@@ -2,18 +2,14 @@ import pLimit from "p-limit";
 import { prisma } from "@/lib/db";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { recordSyncSuccess } from "@/lib/integrations/status";
-import {
-  collapseToTypeDayKeys,
-  recomputeUserRollups,
-} from "@/lib/rollups/measurement-rollups";
-import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
+import { afterProviderBackfill } from "@/lib/integrations/sync-kit/after-write";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import {
   runWithGoogleHealthClientOutcome,
   runWithGoogleHealthStop,
   type GoogleHealthClientOutcome,
-} from "./client";
+} from "./budget";
 import { syncUserActivity } from "./sync-activity";
 import { syncUserMetrics } from "./sync-metrics";
 import { syncUserSleep } from "./sync-sleep";
@@ -362,20 +358,10 @@ async function runGoogleHealthSyncCycle(
 
   if (opts.fullSync && cycle.deferredRollupKeys.length > 0) {
     try {
-      const days = collapseToTypeDayKeys(cycle.deferredRollupKeys);
-      const types = Array.from(new Set(days.map((key) => key.type)));
-      const sorted = days
-        .map((key) => key.measuredAt.getTime())
-        .sort((a, b) => a - b);
-      const from = new Date(sorted[0]!);
-      const to = new Date(sorted[sorted.length - 1]! + 24 * 60 * 60 * 1000);
-      await recomputeUserRollups(userId, { types, from, to });
-      invalidateStatusInsightsForTypes(userId, types, {
-        source: "sync",
-      }).catch((err) => {
-        getEvent()?.addWarning(
-          `google-health: status-insight invalidate failed for ${userId}: ${err}`,
-        );
+      await afterProviderBackfill({
+        userId,
+        provider: "google-health",
+        keys: cycle.deferredRollupKeys,
       });
     } catch (err) {
       anyFailed = true;

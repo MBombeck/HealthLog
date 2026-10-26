@@ -5,48 +5,28 @@ import {
   getGeneralStatusSystemPrompt,
   getGeneralStatusUserPrompt,
 } from "@/lib/ai/prompts/general-status";
-import { openerArchetypeHint } from "@/lib/ai/prompts/opener-archetype";
-import type { Locale } from "@/lib/i18n/config";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
 import { getNoKeyGeneralStatusText } from "@/lib/insights/no-key-fallbacks";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
-import {
-  formatPreviousContextForPrompt,
-  getPreviousInsightContext,
-} from "@/lib/insights/memory";
-import {
-  buildAssessmentContextBlock,
-  pickVarietyLead,
-} from "@/lib/insights/assessment-context";
 import { applyPayloadBudget } from "@/lib/insights/bucket-series";
-import {
-  buildGradedSeriesFromPoints,
-  degradeStatusSnapshotToBudget,
-} from "@/lib/insights/graded-series";
-import { statusSnapshotCharsForRecord } from "@/lib/ai/capabilities/usage";
-import {
-  normalizeLocale,
-  finalizeStatusSummary,
-  persistStatusInsight,
-  round,
-  summarizeSeries,
-} from "@/lib/insights/status-shared";
-import {
-  readFreshStatusText,
-  refreshUnchangedStatusInsight,
-  resolveReadOnlyStatusMiss,
-  statusCacheAction,
-} from "@/lib/insights/status-cache";
-import { hashInsightSnapshot } from "@/lib/insights/snapshot-hash";
-import { returnTimeoutFallback } from "@/lib/insights/timeout-fallback";
+import { buildGradedSeriesFromPoints } from "@/lib/insights/graded-series";
+import { round, summarizeSeries } from "@/lib/insights/status-shared";
 import {
   runPreparedStatusCard,
   type PreparedStatusCard,
-  type StatusCardResult,
 } from "@/lib/insights/status-card-generation";
-import { annotate } from "@/lib/logging/context";
-import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
+import {
+  coverageSpan,
+  prepareStatusCard,
+  textStatusCodec,
+  type StatusCardBuild,
+  type StatusCardContext,
+  type StatusCardOptions,
+  type StatusCardPlugin,
+  type StatusTextResult,
+} from "@/lib/insights/status-pipeline";
+import { userDayKey } from "@/lib/tz/resolver";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 
 // Derived from canonical enum so a new measurement type is auto-included
@@ -63,106 +43,31 @@ const MEASUREMENT_TYPES = measurementTypeEnum.options;
 
 export async function generateGeneralStatusForUser(
   userId: string,
-  options?: {
-    locale?: string | null;
-    force?: boolean;
-    /** v1.8.3 — read-only navigation path; see weight-status for the rationale. */
-    readOnly?: boolean;
-  },
-): Promise<{
-  hasProvider: boolean;
-  text: string | null;
-  cached: boolean;
-  updatedAt: string | null;
-  preparing?: boolean;
-  /** v1.9.0 — last-good text served while a refresh is in flight; keep polling. */
-  revalidating?: boolean;
-}> {
+  options?: StatusCardOptions,
+): Promise<StatusTextResult> {
   const prepared = await prepareGeneralStatusForUser(userId, options);
-  const result = await runPreparedStatusCard(prepared);
-  return result as {
-    hasProvider: boolean;
-    text: string | null;
-    cached: boolean;
-    updatedAt: string | null;
-    preparing?: boolean;
-    revalidating?: boolean;
-  };
+  return (await runPreparedStatusCard(prepared)) as StatusTextResult;
 }
 
-export async function prepareGeneralStatusForUser(
+/**
+ * Everything up to (not including) the provider call, through the shared
+ * status pipeline (`status-pipeline.ts`); this card supplies its snapshot.
+ */
+export function prepareGeneralStatusForUser(
   userId: string,
-  options?: {
-    locale?: string | null;
-    force?: boolean;
-    /** v1.8.3 — read-only navigation path; see weight-status for the rationale. */
-    readOnly?: boolean;
-  },
+  options?: StatusCardOptions,
 ): Promise<PreparedStatusCard> {
-  const locale = normalizeLocale(options?.locale);
-  const force = options?.force === true;
-  const readOnly = options?.readOnly === true;
-  const cacheAction = statusCacheAction("general", locale);
-  // v1.30.3 — resolve the user's own tz BEFORE the day-key so the
-  // cache rolls over at the user's local midnight, not Berlin's. Has to
-  // happen ahead of the cache read below (the earliest possible return
-  // path), not just the later day-bucketing reads.
-  const userTz = await resolveUserTimezone(userId);
-  const todayKey = userDayKey(new Date(), userTz);
+  return prepareStatusCard(GENERAL_STATUS_CARD, userId, options);
+}
 
-  const cached = await readFreshStatusText({
-    userId,
-    cacheAction,
-    todayKey,
-    force,
-  });
-  if (cached) {
-    return {
-      phase: "served",
-      result: {
-        hasProvider: true,
-        text: cached.text,
-        cached: true,
-        updatedAt: cached.updatedAt,
-      },
-    };
-  }
-
-  if (readOnly) {
-    const outcome = await resolveReadOnlyStatusMiss({
-      userId,
-      metric: "general",
-      locale,
-    });
-    // Unavailable for any reason serves the deterministic line and enqueues
-    // nothing. `hasProvider` is provider presence only.
-    if (outcome.kind === "unavailable") {
-      return {
-        phase: "served",
-        result: {
-          hasProvider: outcome.hasProvider,
-          text: getNoKeyGeneralStatusText(locale),
-          cached: true,
-          updatedAt: null,
-        },
-      };
-    }
-    // v1.8.7 — stale-while-revalidate: serve the last good assessment
-    // (if any) instantly while the worker re-warms; only fall to the empty
-    // preparing skeleton when none was ever produced.
-    return {
-      phase: "served",
-      result: {
-        hasProvider: true,
-        text: outcome.lastGood?.text ?? null,
-        cached: outcome.lastGood !== null,
-        updatedAt: outcome.lastGood?.updatedAt ?? null,
-        preparing: outcome.lastGood === null,
-        revalidating: outcome.revalidating,
-      },
-    };
-  }
-
+/**
+ * The overview snapshot: every measured type as a summary + graded series,
+ * medication adherence, the BP targets, and mood context.
+ */
+async function buildGeneralSnapshot(
+  ctx: StatusCardContext,
+): Promise<StatusCardBuild<undefined>> {
+  const { userId, locale, userTz, todayKey } = ctx;
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -222,6 +127,114 @@ export async function prepareGeneralStatusForUser(
     }),
   );
 
+  const { adherenceSeries, adherenceGraded } = await readAdherenceSeries(
+    userId,
+    now,
+    userTz,
+  );
+
+  // Fetch mood context (optional — for enrichment only). v1.4.28
+  // Cap at 90 entries.
+  const moodEntries = await readRecentMoodScores(userId, 90);
+
+  const moodRecords = moodEntries.map((entry) => ({
+    measuredAt: entry.moodLoggedAt,
+    value: entry.score,
+  }));
+  const moodSeries = applyPayloadBudget(moodRecords, { now, tz: userTz });
+  const moodGraded = buildGradedSeriesFromPoints(moodRecords, now, userTz);
+  const moodSummary = summarizeSeries(
+    moodSeries.daily.map((bucket) => ({ value: bucket.value })),
+  );
+  const moodMean = moodSummary?.mean ?? null;
+
+  const bpTargets = getBpTargets(user?.dateOfBirth ?? null);
+  const bpInTargetLast30Days = bpTargets
+    ? bpInTargetLast30DailyPoints(dailyByType, bpTargets)
+    : null;
+
+  // Compute overall data coverage info
+  const { totalSpanDays, newestDaysAgo } = coverageSpan(
+    measurements.length > 0 ? measurements[0].measuredAt : null,
+    measurements.length > 0
+      ? measurements[measurements.length - 1].measuredAt
+      : null,
+  );
+
+  const snapshot = {
+    locale,
+    generatedForDay: todayKey,
+    interpretationHint:
+      "Use trend direction and deltas. Prioritize the newest data if trends conflict. Consider dataCoverage for reliability assessment.",
+    dataCoverage: {
+      totalMeasurements: measurements.length,
+      totalSpanDays,
+      newestMeasurementDaysAgo: newestDaysAgo,
+      avgDaysBetweenMeasurements:
+        measurements.length > 1
+          ? Math.round((totalSpanDays / (measurements.length - 1)) * 10) / 10
+          : null,
+    },
+    measurementSeries,
+    medicationAdherence: {
+      summary: summarizeSeries(
+        adherenceSeries.daily.map((bucket) => ({ value: bucket.value })),
+      ),
+      series: adherenceGraded,
+    },
+    bloodPressureTargets: bpTargets
+      ? {
+          systolic: { min: bpTargets.sysLow, max: bpTargets.sysHigh },
+          diastolic: { min: bpTargets.diaLow, max: bpTargets.diaHigh },
+          inTargetPctLast30DailyPoints: bpInTargetLast30Days,
+        }
+      : null,
+    moodContext:
+      moodSeries.daily.length >= 3
+        ? {
+            points: moodSeries.daily.length,
+            mean: moodMean,
+            latest: moodSeries.daily[0]?.value ?? null,
+            series: moodGraded,
+          }
+        : null,
+  };
+
+  return {
+    snapshot,
+    finish: () => ({
+      // The overview spans many metrics with no single graded mean to band,
+      // so the steady-run signal is left to the previous-context comparison
+      // (repeatCount 0) and there is no single discovery channel (relations
+      // empty); the variety lead + overall data-strength carry the rotation.
+      context: {
+        repeatCount: 0,
+        points: measurements.length,
+        newestDaysAgo,
+        relationsFor: null,
+      },
+      fallbackText: getNoKeyGeneralStatusText(locale),
+      prompts: (snapshotJson, context) => ({
+        systemPrompt: getGeneralStatusSystemPrompt(locale),
+        userPrompt: getGeneralStatusUserPrompt(
+          snapshotJson,
+          todayKey,
+          locale,
+          context.previousContextBlock,
+          context.assessmentContextBlock,
+          context.openerHint,
+        ),
+      }),
+      detail: undefined,
+    }),
+  };
+}
+
+/**
+ * Medication adherence as one rate per user-local day, bucketed and graded
+ * so the model gets the canonical 360+24 view.
+ */
+async function readAdherenceSeries(userId: string, now: Date, userTz: string) {
   // v1.12.7 — bound the intake read to the ~365-day window the adherence
   // series renders. Without a `scheduledFor` floor this scanned all intake
   // history; the adherence fold below only consumes the trailing year.
@@ -235,7 +248,7 @@ export async function prepareGeneralStatusForUser(
       // v1.39.1 (#1033) — adherence counts tracked medications only.
       ...TRACKED_INTAKE_EVENT_WHERE,
     },
-    orderBy: { scheduledFor: "asc" },
+    orderBy: [{ scheduledFor: "asc" }, { id: "asc" }],
     select: {
       scheduledFor: true,
       takenAt: true,
@@ -292,250 +305,50 @@ export async function prepareGeneralStatusForUser(
     userTz,
   );
 
-  // Fetch mood context (optional — for enrichment only). v1.4.28
-  // Cap at 90 entries.
-  const moodEntries = await readRecentMoodScores(userId, 90);
-
-  const moodRecords = moodEntries.map((entry) => ({
-    measuredAt: entry.moodLoggedAt,
-    value: entry.score,
-  }));
-  const moodSeries = applyPayloadBudget(moodRecords, { now, tz: userTz });
-  const moodGraded = buildGradedSeriesFromPoints(moodRecords, now, userTz);
-  const moodSummary = summarizeSeries(
-    moodSeries.daily.map((bucket) => ({ value: bucket.value })),
-  );
-  const moodMean = moodSummary?.mean ?? null;
-
-  const bpTargets = getBpTargets(user?.dateOfBirth ?? null);
-  let bpInTargetLast30Days: number | null = null;
-  if (bpTargets) {
-    const sysDaily = dailyByType.get("BLOOD_PRESSURE_SYS")?.daily ?? [];
-    const diaMap = new Map(
-      (dailyByType.get("BLOOD_PRESSURE_DIA")?.daily ?? []).map(
-        (bucket) => [bucket.dayOffset, bucket.value] as const,
-      ),
-    );
-    const paired = sysDaily
-      .map((bucket) => {
-        const dia = diaMap.get(bucket.dayOffset);
-        if (dia == null) return null;
-        return { dayOffset: bucket.dayOffset, sys: bucket.value, dia };
-      })
-      .filter(
-        (entry): entry is { dayOffset: number; sys: number; dia: number } =>
-          !!entry,
-      )
-      // Keep the legacy "last 30 daily points" semantics — newest 30
-      // paired daily buckets (dayOffset 0..29).
-      .filter((point) => point.dayOffset < 30);
-
-    if (paired.length > 0) {
-      const inTargetCount = paired.filter((point) =>
-        // v1.4.16 — one-sided ceiling semantics with hypotension
-        // floor. See lib/analytics/bp-in-target.ts.
-        isBpReadingInTarget(point.sys, point.dia, bpTargets),
-      ).length;
-      bpInTargetLast30Days = round((inTargetCount / paired.length) * 100, 1);
-    }
-  }
-
-  // Compute overall data coverage info
-  const oldestDay = measurements.length > 0 ? measurements[0].measuredAt : null;
-  const newestDay =
-    measurements.length > 0
-      ? measurements[measurements.length - 1].measuredAt
-      : null;
-  const totalSpanDays =
-    oldestDay && newestDay
-      ? Math.round(
-          (newestDay.getTime() - oldestDay.getTime()) / (24 * 60 * 60 * 1000),
-        )
-      : 0;
-  const newestDaysAgo = newestDay
-    ? Math.round((Date.now() - newestDay.getTime()) / (24 * 60 * 60 * 1000))
-    : null;
-
-  const snapshot = {
-    locale,
-    generatedForDay: todayKey,
-    interpretationHint:
-      "Use trend direction and deltas. Prioritize the newest data if trends conflict. Consider dataCoverage for reliability assessment.",
-    dataCoverage: {
-      totalMeasurements: measurements.length,
-      totalSpanDays,
-      newestMeasurementDaysAgo: newestDaysAgo,
-      avgDaysBetweenMeasurements:
-        measurements.length > 1
-          ? Math.round((totalSpanDays / (measurements.length - 1)) * 10) / 10
-          : null,
-    },
-    measurementSeries,
-    medicationAdherence: {
-      summary: summarizeSeries(
-        adherenceSeries.daily.map((bucket) => ({ value: bucket.value })),
-      ),
-      series: adherenceGraded,
-    },
-    bloodPressureTargets: bpTargets
-      ? {
-          systolic: { min: bpTargets.sysLow, max: bpTargets.sysHigh },
-          diastolic: { min: bpTargets.diaLow, max: bpTargets.diaHigh },
-          inTargetPctLast30DailyPoints: bpInTargetLast30Days,
-        }
-      : null,
-    moodContext:
-      moodSeries.daily.length >= 3
-        ? {
-            points: moodSeries.daily.length,
-            mean: moodMean,
-            latest: moodSeries.daily[0]?.value ?? null,
-            series: moodGraded,
-          }
-        : null,
-  };
-
-  const shed = degradeStatusSnapshotToBudget(
-    snapshot as unknown as Record<string, unknown>,
-    { maxChars: await statusSnapshotCharsForRecord(userId) },
-  );
-  const snapshotJson = JSON.stringify(snapshot);
-
-  annotate({
-    action: { name: cacheAction },
-    meta: {
-      payload_size_bytes: snapshotJson.length,
-      ...(shed.length > 0 ? { snapshot_shed: shed } : {}),
-    },
-  });
-
-  // Content-hash gate (v1.16.8): when the snapshot is unchanged since the
-  // last real assessment, refresh the cache timestamp and skip the LLM.
-  const snapshotHash = hashInsightSnapshot(snapshot);
-  const unchanged = await refreshUnchangedStatusInsight({
-    userId,
-    cacheAction,
-    todayKey,
-    snapshotHash,
-  });
-  if (unchanged) {
-    return {
-      phase: "served",
-      result: {
-        hasProvider: true,
-        text: unchanged.text,
-        cached: true,
-        updatedAt: unchanged.updatedAt,
-      },
-    };
-  }
-
-  // v1.4: pull the previous cached general-status into the prompt so
-  // the model can compare to the user's last analysis. Falls back
-  // gracefully when there's no history (first-run users).
-  const previousContext = await getPreviousInsightContext(
-    userId,
-    "general-status",
-    locale,
-    12,
-  );
-  const previousContextBlock = formatPreviousContextForPrompt(
-    previousContext,
-    locale,
-  );
-
-  // v1.12.7 — diversity / anti-repetition block (see blood-pressure-status).
-  // The overview spans many metrics with no single graded mean to band, so
-  // the steady-run signal is left to the previous-context comparison
-  // (repeatCount 0) and there is no single discovery channel (relations
-  // empty); the variety lead + overall data-strength carry the rotation.
-  const varietyLead = pickVarietyLead(userId, "general", todayKey);
-  const assessmentContextBlock = buildAssessmentContextBlock(
-    {
-      varietyLead,
-      dataStrength: {
-        points: measurements.length,
-        newestDaysAgo,
-      },
-      repeatCount: 0,
-      relations: [],
-    },
-    locale,
-  );
-
-  // The provider call is deferred to the caller — the single-card path runs
-  // ONE completion, the batch path folds this prompt into one shared call.
-  // A timeout / error is a transient miss (fallback served, no assessment
-  // persisted); `none` (no provider / no consent) serves the no-key text.
-  return {
-    phase: "pending",
-    metric: "general",
-    userId,
-    cacheAction,
-    systemPrompt: getGeneralStatusSystemPrompt(locale),
-    userPrompt: getGeneralStatusUserPrompt(
-      snapshotJson,
-      todayKey,
-      locale,
-      previousContextBlock,
-      assessmentContextBlock,
-      // v1.28.40 — rotating opener hint, per (user, metric, day).
-      openerArchetypeHint(`${userId}:general:${todayKey}`, locale as Locale),
-    ),
-    snapshotHash,
-    // v1.12.7 — match the archetype cards' 0.45.
-    temperature: 0.45,
-    noProvider: {
-      hasProvider: false,
-      text: getNoKeyGeneralStatusText(locale),
-      cached: true,
-      updatedAt: null,
-    },
-    timeout: (reason): StatusCardResult =>
-      returnTimeoutFallback({
-        cacheAction,
-        reason,
-        userId,
-        todayKey,
-        stubText: getNoKeyGeneralStatusText(locale),
-      }),
-    finalize: async (outcome): Promise<StatusCardResult> => {
-      // Outbound safety screen. The only transform here used to be
-      // whitespace-normalisation, so a dose-change imperative or a fabricated
-      // clinical risk score persisted as the day's cached assessment. Policy
-      // for a background-generated card is WITHHOLD: serve the deterministic
-      // stub and persist no model text (see `finalizeStatusSummary`).
-      const screened = finalizeStatusSummary(outcome.content, locale);
-      if (!screened.ok) {
-        annotate({
-          action: { name: "insights.status.outbound_blocked" },
-          meta: { cacheAction, reason: screened.reason },
-        });
-        return returnTimeoutFallback({
-          cacheAction,
-          reason: "screened",
-          userId: userId,
-          todayKey: todayKey,
-          stubText: getNoKeyGeneralStatusText(locale),
-        });
-      }
-      const summary = screened.text;
-      if (!summary) {
-        throw new Error("General-status summary was empty after normalization");
-      }
-      const updatedAt = await persistStatusInsight({
-        userId,
-        cacheAction,
-        todayKey,
-        text: summary,
-        snapshotHash,
-      });
-      return {
-        hasProvider: true,
-        text: summary,
-        cached: false,
-        updatedAt,
-      };
-    },
-  };
+  return { adherenceSeries, adherenceGraded };
 }
+
+/**
+ * The share of the newest 30 paired systolic / diastolic daily buckets that
+ * sit in the person's BP targets, or `null` with no paired day.
+ */
+function bpInTargetLast30DailyPoints(
+  dailyByType: ReadonlyMap<string, ReturnType<typeof applyPayloadBudget>>,
+  bpTargets: NonNullable<ReturnType<typeof getBpTargets>>,
+): number | null {
+  const sysDaily = dailyByType.get("BLOOD_PRESSURE_SYS")?.daily ?? [];
+  const diaMap = new Map(
+    (dailyByType.get("BLOOD_PRESSURE_DIA")?.daily ?? []).map(
+      (bucket) => [bucket.dayOffset, bucket.value] as const,
+    ),
+  );
+  const paired = sysDaily
+    .map((bucket) => {
+      const dia = diaMap.get(bucket.dayOffset);
+      if (dia == null) return null;
+      return { dayOffset: bucket.dayOffset, sys: bucket.value, dia };
+    })
+    .filter(
+      (entry): entry is { dayOffset: number; sys: number; dia: number } =>
+        !!entry,
+    )
+    // Keep the legacy "last 30 daily points" semantics — newest 30
+    // paired daily buckets (dayOffset 0..29).
+    .filter((point) => point.dayOffset < 30);
+
+  if (paired.length === 0) return null;
+  const inTargetCount = paired.filter((point) =>
+    // v1.4.16 — one-sided ceiling semantics with hypotension
+    // floor. See lib/analytics/bp-in-target.ts.
+    isBpReadingInTarget(point.sys, point.dia, bpTargets),
+  ).length;
+  return round((inTargetCount / paired.length) * 100, 1);
+}
+
+const GENERAL_STATUS_CARD: StatusCardPlugin<StatusTextResult, undefined> = {
+  scope: "general",
+  codec: textStatusCodec,
+  unavailableText: (locale) => getNoKeyGeneralStatusText(locale),
+  emptyMessage: "General-status summary was empty after normalization",
+  build: buildGeneralSnapshot,
+};

@@ -7,15 +7,12 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
-import {
-  exchangeCode,
-  fetchProfile,
-  resolveFitbitUserId,
-  FITBIT_OAUTH_SCOPE,
-} from "@/lib/fitbit/client";
+import { fetchProfile, resolveFitbitUserId } from "@/lib/fitbit/client";
+import { fitbitOAuth } from "@/lib/fitbit/oauth";
+import { FITBIT_OAUTH_SCOPE } from "@/lib/fitbit/oauth";
 import { getUserFitbitCredentials } from "@/lib/fitbit/credentials";
 import { FITBIT_OAUTH_STATE_COOKIE } from "@/lib/fitbit/oauth-state";
-import { FITBIT_BACKFILL_QUEUE } from "@/lib/jobs/fitbit-backfill";
+import { FITBIT_BACKFILL_QUEUE } from "@/lib/fitbit/jobs/queues";
 import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { markReconnected } from "@/lib/integrations/status";
 import { Prisma } from "@/generated/prisma/client";
@@ -150,7 +147,9 @@ export const GET = apiHandler(async (request: NextRequest) => {
         return ERR("nocreds");
       }
 
-      const tokens = await exchangeCode(code, consumed.codeVerifier, creds);
+      const tokens = await fitbitOAuth.exchange(code, creds, {
+        codeVerifier: consumed.codeVerifier,
+      });
 
       // The initial code exchange MUST return a refresh token. If Fitbit ever
       // omits it, refuse to persist — a stored empty refresh token silently bricks

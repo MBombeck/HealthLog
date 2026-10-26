@@ -8,7 +8,7 @@ import {
   documentSelectionHref,
   documentSelectionSurvivedClose,
   withoutDocumentSelectionHref,
-} from "../documents-view";
+} from "../vault/selection-history";
 
 class MemoryHistory {
   private entries: { href: string; state: unknown }[];

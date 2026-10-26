@@ -22,7 +22,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { I18nProvider } from "@/lib/i18n/context";
-import { RestoreSkipReport } from "@/components/admin/backups-section";
+import { RestoreSkipReport } from "@/components/admin/backups/restore-notices";
 import type { RestoreSkipSummary } from "@/lib/export/restore-skips";
 import { primeLocales } from "@/__tests__/helpers/prime-locales";
 

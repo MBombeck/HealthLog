@@ -1,0 +1,219 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "version": 1,
+      "selectedScoreRings": [
+        "MED_COMPLIANCE"
+      ],
+      "heroRingOrder": [
+        "HEALTH_SCORE",
+        "MED_COMPLIANCE"
+      ],
+      "enabledHeroItemKinds": [
+        "coach_checkin",
+        "dose_window",
+        "preventive_care",
+        "sync_issue",
+        "milestone",
+        "ecg_new_recording",
+        "tension_window",
+        "same_time_baseline",
+        "upcoming_visit"
+      ],
+      "hero": "score",
+      "todayCardVisible": true,
+      "widgets": [
+        {
+          "id": "weight",
+          "visible": true,
+          "tileVisible": true,
+          "order": 0
+        },
+        {
+          "id": "bp",
+          "visible": true,
+          "tileVisible": true,
+          "order": 1
+        },
+        {
+          "id": "pulse",
+          "visible": true,
+          "tileVisible": true,
+          "order": 2
+        },
+        {
+          "id": "hrv",
+          "visible": false,
+          "tileVisible": true,
+          "order": 3
+        },
+        {
+          "id": "oxygenSaturation",
+          "visible": false,
+          "tileVisible": true,
+          "order": 4
+        },
+        {
+          "id": "respiratoryRate",
+          "visible": false,
+          "tileVisible": true,
+          "order": 5
+        },
+        {
+          "id": "wristTemperature",
+          "visible": false,
+          "tileVisible": true,
+          "order": 6
+        },
+        {
+          "id": "bodyFat",
+          "visible": true,
+          "tileVisible": true,
+          "order": 7
+        },
+        {
+          "id": "muscleMass",
+          "visible": false,
+          "tileVisible": true,
+          "order": 8
+        },
+        {
+          "id": "totalBodyWater",
+          "visible": false,
+          "tileVisible": true,
+          "order": 9
+        },
+        {
+          "id": "boneMass",
+          "visible": false,
+          "tileVisible": true,
+          "order": 10
+        },
+        {
+          "id": "mood",
+          "visible": true,
+          "tileVisible": true,
+          "order": 11
+        },
+        {
+          "id": "bpInTarget",
+          "visible": true,
+          "tileVisible": true,
+          "order": 12
+        },
+        {
+          "id": "medications",
+          "visible": true,
+          "tileVisible": true,
+          "order": 13
+        },
+        {
+          "id": "sleep",
+          "visible": false,
+          "tileVisible": true,
+          "order": 14
+        },
+        {
+          "id": "steps",
+          "visible": false,
+          "tileVisible": true,
+          "order": 15
+        },
+        {
+          "id": "glucose",
+          "visible": false,
+          "tileVisible": true,
+          "order": 16
+        },
+        {
+          "id": "achievements",
+          "visible": true,
+          "tileVisible": false,
+          "order": 17
+        },
+        {
+          "id": "vo2Max",
+          "visible": false,
+          "tileVisible": true,
+          "order": 18
+        },
+        {
+          "id": "recentWorkouts",
+          "visible": true,
+          "tileVisible": true,
+          "order": 19
+        },
+        {
+          "id": "cardioRecovery",
+          "visible": false,
+          "tileVisible": false,
+          "order": 20
+        },
+        {
+          "id": "sixMinuteWalk",
+          "visible": false,
+          "tileVisible": false,
+          "order": 21
+        },
+        {
+          "id": "stairAscentSpeed",
+          "visible": false,
+          "tileVisible": false,
+          "order": 22
+        },
+        {
+          "id": "stairDescentSpeed",
+          "visible": false,
+          "tileVisible": false,
+          "order": 23
+        },
+        {
+          "id": "breathingDisturbances",
+          "visible": false,
+          "tileVisible": false,
+          "order": 24
+        },
+        {
+          "id": "falls",
+          "visible": false,
+          "tileVisible": false,
+          "order": 25
+        },
+        {
+          "id": "walkingSteadiness",
+          "visible": false,
+          "tileVisible": false,
+          "order": 26
+        },
+        {
+          "id": "vorsorge",
+          "visible": true,
+          "tileVisible": false,
+          "order": 27
+        },
+        {
+          "id": "waterIntake",
+          "visible": false,
+          "tileVisible": true,
+          "order": 28
+        }
+      ],
+      "updatedAt": "<updatedAt>"
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": null,
+      "meta": {
+        "cache.dashboardWidgets.outcome": "hit",
+        "cache.dashboardWidgets.key_hash": "<cache.dashboardWidgets.key_hash>"
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "stored": null
+}

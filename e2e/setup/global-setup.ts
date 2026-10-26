@@ -33,6 +33,7 @@ import {
 } from "@playwright/test";
 import pg from "pg";
 
+import { allCriticalAccounts, FORM_SIGN_IN_JOURNEYS } from "./critical-fixture";
 import { seedDayDoorsRecord } from "./day-doors-fixture";
 import { seedMobileRoutesRecord } from "./mobile-routes-fixture";
 
@@ -248,6 +249,41 @@ export const E2E_TIMELINE = {
 export const TIMELINE_STORAGE_STATE_PATH = resolve(
   process.cwd(),
   "e2e/setup/storageStateTimeline.json",
+);
+
+/**
+ * The vault specs' own accounts (`documents.spec.ts`, and the documents
+ * journeys of `v142-qol.spec.ts`).
+ *
+ * The vault's layout (cards or a list, months stacked or side by side) is a
+ * per-account preference. On the shared account the layout journey turned it
+ * while the month-grid tests read the default, so either could fail depending
+ * on which ran first. Each file seeds its own vault into its own account
+ * (`ensureVaultFixture(username)`).
+ */
+export const E2E_VAULT = {
+  email: "e2e-vault@healthlog.test",
+  username: "e2e-vault",
+  password: "Vt4!Hq8mZr2wKx6N",
+  // The upload-cap test sets the instance's cap through the admin console.
+  role: "ADMIN",
+} as const;
+
+export const VAULT_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateVault.json",
+);
+
+export const E2E_VAULT_LAYOUT = {
+  email: "e2e-vault-layout@healthlog.test",
+  username: "e2e-vault-layout",
+  password: "Vl7!Bn3qXw9pRt5M",
+  role: "USER",
+} as const;
+
+export const VAULT_LAYOUT_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateVaultLayout.json",
 );
 
 /**
@@ -990,6 +1026,32 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       ],
     );
 
+    // The vault specs' accounts — see `E2E_VAULT`. The vault fixture turns
+    // the documents module on and seeds the documents.
+    for (const account of [E2E_VAULT, E2E_VAULT_LAYOUT]) {
+      await pool.query(
+        `INSERT INTO users
+          (id, username, email, password_hash, role, created_at, updated_at,
+           onboarding_completed_at, onboarding_tour_completed)
+         VALUES ($1, $2, $3, $4, $6, $5, $5, $5, true)
+         ON CONFLICT (username) DO UPDATE SET
+           email = EXCLUDED.email,
+           password_hash = EXCLUDED.password_hash,
+           role = EXCLUDED.role,
+           updated_at = EXCLUDED.updated_at,
+           onboarding_completed_at = EXCLUDED.onboarding_completed_at,
+           onboarding_tour_completed = EXCLUDED.onboarding_tour_completed`,
+        [
+          cuid(),
+          account.username,
+          account.email,
+          await hashPassword(account.password),
+          now,
+          account.role,
+        ],
+      );
+    }
+
     // The day-doors journey's account. Every module the journey reaches is
     // on; its record is written after the login capture.
     await pool.query(
@@ -1364,6 +1426,28 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     // surfaces' own buckets are cleared; nothing else in the table is touched.
     await pool.query(`DELETE FROM rate_limits WHERE key LIKE 'auth:%'`);
 
+    // Every other bucket the suite can fill, for the same reason. A bucket is
+    // keyed on the account it meters (`<surface>:<id>`, sometimes with a
+    // further segment) or, on an anonymous surface, on the caller's address,
+    // and several of them outlive a run by up to an hour: the check-in
+    // ceiling, the per-account write bucket, the export and import buckets.
+    // A second run on the same database then met the first run's counts.
+    // Cleared are the buckets of the fixture accounts (every one of them is
+    // an `@healthlog.test` address or an `e2e-` record) and those of the
+    // loopback addresses the suite calls from; a developer's own accounts
+    // and their buckets are left alone.
+    await pool.query(
+      `DELETE FROM rate_limits r
+        USING users u
+        WHERE (u.email LIKE '%@healthlog.test' OR u.username LIKE 'e2e-%')
+          AND position(u.id IN r.key) > 0`,
+    );
+    await pool.query(
+      `DELETE FROM rate_limits
+        WHERE key LIKE '%:127.0.0.1' OR key LIKE '%:::1'
+           OR key LIKE '%:::ffff:127.0.0.1' OR key LIKE '%:unknown'`,
+    );
+
     // One marker weight per record. Re-seeded by delete-then-insert so a
     // re-run cannot accumulate duplicates and so an edited constant takes
     // effect rather than sitting beside the old value.
@@ -1539,6 +1623,49 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       [cuid(), now, E2E_BACKUP_ADMIN.username, E2E_BACKUP_DELEGATE.username],
     );
 
+    // ── the @critical journeys' accounts ─────────────────────────────────
+    //
+    // One per journey and per project; `critical-fixture.ts` says why. Every
+    // module a journey reaches is switched on (wellbeing and labs are opt-in),
+    // and the passkeys the sign-in journey registers go with the row's reset,
+    // so a re-run registers into an empty list rather than beside the last
+    // run's credential.
+    for (const account of allCriticalAccounts()) {
+      await pool.query(
+        `INSERT INTO users
+          (id, username, email, password_hash, role, created_at, updated_at,
+           onboarding_completed_at, onboarding_tour_completed,
+           module_preferences_json)
+         VALUES ($1, $2, $3, $4, 'USER', $5, $5, $5, true, $6::jsonb)
+         ON CONFLICT (username) DO UPDATE SET
+           email = EXCLUDED.email,
+           password_hash = EXCLUDED.password_hash,
+           updated_at = EXCLUDED.updated_at,
+           onboarding_completed_at = EXCLUDED.onboarding_completed_at,
+           onboarding_tour_completed = EXCLUDED.onboarding_tour_completed,
+           module_preferences_json = EXCLUDED.module_preferences_json,
+           totp_confirmed_at = NULL`,
+        [
+          cuid(),
+          account.username,
+          account.email,
+          await hashPassword(account.password),
+          now,
+          JSON.stringify({
+            mood: true,
+            labs: true,
+            mentalHealth: true,
+            medications: true,
+          }),
+        ],
+      );
+      await pool.query(
+        `DELETE FROM passkeys
+         WHERE user_id = (SELECT id FROM users WHERE username = $1)`,
+        [account.username],
+      );
+    }
+
     // Console (instead of structured logging) is intentional here —
     // global-setup runs outside the app's logging context, and the
     // line is useful when debugging a CI failure where the seed didn't
@@ -1646,6 +1773,10 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     // The timeline journey's jar — see `E2E_TIMELINE`.
     await capture(E2E_TIMELINE, TIMELINE_STORAGE_STATE_PATH);
 
+    // The vault specs' jars — see `E2E_VAULT`.
+    await capture(E2E_VAULT, VAULT_STORAGE_STATE_PATH);
+    await capture(E2E_VAULT_LAYOUT, VAULT_LAYOUT_STORAGE_STATE_PATH);
+
     // The day-doors journey's jar, then its record — see `E2E_DAY_DOORS`.
     await capture(E2E_DAY_DOORS, DAY_DOORS_STORAGE_STATE_PATH);
     await seedDayDoorsRecord(baseURL, DAY_DOORS_STORAGE_STATE_PATH);
@@ -1708,6 +1839,13 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       `UPDATE users SET totp_confirmed_at = $2 WHERE username = $1`,
       [E2E_SETUP_CHILD.username, now],
     );
+
+    // The @critical journeys' jars. The sign-in journey signs in through the
+    // form in every test, so its account gets none.
+    for (const account of allCriticalAccounts()) {
+      if (FORM_SIGN_IN_JOURNEYS.has(account.journey)) continue;
+      await capture(account, account.storageStatePath);
+    }
   } finally {
     await pool.end();
   }

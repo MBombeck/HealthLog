@@ -1,6 +1,11 @@
+import type { ReactElement } from "react";
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+
+import { dashboardSource } from "@/__tests__/helpers/dashboard-source";
+import { STRIP_TILES } from "@/components/dashboard/tiles/strip-tiles";
+import type { DashboardTileContext } from "@/components/dashboard/tiles/tile-context";
 
 /**
  * v1.4.19 — guards for the polish pass on `/insights` and the
@@ -28,7 +33,6 @@ import { join } from "node:path";
  */
 
 const ROOT = join(__dirname, "../../..");
-const DASHBOARD_PATH = join(ROOT, "src/app/page-client.tsx");
 const INSIGHTS_PATH = join(ROOT, "src/app/insights/page-client.tsx");
 const INSIGHTS_LAYOUT_PATH = join(ROOT, "src/app/insights/layout.tsx");
 
@@ -38,7 +42,7 @@ function load(path: string): string {
 
 describe("v1.4.19 A3 — dashboard polish", () => {
   it("dashboard page does NOT render <CompareToggle />", () => {
-    const src = load(DASHBOARD_PATH);
+    const src = dashboardSource();
     // The component import + JSX use are both gone. The toggle still
     // lives on /insights via a separate import there.
     expect(src).not.toMatch(/<CompareToggle\b/);
@@ -52,9 +56,9 @@ describe("v1.4.19 A3 — dashboard polish", () => {
     // baseline plumbing along with the toggle, every chart on the
     // dashboard would lose its comparison overlay silently. The
     // resolved layout still carries the value to each chart.
-    const src = load(DASHBOARD_PATH);
-    expect(src).toContain("comparisonBaseline");
-    expect(src).toContain("compareBaseline");
+    const src = dashboardSource();
+    expect(src).toContain("layout.comparisonBaseline");
+    expect(src).toContain("compareBaseline={ctx.compareBaseline}");
   });
 });
 
@@ -203,18 +207,40 @@ describe("v1.4.22 W5 reconcile (Code-H2) — BD-Zielbereich tile compareDelta us
    * window (priorMonth / priorYear) instead of all-time.
    */
   it("subtracts bpInTargetPctPriorMonth when comparisonBaseline=lastMonth", () => {
-    const src = load(DASHBOARD_PATH);
-    // The fix introduces `bpComparePrior` keyed by `compareBaseline`.
-    expect(src).toContain("bpInTargetPctPriorMonth");
-    expect(src).toContain("bpInTargetPctPriorYear");
-    // The all-time shortcut from v1.4.22 A2 must not subtract `bpAll`
-    // for the comparison delta any more.
-    expect(src).not.toMatch(/bp30\s*-\s*bpAll/);
+    // The tile is built from the registry with a 30-day share of 80 % and
+    // prior periods of 70 % (month), 50 % (year) and 40 % (all time): the
+    // delta follows the chosen baseline and never the all-time share.
+    const tile = STRIP_TILES.find((t) => t.widget === "bpInTarget");
+    const deltaFor = (compareBaseline: string) => {
+      const ctx = {
+        t: (key: string) => key,
+        compareBaseline,
+        directionOf: () => "neutral",
+        data: {
+          bpInTargetPct: 75,
+          bpInTargetPct7d: 78,
+          bpInTargetPct30d: 80,
+          bpInTargetPctAllTime: 40,
+          bpInTargetPctPriorMonth: 70,
+          bpInTargetPctPriorYear: 50,
+          bpInTargetCount90: 200,
+          bpInTargetSpanDays90: 90,
+        },
+      } as unknown as DashboardTileContext;
+      expect(tile?.visible(ctx)).toBe(true);
+      const [card] = tile?.cards(ctx) ?? [];
+      return (card.node as ReactElement<{ compareDelta: number | null }>).props
+        .compareDelta;
+    };
+    expect(deltaFor("lastMonth")).toBe(10);
+    expect(deltaFor("lastYear")).toBe(30);
+    expect(deltaFor("none")).toBeNull();
   });
 
   it("ships priorMonth + priorYear pcts in the analytics envelope", () => {
+    // The default body is built outside the route.
     const ROUTE_SRC = readFileSync(
-      join(ROOT, "src/app/api/analytics/route.ts"),
+      join(ROOT, "src/lib/analytics/response/default-body.ts"),
       "utf8",
     );
     expect(ROUTE_SRC).toContain("bpInTargetPctPriorMonth");

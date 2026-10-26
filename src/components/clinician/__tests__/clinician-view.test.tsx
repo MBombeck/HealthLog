@@ -328,6 +328,28 @@ describe("<ClinicianView>", () => {
     expect(html).toContain("0.495");
   });
 
+  it("notes a screener total answered in an unvalidated translation under its row", () => {
+    const stats = {
+      SCI_SCORE: { avg: 18, min: 14, max: 22, count: 3, latest: 20 },
+      PHQ9_SCORE: { avg: 6, min: 4, max: 8, count: 2, latest: 4 },
+    };
+    const selection = selectionFromLeaves(["SCI_SCORE", "PHQ9_SCORE"]);
+    const marked = render(
+      makeReport({ stats, screenerUnvalidatedTranslations: { SCI_SCORE: 2 } }),
+      { selection },
+    );
+    expect(
+      marked.split('data-slot="clinician-screener-translation-note"').length -
+        1,
+    ).toBe(1);
+    expect(marked).toContain("2 of 3 results were answered in a translation");
+    const plain = render(
+      makeReport({ stats, screenerUnvalidatedTranslations: null }),
+      { selection },
+    );
+    expect(plain).not.toContain("clinician-screener-translation-note");
+  });
+
   it("renders the fenced wellness card with the descriptive disclaimer", () => {
     const html = render(makeReport());
     expect(html).toContain("Wellness scores");

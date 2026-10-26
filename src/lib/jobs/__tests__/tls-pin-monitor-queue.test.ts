@@ -1,63 +1,56 @@
 /**
- * v1.12.2 ios-coord — TLS-pin-monitor queue registration guard.
+ * TLS-pin-monitor queue registration guard.
  *
- * Same source-text-grep approach as the other queue-wiring guards: assert
- * the queue is imported, registered in `allQueues`, scheduled, and wired to
- * a `createAndWork` handler — without booting pg-boss + Prisma. An unregistered
- * queue silently never drains (the recurring v1.4.37 dead-queue bug), which
- * would leave the pinned-leaf-rotation alarm dark.
+ * Reads the worker registry: the queue is declared in the maintenance group,
+ * scheduled on its cron with the default retries, and bound to the handler
+ * that runs the monitor pass. An unregistered queue silently never drains
+ * (the dead-queue class), which would leave the pinned-leaf-rotation alarm
+ * dark.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-// v1.18.1 — the TLS-pin-monitor wiring moved out of the 2143-LOC
-// reminder-worker boot file into the maintenance registrar. The dead-queue
-// guard follows the wiring there (the ops-handlers module is still concatenated
-// for the handler-body `runTlsPinMonitor` assertion).
-const REGISTRAR_PATH = join(
-  __dirname,
-  "..",
-  "reminder",
-  "register-maintenance.ts",
+import { handleTlsPinMonitor } from "@/lib/jobs/reminder/ops-handlers";
+import {
+  groupOf,
+  jobOf,
+  loadedHandler,
+} from "@/lib/jobs/registry/__tests__/registry-helpers";
+import {
+  TLS_PIN_MONITOR_CRON,
+  TLS_PIN_MONITOR_QUEUE,
+} from "@/lib/jobs/tls-pin-monitor-queue";
+
+const handlerSource = readFileSync(
+  join(__dirname, "..", "reminder", "ops-handlers.ts"),
+  "utf8",
 );
-const workerSource =
-  readFileSync(REGISTRAR_PATH, "utf8") +
-  readFileSync(join(__dirname, "..", "reminder", "ops-handlers.ts"), "utf8");
 
-describe("reminder-worker — tls-pin-monitor wiring", () => {
-  it("imports the queue symbols from the tls-pin-monitor module", () => {
-    expect(workerSource).toMatch(
-      /from\s*["']@\/lib\/jobs\/tls-pin-monitor["']/,
-    );
-    expect(workerSource).toMatch(/\bTLS_PIN_MONITOR_QUEUE\b/);
-    expect(workerSource).toMatch(/\bTLS_PIN_MONITOR_CRON\b/);
-    expect(workerSource).toMatch(/\brunTlsPinMonitor\b/);
+describe("tls-pin-monitor registration", () => {
+  it("imports the monitor pass into the ops handlers", () => {
+    expect(handlerSource).toMatch(/\brunTlsPinMonitor\b/);
   });
 
-  it("registers the tls-pin-monitor queue in the allQueues loop", () => {
-    const allQueuesMatch = workerSource.match(
-      /const allQueues\s*=\s*\[([\s\S]*?)\];/,
-    );
-    expect(allQueuesMatch).not.toBeNull();
-    expect(allQueuesMatch![1]).toMatch(/\bTLS_PIN_MONITOR_QUEUE\b/);
+  it("declares the tls-pin-monitor queue in the maintenance group", () => {
+    expect(groupOf(TLS_PIN_MONITOR_QUEUE).name).toBe("maintenance");
   });
 
-  it("schedules the tls-pin-monitor cron", () => {
-    expect(workerSource).toMatch(
-      /\[TLS_PIN_MONITOR_QUEUE,\s*TLS_PIN_MONITOR_CRON\]/,
-    );
+  it("schedules the tls-pin-monitor cron with the default retries", () => {
+    const job = jobOf(TLS_PIN_MONITOR_QUEUE);
+    expect(job.cron).toBe(TLS_PIN_MONITOR_CRON);
+    expect(job.scheduleOptions).toBeUndefined();
   });
 
-  it("registers a createAndWork handler for the queue", () => {
-    expect(workerSource).toMatch(
-      /createAndWork[\s\S]{0,200}TLS_PIN_MONITOR_QUEUE[\s\S]{0,200}handleTlsPinMonitor/,
+  it("binds the monitor handler", async () => {
+    expect(await loadedHandler(TLS_PIN_MONITOR_QUEUE)).toBe(
+      handleTlsPinMonitor,
     );
   });
 
   it("runs the monitor pass inside the handler", () => {
-    expect(workerSource).toMatch(
+    expect(handlerSource).toMatch(
       /handleTlsPinMonitor[\s\S]{0,400}runTlsPinMonitor/,
     );
   });

@@ -32,7 +32,7 @@
  *   consent_required          → `consent.ai.required`
  *   check_failed              → `ai.unavailable`; 503
  */
-import { findActiveGrant } from "@/lib/sharing/grants";
+import { findActiveGrant } from "@/lib/sharing/grant-access";
 import { resolveGrantSections } from "@/lib/sharing/grant-view";
 import { getEvent } from "@/lib/logging/context";
 import { providerWorkAuthorityForRecord } from "@/lib/sharing/provider-work-authority";

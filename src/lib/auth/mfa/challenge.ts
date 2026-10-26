@@ -26,6 +26,7 @@
 import { randomBytes } from "node:crypto";
 import { hashToken } from "@/lib/auth/hmac";
 import { prisma } from "@/lib/db";
+import { assertAccountNotPendingDeletion } from "@/lib/account-deletion/pending";
 
 /** Login step-up: the only `kind` Phase M exercises. */
 export type MfaChallengeKind = "login";
@@ -46,6 +47,10 @@ export async function createMfaChallenge(
   userId: string,
   kind: MfaChallengeKind,
 ): Promise<CreatedChallenge> {
+  // No second factor is asked of an account pending deletion: the caller has
+  // proved the first one, so the refusal may name the date (403
+  // `auth.account.deletion_pending`) instead of costing them a code.
+  await assertAccountNotPendingDeletion(userId);
   const ticket = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + MFA_CHALLENGE_TTL_MS);
   await prisma.mfaChallenge.create({

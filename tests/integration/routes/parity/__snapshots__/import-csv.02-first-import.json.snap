@@ -1,0 +1,206 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "inserted": 5,
+      "updated": 1,
+      "skipped": 2,
+      "total": 8,
+      "dryRun": false,
+      "rows": [
+        {
+          "line": 2,
+          "status": "inserted"
+        },
+        {
+          "line": 3,
+          "status": "inserted"
+        },
+        {
+          "line": 4,
+          "status": "updated"
+        },
+        {
+          "line": 5,
+          "status": "inserted"
+        },
+        {
+          "line": 6,
+          "status": "skipped",
+          "reason": "duplicate"
+        },
+        {
+          "line": 7,
+          "status": "inserted"
+        },
+        {
+          "line": 8,
+          "status": "inserted"
+        },
+        {
+          "line": 9,
+          "status": "skipped",
+          "reason": "invalid_value"
+        }
+      ]
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "import.csv.upload"
+      },
+      "meta": {
+        "import_csv_inserted": 5,
+        "import_csv_updated": 1,
+        "import_csv_skipped": 2,
+        "import_csv_dry_run": false
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "emitDataArrival",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "kind": "weight",
+          "newestSampleAt": "2026-10-11T06:30:00.000Z",
+          "insertedCount": 2,
+          "refId": "<id:2>",
+          "source": "csv_import"
+        }
+      ]
+    },
+    {
+      "effect": "maybeEnqueueMorningRefresh",
+      "args": [
+        "<id:1>",
+        [
+          "2026-10-12T06:00:00.000Z"
+        ]
+      ]
+    },
+    {
+      "effect": "invalidateStatusInsightsForTypes",
+      "args": [
+        "<id:1>",
+        [
+          "WEIGHT",
+          "SLEEP_DURATION",
+          "BLOOD_GLUCOSE",
+          "PULSE"
+        ],
+        {
+          "source": "manual"
+        }
+      ]
+    }
+  ],
+  "stored": {
+    "measurements": [
+      {
+        "type": "WEIGHT",
+        "value": 81.4,
+        "unit": "kg",
+        "source": "IMPORT",
+        "externalId": "exp-w-1",
+        "measuredAt": "2026-10-10T06:30:00.000Z",
+        "notes": null,
+        "notesEncrypted": "<bytes:59>",
+        "glucoseContext": null,
+        "deletedAt": null
+      },
+      {
+        "type": "WEIGHT",
+        "value": 82,
+        "unit": "kg",
+        "source": "IMPORT",
+        "externalId": "exp-w-2",
+        "measuredAt": "2026-10-11T06:30:00.000Z",
+        "notes": null,
+        "notesEncrypted": null,
+        "glucoseContext": null,
+        "deletedAt": null
+      },
+      {
+        "type": "PULSE",
+        "value": 64,
+        "unit": "bpm",
+        "source": "IMPORT",
+        "externalId": null,
+        "measuredAt": "2026-10-12T07:00:00.000Z",
+        "notes": null,
+        "notesEncrypted": null,
+        "glucoseContext": null,
+        "deletedAt": null
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 412,
+        "unit": "minutes",
+        "source": "IMPORT",
+        "externalId": "exp-s-1",
+        "measuredAt": "2026-10-12T06:00:00.000Z",
+        "notes": null,
+        "notesEncrypted": null,
+        "glucoseContext": null,
+        "deletedAt": null
+      },
+      {
+        "type": "BLOOD_GLUCOSE",
+        "value": 104,
+        "unit": "mg/dL",
+        "source": "IMPORT",
+        "externalId": null,
+        "measuredAt": "2026-10-11T08:00:00.000Z",
+        "notes": null,
+        "notesEncrypted": null,
+        "glucoseContext": "FASTING",
+        "deletedAt": null
+      }
+    ],
+    "rollups": [
+      {
+        "type": "WEIGHT",
+        "bucketStart": "2026-10-10T00:00:00.000Z",
+        "count": 1,
+        "mean": 81.4
+      },
+      {
+        "type": "WEIGHT",
+        "bucketStart": "2026-10-11T00:00:00.000Z",
+        "count": 1,
+        "mean": 82
+      },
+      {
+        "type": "PULSE",
+        "bucketStart": "2026-10-12T00:00:00.000Z",
+        "count": 1,
+        "mean": 64
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "bucketStart": "2026-10-12T00:00:00.000Z",
+        "count": 1,
+        "mean": 412
+      },
+      {
+        "type": "BLOOD_GLUCOSE",
+        "bucketStart": "2026-10-11T00:00:00.000Z",
+        "count": 1,
+        "mean": 104
+      }
+    ],
+    "audit": [
+      {
+        "action": "import.csv.upload",
+        "details": "{\"inserted\":5,\"updated\":1,\"skipped\":2}"
+      }
+    ]
+  }
+}

@@ -14,6 +14,10 @@
  * to return. A `.refine()` with a message that quotes its input would break
  * that, and would put a key in an error body.
  */
+import {
+  AI_RESPONSE_TIMEOUT_MAX_SECONDS,
+  AI_RESPONSE_TIMEOUT_MIN_SECONDS,
+} from "@/lib/ai/effective-timeout";
 import { z } from "zod/v4";
 
 import { PROVIDER_CHAIN_TYPES } from "@/lib/ai/provider-chain";
@@ -106,8 +110,14 @@ export const aiProviderPatchSchema = z.object({
   responseTimeoutSeconds: z
     .number()
     .int()
-    .min(10, "Response timeout must be between 10 and 600 seconds")
-    .max(600, "Response timeout must be between 10 and 600 seconds")
+    .min(
+      AI_RESPONSE_TIMEOUT_MIN_SECONDS,
+      "Response timeout must be between 10 and 600 seconds",
+    )
+    .max(
+      AI_RESPONSE_TIMEOUT_MAX_SECONDS,
+      "Response timeout must be between 10 and 600 seconds",
+    )
     .nullable()
     .optional(),
   /**

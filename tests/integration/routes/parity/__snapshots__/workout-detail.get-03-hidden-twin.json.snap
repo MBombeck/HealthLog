@@ -1,0 +1,62 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "id": "<id:1>",
+      "sportType": "running",
+      "startedAt": "2026-10-14T06:30:20.000Z",
+      "endedAt": "2026-10-14T06:46:20.000Z",
+      "dayKey": "2026-10-14",
+      "durationSec": 960,
+      "distanceM": 3150,
+      "activeEnergyKcal": null,
+      "avgHr": 146,
+      "maxHr": 158,
+      "minHr": null,
+      "storedAvgHr": null,
+      "storedMaxHr": null,
+      "stepCount": null,
+      "elevationM": null,
+      "pauseDurationSec": null,
+      "source": "MANUAL",
+      "externalId": "manual:run-twin",
+      "metadata": null,
+      "route": null,
+      "samples": null,
+      "hrSeries": null,
+      "zones": null,
+      "splits": null,
+      "sportContext": {
+        "count": 1,
+        "avgDurationSec": 1800,
+        "avgDistanceM": 5000,
+        "avgAvgHr": 140
+      },
+      "aiInsight": null,
+      "ai": {
+        "available": false,
+        "reason": "no_provider",
+        "onDeviceAllowed": true
+      },
+      "canonicalId": "<id:2>",
+      "previousWorkoutId": "<id:3>"
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "workouts.detail.hr_series"
+      },
+      "meta": {
+        "workoutId": "<id:1>",
+        "source": "none",
+        "points": 0
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": []
+}

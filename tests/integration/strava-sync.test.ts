@@ -30,7 +30,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { StravaDetailedActivity } from "@/lib/strava/client";
+import type { StravaDetailedActivity } from "@/lib/strava/wire-types";
 import type { IntegrationStatus, User } from "@/generated/prisma/client";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { recordSyncFailure } from "@/lib/integrations/status";

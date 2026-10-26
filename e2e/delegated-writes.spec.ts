@@ -136,7 +136,7 @@ test.describe("delegated writes", () => {
     ).toBeVisible();
   }
 
-  test("the owner invites at a level that may add entries", async () => {
+  test("the owner invites at a level that may add entries @critical", async () => {
     await openInviteForm();
 
     const identifier = ownerPage.locator(
@@ -183,7 +183,9 @@ test.describe("delegated writes", () => {
     ).toBe(WRITE_LEVEL_VALUE);
   });
 
-  test("the delegate accepts and opens the record", async ({ page }) => {
+  test("the delegate accepts and opens the record @critical", async ({
+    page,
+  }) => {
     await page.goto("/settings/access");
     await page.locator('[data-slot="grant-accept"]').first().click();
 
@@ -203,7 +205,9 @@ test.describe("delegated writes", () => {
     await expect(banner).not.toContainText("read it, not change it");
   });
 
-  test("the reading they add lands in the owner's record", async ({ page }) => {
+  test("the reading they add lands in the owner's record @critical", async ({
+    page,
+  }) => {
     await page.goto("/measurements");
     await expect(
       page.locator('[data-slot="shared-record-banner"]'),

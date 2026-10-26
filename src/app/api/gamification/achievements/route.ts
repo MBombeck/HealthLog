@@ -97,7 +97,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   );
 
   // v1.35.3 — the unlock rows are NOT written here. A GET must not have side
-  // effects (`api-handler.ts`, the MCP-audience note above
+  // effects (`lib/auth/guards/context.ts`, the MCP-audience note above
   // `READ_HTTP_METHODS`), and this INSERT was one. The badge grid does not
   // need the rows: `unlocked` comes from the live metrics and the completion
   // date is derived from the account's own history, so the payload below is

@@ -46,6 +46,15 @@
  * Prisma passes to the server. `DATABASE_SESSION_OPTIONS_DISABLED` (a pooler
  * that refuses `options`) turns it off, as it does for the app.
  *
+ * One more thing is done before every `migrate deploy`: a concurrent index
+ * build that failed leaves an INVALID index behind, and the re-run of its
+ * migration (`CREATE INDEX CONCURRENTLY IF NOT EXISTS`) would find that index
+ * and do nothing, recorded applied with an index the planner never uses. So
+ * an INVALID index that a not-yet-applied migration builds concurrently is
+ * dropped first, and the run builds it again. An INVALID index whose
+ * migration is recorded applied is not touched at boot; it is named on
+ * stderr with the rebuild that mends it.
+ *
  * Environment:
  *   HEALTHLOG_PRISMA_CLI      Prisma's CLI entry (default: the image's copy)
  *   HEALTHLOG_MIGRATIONS_DIR  where the migration files are (default:
@@ -55,7 +64,7 @@
  * Arguments are passed through to every Prisma call (`--schema …`).
  */
 import { spawn } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -131,6 +140,177 @@ export function decideLockRetry({ output, failedRows, readMigration }) {
     };
   }
   return { retry: true, migration, code };
+}
+
+/** `CREATE [UNIQUE] INDEX CONCURRENTLY IF NOT EXISTS "<name>"`, comments aside. */
+const CONCURRENT_INDEX =
+  /^\s*CREATE\s+(?:UNIQUE\s+)?INDEX\s+CONCURRENTLY\s+IF\s+NOT\s+EXISTS\s+"([^"]+)"/gim;
+
+/** The indexes a migration file builds concurrently. */
+export function concurrentIndexesIn(sql) {
+  if (typeof sql !== "string") return [];
+  const code = sql.replace(/--[^\n]*/g, "");
+  return [...code.matchAll(CONCURRENT_INDEX)].map((m) => m[1]);
+}
+
+/**
+ * What to do about the INVALID indexes in the schema.
+ *
+ * @param {object} input
+ * @param {string[]} input.invalid      names of the INVALID indexes
+ * @param {Map<string, string>} input.builtBy
+ *   index name → the migration that builds it concurrently
+ * @param {Set<string>} input.applied   migrations recorded applied
+ * @returns {{ drop: Array<{ index: string, migration: string }>, report: Array<{ index: string, migration: string | null }> }}
+ */
+export function invalidIndexPlan({ invalid, builtBy, applied }) {
+  const drop = [];
+  const report = [];
+  for (const index of invalid) {
+    const migration = builtBy.get(index) ?? null;
+    if (migration !== null && !applied.has(migration)) {
+      drop.push({ index, migration });
+    } else {
+      report.push({ index, migration });
+    }
+  }
+  return { drop, report };
+}
+
+/** Every concurrently built index in the migrations directory, by name. */
+function concurrentIndexMap(dir) {
+  const builtBy = new Map();
+  let names = [];
+  try {
+    names = readdirSync(dir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name);
+  } catch {
+    return builtBy;
+  }
+  const read = migrationReader(dir);
+  for (const name of names) {
+    for (const index of concurrentIndexesIn(read(name))) {
+      builtBy.set(index, name);
+    }
+  }
+  return builtBy;
+}
+
+/**
+ * Prisma's migration lock: `migrate deploy` holds this advisory lock (in the
+ * schema engine, `pg_advisory_lock(72707369)`) for as long as it migrates.
+ */
+export const PRISMA_MIGRATE_LOCK = 72707369;
+
+/**
+ * Drop the INVALID indexes a migration still to run will build, and name the
+ * others. Best effort: a database that cannot be read here is left to
+ * `migrate deploy`, which reports its own errors.
+ *
+ * A concurrent build that is still running looks exactly like a failed one,
+ * INVALID with its migration not yet finished. With the web and worker roles
+ * in two containers, both run this script, and dropping the index the other
+ * one is building cancels its migration and leaves it failed. So the check
+ * and the drop run in one transaction that first takes Prisma's migration
+ * lock without waiting: when another instance is migrating, nothing here is
+ * touched, and while this transaction holds it, no migration starts. An
+ * index Postgres reports as being built is never dropped either. One
+ * transaction also keeps `lock_timeout` on the statement it bounds behind a
+ * transaction pooler.
+ */
+export async function clearInvalidConcurrentIndexes(
+  connectionString,
+  migrationsDir,
+) {
+  if (!connectionString) return;
+  const builtBy = concurrentIndexMap(migrationsDir);
+  let client;
+  try {
+    const { default: pg } = await import("pg");
+    const url = new URL(connectionString);
+    const schema = url.searchParams.get("schema") || "public";
+    url.searchParams.delete("schema");
+    client = new pg.Client({
+      connectionString: url.toString(),
+      connectionTimeoutMillis: 5_000,
+    });
+    await client.connect();
+    const schemaSql = client.escapeIdentifier(schema);
+    await client.query("BEGIN");
+    const locked = await client.query(
+      "SELECT pg_try_advisory_xact_lock($1) AS ok",
+      [PRISMA_MIGRATE_LOCK],
+    );
+    if (!locked.rows[0]?.ok) {
+      await client.query("ROLLBACK");
+      return;
+    }
+    // Dropping an index takes its table's lock for a moment; never wait on
+    // it for long at boot.
+    await client.query("SET LOCAL lock_timeout = '5s'");
+    const invalid = await client.query(
+      `SELECT c.relname AS name FROM pg_index i
+         JOIN pg_class c ON c.oid = i.indexrelid
+         JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE NOT i.indisvalid AND n.nspname = $1
+          AND NOT EXISTS (
+            SELECT 1 FROM pg_stat_progress_create_index p
+             WHERE p.index_relid = i.indexrelid
+          )`,
+      [schema],
+    );
+    if (invalid.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return;
+    }
+    const table = `${schemaSql}._prisma_migrations`;
+    const exists = await client.query("SELECT to_regclass($1) AS t", [table]);
+    const applied = new Set(
+      exists.rows[0]?.t
+        ? (
+            await client.query(
+              `SELECT migration_name FROM ${table}
+                WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL`,
+            )
+          ).rows.map((row) => row.migration_name)
+        : [],
+    );
+    const plan = invalidIndexPlan({
+      invalid: invalid.rows.map((row) => row.name),
+      builtBy,
+      applied,
+    });
+    for (const { index } of plan.drop) {
+      await client.query(
+        `DROP INDEX IF EXISTS ${schemaSql}.${client.escapeIdentifier(index)}`,
+      );
+    }
+    await client.query("COMMIT");
+    for (const { index, migration } of plan.drop) {
+      console.log(
+        `HealthLog: dropped the invalid index ${index} a failed concurrent ` +
+          `build left behind; ${migration} builds it again.`,
+      );
+    }
+    for (const { index, migration } of plan.report) {
+      console.error(
+        `HealthLog: WARNING — index ${index} is INVALID` +
+          (migration ? ` (built by ${migration}, recorded applied)` : "") +
+          `; the planner does not use it. Rebuild it with ` +
+          `REINDEX INDEX CONCURRENTLY "${index}".`,
+      );
+    }
+  } catch (error) {
+    await client?.query("ROLLBACK").catch(() => {});
+    console.error(
+      `HealthLog: could not check for invalid indexes before migrating: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+  } finally {
+    await client?.end().catch(() => {});
+  }
 }
 
 /** The backoff schedule, from the environment or the default. */
@@ -258,6 +438,10 @@ async function main({
 } = {}) {
   const readMigration = migrationReader(migrationsDir);
   for (let attempt = 0; ; attempt++) {
+    await clearInvalidConcurrentIndexes(
+      process.env.DATABASE_URL,
+      migrationsDir,
+    );
     const deploy = await runPrisma(cli, ["migrate", "deploy", ...extraArgs]);
     if (deploy.code === 0) return 0;
 

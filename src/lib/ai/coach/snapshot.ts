@@ -17,6 +17,7 @@
  */
 import { loadFreeWeekdaySpansForPrompt } from "@/lib/profile/life-circumstances";
 import { prisma } from "@/lib/db";
+import { MEDICATION_WINDOW_SELECT } from "@/lib/medications/course-window";
 import { extractFeatures } from "@/lib/insights/features";
 import type { CoachDataCluster } from "@/lib/validations/coach-prefs";
 import type { UnitPreferences } from "@/lib/measurements/display-transform";
@@ -511,13 +512,12 @@ async function buildCoachSnapshotImpl(
         where: { userId, asNeeded: false, ...TRACKED_INTAKE_WHERE },
         select: {
           id: true,
-          startsOn: true,
-          endsOn: true,
+          ...MEDICATION_WINDOW_SELECT,
           oneShot: true,
           createdAt: true,
           schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
           scheduleRevisions: {
-            orderBy: { validFrom: "asc" },
+            orderBy: [{ validFrom: "asc" }, { id: "asc" }],
             select: {
               id: true,
               validFrom: true,
@@ -533,7 +533,7 @@ async function buildCoachSnapshotImpl(
           intakeEvents: {
             // Tombstoned intake rows must never reach the Coach snapshot.
             where: { deletedAt: null, scheduledFor: { gte: cutoff } },
-            orderBy: { scheduledFor: "asc" },
+            orderBy: [{ scheduledFor: "asc" }, { id: "asc" }],
             select: {
               scheduledFor: true,
               takenAt: true,
@@ -666,10 +666,9 @@ async function buildCoachSnapshotImpl(
 
   // v1.18.11 (#65) — lab-result context. Like illness it is CONTEXT, not a
   // scope-gated metric: attached without a `registerBlock` so the budget
-  // degrader never sheds it, and Labs is intentionally not module-gated (the
-  // helper reads owner-scoped rows directly, mirroring `/api/labs`). The block
-  // carries the most-recent resolved reading per biomarker (last 12 months,
-  // capped) so the Coach can answer "what was my LDL" without re-deriving.
+  // degrader never sheds it. Module-gated inside: with Labs off it reads
+  // nothing. It carries the latest reading per biomarker (whole record or the
+  // lookback limit, capped) so the Coach can answer "what was my LDL".
   const labsBlockPromise = buildLabsSnapshotBlock(userId, now, reach);
 
   // v1.38 — doctor-visit context. Like illness/labs it is attempted always (a

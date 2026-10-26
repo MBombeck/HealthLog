@@ -115,7 +115,7 @@ beforeEach(() => {
     ok: true,
     text: "glucose fasting creatinine values report",
     source: "local-pdf",
-  } as never);
+  });
   // Default: the auto-read toggle is ON (so the external-pick provider path is
   // exercised); the OFF-specific tests override this explicitly.
   vi.mocked(documentAutoReadEnabled).mockResolvedValue(true);
@@ -284,11 +284,43 @@ describe("indexDocumentContent — local fallback path", () => {
     vi.mocked(localExtractText).mockResolvedValue({
       ok: false,
       reason: "empty",
-    } as never);
+    });
 
     const outcome = await indexDocumentContent("user-1", "doc-1");
     expect(outcome).toEqual({ indexed: false, reason: "local-empty" });
     expect(upsertContentIndex).not.toHaveBeenCalled();
+  });
+
+  it("reports a PDF past the reader's limits as resource-limit, not as a file that would not open", async () => {
+    vi.mocked(resolveDocumentVisionProvider).mockResolvedValue({
+      chain: [],
+      pick: null,
+      localOcrEnabled: false,
+      withheld: null,
+    });
+    vi.mocked(localExtractText).mockResolvedValue({
+      ok: false,
+      reason: "resource-limit",
+    });
+
+    const outcome = await indexDocumentContent("user-1", "doc-1");
+    expect(outcome).toEqual({ indexed: false, reason: "resource-limit" });
+    expect(upsertContentIndex).not.toHaveBeenCalled();
+  });
+
+  it("keeps resource-limit over a provider note: the provider never got further either", async () => {
+    vi.mocked(resolveDocumentVisionProvider).mockResolvedValue(PICK as never);
+    vi.mocked(prepareVisionInput).mockResolvedValue({
+      ok: false,
+      reason: "rasterFailed",
+    });
+    vi.mocked(localExtractText).mockResolvedValue({
+      ok: false,
+      reason: "resource-limit",
+    });
+
+    const outcome = await indexDocumentContent("user-1", "doc-1");
+    expect(outcome).toEqual({ indexed: false, reason: "resource-limit" });
   });
 });
 

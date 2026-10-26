@@ -190,7 +190,6 @@ const DELIBERATELY_OPEN: Record<string, { count: number; reason: string }> = {
   //    not read would make a backup unrestorable on the version that has
   //    to restore it, which is the one job a backup has.
   // ---------------------------------------------------------------
-  "import/route.ts": { count: 3, reason: "foreign archive" },
   "medications/[id]/intake/import/route.ts": {
     count: 1,
     reason: "foreign archive",

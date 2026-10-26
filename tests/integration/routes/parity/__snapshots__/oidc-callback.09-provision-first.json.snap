@@ -1,0 +1,66 @@
+{
+  "status": 307,
+  "location": "http://localhost:3000/insights",
+  "setCookies": [
+    "oidc_auth_state=; Path=/api/auth/oidc; Expires=<date>"
+  ],
+  "events": [
+    {
+      "status": 307,
+      "action": {
+        "name": "auth.oidc.callback"
+      },
+      "meta": null,
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "recordSignInDevice",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "ip": "unknown",
+          "userAgent": null
+        }
+      ]
+    }
+  ],
+  "stored": {
+    "users": [
+      {
+        "username": "First",
+        "email": "first@example.test",
+        "role": "ADMIN",
+        "timezone": "Europe/Berlin",
+        "oidcIssuer": "https://id.example.test",
+        "oidcSub": "sub-first"
+      }
+    ],
+    "sessions": [
+      {
+        "user": {
+          "username": "First"
+        },
+        "mfaVerifiedAt": null
+      }
+    ],
+    "audit": [
+      {
+        "action": "auth.oidc.login",
+        "user": {
+          "username": "First"
+        }
+      },
+      {
+        "action": "auth.oidc.provisioned",
+        "user": {
+          "username": "First"
+        }
+      }
+    ],
+    "challenges": 0,
+    "handoffs": 0
+  }
+}

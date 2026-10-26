@@ -13,11 +13,13 @@ Migrations land **before** the new app container takes traffic. The
 canonical command sequence on a single-instance host:
 
 ```sh
-# 0. Dump the database first. A migration is not undone by going back to
-#    the previous image; the dump is the way back. See "Updates" in
-#    docs/self-hosting/getting-started.md.
-docker compose exec -T db pg_dump -U healthlog healthlog \
-  | gzip > healthlog-before-update-$(date +%F).sql.gz
+# 0. Nothing to do by hand for the way back: when the new image brings
+#    migrations, its entrypoint first writes
+#    healthlog-<time>-pre-migration.dump into DB_BACKUP_DIR (the `backups`
+#    volume) and keeps the last two. A migration is not undone by going back
+#    to the previous image; that dump is the way back
+#    (docs/ops/disaster-recovery.md, "Going back to before a migration").
+#    Copy it off the host if the host itself is what you are worried about.
 
 # 1. Pull the new image. If you pin a version with HEALTHLOG_IMAGE_REF,
 #    set it to the new one first.
@@ -32,6 +34,15 @@ docker compose run --rm app sh -c 'exit 0'
 # 3. Recreate the app container so it picks up the new image.
 docker compose up -d app
 ```
+
+Step 2 takes the pre-migration dump too, in the one-off container, before it
+migrates. When the backups directory is on its volume and that dump fails (a
+full disk, most often), the entrypoint stops before migrating and says so;
+free the space and run the step again, or set `DB_BACKUP_BEFORE_MIGRATE=false`
+for one start without the dump. Without the `backups` volume the directory
+is not writable, or it is the image's own and sits inside the container that
+the update replaces; either way the log carries a warning, no dump is taken,
+and the migrations run.
 
 Use `docker compose run` rather than a plain `docker run` for step 2. A
 plain `docker run` starts outside the stack's network, where `db` does not
@@ -108,6 +119,66 @@ wait for it to disappear and start the container again (a restart policy does
 that for you, and each boot retries). Anything else is a session you can
 judge: a stuck client may be ended with `SELECT pg_terminate_backend(<pid>)`.
 You never need to run `migrate resolve` by hand for this case.
+
+### A concurrent index build that failed
+
+A migration that builds an index `CONCURRENTLY` (0477 is one) and fails
+half-way, on a constraint violation, a cancel or a killed container, leaves an
+INVALID index behind and its attempt on record as failed. Once you have mended
+the cause and run `prisma migrate resolve --rolled-back <migration>`, the next
+boot drops that INVALID index before it migrates, logs
+`dropped the invalid index …`, and the re-run builds it again. Without that
+step the re-run would find the index by name and skip it.
+
+A build that is still running looks the same, INVALID with its migration not
+yet finished. The boot therefore leaves every index alone while another
+instance is migrating (it checks Prisma's migration lock first) and never
+drops an index Postgres reports as being built, so a second container that
+starts during the first one's migration cannot cancel it.
+
+An INVALID index whose migration is already recorded applied is not touched at
+boot. The boot names it on stderr with `WARNING — index … is INVALID`; rebuild
+it with `REINDEX INDEX CONCURRENTLY "<index>";` when the database is quiet.
+
+### v1.46.0 notes
+
+- **Postgres 18.** The compose file moves the bundled database from
+  Postgres 16 to 18. The first `docker compose up -d` with the new compose
+  file runs `db-upgrade`, which copies the database into a new
+  `postgres-data` volume, checks every table's row count, and only then lets
+  the app start; the old `pgdata` volume stays as it was, as the way back.
+  Pulling only the new image with the old compose file keeps 16, which this
+  release still runs on. Details, rollback and the steps for a database you
+  run yourself: [postgres-major-upgrade.md](postgres-major-upgrade.md).
+- Migration `0485` drops `preview_features_json` from `users`, the same
+  pattern as `0430` in v1.44.0 below: do not run the previous image beside
+  the new schema. The sequence above stops the old container first; a
+  web/worker split stops both roles before the first new container starts.
+- Migration `0487` drops four columns from `app_settings`
+  (`encryption_key_backup_confirmed_at`, `_key_id`, `_fingerprint` and
+  `_by_user_id`) after carrying the confirmation they held into the new
+  `recovery_kit_confirmations` table. The previous image reads those columns
+  on nearly every request that loads the instance settings and fails once
+  they are gone, so the same rule holds: never run it beside the new schema.
+- The other migrations create tables (`0486`, `0487`), add columns
+  (`0480`, `0482`, `0483`, `0488`, `0489`) and build two indexes: `0477`
+  concurrently on `measurements`, `0488` without `CONCURRENTLY` on `users`,
+  which is small enough that the short lock does not matter. Three touch
+  rows: `0476` links API-written measurements to their token on accounts
+  that have exactly one measurement token, and `0478`/`0479` give PDFs whose
+  preview or text read failed one more attempt. On a prod-sized copy all of
+  them together finished in under a second.
+- **Rolling back to v1.45 while accounts are pending deletion.** v1.46 keeps
+  a deleted account, a deleted managed profile and a data wipe's copy for a
+  grace window (`0488`). v1.45 knows none of that: an account pending
+  deletion can sign in again with its password and every background job runs
+  for it again, nothing ever erases it, a wipe's off-host purge held to the
+  end of its window runs at once, and v1.45's wipe deletes the copies taken
+  before earlier wipes. Before going back, list the accounts with
+  `SELECT id, username, deletion_purge_at FROM users WHERE deletion_requested_at IS NOT NULL;`
+  and either undo each deletion in the admin users list or let the purge
+  finish them first; after coming forward again, delete any that should
+  still go.
 
 ### v1.45.0 notes
 
@@ -186,10 +257,14 @@ roll back:
    app version reads forward-compatible-ish shapes for nearly every
    release pair shipped on the v1.4.x line.
 3. If a column-drop migration ships in the rollback target, hand-roll
-   the column back via a fresh forward migration (`pnpm prisma migrate
-dev --create-only --name vX_Y_Z_rollback_<col>`), edit the SQL,
-   commit, and re-deploy. Never `migrate resolve --rolled-back` against
-   production unless you've taken a fresh `pg_dump` first.
+   the column back via a fresh forward migration
+   (`pnpm prisma migrate dev --create-only --name vX_Y_Z_rollback_<col>`),
+   edit the SQL, commit, and re-deploy. Never `migrate resolve --rolled-back` against
+   production unless you've taken a fresh `pg_dump` first. The columns each
+   release drops are named in its notes above: for v1.46.0 that is
+   `users.preview_features_json` (`0485`) and the four
+   `app_settings.encryption_key_backup_confirmed_*` columns (`0487`); the
+   key backup confirmation then has to be given again on v1.45.
 4. Rolling back from v1.40.2 or later to v1.40.1 or earlier: an account
    that saved the Coach lookback "Last year" reads its whole Coach
    preference blob as defaults on the older version, metric exclusions
@@ -197,13 +272,32 @@ dev --create-only --name vX_Y_Z_rollback_<col>`), edit the SQL,
    pick another lookback before the rollback, or re-save their exclusions
    after it.
 
+When the data itself has to go back to before the update, restore the
+pre-migration dump with the previous image; the steps are in
+[`disaster-recovery.md`](disaster-recovery.md#going-back-to-before-a-migration).
+
 ## Catalog templates
 
-A new required environment variable, or a change to the compose shape, needs a
-matching pull request to the TrueNAS apps catalog in the same release cycle
-(and an update to `docs/self-hosting/unraid/healthlog.xml` and
-`docs/self-hosting/portainer/templates.json`). See
-`docs/self-hosting/truenas.md` for what the catalog template carries.
+The TrueNAS catalog bot follows new image tags on its own, so a routine
+release needs nothing there. These changes do need a matching pull request to
+`truenas/apps` (`ix-dev/community/healthlog/`) in the same release cycle, and
+an update to `docs/self-hosting/unraid/healthlog.xml` and
+`docs/self-hosting/portainer/templates.json`:
+
+- a new required environment variable, or a new format or minimum for an
+  existing one (the form validates the secrets);
+- a changed listening port, health check path or health semantics, or start
+  time beyond the template's five-minute start period;
+- a required PostgreSQL major version, or an extension the stock `postgres`
+  image does not ship;
+- any other change to the compose shape: a new container, a volume the app
+  must write to, a different user.
+
+The catalog app sets `HEALTHLOG_PLATFORM=truenas`, `PORT`, `HOSTNAME`,
+`DATABASE_URL`, `ENCRYPTION_KEY`, `API_TOKEN_HMAC_KEY`, `APP_URL`,
+`NEXT_PUBLIC_APP_URL` and `SESSION_COOKIE_SECURE`; everything else reaches it
+through the form's additional environment variables. See
+`docs/self-hosting/truenas.md` for the operator side.
 
 ## Verify the served version
 
@@ -215,12 +309,30 @@ always confirm the served build after a deploy:
 ```sh
 # Asserts prod + demo serve 1.9.0, prints each target's buildSha,
 # exits non-zero on a mismatch or timeout after a bounded retry loop.
-pnpm dlx tsx scripts/assert-deploy.ts 1.9.0
+HEALTHLOG_PROD_URL=https://healthlog.example.com \
+  pnpm dlx tsx scripts/assert-deploy.ts 1.9.0
 ```
 
-Pass `--only=prod` / `--only=demo` to check a single target, or
+`HEALTHLOG_PROD_URL` is the base URL of your instance; it has no default and
+is required unless you pass `--only=demo`. Pass `--only=prod` /
+`--only=demo` to check a single target, or
 `--attempts=N --interval=ms` to widen the retry window while a slow
 pull settles.
+
+The worker loads each job's handler module on that job's first run, so a
+module the image cannot load does not stop the worker from starting. Once
+it has bound its queues, the worker loads every handler a single time in
+the background and reports each one that fails, normally within a minute
+of start. Each failure is a `job.run.failed` event at `error` with
+`reason: "handler_load_failed"` and the queue's name, and stderr also gets
+`[pg-boss] [registry] preloaded N/M job handlers; failed to load: <queues>`.
+If either shows up after a deploy, the image is broken for those queues,
+and their jobs will fail when they run. Roll back (see Rollback above)
+instead of waiting for the retries to run out:
+
+```sh
+docker compose logs --since 5m app 2>&1 | grep -E 'handler_load_failed|failed to load:'
+```
 
 ## Walk the synthetic journey
 
@@ -436,29 +548,45 @@ low-friction default.
 
 ## Deploy-status webhook: replay protection
 
-`POST /api/internal/deploy-webhook` authenticates via the static
-`X-Deploy-Webhook-Secret` header. Since v1.16.4 it additionally
-enforces a freshness window: a request carrying an
-`X-Deploy-Webhook-Timestamp` header (unix seconds, unix milliseconds,
-or ISO-8601) is rejected with `401 {"status":"stale"}` when the
-timestamp lies more than **5 minutes** from server time — so a captured
-request cannot be replayed later to re-page admins or forge deploy
-outcomes in the audit log.
+`POST /api/internal/deploy-webhook` accepts two kinds of request.
 
-Two modes:
+- **Secret header.** `X-Deploy-Webhook-Secret` carries the shared secret.
+  This is what Coolify's stock notification sender can do. It does not
+  protect against a replay: anyone who captures one request holds the
+  secret and can send any request they like. An `X-Deploy-Webhook-Timestamp`
+  beside it is still checked (a stale or unparseable one is refused with
+  `401 {"status":"stale"}`), but it is covered by nothing, so treat it as a
+  staleness hint. Versions before 1.46 described it as replay protection.
+- **Signature.** `X-Deploy-Webhook-Signature: sha256=<hex>` is the
+  HMAC-SHA256, under `DEPLOY_WEBHOOK_SECRET`, of the
+  `X-Deploy-Webhook-Timestamp` value, a dot, and the exact request body. The
+  timestamp (unix seconds, unix milliseconds or ISO-8601) must lie within
+  **5 minutes** of server time. A signed request sends no secret, and a
+  captured one is useless once the window has passed.
 
-- **Default (tolerant).** Requests _without_ the header pass — Coolify's
-  stock notification sender does not attach one. A header that is
-  present but stale or unparseable is always rejected.
-- **Strict.** Set `DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP=true` in the app
-  environment to make the header mandatory, closing the replay window
-  completely. Use this when the sender (or a reverse proxy in front of
-  the app) can attach the timestamp, e.g.:
+Two settings tighten this:
 
-  ```sh
-  curl -X POST https://<host>/api/internal/deploy-webhook \
-    -H "X-Deploy-Webhook-Secret: $SECRET" \
-    -H "X-Deploy-Webhook-Timestamp: $(date +%s)" \
-    -H "Content-Type: application/json" \
-    -d '{"status":"success"}'
-  ```
+- `DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP=true` requires a fresh
+  `X-Deploy-Webhook-Timestamp` on a request that uses the secret header; one
+  without it is refused with `401 {"status":"stale"}`. This is what the
+  setting has always meant. It keeps an old capture out, but not someone who
+  saw the secret and sends a new request with a new timestamp.
+- `DEPLOY_WEBHOOK_REQUIRE_SIGNATURE=true` accepts signed requests only; the
+  secret header alone is refused with 401. This is the one that stops a
+  replay. Use it when the sender, or a small relay in front of the app, can
+  sign:
+
+```sh
+TS=$(date +%s)
+BODY='{"status":"success"}'
+SIG=$(printf '%s.%s' "$TS" "$BODY" \
+  | openssl dgst -sha256 -hmac "$SECRET" | sed 's/^.*= //')
+curl -X POST https://<host>/api/internal/deploy-webhook \
+  -H "X-Deploy-Webhook-Timestamp: $TS" \
+  -H "X-Deploy-Webhook-Signature: sha256=$SIG" \
+  -H "Content-Type: application/json" \
+  -d "$BODY"
+```
+
+Both may be set; a signed request satisfies both. An operator who set the
+timestamp flag before 1.46 keeps exactly the behaviour they had.

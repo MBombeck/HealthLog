@@ -69,9 +69,10 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
   collapseToTypeDayKeys: (rows: Array<{ type: string; measuredAt: Date }>) =>
     rows.map((r) => ({ type: r.type, measuredAt: r.measuredAt })),
   recomputeBucketsForMeasurement: recomputeMock,
+  recomputeBucketsForKeys: recomputeMock,
 }));
 
-vi.mock("@/lib/insights/comprehensive-generate", () => ({
+vi.mock("@/lib/insights/status-invalidation", () => ({
   invalidateStatusInsightsForTypes: invalidateMock,
 }));
 

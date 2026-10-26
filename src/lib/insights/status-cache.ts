@@ -84,7 +84,7 @@ export function statusCacheAction(scope: string, locale: string): string {
 const CACHE_ACTION_SHAPE = /^insights\.(.+)-status\.([^.]+)$/;
 
 /** The row key behind a note's name, or `null` for a name of another shape. */
-function statusCacheKey(
+export function statusCacheKey(
   cacheAction: string,
 ): { metric: string; locale: string } | null {
   const match = CACHE_ACTION_SHAPE.exec(cacheAction);
@@ -200,6 +200,7 @@ export async function writeStatusNote(args: {
     generatedAt,
     retryAt: null,
     negativeReason: null,
+    failureStreak: 0,
   };
   await prisma.insightStatusCache.upsert({
     where: { userId_metric_locale: { userId: args.userId, ...key } },
@@ -230,36 +231,11 @@ async function redateStatusNote(
         generatedAt,
         retryAt: null,
         negativeReason: null,
+        failureStreak: 0,
       },
     });
   }
   return generatedAt;
-}
-
-/**
- * Open a negative-cache window for a note: the generation stalled, erred, or
- * was screened. Leaves any stored note exactly as it was.
- */
-export async function writeStatusNegativeWindow(args: {
-  userId: string;
-  cacheAction: string;
-  todayKey: string;
-  reason: "timeout" | "error" | "screened";
-  retryAt: Date;
-}): Promise<void> {
-  const key = statusCacheKey(args.cacheAction);
-  if (!key) return;
-  await prisma.insightStatusCache.upsert({
-    where: { userId_metric_locale: { userId: args.userId, ...key } },
-    create: {
-      userId: args.userId,
-      ...key,
-      dateKey: args.todayKey,
-      retryAt: args.retryAt,
-      negativeReason: args.reason,
-    },
-    update: { retryAt: args.retryAt, negativeReason: args.reason },
-  });
 }
 
 export interface FreshStatusCacheHit {
@@ -635,10 +611,12 @@ export async function readPreviousStatusNote(args: {
 }
 
 /**
- * Which of `cacheActions` carry a note written at or after `since`. The
- * ingest invalidator skips those, so a fresh note survives a sync drip.
+ * Which of `cacheActions` are not due for another generation: a note written
+ * at or after `since`, or (#1279) an open negative-cache window. The ingest
+ * invalidator skips those, so a fresh note survives a sync drip and a note
+ * whose generation keeps failing is not selected again by every sync.
  */
-export async function statusNotesWrittenSince(args: {
+export async function statusNotesNotDue(args: {
   userId: string;
   cacheActions: readonly string[];
   since: Date;
@@ -653,17 +631,23 @@ export async function statusNotesWrittenSince(args: {
     const [metric, locale] = k.split("\u0000");
     return { metric, locale };
   });
-  const rows = await prisma.insightStatusCache.findMany({
-    where: {
-      userId: args.userId,
-      OR: keys,
-      generatedAt: { gte: args.since },
-      textEncrypted: { not: null },
-    },
-    select: { metric: true, locale: true },
-  });
+  const [written, coolingDown] = await Promise.all([
+    prisma.insightStatusCache.findMany({
+      where: {
+        userId: args.userId,
+        OR: keys,
+        generatedAt: { gte: args.since },
+        textEncrypted: { not: null },
+      },
+      select: { metric: true, locale: true },
+    }),
+    prisma.insightStatusCache.findMany({
+      where: { userId: args.userId, OR: keys, retryAt: { gt: new Date() } },
+      select: { metric: true, locale: true },
+    }),
+  ]);
   const fresh = new Set<string>();
-  for (const row of rows) {
+  for (const row of [...written, ...coolingDown]) {
     const action = byKey.get(`${row.metric}\u0000${row.locale}`);
     if (action) fresh.add(action);
   }

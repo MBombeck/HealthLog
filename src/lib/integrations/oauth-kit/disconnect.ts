@@ -20,7 +20,7 @@ import {
   WITHINGS_NOTIFY_APPLIS,
   getWithingsWebhookCallbackUrl,
 } from "@/lib/withings/sync";
-import { deauthorize } from "@/lib/strava/client";
+import { stravaOAuth } from "@/lib/strava/oauth";
 import {
   STRAVA_DISCONNECTED,
   getStravaConnection,
@@ -144,7 +144,7 @@ async function dropGrant(
         : [];
       if (sharedWith.length === 0) {
         try {
-          await deauthorize(connection.accessToken);
+          await stravaOAuth.deauthorize(connection.accessToken);
         } catch (err) {
           getEvent()?.addWarning(
             `strava: deauthorize failed on disconnect: ${err}`,

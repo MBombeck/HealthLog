@@ -13,13 +13,8 @@
 import { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -54,16 +49,11 @@ export const PATCH = apiHandler(
     if (!gate.enabled) return gate.response;
 
     const { id } = await params;
-    const { data: rawBody, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, symptomEventUpdateSchema, {
       maxBytes: 16 * 1024,
+      errorCode: "symptoms.invalid",
     });
-    if (jsonError) return jsonError;
-    const parsed = symptomEventUpdateSchema.safeParse(rawBody);
-    if (!parsed.success) {
-      return returnAllZodIssues(parsed.error, 422, {
-        errorCode: "symptoms.invalid",
-      });
-    }
+    if (!parsed.ok) return parsed.error;
     const entry = parsed.data;
 
     const existing = await prisma.symptomEvent.findFirst({

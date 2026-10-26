@@ -6,7 +6,7 @@
  * ahead of it, and rotates the refresh token on every use.
  */
 import type { OAuthTokenDescriptor } from "@/lib/integrations/oauth-kit/token";
-import { refreshAccessToken, type WithingsCredentials } from "./client";
+import { type WithingsCredentials, withingsOAuth } from "./oauth";
 import { getUserWithingsCredentials } from "./credentials";
 
 /** Refresh this long before the stored expiry. */
@@ -42,5 +42,5 @@ export const withingsTokenDescriptor: OAuthTokenDescriptor<WithingsCredentials> 
     },
     loadCredentials: (userId) => getUserWithingsCredentials(userId),
     refresh: (refreshToken, credentials) =>
-      refreshAccessToken(refreshToken, credentials),
+      withingsOAuth.refresh(refreshToken, credentials),
   };

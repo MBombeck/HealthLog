@@ -99,10 +99,13 @@ export const DEFAULT_CHAIN: readonly ChainEntry[] = [
  * OpenAI model presets — the wire-up keeps users out of the freetext
  * box for the common case. The `__custom__` sentinel surfaces a
  * freetext input so power users can target preview models or
- * fine-tunes (e.g. `gpt-5`, which is admitted via the env override on
- * the Codex backend but not yet a documented OpenAI model id).
+ * fine-tunes. The gpt-6 entries are the current workhorse and its
+ * lighter sibling; every preset is a family `openai-model-family.ts`
+ * recognises, so the reasoning, token-field and vision gates fit it.
  */
 export const OPENAI_MODEL_PRESETS = [
+  "gpt-6.1-sol",
+  "gpt-6-luna",
   "gpt-4o",
   "gpt-4o-mini",
   "gpt-4-turbo",

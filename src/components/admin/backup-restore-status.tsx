@@ -28,10 +28,8 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { RestoreFailureCause } from "@/lib/export/restore-failure-cause";
-import type {
-  BackupRestoreFailureCode,
-  BackupRestoreJobView,
-} from "@/lib/jobs/backup-restore";
+import type { BackupRestoreFailureCode } from "@/lib/jobs/backup-restore";
+import type { BackupRestoreJobView } from "@/lib/jobs/backup-restore-view";
 
 /** Whether a job still holds its account's one restore slot. */
 export function isActiveRestore(job: BackupRestoreJobView): boolean {
@@ -147,6 +145,30 @@ function transactionFailureText(
   }
 }
 
+/**
+ * What a queued job is waiting for. A restore never runs beside a backup or
+ * another large job (the heavy lane puts it back for a minute at a time), and
+ * a wait that said only "until the worker picks it up" read as a stuck
+ * worker for as long as a backup ran.
+ */
+function queuedText(
+  job: BackupRestoreJobView,
+  t: ReturnType<typeof useTranslations>["t"],
+): string {
+  switch (job.waiting) {
+    case "backup":
+      return t("admin.section.backups.restoreJobWaitingBackupNote");
+    case "busy":
+      return t("admin.section.backups.restoreJobWaitingBusyNote");
+    case null:
+      return t("admin.section.backups.restoreJobQueuedNote");
+    default: {
+      const unhandled: never = job.waiting;
+      return unhandled;
+    }
+  }
+}
+
 /** What a running job is doing, and the share of it done when that is known. */
 function runningLine(
   job: BackupRestoreJobView,
@@ -213,16 +235,14 @@ export function RestoreJobStatus({
     const line =
       job.status === "running"
         ? runningLine(job, t, fmt)
-        : {
-            text: t("admin.section.backups.restoreJobQueuedNote"),
-            percent: null,
-          };
+        : { text: queuedText(job, t), percent: null };
     return (
       <div
         role="status"
         aria-live="polite"
         data-slot="restore-job-status"
         data-status={job.status}
+        data-waiting={job.waiting ?? undefined}
         className="border-border bg-muted/30 space-y-2 rounded-md border px-3 py-2 text-sm"
       >
         <div className="flex items-start gap-2">
@@ -247,6 +267,13 @@ export function RestoreJobStatus({
                 aria-label={line.text}
                 data-slot="restore-job-progress"
               />
+            ) : null}
+            {job.status === "queued" ? (
+              <p className="text-muted-foreground text-xs">
+                {t("admin.section.backups.restoreJobQueuedSince", {
+                  when: fmt.dateTime(job.createdAt),
+                })}
+              </p>
             ) : null}
             {job.attempts > 1 ? (
               <p className="text-muted-foreground text-xs">

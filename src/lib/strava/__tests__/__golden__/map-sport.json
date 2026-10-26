@@ -1,0 +1,16 @@
+[
+  { "raw": "Run", "sportType": "running" },
+  { "raw": "TrailRun", "sportType": "running" },
+  { "raw": "VirtualRide", "sportType": "cycling" },
+  { "raw": "Virtual Ride", "sportType": "cycling" },
+  { "raw": "virtual_ride", "sportType": "cycling" },
+  { "raw": "  WeightTraining  ", "sportType": "strength" },
+  { "raw": "HighIntensityIntervalTraining", "sportType": "hiit" },
+  { "raw": "Snowshoe", "sportType": "hiking" },
+  { "raw": "Workout", "sportType": "other" },
+  { "raw": "SomethingStravaAddedLater", "sportType": "other" },
+  { "raw": "", "sportType": "other" },
+  { "raw": "   ", "sportType": "other" },
+  { "raw": null, "sportType": "other" },
+  { "raw": "(undefined)", "sportType": "other" }
+]

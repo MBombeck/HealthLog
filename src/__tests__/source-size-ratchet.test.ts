@@ -92,7 +92,10 @@ describe("source size ratchet", () => {
   it("reads the whole tree", () => {
     expect(m.files).toBeGreaterThan(3000);
     expect(m.functionsSeen).toBeGreaterThan(20_000);
-    requireFloor("files over the cap", Object.keys(m.fileLines), 100);
+    // The floor follows the ratchet down: 115 files sat over the cap before
+    // the large-component splits, 96 after. It guards the matcher, so it sits
+    // under the real count, not at it.
+    requireFloor("files over the cap", Object.keys(m.fileLines), 80);
     requireFloor("functions over the cap", Object.keys(m.functionLines), 300);
   });
 

@@ -1,0 +1,139 @@
+[
+  {
+    "id": "sleep-0001",
+    "cycle_id": 900001,
+    "user_id": 10001,
+    "created_at": "2026-03-02T06:40:00.000Z",
+    "updated_at": "2026-03-02T06:45:00.000Z",
+    "start": "2026-03-01T22:30:00.000Z",
+    "end": "2026-03-02T06:30:00.000Z",
+    "nap": false,
+    "score_state": "SCORED",
+    "score": {
+      "stage_summary": {
+        "total_in_bed_time_milli": 28800000,
+        "total_awake_time_milli": 1800000,
+        "total_light_sleep_time_milli": 14400000,
+        "total_slow_wave_sleep_time_milli": 5400000,
+        "total_rem_sleep_time_milli": 7200000,
+        "disturbance_count": 7
+      },
+      "sleep_needed": {
+        "baseline_milli": 27000000,
+        "need_from_sleep_debt_milli": 1800000,
+        "need_from_recent_strain_milli": 900000,
+        "need_from_recent_nap_milli": -600000
+      },
+      "respiratory_rate": 15.234,
+      "sleep_performance_percentage": 88,
+      "sleep_consistency_percentage": 72,
+      "sleep_efficiency_percentage": 93.75
+    }
+  },
+  {
+    "id": "sleep-0002",
+    "user_id": 10001,
+    "created_at": "2026-03-02T14:50:00.000Z",
+    "updated_at": "2026-03-02T14:52:00.000Z",
+    "start": "2026-03-02T14:00:00.000Z",
+    "end": "2026-03-02T14:45:00.000Z",
+    "nap": true,
+    "score_state": "SCORED",
+    "score": {
+      "stage_summary": {
+        "total_in_bed_time_milli": 2700000,
+        "total_awake_time_milli": 0,
+        "total_light_sleep_time_milli": 2100000,
+        "total_slow_wave_sleep_time_milli": 600000,
+        "total_rem_sleep_time_milli": 0
+      },
+      "sleep_needed": {
+        "baseline_milli": 0,
+        "need_from_sleep_debt_milli": 0,
+        "need_from_recent_strain_milli": 0,
+        "need_from_recent_nap_milli": 0
+      }
+    }
+  },
+  {
+    "id": "sleep-0003",
+    "cycle_id": 900003,
+    "user_id": 10001,
+    "created_at": "2026-03-04T06:40:00.000Z",
+    "updated_at": "2026-03-04T06:40:00.000Z",
+    "start": "2026-03-03T23:00:00.000Z",
+    "end": "2026-03-04T06:30:00.000Z",
+    "nap": false,
+    "score_state": "PENDING_SCORE",
+    "score": null
+  },
+  {
+    "id": "sleep-0004",
+    "cycle_id": 900004,
+    "user_id": 10001,
+    "created_at": "2026-03-05T07:10:00.000+01:00",
+    "updated_at": "2026-03-05T07:12:00.000+01:00",
+    "start": "2026-03-04T23:40:00.000+01:00",
+    "end": "2026-03-05T07:05:00.000+01:00",
+    "nap": false,
+    "score_state": "SCORED",
+    "score": {
+      "stage_summary": {
+        "total_in_bed_time_milli": 26700000,
+        "total_awake_time_milli": 2345678,
+        "total_light_sleep_time_milli": 12345678,
+        "total_slow_wave_sleep_time_milli": 4567890,
+        "total_rem_sleep_time_milli": 6543210,
+        "disturbance_count": 0
+      },
+      "sleep_needed": {
+        "baseline_milli": 28123456,
+        "need_from_sleep_debt_milli": 0,
+        "need_from_recent_strain_milli": 456789,
+        "need_from_recent_nap_milli": 0
+      },
+      "respiratory_rate": 0,
+      "sleep_performance_percentage": 0,
+      "sleep_efficiency_percentage": 100
+    }
+  },
+  {
+    "id": "sleep-0005",
+    "cycle_id": 900005,
+    "user_id": 10001,
+    "created_at": "2026-03-06T06:00:00.000-05:00",
+    "updated_at": "2026-03-06T06:05:00.000-05:00",
+    "start": "2026-03-05T22:15:00.000-05:00",
+    "end": "2026-03-06T05:45:00.000-05:00",
+    "nap": false,
+    "score_state": "SCORED",
+    "score": {
+      "stage_summary": {
+        "total_in_bed_time_milli": 0,
+        "total_awake_time_milli": 0,
+        "total_light_sleep_time_milli": 0,
+        "total_slow_wave_sleep_time_milli": 0,
+        "total_rem_sleep_time_milli": 0
+      },
+      "sleep_needed": {
+        "baseline_milli": 25200000,
+        "need_from_sleep_debt_milli": 3600000,
+        "need_from_recent_strain_milli": 0,
+        "need_from_recent_nap_milli": 0
+      },
+      "sleep_consistency_percentage": 55
+    }
+  },
+  {
+    "id": "sleep-0006",
+    "cycle_id": 900006,
+    "user_id": 10001,
+    "created_at": "2026-03-07T08:00:00.000Z",
+    "updated_at": "2026-03-07T08:00:00.000Z",
+    "start": "2026-03-07T00:10:00.000Z",
+    "end": "2026-03-07T07:50:00.000Z",
+    "nap": false,
+    "score_state": "UNSCORABLE",
+    "score": null
+  }
+]

@@ -9,13 +9,8 @@
 import { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -53,16 +48,11 @@ export const PATCH = apiHandler(
     const { key } = await params;
     if (!isCustomSymptomKey(key)) return apiError("Not a custom symptom", 404);
 
-    const { data: rawJsonBody, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, updateCustomSymptomSchema, {
       maxBytes: 64 * 1024,
+      errorCode: "cycle.symptom.custom.invalid",
     });
-    if (jsonError) return jsonError;
-    const parsed = updateCustomSymptomSchema.safeParse(rawJsonBody);
-    if (!parsed.success) {
-      return returnAllZodIssues(parsed.error, 422, {
-        errorCode: "cycle.symptom.custom.invalid",
-      });
-    }
+    if (!parsed.ok) return parsed.error;
 
     const owned = await prisma.cycleSymptom.findFirst({
       where: { key, userId: user.id },

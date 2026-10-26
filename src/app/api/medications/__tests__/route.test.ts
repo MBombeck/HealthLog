@@ -34,6 +34,39 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+// The answer is the medication's read model (`medicationDetail`), whose
+// reads and resolution the integration walks hold against the contract.
+// Here it stands in with the part these tests read: the written row with
+// its schedules wired as every medication answer wires them.
+vi.mock("@/lib/medications/read-medication", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/medications/read-medication")>();
+  const { scheduleWireFields } =
+    await import("@/lib/medications/intake-tracking");
+  const { serializeScheduleUnitsPerDose } =
+    await import("@/lib/medications/schedule-units-dto");
+  return {
+    ...actual,
+    medicationDetail: vi.fn(
+      async ({
+        medication,
+      }: {
+        medication: Parameters<typeof actual.medicationDetail>[0]["medication"];
+      }) => ({
+        ...medication,
+        unitsPerDose: Number(medication.unitsPerDose),
+        ...scheduleWireFields(
+          medication.trackIntake,
+          serializeScheduleUnitsPerDose(
+            medication.schedules,
+            medication.unitsPerDose,
+          ),
+        ),
+      }),
+    ),
+  };
+});
+
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
@@ -88,6 +121,7 @@ vi.mock("next/headers", () => ({
 
 import { GET, POST } from "../route";
 import { prisma } from "@/lib/db";
+import { medicationDetail } from "@/lib/medications/read-medication";
 import { getSession } from "@/lib/auth/session";
 import { cachedSwr } from "@/lib/cache/server-cache";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
@@ -657,11 +691,18 @@ describe("POST /api/medications — Apple Health mirror (v1.28)", () => {
     const res = await POST(postReq(MIRROR_BODY));
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
-      data: { id: string; externalId: string; category: string };
+      data: { id: string; externalId: string };
     };
     expect(body.data.id).toBe("med-existing");
     expect(body.data.externalId).toBe("hk-concept-1");
-    expect(body.data.category).toBe("OTHER");
+    // Answered with the read model of the stored row, keeping the create's
+    // action on the event.
+    expect(medicationDetail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        medication: expect.objectContaining({ id: "med-existing" }),
+        announce: false,
+      }),
+    );
     // Idempotent replay: nothing written.
     expect(prisma.medication.create).not.toHaveBeenCalled();
   });

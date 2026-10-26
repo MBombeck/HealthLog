@@ -10,17 +10,14 @@ import type { MeasurementType } from "@/generated/prisma/client";
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { encrypt, decrypt } from "@/lib/crypto";
 import { prisma } from "@/lib/db";
-import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 import { persistRotatedToken } from "@/lib/integrations/oauth-refresh";
 import { recordSyncFailure } from "@/lib/integrations/status";
 import type { FailureKind } from "@/lib/integrations/status";
 import { getEvent } from "@/lib/logging/context";
 import { dropImplausibleMeasurements } from "@/lib/measurements/plausibility-gate";
-import {
-  collapseToTypeDayKeys,
-  recomputeBucketsForKeys,
-} from "@/lib/rollups/measurement-rollups";
-import { refreshAccessToken } from "./client";
+import { collapseToTypeDayKeys } from "@/lib/rollups/measurement-rollups";
+import { afterProviderWrite } from "@/lib/integrations/sync-kit/after-write";
+import { fitbitOAuth } from "./oauth";
 import { isFitbitRetired } from "./retirement";
 import { getUserFitbitCredentials } from "./credentials";
 import { FitbitApiError, classifyFitbitError } from "./response-classifier";
@@ -115,7 +112,7 @@ export async function getValidToken(
         return null;
       }
 
-      const newTokens = await refreshAccessToken(refreshToken, creds);
+      const newTokens = await fitbitOAuth.refresh(refreshToken, creds);
       const expiresAt = new Date(Date.now() + newTokens.expires_in * 1000);
 
       // Classic Fitbit ROTATES refresh tokens: the refresh response carries a
@@ -898,23 +895,9 @@ export async function upsertFitbitMeasurements(
     return { imported, touched, inserted: insertedRows };
   }
 
-  try {
-    const keys = collapseToTypeDayKeys(touched);
-    await recomputeBucketsForKeys(userId, keys);
-    invalidateStatusInsightsForTypes(
-      userId,
-      keys.map((k) => k.type),
-      { source: "sync" },
-    ).catch((err) => {
-      getEvent()?.addWarning(
-        `fitbit: status-insight invalidate failed for ${userId}: ${err}`,
-      );
-    });
-  } catch (err) {
-    getEvent()?.addWarning(
-      `fitbit: rollup recompute failed for ${userId}: ${err}`,
-    );
-  }
+  // The arrivals went out per chunk above; the shared tail folds, marks the
+  // caches and re-warms the status cards.
+  await afterProviderWrite({ userId, provider: "fitbit", touched });
 
   return { imported, touched, inserted: insertedRows };
 }

@@ -15,13 +15,8 @@
  * `RESET_ALL_CONFIRMATION` below.
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiSuccess,
-  apiError,
-  returnAllZodIssues,
-  safeJson,
-  getClientIp,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
@@ -84,16 +79,10 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     return apiError("Too many requests, please slow down", 429);
   }
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, thresholdsUpdateSchema, {
     maxBytes: 64 * 1024,
   });
-  if (jsonError) return jsonError;
-
-  const parsed = thresholdsUpdateSchema.safeParse(body);
-  if (!parsed.success) {
-    // v1.4.43 — multi-issue 422.
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const existing = await prisma.user.findUnique({
     where: { id: user.id },

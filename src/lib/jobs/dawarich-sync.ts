@@ -11,6 +11,7 @@
  * Every run is its own background event (`job.dawarich_sync`), so its lines
  * and its failure carry the action they belong to.
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { Job, PgBoss } from "pg-boss";
 
 import { loadDawarichConnection } from "@/lib/dawarich/connection";
@@ -30,11 +31,7 @@ import {
 import { daysBetweenDateKeys, shiftDateKey } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { DAWARICH_SYNC_MAX_DAYS } from "@/lib/validations/dawarich";
-
-export const DAWARICH_SYNC_QUEUE = "dawarich-sync";
-
-/** Daily 03:20 Europe/Berlin, after the night's environment fetch. */
-export const DAWARICH_SYNC_CRON = "20 3 * * *";
+import { DAWARICH_SYNC_QUEUE } from "./dawarich-sync-queue";
 
 /** The nightly window: yesterday and the six days before it. */
 const NIGHTLY_WINDOW_DAYS = 7;
@@ -71,7 +68,7 @@ export async function enqueueDawarichSync(payload: {
 async function discover(boss: PgBoss): Promise<JobOutcome> {
   const [candidates, operatorAvailability] = await Promise.all([
     prisma.user.findMany({
-      where: { dawarichUrlEncrypted: { not: null } },
+      where: { dawarichUrlEncrypted: { not: null }, ...ACTIVE_ACCOUNT },
       select: { id: true, modulePreferencesJson: true },
     }),
     getOperatorModuleAvailability(),

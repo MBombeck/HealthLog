@@ -16,13 +16,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { withIdempotency } from "@/lib/idempotency";
 import { annotate } from "@/lib/logging/context";
@@ -46,16 +41,11 @@ async function postAuditC(request: NextRequest): Promise<Response> {
     });
   }
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, auditCRequestSchema, {
     maxBytes: 4 * 1024,
+    errorCode: "anamnesis.auditC.invalid",
   });
-  if (jsonError) return jsonError;
-  const parsed = auditCRequestSchema.safeParse(body);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "anamnesis.auditC.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const input = parsed.data;
 

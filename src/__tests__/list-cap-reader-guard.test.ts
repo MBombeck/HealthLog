@@ -18,7 +18,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -27,10 +27,6 @@ const NO_LIST_ON_SCREEN: Record<string, string> = {
   "/api/personal-records":
     "The web reads it for one decorative badge (a record set in the last 30 days), not as a list; the native client owns the list.",
 };
-
-function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-}
 
 /** `app/api/a/[id]/b/route.ts` → `/api/a/[id]/b`. */
 function routePathOf(file: string): string {

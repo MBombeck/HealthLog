@@ -14,6 +14,10 @@
  * stopped six weeks ago — every row it lists has a perfectly ordinary
  * timestamp either way.
  *
+ * The database row comes first in what an operator needs and last in this
+ * file: the nightly whole-database dump (`getDatabaseBackupHealth`), the
+ * one copy that rebuilds a lost server, read from its own ledger.
+ *
  * And alongside both, the off-host leg: one row per account saying when this
  * host last put that account's encrypted copy in the operator's bucket and how
  * stale that is against the nightly schedule. It comes from the ledger the
@@ -31,11 +35,16 @@ import {
 } from "@/lib/jobs/job-failures";
 import { readBackupPassActivity } from "@/lib/jobs/backup-pass-attempts";
 import { summariseBackupSchedule } from "@/lib/jobs/backup-schedule-status";
+import { getDatabaseBackupHealth } from "@/lib/database-backup/health";
 import {
-  OFFHOST_BACKUP_QUEUE,
   offhostBackupConfigured,
   probeOffhostLifecycle,
 } from "@/lib/jobs/offhost-backup";
+import { OFFHOST_BACKUP_QUEUE } from "@/lib/jobs/offhost-backup-queue";
+import { offhostPurgeDue } from "@/lib/jobs/offhost-purge-queue";
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
+import { accountDeletionGraceDays } from "@/lib/account-deletion/grace";
+import { LIFECYCLE_UNKNOWN } from "@/lib/jobs/offhost-lifecycle";
 import {
   classifyOffhostBackup,
   OFFHOST_BACKUP_PERIOD_HOURS,
@@ -106,7 +115,10 @@ export const GET = apiHandler(async () => {
   // listing call from a page render would put the operator's credentials on
   // the request path of every page view.
   const now = new Date();
+  // An account pending deletion is skipped by the nightly upload on purpose;
+  // its copy ageing is not a backup failure, so it is not listed.
   const offhostAccounts = await prisma.user.findMany({
+    where: ACTIVE_ACCOUNT,
     select: {
       id: true,
       username: true,
@@ -175,12 +187,16 @@ export const GET = apiHandler(async () => {
   // A wipe whose copies are already gone waits for the next nightly run
   // before its request is removed (see `offhost-purge.ts`); nothing of it is
   // left in the bucket, so it is not counted as a pending deletion.
+  //
+  // A wipe's request held back to the end of its grace window is not a
+  // pending deletion either: those copies are kept on purpose until then.
   const stillInBucket = {
     NOT: {
       reason: "data_wiped",
       lastFailure: null,
       lastAttemptAt: { not: null },
     },
+    ...offhostPurgeDue(new Date()),
   };
   const [weeklyRunningSince, offhostRunningSince] = await Promise.all([
     readQueueRunningSince(DATA_BACKUP_QUEUE),
@@ -190,23 +206,24 @@ export const GET = apiHandler(async () => {
     readBackupPassActivity(prisma, DATA_BACKUP_QUEUE, weeklyRunningSince),
     readBackupPassActivity(prisma, OFFHOST_BACKUP_QUEUE, offhostRunningSince),
   ]);
-  const [purgeCount, oldestPurge, lifecycle] = await Promise.all([
+  const [purgeCount, oldestPurge, lifecycle, database] = await Promise.all([
     prisma.offhostPurgeRequest.count({ where: stillInBucket }),
     prisma.offhostPurgeRequest.findFirst({
       where: stillInBucket,
       orderBy: { requestedAt: "asc" },
       select: { requestedAt: true, lastFailure: true },
     }),
-    configured
-      ? probeOffhostLifecycle()
-      : Promise.resolve({ state: "unknown" as const, expirationDays: null }),
+    configured ? probeOffhostLifecycle() : Promise.resolve(LIFECYCLE_UNKNOWN),
+    getDatabaseBackupHealth(now),
   ]);
 
   const payload: BackupsList = {
     rows: list,
-    // Matches the retention window the backup-prune job enforces so the
-    // backups page states the same number the worker acts on.
-    retentionDays: 90,
+    // What ages these copies out, and nothing more: no job prunes stored
+    // copies by age. The weekly copy is replaced in place, a pre-wipe copy
+    // is deleted by the account-deletion purge when its window ends, and an
+    // uploaded copy stays until its account is erased.
+    preWipeCopyDays: accountDeletionGraceDays(),
     schedule: summariseBackupSchedule({
       scheduledCreatedAt: rows
         .filter((row) => row.type === SCHEDULED_BACKUP_TYPE)
@@ -229,6 +246,7 @@ export const GET = apiHandler(async () => {
       },
       lifecycle,
     },
+    database,
   };
 
   return apiSuccess(payload);

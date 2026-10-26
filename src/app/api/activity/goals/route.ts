@@ -8,12 +8,8 @@
  * (`activity_goals_json`) and the activity calendar reads them.
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma, toJson } from "@/lib/db";
@@ -56,16 +52,11 @@ export const GET = apiHandler(async () => {
 export const PATCH = apiHandler(async (request: Request) => {
   const { user } = await requireAuth();
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, activityGoalsSchema, {
     maxBytes: 1024,
+    action: "activity.goals.validation-failed",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = activityGoalsSchema.safeParse(body);
-  if (!parsed.success) {
-    annotate({ action: { name: "activity.goals.validation-failed" } });
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const next = mergeActivityGoals(await readGoals(user.id), parsed.data);
   await prisma.user.update({

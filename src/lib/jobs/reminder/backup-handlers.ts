@@ -4,17 +4,15 @@
  * Extracted from reminder-worker.ts, which owns the queue names, cron
  * schedules, and boss.work registrations.
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { type Job, type JobWithMetadata } from "pg-boss";
-import { jobBudget } from "@/lib/jobs/job-budget";
+import { jobBudget, jobDeadline } from "@/lib/jobs/job-budget";
 import { recordError } from "@/lib/jobs/worker-status";
 import {
   BackupBlobTooLargeError,
   BackupBusyError,
 } from "@/lib/export/backup-blob";
-import { storeBackupBlob } from "@/lib/export/store-backup-blob";
-import { createBackupPreviewCollector } from "@/lib/export/backup-preview";
-import type { FullBackupCounts } from "@/lib/export/full-backup-payload";
-import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
+import { writeAccountCopy } from "@/lib/export/account-copy";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import {
@@ -30,6 +28,37 @@ import {
   readAccountsToTakeLast,
 } from "@/lib/jobs/backup-pass-attempts";
 import { DATA_BACKUP_QUEUE } from "@/lib/jobs/data-backup-policy";
+
+/**
+ * The nightly whole-database dump (`database-backup`).
+ *
+ * One `pg_dump` in a child process, so it is not in the heavy lane: the heap
+ * holds a part of the upload at a time, not the database. `pg_dump` is stopped
+ * at three quarters of the job's expiry (`jobDeadline`), so a dump that hangs
+ * on a lock ends as a failed run with its reason rather than an expired job.
+ * A skipped run (switched off, nowhere to put it) completes; the admin page
+ * and the boot summary carry why.
+ */
+export async function handleDatabaseBackup(
+  jobs: Job<Record<string, never>>[],
+): Promise<JobOutcome> {
+  return withBackgroundEvent("job.database_backup", async () => {
+    const { runDatabaseBackup } = await import("@/lib/database-backup/run");
+    const report = await runDatabaseBackup(getWorkerPrisma(), {
+      deadline: jobs[0] ? jobDeadline(jobs[0]) : undefined,
+    });
+    const did = {
+      database_backup_status: report.status,
+      database_backup_local: report.local,
+      database_backup_offhost: report.offhost,
+      database_backup_bytes: report.dumpBytes ?? 0,
+      database_backup_removed: report.removed,
+    };
+    return report.status === "failed"
+      ? jobFailed("database dump failed", report.error ?? undefined, did)
+      : jobDone(did);
+  });
+}
 
 export interface DataBackupPayload {
   triggeredAt: string;
@@ -149,7 +178,11 @@ export async function handleDataBackup(
     const prisma = getWorkerPrisma();
     try {
       const [accounts, copies, interrupted] = await Promise.all([
-        prisma.user.findMany({ select: { id: true, username: true } }),
+        prisma.user.findMany({
+          where: ACTIVE_ACCOUNT,
+          select: { id: true, username: true },
+        }),
+        // account-deletion: copy ages, read against the filtered accounts beside it.
         prisma.dataBackup.findMany({
           where: { type: "WEEKLY_AUTO" },
           select: { userId: true, createdAt: true },
@@ -198,30 +231,14 @@ export async function handleDataBackup(
         });
         await markBackupAttemptStarted(prisma, DATA_BACKUP_QUEUE, user.id);
         try {
-          // Streamed, compressed, then encrypted (the record contains
-          // sensitive health information), and stored a piece at a time.
-          // Nothing between the database rows and the stored copy exists as
-          // a whole in this process: the payload goes into gzip a page at a
-          // time, and gzip's output is sealed and stored in pieces of about a
-          // megabyte (`storeBackupBlob`). The copy is kept as those pieces,
-          // so its size does not depend on this process's memory (#1031).
-          // The restore preview is taken from the writer's own counts and
-          // the sections as they are written, never by parsing the copy.
-          const preview = await createBackupPreviewCollector();
-          let counts: FullBackupCounts | undefined;
-          const { bytes: storedBytes } = await storeBackupBlob(
+          // The shared account-copy writer (`writeAccountCopy`): streamed,
+          // compressed, encrypted and stored a piece at a time, so nothing of
+          // the record exists as a whole in this process (#1031). The copy a
+          // data wipe takes first goes through the same writer.
+          const { bytes: storedBytes } = await writeAccountCopy(
             prisma,
-            {
-              userId: user.id,
-              type: "WEEKLY_AUTO",
-              preview: () => (counts ? preview.finish(counts) : null),
-            },
-            async (write) => {
-              counts = await streamFullBackupJson(prisma, user.id, write, {
-                purpose: "disaster-recovery",
-                observe: preview.observe,
-              });
-            },
+            user.id,
+            "WEEKLY_AUTO",
           );
           largestBlobBytes = Math.max(largestBlobBytes, storedBytes);
           backed++;

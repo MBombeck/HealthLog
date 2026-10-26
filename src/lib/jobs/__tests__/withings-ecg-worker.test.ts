@@ -1,7 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Job } from "pg-boss";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 const { syncUserEcg } = vi.hoisted(() => ({
   syncUserEcg:
     vi.fn<
@@ -28,7 +26,8 @@ vi.mock("@/lib/withings/sync-activity", () => ({
 vi.mock("@/lib/withings/sync-sleep", () => ({
   syncUserSleep: vi.fn(async () => 0),
 }));
-vi.mock("@/lib/jobs/reminder-satisfy", () => ({
+vi.mock("@/lib/jobs/reminder-satisfy", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/jobs/reminder-satisfy")>()),
   enqueueReminderSatisfy: vi.fn(async () => undefined),
 }));
 vi.mock("@/lib/jobs/worker-status", () => ({
@@ -72,6 +71,13 @@ import {
   handleWithingsEcgSync,
   type WithingsEcgSyncPayload,
 } from "../reminder/withings-sync";
+import { WITHINGS_ECG_SYNC_CRON } from "../integration-poll-queues";
+import {
+  groupOf,
+  jobOf,
+  loadedHandler,
+} from "../registry/__tests__/registry-helpers";
+import { WITHINGS_ECG_SYNC_QUEUE } from "../withings-ecg-queue";
 
 function job(data: WithingsEcgSyncPayload): Job<WithingsEcgSyncPayload> {
   return { data } as Job<WithingsEcgSyncPayload>;
@@ -82,10 +88,6 @@ beforeEach(() => {
   ecgFindMany.mockResolvedValue([]);
   isReauthRequired.mockResolvedValue(false);
 });
-const registrarSource = readFileSync(
-  join(process.cwd(), "src/lib/jobs/reminder/register-integration-sync.ts"),
-  "utf8",
-);
 
 describe("handleWithingsEcgSync", () => {
   it("a webhook job (userId + window) does a targeted date-windowed sync", async () => {
@@ -176,17 +178,13 @@ describe("handleWithingsEcgSync", () => {
 });
 
 describe("withings ECG queue registration", () => {
-  it("deduplicates only queued replays and admits a rescue after work starts", () => {
-    const allQueues = registrarSource.match(
-      /const allQueues\s*=\s*\[([\s\S]*?)\];/,
-    );
-    expect(allQueues).not.toBeNull();
-    expect(allQueues![1]).toMatch(/\bWITHINGS_ECG_SYNC_QUEUE\b/);
-    expect(registrarSource).toMatch(
-      /\[WITHINGS_ECG_SYNC_QUEUE\]:\s*\{[\s\S]*?policy:\s*"short"/,
-    );
-    expect(registrarSource).toMatch(
-      /createAndWork<WithingsEcgSyncPayload>\(\s*boss,\s*WITHINGS_ECG_SYNC_QUEUE[\s\S]{0,120}handleWithingsEcgSync/,
+  it("deduplicates only queued replays and admits a rescue after work starts", async () => {
+    expect(groupOf(WITHINGS_ECG_SYNC_QUEUE).name).toBe("integration_sync");
+    const definition = jobOf(WITHINGS_ECG_SYNC_QUEUE);
+    expect(definition.policy?.policy).toBe("short");
+    expect(definition.cron).toBe(WITHINGS_ECG_SYNC_CRON);
+    expect(await loadedHandler(WITHINGS_ECG_SYNC_QUEUE)).toBe(
+      handleWithingsEcgSync,
     );
   });
 });

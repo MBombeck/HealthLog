@@ -82,13 +82,18 @@ limit for a document).
 
 - Imports count against the person's normal upload allowance (60 an hour) and
   storage quota.
-- A document that is already in HealthLog is not stored twice, and one the
-  person deleted in HealthLog is not brought back by picking it again. Each
-  import is keyed by system, instance (the archive's origin) and document id,
-  so the same id on two Paperless-ngx instances is two documents; a key
-  imported before v1.39.3 carries no instance and matches any instance. These
-  are the same rules the document token and `scripts/import-documents.mjs`
-  follow.
+- A document that is already in HealthLog is not stored twice. Each import is
+  keyed by system, instance (the archive's origin) and document id, so the
+  same id on two Paperless-ngx instances is two documents; a key imported
+  before v1.39.3 carries no instance and matches any instance. These are the
+  same rules the document token and `scripts/import-documents.mjs` follow.
+- A document the person deleted in HealthLog is never brought back by the
+  document token or the import script, however often they re-send it. The
+  person can bring it back themselves: from Recently deleted on the Documents
+  page for 30 days, or by picking it again in the picker, which says "In Recently
+  deleted" or "Deleted in HealthLog" on such a row. Picking one still in
+  Recently deleted restores that same document; picking one already removed
+  for good imports it again.
 - A picked document follows the person's own automatic AI reading setting.
 - Only the owner of a record can connect an archive or import from it. People
   with shared access to a record, whatever their level, do not see the picker.

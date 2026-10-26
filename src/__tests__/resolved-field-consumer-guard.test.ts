@@ -144,7 +144,7 @@ const RULES: ResolvedFieldRule[] = [
     allow: {
       "src/hooks/use-module-toggle.ts":
         "the module switch for the Coach (Settings hub and command palette): its checked state is the stored opt-out it writes",
-      "src/components/settings/managed-record-settings-section.tsx":
+      "src/components/settings/managed-record/coach-form.tsx":
         "the managed record's own settings form: the field's default is the record's stored opt-out",
       "src/hooks/use-auth.ts":
         "the `/me` payload normaliser: coerces the field against a stale payload, decides nothing",
@@ -346,7 +346,10 @@ const V143_FIELDS: ResolvedFieldEntry[] = [
     field: "GET /api/dashboard/snapshot tiles.directions",
     props: ["insights/schemas.ts#directions"],
     readers: [
-      { file: "src/app/page-client.tsx", pattern: /tiles\.directions/ },
+      {
+        file: "src/components/dashboard/tiles/tile-context.ts",
+        pattern: /tiles\.directions/,
+      },
     ],
   },
   {
@@ -359,7 +362,7 @@ const V143_FIELDS: ResolvedFieldEntry[] = [
       sameResolver: {
         pattern: VERDICT_RESOLVER,
         files: [
-          "src/app/api/dashboard/summary/route.ts",
+          "src/lib/dashboard/summary/cards.ts",
           "src/lib/dashboard/snapshot.ts",
         ],
       },
@@ -407,7 +410,7 @@ const V143_FIELDS: ResolvedFieldEntry[] = [
       sameResolver: {
         pattern: VERDICT_RESOLVER,
         files: [
-          "src/app/api/measurements/series/route.ts",
+          "src/lib/measurements/series/read-series.ts",
           "src/lib/dashboard/snapshot.ts",
         ],
       },

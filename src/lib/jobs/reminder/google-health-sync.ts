@@ -4,6 +4,7 @@
  * Extracted alongside the Fitbit handlers; register-integration-sync.ts owns the
  * queue names, cron schedules, and boss.work registrations.
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { type Job } from "pg-boss";
 import pLimit from "p-limit";
 import { fireAndForget } from "@/lib/logging/fire-and-forget";
@@ -48,6 +49,7 @@ export async function handleGoogleHealthSync(
       }
       if (targets.length === 0) {
         const connections = await prisma.googleHealthConnection.findMany({
+          where: OWNED_BY_ACTIVE_ACCOUNT,
           select: { userId: true },
         });
         targets.push(...connections);
@@ -105,7 +107,7 @@ export async function handleGoogleHealthSync(
               // next hour's, which is not a failure to retry.
               if (result.failed && shouldStop()) {
                 if (result.imported > 0) {
-                  fireAndForget(enqueueReminderSatisfy(userId), {
+                  fireAndForget(() => enqueueReminderSatisfy(userId), {
                     action: "reminder.satisfy.enqueue",
                   });
                 }
@@ -128,7 +130,7 @@ export async function handleGoogleHealthSync(
                   : "complete";
 
               if (result.imported > 0) {
-                fireAndForget(enqueueReminderSatisfy(userId), {
+                fireAndForget(() => enqueueReminderSatisfy(userId), {
                   action: "reminder.satisfy.enqueue",
                 });
               }

@@ -11,11 +11,10 @@
  */
 
 import { dayOffsetToDayKey } from "@/lib/insights/bucket-series";
-import {
-  MOOD_GREEN_MAX,
-  MOOD_GREEN_MIN,
-  type DailyPoint,
-  type MoodAggregateEntry,
+import { MOOD_GREEN_MAX, MOOD_GREEN_MIN } from "@/lib/insights/mood-bands";
+import type {
+  DailyPoint,
+  MoodAggregateEntry,
 } from "@/lib/insights/mood-aggregates";
 import { round } from "@/lib/insights/status-shared";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";

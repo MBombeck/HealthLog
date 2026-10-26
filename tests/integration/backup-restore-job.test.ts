@@ -44,12 +44,12 @@ import { setGlobalBoss } from "@/lib/jobs/boss-instance";
 import { runJob } from "@/lib/jobs/run-job";
 import {
   BACKUP_RESTORE_MAX_ATTEMPTS,
-  BACKUP_RESTORE_QUEUE,
   handleBackupRestore,
-  readBackupRestoreJob,
   runBackupRestoreJob,
   sweepInterruptedRestores,
 } from "@/lib/jobs/backup-restore";
+import { readBackupRestoreJob } from "@/lib/jobs/backup-restore-view";
+import { BACKUP_RESTORE_QUEUE } from "@/lib/jobs/backup-restore-queue";
 import { backupPayloadSchema } from "@/lib/validations/backup";
 
 import { cookieJar, headerJar } from "./mock-next-headers";

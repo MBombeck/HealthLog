@@ -1,0 +1,100 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "greeting": {
+        "salutation": "Hi, empty-account",
+        "date": "anchor+0d+12:00:00"
+      },
+      "streak": {
+        "currentDays": 0,
+        "longest": 0,
+        "label": "days in a row"
+      },
+      "compliance": {
+        "scheduledToday": 0,
+        "takenToday": 0
+      },
+      "highlightInsight": null,
+      "metrics": [
+        {
+          "id": "weight",
+          "kind": "weight",
+          "titleKey": "dashboard.metric.title.weight",
+          "latestValue": null,
+          "secondaryValue": null,
+          "unitKey": "dashboard.metric.unit.weight",
+          "unit": null,
+          "sleepStages": null,
+          "sleepSourceDiscrepancy": null,
+          "trend": "unknown",
+          "sparkline": [],
+          "updatedAt": null,
+          "allTimeCount": 0,
+          "lastSeenAt": null,
+          "direction": {
+            "direction": "up-bad",
+            "targetPosition": null,
+            "basis": "metric_default"
+          },
+          "trendSentiment": "neutral"
+        }
+      ],
+      "sleepRhythm": {
+        "sleepDebt": {
+          "state": "partial",
+          "debtMinutes": 0,
+          "needMinutes": 420,
+          "nightsCounted": 0,
+          "windowNights": 5,
+          "nightsUntilReady": 4,
+          "source": "COMPUTED"
+        },
+        "chronotype": {
+          "state": "learning",
+          "msfMinutes": null,
+          "msfScMinutes": null,
+          "band": null,
+          "socialJetlagMinutes": null,
+          "freeNightsCounted": 0,
+          "workNightsCounted": 0,
+          "freeNightsUntilReady": 3
+        },
+        "averagePerNight": {
+          "state": "partial",
+          "averageMinutes": 0,
+          "nightsCounted": 0,
+          "nightsUntilReady": 4
+        }
+      },
+      "lastUpdated": "anchor+0d+12:00:00"
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "dashboard.summary"
+      },
+      "meta": {
+        "cache.analytics.key_hash": 1944272078,
+        "cache.analytics.outcome": "miss",
+        "dashboard.sub_allTime_ms": 0,
+        "dashboard.sub_bmi_ms": 0,
+        "dashboard.sub_latestEver_ms": 0,
+        "dashboard.sub_medsToday_ms": 0,
+        "dashboard.sub_moodSeries_ms": 0,
+        "dashboard.sub_sleepNights_ms": 0,
+        "dashboard.sub_sparkline_ms": 0,
+        "dashboard.sub_streakDays_ms": 0,
+        "dashboard.sub_streakIntakes_ms": 0,
+        "metrics_emitted": 1,
+        "metrics_gated": 0
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": []
+}

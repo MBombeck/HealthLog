@@ -197,6 +197,8 @@ export interface ModuleImports {
   value: string[];
   /** True when every statement is an `export … from` (or an import). */
   reexportOnly: boolean;
+  /** The value imports evaluated when the module loads: `value` without `import("…")`. */
+  staticValue: string[];
 }
 
 /**
@@ -240,6 +242,7 @@ export function moduleImports(sf: ts.SourceFile): ModuleImports {
     }
     other += 1;
   }
+  const staticValue = [...value];
   const visit = (node: ts.Node): void => {
     if (
       ts.isCallExpression(node) &&
@@ -252,7 +255,7 @@ export function moduleImports(sf: ts.SourceFile): ModuleImports {
     ts.forEachChild(node, visit);
   };
   visit(sf);
-  return { value, reexportOnly: reexports > 0 && other === 0 };
+  return { value, staticValue, reexportOnly: reexports > 0 && other === 0 };
 }
 
 export interface ImportGraph {
@@ -373,4 +376,41 @@ export function backEdgeCycles(edges: Map<string, string[]>): string[][] {
   };
   for (const v of [...edges.keys()].sort()) walk(v);
   return cycles;
+}
+
+/**
+ * Every module under `src/` that loading `entries` evaluates: static value
+ * imports and re-exports, transitively. A dynamic `import("…")` is not
+ * followed, since it loads only when it runs. Paths are relative to `src/`.
+ */
+export function staticImportClosure(entries: readonly string[]): Set<string> {
+  const cache = ts.createModuleResolutionCache(
+    process.cwd(),
+    (x) => x,
+    COMPILER_OPTIONS,
+  );
+  const seen = new Set<string>();
+  const stack = [...entries];
+  while (stack.length > 0) {
+    const rel = stack.pop()!;
+    if (seen.has(rel)) continue;
+    seen.add(rel);
+    const abs = join(SRC, rel);
+    for (const spec of moduleImports(parse(rel, readFileSync(abs, "utf8")))
+      .staticValue) {
+      const hit = ts.resolveModuleName(
+        spec,
+        abs,
+        COMPILER_OPTIONS,
+        ts.sys,
+        cache,
+      ).resolvedModule;
+      if (!hit || hit.isExternalLibraryImport) continue;
+      if (!hit.resolvedFileName.startsWith(`${SRC}/`)) continue;
+      const target = hit.resolvedFileName.slice(SRC.length + 1);
+      if (target.startsWith("generated/") || target.endsWith(".d.ts")) continue;
+      stack.push(target);
+    }
+  }
+  return seen;
 }

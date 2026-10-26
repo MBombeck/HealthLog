@@ -1,0 +1,64 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "serverNow": "<now>",
+      "cursor": "eyJ2IjoyLCJ0IjoxNzkyMDY1NjAwMDAwLCJkIjp7Im1lYXN1cmVtZW50cyI6eyJ1IjoxNzkyMDUwNjAwMDAwLCJpIjoibS0wNiJ9LCJtb29kIjp7InUiOjE3OTIwNTE4MDAwMDAsImkiOiJtb29kLTAyIn0sImludGFrZXMiOnsidSI6MTc5MjA1MzYwMDAwMCwiaSI6ImluLTAzIn0sImN5Y2xlRGF5cyI6eyJ1IjoxNzkyMDU3MjAwMDAwLCJpIjoiY2QtMDMifSwiY3ljbGVzIjp7InUiOjE3OTIwNTU0MDAwMDAsImkiOiJjeS0wMyJ9fX0",
+      "hasMore": false,
+      "cursorExpired": false,
+      "changes": {
+        "measurements": {
+          "upserts": [],
+          "tombstones": []
+        },
+        "mood": {
+          "upserts": [],
+          "tombstones": []
+        },
+        "intakes": {
+          "upserts": [],
+          "tombstones": []
+        },
+        "cycleDays": {
+          "upserts": [],
+          "tombstones": []
+        },
+        "cycles": {
+          "upserts": [],
+          "tombstones": []
+        },
+        "measurementMirror": {
+          "upserts": [],
+          "tombstones": []
+        }
+      }
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "sync.changes.pull"
+      },
+      "meta": {
+        "measurement_upserts": 0,
+        "measurement_tombstones": 0,
+        "mood_upserts": 0,
+        "mood_tombstones": 0,
+        "intake_upserts": 0,
+        "intake_tombstones": 0,
+        "cycle_day_upserts": 0,
+        "cycle_day_tombstones": 0,
+        "cycle_upserts": 0,
+        "cycle_tombstones": 0,
+        "measurement_mirror_upserts": 0,
+        "cycle_module_enabled": true,
+        "has_more": false,
+        "cursor_present": true
+      },
+      "warnings": null,
+      "error": null
+    }
+  ]
+}

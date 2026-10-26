@@ -6,6 +6,12 @@
  * rasterised (via `rasterizePdf`, bounded to one page) then downscaled; every
  * other MIME type has no preview (the card keeps its kind icon).
  *
+ * Both untrusted decodes happen in the reader's child process
+ * (`./pdf-isolation.ts`) under its memory ceiling and time limit: the image
+ * through `./image-engine.mjs`, the PDF page through `./pdf-engine.mjs`. An
+ * image's declared size is still checked here first, so a bomb the header
+ * shows is refused without starting a child.
+ *
  * `@napi-rs/canvas` + pdfjs are pulled LAZILY via runtime `import()` — pdfjs's
  * module top-level references the browser-only `DOMMatrix` global, so a STATIC
  * import would make the Turbopack server chunk evaluate that reference at
@@ -24,13 +30,19 @@
  * binary, or any render error resolves to `{ ok: false }`, and the caller
  * leaves the document without a thumbnail (the card falls back to its kind
  * icon). This preserves the "a bad document never aborts an upload/backfill"
- * contract.
+ * contract. `reader-busy` and `interrupted` are the two answers that say
+ * nothing about the document; the job tries those again.
  */
 import { Buffer } from "node:buffer";
 
 import { nativeCanvasSupported } from "./native-canvas-support";
 
+import { runPdfChild } from "@/lib/documents/pdf-isolation";
 import { rasterizePdf } from "@/lib/documents/rasterize-pdf";
+import {
+  readImageDimensions,
+  type DimensionedImageMime,
+} from "@/lib/image-dimensions";
 import { annotate } from "@/lib/logging/context";
 
 /** Longest-edge pixel cap for the preview — a legible card tile at ~10-25 KB. */
@@ -60,94 +72,16 @@ const THUMBNAILABLE_IMAGE_MIMES = new Set([
 ]);
 
 /**
- * Read a source image's pixel count (width × height) from its container header
- * WITHOUT decoding the bitmap — the guard that keeps a decompression bomb out of
- * `loadImage`. Covers the four thumbnailable formats. Returns null when the
- * header can't be read (a malformed file `loadImage` will itself reject, or a
- * format we don't pre-screen); a bomb necessarily carries a parseable header
- * declaring huge dimensions, so a null here is never the bomb case.
+ * A source image's pixel count (width × height) from its container header,
+ * WITHOUT decoding the bitmap — the guard that keeps a decompression bomb out
+ * of `loadImage`. `null` when the header cannot be read, which the caller
+ * treats as a refusal: the decoder reads headers more leniently than any
+ * hand-written walker, so an unreadable size is no evidence of a small one.
  */
 function sniffSourcePixels(bytes: Buffer, mimeType: string): number | null {
-  try {
-    switch (mimeType) {
-      case "image/png": {
-        // 8-byte signature + 4-byte length + "IHDR" → width@16, height@20 (BE).
-        if (bytes.length < 24 || bytes.readUInt32BE(12) !== 0x49484452)
-          return null;
-        return bytes.readUInt32BE(16) * bytes.readUInt32BE(20);
-      }
-      case "image/gif": {
-        // "GIF8" + logical-screen descriptor: width@6, height@8 (uint16 LE).
-        if (bytes.length < 10) return null;
-        return bytes.readUInt16LE(6) * bytes.readUInt16LE(8);
-      }
-      case "image/jpeg":
-        return sniffJpegPixels(bytes);
-      case "image/webp":
-        return sniffWebpPixels(bytes);
-      default:
-        return null;
-    }
-  } catch {
-    return null;
-  }
-}
-
-/** Walk JPEG marker segments to the first Start-Of-Frame and read its W×H. */
-function sniffJpegPixels(bytes: Buffer): number | null {
-  if (bytes.length < 4 || bytes.readUInt16BE(0) !== 0xffd8) return null; // SOI
-  let offset = 2;
-  while (offset + 9 < bytes.length) {
-    if (bytes[offset] !== 0xff) return null;
-    const marker = bytes[offset + 1]!;
-    const segLen = bytes.readUInt16BE(offset + 2);
-    if (segLen < 2) return null;
-    // SOF0-15 carry dimensions, EXCEPT DHT (C4), JPG (C8), DAC (CC).
-    const isSof =
-      marker >= 0xc0 &&
-      marker <= 0xcf &&
-      marker !== 0xc4 &&
-      marker !== 0xc8 &&
-      marker !== 0xcc;
-    if (isSof) {
-      const height = bytes.readUInt16BE(offset + 5);
-      const width = bytes.readUInt16BE(offset + 7);
-      return width * height;
-    }
-    offset += 2 + segLen;
-  }
-  return null;
-}
-
-/** Read W×H from a WebP RIFF header (VP8 lossy / VP8L lossless / VP8X ext). */
-function sniffWebpPixels(bytes: Buffer): number | null {
-  if (bytes.length < 30) return null;
-  if (bytes.readUInt32BE(0) !== 0x52494646) return null; // "RIFF"
-  if (bytes.readUInt32BE(8) !== 0x57454250) return null; // "WEBP"
-  const fourcc = bytes.toString("ascii", 12, 16);
-  if (fourcc === "VP8 ") {
-    // Lossy: 14-bit width/height (LE) at 26/28.
-    const w = bytes.readUInt16LE(26) & 0x3fff;
-    const h = bytes.readUInt16LE(28) & 0x3fff;
-    return w * h;
-  }
-  if (fourcc === "VP8L") {
-    // Lossless: 14-bit each, bit-packed after the 1-byte signature at 21.
-    const b0 = bytes[21]!;
-    const b1 = bytes[22]!;
-    const b2 = bytes[23]!;
-    const b3 = bytes[24]!;
-    const w = 1 + (((b1 & 0x3f) << 8) | b0);
-    const h = 1 + (((b3 & 0x0f) << 10) | (b2 << 2) | ((b1 & 0xc0) >> 6));
-    return w * h;
-  }
-  if (fourcc === "VP8X") {
-    // Extended: 24-bit LE (stored value + 1) width@24, height@27.
-    const w = 1 + (bytes[24]! | (bytes[25]! << 8) | (bytes[26]! << 16));
-    const h = 1 + (bytes[27]! | (bytes[28]! << 8) | (bytes[29]! << 16));
-    return w * h;
-  }
-  return null;
+  if (!THUMBNAILABLE_IMAGE_MIMES.has(mimeType)) return null;
+  const size = readImageDimensions(bytes, mimeType as DimensionedImageMime);
+  return size ? size.width * size.height : null;
 }
 
 /** The generated preview plus its decoded dimensions (for `Content-Length`). */
@@ -166,8 +100,14 @@ export type ThumbnailSkipReason =
   | "unsupported-type"
   | "native-canvas-unsupported"
   | "pixel-cap"
+  | "size-unreadable"
   | "raster-failed"
+  | "resource-limit"
   | "empty-render"
+  /** The reader was busy; the job is retried. */
+  | "reader-busy"
+  /** The reader's process ended for no measured reason; tried again later. */
+  | "interrupted"
   | "error";
 
 /** Best-effort generation outcome — never an exception. */
@@ -224,6 +164,76 @@ function drawScaledJpeg(
   return { jpeg, width, height };
 }
 
+/** How long decoding one image into its preview may take. */
+export const IMAGE_THUMBNAIL_TIMEOUT_MS = 30_000;
+
+/**
+ * Decode and downscale an image in the reader's child process, under its
+ * memory ceiling and time limit. The decoder allocates whatever the file
+ * makes it allocate; in the child that ends the child, not the server.
+ */
+async function imageThumbnail(bytes: Buffer): Promise<ThumbnailResult> {
+  const result = await runPdfChild(
+    {
+      op: "image-thumbnail",
+      data: bytes,
+      options: {
+        longEdge: THUMB_LONG_EDGE,
+        quality: THUMB_QUALITY,
+        maxPixels: MAX_SOURCE_PIXELS,
+      },
+    },
+    { timeoutMs: IMAGE_THUMBNAIL_TIMEOUT_MS },
+  );
+  if (!result.ok) {
+    if (result.reason === "busy") return { ok: false, reason: "reader-busy" };
+    if (result.reason === "interrupted") {
+      return { ok: false, reason: "interrupted" };
+    }
+    if (result.reason === "limit") {
+      annotate({
+        action: { name: "documents.thumbnail.rejected" },
+        meta: {
+          source: "image",
+          reason: "resource_limit",
+          limit: result.limit,
+        },
+      });
+      return { ok: false, reason: "resource-limit" };
+    }
+    annotate({
+      action: { name: "documents.thumbnail.failed" },
+      meta: {
+        mimeType: "image",
+        reason: result.name,
+        message: result.message.slice(0, 300),
+      },
+    });
+    return { ok: false, reason: "error" };
+  }
+  const outcome = result.value;
+  if (!outcome.ok) {
+    if (outcome.reason === "pixel-cap") {
+      // The decoder found a larger image than the header walk did.
+      annotate({
+        action: { name: "documents.thumbnail.rejected" },
+        meta: { source: "image", reason: "pixel_cap_post_decode" },
+      });
+    }
+    return { ok: false, reason: outcome.reason };
+  }
+  const thumb: Thumbnail = {
+    jpeg: Buffer.from(outcome.jpeg),
+    width: outcome.width,
+    height: outcome.height,
+  };
+  annotate({
+    action: { name: "documents.thumbnail.ok" },
+    meta: { source: "image", width: thumb.width, height: thumb.height },
+  });
+  return { ok: true, thumbnail: thumb };
+}
+
 /**
  * Generate a small JPEG preview for a stored document, or `{ ok: false }` when
  * the type is unsupported or rendering fails. Never throws.
@@ -245,52 +255,51 @@ export async function generateThumbnail(
       });
       return { ok: false, reason: "native-canvas-unsupported" };
     }
-    // Lazy import: keeps @napi-rs/canvas (+ transitively pdfjs on the PDF path)
-    // out of the eager server chunk. Resolved on first generation, then cached.
-    const napi =
-      (await import("@napi-rs/canvas")) as unknown as NapiCanvasModule;
-
     if (THUMBNAILABLE_IMAGE_MIMES.has(mimeType)) {
-      // Refuse a decompression bomb BEFORE `loadImage` allocates the bitmap.
+      // Refuse a decompression bomb before a decoder is started at all, and
+      // refuse an image whose size cannot be read: that one would reach the
+      // decoder with no ceiling but the child's.
       const pixels = sniffSourcePixels(bytes, mimeType);
-      if (pixels !== null && pixels > MAX_SOURCE_PIXELS) {
+      if (pixels === null) {
+        annotate({
+          action: { name: "documents.thumbnail.rejected" },
+          meta: { source: "image", reason: "size_unreadable" },
+        });
+        return { ok: false, reason: "size-unreadable" };
+      }
+      if (pixels > MAX_SOURCE_PIXELS) {
         annotate({
           action: { name: "documents.thumbnail.rejected" },
           meta: { source: "image", reason: "pixel_cap", pixels },
         });
         return { ok: false, reason: "pixel-cap" };
       }
-      const image = await napi.loadImage(bytes);
-      // Post-decode backstop: the header sniff returns null on any marker
-      // desync (a malformed-but-decodable JPEG), falling through to here with
-      // NO ceiling. Re-check the DECODED dimensions so such a source can't
-      // bypass the cap and OOM the serial worker.
-      if (image.width * image.height > MAX_SOURCE_PIXELS) {
-        annotate({
-          action: { name: "documents.thumbnail.rejected" },
-          meta: {
-            source: "image",
-            reason: "pixel_cap_post_decode",
-            pixels: image.width * image.height,
-          },
-        });
-        return { ok: false, reason: "pixel-cap" };
-      }
-      const thumb = drawScaledJpeg(napi, image);
-      if (!thumb) return { ok: false, reason: "empty-render" };
-      annotate({
-        action: { name: "documents.thumbnail.ok" },
-        meta: { source: "image", width: thumb.width, height: thumb.height },
-      });
-      return { ok: true, thumbnail: thumb };
+      return await imageThumbnail(bytes);
     }
 
     if (mimeType === "application/pdf") {
       // Page 1 only — a preview never renders the whole document.
       const raster = await rasterizePdf(bytes, 1);
+      if (!raster.ok && raster.reason === "resource-limit") {
+        // The page exhausted the renderer's memory or time bound; the same
+        // bytes will again, so the job records it as final.
+        return { ok: false, reason: "resource-limit" };
+      }
+      if (!raster.ok && raster.reason === "busy") {
+        return { ok: false, reason: "reader-busy" };
+      }
+      if (!raster.ok && raster.reason === "interrupted") {
+        return { ok: false, reason: "interrupted" };
+      }
       if (!raster.ok || raster.images.length === 0) {
         return { ok: false, reason: "raster-failed" };
       }
+      // The page is a JPEG the child rendered, no longer than
+      // `RASTER_TARGET_LONG_EDGE` on its long side: the one decode left in
+      // this process is of the server's own output at a bounded size.
+      // Lazy import: keeps @napi-rs/canvas out of the eager server chunk.
+      const napi =
+        (await import("@napi-rs/canvas")) as unknown as NapiCanvasModule;
       const pageJpeg = Buffer.from(raster.images[0]!.dataBase64, "base64");
       const image = await napi.loadImage(pageJpeg);
       const thumb = drawScaledJpeg(napi, image);

@@ -17,7 +17,7 @@
  */
 import type { Prisma } from "@/generated/prisma/client";
 
-import { grantCoversDomain } from "@/lib/sharing/grants";
+import { grantCoversDomain } from "@/lib/sharing/grant-access";
 import type { ShareScope } from "@/lib/sharing/scope";
 
 export async function actingDomainVisibility(

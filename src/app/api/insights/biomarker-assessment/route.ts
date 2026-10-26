@@ -28,7 +28,7 @@ import { resolveServerLocale } from "@/lib/i18n/server-locale";
 import { aiCapabilityToServe } from "@/lib/ai/capabilities/gate";
 import { unavailableStatusBody } from "@/lib/insights/status-unavailable";
 import { generateBiomarkerStatus } from "@/lib/insights/biomarker-status";
-import { resolveMetricStatusLocale } from "@/lib/insights/metric-status";
+import { normalizeLocale } from "@/lib/insights/status-shared";
 
 export const dynamic = "force-dynamic";
 
@@ -67,7 +67,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     userLocale: user.locale ?? null,
     override: localeParam,
   });
-  const locale = resolveMetricStatusLocale(resolved);
+  const locale = normalizeLocale(resolved);
 
   const result = await generateBiomarkerStatus({
     biomarkerId: parsed.data.biomarkerId,

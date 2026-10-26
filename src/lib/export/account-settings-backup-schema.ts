@@ -66,6 +66,9 @@ export const accountSettingsBackupSchema = z
     moodTagLayoutJson: z.unknown().optional(),
     documentsLayoutJson: z.unknown().optional(),
     moduleListLayoutJson: z.unknown().optional(),
+    // Retired in v1.46.0 with its column (the preview-feature opt-ins). A file
+    // written by v1.44 or v1.45 still carries it; it is accepted and ignored,
+    // because no codec reads it, so such a file restores everything else.
     previewFeaturesJson: z.unknown().optional(),
     activityGoalsJson: z.unknown().optional(),
     reportSelectionJson: z.unknown().optional(),

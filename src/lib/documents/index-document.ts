@@ -24,7 +24,7 @@
  *      configured, the toggle is OFF for an external pick, the provider can't
  *      read this file (e.g. a text-layer PDF on a non-Anthropic account), the
  *      daily budget is reached, or the provider call fails — fall back to
- *      server-side text-layer extraction (`pdf-parse`, no egress, milliseconds).
+ *      server-side text-layer extraction (pdfjs, no egress, milliseconds).
  *      So content search works at a baseline even with no AI, and every
  *      text-layer PDF is searchable regardless of provider.
  *
@@ -45,6 +45,7 @@ import {
   resolveDailyCap,
   type BudgetCostOwner,
 } from "@/lib/ai/coach/budget";
+import { spentTokensOf } from "@/lib/ai/reasoning/answerless";
 import {
   loadOwnedDocument,
   prepareVisionInput,
@@ -57,6 +58,7 @@ import {
 import { transcribeDocument } from "@/lib/documents/describe";
 import { documentAutoReadEnabled } from "@/lib/documents/document-settings";
 import { localExtractText } from "@/lib/documents/local-extract";
+import { PdfReaderUnavailableError } from "@/lib/documents/pdfjs";
 import { resolveDocumentVisionProvider } from "@/lib/documents/provider-order";
 import { decryptDocumentContent } from "@/lib/documents/store";
 import { prisma } from "@/lib/db";
@@ -77,6 +79,7 @@ export type IndexFailureReason =
   | "local-empty"
   | "local-unsupported"
   | "decrypt-error"
+  | "resource-limit"
   | "raster-failed"
   | "provider-error"
   | "pdf-needs-anthropic"
@@ -236,6 +239,12 @@ async function tryProviderIndex(
     if (vision.reason === "rasterFailed") {
       return { outcome: null, note: "raster-failed" };
     }
+    if (vision.reason === "readerBusy") {
+      // The reader could not take the document now. Falling back to the
+      // local text layer would settle for the lesser read for good; the job
+      // runs again instead.
+      throw new PdfReaderUnavailableError("busy");
+    }
     if (vision.reason === "pdfNeedsAnthropic") {
       return { outcome: null, note: "pdf-needs-anthropic" };
     }
@@ -289,13 +298,22 @@ async function tryProviderIndex(
       outcome: { indexed: true, source: "vision", tokenCount },
       note: null,
     };
-  } catch {
+  } catch (err) {
     // Refund the reservation and let the caller fall through to local — a
     // transient provider miss must never leave a text-layer PDF unsearchable.
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
-      servedBy: null,
-      reservedOwner: reservation.owner,
-    });
+    // #1279 — what the reply reported spending stays charged: a model that
+    // reasons without answering bills every call.
+    await reconcileSpend(
+      userId,
+      reservation.reserved,
+      spentTokensOf(err) ?? 0,
+      dateKey,
+      0,
+      {
+        servedBy: null,
+        reservedOwner: reservation.owner,
+      },
+    );
     return { outcome: null, note: "provider-error" };
   }
 }
@@ -331,6 +349,12 @@ async function tryLocalIndex(
   }
   if (result.reason === "unsupported") {
     return { indexed: false, reason: "local-unsupported" };
+  }
+  if (result.reason === "resource-limit") {
+    // Too large or too complex for the reader's bounds: said as such, and
+    // final like the thumbnail's refusal of the same bytes. Nothing retries
+    // it on its own; a person can still ask for a read.
+    return { indexed: false, reason: "resource-limit" };
   }
   if (result.reason === "error") {
     return { indexed: false, reason: "decrypt-error" };

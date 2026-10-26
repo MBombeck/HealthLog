@@ -5,6 +5,14 @@ import {
   supportsPdfForProvider,
 } from "../vision-capability";
 
+const GPT6_SLUGS = [
+  "gpt-6-sol",
+  "gpt-6-luna",
+  "gpt-6-astra",
+  "gpt-6.1-sol",
+  "gpt-6",
+] as const;
+
 describe("supportsVisionForConfig", () => {
   it("accepts the Claude 3 / 3.5 / 3.7 / 4 families for anthropic", () => {
     for (const model of [
@@ -57,6 +65,20 @@ describe("supportsVisionForConfig", () => {
       expect(supportsVisionForConfig(providerType, "o1")).toBe(true);
       expect(supportsVisionForConfig(providerType, "o3")).toBe(true);
       expect(supportsVisionForConfig(providerType, "o4")).toBe(true);
+    }
+  });
+
+  it("accepts the gpt-6 line for openai + admin variants", () => {
+    // Every gpt-6 slug in the upstream catalog lists `input_modalities:
+    // ["text", "image"]` (codex-rs/models-manager/models.json).
+    for (const providerType of [
+      "openai",
+      "admin-openai",
+      "admin-key",
+    ] as const) {
+      for (const model of GPT6_SLUGS) {
+        expect(supportsVisionForConfig(providerType, model), model).toBe(true);
+      }
     }
   });
 
@@ -113,6 +135,14 @@ describe("supportsVisionForConfig", () => {
     expect(supportsVisionForConfig("codex", "o1-preview")).toBe(false);
     // Full o-series stays vision-capable.
     expect(supportsVisionForConfig("codex", "o3")).toBe(true);
+  });
+
+  it("reports vision for codex and admin-codex on the gpt-6 line", () => {
+    for (const providerType of ["codex", "admin-codex"] as const) {
+      for (const model of GPT6_SLUGS) {
+        expect(supportsVisionForConfig(providerType, model), model).toBe(true);
+      }
+    }
   });
 
   it("mirrors codex vision capability for the shared central codex (admin-codex)", () => {

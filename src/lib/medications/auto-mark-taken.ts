@@ -12,10 +12,12 @@
  * worker expands no slot past it), it has doses that fall due (intake
  * tracked, not as-needed), and its doses are not recorded automatically
  * (`autoMarkTaken`). A course that has not started yet still reminds once
- * it does. The person's own reminder preference stays stored untouched:
+ * it does. #1280 — a course ended with "End course" stops reminding at the
+ * instant it was ended (`endedAt`), including the follow-up nags of a dose
+ * that fell due before it. The person's own reminder preference stays stored untouched:
  * switching auto-mark-taken off restores whatever they had chosen.
  */
-import { courseStatusAt } from "@/lib/medications/scheduling/recurrence";
+import { courseStatusAt } from "@/lib/medications/course-window";
 
 export interface ReminderGateMedication {
   notificationsEnabled: boolean;
@@ -24,6 +26,7 @@ export interface ReminderGateMedication {
   trackIntake: boolean;
   asNeeded: boolean;
   endsOn: Date | null;
+  endedAt: Date | null;
 }
 
 export function sendsMedicationReminders(
@@ -37,7 +40,11 @@ export function sendsMedicationReminders(
     medication.trackIntake &&
     !medication.asNeeded &&
     courseStatusAt(
-      { startsOn: null, endsOn: medication.endsOn },
+      {
+        startsOn: null,
+        endsOn: medication.endsOn,
+        endedAt: medication.endedAt,
+      },
       at.now,
       at.timeZone,
     ) !== "ENDED"

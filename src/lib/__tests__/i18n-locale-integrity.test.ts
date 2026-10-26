@@ -3,7 +3,6 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { requireFloor } from "@/__tests__/helpers/source-files";
-import { englishOnlyWordingKeys } from "@/lib/mental-health/instrument-wording";
 
 const ROOT = join(__dirname, "../../..");
 const MESSAGES_DIR = join(ROOT, "messages");
@@ -217,25 +216,45 @@ describe("i18n locale file integrity", () => {
       enArr.forEach((k) => enKeys.add(k));
       otherArr.forEach((k) => otherKeys.add(k));
 
-      // The one sanctioned gap: questionnaire wording of an instrument whose
-      // validated set excludes this language. Those keys must be ABSENT —
-      // the surface shows the English source held by instrument-wording, so a
-      // translation here would be a self-made questionnaire waiting for a
-      // renderer to pick it up. The list is exact in both directions: a
-      // missing key outside it is drift, a carried key inside it fails too.
-      const englishOnly = englishOnlyWordingKeys(locale);
-      const englishOnlySet = new Set(englishOnly);
-      const onlyInEn = [...enKeys]
-        .filter((k) => !otherKeys.has(k) && !englishOnlySet.has(k))
-        .sort();
+      const onlyInEn = [...enKeys].filter((k) => !otherKeys.has(k)).sort();
       const onlyInOther = [...otherKeys].filter((k) => !enKeys.has(k)).sort();
-      const carriedEnglishOnly = englishOnly.filter((k) => otherKeys.has(k));
 
       expect(
-        { onlyInEn, onlyInOther, carriedEnglishOnly },
-        `Locale files drifted apart — every key in en.json must exist in ${locale}.json and vice versa, ` +
-          `except validated questionnaire wording, which ${locale}.json must not carry for an instrument not validated in it.`,
-      ).toEqual({ onlyInEn: [], onlyInOther: [], carriedEnglishOnly: [] });
+        { onlyInEn, onlyInOther },
+        `Locale files drifted apart — every key in en.json must exist in ${locale}.json and vice versa.`,
+      ).toEqual({ onlyInEn: [], onlyInOther: [] });
+    },
+  );
+
+  // Questionnaire wording lives in code with its source
+  // (`src/lib/mental-health/wording/`), never in a bundle: a translator
+  // working through the bundles must not see an item, an answer, a stem or
+  // the PHQ-9 follow-up, let alone reword one. The app's own copy around the
+  // questionnaires (`mentalHealth.instrument.*`, `mentalHealth.wording.*`,
+  // the notes and buttons) stays here.
+  const QUESTIONNAIRE_SUBTREES = [
+    "mentalHealth.items",
+    "mentalHealth.options",
+    "mentalHealth.gad7Options",
+    "mentalHealth.who5Options",
+    "mentalHealth.sciOptions",
+    "mentalHealth.stems",
+    "mentalHealth.functional",
+    "mentalHealth.functionalTitle",
+  ];
+
+  it.each(ALL_LOCALES)(
+    "$locale carries no questionnaire wording",
+    ({ path }) => {
+      const keys: string[] = [];
+      flatten(JSON.parse(readFileSync(path, "utf8")), "", keys);
+      expect(keys.length).toBeGreaterThan(3000);
+      const carried = keys.filter((key) =>
+        QUESTIONNAIRE_SUBTREES.some(
+          (tree) => key === tree || key.startsWith(`${tree}.`),
+        ),
+      );
+      expect(carried).toEqual([]);
     },
   );
 

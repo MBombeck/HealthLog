@@ -26,6 +26,8 @@ import { join } from "node:path";
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { readSource } from "@/__tests__/helpers/source-files";
+
 import { DEFAULT_UNIT_PREFERENCES } from "@/lib/measurements/display-transform";
 import type { CoachSnapshotResult } from "@/lib/ai/coach/snapshot";
 import type {
@@ -181,16 +183,15 @@ vi.mock("@/lib/tz/resolver", () => ({
 }));
 vi.mock("@/lib/modules/gate", () => ({
   resolveModuleMap: async () => ({}),
+  isModuleEnabled: async () => true,
 }));
 vi.mock("@/lib/ai/coach/persistence", () => ({
   readMessageResults: async () => null,
 }));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
 
-import {
-  admittedPriorResults,
-  executeCoachTool,
-} from "@/lib/ai/coach/tools/executor";
+import { executeCoachTool } from "@/lib/ai/coach/tools/executor";
+import { admittedPriorResults } from "@/lib/ai/coach/tools/run/prior-results";
 import { renderPriorResultRefs } from "@/lib/ai/coach/chat-request-builder";
 import {
   COACH_TOOL_DEFS,
@@ -199,6 +200,7 @@ import {
 } from "@/lib/ai/coach/tools/definitions";
 import { createResultRefAllocator } from "@/lib/ai/coach/results/refs";
 import type { PriorResultTurn } from "@/lib/ai/coach/results/refs";
+import { stripComments } from "../../../../__tests__/helpers/source-files";
 
 const REACH: CoachHistoryReach = { window: "last30days", days: LIMIT_DAYS };
 
@@ -398,7 +400,7 @@ function walk(dir: string): string[] {
 
 /** `source` without its comments, so a doc mention is not read as a call. */
 function code(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+  return stripComments(source);
 }
 
 /** The argument text of every call to `fn(` in `source`, parentheses balanced. */
@@ -426,7 +428,10 @@ function callArguments(raw: string, fn: string): string[] {
 
 describe("the source hands the limit on", () => {
   it("passes the limit in every dispatch branch of the executor", () => {
-    const source = readFileSync(join(COACH_DIR, "tools/executor.ts"), "utf8");
+    const source = readSource("src/lib/ai/coach/tools/executor.ts", [
+      "async function dispatchRead(",
+      /case\s+"get_/,
+    ]);
     const dispatch = source.slice(
       source.indexOf("async function dispatchRead("),
     );

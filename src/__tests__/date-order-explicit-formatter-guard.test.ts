@@ -252,15 +252,15 @@ const RAW_ALLOWLIST: ReadonlyArray<{ file: string; why: string }> = [
     why: "The `yyyy-MM-dd` key the ledger groups doses by. The heading a reader sees is rendered separately, through the preference-aware `formatDateWithWeekdaySmart`.",
   },
   {
-    file: "src/components/medications/dose-history-ledger.tsx",
+    file: "src/components/medications/dose-history/use-dose-history-ledger.ts",
     why: "The same key shape for `today`, compared against those buckets. A comparison, not a label.",
   },
   {
-    file: "src/components/charts/health-chart.tsx",
+    file: "src/components/charts/health-chart/series-math.ts",
     why: "`makeDayKeyFormatter` — the per-row bucketing key. Its fields are read back through `formatToParts` and reassembled as `YYYY-MM-DD`.",
   },
   {
-    file: "src/components/measurement-reminders/vorsorge-section.tsx",
+    file: "src/components/measurement-reminders/checkups/postpone-sheet.tsx",
     why: "The ISO day the postpone request writes to the API. A wire value, and the wire format is ISO whatever the reader prefers.",
   },
   {

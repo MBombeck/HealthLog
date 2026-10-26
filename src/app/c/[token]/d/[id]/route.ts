@@ -52,6 +52,7 @@ import { prisma } from "@/lib/db";
 import { decryptDocumentContent } from "@/lib/documents/store";
 import { servingClassFor } from "@/lib/documents/upload-policy";
 import { annotate } from "@/lib/logging/context";
+import { isModuleEnabled } from "@/lib/modules/gate";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 
 type RouteParams = { params: Promise<{ token: string; id: string }> };
@@ -169,6 +170,11 @@ export const GET = apiHandler(
     //    access counters are bumped fire-and-forget.
     const context = await resolveShareToken(token);
     if (!context) return notFound();
+    // The owner switched the documents module off: no document leaves, the
+    // same answer as an unknown one.
+    if (!(await isModuleEnabled(context.ownerUserId, "inboundDocuments"))) {
+      return notFound();
+    }
 
     // 5. Confine to the frozen set: the document must be a member of THIS
     //    link, owned by the link's owner, and live. The composite lookup ties

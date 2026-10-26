@@ -77,6 +77,7 @@ const medication = {
   id: "med-1",
   startsOn: null,
   endsOn: null,
+  endedAt: null,
   oneShot: false,
   createdAt,
 };
@@ -384,6 +385,7 @@ describe("write-attribution era pick", () => {
       id: "med-1",
       startsOn: null,
       endsOn: null,
+      endedAt: null,
       oneShot: false,
       createdAt,
       schedules: [

@@ -55,10 +55,12 @@ import {
   type StagingInUse,
 } from "@/lib/import/apple-health-staging";
 import { caughtAs, logCaught } from "@/lib/logging/signal";
+import { HEALTH_CONNECT_IMPORT_KIND } from "@/lib/jobs/health-connect-import-worker";
+import { HEALTH_CONNECT_IMPORT_QUEUE } from "@/lib/jobs/health-connect-import-queue";
 import {
-  HEALTH_CONNECT_IMPORT_KIND,
-  HEALTH_CONNECT_IMPORT_QUEUE,
-} from "@/lib/jobs/health-connect-import-worker";
+  APPLE_HEALTH_IMPORT_V2_QUEUE,
+  APPLE_HEALTH_IMPORT_LEGACY_QUEUE,
+} from "./apple-health-import-queue";
 
 /** `ImportJob.kind` of the rows this worker owns. */
 export const APPLE_HEALTH_IMPORT_KIND = "apple_health";
@@ -75,28 +77,6 @@ function queuesForKind(kind: string): readonly string[] {
     ? [HEALTH_CONNECT_IMPORT_QUEUE]
     : [APPLE_HEALTH_IMPORT_V2_QUEUE, APPLE_HEALTH_IMPORT_LEGACY_QUEUE];
 }
-
-/**
- * Queue + cron for the periodic orphan-ImportJob sweep. v1.32.1
- * (issue #588) — `reconcileOrphanImportJobs()` used to run only once,
- * at worker boot. `restart: unless-stopped` in `docker-compose.yml`
- * DOES bring a crashed/OOM-killed worker back up, so the boot-time
- * pass usually catches a dead run — but only when that restart lands
- * AFTER the row's heartbeat has already gone stale (30 minutes) or
- * pg-boss no longer reports the backing job as live. A fast restart
- * lands neither condition true yet, and because the pass runs
- * exactly once per boot, a worker that then stays up and healthy
- * NEVER re-evaluates that row — it is stuck in `unpacking` /
- * `parsing` / `upserting` with "0 rows imported" forever and no
- * failure ever surfaced to the status poll. A 15-minute cron closes
- * that gap: within two ticks of the heartbeat going stale, the same
- * idempotent reconcile flips the row to `failed` with an honest
- * reason, so the UI's "Unpacking the archive…" spinner eventually
- * turns into a visible, actionable error instead of an indefinite
- * silent stall.
- */
-export const IMPORT_JOB_RECONCILE_QUEUE = "apple-health-import-reconcile";
-export const IMPORT_JOB_RECONCILE_CRON = "*/15 * * * *";
 
 /**
  * Cron handler for the periodic orphan-ImportJob sweep. Delegates to
@@ -145,12 +125,6 @@ export async function handleImportJobReconcileTick(
   );
 }
 
-/** Queue name isolated from revision-1 workers during rolling deployments. */
-export const APPLE_HEALTH_IMPORT_V2_QUEUE = "apple-health-import-v2";
-
-/** Queue used by pre-revision-2 binaries; new workers only bridge its backlog. */
-export const APPLE_HEALTH_IMPORT_LEGACY_QUEUE = "apple-health-import";
-
 /** Parser semantics carried by every newly-created ImportJob. */
 export const APPLE_HEALTH_IMPORT_PARSER_REVISION = 3;
 
@@ -162,9 +136,6 @@ const APPLE_HEALTH_ECG_ARCHIVE_LIMITS = {
   maxCompressionRatio: 200,
 } as const;
 const APPLE_HEALTH_ECG_MAX_SAMPLES = 2_000_000;
-
-/** Concurrency cap per worker host. */
-export const APPLE_HEALTH_IMPORT_CONCURRENCY = 1;
 
 /**
  * (issue #775) Memory preflight for the parse. The streaming pipeline
@@ -680,6 +651,7 @@ const LIVE_PG_BOSS_STATES = new Set(["active", "created", "retry"]);
  */
 export async function stagedImportFilesInUse(): Promise<StagingInUse | null> {
   const prisma = getWorkerPrisma();
+  // account-deletion: staged files of running imports, not accounts.
   const rows = await prisma.importJob.findMany({
     where: { status: { in: [...ACTIVE_IMPORT_STATUSES] } },
     select: { status: true, pgBossJobId: true, kind: true },
@@ -741,6 +713,7 @@ export async function stagedImportFilesInUse(): Promise<StagingInUse | null> {
  */
 export async function reconcileOrphanImportJobs(): Promise<void> {
   const prisma = getWorkerPrisma();
+  // account-deletion: import-job bookkeeping after a restart, not work for an account.
   const candidates = await prisma.importJob.findMany({
     where: {
       status: { in: ["unpacking", "parsing", "upserting"] },

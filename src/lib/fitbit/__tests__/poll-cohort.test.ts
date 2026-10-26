@@ -33,7 +33,7 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
   recomputeBucketsForMeasurement: vi.fn(async () => {}),
   recomputeUserRollups: vi.fn(async () => ({ rowsUpserted: 0, durationMs: 0 })),
 }));
-vi.mock("@/lib/insights/comprehensive-generate", () => ({
+vi.mock("@/lib/insights/status-invalidation", () => ({
   invalidateStatusInsightsForTypes: vi.fn(async () => {}),
 }));
 

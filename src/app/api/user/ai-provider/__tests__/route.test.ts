@@ -67,6 +67,14 @@ vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn(),
 }));
 
+vi.mock("@/lib/ai/provider-health-ledger", () => ({
+  forgetProviderHealth: vi.fn(),
+}));
+
+vi.mock("@/lib/insights/status-negative-window", () => ({
+  clearStatusNegativeWindows: vi.fn(),
+}));
+
 import { GET, PATCH } from "../route";
 import { prisma } from "@/lib/db";
 import { resolveProviderAvailability } from "@/lib/ai/provider";
@@ -77,6 +85,8 @@ import { getAssistantFlags } from "@/lib/feature-flags";
 import { providerCredentialPolicy } from "@/lib/sharing/provider-work-authority";
 import { hasActiveConsentForSurface } from "@/lib/ai/consent-guard";
 import { auditLog } from "@/lib/auth/audit";
+import { forgetProviderHealth } from "@/lib/ai/provider-health-ledger";
+import { clearStatusNegativeWindows } from "@/lib/insights/status-negative-window";
 
 function patchRequest(body: unknown): Request {
   return new Request("http://localhost/api/user/ai-provider", {
@@ -325,6 +335,26 @@ describe("PATCH /api/user/ai-provider — the gateway's own columns (#470)", () 
         }),
       }),
     );
+  });
+
+  it("starts background work afresh after a change to what answers (#1279)", async () => {
+    // A provider benched for background work and notes backing off would
+    // otherwise sit out a pause the old setup earned.
+    vi.mocked(isPublicUrl).mockReturnValue(true);
+    const res = await patch(
+      patchRequest({
+        provider: "OPENAI_COMPATIBLE",
+        compatModel: "gpt-oss-120b",
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(vi.mocked(forgetProviderHealth).mock.calls.map((c) => c[0])).toEqual(
+      expect.arrayContaining([
+        { userId: "u-1", providerType: "openai-compatible" },
+        { userId: "u-1", providerType: "local" },
+      ]),
+    );
+    expect(clearStatusNegativeWindows).toHaveBeenCalledWith("u-1");
   });
 
   it("refuses a private base URL the operator has not allowlisted", async () => {

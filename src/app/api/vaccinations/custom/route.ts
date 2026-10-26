@@ -24,13 +24,8 @@ import { isP2002 } from "@/lib/prisma-errors";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { customVaccineCreateSchema } from "@/lib/validations/vaccinations";
 import { toCustomVaccineDTO } from "@/lib/vaccinations/dto";
 import {
@@ -58,17 +53,11 @@ export const GET = apiHandler(async () => {
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireRecordAuth("write", "profile");
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, customVaccineCreateSchema, {
     maxBytes: 8 * 1024,
+    errorCode: "vaccination.custom.invalid",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = customVaccineCreateSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "vaccination.custom.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
   const entry = parsed.data;
 
   // The lookup below and the unique index answer the same question; two

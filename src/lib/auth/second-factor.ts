@@ -18,7 +18,7 @@ import { prisma } from "@/lib/db";
  * a step-up at all. Counting a passkey here would silently pull every
  * passkey-holding account into a gate those routes have never applied to them —
  * a behaviour change to five destructive actions, made in passing, for the
- * benefit of a sixth. `canProveFreshFactor` in `api-handler.ts` is where the wider question
+ * benefit of a sixth. `canProveFreshFactor` in `auth/guards/fresh-factor.ts` is where the wider question
  * lives.
  *
  * Since v1.43.3 a passkey DOES count as a second factor where the gate is

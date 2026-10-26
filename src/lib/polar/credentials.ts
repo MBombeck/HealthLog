@@ -12,7 +12,7 @@
 import { prisma } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { obtainAccessToken } from "@/lib/integrations/oauth-kit/token";
-import { getPolarCredentials, type PolarCredentials } from "./client";
+import { getPolarCredentials, type PolarCredentials } from "./oauth";
 import { polarTokenDescriptor } from "./oauth-descriptor";
 
 /**

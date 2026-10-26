@@ -1,0 +1,758 @@
+[
+  {
+    "index": 0,
+    "tz": null,
+    "detailed": {
+      "anchor": "users/me/dataTypes/sleep/dataPoints/sleep-0001",
+      "windowStart": "2026-06-01T22:30:00.000Z",
+      "windowEnd": "2026-06-02T06:10:00.000Z",
+      "rows": [
+        {
+          "type": "SLEEP_DURATION",
+          "value": 15,
+          "unit": "minutes",
+          "measuredAt": "2026-06-01T22:45:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-01T22:30:00.000Z",
+          "sleepStage": "AWAKE"
+        },
+        {
+          "type": "SLEEP_DURATION",
+          "value": 90,
+          "unit": "minutes",
+          "measuredAt": "2026-06-02T00:15:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-01T22:45:00.000Z",
+          "sleepStage": "CORE"
+        },
+        {
+          "type": "SLEEP_DURATION",
+          "value": 65.5,
+          "unit": "minutes",
+          "measuredAt": "2026-06-02T01:20:30.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-02T00:15:00.000Z",
+          "sleepStage": "DEEP"
+        },
+        {
+          "type": "SLEEP_DURATION",
+          "value": 44.5,
+          "unit": "minutes",
+          "measuredAt": "2026-06-02T02:05:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-02T01:20:30.000Z",
+          "sleepStage": "REM"
+        },
+        {
+          "type": "SLEEP_DURATION",
+          "value": 245,
+          "unit": "minutes",
+          "measuredAt": "2026-06-02T06:10:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-02T02:05:00.000Z",
+          "sleepStage": "CORE"
+        }
+      ],
+      "unknownStageSegments": 0,
+      "unknownStageLabels": []
+    },
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 15,
+        "unit": "minutes",
+        "measuredAt": "2026-06-01T22:45:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-01T22:30:00.000Z",
+        "sleepStage": "AWAKE"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 90,
+        "unit": "minutes",
+        "measuredAt": "2026-06-02T00:15:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-01T22:45:00.000Z",
+        "sleepStage": "CORE"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 65.5,
+        "unit": "minutes",
+        "measuredAt": "2026-06-02T01:20:30.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-02T00:15:00.000Z",
+        "sleepStage": "DEEP"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 44.5,
+        "unit": "minutes",
+        "measuredAt": "2026-06-02T02:05:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-02T01:20:30.000Z",
+        "sleepStage": "REM"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 245,
+        "unit": "minutes",
+        "measuredAt": "2026-06-02T06:10:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-02T02:05:00.000Z",
+        "sleepStage": "CORE"
+      }
+    ]
+  },
+  {
+    "index": 0,
+    "tz": "Europe/Berlin",
+    "detailed": {
+      "anchor": "users/me/dataTypes/sleep/dataPoints/sleep-0001",
+      "windowStart": "2026-06-01T22:30:00.000Z",
+      "windowEnd": "2026-06-02T06:10:00.000Z",
+      "rows": [
+        {
+          "type": "SLEEP_DURATION",
+          "value": 15,
+          "unit": "minutes",
+          "measuredAt": "2026-06-01T22:45:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-01T22:30:00.000Z",
+          "sleepStage": "AWAKE"
+        },
+        {
+          "type": "SLEEP_DURATION",
+          "value": 90,
+          "unit": "minutes",
+          "measuredAt": "2026-06-02T00:15:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-01T22:45:00.000Z",
+          "sleepStage": "CORE"
+        },
+        {
+          "type": "SLEEP_DURATION",
+          "value": 65.5,
+          "unit": "minutes",
+          "measuredAt": "2026-06-02T01:20:30.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-02T00:15:00.000Z",
+          "sleepStage": "DEEP"
+        },
+        {
+          "type": "SLEEP_DURATION",
+          "value": 44.5,
+          "unit": "minutes",
+          "measuredAt": "2026-06-02T02:05:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-02T01:20:30.000Z",
+          "sleepStage": "REM"
+        },
+        {
+          "type": "SLEEP_DURATION",
+          "value": 245,
+          "unit": "minutes",
+          "measuredAt": "2026-06-02T06:10:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-02T02:05:00.000Z",
+          "sleepStage": "CORE"
+        }
+      ],
+      "unknownStageSegments": 0,
+      "unknownStageLabels": []
+    },
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 15,
+        "unit": "minutes",
+        "measuredAt": "2026-06-01T22:45:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-01T22:30:00.000Z",
+        "sleepStage": "AWAKE"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 90,
+        "unit": "minutes",
+        "measuredAt": "2026-06-02T00:15:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-01T22:45:00.000Z",
+        "sleepStage": "CORE"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 65.5,
+        "unit": "minutes",
+        "measuredAt": "2026-06-02T01:20:30.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-02T00:15:00.000Z",
+        "sleepStage": "DEEP"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 44.5,
+        "unit": "minutes",
+        "measuredAt": "2026-06-02T02:05:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-02T01:20:30.000Z",
+        "sleepStage": "REM"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 245,
+        "unit": "minutes",
+        "measuredAt": "2026-06-02T06:10:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-02T02:05:00.000Z",
+        "sleepStage": "CORE"
+      }
+    ]
+  },
+  {
+    "index": 0,
+    "tz": "America/New_York",
+    "detailed": {
+      "anchor": "users/me/dataTypes/sleep/dataPoints/sleep-0001",
+      "windowStart": "2026-06-01T22:30:00.000Z",
+      "windowEnd": "2026-06-02T06:10:00.000Z",
+      "rows": [
+        {
+          "type": "SLEEP_DURATION",
+          "value": 15,
+          "unit": "minutes",
+          "measuredAt": "2026-06-01T22:45:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-01T22:30:00.000Z",
+          "sleepStage": "AWAKE"
+        },
+        {
+          "type": "SLEEP_DURATION",
+          "value": 90,
+          "unit": "minutes",
+          "measuredAt": "2026-06-02T00:15:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-01T22:45:00.000Z",
+          "sleepStage": "CORE"
+        },
+        {
+          "type": "SLEEP_DURATION",
+          "value": 65.5,
+          "unit": "minutes",
+          "measuredAt": "2026-06-02T01:20:30.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-02T00:15:00.000Z",
+          "sleepStage": "DEEP"
+        },
+        {
+          "type": "SLEEP_DURATION",
+          "value": 44.5,
+          "unit": "minutes",
+          "measuredAt": "2026-06-02T02:05:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-02T01:20:30.000Z",
+          "sleepStage": "REM"
+        },
+        {
+          "type": "SLEEP_DURATION",
+          "value": 245,
+          "unit": "minutes",
+          "measuredAt": "2026-06-02T06:10:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-02T02:05:00.000Z",
+          "sleepStage": "CORE"
+        }
+      ],
+      "unknownStageSegments": 0,
+      "unknownStageLabels": []
+    },
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 15,
+        "unit": "minutes",
+        "measuredAt": "2026-06-01T22:45:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-01T22:30:00.000Z",
+        "sleepStage": "AWAKE"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 90,
+        "unit": "minutes",
+        "measuredAt": "2026-06-02T00:15:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-01T22:45:00.000Z",
+        "sleepStage": "CORE"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 65.5,
+        "unit": "minutes",
+        "measuredAt": "2026-06-02T01:20:30.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-02T00:15:00.000Z",
+        "sleepStage": "DEEP"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 44.5,
+        "unit": "minutes",
+        "measuredAt": "2026-06-02T02:05:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-02T01:20:30.000Z",
+        "sleepStage": "REM"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 245,
+        "unit": "minutes",
+        "measuredAt": "2026-06-02T06:10:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0001:sleep:2026-06-02T02:05:00.000Z",
+        "sleepStage": "CORE"
+      }
+    ]
+  },
+  {
+    "index": 1,
+    "tz": null,
+    "detailed": {
+      "anchor": "users/me/dataTypes/sleep/dataPoints/sleep-0002",
+      "windowStart": "2026-06-02T23:50:00.000Z",
+      "windowEnd": "2026-06-03T07:00:00.000Z",
+      "rows": [
+        {
+          "type": "SLEEP_DURATION",
+          "value": 30,
+          "unit": "minutes",
+          "measuredAt": "2026-06-03T00:20:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0002:sleep:2026-06-02T23:50:00.000Z",
+          "sleepStage": "ASLEEP"
+        },
+        {
+          "type": "SLEEP_DURATION",
+          "value": 5,
+          "unit": "minutes",
+          "measuredAt": "2026-06-03T00:25:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0002:sleep:2026-06-03T00:20:00.000Z",
+          "sleepStage": "AWAKE"
+        },
+        {
+          "type": "SLEEP_DURATION",
+          "value": 395,
+          "unit": "minutes",
+          "measuredAt": "2026-06-03T07:00:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0002:sleep:2026-06-03T00:25:00.000Z",
+          "sleepStage": "ASLEEP"
+        }
+      ],
+      "unknownStageSegments": 0,
+      "unknownStageLabels": []
+    },
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 30,
+        "unit": "minutes",
+        "measuredAt": "2026-06-03T00:20:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0002:sleep:2026-06-02T23:50:00.000Z",
+        "sleepStage": "ASLEEP"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 5,
+        "unit": "minutes",
+        "measuredAt": "2026-06-03T00:25:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0002:sleep:2026-06-03T00:20:00.000Z",
+        "sleepStage": "AWAKE"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 395,
+        "unit": "minutes",
+        "measuredAt": "2026-06-03T07:00:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0002:sleep:2026-06-03T00:25:00.000Z",
+        "sleepStage": "ASLEEP"
+      }
+    ]
+  },
+  {
+    "index": 1,
+    "tz": "Europe/Berlin",
+    "detailed": {
+      "anchor": "users/me/dataTypes/sleep/dataPoints/sleep-0002",
+      "windowStart": "2026-06-02T21:50:00.000Z",
+      "windowEnd": "2026-06-03T05:00:00.000Z",
+      "rows": [
+        {
+          "type": "SLEEP_DURATION",
+          "value": 30,
+          "unit": "minutes",
+          "measuredAt": "2026-06-02T22:20:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0002:sleep:2026-06-02T21:50:00.000Z",
+          "sleepStage": "ASLEEP"
+        },
+        {
+          "type": "SLEEP_DURATION",
+          "value": 5,
+          "unit": "minutes",
+          "measuredAt": "2026-06-02T22:25:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0002:sleep:2026-06-02T22:20:00.000Z",
+          "sleepStage": "AWAKE"
+        },
+        {
+          "type": "SLEEP_DURATION",
+          "value": 395,
+          "unit": "minutes",
+          "measuredAt": "2026-06-03T05:00:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0002:sleep:2026-06-02T22:25:00.000Z",
+          "sleepStage": "ASLEEP"
+        }
+      ],
+      "unknownStageSegments": 0,
+      "unknownStageLabels": []
+    },
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 30,
+        "unit": "minutes",
+        "measuredAt": "2026-06-02T22:20:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0002:sleep:2026-06-02T21:50:00.000Z",
+        "sleepStage": "ASLEEP"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 5,
+        "unit": "minutes",
+        "measuredAt": "2026-06-02T22:25:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0002:sleep:2026-06-02T22:20:00.000Z",
+        "sleepStage": "AWAKE"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 395,
+        "unit": "minutes",
+        "measuredAt": "2026-06-03T05:00:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0002:sleep:2026-06-02T22:25:00.000Z",
+        "sleepStage": "ASLEEP"
+      }
+    ]
+  },
+  {
+    "index": 1,
+    "tz": "America/New_York",
+    "detailed": {
+      "anchor": "users/me/dataTypes/sleep/dataPoints/sleep-0002",
+      "windowStart": "2026-06-03T03:50:00.000Z",
+      "windowEnd": "2026-06-03T11:00:00.000Z",
+      "rows": [
+        {
+          "type": "SLEEP_DURATION",
+          "value": 30,
+          "unit": "minutes",
+          "measuredAt": "2026-06-03T04:20:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0002:sleep:2026-06-03T03:50:00.000Z",
+          "sleepStage": "ASLEEP"
+        },
+        {
+          "type": "SLEEP_DURATION",
+          "value": 5,
+          "unit": "minutes",
+          "measuredAt": "2026-06-03T04:25:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0002:sleep:2026-06-03T04:20:00.000Z",
+          "sleepStage": "AWAKE"
+        },
+        {
+          "type": "SLEEP_DURATION",
+          "value": 395,
+          "unit": "minutes",
+          "measuredAt": "2026-06-03T11:00:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0002:sleep:2026-06-03T04:25:00.000Z",
+          "sleepStage": "ASLEEP"
+        }
+      ],
+      "unknownStageSegments": 0,
+      "unknownStageLabels": []
+    },
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 30,
+        "unit": "minutes",
+        "measuredAt": "2026-06-03T04:20:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0002:sleep:2026-06-03T03:50:00.000Z",
+        "sleepStage": "ASLEEP"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 5,
+        "unit": "minutes",
+        "measuredAt": "2026-06-03T04:25:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0002:sleep:2026-06-03T04:20:00.000Z",
+        "sleepStage": "AWAKE"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 395,
+        "unit": "minutes",
+        "measuredAt": "2026-06-03T11:00:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0002:sleep:2026-06-03T04:25:00.000Z",
+        "sleepStage": "ASLEEP"
+      }
+    ]
+  },
+  {
+    "index": 2,
+    "tz": null,
+    "detailed": {
+      "anchor": "2026-06-05T03:30:00.000Z",
+      "windowStart": "2026-06-04T20:00:00.000Z",
+      "windowEnd": "2026-06-04T23:00:00.000Z",
+      "rows": [
+        {
+          "type": "SLEEP_DURATION",
+          "value": 180,
+          "unit": "minutes",
+          "measuredAt": "2026-06-04T23:00:00.000Z",
+          "fieldTag": "2026-06-05T03:30:00.000Z:sleep:2026-06-04T20:00:00.000Z",
+          "sleepStage": "DEEP"
+        }
+      ],
+      "unknownStageSegments": 1,
+      "unknownStageLabels": ["SLEEP_STAGE_TYPE_UNSPECIFIED"]
+    },
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 180,
+        "unit": "minutes",
+        "measuredAt": "2026-06-04T23:00:00.000Z",
+        "fieldTag": "2026-06-05T03:30:00.000Z:sleep:2026-06-04T20:00:00.000Z",
+        "sleepStage": "DEEP"
+      }
+    ]
+  },
+  {
+    "index": 2,
+    "tz": "Europe/Berlin",
+    "detailed": {
+      "anchor": "2026-06-05T03:30:00.000Z",
+      "windowStart": "2026-06-04T20:00:00.000Z",
+      "windowEnd": "2026-06-04T23:00:00.000Z",
+      "rows": [
+        {
+          "type": "SLEEP_DURATION",
+          "value": 180,
+          "unit": "minutes",
+          "measuredAt": "2026-06-04T23:00:00.000Z",
+          "fieldTag": "2026-06-05T03:30:00.000Z:sleep:2026-06-04T20:00:00.000Z",
+          "sleepStage": "DEEP"
+        }
+      ],
+      "unknownStageSegments": 1,
+      "unknownStageLabels": ["SLEEP_STAGE_TYPE_UNSPECIFIED"]
+    },
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 180,
+        "unit": "minutes",
+        "measuredAt": "2026-06-04T23:00:00.000Z",
+        "fieldTag": "2026-06-05T03:30:00.000Z:sleep:2026-06-04T20:00:00.000Z",
+        "sleepStage": "DEEP"
+      }
+    ]
+  },
+  {
+    "index": 2,
+    "tz": "America/New_York",
+    "detailed": {
+      "anchor": "2026-06-05T03:30:00.000Z",
+      "windowStart": "2026-06-04T20:00:00.000Z",
+      "windowEnd": "2026-06-04T23:00:00.000Z",
+      "rows": [
+        {
+          "type": "SLEEP_DURATION",
+          "value": 180,
+          "unit": "minutes",
+          "measuredAt": "2026-06-04T23:00:00.000Z",
+          "fieldTag": "2026-06-05T03:30:00.000Z:sleep:2026-06-04T20:00:00.000Z",
+          "sleepStage": "DEEP"
+        }
+      ],
+      "unknownStageSegments": 1,
+      "unknownStageLabels": ["SLEEP_STAGE_TYPE_UNSPECIFIED"]
+    },
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 180,
+        "unit": "minutes",
+        "measuredAt": "2026-06-04T23:00:00.000Z",
+        "fieldTag": "2026-06-05T03:30:00.000Z:sleep:2026-06-04T20:00:00.000Z",
+        "sleepStage": "DEEP"
+      }
+    ]
+  },
+  {
+    "index": 3,
+    "tz": null,
+    "detailed": {
+      "anchor": "2026-06-06T23:00:00.000Z",
+      "windowStart": null,
+      "windowEnd": null,
+      "rows": [],
+      "unknownStageSegments": 0,
+      "unknownStageLabels": []
+    },
+    "rows": []
+  },
+  {
+    "index": 3,
+    "tz": "Europe/Berlin",
+    "detailed": {
+      "anchor": "2026-06-06T23:00:00.000Z",
+      "windowStart": null,
+      "windowEnd": null,
+      "rows": [],
+      "unknownStageSegments": 0,
+      "unknownStageLabels": []
+    },
+    "rows": []
+  },
+  {
+    "index": 3,
+    "tz": "America/New_York",
+    "detailed": {
+      "anchor": "2026-06-06T23:00:00.000Z",
+      "windowStart": null,
+      "windowEnd": null,
+      "rows": [],
+      "unknownStageSegments": 0,
+      "unknownStageLabels": []
+    },
+    "rows": []
+  },
+  {
+    "index": 4,
+    "tz": null,
+    "detailed": {
+      "anchor": "1970-01-01T00:00:00.000Z",
+      "windowStart": null,
+      "windowEnd": null,
+      "rows": [],
+      "unknownStageSegments": 0,
+      "unknownStageLabels": []
+    },
+    "rows": []
+  },
+  {
+    "index": 4,
+    "tz": "Europe/Berlin",
+    "detailed": {
+      "anchor": "1970-01-01T00:00:00.000Z",
+      "windowStart": null,
+      "windowEnd": null,
+      "rows": [],
+      "unknownStageSegments": 0,
+      "unknownStageLabels": []
+    },
+    "rows": []
+  },
+  {
+    "index": 4,
+    "tz": "America/New_York",
+    "detailed": {
+      "anchor": "1970-01-01T00:00:00.000Z",
+      "windowStart": null,
+      "windowEnd": null,
+      "rows": [],
+      "unknownStageSegments": 0,
+      "unknownStageLabels": []
+    },
+    "rows": []
+  },
+  {
+    "index": 5,
+    "tz": null,
+    "detailed": {
+      "anchor": "users/me/dataTypes/sleep/dataPoints/sleep-0006",
+      "windowStart": "2026-06-08T01:10:00.000Z",
+      "windowEnd": "2026-06-08T01:40:00.000Z",
+      "rows": [
+        {
+          "type": "SLEEP_DURATION",
+          "value": 30,
+          "unit": "minutes",
+          "measuredAt": "2026-06-08T01:40:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0006:sleep:2026-06-08T01:10:00.000Z",
+          "sleepStage": "CORE"
+        }
+      ],
+      "unknownStageSegments": 7,
+      "unknownStageLabels": [
+        "NAP_STAGE_ALPHA",
+        "NAP_STAGE_BETA",
+        "NAP_STAGE_GAMMA",
+        "NAP_STAGE_DELTA",
+        "NAP_STAGE_EPSILON"
+      ]
+    },
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 30,
+        "unit": "minutes",
+        "measuredAt": "2026-06-08T01:40:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0006:sleep:2026-06-08T01:10:00.000Z",
+        "sleepStage": "CORE"
+      }
+    ]
+  },
+  {
+    "index": 5,
+    "tz": "Europe/Berlin",
+    "detailed": {
+      "anchor": "users/me/dataTypes/sleep/dataPoints/sleep-0006",
+      "windowStart": "2026-06-08T01:10:00.000Z",
+      "windowEnd": "2026-06-08T01:40:00.000Z",
+      "rows": [
+        {
+          "type": "SLEEP_DURATION",
+          "value": 30,
+          "unit": "minutes",
+          "measuredAt": "2026-06-08T01:40:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0006:sleep:2026-06-08T01:10:00.000Z",
+          "sleepStage": "CORE"
+        }
+      ],
+      "unknownStageSegments": 7,
+      "unknownStageLabels": [
+        "NAP_STAGE_ALPHA",
+        "NAP_STAGE_BETA",
+        "NAP_STAGE_GAMMA",
+        "NAP_STAGE_DELTA",
+        "NAP_STAGE_EPSILON"
+      ]
+    },
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 30,
+        "unit": "minutes",
+        "measuredAt": "2026-06-08T01:40:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0006:sleep:2026-06-08T01:10:00.000Z",
+        "sleepStage": "CORE"
+      }
+    ]
+  },
+  {
+    "index": 5,
+    "tz": "America/New_York",
+    "detailed": {
+      "anchor": "users/me/dataTypes/sleep/dataPoints/sleep-0006",
+      "windowStart": "2026-06-08T01:10:00.000Z",
+      "windowEnd": "2026-06-08T01:40:00.000Z",
+      "rows": [
+        {
+          "type": "SLEEP_DURATION",
+          "value": 30,
+          "unit": "minutes",
+          "measuredAt": "2026-06-08T01:40:00.000Z",
+          "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0006:sleep:2026-06-08T01:10:00.000Z",
+          "sleepStage": "CORE"
+        }
+      ],
+      "unknownStageSegments": 7,
+      "unknownStageLabels": [
+        "NAP_STAGE_ALPHA",
+        "NAP_STAGE_BETA",
+        "NAP_STAGE_GAMMA",
+        "NAP_STAGE_DELTA",
+        "NAP_STAGE_EPSILON"
+      ]
+    },
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 30,
+        "unit": "minutes",
+        "measuredAt": "2026-06-08T01:40:00.000Z",
+        "fieldTag": "users/me/dataTypes/sleep/dataPoints/sleep-0006:sleep:2026-06-08T01:10:00.000Z",
+        "sleepStage": "CORE"
+      }
+    ]
+  }
+]

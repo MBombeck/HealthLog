@@ -28,13 +28,8 @@
  *     prose and must not land in plaintext audit details.
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -111,15 +106,10 @@ export const POST = apiHandler(async (req: Request) => {
     return response;
   }
 
-  const { data: body, error: jsonError } = await safeJson(req, {
+  const parsed = await parseJsonBody(req, aboutMeAdoptSchema, {
     maxBytes: 16 * 1024,
   });
-  if (jsonError) return jsonError;
-
-  const parsed = aboutMeAdoptSchema.safeParse(body);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const { question, answer } = parsed.data;
   const normAnswer = normalise(answer);

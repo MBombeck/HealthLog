@@ -14,6 +14,12 @@
  * entries read "a restored vault is unsorted" and "re-derivable only by
  * re-running the extraction against a provider, at the operator's cost".
  *
+ * A third rides beside them: the import ledger (`DocumentImportKey`), the
+ * source keys of imported documents the person deleted, with the keys of the
+ * documents still waiting in Recently deleted folded in (those documents do
+ * not travel). Without it a restore onto a fresh instance let a token importer
+ * store every deliberately deleted document again.
+ *
  * ## The state on a fact is worth more than the fact
  *
  * `status`, `needsReview` and the pair `committedRecordId` /
@@ -71,6 +77,7 @@
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
+import { importKeysOf, SOURCE_KEY_SELECT } from "@/lib/documents/tombstones";
 import {
   recordUnknownKeys,
   type RestoreSkipLog,
@@ -112,14 +119,28 @@ export interface ExtractedFactBackupEntry {
   updatedAt: string;
 }
 
+/**
+ * One import source key the person deleted the document of. The ledger's own
+ * rows (documents the purge removed) and the keys of the documents still
+ * waiting in Recently deleted, which the file does not carry as documents.
+ */
+export interface DocumentImportKeyBackupEntry {
+  sourceSystem: string;
+  sourceId: string;
+  sourceInstance: string | null;
+  createdAt: string;
+}
+
 export interface DocumentFilingBackupSection {
   documentConditionLinks: DocumentConditionLinkBackupEntry[];
   extractedFacts: ExtractedFactBackupEntry[];
+  documentImportKeys: DocumentImportKeyBackupEntry[];
 }
 
 export interface DocumentFilingBackupCounts {
   documentConditionLinks: number;
   extractedFacts: number;
+  documentImportKeys: number;
 }
 
 /**
@@ -165,8 +186,72 @@ function decryptJsonSoft(bytes: Uint8Array): unknown {
   }
 }
 
+/**
+ * What the person deleted on purpose among their imported documents, as the
+ * import ledger would hold it once every deletion is purged: the ledger's own
+ * rows, then the keys (own and alias) of every document still waiting in
+ * Recently deleted. Those documents do not travel, as no tombstone ever has;
+ * without their keys a restore onto a fresh instance would let an importer
+ * store each one again. A key that appears twice is carried once.
+ */
+async function buildDeletedImportKeys(
+  prisma: Pick<PrismaClient, "documentImportKey" | "inboundDocument">,
+  userId: string,
+): Promise<DocumentImportKeyBackupEntry[]> {
+  const [ledger, tombstones] = await Promise.all([
+    prisma.documentImportKey.findMany({
+      where: { userId },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      select: {
+        sourceSystem: true,
+        sourceId: true,
+        sourceInstance: true,
+        createdAt: true,
+      },
+    }),
+    prisma.inboundDocument.findMany({
+      where: {
+        userId,
+        deletedAt: { not: null },
+        OR: [
+          { sourceSystem: { not: null }, sourceId: { not: null } },
+          { sourceAliases: { some: {} } },
+        ],
+      },
+      orderBy: [{ deletedAt: "asc" }, { id: "asc" }],
+      select: { ...SOURCE_KEY_SELECT, deletedAt: true },
+    }),
+  ]);
+  const out: DocumentImportKeyBackupEntry[] = [];
+  const seen = new Set<string>();
+  const add = (
+    key: Omit<DocumentImportKeyBackupEntry, "createdAt">,
+    at: Date,
+  ) => {
+    const id = JSON.stringify([
+      key.sourceSystem,
+      key.sourceInstance,
+      key.sourceId,
+    ]);
+    if (seen.has(id)) return;
+    seen.add(id);
+    out.push({ ...key, createdAt: at.toISOString() });
+  };
+  for (const row of ledger) add(row, row.createdAt);
+  for (const row of tombstones) {
+    for (const key of importKeysOf(row)) add(key, row.deletedAt!);
+  }
+  return out;
+}
+
 export async function buildDocumentFilingBackupSection(
-  prisma: Pick<PrismaClient, "documentConditionLink" | "extractedFact">,
+  prisma: Pick<
+    PrismaClient,
+    | "documentConditionLink"
+    | "extractedFact"
+    | "documentImportKey"
+    | "inboundDocument"
+  >,
   userId: string,
   options: DocumentFilingBackupOptions = {},
 ): Promise<DocumentFilingBackupSection> {
@@ -177,7 +262,7 @@ export async function buildDocumentFilingBackupSection(
   // skips tombstoned documents in BOTH purposes, and the episode reader skips
   // tombstoned episodes in a portable export only — so the filters here mirror
   // exactly what `records-backup.ts` decided to carry.
-  const [linkRows, factRows] = await Promise.all([
+  const [linkRows, factRows, documentImportKeys] = await Promise.all([
     prisma.documentConditionLink.findMany({
       where: {
         userId,
@@ -192,6 +277,7 @@ export async function buildDocumentFilingBackupSection(
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: EXTRACTED_FACT_BACKUP_SELECT,
     }),
+    buildDeletedImportKeys(prisma, userId),
   ]);
 
   return {
@@ -223,6 +309,7 @@ export async function buildDocumentFilingBackupSection(
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
     })),
+    documentImportKeys,
   };
 }
 
@@ -233,6 +320,7 @@ export function countDocumentFilingBackupSection(
   return {
     documentConditionLinks: section.documentConditionLinks.length,
     extractedFacts: section.extractedFacts.length,
+    documentImportKeys: section.documentImportKeys.length,
   };
 }
 
@@ -240,6 +328,7 @@ export function countDocumentFilingBackupSection(
 export interface DocumentFilingRestoreCleared {
   documentConditionLinks: number;
   extractedFacts: number;
+  documentImportKeys: number;
 }
 
 type OptionalNullable<T> = { [K in keyof T]?: T[K] | undefined };
@@ -279,6 +368,18 @@ export type RestoredExtractedFact = Pick<
 export interface DocumentFilingRestoreInput {
   documentConditionLinks: DocumentConditionLinkBackupEntry[];
   extractedFacts: RestoredExtractedFact[];
+  documentImportKeys: Array<
+    Pick<DocumentImportKeyBackupEntry, "sourceSystem" | "sourceId"> & {
+      sourceInstance?: string | null;
+      createdAt?: string;
+    }
+  >;
+  /** The restored documents' own keys: a live document's key is not deleted. */
+  documents: Array<{
+    sourceSystem?: string | null;
+    sourceId?: string | null;
+    sourceInstance?: string | null;
+  }>;
 }
 
 /**
@@ -319,10 +420,12 @@ export async function restoreDocumentFilingData(
   refs: DocumentFilingRestoreRefs,
   skips: RestoreSkipLog,
 ): Promise<DocumentFilingRestoreCleared> {
-  const [clearedLinks, clearedFacts] = await Promise.all([
+  const [clearedLinks, clearedFacts, clearedKeys] = await Promise.all([
     tx.documentConditionLink.deleteMany({ where: { userId: ownerId } }),
     tx.extractedFact.deleteMany({ where: { userId: ownerId } }),
+    tx.documentImportKey.deleteMany({ where: { userId: ownerId } }),
   ]);
+  await restoreDeletedImportKeys(tx, ownerId, payload);
 
   const droppedFilings: string[] = [];
   const writableLinks = payload.documentConditionLinks.filter((link) => {
@@ -416,7 +519,44 @@ export async function restoreDocumentFilingData(
   return {
     documentConditionLinks: clearedLinks.count,
     extractedFacts: clearedFacts.count,
+    documentImportKeys: clearedKeys.count,
   };
+}
+
+/**
+ * The import ledger back, as the file carries it, minus any key a restored
+ * live document holds: the ledger says "the person deleted this", and a
+ * document in the vault under that key says otherwise. A file written before
+ * the ledger travelled carries none, and the restore then remembers no
+ * deletion, as before.
+ */
+async function restoreDeletedImportKeys(
+  tx: Prisma.TransactionClient,
+  ownerId: string,
+  payload: DocumentFilingRestoreInput,
+): Promise<void> {
+  const keyOf = (k: {
+    sourceSystem?: string | null;
+    sourceId?: string | null;
+    sourceInstance?: string | null;
+  }) => JSON.stringify([k.sourceSystem, k.sourceInstance ?? null, k.sourceId]);
+  const live = new Set(
+    payload.documents
+      .filter((d) => d.sourceSystem && d.sourceId)
+      .map((d) => keyOf(d)),
+  );
+  const keys = payload.documentImportKeys.filter((k) => !live.has(keyOf(k)));
+  if (keys.length === 0) return;
+  await tx.documentImportKey.createMany({
+    data: keys.map((k) => ({
+      userId: ownerId,
+      sourceSystem: k.sourceSystem,
+      sourceId: k.sourceId,
+      sourceInstance: k.sourceInstance ?? null,
+      ...(k.createdAt ? { createdAt: new Date(k.createdAt) } : {}),
+    })),
+    skipDuplicates: true,
+  });
 }
 
 /**

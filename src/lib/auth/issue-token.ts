@@ -36,6 +36,8 @@ export interface IssueTokenOptions {
    * issued and the connector token list can exclude the transient access rows.
    */
   mcpConnectionId?: string;
+  /** A measurement token's Apple Health write-back (#1272). Off by default. */
+  mirrorToAppleHealth?: boolean;
 }
 
 /**
@@ -63,6 +65,9 @@ export async function issueApiToken(
       expiresAt,
       ...(opts.mcpConnectionId
         ? { mcpConnectionId: opts.mcpConnectionId }
+        : {}),
+      ...(opts.mirrorToAppleHealth === true
+        ? { mirrorToAppleHealth: true }
         : {}),
     },
     select: { id: true },

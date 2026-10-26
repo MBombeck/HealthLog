@@ -6,12 +6,8 @@ import {
   requireCookieAuth,
   requireFreshMfa,
 } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -92,12 +88,12 @@ export const POST = apiHandler(
     if (!rateLimit.allowed) {
       return apiError("Too many invitations, try again later", 429);
     }
-    const { data: body, error: jsonError } = await safeJson(request, {
-      maxBytes: 8 * 1024,
-    });
-    if (jsonError) return jsonError;
-    const parsed = inviteManagedProfileGuardianSchema.safeParse(body);
-    if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+    const parsed = await parseJsonBody(
+      request,
+      inviteManagedProfileGuardianSchema,
+      { maxBytes: 8 * 1024 },
+    );
+    if (!parsed.ok) return parsed.error;
     const { id } = await params;
 
     const invitee = await prisma.user.findFirst({

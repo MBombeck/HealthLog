@@ -30,7 +30,7 @@ vi.mock("@/lib/integrations/status", () => ({
   recordSyncFailure: vi.fn(async () => {}),
   recordSyncSuccess: vi.fn(async () => {}),
 }));
-vi.mock("@/lib/insights/comprehensive-generate", () => ({
+vi.mock("@/lib/insights/status-invalidation", () => ({
   invalidateStatusInsightsForTypes: vi.fn(async () => {}),
 }));
 vi.mock("@/lib/arrivals/measurement-emit", () => ({

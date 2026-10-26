@@ -1,0 +1,42 @@
+[
+  {
+    "input": {
+      "height_meter": 1.8,
+      "weight_kilogram": 78.456,
+      "max_heart_rate": 192
+    },
+    "mapped": { "weightKg": 78.46, "maxHeartRate": 192, "heightCm": 180 }
+  },
+  {
+    "input": {
+      "height_meter": 1.655,
+      "weight_kilogram": 62.3,
+      "max_heart_rate": 187.6
+    },
+    "mapped": { "weightKg": 62.3, "maxHeartRate": 188, "heightCm": 165.5 }
+  },
+  {
+    "input": {},
+    "mapped": { "weightKg": null, "maxHeartRate": null, "heightCm": null }
+  },
+  {
+    "input": { "weight_kilogram": 90 },
+    "mapped": { "weightKg": 90, "maxHeartRate": null, "heightCm": null }
+  },
+  {
+    "input": { "height_meter": 0, "weight_kilogram": 0, "max_heart_rate": 0 },
+    "mapped": { "weightKg": null, "maxHeartRate": null, "heightCm": null }
+  },
+  {
+    "input": {
+      "height_meter": -1.7,
+      "weight_kilogram": -70,
+      "max_heart_rate": -180
+    },
+    "mapped": { "weightKg": null, "maxHeartRate": null, "heightCm": null }
+  },
+  {
+    "input": { "height_meter": 1.72345, "max_heart_rate": 175.4 },
+    "mapped": { "weightKg": null, "maxHeartRate": 175, "heightCm": 172.35 }
+  }
+]

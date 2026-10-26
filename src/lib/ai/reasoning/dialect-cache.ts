@@ -47,10 +47,48 @@ export interface ReasoningDialectKey {
  */
 export const ANSWERS_ONLY_UNREASONED = "off";
 
+/**
+ * #1279 — the learned value for an endpoint and model that answered with
+ * reasoning alone even when asked with `none`: gpt-oss behind vLLM accepts
+ * only low / medium / high and ignores it, and a GLM chat template reads an
+ * effort it does not know as its maximum. Asking such a model with `none` is
+ * a wasted call, or a longer thought. Both clients send what the call asks
+ * for (with the thinking room) and never repeat an answerless reply while
+ * this holds.
+ */
+export const REASONS_REGARDLESS = "unswitchable";
+
+/**
+ * #1279 — the learned value for an endpoint that refuses the reasoning field
+ * outright (LiteLLM in front of Ollama: "does not support parameters:
+ * ['reasoning_effort']") in front of a model that reasons unasked. Both facts
+ * at once: no field is sent, as with `"none"`, and the thinking room stays
+ * and an answerless reply is final, as with `REASONS_REGARDLESS`. Held as one
+ * value each, the two lessons overwrote each other on every request.
+ */
+export const FIELD_REFUSED_REASONS_REGARDLESS = "none-unswitchable";
+
+/** True when `learned` says the endpoint refuses the reasoning field. */
+export function refusesReasoningField(learned: string | undefined): boolean {
+  return learned === "none" || learned === FIELD_REFUSED_REASONS_REGARDLESS;
+}
+
 /** How long a learned downgrade holds before the full request is tried again. */
 export const DIALECT_TTL_MS = 60 * 60 * 1000;
 
-const learned = new Map<string, { value: string; expiresAt: number }>();
+/**
+ * Pinned on `globalThis`: a module imported from more than one bundler layer
+ * is instantiated once per layer (see `caches` in `server-cache.ts`), so the
+ * Coach's route handlers and the worker's jobs each kept a copy and paid for
+ * the same lesson separately. One map per process.
+ */
+const LEARNED_SLOT = Symbol.for("healthlog.ai.reasoningDialects");
+const learned: Map<string, { value: string; expiresAt: number }> = ((
+  globalThis as Record<symbol, unknown>
+)[LEARNED_SLOT] ??= new Map()) as Map<
+  string,
+  { value: string; expiresAt: number }
+>;
 
 function cacheKey(key: ReasoningDialectKey): string {
   return `${key.provider}\u0000${key.endpoint}\u0000${key.model}`;
@@ -112,9 +150,58 @@ export function isReasoningParameterRejection(
   return params.test(text) && PARAMETER_REFUSAL.test(text);
 }
 
+/**
+ * #1276 — endpoints and models seen reasoning: a reasoning field or a think
+ * tag in a reply. `unasked` when the request carried no effort (or `none`),
+ * and it outlasts a later sighting on a request that asked. Held as long as a
+ * lesson (`DIALECT_TTL_MS`) and on `globalThis` for the same reason.
+ */
+const SEEN_SLOT = Symbol.for("healthlog.ai.reasoningSeen");
+const seen: Map<string, { unasked: boolean; expiresAt: number }> = ((
+  globalThis as Record<symbol, unknown>
+)[SEEN_SLOT] ??= new Map()) as Map<
+  string,
+  { unasked: boolean; expiresAt: number }
+>;
+
+function seenEntry(k: string) {
+  const entry = seen.get(k);
+  if (entry && Date.now() >= entry.expiresAt) {
+    seen.delete(k);
+    return undefined;
+  }
+  return entry;
+}
+
+/** Record a reply of `key` that reasoned; `asked`: its request asked to. */
+export function noteReasoningSeen(
+  key: ReasoningDialectKey,
+  asked: boolean,
+): void {
+  const k = cacheKey(key);
+  seen.set(k, {
+    unasked: !asked || (seenEntry(k)?.unasked ?? false),
+    expiresAt: Date.now() + DIALECT_TTL_MS,
+  });
+}
+
+/**
+ * True when `key` was seen reasoning in a way that speaks for a request that
+ * did (`asked`) or did not ask to reason: a model that reasoned unasked
+ * speaks for both, one seen reasoning only when asked for the first.
+ */
+export function reasoningSeen(
+  key: ReasoningDialectKey,
+  asked: boolean,
+): boolean {
+  const entry = seenEntry(cacheKey(key));
+  return entry !== undefined && (entry.unasked || asked);
+}
+
 /** Test hook: forget everything learned. */
 export function resetReasoningDialectCache(): void {
   learned.clear();
+  seen.clear();
 }
 
 /**

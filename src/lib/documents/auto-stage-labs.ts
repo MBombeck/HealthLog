@@ -30,17 +30,23 @@
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import {
   buildDateKey,
-  reconcileSpend,
   reserveBudget,
   resolveDailyCapFor,
 } from "@/lib/ai/coach/budget";
+import { meteredReadBudget } from "@/lib/documents/ai-runs/metered-budget";
 import { loadDocumentChatText } from "@/lib/documents/content-index";
 import { resolveIndexProvider } from "@/lib/documents/index-document";
 import {
-  InboundExtractError,
+  planInboundTextReads,
   runInboundExtraction,
   type InboundExtractionResult,
 } from "@/lib/documents/extract";
+import {
+  OCR_EXTRACT_MODEL_CALLS,
+  SYNCHRONOUS_READ_SCHEDULE,
+  type OcrSchedule,
+} from "@/lib/documents/ocr-plan";
+import { OcrExtractError } from "@/lib/documents/ocr-read";
 import { encryptFactData, encryptFactProvenance } from "@/lib/documents/store";
 import { prisma } from "@/lib/db";
 import { stripDiacritics } from "@/lib/i18n/fold-for-match";
@@ -216,6 +222,7 @@ async function stageFactsIfStored(
   userId: string,
   documentId: string,
   result: InboundExtractionResult,
+  incomplete: boolean,
 ): Promise<number | null> {
   return prisma.$transaction(async (tx) => {
     const moved = await tx.inboundDocument.updateMany({
@@ -223,6 +230,7 @@ async function stageFactsIfStored(
       data: {
         status: "EXTRACTED",
         providerType: result.providerType,
+        extractionIncomplete: incomplete,
         reportDate: result.reportDate
           ? dateOnlyAtNoonUtc(result.reportDate)
           : null,
@@ -250,10 +258,19 @@ async function stageFactsIfStored(
  * Auto-stage lab facts for one freshly indexed document (owner-scoped). Called
  * fire-and-forget by the auto-index job after a successful index; every guard
  * miss returns a tagged no-op so the manual extract button stays the fallback.
+ *
+ * `schedule` is the run's deadline when a job reads (the auto-index job, the
+ * document run): the report's text is then split into as many reads as fit
+ * before it, instead of up to `OCR_MAX_PAGES` reads of two calls each that a
+ * slow model could stretch past the job's expiry (#1274). Absent, the staging
+ * runs inside a request (the index route without `Prefer: respond-async`)
+ * and is planned as one ({@link SYNCHRONOUS_READ_SCHEDULE}); what does not
+ * fit is reported as `extractionIncomplete` on the document.
  */
 export async function maybeAutoStageLabFacts(
   userId: string,
   documentId: string,
+  options: { schedule?: OcrSchedule } = {},
 ): Promise<AutoStageOutcome> {
   const [inboundOn, labsOn] = await Promise.all([
     isModuleEnabled(userId, "inboundDocuments"),
@@ -297,44 +314,48 @@ export async function maybeAutoStageLabFacts(
   // A text-structuring pass, not a vision call — reserve the proportionate
   // ceiling under the cost owner the auto-index resolved.
   // v1.38.19 — auto-staging runs off the upload, with no one waiting
-  // on it: a background surface, so half the day's ceiling.
+  // on it: a background surface, so half the day's ceiling. A long report is
+  // read in parts, as the manual extract reads it; every part after the
+  // first is reserved under the same ceiling, and the whole is settled
+  // against what the provider reported.
   const dateKey = await buildDateKey(userId);
+  const servedBy = provider.pick.entry.providerType;
+  const cap = resolveDailyCapFor("job", [{ providerType: servedBy }]);
   const reservation = await reserveBudget(
     userId,
     AI_BUDGETS.ocrExtractText.maxTokens,
     dateKey,
-    resolveDailyCapFor("job", [
-      { providerType: provider.pick.entry.providerType },
-    ]),
+    cap,
     provider.costOwner,
     "job",
   );
   if (!reservation.allowed) return { staged: false, reason: "budget" };
+  const { meter, reserveRead, settle } = meteredReadBudget(
+    userId,
+    { reserved: reservation.reserved, owner: reservation.owner, dateKey },
+    servedBy,
+    { cap, surface: "job" },
+  );
 
+  const schedule = options.schedule ?? SYNCHRONOUS_READ_SCHEDULE;
+  const plan = planInboundTextReads(chat.text, schedule);
   let result: InboundExtractionResult;
   try {
+    // A run that cannot fit even one read before its deadline refuses here;
+    // the reservation is settled below like any other failed read.
+    await schedule.arm(plan.args.chunks.length * OCR_EXTRACT_MODEL_CALLS);
     result = await runInboundExtraction({
+      userId,
       provider: provider.pick.entry.instance,
       providerType: provider.pick.providerType,
-      ocrText: chat.text,
+      ...plan.args,
+      meter,
+      reserveRead,
     });
-    await reconcileSpend(
-      userId,
-      reservation.reserved,
-      reservation.reserved,
-      dateKey,
-      0,
-      {
-        servedBy: provider.pick.entry.providerType,
-        reservedOwner: reservation.owner,
-      },
-    );
+    await settle(true);
   } catch (err) {
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
-      servedBy: null,
-      reservedOwner: reservation.owner,
-    });
-    if (!(err instanceof InboundExtractError)) {
+    await settle(false);
+    if (!(err instanceof OcrExtractError)) {
       annotate({
         action: { name: "documents.autoStage.failed" },
         meta: { documentId, reason: "provider_error" },
@@ -343,7 +364,15 @@ export async function maybeAutoStageLabFacts(
     return { staged: false, reason: "extract-failed" };
   }
 
-  const staged = await stageFactsIfStored(userId, documentId, result);
+  // Part of the document may be missing from the staged facts. Kept on the
+  // document, so the review says so whenever it is opened.
+  const incomplete = result.incomplete || plan.partial;
+  const staged = await stageFactsIfStored(
+    userId,
+    documentId,
+    result,
+    incomplete,
+  );
   if (staged === null) return { staged: false, reason: "raced" };
 
   annotate({
@@ -353,6 +382,7 @@ export async function maybeAutoStageLabFacts(
       facts: staged,
       provider: provider.pick.providerType,
       byKind: doc.kind === "LAB_RESULT",
+      incomplete,
     },
   });
   return { staged: true, facts: staged };

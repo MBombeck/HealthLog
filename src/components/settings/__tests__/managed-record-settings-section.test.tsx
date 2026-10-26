@@ -5,10 +5,8 @@ import { I18nProvider } from "@/lib/i18n/context";
 import { MANAGED_RECORD_SETTINGS_MODULE_DEFAULTS } from "@/lib/record-settings";
 import { ALL_METRICS } from "@/lib/validations/thresholds";
 
-import {
-  managedModulesPatch,
-  ManagedRecordSettingsForm,
-} from "../managed-record-settings-section";
+import { ManagedRecordSettingsForm } from "../managed-record-settings-section";
+import { managedModulesPatch } from "../managed-record/modules-form";
 
 const LOCALES = [
   "de",

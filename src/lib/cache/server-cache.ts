@@ -36,6 +36,7 @@
  */
 
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
+import { runDetached } from "@/lib/logging/detached";
 import type { WorkoutsProjection } from "@/lib/workouts/list-read";
 
 export interface ServerCacheOptions<T = unknown> {
@@ -406,23 +407,19 @@ export class ServerCache<T> {
         // single-flight slot as `wrap`, so an invalidation that lands
         // while it is in flight discards its (pre-write) result instead
         // of re-caching it as fresh.
-        const refresh = this.startBuild(key, builder, ttlMsOverride).promise;
-        // Detach: the foreground caller does not await the rebuild.
-        // Handle the rejection on the detached handle so an
-        // unhandled-rejection warning never fires — but never silently:
-        // a refresh that keeps failing means the bucket serves an
-        // ever-older stale value until the SWR window finally lapses,
-        // so the failure must reach the logs. There is no request
-        // context here (the caller already returned), so a structured
-        // console.error stands in for the wide-event annotation; the
-        // key is logged as its djb2 hash, matching the cache-outcome
-        // meta convention, so the userId segment never reaches stdout.
-        // Registered so the test suite can await it: the error below is a
-        // console write on a detached handle, and one that lands while a
-        // vitest worker is closing its RPC channel fails the whole run.
-        // No-op outside test.
+        // Detached (`runDetached`): the caller does not await the rebuild,
+        // and the rebuild cannot rename the caller's event. Its rejection is
+        // handled, but never silently: a refresh that keeps failing serves
+        // an ever-older value until the SWR window lapses. It may outlive
+        // the event, so a structured console.error carries it, the key as
+        // its djb2 hash (the cache-outcome meta convention) so the userId
+        // segment never reaches stdout. Registered so the test suite can
+        // await it: a console write landing while a vitest worker closes
+        // its RPC channel fails the whole run. No-op outside test.
         trackBackgroundTask(
-          refresh.catch((err) => {
+          runDetached(
+            () => this.startBuild(key, builder, ttlMsOverride).promise,
+          ).catch((err) => {
             console.error(
               `cache.${this.opts.name ?? "unnamed"}.refresh_failed`,
               JSON.stringify({

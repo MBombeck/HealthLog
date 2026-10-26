@@ -1,0 +1,293 @@
+[
+  {
+    "id": "resilience-0001",
+    "day": "2026-03-02",
+    "zone": null,
+    "rows": [
+      {
+        "type": "RESILIENCE",
+        "value": 1,
+        "unit": "level",
+        "measuredAt": "2026-03-02T12:00:00.000Z",
+        "fieldTag": "resilience"
+      }
+    ]
+  },
+  {
+    "id": "resilience-0001",
+    "day": "2026-03-02",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "RESILIENCE",
+        "value": 1,
+        "unit": "level",
+        "measuredAt": "2026-03-02T11:00:00.000Z",
+        "fieldTag": "resilience"
+      }
+    ]
+  },
+  {
+    "id": "resilience-0001",
+    "day": "2026-03-02",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "RESILIENCE",
+        "value": 1,
+        "unit": "level",
+        "measuredAt": "2026-03-02T17:00:00.000Z",
+        "fieldTag": "resilience"
+      }
+    ]
+  },
+  {
+    "id": "resilience-0002",
+    "day": "2026-03-03",
+    "zone": null,
+    "rows": [
+      {
+        "type": "RESILIENCE",
+        "value": 2,
+        "unit": "level",
+        "measuredAt": "2026-03-03T12:00:00.000Z",
+        "fieldTag": "resilience"
+      }
+    ]
+  },
+  {
+    "id": "resilience-0002",
+    "day": "2026-03-03",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "RESILIENCE",
+        "value": 2,
+        "unit": "level",
+        "measuredAt": "2026-03-03T11:00:00.000Z",
+        "fieldTag": "resilience"
+      }
+    ]
+  },
+  {
+    "id": "resilience-0002",
+    "day": "2026-03-03",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "RESILIENCE",
+        "value": 2,
+        "unit": "level",
+        "measuredAt": "2026-03-03T17:00:00.000Z",
+        "fieldTag": "resilience"
+      }
+    ]
+  },
+  {
+    "id": "resilience-0003",
+    "day": "2026-03-04",
+    "zone": null,
+    "rows": [
+      {
+        "type": "RESILIENCE",
+        "value": 3,
+        "unit": "level",
+        "measuredAt": "2026-03-04T12:00:00.000Z",
+        "fieldTag": "resilience"
+      }
+    ]
+  },
+  {
+    "id": "resilience-0003",
+    "day": "2026-03-04",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "RESILIENCE",
+        "value": 3,
+        "unit": "level",
+        "measuredAt": "2026-03-04T11:00:00.000Z",
+        "fieldTag": "resilience"
+      }
+    ]
+  },
+  {
+    "id": "resilience-0003",
+    "day": "2026-03-04",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "RESILIENCE",
+        "value": 3,
+        "unit": "level",
+        "measuredAt": "2026-03-04T17:00:00.000Z",
+        "fieldTag": "resilience"
+      }
+    ]
+  },
+  {
+    "id": "resilience-0004",
+    "day": "2026-03-05",
+    "zone": null,
+    "rows": [
+      {
+        "type": "RESILIENCE",
+        "value": 4,
+        "unit": "level",
+        "measuredAt": "2026-03-05T12:00:00.000Z",
+        "fieldTag": "resilience"
+      }
+    ]
+  },
+  {
+    "id": "resilience-0004",
+    "day": "2026-03-05",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "RESILIENCE",
+        "value": 4,
+        "unit": "level",
+        "measuredAt": "2026-03-05T11:00:00.000Z",
+        "fieldTag": "resilience"
+      }
+    ]
+  },
+  {
+    "id": "resilience-0004",
+    "day": "2026-03-05",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "RESILIENCE",
+        "value": 4,
+        "unit": "level",
+        "measuredAt": "2026-03-05T17:00:00.000Z",
+        "fieldTag": "resilience"
+      }
+    ]
+  },
+  {
+    "id": "resilience-0005",
+    "day": "2026-03-06",
+    "zone": null,
+    "rows": [
+      {
+        "type": "RESILIENCE",
+        "value": 5,
+        "unit": "level",
+        "measuredAt": "2026-03-06T12:00:00.000Z",
+        "fieldTag": "resilience"
+      }
+    ]
+  },
+  {
+    "id": "resilience-0005",
+    "day": "2026-03-06",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "RESILIENCE",
+        "value": 5,
+        "unit": "level",
+        "measuredAt": "2026-03-06T11:00:00.000Z",
+        "fieldTag": "resilience"
+      }
+    ]
+  },
+  {
+    "id": "resilience-0005",
+    "day": "2026-03-06",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "RESILIENCE",
+        "value": 5,
+        "unit": "level",
+        "measuredAt": "2026-03-06T17:00:00.000Z",
+        "fieldTag": "resilience"
+      }
+    ]
+  },
+  { "id": "resilience-0006", "day": "2026-03-07", "zone": null, "rows": [] },
+  {
+    "id": "resilience-0006",
+    "day": "2026-03-07",
+    "zone": "Europe/Berlin",
+    "rows": []
+  },
+  {
+    "id": "resilience-0006",
+    "day": "2026-03-07",
+    "zone": "America/New_York",
+    "rows": []
+  },
+  { "id": "resilience-0007", "day": "2026-03-08", "zone": null, "rows": [] },
+  {
+    "id": "resilience-0007",
+    "day": "2026-03-08",
+    "zone": "Europe/Berlin",
+    "rows": []
+  },
+  {
+    "id": "resilience-0007",
+    "day": "2026-03-08",
+    "zone": "America/New_York",
+    "rows": []
+  },
+  { "id": "resilience-0008", "day": "2026-03-09", "zone": null, "rows": [] },
+  {
+    "id": "resilience-0008",
+    "day": "2026-03-09",
+    "zone": "Europe/Berlin",
+    "rows": []
+  },
+  {
+    "id": "resilience-0008",
+    "day": "2026-03-09",
+    "zone": "America/New_York",
+    "rows": []
+  },
+  {
+    "id": null,
+    "day": "2026-03-10",
+    "zone": null,
+    "rows": [
+      {
+        "type": "RESILIENCE",
+        "value": 3,
+        "unit": "level",
+        "measuredAt": "2026-03-10T12:00:00.000Z",
+        "fieldTag": "resilience"
+      }
+    ]
+  },
+  {
+    "id": null,
+    "day": "2026-03-10",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "RESILIENCE",
+        "value": 3,
+        "unit": "level",
+        "measuredAt": "2026-03-10T11:00:00.000Z",
+        "fieldTag": "resilience"
+      }
+    ]
+  },
+  {
+    "id": null,
+    "day": "2026-03-10",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "RESILIENCE",
+        "value": 3,
+        "unit": "level",
+        "measuredAt": "2026-03-10T16:00:00.000Z",
+        "fieldTag": "resilience"
+      }
+    ]
+  }
+]

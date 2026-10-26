@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { stripComments } from "../../../__tests__/helpers/source-files";
 
 /**
  * Every chart drawn in days is a door to its days, or it says why not.
@@ -120,20 +121,31 @@ function walk(path: string): string[] {
 
 const files = SCAN.flatMap(walk).filter((f) => /\.tsx?$/.test(f));
 const rel = (abs: string) => relative(ROOT, abs);
-/**
- * The code without its comments: a docblock that names `<HealthChart>` is
- * not a mount. Block comments (JSX ones included) go whole; a line comment
- * goes from `//` to the line end unless the slashes follow a colon (a URL).
- */
-export function stripComments(text: string): string {
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
-}
-
-const source = new Map(
+const read = new Map(
   files.map((f) => [rel(f), stripComments(readFileSync(f, "utf8"))]),
 );
+
+/**
+ * A component and the folder of the same name beside it are one chart: the
+ * HealthChart composer in `health-chart.tsx` draws the axes, and its layers,
+ * tooltip and day footer live in `health-chart/`. Read apart, the composer
+ * would look like a date-axis chart with no doors and the folder like no
+ * chart at all, so each folder is folded into its component's entry.
+ */
+export function foldComponentFolders(
+  sources: Map<string, string>,
+): Map<string, string> {
+  const folded = new Map<string, string>();
+  const owners = [...sources.keys()].filter((f) => f.endsWith(".tsx"));
+  for (const [file, text] of sources) {
+    const owner = owners.find((o) => file.startsWith(`${o.slice(0, -4)}/`));
+    const key = owner ?? file;
+    folded.set(key, `${folded.get(key) ?? ""}\n${text}`);
+  }
+  return folded;
+}
+
+const source = foldComponentFolders(read);
 
 /**
  * The text of every JSX opening tag named `name` in `text`: from `<Name` to
@@ -223,7 +235,10 @@ function findMissingDoors(): {
           /\bChartDayFooter\b/.test(text) &&
           /\bOPEN_DAY_LINE\b/.test(text) &&
           /\.tooltipProps\b/.test(text) &&
-          /\.tooltipAction\(/.test(text);
+          // Called in place, or handed whole to a tooltip that calls it.
+          /\.tooltipAction\(|\btooltipAction:\s*\w+\.tooltipAction\b/.test(
+            text,
+          );
         if (wired) {
           doors.charts += 1;
           doors.chartFiles.push(file);
@@ -263,9 +278,10 @@ describe("every chart drawn in days opens its days, or says why not", () => {
   it("still finds the doors it is meant to find (an empty match set fails)", () => {
     // HealthChart on the metric pages (two mounts in the HealthKit page),
     // blood pressure, weight, pulse, BMI, recovery, sleep, the mood line,
-    // water and caffeine; on the dashboard its seven charts, the mood line
-    // and the adherence chart.
-    expect(doors.mounts).toBeGreaterThanOrEqual(20);
+    // water and caffeine; on the dashboard the one mount its chart builder
+    // draws all seven metric charts through, the mood line and the
+    // adherence chart.
+    expect(doors.mounts).toBeGreaterThanOrEqual(14);
     // HealthChart, the mood line and the nutrient bars themselves, sleep
     // stages, mood dimensions, lab marker, custom metric, questionnaire,
     // basal temperature, dose strength, efficacy, the adherence chart:
@@ -301,6 +317,29 @@ describe("every chart drawn in days opens its days, or says why not", () => {
       expect(charts, `${file} is listed but draws no chart`).toBe(true);
       expect(reason.length).toBeGreaterThan(30);
     }
+  });
+
+  it("folds a component's same-named folder into it, and nothing else", () => {
+    const folded = foldComponentFolders(
+      new Map([
+        ["src/components/charts/health-chart.tsx", "<XAxis />"],
+        [
+          "src/components/charts/health-chart/chart-layers.tsx",
+          "ChartDayFooter",
+        ],
+        ["src/components/charts/health-chart-dynamic.tsx", "dynamic"],
+      ]),
+    );
+    expect([...folded.keys()].sort()).toEqual([
+      "src/components/charts/health-chart-dynamic.tsx",
+      "src/components/charts/health-chart.tsx",
+    ]);
+    expect(folded.get("src/components/charts/health-chart.tsx")).toContain(
+      "ChartDayFooter",
+    );
+    expect(source.get("src/components/charts/health-chart.tsx")).toMatch(
+      /\buseChartDayLinks\(/,
+    );
   });
 
   it("reads a JSX tag to its real end, past arrow functions in its props", () => {

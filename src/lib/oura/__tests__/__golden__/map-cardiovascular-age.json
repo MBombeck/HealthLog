@@ -1,0 +1,125 @@
+[
+  {
+    "id": "cv-age-0001",
+    "day": "2026-03-02",
+    "zone": null,
+    "rows": [
+      {
+        "type": "VASCULAR_AGE",
+        "value": 38,
+        "unit": "years",
+        "measuredAt": "2026-03-02T12:00:00.000Z",
+        "fieldTag": "vascular_age"
+      }
+    ]
+  },
+  {
+    "id": "cv-age-0001",
+    "day": "2026-03-02",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "VASCULAR_AGE",
+        "value": 38,
+        "unit": "years",
+        "measuredAt": "2026-03-02T11:00:00.000Z",
+        "fieldTag": "vascular_age"
+      }
+    ]
+  },
+  {
+    "id": "cv-age-0001",
+    "day": "2026-03-02",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "VASCULAR_AGE",
+        "value": 38,
+        "unit": "years",
+        "measuredAt": "2026-03-02T17:00:00.000Z",
+        "fieldTag": "vascular_age"
+      }
+    ]
+  },
+  { "id": "cv-age-0002", "day": "2026-03-03", "zone": null, "rows": [] },
+  {
+    "id": "cv-age-0002",
+    "day": "2026-03-03",
+    "zone": "Europe/Berlin",
+    "rows": []
+  },
+  {
+    "id": "cv-age-0002",
+    "day": "2026-03-03",
+    "zone": "America/New_York",
+    "rows": []
+  },
+  { "id": "cv-age-0003", "day": "2026-03-04", "zone": null, "rows": [] },
+  {
+    "id": "cv-age-0003",
+    "day": "2026-03-04",
+    "zone": "Europe/Berlin",
+    "rows": []
+  },
+  {
+    "id": "cv-age-0003",
+    "day": "2026-03-04",
+    "zone": "America/New_York",
+    "rows": []
+  },
+  {
+    "id": null,
+    "day": "2026-03-05",
+    "zone": null,
+    "rows": [
+      {
+        "type": "VASCULAR_AGE",
+        "value": 41.56,
+        "unit": "years",
+        "measuredAt": "2026-03-05T12:00:00.000Z",
+        "fieldTag": "vascular_age"
+      }
+    ]
+  },
+  {
+    "id": null,
+    "day": "2026-03-05",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "VASCULAR_AGE",
+        "value": 41.56,
+        "unit": "years",
+        "measuredAt": "2026-03-05T11:00:00.000Z",
+        "fieldTag": "vascular_age"
+      }
+    ]
+  },
+  {
+    "id": null,
+    "day": "2026-03-05",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "VASCULAR_AGE",
+        "value": 41.56,
+        "unit": "years",
+        "measuredAt": "2026-03-05T17:00:00.000Z",
+        "fieldTag": "vascular_age"
+      }
+    ]
+  },
+  { "id": "cv-age-0005", "day": "2026-03-06", "zone": null, "rows": [] },
+  {
+    "id": "cv-age-0005",
+    "day": "2026-03-06",
+    "zone": "Europe/Berlin",
+    "rows": []
+  },
+  {
+    "id": "cv-age-0005",
+    "day": "2026-03-06",
+    "zone": "America/New_York",
+    "rows": []
+  }
+]

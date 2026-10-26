@@ -1,92 +1,17 @@
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+/**
+ * Every queue the worker registry declares has a failure audience in
+ * `SUBSYSTEM_SURFACE`, and the table names no queue the registry has dropped.
+ */
 import { describe, expect, it } from "vitest";
 
+import { allJobDefinitions } from "@/lib/jobs/registry";
 import {
   SUBSYSTEM_SURFACE,
   type SubsystemSurface,
 } from "@/lib/jobs/subsystem-surface";
 
-const REGISTRARS = [
-  "register-integration-sync.ts",
-  "register-status.ts",
-  "register-rollup.ts",
-  "register-reminders.ts",
-  "register-maintenance.ts",
-].map((file) => join(process.cwd(), "src/lib/jobs/reminder", file));
-
-function withoutComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
-}
-
-export function extractAllQueueBindings(source: string): string[] {
-  const match = /const\s+allQueues\s*=\s*\[([\s\S]*?)\n\s*\];/.exec(source);
-  if (!match) throw new Error("Registrar has no allQueues array");
-
-  return withoutComments(match[1])
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean)
-    .map((entry) => {
-      if (!/^[A-Z][A-Z0-9_]*$/.test(entry)) {
-        throw new Error(`Unsupported allQueues entry: ${entry}`);
-      }
-      return entry;
-    });
-}
-
-function literalPattern(binding: string): RegExp {
-  return new RegExp(
-    `(?:export\\s+)?const\\s+${binding}(?:\\s*:[^=;]+)?\\s*=\\s*["']([^"']+)["']`,
-  );
-}
-
-function modulePath(fromFile: string, specifier: string): string {
-  const base = specifier.startsWith("@/")
-    ? resolve(process.cwd(), "src", specifier.slice(2))
-    : resolve(dirname(fromFile), specifier);
-  const candidates = [`${base}.ts`, `${base}.tsx`, join(base, "index.ts")];
-  const found = candidates.find((candidate) => existsSync(candidate));
-  if (!found) throw new Error(`Cannot resolve ${specifier} from ${fromFile}`);
-  return found;
-}
-
-function resolveQueueBinding(
-  binding: string,
-  file: string,
-  seen: Set<string> = new Set(),
-): string {
-  const visit = `${file}:${binding}`;
-  if (seen.has(visit)) throw new Error(`Cyclic queue binding: ${visit}`);
-  seen.add(visit);
-
-  const source = withoutComments(readFileSync(file, "utf8"));
-  const local = literalPattern(binding).exec(source);
-  if (local) return local[1];
-
-  const imports = /import\s*{([\s\S]*?)}\s*from\s*["']([^"']+)["'];?/g;
-  for (const match of source.matchAll(imports)) {
-    for (const rawToken of match[1].split(",")) {
-      const token = rawToken.trim().replace(/^type\s+/, "");
-      if (!token) continue;
-      const [imported, alias] = token
-        .split(/\s+as\s+/)
-        .map((part) => part.trim());
-      if ((alias ?? imported) !== binding) continue;
-      return resolveQueueBinding(imported, modulePath(file, match[2]), seen);
-    }
-  }
-
-  throw new Error(`Cannot resolve queue binding ${binding} from ${file}`);
-}
-
 function registeredQueueNames(): string[] {
-  return REGISTRARS.flatMap((file) => {
-    const source = readFileSync(file, "utf8");
-    return extractAllQueueBindings(source).map((binding) =>
-      resolveQueueBinding(binding, file),
-    );
-  });
+  return allJobDefinitions().map((job) => job.queue);
 }
 
 export function findSurfaceDrift(
@@ -113,8 +38,9 @@ function assertSurfaceComplete(
 }
 
 describe("SUBSYSTEM_SURFACE", () => {
-  it("classifies every current registrar queue with no stale entries", () => {
+  it("classifies every current registry queue with no stale entries", () => {
     const names = registeredQueueNames();
+    expect(names.length).toBeGreaterThan(0);
     expect(new Set(names).size).toBe(names.length);
     expect(() => assertSurfaceComplete(names, SUBSYSTEM_SURFACE)).not.toThrow();
   });
@@ -126,24 +52,9 @@ describe("SUBSYSTEM_SURFACE", () => {
     }
   });
 
-  it("catches a new allQueues binding without a surface entry", () => {
-    const fixture = `
-      const EXISTING_QUEUE = "existing-queue";
-      const NEW_QUEUE = "new-queue";
-      const allQueues = [
-        EXISTING_QUEUE,
-        NEW_QUEUE,
-      ];
-    `;
-    const names = extractAllQueueBindings(fixture).map((binding) => {
-      const match = literalPattern(binding).exec(withoutComments(fixture));
-      if (!match)
-        throw new Error(`Fixture binding did not resolve: ${binding}`);
-      return match[1];
-    });
-
+  it("catches a new registry queue without a surface entry", () => {
     expect(() =>
-      assertSurfaceComplete(names, {
+      assertSurfaceComplete(["existing-queue", "new-queue"], {
         "existing-queue": { audience: "system" },
       }),
     ).toThrow(/missing=\[new-queue\]/);

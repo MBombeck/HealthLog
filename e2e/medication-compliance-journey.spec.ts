@@ -363,7 +363,7 @@ test.describe("medication adherence journey", () => {
     });
   });
 
-  test("a taken and a skipped dose move the card, the history and the dashboard tile", async ({
+  test("a taken and a skipped dose move the card, the history and the dashboard tile @critical", async ({
     page,
   }) => {
     // The wizard is a seven-step dialog with per-step validation gating Next;

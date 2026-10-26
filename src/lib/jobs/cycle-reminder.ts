@@ -36,6 +36,7 @@
  * single-flight (`localConcurrency: 1`) so two ticks never race the
  * fire-and-forget ledger write.
  */
+import { activeAccount } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { coerceLocale } from "@/lib/i18n/config";
@@ -333,12 +334,12 @@ export async function runCycleReminderTick(
         { nextPeriodStart: { gte: windowFloor, lte: windowCeil } },
         { fertileWindowStart: { gte: fertileFloor, lte: fertileCeil } },
       ],
-      user: {
+      user: activeAccount({
         cycleProfile: {
           cycleTrackingEnabled: true,
           NOT: { predictionEnabled: false },
         },
-      },
+      }),
     },
     select: {
       userId: true,

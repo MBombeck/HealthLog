@@ -1,0 +1,35 @@
+{
+  "status": 403,
+  "body": {
+    "data": null,
+    "error": "This AI feature is turned off in your settings",
+    "meta": {
+      "capability": "briefing",
+      "reason": "user_disabled",
+      "errorCode": "module.disabled",
+      "module": "insights",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 403,
+      "action": null,
+      "meta": null,
+      "warnings": null,
+      "error": {
+        "type": "AiUnavailableError",
+        "message": "This AI feature is turned off in your settings"
+      }
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "insightsCachedAt": null,
+    "insightsCachedLocale": null,
+    "cachedPayload": null,
+    "snapshotHash": null,
+    "audit": [],
+    "usage": []
+  }
+}

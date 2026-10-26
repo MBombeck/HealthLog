@@ -1,4 +1,5 @@
 import { annotate } from "./context";
+import { runDetached } from "./detached";
 import { trackBackgroundTask } from "./background-tasks";
 
 /**
@@ -22,23 +23,26 @@ import { trackBackgroundTask } from "./background-tasks";
  *     Only the caller-supplied action label — never the error text — reaches
  *     the raw console sink, keeping it redaction-safe by construction.
  *
- * The promise stays fire-and-forget: the caller does not await it and its
- * resolution is discarded exactly as before. Under test the settled handle is
- * registered with `trackBackgroundTask` so the suite setup can await it — see
+ * The work stays fire-and-forget: the caller does not await it and its
+ * resolution is discarded exactly as before. It is started through
+ * `runDetached`, so nothing it annotates can rename the caller's event; that
+ * is why it is passed as a function rather than as a promise already
+ * running. Under test the settled handle is registered with
+ * `trackBackgroundTask` so the suite setup can await it — see
  * `./background-tasks` for why a late `console.warn` is otherwise a teardown
  * hazard.
  *
- * @param promise The background work. May already be running.
+ * @param start Starts the background work.
  * @param context.action A stable `<surface>.<noun>.<verb>` label (never user
  *   input) identifying which background task failed.
  * @param context.meta Optional extra fields to attach to the breadcrumb; they
  *   ride the annotate/redact path with the error message.
  */
 export function fireAndForget(
-  promise: Promise<unknown>,
+  start: () => Promise<unknown>,
   context: { action: string; meta?: Record<string, unknown> },
 ): void {
-  const settled = Promise.resolve(promise).catch((error: unknown) => {
+  const settled = runDetached(start).catch((error: unknown) => {
     const message = error instanceof Error ? error.message : String(error);
     annotate({
       meta: {

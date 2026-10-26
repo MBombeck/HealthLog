@@ -708,6 +708,37 @@ export async function seedContractAccount(
   });
   if (ingested.kind === "stored") ids.document = ingested.document.id;
   else failures.push(`document: ingest answered ${ingested.kind}`);
+  // A second document, deleted the way the delete route tombstones one, so
+  // Recently deleted answers with a row.
+  const deleted = await ingestDocument({
+    userId: CONTRACT_USER_ID,
+    scoped: false,
+    ipAddress: null,
+    bytes: Buffer.concat([pdf, Buffer.from("% deleted\n")]),
+    filename: "deleted.pdf",
+    title: "Deleted letter",
+    kind: null,
+    documentDate: dayKey(daysAgo(12)),
+    episodeIds: [],
+    encounterIds: [],
+    sourceSystem: null,
+    sourceId: null,
+    sourceInstance: null,
+    aiDeferred: true,
+    sourceKeyChecked: false,
+    limits: { maxFileBytes: 10 * 1024 * 1024, quotaBytes: 100 * 1024 * 1024 },
+    documentAi: async () => ({
+      available: false,
+      reason: "no_provider",
+      onDeviceAllowed: false,
+    }),
+  });
+  if (deleted.kind === "stored") {
+    await prisma.inboundDocument.update({
+      where: { id: deleted.document.id },
+      data: { deletedAt: daysAgo(2) },
+    });
+  } else failures.push(`deleted document: ingest answered ${deleted.kind}`);
   // A chat about that document, as the document sheet starts one.
   if (ids.document) {
     const documentChat = await createConversation({

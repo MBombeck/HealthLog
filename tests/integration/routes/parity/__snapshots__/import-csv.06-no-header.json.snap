@@ -1,0 +1,151 @@
+{
+  "status": 422,
+  "body": {
+    "data": null,
+    "error": "Missing required column(s): type, value, unit, measuredat. Required header: type,value,unit,measuredat[,glucosecontext,notes,externalid].",
+    "meta": {
+      "errorCode": "http.invalid",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 422,
+      "action": {
+        "name": "import.csv.upload"
+      },
+      "meta": null,
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "measurements": [
+      {
+        "type": "WEIGHT",
+        "value": 82,
+        "unit": "kg",
+        "source": "IMPORT",
+        "externalId": "exp-w-2",
+        "measuredAt": "2026-10-09T06:30:00.000Z",
+        "notes": null,
+        "notesEncrypted": null,
+        "glucoseContext": null,
+        "deletedAt": null
+      },
+      {
+        "type": "WEIGHT",
+        "value": 81.4,
+        "unit": "kg",
+        "source": "IMPORT",
+        "externalId": "exp-w-1",
+        "measuredAt": "2026-10-10T06:30:00.000Z",
+        "notes": null,
+        "notesEncrypted": "<bytes:59>",
+        "glucoseContext": null,
+        "deletedAt": null
+      },
+      {
+        "type": "PULSE",
+        "value": 64,
+        "unit": "bpm",
+        "source": "IMPORT",
+        "externalId": null,
+        "measuredAt": "2026-10-12T07:00:00.000Z",
+        "notes": null,
+        "notesEncrypted": null,
+        "glucoseContext": null,
+        "deletedAt": null
+      },
+      {
+        "type": "PULSE",
+        "value": 66,
+        "unit": "bpm",
+        "source": "IMPORT",
+        "externalId": null,
+        "measuredAt": "2026-10-13T07:00:00.000Z",
+        "notes": null,
+        "notesEncrypted": null,
+        "glucoseContext": null,
+        "deletedAt": null
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 430,
+        "unit": "minutes",
+        "source": "IMPORT",
+        "externalId": "exp-s-1",
+        "measuredAt": "2026-10-12T06:00:00.000Z",
+        "notes": null,
+        "notesEncrypted": null,
+        "glucoseContext": null,
+        "deletedAt": null
+      },
+      {
+        "type": "BLOOD_GLUCOSE",
+        "value": 104,
+        "unit": "mg/dL",
+        "source": "IMPORT",
+        "externalId": null,
+        "measuredAt": "2026-10-11T08:00:00.000Z",
+        "notes": null,
+        "notesEncrypted": null,
+        "glucoseContext": "FASTING",
+        "deletedAt": null
+      }
+    ],
+    "rollups": [
+      {
+        "type": "WEIGHT",
+        "bucketStart": "2026-10-09T00:00:00.000Z",
+        "count": 1,
+        "mean": 82
+      },
+      {
+        "type": "WEIGHT",
+        "bucketStart": "2026-10-10T00:00:00.000Z",
+        "count": 1,
+        "mean": 81.4
+      },
+      {
+        "type": "PULSE",
+        "bucketStart": "2026-10-12T00:00:00.000Z",
+        "count": 1,
+        "mean": 64
+      },
+      {
+        "type": "PULSE",
+        "bucketStart": "2026-10-13T00:00:00.000Z",
+        "count": 1,
+        "mean": 66
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "bucketStart": "2026-10-12T00:00:00.000Z",
+        "count": 1,
+        "mean": 430
+      },
+      {
+        "type": "BLOOD_GLUCOSE",
+        "bucketStart": "2026-10-11T00:00:00.000Z",
+        "count": 1,
+        "mean": 104
+      }
+    ],
+    "audit": [
+      {
+        "action": "import.csv.upload",
+        "details": "{\"inserted\":5,\"updated\":1,\"skipped\":2}"
+      },
+      {
+        "action": "import.csv.upload",
+        "details": "{\"inserted\":0,\"updated\":2,\"skipped\":6}"
+      },
+      {
+        "action": "import.csv.upload",
+        "details": "{\"inserted\":1,\"updated\":2,\"skipped\":1}"
+      }
+    ]
+  }
+}

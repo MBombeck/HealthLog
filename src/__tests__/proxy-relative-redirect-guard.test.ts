@@ -31,6 +31,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { relativeRedirect } from "@/lib/http/relative-redirect";
+
 const REPO_ROOT = resolve(__dirname, "../..");
 
 /**
@@ -82,9 +84,7 @@ describe("redirects to this deployment do not name a host", () => {
     ).toEqual([]);
   });
 
-  it("the helper refuses a value that is a host in disguise", async () => {
-    const { relativeRedirect } = await import("@/lib/http/relative-redirect");
-
+  it("the helper refuses a value that is a host in disguise", () => {
     // `//evil.example` is protocol-relative: a browser reads it as a host.
     expect(() => relativeRedirect("//evil.example/auth/login")).toThrow(
       /root-relative/,

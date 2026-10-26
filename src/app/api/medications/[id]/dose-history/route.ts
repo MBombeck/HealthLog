@@ -48,6 +48,7 @@ import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { dueSchedules } from "@/lib/medications/intake-tracking";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { isoDateTime } from "@/lib/validations/datetime";
+import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -132,7 +133,7 @@ export const GET = apiHandler(
     const medication = await prisma.medication.findUnique({
       where: { id },
       include: {
-        schedules: true,
+        schedules: { orderBy: MEDICATION_SCHEDULE_ORDER },
         // v1.16.3 — archived schedule eras: past days mint against the
         // schedule that was live THEN.
         scheduleRevisions: { orderBy: { validFrom: "asc" } },
@@ -166,7 +167,7 @@ export const GET = apiHandler(
 
     const events = await prisma.medicationIntakeEvent.findMany({
       where: { medicationId: id, userId: user.id, deletedAt: null },
-      orderBy: { scheduledFor: "desc" },
+      orderBy: [{ scheduledFor: "desc" }, { id: "desc" }],
       select: {
         id: true,
         scheduledFor: true,
@@ -234,7 +235,7 @@ export const GET = apiHandler(
       createdAt: medication.createdAt,
     };
     const ctx = buildRecurrenceContext({
-      medication: bandMedication,
+      medication: { ...bandMedication, endedAt: medication.endedAt },
       userTz,
       lastIntakeAt,
     });

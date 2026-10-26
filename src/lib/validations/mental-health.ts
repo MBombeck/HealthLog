@@ -60,8 +60,17 @@ export const createAssessmentSchema = z
       .max(64)
       .refine(isValidTimezone, "Invalid IANA timezone")
       .optional(),
-    /** Locale of the validated wording actually presented. */
+    /**
+     * The reader's app language: it selects the questionnaire text that was
+     * shown and the crisis resources. Defaults to the account's language.
+     */
     locale: z.string().max(16).optional(),
+    /**
+     * The reader switched to the English original instead of their
+     * language's text. The server records which wording the answers were
+     * given in from this and `locale`.
+     */
+    englishOriginal: z.boolean().optional(),
     /** Client provenance; defaults to WEB. */
     source: assessmentSourceEnum.optional().default("WEB"),
     /**

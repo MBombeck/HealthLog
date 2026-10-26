@@ -585,6 +585,7 @@ describe("remindersActive — the published value is the gate", () => {
       trackIntake: boolean;
       asNeeded: boolean;
       endsOn: Date | null;
+      endedAt: Date | null;
     }> = [];
     for (let bits = 0; bits < 64; bits++) {
       combos.push({
@@ -595,6 +596,7 @@ describe("remindersActive — the published value is the gate", () => {
         asNeeded: (bits & 16) !== 0,
         // A course that ended the day before.
         endsOn: (bits & 32) !== 0 ? new Date("2026-06-09T00:00:00.000Z") : null,
+        endedAt: null,
       });
     }
     const ids: string[] = [];

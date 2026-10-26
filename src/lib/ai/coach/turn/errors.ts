@@ -8,8 +8,40 @@
  */
 import { annotate, getEvent } from "@/lib/logging/context";
 import { redactOptional, redactSecrets } from "@/lib/logging/redact";
+import type { AllProvidersFailedError } from "@/lib/ai/provider-runner";
 
 import type { TurnEmitter } from "./types";
+
+/**
+ * The `coach.provider.*` code for a provider chain where every hop failed.
+ *
+ *  - v1.11.0 — the person's PRIMARY provider failed auth-class (401/403):
+ *    the credential is dead, not the service, so the drawer deep-links to
+ *    reconnect (`credential_expired`).
+ *  - v1.4.25 — every hop landed on 429: transient, on the provider's side
+ *    (`rate_limited`).
+ *  - #1276 — every hop answered with reasoning and no reply, after the
+ *    client already asked once more (`reasoning_only`). The provider was
+ *    reached; "try again in a moment" is the wrong advice, and the thought
+ *    itself is never shown as the answer.
+ *  - Anything else: `unavailable`.
+ */
+export function chainFailureCode(
+  err: Pick<AllProvidersFailedError, "attempts" | "primaryCredentialExpired">,
+): string {
+  if (err.primaryCredentialExpired) return "coach.provider.credential_expired";
+  const { attempts } = err;
+  if (attempts.length > 0 && attempts.every((a) => a.httpStatus === 429)) {
+    return "coach.provider.rate_limited";
+  }
+  if (
+    attempts.length > 0 &&
+    attempts.every((a) => a.failureKind === "reasoning_only")
+  ) {
+    return "coach.provider.reasoning_only";
+  }
+  return "coach.provider.unavailable";
+}
 
 /**
  * v1.21.3 — classify a provider error that bubbled out of the chain runner
@@ -18,15 +50,17 @@ import type { TurnEmitter } from "./types";
  * provider failure that must surface a graceful `coach.provider.*` frame rather
  * than rethrow into an HTTP 500. Returns `null` for anything that is NOT a
  * recognisable provider error (a real server bug), so those keep the 500 +
- * GlitchTip path. Status mapping mirrors `AllProvidersFailedError`: 401/403 →
- * credential_expired, 429 → rate_limited, everything else → unavailable.
+ * GlitchTip path. Status mapping mirrors `chainFailureCode`: 401/403 →
+ * credential_expired, 429 → rate_limited, a reasoning-only reply →
+ * reasoning_only, everything else → unavailable.
  */
 export function classifyBubblingProviderError(err: unknown): {
-  code: "credential_expired" | "rate_limited" | "unavailable";
+  code:
+    "credential_expired" | "rate_limited" | "reasoning_only" | "unavailable";
   httpStatus: number | null;
 } | null {
   if (err === null || typeof err !== "object") return null;
-  const e = err as { upstream?: unknown; httpStatus?: unknown };
+  const e = err as { upstream?: unknown; httpStatus?: unknown; kind?: unknown };
   const hasUpstreamTag = typeof e.upstream === "string";
   const status = typeof e.httpStatus === "number" ? e.httpStatus : null;
   // Require the wire tag — a bare `{ httpStatus }` from unrelated code must not
@@ -36,6 +70,10 @@ export function classifyBubblingProviderError(err: unknown): {
     return { code: "credential_expired", httpStatus: status };
   }
   if (status === 429) return { code: "rate_limited", httpStatus: status };
+  // #1276 — the empty-reply sentinel of a reply that was reasoning only.
+  if (e.kind === "reasoning_only") {
+    return { code: "reasoning_only", httpStatus: status };
+  }
   return { code: "unavailable", httpStatus: status };
 }
 

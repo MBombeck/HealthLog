@@ -1177,18 +1177,23 @@ export const accountSharingPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Account sharing"],
       summary: "Delete a managed record",
       description:
-        "Ends the record and everything in it. This is the documented way OUT of the last-Guardian floor, which is why it carries no last-Guardian refusal of its own: a Guardian may not strand a record with nobody looking after it, but they may end the record. Any active Guardian may do it, from a cookie session with a fresh second factor.",
+        "Ends the record and everything in it. This is the documented way OUT of the last-Guardian floor, which is why it carries no last-Guardian refusal of its own: a Guardian may not strand a record with nobody looking after it, but they may end the record. Any active Guardian may do it, from a cookie session with a fresh second factor.\n\n" +
+        "With a deletion grace window (`ACCOUNT_DELETION_GRACE_DAYS`, 14 days by default) the record is locked rather than erased: it leaves every Guardian's view at once (reads of it answer 404), nothing acts for it, and the purge job erases it at `scheduledPurgeAt`. Until then an admin can undo the deletion. Without a window it is erased now and `scheduledPurgeAt` is null.",
       requestParams: {
         path: z.object({ id: z.string() }),
       },
       responses: {
         ...stdResponses,
         "200": {
-          description: "The record is gone.",
+          description:
+            "The record is gone from the Guardian's view; it is erased at `scheduledPurgeAt`, or already was when that is null.",
           content: {
             "application/json": {
               schema: dataEnvelope(
-                z.object({ deleted: z.literal(true) }),
+                z.object({
+                  deleted: z.literal(true),
+                  scheduledPurgeAt: isoDateTime().nullable(),
+                }),
                 "DeletedManagedProfileEnvelope",
               ),
             },

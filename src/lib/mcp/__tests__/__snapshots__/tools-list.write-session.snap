@@ -1,0 +1,4163 @@
+[
+  {
+    "name": "list_metrics",
+    "title": "List available metrics",
+    "description": "Enumerate which of the user's health data exists and how to fetch it: one row per domain with whether data is present, an approximate sample count, and the tool that retrieves it. Call this first to discover what is available before fetching figures.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "window": {
+          "type": "string"
+        },
+        "restMode": {
+          "type": "boolean"
+        },
+        "cycleEnabled": {
+          "type": "boolean"
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "tool": {
+                "type": "string"
+              },
+              "domain": {
+                "type": "string"
+              },
+              "present": {
+                "type": "boolean"
+              },
+              "count": {
+                "type": "number"
+              },
+              "metric": {
+                "type": "string"
+              },
+              "availability": {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "type": "string"
+                  },
+                  "count": {
+                    "type": "number"
+                  },
+                  "firstDate": {
+                    "type": "string"
+                  },
+                  "lastDate": {
+                    "type": "string"
+                  },
+                  "reachableWithWindow": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "state",
+                  "reachableWithWindow"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "tool",
+              "domain",
+              "present"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_metric_series",
+    "title": "Get a metric time series",
+    "description": "Fetch the user's own time series for ONE metric (e.g. bp, weight, pulse, hrv, resting_hr, steps, sleep, body composition, vo2_max). Returns an aggregate (count, min, max, mean, slope) plus recent-daily and weekly timelines, with units and population reference bands for safe phrasing. Returns { present: false } when the user has no data for that metric.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "metric": {
+          "type": "string",
+          "enum": [
+            "bp",
+            "weight",
+            "pulse",
+            "mood",
+            "compliance",
+            "hrv",
+            "sleep",
+            "resting_hr",
+            "steps",
+            "active_energy",
+            "flights",
+            "distance",
+            "vo2_max",
+            "body_temp",
+            "walking_hr",
+            "respiratory_rate",
+            "spo2",
+            "pulse_wave_velocity",
+            "vascular_age",
+            "body_fat",
+            "fat_mass",
+            "fat_free_mass",
+            "muscle_mass",
+            "lean_body_mass",
+            "bone_mass",
+            "total_body_water",
+            "bmi",
+            "visceral_fat",
+            "glucose",
+            "walking_steadiness",
+            "walking_asymmetry",
+            "walking_double_support",
+            "walking_step_length",
+            "walking_speed",
+            "audio_env",
+            "audio_headphone",
+            "audio_event",
+            "daylight",
+            "skin_temp",
+            "workouts"
+          ]
+        },
+        "window": {
+          "type": "string",
+          "enum": [
+            "last7days",
+            "last30days",
+            "last90days",
+            "lastYear",
+            "allTime"
+          ]
+        }
+      },
+      "required": [
+        "metric"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "data": {},
+        "grounding": {
+          "type": "string"
+        },
+        "searchedWindow": {
+          "type": "string"
+        },
+        "available": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "number"
+            },
+            "firstDate": {
+              "type": "string"
+            },
+            "lastDate": {
+              "type": "string"
+            },
+            "series": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "series": {
+                    "type": "string"
+                  },
+                  "unit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "count": {
+                    "type": "number"
+                  },
+                  "mean": {
+                    "type": "number"
+                  },
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "series",
+                  "unit",
+                  "count",
+                  "mean",
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "reachableWithWindow": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "count",
+            "firstDate",
+            "lastDate",
+            "reachableWithWindow"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_medication_compliance",
+    "title": "Get medication compliance",
+    "description": "Fetch the user's cadence-aware medication adherence: the dose-weighted compliance rate, expected vs taken/missed counts, current-cycle status, and any GLP-1 titration context. Returns { present: false } when no medications are tracked, and { present: false, reason: \"module_disabled\" } when the medications module is switched off.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "window": {
+          "type": "string",
+          "enum": [
+            "last7days",
+            "last30days",
+            "last90days",
+            "lastYear",
+            "allTime"
+          ]
+        }
+      }
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "data": {},
+        "grounding": {
+          "type": "string"
+        },
+        "searchedWindow": {
+          "type": "string"
+        },
+        "available": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "number"
+            },
+            "firstDate": {
+              "type": "string"
+            },
+            "lastDate": {
+              "type": "string"
+            },
+            "series": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "series": {
+                    "type": "string"
+                  },
+                  "unit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "count": {
+                    "type": "number"
+                  },
+                  "mean": {
+                    "type": "number"
+                  },
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "series",
+                  "unit",
+                  "count",
+                  "mean",
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "reachableWithWindow": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "count",
+            "firstDate",
+            "lastDate",
+            "reachableWithWindow"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_labs",
+    "title": "Get lab results",
+    "description": "Fetch the user's lab results. By default returns the latest reading per biomarker over the whole record. Filtered to one named analyte, each matching marker also carries a summarised history (the newest earlier values in full, older ones as one mean / min / max / count per year). Pass history:true with an analyte to return that analyte's reading TRAJECTORY (newest first, paginated). Each reading carries its value, unit, reference range, and in-range/below/above status. Returns { present: false } when no labs match, and { present: false, reason: \"module_disabled\" } when the labs module is switched off.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "analyte": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "history": {
+          "description": "When true (requires `analyte`), return that analyte's full reading trajectory (newest first, paginated) instead of the latest-per-biomarker snapshot.",
+          "type": "boolean"
+        },
+        "cursor": {
+          "description": "Opaque pagination cursor from a previous history response's nextCursor. Treat as a black box.",
+          "type": "string",
+          "maxLength": 256
+        }
+      }
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "data": {},
+        "grounding": {
+          "type": "string"
+        },
+        "searchedWindow": {
+          "type": "string"
+        },
+        "available": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "number"
+            },
+            "firstDate": {
+              "type": "string"
+            },
+            "lastDate": {
+              "type": "string"
+            },
+            "series": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "series": {
+                    "type": "string"
+                  },
+                  "unit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "count": {
+                    "type": "number"
+                  },
+                  "mean": {
+                    "type": "number"
+                  },
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "series",
+                  "unit",
+                  "count",
+                  "mean",
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "reachableWithWindow": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "count",
+            "firstDate",
+            "lastDate",
+            "reachableWithWindow"
+          ],
+          "additionalProperties": false
+        },
+        "analyte": {
+          "type": "string"
+        },
+        "readings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "valueText": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "unit": {
+                "type": "string"
+              },
+              "referenceLow": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "referenceHigh": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "rangeStatus": {
+                "type": "string",
+                "enum": [
+                  "in-range",
+                  "below",
+                  "above",
+                  "unknown"
+                ]
+              },
+              "takenAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "value",
+              "valueText",
+              "unit",
+              "referenceLow",
+              "referenceHigh",
+              "rangeStatus",
+              "takenAt"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "nextCursor": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_correlations",
+    "title": "Get discovered correlations",
+    "description": "Fetch the user's statistically-vetted (FDR-controlled) driver pairs between behaviours (daylight, mood, glucose, blood pressure, steps, and with the environment module the weather, fine particles, ozone and pollen) and outcomes (sleep, HRV, resting HR, weight, mood, symptoms), each with direction, lag, sample size, and a descriptive — never causal — note over a fixed trailing window. Season and trend are removed from both series first. lagDays 1 pairs a day with the next day's outcome; lagDays 0 (the environment channels) pairs the mean of the day before and the day itself with that same day's outcome. Returns { present: false } when too little paired data exists.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "data": {},
+        "grounding": {
+          "type": "string"
+        },
+        "searchedWindow": {
+          "type": "string"
+        },
+        "available": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "number"
+            },
+            "firstDate": {
+              "type": "string"
+            },
+            "lastDate": {
+              "type": "string"
+            },
+            "series": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "series": {
+                    "type": "string"
+                  },
+                  "unit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "count": {
+                    "type": "number"
+                  },
+                  "mean": {
+                    "type": "number"
+                  },
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "series",
+                  "unit",
+                  "count",
+                  "mean",
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "reachableWithWindow": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "count",
+            "firstDate",
+            "lastDate",
+            "reachableWithWindow"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_correlation",
+    "title": "Get a correlation between two metrics",
+    "description": "Fetch the statistically-vetted (FDR-controlled), lag-aware association between TWO named metrics the user tracks (e.g. 'sleep' and 'resting heart rate'). Re-exports the same discovery engine the other correlation surfaces run; returns the matched pair's direction, lag, sample size, Pearson r, and a descriptive — never causal — note. Returns { present: false } when no significant pattern links the pair (sparse data or the link did not clear the engine's floors).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "metricA": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "metricB": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        }
+      },
+      "required": [
+        "metricA",
+        "metricB"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "pair": {
+          "type": "object",
+          "properties": {
+            "behaviour": {
+              "type": "string"
+            },
+            "outcome": {
+              "type": "string"
+            },
+            "direction": {
+              "type": "string",
+              "enum": [
+                "higher",
+                "lower"
+              ]
+            },
+            "lagDays": {
+              "type": "number"
+            },
+            "n": {
+              "type": "number"
+            },
+            "r": {
+              "type": "number"
+            },
+            "note": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "behaviour",
+            "outcome",
+            "direction",
+            "lagDays",
+            "n",
+            "r",
+            "note"
+          ],
+          "additionalProperties": false
+        },
+        "pairsTested": {
+          "type": "number"
+        },
+        "windowDays": {
+          "type": "number"
+        },
+        "association": {
+          "type": "string",
+          "const": "descriptive"
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "compare_metric",
+    "title": "Compare metrics or windows",
+    "description": "Compare one metric against another over the same horizon, OR a single metric across two horizons. A horizon is either one of the five fixed trailing windows OR an explicit {from,to} date range (use `range`/`rangeB` for before-vs-after-a-date). Also resolves the clinical-signal metrics (grip strength, pain 0–10 NRS, waist circumference, waist-to-height ratio). A metric can be named by its alias, its key, or its display name in any language HealthLog ships (e.g. 'poids', 'Blutzucker'). Returns each side's rollup statistics (count, mean, min, max) with units and reference bands, plus a delta + percent change when both sides share a unit. Returns { present: false } when a side has no data.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "metric": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "metricB": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "window": {
+          "type": "string",
+          "enum": [
+            "last7days",
+            "last30days",
+            "last90days",
+            "lastYear",
+            "allTime"
+          ]
+        },
+        "windowB": {
+          "type": "string",
+          "enum": [
+            "last7days",
+            "last30days",
+            "last90days",
+            "lastYear",
+            "allTime"
+          ]
+        },
+        "range": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "to": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            }
+          },
+          "required": [
+            "from",
+            "to"
+          ],
+          "description": "An explicit inclusive date range. Use INSTEAD OF `window` for an arbitrary span (e.g. before vs after a date). Both bounds are ISO-8601 instants."
+        },
+        "rangeB": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "to": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            }
+          },
+          "required": [
+            "from",
+            "to"
+          ],
+          "description": "An explicit inclusive date range. Use INSTEAD OF `window` for an arbitrary span (e.g. before vs after a date). Both bounds are ISO-8601 instants."
+        }
+      },
+      "required": [
+        "metric"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "metric_vs_metric",
+            "window_vs_window"
+          ]
+        },
+        "a": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "band": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "low": {
+                      "type": "number"
+                    },
+                    "high": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "low",
+                    "high"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "windowDays": {
+              "type": "number"
+            },
+            "granularity": {
+              "type": "string"
+            },
+            "count": {
+              "type": "number"
+            },
+            "mean": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "min": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "max": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "from": {
+              "type": "string"
+            },
+            "to": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label",
+            "unit",
+            "windowDays",
+            "granularity",
+            "count",
+            "mean",
+            "min",
+            "max"
+          ],
+          "additionalProperties": false
+        },
+        "b": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            },
+            "unit": {
+              "type": "string"
+            },
+            "band": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "low": {
+                      "type": "number"
+                    },
+                    "high": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "low",
+                    "high"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "windowDays": {
+              "type": "number"
+            },
+            "granularity": {
+              "type": "string"
+            },
+            "count": {
+              "type": "number"
+            },
+            "mean": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "min": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "max": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "from": {
+              "type": "string"
+            },
+            "to": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label",
+            "unit",
+            "windowDays",
+            "granularity",
+            "count",
+            "mean",
+            "min",
+            "max"
+          ],
+          "additionalProperties": false
+        },
+        "delta": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "mean": {
+                  "type": "number"
+                },
+                "pct": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "mean",
+                "pct"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_metric_baseline",
+    "title": "Get a metric's personal baseline",
+    "description": "Fetch where the user's latest reading for ONE metric sits against their own usual range (median ± robust deviation), plus the strongest lagged driver of that metric. Re-exports the same baseline engine the metric page renders. Also resolves the clinical-signal metrics (grip strength, pain 0–10 NRS, waist circumference, waist-to-height ratio). A metric can be named by its alias, its key, or its display name in any language HealthLog ships (e.g. 'poids', 'Blutzucker'). Returns the personal band, the latest value with its date and whether it is from today (latestDate, latestIsToday) + placement (within/above/below), and the population reference band. Returns { present: false } with reason 'insufficient_history' below the 7-day learning floor — never a fabricated range.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "metric": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        }
+      },
+      "required": [
+        "metric"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "metric": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "baseline": {
+          "type": "object",
+          "properties": {
+            "low": {
+              "type": "number"
+            },
+            "high": {
+              "type": "number"
+            },
+            "sampleDays": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "low",
+            "high",
+            "sampleDays"
+          ],
+          "additionalProperties": false
+        },
+        "latest": {
+          "type": "number"
+        },
+        "latestDate": {
+          "description": "Calendar day of `latest` in the user's time zone, `YYYY-MM-DD`.",
+          "type": "string"
+        },
+        "latestIsToday": {
+          "description": "True when `latest` is from today. When false, `latest` is an older reading: name its date, never call it today's.",
+          "type": "boolean"
+        },
+        "placement": {
+          "type": "string",
+          "enum": [
+            "within",
+            "above",
+            "below"
+          ]
+        },
+        "basis": {
+          "description": "Present when today is still in progress for a metric whose day mean moves with the hour (blood glucose): `latest` is today's mean so far and `baseline` the usual range for the same hours of earlier days, not the whole-day range.",
+          "type": "string",
+          "const": "sameHours"
+        },
+        "referenceBand": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "low": {
+                  "type": "number"
+                },
+                "high": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "low",
+                "high"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "driver": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "note": {
+                  "type": "string"
+                },
+                "behaviour": {
+                  "type": "string"
+                },
+                "outcome": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "note",
+                "behaviour",
+                "outcome"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "detect_changepoints",
+    "title": "Detect level shifts in a metric",
+    "description": "Surface points where a metric's level shifted over a trailing window OR an explicit {from,to} date range (e.g. 'when did my weight trend change?'). Also resolves the clinical-signal metrics (grip strength, pain 0–10 NRS, waist circumference, waist-to-height ratio). A metric can be named by its alias, its key, or its display name in any language HealthLog ships (e.g. 'poids', 'Blutzucker'). Runs a conservative changepoint scan over the rollup tier's bucket means and reports each shift's date, direction, and before/after means with units. High firing bar — returns { present: false } when too little data exists or no shift clears the threshold.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "metric": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "window": {
+          "type": "string",
+          "enum": [
+            "last7days",
+            "last30days",
+            "last90days",
+            "lastYear",
+            "allTime"
+          ]
+        },
+        "range": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "to": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            }
+          },
+          "required": [
+            "from",
+            "to"
+          ],
+          "description": "An explicit inclusive date range. Use INSTEAD OF `window` for an arbitrary span (e.g. before vs after a date). Both bounds are ISO-8601 instants."
+        }
+      },
+      "required": [
+        "metric"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "metric": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "granularity": {
+          "type": "string"
+        },
+        "windowDays": {
+          "type": "number"
+        },
+        "bucketsAnalysed": {
+          "type": "number"
+        },
+        "changepoints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "at": {
+                "type": "string"
+              },
+              "direction": {
+                "type": "string",
+                "enum": [
+                  "increase",
+                  "decrease"
+                ]
+              },
+              "beforeMean": {
+                "type": "number"
+              },
+              "afterMean": {
+                "type": "number"
+              },
+              "delta": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "at",
+              "direction",
+              "beforeMean",
+              "afterMean",
+              "delta"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_glucose_panel",
+    "title": "Get the glucose panel",
+    "description": "Fetch the user's glucose data: per-context daily means plus the trailing-30-day clinical panel (time-in-range, GMI, CV%, estimated A1c). Returns { present: false } when the user logs no glucose.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "window": {
+          "type": "string",
+          "enum": [
+            "last7days",
+            "last30days",
+            "last90days",
+            "lastYear",
+            "allTime"
+          ]
+        }
+      }
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "data": {},
+        "grounding": {
+          "type": "string"
+        },
+        "searchedWindow": {
+          "type": "string"
+        },
+        "available": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "number"
+            },
+            "firstDate": {
+              "type": "string"
+            },
+            "lastDate": {
+              "type": "string"
+            },
+            "series": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "series": {
+                    "type": "string"
+                  },
+                  "unit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "count": {
+                    "type": "number"
+                  },
+                  "mean": {
+                    "type": "number"
+                  },
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "series",
+                  "unit",
+                  "count",
+                  "mean",
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "reachableWithWindow": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "count",
+            "firstDate",
+            "lastDate",
+            "reachableWithWindow"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_sleep",
+    "title": "Get sleep",
+    "description": "Fetch the user's sleep: per-night asleep + stage minutes plus the sleep-rhythm summary (sleep debt + chronotype). Returns { present: false } when no sleep is tracked.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "window": {
+          "type": "string",
+          "enum": [
+            "last7days",
+            "last30days",
+            "last90days",
+            "lastYear",
+            "allTime"
+          ]
+        }
+      }
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "data": {},
+        "grounding": {
+          "type": "string"
+        },
+        "searchedWindow": {
+          "type": "string"
+        },
+        "available": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "number"
+            },
+            "firstDate": {
+              "type": "string"
+            },
+            "lastDate": {
+              "type": "string"
+            },
+            "series": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "series": {
+                    "type": "string"
+                  },
+                  "unit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "count": {
+                    "type": "number"
+                  },
+                  "mean": {
+                    "type": "number"
+                  },
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "series",
+                  "unit",
+                  "count",
+                  "mean",
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "reachableWithWindow": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "count",
+            "firstDate",
+            "lastDate",
+            "reachableWithWindow"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_workouts",
+    "title": "Get workouts",
+    "description": "Fetch the user's workouts: the most recent sessions (sport, duration, energy, distance, avg/max HR) plus a per-sport rollup over the window. Use for training-load and 'how were my runs / am I overtraining?' questions. Returns { present: false } when no workouts are tracked.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "window": {
+          "type": "string",
+          "enum": [
+            "last7days",
+            "last30days",
+            "last90days",
+            "lastYear",
+            "allTime"
+          ]
+        }
+      }
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "data": {},
+        "grounding": {
+          "type": "string"
+        },
+        "searchedWindow": {
+          "type": "string"
+        },
+        "available": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "number"
+            },
+            "firstDate": {
+              "type": "string"
+            },
+            "lastDate": {
+              "type": "string"
+            },
+            "series": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "series": {
+                    "type": "string"
+                  },
+                  "unit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "count": {
+                    "type": "number"
+                  },
+                  "mean": {
+                    "type": "number"
+                  },
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "series",
+                  "unit",
+                  "count",
+                  "mean",
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "reachableWithWindow": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "count",
+            "firstDate",
+            "lastDate",
+            "reachableWithWindow"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_illness_recovery",
+    "title": "Get illness & recovery",
+    "description": "Fetch the user's illness + recovery context: rest mode, active and recently-resolved illnesses (with the body site and side when the user named one), the recovery / strain composites, and the illness retrospective (recovery-gap, nadir, red flags). Carries the rest-mode safety flag for framing. Returns { present: false } when there is nothing to report.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "data": {},
+        "grounding": {
+          "type": "string"
+        },
+        "searchedWindow": {
+          "type": "string"
+        },
+        "available": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "number"
+            },
+            "firstDate": {
+              "type": "string"
+            },
+            "lastDate": {
+              "type": "string"
+            },
+            "series": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "series": {
+                    "type": "string"
+                  },
+                  "unit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "count": {
+                    "type": "number"
+                  },
+                  "mean": {
+                    "type": "number"
+                  },
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "series",
+                  "unit",
+                  "count",
+                  "mean",
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "reachableWithWindow": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "count",
+            "firstDate",
+            "lastDate",
+            "reachableWithWindow"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_cycle",
+    "title": "Get menstrual cycle",
+    "description": "Fetch the user's menstrual-cycle context: current phase + day-of-cycle, the next predicted event, and the headline phase-correlation finding. Descriptive only — never a contraception-grade or 'safe day' claim. Gated on cycle tracking being enabled for the account; returns { present: false } when cycle tracking is off or there is no data.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "data": {},
+        "grounding": {
+          "type": "string"
+        },
+        "searchedWindow": {
+          "type": "string"
+        },
+        "available": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "number"
+            },
+            "firstDate": {
+              "type": "string"
+            },
+            "lastDate": {
+              "type": "string"
+            },
+            "series": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "series": {
+                    "type": "string"
+                  },
+                  "unit": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "count": {
+                    "type": "number"
+                  },
+                  "mean": {
+                    "type": "number"
+                  },
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "series",
+                  "unit",
+                  "count",
+                  "mean",
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "reachableWithWindow": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "count",
+            "firstDate",
+            "lastDate",
+            "reachableWithWindow"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_environment",
+    "title": "Get weather, air quality and pollen",
+    "description": "Fetch the weather, air quality, pollen and UV the user's stored days had (environment module): per day the temperature (min, max, mean, feels-like high), precipitation, sunshine hours, pressure and humidity, and while air quality is on, PM2.5 (mean and peak), PM10, NO2, the ozone 8-hour high, the European AQI peak, UV, dust and six pollen kinds; plus coverage and a summary (hot nights, very poor air days, high pollen days). These are modelled outdoor conditions at a coarse location (ERA5 and CAMS, 9 to 45 km grid), not the user's personal exposure; describe co-occurrence, never a cause. Null means not covered, never zero. Carries no coordinates and no place names. Each result lists the attributions to show with it (Open-Meteo, CC BY 4.0; Copernicus Atmosphere Monitoring Service). Returns { present: false, reason: \"module_disabled\" } when the environment module is off, and no_data / outside_window when nothing is stored in the window.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "window": {
+          "type": "string",
+          "enum": [
+            "last7days",
+            "last30days",
+            "last90days",
+            "lastYear",
+            "allTime"
+          ]
+        }
+      }
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "searchedWindow": {
+          "type": "string"
+        },
+        "available": {
+          "type": "object",
+          "properties": {
+            "count": {
+              "type": "number"
+            },
+            "firstDate": {
+              "type": "string"
+            },
+            "lastDate": {
+              "type": "string"
+            },
+            "reachableWithWindow": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "count",
+            "firstDate",
+            "lastDate",
+            "reachableWithWindow"
+          ],
+          "additionalProperties": false
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "window": {
+              "type": "string",
+              "enum": [
+                "last7days",
+                "last30days",
+                "last90days",
+                "lastYear",
+                "allTime"
+              ]
+            },
+            "coverage": {
+              "type": "object",
+              "properties": {
+                "firstDate": {
+                  "type": "string"
+                },
+                "lastDate": {
+                  "type": "string"
+                },
+                "days": {
+                  "type": "number"
+                },
+                "awayDays": {
+                  "type": "number"
+                },
+                "airQualityDays": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "firstDate",
+                "lastDate",
+                "days",
+                "awayDays"
+              ],
+              "additionalProperties": false
+            },
+            "daily": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string"
+                  },
+                  "tempMin": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "tempMax": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "tempMean": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "apparentMax": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "precipSum": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "sunshineHours": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "pressureMean": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "pressureDelta": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "humidityMean": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "airQuality": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "pm25Mean": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "pm25Max": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "pm10Mean": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "no2Mean": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "so2Mean": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "coMean": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "o3Max8h": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "eaqiMax": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "usaqiMax": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "uvIndexMax": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "dustMax": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "aodMax": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "pollen": {
+                            "type": "object",
+                            "properties": {
+                              "alder": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "birch": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "grass": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "mugwort": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "olive": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "ragweed": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "alder",
+                              "birch",
+                              "grass",
+                              "mugwort",
+                              "olive",
+                              "ragweed"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "pm25Mean",
+                          "pm25Max",
+                          "pm10Mean",
+                          "no2Mean",
+                          "so2Mean",
+                          "coMean",
+                          "o3Max8h",
+                          "eaqiMax",
+                          "usaqiMax",
+                          "uvIndexMax",
+                          "dustMax",
+                          "aodMax",
+                          "pollen"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "date",
+                  "tempMin",
+                  "tempMax",
+                  "tempMean",
+                  "apparentMax",
+                  "precipSum",
+                  "sunshineHours",
+                  "pressureMean",
+                  "pressureDelta",
+                  "humidityMean"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "summary": {
+              "type": "object",
+              "properties": {
+                "hotNights": {
+                  "type": "number"
+                },
+                "veryPoorAirDays": {
+                  "type": "number"
+                },
+                "highPollenDays": {
+                  "type": "number"
+                },
+                "pollenPeak": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "hotNights"
+              ],
+              "additionalProperties": false
+            },
+            "airQuality": {
+              "type": "string",
+              "enum": [
+                "on",
+                "off_account",
+                "off_operator"
+              ]
+            },
+            "provenance": {
+              "type": "object",
+              "properties": {
+                "weather": {
+                  "type": "string"
+                },
+                "airQuality": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "weather",
+                "airQuality",
+                "note"
+              ],
+              "additionalProperties": false
+            },
+            "attributions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "window",
+            "coverage",
+            "daily",
+            "summary",
+            "airQuality",
+            "provenance",
+            "attributions"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_day",
+    "title": "Get one day",
+    "description": "Fetch one local calendar day of the user's record (YYYY-MM-DD, in the user's own time zone): what ran through it (medications and courses with dose and day n, pauses, an illness with its day n, a cycle phase with its cycle day, a trip; day n counts from the record's own start date and is null, with `since` null, when the record holds none), the readings in that day's window with the user's usual range over the 30 days before (null with too little history), what happened on it (intakes, dose changes, symptoms, lab results, visits, vaccinations, check-ups, documents by kind, mood and screener scores, workouts), the day's scores (healthScore, readiness, recovery from a device, sleepScore, strain; each a number on its own 0 to `max` scale with the usual range beside it, absent when not recorded that day), and deterministic notable observations (highest or lowest for at least three months, first reading of a kind). Notes, document names, visit reasons, practitioner names and life events are never included. `unavailable` names sections whose module is off (module_disabled). Each result carries `url`, the day in the app. Returns { present: false } with no_data, outside_window (a future date) or invalid_arguments.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "description": "The local calendar date, YYYY-MM-DD."
+        }
+      },
+      "required": [
+        "date"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "date": {
+              "type": "string"
+            },
+            "counts": {
+              "type": "object",
+              "properties": {
+                "values": {
+                  "type": "number"
+                },
+                "entries": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "values",
+                "entries"
+              ],
+              "additionalProperties": false
+            },
+            "running": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "medication",
+                      "medicationCourse",
+                      "medicationPause",
+                      "illness",
+                      "restMode",
+                      "cyclePhase",
+                      "travel",
+                      "lifeEvent"
+                    ]
+                  },
+                  "section": {
+                    "type": "string",
+                    "enum": [
+                      "values",
+                      "sleep",
+                      "scores",
+                      "mood",
+                      "assessments",
+                      "medications",
+                      "illness",
+                      "symptoms",
+                      "allergies",
+                      "labs",
+                      "visits",
+                      "vaccinations",
+                      "checkups",
+                      "documents",
+                      "workouts",
+                      "cycle",
+                      "environment"
+                    ]
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "sub": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "since": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "until": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "dayIndex": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "dayCount": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "kind",
+                  "section",
+                  "title",
+                  "sub",
+                  "since",
+                  "until",
+                  "dayIndex",
+                  "dayCount"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "number"
+                  },
+                  "unit": {
+                    "type": "string"
+                  },
+                  "at": {
+                    "type": "string"
+                  },
+                  "band": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "lo": {
+                            "type": "number"
+                          },
+                          "hi": {
+                            "type": "number"
+                          },
+                          "n": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "lo",
+                          "hi",
+                          "n"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "type",
+                  "value",
+                  "unit",
+                  "at",
+                  "band"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "events": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "at": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "intake",
+                      "doseChange",
+                      "medicationStart",
+                      "medicationEnd",
+                      "pauseStart",
+                      "pauseEnd",
+                      "courseStart",
+                      "courseEnd",
+                      "illnessOnset",
+                      "illnessResolved",
+                      "illnessDayLog",
+                      "symptom",
+                      "allergyOnset",
+                      "labResult",
+                      "visit",
+                      "procedure",
+                      "vaccination",
+                      "checkup",
+                      "document",
+                      "mood",
+                      "assessment",
+                      "workout",
+                      "cycleDayLog",
+                      "lifeEvent"
+                    ]
+                  },
+                  "section": {
+                    "type": "string",
+                    "enum": [
+                      "values",
+                      "sleep",
+                      "scores",
+                      "mood",
+                      "assessments",
+                      "medications",
+                      "illness",
+                      "symptoms",
+                      "allergies",
+                      "labs",
+                      "visits",
+                      "vaccinations",
+                      "checkups",
+                      "documents",
+                      "workouts",
+                      "cycle",
+                      "environment"
+                    ]
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "meta": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "at",
+                  "kind",
+                  "section",
+                  "title",
+                  "meta"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "notable": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "extremeHigh",
+                      "extremeLow",
+                      "firstValue",
+                      "gap"
+                    ]
+                  },
+                  "type": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "params": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": [
+                        "string",
+                        "number"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "kind",
+                  "type",
+                  "params"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "scores": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "score": {
+                    "type": "string",
+                    "enum": [
+                      "healthScore",
+                      "readiness",
+                      "recovery",
+                      "sleepScore",
+                      "strain"
+                    ]
+                  },
+                  "value": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  },
+                  "band": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "lo": {
+                            "type": "number"
+                          },
+                          "hi": {
+                            "type": "number"
+                          },
+                          "n": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "lo",
+                          "hi",
+                          "n"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "score",
+                  "value",
+                  "max",
+                  "band"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "movement": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "distance": {
+                      "type": "object",
+                      "properties": {
+                        "unit": {
+                          "type": "string",
+                          "enum": [
+                            "km",
+                            "mi"
+                          ]
+                        },
+                        "total": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "driving": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "train": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "unit",
+                        "total",
+                        "driving",
+                        "train"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "placesVisited": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "awayFromHomeMinutes": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "travel": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "isTravelDay": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "isTravelDay"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "distance",
+                    "placesVisited",
+                    "awayFromHomeMinutes",
+                    "travel"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "unavailable": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "section": {
+                    "type": "string",
+                    "enum": [
+                      "values",
+                      "sleep",
+                      "scores",
+                      "mood",
+                      "assessments",
+                      "medications",
+                      "illness",
+                      "symptoms",
+                      "allergies",
+                      "labs",
+                      "visits",
+                      "vaccinations",
+                      "checkups",
+                      "documents",
+                      "workouts",
+                      "cycle",
+                      "environment"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "enum": [
+                      "module_disabled",
+                      "not_shared"
+                    ]
+                  }
+                },
+                "required": [
+                  "section",
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "date",
+            "counts",
+            "running",
+            "values",
+            "events",
+            "notable",
+            "scores",
+            "unavailable"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_metrics",
+    "title": "Get several metric series at once",
+    "description": "Fetch the time series for SEVERAL metrics in one call — a fan-out over the same single-metric read `get_metric_series` runs, returning one grounded result per metric (each with { present } and the metric's aggregate/timelines when present). Paginated: when more metrics remain than fit one page, pass the opaque nextCursor back as `cursor`. Use for a multi-metric question instead of many separate calls.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "minItems": 1,
+          "maxItems": 24,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "description": "The metrics to fetch (e.g. ['weight','pulse','hrv']). Unknown metrics return { present: false } for that entry, never an error."
+        },
+        "window": {
+          "type": "string",
+          "enum": [
+            "last7days",
+            "last30days",
+            "last90days",
+            "lastYear",
+            "allTime"
+          ]
+        },
+        "cursor": {
+          "description": "Opaque pagination cursor from a previous response's nextCursor. Treat as a black box.",
+          "type": "string",
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "metrics"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "window": {
+          "type": "string"
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "metric": {
+                "type": "string"
+              },
+              "present": {
+                "type": "boolean"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "data": {},
+              "grounding": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "metric",
+              "present"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "nextCursor": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_medication_schedule",
+    "title": "Get the medication schedule",
+    "description": "Fetch when the user's active medications are next due, and which are overdue right now. Reuses the same server-authoritative recurrence engine the medication cards render (open overdue slots win over future ones). Returns one row per active medication: name, dose, next-due instant, an overdue flag, an as-needed (PRN) flag, and an intakeTracked flag. As-needed medications and medications whose intake tracking is off (intakeTracked: false, kept as a record only) have no due time (nextDueAt: null). Returns { present: false } when no medications are tracked, and { present: false, reason: \"module_disabled\" } when the medications module is switched off.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "medications": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "dose": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "nextDueAt": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "overdue": {
+                "type": "boolean"
+              },
+              "asNeeded": {
+                "type": "boolean"
+              },
+              "intakeTracked": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name",
+              "dose",
+              "nextDueAt",
+              "overdue",
+              "asNeeded",
+              "intakeTracked"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_integration_status",
+    "title": "Get device & service sync status",
+    "description": "Fetch the sync health of the user's connected devices and services (Withings, WHOOP, Fitbit, Nightscout, Polar, Oura, Strava, Google Health) — which are connected, when each last synced, and whether one needs reconnecting or is failing. Answers 'why is my data stale?'. Reuses the integration-status ledger; carries no secrets or tokens. `connected` means only 'not explicitly disconnected'; `verdict` is the liveness truth (fresh / stale / stalled / failing / reauth_required / parked / pending_first_sync / disconnected), where `stalled` means the sync has stopped even attempting. Returns { present: false } when no integration has ever attempted a sync.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "providers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "connected": {
+                "type": "boolean"
+              },
+              "reauthRequired": {
+                "type": "boolean"
+              },
+              "lastSuccessAt": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "lastAttemptAt": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "verdict": {
+                "type": "string"
+              },
+              "since": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "provider",
+              "state",
+              "connected",
+              "reauthRequired",
+              "lastSuccessAt",
+              "lastAttemptAt",
+              "verdict",
+              "since"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_preventive_care",
+    "title": "Get preventive-care due-list",
+    "description": "Fetch what preventive care is coming up: the user's own configured preventive-care (Vorsorge) reminders (upcoming and overdue checkups with their next-due dates) AND the appointments they have booked as future visits. Surfaces only the reminders the user has already set up (it never invents screening recommendations); each checkup carries its label, optional measurement type, next-due instant, an overdue flag, and last-completed date. Each `appointments` entry carries its date, practitioner name + specialty, visit kind, and the visit's own free-text reason. Returns { present: false } only when neither a reminder nor an appointment exists.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "checkups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "measurementType": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "nextDueAt": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "overdue": {
+                "type": "boolean"
+              },
+              "location": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "lastSatisfiedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "snoozedUntil": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "lastSkippedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "skipCount": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "label",
+              "measurementType",
+              "nextDueAt",
+              "overdue",
+              "location",
+              "lastSatisfiedAt",
+              "snoozedUntil",
+              "lastSkippedAt",
+              "skipCount"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "appointments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "occurredAt": {
+                "type": "string"
+              },
+              "practitioner": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "specialty": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "kind": {
+                "type": "string"
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "occurredAt",
+              "practitioner",
+              "specialty",
+              "kind",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "appointmentsTruncated": {
+          "description": "True when more booked appointments exist than `appointments` lists: the list was cut at `appointmentsLimit`, soonest first. Say the list is partial.",
+          "type": "boolean"
+        },
+        "appointmentsLimit": {
+          "description": "The most appointments this result could list.",
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_nutrients",
+    "title": "Get nutrient intake",
+    "description": "Fetch the user's synced micronutrient intake — water, caffeine, and the 24 tracked vitamins/minerals — as day totals summed across sources (e.g. an Apple Health sync AND a manual water entry on the same day). Omit `nutrient` for a presence overview across every logged code (latest logged day, latest day's total, days with data). Pass a catalog code, or the nutrient's display name in any language HealthLog ships (e.g. 'water', 'magnesium', 'vitamin_d', 'Magnésium', 'Żelazo'), for that nutrient's per-day series over a trailing window, plus its EFSA dietary reference resolved against the user's own profile sex — omitted, never guessed, when sex is not on file. Gated on the opt-in `nutrients` module. Returns { present: false, reason: \"module_disabled\" } when the module is off, or { present: false } when nothing matches.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "nutrient": {
+          "description": "A catalog code (e.g. 'water', 'caffeine', 'vitamin_d', 'magnesium') or its display name in any language HealthLog ships. Omit for a presence overview across all logged nutrients.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "days": {
+          "description": "Trailing window in days. Overview mode (no `nutrient`) defaults to 14, capped at 365. Per-nutrient mode defaults to 30, capped at 90.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365
+        }
+      }
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "windowDays": {
+          "type": "number"
+        },
+        "nutrients": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "nutrient": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "latestDay": {
+                "type": "string"
+              },
+              "latestAmount": {
+                "type": "number"
+              },
+              "daysWithData": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "nutrient",
+              "label",
+              "unit",
+              "latestDay",
+              "latestAmount",
+              "daysWithData"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "nutrient": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "days": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "day": {
+                "type": "string"
+              },
+              "amount": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "day",
+              "amount"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "PRI",
+                    "AI",
+                    "safeLevel"
+                  ]
+                },
+                "direction": {
+                  "type": "string",
+                  "enum": [
+                    "target",
+                    "upperGuidance"
+                  ]
+                },
+                "value": {
+                  "type": "number"
+                },
+                "source": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "direction",
+                "value",
+                "source"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_intraday_pulse",
+    "title": "Get the intraday pulse shape",
+    "description": "Fetch the user's own 10-minute heart-rate shape for ONE local day — 'what happened this afternoon?', 'was I tense during the meeting?'. When every confidence gate holds, also carries a single cautious elevated-at-rest ('tension') window: a DESCRIPTIVE pattern only, NEVER a stress diagnosis. Falls back to an hourly-grain shape for a day outside the dense-retention window — see the `resolution` field ('tenMin' vs 'hourly'); `tension` is only ever computed at the dense grain. Pulse is a core vital: no AI switch and no module gate apply. Returns { present: false } when the day has no pulse data.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "description": "YYYY-MM-DD in the user's own timezone. Defaults to the user's local today.",
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        }
+      }
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "dateKey": {
+          "type": "string"
+        },
+        "timezone": {
+          "type": "string"
+        },
+        "bucketMinutes": {
+          "type": "number"
+        },
+        "resolution": {
+          "type": "string",
+          "enum": [
+            "tenMin",
+            "hourly"
+          ]
+        },
+        "series": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "startMinute": {
+                "type": "number"
+              },
+              "mean": {
+                "type": "number"
+              },
+              "count": {
+                "type": "number"
+              },
+              "min": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "startMinute",
+              "mean",
+              "count"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "baseline": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "baselineSource": {
+          "type": "string",
+          "enum": [
+            "resting",
+            "proxy",
+            "none"
+          ]
+        },
+        "tension": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "startMinute": {
+                  "type": "number"
+                },
+                "endMinute": {
+                  "type": "number"
+                },
+                "partOfDay": {
+                  "type": "string",
+                  "enum": [
+                    "morning",
+                    "afternoon",
+                    "evening",
+                    "night"
+                  ]
+                },
+                "meanHr": {
+                  "type": "number"
+                },
+                "baseline": {
+                  "type": "number"
+                },
+                "hrvConfirmed": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "startMinute",
+                "endMinute",
+                "partOfDay",
+                "meanHr",
+                "baseline",
+                "hrvConfirmed"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_ecg_recordings",
+    "title": "Get ECG recordings",
+    "description": "Fetch METADATA for the user's own ECG recordings — recorded time, duration, sampling rate, sample count, average heart rate, lead, and the DEVICE's own rhythm classification. NEVER reads or returns the waveform (that stays app-only). Non-diagnostic: this reflects ONLY the classification result the recording device's own certified on-device algorithm produced — HealthLog never re-classifies an ECG and never forms a diagnosis from it; `classificationSource` is always the fixed literal 'device'. Device data: no AI switch and no module gate apply. Returns { present: false } when no recordings exist.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "classificationSource": {
+          "type": "string",
+          "const": "device"
+        },
+        "recordings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "recordedAt": {
+                "type": "string"
+              },
+              "durationSeconds": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "samplingFrequency": {
+                "type": "number"
+              },
+              "sampleCount": {
+                "type": "number"
+              },
+              "averageHeartRate": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "lead": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "classification": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "source": {
+                "type": "string"
+              },
+              "hasWaveform": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "recordedAt",
+              "durationSeconds",
+              "samplingFrequency",
+              "sampleCount",
+              "averageHeartRate",
+              "lead",
+              "classification",
+              "source",
+              "hasWaveform"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "truncated": {
+          "description": "True when more records exist than this result lists: the list was cut at `limit`. Do not treat the last record listed as the oldest or the only one; say the list is partial.",
+          "type": "boolean"
+        },
+        "limit": {
+          "description": "The most records this result could list.",
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "get_visits",
+    "title": "Get past doctor visits",
+    "description": "Fetch the user's own past doctor visits over a bounded window (default: the last 12 months) so a question like 'when did I last see a cardiologist' is answerable from the record. Each visit carries its date, lifecycle status (DONE / CANCELLED / NO_SHOW — a no-show is not a visit that happened), kind, practitioner name + specialty, the visit's own free-text reason and outcome, the body site and side (set on procedures), and the labels of any conditions it was filed against. Optionally narrow to one practitioner by a name substring, or to one kind. kind PROCEDURE is the procedure and surgery history: without a months argument it reads the whole record, because a surgery years ago is still the answer to 'what surgeries have I had'. Newest first, bounded. Returns { present: false } when the user has never recorded a visit — distinct from a filtered read that simply matched none. With the illness module switched off the condition labels are withheld and conditionsReason is \"module_disabled\".",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "months": {
+          "description": "Trailing window in months. Defaults to 12, capped at 60. Past visits only — a future appointment is surfaced by get_preventive_care, not here.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60
+        },
+        "practitioner": {
+          "description": "Optional case-insensitive name substring to narrow to one practitioner (e.g. a surname read back from an earlier result). Omit for every practitioner.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "kind": {
+          "description": "Optional visit kind to narrow to. PROCEDURE lists procedures and surgeries, over the whole record unless months is given.",
+          "type": "string",
+          "enum": [
+            "ROUTINE",
+            "ACUTE",
+            "SPECIALIST",
+            "PREVENTIVE",
+            "EMERGENCY",
+            "HOSPITAL",
+            "THERAPY",
+            "OTHER",
+            "PROCEDURE"
+          ]
+        }
+      }
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "present": {
+          "type": "boolean"
+        },
+        "windowMonths": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "visits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "occurredAt": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "practitioner": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "specialty": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "outcome": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "bodySite": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "laterality": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "LEFT",
+                      "RIGHT",
+                      "BOTH"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "conditions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "occurredAt",
+              "status",
+              "kind",
+              "practitioner",
+              "specialty",
+              "reason",
+              "outcome",
+              "bodySite",
+              "laterality",
+              "conditions"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "conditionsReason": {
+          "type": "string"
+        },
+        "truncated": {
+          "description": "True when more records exist than this result lists: the list was cut at `limit`. Do not treat the last record listed as the oldest or the only one; say the list is partial.",
+          "type": "boolean"
+        },
+        "limit": {
+          "description": "The most records this result could list.",
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "present"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "search",
+    "title": "Search your health records",
+    "description": "Search the user's own health record for items matching a free-text query (English or the user's language). Covers metric domains, medications, lab biomarkers, and the clinical records: doctor visits including procedures and surgeries (`visit:<id>`, matched on visit kind, reason, outcome, body site and side, practitioner name and specialty), conditions (`condition:<id>`, matched on label, type, body site and side), documents (`document:<id>`, matched on title, file name, kind such as discharge letter, and whole words of the document's own indexed text where one is stored; a document the user held back from AI reading is matched on its title and details only) and vaccinations (`vaccination:<id>`, matched on vaccine name and catalogue name). Condition and vaccination notes are never searched or returned. A kind whose module the user has switched off (conditions, documents, vaccinations, medications, labs) never appears. Results are ranked by how many query words match, then newest first; record results are capped at 50. Returns { results: [{ id, title, url }], nextCursor? }; pass an id to the `fetch` tool to hydrate it. Each `url` deep-links into the HealthLog web app for citation. When more results exist, pass the opaque `nextCursor` back as `cursor` for the next page. Returns an empty list when nothing matches.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "cursor": {
+          "description": "Opaque pagination cursor from a previous response's nextCursor. Treat as a black box; do not construct one.",
+          "type": "string",
+          "maxLength": 256
+        }
+      },
+      "required": [
+        "query"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "url"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "nextCursor": {
+          "type": "string"
+        },
+        "truncated": {
+          "description": "True when a source this search reads stopped at its scan ceiling, so older records of that kind were not searched and no cursor reaches them. An empty or short result is then not proof that nothing matches; narrow the query or use the kind's own tool.",
+          "type": "boolean"
+        },
+        "truncatedSources": {
+          "description": "Which sources were cut: medication, lab, visit, condition, document, vaccination.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "results"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "fetch",
+    "title": "Fetch one health record",
+    "description": "Hydrate a single record returned by `search`, by its id (e.g. `metric:weight`, `med:<id>`, `lab:LDL`, `visit:<id>`, `condition:<id>`, `document:<id>`, `vaccination:<id>`). Returns { id, title, text, url, metadata } where `text` is a server-authoritative, plain-text prose summary suitable for citation and `url` deep-links to the specific record in HealthLog. A visit, condition, document or vaccination carries its key fields and its directly linked records (metadata.links, each with an id `fetch` accepts); a document returns its metadata and at most a bounded excerpt of its own indexed text (the words of the stored document), never the file; a document held back from AI reading returns no excerpt and metadata.reason \"ai_read_deferred\". Fields that were never recorded are null. Returns a not-found message when the id does not resolve, and metadata.reason \"module_disabled\" when the record's module is switched off.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {}
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "text",
+        "url"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "log_measurement",
+    "title": "Log a measurement",
+    "description": "Log ONE single-value health measurement to the user's own record (e.g. weight, pulse, blood glucose, body temperature, oxygen saturation, a body-composition value). Requires confirmation: call once to preview the exact record, confirm the value with the user, then call again with confirm:true and the same idempotencyKey. Blood pressure (two values) and computed/clinical-only metrics are not loggable here.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "The measurement type, e.g. WEIGHT, PULSE, BLOOD_GLUCOSE, BODY_TEMPERATURE, OXYGEN_SATURATION, BODY_FAT. Not all types are loggable; an unsupported type is refused."
+        },
+        "value": {
+          "type": "number",
+          "description": "The numeric reading in the type's canonical unit."
+        },
+        "unit": {
+          "description": "Optional unit hint. Omit to use the type's canonical unit. A recognised alias (lb/lbs/pound(s), in/inch(es), °F, mmol/L) is converted to canonical; any other unit is refused with unsupported_unit — the value is never stored in a non-canonical unit.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "measuredAt": {
+          "description": "Optional ISO-8601 instant the reading was taken; defaults to now.",
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        },
+        "confirm": {
+          "default": false,
+          "description": "Set to true ONLY after confirming the value with the user. When false or absent the tool returns a preview and writes nothing.",
+          "type": "boolean"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "A stable client-chosen key for this logical write. Re-calling with the same key (after a preview) commits exactly one row; a further retry is a safe no-op."
+        }
+      },
+      "required": [
+        "type",
+        "value",
+        "idempotencyKey"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "written": {
+          "type": "boolean"
+        },
+        "requiresConfirmation": {
+          "type": "boolean"
+        },
+        "alreadyLogged": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "instruction": {
+          "type": "string"
+        },
+        "preview": {},
+        "record": {},
+        "wouldFail": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "written"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "log_mood",
+    "title": "Log a mood entry",
+    "description": "Log the user's mood for today on a 1-5 scale (1 = very low, 5 = very good) to their own record, with an optional short note. Requires confirmation: call once to preview, confirm with the user, then call again with confirm:true and the same idempotencyKey to commit.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "score": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "Mood score 1-5 (1 = very low, 5 = very good)."
+        },
+        "note": {
+          "description": "Optional short free-text note (max 500 chars).",
+          "type": "string",
+          "maxLength": 500
+        },
+        "confirm": {
+          "default": false,
+          "description": "Set to true ONLY after confirming the value with the user. When false or absent the tool returns a preview and writes nothing.",
+          "type": "boolean"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "A stable client-chosen key for this logical write. Re-calling with the same key (after a preview) commits exactly one row; a further retry is a safe no-op."
+        }
+      },
+      "required": [
+        "score",
+        "idempotencyKey"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "written": {
+          "type": "boolean"
+        },
+        "requiresConfirmation": {
+          "type": "boolean"
+        },
+        "alreadyLogged": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "instruction": {
+          "type": "string"
+        },
+        "preview": {},
+        "record": {},
+        "wouldFail": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "written"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  },
+  {
+    "name": "log_blood_pressure",
+    "title": "Log a blood-pressure reading",
+    "description": "Log ONE blood-pressure reading (systolic AND diastolic, in mmHg) to the user's own record. Blood pressure is two values so it cannot use log_measurement. Requires confirmation: call once to preview the exact reading, confirm the values with the user, then call again with confirm:true and the same idempotencyKey to commit. Both values are written atomically with the same timestamp.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "systolic": {
+          "type": "number",
+          "description": "Systolic (the higher number), in mmHg."
+        },
+        "diastolic": {
+          "type": "number",
+          "description": "Diastolic (the lower number), in mmHg."
+        },
+        "measuredAt": {
+          "description": "Optional ISO-8601 instant the reading was taken; defaults to now.",
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        },
+        "confirm": {
+          "default": false,
+          "description": "Set to true ONLY after confirming the value with the user. When false or absent the tool returns a preview and writes nothing.",
+          "type": "boolean"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "A stable client-chosen key for this logical write. Re-calling with the same key (after a preview) commits exactly one row; a further retry is a safe no-op."
+        }
+      },
+      "required": [
+        "systolic",
+        "diastolic",
+        "idempotencyKey"
+      ]
+    },
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "written": {
+          "type": "boolean"
+        },
+        "requiresConfirmation": {
+          "type": "boolean"
+        },
+        "alreadyLogged": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "instruction": {
+          "type": "string"
+        },
+        "preview": {},
+        "record": {},
+        "wouldFail": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "written"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": false
+    },
+    "execution": {
+      "taskSupport": "forbidden"
+    }
+  }
+]

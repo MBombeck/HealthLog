@@ -1,0 +1,351 @@
+{
+  "status": 201,
+  "body": {
+    "data": {
+      "id": "<id:1>",
+      "userId": "<id:2>",
+      "name": "Full injection",
+      "dose": "1 pen",
+      "treatmentClass": "GLP1",
+      "dosesPerUnit": 4,
+      "unitsPerDose": 0.5,
+      "active": true,
+      "notificationsEnabled": false,
+      "pausedAt": null,
+      "snoozedUntil": null,
+      "startsOn": "2026-10-10T00:00:00.000Z",
+      "endsOn": "2026-12-31T00:00:00.000Z",
+      "endedAt": null,
+      "oneShot": false,
+      "asNeeded": false,
+      "trackIntake": true,
+      "autoMarkTaken": true,
+      "autoMarkTakenSince": "<now>",
+      "deliveryForm": "INJECTION",
+      "trackInjectionSites": true,
+      "allowedInjectionSites": [
+        "ABDOMEN_LEFT",
+        "THIGH_RIGHT"
+      ],
+      "liveActivityEnabled": true,
+      "criticalAlarmEnabled": true,
+      "atcCode": "A10BJ06",
+      "rxNormCode": "1991302",
+      "lowStockNotifiedAt": null,
+      "lowStockNotifiedThresholdDays": null,
+      "reorderLeadDays": 7,
+      "externalSource": null,
+      "externalId": null,
+      "createdAt": "<createdAt>",
+      "updatedAt": "<updatedAt>",
+      "schedules": [
+        {
+          "id": "<id:3>",
+          "medicationId": "<id:1>",
+          "windowStart": "18:00",
+          "windowEnd": "20:00",
+          "label": "Evening",
+          "dose": "0.5 pen",
+          "unitsPerDose": 1,
+          "daysOfWeek": null,
+          "timesOfDay": [
+            "18:30"
+          ],
+          "reminderGraceMinutes": 45,
+          "rrule": "FREQ=WEEKLY;BYDAY=MO",
+          "rollingIntervalDays": null,
+          "scheduleType": "SCHEDULED",
+          "cyclicOnWeeks": null,
+          "cyclicOffWeeks": null,
+          "doseWindows": [
+            {
+              "end": "20:00",
+              "start": "18:00",
+              "timeOfDay": "18:30"
+            }
+          ],
+          "resolvedUnitsPerDose": 1
+        }
+      ],
+      "category": "custom:5b1f7c2e-4d3a-4b8e-9c61-2a7d0e9f4c13",
+      "categoryLabel": "Heart and circulation",
+      "courses": [
+        {
+          "id": "<id:4>",
+          "startsOn": "2026-10-10",
+          "endsOn": "2026-12-31",
+          "endedAt": null,
+          "status": "CURRENT",
+          "takenDoses": 0,
+          "note": null
+        }
+      ],
+      "courseCount": 1,
+      "previousCourseEndedOn": null,
+      "canStartCourse": false,
+      "nextDueAt": "2026-10-12T16:30:00.000Z",
+      "remindersActive": false,
+      "nextDueOverdue": true,
+      "courseStatus": "CURRENT",
+      "intakeActionable": true,
+      "canEndCourse": true,
+      "stockUnitsRemaining": null,
+      "stockDosesRemaining": null,
+      "runwayDays": null,
+      "ingredients": [],
+      "related": []
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 201,
+      "action": {
+        "name": "medication.create",
+        "entity_type": "medication",
+        "entity_id": "<id:1>"
+      },
+      "meta": null,
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "medications": [
+      {
+        "id": "<id:5>",
+        "userId": "<id:2>",
+        "name": "Existing tablet",
+        "dose": "10mg",
+        "treatmentClass": "GENERIC",
+        "dosesPerUnit": null,
+        "unitsPerDose": "1",
+        "active": true,
+        "notificationsEnabled": true,
+        "pausedAt": null,
+        "snoozedUntil": null,
+        "startsOn": "2026-10-01T00:00:00.000Z",
+        "endsOn": null,
+        "endedAt": null,
+        "oneShot": false,
+        "asNeeded": false,
+        "trackIntake": true,
+        "autoMarkTaken": false,
+        "autoMarkTakenSince": null,
+        "deliveryForm": "ORAL",
+        "trackInjectionSites": false,
+        "allowedInjectionSites": [],
+        "liveActivityEnabled": false,
+        "criticalAlarmEnabled": false,
+        "atcCode": null,
+        "rxNormCode": null,
+        "lowStockNotifiedAt": null,
+        "lowStockNotifiedThresholdDays": null,
+        "reorderLeadDays": null,
+        "externalSource": null,
+        "externalId": null,
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>"
+      },
+      {
+        "id": "<id:1>",
+        "userId": "<id:2>",
+        "name": "Full injection",
+        "dose": "1 pen",
+        "treatmentClass": "GLP1",
+        "dosesPerUnit": 4,
+        "unitsPerDose": "0.5",
+        "active": true,
+        "notificationsEnabled": false,
+        "pausedAt": null,
+        "snoozedUntil": null,
+        "startsOn": "2026-10-10T00:00:00.000Z",
+        "endsOn": "2026-12-31T00:00:00.000Z",
+        "endedAt": null,
+        "oneShot": false,
+        "asNeeded": false,
+        "trackIntake": true,
+        "autoMarkTaken": true,
+        "autoMarkTakenSince": "<now>",
+        "deliveryForm": "INJECTION",
+        "trackInjectionSites": true,
+        "allowedInjectionSites": [
+          "ABDOMEN_LEFT",
+          "THIGH_RIGHT"
+        ],
+        "liveActivityEnabled": true,
+        "criticalAlarmEnabled": true,
+        "atcCode": "A10BJ06",
+        "rxNormCode": "1991302",
+        "lowStockNotifiedAt": null,
+        "lowStockNotifiedThresholdDays": null,
+        "reorderLeadDays": 7,
+        "externalSource": null,
+        "externalId": null,
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>"
+      },
+      {
+        "id": "<id:6>",
+        "userId": "<id:2>",
+        "name": "Plain tablet",
+        "dose": "5mg",
+        "treatmentClass": "GENERIC",
+        "dosesPerUnit": null,
+        "unitsPerDose": "1",
+        "active": true,
+        "notificationsEnabled": true,
+        "pausedAt": null,
+        "snoozedUntil": null,
+        "startsOn": null,
+        "endsOn": null,
+        "endedAt": null,
+        "oneShot": false,
+        "asNeeded": false,
+        "trackIntake": true,
+        "autoMarkTaken": false,
+        "autoMarkTakenSince": null,
+        "deliveryForm": "ORAL",
+        "trackInjectionSites": false,
+        "allowedInjectionSites": [],
+        "liveActivityEnabled": false,
+        "criticalAlarmEnabled": false,
+        "atcCode": null,
+        "rxNormCode": null,
+        "lowStockNotifiedAt": null,
+        "lowStockNotifiedThresholdDays": null,
+        "reorderLeadDays": null,
+        "externalSource": null,
+        "externalId": null,
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>"
+      }
+    ],
+    "schedules": [
+      {
+        "id": "<id:7>",
+        "medicationId": "<id:6>",
+        "windowStart": "07:00",
+        "windowEnd": "09:00",
+        "label": null,
+        "dose": null,
+        "unitsPerDose": null,
+        "daysOfWeek": null,
+        "timesOfDay": [
+          "07:00"
+        ],
+        "reminderGraceMinutes": null,
+        "rrule": "FREQ=DAILY",
+        "rollingIntervalDays": null,
+        "scheduleType": "SCHEDULED",
+        "cyclicOnWeeks": null,
+        "cyclicOffWeeks": null,
+        "doseWindows": null
+      },
+      {
+        "id": "<id:8>",
+        "medicationId": "<id:5>",
+        "windowStart": "08:00",
+        "windowEnd": "10:00",
+        "label": null,
+        "dose": null,
+        "unitsPerDose": null,
+        "daysOfWeek": null,
+        "timesOfDay": [
+          "08:00"
+        ],
+        "reminderGraceMinutes": null,
+        "rrule": "FREQ=DAILY",
+        "rollingIntervalDays": null,
+        "scheduleType": "SCHEDULED",
+        "cyclicOnWeeks": null,
+        "cyclicOffWeeks": null,
+        "doseWindows": null
+      },
+      {
+        "id": "<id:3>",
+        "medicationId": "<id:1>",
+        "windowStart": "18:00",
+        "windowEnd": "20:00",
+        "label": "Evening",
+        "dose": "0.5 pen",
+        "unitsPerDose": "1",
+        "daysOfWeek": null,
+        "timesOfDay": [
+          "18:30"
+        ],
+        "reminderGraceMinutes": 45,
+        "rrule": "FREQ=WEEKLY;BYDAY=MO",
+        "rollingIntervalDays": null,
+        "scheduleType": "SCHEDULED",
+        "cyclicOnWeeks": null,
+        "cyclicOffWeeks": null,
+        "doseWindows": [
+          {
+            "end": "20:00",
+            "start": "18:00",
+            "timeOfDay": "18:30"
+          }
+        ]
+      }
+    ],
+    "revisions": [],
+    "pauseEras": [],
+    "courses": [
+      {
+        "id": "<id:4>",
+        "medicationId": "<id:1>",
+        "userId": "<id:2>",
+        "startsOn": "2026-10-10T00:00:00.000Z",
+        "endsOn": "2026-12-31T00:00:00.000Z",
+        "endedAt": null,
+        "noteEncrypted": null,
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>"
+      }
+    ],
+    "intakes": [],
+    "doseChanges": [],
+    "inventoryItems": [],
+    "inventoryEvents": [],
+    "categories": [
+      {
+        "medicationId": "<id:6>",
+        "category": "OTHER",
+        "updatedAt": "<updatedAt>"
+      },
+      {
+        "medicationId": "<id:1>",
+        "category": "custom:5b1f7c2e-4d3a-4b8e-9c61-2a7d0e9f4c13",
+        "updatedAt": "<updatedAt>"
+      }
+    ],
+    "ingredients": [],
+    "audit": [
+      {
+        "action": "medication.create",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:1>",
+          "name": "Full injection",
+          "autoMarkTaken": true
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.create",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:6>",
+          "name": "Plain tablet",
+          "autoMarkTaken": false
+        },
+        "ipAddress": null
+      }
+    ],
+    "idempotency": []
+  }
+}

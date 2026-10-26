@@ -19,8 +19,8 @@ import {
   apiSuccess,
   getClientIp,
   returnAllZodIssues,
-  safeJson,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { withIdempotency } from "@/lib/idempotency";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import {
@@ -80,21 +80,13 @@ async function postFamilyHistory(request: NextRequest): Promise<Response> {
   // it (`recordSharing.anamnesis.relativeNote`).
   const { user } = await requireRecordAuth("manage", "profile");
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, familyHistoryCreateSchema, {
     maxBytes: 16 * 1024,
+    action: "family-history.validation-failed",
+    countIssues: true,
+    errorCode: "familyHistory.invalid",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = familyHistoryCreateSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    annotate({
-      action: { name: "family-history.validation-failed" },
-      meta: { issue_count: parsed.error.issues.length },
-    });
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "familyHistory.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const entry = parsed.data;
 

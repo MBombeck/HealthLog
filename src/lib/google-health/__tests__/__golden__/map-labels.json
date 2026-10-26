@@ -1,0 +1,37 @@
+{
+  "sleepStages": [
+    { "raw": "AWAKE", "stage": "AWAKE" },
+    { "raw": "wake", "stage": "AWAKE" },
+    { "raw": "LIGHT", "stage": "CORE" },
+    { "raw": " core ", "stage": "CORE" },
+    { "raw": "Deep", "stage": "DEEP" },
+    { "raw": "REM", "stage": "REM" },
+    { "raw": "ASLEEP", "stage": "ASLEEP" },
+    { "raw": "RESTLESS", "stage": "AWAKE" },
+    { "raw": "in bed", "stage": "IN_BED" },
+    { "raw": "IN-BED", "stage": "IN_BED" },
+    { "raw": "inbed", "stage": "IN_BED" },
+    { "raw": "SLEEP_STAGE_TYPE_UNSPECIFIED", "stage": null },
+    { "raw": "", "stage": null },
+    { "raw": 42, "stage": null },
+    { "raw": null, "stage": null }
+  ],
+  "sportTypes": [
+    { "raw": "RUNNING", "sportType": "running" },
+    { "raw": "TREADMILL_RUNNING", "sportType": "running" },
+    { "raw": "STRENGTH_TRAINING", "sportType": "strength" },
+    { "raw": "strength training", "sportType": "strength" },
+    { "raw": "Mountain-Biking", "sportType": "cycling" },
+    { "raw": "STAIR_CLIMBER", "sportType": "stairClimber" },
+    { "raw": "STAIRCLIMBER", "sportType": "stairClimber" },
+    { "raw": "HIGH INTENSITY INTERVAL TRAINING", "sportType": "hiit" },
+    { "raw": "FOOTBALL", "sportType": "soccer" },
+    { "raw": "PILATES", "sportType": "mindAndBody" },
+    { "raw": "OTHER_WORKOUT", "sportType": "other" },
+    { "raw": "KITESURFING", "sportType": "other" },
+    { "raw": "", "sportType": "other" },
+    { "raw": "   ", "sportType": "other" },
+    { "raw": null, "sportType": "other" },
+    { "raw": 7, "sportType": "other" }
+  ]
+}

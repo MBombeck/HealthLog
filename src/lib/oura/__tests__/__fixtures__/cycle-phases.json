@@ -1,0 +1,65 @@
+[
+  {
+    "scenario": "luteal then follicular on adjacent days marks the follicular day",
+    "records": [
+      { "id": "cycle-0001", "day": "2026-03-01", "phase": "luteal" },
+      { "id": "cycle-0002", "day": "2026-03-02", "phase": "luteal" },
+      { "id": "cycle-0003", "day": "2026-03-03", "phase": "follicular" },
+      { "id": "cycle-0004", "day": "2026-03-04", "phase": "follicular" }
+    ]
+  },
+  {
+    "scenario": "a gap between luteal and follicular marks nothing",
+    "records": [
+      { "id": "cycle-0011", "day": "2026-03-10", "phase": "luteal" },
+      { "id": "cycle-0012", "day": "2026-03-12", "phase": "follicular" }
+    ]
+  },
+  {
+    "scenario": "a literal menstrual phase marks its own day",
+    "records": [
+      { "id": "cycle-0021", "day": "2026-04-01", "phase": "menstrual" },
+      { "id": "cycle-0022", "day": "2026-04-02", "phase": "Menstrual" },
+      { "id": "cycle-0023", "day": "2026-04-03", "phase": "follicular" }
+    ]
+  },
+  {
+    "scenario": "page order is not chronological",
+    "records": [
+      { "id": "cycle-0033", "day": "2026-05-03", "phase": "follicular" },
+      { "id": "cycle-0031", "day": "2026-05-01", "phase": "luteal" },
+      { "id": "cycle-0032", "day": "2026-05-02", "phase": "LUTEAL" }
+    ]
+  },
+  {
+    "scenario": "a null phase does not break the run, an unknown phase does",
+    "records": [
+      { "id": "cycle-0041", "day": "2026-06-01", "phase": "luteal" },
+      { "id": "cycle-0042", "day": "2026-06-02", "phase": null },
+      { "id": "cycle-0043", "day": "2026-06-03", "phase": "follicular" },
+      { "id": "cycle-0044", "day": "2026-06-10", "phase": "luteal" },
+      { "id": "cycle-0045", "day": "2026-06-11", "phase": "ovulatory" },
+      { "id": "cycle-0046", "day": "2026-06-12", "phase": "follicular" }
+    ]
+  },
+  {
+    "scenario": "records without a day are dropped and duplicates collapse",
+    "records": [
+      { "id": "cycle-0051", "day": "", "phase": "menstrual" },
+      { "id": "cycle-0052", "day": "2026-07-01", "phase": "menstrual" },
+      { "id": "cycle-0053", "day": "2026-07-01", "phase": "menstrual" },
+      { "day": "2026-07-02" }
+    ]
+  },
+  {
+    "scenario": "month boundary counts as adjacent",
+    "records": [
+      { "id": "cycle-0061", "day": "2026-08-31", "phase": "luteal" },
+      { "id": "cycle-0062", "day": "2026-09-01", "phase": "follicular" }
+    ]
+  },
+  {
+    "scenario": "an empty series",
+    "records": []
+  }
+]

@@ -20,12 +20,8 @@
  *   `requireFreshMfa` step-up.
  */
 import { NextRequest } from "next/server";
-import {
-  apiError,
-  apiValidationError,
-  safeJson,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiError } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -81,19 +77,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
   await ensureDbCompatibility();
 
   // (3) Body — bounded, then the exact wire contract.
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, nativeHandoffTokenSchema, {
     maxBytes: 16 * 1024,
+    message: "Invalid request",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = nativeHandoffTokenSchema.safeParse(body);
-  if (!parsed.success) {
-    return apiValidationError(
-      "Invalid request",
-      sanitiseZodIssues(parsed.error.issues),
-      422,
-    );
-  }
+  if (!parsed.ok) return parsed.error;
   const { code, codeVerifier } = parsed.data;
 
   // (4) Lookup + flow check + replay/expiry/PKCE + atomic single-use consume.
@@ -126,7 +114,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // (5) Load the user (may have been deleted mid-flight).
   const user = await prisma.user.findUnique({
     where: { id: result.userId },
-    select: { id: true, username: true, onboardingCompletedAt: true },
+    select: {
+      id: true,
+      username: true,
+      onboardingCompletedAt: true,
+      deletionRequestedAt: true,
+      deletionPurgeAt: true,
+    },
   });
   if (!user) {
     annotate({ action: { name: "auth.native.token.user_missing" } });

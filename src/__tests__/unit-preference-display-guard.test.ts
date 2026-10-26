@@ -85,6 +85,9 @@ const HEIGHT_CONTROL = join(
 function sweptFiles(): string[] {
   return [
     join(SRC, "app", "page-client.tsx"),
+    ...walkSourceFiles(join(SRC, "components", "dashboard", "tiles"), {
+      floor: 5,
+    }).map((rel) => join(SRC, "components", "dashboard", "tiles", rel)),
     ...walkSourceFiles(SRC, { floor: 700, extensions: [".tsx"] })
       .filter(
         (rel) => rel.startsWith("app/insights/") && rel.endsWith("/page.tsx"),
@@ -250,6 +253,8 @@ const WIDE_SWEEP_ROOTS = [
   "lib/jobs/",
   "lib/targets/",
   "lib/daily/",
+  // The series route's readers, moved out of `app/` with their unit tokens.
+  "lib/measurements/series/",
 ];
 
 const UNIT_LITERAL_PATTERNS: readonly RegExp[] = [
@@ -293,9 +298,14 @@ const UNIT_LITERAL_ALLOWLIST: Record<
     reason:
       "input parsing: canonical units of the entry table, replaced by the transform's unit at render and inverted on save",
   },
-  "components/measurements/measurement-list.tsx": {
-    lines: 2,
+  "components/measurements/list/use-measurement-edit.ts": {
+    lines: 1,
     reason: "input parsing: the inline edit inverts an mmol/L entry to mg/dL",
+  },
+  "components/measurements/list/use-measurement-row-display.ts": {
+    lines: 1,
+    reason:
+      "input parsing: decides whether the inline edit's input is in mmol/L and so needs inverting",
   },
   "components/settings/import-panel/import-examples.ts": {
     lines: 3,
@@ -351,7 +361,7 @@ const UNIT_LITERAL_ALLOWLIST: Record<
     lines: 1,
     reason: "the legacy export endpoint's canonical storage-unit contract",
   },
-  "app/api/measurements/series/route.ts": {
+  "lib/measurements/series/kinds.ts": {
     lines: 4,
     reason:
       "canonical wire units; glucose is overridden to the reader's unit per request",
@@ -504,7 +514,7 @@ const READER_UNIT_PRODUCERS = [
   "lib/ai/prompts/weight.ts",
   "lib/insights/features-units.ts",
   "lib/insights/comprehensive-generate.ts",
-  "app/api/insights/generate/route.ts",
+  "lib/insights/briefing-request/features.ts",
   "lib/insights/weight-status.ts",
   "lib/insights/metric-status.ts",
   "lib/insights/narrative/period-narrative.ts",

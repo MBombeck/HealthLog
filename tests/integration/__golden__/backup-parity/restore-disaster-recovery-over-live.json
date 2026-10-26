@@ -27,6 +27,7 @@
         "documents": 1,
         "documentConditionLinks": 1,
         "extractedFacts": 1,
+        "documentImportKeys": 1,
         "healthProfile": 1,
         "healthProfileFactRevisions": 2,
         "customMetrics": 2,
@@ -83,6 +84,7 @@
         "documents": 1,
         "documentConditionLinks": 0,
         "extractedFacts": 0,
+        "documentImportKeys": 1,
         "healthProfile": 1,
         "healthProfileFactRevisions": 2,
         "customMetrics": 2,
@@ -299,6 +301,7 @@
           "documents": 1,
           "documentConditionLinks": 0,
           "extractedFacts": 0,
+          "documentImportKeys": 1,
           "healthProfile": 1,
           "healthProfileFactRevisions": 2,
           "customMetrics": 2,
@@ -332,7 +335,7 @@
           "symptomDefinitions": 2,
           "lifeEvents": 3
         },
-        "accountSettingsApplied": 62,
+        "accountSettingsApplied": 61,
         "skipped": {
           "catalogueKeys": [],
           "links": 0

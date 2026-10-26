@@ -1,48 +1,44 @@
 /**
- * v1.7.0 — daily-mean consolidation queue registration guard.
+ * Daily-mean consolidation queue registration guard.
  *
- * Same source-text-grep approach as the drain + step-consolidation
- * regression guards: assert the queue is registered in `allQueues`, a
- * `createAndWork` handler is wired against it, and the boot-discovery
- * enqueue helper is called — without booting pg-boss + Prisma. An
- * unregistered queue silently never drains.
+ * Reads the worker registry: the queue is declared in the rollup group,
+ * bound to the consolidation handler, and offered again by the rollup boot
+ * discovery. An unregistered queue silently never drains.
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { describe, expect, it } from "vitest";
 
-// v1.18.1 — the mean-consolidation wiring + boot discovery moved out of the
-// 2143-LOC reminder-worker boot file into the rollup registrar. The dead-queue
-// guard follows the wiring there.
-const REGISTRAR_PATH = join(__dirname, "..", "reminder", "register-rollup.ts");
-const source = readFileSync(REGISTRAR_PATH, "utf8");
+import {
+  MEAN_CONSOLIDATION_CONCURRENCY,
+  MEAN_CONSOLIDATION_QUEUE,
+} from "@/lib/jobs/mean-consolidation";
+import { handleMeanConsolidation } from "@/lib/jobs/reminder/rollup-handlers";
+import {
+  discoveryOf,
+  groupOf,
+  jobOf,
+  loadedHandler,
+} from "@/lib/jobs/registry/__tests__/registry-helpers";
 
-describe("reminder-worker — mean-consolidation wiring", () => {
-  it("imports the queue symbols from the mean-consolidation module", () => {
-    expect(source).toMatch(/from\s*["']@\/lib\/jobs\/mean-consolidation["']/);
-    expect(source).toMatch(/\bMEAN_CONSOLIDATION_QUEUE\b/);
-    expect(source).toMatch(/\brunMeanConsolidationForUser\b/);
-    expect(source).toMatch(/\benqueueBootTimeMeanConsolidation\b/);
+describe("mean-consolidation registration", () => {
+  it("declares the mean-consolidation queue in the rollup group", () => {
+    expect(groupOf(MEAN_CONSOLIDATION_QUEUE).name).toBe("rollup");
   });
 
-  it("registers the mean-consolidation queue in the allQueues loop", () => {
-    const allQueuesMatch = source.match(
-      /const allQueues\s*=\s*\[([\s\S]*?)\];/,
+  it("is a per-user exclusive pass at the module's concurrency", () => {
+    const job = jobOf(MEAN_CONSOLIDATION_QUEUE);
+    expect(job.policy?.policy).toBe("exclusive");
+    expect(job.work).toEqual({
+      localConcurrency: MEAN_CONSOLIDATION_CONCURRENCY,
+    });
+  });
+
+  it("binds the consolidation handler", async () => {
+    expect(await loadedHandler(MEAN_CONSOLIDATION_QUEUE)).toBe(
+      handleMeanConsolidation,
     );
-    expect(allQueuesMatch).not.toBeNull();
-    expect(allQueuesMatch![1]).toMatch(/\bMEAN_CONSOLIDATION_QUEUE\b/);
   });
 
-  it("registers a createAndWork handler against the mean-consolidation queue", () => {
-    expect(source).toMatch(
-      /createAndWork[\s\S]{0,200}MEAN_CONSOLIDATION_QUEUE[\s\S]{0,400}runMeanConsolidationForUser/,
-    );
-  });
-
-  it("fires the boot-discovery enqueue helper", () => {
-    // The boot wiring passes a stagger offset so the heavy backfills don't all
-    // drain in parallel onto one tenant; allow an optional argument here.
-    expect(source).toMatch(/await enqueueBootTimeMeanConsolidation\([^)]*\)/);
+  it("runs the boot discovery pass", () => {
+    expect(discoveryOf("rollup")).toContain("mean-consolidation");
   });
 });

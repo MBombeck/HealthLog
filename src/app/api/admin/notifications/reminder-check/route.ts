@@ -3,7 +3,12 @@ import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
-import { apiSuccess, returnAllZodIssues, safeJson } from "@/lib/api-response";
+import {
+  apiSuccess,
+  returnAllZodIssues,
+  safeJson,
+  isJsonContentType,
+} from "@/lib/api-response";
 import { adminReminderCheckSchema } from "@/lib/validations/notifications";
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
 import { dispatchLocalisedNotification } from "@/lib/notifications/dispatch-localised";
@@ -11,6 +16,7 @@ import { getUserTodayBounds, getDayOfWeekInTz } from "@/lib/tz/local-day";
 import { sendsMedicationReminders } from "@/lib/medications/auto-mark-taken";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 
 export const dynamic = "force-dynamic";
 
@@ -75,9 +81,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // body and no content-type), so the parse only runs when a JSON body is
   // actually presented. An empty object is the same instance-wide sweep.
   let input: unknown = {};
-  if (
-    (request.headers.get("content-type") ?? "").includes("application/json")
-  ) {
+  if (isJsonContentType(request.headers.get("content-type"))) {
     const { data, error } = await safeJson(request, { maxBytes: 4 * 1024 });
     if (error) return error;
     input = data ?? {};
@@ -109,7 +113,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       ...(scopedUserId ? { userId: scopedUserId } : {}),
     },
     include: {
-      schedules: true,
+      schedules: { orderBy: MEDICATION_SCHEDULE_ORDER },
       user: { select: { id: true, username: true, timezone: true } },
     },
   });

@@ -13,13 +13,8 @@
  */
 import { NextRequest } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  apiValidationError,
-  safeJson,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { ensureDbCompatibility } from "@/lib/db-compat";
 import { checkAuthSurfaceRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -44,19 +39,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   await ensureDbCompatibility();
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, mfaWebauthnLoginOptionsSchema, {
     maxBytes: 16 * 1024,
+    message: "Invalid request",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = mfaWebauthnLoginOptionsSchema.safeParse(body);
-  if (!parsed.success) {
-    return apiValidationError(
-      "Invalid request",
-      sanitiseZodIssues(parsed.error.issues),
-      422,
-    );
-  }
+  if (!parsed.ok) return parsed.error;
 
   const challenge = await loadActiveChallenge(parsed.data.mfaTicket);
   if (!challenge) {

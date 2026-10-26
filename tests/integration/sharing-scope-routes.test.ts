@@ -1,11 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
-import {
-  acceptGrant,
-  grantCoversDomain,
-  inviteGrant,
-} from "@/lib/sharing/grants";
+import { acceptGrant, inviteGrant } from "@/lib/sharing/grants";
+import { grantCoversDomain } from "@/lib/sharing/grant-access";
 import { SHARE_DOMAINS } from "@/lib/sharing/scope";
 
 let counter = 0;

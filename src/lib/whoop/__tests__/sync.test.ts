@@ -60,11 +60,20 @@ vi.mock("@/lib/crypto", () => ({
   decrypt: (s: string) => s.replace(/^enc\(|\)$/g, ""),
 }));
 
+vi.mock("../oauth", async (orig) => {
+  const actual = await orig<typeof import("../oauth")>();
+  return {
+    ...actual,
+    whoopOAuth: {
+      ...actual.whoopOAuth,
+      refresh: (...a: unknown[]) => refreshAccessTokenMock(...a),
+    },
+  };
+});
 vi.mock("../client", async (orig) => {
   const actual = await orig<typeof import("../client")>();
   return {
     ...actual,
-    refreshAccessToken: (...a: unknown[]) => refreshAccessTokenMock(...a),
     fetchRecoveries: (...a: unknown[]) => fetchRecoveriesMock(...a),
   };
 });
@@ -99,7 +108,7 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
   },
 }));
 
-vi.mock("@/lib/insights/comprehensive-generate", () => ({
+vi.mock("@/lib/insights/status-invalidation", () => ({
   invalidateStatusInsightsForTypes: (...a: unknown[]) =>
     invalidateStatusMock(...a),
 }));

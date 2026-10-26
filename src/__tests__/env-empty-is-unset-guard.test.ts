@@ -88,15 +88,18 @@ describe("an empty environment variable counts as unset", () => {
   it("T3 — the sweep read the tree and the matcher fires on real source", () => {
     // An empty offender list proves nothing if the narrowed walk found no
     // files, or if the matcher no longer fires on what the tree actually
-    // holds. Floor the narrowed set, then put the pre-fix read back into a
-    // real client and require the matcher to find it there.
+    // holds. Floor the narrowed set, then put the pre-fix read back into the
+    // redirect-URI helper every client uses and require the matcher to find it there.
     const files = sourceFiles();
     expect(files.length).toBeGreaterThan(2400);
-    expect(files).toContain("lib/withings/client.ts");
-    const real = readFileSync(join(SRC, "lib/withings/client.ts"), "utf8");
+    expect(files).toContain("lib/integrations/oauth-kit/redirect-uri.ts");
+    const real = readFileSync(
+      join(SRC, "lib/integrations/oauth-kit/redirect-uri.ts"),
+      "utf8",
+    );
     expect([...real.matchAll(NULLISH_ENV_FALLBACK)]).toEqual([]);
     const reverted = real.replace(
-      /envOr\(\s*"WITHINGS_REDIRECT_URI",/,
+      /envOr\(envVar,/,
       "process.env.WITHINGS_REDIRECT_URI ?? (",
     );
     expect(reverted).not.toBe(real);

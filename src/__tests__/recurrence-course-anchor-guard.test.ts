@@ -15,6 +15,20 @@
  * which it is. The scan asserts a floor on what it found, so a matcher that
  * stopped matching fails instead of agreeing with an empty tree.
  *
+ * #1280 — the same list carries the instant "End course" ended a course:
+ * every medication builder threads `endedAt` into the context, or the
+ * engine would keep a dose due after the course was ended. A builder passes
+ * when its block names `endedAt` or spreads a window that carries it
+ * (`...window` from `mintWindow`, `...medicationWindow(row)`).
+ *
+ * The compliance side builds its context in two more shapes,
+ * `ComplianceMedicationContext` and the `CadenceEngineContext` the timelines
+ * hand the engine, and both dropped `endedAt` once: the streak and the
+ * per-window timeline copied the context field by field and counted the dose
+ * after an ended course as missed. Both types now require the field, and the
+ * last leg holds every builder of either to naming it, and the timelines to
+ * the one builder.
+ *
  * Limit, stated: a literal passed straight to the engine without the
  * `RecurrenceContext` annotation is invisible here. Every medication path
  * today goes through one of the annotated builders below.
@@ -23,7 +37,7 @@ import { readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
-import { readSourceText } from "./helpers/source-files";
+import { readSource, readSourceText } from "./helpers/source-files";
 
 const SRC = resolve(__dirname, "..");
 const ROOT = resolve(SRC, "..");
@@ -69,7 +83,10 @@ function blockAt(text: string, open: number): string {
 interface Builder {
   file: string;
   declaresCourseStart: boolean;
+  threadsEndedAt: boolean;
 }
+
+const THREADS_ENDED_AT = /\bendedAt\b|\.\.\.\s*(window\b|medicationWindow\()/;
 
 function builders(): Builder[] {
   const out: Builder[] = [];
@@ -77,11 +94,11 @@ function builders(): Builder[] {
     const text = readSourceText(file);
     for (const m of text.matchAll(DECLARATION)) {
       const open = m.index! + m[0].length - 1;
+      const block = blockAt(text, open);
       out.push({
         file: relative(ROOT, file),
-        declaresCourseStart: /rollingAnchor\s*:\s*"courseStart"/.test(
-          blockAt(text, open),
-        ),
+        declaresCourseStart: /rollingAnchor\s*:\s*"courseStart"/.test(block),
+        threadsEndedAt: THREADS_ENDED_AT.test(block),
       });
     }
   }
@@ -114,10 +131,72 @@ describe("the rolling course anchor is opt-in", () => {
     expect(missing).toEqual([]);
   });
 
+  it("has every medication builder thread the instant a course was ended", () => {
+    const medication = builders().filter((b) =>
+      MEDICATION_BUILDERS.includes(b.file),
+    );
+    expect(medication.length).toBeGreaterThanOrEqual(3);
+    expect(medication.filter((b) => !b.threadsEndedAt)).toEqual([]);
+    // The matcher, held against what it must and must not accept.
+    expect(THREADS_ENDED_AT.test("endedAt: row.endedAt,")).toBe(true);
+    expect(THREADS_ENDED_AT.test("...medicationWindow(row),")).toBe(true);
+    expect(THREADS_ENDED_AT.test("endsOn: row.endsOn,")).toBe(false);
+  });
+
   it("keeps every other builder on the default (the last intake anchors)", () => {
     const declaring = builders().filter(
       (b) => NON_MEDICATION_BUILDERS.includes(b.file) && b.declaresCourseStart,
     );
     expect(declaring).toEqual([]);
+  });
+});
+
+/** A typed literal or a typed return of either compliance context. */
+const COMPLIANCE_CONTEXT_DECLARATION =
+  /(\)\s*:\s*(?:CadenceEngineContext|ComplianceMedicationContext)\s*\{|:\s*(?:CadenceEngineContext|ComplianceMedicationContext)(?:\s*\|\s*undefined)?\s*=\s*[^;{]*\{)/g;
+
+function complianceContextBuilders(): Array<{ file: string; block: string }> {
+  const out: Array<{ file: string; block: string }> = [];
+  for (const file of sourceFiles(SRC)) {
+    const text = readSourceText(file);
+    for (const m of text.matchAll(COMPLIANCE_CONTEXT_DECLARATION)) {
+      const open = m.index! + m[0].length - 1;
+      out.push({ file: relative(ROOT, file), block: blockAt(text, open) });
+    }
+  }
+  return out;
+}
+
+describe("the compliance contexts carry the instant a course was ended", () => {
+  it("builds the engine's context in one place, which names endedAt", () => {
+    const found = complianceContextBuilders();
+    // The two builders: the medication context and the engine's view of it.
+    expect(found.map((b) => b.file).sort()).toEqual([
+      "src/lib/analytics/compliance/display.ts",
+      "src/lib/analytics/compliance/types.ts",
+    ]);
+    for (const b of found) {
+      expect(b.block, b.file).toMatch(/\bendedAt\s*:/);
+    }
+    // The matcher sees each shape the timelines used to write.
+    const shapes = [
+      "const e: CadenceEngineContext = { a: 1 };",
+      "const e: CadenceEngineContext | undefined = ctx ? { a: 1 } : undefined;",
+      "function f(): ComplianceMedicationContext {\n return {};\n}",
+    ];
+    for (const shape of shapes) {
+      expect([...shape.matchAll(COMPLIANCE_CONTEXT_DECLARATION)]).toHaveLength(
+        1,
+      );
+    }
+  });
+
+  it("has both timelines take the engine context from that builder", () => {
+    const display = readSource("src/lib/analytics/compliance/display.ts", [
+      "function cadenceEngineContextOf(",
+      "function buildTimelineForWindow(",
+    ]);
+    const uses = display.match(/cadenceEngineContextOf\(ctx\)/g) ?? [];
+    expect(uses.length).toBe(2);
   });
 });

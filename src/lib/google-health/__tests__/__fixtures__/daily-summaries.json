@@ -1,0 +1,94 @@
+[
+  {
+    "name": "users/me/dataTypes/daily-oxygen-saturation/dataPoints/spo2-0001",
+    "dailyOxygenSaturation": {
+      "date": { "year": 2026, "month": 6, "day": 1 },
+      "averagePercentage": 96.5
+    }
+  },
+  {
+    "name": "users/me/dataTypes/daily-oxygen-saturation/dataPoints/spo2-0002",
+    "dailyOxygenSaturation": {
+      "date": "2026-06-02T00:00:00",
+      "averagePercentage": "97"
+    }
+  },
+  {
+    "name": "users/me/dataTypes/daily-heart-rate-variability/dataPoints/hrv-0001",
+    "dailyHeartRateVariability": {
+      "date": { "year": 2026, "month": 6, "day": 1 },
+      "averageHeartRateVariabilityMilliseconds": 42.123456
+    }
+  },
+  {
+    "name": "users/me/dataTypes/daily-heart-rate-variability/dataPoints/hrv-0002",
+    "dailyHeartRateVariability": {
+      "date": { "year": 2026, "month": 12, "day": 31 },
+      "averageHeartRateVariabilityMilliseconds": 0
+    }
+  },
+  {
+    "name": "users/me/dataTypes/daily-resting-heart-rate/dataPoints/rhr-0001",
+    "dailyRestingHeartRate": {
+      "date": "2026-06-03",
+      "beatsPerMinute": "55"
+    }
+  },
+  {
+    "name": "users/me/dataTypes/daily-resting-heart-rate/dataPoints/rhr-0002",
+    "dailyRestingHeartRate": {
+      "date": { "year": 2026, "month": "6", "day": 4 },
+      "beatsPerMinute": 57
+    }
+  },
+  {
+    "name": "users/me/dataTypes/daily-respiratory-rate/dataPoints/resp-0001",
+    "dailyRespiratoryRate": {
+      "date": { "year": 2026, "month": 3, "day": 29 },
+      "breathsPerMinute": 14.8
+    }
+  },
+  {
+    "name": "users/me/dataTypes/daily-respiratory-rate/dataPoints/resp-0002",
+    "dailyRespiratoryRate": {
+      "date": { "year": 2026, "month": 3, "day": 30 },
+      "dailyRespiratoryRateBpm": 15.1
+    }
+  },
+  {
+    "name": "users/me/dataTypes/daily-sleep-temperature-derivations/dataPoints/temp-0001",
+    "dailySleepTemperatureDerivations": {
+      "date": { "year": 2026, "month": 6, "day": 5 },
+      "nightlyTemperatureCelsius": 34.42,
+      "baselineTemperatureCelsius": 34.1,
+      "relativeNightlyStddev30dCelsius": 0.3
+    }
+  },
+  {
+    "name": "users/me/dataTypes/daily-sleep-temperature-derivations/dataPoints/temp-0002",
+    "dailySleepTemperatureDerivations": {
+      "date": "garbage",
+      "nightlyTemperatureCelsius": 34.6
+    }
+  },
+  {
+    "name": "users/me/dataTypes/daily-vo2-max/dataPoints/vo2-0001",
+    "dailyVo2Max": {
+      "date": { "year": 2026, "month": 6, "day": 6 },
+      "vo2Max": 47.25
+    }
+  },
+  {
+    "name": "users/me/dataTypes/daily-vo2-max/dataPoints/vo2-0002",
+    "dailyVo2Max": {
+      "vo2Max": "45"
+    }
+  },
+  {
+    "name": "users/me/dataTypes/daily-vo2-max/dataPoints/vo2-0003",
+    "dailyVo2Max": {
+      "date": { "year": 2026, "month": 6, "day": 7 },
+      "vo2Max": null
+    }
+  }
+]

@@ -18,6 +18,7 @@ import {
   createAssessmentSchema,
   listAssessmentsSchema,
 } from "@/lib/validations/mental-health";
+import { ASSESSMENT_WORDINGS } from "@/lib/mental-health/wording/types";
 
 import {
   dataEnvelope,
@@ -34,7 +35,7 @@ import {
 const createMentalHealthAssessmentRequest = createAssessmentSchema.meta({
   id: "CreateMentalHealthAssessmentRequest",
   description:
-    "Record one completed screener administration: PHQ-9 (9 items, 0–3), GAD-7 (7 items, 0–3), WHO-5 (5 items, 0–5) or SCI (8 items, 0–4). The array length and per-item ceiling must match the instrument. The item answers are encrypted at rest and never returned. The server computes the total (WHO-5 reports raw-sum × 4 as 0–100) + severity band + item-9 safety flag. Opt-in, beside mood tracking — this is a screening surface, not a diagnosis.",
+    "Record one completed screener administration: PHQ-9 (9 items, 0–3), GAD-7 (7 items, 0–3), WHO-5 (5 items, 0–5) or SCI (8 items, 0–4). The array length and per-item ceiling must match the instrument. The item answers are encrypted at rest and never returned. The server computes the total (WHO-5 reports raw-sum × 4 as 0–100) + severity band + item-9 safety flag. `locale` is the reader's app language; set `englishOriginal` when the reader answered in the English original instead of their language's text, and the server records the resulting `wording`. Opt-in, beside mood tracking — this is a screening surface, not a diagnosis.",
 });
 
 const listMentalHealthAssessmentsQuery = listAssessmentsSchema.meta({
@@ -48,6 +49,12 @@ const assessmentRow = z
     id: z.string(),
     instrument: z.enum(["PHQ9", "GAD7", "WHO5", "SCI"]),
     locale: z.string(),
+    wording: z
+      .enum(ASSESSMENT_WORDINGS)
+      .nullable()
+      .describe(
+        "Which text the answers were given in. `validated`: the published validated version for `locale` (the original for English). `unvalidated_translation`: a translation written for HealthLog where no validated version exists; clients show that the result is orientation only. `original_en`: the English original, chosen by a reader of another language (`englishOriginal` on create). Null on administrations recorded before v1.46.",
+      ),
     version: z.string(),
     totalScore: z.number(),
     severityBand: z.string(),

@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
-import { findActiveGrant } from "@/lib/sharing/grants";
+import { findActiveGrant } from "@/lib/sharing/grant-access";
 
 /**
  * The authority that admitted provider work for a record.

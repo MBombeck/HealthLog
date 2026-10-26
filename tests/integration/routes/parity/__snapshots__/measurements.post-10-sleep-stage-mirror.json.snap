@@ -1,0 +1,142 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "id": "<id:1>",
+      "userId": "<id:2>",
+      "type": "SLEEP_DURATION",
+      "value": 90,
+      "valueMin": null,
+      "valueMax": null,
+      "unit": "minutes",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T02:30:00.000Z",
+      "notes": null,
+      "externalId": "bridge-sleep-1",
+      "externalSourceVersion": null,
+      "aggregationProvenance": null,
+      "glucoseContext": null,
+      "sleepStage": "DEEP",
+      "rhythmClassification": null,
+      "deviceType": null,
+      "syncVersion": "<syncVersion>",
+      "deletedAt": null,
+      "createdAt": "<createdAt>",
+      "updatedAt": "<updatedAt>",
+      "appleHealthMirror": true,
+      "status": "duplicate"
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "measurement.create.sleep-stage",
+        "entity_type": "measurement",
+        "entity_id": "<id:1>"
+      },
+      "meta": {
+        "status": "duplicate",
+        "stage": "DEEP",
+        "source": "APPLE_HEALTH",
+        "cross_source_merge": true
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [],
+  "stored": [
+    {
+      "id": "<id:3>",
+      "type": "WEIGHT",
+      "value": 80.4,
+      "unit": "kg",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T06:30:00.000Z",
+      "notes": null,
+      "glucoseContext": null,
+      "deviceType": "scale",
+      "externalId": null,
+      "sleepStage": null,
+      "deletedAt": null,
+      "sealedNote": true
+    },
+    {
+      "id": "<id:4>",
+      "type": "BLOOD_PRESSURE_SYS",
+      "value": 128,
+      "unit": "mmHg",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T08:00:00.000Z",
+      "notes": null,
+      "glucoseContext": null,
+      "deviceType": null,
+      "externalId": null,
+      "sleepStage": null,
+      "deletedAt": null,
+      "sealedNote": false
+    },
+    {
+      "id": "<id:5>",
+      "type": "BLOOD_PRESSURE_DIA",
+      "value": 82,
+      "unit": "mmHg",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T08:00:00.000Z",
+      "notes": null,
+      "glucoseContext": null,
+      "deviceType": null,
+      "externalId": null,
+      "sleepStage": null,
+      "deletedAt": null,
+      "sealedNote": false
+    },
+    {
+      "id": "<id:6>",
+      "type": "PULSE",
+      "value": 66,
+      "unit": "bpm",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T08:00:00.000Z",
+      "notes": null,
+      "glucoseContext": null,
+      "deviceType": null,
+      "externalId": null,
+      "sleepStage": null,
+      "deletedAt": null,
+      "sealedNote": true
+    },
+    {
+      "id": "<id:1>",
+      "type": "SLEEP_DURATION",
+      "value": 90,
+      "unit": "minutes",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T02:30:00.000Z",
+      "notes": null,
+      "glucoseContext": null,
+      "deviceType": null,
+      "externalId": "bridge-sleep-1",
+      "sleepStage": "DEEP",
+      "deletedAt": null,
+      "sealedNote": false
+    },
+    {
+      "id": "<id:7>",
+      "type": "BLOOD_GLUCOSE",
+      "value": 104,
+      "unit": "mg/dL",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T07:00:00.000Z",
+      "notes": null,
+      "glucoseContext": "FASTING",
+      "deviceType": null,
+      "externalId": null,
+      "sleepStage": null,
+      "deletedAt": null,
+      "sealedNote": false
+    }
+  ]
+}

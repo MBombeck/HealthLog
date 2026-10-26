@@ -34,7 +34,11 @@
 import { describe, expect, it } from "vitest";
 import { join } from "node:path";
 
-import { readSourceText, walkSourceFiles } from "./helpers/source-files";
+import {
+  readSourceText,
+  stripComments,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -51,11 +55,7 @@ const codeCache = new Map<string, string>();
 function code(rel: string): string {
   let stripped = codeCache.get(rel);
   if (stripped === undefined) {
-    stripped = read(rel)
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .split("\n")
-      .map((line) => line.replace(/(^|[^:"'`\\])\/\/.*$/, "$1"))
-      .join("\n");
+    stripped = stripComments(read(rel), rel);
     codeCache.set(rel, stripped);
   }
   return stripped;
@@ -319,7 +319,7 @@ function findGatedWebCalls(): GatedCall[] {
 const PRECHECKED = new Set<string>([
   // `upload.mutationFn` asks first, then calls `uploadOnce`, so a large file
   // is not sent once only to be refused.
-  "components/admin/backups-section.tsx -> POST /api/admin/backups/upload",
+  "components/admin/backups/use-backup-upload.ts -> POST /api/admin/backups/upload",
 ]);
 
 describe("fresh-proof gates on the web", () => {

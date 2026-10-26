@@ -76,7 +76,7 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
   recomputeBucketsForMeasurement: vi.fn(async () => {}),
   recomputeUserRollups: vi.fn(async () => {}),
 }));
-vi.mock("@/lib/insights/comprehensive-generate", () => ({
+vi.mock("@/lib/insights/status-invalidation", () => ({
   invalidateStatusInsightsForTypes: vi.fn(async () => {}),
 }));
 vi.mock("@/lib/cache/invalidate", () => ({
@@ -85,9 +85,15 @@ vi.mock("@/lib/cache/invalidate", () => ({
 vi.mock("../credentials", () => ({
   getUserGoogleHealthCredentials: getUserGoogleHealthCredentialsMock,
 }));
-vi.mock("../client", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../client")>();
-  return { ...actual, refreshAccessToken: refreshAccessTokenMock };
+vi.mock("../oauth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../oauth")>();
+  return {
+    ...actual,
+    googleHealthOAuth: {
+      ...actual.googleHealthOAuth,
+      refresh: refreshAccessTokenMock,
+    },
+  };
 });
 
 vi.mock("../sync-metrics", () => ({ syncUserMetrics: resourceFake }));

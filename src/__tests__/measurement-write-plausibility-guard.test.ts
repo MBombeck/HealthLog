@@ -68,15 +68,22 @@ const WRITERS: Record<string, Disposition> = {
   "lib/measurements/reconcile-external-measurement.ts": { kind: "gate" },
 
   // ── Person-driven write paths, validated ──────────────────────────────
-  "app/api/measurements/route.ts": {
+  // The hand-entry writes behind `POST /api/measurements`.
+  "lib/measurements/create/create-readings.ts": {
     kind: "upstream",
     validatedIn: "lib/validations/measurement.ts",
   },
-  "app/api/import/route.ts": { kind: "validator" },
-  // v1.44 — the set-based insert writes rows that already passed the
-  // route's `validateMeasurementRange` per entry; everything else goes
-  // through the reconciler, which gates itself.
-  "app/api/measurements/batch/route.ts": { kind: "validator" },
+  "lib/import/json/measurements.ts": {
+    kind: "upstream",
+    validatedIn: "lib/import/json/schema.ts",
+  },
+  // The batch ingest's set-based insert writes rows that already passed
+  // `validateMeasurementRange` per entry in its first pass; everything else
+  // goes through the reconciler, which gates itself.
+  "lib/measurements/batch-ingest/write-measurements.ts": {
+    kind: "upstream",
+    validatedIn: "lib/measurements/batch-ingest/prepare.ts",
+  },
   "lib/mcp/writes.ts": { kind: "validator" },
   "lib/measurements/create-from-telegram.ts": { kind: "validator" },
   "lib/measurements/import-apple-health-export.ts": { kind: "validator" },
@@ -84,7 +91,7 @@ const WRITERS: Record<string, Disposition> = {
   // insert after `validateMeasurementRange`; day totals through the gated
   // reconcile seam.
   "lib/import/health-connect/import.ts": { kind: "validator" },
-  "app/api/import/csv/route.ts": {
+  "lib/import/csv-write.ts": {
     kind: "upstream",
     validatedIn: "lib/import/csv-measurements.ts",
   },

@@ -15,8 +15,23 @@
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
 import { logCaught } from "@/lib/logging/signal";
+import {
+  COMPLETION_CEILING_MS,
+  expireAboveModelTime,
+} from "@/lib/jobs/model-time";
 
 export const WORKOUT_INSIGHT_GENERATE_QUEUE = "workout-insight-generate";
+
+/**
+ * The job's expiry: one status run at the largest response timeout (the call
+ * and its one reasoning repeat), plus headroom. Past pg-boss's fifteen-minute
+ * default the job was failed and retried while the paragraph was still being
+ * written (#1274); the claim kept the retry from calling the model twice, but
+ * the attempt was recorded as a failure.
+ */
+export const WORKOUT_INSIGHT_GENERATE_EXPIRE_SECONDS = expireAboveModelTime(
+  COMPLETION_CEILING_MS,
+);
 
 /** Serial — this is a provider path, kept off the request pool entirely. */
 export const WORKOUT_INSIGHT_GENERATE_CONCURRENCY = 1;
@@ -56,6 +71,7 @@ export async function enqueueWorkoutInsight(
       retryLimit: 3,
       retryDelay: 60,
       retryBackoff: true,
+      expireInSeconds: WORKOUT_INSIGHT_GENERATE_EXPIRE_SECONDS,
     });
     return { enqueued: true };
   } catch (err) {

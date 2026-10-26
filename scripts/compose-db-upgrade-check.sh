@@ -1,0 +1,214 @@
+#!/usr/bin/env bash
+# Plays the Postgres 16 -> 18 move in docker-compose.yml end to end, against
+# real containers, the way an install from v1.45 meets it on its first update.
+#
+#   1. Start the database exactly as the v1.45 compose file had it, apply every
+#      migration and add rows in a second schema.
+#   2. Start the current compose file's `db-upgrade` and check the move: exit 0,
+#      Postgres 18, the same rows and the same migration history.
+#   3. Start it again: nothing to do.
+#   4. Pretend the move was cut short after the restore: the next start must
+#      empty the new database and run the move again.
+#   5. Empty the new volume: it must refuse to import the old state again,
+#      and move it once more after the marker is removed as the guide says.
+#   6. Going back to 16 after a move that did not finish: db-upgrade leaves
+#      the live 16 database alone.
+#   7. Using 16 again after a move, then updating: refused, not the old copy.
+#   8. Updating again as the guide says: the current 16 database moves.
+#   9. A new install with no old volume: nothing to do.
+#
+# Needs Docker and the repo's node_modules (for the migrations). Run it from
+# anywhere in the repo: `bash scripts/compose-db-upgrade-check.sh`.
+set -euo pipefail
+
+ROOT=$(git rev-parse --show-toplevel)
+# The last release whose compose file ran Postgres 16.
+OLD_REF=${OLD_REF:-v1.45.0}
+PROJECT=hl-db-upgrade-check
+# A free port unless CHECK_DB_PORT names one, so the check never collides with
+# another stack on the same machine.
+PORT=${CHECK_DB_PORT:-$(node -e "const s=require('node:net').createServer().listen(0,'127.0.0.1',()=>{console.log(s.address().port);s.close()})")}
+WORK=$(mktemp -d)
+
+export PRISMA_HIDE_UPDATE_MESSAGE=1
+export POSTGRES_PASSWORD
+POSTGRES_PASSWORD=$(openssl rand -hex 16)
+# The app service is never started here, but compose reads its environment.
+export ENCRYPTION_KEY API_TOKEN_HMAC_KEY
+ENCRYPTION_KEY=$(openssl rand -hex 32)
+API_TOKEN_HMAC_KEY=$(openssl rand -hex 32)
+
+git -C "$ROOT" show "$OLD_REF:docker-compose.yml" >"$WORK/old.yml"
+cat >"$WORK/old-port.yml" <<EOF
+services:
+  db:
+    ports:
+      - "127.0.0.1:$PORT:5432"
+EOF
+
+old() { docker compose -p "$PROJECT" -f "$WORK/old.yml" -f "$WORK/old-port.yml" "$@"; }
+new() { docker compose -p "$PROJECT" -f "$ROOT/docker-compose.yml" "$@"; }
+down_all() {
+  new down -v --remove-orphans >/dev/null 2>&1 || true
+  old down -v --remove-orphans >/dev/null 2>&1 || true
+}
+trap 'down_all; rm -rf "$WORK"' EXIT
+
+fail() {
+  echo "FAIL: $*" >&2
+  docker logs healthlog-db-upgrade 2>&1 | tail -40 >&2 || true
+  exit 1
+}
+step() { echo "== $*"; }
+sql() { docker exec healthlog-db psql -U healthlog -d healthlog -v ON_ERROR_STOP=1 -Atqc "$1"; }
+# Starts db-upgrade (and the database it waits for), waits for it to exit and
+# prints its exit code.
+run_upgrade() {
+  new up -d db-upgrade >/dev/null 2>&1 || true
+  docker wait healthlog-db-upgrade
+}
+upgrade_log() { docker logs healthlog-db-upgrade 2>&1 | grep '^db-upgrade:' || true; }
+
+# The container can report healthy before its published port forwards (Docker
+# Desktop and OrbStack set the forward up a moment later), and a migrate
+# started in that gap failed with "Can't reach database server". So wait
+# until the port answers, for at most thirty seconds, and retry the migrate
+# within the same bound.
+wait_for_port() {
+  local i=0
+  until node -e "
+    const s = require('node:net').connect(Number(process.argv[1]), '127.0.0.1');
+    s.on('connect', () => { s.end(); process.exit(0); });
+    s.on('error', () => process.exit(1));
+  " "$PORT" 2>/dev/null; do
+    i=$((i + 1))
+    [ "$i" -lt 30 ] || return 1
+    sleep 1
+  done
+}
+migrate_old() {
+  local started=$SECONDS
+  until DATABASE_URL="postgresql://healthlog:$POSTGRES_PASSWORD@127.0.0.1:$PORT/healthlog?schema=public" \
+    node "$ROOT/node_modules/prisma/build/index.js" migrate deploy --schema "$WORK/old-prisma/prisma/schema.prisma" >"$WORK/migrate.log" 2>&1; do
+    if [ $((SECONDS - started)) -ge 30 ] || ! grep -q "P1001" "$WORK/migrate.log"; then
+      cat "$WORK/migrate.log" >&2
+      return 1
+    fi
+    sleep 1
+  done
+}
+
+# The v1.45 schema, migrated with v1.45's own migrations.
+mkdir -p "$WORK/old-prisma"
+git -C "$ROOT" archive "$OLD_REF" prisma | tar -x -C "$WORK/old-prisma"
+# The current compose file with its database pointed back at Postgres 16, the
+# way docs/ops/postgres-major-upgrade.md "Going back" describes it.
+sed -e 's|image: postgres:18\.[0-9]*-alpine|image: postgres:16.15-alpine|' \
+  -e 's|- postgres-data:/var/lib/postgresql$|- pgdata:/var/lib/postgresql/data|' \
+  "$ROOT/docker-compose.yml" >"$WORK/back.yml"
+grep -q 'image: postgres:16.15-alpine' "$WORK/back.yml" && grep -q -- '- pgdata:/var/lib/postgresql/data' "$WORK/back.yml" ||
+  { echo "FAIL: could not derive the going-back compose file" >&2; exit 1; }
+back() { docker compose -p "$PROJECT" -f "$WORK/back.yml" "$@"; }
+
+down_all
+step "a v1.45 database on Postgres 16"
+old up -d --wait db >"$WORK/up.log" 2>&1 || { cat "$WORK/up.log" >&2; fail "the v1.45 database did not start"; }
+wait_for_port || fail "port $PORT did not answer within thirty seconds"
+migrate_old || fail "the migrations did not apply to the v1.45 database"
+old exec -T db psql -U healthlog -d healthlog -v ON_ERROR_STOP=1 -q <<'SQL'
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+CREATE SCHEMA check_probe;
+CREATE TABLE check_probe.rows AS
+  SELECT g AS id, md5(g::text) AS value FROM generate_series(1, 50000) AS g;
+SQL
+probe() {
+  "$@" psql -U healthlog -d healthlog -Atqc \
+    "SELECT md5(string_agg(value, ',' ORDER BY id)) FROM check_probe.rows"
+}
+migrations() {
+  "$@" psql -U healthlog -d healthlog -Atqc "SELECT count(*) FROM _prisma_migrations"
+}
+PROBE=$(probe old exec -T db)
+MIGRATIONS=$(migrations old exec -T db)
+[ "$MIGRATIONS" -gt 0 ] || fail "the migrations did not apply to the old database"
+old stop db >/dev/null 2>&1
+old rm -f db >/dev/null 2>&1
+
+step "first start of the current compose file moves it"
+CODE=$(run_upgrade)
+upgrade_log
+[ "$CODE" = 0 ] || fail "db-upgrade exited $CODE on the move"
+upgrade_log | grep -q 'tables arrived with the same row counts' || fail "the move did not report its row-count check"
+VERSION=$(sql "SHOW server_version_num")
+[ "$VERSION" -ge 180000 ] || fail "the database runs $VERSION, expected Postgres 18"
+[ "$(probe docker exec healthlog-db)" = "$PROBE" ] || fail "the probe rows differ after the move"
+[ "$(migrations docker exec healthlog-db)" = "$MIGRATIONS" ] || fail "the migration history differs after the move"
+[ "$(sql "SELECT count(*) FROM pg_stats WHERE schemaname = 'check_probe'")" -gt 0 ] ||
+  fail "the moved tables have no planner statistics"
+
+step "second start: nothing to do"
+CODE=$(run_upgrade)
+[ "$CODE" = 0 ] || fail "db-upgrade exited $CODE on a start after the move"
+upgrade_log | tail -1 | grep -q 'nothing to do' || fail "the second start did not say there was nothing to do"
+
+step "a move cut short after the restore runs again from scratch"
+new down >/dev/null 2>&1
+docker run --rm -v "${PROJECT}_pgdata:/old" postgres:16.15-alpine \
+  mv /old/HEALTHLOG_MOVED_TO_POSTGRES_18 /old/HEALTHLOG_MOVING_TO_POSTGRES_18
+CODE=$(run_upgrade)
+[ "$CODE" = 0 ] || fail "db-upgrade exited $CODE when resuming a cut-short move"
+upgrade_log | grep -q 'did not finish' || fail "the resumed move did not say it starts again"
+[ "$(probe docker exec healthlog-db)" = "$PROBE" ] || fail "the probe rows differ after the resumed move"
+
+step "an emptied Postgres 18 volume is not refilled from the old state"
+new down >/dev/null 2>&1
+docker volume rm "${PROJECT}_postgres-data" >/dev/null
+CODE=$(run_upgrade)
+[ "$CODE" = 1 ] || fail "db-upgrade exited $CODE with the moved marker and an empty database, expected 1"
+upgrade_log | grep -q 'Not importing the old state again' || fail "the refusal did not explain itself"
+
+step "starting over as the guide says brings the moved state back"
+new run --rm --entrypoint rm db-upgrade /var/lib/postgresql/data/HEALTHLOG_MOVED_TO_POSTGRES_18 >/dev/null 2>&1
+CODE=$(run_upgrade)
+[ "$CODE" = 0 ] || fail "db-upgrade exited $CODE after the marker was removed"
+[ "$(probe docker exec healthlog-db)" = "$PROBE" ] || fail "the probe rows differ after starting over"
+
+step "going back to 16 after a move that did not finish leaves 16 alone"
+new down >/dev/null 2>&1
+docker volume rm "${PROJECT}_postgres-data" >/dev/null
+docker run --rm -v "${PROJECT}_pgdata:/old" postgres:16.15-alpine \
+  mv /old/HEALTHLOG_MOVED_TO_POSTGRES_18 /old/HEALTHLOG_MOVING_TO_POSTGRES_18
+back up -d db-upgrade >/dev/null 2>&1 || true
+CODE=$(docker wait healthlog-db-upgrade)
+upgrade_log
+[ "$CODE" = 0 ] || fail "db-upgrade exited $CODE beside a Postgres 16 database service"
+upgrade_log | grep -q 'not 18: nothing to move' || fail "db-upgrade did not recognise the Postgres 16 service"
+[ "$(probe docker exec healthlog-db)" = "$PROBE" ] || fail "the live Postgres 16 data changed beside db-upgrade"
+
+step "using 16 again after a move, then updating, is refused instead of serving the old copy"
+back down >/dev/null 2>&1
+CODE=$(run_upgrade)
+[ "$CODE" = 0 ] || fail "the move after going back exited $CODE"
+back up -d db >/dev/null 2>&1
+back exec -T db psql -U healthlog -d healthlog -v ON_ERROR_STOP=1 -qc \
+  "INSERT INTO check_probe.rows VALUES (50001, 'written on 16 after the move')"
+back down >/dev/null 2>&1
+CODE=$(run_upgrade)
+[ "$CODE" = 1 ] || fail "db-upgrade exited $CODE after 16 was used again, expected 1"
+upgrade_log | grep -q 'changed after it was moved' || fail "the refusal did not say that 16 changed"
+
+step "updating again as the guide says moves the current 16 database"
+new down >/dev/null 2>&1
+docker volume rm "${PROJECT}_postgres-data" >/dev/null
+new run --rm --entrypoint rm db-upgrade /var/lib/postgresql/data/HEALTHLOG_MOVED_TO_POSTGRES_18 >/dev/null 2>&1
+CODE=$(run_upgrade)
+[ "$CODE" = 0 ] || fail "db-upgrade exited $CODE when moving the current 16 database"
+[ "$(sql "SELECT count(*) FROM check_probe.rows")" = 50001 ] || fail "the row written on 16 did not arrive"
+
+step "a new install: nothing to do"
+new down -v >/dev/null 2>&1
+CODE=$(run_upgrade)
+[ "$CODE" = 0 ] || fail "db-upgrade exited $CODE on a new install"
+upgrade_log | tail -1 | grep -q 'no Postgres 16 database to move' || fail "the new install did not say there was nothing to move"
+
+echo "OK: the Postgres 16 -> 18 move behaves in all nine cases"

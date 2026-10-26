@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, onTestFinished } from "vitest";
 
 vi.mock("@/lib/modules/gate", () => ({
   isModuleEnabled: vi.fn(async () => true),
@@ -457,6 +457,21 @@ describe("sleep_review", () => {
 });
 
 describe("lab_trend_brief", () => {
+  it("refuses with the labs module off and reads no lab row", async () => {
+    const { isModuleEnabled } = await import("@/lib/modules/gate");
+    vi.mocked(isModuleEnabled).mockImplementation(
+      async (_userId, key) => key !== "labs",
+    );
+    onTestFinished(() => {
+      vi.mocked(isModuleEnabled).mockImplementation(async () => true);
+    });
+    vi.mocked(prisma.labResult.findMany).mockClear();
+    await expect(prompt("lab_trend_brief").run(CTX, {})).rejects.toThrow(
+      /"labs" module is turned off/,
+    );
+    expect(prisma.labResult.findMany).not.toHaveBeenCalled();
+  });
+
   it("builds a per-analyte trajectory with stored ranges + status, latest first", async () => {
     vi.mocked(prisma.labResult.findMany).mockResolvedValue([
       {

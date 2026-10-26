@@ -316,7 +316,7 @@ describe("computeBpInTargetFastPath", () => {
       // a raw `findMany` (double-counting) fails here.
       for (const call of QUERY_RAW.mock.calls) {
         const sql = String(call[0]);
-        expect(sql).toContain("DISTINCT ON");
+        expect(sql).toContain("canonical_source");
         expect(sql).toContain("date_trunc('day'");
       }
     });

@@ -15,10 +15,6 @@ import { reapAiRuns } from "@/lib/documents/ai-runs/store";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { withBackgroundEvent } from "@/lib/logging/background";
 
-export const DOCUMENT_AI_RUN_REAPER_QUEUE = "document-ai-run-reaper";
-/** Every five minutes: a queued run fails within twenty minutes at worst. */
-export const DOCUMENT_AI_RUN_REAPER_CRON = "*/5 * * * *";
-
 export interface DocumentAiRunReaperPayload {
   triggeredAt?: string;
 }

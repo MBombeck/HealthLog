@@ -21,6 +21,7 @@
  * No prompt mutation in v1.4.16 — the aggregator only writes the
  * summary blob; the prompt-tuning step is deferred to v1.4.17.
  */
+// account-deletion(file): instance-wide counts of feedback rows; nothing is done for any account.
 import type { PrismaClient } from "@/generated/prisma/client";
 
 export const DEFAULT_FEEDBACK_AGGREGATION_WINDOW_DAYS = 30;

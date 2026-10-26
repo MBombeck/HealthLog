@@ -9,6 +9,8 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { readSource } from "@/__tests__/helpers/source-files";
+
 /**
  * Runtime detection + once-per-state admin notification for the offline
  * GeoLite2 tier.
@@ -17,7 +19,8 @@ import { join } from "node:path";
  * whenever `MAXMIND_LICENSE_KEY` is unset, so the Docker COPY still
  * lands a non-empty directory in `/opt/geolite2/`. The runtime resolver
  * detects the marker on first fallback and fires a localised
- * notification to every admin.
+ * notification to every admin, through the notice module registered in
+ * its slot at boot (`src/lib/notifications/offline-geo-notice.ts`).
  *
  * Issue #851: the sent-latch used to be a module-level boolean, so every
  * worker boot re-sent the same notice while the configuration never
@@ -141,6 +144,18 @@ async function flushMicrotasks(): Promise<void> {
   }
 }
 
+/**
+ * The resolver plus the notice in its slot, the way a booted process has
+ * them: `src/instrumentation.ts` registers the notice before any request.
+ */
+async function loadGeo(): Promise<typeof import("../geo")> {
+  const geo = await import("../geo");
+  const { registerOfflineGeoNotice } =
+    await import("@/lib/notifications/offline-geo-notice");
+  registerOfflineGeoNotice();
+  return geo;
+}
+
 beforeEach(() => {
   process.env = { ...ORIGINAL_ENV };
   delete process.env.IP_GEO_LOOKUP_DISABLED;
@@ -161,14 +176,46 @@ afterEach(() => {
 });
 
 describe("offline-geo runtime detection", () => {
+  it("evaluates nothing before the notice is registered, and runs on the first lookup after", async () => {
+    writeFileSync(join(tmpRoot, ".empty"), "");
+    const geo = await import("../geo");
+
+    await geo.lookupIpLocation("8.8.8.8");
+    await flushMicrotasks();
+    expect(findManySpy).not.toHaveBeenCalled();
+    expect(dispatchSpy).not.toHaveBeenCalled();
+
+    const { registerOfflineGeoNotice } =
+      await import("@/lib/notifications/offline-geo-notice");
+    registerOfflineGeoNotice();
+    await geo.lookupIpLocation("1.1.1.1");
+    await flushMicrotasks();
+    expect(dispatchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("is registered at boot", () => {
+    const boot = readSource(
+      "src/instrumentation.ts",
+      "registerOfflineGeoNotice",
+    );
+    expect(boot).toMatch(
+      /import\("@\/lib\/notifications\/offline-geo-notice"\)[\s\S]*registerOfflineGeoNotice\(\)/,
+    );
+    // …and the helper that does it runs inside `register()`.
+    const registerBody = boot.slice(
+      boot.indexOf("export async function register()"),
+    );
+    expect(registerBody).toContain("await registerOfflineGeoNoticeAtBoot()");
+  });
+
   it("offlineGeoReady() is false when the .empty marker is present", async () => {
     writeFileSync(join(tmpRoot, ".empty"), "");
-    const { offlineGeoReady } = await import("../geo");
+    const { offlineGeoReady } = await loadGeo();
     expect(offlineGeoReady()).toBe(false);
   });
 
   it("offlineGeoReady() is false when the City MMDB is absent", async () => {
-    const { offlineGeoReady } = await import("../geo");
+    const { offlineGeoReady } = await loadGeo();
     expect(offlineGeoReady()).toBe(false);
   });
 
@@ -184,7 +231,7 @@ describe("offline-geo runtime detection", () => {
     process.chdir(tmpRoot);
     try {
       process.env.GEOLITE2_DIR = "";
-      const { offlineGeoReady } = await import("../geo");
+      const { offlineGeoReady } = await loadGeo();
       expect(offlineGeoReady()).toBe(false);
     } finally {
       process.chdir(originalCwd);
@@ -196,13 +243,13 @@ describe("offline-geo runtime detection", () => {
       join(tmpRoot, "GeoLite2-City.mmdb"),
       Buffer.from("city-stub"),
     );
-    const { offlineGeoReady } = await import("../geo");
+    const { offlineGeoReady } = await loadGeo();
     expect(offlineGeoReady()).toBe(true);
   });
 
   it("fires the admin notification when the marker is present and lookupIpLocation falls back", async () => {
     writeFileSync(join(tmpRoot, ".empty"), "");
-    const { lookupIpLocation } = await import("../geo");
+    const { lookupIpLocation } = await loadGeo();
 
     await lookupIpLocation("8.8.8.8");
     await flushMicrotasks();
@@ -226,7 +273,7 @@ describe("offline-geo runtime detection", () => {
   it("names the real online provider in the notification params", async () => {
     writeFileSync(join(tmpRoot, ".empty"), "");
     process.env.IP_GEO_LOOKUP_URL = "https://ip-api.example/json";
-    const { lookupIpLocation } = await import("../geo");
+    const { lookupIpLocation } = await loadGeo();
 
     await lookupIpLocation("8.8.8.8");
     await flushMicrotasks();
@@ -286,7 +333,7 @@ describe("offline-geo runtime detection", () => {
     // The stubbed reader returns null for every IP, which is fine — the
     // lookup will still go through the online path, but the offline
     // check sees a healthy directory so the notification stays silent.
-    const { lookupIpLocation } = await import("../geo");
+    const { lookupIpLocation } = await loadGeo();
 
     await lookupIpLocation("8.8.8.8");
     await flushMicrotasks();
@@ -301,7 +348,7 @@ describe("offline-geo runtime detection", () => {
     // left the state exactly like one that mounted the databases.
     writeFileSync(join(tmpRoot, ".empty"), "");
     process.env.IP_GEO_LOOKUP_DISABLED = "1";
-    const { lookupIpLocation } = await import("../geo");
+    const { lookupIpLocation } = await loadGeo();
 
     await lookupIpLocation("8.8.8.8");
     await flushMicrotasks();
@@ -312,7 +359,7 @@ describe("offline-geo runtime detection", () => {
 
   it("fires the notification exactly once across repeated fallbacks in one process", async () => {
     writeFileSync(join(tmpRoot, ".empty"), "");
-    const { lookupIpLocation, lookupIpAsn } = await import("../geo");
+    const { lookupIpLocation, lookupIpAsn } = await loadGeo();
 
     await lookupIpLocation("8.8.8.8");
     await flushMicrotasks();
@@ -328,7 +375,7 @@ describe("offline-geo runtime detection", () => {
   it("falls back silently when no admin user is configured", async () => {
     writeFileSync(join(tmpRoot, ".empty"), "");
     findManySpy.mockResolvedValueOnce([]);
-    const { lookupIpLocation } = await import("../geo");
+    const { lookupIpLocation } = await loadGeo();
 
     await lookupIpLocation("8.8.8.8");
     await flushMicrotasks();
@@ -339,7 +386,7 @@ describe("offline-geo runtime detection", () => {
 
   it("lookupIpAsn fires the notification when the ASN reader is missing and the marker is set", async () => {
     writeFileSync(join(tmpRoot, ".empty"), "");
-    const { lookupIpAsn } = await import("../geo");
+    const { lookupIpAsn } = await loadGeo();
 
     const result = lookupIpAsn("8.8.8.8");
     await flushMicrotasks();
@@ -353,7 +400,7 @@ describe("offline-geo runtime detection", () => {
 
     // ── Boot 1: unconfigured → the notice goes out and anchors durably.
     writeFileSync(join(tmpRoot, ".empty"), "");
-    let geo = await import("../geo");
+    let geo = await loadGeo();
     await geo.lookupIpLocation("8.8.8.8");
     await flushMicrotasks();
     expect(dispatchSpy).toHaveBeenCalledTimes(1);
@@ -362,7 +409,7 @@ describe("offline-geo runtime detection", () => {
     // ── Boot 2: worker restart, state unchanged → the persisted anchor
     // keeps it silent. This is the #851 repeat, pinned closed.
     vi.resetModules();
-    geo = await import("../geo");
+    geo = await loadGeo();
     await geo.lookupIpLocation("8.8.8.8");
     await flushMicrotasks();
     expect(dispatchSpy).toHaveBeenCalledTimes(1);
@@ -373,7 +420,7 @@ describe("offline-geo runtime detection", () => {
     unlinkSync(join(tmpRoot, ".empty"));
     writeFileSync(cityDb, Buffer.from("city-stub"));
     vi.resetModules();
-    geo = await import("../geo");
+    geo = await loadGeo();
     await geo.lookupIpLocation("8.8.8.8");
     await flushMicrotasks();
     expect(dispatchSpy).toHaveBeenCalledTimes(1);
@@ -384,7 +431,7 @@ describe("offline-geo runtime detection", () => {
     unlinkSync(cityDb);
     writeFileSync(join(tmpRoot, ".empty"), "");
     vi.resetModules();
-    geo = await import("../geo");
+    geo = await loadGeo();
     await geo.lookupIpLocation("8.8.8.8");
     await flushMicrotasks();
     expect(dispatchSpy).toHaveBeenCalledTimes(2);
@@ -396,7 +443,7 @@ describe("offline-geo runtime detection", () => {
     // placing fresh databases. The next lookup must observe the healthy
     // state and release the anchor without waiting for a restart.
     writeFileSync(join(tmpRoot, ".empty"), "");
-    const geo = await import("../geo");
+    const geo = await loadGeo();
 
     await geo.lookupIpLocation("8.8.8.8");
     await flushMicrotasks();

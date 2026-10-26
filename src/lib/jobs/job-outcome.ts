@@ -43,6 +43,16 @@ export type JobFacts = Readonly<Record<string, JobFact>>;
  */
 export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "access_tokens_deleted",
+  // The account-deletion purge: accounts whose grace window ended and
+  // were erased, ones whose erasure was refused and stays pending, and the
+  // copies taken before a data wipe that aged out with their window; the
+  // erasures that threw, and the due accounts left for the next run when
+  // its time budget ran out.
+  "account_deletions_deferred",
+  "account_deletions_due",
+  "account_deletions_failed",
+  "account_deletions_purged",
+  "account_deletions_refused",
   "accounts_completed",
   // v1.40 — the document AI run reaper's three outcomes.
   "ai_runs_deleted",
@@ -78,6 +88,12 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "continued",
   "conversation_titles_migrated",
   "created",
+  // The nightly whole-database dump: where it went and how big.
+  "database_backup_bytes",
+  "database_backup_local",
+  "database_backup_offhost",
+  "database_backup_removed",
+  "database_backup_status",
   "daily_rows_retired",
   "days_consolidated",
   "days_rebuilt",
@@ -148,6 +164,9 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "inventory_expired_count",
   "inventory_items_migrated",
   "jobs",
+  // A batch whose every job named an account pending deletion
+  // (`pending-deletion-gate.ts`): completed without running.
+  "jobs_skipped_deletion_pending",
   // Heavy jobs that found the lane taken and went back to their queue.
   "lane_deferred",
   "legacy_rows_soft_deleted",
@@ -201,6 +220,7 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "persisted",
   "plan_reviews_minted",
   "practitioner_contacts_migrated",
+  "pre_wipe_copies_deleted",
   "pr_detection_inserted",
   "pr_detection_jobs",
   "pr_detection_ties",
@@ -234,6 +254,13 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "restore_drill_plaintext_bytes",
   "restore_drill_unchecked",
   "restore_drill_stale",
+  // The hourly recovery readiness evaluation: the overall verdict, how many
+  // signals need attention or are failing, notices sent, admins reached.
+  "recovery_readiness_admins",
+  "recovery_readiness_attention",
+  "recovery_readiness_failing",
+  "recovery_readiness_notices",
+  "recovery_readiness_state",
   "restore_fail_cause",
   "restore_failed",
   "restore_measurements",

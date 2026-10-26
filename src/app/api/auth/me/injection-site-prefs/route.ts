@@ -19,13 +19,8 @@
  * field-by-field write (no mass assignment).
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -77,18 +72,11 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     return response;
   }
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, injectionSitePrefsPatchSchema, {
     maxBytes: 64 * 1024,
+    action: "auth.me.injection-site-prefs.patch.invalid_shape",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = injectionSitePrefsPatchSchema.safeParse(body);
-  if (!parsed.success) {
-    annotate({
-      action: { name: "auth.me.injection-site-prefs.patch.invalid_shape" },
-    });
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   // Dedup while preserving canonical order from the enum tuple.
   const submitted = new Set(parsed.data.globalExcludedInjectionSites);

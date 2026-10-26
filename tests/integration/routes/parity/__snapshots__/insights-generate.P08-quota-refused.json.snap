@@ -1,0 +1,29 @@
+{
+  "status": 429,
+  "body": {
+    "data": null,
+    "error": "Maximum 10 insight generations per hour.",
+    "meta": {
+      "errorCode": "http.rate_limited",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 429,
+      "action": null,
+      "meta": null,
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "insightsCachedAt": null,
+    "insightsCachedLocale": null,
+    "cachedPayload": null,
+    "snapshotHash": null,
+    "audit": [],
+    "usage": []
+  }
+}

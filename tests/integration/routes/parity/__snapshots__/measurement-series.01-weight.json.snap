@@ -1,0 +1,154 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "kind": "weight",
+      "unit": "kg",
+      "points": [
+        {
+          "id": "<id:1>",
+          "at": "anchor-20d+06:30:00",
+          "value": 78,
+          "secondary": null
+        },
+        {
+          "id": "<id:2>",
+          "at": "anchor-19d+06:30:00",
+          "value": 78.1,
+          "secondary": null
+        },
+        {
+          "id": "<id:3>",
+          "at": "anchor-18d+06:30:00",
+          "value": 78.2,
+          "secondary": null
+        },
+        {
+          "id": "<id:4>",
+          "at": "anchor-17d+06:30:00",
+          "value": 78.3,
+          "secondary": null
+        },
+        {
+          "id": "<id:5>",
+          "at": "anchor-16d+06:30:00",
+          "value": 78.4,
+          "secondary": null
+        },
+        {
+          "id": "<id:6>",
+          "at": "anchor-15d+06:30:00",
+          "value": 78.5,
+          "secondary": null
+        },
+        {
+          "id": "<id:7>",
+          "at": "anchor-13d+06:30:00",
+          "value": 78.7,
+          "secondary": null
+        },
+        {
+          "id": "<id:8>",
+          "at": "anchor-12d+06:30:00",
+          "value": 78.8,
+          "secondary": null
+        },
+        {
+          "id": "<id:9>",
+          "at": "anchor-11d+06:30:00",
+          "value": 78.9,
+          "secondary": null
+        },
+        {
+          "id": "<id:10>",
+          "at": "anchor-10d+06:30:00",
+          "value": 79,
+          "secondary": null
+        },
+        {
+          "id": "<id:11>",
+          "at": "anchor-9d+06:30:00",
+          "value": 79.1,
+          "secondary": null
+        },
+        {
+          "id": "<id:12>",
+          "at": "anchor-8d+06:30:00",
+          "value": 79.2,
+          "secondary": null
+        },
+        {
+          "id": "<id:13>",
+          "at": "anchor-6d+06:30:00",
+          "value": 79.4,
+          "secondary": null
+        },
+        {
+          "id": "<id:14>",
+          "at": "anchor-5d+06:30:00",
+          "value": 79.5,
+          "secondary": null
+        },
+        {
+          "id": "<id:15>",
+          "at": "anchor-4d+06:30:00",
+          "value": 79.6,
+          "secondary": null
+        },
+        {
+          "id": "<id:16>",
+          "at": "anchor-3d+06:30:00",
+          "value": 79.7,
+          "secondary": null
+        },
+        {
+          "id": "<id:17>",
+          "at": "anchor-2d+06:30:00",
+          "value": 79.8,
+          "secondary": null
+        },
+        {
+          "id": "<id:18>",
+          "at": "anchor-1d+06:30:00",
+          "value": 79.9,
+          "secondary": null
+        }
+      ],
+      "direction": {
+        "direction": "up-bad",
+        "targetPosition": null,
+        "basis": "metric_default"
+      },
+      "change": {
+        "from": 78,
+        "to": 79.9,
+        "delta": 1.9,
+        "sentiment": "negative"
+      },
+      "referenceLines": [],
+      "stats": {
+        "mean": 78.95,
+        "min": 78,
+        "max": 79.9,
+        "stdDev": 0.6,
+        "count": 18
+      }
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "measurements.series"
+      },
+      "meta": {
+        "kind": "weight",
+        "days": 30,
+        "count": 18
+      },
+      "warnings": null,
+      "error": null
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "status": 409,
+  "body": {
+    "data": null,
+    "error": "Insight scope changed during generation",
+    "meta": {
+      "errorCode": "insights.generate.scopeChanged",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 409,
+      "action": {
+        "name": "insights.feature_cache.miss"
+      },
+      "meta": {
+        "ai_reasoning_effort": "medium",
+        "ai_reasoning_job": "daily_briefing",
+        "ai_reasoning_source": "job",
+        "include_raw": false,
+        "since_days": 400
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "ensureUserMoodRollupsFresh",
+      "args": [
+        "<id:1>"
+      ]
+    },
+    {
+      "effect": "provider",
+      "args": [
+        {
+          "surface": "job",
+          "chain": [
+            "anthropic"
+          ],
+          "params": {
+            "temperature": 0.3,
+            "maxTokens": 2500,
+            "responseFormat": "json",
+            "timeoutMs": 180000,
+            "reasoning": {
+              "effort": "medium",
+              "summaries": false
+            }
+          },
+          "promptChars": 34773,
+          "promptSha256": "2197bdec8af3ff7034e7b533788ac94d36b64d4edf8d211bbacfac7e2298ad72"
+        }
+      ]
+    }
+  ],
+  "stored": {
+    "insightsCachedAt": null,
+    "insightsCachedLocale": null,
+    "cachedPayload": null,
+    "snapshotHash": null,
+    "audit": [],
+    "usage": [
+      {
+        "dateKey": "day+0",
+        "totalTokens": 1200,
+        "operatorTokens": 0,
+        "messageCount": 1
+      }
+    ]
+  }
+}

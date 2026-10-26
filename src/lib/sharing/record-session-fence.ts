@@ -198,7 +198,7 @@ export async function assertRecordSessionFence(
   // two-refusals note in the contract module.
   //
   // No audit row, and that follows the rule already written for the session
-  // carrier in `api-handler.ts`: a HEADER refusal is a per-request assertion by
+  // carrier in `auth/guards/acting.ts`: a HEADER refusal is a per-request assertion by
   // a client and earns a durable record, a SESSION-state refusal is ambient
   // browser state and would bury the rows that matter under noise from the
   // feature working as designed. This arm is the second kind — every

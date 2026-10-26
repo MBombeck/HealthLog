@@ -41,7 +41,6 @@ vi.mock("next/headers", () => ({
 
 vi.mock("@/lib/insights/blood-pressure-status", () => ({
   generateBloodPressureStatusForUser: vi.fn(),
-  resolveBloodPressureStatusLocale: () => "en",
 }));
 
 // The `statusText` capability decides whether the note is served; the

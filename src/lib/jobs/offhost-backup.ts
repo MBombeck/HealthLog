@@ -23,12 +23,7 @@
  */
 import { envOr } from "@/lib/env";
 import { Buffer } from "node:buffer";
-import {
-  createCipheriv,
-  createDecipheriv,
-  createHash,
-  randomBytes,
-} from "node:crypto";
+import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { Readable, Transform } from "node:stream";
 import { createGunzip, createGzip, gunzipSync, gzipSync } from "node:zlib";
 import type { PrismaClient } from "@/generated/prisma/client";
@@ -38,37 +33,23 @@ import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
 import {
   markBackupAttemptFinished,
   markBackupAttemptStarted,
-  orderInterruptedLast,
-  readAccountsToTakeLast,
 } from "@/lib/jobs/backup-pass-attempts";
-import { BACKUP_HEARTBEAT_SECONDS } from "@/lib/jobs/data-backup-policy";
+import { readOffhostCohort } from "./offhost-backup-cohort";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { envValue } from "@/lib/env";
+import { OFFHOST_BACKUP_QUEUE } from "./offhost-backup-queue";
+import { decodeBackupKey, offhostKeyId } from "./offhost-key";
+import {
+  LIFECYCLE_MISSING,
+  LIFECYCLE_UNKNOWN,
+  lifecycleFromRules,
+  standOnLastAnswer,
+  type OffhostLifecycle,
+} from "./offhost-lifecycle";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 12;
 const TAG_LENGTH = 16;
-
-/**
- * The off-host pass's expiry: four hours. It uploads every account and
- * already stopped between accounts at three quarters of the default fifteen
- * minutes, which on an instance of any size meant a retry per night; one
- * large account past the default was retried beside itself. Four hours with
- * the same budget and a lock (`lockedPass`) leaves room for the night's pass.
- */
-export const OFFHOST_BACKUP_EXPIRE_SECONDS = 4 * 60 * 60;
-
-export const OFFHOST_BACKUP_QUEUE = "data-backup-offhost";
-
-/**
- * What the nightly schedule sends with: the four hours above, and the
- * heartbeat that notices a process that died under the pass within minutes
- * rather than at the end of them (`BACKUP_HEARTBEAT_SECONDS`).
- */
-export const OFFHOST_BACKUP_SEND_OPTIONS = {
-  expireInSeconds: OFFHOST_BACKUP_EXPIRE_SECONDS,
-  heartbeatSeconds: BACKUP_HEARTBEAT_SECONDS,
-} as const;
 
 export interface OffhostBackupConfig {
   endpoint: string;
@@ -93,17 +74,6 @@ export class OffhostBackupNotConfiguredError extends Error {
     super(message);
     this.name = "OffhostBackupNotConfiguredError";
   }
-}
-
-function decodeBackupKey(raw: string): Buffer {
-  if (/^[0-9a-fA-F]{64}$/.test(raw)) return Buffer.from(raw, "hex");
-  if (/^[A-Za-z0-9+/=]+$/.test(raw)) {
-    const buf = Buffer.from(raw, "base64");
-    if (buf.length === 32) return buf;
-  }
-  throw new Error(
-    "BACKUP_ENCRYPTION_KEY must be 64 hex chars or 32-byte base64",
-  );
 }
 
 /**
@@ -219,11 +189,6 @@ export function offhostKeyRing(cfg: OffhostBackupConfig): OffhostKeyRing {
 
 function asKeyRing(key: Buffer | OffhostKeyRing): OffhostKeyRing {
   return Buffer.isBuffer(key) ? { active: key, previous: [] } : key;
-}
-
-/** The id a version-4 object records for the key it was written under. */
-export function offhostKeyId(key: Buffer): string {
-  return createHash("sha256").update(key).digest("hex").slice(0, 12);
 }
 
 function offhostAad(objectKey: string): Buffer {
@@ -515,9 +480,9 @@ function createEnvelopeStream(
   return { stream, bytes: () => written };
 }
 
-/** Produces the backup JSON in pieces. Every piece is written in order. */
+/** Produces the plaintext (JSON text, or a dump's bytes) in ordered pieces. */
 export type BackupJsonProducer = (
-  write: (chunk: string) => Promise<void>,
+  write: (chunk: string | Buffer) => Promise<void>,
 ) => Promise<unknown>;
 
 export interface UploadBackupOptions {
@@ -593,9 +558,9 @@ export async function uploadEncryptedBackup(
     },
   );
 
-  const write = async (chunk: string): Promise<void> => {
+  const write = async (chunk: string | Buffer): Promise<void> => {
     if (failure) throw failure;
-    if (gzip.write(chunk, "utf8")) return;
+    if (gzip.write(chunk, "utf8")) return; // a Buffer ignores the encoding
     await new Promise<void>((resolve, reject) => {
       const onDrain = (): void => {
         gzip.off("error", onError);
@@ -655,18 +620,7 @@ export interface S3Like {
   getLifecycle?(): Promise<OffhostLifecycle>;
 }
 
-/**
- * Whether the bucket retires old copies by itself.
- *
- * `configured` names the shortest expiry of an enabled rule; `missing` means
- * the bucket answered that it has no rule; `unknown` means it would not say
- * (a credential without `s3:GetLifecycleConfiguration`, a target that does not
- * implement the call, a network failure) and says nothing either way.
- */
-export interface OffhostLifecycle {
-  state: "configured" | "missing" | "unknown";
-  expirationDays: number | null;
-}
+export type { OffhostLifecycle } from "./offhost-lifecycle";
 
 export async function getS3Client(cfg: OffhostBackupConfig): Promise<S3Like> {
   // Dynamic import so unit tests + dev environments without the SDK don't fail.
@@ -786,13 +740,7 @@ export async function getS3Client(cfg: OffhostBackupConfig): Promise<S3Like> {
           }),
           { abortSignal: AbortSignal.timeout(5_000) },
         );
-        const days = (out.Rules ?? [])
-          .filter((rule) => rule.Status === "Enabled")
-          .map((rule) => rule.Expiration?.Days)
-          .filter((d): d is number => typeof d === "number" && d > 0);
-        return days.length > 0
-          ? { state: "configured", expirationDays: Math.min(...days) }
-          : { state: "missing", expirationDays: null };
+        return lifecycleFromRules(out.Rules ?? []);
       } catch (err) {
         const name = (err as { name?: string; Code?: string }).name;
         const code = (err as { Code?: string }).Code;
@@ -800,9 +748,9 @@ export async function getS3Client(cfg: OffhostBackupConfig): Promise<S3Like> {
           name === "NoSuchLifecycleConfiguration" ||
           code === "NoSuchLifecycleConfiguration"
         ) {
-          return { state: "missing", expirationDays: null };
+          return LIFECYCLE_MISSING;
         }
-        return { state: "unknown", expirationDays: null };
+        return LIFECYCLE_UNKNOWN;
       }
     },
   };
@@ -811,10 +759,8 @@ export async function getS3Client(cfg: OffhostBackupConfig): Promise<S3Like> {
 const LIFECYCLE_CACHE_MS = 10 * 60 * 1000;
 let lifecycleCache: { at: number; value: OffhostLifecycle } | null = null;
 
-/**
- * The bucket's lifecycle rule for the admin card, cached for ten minutes so a
- * page render does not become a bucket call. Never throws.
- */
+/** The bucket's lifecycle rule for the admin card, cached for ten minutes so
+ * a page render does not become a bucket call. Never throws. */
 export async function probeOffhostLifecycle(
   s3Override?: S3Like,
   now: number = Date.now(),
@@ -827,16 +773,15 @@ export async function probeOffhostLifecycle(
     return lifecycleCache.value;
   }
   const cfg = loadOffhostConfigSafe();
-  if (!cfg) return { state: "unknown", expirationDays: null };
-  let value: OffhostLifecycle;
+  if (!cfg) return LIFECYCLE_UNKNOWN;
+  let read: OffhostLifecycle = LIFECYCLE_UNKNOWN;
   try {
     const s3 = s3Override ?? (await getS3Client(cfg));
-    value = s3.getLifecycle
-      ? await s3.getLifecycle()
-      : { state: "unknown", expirationDays: null };
+    if (s3.getLifecycle) read = await s3.getLifecycle();
   } catch {
-    value = { state: "unknown", expirationDays: null };
+    // A failed read stands on the last answer the bucket gave.
   }
+  const value = standOnLastAnswer(read, now);
   if (!s3Override) lifecycleCache = { at: now, value };
   return value;
 }
@@ -929,26 +874,7 @@ export async function runOffhostBackup(
   // eslint-disable-next-line healthlog/no-utc-day-key -- UTC by design: off-host object key date, the name the restore drill and the purge look up
   const dateKey = (runStartedAt ?? now).toISOString().slice(0, 10);
 
-  // By id, with an account whose last walk never came back behind the rest:
-  // a record that killed the process once would otherwise lead every retry
-  // and keep every account after it out of the bucket. Behind them for one
-  // run only, so a pass that stops on its budget still reaches it the run
-  // after (`backup-pass-attempts.ts`).
-  const users = orderInterruptedLast(
-    await prisma.user.findMany({
-      select: { id: true },
-      orderBy: { id: "asc" },
-    }),
-    await readAccountsToTakeLast(prisma, OFFHOST_BACKUP_QUEUE),
-  );
-  const doneThisRun = new Set<string>();
-  if (runStartedAt) {
-    const done = await prisma.offhostBackupState.findMany({
-      where: { lastSuccessAt: { gte: runStartedAt } },
-      select: { userId: true },
-    });
-    for (const row of done) doneThisRun.add(row.userId);
-  }
+  const { users, doneThisRun } = await readOffhostCohort(prisma, runStartedAt);
   let alreadyUploaded = 0;
   let stoppedEarly = false;
   let uploaded = 0;

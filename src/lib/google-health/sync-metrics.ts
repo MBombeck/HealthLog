@@ -26,15 +26,17 @@
  * can be granted independently in the Google consent flow.
  */
 import {
-  GOOGLE_HEALTH_DATA_TYPES,
   GOOGLE_HEALTH_DEFAULT_MAX_PAGES,
   GOOGLE_HEALTH_DENSE_MAX_PAGES,
+  fetchDataPoints,
+  forEachDataPointPage,
+} from "./data-points";
+import { type GoogleHealthTokenSource } from "./request";
+import {
+  GOOGLE_HEALTH_DATA_TYPES,
   type GoogleHealthDataPoint,
   type GoogleHealthDataType,
   type GoogleHealthMappedMeasurement,
-  type GoogleHealthTokenSource,
-  fetchDataPoints,
-  forEachDataPointPage,
   googleHealthSampleInstant,
   mapBloodGlucose,
   mapBodyFat,
@@ -47,7 +49,7 @@ import {
   mapRestingHeartRate,
   mapWeight,
   mapWristTemperature,
-} from "./client";
+} from "./mappers";
 import { googleHealthBackfillHorizon } from "./backfill-bounds";
 import {
   getValidToken,

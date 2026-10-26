@@ -102,7 +102,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const user = await prisma.user.findUnique({
     where: { id: challenge.userId },
-    select: { id: true, username: true, onboardingCompletedAt: true },
+    select: {
+      id: true,
+      username: true,
+      onboardingCompletedAt: true,
+      deletionRequestedAt: true,
+      deletionPurgeAt: true,
+    },
   });
   if (!user) {
     await recordChallengeFailure(challenge.id);

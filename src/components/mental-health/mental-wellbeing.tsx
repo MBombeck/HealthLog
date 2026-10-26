@@ -46,6 +46,7 @@ import { InstrumentDetail } from "./instrument-detail";
 import type {
   AssessmentRow,
   AssessmentTrendDto,
+  CheckInAnswers,
   CreateResponse,
   InstrumentId,
   Phase,
@@ -133,16 +134,9 @@ export function MentalWellbeing() {
     setPhase("choose");
   }
 
-  // v1.27.8 — the PHQ-9 functional-impairment follow-up returned as the
-  // wizard's regular last question (optional, unscored); the value rides
-  // the existing `functionalDifficulty` field when the user answered it.
-  function submit(items: number[], functionalDifficulty?: number) {
-    mutation.mutate({
-      instrument,
-      items,
-      locale,
-      ...(functionalDifficulty !== undefined ? { functionalDifficulty } : {}),
-    });
+  // The server records the wording from `locale` and `englishOriginal`.
+  function submit(answers: CheckInAnswers) {
+    mutation.mutate({ instrument, locale, ...answers });
   }
 
   return (

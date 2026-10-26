@@ -13,13 +13,8 @@ import type { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { COACH_CONVERSATION_TITLE_MAX } from "@/lib/ai/coach/types";
@@ -75,17 +70,11 @@ export const PATCH = apiHandler(async (request: NextRequest, ctx: RouteCtx) => {
   const { id } = await ctx.params;
   if (!id) return apiError("coach.conversation.notFound", 404);
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, renameConversationSchema, {
     maxBytes: 4 * 1024,
+    errorCode: "coach.conversation.invalidTitle",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = renameConversationSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "coach.conversation.invalidTitle",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const renamed = await renameConversation(auth.user.id, id, parsed.data.title);
   if (!renamed) {

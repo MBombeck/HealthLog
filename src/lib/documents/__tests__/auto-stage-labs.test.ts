@@ -63,6 +63,7 @@ import { resolveIndexProvider } from "@/lib/documents/index-document";
 import { loadDocumentChatText } from "@/lib/documents/content-index";
 import { runInboundExtraction } from "@/lib/documents/extract";
 import { reserveBudget } from "@/lib/ai/coach/budget";
+import { SYNC_EXTRACT_MAX_READS } from "@/lib/documents/ocr-plan";
 
 const mockModule = vi.mocked(isModuleEnabled);
 const mockProvider = vi.mocked(resolveIndexProvider);
@@ -107,6 +108,7 @@ beforeEach(() => {
     reportDate: "2026-07-10",
     kind: "OTHER",
     providerType: "anthropic",
+    incomplete: false,
     facts: [
       {
         factType: "OBSERVATION",
@@ -170,6 +172,58 @@ describe("maybeAutoStageLabFacts", () => {
       data: { status: string }[];
     };
     expect(created.data.every((f) => f.status === "PENDING")).toBe(true);
+  });
+
+  it("keeps on the document whether the staged facts may be missing a part", async () => {
+    await maybeAutoStageLabFacts("u1", "d1");
+    expect(updateMany.mock.calls[0]![0]).toMatchObject({
+      data: { extractionIncomplete: false },
+    });
+    const whole = await mockExtract.mock.results[0]!.value;
+    mockExtract.mockResolvedValueOnce({ ...whole, incomplete: true });
+    await maybeAutoStageLabFacts("u1", "d1");
+    expect(updateMany.mock.calls[1]![0]).toMatchObject({
+      data: { extractionIncomplete: true },
+    });
+  });
+
+  it("plans a long report's reads against the run's deadline (#1274)", async () => {
+    // Four hundred lines of a panel, many reads of text.
+    const longReport = Array.from(
+      { length: 400 },
+      (_, i) => `Hämoglobin ${i} g/dl Referenzbereich 13-17 LDL 120 mg/dl`,
+    ).join("\n");
+    mockText.mockResolvedValue({ text: longReport, source: "verbatim" });
+
+    await maybeAutoStageLabFacts("u1", "d1");
+    const inRequest = mockExtract.mock.calls[0]![0].chunks.length;
+    expect(inRequest).toBeGreaterThan(1);
+
+    const arm = vi.fn(async () => {});
+    await maybeAutoStageLabFacts("u1", "d1", {
+      schedule: { maxModelCalls: () => 2, arm },
+    });
+    // Two calls left before the deadline: one read (a call and its retry).
+    expect(mockExtract.mock.calls[1]![0].chunks).toHaveLength(1);
+    expect(arm).toHaveBeenCalledWith(2);
+  });
+
+  it("stays inside one request without a run deadline, and says what it left out", async () => {
+    // The index route without Prefer: respond-async continues into this
+    // staging with no schedule. Twelve hundred lines is many reads of text.
+    const longReport = Array.from(
+      { length: 1200 },
+      (_, i) => `Hämoglobin ${i} g/dl Referenzbereich 13-17 LDL 120 mg/dl`,
+    ).join("\n");
+    mockText.mockResolvedValue({ text: longReport, source: "verbatim" });
+
+    await maybeAutoStageLabFacts("u1", "d1");
+    const reads = mockExtract.mock.calls[0]![0].chunks.length;
+    expect(reads).toBeGreaterThan(0);
+    expect(reads).toBeLessThanOrEqual(SYNC_EXTRACT_MAX_READS);
+    expect(updateMany.mock.calls[0]![0]).toMatchObject({
+      data: { extractionIncomplete: true },
+    });
   });
 
   it("skips (manual path only) when a module is off", async () => {

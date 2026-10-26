@@ -8,7 +8,7 @@
  * That is the whole design of this file and it is worth stating plainly,
  * because the tempting alternative is one line shorter: publish the grant rows
  * and let the client work out what they mean. Then two programs decide one
- * person's access — the resolver in `src/lib/api-handler.ts`, and whichever
+ * person's access — the resolver in `src/lib/auth/guards/record.ts`, and whichever
  * client is being read today — and they answer differently the first time an
  * expiry, a revocation or a second access level appears. The client renders
  * `canSwitch` and `canWrite`; it never computes them, and there is nothing in
@@ -44,7 +44,7 @@ import type {
 } from "@/lib/sharing/account-access-view";
 import { delegatedDomains } from "@/lib/sharing/domain-write-support";
 import { resolveGrantSections } from "@/lib/sharing/grant-view";
-import { grantAllows, isGrantActive } from "@/lib/sharing/grants";
+import { grantAllows, isGrantActive } from "@/lib/sharing/grant-access";
 import type { AccountGrantAccess } from "@/generated/prisma/client";
 
 /**

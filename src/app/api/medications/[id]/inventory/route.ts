@@ -20,13 +20,8 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { auditLog } from "@/lib/auth/audit";
 import { annotate } from "@/lib/logging/context";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { createInventoryItemSchema } from "@/lib/validations/medication";
 import {
@@ -55,7 +50,12 @@ export const GET = apiHandler(
     const [items, medication] = await Promise.all([
       prisma.medicationInventoryItem.findMany({
         where: { userId: user.id, medicationId: id },
-        orderBy: [{ state: "asc" }, { expiresAt: "asc" }, { createdAt: "asc" }],
+        orderBy: [
+          { state: "asc" },
+          { expiresAt: "asc" },
+          { createdAt: "asc" },
+          { id: "asc" },
+        ],
       }),
       prisma.medication.findUnique({
         where: { id },
@@ -130,16 +130,10 @@ async function postInventoryItem(
     });
   }
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, createInventoryItemSchema, {
     maxBytes: 64 * 1024,
   });
-  if (jsonError) return jsonError;
-
-  const parsed = createInventoryItemSchema.safeParse(body);
-  if (!parsed.success) {
-    // v1.4.43 — multi-issue 422.
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const {
     unitsTotal,

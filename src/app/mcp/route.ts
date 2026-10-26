@@ -35,7 +35,7 @@
  * (`log_measurement` / `log_mood`) ONLY for a `health:write`-scoped session;
  * a read-only token never sees them. Writes happen in-process here and are
  * audience-bound to `/mcp` — a `health:write` MCP token is refused on every
- * REST write/delete by the resource-server guard in `api-handler.ts`, so it
+ * REST write/delete by the resource-server guard in `lib/auth/guards/caller.ts`, so it
  * can never become a general REST write credential. `requireAdmin()` stays
  * cookie-only, so admin is unreachable over this wire regardless of token
  * scope — including `["*"]` (ADR-003 / ADR-005).

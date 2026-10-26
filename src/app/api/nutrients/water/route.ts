@@ -21,13 +21,8 @@ import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { overwriteDetails } from "@/lib/sharing/audit-details";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { withIdempotency } from "@/lib/idempotency";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireModuleEnabled } from "@/lib/modules/gate";
@@ -73,17 +68,11 @@ async function postWater(request: NextRequest): Promise<Response> {
     return apiError("Too many requests, try again later", 429);
   }
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, nutrientWaterWriteSchema, {
     maxBytes: 4 * 1024,
+    errorCode: "nutrient.water.invalid",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = nutrientWaterWriteSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "nutrient.water.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
   const { amountMl, mode } = parsed.data;
 
   const userTz = user.timezone || DEFAULT_TIMEZONE;

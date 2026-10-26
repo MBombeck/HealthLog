@@ -49,7 +49,8 @@
 import { readFile } from "node:fs/promises";
 
 import type { Page, Response } from "@playwright/test";
-import { PDFParse } from "pdf-parse";
+
+import { readPdfText } from "@/lib/documents/pdfjs";
 
 import {
   E2E_REPORT_OWNER,
@@ -342,13 +343,7 @@ async function generateReport(page: Page): Promise<GeneratedReport> {
   expect(response.headers()["content-type"] ?? "").toContain("application/pdf");
   expect(bytes.byteLength).toBeGreaterThan(MIN_PDF_BYTES);
 
-  const parser = new PDFParse({ data: new Uint8Array(bytes) });
-  let text: string;
-  try {
-    text = (await parser.getText()).text;
-  } finally {
-    await parser.destroy();
-  }
+  const text = await readPdfText(new Uint8Array(bytes));
 
   return {
     status: response.status(),

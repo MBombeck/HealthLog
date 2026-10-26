@@ -58,6 +58,7 @@ const MEDICATION = {
   // The row projects the latest course.
   startsOn: COURSES[1].startsOn,
   endsOn: COURSES[1].endsOn,
+  endedAt: null,
   oneShot: false,
   createdAt: new Date("2026-03-15T10:00:00.000Z"),
 };
@@ -124,6 +125,7 @@ describe("the streak across two courses (v1.40, #1024)", () => {
   const A = {
     startsOn: dateOfDayKey("2026-06-01"),
     endsOn: dateOfDayKey("2026-06-10"),
+    endedAt: null,
   };
   const B = { startsOn: dateOfDayKey("2026-06-13"), endsOn: null };
   const NOW_B = new Date("2026-06-27T18:00:00.000Z");
@@ -141,6 +143,7 @@ describe("the streak across two courses (v1.40, #1024)", () => {
       {
         startsOn: B.startsOn,
         endsOn: null,
+        endedAt: null,
         oneShot: false,
         createdAt: new Date("2026-05-20T10:00:00.000Z"),
         courses: [A, B],

@@ -32,15 +32,19 @@ vi.mock("@/lib/logging/context", () => ({
 }));
 
 import {
-  GOOGLE_HEALTH_DATA_TYPES,
   GOOGLE_HEALTH_SKIP_MS,
-  type GoogleHealthDataPoint,
   forEachDataPointPage,
-  googleHealthSliceBudget,
   refusesEdgeFilter,
+} from "@/lib/google-health/data-points";
+import {
+  googleHealthSliceBudget,
   runWithGoogleHealthClientOutcome,
   runWithGoogleHealthStop,
-} from "../client";
+} from "@/lib/google-health/budget";
+import {
+  GOOGLE_HEALTH_DATA_TYPES,
+  type GoogleHealthDataPoint,
+} from "@/lib/google-health/mappers";
 import { GoogleHealthApiError } from "../response-classifier";
 import { GOOGLE_HEALTH_NO_PROGRESS_PAGES } from "../backfill-bounds";
 import {

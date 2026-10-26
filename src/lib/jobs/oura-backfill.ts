@@ -28,6 +28,7 @@
  * that grants the missing scope reads only those collections: the first slice
  * of every chain asks again for the refused ones.
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -68,11 +69,7 @@ import {
   withoutDenied,
   type OuraBackfillProgress,
 } from "@/lib/oura/backfill-progress";
-
-export const OURA_BACKFILL_QUEUE = "oura-backfill";
-
-/** One account at a time; the shared lane bounds the instance. */
-export const OURA_BACKFILL_CONCURRENCY = 1;
+import { OURA_BACKFILL_QUEUE } from "./oura-backfill-queue";
 
 /**
  * One slice: five minutes of walking, then the account is let go and the
@@ -480,6 +477,7 @@ export async function enqueueBootTimeOuraBackfill(
     const users = await prisma.user.findMany({
       where: {
         ouraBackfillCompletedAt: null,
+        ...ACTIVE_ACCOUNT,
         OR: [
           { ouraAccessTokenEncrypted: { not: null } },
           { measurements: { some: OURA_EQUIVALENT_DISTANCE_WHERE } },

@@ -1,11 +1,7 @@
 import type { NextRequest } from "next/server";
 import { apiHandler, HttpError, requireAuth } from "@/lib/api-handler";
-import {
-  apiSuccess,
-  apiValidationError,
-  safeJson,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { probeProviderChain, resolveProviderChain } from "@/lib/ai/provider";
 import {
@@ -90,19 +86,11 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
   annotate({ action: { name: "insights.provider_chain.update" } });
 
-  const { data: body, error } = await safeJson<unknown>(request, {
+  const parsed = await parseJsonBody(request, providerChainPutSchema, {
     maxBytes: 64 * 1024,
+    message: "Invalid provider chain payload",
   });
-  if (error) return error;
-
-  const parsed = providerChainPutSchema.safeParse(body);
-  if (!parsed.success) {
-    return apiValidationError(
-      "Invalid provider chain payload",
-      sanitiseZodIssues(parsed.error.issues),
-      422,
-    );
-  }
+  if (!parsed.ok) return parsed.error;
 
   // Defence-in-depth: reject duplicate provider types so a stale-tab
   // resubmit cannot create a chain that walks the same entry twice.

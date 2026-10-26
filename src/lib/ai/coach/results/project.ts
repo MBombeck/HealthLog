@@ -15,7 +15,7 @@
  */
 import type { Locale } from "@/lib/i18n/config";
 import type { CoachResultTable } from "@/lib/ai/coach/types";
-import type { CoachToolResult } from "@/lib/ai/coach/tools/executor";
+import type { CoachToolResult } from "@/lib/ai/coach/tools/run/types";
 
 import { MAX_RESULTS_PER_TURN, isTurnResultRef } from "./refs";
 

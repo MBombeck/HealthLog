@@ -7,8 +7,8 @@ import {
   apiSuccess,
   getClientIp,
   returnAllZodIssues,
-  safeJson,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserCorrelationPatterns } from "@/lib/cache/invalidate";
 import { prisma } from "@/lib/db";
@@ -28,13 +28,12 @@ export const PATCH = apiHandler(
     const parsedId = patternIdSchema.safeParse((await params).id);
     if (!parsedId.success) return returnAllZodIssues(parsedId.error, 422);
     const id = parsedId.data;
-    const { data: body, error: jsonError } = await safeJson(request, {
-      maxBytes: 1024,
-    });
-    if (jsonError) return jsonError;
-
-    const parsed = updateCorrelationPatternSchema.safeParse(body);
-    if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+    const parsed = await parseJsonBody(
+      request,
+      updateCorrelationPatternSchema,
+      { maxBytes: 1024 },
+    );
+    if (!parsed.ok) return parsed.error;
 
     const pattern = await prisma.correlationPattern.findFirst({
       where: { id, userId: user.id, isCurrent: true },

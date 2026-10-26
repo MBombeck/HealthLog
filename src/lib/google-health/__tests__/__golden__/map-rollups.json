@@ -1,0 +1,294 @@
+[
+  {
+    "index": 0,
+    "key": "steps",
+    "tz": null,
+    "output": [
+      {
+        "type": "ACTIVITY_STEPS",
+        "value": 8432,
+        "unit": "steps",
+        "measuredAt": "2026-06-01T12:00:00.000Z",
+        "fieldTag": "steps:2026-06-01",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 0,
+    "key": "steps",
+    "tz": "Europe/Berlin",
+    "output": [
+      {
+        "type": "ACTIVITY_STEPS",
+        "value": 8432,
+        "unit": "steps",
+        "measuredAt": "2026-06-01T10:00:00.000Z",
+        "fieldTag": "steps:2026-06-01",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 0,
+    "key": "steps",
+    "tz": "America/New_York",
+    "output": [
+      {
+        "type": "ACTIVITY_STEPS",
+        "value": 8432,
+        "unit": "steps",
+        "measuredAt": "2026-06-01T16:00:00.000Z",
+        "fieldTag": "steps:2026-06-01",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 1,
+    "key": "steps",
+    "tz": null,
+    "output": [
+      {
+        "type": "ACTIVITY_STEPS",
+        "value": 0,
+        "unit": "steps",
+        "measuredAt": "2026-06-02T12:00:00.000Z",
+        "fieldTag": "steps:2026-06-02",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 1,
+    "key": "steps",
+    "tz": "Europe/Berlin",
+    "output": [
+      {
+        "type": "ACTIVITY_STEPS",
+        "value": 0,
+        "unit": "steps",
+        "measuredAt": "2026-06-02T10:00:00.000Z",
+        "fieldTag": "steps:2026-06-02",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 1,
+    "key": "steps",
+    "tz": "America/New_York",
+    "output": [
+      {
+        "type": "ACTIVITY_STEPS",
+        "value": 0,
+        "unit": "steps",
+        "measuredAt": "2026-06-02T16:00:00.000Z",
+        "fieldTag": "steps:2026-06-02",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 2,
+    "key": "steps",
+    "tz": null,
+    "output": [
+      {
+        "type": "ACTIVITY_STEPS",
+        "value": 10250,
+        "unit": "steps",
+        "measuredAt": "2026-06-03T12:00:00.000Z",
+        "fieldTag": "steps:2026-06-03",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 2,
+    "key": "steps",
+    "tz": "Europe/Berlin",
+    "output": [
+      {
+        "type": "ACTIVITY_STEPS",
+        "value": 10250,
+        "unit": "steps",
+        "measuredAt": "2026-06-03T10:00:00.000Z",
+        "fieldTag": "steps:2026-06-03",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 2,
+    "key": "steps",
+    "tz": "America/New_York",
+    "output": [
+      {
+        "type": "ACTIVITY_STEPS",
+        "value": 10250,
+        "unit": "steps",
+        "measuredAt": "2026-06-03T16:00:00.000Z",
+        "fieldTag": "steps:2026-06-03",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  { "index": 3, "key": "steps", "tz": null, "output": [] },
+  { "index": 3, "key": "steps", "tz": "Europe/Berlin", "output": [] },
+  { "index": 3, "key": "steps", "tz": "America/New_York", "output": [] },
+  {
+    "index": 4,
+    "key": "distance",
+    "tz": null,
+    "output": [
+      {
+        "type": "WALKING_RUNNING_DISTANCE",
+        "value": 6240.51,
+        "unit": "m",
+        "measuredAt": "2026-06-01T12:00:00.000Z",
+        "fieldTag": "distance:2026-06-01",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 4,
+    "key": "distance",
+    "tz": "Europe/Berlin",
+    "output": [
+      {
+        "type": "WALKING_RUNNING_DISTANCE",
+        "value": 6240.51,
+        "unit": "m",
+        "measuredAt": "2026-06-01T10:00:00.000Z",
+        "fieldTag": "distance:2026-06-01",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 4,
+    "key": "distance",
+    "tz": "America/New_York",
+    "output": [
+      {
+        "type": "WALKING_RUNNING_DISTANCE",
+        "value": 6240.51,
+        "unit": "m",
+        "measuredAt": "2026-06-01T16:00:00.000Z",
+        "fieldTag": "distance:2026-06-01",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  { "index": 5, "key": "distance", "tz": null, "output": [] },
+  { "index": 5, "key": "distance", "tz": "Europe/Berlin", "output": [] },
+  { "index": 5, "key": "distance", "tz": "America/New_York", "output": [] },
+  {
+    "index": 6,
+    "key": "activeEnergyBurned",
+    "tz": null,
+    "output": [
+      {
+        "type": "ACTIVE_ENERGY_BURNED",
+        "value": 512.75,
+        "unit": "kcal",
+        "measuredAt": "2026-06-01T12:00:00.000Z",
+        "fieldTag": "active_energy:2026-06-01",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 6,
+    "key": "activeEnergyBurned",
+    "tz": "Europe/Berlin",
+    "output": [
+      {
+        "type": "ACTIVE_ENERGY_BURNED",
+        "value": 512.75,
+        "unit": "kcal",
+        "measuredAt": "2026-06-01T10:00:00.000Z",
+        "fieldTag": "active_energy:2026-06-01",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 6,
+    "key": "activeEnergyBurned",
+    "tz": "America/New_York",
+    "output": [
+      {
+        "type": "ACTIVE_ENERGY_BURNED",
+        "value": 512.75,
+        "unit": "kcal",
+        "measuredAt": "2026-06-01T16:00:00.000Z",
+        "fieldTag": "active_energy:2026-06-01",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  { "index": 7, "key": "activeEnergyBurned", "tz": null, "output": [] },
+  {
+    "index": 7,
+    "key": "activeEnergyBurned",
+    "tz": "Europe/Berlin",
+    "output": []
+  },
+  {
+    "index": 7,
+    "key": "activeEnergyBurned",
+    "tz": "America/New_York",
+    "output": []
+  },
+  {
+    "index": 8,
+    "key": "floors",
+    "tz": null,
+    "output": [
+      {
+        "type": "FLIGHTS_CLIMBED",
+        "value": 12,
+        "unit": "flights",
+        "measuredAt": "2026-12-31T12:00:00.000Z",
+        "fieldTag": "floors:2026-12-31",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 8,
+    "key": "floors",
+    "tz": "Europe/Berlin",
+    "output": [
+      {
+        "type": "FLIGHTS_CLIMBED",
+        "value": 12,
+        "unit": "flights",
+        "measuredAt": "2026-12-31T11:00:00.000Z",
+        "fieldTag": "floors:2026-12-31",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 8,
+    "key": "floors",
+    "tz": "America/New_York",
+    "output": [
+      {
+        "type": "FLIGHTS_CLIMBED",
+        "value": 12,
+        "unit": "flights",
+        "measuredAt": "2026-12-31T17:00:00.000Z",
+        "fieldTag": "floors:2026-12-31",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  { "index": 9, "key": "floors", "tz": null, "output": [] },
+  { "index": 9, "key": "floors", "tz": "Europe/Berlin", "output": [] },
+  { "index": 9, "key": "floors", "tz": "America/New_York", "output": [] }
+]

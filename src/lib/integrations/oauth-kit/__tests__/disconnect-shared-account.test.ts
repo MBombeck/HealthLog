@@ -32,7 +32,9 @@ vi.mock("@/lib/withings/sync", () => ({
   WITHINGS_NOTIFY_APPLIS: [1, 44],
   getWithingsWebhookCallbackUrl: () => "https://app.example/hook",
 }));
-vi.mock("@/lib/strava/client", () => ({ deauthorize: deauthorizeMock }));
+vi.mock("@/lib/strava/oauth", () => ({
+  stravaOAuth: { deauthorize: deauthorizeMock },
+}));
 vi.mock("@/lib/strava/credentials", () => ({
   STRAVA_DISCONNECTED: { stravaAccessTokenEncrypted: null },
   getStravaConnection: vi.fn(async () => ({ accessToken: "at" })),

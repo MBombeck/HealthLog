@@ -21,6 +21,7 @@ import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
+import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 
 /**
  * Batched card-compliance read: one round trip for every medication the
@@ -82,15 +83,15 @@ export const GET = apiHandler(async (request: Request) => {
     // of rates, and an empty expected set must not read as 0% or 100%.
     where: { userId: user.id, asNeeded: false, ...TRACKED_INTAKE_WHERE },
     include: {
-      schedules: true,
+      schedules: { orderBy: MEDICATION_SCHEDULE_ORDER },
       // v1.16.3 — archived schedule eras for era-aware compliance.
-      scheduleRevisions: { orderBy: { validFrom: "asc" } },
+      scheduleRevisions: { orderBy: [{ validFrom: "asc" }, { id: "asc" }] },
       // v1.25 — pause eras so paused days drop out of the denominator.
       pauseEras: { select: { pausedAt: true, resumedAt: true } },
       // v1.40 (#1024) — the courses, so a gap between two expects nothing.
       courses: COURSES_COMPLIANCE_SELECT,
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   });
 
   // Bounded fan-out: each cold cell costs one bounded intake read + one

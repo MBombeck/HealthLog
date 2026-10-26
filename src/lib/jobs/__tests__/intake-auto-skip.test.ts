@@ -27,12 +27,14 @@ import type { PrismaClient } from "@/generated/prisma/client";
 
 import { caches, __resetAllCachesForTests } from "@/lib/cache/server-cache";
 import {
-  INTAKE_AUTO_SKIP_CRON,
   INTAKE_AUTO_SKIP_GRACE_HOURS,
-  INTAKE_AUTO_SKIP_QUEUE,
   medicationAutoMissDelayMs,
   runIntakeAutoSkipPass,
 } from "../intake-auto-skip";
+import {
+  INTAKE_AUTO_SKIP_CRON,
+  INTAKE_AUTO_SKIP_QUEUE,
+} from "../intake-auto-skip-queue";
 
 interface FakeIntakeRow {
   id: string;

@@ -43,7 +43,7 @@ const restoreRequest = z
   .meta({
     id: "AdminBackupRestoreRequest",
     description:
-      "`confirm` is the literal typed gate; anything else is refused with 422 and nothing is read. `restoreInstanceSettings` defaults to false: the restore then replaces the snapshot owner's data tables and leaves the singleton instance settings — registration, MFA requirement, default locale and timezone, module availability, notification and AI configuration, document cap and quota — exactly as they are. Send `true` only when rebuilding a host from a snapshot, because those settings apply to every account on the installation.",
+      "`confirm` is the literal typed gate; anything else is refused with 422 and nothing is read. `restoreInstanceSettings` defaults to false: the restore then replaces the snapshot owner's data tables and leaves the singleton instance settings — registration, MFA requirement, default locale and timezone, module availability, notification and AI configuration, document cap and quota — exactly as they are. Send `true` only when this server's instance settings themselves need to go back to the ones in the copy, because those settings apply to every account on the installation. An account copy restores one existing account on this server; it does not rebuild a lost server, which takes a database dump and the encryption keys (`docs/ops/disaster-recovery.md`).",
   });
 
 const restoreSkipEntry = z
@@ -132,6 +132,12 @@ const restoreJob = z
       })
       .nullable(),
     failure: restoreFailure.nullable(),
+    waiting: z
+      .enum(["backup", "busy"])
+      .nullable()
+      .describe(
+        "Why a `queued` job has not started. A restore never runs beside a backup or another large job: while one holds the server it goes back to the queue for a minute at a time. `backup` when a backup pass holds it, `busy` for anything else (an import, a nightly pass, the memory guard). Null while the job only waits for the worker, and on every job that is not queued.",
+      ),
     attempts: z.number().int(),
     createdAt: z.string(),
     startedAt: z.string().nullable(),

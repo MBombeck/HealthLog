@@ -1,7 +1,16 @@
+import { kickOffhostPurge } from "@/lib/jobs/offhost-purge";
 import {
-  kickOffhostPurge,
-  requestOffhostPurge,
-} from "@/lib/jobs/offhost-purge";
+  accountDeletionGraceDays,
+  accountDeletionPurgeAt,
+} from "@/lib/account-deletion/grace";
+import {
+  eraseAccount,
+  lockAccountForDeletion,
+} from "@/lib/account-deletion/lifecycle";
+import {
+  activeGuardianWhere,
+  remainingGuardianWhere,
+} from "@/lib/managed-profiles/guardian-where";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { releaseUnbackedClientApps } from "@/lib/integrations/oauth-kit/connect-target";
@@ -14,12 +23,30 @@ import {
 
 type Transaction = Prisma.TransactionClient;
 
-export const activeGuardianWhere = (now: Date) => ({
-  access: "MANAGE" as const,
-  acceptedAt: { not: null },
-  revokedAt: null,
-  OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
-});
+export { activeGuardianWhere, remainingGuardianWhere };
+export {
+  CLAIMABLE_PROFILE_SELECT,
+  isClaimableProfile,
+} from "@/lib/managed-profiles/claimable";
+
+/**
+ * Whether `profileId` keeps a Guardian who is not pending deletion once
+ * `leavingGuardianId` (if any) is gone. Call it under the record lock.
+ */
+export async function keepsAGuardian(
+  tx: Transaction,
+  profileId: string,
+  leavingGuardianId: string | null,
+): Promise<boolean> {
+  const remaining = await tx.accountGrant.count({
+    where: {
+      grantorId: profileId,
+      ...(leavingGuardianId ? { granteeId: { not: leavingGuardianId } } : {}),
+      ...remainingGuardianWhere(new Date()),
+    },
+  });
+  return remaining > 0;
+}
 
 export type ManagedProfileLifecycleErrorCode =
   "not_found" | "not_managed" | "not_guardian" | "managed_grantee";
@@ -49,7 +76,11 @@ export async function withManagedProfileLock<T>(
   tx: Transaction,
   profileId: string,
   operation: (
-    profile: { id: string; managedProfileAt: Date | null } | null,
+    profile: {
+      id: string;
+      managedProfileAt: Date | null;
+      deletionRequestedAt: Date | null;
+    } | null,
   ) => Promise<T>,
 ): Promise<T> {
   await tx.$queryRaw`
@@ -58,7 +89,7 @@ export async function withManagedProfileLock<T>(
   `;
   const profile = await tx.user.findUnique({
     where: { id: profileId },
-    select: { id: true, managedProfileAt: true },
+    select: { id: true, managedProfileAt: true, deletionRequestedAt: true },
   });
   return operation(profile);
 }
@@ -69,17 +100,17 @@ export async function withManagedProfileLock<T>(
  */
 export async function reduceManagedProfileGuardian<T>(
   tx: Transaction,
-  profileId: string,
+  grant: { grantorId: string; granteeId: string },
   reduction: () => Promise<T>,
 ): Promise<T> {
-  return withManagedProfileLock(tx, profileId, async (profile) => {
-    if (!profile?.managedProfileAt) return reduction();
-
-    const activeGuardians = await tx.accountGrant.count({
-      where: { grantorId: profile.id, ...activeGuardianWhere(new Date()) },
-    });
-    if (activeGuardians <= 1) throw new LastManagedGuardianError();
-
+  return withManagedProfileLock(tx, grant.grantorId, async (profile) => {
+    // A profile pending deletion has left every roster; nobody is stranded.
+    if (!profile?.managedProfileAt || profile.deletionRequestedAt) {
+      return reduction();
+    }
+    if (!(await keepsAGuardian(tx, profile.id, grant.granteeId))) {
+      throw new LastManagedGuardianError();
+    }
     return reduction();
   });
 }
@@ -110,18 +141,30 @@ export const ACCOUNT_DELETION_TRANSACTION_OPTIONS = {
  * Keep account deletion and its Guardian checks inside the same transaction.
  * Profiles are locked in id order so an account protecting more than one
  * profile cannot deadlock with a concurrent lifecycle operation.
+ *
+ * `erasing: false` is the request that only locks the account for a grace
+ * window: the Guardian invariant is decided exactly as for an erasure, so a
+ * request that could never complete is refused while the person is still
+ * there to act on the answer, but the grants stay and so does any provider
+ * app a profile borrowed through them. The purge job runs this again with
+ * `erasing: true` when the window ends, and the invariant is decided again.
  */
 export async function deleteGuardianAccountWithLifecycle<T>(
   guardianId: string,
   deleteAccount: (tx: Transaction) => Promise<T>,
+  options: { erasing: boolean } = { erasing: true },
 ): Promise<T> {
   return prisma.$transaction(async (tx) => {
     const now = new Date();
+    // A profile already pending deletion is not stranded by this account
+    // leaving: it has left every roster and goes at the end of its own
+    // window. Counting it refused a Guardian who had just deleted their only
+    // profile, with nothing left they could do about it.
     const grants = await tx.accountGrant.findMany({
       where: {
         granteeId: guardianId,
         ...activeGuardianWhere(now),
-        grantor: { managedProfileAt: { not: null } },
+        grantor: { managedProfileAt: { not: null }, deletionRequestedAt: null },
       },
       select: { grantorId: true },
       distinct: ["grantorId"],
@@ -130,7 +173,7 @@ export async function deleteGuardianAccountWithLifecycle<T>(
 
     for (const { grantorId } of grants) {
       await withManagedProfileLock(tx, grantorId, async (profile) => {
-        if (!profile?.managedProfileAt) return;
+        if (!profile?.managedProfileAt || profile.deletionRequestedAt) return;
 
         const stillActive = await tx.accountGrant.findFirst({
           where: {
@@ -142,14 +185,17 @@ export async function deleteGuardianAccountWithLifecycle<T>(
         });
         if (!stillActive) return;
 
-        const activeGuardians = await tx.accountGrant.count({
-          where: { grantorId, ...activeGuardianWhere(new Date()) },
-        });
-        if (activeGuardians <= 1) throw new LastManagedGuardianError();
+        // Another Guardian who is not pending deletion must stay. Counted
+        // under the record lock, so two Guardians deleting at once cannot
+        // each count the other.
+        if (!(await keepsAGuardian(tx, grantorId, guardianId))) {
+          throw new LastManagedGuardianError();
+        }
       });
     }
 
     const result = await deleteAccount(tx);
+    if (!options.erasing) return result;
     // The guardian's grants went with their account; a provider app any of
     // their profiles borrowed from them goes too.
     for (const { grantorId } of grants) {
@@ -197,18 +243,21 @@ export async function protectManagedProfilesDuringDataWipe(
   const now = new Date();
   for (const { grantorId } of affectedProfiles) {
     await withManagedProfileLock(tx, grantorId, async (profile) => {
-      if (!profile?.managedProfileAt) return;
+      // A profile pending deletion is stranded by nobody (see the deletion
+      // above); its grants still go with the wipe, as the caller settles.
+      if (!profile?.managedProfileAt || profile.deletionRequestedAt) return;
 
+      // Guardians pending deletion count on neither side.
       const [activeGuardians, guardiansRemovedByWipe] = await Promise.all([
         tx.accountGrant.count({
-          where: { grantorId: profile.id, ...activeGuardianWhere(now) },
+          where: { grantorId: profile.id, ...remainingGuardianWhere(now) },
         }),
         tx.accountGrant.count({
           where: {
             AND: [
               { grantorId: profile.id },
               { OR: [{ grantorId: userId }, { granteeId: userId }] },
-              activeGuardianWhere(now),
+              remainingGuardianWhere(now),
             ],
           },
         }),
@@ -224,13 +273,32 @@ export async function protectManagedProfilesDuringDataWipe(
   return affectedProfiles.map((p) => p.grantorId);
 }
 
+/**
+ * Delete a managed profile on a Guardian's word.
+ *
+ * With a grace window the profile is locked rather than erased (see
+ * `lockAccountForDeletion`): it leaves every Guardian's roster, nothing acts
+ * for it, and the purge job erases it when the window ends unless an admin
+ * undoes it first. Without one (`ACCOUNT_DELETION_GRACE_DAYS=0`) it is
+ * erased here, as before. Answers when it will be erased, or null when it
+ * already was.
+ */
 export async function deleteManagedProfile(input: {
   profileId: string;
   guardianId: string;
-}): Promise<void> {
+}): Promise<{ scheduledPurgeAt: Date | null }> {
+  const requestedAt = new Date();
+  const purgeAt = accountDeletionPurgeAt(
+    requestedAt,
+    accountDeletionGraceDays(),
+  );
   await prisma.$transaction(async (tx) => {
     await withManagedProfileLock(tx, input.profileId, async (profile) => {
-      if (!profile) throw new ManagedProfileLifecycleError("not_found");
+      // A profile already pending deletion has left every roster; to its
+      // Guardians it is gone, and only an admin can bring it back.
+      if (!profile || profile.deletionRequestedAt) {
+        throw new ManagedProfileLifecycleError("not_found");
+      }
       if (!profile.managedProfileAt) {
         throw new ManagedProfileLifecycleError("not_managed");
       }
@@ -247,14 +315,26 @@ export async function deleteManagedProfile(input: {
 
       await auditLog("managed_profile.deleted", {
         userId: input.guardianId,
-        details: { profileId: profile.id },
+        details: {
+          profileId: profile.id,
+          scheduledPurgeAt: purgeAt?.toISOString() ?? null,
+        },
         client: tx,
       });
-      await requestOffhostPurge(tx, profile.id, "managed_profile_deleted");
-      await tx.user.delete({ where: { id: profile.id } });
+      if (purgeAt) {
+        await lockAccountForDeletion(tx, {
+          userId: profile.id,
+          requestedById: input.guardianId,
+          requestedAt,
+          purgeAt,
+        });
+        return;
+      }
+      await eraseAccount(tx, profile.id, "managed_profile_deleted");
     });
   }, ACCOUNT_DELETION_TRANSACTION_OPTIONS);
-  await kickOffhostPurge();
+  if (!purgeAt) await kickOffhostPurge();
+  return { scheduledPurgeAt: purgeAt };
 }
 
 /**
@@ -330,9 +410,13 @@ export async function readManagedProfileForGuardian(input: {
 }): Promise<ManagedProfileView | null> {
   const profile = await prisma.user.findUnique({
     where: { id: input.profileId },
-    select: { ...MANAGED_PROFILE_VIEW_SELECT, managedProfileAt: true },
+    select: {
+      ...MANAGED_PROFILE_VIEW_SELECT,
+      managedProfileAt: true,
+      deletionRequestedAt: true,
+    },
   });
-  if (!profile?.managedProfileAt) return null;
+  if (!profile?.managedProfileAt || profile.deletionRequestedAt) return null;
 
   const guardian = await prisma.accountGrant.findFirst({
     where: {
@@ -387,7 +471,9 @@ export async function updateManagedProfile(input: {
 }): Promise<ManagedProfileView> {
   return prisma.$transaction(async (tx) => {
     return withManagedProfileLock(tx, input.profileId, async (profile) => {
-      if (!profile) throw new ManagedProfileLifecycleError("not_found");
+      if (!profile || profile.deletionRequestedAt) {
+        throw new ManagedProfileLifecycleError("not_found");
+      }
       if (!profile.managedProfileAt) {
         throw new ManagedProfileLifecycleError("not_managed");
       }

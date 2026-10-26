@@ -10,6 +10,7 @@
  * Idempotent: a re-run within the same window matches zero rows the second time
  * because the first pass deleted everything older than `now()`.
  */
+// account-deletion(file): expires abandoned OAuth state rows and connect tickets; acts for no account.
 import type { PrismaClient } from "@/generated/prisma/client";
 
 export async function cleanupExpiredWhoopOAuthStates(

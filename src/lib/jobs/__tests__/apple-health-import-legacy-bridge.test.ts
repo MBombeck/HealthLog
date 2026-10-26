@@ -25,10 +25,10 @@ vi.mock("@/lib/jobs/boss-instance", () => ({
 import {
   APPLE_HEALTH_IMPORT_PARSER_REVISION,
   APPLE_HEALTH_IMPORT_SEND_OPTIONS,
-  APPLE_HEALTH_IMPORT_V2_QUEUE,
   migrateLegacyAppleHealthImport,
   type AppleHealthImportPayload,
 } from "../apple-health-import-worker";
+import { APPLE_HEALTH_IMPORT_V2_QUEUE } from "@/lib/jobs/apple-health-import-queue";
 
 const payload: AppleHealthImportPayload = {
   userId: "user-1",

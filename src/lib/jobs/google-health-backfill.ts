@@ -1,7 +1,7 @@
 /**
  * v1.26.0 — pg-boss queue + boot-time self-converging backfill for newly
  * connected Google Health accounts. Modelled on the Fitbit / WHOOP backfill
- * (`src/lib/jobs/fitbit-backfill.ts`): a discovery query enqueues one job per
+ * (`src/lib/fitbit/jobs/backfill.ts`): a discovery query enqueues one job per
  * connection that has NOT yet been backfilled, and the pass is idempotent
  * across reboots (the predicate `backfill_completed_at IS NULL` drops a
  * connection once its backfill finishes).
@@ -11,6 +11,7 @@
  * provisions it and the boot enqueue silently never drains (the v1.4.37
  * dead-queue class).
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
@@ -40,19 +41,11 @@ import {
   googleHealthSliceBudget,
   type GoogleHealthSliceStopReason,
   runWithGoogleHealthStop,
-} from "@/lib/google-health/client";
+} from "@/lib/google-health/budget";
 import { reportJobProgress } from "@/lib/jobs/job-observer";
 import { LANE_YIELD_DELAY_SECONDS, laneWanted } from "@/lib/jobs/heavy-lane";
 import { GOOGLE_HEALTH_COLLECTION_KEYS } from "@/lib/google-health/collection-keys";
-
-export const GOOGLE_HEALTH_BACKFILL_QUEUE = "google-health-backfill";
-
-/**
- * Serial concurrency — a backfill walks years of history for one account and is
- * rate-bounded by Google's per-app quota; concurrency-1 keeps it from crowding
- * the request pool, matching `FITBIT_BACKFILL_CONCURRENCY`.
- */
-export const GOOGLE_HEALTH_BACKFILL_CONCURRENCY = 1;
+import { GOOGLE_HEALTH_BACKFILL_QUEUE } from "./google-health-backfill-queue";
 
 /**
  * One slice of a backfill: how long it walks and how many pages it reads
@@ -494,7 +487,7 @@ export async function enqueueBootTimeGoogleHealthBackfill(
 
   try {
     const connections = await prisma.googleHealthConnection.findMany({
-      where: { backfillCompletedAt: null },
+      where: { backfillCompletedAt: null, ...OWNED_BY_ACTIVE_ACCOUNT },
       select: { userId: true },
     });
 

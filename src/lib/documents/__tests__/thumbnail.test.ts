@@ -5,10 +5,9 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 
-// Partial mock of the native canvas module: `loadImage` delegates to the real
-// decoder by default (so every real-fixture test below is unaffected) and can
-// be overridden per-test via `loadImageMock` to simulate a decoded image whose
-// dimensions the header sniff could not have known.
+// Partial mock of the native canvas module in this process: `loadImage`
+// delegates to the real decoder and records every call, so a test can tell
+// whether an upload was decoded here rather than in the reader's child.
 const { loadImageMock } = vi.hoisted(() => ({ loadImageMock: vi.fn() }));
 vi.mock("@napi-rs/canvas", async (importActual) => {
   const actual = await importActual<typeof import("@napi-rs/canvas")>();
@@ -19,6 +18,7 @@ vi.mock("@napi-rs/canvas", async (importActual) => {
   };
 });
 
+import { gif } from "../../__tests__/gif-fixture";
 import { generateThumbnail, THUMB_LONG_EDGE } from "../thumbnail";
 
 /**
@@ -132,7 +132,15 @@ describe("generateThumbnail", () => {
   it("returns { ok: false } and never throws on malformed image bytes", async () => {
     await expect(
       generateThumbnail(Buffer.from("not a real image"), "image/png"),
-    ).resolves.toEqual({ ok: false, reason: "error" });
+    ).resolves.toEqual({ ok: false, reason: "size-unreadable" });
+  });
+
+  it("returns { ok: false } when a readable header fronts bytes that do not decode", async () => {
+    const header = sourceImage(8, 8, "image/png").subarray(0, 40);
+    await expect(generateThumbnail(header, "image/png")).resolves.toEqual({
+      ok: false,
+      reason: "error",
+    });
   });
 
   it("returns { ok: false } on a malformed PDF", async () => {
@@ -157,14 +165,94 @@ describe("generateThumbnail", () => {
     });
   });
 
-  it("refuses an oversize image the header sniff missed (post-decode cap)", async () => {
-    // Bytes the JPEG sniffer cannot read (no SOI) → the pre-decode guard is
-    // skipped and the code falls through to `loadImage`. The decoder is forced
-    // to return 30000×30000 = 900 MP, so only the post-decode backstop can
-    // catch it. Without that backstop this would OOM the serial worker.
-    loadImageMock.mockResolvedValueOnce({ width: 30_000, height: 30_000 });
+  it("decodes an uploaded image in the reader's child process, not in this one", async () => {
+    // The decoder allocates what the file makes it allocate; in the child
+    // that ends the child. Nothing of an image upload is decoded here.
+    loadImageMock.mockClear();
+    const result = await generateThumbnail(
+      sourceImage(640, 480, "image/png"),
+      "image/png",
+    );
+    expect(result.ok).toBe(true);
+    expect(loadImageMock).not.toHaveBeenCalled();
+  });
+
+  /**
+   * A JPEG whose frame header declares `width` × `height`, with `fill` 0xFF
+   * fill bytes after the start-of-image marker. The standard allows fill
+   * bytes before any marker and every decoder skips them.
+   */
+  function jpegDeclaring(width: number, height: number, fill: number): Buffer {
+    const base = sourceImage(16, 16, "image/jpeg");
+    const sof = base.indexOf(Buffer.from([0xff, 0xc0]));
+    const patched = Buffer.from(base);
+    patched.writeUInt16BE(height, sof + 5);
+    patched.writeUInt16BE(width, sof + 7);
+    return Buffer.concat([
+      patched.subarray(0, 2),
+      Buffer.alloc(fill, 0xff),
+      patched.subarray(2),
+    ]);
+  }
+
+  it("reads the size of a JPEG with fill bytes before a marker, and refuses a bomb before decoding", async () => {
+    loadImageMock.mockClear();
+    // 20000×20000 behind one fill byte: the old walker lost its place, read
+    // no size and let the decoder allocate 1.6 GB.
     await expect(
-      generateThumbnail(Buffer.from("desynced jpeg bytes"), "image/jpeg"),
+      generateThumbnail(jpegDeclaring(20_000, 20_000, 1), "image/jpeg"),
     ).resolves.toEqual({ ok: false, reason: "pixel-cap" });
+    await expect(
+      generateThumbnail(jpegDeclaring(20_000, 20_000, 3), "image/jpeg"),
+    ).resolves.toEqual({ ok: false, reason: "pixel-cap" });
+    expect(loadImageMock).not.toHaveBeenCalled();
+  });
+
+  it("still previews an ordinary JPEG that carries fill bytes", async () => {
+    const result = await generateThumbnail(
+      jpegDeclaring(16, 16, 2),
+      "image/jpeg",
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it("refuses a GIF whose frame is far larger than its logical screen, before decoding", async () => {
+    loadImageMock.mockClear();
+    // A 10 x 10 screen around a 20000 x 20000 frame: the decoder sizes its
+    // buffer from the frame.
+    const bomb = gif({ width: 10, height: 10 }, [
+      { width: 20_000, height: 20_000 },
+    ]);
+    expect(bomb.length).toBeLessThan(64);
+    await expect(generateThumbnail(bomb, "image/gif")).resolves.toEqual({
+      ok: false,
+      reason: "pixel-cap",
+    });
+    expect(loadImageMock).not.toHaveBeenCalled();
+  });
+
+  it("still previews an ordinary GIF", async () => {
+    const result = await generateThumbnail(
+      gif({ width: 1, height: 1 }, [{ width: 1, height: 1 }]),
+      "image/gif",
+    );
+    expect(result).toMatchObject({
+      ok: true,
+      thumbnail: { width: 1, height: 1 },
+    });
+  });
+
+  it("refuses an image whose size cannot be read instead of decoding it", async () => {
+    loadImageMock.mockClear();
+    // Start of image, then straight into a scan: no frame header to read.
+    const noFrame = Buffer.from([0xff, 0xd8, 0xff, 0xda, 0x00, 0x08, 1, 2, 3]);
+    await expect(generateThumbnail(noFrame, "image/jpeg")).resolves.toEqual({
+      ok: false,
+      reason: "size-unreadable",
+    });
+    await expect(
+      generateThumbnail(Buffer.from("RIFF0000WEBPVP8Z"), "image/webp"),
+    ).resolves.toEqual({ ok: false, reason: "size-unreadable" });
+    expect(loadImageMock).not.toHaveBeenCalled();
   });
 });

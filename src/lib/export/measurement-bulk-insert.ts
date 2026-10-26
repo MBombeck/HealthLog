@@ -66,6 +66,8 @@ export interface MeasurementInsertRow {
   sleepStage: string | null;
   rhythmClassification: string | null;
   deviceType: string | null;
+  /** The token an EXTERNAL row came from (#1272); null when absent. */
+  ingestTokenId?: string | null;
   syncVersion: number;
   deletedAt: Date | null;
   createdAt?: Date;
@@ -98,6 +100,7 @@ const COLUMNS: { [K in keyof MeasurementInsertRow]-?: [string, Kind] } = {
   sleepStage: ["sleep_stage", "enum:sleep_stage"],
   rhythmClassification: ["rhythm_classification", "enum:rhythm_classification"],
   deviceType: ["device_type", "text"],
+  ingestTokenId: ["ingest_token_id", "text"],
   syncVersion: ["sync_version", "int4"],
   deletedAt: ["deleted_at", "timestamp"],
   createdAt: ["created_at", "timestamp"],

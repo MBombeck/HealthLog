@@ -10,14 +10,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireAuth, requireRecordAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  apiValidationError,
-  getClientIp,
-  safeJson,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import {
@@ -164,20 +158,11 @@ export const PATCH = apiHandler(
 
     const { id } = await params;
 
-    const { data: body, error: jsonError } = await safeJson(request);
-    if (jsonError) return jsonError;
-
-    const parsed = documentUpdateSchema.safeParse(body);
-    if (!parsed.success) {
-      return apiValidationError(
-        "Invalid document update",
-        sanitiseZodIssues(parsed.error.issues),
-        422,
-        {
-          errorCode: "documents.inbound.invalidUpdate",
-        },
-      );
-    }
+    const parsed = await parseJsonBody(request, documentUpdateSchema, {
+      errorCode: "documents.inbound.invalidUpdate",
+      message: "Invalid document update",
+    });
+    if (!parsed.ok) return parsed.error;
 
     const existing = await prisma.inboundDocument.findFirst({
       where: { id, userId: user.id, deletedAt: null },

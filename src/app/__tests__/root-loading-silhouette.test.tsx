@@ -1,3 +1,4 @@
+import { dashboardSource } from "@/__tests__/helpers/dashboard-source";
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
@@ -86,10 +87,7 @@ describe("RootLoading — single skeleton source (wiring pins)", () => {
     join(process.cwd(), "src/app/loading.tsx"),
     "utf8",
   );
-  const pageSrc = readFileSync(
-    join(process.cwd(), "src/app/page-client.tsx"),
-    "utf8",
-  );
+  const pageSrc = dashboardSource();
 
   it("imports the same silhouette components the page's loading phase uses", () => {
     expect(loadingSrc).toContain(

@@ -40,6 +40,11 @@ export type ProviderFailureKind =
   | "embedded_error"
   /** A non-2xx HTTP status. */
   | "http"
+  /**
+   * #1279 — not sent: background work waits out a provider the health
+   * ledger has benched after failures in a row (`provider-runner.ts`).
+   */
+  | "paused"
   /** A transport failure with no code this list knows. */
   | "network"
   | "unknown";

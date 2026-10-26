@@ -25,11 +25,16 @@
 import { describe, it, expect } from "vitest";
 import { join } from "node:path";
 
+import { guardModuleOf, guardSourceOf } from "./helpers/auth-guards";
 import {
   readSource,
   readSourceText,
   walkSourceFiles,
 } from "./helpers/source-files";
+import {
+  FRESH_FACTOR_METHODS,
+  isFreshFactorMethod,
+} from "@/lib/auth/step-up-factors";
 
 const SRC = join(process.cwd(), "src");
 
@@ -76,6 +81,28 @@ function importedAs(
 
 const API_HANDLER = /api-handler$/;
 const STEP_UP_MODULE = /auth\/step-up$/;
+
+/**
+ * The guard module that reads the elevation header, validates and claims:
+ * the one redemption path. Found by the function that does it, so a move
+ * between guard modules repoints every leg below at once.
+ */
+const GATE_MODULE = guardModuleOf("resolveBearerElevation");
+
+/**
+ * An exported declaration's source, from its signature to the next top-level
+ * export (or the end of its module), read from the guard module that declares
+ * `name`. Throws when the signature is gone, so a negative assertion on the
+ * slice cannot pass over an empty string.
+ */
+function exportedBlock(name: string, signature: string): string {
+  const src = guardSourceOf(name, [signature]);
+  const start = src.indexOf(signature);
+  const next = src.indexOf("\nexport ", start + 1);
+  const body = src.slice(start, next === -1 ? undefined : next);
+  expect(body.length).toBeGreaterThan(signature.length);
+  return body;
+}
 
 /** Files that import `exportName` from the module AND call it. */
 function callers(exportName: string, moduleRe: RegExp): string[] {
@@ -260,15 +287,10 @@ describe("S6 — the erasure routes accept a fresh-factor elevation", () => {
     // A password-proved elevation must not erase an account, and the gate
     // must not grow a second, inline factor check beside the elevation: one
     // mint surface, one redemption path.
-    const src = readSource(
-      "src/lib/api-handler.ts",
+    const body = exportedBlock(
+      "requireFreshMfaOrElevationIfEnrolled",
       "export async function requireFreshMfaOrElevationIfEnrolled(",
     );
-    const start = src.indexOf(
-      "export async function requireFreshMfaOrElevationIfEnrolled(",
-    );
-    expect(start).toBeGreaterThan(-1);
-    const body = src.slice(start, src.indexOf("\nexport ", start + 1));
     expect(body).toMatch(/freshFactor:\s*true/);
     expect(body).not.toMatch(/verifyMfaFactor|verifyTotp|recoveryCode/);
   });
@@ -279,14 +301,14 @@ describe("S2 — mint and redeem happen in exactly one place each", () => {
     const found = callers("claimStepUpElevation", STEP_UP_MODULE).filter(
       (rel) => rel !== "lib/auth/step-up.ts",
     );
-    expect(found).toEqual(["lib/api-handler.ts"]);
+    expect(found).toEqual([GATE_MODULE]);
   });
 
   it("only the gate validates one", () => {
     const found = callers("validateStepUpElevation", STEP_UP_MODULE).filter(
       (rel) => rel !== "lib/auth/step-up.ts",
     );
-    expect(found).toEqual(["lib/api-handler.ts"]);
+    expect(found).toEqual([GATE_MODULE]);
   });
 
   it("only the mint route mints one", () => {
@@ -300,7 +322,7 @@ describe("S2 — mint and redeem happen in exactly one place each", () => {
     // Both spellings — the literal string AND the exported constant — across
     // every source file, not only `route.ts`. A helper could read it too.
     const offenders = sourceFiles()
-      .filter((rel) => rel !== "lib/api-handler.ts")
+      .filter((rel) => rel !== GATE_MODULE)
       .filter((rel) => {
         const src = read(rel);
         if (/["']x-step-up["']/i.test(src)) return true;
@@ -314,13 +336,9 @@ describe("S2 — mint and redeem happen in exactly one place each", () => {
 
 describe("S3 — requireAdmin stays cookie-only", () => {
   it("resolves through getSession and nothing else", () => {
-    const src = readSource("src/lib/api-handler.ts", [
+    const body = exportedBlock(
+      "requireAdmin",
       "export async function requireAdmin(",
-      "export async function requireCookieAuth(",
-    ]);
-    const body = src.slice(
-      src.indexOf("export async function requireAdmin("),
-      src.indexOf("export async function requireCookieAuth("),
     );
     expect(body).toContain("await getSession()");
     expect(body).not.toMatch(/authenticateBearer|resolveBearerToken/);
@@ -345,25 +363,24 @@ describe("S4 — the mint surface refuses a cookie", () => {
   });
 
   it("requireBearerAuth never consults the session cookie", () => {
-    const src = readSource("src/lib/api-handler.ts", [
+    const body = exportedBlock(
+      "requireBearerAuth",
       "export async function requireBearerAuth(",
-      "export const STEP_UP_ELEVATION_HEADER",
-    ]);
-    const body = src.slice(
-      src.indexOf("export async function requireBearerAuth("),
-      src.indexOf("export const STEP_UP_ELEVATION_HEADER"),
     );
+    expect(body).toContain("authenticateBearer(");
     expect(body).not.toContain("getSession(");
   });
 });
 
 describe("S5 — a password proof cannot satisfy a fresh-factor gate", () => {
-  it("the fresh-factor set excludes password", async () => {
+  it("the fresh-factor set excludes password", () => {
     // The B1 invariant, pinned at the definition. The web stamps
     // `mfaVerifiedAt` only for a completed second factor or a primary passkey
-    // login; the Bearer arm must not be looser.
-    const { FRESH_FACTOR_METHODS, isFreshFactorMethod } =
-      await import("@/lib/auth/step-up");
+    // login; the Bearer arm must not be looser. Read from the definition's
+    // own module, which imports nothing: reaching it through `step-up.ts`
+    // loaded the database client and the generated Prisma client inside this
+    // test body, and that import alone ran past the test timeout on a loaded
+    // machine.
     expect([...FRESH_FACTOR_METHODS].sort()).toEqual([
       "passkey",
       "totp",

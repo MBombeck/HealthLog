@@ -138,11 +138,9 @@ import {
   LANE_YIELD_DELAY_SECONDS,
 } from "@/lib/jobs/heavy-lane";
 import { GOOGLE_HEALTH_COLLECTION_KEYS } from "@/lib/google-health/collection-keys";
-import {
-  GOOGLE_HEALTH_DATA_TYPES,
-  forEachDataPointPage,
-  runWithGoogleHealthClientOutcome,
-} from "@/lib/google-health/client";
+import { forEachDataPointPage } from "@/lib/google-health/data-points";
+import { runWithGoogleHealthClientOutcome } from "@/lib/google-health/budget";
+import { GOOGLE_HEALTH_DATA_TYPES } from "@/lib/google-health/mappers";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -479,7 +477,7 @@ describe("runGoogleHealthBackfillForUser — slices", () => {
   it("queues the next slice past the waiting job's return after giving way", async () => {
     resumeState.advances = ["fetchHeartRate"];
     syncUserGoogleHealthMock.mockResolvedValue({ imported: 10, failed: true });
-    const client = await import("@/lib/google-health/client");
+    const client = await import("@/lib/google-health/budget");
     const spy = vi
       .spyOn(client, "googleHealthSliceBudget")
       .mockImplementation(() => ({
@@ -510,7 +508,7 @@ describe("runGoogleHealthBackfillForUser — slices", () => {
     syncUserGoogleHealthMock.mockResolvedValue({ imported: 10, failed: true });
     // The slice ended the way a resumable walk ends it when Google keeps
     // answering 429 past every wait.
-    const client = await import("@/lib/google-health/client");
+    const client = await import("@/lib/google-health/budget");
     const spy = vi
       .spyOn(client, "googleHealthSliceBudget")
       .mockImplementation(() => ({

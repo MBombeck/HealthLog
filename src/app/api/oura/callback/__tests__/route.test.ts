@@ -74,12 +74,14 @@ const {
 
 vi.mock("@/lib/jobs/boss-instance", () => ({ getGlobalBoss: bossMock }));
 
-vi.mock("@/lib/oura/client", async (importOriginal) => ({
-  isAcceptedOuraIssuer: (
-    await importOriginal<typeof import("@/lib/oura/client")>()
-  ).isAcceptedOuraIssuer,
-  exchangeCode: exchangeMock,
+vi.mock("@/lib/oura/client", () => ({
   fetchOuraAccountId: vi.fn(async () => "oura-account-1"),
+}));
+vi.mock("@/lib/oura/oauth", async (importOriginal) => ({
+  isAcceptedOuraIssuer: (
+    await importOriginal<typeof import("@/lib/oura/oauth")>()
+  ).isAcceptedOuraIssuer,
+  exchangeOuraCode: exchangeMock,
 }));
 vi.mock("@/lib/oura/credentials", () => ({
   getOuraClientCredentials: getCredsMock,

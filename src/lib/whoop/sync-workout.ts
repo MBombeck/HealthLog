@@ -19,12 +19,9 @@
  * source's. Raw `sport_id` / `sport_name` still live in `Workout.metadata`
  * for traceability.
  */
-import {
-  fetchWorkouts,
-  fetchWorkoutById,
-  KJ_TO_KCAL,
-  type WhoopWorkout,
-} from "./client";
+import { fetchWorkouts, fetchWorkoutById } from "./client";
+import { KJ_TO_KCAL } from "./map";
+import { type WhoopWorkout } from "./wire-types";
 import {
   getValidToken,
   incrementalStart,

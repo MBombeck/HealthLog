@@ -22,6 +22,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, globSync } from "node:fs";
 import { join, sep } from "node:path";
+import { stripComments } from "./helpers/source-files";
 
 const E2E = join(process.cwd(), "e2e");
 
@@ -42,15 +43,6 @@ function specFiles(): string[] {
 
 function read(rel: string): string {
   return readFileSync(join(E2E, rel), "utf8");
-}
-
-/**
- * The file with comments removed. This guard's own subject matter is worth
- * explaining in prose inside the specs, and a naive substring match would be
- * satisfied by that prose alone.
- */
-function stripComments(src: string): string {
-  return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 }
 
 function switchingSpecs(): string[] {

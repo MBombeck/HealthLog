@@ -362,7 +362,7 @@ describe(`Google Health backfill over ${DAYS} days of heart rate (#1220)`, () =>
     const { handleGoogleHealthSync } =
       await import("@/lib/jobs/reminder/google-health-sync");
     const { GOOGLE_HEALTH_TRANSIENT_RETRY } =
-      await import("@/lib/google-health/client");
+      await import("@/lib/google-health/request");
     GOOGLE_HEALTH_TRANSIENT_RETRY.baseDelayMs = 0;
 
     // A server error and a lost request in the first slice, and a rate limit
@@ -525,7 +525,7 @@ describe(`Google Health backfill over ${DAYS} days of heart rate (#1220)`, () =>
     const { handleGoogleHealthSync } =
       await import("@/lib/jobs/reminder/google-health-sync");
     const { GOOGLE_HEALTH_TRANSIENT_RETRY } =
-      await import("@/lib/google-health/client");
+      await import("@/lib/google-health/request");
     GOOGLE_HEALTH_TRANSIENT_RETRY.baseDelayMs = 0;
 
     const prisma = getPrismaClient();

@@ -11,13 +11,12 @@
  * higher-fidelity native PDF block; a text-layer PDF is still read locally for
  * free before we ever rasterize).
  *
- * pdfjs is loaded LAZILY via a runtime `import()` — its module top-level
- * references the browser-only `DOMMatrix` global, so a STATIC import would make
- * the Turbopack server chunk evaluate that reference at instantiation and throw
- * `DOMMatrix is not defined`, taking down every route/worker sharing the chunk.
- * The lazy import (the exact pattern `local-extract.ts` documents) keeps pdfjs +
- * `@napi-rs/canvas` (its Node canvas backend) out of the eager chunk. Rendering
- * is pure local compute — no network, nothing written to disk.
+ * The rendering itself runs in a child process under a memory ceiling and a
+ * time limit (`./pdf-isolation.ts`), through the one pdf.js loader
+ * (`./pdf-engine.mjs`) the local text read uses too. A document built to
+ * exhaust memory or time ends that child and answers `resource-limit`; the
+ * server keeps running. Rendering is pure local compute — no network,
+ * nothing written to disk.
  *
  * Bounds (denial-of-service + vision token cost): render at most the first
  * `RASTER_MAX_PAGES` pages, each capped to `RASTER_TARGET_LONG_EDGE` on its long
@@ -31,13 +30,11 @@
  * preserves the "a bad document never aborts an upload/batch" contract.
  */
 import { Buffer } from "node:buffer";
-import { existsSync } from "node:fs";
-import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
 
 import { annotate } from "@/lib/logging/context";
 
 import { nativeCanvasSupported } from "./native-canvas-support";
+import { runPdfChild } from "./pdf-isolation";
 
 /**
  * Whether the PDF rasterizer is available in this build. The native
@@ -89,7 +86,9 @@ export interface RasterImage {
  * failure names its class so the caller can tell "this build cannot raster
  * at all" (`unsupported` — the native canvas binary is unusable, a capability
  * gap Anthropic's native PDF path would cover) from "this particular PDF
- * would not render" (`render-failed` — malformed / encrypted / zero pages).
+ * would not render" (`render-failed` — malformed / encrypted / zero pages),
+ * and both from "this PDF crossed the renderer's memory or time bound"
+ * (`resource-limit`), which the same bytes will cross again.
  */
 export type RasterResult =
   | {
@@ -108,257 +107,35 @@ export type RasterResult =
        */
       texts?: string[];
     }
-  | { ok: false; reason: "unsupported" | "render-failed" };
-
-// Minimal structural types for the slice of the pdfjs API this module uses. A
-// type-only shape (erased at build) so we never eagerly evaluate the pdfjs
-// module for its types; the real module is pulled at runtime via `import()`.
-interface PdfViewport {
-  width: number;
-  height: number;
-}
-interface PdfCanvas {
-  width: number;
-  height: number;
-  toBuffer(mime: "image/jpeg", quality?: number): Buffer;
-}
-interface PdfContext2D {
-  getImageData(
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-  ): { data: Uint8ClampedArray };
-}
-interface PdfCanvasAndContext {
-  canvas: PdfCanvas;
-  context: PdfContext2D;
-}
-interface PdfCanvasFactory {
-  create(width: number, height: number): PdfCanvasAndContext;
-  destroy?(target: PdfCanvasAndContext): void;
-}
-interface PdfPage {
-  getViewport(opts: { scale: number }): PdfViewport;
-  render(opts: {
-    canvasContext: unknown;
-    viewport: PdfViewport;
-    canvas: unknown;
-  }): { promise: Promise<void> };
-  cleanup(): void;
-  getTextContent(): Promise<{
-    items: Array<{ str?: string; hasEOL?: boolean }>;
-  }>;
-}
-interface PdfDocument {
-  numPages: number;
-  canvasFactory: PdfCanvasFactory;
-  getPage(pageNumber: number): Promise<PdfPage>;
-}
-interface PdfLoadingTask {
-  promise: Promise<PdfDocument>;
-  destroy(): Promise<void>;
-}
-interface PdfjsModule {
-  getDocument(opts: PdfDocumentOptions): PdfLoadingTask;
-}
-interface PdfDocumentOptions {
-  data: Uint8Array;
-  verbosity?: number;
-  isEvalSupported?: boolean;
-  useSystemFonts?: boolean;
-  standardFontDataUrl?: string;
-  cMapUrl?: string;
-  cMapPacked?: boolean;
-  wasmUrl?: string;
-}
-interface GlobalFontsLike {
-  registerFromPath(path: string, nameAlias?: string): unknown;
-}
-
-/**
- * Where pdfjs finds the data it does not carry in its JS: the standard 14
- * fonts (a PDF that names Helvetica or Times without embedding them), the
- * CMaps (CID fonts with a predefined encoding), and the wasm image decoders
- * (JPEG 2000, JBIG2). In a browser pdfjs fetches these from a URL; under Node
- * they are read from disk, and without a directory pdfjs simply draws the text
- * without glyphs.
- *
- * The runtime image carries no system fonts at all, so nothing else catches
- * that: a letter set in a non-embedded font rendered as an empty page in the
- * container while it rendered correctly on a workstation, where the operating
- * system's fonts stood in. The image-only provider then read the empty page
- * and returned a line of nothing.
- *
- * Resolved from the working directory with Node's own resolution, which is
- * what finds the hoisted `node_modules/pdfjs-dist` in the standalone image
- * and the pnpm link in a checkout. The specifier is assembled at runtime so
- * the bundler leaves the lookup alone. The ICC profile option is not set: its
- * loader needs a synchronous XMLHttpRequest that Node lacks, and pdfjs falls
- * back to each colour space's alternate.
- */
-export interface PdfjsAssets {
-  standardFontDataUrl: string;
-  cMapUrl: string;
-  wasmUrl: string;
-  /** The Liberation Sans faces registered as the generic fallback families. */
-  fallbackFonts: string[];
-}
-
-let cachedAssets: PdfjsAssets | null | undefined;
-
-export function resolvePdfjsAssets(): PdfjsAssets | null {
-  if (cachedAssets !== undefined) return cachedAssets;
-  cachedAssets = null;
-  try {
-    const anchor = createRequire(join(process.cwd(), "package.json"));
-    const root = dirname(
-      anchor.resolve(["pdfjs-dist", "package.json"].join("/")),
-    );
-    const fonts = join(root, "standard_fonts");
-    const assets: PdfjsAssets = {
-      standardFontDataUrl: `${fonts}/`,
-      cMapUrl: `${join(root, "cmaps")}/`,
-      wasmUrl: `${join(root, "wasm")}/`,
-      fallbackFonts: [
-        "LiberationSans-Regular.ttf",
-        "LiberationSans-Bold.ttf",
-        "LiberationSans-Italic.ttf",
-        "LiberationSans-BoldItalic.ttf",
-      ].map((file) => join(fonts, file)),
+  | {
+      ok: false;
+      reason:
+        | "unsupported"
+        | "render-failed"
+        | "resource-limit"
+        /**
+         * Not an answer about this document: the reader was busy past the
+         * wait this work may spend, or its process ended for no reason it
+         * measured. The caller tries again later.
+         */
+        | "busy"
+        | "interrupted";
     };
-    if (
-      existsSync(join(fonts, "FoxitSerif.pfb")) &&
-      existsSync(join(root, "cmaps", "UniJIS-UTF16-H.bcmap")) &&
-      existsSync(join(root, "wasm", "openjpeg.wasm")) &&
-      assets.fallbackFonts.every((file) => existsSync(file))
-    ) {
-      cachedAssets = assets;
-    }
-  } catch {
-    // Unresolvable: render without the data, as before, and say so below.
-  }
-  return cachedAssets;
-}
 
-let fallbackFamiliesRegistered = false;
+export {
+  pageText,
+  RASTER_PAGE_TEXT_MAX,
+  TEXT_LAYER_CUT_MARK,
+} from "./pdf-engine.mjs";
 
 /**
- * Give the canvas a face for the generic families pdfjs falls back to.
- *
- * When pdfjs cannot use a font program (a damaged or unsupported embedded
- * font, or a non-embedded face outside the standard 14) it draws the text
- * with the canvas' own `fillText` under the PDF's font name and a generic
- * family. With no system fonts in the image that text vanished. Registering
- * Liberation Sans, which pdfjs ships, under `sans-serif`, `serif` and
- * `monospace` makes it legible instead. Once per process.
+ * How long a render may take: a base for opening the document plus a share
+ * per page. A page that takes longer than this is not a page a reader waits
+ * on, and the time limit is what ends a document built to keep the renderer
+ * busy.
  */
-async function registerFallbackFamilies(assets: PdfjsAssets): Promise<void> {
-  if (fallbackFamiliesRegistered) return;
-  fallbackFamiliesRegistered = true;
-  const { GlobalFonts } = (await import("@napi-rs/canvas")) as unknown as {
-    GlobalFonts: GlobalFontsLike;
-  };
-  for (const family of ["sans-serif", "serif", "monospace"]) {
-    for (const file of assets.fallbackFonts) {
-      GlobalFonts.registerFromPath(file, family);
-    }
-  }
-}
-
-/** Share of dark pixels on a rendered page (luminance below half). */
-function inkRatio(context: PdfContext2D, width: number, height: number) {
-  const { data } = context.getImageData(0, 0, width, height);
-  let dark = 0;
-  for (let i = 0; i < data.length; i += 4) {
-    if (data[i]! + data[i + 1]! + data[i + 2]! < 384) dark++;
-  }
-  const pixels = data.length / 4;
-  return pixels > 0 ? dark / pixels : 0;
-}
-
-/** Test hook: the asset lookup and the font registration are per process. */
-export function __resetPdfjsAssetsForTests(): void {
-  cachedAssets = undefined;
-  fallbackFamiliesRegistered = false;
-}
-
-/**
- * The most text kept from one page's text layer. Collection stops here while
- * the items are read, so a PDF whose content streams inflate to megabytes of
- * text cannot hold them in memory for the length of a run. A dense lab page
- * is well below it.
- */
-export const RASTER_PAGE_TEXT_MAX = 12_000;
-
-/** Marks where a text layer was cut. */
-export const TEXT_LAYER_CUT_MARK = "[text layer cut here]";
-
-/**
- * The head of `text` that fits `room` characters: cut at the last space before
- * the limit so no number is cut in half, or hard at the limit when the text
- * has no space to cut at.
- */
-function headThatFits(text: string, room: number): string {
-  if (text.length <= room) return text;
-  const head = text.slice(0, room);
-  const space = head.lastIndexOf(" ");
-  return space > 0 ? head.slice(0, space) : head;
-}
-
-/**
- * A page's text layer, line by line: what the PDF states as characters.
- * Empty for a page without one or on any failure. Past
- * `RASTER_PAGE_TEXT_MAX` it is cut (at a line, else a space, else hard) and
- * marked.
- */
-export async function pageText(
-  page: Pick<PdfPage, "getTextContent">,
-): Promise<string> {
-  const max = RASTER_PAGE_TEXT_MAX;
-  try {
-    const { items } = await page.getTextContent();
-    const lines: string[] = [];
-    let length = 0;
-    let line = "";
-    // Cut at the last whole line; only a page whose first line alone runs
-    // past the cap keeps part of that line, cut at a space or hard.
-    const cut = (): string => {
-      if (lines.length === 0) {
-        const room = max - TEXT_LAYER_CUT_MARK.length - 1;
-        const head = headThatFits(line.replace(/\s+/g, " ").trim(), room);
-        if (head.trim()) lines.push(head.trim());
-      }
-      lines.push(TEXT_LAYER_CUT_MARK);
-      return lines.join("\n");
-    };
-    /** Adds the line in hand; false when it does not fit. */
-    const flush = (): boolean => {
-      const clean = line.replace(/\s+/g, " ").trim();
-      if (!clean) {
-        line = "";
-        return true;
-      }
-      if (length + clean.length + 1 > max - TEXT_LAYER_CUT_MARK.length - 1) {
-        return false;
-      }
-      lines.push(clean);
-      length += clean.length + 1;
-      line = "";
-      return true;
-    };
-    for (const item of items) {
-      line += `${item.str ?? ""} `;
-      // A line that runs on without a break is judged at the cap, so one
-      // endless line cannot grow past it either.
-      if ((item.hasEOL || line.length > max) && !flush()) return cut();
-    }
-    if (!flush()) return cut();
-    return lines.join("\n");
-  } catch {
-    return "";
-  }
-}
+export const RASTER_TIMEOUT_BASE_MS = 15_000;
+export const RASTER_TIMEOUT_PER_PAGE_MS = 5_000;
 
 /**
  * Render the first `RASTER_MAX_PAGES` pages of a PDF to bounded JPEG images
@@ -372,12 +149,10 @@ export async function rasterizePdf(
   maxPages: number = RASTER_MAX_PAGES,
   opts: { withText?: boolean } = {},
 ): Promise<RasterResult> {
-  let doc: PdfDocument | null = null;
-  let task: PdfLoadingTask | null = null;
   // CPU-feature gate: pdfjs renders through @napi-rs/canvas (Skia), whose x64
-  // build uses AVX2 — an unsupported CPU dies with an uncatchable SIGILL on
-  // the first render. Degrade to the existing no-raster path instead (scanned
-  // PDFs stay unreadable for image-only providers; everything else works).
+  // build uses AVX2 — an unsupported CPU dies with SIGILL on the first
+  // render. Degrade to the existing no-raster path instead (scanned PDFs stay
+  // unreadable for image-only providers; everything else works).
   if (!nativeCanvasSupported()) {
     annotate({
       action: { name: "documents.rasterize.failed" },
@@ -385,134 +160,94 @@ export async function rasterizePdf(
     });
     return { ok: false, reason: "unsupported" };
   }
-  try {
-    // Lazy import: keeps pdfjs (DOMMatrix) + @napi-rs/canvas out of the eager
-    // server chunk. Resolved at first rasterization, then module-cached.
-    const pdfjs =
-      (await import("pdfjs-dist/legacy/build/pdf.mjs")) as unknown as PdfjsModule;
 
-    const assets = resolvePdfjsAssets();
-    if (assets) {
-      await registerFallbackFamilies(assets);
-    } else {
+  // Never exceed the standing DoS ceiling, even if a caller asks for more.
+  const cap = Math.min(Math.max(1, maxPages), RASTER_HARD_MAX_PAGES);
+  const result = await runPdfChild(
+    {
+      op: "render",
+      data: buffer,
+      options: {
+        maxPages: cap,
+        targetLongEdge: RASTER_TARGET_LONG_EDGE,
+        jpegQuality: RASTER_JPEG_QUALITY,
+        minInkRatio: RASTER_MIN_INK_RATIO,
+        withText: opts.withText === true,
+      },
+    },
+    { timeoutMs: RASTER_TIMEOUT_BASE_MS + cap * RASTER_TIMEOUT_PER_PAGE_MS },
+  );
+
+  if (!result.ok) {
+    if (result.reason === "busy" || result.reason === "interrupted") {
       annotate({
-        action: { name: "documents.rasterize.assetsMissing" },
-        meta: { reason: "pdfjs_assets_unresolved" },
+        action: { name: "documents.rasterize.deferred" },
+        meta: { reason: result.reason },
       });
+      return { ok: false, reason: result.reason };
     }
-
-    task = pdfjs.getDocument({
-      data: new Uint8Array(buffer),
-      verbosity: 0, // VerbosityLevel.ERRORS — no console spam on odd PDFs.
-      isEvalSupported: false, // never eval font programs (defence in depth).
-      // There are no system fonts to use: substitutes come from pdfjs' own
-      // standard font data and the fallback families registered above.
-      useSystemFonts: false,
-      ...(assets
-        ? {
-            standardFontDataUrl: assets.standardFontDataUrl,
-            cMapUrl: assets.cMapUrl,
-            cMapPacked: true,
-            wasmUrl: assets.wasmUrl,
-          }
-        : {}),
-    });
-    doc = await task.promise;
-
-    // Never exceed the standing DoS ceiling, even if a caller asks for more.
-    const cap = Math.min(Math.max(1, maxPages), RASTER_HARD_MAX_PAGES);
-    const pageCount = Math.min(doc.numPages, cap);
-    const images: RasterImage[] = [];
-    const texts: string[] = [];
-    let blankPages = 0;
-
-    for (let pageNumber = 1; pageNumber <= pageCount; pageNumber++) {
-      const page = await doc.getPage(pageNumber);
-      try {
-        const base = page.getViewport({ scale: 1 });
-        const longEdge = Math.max(base.width, base.height);
-        // Cap the long edge, never upscale (scale ≤ 1).
-        const scale =
-          longEdge > 0 ? Math.min(1, RASTER_TARGET_LONG_EDGE / longEdge) : 1;
-        const viewport = page.getViewport({ scale });
-
-        const factory = doc.canvasFactory;
-        const cc = factory.create(
-          Math.ceil(viewport.width),
-          Math.ceil(viewport.height),
-        );
-        await page.render({
-          canvasContext: cc.context,
-          viewport,
-          canvas: cc.canvas,
-        }).promise;
-        if (
-          inkRatio(cc.context, cc.canvas.width, cc.canvas.height) <
-          RASTER_MIN_INK_RATIO
-        ) {
-          blankPages++;
-        }
-        const jpeg = cc.canvas.toBuffer("image/jpeg", RASTER_JPEG_QUALITY);
-        images.push({
-          mediaType: "image/jpeg",
-          dataBase64: jpeg.toString("base64"),
-        });
-        factory.destroy?.(cc);
-        if (opts.withText) texts.push(await pageText(page));
-      } finally {
-        page.cleanup();
-      }
-    }
-
-    if (images.length === 0) {
-      // Refs #776 — the zero-pages shape must be as loud as a throw: a
-      // document that "rendered" nothing is a failed rasterization, and the
-      // wide event is what lets an operator see WHY a scan stayed unread.
+    if (result.reason === "limit") {
       annotate({
         action: { name: "documents.rasterize.failed" },
-        meta: { reason: "zero_pages", pageCount: doc.numPages },
+        meta: { reason: "resource_limit", limit: result.limit },
       });
-      return { ok: false, reason: "render-failed" };
+      return { ok: false, reason: "resource-limit" };
     }
-    if (blankPages === images.length) {
-      // Every rendered page came out empty. Sending those to a vision model
-      // buys a transcript of nothing that would be indexed as a success; say
-      // the render failed instead, so the read reports `raster-failed`.
-      annotate({
-        action: { name: "documents.rasterize.failed" },
-        meta: { reason: "blank_pages", pages: images.length },
-      });
-      return { ok: false, reason: "render-failed" };
-    }
-    annotate({
-      action: { name: "documents.rasterize.ok" },
-      meta: { pages: images.length, cappedFrom: doc.numPages, blankPages },
-    });
-    return {
-      ok: true,
-      images,
-      pageCount: doc.numPages,
-      ...(opts.withText ? { texts } : {}),
-    };
-  } catch (err) {
     annotate({
       action: { name: "documents.rasterize.failed" },
       meta: {
-        reason: err instanceof Error ? err.name : "unknown",
-        // The message pins WHY a render failed (bundled-module mismatch, an
-        // encrypted/odd PDF, a font issue) — the name alone is opaque. Bounded
-        // so a pathological message can't bloat the wide event.
-        message: err instanceof Error ? err.message.slice(0, 300) : String(err),
+        reason: result.name,
+        // The message pins WHY a render failed (an encrypted or odd PDF, a
+        // font issue) — the name alone is opaque. Bounded so a pathological
+        // message can't bloat the wide event.
+        message: result.message.slice(0, 300),
       },
     });
     return { ok: false, reason: "render-failed" };
-  } finally {
-    if (task) {
-      try {
-        await task.destroy();
-      } catch {
-        // Best-effort teardown; a destroy failure must not mask the result.
-      }
-    }
   }
+
+  const doc = result.value;
+  if (doc.assetsMissing) {
+    annotate({
+      action: { name: "documents.rasterize.assetsMissing" },
+      meta: { reason: "pdfjs_assets_unresolved" },
+    });
+  }
+  if (doc.pages.length === 0) {
+    // Refs #776 — the zero-pages shape must be as loud as a throw: a
+    // document that "rendered" nothing is a failed rasterization, and the
+    // wide event is what lets an operator see WHY a scan stayed unread.
+    annotate({
+      action: { name: "documents.rasterize.failed" },
+      meta: { reason: "zero_pages", pageCount: doc.pageCount },
+    });
+    return { ok: false, reason: "render-failed" };
+  }
+  const blankPages = doc.pages.filter((page) => page.blank).length;
+  if (blankPages === doc.pages.length) {
+    // Every rendered page came out empty. Sending those to a vision model
+    // buys a transcript of nothing that would be indexed as a success; say
+    // the render failed instead, so the read reports `raster-failed`.
+    annotate({
+      action: { name: "documents.rasterize.failed" },
+      meta: { reason: "blank_pages", pages: doc.pages.length },
+    });
+    return { ok: false, reason: "render-failed" };
+  }
+  annotate({
+    action: { name: "documents.rasterize.ok" },
+    meta: { pages: doc.pages.length, cappedFrom: doc.pageCount, blankPages },
+  });
+  const images: RasterImage[] = doc.pages.map((page) => ({
+    mediaType: "image/jpeg",
+    dataBase64: page.jpeg.toString("base64"),
+  }));
+  return {
+    ok: true,
+    images,
+    pageCount: doc.pageCount,
+    ...(opts.withText
+      ? { texts: doc.pages.map((page) => page.text ?? "") }
+      : {}),
+  };
 }

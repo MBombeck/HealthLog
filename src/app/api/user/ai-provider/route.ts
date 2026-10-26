@@ -1,13 +1,8 @@
 import { NextRequest } from "next/server";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { isPublicUrl } from "@/lib/validations/notifications";
 import { isLocalAiHostAllowed } from "@/lib/ai/local-host-allowlist";
@@ -28,8 +23,38 @@ import {
   serializeProviderChain,
 } from "@/lib/ai/provider-chain";
 import { reasoningEffortFor } from "@/lib/ai/reasoning-effort";
+import { forgetProviderHealth } from "@/lib/ai/provider-health-ledger";
+import type { ProviderChainType } from "@/lib/ai/provider-chain";
+import { clearStatusNegativeWindows } from "@/lib/insights/status-negative-window";
 
 export const dynamic = "force-dynamic";
+
+/** The chain entries this route configures (Codex signs in elsewhere). */
+const USER_SETTINGS_PROVIDERS: readonly ProviderChainType[] = [
+  "openai",
+  "anthropic",
+  "local",
+  "openai-compatible",
+];
+
+/**
+ * Write the changed provider settings. #1279 — and start background work
+ * afresh: it skips a provider the health ledger benched, and a status note
+ * waits out its negative window, so without this a fixed setup would sit out
+ * a pause the old one earned.
+ */
+async function saveProviderSettings(
+  userId: string,
+  updates: Record<string, unknown>,
+): Promise<void> {
+  await prisma.user.update({ where: { id: userId }, data: updates });
+  await Promise.all([
+    ...USER_SETTINGS_PROVIDERS.map((providerType) =>
+      forgetProviderHealth({ userId, providerType }),
+    ),
+    clearStatusNegativeWindows(userId),
+  ]);
+}
 
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
@@ -170,30 +195,26 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
   annotate({ action: { name: "user.ai-provider.update" } });
 
-  const { data: rawBody, error } = await safeJson<unknown>(request, {
-    maxBytes: 64 * 1024,
-  });
-  if (error) return error;
-
   // Every accepted field states its type in the schema, so a wrongly-typed
   // value is a named issue rather than a key quietly dropped on the floor.
   // The multi-issue envelope is safe to return even though this body carries
   // plaintext credentials: Zod's type and range messages name the received
   // TYPE, never the received value. See the note in the validations module
   // before adding a `.refine()` here.
-  const parsed = aiProviderPatchSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    annotate({
-      action: { name: "user.ai-provider.update" },
-      meta: {
-        outcome: "validation_failed",
-        issue_count: parsed.error.issues.length,
-      },
-    });
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "ai_provider.invalid",
-    });
-  }
+  const parsed = await parseJsonBody(request, aiProviderPatchSchema, {
+    maxBytes: 64 * 1024,
+    errorCode: "ai_provider.invalid",
+    onInvalid: (error) => {
+      annotate({
+        action: { name: "user.ai-provider.update" },
+        meta: {
+          outcome: "validation_failed",
+          issue_count: error.issues.length,
+        },
+      });
+    },
+  });
+  if (!parsed.ok) return parsed.error;
   const body = parsed.data;
 
   // v1.39.3 — whose configuration this is. Settings saved on an admin account
@@ -398,7 +419,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     : null;
 
   if (Object.keys(updates).length > 0) {
-    await prisma.user.update({ where: { id: user.id }, data: updates });
+    await saveProviderSettings(user.id, updates);
   }
 
   for (const [slot, value, column] of keySlots) {

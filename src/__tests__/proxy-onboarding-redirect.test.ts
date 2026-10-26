@@ -75,6 +75,16 @@ describe("proxy.ts onboarding redirect (v1.4.22 C4)", () => {
     expect(res.headers.get("location")).toBeNull();
   });
 
+  it("counts the __Host- session cookie as a session at the page gate", () => {
+    const res = proxy(
+      makeRequest("/insights", { "__Host-healthlog_session": "sess-1" }),
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get("location")).toBeNull();
+    const anonymous = proxy(makeRequest("/insights"));
+    expect(anonymous.headers.get("location")).toMatch(/\/auth\/login$/);
+  });
+
   it("passes through when hl_onboarding cookie is absent (completed users)", () => {
     const res = proxy(makeRequest("/", { healthlog_session: "sess-1" }));
     expect(res.status).toBe(200);

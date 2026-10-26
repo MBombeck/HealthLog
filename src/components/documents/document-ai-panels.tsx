@@ -22,6 +22,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AiRunPhase } from "@/hooks/use-ai-run";
+import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import {
@@ -64,9 +65,13 @@ export function AiRunPhaseNote({
 }
 
 /**
- * Calm pointer to the AI settings, shown when assist is unavailable. When the
- * document is already searchable (auto-indexed locally) the copy stays honest —
- * it is searchable, an AI provider only adds a richer read.
+ * Calm pointer to the setting that would make assist available: the AI
+ * settings when no provider is configured, the on-device scan switch on the
+ * Labs module page when the provider cannot read images. Both live under
+ * `/settings`, which is the caller's own and closed inside somebody else's
+ * record, so the link is withheld there and the sentence stands alone. When
+ * the document is already searchable (auto-indexed locally) the copy stays
+ * honest — it is searchable, an AI provider only adds a richer read.
  */
 export function AiUnavailableHint({
   reason,
@@ -74,10 +79,11 @@ export function AiUnavailableHint({
   reason: "no-provider" | "enable-local-ocr" | null;
 }) {
   const { t } = useTranslations();
-  const body =
-    reason === "enable-local-ocr"
-      ? t("documents.assist.unavailableLocalOcr")
-      : t("documents.assist.unavailableBody");
+  const { inSharedRecord } = useRecordCapabilities();
+  const localOcr = reason === "enable-local-ocr";
+  const body = localOcr
+    ? t("documents.assist.unavailableLocalOcr")
+    : t("documents.assist.unavailableBody");
   return (
     <div
       data-slot="assist-unavailable"
@@ -85,14 +91,25 @@ export function AiUnavailableHint({
     >
       <Sparkles className="mt-0.5 size-3.5 shrink-0" aria-hidden />
       <p className="min-w-0">
-        {body}{" "}
-        <Link
-          href="/settings/ai"
-          data-slot="assist-settings-link"
-          className="text-primary font-medium underline-offset-4 hover:underline"
-        >
-          {t("documents.assist.unavailableAction")}
-        </Link>
+        {body}
+        {!inSharedRecord && (
+          <>
+            {" "}
+            <Link
+              href={
+                localOcr
+                  ? "/settings/modules/labs#labs-local-ocr"
+                  : "/settings/ai"
+              }
+              data-slot="assist-settings-link"
+              className="text-primary font-medium underline-offset-4 hover:underline"
+            >
+              {localOcr
+                ? t("documents.assist.unavailableLocalOcrAction")
+                : t("documents.assist.unavailableAction")}
+            </Link>
+          </>
+        )}
       </p>
     </div>
   );

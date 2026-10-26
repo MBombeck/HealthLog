@@ -1,0 +1,86 @@
+[
+  {
+    "id": "workout-0001",
+    "row": {
+      "externalId": "workout-0001",
+      "sportType": "running",
+      "startedAt": "2026-03-02T06:00:00.000Z",
+      "endedAt": "2026-03-02T06:45:30.000Z",
+      "durationSec": 2730,
+      "totalEnergyKcal": 412,
+      "totalDistanceM": 7520.5,
+      "metadata": {
+        "ouraActivity": "running",
+        "ouraIntensity": "moderate",
+        "ouraSource": "confirmed"
+      }
+    }
+  },
+  {
+    "id": "workout-0002",
+    "row": {
+      "externalId": "workout-0002",
+      "sportType": "other",
+      "startedAt": "2026-03-03T23:00:00.000Z",
+      "endedAt": "2026-03-03T23:30:00.000Z",
+      "durationSec": 1800,
+      "totalEnergyKcal": 121,
+      "totalDistanceM": null,
+      "metadata": {
+        "ouraActivity": "underwater_basket_weaving",
+        "ouraIntensity": "easy",
+        "ouraSource": "manual"
+      }
+    }
+  },
+  {
+    "id": "workout-0003",
+    "row": {
+      "externalId": "workout-0003",
+      "sportType": "other",
+      "startedAt": "2026-03-04T12:00:00.000Z",
+      "endedAt": "2026-03-04T12:20:00.000Z",
+      "durationSec": 1200,
+      "totalEnergyKcal": null,
+      "totalDistanceM": 0,
+      "metadata": {}
+    }
+  },
+  { "id": "workout-0004", "row": null },
+  { "id": "", "row": null },
+  { "id": "workout-0006", "row": null },
+  {
+    "id": "workout-0007",
+    "row": {
+      "externalId": "workout-0007",
+      "sportType": "yoga",
+      "startedAt": "2026-03-08T06:30:00.000Z",
+      "endedAt": "2026-03-08T06:30:00.000Z",
+      "durationSec": 0,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "metadata": {
+        "ouraActivity": "Yoga",
+        "ouraIntensity": "hard",
+        "ouraSource": "autodetected"
+      }
+    }
+  },
+  {
+    "id": "workout-0008",
+    "row": {
+      "externalId": "workout-0008",
+      "sportType": "strength",
+      "startedAt": "2026-03-09T17:00:00.250Z",
+      "endedAt": "2026-03-09T17:50:00.749Z",
+      "durationSec": 3000,
+      "totalEnergyKcal": 0,
+      "totalDistanceM": null,
+      "metadata": {
+        "ouraActivity": "strength_training",
+        "ouraSource": "workout_heart_rate"
+      }
+    }
+  },
+  { "id": "workout-0009", "row": null }
+]

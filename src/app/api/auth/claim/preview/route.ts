@@ -14,7 +14,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler } from "@/lib/api-handler";
-import { apiSuccess, returnAllZodIssues, safeJson } from "@/lib/api-response";
+import { apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { getSession } from "@/lib/auth/session";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -35,12 +36,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   );
   if (gate.refusal) return gate.refusal;
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, claimPreviewSchema, {
     maxBytes: 4 * 1024,
   });
-  if (jsonError) return jsonError;
-  const parsed = claimPreviewSchema.safeParse(body);
-  if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+  if (!parsed.ok) return parsed.error;
 
   const preview = await previewHandover(parsed.data.token);
   annotate({

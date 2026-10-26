@@ -25,7 +25,7 @@ import { NextRequest } from "next/server";
 import type { z } from "zod";
 
 import { openApiComponents, openApiPaths } from "@/lib/openapi/routes";
-import { SESSION_COOKIE_NAME } from "@/lib/auth/session";
+import { sessionCookieName } from "@/lib/auth/session-cookie";
 
 import { cookieJar, headerJar } from "../integration/mock-next-headers";
 import type { BearerFixture, SessionFixture } from "./factories";
@@ -64,6 +64,12 @@ export interface CallRouteOptions {
    * picks.
    */
   body?: unknown;
+  /**
+   * A raw text body sent as it is (a CSV upload), with
+   * `content-type: text/plain` unless `headers` names another. Not combined
+   * with `body`.
+   */
+  text?: string;
   auth: RouteAuth;
   headers?: Record<string, string>;
   contract?: { skip: string };
@@ -97,7 +103,13 @@ export async function callRoute<T = unknown>(
     if (value !== undefined) url.searchParams.set(key, String(value));
   }
 
+  if (options.text !== undefined && options.body !== undefined) {
+    throw new Error("callRoute: pass either `body` or `text`, not both");
+  }
   const headers = new Headers(options.headers);
+  if (options.text !== undefined && !headers.has("content-type")) {
+    headers.set("content-type", "text/plain");
+  }
   const multipart = options.body instanceof FormData;
   if (
     options.body !== undefined &&
@@ -110,7 +122,7 @@ export async function callRoute<T = unknown>(
     headers.set("authorization", `Bearer ${options.auth.token}`);
   }
   if (options.auth.kind === "session") {
-    headers.set("cookie", `${SESSION_COOKIE_NAME}=${options.auth.cookie}`);
+    headers.set("cookie", `${sessionCookieName()}=${options.auth.cookie}`);
   }
 
   // `next/headers` is served from the shared jars; fill them for this call
@@ -121,7 +133,7 @@ export async function callRoute<T = unknown>(
   const savedHeaders = new Map(headerJar);
   cookieJar.clear();
   if (options.auth.kind === "session") {
-    cookieJar.set(SESSION_COOKIE_NAME, options.auth.cookie);
+    cookieJar.set(sessionCookieName(), options.auth.cookie);
   }
   headerJar.delete("authorization");
   headers.forEach((value, name) => headerJar.set(name.toLowerCase(), value));
@@ -132,11 +144,13 @@ export async function callRoute<T = unknown>(
       method: options.method,
       headers,
       body:
-        options.body === undefined
-          ? undefined
-          : options.body instanceof FormData
-            ? options.body
-            : JSON.stringify(options.body),
+        options.text !== undefined
+          ? options.text
+          : options.body === undefined
+            ? undefined
+            : options.body instanceof FormData
+              ? options.body
+              : JSON.stringify(options.body),
     });
     response = await handler(request, {
       params: Promise.resolve(options.params ?? {}),
@@ -152,6 +166,10 @@ export async function callRoute<T = unknown>(
   const text = await response.text();
   const isJson = contentType.includes("json") && text.length > 0;
   const body: unknown = isJson ? JSON.parse(text) : text;
+
+  // Not skippable with `contract`: a sealed column leaving the server is a
+  // defect whatever the contract says, so no test can opt a route out of it.
+  if (isJson) assertNoSealedFields(options.method, options.route, body);
 
   if (!options.contract?.skip) {
     checkContract(
@@ -180,6 +198,51 @@ export async function callRoute<T = unknown>(
         ? (envelope.meta as Record<string, unknown>)
         : undefined,
   };
+}
+
+/**
+ * A column the server stores sealed (`notesEncrypted`, `geometryEncrypted`,
+ * every `*Encrypted` field) is decrypted or dropped before a response is
+ * built. One that reaches a response anyway arrives as its key or as the
+ * serialised bytes (`{"0":…,"1":…}`, or `{ type: "Buffer", data: […] }`).
+ * Either fails the call, on every route the kit drives.
+ */
+export function sealedFieldPaths(value: unknown, at = ""): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((item, i) => sealedFieldPaths(item, `${at}[${i}]`));
+  }
+  if (!isRecord(value)) return [];
+  const keys = Object.keys(value);
+  // A sealed value is at least a nonce and a tag (28 bytes), so a short
+  // index-keyed object (an hour map, a weekday tally) is not mistaken for one.
+  const bufferShape =
+    (value.type === "Buffer" && Array.isArray(value.data)) ||
+    (keys.length >= 16 &&
+      keys.every((k, i) => k === String(i)) &&
+      Object.values(value).every(
+        (v) =>
+          Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 255,
+      ));
+  if (bufferShape) return [at || "(body)"];
+  return keys.flatMap((key) => {
+    const path = at ? `${at}.${key}` : key;
+    return /encrypted$/i.test(key)
+      ? [path]
+      : sealedFieldPaths(value[key], path);
+  });
+}
+
+function assertNoSealedFields(
+  method: HttpMethod,
+  route: string,
+  body: unknown,
+): void {
+  const found = sealedFieldPaths(body);
+  if (found.length > 0) {
+    throw new ContractViolation(
+      `${method} ${route} sent sealed or raw byte fields to the client: ${found.join(", ")}. Decrypt onto the readable field or drop the column before the response is built.`,
+    );
+  }
 }
 
 function concretePath(route: string, params: RouteParams): string {

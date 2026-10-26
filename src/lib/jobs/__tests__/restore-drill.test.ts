@@ -2,20 +2,24 @@ import type { Readable } from "node:stream";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { _resetCryptoCacheForTests, encrypt } from "@/lib/crypto";
 import { encryptBackup } from "../offhost-backup";
+import { handleRestoreDrill, runRestoreDrill } from "../restore-drill";
 import {
-  handleRestoreDrill,
-  runRestoreDrill,
   RESTORE_DRILL_CRON,
   RESTORE_DRILL_QUEUE,
   RESTORE_DRILL_SEND_OPTIONS,
-} from "../restore-drill";
+} from "@/lib/jobs/restore-drill-queue";
 import { QUEUE_RUNTIME } from "../queue-runtime";
 
 vi.mock("../report-worker-error", () => ({
   reportWorkerError: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("../restore-drill-outcome", () => ({
+  recordRestoreDrillOutcome: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { reportWorkerError } from "../report-worker-error";
+import { recordRestoreDrillOutcome } from "../restore-drill-outcome";
 
 const ENC_KEY =
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
@@ -258,6 +262,8 @@ describe("handleRestoreDrill", () => {
     vi.stubEnv("BACKUP_S3_ENDPOINT", "");
     await handleRestoreDrill([]);
     expect(reportWorkerError).not.toHaveBeenCalled();
+    // Nothing was checked, so there is no verdict to keep.
+    expect(recordRestoreDrillOutcome).not.toHaveBeenCalled();
   });
 
   it("pages via reportWorkerError when the drill fails", async () => {
@@ -271,5 +277,49 @@ describe("handleRestoreDrill", () => {
     expect(vi.mocked(reportWorkerError).mock.calls[0][0]).toBe(
       RESTORE_DRILL_QUEUE,
     );
+    // The failure is kept for the readiness tile, past pg-boss's retention.
+    expect(recordRestoreDrillOutcome).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(recordRestoreDrillOutcome).mock.calls[0][0]).toMatchObject(
+      { ok: false, accountsChecked: 0, accountsFailed: 0 },
+    );
+  });
+
+  it("records no pass for a run that stopped before its first object", async () => {
+    stubConfigEnv();
+    const s3 = makeS3Mock({
+      "2026-06-01/user-aaa.json.enc": backupObject({ userId: "user-aaa" }),
+    });
+    const offhost = await import("../offhost-backup");
+    vi.spyOn(offhost, "getS3Client").mockResolvedValue(s3);
+    // The job's budget is already spent: pg-boss aborted it.
+    const aborted = new AbortController();
+    aborted.abort();
+    await handleRestoreDrill([
+      {
+        id: "drill-1",
+        name: RESTORE_DRILL_QUEUE,
+        data: {},
+        expireInSeconds: 900,
+        heartbeatSeconds: null,
+        retryCount: 0,
+        signal: aborted.signal,
+      },
+    ]);
+    expect(recordRestoreDrillOutcome).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(recordRestoreDrillOutcome).mock.calls[0][0]).toMatchObject(
+      { ok: null, accountsChecked: 0 },
+    );
+  });
+
+  it("still reports the drill's own failure when its verdict cannot be kept", async () => {
+    stubConfigEnv();
+    vi.stubEnv("BACKUP_ENCRYPTION_KEY", "not-a-key");
+    vi.mocked(recordRestoreDrillOutcome).mockRejectedValueOnce(
+      new Error("database away"),
+    );
+    const outcome = await handleRestoreDrill([]);
+    // The drill's own failure is still what the run reports.
+    expect(outcome.ok).toBe(false);
+    expect(reportWorkerError).toHaveBeenCalledTimes(1);
   });
 });

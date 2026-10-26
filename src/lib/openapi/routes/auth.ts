@@ -34,6 +34,7 @@ import { oidcNativeTokenSchema } from "@/lib/validations/oidc-native";
 import {
   createDocumentTokenSchema,
   createMeasurementTokenSchema,
+  updateMeasurementTokenSchema,
   createWorkoutTokenSchema,
 } from "@/lib/validations/tokens";
 import { nativeHandoffTokenSchema } from "@/lib/validations/native-handoff";
@@ -484,8 +485,35 @@ const apiTokenInfo = z
       .describe(
         "Revoked tokens stay in the list rather than disappearing, so a client must filter on this rather than treat presence as validity.",
       ),
+    mirrorToAppleHealth: z
+      .boolean()
+      .describe(
+        "A measurement token's Apple Health setting: whether the HealthLog app writes the readings this token sent into Apple Health. Changed with `PATCH /api/tokens/{id}`; false on every other token.",
+      ),
   })
   .meta({ id: "ApiTokenInfo" });
+
+const updateMeasurementTokenRequest = updateMeasurementTokenSchema.meta({
+  id: "UpdateMeasurementTokenRequest",
+  description:
+    "The one setting a measurement token has. Strict: any other key is refused 422.",
+});
+
+const updateMeasurementTokenResponse = z
+  .object({ id: z.string(), mirrorToAppleHealth: z.boolean() })
+  .meta({ id: "UpdateMeasurementTokenResponse" });
+
+const measurementTokenSummaryResponse = z
+  .object({
+    unattributedReadings: z
+      .number()
+      .int()
+      .nonnegative()
+      .describe(
+        "Live EXTERNAL readings that belong to no token: sent before readings were linked to their token, by an account that held more than one. No token's Apple Health setting reaches them.",
+      ),
+  })
+  .meta({ id: "MeasurementTokenSummaryResponse" });
 
 const apiTokenListResponse = z
   .array(apiTokenInfo)
@@ -494,7 +522,7 @@ const apiTokenListResponse = z
 const createMeasurementTokenRequest = createMeasurementTokenSchema.meta({
   id: "CreateMeasurementTokenRequest",
   description:
-    "Mint a measurement-ingest Bearer. There is no `scope` field: this endpoint mints one shape and the permission array is a literal, so no request can widen it. `name` is what the token is listed under — name it after the thing you are pasting it into, because that is what you will be reading when you decide whether to revoke it. `expiresInDays` defaults to 365.",
+    "Mint a measurement-ingest Bearer. There is no `scope` field: this endpoint mints one shape and the permission array is a literal, so no request can widen it. `name` is what the token is listed under — name it after the thing you are pasting it into, because that is what you will be reading when you decide whether to revoke it. `expiresInDays` defaults to 365. `mirrorToAppleHealth` (default false) lets the HealthLog app write the token's readings into Apple Health; it can be changed later at `PATCH /api/tokens/{id}`.",
 });
 
 const createMeasurementTokenResponse = z
@@ -910,7 +938,8 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "403": {
           description:
-            "Password login is disabled — the operator runs `OIDC_ONLY=true`. `meta.errorCode` = `oidc_only`; sign in through SSO instead. The one exception is a browser the SSO callback sent back with a pending link to confirm an existing account: it may sign in with that one account's password, which links the account. A sign-in to any other account on that browser is refused before its password is checked, so the answer is the same whether the password was right or wrong.",
+            "Password login is disabled — the operator runs `OIDC_ONLY=true`. `meta.errorCode` = `oidc_only`; sign in through SSO instead. The one exception is a browser the SSO callback sent back with a pending link to confirm an existing account: it may sign in with that one account's password, which links the account. A sign-in to any other account on that browser is refused before its password is checked, so the answer is the same whether the password was right or wrong.\n\n" +
+            "Also 403 `auth.account.deletion_pending`, after the password was proved and before a second factor is asked for: the account is pending deletion and locked. `meta.purgeAt` is when it is erased; an admin can undo the deletion until then. Every other sign-in surface (passkey, second-factor completion, the native token exchanges) refuses with the same code. A session, refresh token or API token issued before the deletion is revoked by it, so those answer 401 (`auth.refresh.revoked` on refresh), the same as for a signed-out session.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
@@ -1944,6 +1973,26 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
     },
   },
   "/api/tokens/measurements": {
+    get: {
+      tags: ["Auth"],
+      summary: "Readings no measurement token reaches",
+      description:
+        "Counts the caller's live EXTERNAL readings that are linked to no token. Readings are linked to the token that sent them since v1.46; older ones were linked by a one-time pass only when the account held exactly one measurement token, so the rest belong to none and no token's Apple Health setting reaches them. Cookie session only.",
+      responses: {
+        "200": {
+          description: "The count.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                measurementTokenSummaryResponse,
+                "MeasurementTokenSummaryEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
     post: {
       tags: ["Auth"],
       summary: "Mint a measurement-ingest token",
@@ -2168,6 +2217,42 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
+      },
+    },
+    patch: {
+      tags: ["Auth"],
+      summary: "Change a measurement token's Apple Health setting",
+      description:
+        "Sets whether the HealthLog app writes the readings this measurement token sent into Apple Health. The readings keep their `EXTERNAL` source and are not rewritten: every measurement row resolves `appleHealthMirror` from the token at read time, and a paired client learns of the change through the `measurementMirror` domain of `GET /api/sync/changes`. Turning it off stops further writes; samples already in Apple Health stay. A revoked token is accepted, since its readings stay in the record. Cookie session only, the caller's own tokens only (another account's answers 404). Audited as `tokens.measurements.mirror.update` when the value changes. 30 changes per account per minute. Not gated on the instance-wide API switch: no credential is created or extended.",
+      requestParams: { path: z.object({ id: z.string() }) },
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: updateMeasurementTokenRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description: "The setting as it now stands.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                updateMeasurementTokenResponse,
+                "UpdateMeasurementTokenEnvelope",
+              ),
+            },
+          },
+        },
+        "404": {
+          description: "Token not found or not owned by the caller.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        "422": {
+          description:
+            "Validation failed, or the token is not a measurement token (`meta.errorCode` = `tokens.mirror.not_measurement_token`): a wildcard, connector or other narrow token has no such setting.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },

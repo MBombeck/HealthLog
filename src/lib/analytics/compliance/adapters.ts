@@ -65,6 +65,7 @@ export function toRecurrenceCtx(
       id: idTag,
       startsOn: window.startsOn,
       endsOn: window.endsOn,
+      endedAt: ctx.endedAt ?? null,
       oneShot: ctx.oneShot,
       createdAt: ctx.createdAt,
     },

@@ -1295,3 +1295,71 @@ describe("occurrencesBetween — CYCLIC", () => {
     );
   });
 });
+
+// ────────────────────────────────────────────────────────────────────
+// #1280 — a course ended with "End course" stops at that instant
+// ────────────────────────────────────────────────────────────────────
+
+describe("a course ended at an instant (#1280)", () => {
+  // 08:00 and 20:00 in Berlin (UTC+2 in June), ended at 12:00 local on the
+  // 10th, which is also its last day.
+  const schedule = makeSchedule({
+    rrule: "FREQ=DAILY",
+    timesOfDay: ["08:00", "20:00"],
+  });
+  const ended = makeCtx({
+    medication: {
+      endsOn: d("2026-06-10T00:00:00Z"),
+      endedAt: d("2026-06-10T10:00:00Z"),
+    },
+  });
+  const wholeDay = makeCtx({
+    medication: { endsOn: d("2026-06-10T00:00:00Z") },
+  });
+
+  it("emits the slot before the instant and none after it", () => {
+    const from = d("2026-06-09T22:00:00Z");
+    const to = d("2026-06-10T21:59:59Z");
+    expect(
+      occurrencesBetween(schedule, from, to, ended).map((o) =>
+        o.at.toISOString(),
+      ),
+    ).toEqual(["2026-06-10T06:00:00.000Z"]);
+    // The same end date without the instant keeps the evening dose.
+    expect(occurrencesBetween(schedule, from, to, wholeDay)).toHaveLength(2);
+  });
+
+  it("has no next dose once the course was ended", () => {
+    expect(
+      nextOccurrenceAfter(schedule, d("2026-06-10T10:30:00Z"), ended),
+    ).toBeNull();
+    expect(
+      nextOccurrenceAfter(schedule, d("2026-06-10T10:30:00Z"), wholeDay)?.at,
+    ).toEqual(d("2026-06-10T18:00:00Z"));
+  });
+
+  it("stops a rolling cadence whose next dose falls after the instant", () => {
+    const rolling = makeSchedule({
+      rollingIntervalDays: 1,
+      timesOfDay: ["20:00"],
+    });
+    const ctx = makeCtx({
+      lastIntakeAt: d("2026-06-09T18:00:00Z"),
+      medication: {
+        endsOn: d("2026-06-10T00:00:00Z"),
+        endedAt: d("2026-06-10T10:00:00Z"),
+      },
+    });
+    expect(
+      occurrencesBetween(
+        rolling,
+        d("2026-06-09T22:00:00Z"),
+        d("2026-06-10T21:59:59Z"),
+        ctx,
+      ),
+    ).toEqual([]);
+    expect(
+      nextOccurrenceAfter(rolling, d("2026-06-10T10:30:00Z"), ctx),
+    ).toBeNull();
+  });
+});

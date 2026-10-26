@@ -5,13 +5,13 @@
  *   (a) the per-user `CycleProfile.cycleTrackingEnabled` toggle, and
  *   (b) a gender-derived default when that toggle is NULL.
  *
- * `isCycleEnabled` is the per-user (LAYER 2) source of truth. The server
+ * `isCycleEnabled` (`./enabled.ts`) is the per-user (LAYER 2) source of truth. The server
  * gender enum ships UPPERCASE (`"MALE" | "FEMALE" | null`); the gate keys
  * on `"FEMALE"`. A NULL toggle derives `gender === "FEMALE"`; an explicit
  * `true`/`false` overrides the derivation (so a non-FEMALE account can
  * opt in and a FEMALE account can opt out).
  *
- * v1.18.0 — `isCycleEnabled` is the USER layer only and stays pure: the
+ * `isCycleEnabled` is the USER layer only and stays pure: the
  * module foundation's `resolveModuleEnabled` AND-s it with the operator
  * server-wide kill-switch (LAYER 1). Every SERVER-SIDE consumer that wants
  * the fully-resolved decision (routes, the cycle-reminder cron, the coach
@@ -49,24 +49,6 @@ export const CYCLE_DISABLED_ERROR_CODE = "cycle.disabled";
  */
 export function isCycleAvailableForUser(userId: string): Promise<boolean> {
   return isModuleEnabled(userId, "cycle");
-}
-
-/**
- * Resolve whether cycle tracking is enabled for an account.
- *
- * @param gender the user's `gender` column (`"MALE" | "FEMALE" | null`).
- * @param profile the user's `CycleProfile`, or just its
- *   `cycleTrackingEnabled` field (NULL ⇒ derive from gender).
- */
-export function isCycleEnabled(
-  gender: string | null | undefined,
-  profile: { cycleTrackingEnabled: boolean | null } | null | undefined,
-): boolean {
-  const toggle = profile?.cycleTrackingEnabled;
-  if (toggle === true) return true;
-  if (toggle === false) return false;
-  // NULL toggle → derive from gender.
-  return gender === "FEMALE";
 }
 
 /**

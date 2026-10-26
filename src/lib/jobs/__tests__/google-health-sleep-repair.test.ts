@@ -64,16 +64,19 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
   recomputeBucketsForMeasurement: vi.fn(async () => {}),
   recomputeUserRollups: vi.fn(async () => {}),
 }));
-vi.mock("@/lib/insights/comprehensive-generate", () => ({
+vi.mock("@/lib/insights/status-invalidation", () => ({
   invalidateStatusInsightsForTypes: vi.fn(async () => {}),
 }));
 vi.mock("@/lib/google-health/credentials", () => ({
   getUserGoogleHealthCredentials: vi.fn(async () => null),
 }));
-vi.mock("@/lib/google-health/client", async (importOriginal) => {
+vi.mock("@/lib/google-health/oauth", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("@/lib/google-health/client")>();
-  return { ...actual, refreshAccessToken: vi.fn() };
+    await importOriginal<typeof import("@/lib/google-health/oauth")>();
+  return {
+    ...actual,
+    googleHealthOAuth: { ...actual.googleHealthOAuth, refresh: vi.fn() },
+  };
 });
 
 import {
@@ -101,7 +104,9 @@ describe("enqueueBootTimeGoogleHealthSleepRepair — discovery", () => {
     const result = await enqueueBootTimeGoogleHealthSleepRepair();
 
     expect(prismaMock.googleHealthConnection.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { sleepRepairedAt: null } }),
+      expect.objectContaining({
+        where: { sleepRepairedAt: null, user: { deletionRequestedAt: null } },
+      }),
     );
     expect(result.enqueued).toBe(2);
     expect(bossSend).toHaveBeenCalledWith(

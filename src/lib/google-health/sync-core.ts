@@ -38,11 +38,10 @@ import {
 import { dropImplausibleMeasurements } from "@/lib/measurements/plausibility-gate";
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { recordSyncFailure, type FailureKind } from "@/lib/integrations/status";
-import {
-  collapseToTypeDayKeys,
-  recomputeBucketsForKeys,
-} from "@/lib/rollups/measurement-rollups";
-import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
+import { collapseToTypeDayKeys } from "@/lib/rollups/measurement-rollups";
+import { afterProviderWrite } from "@/lib/integrations/sync-kit/after-write";
+import { type GoogleHealthResumePoint } from "./data-points";
+import { type GoogleHealthTokenSource } from "./request";
 import {
   googleHealthOutcomeTruncated,
   googleHealthSliceExhausted,
@@ -51,9 +50,7 @@ import {
   noteGoogleHealthMapped,
   noteGoogleHealthOutcomeFailure,
   noteGoogleHealthWritten,
-  type GoogleHealthResumePoint,
-  type GoogleHealthTokenSource,
-} from "./client";
+} from "./budget";
 import {
   GOOGLE_HEALTH_TOKEN_REFRESH_BUFFER_MS,
   googleHealthTokenDescriptor,
@@ -1553,24 +1550,14 @@ export async function upsertGoogleHealthMeasurements(
     return { imported, touched, inserted: insertedRows };
   }
 
-  try {
-    const keys = collapseToTypeDayKeys(touched);
-    await recomputeBucketsForKeys(userId, keys);
-    invalidateStatusInsightsForTypes(
-      userId,
-      keys.map((k) => k.type),
-      { source: "sync" },
-    ).catch((err) => {
-      getEvent()?.addWarning(
-        `google-health: status-insight invalidate failed for ${userId}: ${err}`,
-      );
-    });
-  } catch (err) {
-    getEvent()?.addWarning(
-      `google-health: rollup recompute failed for ${userId}: ${err}`,
-    );
-    noteHardFailure("rollup");
-  }
+  // The arrivals went out per chunk above; the shared tail folds, marks the
+  // caches and re-warms the status cards. A failed fold fails the verdict.
+  const { rollupFailed } = await afterProviderWrite({
+    userId,
+    provider: "google-health",
+    touched,
+  });
+  if (rollupFailed) noteHardFailure("rollup");
 
   noteGoogleHealthWritten(imported);
   return { imported, touched, inserted: insertedRows };

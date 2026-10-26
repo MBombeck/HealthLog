@@ -5,10 +5,9 @@ import {
   apiError,
   apiSuccess,
   getClientIp,
-  returnAllZodIssues,
-  safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { withIdempotency } from "@/lib/idempotency";
@@ -77,31 +76,25 @@ async function postBiomarker(request: NextRequest) {
   // tracks gets the ordinary 409 rather than a second copy.
   const { user } = await requireRecordAuth("write", "labs");
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, createBiomarkerSchema, {
     maxBytes: 16 * 1024,
+    action: "labs.biomarker.create.validation-failed",
+    countIssues: true,
+    errorCode: "labs.biomarker.create.invalid",
+    onInvalid: (error) => {
+      const auditIssues = sanitiseZodIssues(error.issues, {
+        stripValuesFromMessage: true,
+      });
+      // v1.36.x — through `auditLog()`, the only writer that stamps the actor.
+      void auditLog("labs.biomarker.create.validation-failed", {
+        userId: user.id,
+        details: { issues: auditIssues },
+      }).catch(() => {
+        /* swallow — the 422 response is the contract */
+      });
+    },
   });
-  if (jsonError) return jsonError;
-
-  const parsed = createBiomarkerSchema.safeParse(body);
-  if (!parsed.success) {
-    annotate({
-      action: { name: "labs.biomarker.create.validation-failed" },
-      meta: { issue_count: parsed.error.issues.length },
-    });
-    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
-      stripValuesFromMessage: true,
-    });
-    // v1.36.x — through `auditLog()`, the only writer that stamps the actor.
-    void auditLog("labs.biomarker.create.validation-failed", {
-      userId: user.id,
-      details: { issues: auditIssues },
-    }).catch(() => {
-      /* swallow — the 422 response is the contract */
-    });
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "labs.biomarker.create.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const { name, unit, lowerBound, upperBound, context, panel } = parsed.data;
 

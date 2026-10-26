@@ -17,7 +17,7 @@
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-import type { CoachToolResult } from "@/lib/ai/coach/tools/executor";
+import type { CoachToolResult } from "@/lib/ai/coach/tools/run/types";
 
 const executeCoachTool = vi.fn<(args?: unknown) => Promise<CoachToolResult>>();
 vi.mock("@/lib/ai/coach/tools/executor", () => ({
@@ -65,6 +65,7 @@ describe("coach tool loop — which results reach the grounding guard", () => {
         },
         workingProvider: { providerType: "anthropic" },
         fallbackHops: [],
+        tokensSpent: 0,
       })
       .mockResolvedValueOnce({
         result: {
@@ -76,6 +77,7 @@ describe("coach tool loop — which results reach the grounding guard", () => {
         },
         workingProvider: { providerType: "anthropic" },
         fallbackHops: [],
+        tokensSpent: 0,
       });
 
     const loop = await runCoachToolLoop(baseArgs);
@@ -110,6 +112,7 @@ describe("coach tool loop — which results reach the grounding guard", () => {
         },
         workingProvider: { providerType: "anthropic" },
         fallbackHops: [],
+        tokensSpent: 0,
       })
       .mockResolvedValueOnce({
         result: {
@@ -121,6 +124,7 @@ describe("coach tool loop — which results reach the grounding guard", () => {
         },
         workingProvider: { providerType: "anthropic" },
         fallbackHops: [],
+        tokensSpent: 0,
       });
 
     const loop = await runCoachToolLoop(baseArgs);

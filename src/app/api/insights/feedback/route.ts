@@ -1,14 +1,8 @@
 import type { NextRequest } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  apiValidationError,
-  getClientIp,
-  safeJson,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
@@ -57,23 +51,17 @@ async function handlePost(request: NextRequest) {
     return apiError("Too many feedback submissions, try again later", 429);
   }
 
-  const { data: rawBody, error } = await safeJson<unknown>(request, {
-    maxBytes: 64 * 1024,
-  });
-  if (error) return error;
-
-  const parsed = recommendationFeedbackRequestSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    annotate({
-      action: { name: "insights.recommendation.feedback" },
+  const parsed = await parseJsonBody(
+    request,
+    recommendationFeedbackRequestSchema,
+    {
+      maxBytes: 64 * 1024,
+      action: "insights.recommendation.feedback",
       meta: { outcome: "validation_failed" },
-    });
-    return apiValidationError(
-      "Invalid feedback payload",
-      sanitiseZodIssues(parsed.error.issues),
-      422,
-    );
-  }
+      message: "Invalid feedback payload",
+    },
+  );
+  if (!parsed.ok) return parsed.error;
   const body = parsed.data;
 
   const attribution = await resolveFeedbackAttribution(user.id);

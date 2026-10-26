@@ -6,14 +6,14 @@ vi.mock("@/lib/logging/context", () => ({
   getEvent: () => null,
 }));
 
+import { fetchExercises } from "../client";
 import {
   combinePolarStart,
-  fetchExercises,
   mapExercise,
   normaliseExerciseList,
   parseIsoDuration,
-  type PolarExercise,
-} from "../client";
+} from "@/lib/polar/map";
+import { type PolarExercise } from "@/lib/polar/wire-types";
 import { PolarApiError } from "../response-classifier";
 
 function installFetchMock(pages: Array<{ status: number; body?: unknown }>) {

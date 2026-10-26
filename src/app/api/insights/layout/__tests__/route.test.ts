@@ -44,6 +44,12 @@ vi.mock("@/lib/logging/context", async (importOriginal) => {
   };
 });
 
+// The real `auditLog`, observed: it decides whether a refusal is filed.
+vi.mock("@/lib/auth/audit", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/auth/audit")>();
+  return { ...actual, auditLog: vi.fn(actual.auditLog) };
+});
+
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: () => null })),
   cookies: vi.fn(async () => ({
@@ -57,6 +63,7 @@ import { GET, PUT, DELETE } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { annotate } from "@/lib/logging/context";
+import { auditLog } from "@/lib/auth/audit";
 import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
 import { __resetAuditDedupMemoForTests } from "@/lib/audit-dedup";
 import { DEFAULT_INSIGHTS_LAYOUT } from "@/lib/insights-layout";
@@ -442,31 +449,31 @@ describe("PUT /api/insights/layout — 422 multi-issue envelope", () => {
     );
   });
 
-  it("writes one audit-ledger row keyed insights.layout.validation-failed", async () => {
+  it("hands the insights.layout.validation-failed refusal to auditLog, which files no row for the owner", async () => {
     const res = await callPut(makeReq({ version: 99, tiles: [] }));
     expect(res.status).toBe(422);
 
     await new Promise((r) => setTimeout(r, 5));
 
-    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
-    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
-      data: { userId: string; action: string; details: string };
-    };
-    expect(call.data.userId).toBe("user-1");
-    expect(call.data.action).toBe("insights.layout.validation-failed");
-    const details = JSON.parse(call.data.details) as {
+    expect(auditLog).toHaveBeenCalledTimes(1);
+    const [action, opts] = vi.mocked(auditLog).mock.calls[0]!;
+    expect(action).toBe("insights.layout.validation-failed");
+    expect(opts?.userId).toBe("user-1");
+    // An owner's own refused request is not an audit event.
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
+    const details = opts?.details as {
       issues: Array<{ path: string; code: string }>;
     };
     expect(details.issues.length).toBe(2);
     for (const issue of details.issues) {
-      // The persisted row strips `message` so a future Zod code that
+      // The filed issues strip `message` so a future Zod code that
       // echoes the offending value cannot leak into the audit
       // surface.
       expect(Object.keys(issue).sort()).toEqual(["code", "path"]);
     }
   });
 
-  it("dedups the audit-ledger write across two sequential 422s for the same user", async () => {
+  it("dedups the audit call across two sequential 422s for the same user", async () => {
     const res1 = await callPut(makeReq({ version: 99, tiles: [] }));
     expect(res1.status).toBe(422);
     const res2 = await callPut(makeReq({ version: 99, tiles: [] }));
@@ -474,7 +481,8 @@ describe("PUT /api/insights/layout — 422 multi-issue envelope", () => {
 
     await new Promise((r) => setTimeout(r, 5));
 
-    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
+    expect(auditLog).toHaveBeenCalledTimes(1);
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
 
     // The full multi-issue envelope still rides on every 422 — the
     // dedup only suppresses the breadcrumb write, never the response.

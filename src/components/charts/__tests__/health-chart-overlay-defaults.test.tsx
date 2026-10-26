@@ -1,3 +1,4 @@
+import { baselineLayers } from "../health-chart/chart-layers";
 import { describe, it, expect, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -54,28 +55,22 @@ vi.mock("@/hooks/use-auth", () => ({
 }));
 
 describe("HealthChart default overlay state", () => {
-  it("source: personal baseline is gated behind a toggle (no unconditional ReferenceLine)", () => {
-    // The B1a wrapper rendered the baseline `<ReferenceLine>` for every
-    // type unconditionally. Make sure the source no longer paints it
-    // outside an opt-in branch — we look for the tell-tale pattern of
-    // `types.map((type, i) => { ... <ReferenceLine ... y={baseline}`
-    // appearing without a `showTrend` / `showBaseline` guard above it.
-    const moduleUrl = new URL("../health-chart.tsx", import.meta.url);
-    const src = readFileSync(fileURLToPath(moduleUrl), "utf8");
-
-    // Personal-baseline rendering must be guarded — the JSX block that
-    // emits the dashed baseline must be wrapped in a conditional
-    // expression starting with a state flag.
-    const baselineSection = src.match(
-      /\{types\.map\(\(type, i\) => \{[\s\S]*?const baseline = personalBaselines\.get\(type\);[\s\S]*?\}\)\}/,
+  it("paints the personal baseline only behind the trend toggle", () => {
+    // An always-on dashed mean line was rejected: the baseline layer paints
+    // nothing with the trend overlay off, and one line per type with it on.
+    const baselines = new Map([["WEIGHT", 80]]);
+    const t = (key: string) => key;
+    expect(
+      baselineLayers(false, ["WEIGHT"], ["var(--chart-1)"], baselines, t),
+    ).toBe(false);
+    const on = baselineLayers(
+      true,
+      ["WEIGHT"],
+      ["var(--chart-1)"],
+      baselines,
+      t,
     );
-    if (baselineSection) {
-      // If the section still exists, it's not gated. Allow a guard
-      // wrapper test instead — match `{showSomething &&`.
-      throw new Error(
-        "Personal baseline ReferenceLine is rendered unconditionally — must be gated behind an opt-in toggle.",
-      );
-    }
+    expect(Array.isArray(on) && on.filter(Boolean)).toHaveLength(1);
   });
 
   it("does NOT paint the personal-baseline label by default in MoodChart source", () => {

@@ -29,7 +29,7 @@ import { I18nProvider } from "@/lib/i18n/context";
 import {
   RestoreRefusalNotice,
   missingSectionsOf,
-} from "@/components/admin/backups-section";
+} from "@/components/admin/backups/restore-notices";
 import type { MissingBackupSection } from "@/lib/export/restore-skips";
 import { primeLocales } from "@/__tests__/helpers/prime-locales";
 
@@ -64,7 +64,7 @@ describe("RestoreRefusalNotice", () => {
     const html = render(["documents"]);
 
     expect(html).toContain("Nothing was changed");
-    expect(html).toContain("disaster-recovery snapshot");
+    expect(html).toContain("account copies or an off-host copy");
   });
 
   it("renders nothing when no section was missing", () => {

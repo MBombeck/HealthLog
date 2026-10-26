@@ -6,7 +6,7 @@
  * session at a record, and the end of a grant points every affected session
  * back at its own. Both live here rather than at their call sites so the
  * carrier has one writer, the same way it has one reader (the resolver in
- * `src/lib/api-handler.ts`). The structural guard in
+ * `src/lib/auth/guards/acting.ts`). The structural guard in
  * `src/__tests__/acting-account-boundary-guard.test.ts` holds that shape: any
  * other file that so much as names the column fails it.
  *

@@ -1,90 +1,83 @@
 /**
- * v1.4.25 — pg-boss queue registration for Withings activity +
- * sleep v2 syncs.
+ * pg-boss queue registration for Withings activity + sleep v2 syncs.
  *
- * The reminder-worker imports heavy infrastructure (pg-boss, Prisma
- * adapter, notification dispatchers, …) so we don't boot the whole
- * worker in this test. Instead we read the source file as text and
- * assert the queue constants + cron schedules + handler wiring are
- * present — a fast regression guard that catches accidental deletion
- * of the W17b/c plumbing without spinning up Postgres.
+ * Reads the worker registry instead of booting the worker (pg-boss, Prisma
+ * adapter, notification dispatchers, …): the queues are declared with their
+ * crons and bound to their handlers, a fast regression guard against
+ * accidental deletion of the plumbing without spinning up Postgres. The
+ * import-routine assertions read the handler module.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-// v1.18.1 — the queue wiring moved out of the 2143-LOC reminder-worker boot
-// file into domain registrars; the Withings queues live in the integration-sync
-// registrar. The dead-queue guard follows the wiring there (the handler module
-// is still concatenated for the import-routine assertions below).
-const REGISTRAR_PATH = join(
-  __dirname,
-  "..",
-  "reminder",
-  "register-integration-sync.ts",
+import {
+  WITHINGS_ACTIVITY_CRON,
+  WITHINGS_ACTIVITY_QUEUE,
+  WITHINGS_ECG_SYNC_CRON,
+  WITHINGS_SLEEP_CRON,
+  WITHINGS_SLEEP_QUEUE,
+} from "@/lib/jobs/integration-poll-queues";
+import {
+  handleWithingsActivitySync,
+  handleWithingsSleepSync,
+} from "@/lib/jobs/reminder/withings-sync";
+import {
+  groupOf,
+  jobOf,
+  loadedHandler,
+} from "@/lib/jobs/registry/__tests__/registry-helpers";
+import { WITHINGS_ECG_SYNC_QUEUE } from "@/lib/jobs/withings-ecg-queue";
+
+const handlerSource = readFileSync(
+  join(__dirname, "..", "reminder", "withings-sync.ts"),
+  "utf8",
 );
 
-const source =
-  readFileSync(REGISTRAR_PATH, "utf8") +
-  readFileSync(join(__dirname, "..", "reminder", "withings-sync.ts"), "utf8");
-
-describe("reminder-worker — Withings activity + sleep v2 queues", () => {
+describe("Withings activity + sleep v2 queues", () => {
   it("declares the activity-sync queue at the documented cadence", () => {
-    expect(source).toMatch(
-      /WITHINGS_ACTIVITY_QUEUE\s*=\s*["']withings-activity-sync["']/,
-    );
-    expect(source).toMatch(
-      /WITHINGS_ACTIVITY_CRON\s*=\s*["']0 \* \* \* \*["']/,
-    );
+    expect(WITHINGS_ACTIVITY_QUEUE).toBe("withings-activity-sync");
+    expect(WITHINGS_ACTIVITY_CRON).toBe("0 * * * *");
   });
 
   it("declares the sleep-sync queue at the offset cadence", () => {
-    expect(source).toMatch(
-      /WITHINGS_SLEEP_QUEUE\s*=\s*["']withings-sleep-sync["']/,
-    );
+    expect(WITHINGS_SLEEP_QUEUE).toBe("withings-sleep-sync");
     // :15 offset keeps it out of lockstep with the measure cron at :00.
-    expect(source).toMatch(/WITHINGS_SLEEP_CRON\s*=\s*["']15 \* \* \* \*["']/);
+    expect(WITHINGS_SLEEP_CRON).toBe("15 * * * *");
   });
 
-  it("registers the activity-sync handler against pg-boss", () => {
-    expect(source).toMatch(/handleWithingsActivitySync\b/);
-    expect(source).toMatch(
-      /createAndWork[\s\S]{0,200}WITHINGS_ACTIVITY_QUEUE[\s\S]{0,200}handleWithingsActivitySync/,
+  it("binds the activity-sync handler", async () => {
+    expect(groupOf(WITHINGS_ACTIVITY_QUEUE).name).toBe("integration_sync");
+    expect(await loadedHandler(WITHINGS_ACTIVITY_QUEUE)).toBe(
+      handleWithingsActivitySync,
     );
   });
 
-  it("registers the sleep-sync handler against pg-boss", () => {
-    expect(source).toMatch(/handleWithingsSleepSync\b/);
-    expect(source).toMatch(
-      /createAndWork[\s\S]{0,200}WITHINGS_SLEEP_QUEUE[\s\S]{0,200}handleWithingsSleepSync/,
+  it("binds the sleep-sync handler", async () => {
+    expect(groupOf(WITHINGS_SLEEP_QUEUE).name).toBe("integration_sync");
+    expect(await loadedHandler(WITHINGS_SLEEP_QUEUE)).toBe(
+      handleWithingsSleepSync,
     );
   });
 
-  it("imports the new activity / sleep sync routines", () => {
-    expect(source).toMatch(
+  it("imports the activity / sleep sync routines", () => {
+    expect(handlerSource).toMatch(
       /import\s*\{\s*syncUserActivity\s*\}\s*from\s*["']@\/lib\/withings\/sync-activity["']/,
     );
-    expect(source).toMatch(
+    expect(handlerSource).toMatch(
       /import\s*\{\s*syncUserSleep\s*\}\s*from\s*["']@\/lib\/withings\/sync-sleep["']/,
     );
   });
 
-  it("schedules both crons via boss.schedule (allQueues + schedules tables)", () => {
-    expect(source).toMatch(
-      /\[WITHINGS_ACTIVITY_QUEUE,\s*WITHINGS_ACTIVITY_CRON\]/,
-    );
-    expect(source).toMatch(/\[WITHINGS_SLEEP_QUEUE,\s*WITHINGS_SLEEP_CRON\]/);
+  it("schedules both crons", () => {
+    expect(jobOf(WITHINGS_ACTIVITY_QUEUE).cron).toBe(WITHINGS_ACTIVITY_CRON);
+    expect(jobOf(WITHINGS_SLEEP_QUEUE).cron).toBe(WITHINGS_SLEEP_CRON);
   });
 
   it("schedules the ECG catch-net cron at :41 so watch-only accounts pull strips", () => {
-    // The queue is already in allQueues + createAndWork-bound; W-1 adds the missing
-    // schedule entry so a payload-less cron tick walks the connection cohort.
-    expect(source).toMatch(
-      /WITHINGS_ECG_SYNC_CRON\s*=\s*["']41 \* \* \* \*["']/,
-    );
-    expect(source).toMatch(
-      /\[WITHINGS_ECG_SYNC_QUEUE,\s*WITHINGS_ECG_SYNC_CRON\]/,
-    );
+    // A payload-less cron tick walks the connection cohort.
+    expect(WITHINGS_ECG_SYNC_CRON).toBe("41 * * * *");
+    expect(jobOf(WITHINGS_ECG_SYNC_QUEUE).cron).toBe(WITHINGS_ECG_SYNC_CRON);
   });
 });

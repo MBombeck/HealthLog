@@ -22,7 +22,7 @@ import { emitInsertedWorkoutArrival } from "@/lib/arrivals/workout-emit";
 import { annotate, getEvent } from "@/lib/logging/context";
 import type { Prisma } from "@/generated/prisma/client";
 import type { WorkoutSportType } from "@/lib/validations/workout";
-import type { OuraWorkout } from "./client";
+import type { OuraWorkout } from "./wire-types";
 import { mapOuraSportType } from "./sport-map";
 
 export interface OuraWorkoutRow {

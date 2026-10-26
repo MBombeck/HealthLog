@@ -57,7 +57,8 @@ export async function resetSetupFlow(username: string): Promise<void> {
         WHERE key IN (
           'onboarding-answers:' || $1,
           'onboarding-restart:' || $1,
-          'managed-profile:create:' || $1
+          'managed-profile:create:' || $1,
+          'record-write:' || $1
         )`,
       [id],
     );

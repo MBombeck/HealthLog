@@ -1,3 +1,4 @@
+import type { ReactElement } from "react";
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -19,7 +20,8 @@ import {
 import { moduleForMeasurementType } from "@/lib/modules/measurement-scope";
 import { locales } from "@/lib/i18n/config";
 import type { DataSummary } from "@/lib/analytics/trends";
-import { readSource } from "@/__tests__/helpers/source-files";
+import { STRIP_TILES } from "@/components/dashboard/tiles/strip-tiles";
+import type { DashboardTileContext } from "@/components/dashboard/tiles/tile-context";
 
 /**
  * The dashboard HRV tile must accept either HRV type.
@@ -245,20 +247,37 @@ describe("the tile the user actually sees", () => {
     }
   });
 
-  it("does not read freshness off a hardcoded SDNN type", () => {
-    // The one source-level check kept, and deliberately a NEGATIVE one: it
-    // names the exact expression the bug lived on rather than asserting the
-    // current formatting of the replacement, so reformatting cannot break
-    // it. Freshness is per-type and captioning a live RMSSD tile from the
-    // SDNN lookup is the failure it guards.
-    const page = readSource("src/app/page-client.tsx", [
-      "const tileStaleDays",
-      "HEART_RATE_VARIABILITY",
-    ]);
-    expect(page).not.toContain('tileStaleDays("HEART_RATE_VARIABILITY")');
-    expect(page).not.toContain(
-      "const hrvSummary = data?.summaries?.HEART_RATE_VARIABILITY",
-    );
+  it("reads freshness off the series the tile shows", () => {
+    // Freshness is per type, and captioning a live RMSSD tile from the SDNN
+    // lookup marked it permanently stale. The registry's HRV tile is built
+    // with a context whose freshness differs per type, so the caption it
+    // asks for names the type it used.
+    const hrvTile = STRIP_TILES.find((tile) => tile.widget === "hrv");
+    expect(hrvTile).toBeDefined();
+    for (const [summaries, type, days] of [
+      [{ HRV_RMSSD: summary(30, 42) }, "HRV_RMSSD", 12],
+      [
+        { HEART_RATE_VARIABILITY: summary(9, 55) },
+        "HEART_RATE_VARIABILITY",
+        20,
+      ],
+    ] as const) {
+      const ctx = {
+        t: (key: string) => key,
+        summaries,
+        hrv: pickHrvSummary(summaries),
+        compareBaseline: "none",
+        directionOf: () => "neutral",
+        tileCompareDelta: () => null,
+        tileStaleDays: (t: string | null | undefined) =>
+          t === "HRV_RMSSD" ? 12 : t === "HEART_RATE_VARIABILITY" ? 20 : null,
+      } as unknown as DashboardTileContext;
+      expect(hrvTile?.visible(ctx), type).toBe(true);
+      const [card] = hrvTile?.cards(ctx) ?? [];
+      const props = (card.node as ReactElement<{ staleDays: number | null }>)
+        .props;
+      expect(props.staleDays, type).toBe(days);
+    }
   });
 });
 

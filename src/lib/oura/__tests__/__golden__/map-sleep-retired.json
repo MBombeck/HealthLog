@@ -1,0 +1,11 @@
+[
+  { "type": "long_sleep", "retired": false },
+  { "type": "sleep", "retired": false },
+  { "type": "late_nap", "retired": false },
+  { "type": "rest", "retired": true },
+  { "type": "deleted", "retired": true },
+  { "type": "REST", "retired": false },
+  { "type": "", "retired": false },
+  { "type": null, "retired": false },
+  { "type": null, "retired": false }
+]

@@ -22,14 +22,14 @@ vi.mock("@/lib/logging/context", () => ({
 }));
 
 import { SafeFetchError } from "@/lib/safe-fetch";
+import { forEachDataPointPage } from "@/lib/google-health/data-points";
+import { GOOGLE_HEALTH_TRANSIENT_RETRY } from "@/lib/google-health/request";
 import {
-  GOOGLE_HEALTH_DATA_TYPES,
-  GOOGLE_HEALTH_TRANSIENT_RETRY,
-  forEachDataPointPage,
   googleHealthSliceBudget,
   runWithGoogleHealthClientOutcome,
   runWithGoogleHealthStop,
-} from "../client";
+} from "@/lib/google-health/budget";
+import { GOOGLE_HEALTH_DATA_TYPES } from "@/lib/google-health/mappers";
 import { GoogleHealthApiError } from "../response-classifier";
 
 function page(n: number, next: boolean, status = 200, headers = {}): Response {

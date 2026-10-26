@@ -258,6 +258,12 @@ export async function readAllTimeCounts(
  * replaced shifted the column with a single `AT TIME ZONE`, which treats the
  * UTC value as local time and moves it the wrong way: in Berlin a reading at
  * 23:30 UTC landed on the day before instead of the day after.
+ *
+ * `since` and `now` arrive the same way, as offset-free UTC strings, so they
+ * are read as UTC (`::timestamp AT TIME ZONE 'UTC'`) before they move into
+ * `timeZone`. A bare `::timestamptz` read them in the session zone: outside
+ * a UTC session the series ended a day early and today's reading fell out of
+ * the streak.
  */
 export async function readActivityDayKeys(
   db: PrismaClient,
@@ -269,8 +275,8 @@ export async function readActivityDayKeys(
   const rows = await db.$queryRaw<Array<{ day_key: string }>>`
     SELECT to_char(d, 'YYYY-MM-DD') AS day_key
     FROM generate_series(
-      (${since}::timestamptz AT TIME ZONE ${timeZone})::date,
-      (${now}::timestamptz AT TIME ZONE ${timeZone})::date,
+      ((${since}::timestamp AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone})::date,
+      ((${now}::timestamp AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone})::date,
       INTERVAL '1 day'
     ) AS d
     WHERE EXISTS (

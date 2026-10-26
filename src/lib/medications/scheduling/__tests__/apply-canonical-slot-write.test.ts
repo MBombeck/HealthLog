@@ -18,14 +18,27 @@ import { applyCanonicalSlotWrite, type SlotIntakeRow } from "../slot-upsert";
 const SLOT = new Date("2026-06-15T05:00:00.000Z");
 
 function row(overrides: Partial<SlotIntakeRow> = {}): SlotIntakeRow {
+  const createdAt = new Date("2026-06-15T00:00:00.000Z");
   return {
     id: "row-1",
+    userId: "user-1",
+    medicationId: "med-1",
     takenAt: null,
     skipped: false,
+    autoMissed: false,
+    autoRecorded: false,
+    attributionSource: "AUTO",
     idempotencyKey: null,
     scheduledFor: SLOT,
     source: "REMINDER",
-    createdAt: new Date("2026-06-15T00:00:00.000Z"),
+    createdAt,
+    injectionSite: null,
+    doseTaken: null,
+    inventoryConsumption: null,
+    externalId: null,
+    updatedAt: createdAt,
+    syncVersion: 0,
+    deletedAt: null,
     ...overrides,
   };
 }

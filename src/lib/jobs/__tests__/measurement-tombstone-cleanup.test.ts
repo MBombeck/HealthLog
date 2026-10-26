@@ -1,23 +1,26 @@
 /**
- * v1.7.0 — measurement-tombstone retention cleanup.
+ * Measurement-tombstone retention cleanup.
  *
  * Two guards:
  *   1. Behavioural: the helper hard-deletes only soft-deleted rows whose
  *      `deletedAt` predates the retention horizon, leaving live rows and
  *      recently-tombstoned rows untouched.
- *   2. Source-grep wiring (same approach as the drain-cumulative guard):
- *      the queue is registered in `allQueues`, scheduled, and bound to a
- *      `createAndWork` handler — a missing `allQueues` entry silently no-ops
- *      the schedule under pg-boss v12.
+ *   2. Registry wiring: the queue is declared in the maintenance group,
+ *      scheduled, and bound to its handler — a queue the registry does not
+ *      declare is never created, and its schedule silently no-ops under
+ *      pg-boss v12.
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { describe, expect, it, vi } from "vitest";
 
 import { cleanupExpiredMeasurementTombstones } from "../measurement-tombstone-cleanup";
 import { PURGE_BATCH_SIZE, PURGE_MAX_BATCHES } from "../purge-batch";
 import { TOMBSTONE_RETENTION_DAYS } from "@/lib/auth/native-client";
+import { handleMeasurementTombstoneCleanup } from "../reminder/cleanup-handlers";
+import {
+  groupOf,
+  jobOf,
+  loadedHandler,
+} from "../registry/__tests__/registry-helpers";
 
 const DAY_MS = 86_400_000;
 
@@ -170,42 +173,24 @@ describe("cleanupExpiredMeasurementTombstones — accounts under restore", () =>
   });
 });
 
-describe("reminder-worker — measurement-tombstone-cleanup schedule", () => {
-  // v1.18.1 — the cleanup wiring moved out of the 2143-LOC reminder-worker
-  // boot file into the maintenance registrar. The dead-queue guard follows it.
-  const source = readFileSync(
-    join(__dirname, "..", "reminder", "register-maintenance.ts"),
-    "utf8",
-  );
+describe("measurement-tombstone-cleanup schedule", () => {
+  const QUEUE = "measurement-tombstone-cleanup";
 
   it("declares the queue at the documented Berlin cadence", () => {
-    expect(source).toMatch(
-      /MEASUREMENT_TOMBSTONE_CLEANUP_QUEUE\s*=\s*["']measurement-tombstone-cleanup["']/,
-    );
-    expect(source).toMatch(
-      /MEASUREMENT_TOMBSTONE_CLEANUP_CRON\s*=\s*["']40 3 \* \* \*["']/,
-    );
+    expect(jobOf(QUEUE).cron).toBe("40 3 * * *");
   });
 
-  it("registers the queue in the allQueues createQueue loop", () => {
-    const allQueuesMatch = source.match(
-      /const allQueues\s*=\s*\[([\s\S]*?)\];/,
-    );
-    expect(allQueuesMatch).not.toBeNull();
-    expect(allQueuesMatch![1]).toMatch(
-      /\bMEASUREMENT_TOMBSTONE_CLEANUP_QUEUE\b/,
-    );
+  it("declares the queue in the maintenance group", () => {
+    expect(groupOf(QUEUE).name).toBe("maintenance");
   });
 
-  it("schedules the cron via boss.schedule (allQueues + schedules)", () => {
-    expect(source).toMatch(
-      /\[MEASUREMENT_TOMBSTONE_CLEANUP_QUEUE,\s*MEASUREMENT_TOMBSTONE_CLEANUP_CRON\]/,
-    );
+  it("keeps the default retries on the schedule", () => {
+    const job = jobOf(QUEUE);
+    expect(job.scheduleOptions).toBeUndefined();
+    expect(job.work).toEqual({ localConcurrency: 1 });
   });
 
-  it("binds a createAndWork handler to the queue", () => {
-    expect(source).toMatch(
-      /createAndWork[\s\S]{0,200}MEASUREMENT_TOMBSTONE_CLEANUP_QUEUE[\s\S]{0,200}handleMeasurementTombstoneCleanup/,
-    );
+  it("binds the cleanup handler to the queue", async () => {
+    expect(await loadedHandler(QUEUE)).toBe(handleMeasurementTombstoneCleanup);
   });
 });

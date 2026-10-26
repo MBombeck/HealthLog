@@ -260,11 +260,21 @@
       "variables": [
         {
           "name": "DEPLOY_WEBHOOK_SECRET",
-          "purpose": "Shared secret for the X-Deploy-Webhook-Secret header on POST /api/internal/deploy-webhook. 64 hex chars."
+          "purpose": "Shared secret of POST /api/internal/deploy-webhook. 64 hex chars. A request authenticates by sending it in the X-Deploy-Webhook-Secret header (Coolify's stock sender; no replay protection), or by signing: X-Deploy-Webhook-Signature: sha256=<HMAC-SHA256 under this secret of the X-Deploy-Webhook-Timestamp value, a dot and the raw body>, the timestamp within 5 minutes."
         },
         {
           "name": "DEPLOY_LOGS_URL",
           "purpose": "URL of the deployment dashboard (e.g. the Coolify UI) linked in deploy-failure notifications. Optional; when unset the notification omits the link."
+        },
+        {
+          "name": "DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP",
+          "purpose": "\"true\" (or \"1\") requires a fresh X-Deploy-Webhook-Timestamp (within 5 minutes) on a deploy-webhook request that authenticates with the secret header; one without it is refused with 401. Keeps a stale capture out, not a fresh forgery by someone who saw the secret. Leave unset for Coolify's stock sender, which sends no timestamp.",
+          "example": "true"
+        },
+        {
+          "name": "DEPLOY_WEBHOOK_REQUIRE_SIGNATURE",
+          "purpose": "\"true\" (or \"1\") accepts only signed deploy-webhook requests (X-Deploy-Webhook-Signature with a fresh X-Deploy-Webhook-Timestamp); the secret header alone is refused with 401. The setting that stops a replay. Leave unset for Coolify's stock sender, which can only send the secret header.",
+          "example": "true"
         }
       ]
     },
@@ -361,6 +371,38 @@
       ]
     },
     {
+      "name": "Database dumps",
+      "description": "The nightly whole-database dump and the dump before migrations (docs/ops/disaster-recovery.md). Optional: each has a default, and the bundled compose file mounts the `backups` volume at the default directory.",
+      "required": false,
+      "variables": [
+        {
+          "name": "DB_BACKUP_ENABLED",
+          "purpose": "Set false to stop the nightly database dump. On when unset.",
+          "example": "true"
+        },
+        {
+          "name": "DB_BACKUP_DIR",
+          "purpose": "Directory the dumps are written to and restored from. Default /var/lib/healthlog/backups, the `backups` volume. In a container it must be a mount of its own: a directory in the container's layer is lost at the next update and counts as none. Without one the nightly dump only goes off-host and no dump is taken before migrations.",
+          "example": "/var/lib/healthlog/backups"
+        },
+        {
+          "name": "DB_BACKUP_SCHEDULE",
+          "purpose": "Five-field cron for the nightly dump, in Europe/Berlin time like every scheduled job. Default 30 1 * * * (01:30).",
+          "example": "30 1 * * *"
+        },
+        {
+          "name": "DB_BACKUP_KEEP",
+          "purpose": "How many nightly dumps stay in DB_BACKUP_DIR (default 7, at least 1). The last two dumps taken before a migration are kept besides.",
+          "example": "7"
+        },
+        {
+          "name": "DB_BACKUP_BEFORE_MIGRATE",
+          "purpose": "Set false to start without the dump the entrypoint takes before applying migrations. On when unset; a failed dump stops the start until it works or this is false.",
+          "example": "true"
+        }
+      ]
+    },
+    {
       "name": "Operational windows and cookie flags",
       "description": "Values the product states back to a user or that decide whether a session cookie is accepted. Optional: each has a documented default. They are listed so `pnpm check-env` reports them, and so the compose whitelist and the example files can be held in step with this manifest.",
       "required": false,
@@ -369,6 +411,11 @@
           "name": "AUDIT_LOG_RETENTION_DAYS",
           "purpose": "How long audit rows survive, in days (365 by default). Published, not merely enforced: the shared-access activity feed and the dialog that ends somebody's access both state the number back to the user.",
           "example": "365"
+        },
+        {
+          "name": "ACCOUNT_DELETION_GRACE_DAYS",
+          "purpose": "Days an account deletion, a managed-profile deletion or a data wipe stays undoable before the purge erases it (14 by default, 30 at most, 0 erases immediately). The account is locked at once. Published: the deletion dialogs and the Data & Privacy page state the number.",
+          "example": "14"
         },
         {
           "name": "SESSION_COOKIE_SECURE",
@@ -387,7 +434,17 @@
         },
         {
           "name": "TRUST_PROXY_HOPS",
-          "purpose": "Trusted reverse-proxy hop count; the client IP is read that many entries from the right of X-Forwarded-For.",
+          "purpose": "Trusted reverse-proxy hop count; the client IP is read that many entries from the right of X-Forwarded-For. Forwarding headers are read only from a peer whose own address is not public (loopback, private, CGNAT, unique-local, link-local, reserved, multicast).",
+          "example": "1"
+        },
+        {
+          "name": "TRUSTED_PROXY_CIDRS",
+          "purpose": "Comma-separated CIDRs (IPv4 or IPv6; a bare address is one host) the reverse proxy connects from. Set, only a connection from inside them may report the client address in X-Forwarded-For or X-Real-IP; every other connection is its own client. Unset, any non-public address may, which behind Docker Desktop, OrbStack or docker-proxy includes every caller of a published port. Same host: 127.0.0.1/32,::1/128; Docker network: the proxy's subnet. An entry that is not a CIDR lets no connection report an address and is named at boot.",
+          "example": "127.0.0.1/32,::1/128"
+        },
+        {
+          "name": "TRUST_CF_CONNECTING_IP",
+          "purpose": "\"1\" takes the client IP from Cloudflare's CF-Connecting-IP header, from every connection and before the peer check. Safe only when the origin accepts connections from Cloudflare alone (a Tunnel, or a firewall admitting only Cloudflare's ranges); otherwise any caller forges the address rate limits and the audit log record. Off by default.",
           "example": "1"
         },
         {

@@ -16,8 +16,8 @@ import {
   apiSuccess,
   getClientIp,
   returnAllZodIssues,
-  safeJson,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import {
   lifeEventIdPathSchema,
@@ -48,17 +48,11 @@ export const PATCH = apiHandler(
     const existing = await findOwnLifeEvent(user.id, path.data.id);
     if (!existing) return notFound();
 
-    const { data: rawBody, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, lifeEventUpdateSchema, {
       maxBytes: 16 * 1024,
+      errorCode: "life_event.invalid",
     });
-    if (jsonError) return jsonError;
-
-    const parsed = lifeEventUpdateSchema.safeParse(rawBody);
-    if (!parsed.success) {
-      return returnAllZodIssues(parsed.error, 422, {
-        errorCode: "life_event.invalid",
-      });
-    }
+    if (!parsed.ok) return parsed.error;
     const merged = mergeLifeEventEdit(existing, parsed.data);
     if (!merged.ok) {
       return returnAllZodIssues(merged.error, 422, {

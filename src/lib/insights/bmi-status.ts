@@ -1,51 +1,32 @@
 import { prisma } from "@/lib/db";
 import { getBmiSystemPrompt, getBmiUserPrompt } from "@/lib/ai/prompts/bmi";
-import { openerArchetypeHint } from "@/lib/ai/prompts/opener-archetype";
-import type { Locale } from "@/lib/i18n/config";
 import { classifyBMI } from "@/lib/analytics/classifications";
 import { getNoKeyBmiStatusText } from "@/lib/insights/no-key-fallbacks";
-import {
-  formatPreviousContextForPrompt,
-  getPreviousInsightContext,
-} from "@/lib/insights/memory";
-import {
-  buildAssessmentContextBlock,
-  computeSteadyRun,
-  pickVarietyLead,
-} from "@/lib/insights/assessment-context";
+import { computeSteadyRun } from "@/lib/insights/assessment-context";
 import { applyPayloadBudget } from "@/lib/insights/bucket-series";
 import {
   buildGradedSeriesWithRollups,
   scaleGradedSeries,
-  degradeStatusSnapshotToBudget,
 } from "@/lib/insights/graded-series";
-import { statusSnapshotCharsForRecord } from "@/lib/ai/capabilities/usage";
 import { buildMetricSignal } from "@/lib/insights/metric-signal";
-import {
-  type SupportedLocale,
-  normalizeLocale,
-  finalizeStatusSummary,
-  persistStatusInsight,
-  round,
-  summarizeSeries,
-} from "@/lib/insights/status-shared";
-import {
-  computeStatusInputFingerprint,
-  gateUnchangedStatusInput,
-  readFreshStatusText,
-  refreshUnchangedStatusInsight,
-  resolveReadOnlyStatusMiss,
-  statusCacheAction,
-} from "@/lib/insights/status-cache";
-import { hashInsightSnapshot } from "@/lib/insights/snapshot-hash";
-import { returnTimeoutFallback } from "@/lib/insights/timeout-fallback";
+import { round, summarizeSeries } from "@/lib/insights/status-shared";
+import { computeStatusInputFingerprint } from "@/lib/insights/status-cache";
 import {
   runPreparedStatusCard,
   type PreparedStatusCard,
-  type StatusCardResult,
 } from "@/lib/insights/status-card-generation";
-import { annotate } from "@/lib/logging/context";
-import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
+import {
+  coverageSpan,
+  gateUnchangedInputs,
+  prepareStatusCard,
+  textStatusCodec,
+  type ServedBuild,
+  type StatusCardBuild,
+  type StatusCardContext,
+  type StatusCardOptions,
+  type StatusCardPlugin,
+  type StatusTextResult,
+} from "@/lib/insights/status-pipeline";
 
 /**
  * Public entry — unchanged signature. Prepares the card (cache-read,
@@ -56,112 +37,29 @@ import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
  */
 export async function generateBmiStatusForUser(
   userId: string,
-  options?: {
-    locale?: string | null;
-    force?: boolean;
-    /** v1.8.3 — read-only navigation path; see weight-status for the rationale. */
-    readOnly?: boolean;
-  },
-): Promise<{
-  hasProvider: boolean;
-  text: string | null;
-  cached: boolean;
-  updatedAt: string | null;
-  preparing?: boolean;
-  /** v1.9.0 — last-good text served while a refresh is in flight; keep polling. */
-  revalidating?: boolean;
-}> {
+  options?: StatusCardOptions,
+): Promise<StatusTextResult> {
   const prepared = await prepareBmiStatusForUser(userId, options);
-  const result = await runPreparedStatusCard(prepared);
-  return result as {
-    hasProvider: boolean;
-    text: string | null;
-    cached: boolean;
-    updatedAt: string | null;
-    preparing?: boolean;
-    revalidating?: boolean;
-  };
+  return (await runPreparedStatusCard(prepared)) as StatusTextResult;
 }
 
 /**
- * v1.18.7 — everything up to (not including) the provider call.
- * Returns a finished `served` result for every path that never needed the
- * LLM, or a `pending` descriptor the single-card path and the batch path
- * both drive. See `status-card-generation.ts` for the contract.
+ * Everything up to (not including) the provider call, through the shared
+ * status pipeline (`status-pipeline.ts`); this card supplies its height
+ * check, its input gate and its snapshot.
  */
-export async function prepareBmiStatusForUser(
+export function prepareBmiStatusForUser(
   userId: string,
-  options?: {
-    locale?: string | null;
-    force?: boolean;
-    /** v1.8.3 — read-only navigation path; see weight-status for the rationale. */
-    readOnly?: boolean;
-  },
+  options?: StatusCardOptions,
 ): Promise<PreparedStatusCard> {
-  const locale = normalizeLocale(options?.locale);
-  const force = options?.force === true;
-  const readOnly = options?.readOnly === true;
-  const cacheAction = statusCacheAction("bmi", locale);
-  // v1.30.3 — resolve the user's own tz BEFORE the day-key so the
-  // cache rolls over at the user's local midnight, not Berlin's. Has to
-  // happen ahead of the cache read below (the earliest possible return
-  // path), not just the later day-bucketing reads.
-  const userTz = await resolveUserTimezone(userId);
-  const todayKey = userDayKey(new Date(), userTz);
+  return prepareStatusCard(BMI_STATUS_CARD, userId, options);
+}
 
-  const cached = await readFreshStatusText({
-    userId,
-    cacheAction,
-    todayKey,
-    force,
-  });
-  if (cached) {
-    return {
-      phase: "served",
-      result: {
-        hasProvider: true,
-        text: cached.text,
-        cached: true,
-        updatedAt: cached.updatedAt,
-      },
-    };
-  }
-
-  if (readOnly) {
-    const outcome = await resolveReadOnlyStatusMiss({
-      userId,
-      metric: "bmi",
-      locale,
-    });
-    // Unavailable for any reason serves the deterministic line and enqueues
-    // nothing. `hasProvider` is provider presence only.
-    if (outcome.kind === "unavailable") {
-      return {
-        phase: "served",
-        result: {
-          hasProvider: outcome.hasProvider,
-          text: getNoKeyBmiStatusText(locale),
-          cached: true,
-          updatedAt: null,
-        },
-      };
-    }
-    // v1.8.7 — stale-while-revalidate: serve the last good assessment
-    // (if any) instantly while the worker re-warms; only fall to the empty
-    // preparing skeleton when none was ever produced.
-    return {
-      phase: "served",
-      result: {
-        hasProvider: true,
-        text: outcome.lastGood?.text ?? null,
-        cached: outcome.lastGood !== null,
-        updatedAt: outcome.lastGood?.updatedAt ?? null,
-        preparing: outcome.lastGood === null,
-        revalidating: outcome.revalidating,
-      },
-    };
-  }
-
+/** The BMI snapshot: the weight series scaled by the profile height. */
+async function buildBmiSnapshot(
+  ctx: StatusCardContext,
+): Promise<StatusCardBuild<undefined> | ServedBuild<StatusTextResult>> {
+  const { userId, locale, userTz, todayKey } = ctx;
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -195,25 +93,9 @@ export async function prepareBmiStatusForUser(
     types: ["WEIGHT"],
     extra: { heightCm: user.heightCm },
   });
-  if (!force) {
-    const unchangedInput = await gateUnchangedStatusInput({
-      userId,
-      cacheAction,
-      todayKey,
-      inputHash,
-      force,
-    });
-    if (unchangedInput) {
-      return {
-        phase: "served",
-        result: {
-          hasProvider: true,
-          text: unchangedInput.text,
-          cached: true,
-          updatedAt: unchangedInput.updatedAt,
-        },
-      };
-    }
+  if (!ctx.force) {
+    const unchangedInput = await gateUnchangedInputs(ctx, inputHash, ctx.force);
+    if (unchangedInput) return { phase: "served", result: unchangedInput };
   }
 
   // v1.4.28 — cap the snapshot input (weight runs at most once
@@ -270,24 +152,13 @@ export async function prepareBmiStatusForUser(
   const previousBmi = bmiSeries.daily[1] ?? null;
   const latestClassification = latestBmi ? classifyBMI(latestBmi.value) : null;
 
-  const oldestMeasurement =
-    measurements.length > 0 ? measurements[0].measuredAt : null;
-  const newestMeasurement =
-    measurements.length > 0
-      ? measurements[measurements.length - 1].measuredAt
-      : null;
-  const totalSpanDays =
-    oldestMeasurement && newestMeasurement
-      ? Math.round(
-          (newestMeasurement.getTime() - oldestMeasurement.getTime()) /
-            (24 * 60 * 60 * 1000),
-        )
-      : 0;
-  const newestMeasurementDaysAgo = newestMeasurement
-    ? Math.round(
-        (Date.now() - newestMeasurement.getTime()) / (24 * 60 * 60 * 1000),
-      )
-    : null;
+  const { totalSpanDays, newestDaysAgo: newestMeasurementDaysAgo } =
+    coverageSpan(
+      measurements.length > 0 ? measurements[0].measuredAt : null,
+      measurements.length > 0
+        ? measurements[measurements.length - 1].measuredAt
+        : null,
+    );
 
   // v1.18.10 — hand the model the finished recent-vs-baseline
   // comparison + normal-swing verdict instead of asking it to derive them.
@@ -333,152 +204,40 @@ export async function prepareBmiStatusForUser(
     },
   };
 
-  const shed = degradeStatusSnapshotToBudget(
-    snapshot as unknown as Record<string, unknown>,
-    { maxChars: await statusSnapshotCharsForRecord(userId) },
-  );
-  const snapshotJson = JSON.stringify(snapshot);
-
-  annotate({
-    action: { name: cacheAction },
-    meta: {
-      payload_size_bytes: snapshotJson.length,
-      ...(shed.length > 0 ? { snapshot_shed: shed } : {}),
-    },
-  });
-
-  // Content-hash gate (v1.16.8): when the snapshot is unchanged since the
-  // last real assessment, refresh the cache timestamp and skip the LLM.
-  const snapshotHash = hashInsightSnapshot(snapshot);
-  const unchanged = await refreshUnchangedStatusInsight({
-    userId,
-    cacheAction,
-    todayKey,
-    snapshotHash,
-  });
-  if (unchanged) {
-    return {
-      phase: "served",
-      result: {
-        hasProvider: true,
-        text: unchanged.text,
-        cached: true,
-        updatedAt: unchanged.updatedAt,
-      },
-    };
-  }
-
-  const previousContext = await getPreviousInsightContext(
-    userId,
-    "bmi-status",
-    locale,
-    12,
-  );
-  const previousContextBlock = formatPreviousContextForPrompt(
-    previousContext,
-    locale,
-  );
-
-  // v1.12.7 — diversity / anti-repetition block (see blood-pressure-status).
-  // BMI is a per-user height transform of WEIGHT (no discovery channel of its
-  // own), so the RELATIONS sub-block stays empty; the variety / data-strength
-  // / repetition signals carry the rotation.
-  const varietyLead = pickVarietyLead(userId, "bmi", todayKey);
-  const steadyRun = computeSteadyRun(bmiGraded.weekly, bmiGraded.monthly);
-  const assessmentContextBlock = buildAssessmentContextBlock(
-    {
-      varietyLead,
-      dataStrength: {
+  return {
+    snapshot,
+    inputHash,
+    finish: () => ({
+      // BMI is a per-user height transform of WEIGHT (no discovery channel
+      // of its own), so the RELATIONS sub-block stays empty; the variety /
+      // data-strength / repetition signals carry the rotation.
+      context: {
+        repeatCount: computeSteadyRun(bmiGraded.weekly, bmiGraded.monthly),
         points: bmiSeries.daily.length,
         newestDaysAgo: newestMeasurementDaysAgo,
+        relationsFor: null,
       },
-      repeatCount: steadyRun,
-      relations: [],
-    },
-    locale,
-  );
-
-  // The provider call is deferred to the caller — the single-card path runs
-  // ONE completion, the batch path folds this prompt into one shared call.
-  // A timeout / error is a transient miss (fallback served, no assessment
-  // persisted); `none` (no provider / no consent) serves the no-key text.
-  return {
-    phase: "pending",
-    metric: "bmi",
-    userId,
-    cacheAction,
-    systemPrompt: getBmiSystemPrompt(locale),
-    userPrompt: getBmiUserPrompt(
-      snapshotJson,
-      todayKey,
-      locale,
-      previousContextBlock,
-      assessmentContextBlock,
-      // v1.28.40 — rotating opener hint, per (user, metric, day).
-      openerArchetypeHint(`${userId}:bmi:${todayKey}`, locale as Locale),
-    ),
-    snapshotHash,
-    // v1.12.7 — match the archetype cards' 0.45.
-    temperature: 0.45,
-    noProvider: {
-      hasProvider: false,
-      text: getNoKeyBmiStatusText(locale, bmiSignal),
-      cached: true,
-      updatedAt: null,
-    },
-    timeout: (reason): StatusCardResult =>
-      returnTimeoutFallback({
-        cacheAction,
-        reason,
-        userId,
-        todayKey,
-        stubText: getNoKeyBmiStatusText(locale, bmiSignal),
+      fallbackText: getNoKeyBmiStatusText(locale, bmiSignal),
+      prompts: (snapshotJson, context) => ({
+        systemPrompt: getBmiSystemPrompt(locale),
+        userPrompt: getBmiUserPrompt(
+          snapshotJson,
+          todayKey,
+          locale,
+          context.previousContextBlock,
+          context.assessmentContextBlock,
+          context.openerHint,
+        ),
       }),
-    finalize: async (outcome): Promise<StatusCardResult> => {
-      // Outbound safety screen. The only transform here used to be
-      // whitespace-normalisation, so a dose-change imperative or a fabricated
-      // clinical risk score persisted as the day's cached assessment. Policy
-      // for a background-generated card is WITHHOLD: serve the deterministic
-      // stub and persist no model text (see `finalizeStatusSummary`).
-      const screened = finalizeStatusSummary(outcome.content, locale);
-      if (!screened.ok) {
-        annotate({
-          action: { name: "insights.status.outbound_blocked" },
-          meta: { cacheAction, reason: screened.reason },
-        });
-        return returnTimeoutFallback({
-          cacheAction,
-          reason: "screened",
-          userId: userId,
-          todayKey: todayKey,
-          stubText: getNoKeyBmiStatusText(locale, bmiSignal),
-        });
-      }
-      const summary = screened.text;
-      if (!summary) {
-        throw new Error("Bmi-status summary was empty after normalization");
-      }
-      const updatedAt = await persistStatusInsight({
-        userId,
-        cacheAction,
-        todayKey,
-        text: summary,
-        snapshotHash,
-        // v1.18.11 — persist the input fingerprint for tomorrow's gate.
-        inputHash,
-      });
-      return {
-        hasProvider: true,
-        text: summary,
-        cached: false,
-        updatedAt,
-      };
-    },
+      detail: undefined,
+    }),
   };
 }
 
-export function resolveBmiStatusLocale(
-  locale: string | null | undefined,
-): SupportedLocale {
-  return normalizeLocale(locale);
-}
+const BMI_STATUS_CARD: StatusCardPlugin<StatusTextResult, undefined> = {
+  scope: "bmi",
+  codec: textStatusCodec,
+  unavailableText: (locale) => getNoKeyBmiStatusText(locale),
+  emptyMessage: "Bmi-status summary was empty after normalization",
+  build: buildBmiSnapshot,
+};

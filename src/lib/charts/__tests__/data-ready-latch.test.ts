@@ -66,7 +66,7 @@ describe("shouldFireDataReady", () => {
 
 describe("chart notify wiring", () => {
   const charts = [
-    "src/components/charts/health-chart.tsx",
+    "src/components/charts/health-chart/use-health-chart-series.ts",
     "src/components/charts/mood-chart.tsx",
     "src/components/charts/medication-compliance-chart.tsx",
   ];

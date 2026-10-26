@@ -11,6 +11,7 @@
  * Idempotent: a re-run within the same window matches zero rows the second time
  * because the first pass deleted everything older than `now()`.
  */
+// account-deletion(file): expires single-use sign-in handoffs; acts for no account.
 import type { PrismaClient } from "@/generated/prisma/client";
 
 export async function cleanupExpiredOidcNativeHandoffs(

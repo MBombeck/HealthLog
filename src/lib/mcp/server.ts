@@ -21,7 +21,8 @@ import {
 } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import type { McpAuthContext } from "./auth";
-import { MCP_TOOLS, type McpToolDefinition } from "./tools";
+import { MCP_TOOLS } from "./tools";
+import type { McpToolDefinition } from "./tools/types";
 import { MCP_WRITE_TOOLS } from "./write-tools";
 import { MCP_RESOURCES, MCP_RESOURCE_TEMPLATES } from "./resources";
 import { MCP_PROMPTS } from "./prompts";

@@ -1,0 +1,457 @@
+[
+  {
+    "index": 0,
+    "key": "dailyOxygenSaturation",
+    "tz": null,
+    "output": [
+      {
+        "type": "OXYGEN_SATURATION",
+        "value": 96.5,
+        "unit": "%",
+        "measuredAt": "2026-06-01T12:00:00.000Z",
+        "fieldTag": "2026-06-01:spo2"
+      }
+    ]
+  },
+  {
+    "index": 0,
+    "key": "dailyOxygenSaturation",
+    "tz": "Europe/Berlin",
+    "output": [
+      {
+        "type": "OXYGEN_SATURATION",
+        "value": 96.5,
+        "unit": "%",
+        "measuredAt": "2026-06-01T10:00:00.000Z",
+        "fieldTag": "2026-06-01:spo2"
+      }
+    ]
+  },
+  {
+    "index": 0,
+    "key": "dailyOxygenSaturation",
+    "tz": "America/New_York",
+    "output": [
+      {
+        "type": "OXYGEN_SATURATION",
+        "value": 96.5,
+        "unit": "%",
+        "measuredAt": "2026-06-01T16:00:00.000Z",
+        "fieldTag": "2026-06-01:spo2"
+      }
+    ]
+  },
+  {
+    "index": 1,
+    "key": "dailyOxygenSaturation",
+    "tz": null,
+    "output": [
+      {
+        "type": "OXYGEN_SATURATION",
+        "value": 97,
+        "unit": "%",
+        "measuredAt": "2026-06-02T12:00:00.000Z",
+        "fieldTag": "2026-06-02:spo2"
+      }
+    ]
+  },
+  {
+    "index": 1,
+    "key": "dailyOxygenSaturation",
+    "tz": "Europe/Berlin",
+    "output": [
+      {
+        "type": "OXYGEN_SATURATION",
+        "value": 97,
+        "unit": "%",
+        "measuredAt": "2026-06-02T10:00:00.000Z",
+        "fieldTag": "2026-06-02:spo2"
+      }
+    ]
+  },
+  {
+    "index": 1,
+    "key": "dailyOxygenSaturation",
+    "tz": "America/New_York",
+    "output": [
+      {
+        "type": "OXYGEN_SATURATION",
+        "value": 97,
+        "unit": "%",
+        "measuredAt": "2026-06-02T16:00:00.000Z",
+        "fieldTag": "2026-06-02:spo2"
+      }
+    ]
+  },
+  {
+    "index": 2,
+    "key": "dailyHeartRateVariability",
+    "tz": null,
+    "output": [
+      {
+        "type": "HRV_RMSSD",
+        "value": 42.12,
+        "unit": "ms",
+        "measuredAt": "2026-06-01T12:00:00.000Z",
+        "fieldTag": "2026-06-01:hrv"
+      }
+    ]
+  },
+  {
+    "index": 2,
+    "key": "dailyHeartRateVariability",
+    "tz": "Europe/Berlin",
+    "output": [
+      {
+        "type": "HRV_RMSSD",
+        "value": 42.12,
+        "unit": "ms",
+        "measuredAt": "2026-06-01T10:00:00.000Z",
+        "fieldTag": "2026-06-01:hrv"
+      }
+    ]
+  },
+  {
+    "index": 2,
+    "key": "dailyHeartRateVariability",
+    "tz": "America/New_York",
+    "output": [
+      {
+        "type": "HRV_RMSSD",
+        "value": 42.12,
+        "unit": "ms",
+        "measuredAt": "2026-06-01T16:00:00.000Z",
+        "fieldTag": "2026-06-01:hrv"
+      }
+    ]
+  },
+  { "index": 3, "key": "dailyHeartRateVariability", "tz": null, "output": [] },
+  {
+    "index": 3,
+    "key": "dailyHeartRateVariability",
+    "tz": "Europe/Berlin",
+    "output": []
+  },
+  {
+    "index": 3,
+    "key": "dailyHeartRateVariability",
+    "tz": "America/New_York",
+    "output": []
+  },
+  {
+    "index": 4,
+    "key": "dailyRestingHeartRate",
+    "tz": null,
+    "output": [
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 55,
+        "unit": "bpm",
+        "measuredAt": "2026-06-03T12:00:00.000Z",
+        "fieldTag": "2026-06-03:rhr"
+      }
+    ]
+  },
+  {
+    "index": 4,
+    "key": "dailyRestingHeartRate",
+    "tz": "Europe/Berlin",
+    "output": [
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 55,
+        "unit": "bpm",
+        "measuredAt": "2026-06-03T10:00:00.000Z",
+        "fieldTag": "2026-06-03:rhr"
+      }
+    ]
+  },
+  {
+    "index": 4,
+    "key": "dailyRestingHeartRate",
+    "tz": "America/New_York",
+    "output": [
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 55,
+        "unit": "bpm",
+        "measuredAt": "2026-06-03T16:00:00.000Z",
+        "fieldTag": "2026-06-03:rhr"
+      }
+    ]
+  },
+  {
+    "index": 5,
+    "key": "dailyRestingHeartRate",
+    "tz": null,
+    "output": [
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 57,
+        "unit": "bpm",
+        "measuredAt": "2026-07-01T09:00:00.000Z",
+        "fieldTag": "1970-01-01T00:00:00.000Z:rhr"
+      }
+    ]
+  },
+  {
+    "index": 5,
+    "key": "dailyRestingHeartRate",
+    "tz": "Europe/Berlin",
+    "output": [
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 57,
+        "unit": "bpm",
+        "measuredAt": "2026-07-01T09:00:00.000Z",
+        "fieldTag": "1970-01-01T00:00:00.000Z:rhr"
+      }
+    ]
+  },
+  {
+    "index": 5,
+    "key": "dailyRestingHeartRate",
+    "tz": "America/New_York",
+    "output": [
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 57,
+        "unit": "bpm",
+        "measuredAt": "2026-07-01T09:00:00.000Z",
+        "fieldTag": "1970-01-01T00:00:00.000Z:rhr"
+      }
+    ]
+  },
+  {
+    "index": 6,
+    "key": "dailyRespiratoryRate",
+    "tz": null,
+    "output": [
+      {
+        "type": "RESPIRATORY_RATE",
+        "value": 14.8,
+        "unit": "breaths/min",
+        "measuredAt": "2026-03-29T12:00:00.000Z",
+        "fieldTag": "2026-03-29:resp_rate"
+      }
+    ]
+  },
+  {
+    "index": 6,
+    "key": "dailyRespiratoryRate",
+    "tz": "Europe/Berlin",
+    "output": [
+      {
+        "type": "RESPIRATORY_RATE",
+        "value": 14.8,
+        "unit": "breaths/min",
+        "measuredAt": "2026-03-29T10:00:00.000Z",
+        "fieldTag": "2026-03-29:resp_rate"
+      }
+    ]
+  },
+  {
+    "index": 6,
+    "key": "dailyRespiratoryRate",
+    "tz": "America/New_York",
+    "output": [
+      {
+        "type": "RESPIRATORY_RATE",
+        "value": 14.8,
+        "unit": "breaths/min",
+        "measuredAt": "2026-03-29T16:00:00.000Z",
+        "fieldTag": "2026-03-29:resp_rate"
+      }
+    ]
+  },
+  { "index": 7, "key": "dailyRespiratoryRate", "tz": null, "output": [] },
+  {
+    "index": 7,
+    "key": "dailyRespiratoryRate",
+    "tz": "Europe/Berlin",
+    "output": []
+  },
+  {
+    "index": 7,
+    "key": "dailyRespiratoryRate",
+    "tz": "America/New_York",
+    "output": []
+  },
+  {
+    "index": 8,
+    "key": "dailySleepTemperatureDerivations",
+    "tz": null,
+    "output": [
+      {
+        "type": "WRIST_TEMPERATURE",
+        "value": 34.42,
+        "unit": "celsius",
+        "measuredAt": "2026-06-05T12:00:00.000Z",
+        "fieldTag": "2026-06-05:wrist_temp"
+      }
+    ]
+  },
+  {
+    "index": 8,
+    "key": "dailySleepTemperatureDerivations",
+    "tz": "Europe/Berlin",
+    "output": [
+      {
+        "type": "WRIST_TEMPERATURE",
+        "value": 34.42,
+        "unit": "celsius",
+        "measuredAt": "2026-06-05T10:00:00.000Z",
+        "fieldTag": "2026-06-05:wrist_temp"
+      }
+    ]
+  },
+  {
+    "index": 8,
+    "key": "dailySleepTemperatureDerivations",
+    "tz": "America/New_York",
+    "output": [
+      {
+        "type": "WRIST_TEMPERATURE",
+        "value": 34.42,
+        "unit": "celsius",
+        "measuredAt": "2026-06-05T16:00:00.000Z",
+        "fieldTag": "2026-06-05:wrist_temp"
+      }
+    ]
+  },
+  {
+    "index": 9,
+    "key": "dailySleepTemperatureDerivations",
+    "tz": null,
+    "output": [
+      {
+        "type": "WRIST_TEMPERATURE",
+        "value": 34.6,
+        "unit": "celsius",
+        "measuredAt": "2026-07-01T09:00:00.000Z",
+        "fieldTag": "1970-01-01T00:00:00.000Z:wrist_temp"
+      }
+    ]
+  },
+  {
+    "index": 9,
+    "key": "dailySleepTemperatureDerivations",
+    "tz": "Europe/Berlin",
+    "output": [
+      {
+        "type": "WRIST_TEMPERATURE",
+        "value": 34.6,
+        "unit": "celsius",
+        "measuredAt": "2026-07-01T09:00:00.000Z",
+        "fieldTag": "1970-01-01T00:00:00.000Z:wrist_temp"
+      }
+    ]
+  },
+  {
+    "index": 9,
+    "key": "dailySleepTemperatureDerivations",
+    "tz": "America/New_York",
+    "output": [
+      {
+        "type": "WRIST_TEMPERATURE",
+        "value": 34.6,
+        "unit": "celsius",
+        "measuredAt": "2026-07-01T09:00:00.000Z",
+        "fieldTag": "1970-01-01T00:00:00.000Z:wrist_temp"
+      }
+    ]
+  },
+  {
+    "index": 10,
+    "key": "dailyVo2Max",
+    "tz": null,
+    "output": [
+      {
+        "type": "VO2_MAX",
+        "value": 47.25,
+        "unit": "mL/(kg·min)",
+        "measuredAt": "2026-06-06T12:00:00.000Z",
+        "fieldTag": "vo2_max:2026-06-06",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 10,
+    "key": "dailyVo2Max",
+    "tz": "Europe/Berlin",
+    "output": [
+      {
+        "type": "VO2_MAX",
+        "value": 47.25,
+        "unit": "mL/(kg·min)",
+        "measuredAt": "2026-06-06T10:00:00.000Z",
+        "fieldTag": "vo2_max:2026-06-06",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 10,
+    "key": "dailyVo2Max",
+    "tz": "America/New_York",
+    "output": [
+      {
+        "type": "VO2_MAX",
+        "value": 47.25,
+        "unit": "mL/(kg·min)",
+        "measuredAt": "2026-06-06T16:00:00.000Z",
+        "fieldTag": "vo2_max:2026-06-06",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 11,
+    "key": "dailyVo2Max",
+    "tz": null,
+    "output": [
+      {
+        "type": "VO2_MAX",
+        "value": 45,
+        "unit": "mL/(kg·min)",
+        "measuredAt": "2026-07-01T09:00:00.000Z",
+        "fieldTag": "vo2_max:1970-01-01T00:00:00.000Z",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 11,
+    "key": "dailyVo2Max",
+    "tz": "Europe/Berlin",
+    "output": [
+      {
+        "type": "VO2_MAX",
+        "value": 45,
+        "unit": "mL/(kg·min)",
+        "measuredAt": "2026-07-01T09:00:00.000Z",
+        "fieldTag": "vo2_max:1970-01-01T00:00:00.000Z",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  {
+    "index": 11,
+    "key": "dailyVo2Max",
+    "tz": "America/New_York",
+    "output": [
+      {
+        "type": "VO2_MAX",
+        "value": 45,
+        "unit": "mL/(kg·min)",
+        "measuredAt": "2026-07-01T09:00:00.000Z",
+        "fieldTag": "vo2_max:1970-01-01T00:00:00.000Z",
+        "cumulativeDaily": true
+      }
+    ]
+  },
+  { "index": 12, "key": "dailyVo2Max", "tz": null, "output": [] },
+  { "index": 12, "key": "dailyVo2Max", "tz": "Europe/Berlin", "output": [] },
+  { "index": 12, "key": "dailyVo2Max", "tz": "America/New_York", "output": [] }
+]

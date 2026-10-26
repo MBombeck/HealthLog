@@ -7,7 +7,7 @@
  * back without one, and the kit then keeps the stored refresh token.
  */
 import type { OAuthTokenDescriptor } from "@/lib/integrations/oauth-kit/token";
-import { refreshAccessToken, type GoogleHealthCredentials } from "./client";
+import { type GoogleHealthCredentials, googleHealthOAuth } from "./oauth";
 import { getUserGoogleHealthCredentials } from "./credentials";
 
 /** Refresh this long before the stored expiry. */
@@ -43,5 +43,5 @@ export const googleHealthTokenDescriptor: OAuthTokenDescriptor<GoogleHealthCrede
     },
     loadCredentials: (userId) => getUserGoogleHealthCredentials(userId),
     refresh: (refreshToken, credentials) =>
-      refreshAccessToken(refreshToken, credentials),
+      googleHealthOAuth.refresh(refreshToken, credentials),
   };

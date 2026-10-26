@@ -27,10 +27,8 @@ import type { Prisma, User } from "@/generated/prisma/client";
 import { GET, PATCH } from "@/app/api/auth/me/documents-auto-ai-read/route";
 import { aiCapabilityForJob } from "@/lib/ai/capabilities/gate";
 import { setGlobalBoss } from "@/lib/jobs/boss-instance";
-import {
-  DOCUMENT_SUMMARY_CATCHUP_QUEUE,
-  enqueueSummaryCatchUp,
-} from "@/lib/jobs/document-summary-catchup";
+import { enqueueSummaryCatchUp } from "@/lib/jobs/document-summary-catchup";
+import { DOCUMENT_SUMMARY_CATCHUP_QUEUE } from "@/lib/jobs/document-summary-catchup-queue";
 
 import { anonymous, callRoute } from "../../kit/call-route";
 import { makeSession, makeUser, uniqueSuffix } from "../../kit/factories";

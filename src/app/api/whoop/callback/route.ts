@@ -6,15 +6,12 @@ import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
-import {
-  exchangeCode,
-  fetchProfile,
-  WHOOP_OAUTH_SCOPE,
-} from "@/lib/whoop/client";
+import { fetchProfile } from "@/lib/whoop/client";
+import { WHOOP_OAUTH_SCOPE, whoopOAuth } from "@/lib/whoop/oauth";
 import { getUserWhoopCredentials } from "@/lib/whoop/credentials";
 import { WHOOP_OAUTH_STATE_COOKIE } from "@/lib/whoop/oauth-state";
 import { buildReturnSchemeRedirect } from "@/lib/whoop/return-scheme";
-import { WHOOP_BACKFILL_QUEUE } from "@/lib/jobs/whoop-backfill";
+import { WHOOP_BACKFILL_QUEUE } from "@/lib/jobs/whoop-backfill-queue";
 import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { markReconnected } from "@/lib/integrations/status";
 import { Prisma } from "@/generated/prisma/client";
@@ -205,7 +202,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
         return outcomeRedirect(returnScheme, "error", "nocreds");
       }
 
-      const tokens = await exchangeCode(code, creds);
+      const tokens = await whoopOAuth.exchange(code, creds);
       const profile = await fetchProfile(tokens.access_token);
       const whoopUserId = String(profile.user_id);
       const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);

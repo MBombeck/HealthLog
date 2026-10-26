@@ -62,6 +62,15 @@ export const USER_COLUMNS_OUTSIDE_SETTINGS = {
   mfaEnforced: "IDENTITY",
   documentQuotaBytes: "IDENTITY",
 
+  // The account's deletion lifecycle on this host: when deletion was asked
+  // for, when the purge job erases the account, and who asked. A copy must
+  // never carry it: restoring a file taken from a pending account would lock
+  // the account it lands in, and one taken before would undo nothing an admin
+  // did not mean to undo.
+  deletionRequestedAt: "OPERATIONAL",
+  deletionPurgeAt: "OPERATIONAL",
+  deletionRequestedById: "OPERATIONAL",
+
   // ── Credentials ───────────────────────────────────────────────────────────
   passwordHash: "CREDENTIAL",
   oidcIssuer: "CREDENTIAL",

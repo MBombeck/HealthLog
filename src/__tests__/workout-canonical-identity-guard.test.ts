@@ -48,7 +48,8 @@ const PICKER_CALLERS = ["lib/workouts/canonical-read.ts"];
  * acknowledgement. The value is the file that owns the read's `select`.
  */
 const IDENTITY_OWNER: Record<string, string> = {
-  "app/api/workouts/[id]/route.ts": "app/api/workouts/[id]/route.ts",
+  // The workout detail read behind `GET /api/workouts/{id}`.
+  "lib/workouts/detail.ts": "lib/workouts/detail.ts",
   "lib/jobs/workout-insight-generate.ts":
     "lib/jobs/workout-insight-generate.ts",
   "lib/workouts/list-read.ts": "lib/workouts/list-read.ts",

@@ -49,11 +49,11 @@ vi.mock("@tanstack/react-query", () => ({
             createdAt: "2026-09-01T03:00:00.000Z",
           },
         ],
-        retentionDays: 30,
+        preWipeCopyDays: 14,
         schedule: {
           lastSuccessAt: "2026-09-01T03:00:00.000Z",
           lastSuccessAgeDays: 2,
-          staleAfterDays: 10,
+          staleAfterDays: 9,
           stale: false,
           lastRun: null,
           lastRunFailed: false,
@@ -84,13 +84,16 @@ vi.mock("@/hooks/use-auth", () => ({
 }));
 
 import { I18nProvider } from "@/lib/i18n/context";
-import { BackupsSection, restorePreviewFailure } from "../backups-section";
+import {
+  RestorePreview,
+  restorePreviewFailure,
+} from "../backups/restore-dialog";
 
 describe("restore preview query", () => {
   it("is never retried and waits a bounded time", async () => {
     renderToStaticMarkup(
       <I18nProvider initialLocale="en">
-        <BackupsSection />
+        <RestorePreview backupId="b1" open />
       </I18nProvider>,
     );
     const key = JSON.stringify(queryKeys.adminBackupSummary("b1"));

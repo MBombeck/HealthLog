@@ -7,29 +7,29 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getWithingsRedirectUri } from "@/lib/withings/client";
-import { getFitbitRedirectUri } from "@/lib/fitbit/client";
-import { getGoogleHealthRedirectUri } from "@/lib/google-health/client";
-import { getPolarRedirectUri } from "@/lib/polar/client";
-import { getWhoopRedirectUri } from "@/lib/whoop/client";
-import { getStravaRedirectUri } from "@/lib/strava/client";
-import { getOuraRedirectUri } from "@/lib/oura/client";
+import { withingsOAuth } from "@/lib/withings/oauth";
+import { fitbitOAuth } from "@/lib/fitbit/oauth";
+import { googleHealthOAuth } from "@/lib/google-health/oauth";
+import { polarOAuth } from "@/lib/polar/oauth";
+import { whoopOAuth } from "@/lib/whoop/oauth";
+import { stravaOAuth } from "@/lib/strava/oauth";
+import { ouraOAuth } from "@/lib/oura/oauth";
 
 const APP = "https://health.example.test";
 
 const CASES: Array<[string, string, () => string, string]> = [
-  ["Withings", "WITHINGS_REDIRECT_URI", getWithingsRedirectUri, "withings"],
-  ["Fitbit", "FITBIT_REDIRECT_URI", getFitbitRedirectUri, "fitbit"],
+  ["Withings", "WITHINGS_REDIRECT_URI", withingsOAuth.redirectUri, "withings"],
+  ["Fitbit", "FITBIT_REDIRECT_URI", fitbitOAuth.redirectUri, "fitbit"],
   [
     "Google Health",
     "GOOGLE_HEALTH_REDIRECT_URI",
-    getGoogleHealthRedirectUri,
+    googleHealthOAuth.redirectUri,
     "google-health",
   ],
-  ["Polar", "POLAR_REDIRECT_URI", getPolarRedirectUri, "polar"],
-  ["WHOOP", "WHOOP_REDIRECT_URI", getWhoopRedirectUri, "whoop"],
-  ["Strava", "STRAVA_REDIRECT_URI", getStravaRedirectUri, "strava"],
-  ["Oura", "OURA_REDIRECT_URI", getOuraRedirectUri, "oura"],
+  ["Polar", "POLAR_REDIRECT_URI", polarOAuth.redirectUri, "polar"],
+  ["WHOOP", "WHOOP_REDIRECT_URI", whoopOAuth.redirectUri, "whoop"],
+  ["Strava", "STRAVA_REDIRECT_URI", stravaOAuth.redirectUri, "strava"],
+  ["Oura", "OURA_REDIRECT_URI", ouraOAuth.redirectUri, "oura"],
 ];
 
 afterEach(() => {
@@ -56,8 +56,12 @@ describe.each(CASES)("%s redirect URI", (_name, variable, resolve, path) => {
 
 describe("with neither variable set", () => {
   it.each([
-    ["Fitbit", "FITBIT_REDIRECT_URI", getFitbitRedirectUri],
-    ["Google Health", "GOOGLE_HEALTH_REDIRECT_URI", getGoogleHealthRedirectUri],
+    ["Fitbit", "FITBIT_REDIRECT_URI", fitbitOAuth.redirectUri],
+    [
+      "Google Health",
+      "GOOGLE_HEALTH_REDIRECT_URI",
+      googleHealthOAuth.redirectUri,
+    ],
   ] as const)("%s still says it is not configured", (_n, variable, resolve) => {
     vi.stubEnv(variable, "");
     vi.stubEnv("NEXT_PUBLIC_APP_URL", " ");

@@ -2,7 +2,7 @@
  * The option lists and label keys of the managed-record settings forms:
  * which Coach metrics and data clusters a guardian can exclude, and the
  * bundle key each option, insights section and threshold metric renders
- * with. Data only; the forms live in `managed-record-settings-section.tsx`.
+ * with. Data only; the forms live in `managed-record/`.
  */
 import type { InsightsSectionId } from "@/lib/insights-layout";
 import type { ThresholdMetric } from "@/lib/analytics/effective-range";

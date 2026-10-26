@@ -1,0 +1,29 @@
+{
+  "status": 307,
+  "location": "healthlog://oidc-callback?error=oidc_denied",
+  "setCookies": [
+    "oidc_auth_state=; Path=/api/auth/oidc; Expires=<date>"
+  ],
+  "events": [
+    {
+      "status": 307,
+      "action": {
+        "name": "auth.oidc.callback"
+      },
+      "meta": {
+        "reason": "idp_denied",
+        "idpError": "other"
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "users": [],
+    "sessions": [],
+    "audit": [],
+    "challenges": 0,
+    "handoffs": 0
+  }
+}

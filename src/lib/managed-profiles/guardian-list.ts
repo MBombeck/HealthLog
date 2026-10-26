@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { activeGuardianWhere } from "@/lib/managed-profiles/lifecycle";
-import { grantState } from "@/lib/sharing/grants";
+import { grantState } from "@/lib/sharing/grant-access";
 import { GRANT_PARTY_SELECT, type GrantParty } from "@/lib/sharing/grant-view";
 
 /**

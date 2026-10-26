@@ -84,6 +84,14 @@ export const documentSourceImportSchema = z.object({
       id: z.string().trim().min(1).max(64),
     })
     .optional(),
+  /**
+   * The person chose to bring back a document they deleted in HealthLog. One
+   * still in Recently deleted is restored (`restored`); one already removed
+   * for good is fetched and stored again, and the import ledger forgets its
+   * key. Without it a deleted document is answered `deleted` and left alone,
+   * as an importer's upload always is.
+   */
+  revive: z.boolean().optional(),
 });
 export type DocumentSourceImportInput = z.infer<
   typeof documentSourceImportSchema

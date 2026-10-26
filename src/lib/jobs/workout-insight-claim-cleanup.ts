@@ -12,6 +12,7 @@
  * its `local_date` says, so no row that the cap can still read is ever
  * deleted.
  */
+// account-deletion(file): expires generation claims; acts for no account.
 import type { PrismaClient } from "@/generated/prisma/client";
 
 export const WORKOUT_INSIGHT_CLAIM_RETENTION_DAYS = 7;

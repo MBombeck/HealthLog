@@ -1,0 +1,166 @@
+[
+  {
+    "label": "run with heart rate, power and a detail read",
+    "summary": {
+      "id": 10000000001,
+      "name": "Morning Run",
+      "distance": 10234.5,
+      "moving_time": 3120,
+      "elapsed_time": 3300,
+      "total_elevation_gain": 85.2,
+      "type": "Run",
+      "sport_type": "TrailRun",
+      "start_date": "2026-03-02T06:00:00Z",
+      "start_date_local": "2026-03-02T07:00:00Z",
+      "average_heartrate": 151.6,
+      "max_heartrate": 178.2,
+      "has_heartrate": true,
+      "average_watts": 245.3,
+      "weighted_average_watts": 252,
+      "device_watts": true,
+      "average_cadence": 86.5,
+      "trainer": false,
+      "commute": false,
+      "gear_id": "gear-0001"
+    },
+    "detail": {
+      "id": 10000000001,
+      "start_date": "2026-03-02T06:00:00Z",
+      "calories": 712.4,
+      "description": "Easy loop around the park"
+    }
+  },
+  {
+    "label": "summary-only ride without heart rate",
+    "summary": {
+      "id": 10000000002,
+      "name": "Lunch Ride",
+      "distance": 32500,
+      "moving_time": 4500,
+      "elapsed_time": 5100,
+      "total_elevation_gain": 210,
+      "type": "Ride",
+      "sport_type": "Ride",
+      "start_date": "2026-03-03T11:30:00Z",
+      "has_heartrate": false,
+      "average_watts": 180.5,
+      "device_watts": false,
+      "trainer": true,
+      "commute": true
+    }
+  },
+  {
+    "label": "summary without a start, filled from the detail",
+    "summary": {
+      "id": 10000000003,
+      "name": "Afternoon Walk",
+      "sport_type": "Walk",
+      "start_date": null
+    },
+    "detail": {
+      "id": 10000000003,
+      "start_date": "2026-03-04T15:00:00+01:00",
+      "distance": 4200,
+      "moving_time": 2700,
+      "elapsed_time": 3000,
+      "total_elevation_gain": 12,
+      "average_heartrate": 98.4,
+      "max_heartrate": 121.5,
+      "calories": 0,
+      "description": ""
+    }
+  },
+  {
+    "label": "legacy type only",
+    "summary": {
+      "id": 10000000004,
+      "name": "Weekend Hike",
+      "type": "Hike",
+      "sport_type": null,
+      "start_date": "2026-03-07T08:00:00Z",
+      "moving_time": 10800,
+      "elapsed_time": null,
+      "distance": 14000.25
+    },
+    "detail": null
+  },
+  {
+    "label": "unknown sport, moving time only",
+    "summary": {
+      "id": 10000000005,
+      "sport_type": "SomethingStravaAddedLater",
+      "start_date": "2026-03-08T18:00:00-05:00",
+      "moving_time": 1800
+    }
+  },
+  {
+    "label": "no sport label anywhere",
+    "summary": {
+      "id": 10000000006,
+      "start_date": "2026-03-09T07:00:00Z",
+      "elapsed_time": 1500
+    }
+  },
+  {
+    "label": "zero and negative values",
+    "summary": {
+      "id": 10000000007,
+      "name": "",
+      "distance": 0,
+      "moving_time": -10,
+      "elapsed_time": 0,
+      "total_elevation_gain": -3.5,
+      "sport_type": "Virtual Ride",
+      "start_date": "2026-03-10T19:00:00Z",
+      "average_heartrate": -1,
+      "max_heartrate": 0,
+      "gear_id": ""
+    },
+    "detail": {
+      "id": 10000000007,
+      "calories": -12,
+      "sport_type": "VirtualRide"
+    }
+  },
+  {
+    "label": "detail sport type used when the summary has none",
+    "summary": {
+      "id": 10000000008,
+      "start_date": "2026-03-11T05:45:00Z",
+      "moving_time": 2400,
+      "elapsed_time": 2460
+    },
+    "detail": {
+      "id": 10000000008,
+      "sport_type": "weight_training",
+      "average_heartrate": 112,
+      "calories": 250.5
+    }
+  },
+  {
+    "label": "no start anywhere",
+    "summary": {
+      "id": 10000000009,
+      "sport_type": "Swim",
+      "moving_time": 1800
+    }
+  },
+  {
+    "label": "unparseable start",
+    "summary": {
+      "id": 10000000010,
+      "sport_type": "Swim",
+      "start_date": "yesterday morning",
+      "moving_time": 1800
+    }
+  },
+  {
+    "label": "no durations at all",
+    "summary": {
+      "id": 10000000011,
+      "sport_type": "Yoga",
+      "start_date": "2026-03-12T20:00:00Z",
+      "has_heartrate": null
+    }
+  }
+]

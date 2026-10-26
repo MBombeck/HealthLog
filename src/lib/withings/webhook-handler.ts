@@ -23,6 +23,7 @@
  * by a single proxy rule) is the largest shift Withings supports
  * end-to-end.
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { syncUserMeasurements } from "@/lib/withings/sync";
@@ -31,6 +32,10 @@ import { getClientIp, safeJson } from "@/lib/api-response";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { enqueueWithingsEcgSync } from "@/lib/jobs/withings-ecg-queue";
+import {
+  WITHINGS_ACTIVITY_QUEUE,
+  WITHINGS_SLEEP_QUEUE,
+} from "@/lib/jobs/integration-poll-queues";
 
 /**
  * v1.4.25 — appli categories that have their own sync routine
@@ -41,8 +46,6 @@ import { enqueueWithingsEcgSync } from "@/lib/jobs/withings-ecg-queue";
  */
 const WITHINGS_ACTIVITY_APPLI = 16;
 const WITHINGS_SLEEP_APPLI = 44;
-const WITHINGS_ACTIVITY_QUEUE = "withings-activity-sync";
-const WITHINGS_SLEEP_QUEUE = "withings-sleep-sync";
 
 /**
  * Constant-time comparison helper. Returns false unless both inputs have
@@ -141,8 +144,9 @@ export async function processWithingsNotification(
   // A Withings account belongs to one record; callbacks refuse a second
   // holder. A pair linked before that rule routes to the record that linked
   // the account first, never to whichever row a lookup happens to find.
+  // A record pending deletion is frozen: its notifications sync nothing.
   const holders = await prisma.withingsConnection.findMany({
-    where: { withingsUserId },
+    where: { withingsUserId, ...OWNED_BY_ACTIVE_ACCOUNT },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     select: { userId: true },
     take: 2,

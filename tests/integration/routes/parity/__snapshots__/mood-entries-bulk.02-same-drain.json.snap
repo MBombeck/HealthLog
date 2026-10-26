@@ -1,0 +1,224 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "processed": 7,
+      "inserted": 0,
+      "duplicates": 4,
+      "skipped": [
+        {
+          "index": 3,
+          "reason": "Rating 3 for factor \"factor_parity_short\" is outside its scale 1..2"
+        },
+        {
+          "index": 5,
+          "reason": "invalid_dimensions"
+        },
+        {
+          "index": 6,
+          "reason": "unstable_external_id"
+        }
+      ],
+      "entries": [
+        {
+          "index": 0,
+          "status": "duplicate",
+          "id": "<id:1>",
+          "externalId": "sd-1",
+          "droppedTagKeys": [
+            "no_such_tag"
+          ],
+          "droppedFactorKeys": [
+            "<custom-tag-key>"
+          ]
+        },
+        {
+          "index": 1,
+          "status": "duplicate",
+          "id": "<id:2>"
+        },
+        {
+          "index": 2,
+          "status": "duplicate",
+          "id": "<id:3>",
+          "externalId": "sd-2"
+        },
+        {
+          "index": 3,
+          "status": "skipped",
+          "reason": "Rating 3 for factor \"factor_parity_short\" is outside its scale 1..2",
+          "externalId": "sd-3"
+        },
+        {
+          "index": 4,
+          "status": "duplicate",
+          "id": "<id:4>",
+          "externalId": "sd-4"
+        },
+        {
+          "index": 5,
+          "status": "skipped",
+          "reason": "invalid_dimensions",
+          "externalId": "sd-5"
+        },
+        {
+          "index": 6,
+          "status": "skipped",
+          "reason": "unstable_external_id",
+          "externalId": "<MoodEntry: 0x600001b4c2a0>"
+        }
+      ]
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "mood.bulk.ingest"
+      },
+      "meta": {
+        "write_bucket": "own",
+        "processed": 7,
+        "inserted": 0,
+        "duplicates": 4,
+        "skipped": 3,
+        "dropped_tag_keys": 1,
+        "dropped_factor_keys": 1,
+        "external_id_rejected": 1,
+        "external_id_shapes": "object_description",
+        "external_id_surface": "mood.bulk",
+        "sync_checkpoint_at": "<now>"
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "stored": {
+    "entries": [
+      {
+        "id": "<id:4>",
+        "date": "2026-10-12",
+        "tz": "Europe/Berlin",
+        "mood": "GUT",
+        "score": 4,
+        "moodA1": 7,
+        "stressA2": null,
+        "energyA3": null,
+        "connectionA4": null,
+        "stabilityA5": null,
+        "tags": null,
+        "note": null,
+        "noteEncrypted": null,
+        "source": "MANUAL",
+        "externalId": "sd-4",
+        "moodLoggedAt": "2026-10-12T10:00:00.000Z",
+        "deletedAt": null,
+        "tagLinks": [],
+        "context": null
+      },
+      {
+        "id": "<id:3>",
+        "date": "2026-10-13",
+        "tz": "Europe/Berlin",
+        "mood": "SCHLECHT",
+        "score": 2,
+        "moodA1": 3,
+        "stressA2": null,
+        "energyA3": null,
+        "connectionA4": null,
+        "stabilityA5": null,
+        "tags": null,
+        "note": null,
+        "noteEncrypted": null,
+        "source": "MANUAL",
+        "externalId": "sd-2",
+        "moodLoggedAt": "2026-10-13T21:00:00.000Z",
+        "deletedAt": null,
+        "tagLinks": [],
+        "context": {
+          "moodEntryId": "<id:3>",
+          "userId": "<id:5>",
+          "workStatus": "regular",
+          "workMinutes": 480,
+          "overtimeMinutes": null,
+          "workLoad": null,
+          "workSatisfaction": null,
+          "contactCircles": null,
+          "contactForm": null,
+          "contactExtent": null,
+          "contactQuality": null,
+          "contactSupport": null,
+          "leisureCategories": null,
+          "leisureMinutes": null,
+          "leisureJoy": null,
+          "leisureRecovery": null,
+          "eventType": null,
+          "eventValence": null,
+          "eventAt": null,
+          "notesEncrypted": null,
+          "createdAt": "<createdAt>",
+          "updatedAt": "<updatedAt>"
+        }
+      },
+      {
+        "id": "<id:1>",
+        "date": "2026-10-14",
+        "tz": "Europe/Berlin",
+        "mood": "GUT",
+        "score": 4,
+        "moodA1": 7,
+        "stressA2": 7,
+        "energyA3": 4,
+        "connectionA4": null,
+        "stabilityA5": null,
+        "tags": "[\"slept well\"]",
+        "note": null,
+        "noteEncrypted": "<bytes:59>",
+        "source": "WEB",
+        "externalId": "sd-1",
+        "moodLoggedAt": "2026-10-14T07:00:00.000Z",
+        "deletedAt": null,
+        "tagLinks": [
+          {
+            "moodTag": {
+              "key": "alcohol"
+            },
+            "rating": null
+          },
+          {
+            "moodTag": {
+              "key": "factor_parity_short"
+            },
+            "rating": 1
+          }
+        ],
+        "context": null
+      },
+      {
+        "id": "<id:2>",
+        "date": "2026-10-14",
+        "tz": "Europe/Berlin",
+        "mood": "OKAY",
+        "score": 3,
+        "moodA1": 5,
+        "stressA2": null,
+        "energyA3": null,
+        "connectionA4": null,
+        "stabilityA5": null,
+        "tags": null,
+        "note": null,
+        "noteEncrypted": null,
+        "source": "MANUAL",
+        "externalId": null,
+        "moodLoggedAt": "2026-10-14T19:30:00.000Z",
+        "deletedAt": null,
+        "tagLinks": [],
+        "context": null
+      }
+    ],
+    "user": {
+      "lastSyncedAt": "<now>"
+    }
+  }
+}

@@ -48,10 +48,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const meds = await prisma.medication.findMany({
     where: { userId: user.id, treatmentClass: "GLP1" },
     include: {
-      doseChanges: { orderBy: { effectiveFrom: "asc" } },
+      doseChanges: { orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }] },
       intakeEvents: {
         where: { takenAt: { not: null } },
-        orderBy: { takenAt: "desc" },
+        orderBy: [{ takenAt: "desc" }, { id: "desc" }],
         take: 50,
       },
       // v1.16.10 divergence note: the stock READOUTS (glp1 details
@@ -63,7 +63,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
       // only grows through the legacy `POST /api/medications/[id]/glp1`
       // inventory branch, so timelines on item-tracked medications show
       // no new inventory entries.
-      inventoryEvents: { orderBy: { occurredAt: "desc" }, take: 20 },
+      inventoryEvents: {
+        orderBy: [{ occurredAt: "desc" }, { id: "desc" }],
+        take: 20,
+      },
     },
   });
 

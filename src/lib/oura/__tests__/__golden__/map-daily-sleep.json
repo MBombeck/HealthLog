@@ -1,0 +1,167 @@
+[
+  {
+    "id": "daily-sleep-0001",
+    "day": "2026-03-02",
+    "zone": null,
+    "rows": [
+      {
+        "type": "SLEEP_SCORE",
+        "value": 84,
+        "unit": "score",
+        "measuredAt": "2026-03-02T00:00:00.000Z",
+        "fieldTag": "sleep_score"
+      }
+    ]
+  },
+  {
+    "id": "daily-sleep-0001",
+    "day": "2026-03-02",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "SLEEP_SCORE",
+        "value": 84,
+        "unit": "score",
+        "measuredAt": "2026-03-02T00:00:00.000Z",
+        "fieldTag": "sleep_score"
+      }
+    ]
+  },
+  {
+    "id": "daily-sleep-0001",
+    "day": "2026-03-02",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "SLEEP_SCORE",
+        "value": 84,
+        "unit": "score",
+        "measuredAt": "2026-03-02T00:00:00.000Z",
+        "fieldTag": "sleep_score"
+      }
+    ]
+  },
+  { "id": "daily-sleep-0002", "day": "2026-03-03", "zone": null, "rows": [] },
+  {
+    "id": "daily-sleep-0002",
+    "day": "2026-03-03",
+    "zone": "Europe/Berlin",
+    "rows": []
+  },
+  {
+    "id": "daily-sleep-0002",
+    "day": "2026-03-03",
+    "zone": "America/New_York",
+    "rows": []
+  },
+  {
+    "id": "daily-sleep-0003",
+    "day": "2026-03-04",
+    "zone": null,
+    "rows": [
+      {
+        "type": "SLEEP_SCORE",
+        "value": 0,
+        "unit": "score",
+        "measuredAt": "2026-03-04T12:00:00.000Z",
+        "fieldTag": "sleep_score"
+      }
+    ]
+  },
+  {
+    "id": "daily-sleep-0003",
+    "day": "2026-03-04",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "SLEEP_SCORE",
+        "value": 0,
+        "unit": "score",
+        "measuredAt": "2026-03-04T11:00:00.000Z",
+        "fieldTag": "sleep_score"
+      }
+    ]
+  },
+  {
+    "id": "daily-sleep-0003",
+    "day": "2026-03-04",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "SLEEP_SCORE",
+        "value": 0,
+        "unit": "score",
+        "measuredAt": "2026-03-04T17:00:00.000Z",
+        "fieldTag": "sleep_score"
+      }
+    ]
+  },
+  { "id": "daily-sleep-0004", "day": "2026-03-05", "zone": null, "rows": [] },
+  {
+    "id": "daily-sleep-0004",
+    "day": "2026-03-05",
+    "zone": "Europe/Berlin",
+    "rows": []
+  },
+  {
+    "id": "daily-sleep-0004",
+    "day": "2026-03-05",
+    "zone": "America/New_York",
+    "rows": []
+  },
+  {
+    "id": "daily-sleep-0005",
+    "day": "2026-03-06",
+    "zone": null,
+    "rows": [
+      {
+        "type": "SLEEP_SCORE",
+        "value": 90.56,
+        "unit": "score",
+        "measuredAt": "2026-03-06T12:00:00.000Z",
+        "fieldTag": "sleep_score"
+      }
+    ]
+  },
+  {
+    "id": "daily-sleep-0005",
+    "day": "2026-03-06",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "SLEEP_SCORE",
+        "value": 90.56,
+        "unit": "score",
+        "measuredAt": "2026-03-06T11:00:00.000Z",
+        "fieldTag": "sleep_score"
+      }
+    ]
+  },
+  {
+    "id": "daily-sleep-0005",
+    "day": "2026-03-06",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "SLEEP_SCORE",
+        "value": 90.56,
+        "unit": "score",
+        "measuredAt": "2026-03-06T17:00:00.000Z",
+        "fieldTag": "sleep_score"
+      }
+    ]
+  },
+  { "id": "daily-sleep-0006", "day": "2026-03-07", "zone": null, "rows": [] },
+  {
+    "id": "daily-sleep-0006",
+    "day": "2026-03-07",
+    "zone": "Europe/Berlin",
+    "rows": []
+  },
+  {
+    "id": "daily-sleep-0006",
+    "day": "2026-03-07",
+    "zone": "America/New_York",
+    "rows": []
+  }
+]

@@ -1,15 +1,12 @@
 /**
- * pg-boss based reminder worker — boot composition.
+ * pg-boss worker boot.
  *
- * v1.18.1 — this file was a 2143-LOC monolith that declared every pg-boss
- * queue name, listed them in one `allQueues` array, scheduled every cron, and
- * bound every `boss.work` handler inline. It is now a thin registration table:
- * `startReminderWorker()` boots pg-boss, runs the boot one-shots, then calls
- * the domain registrars under `src/lib/jobs/reminder/`. Each registrar owns the
- * four facts the v1.4.37 dead-queue guards pin — the queue-name constant, its
- * `allQueues` membership, its `[QUEUE, CRON]` schedule tuple, and its
- * `createAndWork(boss, QUEUE, …, handler)` binding — so a queue can never be
- * declared without being provisioned, scheduled, and drained.
+ * `startReminderWorker()` starts pg-boss, registers every queue from the
+ * declarative registry (`./registry/`), runs the boot one-shots and the boot
+ * discovery. The registry declares each queue with its schedule, policy,
+ * concurrency and handler loader; a queue cannot be declared without being
+ * created, scheduled and drained. Handler modules load on their queue's first
+ * job, not at boot.
  *
  * Usage: Run as a standalone process or call startReminderWorker() from a
  * custom server setup. In dev, use: npx tsx src/lib/jobs/reminder-worker.ts
@@ -20,23 +17,16 @@ import { reportJobsCutOffAtBoot } from "@/lib/jobs/job-observer";
 import { beginBootStep, reportBootSteps } from "@/lib/boot/boot-steps";
 import { assertSubsystemEnabled } from "@/lib/process-type";
 import { DATABASE_URL, workerLog } from "./reminder/shared";
-import type { PgBoss } from "pg-boss";
+import type { BoundLoader } from "./registry/index";
 
 /**
- * Give the event loop a turn. Each registrar's module graph is evaluated in
- * one synchronous stretch when it is first imported; loading the five one
- * after another, with a turn in between, keeps the longest stall to the
- * largest graph instead of the sum of all five, so requests and the health
- * probe are answered in between.
+ * Give the event loop a turn around a module load, so requests and the
+ * health probe are answered between boot steps.
  */
 const yieldToLoop = () => new Promise<void>((resolve) => setImmediate(resolve));
 
-/**
- * Import one registrar module as its own boot step. The registrars and the
- * handler graphs behind them are loaded here, after `boss.start()`, rather
- * than when this module is imported.
- */
-async function loadRegistrar<T>(
+/** Import one boot module as its own boot step. */
+async function loadBootModule<T>(
   name: string,
   load: () => Promise<T>,
 ): Promise<T> {
@@ -74,65 +64,28 @@ export async function startReminderWorker() {
   markWorkerStarted();
 
   // Graceful shutdown: drain in-flight jobs on SIGTERM/SIGINT.
-  const lifecycle = await loadRegistrar(
+  const lifecycle = await loadBootModule(
     "worker_lifecycle",
     () => import("./reminder/worker-lifecycle"),
   );
   lifecycle.registerShutdownHandlers(boss);
 
-  // Register every domain's queues (createQueue + schedule + boss.work). Each
-  // registrar returns the queue names it provisioned; the aggregate is the
-  // boot-level mirror of the per-registrar `allQueues` arrays the dead-queue
-  // guards pin. Order preserves the monolith's createQueue / schedule / work
-  // sequence (integration → status → rollup → reminders → maintenance).
-  const integration = await loadRegistrar(
-    "integration_sync",
-    () => import("./reminder/register-integration-sync"),
+  // Register every queue (createQueue + schedule + boss.work) from the
+  // declarative registry, one group per boot step. The registry holds
+  // declarations only; each handler module loads on its queue's first job.
+  const registry = await loadBootModule(
+    "registry",
+    () => import("./registry/index"),
   );
-  const registeredQueues = await registerInStep(
-    "integration_sync",
+  const bound: BoundLoader[] = [];
+  const registeredQueues = await registry.registerAllJobGroups(
     boss,
-    integration.registerIntegrationSyncQueues,
-  );
-  const status = await loadRegistrar(
-    "status",
-    () => import("./reminder/register-status"),
-  );
-  registeredQueues.push(
-    ...(await registerInStep("status", boss, status.registerStatusQueues)),
-  );
-  const rollup = await loadRegistrar(
-    "rollup",
-    () => import("./reminder/register-rollup"),
-  );
-  registeredQueues.push(
-    ...(await registerInStep("rollup", boss, rollup.registerRollupQueues)),
-  );
-  const reminders = await loadRegistrar(
-    "reminders",
-    () => import("./reminder/register-reminders"),
-  );
-  registeredQueues.push(
-    ...(await registerInStep(
-      "reminders",
-      boss,
-      reminders.registerReminderQueues,
-    )),
-  );
-  const maintenance = await loadRegistrar(
-    "maintenance",
-    () => import("./reminder/register-maintenance"),
-  );
-  registeredQueues.push(
-    ...(await registerInStep(
-      "maintenance",
-      boss,
-      maintenance.registerMaintenanceQueues,
-    )),
+    (group) => beginBootStep(`register_${group.name}`),
+    (loader) => bound.push(loader),
   );
   workerLog(
     "info",
-    `[reminder-worker] registered ${registeredQueues.length} queues across 5 domain registrars`,
+    `[reminder-worker] registered ${registeredQueues.length} queues across ${registry.JOB_GROUPS.length} groups`,
   );
 
   // v1.4.34 — reconcile any `ImportJob` rows that were mid-parse when the
@@ -146,24 +99,17 @@ export async function startReminderWorker() {
 
   // Fire-and-forget boot discovery for every self-converging backfill /
   // consolidation pass. Each is idempotent across reboots and never fails
-  // worker boot on a miss (errors come back through the helper's result).
+  // worker boot on a miss.
   beginBootStep("boot_discovery");
-  await rollup.enqueueRollupBootDiscovery();
-  await integration.enqueueIntegrationSyncBootDiscovery();
-  await maintenance.enqueueMaintenanceBootDiscovery();
+  await registry.runAllBootDiscovery();
 
   await reportBootSteps({ boot_queue_count: registeredQueues.length });
-  return boss;
-}
 
-/** Run one registrar as its own boot step. */
-async function registerInStep(
-  name: string,
-  boss: PgBoss,
-  register: (boss: PgBoss) => Promise<readonly string[]>,
-): Promise<string[]> {
-  beginBootStep(`register_${name}`);
-  return [...(await register(boss))];
+  // Every handler module is loaded once now, in the background, so one that
+  // cannot load is reported at deploy time rather than on its queue's first
+  // job. Not awaited: readiness does not wait on it, and it never throws.
+  void registry.preloadHandlers(bound);
+  return boss;
 }
 
 // Run standalone

@@ -74,6 +74,7 @@
  * `src/lib/jobs/reminder/register-maintenance.ts`, or the sends silently
  * no-op.
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { createHash } from "node:crypto";
 import type { Job } from "pg-boss";
 
@@ -90,10 +91,8 @@ import {
   holdAccountFoldLock,
 } from "@/lib/export/restore-lock";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
-import {
-  COMPACTION_TOMBSTONE_PURGE_QUEUE,
-  COMPACTION_TOMBSTONE_PURGE_SINGLETON_KEY,
-} from "@/lib/jobs/compaction-tombstone-purge";
+import { COMPACTION_TOMBSTONE_PURGE_SINGLETON_KEY } from "@/lib/jobs/compaction-tombstone-purge";
+import { COMPACTION_TOMBSTONE_PURGE_QUEUE } from "@/lib/jobs/compaction-tombstone-purge-queue";
 import { jobBudget } from "@/lib/jobs/job-budget";
 import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { reportJobRun, type JobRunCandidate } from "@/lib/jobs/job-run-report";
@@ -136,8 +135,7 @@ import {
 } from "@/lib/measurements/fold-constituents";
 import { recomputeBucketsForMeasurement } from "@/lib/rollups/measurement-rollups";
 import { localDayWindow } from "@/lib/tz/local-day";
-
-export const MEASUREMENT_FOLD_REPAIR_QUEUE = "measurement-fold-repair";
+import { MEASUREMENT_FOLD_REPAIR_QUEUE } from "./measurement-fold-repair-queue";
 
 /** Delay before the follow-up of a run that stopped early, in seconds. */
 export const FOLD_REPAIR_CONTINUATION_DELAY_SECONDS = 30;
@@ -758,7 +756,7 @@ export async function enqueueBootTimeMeasurementFoldRepair(
   if (!boss) return { enqueued: 0, skipped: 0, error: null };
   try {
     const users = await prisma.user.findMany({
-      where: { measurementFoldRepair: null },
+      where: { measurementFoldRepair: null, ...ACTIVE_ACCOUNT },
       select: { id: true },
     });
     let enqueued = 0;

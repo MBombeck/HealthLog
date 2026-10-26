@@ -249,3 +249,10 @@ export async function enqueuePregenerateFailureRetry(payload: {
     // catch-net, exactly the pre-retry behaviour.
   }
 }
+
+/**
+ * 04:30 Europe/Berlin. Slots between the cumulative drain (03:30) and
+ * the feedback aggregator (04:00) maintenance window's tail so the
+ * LLM-bound pass doesn't contend with the SQL-bound nightly folds.
+ */
+export const INSIGHT_PREGENERATE_CRON = "30 4 * * *";

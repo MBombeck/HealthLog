@@ -228,6 +228,37 @@ async function downloadAndExtractEdition(
 }
 
 /**
+ * Create `dir` and its missing parents one level at a time. Not
+ * `fsp.mkdir(dir, { recursive: true })`: below `/proc` on Linux Node's
+ * recursive walk retries ENOENT/EEXIST forever and the promise never settles.
+ * Same walk as `makeDirectory` in `src/lib/database-backup/dump-core.mjs`,
+ * which this module cannot import (its `child_process` import would undo the
+ * bounded trace described above).
+ */
+export async function makeDirectory(dir: string): Promise<void> {
+  const missing: string[] = [];
+  let current = path.resolve(dir);
+  for (;;) {
+    try {
+      await fsp.stat(current);
+      break;
+    } catch {
+      missing.push(current);
+      const parent = path.dirname(current);
+      if (parent === current) break;
+      current = parent;
+    }
+  }
+  for (const p of missing.reverse()) {
+    try {
+      await fsp.mkdir(p);
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
+    }
+  }
+}
+
+/**
  * Fetch both GeoLite2 databases and place them in `geoLiteDir()`.
  *
  *   - `IP_GEO_LOOKUP_DISABLED=1` → `skipped_disabled` (the whole tier is off).
@@ -255,7 +286,7 @@ export async function fetchGeoLite2Databases(
 
   const dir = geoLiteDir();
   try {
-    await fsp.mkdir(dir, { recursive: true });
+    await makeDirectory(dir);
   } catch (err) {
     return fail(`geolite2 directory not writable (${dir})`, err);
   }

@@ -13,8 +13,8 @@ import {
   fetchRecoveries,
   fetchRecoveryByCycleId,
   fetchSleepById,
-  mapRecovery,
 } from "./client";
+import { mapRecovery } from "./map";
 import {
   getValidToken,
   incrementalStart,

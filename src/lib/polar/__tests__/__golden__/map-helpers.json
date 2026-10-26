@@ -1,0 +1,91 @@
+{
+  "normaliseExerciseList": [
+    { "label": "bare array", "result": [{ "id": "exercise-0001" }] },
+    { "label": "exercises key", "result": [{ "id": "exercise-0001" }] },
+    { "label": "data key", "result": [{ "id": "exercise-0001" }] },
+    { "label": "items key", "result": [{ "id": "exercise-0001" }] },
+    { "label": "records key", "result": [{ "id": "exercise-0001" }] },
+    { "label": "first known key wins", "result": [{ "id": "exercise-0001" }] },
+    { "label": "empty known key", "result": [] },
+    { "label": "unknown key", "result": [] },
+    { "label": "known key not an array", "result": [] },
+    { "label": "null", "result": [] },
+    { "label": "empty string", "result": [] },
+    { "label": "number", "result": [] }
+  ],
+  "combinePolarStart": [
+    {
+      "startTime": "2026-03-02T07:00:00",
+      "offset": "60",
+      "result": "2026-03-02T06:00:00.000Z"
+    },
+    {
+      "startTime": "2026-03-02T07:00:00",
+      "offset": "-300",
+      "result": "2026-03-02T12:00:00.000Z"
+    },
+    {
+      "startTime": "2026-03-02T07:00:00",
+      "offset": "0",
+      "result": "2026-03-02T07:00:00.000Z"
+    },
+    {
+      "startTime": "2026-03-02T07:00:00",
+      "offset": "null",
+      "result": "2026-03-02T07:00:00.000Z"
+    },
+    {
+      "startTime": "2026-03-02T07:00:00",
+      "offset": "NaN",
+      "result": "2026-03-02T07:00:00.000Z"
+    },
+    {
+      "startTime": "2026-03-02T07:00:00.500",
+      "offset": "330",
+      "result": "2026-03-02T01:30:00.500Z"
+    },
+    {
+      "startTime": "2026-03-02T07:00:00Z",
+      "offset": "120",
+      "result": "2026-03-02T07:00:00.000Z"
+    },
+    {
+      "startTime": "2026-03-02T07:00:00+02:00",
+      "offset": "120",
+      "result": "2026-03-02T05:00:00.000Z"
+    },
+    {
+      "startTime": "2026-03-02T07:00:00-0500",
+      "offset": "-300",
+      "result": "2026-03-02T12:00:00.000Z"
+    },
+    {
+      "startTime": "  2026-03-02T07:00:00  ",
+      "offset": "60",
+      "result": "2026-03-02T06:00:00.000Z"
+    },
+    { "startTime": "garbled", "offset": "60", "result": null },
+    { "startTime": "", "offset": "60", "result": null },
+    { "startTime": "   ", "offset": "60", "result": null },
+    { "startTime": null, "offset": "60", "result": null },
+    { "startTime": null, "offset": "(undefined)", "result": null }
+  ],
+  "parseIsoDuration": [
+    { "raw": "PT2H44M30S", "seconds": 9870 },
+    { "raw": "PT45S", "seconds": 45 },
+    { "raw": "PT45M", "seconds": 2700 },
+    { "raw": "P1DT2H", "seconds": 93600 },
+    { "raw": "P2D", "seconds": 172800 },
+    { "raw": "PT30M15.6S", "seconds": 1816 },
+    { "raw": "PT0.4S", "seconds": 0 },
+    { "raw": "pt1h", "seconds": 3600 },
+    { "raw": " PT10M ", "seconds": 600 },
+    { "raw": "PT", "seconds": 0 },
+    { "raw": "P", "seconds": 0 },
+    { "raw": "PT-5M", "seconds": 0 },
+    { "raw": "1:02:30", "seconds": 0 },
+    { "raw": "", "seconds": 0 },
+    { "raw": null, "seconds": 0 },
+    { "raw": "(undefined)", "seconds": 0 }
+  ]
+}

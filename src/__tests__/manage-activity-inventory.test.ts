@@ -71,8 +71,9 @@ const RECORD_RESOLVER = "requireRecordAuth";
 /**
  * Rows the feed cannot show, and the reason each one cannot.
  *
- * `src/lib/api-handler.ts` is a direct import of every route, so the walk
- * below reaches the three actions the auth kit files itself. None of them can
+ * `src/lib/api-handler.ts` is a direct import of every route, and it
+ * re-exports the guards in `src/lib/auth/guards/`, so the walk below reaches
+ * the three actions the auth kit files itself. None of them can
  * appear in a record owner's activity view, and the reason is the same for all
  * three: they are filed under `auth.user.id` — the CALLER — at a point where
  * no record has been resolved. The feed selects rows where `userId` is the
@@ -148,6 +149,13 @@ interface ModuleFacts {
   auditActions: string[];
   /** First-party modules this one imports, resolved to files. */
   imports: string[];
+  /**
+   * First-party modules this one re-exports with `export … from`, resolved to
+   * files. A re-export makes the named module's bindings this module's own,
+   * so its actions count as this module's (`lib/api-handler.ts` re-exports
+   * the guards in `lib/auth/guards/`).
+   */
+  reexports: string[];
 }
 
 /**
@@ -173,7 +181,19 @@ export function moduleFacts(source: string, fileName: string): ModuleFacts {
   const aliases = new Map<string, string>();
   const namespaces = new Set<string>();
   const importPaths: string[] = [];
+  const reexportPaths: string[] = [];
   parsed.forEachChild((node) => {
+    if (
+      ts.isExportDeclaration(node) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      const resolved = resolveFirstParty(node.moduleSpecifier.text, fileName);
+      if (resolved !== null && !resolved.includes("__tests__")) {
+        reexportPaths.push(resolved);
+      }
+      return;
+    }
     if (!ts.isImportDeclaration(node)) return;
     if (ts.isStringLiteral(node.moduleSpecifier)) {
       const resolved = resolveFirstParty(node.moduleSpecifier.text, fileName);
@@ -232,7 +252,13 @@ export function moduleFacts(source: string, fileName: string): ModuleFacts {
   };
   parsed.forEachChild(visit);
 
-  return { delegatesRecord, recordLevels, auditActions, imports: importPaths };
+  return {
+    delegatesRecord,
+    recordLevels,
+    auditActions,
+    imports: importPaths,
+    reexports: reexportPaths,
+  };
 }
 
 /**
@@ -267,7 +293,8 @@ export function resolveFirstParty(
  * to this route can file; one level is where a route's own collaborators live
  * — the import-admission module and the medication lifecycle module are both
  * direct imports of the routes that use them, and both were invisible to a
- * walk that read only `route.ts`.
+ * walk that read only `route.ts`. A module an import re-exports is part of
+ * that import, not a level below it, so its actions count at the same level.
  */
 function actionsReachableFrom(
   file: string,
@@ -276,7 +303,76 @@ function actionsReachableFrom(
   const own = read(file);
   const out = [...own.auditActions];
   for (const imported of own.imports) {
-    out.push(...read(imported).auditActions);
+    const facts = read(imported);
+    out.push(...facts.auditActions);
+    for (const reexported of facts.reexports) {
+      out.push(...packageActions(reexported, read));
+    }
+  }
+  for (const body of HANDLER_BODY_MODULES[relative(SRC, file)] ?? []) {
+    out.push(...actionsReachableFrom(join(SRC, body), read));
+  }
+  return out;
+}
+
+/**
+ * Delegated routes whose handler bodies live in service modules under
+ * `src/lib/`, keyed by the route relative to `src/`. A handler body is the
+ * route's own code moved, so it counts at the route's level: its actions and
+ * those of its direct imports (the medication lifecycle a dose write
+ * reconciles through) are reached as they were before the move. Each module
+ * has to be a direct import of its route (leg below), so an entry cannot
+ * outlive the delegation it describes.
+ */
+const HANDLER_BODY_MODULES: Record<string, readonly string[]> = {
+  "app/api/medications/route.ts": ["lib/medications/create-medication.ts"],
+  "app/api/medications/[id]/route.ts": [
+    "lib/medications/read-medication.ts",
+    "lib/medications/update-medication/update-medication.ts",
+    "lib/medications/delete-medication.ts",
+  ],
+  "app/api/medications/[id]/intake/route.ts": [
+    "lib/medications/record-intake/record-intake.ts",
+    "lib/medications/list-intake-events.ts",
+  ],
+  "app/api/medications/[id]/intake/[eventId]/route.ts": [
+    "lib/medications/update-intake-event.ts",
+    "lib/medications/delete-intake-event.ts",
+  ],
+  "app/api/medications/intake/route.ts": [
+    "lib/medications/intake-today.ts",
+    "lib/medications/intake-compliance.ts",
+    "lib/medications/update-intake-status/admission.ts",
+    "lib/medications/update-intake-status/update-intake-status.ts",
+  ],
+};
+
+/**
+ * The actions of a re-exported module together with the sibling modules it
+ * imports from its own folder. The re-exported module is a package's public
+ * face; the siblings are its private parts, which run inside the same call
+ * (`lib/auth/guards/record.ts` files its refusals through `./acting.ts`).
+ * Bounded to the one folder, so this does not become the transitive closure
+ * the walk above deliberately avoids.
+ */
+function packageActions(
+  file: string,
+  read: (path: string) => ModuleFacts,
+): string[] {
+  const folder = dirname(file);
+  const seen = new Set<string>([file]);
+  const queue = [file];
+  const out: string[] = [];
+  while (queue.length > 0) {
+    const current = queue.shift() as string;
+    const facts = read(current);
+    out.push(...facts.auditActions);
+    for (const next of [...facts.imports, ...facts.reexports]) {
+      if (dirname(next) === folder && !seen.has(next)) {
+        seen.add(next);
+        queue.push(next);
+      }
+    }
   }
   return out;
 }
@@ -490,6 +586,21 @@ describe("every delegated action has a sentence of its own", () => {
     expect(read(anchor).recordLevels).not.toContain("manage");
     expect(delegatedModules).toContain(anchor);
     expect(manageOnly).not.toContain(anchor);
+  });
+
+  it("reads each moved handler body where its route imports it from", () => {
+    const entries = Object.entries(HANDLER_BODY_MODULES);
+    expect(entries.length).toBeGreaterThan(0);
+    for (const [route, bodies] of entries) {
+      const file = join(SRC, route);
+      expect(delegatedModules, route).toContain(file);
+      for (const body of bodies) {
+        expect(
+          read(file).imports,
+          `${route} does not import ${body}`,
+        ).toContain(join(SRC, body));
+      }
+    }
   });
 
   it("reaches the actions a route files through what it imports", () => {

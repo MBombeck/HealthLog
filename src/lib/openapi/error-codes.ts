@@ -40,6 +40,7 @@ import { DEFAULT_ERROR_CODES } from "@/lib/api/default-error-codes";
  */
 export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
   {
+    account: ["account.deletion.no_guardian", "account.deletion.not_pending"],
     activity: ["activity.calendar.future_date", "activity.calendar.too_old"],
     ai: [
       "ai.budget.exceeded",
@@ -56,6 +57,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     aiRuns: [
       "aiRuns.failed",
       "aiRuns.notFound",
+      "aiRuns.readerBusy",
       "aiRuns.timedOut",
       "aiRuns.workerUnavailable",
     ],
@@ -72,6 +74,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "anamnesis.lifeSections.invalid",
     ],
     auth: [
+      "auth.account.deletion_pending",
       "auth.admin.required",
       "auth.already_authenticated",
       "auth.mfa.code_invalid",
@@ -132,6 +135,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     ],
     "cycle-prefs": ["cycle-prefs.body.invalid_json", "cycle-prefs.invalid"],
     "disable-coach": ["disable-coach.body.invalid_json"],
+    data_wipe: ["data_wipe.copy_failed"],
     dawarich: [
       "dawarich.credentials_rejected",
       "dawarich.home_place_unknown",
@@ -161,8 +165,10 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "documents.inbound.invalidQuery",
       "documents.inbound.invalidUpdate",
       "documents.inbound.localOcrDisabled",
+      "documents.inbound.notDeleted",
       "documents.inbound.notFound",
       "documents.inbound.notIndexed",
+      "documents.inbound.outputLimit",
       "documents.inbound.pdfNeedsAnthropic",
       "documents.inbound.providerUnsupported",
       "documents.inbound.quotaExceeded",
@@ -197,7 +203,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "encounter.reminder-conflict",
       "encounter.reminder-not-found",
     ],
-    encryption: ["encryption.keyBackup.stale", "encryption.key_mismatch"],
+    encryption: ["encryption.key_mismatch"],
     environment: [
       "environment.backfill_pending",
       "environment.backfill_rate_limited",
@@ -310,6 +316,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "medications.course.invalid",
       "medications.course.invalidRange",
       "medications.course.notFound",
+      "medications.course.notRunning",
       "medications.course.oneShot",
       "medications.course.overlap",
       "medications.course.windowRequired",
@@ -395,11 +402,13 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "profile_claim.taken",
     ],
     record_write: ["record_write.rate_limited"],
+    recovery: ["recovery.kit.stale"],
     "report-selection": [
       "report-selection.body.invalid_json",
       "report-selection.body.invalid_shape",
       "report-selection.leaves.unknown",
     ],
+    request: ["request.cross_site"],
     route: ["route.retired"],
     search: ["search.invalid"],
     security_activity: ["security_activity.invalid"],
@@ -450,6 +459,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     tokens: [
       "tokens.documents.ceiling_reached",
       "tokens.measurements.ceiling_reached",
+      "tokens.mirror.not_measurement_token",
       "tokens.workouts.ceiling_reached",
     ],
     vaccination: [

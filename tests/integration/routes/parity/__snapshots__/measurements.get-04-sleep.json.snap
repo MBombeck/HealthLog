@@ -1,0 +1,54 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "measurements": [
+        {
+          "id": "sleep:2026-10-14",
+          "type": "SLEEP_DURATION",
+          "value": 90,
+          "mainAsleepMinutes": 90,
+          "unit": "minutes",
+          "source": "MANUAL",
+          "measuredAt": "2026-10-14T02:30:00.000Z",
+          "notes": null,
+          "dayKey": "2026-10-14",
+          "sampleCount": 1,
+          "sleepStages": {
+            "DEEP": 90
+          },
+          "inBedMinutes": null,
+          "awakeMinutes": null,
+          "napCount": 0,
+          "napAsleepMinutes": 0,
+          "awakenings": 0
+        }
+      ],
+      "meta": {
+        "total": 1,
+        "limit": 100,
+        "offset": 0,
+        "groupBy": "night"
+      }
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "measurement.list"
+      },
+      "meta": {
+        "total": 1,
+        "type": "SLEEP_DURATION",
+        "mode": "sleep-per-night",
+        "nights": 1,
+        "rowsScanned": 1
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": []
+}

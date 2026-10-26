@@ -30,12 +30,12 @@ import { emitSignal } from "@/lib/logging/signal";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import {
-  APPLE_HEALTH_IMPORT_V2_QUEUE,
   APPLE_HEALTH_IMPORT_KIND,
   APPLE_HEALTH_IMPORT_PARSER_REVISION,
   APPLE_HEALTH_IMPORT_SEND_OPTIONS,
   type AppleHealthImportPayload,
 } from "@/lib/jobs/apple-health-import-worker";
+import { APPLE_HEALTH_IMPORT_V2_QUEUE } from "@/lib/jobs/apple-health-import-queue";
 import { streamMultipartToDisk } from "@/lib/multipart/stream-to-disk";
 import {
   createImportJobUnlessBusy,

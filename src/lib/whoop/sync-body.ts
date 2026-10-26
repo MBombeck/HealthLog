@@ -20,7 +20,8 @@
  * 403 soft-skips this data class (returns 0, leaves the connection connected)
  * rather than parking the whole integration — see `isCollectionForbidden`.
  */
-import { fetchBodyMeasurement, mapBody } from "./client";
+import { fetchBodyMeasurement } from "./client";
+import { mapBody } from "./map";
 import {
   getValidToken,
   handleCollectionFetchError,

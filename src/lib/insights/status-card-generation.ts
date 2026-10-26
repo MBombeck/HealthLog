@@ -75,9 +75,15 @@ export interface PendingStatusCard {
   systemPrompt: string;
   userPrompt: string;
   /** Snapshot fingerprint — persisted so the next run's hash gate can skip. */
-  snapshotHash: string;
+  snapshotHash?: string;
   /** Per-card sampling temperature (the cards run a touch warmer at 0.45). */
   temperature: number;
+  /**
+   * The answer budget for the single-card call; `AI_BUDGETS.status` when
+   * omitted. The archetype cards (generic metric, biomarker) compose a longer
+   * prompt and pass `AI_BUDGETS.statusArchetype`.
+   */
+  maxTokens?: number;
   /**
    * The deterministic no-key / no-consent result. The provider call returns
    * `{ kind: "none" }` for both, and the prepare step already knows the
@@ -129,7 +135,7 @@ export async function runPreparedStatusCard(
     systemPrompt: prepared.systemPrompt,
     userPrompt: prepared.userPrompt,
     temperature: prepared.temperature,
-    maxTokens: AI_BUDGETS.status.maxTokens,
+    maxTokens: prepared.maxTokens ?? AI_BUDGETS.status.maxTokens,
   });
 
   if (outcome.kind === "none") {

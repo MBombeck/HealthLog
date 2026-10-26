@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Bell,
   Keyboard,
@@ -26,7 +26,17 @@ import {
   visibleNavDestinations,
   visibleUtilityDestinations,
 } from "@/components/layout/nav-model";
-import { SHELL_HEADER_BAND } from "@/components/layout/shell-metrics";
+import {
+  RAIL_ACCOUNT_BAND_CLASS,
+  RAIL_BAND_INSET,
+  RAIL_WIDTH_COLLAPSED,
+  RAIL_WIDTH_EXPANDED,
+  SHELL_HEADER_BAND,
+} from "@/components/layout/shell-metrics";
+import {
+  RailNavList,
+  useNavOverflows,
+} from "@/components/layout/sidebar-nav-scroll";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
 import { useAuth, useLogout } from "@/hooks/use-auth";
@@ -264,10 +274,8 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
   if (collapsed) {
     return (
       <div
-        className={cn(
-          "border-sidebar-border border-t p-3",
-          "[@media(max-height:940px)]:p-2",
-        )}
+        data-slot="sidebar-account"
+        className={RAIL_ACCOUNT_BAND_CLASS.collapsed}
       >
         <div className="flex items-center justify-center">
           <DropdownMenu>
@@ -290,8 +298,11 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
   }
 
   return (
-    <div className="border-sidebar-border border-t p-3">
-      <div className="flex items-center gap-3 px-2 py-1">
+    <div
+      data-slot="sidebar-account"
+      className={RAIL_ACCOUNT_BAND_CLASS.expanded}
+    >
+      <div className="flex w-full min-w-0 items-center gap-3 px-2 py-1">
         {/* The avatar + name in the expanded footer routes straight
             into the account settings; the kebab to the right still opens
             the rest of the user menu. */}
@@ -339,7 +350,8 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
  *
  * Steps (rows are full-width, so the click target is the whole row):
  * - default: 40 px rows, 4 px apart
- * - max-height 940 px: gaps close (40 px pitch), list and user padding tighten
+ * - max-height 940 px: gaps close (40 px pitch), the list padding tightens
+ *   (the account band keeps the logo band's height, `RAIL_ACCOUNT_BAND`)
  * - max-height 820 px: 36 px rows
  * - max-height 740 px: 32 px rows — the one step under 40 px, taken only
  *   where the alternative is rows hidden behind a scroll edge
@@ -365,69 +377,6 @@ function railRowClass(collapsed: boolean): string {
       ? "justify-center px-2.5"
       : "gap-3 px-3 py-1.5 text-sm font-medium",
   );
-}
-
-/** Height of the fade at a scroll edge that has more content beyond it. */
-const RAIL_FADE = "1.5rem";
-
-/**
- * The fade mask for the list's scroll edges: a top fade while there is
- * content above, a bottom fade while there is content below. A mask paints
- * alpha only, so it reads the same in light and dark and never moves layout.
- */
-function railFadeMask(
-  top: boolean,
-  bottom: boolean,
-): React.CSSProperties | undefined {
-  if (!top && !bottom) return undefined;
-  const image = `linear-gradient(to bottom, ${top ? "transparent" : "#000"} 0, #000 ${top ? RAIL_FADE : "0px"}, #000 calc(100% - ${bottom ? RAIL_FADE : "0px"}), ${bottom ? "transparent" : "#000"} 100%)`;
-  return { maskImage: image, WebkitMaskImage: image };
-}
-
-/**
- * Whether the nav list is taller than the room the rail leaves it, i.e.
- * whether it scrolls, and which of its edges have more content beyond them.
- * Re-measured when the nav (viewport height) or the list (entries arriving
- * as modules resolve) changes size, and on scroll.
- */
-function useNavOverflows(navRef: React.RefObject<HTMLElement | null>): {
-  overflows: boolean;
-  moreAbove: boolean;
-  moreBelow: boolean;
-} {
-  const [edges, setEdges] = useState({
-    overflows: false,
-    moreAbove: false,
-    moreBelow: false,
-  });
-  useEffect(() => {
-    const nav = navRef.current;
-    if (!nav || typeof ResizeObserver === "undefined") return;
-    // Strict: any overflow, the same test that makes the list scroll.
-    const update = () => {
-      const overflows = nav.scrollHeight > nav.clientHeight;
-      const moreAbove = overflows && nav.scrollTop > 0.5;
-      const moreBelow =
-        overflows && nav.scrollTop + nav.clientHeight < nav.scrollHeight - 0.5;
-      setEdges((prev) =>
-        prev.overflows === overflows &&
-        prev.moreAbove === moreAbove &&
-        prev.moreBelow === moreBelow
-          ? prev
-          : { overflows, moreAbove, moreBelow },
-      );
-    };
-    const observer = new ResizeObserver(update);
-    observer.observe(nav);
-    if (nav.firstElementChild) observer.observe(nav.firstElementChild);
-    nav.addEventListener("scroll", update, { passive: true });
-    update();
-    return () => {
-      observer.disconnect();
-      nav.removeEventListener("scroll", update);
-    };
-  }, [navRef]);
-  return edges;
 }
 
 /**
@@ -547,11 +496,8 @@ export function SidebarNav() {
   const collapsed = mounted ? (collapsedPref ?? tabletOrBelow) : false;
 
   const navRef = useRef<HTMLElement | null>(null);
-  const {
-    overflows: navOverflows,
-    moreAbove: navMoreAbove,
-    moreBelow: navMoreBelow,
-  } = useNavOverflows(navRef);
+  const navEdges = useNavOverflows(navRef);
+  const navOverflows = navEdges.overflows;
 
   function toggleCollapsed() {
     const next = !collapsed;
@@ -689,8 +635,8 @@ export function SidebarNav() {
       <aside
         aria-label={t("nav.sidebar")}
         className={cn(
-          "bg-sidebar border-sidebar-border shell-desktop:flex shell-desktop:flex-col relative hidden h-full flex-shrink-0 overflow-hidden border-r transition-[width] duration-200 motion-reduce:transition-none",
-          collapsed ? "w-16" : "w-64",
+          "bg-sidebar border-sidebar-border shell-desktop:flex shell-desktop:flex-col relative hidden h-full flex-shrink-0 overflow-hidden border-r pb-(--safe-area-bottom) pl-(--safe-area-left) transition-[width] duration-200 motion-reduce:transition-none",
+          collapsed ? RAIL_WIDTH_COLLAPSED : RAIL_WIDTH_EXPANDED,
         )}
       >
         {/* The rail animates its width; the content does not. Expanded, this
@@ -718,7 +664,7 @@ export function SidebarNav() {
             className={cn(
               "border-sidebar-border",
               SHELL_HEADER_BAND,
-              collapsed ? "px-3" : "px-6",
+              RAIL_BAND_INSET.header[collapsed ? "collapsed" : "expanded"],
             )}
           >
             <Link
@@ -737,24 +683,11 @@ export function SidebarNav() {
             </Link>
           </div>
 
-          <nav
-            ref={navRef}
-            aria-label={t("nav.mainNavigation")}
-            // The list scrolls without a native scrollbar (a classic
-            // scrollbar with arrow buttons read as a foreign body in the
-            // rail); fades at the edges say there is more, and focus keeps
-            // the focused row clear of them.
-            className={cn(
-              "flex-1 scroll-py-6 [scrollbar-width:none] overflow-y-auto [&::-webkit-scrollbar]:hidden",
-              collapsed ? "p-1.5" : "p-3",
-              RAIL_SHORT_PY,
-            )}
-            style={railFadeMask(navMoreAbove, navMoreBelow)}
-            data-fade-top={navMoreAbove ? "true" : undefined}
-            data-fade-bottom={navMoreBelow ? "true" : undefined}
-            onFocus={(event) => {
-              event.target.scrollIntoView?.({ block: "nearest" });
-            }}
+          <RailNavList
+            navRef={navRef}
+            edges={navEdges}
+            label={t("nav.mainNavigation")}
+            className={cn(collapsed ? "p-1.5" : "p-3", RAIL_SHORT_PY)}
           >
             <div className={RAIL_LIST_GAP}>
               {visibleNavItems.map((item) => {
@@ -811,7 +744,7 @@ export function SidebarNav() {
                 );
               })}
             </div>
-          </nav>
+          </RailNavList>
 
           {/* Bottom utility links — the shared utility tail (minus
             Notifications, which lives in the avatar menu) with the
@@ -830,7 +763,7 @@ export function SidebarNav() {
             className={cn(
               RAIL_LIST_GAP,
               "pb-1",
-              collapsed ? "px-1.5" : "px-3",
+              RAIL_BAND_INSET.footer[collapsed ? "collapsed" : "expanded"],
               navOverflows && "border-sidebar-border border-t pt-1",
             )}
           >

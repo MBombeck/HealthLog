@@ -72,12 +72,14 @@ export interface TargetMedication {
   createdAt: Date;
   startsOn: Date | null;
   endsOn: Date | null;
+  /** #1280 — the instant "End course" ended the latest course. */
+  endedAt: Date | null;
   oneShot: boolean;
   schedules: ComplianceSchedule[];
   scheduleRevisions?: ScheduleRevisionLike[];
   pauseEras?: MedicationPauseEraLike[];
   /** v1.40 (#1024) — the courses, so a gap between two expects nothing. */
-  courses?: { startsOn: Date; endsOn: Date | null }[];
+  courses?: { startsOn: Date; endsOn: Date | null; endedAt: Date | null }[];
 }
 
 export interface TargetIntakeEvent extends IntakeEvent {

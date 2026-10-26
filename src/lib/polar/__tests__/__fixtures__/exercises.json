@@ -1,0 +1,53 @@
+[
+  {
+    "id": "exercise-0001",
+    "start_time": "2026-03-02T07:00:00",
+    "start_time_utc_offset": 60,
+    "duration": "PT1H2M30S",
+    "sport": "RUNNING",
+    "detailed_sport_info": "TRAIL_RUNNING",
+    "calories": 645.5,
+    "distance": 10250.4,
+    "heart_rate": { "average": 148.6, "maximum": 176 },
+    "training_load": 112.3,
+    "device": "Polar Vantage V3",
+    "device_id": "device-0001"
+  },
+  {
+    "id": 4200017,
+    "start_time": "2026-03-03T18:30:00-05:00",
+    "start_time_utc_offset": -300,
+    "duration": "PT45M",
+    "sport": "CYCLING",
+    "calories": 0,
+    "distance": 0,
+    "heart_rate": { "average": 0, "maximum": null }
+  },
+  {
+    "id": "exercise-0003",
+    "start_time": "2026-03-04T06:15:00Z",
+    "duration": "P1DT2H",
+    "detailed_sport_info": "SOMETHING_POLAR_INVENTED",
+    "heart_rate": null
+  },
+  {
+    "id": "exercise-0004",
+    "start_time": "2026-03-05T12:00:00",
+    "duration": "not-a-duration",
+    "sport": "STRENGTH_TRAINING",
+    "calories": -5,
+    "distance": null,
+    "training_load": null
+  },
+  {
+    "id": "exercise-0005",
+    "start_time": "2026-03-06T09:00:00",
+    "start_time_utc_offset": 330,
+    "duration": "PT30M15.6S",
+    "sport": "OTHER"
+  },
+  { "id": null, "start_time": "2026-03-07T08:00:00", "duration": "PT20M" },
+  { "id": "   ", "start_time": "2026-03-07T08:00:00", "duration": "PT20M" },
+  { "id": "exercise-0008", "start_time": "garbled", "duration": "PT20M" },
+  { "id": "exercise-0009", "duration": "PT20M", "sport": "WALKING" }
+]

@@ -14,13 +14,8 @@ import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { requireIllnessEnabled } from "@/lib/illness/gate";
 import { illnessEpisodeResolveSchema } from "@/lib/validations/illness";
 import { toIllnessEpisodeDTO } from "@/lib/illness/dto";
@@ -60,17 +55,12 @@ export const PATCH = apiHandler(
       });
     }
 
-    const { data: rawBody, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, illnessEpisodeResolveSchema, {
       maxBytes: 4 * 1024,
+      input: (rawBody) => rawBody ?? {},
+      errorCode: "illness.episode.invalid",
     });
-    if (jsonError) return jsonError;
-
-    const parsed = illnessEpisodeResolveSchema.safeParse(rawBody ?? {});
-    if (!parsed.success) {
-      return returnAllZodIssues(parsed.error, 422, {
-        errorCode: "illness.episode.invalid",
-      });
-    }
+    if (!parsed.ok) return parsed.error;
 
     const resolvedAt = parsed.data.resolvedAt
       ? new Date(parsed.data.resolvedAt)

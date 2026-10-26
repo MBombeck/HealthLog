@@ -15,6 +15,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const deleteMany = vi.fn();
+const noteUpdateMany = vi.fn();
 const noteFindMany = vi.fn();
 const aiCapabilityForRecord = vi.fn();
 const enqueueStatusGeneration = vi.fn();
@@ -39,6 +40,7 @@ vi.mock("@/lib/db", () => ({
     insightStatusCache: {
       deleteMany: (...a: unknown[]) => deleteMany(...a),
       findMany: (...a: unknown[]) => noteFindMany(...a),
+      updateMany: (...a: unknown[]) => noteUpdateMany(...a),
     },
     user: { findUnique: (...a: unknown[]) => userFindUnique(...a) },
     appSettings: {
@@ -316,17 +318,34 @@ describe("invalidateStatusInsightsForTypes", () => {
       expect(enqueueStatusGeneration).not.toHaveBeenCalled();
     });
 
-    it("counts only a stored note as fresh, so a recently stalled scope still refreshes", async () => {
-      // A row that carries only a negative-cache window has no note, so a
-      // scope that recently stalled must retry rather than be debounced into
-      // staying cold. The probe asks the database for noted rows only; with
-      // none returned, every dirtied scope refreshes.
+    it("counts only a stored note as fresh, so a stalled scope refreshes once its window lapses", async () => {
+      // A row that carries only a lapsed negative-cache window has no note,
+      // so a scope that stalled must retry rather than be debounced into
+      // staying cold. The first probe asks for noted rows only; with none
+      // returned, every dirtied scope refreshes.
       await invalidateStatusInsightsForTypes("u1", ["WEIGHT"], {
         source: "manual",
       });
       const where = noteFindMany.mock.calls[0][0].where;
       expect(where.textEncrypted).toEqual({ not: null });
       expect(enqueuedScopes()).toEqual(["bmi", "general", "weight"]);
+    });
+
+    it("leaves a scope whose negative window is still open to wait it out (#1279)", async () => {
+      // Every sync batch used to re-enqueue a scope whose generation had just
+      // failed, however often it failed. The second probe asks for open
+      // windows; a scope it returns is not enqueued.
+      noteFindMany.mockImplementation(
+        async (args: { where: { retryAt?: { gt: Date } } }) =>
+          args.where.retryAt ? [freshRow("weight"), freshRow("general")] : [],
+      );
+      const before = Date.now();
+      await invalidateStatusInsightsForTypes("u1", ["WEIGHT"], {
+        source: "manual",
+      });
+      const probe = noteFindMany.mock.calls[1][0].where;
+      expect(probe.retryAt.gt.getTime()).toBeGreaterThanOrEqual(before - 1000);
+      expect(enqueuedScopes()).toEqual(["bmi"]);
     });
 
     it("scopes the freshness probe to the user's resolved locale and a 1 h gap cutoff", async () => {
@@ -392,6 +411,20 @@ describe("enqueueStatusRefillForUser", () => {
       ),
     );
     expect([...locales]).toEqual(["de"]);
+  });
+
+  it("closes the user's negative windows first: the person asked (#1279)", async () => {
+    await enqueueStatusRefillForUser("u1", "en");
+    expect(noteUpdateMany).toHaveBeenCalledWith({
+      where: {
+        userId: "u1",
+        OR: [{ retryAt: { not: null } }, { failureStreak: { gt: 0 } }],
+      },
+      data: { retryAt: null, negativeReason: null, failureStreak: 0 },
+    });
+    expect(noteUpdateMany.mock.invocationCallOrder[0]).toBeLessThan(
+      enqueueStatusGeneration.mock.invocationCallOrder[0],
+    );
   });
 
   it("never deletes cache rows (the hash baselines survive the refill)", async () => {

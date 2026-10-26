@@ -1,0 +1,31 @@
+{
+  "status": 307,
+  "location": "http://localhost:3000/auth/login?error=oidc_failed",
+  "setCookies": [
+    "oidc_auth_state=; Path=/api/auth/oidc; Expires=<date>"
+  ],
+  "events": [
+    {
+      "status": 307,
+      "action": {
+        "name": "auth.oidc.callback"
+      },
+      "meta": {
+        "reason": "exchange_or_verify_failed"
+      },
+      "warnings": null,
+      "error": {
+        "type": "Error",
+        "message": "invalid_grant"
+      }
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "users": [],
+    "sessions": [],
+    "audit": [],
+    "challenges": 0,
+    "handoffs": 0
+  }
+}

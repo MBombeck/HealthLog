@@ -16,6 +16,7 @@
  * `src/lib/jobs/reminder-worker.ts` or pg-boss never provisions it and the
  * boot enqueue silently never drains (the v1.4.37 dead-queue class).
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -26,15 +27,7 @@ import {
   withPageWalkLedger,
 } from "@/lib/integrations/page-walk";
 import { syncUserWhoop } from "@/lib/whoop/sync";
-
-export const WHOOP_BACKFILL_QUEUE = "whoop-backfill";
-
-/**
- * Serial concurrency — a backfill walks years of history for one account and
- * is rate-bounded by WHOOP's 100 req/min cap; concurrency-1 keeps it from
- * crowding the request pool, matching `ROLLUP_FULL_BACKFILL_CONCURRENCY`.
- */
-export const WHOOP_BACKFILL_CONCURRENCY = 1;
+import { WHOOP_BACKFILL_QUEUE } from "./whoop-backfill-queue";
 
 export interface WhoopBackfillPayload {
   userId: string;
@@ -143,7 +136,7 @@ export async function enqueueBootTimeWhoopBackfill(
 
   try {
     const connections = await prisma.whoopConnection.findMany({
-      where: { backfillCompletedAt: null },
+      where: { backfillCompletedAt: null, ...OWNED_BY_ACTIVE_ACCOUNT },
       select: { userId: true },
     });
 

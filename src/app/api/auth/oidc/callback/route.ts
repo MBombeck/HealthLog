@@ -3,17 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { checkAuthSurfaceRateLimit } from "@/lib/rate-limit";
-import { decrypt } from "@/lib/crypto";
-import { prisma } from "@/lib/db";
-import { auditLog } from "@/lib/auth/audit";
+import { validateSessionFromCookieValue } from "@/lib/auth/session";
+import { readSessionCookie } from "@/lib/auth/session-cookie";
 import {
-  createSession,
-  validateSessionFromCookieValue,
-  SESSION_COOKIE_NAME,
-} from "@/lib/auth/session";
-import { recordSignInDevice } from "@/lib/auth/login-alert";
-import {
-  deriveUniqueUsername,
   discoverOidcMetadata,
   exchangeCodeForTokens,
   fetchUserinfoEmail,
@@ -29,15 +21,19 @@ import {
   OIDC_STATE_COOKIE,
   OIDC_STATE_COOKIE_PATH,
 } from "@/lib/auth/oidc-cookie";
-import { createMfaChallenge } from "@/lib/auth/mfa/challenge";
-import { syncMfaEnrollCookie } from "@/lib/auth/mfa-enrollment";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
-import { resolveServerDefaultTimezone } from "@/lib/tz/resolver";
-import {
-  buildNativeCallbackUrl,
-  mintNativeHandoff,
-} from "@/lib/auth/oidc-native-handoff";
+import { buildNativeCallbackUrl } from "@/lib/auth/oidc-native-handoff";
 import { setPendingLinkCookie } from "@/lib/auth/oidc-pending-link";
+import {
+  idpErrorCode,
+  readStoredOidcState,
+} from "@/lib/auth/oidc-callback/state";
+import { resolveOidcAccount } from "@/lib/auth/oidc-callback/resolve-account";
+import {
+  mintOidcNativeHandoff,
+  openOidcSession,
+  startOidcSecondFactor,
+} from "@/lib/auth/oidc-callback/complete-sign-in";
 import {
   CLAIM_COOKIE,
   CLAIM_ERROR_PATH,
@@ -49,6 +45,7 @@ import {
   completeSsoClaim,
   SSO_CLAIM_LANDING,
 } from "@/lib/managed-profiles/claim-sso";
+import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 import { isHandoverUsable } from "@/lib/managed-profiles/handover";
 
 const LOGIN_ERROR_URL = "/auth/login";
@@ -57,6 +54,51 @@ function errorRedirect(reason: string): NextResponse {
   const response = NextResponse.redirect(
     oidcAppUrl(`${LOGIN_ERROR_URL}?error=${reason}`),
   );
+  deleteStateCookie(response);
+  return response;
+}
+
+/**
+ * The web sign-in page, with the single-use second-factor ticket parked in a
+ * short-lived cookie its script reads (`OIDC_MFA_COOKIE`).
+ */
+function secondFactorRedirect(
+  next: string,
+  secondFactor: { ticket: string; methods: readonly string[] },
+): NextResponse {
+  const loginUrl = oidcAppUrl(LOGIN_ERROR_URL);
+  if (next !== "/") {
+    loginUrl.searchParams.set("next", next);
+  }
+  const response = NextResponse.redirect(loginUrl);
+  deleteStateCookie(response);
+  response.cookies.set(
+    OIDC_MFA_COOKIE,
+    JSON.stringify({
+      ticket: secondFactor.ticket,
+      methods: secondFactor.methods,
+    }),
+    {
+      // Not httpOnly by design — see the constant's doc comment.
+      httpOnly: false,
+      secure: shouldEmitSecureCookie(),
+      sameSite: "lax",
+      maxAge: Math.floor(OIDC_MFA_TTL_MS / 1000),
+      path: OIDC_MFA_COOKIE_PATH,
+    },
+  );
+  return response;
+}
+
+/**
+ * The web sign-in page for an account pending deletion, with the date it is
+ * erased, so the page can say until when an admin can undo it.
+ */
+function deletionPendingRedirect(purgeAt: Date | null): NextResponse {
+  const url = oidcAppUrl(LOGIN_ERROR_URL);
+  url.searchParams.set("error", "account_deletion_pending");
+  if (purgeAt) url.searchParams.set("purgeAt", purgeAt.toISOString());
+  const response = NextResponse.redirect(url);
   deleteStateCookie(response);
   return response;
 }
@@ -75,90 +117,15 @@ function deleteStateCookie(response: NextResponse): void {
 }
 
 /**
- * Closed set of RFC 6749 §4.1.2.1 / OIDC Core §3.1.2.6 authorization error
- * codes. The wide-event meta only ever carries a member of this set (or
- * "other") — never the raw, attacker-influenceable query value.
- */
-const KNOWN_IDP_ERROR_CODES = new Set([
-  "access_denied",
-  "invalid_request",
-  "unauthorized_client",
-  "unsupported_response_type",
-  "invalid_scope",
-  "server_error",
-  "temporarily_unavailable",
-  "interaction_required",
-  "login_required",
-  "account_selection_required",
-  "consent_required",
-  "invalid_request_uri",
-  "invalid_request_object",
-  "request_not_supported",
-  "request_uri_not_supported",
-  "registration_not_supported",
-]);
-
-interface StoredOidcState {
-  state: string;
-  nonce: string;
-  codeVerifier: string;
-  next: string;
-  /**
-   * v1.30.x — set only when the login GET carried `client=native`. When true
-   * the callback mints a handoff code (or MFA ticket) and redirects to the
-   * custom scheme instead of minting a session. Both fields live ONLY inside
-   * the AES-256-GCM blob, so they are tamper-authenticated: a network attacker
-   * or the IdP cannot flip a web login into a native one or swap the app
-   * challenge.
-   */
-  native?: boolean;
-  /** The app's S256 PKCE challenge, bound at login; verified at the exchange. */
-  appCodeChallenge?: string;
-  /**
-   * v1.43 (#959) — set only when the login carried `intent=claim` and a valid
-   * `hl_claim` cookie. The callback then claims the managed profile the
-   * cookie names instead of signing in, and only when the cookie still
-   * carries this exact binding. Web only: never together with `native`.
-   */
-  intent?: "claim";
-  claimBinding?: string;
-}
-
-function isStoredOidcState(value: unknown): value is StoredOidcState {
-  const v = value as Record<string, unknown>;
-  if (
-    typeof value !== "object" ||
-    value === null ||
-    typeof v.state !== "string" ||
-    typeof v.nonce !== "string" ||
-    typeof v.codeVerifier !== "string" ||
-    typeof v.next !== "string"
-  ) {
-    return false;
-  }
-  // Optional native fields: when present they must be the right shape, and a
-  // native start MUST carry the challenge the exchange verifies against.
-  if (v.native !== undefined) {
-    if (v.native !== true) return false;
-    if (typeof v.appCodeChallenge !== "string") return false;
-  }
-  if (v.intent !== undefined) {
-    if (v.intent !== "claim") return false;
-    if (typeof v.claimBinding !== "string" || v.claimBinding.length === 0) {
-      return false;
-    }
-    if (v.native !== undefined) return false;
-  }
-  return true;
-}
-
-/**
  * OIDC callback. Must work with NO existing session — this route
  * authenticates the user in the first place, unlike the per-account
  * integration callbacks (Withings/Polar/etc.) which all require
  * `requireAuth()`. Every failure branch redirects to `/auth/login?error=...`
  * (never JSON — this is a top-level browser navigation) and deletes the
  * single-use state cookie, mirroring `src/app/api/withings/callback/route.ts`.
+ *
+ * The state blob, the account resolution and the three endings (second
+ * factor, native handoff, session) live in `src/lib/auth/oidc-callback/`.
  */
 export const GET = apiHandler(async (req: NextRequest) => {
   annotate({ action: { name: "auth.oidc.callback" } });
@@ -169,16 +136,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
   // the web login page — the app parses `?error=<reason>` and never lands on a
   // dead web page. A missing/undecryptable blob leaves `stored` null (isNative
   // false) and those branches fall back to the web redirect by construction.
-  const rawCookie = req.cookies.get(OIDC_STATE_COOKIE)?.value;
-  let stored: StoredOidcState | null = null;
-  if (rawCookie) {
-    try {
-      const parsed: unknown = JSON.parse(decrypt(rawCookie));
-      if (isStoredOidcState(parsed)) stored = parsed;
-    } catch {
-      stored = null;
-    }
-  }
+  const stored = readStoredOidcState(req.cookies.get(OIDC_STATE_COOKIE)?.value);
   const isNative = stored?.native === true;
   const isClaim = stored?.intent === "claim";
 
@@ -229,7 +187,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
     annotate({
       meta: {
         reason: "idp_denied",
-        idpError: KNOWN_IDP_ERROR_CODES.has(idpError) ? idpError : "other",
+        idpError: idpErrorCode(idpError),
       },
     });
     return failRedirect("oidc_denied");
@@ -265,7 +223,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
     // session gains nothing here but a redirect to a page they could already
     // reach — no code redemption, no session mint, no identity change.
     const existingSession = await validateSessionFromCookieValue(
-      req.cookies.get(SESSION_COOKIE_NAME)?.value,
+      readSessionCookie(req.cookies)?.value,
     );
     if (existingSession) {
       annotate({ meta: { reason: "duplicate_callback_authenticated" } });
@@ -298,7 +256,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
     : null;
   if (isClaim) {
     const liveSession = await validateSessionFromCookieValue(
-      req.cookies.get(SESSION_COOKIE_NAME)?.value,
+      readSessionCookie(req.cookies)?.value,
     );
     if (liveSession) {
       annotate({ meta: { reason: "claim_signed_in" } });
@@ -367,198 +325,40 @@ export const GET = apiHandler(async (req: NextRequest) => {
       return response;
     }
 
-    // (1) Durable identity match — the (issuer, sub) pair stamped on a
-    // previous login, link, or provision. Email is deliberately NOT
-    // consulted here: after the stamp it is a display field, so an
-    // IdP-side email change can refresh it below but can never re-point
-    // the login at a different account.
-    let user = await prisma.user.findFirst({
-      where: { oidcIssuer: metadata.issuer, oidcSub: identity.sub },
+    const account = await resolveOidcAccount({
+      issuer: metadata.issuer,
+      sub: identity.sub,
+      email,
+      emailVerified,
+      ip,
     });
-
-    if (user) {
-      // Refresh the display email only — and only from a claim the IdP
-      // explicitly marks verified. Skipped when another account already
-      // holds the address (`email` is unique); the login itself proceeds
-      // either way, keyed by (issuer, sub).
-      const displayEmail = email ? email.toLowerCase() : null;
-      if (
-        displayEmail &&
-        emailVerified === true &&
-        user.email?.toLowerCase() !== displayEmail
-      ) {
-        const emailTaken = await prisma.user.findFirst({
-          where: {
-            email: { equals: displayEmail, mode: "insensitive" },
-            NOT: { id: user.id },
-          },
-          select: { id: true },
-        });
-        if (!emailTaken) {
-          user = await prisma.user.update({
-            where: { id: user.id },
-            data: { email: displayEmail },
-          });
-        }
+    if (account.kind === "refused") return failRedirect(account.reason);
+    if (account.kind === "linkPending") {
+      if (isNative) {
+        // The native sign-in sheet cannot run the confirmation; the person
+        // signs in on the web once, after which the app's SSO works.
+        return failRedirect("oidc_link_required");
       }
-    } else {
-      // No stamped identity yet — both remaining paths (link-once,
-      // provision) bind this (issuer, sub) to an account keyed by email,
-      // so the claim must be explicitly `email_verified: true`. An ABSENT
-      // claim is a reject, not a benefit of the doubt: an IdP that does
-      // not assert verification cannot anchor a link that later gates a
-      // health record.
-      if (!email) {
-        annotate({ meta: { reason: "no_email" } });
-        return failRedirect("oidc_no_email");
-      }
-      if (emailVerified !== true) {
-        annotate({ meta: { reason: "email_unverified" } });
-        return failRedirect("oidc_email_unverified");
-      }
-
-      const byEmail = await prisma.user.findFirst({
-        where: { email: { equals: email, mode: "insensitive" } },
+      const response = errorRedirect("oidc_link_required");
+      setPendingLinkCookie(response, {
+        userId: account.userId,
+        issuer: metadata.issuer,
+        sub: identity.sub,
       });
+      return response;
+    }
+    const user = account.user;
 
-      if (byEmail) {
-        // (2) Link ONCE. An account already pinned to a different IdP
-        // identity is never silently re-bound — a rebind would let a
-        // second IdP identity that acquires the same email capture the
-        // account. Audited so the operator can see the collision.
-        if (byEmail.oidcIssuer !== null || byEmail.oidcSub !== null) {
-          await auditLog("auth.oidc.link_conflict", {
-            userId: byEmail.id,
-            ipAddress: ip,
-          });
-          annotate({ meta: { reason: "identity_conflict" } });
-          return failRedirect("oidc_identity_conflict");
-        }
-        // (2b) Never link on the email alone. The local address was never
-        // verified — anyone can register with it or type it into a profile —
-        // so matching it proves nothing about who owns the account. Record
-        // the link this login would make and send the browser to sign in to
-        // the account with its own credential; the link is made there
-        // (`completePendingOidcLink`), and only for this account.
-        await auditLog("auth.oidc.link_pending", {
-          userId: byEmail.id,
-          ipAddress: ip,
-        });
-        annotate({ meta: { reason: "link_confirmation_required" } });
-        if (isNative) {
-          // The native sign-in sheet cannot run the confirmation; the person
-          // signs in on the web once, after which the app's SSO works.
-          return failRedirect("oidc_link_required");
-        }
-        const response = errorRedirect("oidc_link_required");
-        setPendingLinkCookie(response, {
-          userId: byEmail.id,
-          issuer: metadata.issuer,
-          sub: identity.sub,
-        });
-        return response;
-      } else {
-        // (3) Provision.
-        const userCount = await prisma.user.count();
-        let registrationEnabled = true;
-        try {
-          const settings = await prisma.appSettings.findUnique({
-            where: { id: "singleton" },
-          });
-          if (settings && !settings.registrationEnabled && userCount > 0) {
-            registrationEnabled = false;
-          }
-        } catch {
-          // Table may not exist yet; allow provisioning (matches register/route.ts).
-        }
-        if (!registrationEnabled) {
-          annotate({ meta: { reason: "registration_disabled" } });
-          return failRedirect("oidc_registration_disabled");
-        }
-
-        const username = await deriveUniqueUsername(email, (candidate) =>
-          prisma.user
-            .findUnique({ where: { username: candidate } })
-            .then((u: unknown) => u !== null),
-        );
-
-        // Same server-default resolution the register route uses — an
-        // SSO-provisioned account has no registration form to carry the
-        // browser-detected timezone.
-        const timezone = await resolveServerDefaultTimezone();
-
-        // v1.28.48 — the first provisioned user becomes ADMIN. Deriving that
-        // role from the early `userCount` (read above, before username
-        // derivation) and then creating without coordination is the same
-        // check-then-act race the password-register route closed in v1.28.42:
-        // two concurrent OIDC first-logins racing the empty-DB window would
-        // both observe `0` and both be minted ADMIN. Serialise the
-        // count+insert behind a transaction-scoped advisory lock (released on
-        // commit/rollback) and re-count *inside* the lock so the second
-        // provision observes the first's committed row and is minted USER.
-        // The lock key STRING matches the register route's — an OIDC
-        // first-login racing a password first-registration is serialised
-        // against the same lock, so only one ADMIN can ever be minted.
-        user = await prisma.$transaction(async (tx) => {
-          // `pg_advisory_xact_lock` returns void, which the client cannot
-          // deserialize as a column — selecting FROM it yields a plain int row.
-          await tx.$queryRaw`
-            SELECT 1 AS locked
-            FROM pg_advisory_xact_lock(hashtextextended('register:first-admin', 0))
-          `;
-          const priorUsers = await tx.user.count();
-          const role = priorUsers === 0 ? "ADMIN" : "USER";
-          return tx.user.create({
-            data: {
-              email: email.toLowerCase(),
-              username,
-              passwordHash: null,
-              role,
-              timezone,
-              oidcIssuer: metadata.issuer,
-              oidcSub: identity.sub,
-            },
-          });
-        });
-
-        await auditLog("auth.oidc.provisioned", {
-          userId: user.id,
-          ipAddress: ip,
-        });
-      }
+    // An account pending deletion is locked. The identity provider proved
+    // the caller is this account, so the sign-in page may name the date.
+    const pendingDeletion = await pendingDeletionOf(user.id);
+    if (pendingDeletion) {
+      if (isNative || isClaim) return failRedirect("account_deletion_pending");
+      return deletionPendingRedirect(pendingDeletion.purgeAt);
     }
 
-    // Native second factor. OIDC is a DELEGATED factor: it proves the IdP
-    // authenticated someone, but it never substitutes for this app's own
-    // second factor. An account with a confirmed TOTP secret or a
-    // registered security key gets the same MFA challenge step password
-    // login gets — no session is minted here; the single-use ticket rides
-    // the handoff cookie to the login page (web) or the custom scheme
-    // (native), which render the same challenge UI and complete at
-    // `/api/auth/mfa/verify`. (The trusted-device skip cannot apply on this
-    // path: its cookie is SameSite=Strict, which the browser withholds on an
-    // IdP-initiated redirect chain.)
-    const hasTotp = Boolean(user.totpConfirmedAt);
-    const webauthnKeyCount = await prisma.webauthnMfaCredential.count({
-      where: { userId: user.id },
-    });
-    const hasWebauthn = webauthnKeyCount > 0;
-
-    if (hasTotp || hasWebauthn) {
-      const challenge = await createMfaChallenge(user.id, "login");
-      const methods: ("totp" | "recovery" | "webauthn")[] = [];
-      if (hasTotp) methods.push("totp", "recovery");
-      if (hasWebauthn) methods.push("webauthn");
-      await auditLog("auth.mfa.challenge", {
-        userId: user.id,
-        ipAddress: ip,
-        details: { source: isNative ? "login.oidc.native" : "login.oidc" },
-      });
-      annotate({
-        action: { name: "auth.mfa.challenge" },
-        meta: { mfa_required: true },
-      });
-
+    const secondFactor = await startOidcSecondFactor(user, ip, isNative);
+    if (secondFactor) {
       // Native: hand the app the SAME single-use ticket via the custom scheme.
       // No `OIDC_MFA_COOKIE` (it exists only to ferry the ticket to the web
       // login page's script) and no session — the app completes at the
@@ -569,57 +369,27 @@ export const GET = apiHandler(async (req: NextRequest) => {
       if (isNative) {
         const response = NextResponse.redirect(
           buildNativeCallbackUrl({
-            mfa_ticket: challenge.ticket,
-            methods: methods.join(","),
+            mfa_ticket: secondFactor.ticket,
+            methods: secondFactor.methods.join(","),
           }),
         );
         deleteStateCookie(response);
         return response;
       }
 
-      const loginUrl = oidcAppUrl(LOGIN_ERROR_URL);
-      if (stored.next !== "/") {
-        loginUrl.searchParams.set("next", stored.next);
-      }
-      const response = NextResponse.redirect(loginUrl);
-      deleteStateCookie(response);
-      response.cookies.set(
-        OIDC_MFA_COOKIE,
-        JSON.stringify({ ticket: challenge.ticket, methods }),
-        {
-          // Not httpOnly by design — see the constant's doc comment.
-          httpOnly: false,
-          secure: shouldEmitSecureCookie(),
-          sameSite: "lax",
-          maxAge: Math.floor(OIDC_MFA_TTL_MS / 1000),
-          path: OIDC_MFA_COOKIE_PATH,
-        },
-      );
-      return response;
+      return secondFactorRedirect(stored.next, secondFactor);
     }
 
     const ua = req.headers.get("user-agent");
 
-    // Native, no MFA: mint a one-time handoff code and hand it to the app via
-    // the custom scheme. NO session and NO cookie are minted here — the app
-    // exchanges the code at `POST /api/auth/oidc/native/token` for the native
-    // bundle. `userId` is the resolved identity; the app's S256 challenge
-    // (bound at login, tamper-authenticated in the state blob) locks the code
-    // to the app instance that started the flow. The session/device are
-    // recorded at the exchange via `finishLogin`, not here.
     if (isNative) {
-      const { code: handoffCode } = await mintNativeHandoff({
+      const handoffCode = await mintOidcNativeHandoff({
         userId: user.id,
-        // Guaranteed present by `isStoredOidcState` when `native === true`.
+        // Guaranteed present by the state reader when `native === true`.
         appCodeChallenge: stored.appCodeChallenge as string,
-        ipAddress: ip,
+        ip,
         userAgent: ua,
       });
-      await auditLog("auth.oidc.native.handoff_minted", {
-        userId: user.id,
-        ipAddress: ip,
-      });
-      annotate({ action: { name: "auth.oidc.native.handoff_minted" } });
       const response = NextResponse.redirect(
         buildNativeCallbackUrl({ code: handoffCode }),
       );
@@ -627,28 +397,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
       return response;
     }
 
-    // v1.23 parity with password login — the admin-enforced-MFA hint cookie
-    // sends a single-factor account into forced enrollment after sign-in.
-    await syncMfaEnrollCookie(user.id, {
-      totpConfirmedAt: user.totpConfirmedAt,
-      mfaEnforced: user.mfaEnforced,
-    });
-
-    // The 5th argument stays null: OIDC is a delegated factor, so an SSO
-    // session must never satisfy `requireFreshMfa` step-up (MFA disable,
-    // encryption-key rotation, encrypted export, account deletion) — the
-    // same treatment a trusted-device login gets.
-    await createSession(
-      user.id,
-      user.onboardingCompletedAt === null,
-      ip,
-      ua,
-      null,
-    );
-
-    void recordSignInDevice({ userId: user.id, ip, userAgent: ua });
-
-    await auditLog("auth.oidc.login", { userId: user.id, ipAddress: ip });
+    await openOidcSession(user, ip, ua);
 
     const response = NextResponse.redirect(oidcAppUrl(stored.next));
     deleteStateCookie(response);

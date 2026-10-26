@@ -3,12 +3,12 @@
  *
  * Mirrors `generateMetricStatus` (the generic HealthKit-metric generator)
  * but reads `LabResult` rows for one user-scoped `Biomarker` instead of
- * `Measurement` rows for a `MeasurementType`. It reuses the exact same
- * machinery the metric cards use:
- *   - the shared provider runner (`runStatusCompletion`),
- *   - the stale-while-revalidate read-only path (`resolveReadOnlyStatusMiss`),
- *   - the standard cache-row persist (`persistStatusInsight`),
- *   - the cheap INPUT gate (`gateUnchangedStatusInput`) keyed on the latest
+ * `Measurement` rows for a `MeasurementType`. It runs on the same status
+ * pipeline stages (`status-pipeline.ts`) the metric cards use:
+ *   - the single-card provider run (`runPreparedStatusCard`),
+ *   - the stale-while-revalidate read-only path (`resolveReadOnlyStatus`),
+ *   - the standard note persist (`textStatusCodec`),
+ *   - the cheap INPUT gate (`gateUnchangedInputs`) keyed on the latest
  *     reading fingerprint so a fresh assessment is produced ONLY when a new
  *     reading lands — an idle day re-stamps the cached text without an LLM
  *     round-trip.
@@ -21,6 +21,7 @@
  * `insufficient` marker WITHOUT touching the provider chain.
  */
 import { prisma } from "@/lib/db";
+import { isModuleEnabled } from "@/lib/modules/gate";
 import { PROMPT_VERSION } from "@/lib/ai/prompts/base-system";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import {
@@ -35,25 +36,25 @@ import {
 } from "@/lib/labs/reference-range";
 import { getNoKeyBiomarkerStatusText } from "@/lib/insights/no-key-fallbacks";
 import { hashInsightSnapshot } from "@/lib/insights/snapshot-hash";
-import { runStatusCompletion } from "@/lib/insights/status-provider";
+import { summarizeSeries } from "@/lib/insights/status-shared";
 import {
-  normalizeLocale,
-  finalizeStatusSummary,
-  persistStatusInsight,
-  summarizeSeries,
-} from "@/lib/insights/status-shared";
+  runPreparedStatusCard,
+  type PreparedStatusCard,
+} from "@/lib/insights/status-card-generation";
 import {
-  gateUnchangedStatusInput,
-  readFreshStatusText,
-  resolveReadOnlyStatusMiss,
-  statusCacheAction,
-} from "@/lib/insights/status-cache";
-import { returnTimeoutFallback } from "@/lib/insights/timeout-fallback";
+  gateUnchangedInputs,
+  openStatusCard,
+  pendingStatusCard,
+  readCachedStatus,
+  resolveReadOnlyStatus,
+  textStatusCodec,
+  type StatusCardContext,
+} from "@/lib/insights/status-pipeline";
 import { annotate } from "@/lib/logging/context";
-import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
+import { userDayKey } from "@/lib/tz/resolver";
 import { sanitizeForPrompt } from "@/lib/insights/sanitize";
 
-export interface BiomarkerStatusResult {
+export type BiomarkerStatusResult = {
   hasProvider: boolean;
   text: string | null;
   cached: boolean;
@@ -63,7 +64,7 @@ export interface BiomarkerStatusResult {
   revalidating?: boolean;
   /** True when the marker has no numeric readings; no LLM was called. */
   insufficient?: boolean;
-}
+};
 
 /** The `biomarker:<id>` cache/queue scope for one marker. */
 export function biomarkerStatusScope(
@@ -89,6 +90,14 @@ function insufficient(): BiomarkerStatusResult {
     updatedAt: null,
     insufficient: true,
   };
+}
+
+interface BiomarkerMarker {
+  id: string;
+  name: string;
+  unit: string;
+  lowerBound: number | null;
+  upperBound: number | null;
 }
 
 /**
@@ -122,40 +131,45 @@ export async function generateBiomarkerStatus(args: {
     // Unknown / cross-user marker — degrade gracefully rather than throwing.
     return insufficient();
   }
-
-  const locale = normalizeLocale(args.locale);
-  const force = args.force === true;
-  const readOnly = args.readOnly === true;
-  const scope = biomarkerStatusScope(marker.id);
-  const cacheAction = statusCacheAction(scope, locale);
-  // v1.30.3 — resolve the user's own tz BEFORE the day-key so the
-  // cache rolls over at the user's local midnight, not Berlin's. Has to
-  // happen ahead of the cache read below (the earliest possible return
-  // path).
-  const userTz = await resolveUserTimezone(args.userId);
-  const todayKey = userDayKey(new Date(), userTz);
-
-  const cached = await readFreshStatusText({
-    userId: args.userId,
-    cacheAction,
-    todayKey,
-    force,
-  });
-  if (cached) {
-    return {
-      hasProvider: true,
-      text: cached.text,
-      cached: true,
-      updatedAt: cached.updatedAt,
-    };
+  // With the labs module off no model writes about a marker, and text it
+  // wrote while the module was on is not served either.
+  if (!(await isModuleEnabled(args.userId, "labs"))) {
+    return { hasProvider: true, text: null, cached: false, updatedAt: null };
   }
+
+  const prepared = await prepareBiomarkerStatus(marker, args);
+  return (await runPreparedStatusCard(prepared)) as BiomarkerStatusResult;
+}
+
+/**
+ * Everything up to (not including) the provider call, on the shared
+ * pipeline stages, with the empty-data gate between the cache read and the
+ * read-only path and the input gate in place of the snapshot gate.
+ */
+async function prepareBiomarkerStatus(
+  marker: BiomarkerMarker,
+  args: {
+    userId: string;
+    locale?: string | null;
+    force?: boolean;
+    readOnly?: boolean;
+  },
+): Promise<PreparedStatusCard> {
+  const ctx = await openStatusCard(
+    args.userId,
+    biomarkerStatusScope(marker.id),
+    args,
+  );
+
+  const cached = await readCachedStatus(ctx, textStatusCodec);
+  if (cached) return { phase: "served", result: cached };
 
   // Numeric readings only — a qualitative-only marker carries no range verdict
   // or trend, so there is nothing to assess. Done BEFORE any enqueue so an
   // empty marker never queues an LLM job nor blocks on the provider.
   const rows = await prisma.labResult.findMany({
     where: {
-      userId: args.userId,
+      userId: ctx.userId,
       biomarkerId: marker.id,
       deletedAt: null,
       value: { not: null },
@@ -180,7 +194,7 @@ export async function generateBiomarkerStatus(args: {
       action: { name: "insights.biomarker-status.insufficient" },
       meta: { biomarkerId: marker.id },
     });
-    return insufficient();
+    return { phase: "served", result: insufficient() };
   }
 
   const readings: BiomarkerReading[] = rows.map((r) => ({
@@ -199,34 +213,21 @@ export async function generateBiomarkerStatus(args: {
   );
   const totalCount = await prisma.labResult.count({
     where: {
-      userId: args.userId,
+      userId: ctx.userId,
       biomarkerId: marker.id,
       deletedAt: null,
       value: { not: null },
     },
   });
 
-  if (readOnly) {
-    const outcome = await resolveReadOnlyStatusMiss({
-      userId: args.userId,
-      metric: scope,
-      locale,
-    });
-    if (outcome.kind === "unavailable") {
-      return {
-        hasProvider: outcome.hasProvider,
-        text: getNoKeyBiomarkerStatusText(locale, marker.name),
-        cached: true,
-        updatedAt: null,
-      };
-    }
+  if (ctx.readOnly) {
     return {
-      hasProvider: true,
-      text: outcome.lastGood?.text ?? null,
-      cached: outcome.lastGood !== null,
-      updatedAt: outcome.lastGood?.updatedAt ?? null,
-      preparing: outcome.lastGood === null,
-      revalidating: outcome.revalidating,
+      phase: "served",
+      result: await resolveReadOnlyStatus(
+        ctx,
+        textStatusCodec,
+        getNoKeyBiomarkerStatusText(ctx.locale, marker.name),
+      ),
     };
   }
 
@@ -245,8 +246,8 @@ export async function generateBiomarkerStatus(args: {
   // letting the input gate run keeps an idle marker to one cheap re-stamp per
   // day instead of a daily regeneration.
   const inputHash = hashInsightSnapshot({
-    scope,
-    locale,
+    scope: ctx.scope,
+    locale: ctx.locale,
     promptVersion: PROMPT_VERSION,
     count: totalCount,
     bounds: { lower: latestRange.low, upper: latestRange.high },
@@ -256,22 +257,58 @@ export async function generateBiomarkerStatus(args: {
       value: latest.value,
     },
   });
-  const unchanged = await gateUnchangedStatusInput({
-    userId: args.userId,
-    cacheAction,
-    todayKey,
-    inputHash,
-    force: false,
-  });
-  if (unchanged) {
-    return {
-      hasProvider: true,
-      text: unchanged.text,
-      cached: true,
-      updatedAt: unchanged.updatedAt,
-    };
-  }
+  const unchanged = await gateUnchangedInputs(ctx, inputHash, false);
+  if (unchanged) return { phase: "served", result: unchanged };
 
+  const { snapshotJson, safeMarkerName } = biomarkerSnapshot({
+    ctx,
+    marker,
+    readings,
+    latestRange,
+    totalCount,
+  });
+
+  annotate({
+    action: { name: ctx.cacheAction },
+    meta: { payload_size_bytes: snapshotJson.length },
+  });
+
+  return pendingStatusCard(ctx, textStatusCodec, {
+    systemPrompt: getBiomarkerSystemPrompt(
+      safeMarkerName,
+      ctx.locale as Locale,
+    ),
+    userPrompt: getBiomarkerUserPrompt(
+      snapshotJson,
+      ctx.todayKey,
+      ctx.locale as Locale,
+      // The rotating opener hint the sibling cards carry, keyed per
+      // (user, marker, day) so consecutive markers do not all open alike.
+      openerArchetypeHint(
+        `${ctx.userId}:biomarker:${marker.id}:${ctx.todayKey}`,
+        ctx.locale as Locale,
+      ),
+    ),
+    hashes: { inputHash },
+    temperature: AI_BUDGETS.statusArchetype.temperature,
+    maxTokens: AI_BUDGETS.statusArchetype.maxTokens,
+    fallbackText: getNoKeyBiomarkerStatusText(ctx.locale, marker.name),
+    emptyMessage: `Biomarker-status summary was empty for ${marker.id}`,
+    detail: undefined,
+  });
+}
+
+/** The marker snapshot: the range, the latest verdict and the series. */
+function biomarkerSnapshot(args: {
+  ctx: StatusCardContext;
+  marker: BiomarkerMarker;
+  readings: BiomarkerReading[];
+  latestRange: ReturnType<typeof resolveEffectiveReferenceRange>;
+  totalCount: number;
+}): { snapshotJson: string; safeMarkerName: string } {
+  const { marker, readings, latestRange, totalCount } = args;
+  const { locale, todayKey, userTz } = args.ctx;
+  const latest = readings[0];
   // Ascending series (oldest → newest) for the trend summary the prompt reads.
   const ascending = [...readings].reverse();
   const summary = summarizeSeries(ascending.map((r) => ({ value: r.value })));
@@ -317,76 +354,5 @@ export async function generateBiomarkerStatus(args: {
   };
   const snapshotJson = JSON.stringify(snapshot);
 
-  annotate({
-    action: { name: cacheAction },
-    meta: { payload_size_bytes: snapshotJson.length },
-  });
-
-  const outcome = await runStatusCompletion({
-    userId: args.userId,
-    cacheAction,
-    capability: "statusText",
-    systemPrompt: getBiomarkerSystemPrompt(safeMarkerName, locale as Locale),
-    userPrompt: getBiomarkerUserPrompt(
-      snapshotJson,
-      todayKey,
-      locale as Locale,
-      // The rotating opener hint the sibling cards carry, keyed per
-      // (user, marker, day) so consecutive markers do not all open alike.
-      openerArchetypeHint(
-        `${args.userId}:biomarker:${marker.id}:${todayKey}`,
-        locale as Locale,
-      ),
-    ),
-    temperature: AI_BUDGETS.statusArchetype.temperature,
-    maxTokens: AI_BUDGETS.statusArchetype.maxTokens,
-  });
-
-  if (outcome.kind === "none") {
-    return {
-      hasProvider: false,
-      text: getNoKeyBiomarkerStatusText(locale, marker.name),
-      cached: true,
-      updatedAt: null,
-    };
-  }
-  if (outcome.kind === "timeout" || outcome.kind === "error") {
-    return returnTimeoutFallback({
-      cacheAction,
-      reason: outcome.kind,
-      userId: args.userId,
-      todayKey,
-      stubText: getNoKeyBiomarkerStatusText(locale, marker.name),
-    });
-  }
-
-  // Outbound safety screen — WITHHOLD policy for a background-generated card.
-  const screened = finalizeStatusSummary(outcome.content, locale);
-  if (!screened.ok) {
-    annotate({
-      action: { name: "insights.status.outbound_blocked" },
-      meta: { cacheAction, reason: screened.reason },
-    });
-    return returnTimeoutFallback({
-      cacheAction,
-      reason: "screened",
-      userId: args.userId,
-      todayKey,
-      stubText: getNoKeyBiomarkerStatusText(locale, marker.name),
-    });
-  }
-  const text = screened.text;
-  if (!text) {
-    throw new Error(`Biomarker-status summary was empty for ${marker.id}`);
-  }
-
-  const updatedAt = await persistStatusInsight({
-    userId: args.userId,
-    cacheAction,
-    todayKey,
-    text,
-    inputHash,
-  });
-
-  return { hasProvider: true, text, cached: false, updatedAt };
+  return { snapshotJson, safeMarkerName };
 }

@@ -31,7 +31,7 @@ import { describe, expect, it } from "vitest";
 
 import { BACKGROUND_REASONING_JOBS } from "@/lib/ai/reasoning/levels";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -41,7 +41,7 @@ const ADMITTED: Record<string, { jobs: string[]; why: string }> = {
     jobs: ["daily_briefing"],
     why: "The daily briefing's generation and its phrasing re-roll; the JSON and grounding repairs do not reason.",
   },
-  "app/api/insights/generate/route.ts": {
+  "lib/insights/briefing-request/completion.ts": {
     jobs: ["daily_briefing"],
     why: "A briefing asked for by hand reasons like the scheduled one; its JSON and grounding repairs do not.",
   },
@@ -55,17 +55,12 @@ const ADMITTED: Record<string, { jobs: string[]; why: string }> = {
 const NEVER = [
   "lib/insights/status-batch.ts",
   "lib/insights/status-card-generation.ts",
+  "lib/insights/status-pipeline.ts",
   "lib/insights/metric-status.ts",
   "lib/insights/biomarker-status.ts",
   "lib/insights/derived/derived-assessment-ai.ts",
   "lib/jobs/workout-insight-generate.ts",
 ];
-
-function stripComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
-}
 
 /** `reasoningJob:` as a value, not the optional declaration `reasoningJob?:`. */
 const SETTER = /\breasoningJob\s*:(?!\s*BackgroundReasoningJob)/g;

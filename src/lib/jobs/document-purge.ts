@@ -8,20 +8,21 @@
  * tombstoned document keeps counting against the quota until purged, so
  * "deleted" bytes are never invisible backup weight). Staged facts cascade
  * via the FK. Restore-after-purge answers 409 at the API. An imported
- * document's source key is carried to `DocumentImportKey` on the way out.
+ * document's source key is carried to `DocumentImportKey` on the way out
+ * (`src/lib/documents/tombstones.ts`, shared with "Delete now").
  */
 import { type Job } from "pg-boss";
+import { DOCUMENT_PURGE_GRACE_DAYS } from "@/lib/jobs/document-purge-queue";
+import { purgeDocumentTombstones } from "@/lib/documents/tombstones";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { getWorkerPrisma } from "@/lib/jobs/reminder/shared";
 import type { PrismaClient } from "@/generated/prisma/client";
 
-export const DOCUMENT_PURGE_QUEUE = "document-tombstone-purge";
-/** Daily at 04:10 Europe/Berlin — after the med-notes backfill tick (04:05). */
-export const DOCUMENT_PURGE_CRON = "10 4 * * *";
-
-/** Days a tombstoned document stays restorable before the purge claims it. */
-export const DOCUMENT_PURGE_GRACE_DAYS = 30;
+export {
+  DOCUMENT_PURGE_CRON,
+  DOCUMENT_PURGE_QUEUE,
+} from "@/lib/jobs/document-purge-queue";
 
 const DAY_MS = 86_400_000;
 
@@ -33,66 +34,20 @@ export interface DocumentPurgePayload {
  * Hard-delete tombstoned `inbound_documents` rows whose `deletedAt` is older
  * than the grace horizon. Returns the number of rows purged. Rows inside the
  * grace window and live rows are never touched.
+ *
+ * v1.39.2 (#1038) — an imported document's source key outlives its row: the
+ * shared purge (`purgeDocumentTombstones`, the same one "Delete now" in
+ * Recently deleted runs) copies it into the ledger in the same transaction as
+ * the delete, so a re-run of the importer does not store the document again.
  */
 export async function purgeExpiredDocumentTombstones(
   prisma: PrismaClient,
   now: Date = new Date(),
 ): Promise<number> {
   const cutoff = new Date(now.getTime() - DOCUMENT_PURGE_GRACE_DAYS * DAY_MS);
-  const expired = { deletedAt: { not: null, lt: cutoff } };
-  return prisma.$transaction(async (tx) => {
-    // v1.39.2 (#1038) — an imported document's source key outlives its row.
-    // While the tombstone exists the key sits on it and the upload route
-    // answers "deleted"; once the row goes, this ledger is what keeps a re-run
-    // of the importer from storing the document again. Same transaction as the
-    // delete, so a purge that fails halfway forgets nothing.
-    const keyed = await tx.inboundDocument.findMany({
-      where: {
-        ...expired,
-        OR: [
-          { sourceSystem: { not: null }, sourceId: { not: null } },
-          { sourceAliases: { some: {} } },
-        ],
-      },
-      select: {
-        userId: true,
-        sourceSystem: true,
-        sourceId: true,
-        sourceInstance: true,
-        // Further keys the import answered with this document (same bytes).
-        // They cascade away with the row, so they are copied here first.
-        sourceAliases: {
-          select: { sourceSystem: true, sourceId: true, sourceInstance: true },
-        },
-      },
-    });
-    const keys = keyed.flatMap((row) => [
-      ...(row.sourceSystem && row.sourceId
-        ? [
-            {
-              userId: row.userId,
-              sourceSystem: row.sourceSystem,
-              sourceId: row.sourceId,
-              sourceInstance: row.sourceInstance,
-            },
-          ]
-        : []),
-      ...row.sourceAliases.map((alias) => ({
-        userId: row.userId,
-        sourceSystem: alias.sourceSystem,
-        sourceId: alias.sourceId,
-        sourceInstance: alias.sourceInstance,
-      })),
-    ]);
-    if (keys.length > 0) {
-      await tx.documentImportKey.createMany({
-        data: keys,
-        skipDuplicates: true,
-      });
-    }
-    const { count } = await tx.inboundDocument.deleteMany({ where: expired });
-    return count;
-  });
+  return prisma.$transaction((tx) =>
+    purgeDocumentTombstones(tx, { deletedAt: { lt: cutoff } }),
+  );
 }
 
 export async function handleDocumentPurge(

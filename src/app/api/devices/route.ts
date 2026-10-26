@@ -24,13 +24,8 @@
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  returnAllZodIssues,
-  safeJson,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, sanitiseZodIssues } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
@@ -113,42 +108,31 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Too many device registrations, please slow down", 429);
   }
 
-  const { data: body, error } = await safeJson(request, {
+  // v1.4.43 — iOS device-registration multi-issue 422 + audit
+  // breadcrumb. APNs-token + bundleId + environment + model + locale
+  // can all fail simultaneously on a misconfigured client build.
+  const parsed = await parseJsonBody(request, deviceSchema, {
     maxBytes: 64 * 1024,
-  });
-  if (error) return error;
-
-  const parsed = deviceSchema.safeParse(body);
-  if (!parsed.success) {
-    // v1.4.43 — iOS device-registration multi-issue 422 + audit
-    // breadcrumb. APNs-token + bundleId + environment + model + locale
-    // can all fail simultaneously on a misconfigured client build.
-    const issues = sanitiseZodIssues(parsed.error.issues);
-    annotate({
-      action: { name: "devices.register.validation-failed" },
-      meta: { issue_count: issues.length },
-    });
-    // v1.4.49 — strip `message` from the audit-ledger row. Device
-    // registration carries `token` + `apnsToken`; the default Zod
-    // message for `invalid_format` echoes the offending value, which
-    // would persist an APNs token (or a forged near-miss) into the
-    // audit ledger.
-    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
-      stripValuesFromMessage: true,
-    });
-    prisma.auditLog
-      .create({
-        data: {
-          userId: user.id,
-          action: "devices.register.validation-failed",
-          details: JSON.stringify({ issues: auditIssues }),
-        },
-      })
-      .catch(() => {
+    action: "devices.register.validation-failed",
+    countIssues: true,
+    onInvalid: (error) => {
+      // v1.4.49 — strip `message` from the audit-ledger row. Device
+      // registration carries `token` + `apnsToken`; the default Zod
+      // message for `invalid_format` echoes the offending value, which
+      // would persist an APNs token (or a forged near-miss) into the
+      // audit ledger.
+      const auditIssues = sanitiseZodIssues(error.issues, {
+        stripValuesFromMessage: true,
+      });
+      auditLog("devices.register.validation-failed", {
+        userId: user.id,
+        details: { issues: auditIssues },
+      }).catch(() => {
         /* swallow — 422 response is the contract */
       });
-    return returnAllZodIssues(parsed.error, 422);
-  }
+    },
+  });
+  if (!parsed.ok) return parsed.error;
 
   const {
     token,

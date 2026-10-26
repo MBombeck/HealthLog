@@ -19,21 +19,23 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { stripComments } from "./helpers/source-files";
 
 const ROOT = resolve(__dirname, "../..");
 const read = (path: string) => readFileSync(resolve(ROOT, path), "utf8");
 
 /** Drop `//` and block comments so prose about a class cannot satisfy a check. */
-function code(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
+function code(source: string, fileName?: string): string {
+  return stripComments(source, fileName);
 }
 
 describe("the shell owns the safe area", () => {
   it("the authenticated shell wrapper takes the insets", () => {
     const shell = code(read("src/components/layout/auth-shell.tsx"));
-    expect(shell).toMatch(/className="shell-safe-area flex h-dvh flex-col"/);
+    expect(shell).toMatch(/<div className=\{SHELL_ROOT_CLASS\}>/);
+    expect(read("src/components/layout/shell-metrics.ts")).toMatch(
+      /SHELL_ROOT_CLASS =\s*"shell-safe-area absolute inset-0 flex flex-col"/,
+    );
   });
 
   it.each([
@@ -63,7 +65,7 @@ describe("the shell owns the safe area", () => {
   it("bottom toasts clear the bar under the same query the bar follows", () => {
     // Sonner's own mobile offset stops at 600 px; the bar shows up to `md`
     // and on a phone held sideways, so the lift keys on `shell-mobile`.
-    const css = code(read("src/app/globals.css"));
+    const css = code(read("src/app/globals.css"), "globals.css");
     expect(css).toMatch(
       /html \[data-sonner-toaster\]\[data-y-position="bottom"\]\s*\{\s*@variant shell-mobile\s*\{\s*bottom:\s*calc\(4rem \+ env\(safe-area-inset-bottom/,
     );
@@ -81,7 +83,7 @@ describe("the shell owns the safe area", () => {
   it("a bottom sheet on the keyboard drops its home-indicator padding", () => {
     // Standing on the keyboard, the safe-area inset left a ~34 px gap
     // between the sheet's last row and the keys.
-    expect(code(read("src/app/globals.css"))).toMatch(
+    expect(code(read("src/app/globals.css"), "globals.css")).toMatch(
       /@custom-variant keyboard-open \(html\[data-keyboard="open"\] &\);/,
     );
     const sheet = code(read("src/components/ui/responsive-sheet.tsx"));
@@ -97,7 +99,7 @@ describe("the shell owns the safe area", () => {
     // `bg-*` on the shell or a `bottom-*` on a sheet would have been ignored
     // without a trace. In the components layer a utility wins, so the bottom
     // sheet must not carry one that would pin it under the keyboard.
-    const css = code(read("src/app/globals.css"));
+    const css = code(read("src/app/globals.css"), "globals.css");
     const start = css.indexOf("@layer components {");
     expect(start).toBeGreaterThan(-1);
     let depth = 0;

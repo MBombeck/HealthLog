@@ -67,7 +67,12 @@ const resultSchema = z
     tags: z.array(z.string()),
     sizeBytes: z.number().int().nullable(),
     state: z.enum(["new", "imported", "deleted"]),
-    documentId: z.string().nullable(),
+    documentId: z
+      .string()
+      .nullable()
+      .describe(
+        "The vault document for `imported`. For `deleted`, the document while it is still in Recently deleted (restorable), null once it has been removed for good.",
+      ),
   })
   .meta({ id: "DocumentSourceResult" });
 
@@ -81,7 +86,11 @@ const searchSchema = z
 
 const importResultSchema = z
   .object({
-    outcome: z.enum(["imported", "duplicate", "deleted"]),
+    outcome: z
+      .enum(["imported", "duplicate", "deleted", "restored"])
+      .describe(
+        "`restored` only answers a request that sent `revive: true`: the deleted document was still in Recently deleted and is back in the vault.",
+      ),
     documentId: z.string().nullable(),
     linked: z.boolean(),
   })
@@ -335,7 +344,7 @@ export const documentSourcePaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Documents"],
       summary: "Import one picked document",
       description:
-        "`sourceId` must be an id the system issues (Paperless-ngx: digits; Papra: letters, digits, `_`, `-`), else 422 before anything is fetched. Fetches one document from the source and stores it in the vault through the same path as an upload, with `sourceSystem` / `sourceId` / `sourceInstance` (the connection's origin) provenance; the same id from another instance is another document. One import per key runs at a time; a concurrent second one waits and then answers `duplicate`. The key check counts toward the lookup allowance, the fetch toward the search allowance, and only a file that arrived toward the upload allowance. A source key the vault already holds is answered without a download: `duplicate` for a live document (same id), `deleted` for one the person deleted in HealthLog, which is never stored again. Bytes already in the vault under another key are `duplicate` too, and the key is remembered for that document. `link` files the document against the record the picker was opened from (a condition, a visit or a vaccination, which must be the caller's own and live; checked before anything is fetched), including a duplicate. `kind` sets the document type (default OTHER). Automatic AI reading follows the person's own setting. Counts against the person's upload allowance (60 an hour) and storage quota. 201 for a new document, 200 otherwise. Cookie session only; not delegable.",
+        "`sourceId` must be an id the system issues (Paperless-ngx: digits; Papra: letters, digits, `_`, `-`), else 422 before anything is fetched. Fetches one document from the source and stores it in the vault through the same path as an upload, with `sourceSystem` / `sourceId` / `sourceInstance` (the connection's origin) provenance; the same id from another instance is another document. One import per key runs at a time; a concurrent second one waits and then answers `duplicate`. The key check counts toward the lookup allowance, the fetch toward the search allowance, and only a file that arrived toward the upload allowance. A source key the vault already holds is answered without a download: `duplicate` for a live document (same id), `deleted` for one the person deleted in HealthLog, which is not stored again unless the request sends `revive: true`: then a document still in Recently deleted is restored (`restored`), and one already removed for good is fetched and stored again, its key leaving the import ledger. A token upload (`POST /api/documents/inbound`) has no such switch, so an importer never brings a deleted document back. Bytes already in the vault under another key are `duplicate` too, and the key is remembered for that document. `link` files the document against the record the picker was opened from (a condition, a visit or a vaccination, which must be the caller's own and live; checked before anything is fetched), including a duplicate. `kind` sets the document type (default OTHER). Automatic AI reading follows the person's own setting. Counts against the person's upload allowance (60 an hour) and storage quota. 201 for a new document, 200 otherwise. Cookie session only; not delegable.",
       security: cookieOnly,
       parameters: [systemParameter],
       requestBody: {
@@ -358,7 +367,7 @@ export const documentSourcePaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "200": {
           description:
-            "Already held (`duplicate`) or deleted in HealthLog (`deleted`).",
+            "Already held (`duplicate`), deleted in HealthLog (`deleted`), or brought back from Recently deleted (`restored`).",
           content: {
             "application/json": {
               schema: dataEnvelope(

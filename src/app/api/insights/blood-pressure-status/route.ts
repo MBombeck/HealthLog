@@ -1,9 +1,7 @@
 import { NextRequest } from "next/server";
 import { apiSuccess } from "@/lib/api-response";
-import {
-  generateBloodPressureStatusForUser,
-  resolveBloodPressureStatusLocale,
-} from "@/lib/insights/blood-pressure-status";
+import { generateBloodPressureStatusForUser } from "@/lib/insights/blood-pressure-status";
+import { normalizeLocale } from "@/lib/insights/status-shared";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
@@ -42,7 +40,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     userLocale: user.locale ?? null,
     override: localeParam,
   });
-  const locale = resolveBloodPressureStatusLocale(resolved);
+  const locale = normalizeLocale(resolved);
 
   // v1.8.3 — read-only: serve the cache, enqueue generation out of band on
   // a miss. The GET never awaits the provider, so opening /insights/<metric>

@@ -18,12 +18,8 @@ import { z } from "zod/v4";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { auditLog } from "@/lib/auth/audit";
-import {
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { invalidateUserCorrelationPatterns } from "@/lib/cache/invalidate";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
@@ -43,15 +39,10 @@ export const POST = apiHandler(
     const { user } = await requireAuth();
     const { id } = await params;
 
-    const { data: rawBody, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, restoreSchema, {
       maxBytes: 64 * 1024,
     });
-    if (jsonError) return jsonError;
-
-    const parsed = restoreSchema.safeParse(rawBody);
-    if (!parsed.success) {
-      return returnAllZodIssues(parsed.error, 422);
-    }
+    if (!parsed.ok) return parsed.error;
 
     const { count } = await prisma.customMetricEntry.updateMany({
       where: {

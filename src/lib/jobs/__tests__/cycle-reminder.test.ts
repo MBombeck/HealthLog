@@ -33,7 +33,7 @@ import {
   PERIOD_CONFIRM_GRACE_DAYS,
   FERTILE_SOON_LEAD_DAYS,
 } from "../cycle-reminder";
-import { isCycleEnabled } from "@/lib/cycle/gate";
+import { isCycleEnabled } from "@/lib/cycle/enabled";
 import type { NotificationPayload } from "@/lib/notifications/types";
 import type { DispatchOutcome } from "@/lib/notifications/dispatcher";
 

@@ -81,10 +81,11 @@
  * by construction (no trigger → no nudge), and a user who engaged the Coach
  * in the last ~24 h is skipped.
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { getAssistantFlags } from "@/lib/feature-flags";
 import { aiCapabilityForJob } from "@/lib/ai/capabilities/gate";
-import { annotate } from "@/lib/logging/context";
+import { annotate, getEvent } from "@/lib/logging/context";
 import {
   getEffectiveRange,
   type ThresholdOverridesJson,
@@ -101,7 +102,6 @@ import {
   type ComposeNudgeWithAI,
   type NudgeAiTickBudget,
 } from "@/lib/jobs/coach-nudge-ai";
-import { getEvent } from "@/lib/logging/context";
 import { resolveCanonicalRecovery } from "@/lib/insights/derived/recovery-resolve";
 import { resolveRestMode } from "@/lib/illness/rest-mode";
 import { reconstructSleepNights } from "@/lib/analytics/sleep-night";
@@ -120,11 +120,6 @@ const SELF_CONTEXT_AI_SECTIONS = [
   "ALLERGIES",
   "COACH_FOCUS",
 ] as const satisfies readonly HealthProfileAiSection[];
-
-/** Pg-boss queue + cron — imported by the reminder worker's bootstrap. */
-export const COACH_NUDGE_QUEUE = "coach-nudge";
-/** 05:15 Europe/Berlin — after the 04:45–04:55 score crons settled. */
-export const COACH_NUDGE_CRON = "15 5 * * *";
 
 /**
  * Frequency cap default: one nudge per user per rolling week. v1.16.5 —
@@ -837,7 +832,7 @@ export async function runCoachNudgeTick(
 
   // Gate 2 — per-user Coach opt-out.
   const users = await prisma.user.findMany({
-    where: { disableCoach: false },
+    where: { disableCoach: false, ...ACTIVE_ACCOUNT },
     select: {
       id: true,
       locale: true,

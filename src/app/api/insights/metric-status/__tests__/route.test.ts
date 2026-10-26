@@ -54,7 +54,6 @@ vi.mock("@/lib/insights/metric-status", () => ({
     cached: true,
     updatedAt: new Date().toISOString(),
   })),
-  resolveMetricStatusLocale: () => "en",
 }));
 
 import { GET } from "../route";

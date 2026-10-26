@@ -42,14 +42,8 @@ import {
   recentProofMethods,
   requireCookieAuth,
 } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  apiValidationError,
-  getClientIp,
-  safeJson,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { annotate } from "@/lib/logging/context";
@@ -68,19 +62,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const { user, session } = await requireCookieAuth();
   const ip = getClientIp(request);
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, stepUpMintSchema, {
     maxBytes: 64 * 1024,
+    message: "Invalid request",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = stepUpMintSchema.safeParse(body);
-  if (!parsed.success) {
-    return apiValidationError(
-      "Invalid request",
-      sanitiseZodIssues(parsed.error.issues),
-      422,
-    );
-  }
+  if (!parsed.ok) return parsed.error;
   const proof = parsed.data;
 
   // Refuse a proof that could not satisfy the gate BEFORE spending a guess on

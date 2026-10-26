@@ -20,15 +20,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { persistStrainScore } from "@/lib/insights/strain-score";
 import { runScoreBatch } from "@/lib/insights/score-row";
-
-export const STRAIN_SCORE_QUEUE = "strain-score-compute";
-
-/**
- * Daily at 04:55 Europe/Berlin — inside the existing maintenance window,
- * after the recovery-score (04:45) + stress-score (04:50) passes so the
- * nightly score writes stay ordered and don't pile on one boss poll.
- */
-export const STRAIN_SCORE_CRON = "55 4 * * *";
+import { excludePendingOwners } from "@/lib/account-deletion/active-account";
 
 /** Per-run user cap — same starvation guard the other score passes use. */
 export const STRAIN_SCORE_BATCH_CAP = 500;
@@ -64,10 +56,14 @@ export async function findStrainScoreCandidates(
   // order picked an arbitrary set when more than `cap` users qualified; the
   // ordered `groupBy` makes each side take the most-recently-active users, and
   // the merge below is order-stable.
+  // An account pending deletion gets no score and takes no slot of the cap.
   const [workoutUsers, energyUsers] = await Promise.all([
     prisma.workout.groupBy({
       by: ["userId"],
-      where: { startedAt: { gte: since } },
+      where: {
+        startedAt: { gte: since },
+        ...(await excludePendingOwners(prisma)),
+      },
       orderBy: [{ _max: { startedAt: "desc" } }, { userId: "asc" }],
       take: cap,
     }),
@@ -77,6 +73,7 @@ export async function findStrainScoreCandidates(
         type: "ACTIVE_ENERGY_BURNED",
         deletedAt: null,
         measuredAt: { gte: since },
+        ...(await excludePendingOwners(prisma)),
       },
       orderBy: [{ _max: { measuredAt: "desc" } }, { userId: "asc" }],
       take: cap,

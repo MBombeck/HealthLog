@@ -39,7 +39,8 @@ import {
   recordSyncSuccess,
   toFailureKind,
 } from "@/lib/integrations/status";
-import { fetchExercises, mapExercise, type PolarWorkoutRow } from "./client";
+import { fetchExercises } from "./client";
+import { mapExercise, type PolarWorkoutRow } from "./map";
 import { getPolarConnection } from "./credentials";
 import {
   PolarApiError,

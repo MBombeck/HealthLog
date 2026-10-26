@@ -61,6 +61,12 @@ vi.mock("@napi-rs/canvas", async (importActual) => {
   };
 });
 
+import {
+  __resetFallbackFamiliesForTests,
+  __resetPdfjsAssetsForTests,
+  PDF_MAX_IMAGE_PIXELS,
+  renderPdfPages,
+} from "../pdf-engine.mjs";
 import * as raster from "../rasterize-pdf";
 import { generateThumbnail } from "../thumbnail";
 
@@ -85,15 +91,32 @@ beforeEach(() => {
   annotate.mockClear();
   registerFromPath.mockClear();
   getDocumentOptions.length = 0;
-  raster.__resetPdfjsAssetsForTests();
+  __resetPdfjsAssetsForTests();
+  __resetFallbackFamiliesForTests();
 });
+
+/**
+ * The server renders in a child process (`../pdf-isolation.ts`), where the
+ * mocks above cannot see. The option and registration checks therefore drive
+ * the engine the child runs in this process; the rendering checks go through
+ * `rasterizePdf` and the child, as the server does.
+ */
+const renderHere = (data: Buffer) =>
+  renderPdfPages(data, {
+    maxPages: 1,
+    targetLongEdge: raster.RASTER_TARGET_LONG_EDGE,
+    jpegQuality: raster.RASTER_JPEG_QUALITY,
+    minInkRatio: raster.RASTER_MIN_INK_RATIO,
+  });
 
 describe("rasterizePdf font and decoder data (#1124)", () => {
   it("gives pdfjs its font, CMap and wasm directories and no system fonts", async () => {
-    const result = await raster.rasterizePdf(fixture("fallback-fonts.pdf"), 1);
-    expect(result.ok).toBe(true);
+    const result = await renderHere(fixture("fallback-fonts.pdf"));
+    expect(result.pages).toHaveLength(1);
     const opts = getDocumentOptions.at(-1)!;
     expect(opts.useSystemFonts).toBe(false);
+    expect(opts.disableFontFace).toBe(true);
+    expect(opts.maxImageSize).toBe(PDF_MAX_IMAGE_PIXELS);
     for (const [key, probe] of [
       ["standardFontDataUrl", "FoxitSerif.pfb"],
       ["standardFontDataUrl", "LiberationSans-Regular.ttf"],
@@ -107,7 +130,7 @@ describe("rasterizePdf font and decoder data (#1124)", () => {
   });
 
   it("registers a fallback face for every generic family pdfjs falls back to", async () => {
-    await raster.rasterizePdf(fixture("fallback-fonts.pdf"), 1);
+    await renderHere(fixture("fallback-fonts.pdf"));
     const families = new Set(registerFromPath.mock.calls.map((c) => c[1]));
     expect(families).toEqual(new Set(["sans-serif", "serif", "monospace"]));
     for (const [path] of registerFromPath.mock.calls) {

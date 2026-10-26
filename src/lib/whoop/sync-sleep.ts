@@ -27,7 +27,8 @@ import {
 } from "@/lib/sleep/sweep-stale-segments";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";
 
-import { fetchSleeps, fetchSleepById, mapSleep } from "./client";
+import { fetchSleeps, fetchSleepById } from "./client";
+import { mapSleep } from "./map";
 import {
   getValidToken,
   incrementalStart,

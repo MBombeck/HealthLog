@@ -1,51 +1,46 @@
 /**
- * v1.28.37 — step-consolidation repair queue registration guard +
- * `extractStatsDay` unit coverage.
+ * Step-consolidation repair queue registration guard + `extractStatsDay`
+ * unit coverage.
  *
- * Same source-text-grep approach as the drain + step-consolidation +
- * mean-consolidation guards: assert the repair queue is registered in
- * `allQueues`, a `createAndWork` handler is wired against it, and the
- * boot-discovery enqueue helper fires — without booting pg-boss + Prisma.
- * An unregistered queue silently never drains (the dead-queue class).
+ * Reads the worker registry: the repair queue is declared in the rollup
+ * group, bound to the repair handler, and offered again by the rollup boot
+ * discovery. An unregistered queue silently never drains (the dead-queue
+ * class).
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { describe, expect, it } from "vitest";
 
-import { extractStatsDay } from "../step-consolidation-repair";
+import { handleStepConsolidationRepair } from "@/lib/jobs/reminder/rollup-handlers";
+import {
+  discoveryOf,
+  groupOf,
+  jobOf,
+  loadedHandler,
+} from "@/lib/jobs/registry/__tests__/registry-helpers";
 
-const REGISTRAR_PATH = join(__dirname, "..", "reminder", "register-rollup.ts");
-const source = readFileSync(REGISTRAR_PATH, "utf8");
+import {
+  STEP_CONSOLIDATION_REPAIR_CONCURRENCY,
+  STEP_CONSOLIDATION_REPAIR_QUEUE,
+  extractStatsDay,
+} from "../step-consolidation-repair";
 
-describe("reminder-worker — step-consolidation-repair wiring", () => {
-  it("imports the queue symbols from the repair module", () => {
-    expect(source).toMatch(
-      /from\s*["']@\/lib\/jobs\/step-consolidation-repair["']/,
-    );
-    expect(source).toMatch(/\bSTEP_CONSOLIDATION_REPAIR_QUEUE\b/);
-    expect(source).toMatch(/\brunStepConsolidationRepairForUser\b/);
-    expect(source).toMatch(/\benqueueBootTimeStepConsolidationRepair\b/);
+describe("step-consolidation-repair registration", () => {
+  it("declares the repair queue in the rollup group", () => {
+    expect(groupOf(STEP_CONSOLIDATION_REPAIR_QUEUE).name).toBe("rollup");
+    const job = jobOf(STEP_CONSOLIDATION_REPAIR_QUEUE);
+    expect(job.policy?.policy).toBe("exclusive");
+    expect(job.work).toEqual({
+      localConcurrency: STEP_CONSOLIDATION_REPAIR_CONCURRENCY,
+    });
   });
 
-  it("registers the repair queue in the allQueues loop", () => {
-    const allQueuesMatch = source.match(
-      /const allQueues\s*=\s*\[([\s\S]*?)\];/,
-    );
-    expect(allQueuesMatch).not.toBeNull();
-    expect(allQueuesMatch![1]).toMatch(/\bSTEP_CONSOLIDATION_REPAIR_QUEUE\b/);
-  });
-
-  it("registers a createAndWork handler against the repair queue", () => {
-    expect(source).toMatch(
-      /createAndWork[\s\S]{0,200}STEP_CONSOLIDATION_REPAIR_QUEUE[\s\S]{0,400}runStepConsolidationRepairForUser/,
+  it("binds the repair handler", async () => {
+    expect(await loadedHandler(STEP_CONSOLIDATION_REPAIR_QUEUE)).toBe(
+      handleStepConsolidationRepair,
     );
   });
 
-  it("fires the boot-discovery enqueue helper", () => {
-    expect(source).toMatch(
-      /await enqueueBootTimeStepConsolidationRepair\([^)]*\)/,
-    );
+  it("runs the boot discovery pass", () => {
+    expect(discoveryOf("rollup")).toContain("step-consolidation-repair");
   });
 });
 

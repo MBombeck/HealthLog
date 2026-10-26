@@ -46,6 +46,7 @@ const WRITTEN_REASON = /tile-eligibility-exempt:\s*\S/;
 const SURFACES = [
   "src/app/page-client.tsx",
   ...listSourceFiles("src/components/dashboard"),
+  ...listSourceFiles("src/components/dashboard/tiles"),
   ...listSourceFiles("src/lib/dashboard"),
 ];
 

@@ -222,10 +222,14 @@ export function documentAiErrorKey(err: unknown): string {
         return "documents.assist.errorProvider";
       case "documents.inbound.notIndexed":
         return "documents.assist.errorNotIndexed";
+      case "documents.inbound.outputLimit":
+        return "documents.assist.errorOutputLimit";
       case "aiRuns.workerUnavailable":
         return "aiRuns.errorWorkerUnavailable";
       case "aiRuns.timedOut":
         return "aiRuns.errorTimedOut";
+      case "aiRuns.readerBusy":
+        return "aiRuns.errorReaderBusy";
       case "consent.ai.required":
         return "documents.assist.errorConsent";
       case "ai.provider.none":

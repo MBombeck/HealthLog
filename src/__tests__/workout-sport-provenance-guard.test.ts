@@ -83,7 +83,7 @@ const PROVIDER_INGESTS: ProviderIngest[] = [
     provider: "Polar",
     mapper: "mapPolarSportType",
     mapperFile: "lib/polar/sport-map.ts",
-    captureFile: "lib/polar/client.ts",
+    captureFile: "lib/polar/map.ts",
     captureField: "detailed_sport_info",
     writeFile: "lib/polar/sync-workouts.ts",
     metadataKey: "polarSport",
@@ -92,7 +92,7 @@ const PROVIDER_INGESTS: ProviderIngest[] = [
     provider: "Strava",
     mapper: "mapStravaSportType",
     mapperFile: "lib/strava/sport-map.ts",
-    captureFile: "lib/strava/client.ts",
+    captureFile: "lib/strava/map.ts",
     captureField: "rawSportType",
     writeFile: "lib/strava/sync.ts",
     metadataKey: "stravaType",
@@ -189,9 +189,10 @@ describe("T2 — the set of files writing Workout rows is frozen", () => {
    * already resolved, so the provenance rule does not reach them.
    */
   const NON_MAPPING_WRITERS: Record<string, string> = {
-    // The iOS / client batch endpoint. The client sends an enum value and MAY
+    // The iOS / client batch endpoint (its write, behind
+    // `/api/workouts/batch`). The client sends an enum value and MAY
     // send its own `metadata`; no server-side label mapping happens here.
-    "app/api/workouts/batch/route.ts": "client-supplied enum",
+    "lib/workouts/batch-ingest/write.ts": "client-supplied enum",
     // Backup restore replays rows this app previously wrote, provenance and
     // all.
     "lib/export/workouts-backup.ts": "restore replay",

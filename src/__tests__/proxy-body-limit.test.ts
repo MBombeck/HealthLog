@@ -102,8 +102,17 @@ describe("proxy matcher", () => {
       "/api/import/csv/preview",
       // The composition PUT beside the label upload stays behind the proxy.
       "/api/medications/abc/ingredients",
+      // An API path ending in a static-file extension is still an API call:
+      // the last segment is the caller's choice.
+      "/api/mood/tags/custom/x.png",
+      "/api/documents/inbound/abc.txt",
+      "/api/measurements/x.svg",
     ]) {
       expect(re.test(path), path).toBe(true);
+    }
+    // Static files outside the API still skip it.
+    for (const path of ["/icons/icon-192.png", "/og.jpg", "/robots.txt"]) {
+      expect(re.test(path), path).toBe(false);
     }
   });
 });

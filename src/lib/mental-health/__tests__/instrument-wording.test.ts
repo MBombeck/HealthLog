@@ -1,209 +1,279 @@
-import { readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { readSourceFolder } from "@/__tests__/helpers/source-files";
+import { locales, type Locale } from "@/lib/i18n/config";
+import type { InstrumentWording } from "../wording/types";
 
-import { INSTRUMENTS, INSTRUMENT_ORDER } from "../instruments";
+import { INSTRUMENT_ORDER, isSafetyFlagged } from "../instruments";
+import { anchorText, stemText } from "../instrument-wording";
+import { WORDING } from "../wording";
+import { loadLocaleWording } from "../wording/load";
 import {
-  SOURCE_WORDING,
-  englishOnlyWordingKeys,
-  instrumentText,
-  instrumentWordingKeys,
-} from "../instrument-wording";
+  isValidatedWording,
+  presentedWording,
+  wordingFor,
+} from "../wording/resolve";
 
 /**
- * Validated questionnaire wording is never freely translated. A language
- * outside an instrument's validated set sees the English source, and its
- * bundle carries none of that instrument's wording, so no renderer can pick a
- * self-made translation up by accident.
+ * How a surface reads questionnaire text, and which wording an
+ * administration records. Then spot checks of the validated entries against
+ * the published forms named in their `source`: the places a transcription
+ * slips (a column header split over lines, an anchor that differs between
+ * two forms of one language, a form of address).
  */
 
-const ROOT = join(__dirname, "../../../..");
-const MESSAGES = join(ROOT, "messages");
-const LOCALES = readdirSync(MESSAGES)
-  .filter((f) => f.endsWith(".json"))
-  .map((f) => f.replace(/\.json$/, ""));
-
-function flatten(obj: unknown, prefix = "", out = new Map<string, string>()) {
-  if (obj && typeof obj === "object") {
-    for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
-      const key = prefix ? `${prefix}.${k}` : k;
-      if (typeof v === "string") out.set(key, v);
-      else flatten(v, key, out);
-    }
-  }
-  return out;
-}
-
-function bundle(locale: string): Map<string, string> {
-  return flatten(
-    JSON.parse(readFileSync(join(MESSAGES, `${locale}.json`), "utf8")),
-  );
-}
-
-describe("instrument wording", () => {
-  it("holds the English source of every instrument's wording, word for word as en.json", () => {
-    const en = bundle("en");
-    const expected = new Set(INSTRUMENT_ORDER.flatMap(instrumentWordingKeys));
-    // PHQ-9 9 + GAD-7 7 + WHO-5 5 + SCI 8 items alone are 29 keys.
-    expect(expected.size).toBeGreaterThan(29);
-    expect(Object.keys(SOURCE_WORDING).sort()).toEqual([...expected].sort());
-    for (const [key, text] of Object.entries(SOURCE_WORDING)) {
-      expect(en.get(key), key).toBe(text);
-    }
+describe("reading the wording", () => {
+  it("reads the reader's language, and English for a language the app does not ship", () => {
+    expect(wordingFor("PHQ9", "nl")).toBe(WORDING.PHQ9.nl);
+    expect(wordingFor("PHQ9", "pt-br")).toBe(WORDING.PHQ9["pt-BR"]);
+    expect(wordingFor("PHQ9", "de-AT")).toBe(WORDING.PHQ9.de);
+    expect(wordingFor("SCI", "ja")).toBe(WORDING.SCI.en);
   });
 
-  it("names PHQ-9 item 9 English-only for the languages its wording is not validated in", () => {
-    for (const locale of ["nl", "pt-BR"]) {
-      const keys = englishOnlyWordingKeys(locale);
-      expect(keys).toContain("mentalHealth.items.phq9.9");
-      expect(keys).toContain("mentalHealth.options.3");
-      expect(keys).toContain("mentalHealth.functionalTitle");
-      expect(keys).toContain("mentalHealth.who5Options.5");
-      expect(keys).toContain("mentalHealth.stems.who5.period");
-      expect(keys).toContain("mentalHealth.items.sci.1");
-    }
-    // German is validated for the PHQ family and the WHO-5, not the SCI.
-    const de = englishOnlyWordingKeys("de");
-    expect(de).not.toContain("mentalHealth.items.phq9.9");
-    expect(de).toContain("mentalHealth.items.sci.1");
-    expect(de).toContain("mentalHealth.sciOptions.duration.4");
-    expect(englishOnlyWordingKeys("en")).toEqual([]);
+  it("resolves an answer label through the item's anchor group", () => {
+    const sci = WORDING.SCI.en;
+    expect(anchorText("SCI", sci, 0, 4)).toBe("0–15 min");
+    expect(anchorText("SCI", sci, 2, 0)).toBe("5–7");
+    expect(anchorText("SCI", sci, 3, 2)).toBe("Average");
+    expect(anchorText("SCI", sci, 6, 1)).toBe("Much");
+    expect(anchorText("SCI", sci, 7, 3)).toBe("1–2 months");
+    expect(anchorText("PHQ9", WORDING.PHQ9.en, 8, 3)).toBe("Nearly every day");
   });
 
-  it.each(LOCALES.filter((l) => l !== "en"))(
-    "messages/%s.json carries no wording of an instrument it is not validated for",
-    (locale) => {
-      const flat = bundle(locale);
-      expect(flat.size).toBeGreaterThan(3000);
-      const englishOnly = englishOnlyWordingKeys(locale);
-      expect(englishOnly.length).toBeGreaterThan(0);
-      expect(englishOnly.filter((key) => flat.has(key))).toEqual([]);
-    },
-  );
-
-  it("resolves the English source, not the bundle, outside the validated set", () => {
-    const drifted = (key: string) => `TRANSLATED(${key})`;
-    for (const locale of ["nl", "pt-BR"]) {
-      expect(
-        instrumentText("PHQ9", "mentalHealth.items.phq9.9", locale, drifted),
-      ).toBe(
-        "Thoughts that you would be better off dead, or of hurting yourself in some way",
-      );
-      expect(
-        instrumentText("GAD7", "mentalHealth.options.0", locale, drifted),
-      ).toBe("Not at all");
-    }
-    expect(
-      instrumentText("SCI", "mentalHealth.items.sci.1", "fr", drifted),
-    ).toBe(SOURCE_WORDING["mentalHealth.items.sci.1"]);
-  });
-
-  it("resolves the bundle's validated translation inside the validated set", () => {
-    const t = (key: string) => `VALIDATED(${key})`;
-    expect(instrumentText("PHQ9", "mentalHealth.items.phq9.9", "de", t)).toBe(
-      "VALIDATED(mentalHealth.items.phq9.9)",
+  it("resolves the stem the form prints above an item", () => {
+    expect(stemText("SCI", WORDING.SCI.en, 0)).toBe(
+      "Thinking about a typical night in the last month …",
     );
-    expect(instrumentText("SCI", "mentalHealth.items.sci.1", "en", t)).toBe(
-      "VALIDATED(mentalHealth.items.sci.1)",
+    expect(stemText("SCI", WORDING.SCI.en, 7)).toBe("Finally …");
+    expect(stemText("WHO5", WORDING.WHO5.nl, 4)).toBe(
+      "Gedurende de laatste twee weken",
     );
-  });
-
-  it("every validated locale's bundle carries a complete set for its instruments", () => {
-    for (const locale of LOCALES) {
-      const flat = bundle(locale);
-      for (const id of INSTRUMENT_ORDER) {
-        if (!INSTRUMENTS[id].validatedItemLocales.includes(locale)) continue;
-        const missing = instrumentWordingKeys(id).filter((k) => !flat.has(k));
-        expect(missing, `${locale} ${id}`).toEqual([]);
-      }
-    }
   });
 });
 
-describe("validated languages carry the published wording", () => {
-  // Spot checks against the published forms named at the locale lists in
-  // instruments.ts: the places where the bundles had drifted (an informal
-  // follow-up question, a reworded anchor, a modernised spelling, the
-  // Italian GAD-7 anchor that differs from the Italian PHQ-9 one).
-  const PUBLISHED: Record<string, Record<string, string>> = {
-    de: {
-      "mentalHealth.stems.phq9.period":
-        "Wie oft fühlten Sie sich im Verlauf der letzten 2 Wochen durch die folgenden Beschwerden beeinträchtigt?",
-      "mentalHealth.items.phq9.7":
-        "Schwierigkeiten, sich auf etwas zu konzentrieren, z. B. beim Zeitungslesen oder Fernsehen",
-      "mentalHealth.items.gad7.5":
-        "Rastlosigkeit, so dass Stillsitzen schwer fällt",
-      "mentalHealth.items.gad7.7":
-        "Gefühl der Angst, so als würde etwas Schlimmes passieren",
-      "mentalHealth.functional.2": "Stark erschwert",
-      "mentalHealth.who5Options.5": "Die ganze Zeit",
+describe("one language's chunk, as the client loads it", () => {
+  it.each(locales)(
+    "%s carries that language's file of every instrument",
+    async (locale) => {
+      const chunk = await loadLocaleWording(locale);
+      for (const id of INSTRUMENT_ORDER) {
+        expect(chunk[id], `${id} ${locale}`).toBe(WORDING[id][locale]);
+      }
+      expect(Object.keys(chunk).sort()).toEqual([...INSTRUMENT_ORDER].sort());
     },
-    es: {
-      "mentalHealth.options.3": "Casi cada día",
-      "mentalHealth.items.phq9.9":
-        "Pensamientos de que estaría mejor muerto/a o de querer hacerse daño de algún modo",
-      "mentalHealth.items.gad7.1":
-        "Sentirse nervioso/a, angustiado/a o muy tenso/a",
-    },
-    it: {
-      "mentalHealth.options.2": "Per più della metà dei giorni",
-      "mentalHealth.gad7Options.2": "Per oltre la metà dei giorni",
-      "mentalHealth.items.phq9.2": "Sentirsi giù, triste o disperato/a",
-    },
-    pl: {
-      "mentalHealth.options.0": "Wcale nie dokuczały",
-      "mentalHealth.items.gad7.1":
-        "Czuł(a) się Pan(i) podenerwowany(a), niespokojny(a), mocno spięty(a)",
-    },
-    fr: {
-      "mentalHealth.gad7Options.2": "Plus de la moitié du temps",
-      "mentalHealth.items.gad7.1":
-        "Un sentiment de nervosité, d’anxiété ou de tension",
-    },
-  };
+  );
+});
 
-  it.each(Object.keys(PUBLISHED))("%s", (locale) => {
-    const flat = bundle(locale);
-    for (const [key, text] of Object.entries(PUBLISHED[locale])) {
-      expect(flat.get(key), `${locale} ${key}`).toBe(text);
-    }
+describe("the wording an administration records", () => {
+  it("records a validated language's text as validated", () => {
+    expect(presentedWording("PHQ9", "nl", false)).toBe("validated");
+    expect(presentedWording("WHO5", "ko", false)).toBe("validated");
+    expect(presentedWording("SCI", "pl", false)).toBe("validated");
   });
 
-  it("keeps the German follow-up question in the published formal address", () => {
-    const title = bundle("de").get("mentalHealth.functionalTitle") ?? "";
+  it("records HealthLog's own translation as an unvalidated translation", () => {
+    expect(presentedWording("SCI", "nl", false)).toBe(
+      "unvalidated_translation",
+    );
+    expect(presentedWording("SCI", "pt-br", false)).toBe(
+      "unvalidated_translation",
+    );
+    expect(presentedWording("WHO5", "pt-BR", false)).toBe(
+      "unvalidated_translation",
+    );
+  });
+
+  it("records the English original when the reader chose it", () => {
+    expect(presentedWording("SCI", "nl", true)).toBe("original_en");
+    expect(presentedWording("PHQ9", "de", true)).toBe("original_en");
+  });
+
+  it("records English for an English reader as validated, whatever the switch says", () => {
+    expect(presentedWording("SCI", "en", false)).toBe("validated");
+    expect(presentedWording("SCI", "en-GB", true)).toBe("validated");
+  });
+
+  it("records the English original for a language the app does not ship", () => {
+    expect(presentedWording("PHQ9", "ja", false)).toBe("original_en");
+  });
+
+  it("leaves the item-9 crisis flag to the answers alone", () => {
+    // The flag reads the ninth answer; no wording or language enters it.
+    const answers = [0, 0, 0, 0, 0, 0, 0, 0, 1];
+    for (const locale of Object.keys(WORDING.PHQ9) as Locale[]) {
+      expect(WORDING.PHQ9[locale].items).toHaveLength(answers.length);
+    }
+    expect(isSafetyFlagged("PHQ9", answers)).toBe(true);
+    expect(isSafetyFlagged("PHQ9", [...answers.slice(0, 8), 0])).toBe(false);
+  });
+});
+
+describe("validated entries carry the published wording", () => {
+  // [instrument, locale, path into the entry, published text]
+  const PUBLISHED: ReadonlyArray<
+    readonly [
+      keyof typeof WORDING,
+      Locale,
+      (w: InstrumentWording) => unknown,
+      string,
+    ]
+  > = [
+    [
+      "PHQ9",
+      "de",
+      (w) => w.stems.period,
+      "Wie oft fühlten Sie sich im Verlauf der letzten 2 Wochen durch die folgenden Beschwerden beeinträchtigt?",
+    ],
+    [
+      "PHQ9",
+      "de",
+      (w) => w.items[6],
+      "Schwierigkeiten, sich auf etwas zu konzentrieren, z. B. beim Zeitungslesen oder Fernsehen",
+    ],
+    ["PHQ9", "de", (w) => w.functional?.anchors[2], "Stark erschwert"],
+    [
+      "GAD7",
+      "de",
+      (w) => w.items[4],
+      "Rastlosigkeit, so dass Stillsitzen schwer fällt",
+    ],
+    [
+      "GAD7",
+      "de",
+      (w) => w.items[6],
+      "Gefühl der Angst, so als würde etwas Schlimmes passieren",
+    ],
+    ["WHO5", "de", (w) => w.anchors.all[5], "Die ganze Zeit"],
+    ["PHQ9", "es", (w) => w.anchors.all[3], "Casi cada día"],
+    [
+      "PHQ9",
+      "es",
+      (w) => w.items[8],
+      "Pensamientos de que estaría mejor muerto/a o de querer hacerse daño de algún modo",
+    ],
+    [
+      "GAD7",
+      "es",
+      (w) => w.items[0],
+      "Sentirse nervioso/a, angustiado/a o muy tenso/a",
+    ],
+    ["PHQ9", "it", (w) => w.anchors.all[2], "Per più della metà dei giorni"],
+    ["GAD7", "it", (w) => w.anchors.all[2], "Per oltre la metà dei giorni"],
+    ["PHQ9", "it", (w) => w.items[1], "Sentirsi giù, triste o disperato/a"],
+    ["PHQ9", "pl", (w) => w.anchors.all[0], "Wcale nie dokuczały"],
+    [
+      "GAD7",
+      "pl",
+      (w) => w.items[0],
+      "Czuł(a) się Pan(i) podenerwowany(a), niespokojny(a), mocno spięty(a)",
+    ],
+    ["GAD7", "fr", (w) => w.anchors.all[2], "Plus de la moitié du temps"],
+    [
+      "GAD7",
+      "fr",
+      (w) => w.items[0],
+      "Un sentiment de nervosité, d’anxiété ou de tension",
+    ],
+    // Pfizer "French for France".
+    ["PHQ9", "fr", (w) => w.anchors.all[0], "Jamais"],
+    [
+      "PHQ9",
+      "fr",
+      (w) => w.items[8],
+      "Penser qu’il vaudrait mieux mourir ou envisager de vous faire du mal d’une manière ou d’une autre",
+    ],
+    ["PHQ9", "fr", (w) => w.functional?.anchors[3], "Extrêmement difficile(s)"],
+    // Pfizer "Dutch for the Netherlands": the header split over two lines.
+    ["PHQ9", "nl", (w) => w.anchors.all[1], "Verscheidene dagen"],
+    [
+      "PHQ9",
+      "nl",
+      (w) => w.items[8],
+      "De gedachte dat u beter dood zou kunnen zijn of de gedachte uzelf op een bepaalde manier pijn te doen",
+    ],
+    ["GAD7", "nl", (w) => w.anchors.all[0], "Helemaal niet"],
+    [
+      "GAD7",
+      "nl",
+      (w) => w.items[1],
+      "Niet kunnen stoppen met u zorgen maken of dit niet kunnen beteugelen",
+    ],
+    // Pfizer "Korean for Korea": headers printed over three or four lines.
+    ["PHQ9", "ko", (w) => w.anchors.all[2], "7 일 이상 방해 받았다"],
+    [
+      "PHQ9",
+      "ko",
+      (w) => w.items[8],
+      "자신이 죽는 것이 더 낫다고 생각하거나 어떤 식으로든 자신을 해칠 것이라고 생각함",
+    ],
+    ["GAD7", "ko", (w) => w.anchors.all[2], "2 주 중 절반 이상 방해 받았다"],
+    [
+      "GAD7",
+      "ko",
+      (w) => w.stems.period,
+      "지난 2 주 동안 당신은 다음의 문제들로 인해서 얼마나 자주 방해를 받았습니까?",
+    ],
+    // Pfizer "Portuguese for Brazil", with its own spelling.
+    [
+      "PHQ9",
+      "pt-BR",
+      (w) => w.stems.period,
+      "Durante as últimas 2 semanas, com que freqüência você foi incomodado/a por qualquer um dos problemas abaixo?",
+    ],
+    [
+      "PHQ9",
+      "pt-BR",
+      (w) => w.items[8],
+      "Pensar em se ferir de alguma maneira ou que seria melhor estar morto/a",
+    ],
+    ["GAD7", "pt-BR", (w) => w.anchors.all[3], "Quase todos os dias"],
+    // PRU Dutch WHO-5 (1999) and the Korean WHO-5 (Kim et al. 2010).
+    ["WHO5", "nl", (w) => w.anchors.all[5], "Constant"],
+    ["WHO5", "nl", (w) => w.items[2], "Ik voelde me actief en doelbewust"],
+    ["WHO5", "ko", (w) => w.anchors.all[0], "전혀 그렇지 않다"],
+    [
+      "WHO5",
+      "ko",
+      (w) => w.items[3],
+      "나는 자고 일어나면 상쾌하고 푹 쉬었다는 느낌이 든다",
+    ],
+    // SCI-PL (Bidzan-Wiącek et al. 2026), its "45-60 min" kept.
+    ["SCI", "pl", (w) => w.anchors.duration[1], "45-60 min"],
+    ["SCI", "pl", (w) => w.anchors.impact[2], "Lekko"],
+  ];
+
+  it.each(
+    PUBLISHED.map(([id, locale, read, text]) => ({ id, locale, read, text })),
+  )("$id / $locale: $text", ({ id, locale, read, text }) => {
+    const wording = WORDING[id][locale];
+    expect(wording.validated).toBe(true);
+    expect(read(wording)).toBe(text);
+  });
+
+  it("keeps the German PHQ-9 follow-up question in the published formal address", () => {
+    const title = WORDING.PHQ9.de.functional?.title ?? "";
     expect(title).toMatch(/^Wenn eines oder mehrere der bisher/);
     expect(title).not.toMatch(/\b(?:du|dich|dir|dein\w*)\b/i);
   });
-});
 
-describe("no surface renders instrument wording through a bare t()", () => {
-  // Item text, answer labels and stems must go through `instrumentText`. A
-  // bare `t()` on one of these keys reads the bundle whatever the language.
-  const BARE = [
-    /\bt\(\s*`mentalHealth\.items\./,
-    /\bt\(\s*`mentalHealth\.stems\./,
-    /\bt\(\s*`mentalHealth\.functional\./,
-    /\bt\(\s*"mentalHealth\.functionalTitle"/,
-    /\bt\(\s*optionLabelKey\(/,
-    /\bt\(\s*itemKey\(/,
-  ];
-
-  it("finds the item surfaces and no bare lookup anywhere", () => {
-    const files = readSourceFolder("src", {
-      floor: 500,
-      include: (rel) =>
-        !rel.startsWith("generated/") &&
-        !rel.includes("__tests__/") &&
-        !/\.test\.tsx?$/.test(rel),
-    });
-    const users = files.filter(([, text]) => text.includes("instrumentText("));
-    // The wizard and the history breakdown, plus the module itself.
-    expect(users.length).toBeGreaterThanOrEqual(3);
-    const offenders = files
-      .filter(([, text]) => BARE.some((re) => re.test(text)))
-      .map(([rel]) => rel);
-    expect(offenders).toEqual([]);
+  it("names which cells carry HealthLog's own translation", () => {
+    const unvalidated = Object.entries(WORDING).flatMap(([id, byLocale]) =>
+      Object.entries(byLocale)
+        .filter(([, w]) => !w.validated)
+        .map(([locale]) => `${id}.${locale}`),
+    );
+    expect(unvalidated.sort()).toEqual(
+      [
+        "SCI.de",
+        "SCI.es",
+        "SCI.fr",
+        "SCI.it",
+        "SCI.ko",
+        "SCI.nl",
+        "SCI.pt-BR",
+        "WHO5.pt-BR",
+      ].sort(),
+    );
+    expect(isValidatedWording("SCI", "de")).toBe(false);
+    expect(isValidatedWording("PHQ9", "ko")).toBe(true);
   });
 });

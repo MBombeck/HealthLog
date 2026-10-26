@@ -1,0 +1,190 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "kind": "pulse",
+      "unit": "bpm",
+      "points": [
+        {
+          "id": "<id:1>",
+          "at": "anchor-6d+09:00:00",
+          "value": 69,
+          "secondary": null,
+          "valueMin": 64,
+          "valueMax": 79
+        },
+        {
+          "id": "<id:2>",
+          "at": "anchor-6d+14:00:00",
+          "value": 74,
+          "secondary": null,
+          "valueMin": 69,
+          "valueMax": 84
+        },
+        {
+          "id": "<id:3>",
+          "at": "anchor-6d+20:00:00",
+          "value": 80,
+          "secondary": null,
+          "valueMin": 75,
+          "valueMax": 90
+        },
+        {
+          "id": "<id:4>",
+          "at": "anchor-5d+09:00:00",
+          "value": 69,
+          "secondary": null,
+          "valueMin": 64,
+          "valueMax": 79
+        },
+        {
+          "id": "<id:5>",
+          "at": "anchor-5d+14:00:00",
+          "value": 74,
+          "secondary": null,
+          "valueMin": 69,
+          "valueMax": 84
+        },
+        {
+          "id": "<id:6>",
+          "at": "anchor-5d+20:00:00",
+          "value": 80,
+          "secondary": null,
+          "valueMin": 75,
+          "valueMax": 90
+        },
+        {
+          "id": "<id:7>",
+          "at": "anchor-4d+09:00:00",
+          "value": 69,
+          "secondary": null,
+          "valueMin": 64,
+          "valueMax": 79
+        },
+        {
+          "id": "<id:8>",
+          "at": "anchor-4d+14:00:00",
+          "value": 74,
+          "secondary": null,
+          "valueMin": 69,
+          "valueMax": 84
+        },
+        {
+          "id": "<id:9>",
+          "at": "anchor-4d+20:00:00",
+          "value": 80,
+          "secondary": null,
+          "valueMin": 75,
+          "valueMax": 90
+        },
+        {
+          "id": "<id:10>",
+          "at": "anchor-3d+09:00:00",
+          "value": 69,
+          "secondary": null,
+          "valueMin": 64,
+          "valueMax": 79
+        },
+        {
+          "id": "<id:11>",
+          "at": "anchor-3d+14:00:00",
+          "value": 74,
+          "secondary": null,
+          "valueMin": 69,
+          "valueMax": 84
+        },
+        {
+          "id": "<id:12>",
+          "at": "anchor-3d+20:00:00",
+          "value": 80,
+          "secondary": null,
+          "valueMin": 75,
+          "valueMax": 90
+        },
+        {
+          "id": "<id:13>",
+          "at": "anchor-2d+09:00:00",
+          "value": 69,
+          "secondary": null,
+          "valueMin": 64,
+          "valueMax": 79
+        },
+        {
+          "id": "<id:14>",
+          "at": "anchor-2d+14:00:00",
+          "value": 74,
+          "secondary": null,
+          "valueMin": 69,
+          "valueMax": 84
+        },
+        {
+          "id": "<id:15>",
+          "at": "anchor-2d+20:00:00",
+          "value": 80,
+          "secondary": null,
+          "valueMin": 75,
+          "valueMax": 90
+        },
+        {
+          "id": "<id:16>",
+          "at": "anchor-1d+09:00:00",
+          "value": 69,
+          "secondary": null,
+          "valueMin": 64,
+          "valueMax": 79
+        },
+        {
+          "id": "<id:17>",
+          "at": "anchor-1d+14:00:00",
+          "value": 74,
+          "secondary": null,
+          "valueMin": 69,
+          "valueMax": 84
+        },
+        {
+          "id": "<id:18>",
+          "at": "anchor-1d+20:00:00",
+          "value": 80,
+          "secondary": null,
+          "valueMin": 75,
+          "valueMax": 90
+        }
+      ],
+      "direction": {
+        "direction": "hold",
+        "targetPosition": "inside",
+        "basis": "profile_default"
+      },
+      "change": {
+        "from": 74.33,
+        "to": 74.33,
+        "delta": 0,
+        "sentiment": "positive"
+      },
+      "referenceLines": [],
+      "stats": {
+        "mean": 74.33,
+        "min": 69,
+        "max": 80,
+        "stdDev": 4.5,
+        "count": 18
+      }
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "measurements.series"
+      },
+      "meta": {
+        "kind": "pulse",
+        "days": 7,
+        "count": 18
+      },
+      "warnings": null,
+      "error": null
+    }
+  ]
+}

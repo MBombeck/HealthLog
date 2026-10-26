@@ -49,13 +49,15 @@ import {
 } from "@/lib/insights/derived/derived-assessment-ai";
 import { isDerivedMetricId } from "@/lib/insights/derived/registry";
 import {
-  INSIGHT_STATUS_GENERATE_QUEUE,
-  INSIGHT_STATUS_GENERATE_CONCURRENCY,
   INSIGHT_STATUS_METRICS,
   enqueueStatusGeneration,
   type InsightStatusMetric,
   type InsightStatusGeneratePayload,
 } from "@/lib/jobs/insight-status-generate-shared";
+import {
+  INSIGHT_STATUS_GENERATE_QUEUE,
+  INSIGHT_STATUS_GENERATE_CONCURRENCY,
+} from "@/lib/jobs/insight-status-generate-queue";
 import { aiCapabilityForJob } from "@/lib/ai/capabilities/gate";
 import {
   mayDispatchProviderWork,

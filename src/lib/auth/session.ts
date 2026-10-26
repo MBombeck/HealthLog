@@ -8,15 +8,17 @@ import { getEvent } from "@/lib/logging/context";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 import { isInputRefusal, isP2025 } from "@/lib/prisma-errors";
 import { SessionStoreUnavailableError } from "@/lib/api-errors";
+import { credentialRevocations } from "@/lib/auth/credential-revocations";
 import { locales, type Locale } from "@/lib/i18n/config";
 import { LOCALE_COOKIE, setLocaleCookie } from "@/lib/i18n/locale-cookie";
+import {
+  expireSessionCookies,
+  issueSessionCookie,
+  readSessionCookie,
+  sessionCookieName,
+} from "@/lib/auth/session-cookie";
 
-const SESSION_COOKIE = "healthlog_session";
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
-
-/** Public name of the browser session cookie, for routes that read it off a
- * `NextRequest` directly (rather than through `getSession()`'s `cookies()`). */
-export const SESSION_COOKIE_NAME = SESSION_COOKIE;
 
 /**
  * Marks a cookie value as a v1.30.32 session secret. Doubles as the branch
@@ -133,6 +135,22 @@ async function findSessionByCookie(cookieValue: string) {
 }
 
 /**
+ * A session row that may answer for its user: it exists, has not expired, and
+ * its account is not pending deletion. Deleting an account revokes every
+ * session in the same transaction; this refuses one minted in the moment
+ * between a sign-in's own check and that commit, so the lock holds without
+ * relying on the order of two transactions.
+ */
+function isUsableSession(session: {
+  expiresAt: Date;
+  user: { deletionRequestedAt: Date | null };
+}): boolean {
+  return (
+    session.expiresAt >= new Date() && session.user.deletionRequestedAt == null
+  );
+}
+
+/**
  * Validate a session straight from a raw cookie value — no `next/headers`,
  * no sliding-expiry write, no cookie mutation. Runs the same hardened lookup
  * `getSession()` uses (`hashToken` secret path or the passive legacy-cuid
@@ -154,7 +172,7 @@ export async function validateSessionFromCookieValue(
 } | null> {
   if (!cookieValue) return null;
   const session = await findSessionByCookie(cookieValue);
-  if (!session || session.expiresAt < new Date()) return null;
+  if (!session || !isUsableSession(session)) return null;
   return {
     session: { id: session.id, expiresAt: session.expiresAt },
     user: session.user,
@@ -186,7 +204,7 @@ export async function validateSessionWithCreatedAt(
 } | null> {
   if (!cookieValue) return null;
   const session = await findSessionByCookie(cookieValue);
-  if (!session || session.expiresAt < new Date()) return null;
+  if (!session || !isUsableSession(session)) return null;
   return {
     session: {
       id: session.id,
@@ -227,7 +245,7 @@ export async function setOnboardingPendingCookie(
       secure: shouldEmitSecureCookie(),
       // v1.4.22 — Strict (not Lax) because
       // no cross-site redirect flow ever depends on this cookie. The
-      // sibling `healthlog_session` cookie stays Lax because the
+      // sibling session cookie stays Lax because the
       // Withings OAuth callback arrives via top-level cross-site
       // redirect; the onboarding hint has no equivalent flow.
       sameSite: "strict",
@@ -274,15 +292,7 @@ export async function createSession(
   });
 
   const cookieStore = await cookies();
-  cookieStore.set(SESSION_COOKIE, secret, {
-    httpOnly: true,
-    secure: shouldEmitSecureCookie(),
-    // OAuth callbacks (e.g. Withings) arrive via top-level cross-site redirect.
-    // Lax keeps CSRF protection for unsafe methods while allowing this flow.
-    sameSite: "lax",
-    maxAge: SESSION_MAX_AGE_MS / 1000,
-    path: "/",
-  });
+  issueSessionCookie(cookieStore, secret, SESSION_MAX_AGE_MS / 1000);
 
   // Anchor the onboarding cookie alongside the session cookie so a
   // future auth surface added without remembering the helper can never
@@ -312,18 +322,19 @@ export async function getSession(): Promise<{
   }
 
   const cookieStore = await cookies();
-  const cookieValue = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!cookieValue) return null;
+  const carried = readSessionCookie(cookieStore);
+  if (!carried) return null;
+  const cookieValue = carried.value;
 
   const session = await findSessionByCookie(cookieValue);
 
-  if (!session || session.expiresAt < new Date()) {
+  if (!session || !isUsableSession(session)) {
     if (session) {
       await prisma.session
         .deleteMany({ where: { id: session.id } })
         .catch(() => {});
     }
-    cookieStore.delete(SESSION_COOKIE);
+    expireSessionCookies(cookieStore);
     cookieStore.delete(ONBOARDING_COOKIE);
     return null;
   }
@@ -347,13 +358,16 @@ export async function getSession(): Promise<{
       where: { id: session.id },
       data: { expiresAt: newExpiry },
     });
-    cookieStore.set(SESSION_COOKIE, cookieValue, {
-      httpOnly: true,
-      secure: shouldEmitSecureCookie(),
-      sameSite: "lax",
-      maxAge: SESSION_MAX_AGE_MS / 1000,
-      path: "/",
-    });
+    issueSessionCookie(cookieStore, cookieValue, SESSION_MAX_AGE_MS / 1000);
+  } else if (carried.name !== sessionCookieName()) {
+    // Issued before the `__Host-` name: re-issued under it, so the upgrade
+    // signs nobody out. A server-component render cannot write cookies; the
+    // next route request does.
+    try {
+      issueSessionCookie(cookieStore, cookieValue, SESSION_MAX_AGE_MS / 1000);
+    } catch {
+      // Read-only cookie context.
+    }
   }
 
   // v1.23 — sliding "last seen" stamp for the active-session list. Throttled
@@ -446,7 +460,7 @@ export async function getSession(): Promise<{
       // already in hand and re-reading it per request would be waste.
       //
       // Read this in exactly one place: the acting-account resolver in
-      // `src/lib/api-handler.ts`. It is a selector and not a decision — the
+      // `src/lib/auth/guards/`. It is a selector and not a decision — the
       // resolver still has to find a live grant for the pair before anything
       // is substituted, and a value stranded here by a grant that has since
       // ended confers nothing.
@@ -484,20 +498,20 @@ export async function getSession(): Promise<{
  */
 export async function getSessionUserLocale(): Promise<string | null> {
   const cookieStore = await cookies();
-  const cookieValue = cookieStore.get(SESSION_COOKIE)?.value;
+  const cookieValue = readSessionCookie(cookieStore)?.value;
   if (!cookieValue) return null;
 
   // Same two-path resolution as `getSession`, read-only: this runs in the root
   // layout where the cookie store cannot be written, so there is nothing to
   // refresh or clear here.
   const session = await findSessionByCookie(cookieValue);
-  if (!session || session.expiresAt < new Date()) return null;
+  if (!session || !isUsableSession(session)) return null;
   return session.user.locale;
 }
 
 export async function destroySession(): Promise<void> {
   const cookieStore = await cookies();
-  const cookieValue = cookieStore.get(SESSION_COOKIE)?.value;
+  const cookieValue = readSessionCookie(cookieStore)?.value;
   if (cookieValue) {
     // Resolve the cookie to its row before deleting — the cookie is a secret,
     // not the primary key, so `delete({ where: { id: cookieValue } })` would
@@ -530,7 +544,7 @@ export async function destroySession(): Promise<void> {
         });
     }
   }
-  cookieStore.delete(SESSION_COOKIE);
+  expireSessionCookies(cookieStore);
   cookieStore.delete(ONBOARDING_COOKIE);
 }
 
@@ -550,35 +564,7 @@ export async function destroySession(): Promise<void> {
  * survives — the rows linger as evidence of the rotation event.
  */
 export async function destroyAllSessions(userId: string): Promise<void> {
-  await prisma.$transaction([
-    prisma.session.deleteMany({ where: { userId } }),
-    prisma.apiToken.updateMany({
-      where: { userId, revoked: false },
-      data: { revoked: true },
-    }),
-    prisma.refreshToken.updateMany({
-      where: { userId, revokedAt: null },
-      data: { revokedAt: new Date() },
-    }),
-    // v1.23 — a credential rotation also kills every "remember this device"
-    // trusted-device token: a stolen device cookie must not survive a
-    // password change or account-credential remediation.
-    prisma.trustedDevice.deleteMany({ where: { userId } }),
-    // A connected AI assistant holds a refresh chain of its own: revoking its
-    // access tokens above left the connection able to mint the next one.
-    prisma.mcpOAuthConnection.updateMany({
-      where: { userId, revokedAt: null },
-      data: { revokedAt: new Date() },
-    }),
-    // A clinician share link opens the record without signing in. Whoever
-    // held the old password could have made one, and it would outlive the
-    // change; the owner makes a fresh link for the people who should keep it.
-    prisma.clinicianShareLink.updateMany({
-      where: { userId, revokedAt: null },
-      data: { revokedAt: new Date() },
-    }),
-    prisma.stepUpElevation.deleteMany({ where: { userId } }),
-  ]);
+  await prisma.$transaction(credentialRevocations(prisma, userId));
 }
 
 /**

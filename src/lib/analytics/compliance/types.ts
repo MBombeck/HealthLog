@@ -144,7 +144,7 @@ export const SCHEDULE_COMPLIANCE_SELECT = {
  * sibling of {@link SCHEDULE_COMPLIANCE_SELECT}.
  */
 export const COURSES_COMPLIANCE_SELECT = {
-  select: { startsOn: true, endsOn: true },
+  select: { startsOn: true, endsOn: true, endedAt: true },
   orderBy: { startsOn: "asc" },
 } as const;
 
@@ -158,6 +158,13 @@ export const COURSES_COMPLIANCE_SELECT = {
 export interface ComplianceMedicationContext {
   startsOn: Date | null;
   endsOn: Date | null;
+  /**
+   * #1280 — the instant "End course" ended the latest course: no slot at or
+   * after it is expected. Earlier courses carry their own in `courses`.
+   * Required, null when the whole `endsOn` day counts: a context built
+   * without it would expect the dose after the end.
+   */
+  endedAt: Date | null;
   oneShot: boolean;
   createdAt: Date;
   lastIntakeAt: Date | null;
@@ -222,7 +229,7 @@ export function slotInsideCourses(
 ): boolean {
   const courses = ctx.courses;
   if (!courses || courses.length < 2) return true;
-  return isInsideCourses(userDayKey(at, ctx.timeZone), courses);
+  return isInsideCourses(userDayKey(at, ctx.timeZone), courses, at);
 }
 
 /**
@@ -245,6 +252,7 @@ export function buildComplianceMedicationContext(
   med: {
     startsOn: Date | null;
     endsOn: Date | null;
+    endedAt: Date | null;
     oneShot: boolean;
     createdAt: Date;
     /** v1.16.3 — thread the archived eras when the bundle carries them. */
@@ -260,6 +268,7 @@ export function buildComplianceMedicationContext(
   return {
     startsOn: med.startsOn,
     endsOn: med.endsOn,
+    endedAt: med.endedAt,
     oneShot: med.oneShot,
     createdAt: med.createdAt,
     lastIntakeAt,

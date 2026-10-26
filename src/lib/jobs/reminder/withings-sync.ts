@@ -4,6 +4,7 @@
  * Extracted from reminder-worker.ts, which owns the queue names, cron
  * schedules, and boss.work registrations.
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { type Job } from "pg-boss";
 import { fireAndForget } from "@/lib/logging/fire-and-forget";
 import { recordError, recordWithingsSync } from "@/lib/jobs/worker-status";
@@ -85,6 +86,7 @@ export async function handleWithingsFallbackSync(
         evt.addWarning("Withings plan-park release failed; continuing");
       }
       const connections = await prisma.withingsConnection.findMany({
+        where: OWNED_BY_ACTIVE_ACCOUNT,
         select: { userId: true },
       });
 
@@ -124,7 +126,7 @@ export async function handleWithingsFallbackSync(
           // v1.18.1 — a fresh reading landed; resolve this user's Vorsorge
           // reminders eventfully. Fire-and-forget; the cron is the net.
           if (result.imported > 0) {
-            fireAndForget(enqueueReminderSatisfy(connection.userId), {
+            fireAndForget(() => enqueueReminderSatisfy(connection.userId), {
               action: "reminder.satisfy.enqueue",
             });
           }
@@ -193,6 +195,7 @@ export async function handleWithingsEcgSync(
       // No user-specific enqueue → cron fallback iterating every connection.
       if (targets.length === 0) {
         const connections = await prisma.withingsConnection.findMany({
+          where: OWNED_BY_ACTIVE_ACCOUNT,
           select: { userId: true },
         });
         targets.push(...connections);
@@ -277,6 +280,7 @@ export async function handleWithingsActivitySync(
       // No user-specific enqueue → cron fallback iterating everyone.
       if (targets.length === 0) {
         const connections = await prisma.withingsConnection.findMany({
+          where: OWNED_BY_ACTIVE_ACCOUNT,
           select: { userId: true },
         });
         targets.push(...connections);
@@ -304,7 +308,7 @@ export async function handleWithingsActivitySync(
             imported,
           });
           if (imported > 0) {
-            fireAndForget(enqueueReminderSatisfy(userId), {
+            fireAndForget(() => enqueueReminderSatisfy(userId), {
               action: "reminder.satisfy.enqueue",
             });
           }
@@ -350,6 +354,7 @@ export async function handleWithingsSleepSync(
       }
       if (targets.length === 0) {
         const connections = await prisma.withingsConnection.findMany({
+          where: OWNED_BY_ACTIVE_ACCOUNT,
           select: { userId: true },
         });
         targets.push(...connections);
@@ -377,7 +382,7 @@ export async function handleWithingsSleepSync(
             imported,
           });
           if (imported > 0) {
-            fireAndForget(enqueueReminderSatisfy(userId), {
+            fireAndForget(() => enqueueReminderSatisfy(userId), {
               action: "reminder.satisfy.enqueue",
             });
           }

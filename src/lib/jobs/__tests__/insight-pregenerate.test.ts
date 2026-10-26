@@ -1,5 +1,5 @@
 /**
- * v1.7.0 — unit tests for the nightly insight pre-generation cron.
+ * Unit tests for the nightly insight pre-generation cron.
  *
  * Covers:
  *   - the discovery query selects stale-cache users who kept AI analysis
@@ -14,12 +14,10 @@
  *   - the warm pass is single-locale + refill-only (v1.16.8);
  *   - the forced single-user warm is idempotent (freshness re-check),
  *     backs off after a failure, and is capped per day (v1.16.8);
- *   - the queue is registered in `allQueues` AND scheduled in
- *     reminder-worker.ts (the v1.4.37 W10 unregistered-queue catch).
+ *   - the worker registry declares the queue, schedules its cron and binds
+ *     its handler (the unregistered-queue catch).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import fs from "node:fs";
-import path from "node:path";
 
 const checkRateLimit = vi.fn();
 const getAssistantFlags = vi.fn();
@@ -128,9 +126,24 @@ import {
   PREGENERATE_STALE_MS,
   FORCE_WARM_DAILY_LIMIT,
   INSIGHT_PREGENERATE_QUEUE,
-  INSIGHT_PREGENERATE_CRON,
 } from "../insight-pregenerate";
-import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
+import {
+  INSIGHT_PREGENERATE_CRON,
+  INSIGHT_PREGENERATE_EXPIRE_SECONDS,
+} from "../insight-pregenerate-shared";
+import { handleInsightPregenerateJob } from "../reminder/insights-handlers";
+import { insightRetryOptions } from "../reminder/registrar-shared";
+import {
+  groupOf,
+  jobOf,
+  loadedHandler,
+} from "../registry/__tests__/registry-helpers";
+import { AI_BUDGETS, COMPREHENSIVE_MODEL_CALLS } from "@/lib/ai/ai-budgets";
+import {
+  ADVISOR_REVALIDATE_POLL_MS,
+  advisorRevalidatePollMaxAttempts,
+  nextAdvisorPollInterval,
+} from "@/components/insights/use-insights-advisor";
 
 function makePrisma(
   users: Array<{
@@ -474,10 +487,9 @@ describe("runInsightPregenerate — outcome tally", () => {
           observedSignal = opts.signal;
           setTimeout(
             () => resolve({ status: "generated", providerType: "x" }),
-            // v1.25.12 — above the default warm budget (~210 s = the 180 s
-            // comprehensive provider budget + headroom) so the bounded budget
+            // v1.25.12 — above the default warm budget so the bounded budget
             // fires before this "slow" generation settles.
-            260_000,
+            comprehensiveWarmBudgetMs(null) + 50_000,
           );
         }),
     );
@@ -493,7 +505,9 @@ describe("runInsightPregenerate — outcome tally", () => {
         statusGenerators,
         warmGenericMetrics,
       });
-      await vi.advanceTimersByTimeAsync(230_000);
+      await vi.advanceTimersByTimeAsync(
+        comprehensiveWarmBudgetMs(null) + 20_000,
+      );
       const result = await promise;
 
       // The timeout fired, aborted the still-running generation (so its
@@ -602,7 +616,7 @@ describe("runInsightPregenerate — failure visibility + intra-day retry (v1.28.
         new Promise((resolve) => {
           setTimeout(
             () => resolve({ status: "generated", providerType: "x" }),
-            260_000,
+            comprehensiveWarmBudgetMs(null) + 50_000,
           );
         }),
     );
@@ -620,7 +634,9 @@ describe("runInsightPregenerate — failure visibility + intra-day retry (v1.28.
         warmGenericMetrics,
         enqueueRetry,
       });
-      await vi.advanceTimersByTimeAsync(230_000);
+      await vi.advanceTimersByTimeAsync(
+        comprehensiveWarmBudgetMs(null) + 20_000,
+      );
       const result = await promise;
 
       expect(result.failed).toBe(1);
@@ -1222,10 +1238,9 @@ describe("forceWarmUser — on-demand single-user warm (v1.8.7.1)", () => {
           // advance past it so the warm continues.
           setTimeout(
             () => resolve({ status: "generated", providerType: "x" }),
-            // v1.25.12 — above the default warm budget (~210 s = the 180 s
-            // comprehensive provider budget + headroom) so the bounded budget
+            // v1.25.12 — above the default warm budget so the bounded budget
             // fires before this "slow" generation settles.
-            260_000,
+            comprehensiveWarmBudgetMs(null) + 50_000,
           );
         }),
     );
@@ -1242,7 +1257,9 @@ describe("forceWarmUser — on-demand single-user warm (v1.8.7.1)", () => {
         warmGenericMetrics,
       });
       // Advance past the comprehensive budget so withTimeout fires.
-      await vi.advanceTimersByTimeAsync(230_000);
+      await vi.advanceTimersByTimeAsync(
+        comprehensiveWarmBudgetMs(null) + 20_000,
+      );
       const result = await promise;
 
       for (const g of statusGenerators) {
@@ -1364,10 +1381,9 @@ describe("forceWarmUser — on-demand single-user warm (v1.8.7.1)", () => {
           observedSignal = opts.signal;
           setTimeout(
             () => resolve({ status: "generated", providerType: "x" }),
-            // v1.25.12 — above the default warm budget (~210 s = the 180 s
-            // comprehensive provider budget + headroom) so the bounded budget
+            // v1.25.12 — above the default warm budget so the bounded budget
             // fires before this "slow" generation settles.
-            260_000,
+            comprehensiveWarmBudgetMs(null) + 50_000,
           );
         }),
     );
@@ -1383,7 +1399,9 @@ describe("forceWarmUser — on-demand single-user warm (v1.8.7.1)", () => {
         statusGenerators,
         warmGenericMetrics,
       });
-      await vi.advanceTimersByTimeAsync(230_000);
+      await vi.advanceTimersByTimeAsync(
+        comprehensiveWarmBudgetMs(null) + 20_000,
+      );
       const result = await promise;
 
       // The timeout fired and aborted the still-running generation.
@@ -1402,29 +1420,22 @@ describe("forceWarmUser — on-demand single-user warm (v1.8.7.1)", () => {
 });
 
 describe("queue registration", () => {
-  // v1.18.1 — the insight-pregenerate wiring moved out of the 2143-LOC
-  // reminder-worker boot file into the status registrar. The dead-queue guard
-  // follows the wiring there.
-  const workerSrc = fs.readFileSync(
-    path.resolve(__dirname, "../reminder/register-status.ts"),
-    "utf8",
-  );
-
-  it("registers the queue name in the allQueues createQueue loop", () => {
-    const match = workerSrc.match(/const allQueues\s*=\s*\[([\s\S]*?)\];/);
-    expect(match).not.toBeNull();
-    expect(match![1]).toMatch(/\bINSIGHT_PREGENERATE_QUEUE\b/);
+  it("declares the queue in the status group", () => {
+    expect(groupOf(INSIGHT_PREGENERATE_QUEUE).name).toBe("status");
   });
 
-  it("schedules the cron in the schedules table (with retry policy)", () => {
-    expect(workerSrc).toMatch(
-      /\[\s*INSIGHT_PREGENERATE_QUEUE\s*,\s*INSIGHT_PREGENERATE_CRON\s*,\s*\{\s*\.\.\.insightRetryOptions\s*,\s*expireInSeconds:\s*INSIGHT_PREGENERATE_EXPIRE_SECONDS\s*,?\s*\}\s*,?\s*\]/,
-    );
+  it("schedules the cron with the retry policy", () => {
+    const job = jobOf(INSIGHT_PREGENERATE_QUEUE);
+    expect(job.cron).toBe(INSIGHT_PREGENERATE_CRON);
+    expect(job.scheduleOptions).toEqual({
+      ...insightRetryOptions,
+      expireInSeconds: INSIGHT_PREGENERATE_EXPIRE_SECONDS,
+    });
   });
 
-  it("registers a createAndWork handler for the queue", () => {
-    expect(workerSrc).toMatch(
-      /createAndWork[\s\S]{0,80}INSIGHT_PREGENERATE_QUEUE/,
+  it("binds the pre-generation handler to the queue", async () => {
+    expect(await loadedHandler(INSIGHT_PREGENERATE_QUEUE)).toBe(
+      handleInsightPregenerateJob,
     );
   });
 
@@ -1435,32 +1446,62 @@ describe("queue registration", () => {
   });
 });
 
-describe("comprehensiveWarmBudgetMs — warm budget scales with the response timeout (v1.25.3)", () => {
+describe("comprehensiveWarmBudgetMs — the warm waits for every call of one generation", () => {
   const HEADROOM_MS = 30_000;
   const DEFAULT_MS = AI_BUDGETS.comprehensive.timeoutMs;
+  const CALLS = COMPREHENSIVE_MODEL_CALLS;
 
-  it("falls back to the comprehensive surface budget + headroom for an unset value", () => {
-    expect(comprehensiveWarmBudgetMs(null)).toBe(DEFAULT_MS + HEADROOM_MS);
-    expect(comprehensiveWarmBudgetMs(undefined)).toBe(DEFAULT_MS + HEADROOM_MS);
+  it("falls back to the comprehensive surface budget per call for an unset value", () => {
+    const unset = DEFAULT_MS * CALLS + HEADROOM_MS;
+    expect(comprehensiveWarmBudgetMs(null)).toBe(unset);
+    expect(comprehensiveWarmBudgetMs(undefined)).toBe(unset);
     // A non-positive stored value is treated as unset.
-    expect(comprehensiveWarmBudgetMs(0)).toBe(DEFAULT_MS + HEADROOM_MS);
+    expect(comprehensiveWarmBudgetMs(0)).toBe(unset);
   });
 
-  it("scales the budget with a raised setting and stays above the old fixed 130 s cap", () => {
-    // The regression: any account whose response timeout was >= ~130 s had its
-    // comprehensive warm clipped by the old flat 130 s cap, never landing.
-    const budget = comprehensiveWarmBudgetMs(300);
-    expect(budget).toBe(300_000 + HEADROOM_MS);
-    expect(budget).toBeGreaterThan(130_000);
+  it("gives each sequential call the full setting (#1274)", () => {
+    // Three 300 s answers (the generation, the JSON retry, the grounding
+    // retry) under a 600 s setting used to meet a 630 s bound.
+    expect(CALLS).toBeGreaterThanOrEqual(4);
+    for (const seconds of [10, 60, 180, 300, 600]) {
+      expect(comprehensiveWarmBudgetMs(seconds)).toBe(
+        seconds * 1000 * CALLS + HEADROOM_MS,
+      );
+    }
+    expect(comprehensiveWarmBudgetMs(600)).toBeGreaterThan(3 * 300_000);
   });
 
-  it("clamps to an absolute ceiling that still sits above the 600 s write-time maximum", () => {
-    // The 600 s max a user can configure is honoured (not clipped below it);
-    // the ceiling adds the headroom so a legitimate 600 s setting fits.
-    expect(comprehensiveWarmBudgetMs(600)).toBe(600_000 + HEADROOM_MS);
+  it("clamps to a ceiling that still covers the 600 s write-time maximum", () => {
+    const ceiling = 600_000 * CALLS + HEADROOM_MS;
+    expect(comprehensiveWarmBudgetMs(600)).toBe(ceiling);
     // A value beyond the write-time bound can never reach here, but the clamp
     // is the structural backstop against a wedged call regardless.
-    expect(comprehensiveWarmBudgetMs(100_000)).toBe(600_000 + HEADROOM_MS);
+    expect(comprehensiveWarmBudgetMs(100_000)).toBe(ceiling);
+  });
+
+  it("the Insights page polls for the warm at least as long as the warm may run", () => {
+    // The page reads the published `responseTimeoutMs`: the setting in ms, or
+    // the 60 s provider default when nothing is set.
+    const cases: Array<[number | null, number]> = [
+      [null, 60_000],
+      [10, 10_000],
+      [60, 60_000],
+      [180, 180_000],
+      [300, 300_000],
+      [600, 600_000],
+    ];
+    for (const [seconds, published] of cases) {
+      const attempts = advisorRevalidatePollMaxAttempts(published);
+      let count = 1; // the read that enqueued the warm
+      let lastPollMs = 0;
+      while (nextAdvisorPollInterval(true, count, null, attempts) !== false) {
+        lastPollMs += ADVISOR_REVALIDATE_POLL_MS;
+        count += 1;
+      }
+      expect(lastPollMs, `setting ${seconds ?? "unset"}`).toBeGreaterThan(
+        comprehensiveWarmBudgetMs(seconds),
+      );
+    }
   });
 });
 

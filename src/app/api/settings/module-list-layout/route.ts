@@ -19,7 +19,8 @@
  * cannot each start from the same stored value and drop the other's change.
  */
 import { apiHandler, requireActorAuth } from "@/lib/api-handler";
-import { apiSuccess, returnAllZodIssues, safeJson } from "@/lib/api-response";
+import { apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { prisma, toJson } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -58,18 +59,11 @@ export const PUT = apiHandler(async (request: Request) => {
   const { user } = await requireActorAuth();
 
   // 500 ids of up to 64 characters plus the envelope.
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, moduleListLayoutPutSchema, {
     maxBytes: 48 * 1024,
+    action: "settings.module-list-layout.validation-failed",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = moduleListLayoutPutSchema.safeParse(body);
-  if (!parsed.success) {
-    annotate({
-      action: { name: "settings.module-list-layout.validation-failed" },
-    });
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const { list, view, order, sortDir } = parsed.data;
   // Preserve-when-absent: one stored read fills whichever field the body

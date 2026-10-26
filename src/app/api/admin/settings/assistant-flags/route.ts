@@ -52,13 +52,8 @@ import type { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { resolveAssistantFlags } from "@/lib/feature-flags";
@@ -180,16 +175,10 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAdmin();
   annotate({ action: { name: "admin.settings.assistant-flags.update" } });
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, assistantFlagsSchema, {
     maxBytes: 64 * 1024,
   });
-  if (jsonError) return jsonError;
-
-  const parsed = assistantFlagsSchema.safeParse(body);
-  if (!parsed.success) {
-    // v1.4.43 — multi-issue 422.
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   // Field by field from the parsed body; the schema is strict, so every key
   // here is one the route owns.

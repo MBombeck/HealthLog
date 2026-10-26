@@ -48,6 +48,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join, posix, relative, sep } from "node:path";
+import { stripComments } from "./helpers/source-files";
 
 const REPO_ROOT = join(__dirname, "..", "..");
 const COMPONENT_ROOT = join(REPO_ROOT, "src", "components");
@@ -97,7 +98,10 @@ const PINNED_AFFORDANCES: Record<
   "src/components/admin/assistant-section.tsx": { "toast.success": 1 },
   // v1.43 — the AI usage bounds: a settings save, not a write with counts.
   "src/components/admin/ai-usage-section.tsx": { "toast.success": 1 },
-  "src/components/admin/backups-section.tsx": { "toast.success": 4 },
+  // The run, the download, the upload and the finished restore, one toast each.
+  "src/components/admin/backups/use-backup-actions.ts": { "toast.success": 2 },
+  "src/components/admin/backups/use-backup-restores.ts": { "toast.success": 1 },
+  "src/components/admin/backups/use-backup-upload.ts": { "toast.success": 1 },
   "src/components/admin/central-codex-section.tsx": { "toast.success": 2 },
   "src/components/admin/danger-zone-section.tsx": { "text-success": 1 },
   "src/components/admin/encryption-section.tsx": {
@@ -131,6 +135,13 @@ const PINNED_AFFORDANCES: Record<
   // off-host copy is, and the state it paints green came out of the database
   // rather than out of a request this card just made.
   "src/components/admin/offhost-backups-section.tsx": { "text-success": 1 },
+  // Reads the server's verdict, writes nothing: the check and the green mark
+  // say a backup signal is ok as the readiness model judged it, not that a
+  // request this card made succeeded.
+  "src/components/admin/recovery-readiness-card.tsx": {
+    CheckCircle2: 2,
+    "text-success": 1,
+  },
   "src/components/admin/recent-audit-preview.tsx": {
     CheckCircle2: 2,
     "text-success": 1,
@@ -145,6 +156,9 @@ const PINNED_AFFORDANCES: Record<
     "text-success": 2,
     "toast.success": 2,
   },
+  // An undone account deletion: an account action with no row counts to
+  // misreport.
+  "src/components/admin/pending-deletion-controls.tsx": { "toast.success": 1 },
   "src/components/admin/version-tile-section.tsx": {
     CheckCircle2: 2,
     "text-success": 1,
@@ -176,8 +190,25 @@ const PINNED_AFFORDANCES: Record<
   },
   "src/components/dashboard/range-display.tsx": { "text-success": 2 },
   "src/components/documents/document-card.tsx": { "text-success": 1 },
-  "src/components/documents/document-detail-sheet.tsx": { "toast.success": 2 },
-  "src/components/documents/documents-view.tsx": { "toast.success": 3 },
+  "src/components/documents/detail/use-document-detail-ai.ts": {
+    "toast.success": 1,
+  },
+  "src/components/documents/detail/use-document-detail.ts": {
+    "toast.success": 1,
+  },
+  "src/components/documents/vault/use-vault-library.ts": {
+    "toast.success": 1,
+  },
+  "src/components/documents/vault/use-vault-bulk.ts": {
+    "toast.success": 2,
+  },
+  // Recently deleted: the one restore's toast, which carries an "Open"
+  // action the shared outcome toast has no slot for. It fires only on the
+  // restore route's 200 for that one document, i.e. a document back in the
+  // vault. Restore-all and delete-now go through toastWrittenOutcome.
+  "src/components/documents/trash/use-recently-deleted.ts": {
+    "toast.success": 1,
+  },
   // The document picker's per-row result: tinted only for the `imported` /
   // `duplicate` outcome the import route returned for that one document, i.e.
   // a document the vault now holds. The run's headline goes through
@@ -228,12 +259,14 @@ const PINNED_AFFORDANCES: Record<
   "src/components/measurement-reminders/vorsorge-dashboard-card.tsx": {
     CheckCircle2: 2,
   },
-  "src/components/measurement-reminders/vorsorge-section.tsx": {
+  "src/components/measurement-reminders/checkups/checkup-card.tsx": {
     CheckCircle2: 2,
     "text-success": 1,
   },
   "src/components/measurements/measurement-form.tsx": { "toast.success": 1 },
-  "src/components/measurements/measurement-list.tsx": { "toast.success": 3 },
+  "src/components/measurements/list/use-measurement-list-data.ts": {
+    "toast.success": 3,
+  },
   "src/components/medications/card-parts/medication-status-pill.tsx": {
     "text-success": 1,
   },
@@ -241,8 +274,13 @@ const PINNED_AFFORDANCES: Record<
   "src/components/medications/dose-history-add-dialog.tsx": {
     "toast.success": 2,
   },
-  "src/components/medications/dose-history-ledger.tsx": {
-    "text-success": 2,
+  "src/components/medications/dose-history/ledger-row-item.tsx": {
+    "text-success": 1,
+  },
+  "src/components/medications/dose-history/ledger-summary-chart.tsx": {
+    "text-success": 1,
+  },
+  "src/components/medications/dose-history/use-dose-history-ledger.ts": {
     "toast.success": 4,
   },
   "src/components/medications/intake-edit-dialog.tsx": { "toast.success": 1 },
@@ -348,7 +386,7 @@ const PINNED_AFFORDANCES: Record<
   },
   "src/components/settings/coach-memory-section.tsx": { "toast.success": 2 },
   "src/components/settings/coach-prefs-section.tsx": { "toast.success": 1 },
-  "src/components/settings/dashboard-layout-section.tsx": {
+  "src/components/settings/dashboard-layout/use-dashboard-layout-draft.ts": {
     "toast.success": 2,
   },
   "src/components/settings/environment-section.tsx": { "toast.success": 4 },
@@ -507,11 +545,6 @@ const RESULT_SURFACES: ReadonlyArray<{
     forbidsMarkers: true,
   },
 ];
-
-/** Code only — a comment naming a marker is prose, not an affordance. */
-function stripComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-}
 
 function readCode(relativePath: string): string {
   return stripComments(readFileSync(join(REPO_ROOT, relativePath), "utf8"));

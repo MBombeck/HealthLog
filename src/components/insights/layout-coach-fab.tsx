@@ -240,13 +240,13 @@ export function LayoutCoachFab() {
           // sits symmetrically in the corner. On mobile the right inset is
           // `right-6` but the bottom is deliberately larger — it clears the
           // 64 px bottom-nav plus the home-indicator safe-area inset
-          // (`bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)]`), so the
+          // (`bottom-[calc(var(--safe-area-bottom)+5rem)]`), so the
           // gap is asymmetric there by design, not drift.
           // v1.42 — the side and bottom insets apply at every width: a
           // phone held sideways (844 px, past `md`) has its notch on one
           // side, and an installed iPad its home indicator along the bottom.
           "fixed right-[calc(env(safe-area-inset-right,0px)+1.5rem)] z-40 size-14 rounded-full shadow-lg md:right-[calc(env(safe-area-inset-right,0px)+2rem)]",
-          "shell-desktop:bottom-[calc(env(safe-area-inset-bottom,0px)+2rem)] bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)]",
+          "shell-desktop:bottom-[calc(var(--safe-area-bottom)+2rem)] bottom-[calc(var(--safe-area-bottom)+5rem)]",
           // Dark glyph on the purple/pink gradient — white sat at
           // ≈2.3:1 against the gradient midpoint; the background token
           // reads ≈6.5:1.

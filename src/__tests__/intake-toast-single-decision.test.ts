@@ -151,7 +151,7 @@ describe("the intake confirmation is decided in one place", () => {
     expect(posting.length).toBeGreaterThan(2);
     for (const rel of [
       "components/medications/use-medication-intake.ts",
-      "components/medications/dose-history-ledger.tsx",
+      "components/medications/dose-history/use-dose-history-ledger.ts",
       "components/dashboard/medication-intake-quick-add.tsx",
       "components/medications/dose-history-add-dialog.tsx",
     ]) {

@@ -48,7 +48,7 @@ import {
   convertHkValue,
   isConvertibleHkUnit,
 } from "@/lib/measurements/hk-units";
-import { readSource } from "@/__tests__/helpers/source-files";
+import { readSource, readSourceFolder } from "@/__tests__/helpers/source-files";
 
 const ENTRIES = Object.values(APPLE_HEALTH_TYPE_MAP);
 
@@ -194,10 +194,17 @@ describe("Apple Health mapping — the record's own unit (issue #944)", () => {
       "utf8",
     );
     expect(archive).toContain(optIn);
-    const batch = readSource("src/app/api/measurements/batch/route.ts", [
-      "export const POST",
-      "hkIdentifier",
-    ]);
+    // The route parses; its ingest maps the entries in the service folder.
+    const batch = [
+      readSource("src/app/api/measurements/batch/route.ts", [
+        "export const POST",
+        "hkIdentifier",
+      ]),
+      ...readSourceFolder("src/lib/measurements/batch-ingest", {
+        floor: 5,
+      }).map(([, text]) => text),
+    ].join("\n");
+    expect(batch).toContain("mapAppleHealthEntry(");
     expect(
       batch,
       "the batch route opted into record-unit conversion",

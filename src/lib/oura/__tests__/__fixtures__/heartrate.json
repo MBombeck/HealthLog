@@ -1,0 +1,17 @@
+[
+  { "bpm": 62, "source": "awake", "timestamp": "2026-03-02T08:00:00Z" },
+  { "bpm": 19, "source": "rest", "timestamp": "2026-03-02T08:05:00Z" },
+  { "bpm": 20, "source": "sleep", "timestamp": "2026-03-02T03:00:00Z" },
+  { "bpm": 250, "source": "workout", "timestamp": "2026-03-02T17:30:00Z" },
+  { "bpm": 251, "source": "workout", "timestamp": "2026-03-02T17:31:00Z" },
+  { "bpm": 71.6, "source": "live", "timestamp": "2026-03-02T09:00:00.000Z" },
+  { "bpm": null, "source": "awake", "timestamp": "2026-03-02T09:05:00Z" },
+  { "bpm": 66, "source": "awake" },
+  { "bpm": 66, "source": "awake", "timestamp": "not-a-date" },
+  {
+    "bpm": 74,
+    "source": "session",
+    "timestamp": "2026-03-02T10:15:30+02:00"
+  },
+  { "bpm": 55, "source": null, "timestamp": null }
+]

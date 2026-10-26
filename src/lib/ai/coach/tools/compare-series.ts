@@ -35,11 +35,8 @@ import { createResultRefAllocator } from "@/lib/ai/coach/results/refs";
 import { projectCompare } from "@/lib/ai/coach/results/projections";
 
 import { coachResultGranularitySchema } from "./definitions";
-import {
-  executeCoachTool,
-  type CoachToolResult,
-  type CoachToolTurnContext,
-} from "./executor";
+import { executeCoachTool } from "./executor";
+import type { CoachToolResult, CoachToolTurnContext } from "./run/types";
 
 export const COMPARE_SERIES_TOOL_NAME = "compare_series";
 

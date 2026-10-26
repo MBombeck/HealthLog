@@ -35,6 +35,7 @@
  *      server-side APNs send only, and it does so in the dispatcher — the
  *      tick dispatches for every user and lets the cascade decide.
  */
+import { ownedByActiveAccount } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
@@ -164,12 +165,12 @@ async function cleanupExpiredCoachReminders(
   now: Date,
 ): Promise<number> {
   const result = await prisma.measurementReminder.updateMany({
-    where: {
+    where: ownedByActiveAccount({
       deletedAt: null,
-      origin: "COACH",
+      origin: "COACH" as const,
       endsOn: { not: null, lt: now },
       nextDueAt: null,
-    },
+    }),
     data: { deletedAt: now },
   });
   return result.count;
@@ -313,11 +314,11 @@ export async function runMeasurementReminderTick(
   // cross due, before any nudge fires, so dropping future rows is safe.
   const dueFloor = new Date(now.getTime() + DUE_QUERY_SLACK_MS);
   const reminders = await prisma.measurementReminder.findMany({
-    where: {
+    where: ownedByActiveAccount({
       deletedAt: null,
       enabled: true,
       nextDueAt: { not: null, lte: dueFloor },
-    },
+    }),
     include: {
       user: {
         select: {

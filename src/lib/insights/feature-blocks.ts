@@ -12,11 +12,7 @@
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { buildSourceRankCase } from "@/lib/analytics/source-rank-sql";
-import {
-  dayWeightedRowsSql,
-  foldMeanSql,
-  isHourlyMeanTypeSql,
-} from "@/lib/measurements/day-mean";
+import { dayWeightedRowsSql, foldMeanSql } from "@/lib/measurements/day-mean";
 import {
   loadUserSourcePriority,
   utcBucketEnd,
@@ -24,6 +20,7 @@ import {
 import { classifyAgainstEffectiveRange } from "@/lib/labs/reference-range";
 import { calendarDaysUntil } from "@/lib/measurement-reminders/due-day";
 import { resolveLabFields } from "@/lib/labs/serialise";
+import { isModuleEnabled } from "@/lib/modules/gate";
 import {
   readRollupBuckets,
   ROLLUP_FOLD_WINDOW_MS,
@@ -207,9 +204,18 @@ export async function readAllTimeExtremes(
       ORDER BY r."type", r."bucket_start", (${rank("r")}), r."source"::text
     ) tier`;
   // A day of pulse is the mean of its hours' means and the full history the
-  // mean of its days (`day-mean.ts`). `weighted` carries, per source and day,
-  // the day-weighted sum and the day's weight (one) for those types only;
-  // every other type keeps the reading-weighted mean below, unchanged.
+  // mean of its days (`day-mean.ts`). `per_source` carries, per source and
+  // day, the day-weighted sum and the day's weight (one) beside the reading
+  // count and sum; the mean below reads the weighted pair for those types
+  // only, and every other type keeps the reading-weighted mean, unchanged.
+  //
+  // One fold of one scan, no join. The weighted pair used to be a second
+  // grouping of the same rows, joined back to the per-source days before the
+  // pick; on a measurements table without planner statistics (a new install,
+  // an import under the autoanalyze threshold) that join ran as a nested
+  // loop that re-ran the weighting for every source day, and ten years of
+  // readings took seconds. `tests/integration/per-source-fold-parity.test.ts`
+  // holds the joined statement as the reference.
   const mean = Prisma.raw(
     foldMeanSql({
       typeColumn: 'c."type"',
@@ -223,30 +229,18 @@ export async function readAllTimeExtremes(
     Array<{ type: string; mean: number; min: number; max: number }>
   >`
     WITH live AS (${Prisma.join(rawArms, " UNION ALL ")}),
-    hourly_src AS (
-      SELECT * FROM live l
-      WHERE ${Prisma.raw(isHourlyMeanTypeSql('l."type"'))}
-    ),
-    weighted AS (
-      SELECT
-        w."type",
-        w."source",
-        date_trunc('day', w."measured_at")              AS day,
-        SUM(w."value" * w.day_weight)::double precision AS wsum,
-        SUM(w.day_weight)::double precision             AS wdays
-      FROM ${dayWeightedRowsSql("hourly_src", null, { bySource: true })} w
-      GROUP BY w."type", w."source", 3
-    ),
     per_source AS (
       SELECT
         l."type",
         l."source",
-        date_trunc('day', l."measured_at") AS day,
-        COUNT(*)::int                      AS cnt,
-        SUM(l."value")::double precision   AS total,
-        MIN(l."value")::double precision   AS min_value,
-        MAX(l."value")::double precision   AS max_value
-      FROM live l
+        date_trunc('day', l."measured_at")              AS day,
+        COUNT(*)::int                                   AS cnt,
+        SUM(l."value")::double precision                AS total,
+        MIN(l."value")::double precision                AS min_value,
+        MAX(l."value")::double precision                AS max_value,
+        SUM(l."value" * l.day_weight)::double precision AS wsum,
+        SUM(l.day_weight)::double precision             AS wdays
+      FROM ${dayWeightedRowsSql("live", null, { bySource: true })} l
       GROUP BY l."type", l."source", 3
     )
     SELECT
@@ -257,10 +251,8 @@ export async function readAllTimeExtremes(
     FROM (
       SELECT * FROM (
         SELECT DISTINCT ON (p."type", p.day)
-          p."type", p.cnt, p.total, p.min_value, p.max_value, w.wsum, w.wdays
+          p."type", p.cnt, p.total, p.min_value, p.max_value, p.wsum, p.wdays
         FROM per_source p
-        LEFT JOIN weighted w
-          ON w."type" = p."type" AND w."source" = p."source" AND w.day = p.day
         ORDER BY p."type", p.day, (${rank("p")}), p."source"::text
       ) raw
       ${tierCanon}
@@ -355,12 +347,15 @@ function sanitizeLabel(text: string, max = 80): string {
  * Most-recent reading per biomarker over the lookback window; hidden markers
  * excluded; qualitative rows neutral. Only abnormal (below/above) OR trending
  * markers surface, bounded. Returns `undefined` when nothing is flagged so the
- * block is omitted rather than emitting an empty shape.
+ * block is omitted rather than emitting an empty shape, and when the `labs`
+ * module is off, before any row is read: the briefing prompt never carries a
+ * switched-off domain.
  */
 export async function readLabsBriefingBlock(
   userId: string,
   now: number,
 ): Promise<AggregatedFeatures["labs"] | undefined> {
+  if (!(await isModuleEnabled(userId, "labs"))) return undefined;
   const nowDate = new Date(now);
   const cutoff = new Date(nowDate);
   cutoff.setMonth(cutoff.getMonth() - LABS_LOOKBACK_MONTHS);

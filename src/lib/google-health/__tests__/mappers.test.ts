@@ -14,10 +14,13 @@
  */
 import { describe, expect, it } from "vitest";
 
+import { chunkCivilRange } from "../client";
+import { mapVo2Max } from "@/lib/google-health/mappers";
 import {
-  chunkCivilRange,
   formatCivilBound,
   incrementalFilter,
+} from "@/lib/google-health/request";
+import {
   GOOGLE_HEALTH_DATA_TYPES,
   mapActiveEnergy,
   mapBloodGlucose,
@@ -36,11 +39,10 @@ import {
   mapSleepSession,
   mapSleepSessionDetailed,
   mapSteps,
-  mapVo2Max,
   mapWeight,
   mapWorkout,
   mapWristTemperature,
-} from "../client";
+} from "@/lib/google-health/mappers";
 
 describe("mapGoogleHealthSportType", () => {
   it("keeps Badminton as a first-class workout sport", () => {

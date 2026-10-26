@@ -1,48 +1,46 @@
 /**
- * v1.30.3 — cumulative-PersonalRecord rederivation queue
- * registration guard.
+ * Cumulative-PersonalRecord rederivation queue registration guard.
  *
- * Same source-text-grep approach as the step-consolidation-repair guard:
- * assert the queue is registered in `allQueues`, a `createAndWork` handler is
- * wired against it, and the boot-discovery enqueue helper fires — without
- * booting pg-boss + Prisma. An unregistered queue silently never drains
- * (the v1.4.37 dead-queue class).
+ * Reads the worker registry: the queue is declared in the rollup group,
+ * bound to the rederivation handler, and offered again by the rollup boot
+ * discovery. An unregistered queue silently never drains (the dead-queue
+ * class).
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { describe, expect, it } from "vitest";
 
-const REGISTRAR_PATH = join(__dirname, "..", "reminder", "register-rollup.ts");
-const source = readFileSync(REGISTRAR_PATH, "utf8");
+import { handleCumulativePrRederive } from "@/lib/jobs/reminder/rollup-handlers";
+import {
+  discoveryOf,
+  groupOf,
+  jobOf,
+  loadedHandler,
+} from "@/lib/jobs/registry/__tests__/registry-helpers";
+import {
+  CUMULATIVE_PR_REDERIVE_CONCURRENCY,
+  CUMULATIVE_PR_REDERIVE_QUEUE,
+} from "@/lib/personal-records/cumulative-pr-rederivation";
 
-describe("reminder-worker — cumulative-pr-rederive wiring", () => {
-  it("imports the queue symbols from the rederivation module", () => {
-    expect(source).toMatch(
-      /from\s*["']@\/lib\/personal-records\/cumulative-pr-rederivation["']/,
-    );
-    expect(source).toMatch(/\bCUMULATIVE_PR_REDERIVE_QUEUE\b/);
-    expect(source).toMatch(/\brunCumulativePrRederivationForUser\b/);
-    expect(source).toMatch(/\benqueueBootTimeCumulativePrRederivation\b/);
+describe("cumulative-pr-rederive registration", () => {
+  it("declares the queue in the rollup group", () => {
+    expect(groupOf(CUMULATIVE_PR_REDERIVE_QUEUE).name).toBe("rollup");
   });
 
-  it("registers the queue in the allQueues loop", () => {
-    const allQueuesMatch = source.match(
-      /const allQueues\s*=\s*\[([\s\S]*?)\];/,
-    );
-    expect(allQueuesMatch).not.toBeNull();
-    expect(allQueuesMatch![1]).toMatch(/\bCUMULATIVE_PR_REDERIVE_QUEUE\b/);
+  it("is a per-user exclusive one-shot at the module's concurrency", () => {
+    const job = jobOf(CUMULATIVE_PR_REDERIVE_QUEUE);
+    expect(job.policy?.policy).toBe("exclusive");
+    expect(job.work).toEqual({
+      localConcurrency: CUMULATIVE_PR_REDERIVE_CONCURRENCY,
+    });
+    expect(job.cron).toBeUndefined();
   });
 
-  it("registers a createAndWork handler against the queue", () => {
-    expect(source).toMatch(
-      /createAndWork[\s\S]{0,200}CUMULATIVE_PR_REDERIVE_QUEUE[\s\S]{0,400}runCumulativePrRederivationForUser/,
+  it("binds the rederivation handler", async () => {
+    expect(await loadedHandler(CUMULATIVE_PR_REDERIVE_QUEUE)).toBe(
+      handleCumulativePrRederive,
     );
   });
 
-  it("fires the boot-discovery enqueue helper", () => {
-    expect(source).toMatch(
-      /await enqueueBootTimeCumulativePrRederivation\([^)]*\)/,
-    );
+  it("runs the boot discovery pass", () => {
+    expect(discoveryOf("rollup")).toContain("cumulative-pr-rederive");
   });
 });

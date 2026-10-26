@@ -34,14 +34,10 @@ import {
   type FailureKind,
 } from "@/lib/integrations/status";
 import {
-  collapseToTypeDayKeys,
-  recomputeBucketsForKeys,
-} from "@/lib/rollups/measurement-rollups";
-import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
-import {
-  emitInsertedMeasurementArrivals,
-  type InsertedMeasurementArrivalRow,
-} from "@/lib/arrivals/measurement-emit";
+  afterProviderWrite,
+  invalidateProviderStatus,
+} from "@/lib/integrations/sync-kit/after-write";
+import type { InsertedMeasurementArrivalRow } from "@/lib/arrivals/measurement-emit";
 import { obtainAccessToken } from "@/lib/integrations/oauth-kit/token";
 import {
   MeasurementReconciliationError,
@@ -351,17 +347,8 @@ export async function upsertWhoopMeasurements(
 
   let imported = 0;
   const touchedTypes = new Set<MeasurementType>();
-  const invalidateTouchedTypes = (): void => {
-    if (touchedTypes.size === 0) return;
-
-    void invalidateStatusInsightsForTypes(userId, [...touchedTypes], {
-      source: "sync",
-    }).catch((err) => {
-      getEvent()?.addWarning(
-        `whoop: status-insight invalidate failed for ${userId}: ${err}`,
-      );
-    });
-  };
+  const invalidateTouchedTypes = (): void =>
+    invalidateProviderStatus(userId, "whoop", touchedTypes);
 
   for (
     let chunkStart = 0;
@@ -431,17 +418,15 @@ export async function upsertWhoopMeasurements(
     }
 
     opts.onInserted?.(insertedRows);
-    void emitInsertedMeasurementArrivals(userId, insertedRows, "whoop").catch(
-      () => {},
-    );
-    try {
-      const keys = collapseToTypeDayKeys(touched);
-      await recomputeBucketsForKeys(userId, keys);
-    } catch (err) {
-      getEvent()?.addWarning(
-        `whoop: rollup recompute failed for ${userId}: ${err}`,
-      );
-    }
+    // Each chunk folds its own days; the status cards are re-warmed once,
+    // after the last chunk (or the one that failed).
+    await afterProviderWrite({
+      userId,
+      provider: "whoop",
+      touched,
+      arrivals: { rows: insertedRows, source: "whoop" },
+      invalidateStatus: false,
+    });
   }
 
   invalidateTouchedTypes();

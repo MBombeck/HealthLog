@@ -8,20 +8,37 @@ import {
   MFA_STEP_UP_MAX_AGE_SECONDS,
 } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import {
-  kickOffhostPurge,
-  requestOffhostPurge,
-} from "@/lib/jobs/offhost-purge";
+import { kickOffhostPurge } from "@/lib/jobs/offhost-purge";
 import {
   deleteGuardianAccountWithLifecycle,
   LastManagedGuardianError,
 } from "@/lib/managed-profiles/lifecycle";
+import {
+  accountDeletionGraceDays,
+  accountDeletionPurgeAt,
+} from "@/lib/account-deletion/grace";
+import {
+  eraseAccount,
+  lockAccountForDeletion,
+} from "@/lib/account-deletion/lifecycle";
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
+import {
+  assertAnotherAdminStays,
+  LastAdminError,
+} from "@/lib/auth/admin-roster";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Permanently delete the user account and ALL associated data.
- * Cascading deletes in the schema handle all related records.
+ * Delete the user account and ALL associated data.
+ *
+ * With a grace window (`ACCOUNT_DELETION_GRACE_DAYS`, 14 by default)
+ * the account is locked rather than erased: every credential is revoked and
+ * sign-in is refused at once, nothing acts for the account any more, and the
+ * purge job erases it when the window ends. Until then an admin can undo it,
+ * and the record, its stored copies and its off-host objects are exactly as
+ * they were. With the window set to 0 the account is erased here, as before:
+ * cascading deletes in the schema handle all related records.
  *
  * v1.23 — for an account with a second factor active this requires a fresh
  * step-up (within MFA_STEP_UP_MAX_AGE_SECONDS) in addition to the typed
@@ -63,7 +80,11 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
 
   // Prevent last admin from deleting themselves
   if (user.role === "ADMIN") {
-    const adminCount = await prisma.user.count({ where: { role: "ADMIN" } });
+    // An admin already pending deletion is on their way out and cannot sign
+    // in: they do not count as the one who stays.
+    const adminCount = await prisma.user.count({
+      where: { role: "ADMIN", ...ACTIVE_ACCOUNT },
+    });
     if (adminCount <= 1) {
       return apiError("The last admin account cannot be deleted", 400);
     }
@@ -83,36 +104,57 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
   // the elevation would stay redeemable while the erasure was already running.
   await auth.commitElevation();
 
+  const requestedAt = new Date();
+  const purgeAt = accountDeletionPurgeAt(
+    requestedAt,
+    accountDeletionGraceDays(),
+  );
+
   try {
-    await deleteGuardianAccountWithLifecycle(userId, async (tx) => {
-      // The invariant has now passed, so this success event cannot survive a
-      // refusal. It is purged with the rest of the account's audit history.
-      await auditLog("user.account.delete", {
-        userId,
-        ipAddress: getClientIp(request),
-        details: { username },
-        client: tx,
-      });
+    await deleteGuardianAccountWithLifecycle(
+      userId,
+      async (tx) => {
+        // Checked again under the roster lock: two admins deleting at the
+        // same moment must not each count the other.
+        if (user.role === "ADMIN") await assertAnotherAdminStays(tx, userId);
+        // The invariant has now passed, so this success event cannot survive
+        // a refusal. On an immediate erasure it is purged with the rest of the
+        // account's audit history; during a grace window it is the account's
+        // own record of the request.
+        await auditLog("user.account.delete", {
+          userId,
+          ipAddress: getClientIp(request),
+          details: {
+            username,
+            scheduledPurgeAt: purgeAt?.toISOString() ?? null,
+          },
+          client: tx,
+        });
 
-      // Destroy all sessions before the user row goes, inside the same record
-      // lifecycle transaction so a refusal leaves every account state intact.
-      await tx.session.deleteMany({ where: { userId } });
+        if (purgeAt) {
+          // Locked, not erased: credentials revoked in this transaction,
+          // the record untouched until the purge job reaches `purgeAt`.
+          await lockAccountForDeletion(tx, {
+            userId,
+            requestedById: userId,
+            requestedAt,
+            purgeAt,
+          });
+          return;
+        }
 
-      // Audit V3 NEW-V3-2 / GDPR Art. 17 fix: AuditLog rows have
-      // `onDelete: SetNull` in the schema, which keeps PII (IP addresses, login
-      // city geo) attached to the record after the user is deleted. We explicitly
-      // purge them inside the same logical operation so account deletion is
-      // genuinely complete erasure.
-      await tx.auditLog.deleteMany({ where: { userId } });
-
-      // The nightly off-host copies go with the account. The request commits
-      // with the deletion; the purge job deletes the objects.
-      await requestOffhostPurge(tx, userId, "account_deleted");
-
-      // Delete user — all other related data is removed via onDelete: Cascade.
-      await tx.user.delete({ where: { id: userId } });
-    });
+        // No window: erase now, inside the same record lifecycle transaction
+        // so a refusal leaves every account state intact (sessions, the
+        // account's audit history — GDPR Art. 17 — the off-host purge
+        // request, then the row with everything cascading from it).
+        await eraseAccount(tx, userId, "account_deleted");
+      },
+      { erasing: purgeAt === null },
+    );
   } catch (error) {
+    if (error instanceof LastAdminError) {
+      return apiError("The last admin account cannot be deleted", 400);
+    }
     if (error instanceof LastManagedGuardianError) {
       return apiError(
         "Add another Guardian or delete the managed profile first",
@@ -123,12 +165,18 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
     throw error;
   }
 
-  await kickOffhostPurge();
+  if (!purgeAt) await kickOffhostPurge();
 
   annotate({
     action: { name: "settings.account.delete" },
-    meta: { username },
+    meta: { username, deletion_scheduled: purgeAt !== null },
   });
 
-  return apiSuccess({ deleted: true });
+  // `deleted` stays true either way: from the person's side the account is
+  // gone now. `scheduledPurgeAt` says when it is erased, null when it already
+  // was.
+  return apiSuccess({
+    deleted: true,
+    scheduledPurgeAt: purgeAt?.toISOString() ?? null,
+  });
 });

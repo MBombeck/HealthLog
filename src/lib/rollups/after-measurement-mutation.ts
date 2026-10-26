@@ -37,6 +37,7 @@ import {
   type StatusIngestSource,
 } from "@/lib/insights/status-invalidation";
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
+import { runDetached } from "@/lib/logging/detached";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { earliestMeasuredAt } from "@/lib/cache/closed-block";
 import type { MeasurementType } from "@/generated/prisma/client";
@@ -53,17 +54,24 @@ export async function afterMeasurementMutation(
     source: StatusIngestSource;
     /** Log prefix identifying the calling surface in the warn lines. */
     label?: string;
+    /**
+     * Re-warm the status cards of the touched types. A caller that writes in
+     * chunks and invalidates once at the end passes false.
+     */
+    invalidateStatus?: boolean;
   },
-): Promise<void> {
+): Promise<{ rollupFailed: boolean }> {
   const label = options.label ?? "measurements";
-  if (rows.length === 0) return;
+  if (rows.length === 0) return { rollupFailed: false };
 
   // Collapse to the distinct `(type, day)` set BEFORE recomputing so a
   // 500-row batch fires at most one DAY recompute per touched bucket.
   const keys = collapseToTypeDayKeys(rows);
+  let rollupFailed = false;
   try {
     await recomputeBucketsForKeys(userId, keys);
   } catch (err) {
+    rollupFailed = true;
     console.warn(`[${label}] rollup recompute failed`, err);
   }
   invalidateUserMeasurements(userId, { touchedFrom: earliestMeasuredAt(rows) });
@@ -71,16 +79,19 @@ export async function afterMeasurementMutation(
   // Status-insight re-warm is fire-and-forget — it must run even when
   // the rollup leg above failed, so the two legs never gate each other.
   const types = Array.from(new Set(keys.map((k) => k.type)));
-  if (types.length > 0) {
+  if (types.length > 0 && options.invalidateStatus !== false) {
     // Registered so the test suite can await it: the warn below is a console
     // write on a detached handle, and one that lands while a vitest worker is
     // closing its RPC channel fails the whole run. No-op outside test.
     trackBackgroundTask(
-      invalidateStatusInsightsForTypes(userId, types, {
-        source: options.source,
-      }).catch((err) => {
+      runDetached(() =>
+        invalidateStatusInsightsForTypes(userId, types, {
+          source: options.source,
+        }),
+      ).catch((err) => {
         console.warn(`[${label}] status-insight invalidate failed`, err);
       }),
     );
   }
+  return { rollupFailed };
 }

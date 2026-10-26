@@ -12,8 +12,8 @@ let auth: Record<string, unknown> | undefined;
 vi.mock("@/lib/logging/context", () => ({
   getEvent: () => ({ getAuth: () => auth, addWarning: vi.fn() }),
 }));
-vi.mock("@/lib/sharing/grants", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/sharing/grants")>()),
+vi.mock("@/lib/sharing/grant-access", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/sharing/grant-access")>()),
   findActiveGrant: vi.fn(),
 }));
 vi.mock("../load", () => ({ loadAiCapabilityInputs: vi.fn() }));

@@ -20,35 +20,33 @@ import {
   mintSignedState,
   oauthStateCookieName,
 } from "@/lib/oauth/signed-state";
-import { getAuthorizationUrl as withingsAuthorizationUrl } from "@/lib/withings/client";
+import { withingsOAuth } from "@/lib/withings/oauth";
 import { getUserWithingsCredentials } from "@/lib/withings/credentials";
 import {
   WITHINGS_OAUTH_STATE_COOKIE,
   WITHINGS_OAUTH_STATE_TTL_MS,
   mintWithingsOAuthStateNonce,
 } from "@/lib/withings/oauth-state";
-import { getAuthorizationUrl as whoopAuthorizationUrl } from "@/lib/whoop/client";
+import { whoopOAuth } from "@/lib/whoop/oauth";
 import { getUserWhoopCredentials } from "@/lib/whoop/credentials";
 import {
   WHOOP_OAUTH_STATE_COOKIE,
   WHOOP_OAUTH_STATE_TTL_MS,
   mintWhoopOAuthStateNonce,
 } from "@/lib/whoop/oauth-state";
-import {
-  generatePkcePair,
-  getAuthorizationUrl as googleHealthAuthorizationUrl,
-} from "@/lib/google-health/client";
+import { googleHealthOAuth } from "@/lib/google-health/oauth";
+import { generatePkcePair } from "./pkce";
 import { getUserGoogleHealthCredentials } from "@/lib/google-health/credentials";
 import {
   GOOGLE_HEALTH_OAUTH_STATE_COOKIE,
   GOOGLE_HEALTH_OAUTH_STATE_TTL_MS,
   mintGoogleHealthOAuthStateNonce,
 } from "@/lib/google-health/oauth-state";
-import { getAuthorizationUrl as ouraAuthorizationUrl } from "@/lib/oura/client";
+import { ouraOAuth } from "@/lib/oura/oauth";
 import { getOuraClientCredentials } from "@/lib/oura/credentials";
-import { getAuthorizationUrl as polarAuthorizationUrl } from "@/lib/polar/client";
+import { polarOAuth } from "@/lib/polar/oauth";
 import { getPolarClientCredentials } from "@/lib/polar/credentials";
-import { getAuthorizationUrl as stravaAuthorizationUrl } from "@/lib/strava/client";
+import { stravaOAuth } from "@/lib/strava/oauth";
 import { getStravaClientCredentials } from "@/lib/strava/credentials";
 import type { OAuthKitProvider } from "./token";
 
@@ -152,7 +150,7 @@ export async function startOAuthConnect(
           value: nonce,
           maxAgeSeconds: Math.floor(WITHINGS_OAUTH_STATE_TTL_MS / 1000),
         },
-        () => withingsAuthorizationUrl(nonce, creds),
+        () => withingsOAuth.authorizationUrl(nonce, creds),
       );
     }
     case "whoop": {
@@ -174,7 +172,7 @@ export async function startOAuthConnect(
           value: nonce,
           maxAgeSeconds: Math.floor(WHOOP_OAUTH_STATE_TTL_MS / 1000),
         },
-        () => whoopAuthorizationUrl(nonce, creds),
+        () => whoopOAuth.authorizationUrl(nonce, creds),
       );
     }
     case "google-health": {
@@ -199,26 +197,28 @@ export async function startOAuthConnect(
           value: nonce,
           maxAgeSeconds: Math.floor(GOOGLE_HEALTH_OAUTH_STATE_TTL_MS / 1000),
         },
-        () => googleHealthAuthorizationUrl(nonce, creds, challenge),
+        () => googleHealthOAuth.authorizationUrl(nonce, creds, challenge),
       );
     }
     case "oura": {
       const creds = await getOuraClientCredentials(userId);
       if (!creds) return { ok: false, reason: "nocreds" };
-      return signedStart("oura", userId, (s) => ouraAuthorizationUrl(s, creds));
+      return signedStart("oura", userId, (s) =>
+        ouraOAuth.authorizationUrl(s, creds),
+      );
     }
     case "polar": {
       const creds = await getPolarClientCredentials(userId);
       if (!creds) return { ok: false, reason: "nocreds" };
       return signedStart("polar", userId, (s) =>
-        polarAuthorizationUrl(s, creds),
+        polarOAuth.authorizationUrl(s, creds),
       );
     }
     case "strava": {
       const creds = await getStravaClientCredentials(userId);
       if (!creds) return { ok: false, reason: "nocreds" };
       return signedStart("strava", userId, (s) =>
-        stravaAuthorizationUrl(s, creds),
+        stravaOAuth.authorizationUrl(s, creds),
       );
     }
   }

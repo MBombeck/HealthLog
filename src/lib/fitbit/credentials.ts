@@ -10,7 +10,7 @@
  */
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
-import type { FitbitCredentials } from "./client";
+import type { FitbitCredentials } from "./oauth";
 
 /**
  * Fetch and decrypt the user's Fitbit API credentials.

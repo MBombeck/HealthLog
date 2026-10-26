@@ -17,6 +17,11 @@ import { describe, it, expect } from "vitest";
 import { join } from "node:path";
 
 import {
+  API_HANDLER,
+  authGuardModules,
+  guardSourceOf,
+} from "./helpers/auth-guards";
+import {
   readSource,
   readSourceText,
   walkSourceFiles,
@@ -80,8 +85,16 @@ describe("the acting-account carrier is read in one place", () => {
     // Reads it. The one statement of "what does this request say it is acting
     // as", for both transports and for every caller that has to ask.
     "lib/auth/acting-carrier.ts",
-    // The resolver. The only thing that acts on the value.
-    "lib/api-handler.ts",
+    // The resolver. The only thing that acts on the value: the guard module
+    // that reads the carrier off the auth context.
+    "lib/auth/guards/acting.ts",
+    // Declares the field on the auth context the resolvers pass around, and
+    // explains it in prose. Holds no logic that could read it.
+    "lib/auth/guards/context.ts",
+    // Names the column in prose only: the record resolver's note on why the
+    // fence and the carrier read one session row. It reads the carrier
+    // through `acting.ts`.
+    "lib/auth/guards/record.ts",
     // v1.36.0 — the only thing that WRITES it: the switch endpoint sets it
     // through here, ending a grant clears it through here. The routes
     // themselves call these two functions and never name the column, which is
@@ -180,7 +193,7 @@ describe("the cookie-only helpers cannot see the acting account", () => {
   const COOKIE_ONLY = ["requireAdmin", "requireCookieAuth", "requireFreshMfa"];
 
   it.each(COOKIE_ONLY)("%s resolves the actor and nothing else", (name) => {
-    const body = functionBody(readSource("src/lib/api-handler.ts", name), name);
+    const body = functionBody(guardSourceOf(name), name);
 
     // Non-zero proof, twice over: the slice found a function, and the slice is
     // the function it claims to be. A renamed helper must fail here rather
@@ -194,7 +207,7 @@ describe("the cookie-only helpers cannot see the acting account", () => {
   });
 
   it("substitutes a data-scope user in exactly two functions", () => {
-    const src = readSource("src/lib/api-handler.ts", "requireRecordAuth");
+    const src = guardSourceOf("requireRecordAuth", ["requireGuardianAuth"]);
     const record = functionBody(src, "requireRecordAuth");
     expect(record).toContain("readActingCarrier");
 
@@ -210,8 +223,22 @@ describe("the cookie-only helpers cannot see the acting account", () => {
     // `readActingCarrier` is what turns a request into "acting as somebody
     // else". Three callers: the bare path, which refuses on it, and the two
     // record paths, which act on it. A fourth would be a mode nobody declared.
-    const callers = (src.match(/await readActingCarrier\(/g) ?? []).length;
+    // Counted over the whole auth layer, the wrapper included, because the
+    // bare path lives in another guard module than the record paths.
+    const callers = (
+      [API_HANDLER, ...authGuardModules().map(([rel]) => rel)]
+        .map((rel) => read(rel))
+        .join("\n")
+        .match(/await readActingCarrier\(/g) ?? []
+    ).length;
     expect(callers).toBe(3);
+    expect(
+      (
+        functionBody(guardSourceOf("requireAuth"), "requireAuth").match(
+          /await readActingCarrier\(/g,
+        ) ?? []
+      ).length,
+    ).toBe(1);
   });
 });
 

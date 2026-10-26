@@ -17,6 +17,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { requireFloor } from "@/__tests__/helpers/source-files";
+import { stripComments } from "../../../../__tests__/helpers/source-files";
 
 const ROOT = resolve(__dirname, "../../../..");
 
@@ -65,9 +66,7 @@ const DE_DEFAULT_NULLISH = /\?\?\s*"de"/;
  * Only executable source is checked.
  */
 function readCode(rel: string): string {
-  return readFileSync(resolve(ROOT, rel), "utf8")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/^\s*\/\/.*$/gm, "");
+  return stripComments(readFileSync(resolve(ROOT, rel), "utf8"), rel);
 }
 
 describe("no German-default locale binary", () => {
@@ -77,6 +76,11 @@ describe("no German-default locale binary", () => {
 
   it.each(GUARDED_FILES)("%s carries no de-default fallback", (rel) => {
     expect(readCode(rel)).not.toMatch(DE_DEFAULT_NULLISH);
+  });
+
+  it.each(GUARDED_FILES)("%s reads as code, not as an empty file", (rel) => {
+    // The bans above pass on nothing; the stripped file must still export.
+    expect(readCode(rel)).toMatch(/\bexport\b/);
   });
 
   it("finds the turn pipeline it guards", () => {

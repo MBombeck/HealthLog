@@ -28,8 +28,8 @@ import {
   apiSuccess,
   getClientIp,
   returnAllZodIssues,
-  safeJson,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import {
   createSideEffectSchema,
@@ -149,16 +149,10 @@ async function postSideEffect(
     });
   }
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, createSideEffectSchema, {
     maxBytes: 64 * 1024,
   });
-  if (jsonError) return jsonError;
-
-  const parsed = createSideEffectSchema.safeParse(body);
-  if (!parsed.success) {
-    // v1.4.43 — multi-issue 422.
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const { entry, severity, occurredAt, notes } = parsed.data;
 

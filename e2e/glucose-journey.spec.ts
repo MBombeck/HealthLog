@@ -62,8 +62,14 @@ function decimal(value: string): RegExp {
   return new RegExp(value.replace(".", "[.,]"));
 }
 
+/**
+ * The list, filtered to blood glucose. Unfiltered it shows the account's
+ * newest page of every type, and other specs keep writing readings to the
+ * same account, so on a database a few runs old a reading typed for
+ * "yesterday" falls off that page and the count reads one short.
+ */
 async function openList(page: Page): Promise<void> {
-  await page.goto("/measurements");
+  await page.goto("/measurements?type=BLOOD_GLUCOSE");
   await expect(page.locator(LIST_SETTLED).first()).toBeVisible({
     timeout: 30_000,
   });

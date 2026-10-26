@@ -23,6 +23,7 @@
  * provisions it and the boot enqueue silently never drains (the v1.4.37
  * dead-queue class).
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -37,15 +38,7 @@ import {
   GOOGLE_HEALTH_SYNC_LOCK_WAIT_MS,
   withGoogleHealthSyncLock,
 } from "@/lib/google-health/sync-lock";
-
-export const GOOGLE_HEALTH_SLEEP_REPAIR_QUEUE = "google-health-sleep-repair";
-
-/**
- * Serial concurrency — a repair walks the full sleep history for one account
- * and is rate-bounded by Google's per-app quota; concurrency-1 keeps it from
- * crowding the request pool, matching `GOOGLE_HEALTH_BACKFILL_CONCURRENCY`.
- */
-export const GOOGLE_HEALTH_SLEEP_REPAIR_CONCURRENCY = 1;
+import { GOOGLE_HEALTH_SLEEP_REPAIR_QUEUE } from "./google-health-sleep-repair-queue";
 
 export interface GoogleHealthSleepRepairPayload {
   userId: string;
@@ -158,7 +151,7 @@ export async function enqueueBootTimeGoogleHealthSleepRepair(
 
   try {
     const connections = await prisma.googleHealthConnection.findMany({
-      where: { sleepRepairedAt: null },
+      where: { sleepRepairedAt: null, ...OWNED_BY_ACTIVE_ACCOUNT },
       select: { userId: true },
     });
 

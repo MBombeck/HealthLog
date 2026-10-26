@@ -20,6 +20,8 @@ import { RECORD_FENCE_ERROR_CODE } from "./sharing/record-session-fence-contract
  * HttpError without one serialises exactly as before.
  */
 export class HttpError extends Error {
+  /** Machine fields for the envelope's `meta`, beside `errorCode`. */
+  extraMeta?: Record<string, unknown>;
   constructor(
     public statusCode: number,
     message: string,
@@ -68,7 +70,35 @@ export const AUTH_ERROR_CODES = {
    * drops a perfectly good session because the database blinked. Retry.
    */
   sessionUnavailable: "auth.session.unavailable",
+  /**
+   * The credentials are right, but the account is pending deletion: it is
+   * locked until the grace window ends and then erased. 403, and the envelope
+   * carries `meta.purgeAt` so the sign-in screen can name the date. Only an
+   * admin can undo it, so a client stops retrying and says so.
+   */
+  deletionPending: "auth.account.deletion_pending",
 } as const;
+
+/**
+ * Sign-in refused because the account is pending deletion.
+ *
+ * Raised only after the credential itself was proved (the password checked,
+ * the passkey assertion verified, the identity provider answered), so it
+ * tells nobody anything they could not already sign in to learn. `purgeAt` is
+ * when the purge job erases the account; null only on a row whose window was
+ * never stamped, which the purge job treats as due.
+ */
+export class AccountDeletionPendingError extends HttpError {
+  constructor(public readonly purgeAt: Date | null) {
+    super(
+      403,
+      "This account is scheduled for deletion and is locked. An admin can undo the deletion until it completes.",
+      AUTH_ERROR_CODES.deletionPending,
+    );
+    this.name = "AccountDeletionPendingError";
+    this.extraMeta = { purgeAt: purgeAt ? purgeAt.toISOString() : null };
+  }
+}
 
 /**
  * The session lookup failed, as opposed to finding nothing.

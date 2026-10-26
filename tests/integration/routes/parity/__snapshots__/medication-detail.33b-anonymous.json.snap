@@ -1,0 +1,1053 @@
+{
+  "status": 401,
+  "body": {
+    "data": null,
+    "error": "Not authenticated",
+    "meta": {
+      "errorCode": "auth.missing",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 401,
+      "action": null,
+      "meta": null,
+      "warnings": null,
+      "error": {
+        "type": "HttpError",
+        "message": "Not authenticated"
+      }
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "medications": [
+      {
+        "id": "<id:1>",
+        "userId": "<id:2>",
+        "name": "As needed",
+        "dose": "10mg",
+        "treatmentClass": "GENERIC",
+        "dosesPerUnit": null,
+        "unitsPerDose": "1",
+        "active": true,
+        "notificationsEnabled": true,
+        "pausedAt": null,
+        "snoozedUntil": null,
+        "startsOn": null,
+        "endsOn": null,
+        "endedAt": null,
+        "oneShot": false,
+        "asNeeded": true,
+        "trackIntake": true,
+        "autoMarkTaken": false,
+        "autoMarkTakenSince": null,
+        "deliveryForm": "ORAL",
+        "trackInjectionSites": false,
+        "allowedInjectionSites": [],
+        "liveActivityEnabled": false,
+        "criticalAlarmEnabled": false,
+        "atcCode": null,
+        "rxNormCode": null,
+        "lowStockNotifiedAt": null,
+        "lowStockNotifiedThresholdDays": null,
+        "reorderLeadDays": null,
+        "externalSource": null,
+        "externalId": null,
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>"
+      },
+      {
+        "id": "<id:3>",
+        "userId": "<id:2>",
+        "name": "Booster",
+        "dose": "10mg",
+        "treatmentClass": "GENERIC",
+        "dosesPerUnit": null,
+        "unitsPerDose": "1",
+        "active": true,
+        "notificationsEnabled": true,
+        "pausedAt": null,
+        "snoozedUntil": null,
+        "startsOn": "2026-10-20T00:00:00.000Z",
+        "endsOn": "2026-10-20T00:00:00.000Z",
+        "endedAt": null,
+        "oneShot": true,
+        "asNeeded": false,
+        "trackIntake": true,
+        "autoMarkTaken": false,
+        "autoMarkTakenSince": null,
+        "deliveryForm": "ORAL",
+        "trackInjectionSites": false,
+        "allowedInjectionSites": [],
+        "liveActivityEnabled": false,
+        "criticalAlarmEnabled": false,
+        "atcCode": null,
+        "rxNormCode": null,
+        "lowStockNotifiedAt": null,
+        "lowStockNotifiedThresholdDays": null,
+        "reorderLeadDays": null,
+        "externalSource": null,
+        "externalId": null,
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>"
+      },
+      {
+        "id": "<id:4>",
+        "userId": "<id:2>",
+        "name": "By a manager",
+        "dose": "20mg",
+        "treatmentClass": "GENERIC",
+        "dosesPerUnit": 30,
+        "unitsPerDose": "1",
+        "active": true,
+        "notificationsEnabled": false,
+        "pausedAt": null,
+        "snoozedUntil": null,
+        "startsOn": "2026-10-01T00:00:00.000Z",
+        "endsOn": null,
+        "endedAt": null,
+        "oneShot": false,
+        "asNeeded": false,
+        "trackIntake": true,
+        "autoMarkTaken": true,
+        "autoMarkTakenSince": "<now>",
+        "deliveryForm": "ORAL",
+        "trackInjectionSites": false,
+        "allowedInjectionSites": [],
+        "liveActivityEnabled": true,
+        "criticalAlarmEnabled": true,
+        "atcCode": "C09AA05",
+        "rxNormCode": null,
+        "lowStockNotifiedAt": null,
+        "lowStockNotifiedThresholdDays": null,
+        "reorderLeadDays": 5,
+        "externalSource": null,
+        "externalId": null,
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>"
+      },
+      {
+        "id": "<id:5>",
+        "userId": "<id:2>",
+        "name": "Course tablet",
+        "dose": "10mg",
+        "treatmentClass": "GENERIC",
+        "dosesPerUnit": null,
+        "unitsPerDose": "1",
+        "active": true,
+        "notificationsEnabled": true,
+        "pausedAt": null,
+        "snoozedUntil": null,
+        "startsOn": "2026-10-01T00:00:00.000Z",
+        "endsOn": "2026-12-31T00:00:00.000Z",
+        "endedAt": null,
+        "oneShot": false,
+        "asNeeded": false,
+        "trackIntake": true,
+        "autoMarkTaken": false,
+        "autoMarkTakenSince": null,
+        "deliveryForm": "ORAL",
+        "trackInjectionSites": false,
+        "allowedInjectionSites": [],
+        "liveActivityEnabled": false,
+        "criticalAlarmEnabled": false,
+        "atcCode": null,
+        "rxNormCode": null,
+        "lowStockNotifiedAt": null,
+        "lowStockNotifiedThresholdDays": null,
+        "reorderLeadDays": null,
+        "externalSource": null,
+        "externalId": null,
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>"
+      },
+      {
+        "id": "<id:6>",
+        "userId": "<id:2>",
+        "name": "Record only renamed",
+        "dose": "10mg",
+        "treatmentClass": "GENERIC",
+        "dosesPerUnit": null,
+        "unitsPerDose": "1",
+        "active": true,
+        "notificationsEnabled": true,
+        "pausedAt": null,
+        "snoozedUntil": null,
+        "startsOn": "2026-10-01T00:00:00.000Z",
+        "endsOn": null,
+        "endedAt": null,
+        "oneShot": false,
+        "asNeeded": false,
+        "trackIntake": false,
+        "autoMarkTaken": false,
+        "autoMarkTakenSince": null,
+        "deliveryForm": "ORAL",
+        "trackInjectionSites": false,
+        "allowedInjectionSites": [],
+        "liveActivityEnabled": false,
+        "criticalAlarmEnabled": false,
+        "atcCode": null,
+        "rxNormCode": null,
+        "lowStockNotifiedAt": null,
+        "lowStockNotifiedThresholdDays": null,
+        "reorderLeadDays": null,
+        "externalSource": null,
+        "externalId": null,
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>"
+      },
+      {
+        "id": "<id:7>",
+        "userId": "<id:2>",
+        "name": "Rolling pen",
+        "dose": "1 pen",
+        "treatmentClass": "GENERIC",
+        "dosesPerUnit": null,
+        "unitsPerDose": "2",
+        "active": true,
+        "notificationsEnabled": true,
+        "pausedAt": null,
+        "snoozedUntil": null,
+        "startsOn": "2026-10-01T00:00:00.000Z",
+        "endsOn": null,
+        "endedAt": null,
+        "oneShot": false,
+        "asNeeded": false,
+        "trackIntake": true,
+        "autoMarkTaken": true,
+        "autoMarkTakenSince": "2026-10-01T06:00:00.000Z",
+        "deliveryForm": "INJECTION",
+        "trackInjectionSites": false,
+        "allowedInjectionSites": [],
+        "liveActivityEnabled": false,
+        "criticalAlarmEnabled": false,
+        "atcCode": null,
+        "rxNormCode": null,
+        "lowStockNotifiedAt": null,
+        "lowStockNotifiedThresholdDays": null,
+        "reorderLeadDays": null,
+        "externalSource": null,
+        "externalId": null,
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>"
+      }
+    ],
+    "schedules": [
+      {
+        "id": "<id:8>",
+        "medicationId": "<id:6>",
+        "windowStart": "07:00",
+        "windowEnd": "08:00",
+        "label": null,
+        "dose": null,
+        "unitsPerDose": null,
+        "daysOfWeek": null,
+        "timesOfDay": [
+          "07:00"
+        ],
+        "reminderGraceMinutes": null,
+        "rrule": "FREQ=DAILY",
+        "rollingIntervalDays": null,
+        "scheduleType": "SCHEDULED",
+        "cyclicOnWeeks": null,
+        "cyclicOffWeeks": null,
+        "doseWindows": null
+      },
+      {
+        "id": "<id:9>",
+        "medicationId": "<id:5>",
+        "windowStart": "08:00",
+        "windowEnd": "09:00",
+        "label": null,
+        "dose": null,
+        "unitsPerDose": null,
+        "daysOfWeek": null,
+        "timesOfDay": [
+          "08:00"
+        ],
+        "reminderGraceMinutes": null,
+        "rrule": "FREQ=DAILY",
+        "rollingIntervalDays": null,
+        "scheduleType": "SCHEDULED",
+        "cyclicOnWeeks": null,
+        "cyclicOffWeeks": null,
+        "doseWindows": null
+      },
+      {
+        "id": "<id:10>",
+        "medicationId": "<id:3>",
+        "windowStart": "09:00",
+        "windowEnd": "10:00",
+        "label": null,
+        "dose": null,
+        "unitsPerDose": null,
+        "daysOfWeek": null,
+        "timesOfDay": [
+          "09:00"
+        ],
+        "reminderGraceMinutes": null,
+        "rrule": null,
+        "rollingIntervalDays": null,
+        "scheduleType": "SCHEDULED",
+        "cyclicOnWeeks": null,
+        "cyclicOffWeeks": null,
+        "doseWindows": null
+      },
+      {
+        "id": "<id:11>",
+        "medicationId": "<id:7>",
+        "windowStart": "09:00",
+        "windowEnd": "11:00",
+        "label": null,
+        "dose": null,
+        "unitsPerDose": null,
+        "daysOfWeek": null,
+        "timesOfDay": [
+          "09:00"
+        ],
+        "reminderGraceMinutes": null,
+        "rrule": null,
+        "rollingIntervalDays": 7,
+        "scheduleType": "SCHEDULED",
+        "cyclicOnWeeks": null,
+        "cyclicOffWeeks": null,
+        "doseWindows": null
+      },
+      {
+        "id": "<id:12>",
+        "medicationId": "<id:4>",
+        "windowStart": "11:30",
+        "windowEnd": "11:30",
+        "label": "Late morning",
+        "dose": "10mg",
+        "unitsPerDose": "2",
+        "daysOfWeek": null,
+        "timesOfDay": [
+          "11:30"
+        ],
+        "reminderGraceMinutes": 45,
+        "rrule": "FREQ=DAILY",
+        "rollingIntervalDays": null,
+        "scheduleType": "SCHEDULED",
+        "cyclicOnWeeks": null,
+        "cyclicOffWeeks": null,
+        "doseWindows": null
+      },
+      {
+        "id": "<id:13>",
+        "medicationId": "<id:4>",
+        "windowStart": "20:00",
+        "windowEnd": "22:00",
+        "label": null,
+        "dose": null,
+        "unitsPerDose": null,
+        "daysOfWeek": "i2;1,3,5",
+        "timesOfDay": [
+          "20:00"
+        ],
+        "reminderGraceMinutes": null,
+        "rrule": null,
+        "rollingIntervalDays": null,
+        "scheduleType": "SCHEDULED",
+        "cyclicOnWeeks": null,
+        "cyclicOffWeeks": null,
+        "doseWindows": [
+          {
+            "end": "21:00",
+            "start": "19:30",
+            "timeOfDay": "20:00"
+          }
+        ]
+      }
+    ],
+    "revisions": [
+      {
+        "id": "<id:14>",
+        "medicationId": "<id:6>",
+        "validFrom": "2026-10-01T06:00:00.000Z",
+        "validUntil": "<now>",
+        "payload": [],
+        "source": "ARCHIVED",
+        "supersededByRevisionId": null,
+        "createdAt": "<createdAt>"
+      },
+      {
+        "id": "<id:15>",
+        "medicationId": "<id:1>",
+        "validFrom": "2026-10-01T06:00:00.000Z",
+        "validUntil": "<now>",
+        "payload": [],
+        "source": "ARCHIVED",
+        "supersededByRevisionId": null,
+        "createdAt": "<createdAt>"
+      },
+      {
+        "id": "<id:16>",
+        "medicationId": "<id:4>",
+        "validFrom": "2026-10-01T06:00:00.000Z",
+        "validUntil": "<now>",
+        "payload": [
+          {
+            "dose": null,
+            "label": null,
+            "rrule": "FREQ=DAILY",
+            "windowEnd": "10:00",
+            "daysOfWeek": null,
+            "timesOfDay": [
+              "08:00"
+            ],
+            "doseWindows": null,
+            "windowStart": "08:00",
+            "scheduleType": "SCHEDULED",
+            "cyclicOnWeeks": null,
+            "cyclicOffWeeks": null,
+            "rollingIntervalDays": null,
+            "reminderGraceMinutes": null
+          },
+          {
+            "dose": null,
+            "label": null,
+            "rrule": "FREQ=DAILY",
+            "windowEnd": "22:00",
+            "daysOfWeek": null,
+            "timesOfDay": [
+              "20:00"
+            ],
+            "doseWindows": null,
+            "windowStart": "20:00",
+            "scheduleType": "SCHEDULED",
+            "cyclicOnWeeks": null,
+            "cyclicOffWeeks": null,
+            "rollingIntervalDays": null,
+            "reminderGraceMinutes": null
+          }
+        ],
+        "source": "ARCHIVED",
+        "supersededByRevisionId": null,
+        "createdAt": "<createdAt>"
+      },
+      {
+        "id": "<id:17>",
+        "medicationId": "<id:3>",
+        "validFrom": "2026-10-01T06:00:00.000Z",
+        "validUntil": "<now>",
+        "payload": [
+          {
+            "dose": null,
+            "label": null,
+            "rrule": "FREQ=DAILY",
+            "windowEnd": "10:00",
+            "daysOfWeek": null,
+            "timesOfDay": [
+              "09:00"
+            ],
+            "doseWindows": null,
+            "windowStart": "09:00",
+            "scheduleType": "SCHEDULED",
+            "cyclicOnWeeks": null,
+            "cyclicOffWeeks": null,
+            "rollingIntervalDays": null,
+            "reminderGraceMinutes": null
+          }
+        ],
+        "source": "ARCHIVED",
+        "supersededByRevisionId": null,
+        "createdAt": "<createdAt>"
+      },
+      {
+        "id": "<id:18>",
+        "medicationId": "<id:6>",
+        "validFrom": "<now>",
+        "validUntil": "<now>",
+        "payload": [
+          {
+            "dose": null,
+            "label": null,
+            "rrule": "FREQ=DAILY",
+            "windowEnd": "08:00",
+            "daysOfWeek": null,
+            "timesOfDay": [
+              "07:00"
+            ],
+            "doseWindows": null,
+            "windowStart": "07:00",
+            "scheduleType": "SCHEDULED",
+            "cyclicOnWeeks": null,
+            "cyclicOffWeeks": null,
+            "rollingIntervalDays": null,
+            "reminderGraceMinutes": null
+          }
+        ],
+        "source": "ARCHIVED",
+        "supersededByRevisionId": null,
+        "createdAt": "<createdAt>"
+      },
+      {
+        "id": "<id:19>",
+        "medicationId": "<id:1>",
+        "validFrom": "<now>",
+        "validUntil": "<now>",
+        "payload": [
+          {
+            "dose": null,
+            "label": null,
+            "rrule": "FREQ=DAILY",
+            "windowEnd": "09:00",
+            "daysOfWeek": null,
+            "timesOfDay": [
+              "08:00"
+            ],
+            "doseWindows": null,
+            "windowStart": "08:00",
+            "scheduleType": "SCHEDULED",
+            "cyclicOnWeeks": null,
+            "cyclicOffWeeks": null,
+            "rollingIntervalDays": null,
+            "reminderGraceMinutes": null
+          }
+        ],
+        "source": "ARCHIVED",
+        "supersededByRevisionId": null,
+        "createdAt": "<createdAt>"
+      }
+    ],
+    "pauseEras": [
+      {
+        "id": "<id:20>",
+        "medicationId": "<id:4>",
+        "userId": "<id:2>",
+        "pausedAt": "<now>",
+        "resumedAt": "<now>",
+        "createdAt": "<createdAt>"
+      }
+    ],
+    "courses": [
+      {
+        "id": "<id:21>",
+        "medicationId": "<id:5>",
+        "userId": "<id:2>",
+        "startsOn": "2026-08-01T00:00:00.000Z",
+        "endsOn": "2026-08-31T00:00:00.000Z",
+        "endedAt": null,
+        "noteEncrypted": null,
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>"
+      },
+      {
+        "id": "<id:22>",
+        "medicationId": "<id:5>",
+        "userId": "<id:2>",
+        "startsOn": "2026-10-01T00:00:00.000Z",
+        "endsOn": "2026-12-31T00:00:00.000Z",
+        "endedAt": null,
+        "noteEncrypted": null,
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>"
+      },
+      {
+        "id": "<id:23>",
+        "medicationId": "<id:3>",
+        "userId": "<id:2>",
+        "startsOn": "2026-10-20T00:00:00.000Z",
+        "endsOn": "2026-10-20T00:00:00.000Z",
+        "endedAt": null,
+        "noteEncrypted": null,
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>"
+      }
+    ],
+    "intakes": [
+      {
+        "id": "<id:24>",
+        "userId": "<id:2>",
+        "medicationId": "<id:7>",
+        "scheduledFor": "2026-10-10T07:00:00.000Z",
+        "takenAt": "2026-10-10T07:05:00.000Z",
+        "skipped": false,
+        "autoMissed": false,
+        "autoRecorded": false,
+        "attributionSource": "AUTO",
+        "source": "WEB",
+        "idempotencyKey": null,
+        "createdAt": "<createdAt>",
+        "injectionSite": null,
+        "doseTaken": null,
+        "inventoryConsumption": null,
+        "externalId": null,
+        "updatedAt": "<updatedAt>",
+        "syncVersion": "<syncVersion>",
+        "deletedAt": null
+      },
+      {
+        "id": "<id:25>",
+        "userId": "<id:2>",
+        "medicationId": "<id:4>",
+        "scheduledFor": "2026-10-14T18:00:00.000Z",
+        "takenAt": null,
+        "skipped": false,
+        "autoMissed": false,
+        "autoRecorded": false,
+        "attributionSource": "AUTO",
+        "source": "WEB",
+        "idempotencyKey": null,
+        "createdAt": "<createdAt>",
+        "injectionSite": null,
+        "doseTaken": null,
+        "inventoryConsumption": null,
+        "externalId": null,
+        "updatedAt": "<updatedAt>",
+        "syncVersion": "<syncVersion>",
+        "deletedAt": null
+      },
+      {
+        "id": "<id:26>",
+        "userId": "<id:2>",
+        "medicationId": "<id:4>",
+        "scheduledFor": "2026-10-15T06:00:00.000Z",
+        "takenAt": "2026-10-15T06:10:00.000Z",
+        "skipped": false,
+        "autoMissed": false,
+        "autoRecorded": false,
+        "attributionSource": "AUTO",
+        "source": "WEB",
+        "idempotencyKey": null,
+        "createdAt": "<createdAt>",
+        "injectionSite": null,
+        "doseTaken": null,
+        "inventoryConsumption": null,
+        "externalId": null,
+        "updatedAt": "<updatedAt>",
+        "syncVersion": "<syncVersion>",
+        "deletedAt": null
+      },
+      {
+        "id": "<id:27>",
+        "userId": "<id:2>",
+        "medicationId": "<id:4>",
+        "scheduledFor": "2026-10-15T18:00:00.000Z",
+        "takenAt": null,
+        "skipped": false,
+        "autoMissed": false,
+        "autoRecorded": false,
+        "attributionSource": "AUTO",
+        "source": "WEB",
+        "idempotencyKey": null,
+        "createdAt": "<createdAt>",
+        "injectionSite": null,
+        "doseTaken": null,
+        "inventoryConsumption": null,
+        "externalId": null,
+        "updatedAt": "<updatedAt>",
+        "syncVersion": "<syncVersion>",
+        "deletedAt": "<now>"
+      },
+      {
+        "id": "<id:28>",
+        "userId": "<id:2>",
+        "medicationId": "<id:6>",
+        "scheduledFor": "2026-10-16T05:00:00.000Z",
+        "takenAt": null,
+        "skipped": false,
+        "autoMissed": false,
+        "autoRecorded": false,
+        "attributionSource": "AUTO",
+        "source": "WEB",
+        "idempotencyKey": null,
+        "createdAt": "<createdAt>",
+        "injectionSite": null,
+        "doseTaken": null,
+        "inventoryConsumption": null,
+        "externalId": null,
+        "updatedAt": "<updatedAt>",
+        "syncVersion": "<syncVersion>",
+        "deletedAt": "<now>"
+      },
+      {
+        "id": "<id:29>",
+        "userId": "<id:2>",
+        "medicationId": "<id:4>",
+        "scheduledFor": "2026-10-16T06:00:00.000Z",
+        "takenAt": null,
+        "skipped": false,
+        "autoMissed": false,
+        "autoRecorded": false,
+        "attributionSource": "AUTO",
+        "source": "WEB",
+        "idempotencyKey": null,
+        "createdAt": "<createdAt>",
+        "injectionSite": null,
+        "doseTaken": null,
+        "inventoryConsumption": null,
+        "externalId": null,
+        "updatedAt": "<updatedAt>",
+        "syncVersion": "<syncVersion>",
+        "deletedAt": "<now>"
+      }
+    ],
+    "doseChanges": [],
+    "inventoryItems": [
+      {
+        "id": "<id:30>",
+        "userId": "<id:2>",
+        "medicationId": "<id:7>",
+        "state": "ACTIVE",
+        "containerType": "OTHER",
+        "unitsTotal": "4",
+        "unitsRemaining": "3",
+        "firstUseAt": null,
+        "expiresAt": null,
+        "printedExpiry": null,
+        "purchasedAt": "2026-10-01T06:00:00.000Z",
+        "manufacturer": null,
+        "doseStrength": null,
+        "notes": null,
+        "notesEncrypted": null,
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>"
+      }
+    ],
+    "inventoryEvents": [],
+    "categories": [
+      {
+        "medicationId": "<id:4>",
+        "category": "OTHER",
+        "updatedAt": "<updatedAt>"
+      },
+      {
+        "medicationId": "<id:7>",
+        "category": "custom:5b1f7c2e-4d3a-4b8e-9c61-2a7d0e9f4c13",
+        "updatedAt": "<updatedAt>"
+      }
+    ],
+    "ingredients": [
+      {
+        "id": "<id:31>",
+        "userId": "<id:2>",
+        "medicationId": "<id:7>",
+        "nutrient": "vitamin_d",
+        "amountPerUnit": 25,
+        "unit": "ug",
+        "enteredAmount": 1000,
+        "enteredUnit": "IU",
+        "source": "MANUAL",
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>"
+      }
+    ],
+    "audit": [
+      {
+        "action": "medication.delete",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:32>",
+          "name": "To delete"
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": "<id:33>",
+        "details": {
+          "medicationId": "<id:4>",
+          "fields": [
+            "name"
+          ],
+          "previous": {
+            "name": "Daily tablet renamed"
+          }
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:4>",
+          "fields": [
+            "active"
+          ],
+          "previous": {
+            "active": false
+          }
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:4>",
+          "fields": [
+            "active"
+          ],
+          "previous": {
+            "active": true
+          }
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:1>",
+          "fields": [
+            "asNeeded"
+          ],
+          "previous": {
+            "asNeeded": false
+          },
+          "replacedCadence": "08:00 FREQ=DAILY",
+          "replacedScheduleCount": 1,
+          "tombstonedSlotCount": 0,
+          "tombstonedFrom": null,
+          "tombstonedTo": null
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:1>",
+          "fields": [
+            "asNeeded"
+          ],
+          "previous": {
+            "asNeeded": true
+          },
+          "replacedCadence": null,
+          "replacedScheduleCount": 0,
+          "tombstonedSlotCount": 0,
+          "tombstonedFrom": null,
+          "tombstonedTo": null
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:4>",
+          "fields": [
+            "autoMarkTaken"
+          ],
+          "previous": {
+            "autoMarkTaken": false
+          }
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:4>",
+          "fields": [
+            "dose",
+            "name"
+          ],
+          "previous": {
+            "name": "Daily tablet",
+            "dose": "10mg"
+          }
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:3>",
+          "fields": [
+            "endsOn"
+          ],
+          "previous": {
+            "endsOn": null
+          },
+          "replacedCadence": "09:00 FREQ=DAILY",
+          "replacedScheduleCount": 1,
+          "tombstonedSlotCount": 0,
+          "tombstonedFrom": null,
+          "tombstonedTo": null
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:5>",
+          "fields": [
+            "endsOn"
+          ],
+          "previous": {
+            "endsOn": null
+          }
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:6>",
+          "fields": [
+            "name"
+          ],
+          "previous": {
+            "name": "Record only"
+          }
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:6>",
+          "fields": [
+            "trackIntake"
+          ],
+          "previous": {
+            "trackIntake": false
+          }
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:6>",
+          "fields": [
+            "trackIntake"
+          ],
+          "previous": {
+            "trackIntake": true
+          }
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:4>",
+          "fields": [],
+          "previous": {},
+          "replacedCadence": "08:00 FREQ=DAILY | 20:00 FREQ=DAILY",
+          "replacedScheduleCount": 2,
+          "tombstonedSlotCount": 2,
+          "tombstonedFrom": "2026-10-15T18:00:00.000Z",
+          "tombstonedTo": "2026-10-16T06:00:00.000Z"
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:4>",
+          "fields": [],
+          "previous": {},
+          "replacedCadence": "11:30 FREQ=DAILY | 20:00 i2;1,3,5",
+          "replacedScheduleCount": 2,
+          "tombstonedSlotCount": 0,
+          "tombstonedFrom": null,
+          "tombstonedTo": null
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:4>",
+          "fields": [],
+          "previous": {}
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:4>",
+          "fields": [],
+          "previous": {}
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:4>",
+          "fields": [],
+          "previous": {}
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:4>",
+          "fields": [],
+          "previous": {}
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "medication.update",
+        "userId": "<id:2>",
+        "actorUserId": null,
+        "details": {
+          "medicationId": "<id:7>",
+          "fields": [],
+          "previous": {}
+        },
+        "ipAddress": null
+      }
+    ],
+    "idempotency": []
+  },
+  "extra": [
+    {
+      "name": "kit-ingest",
+      "permissions": [
+        "medication:<doomed>:ingest"
+      ],
+      "revoked": true
+    },
+    {
+      "name": "kit-phone",
+      "permissions": [
+        "*"
+      ],
+      "revoked": false
+    }
+  ]
+}

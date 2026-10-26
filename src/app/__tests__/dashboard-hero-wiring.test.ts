@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { dashboardSource } from "@/__tests__/helpers/dashboard-source";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -16,14 +17,13 @@ import { join } from "node:path";
  *     once carried it — is gone), while the page itself derives no
  *     welcome text.
  */
-const PAGE_PATH = join(process.cwd(), "src/app/page-client.tsx");
 const HEADER_PATH = join(
   process.cwd(),
   "src/components/dashboard/dashboard-header.tsx",
 );
 
 describe("dashboard hero — page wiring", () => {
-  const src = readFileSync(PAGE_PATH, "utf8");
+  const src = dashboardSource();
 
   it("mounts the TodayHero above the tile strip", () => {
     const heroIdx = src.indexOf("<TodayHero");
@@ -80,7 +80,7 @@ describe("dashboard hero — header greeting", () => {
   });
 
   it("the page mounts the header without a greeting prop", () => {
-    const src = readFileSync(PAGE_PATH, "utf8");
+    const src = dashboardSource();
     expect(src).toContain(
       "<DashboardHeader onQuickEntry={setQuickEntryDialog} />",
     );

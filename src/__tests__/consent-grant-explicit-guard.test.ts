@@ -27,6 +27,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { stripComments } from "./helpers/source-files";
 
 const ROOT = process.cwd();
 const SRC = join(ROOT, "src");
@@ -65,12 +66,6 @@ function clientSources(dir: string): string[] {
 
 function rel(file: string): string {
   return relative(ROOT, file).split(sep).join("/");
-}
-
-function stripComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
-    .replace(/(^|[^:"'`])\/\/[^\n]*/g, "$1");
 }
 
 /** The source spans of every `useEffect(` / `useLayoutEffect(` call. */

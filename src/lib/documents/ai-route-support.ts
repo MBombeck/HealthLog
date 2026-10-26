@@ -154,9 +154,14 @@ export type VisionInput =
       // Refs #776 — `rasterFailed` (this PDF would not render on a raster-
       // capable build) is distinct from `pdfNeedsAnthropic` (this build /
       // provider cannot take a PDF at all): they need different fixes, so
-      // they must not share a label.
+      // they must not share a label. `readerBusy` is neither: the reader
+      // could not take the document now, and the work is tried again.
       reason:
-        "decryptFailed" | "fileType" | "pdfNeedsAnthropic" | "rasterFailed";
+        | "decryptFailed"
+        | "fileType"
+        | "pdfNeedsAnthropic"
+        | "rasterFailed"
+        | "readerBusy";
     };
 
 /**
@@ -210,6 +215,9 @@ export async function prepareVisionInput(
     const raster = await rasterizePdf(buffer);
     if (raster.ok) {
       return { ok: true, images: raster.images, documents: [] };
+    }
+    if (raster.reason === "busy" || raster.reason === "interrupted") {
+      return { ok: false, reason: "readerBusy" };
     }
     // Refs #776 — a build that cannot rasterize at all is a capability gap a
     // PDF-native (Anthropic) provider would cover; a render failure on a

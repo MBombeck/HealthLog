@@ -12,7 +12,12 @@ import { describe, expect, it } from "vitest";
 
 import { apiHandler } from "@/lib/api-handler";
 
-import { ContractViolation, anonymous, callRoute } from "../../kit/call-route";
+import {
+  ContractViolation,
+  anonymous,
+  callRoute,
+  sealedFieldPaths,
+} from "../../kit/call-route";
 
 const token = {
   id: "tok-1",
@@ -22,11 +27,37 @@ const token = {
   expiresAt: null,
   createdAt: "2026-01-01T00:00:00.000Z",
   revoked: false,
+  mirrorToAppleHealth: false,
 };
 
 function answering(status: number, body: unknown) {
   return apiHandler(async () => NextResponse.json(body, { status }));
 }
+
+describe("callRoute's sealed-field check", () => {
+  it("finds a sealed key and serialised bytes at any depth, and nothing else", () => {
+    const bytes = Object.fromEntries(
+      Array.from({ length: 32 }, (_, i) => [String(i), (i * 7) % 256]),
+    );
+    expect(
+      sealedFieldPaths({
+        data: {
+          rows: [{ notes: "a", notesEncrypted: null }],
+          track: { geometry: bytes },
+          raw: { type: "Buffer", data: [1, 2, 3] },
+          hours: { "0": 3, "1": 4, "2": 5 },
+        },
+      }),
+    ).toEqual([
+      "data.rows[0].notesEncrypted",
+      "data.track.geometry",
+      "data.raw",
+    ]);
+    expect(sealedFieldPaths({ data: { notes: "plain", count: 3 } })).toEqual(
+      [],
+    );
+  });
+});
 
 describe("callRoute's contract check", () => {
   it("accepts a body the registered schema describes", async () => {

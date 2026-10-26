@@ -283,16 +283,14 @@ export const MOOD_CROSS_METRIC_ROW_CAP = 50_000;
 
 // --- Target bands (mirror mood-chart VALUE_BANDS + mood-status) ---
 
-/**
- * The mood-status generator grades "in target" as score >= 3.5. The
- * mood-chart paints three reference bands (1–2 red, 2–3 orange, 3–5
- * green). We keep both anchored here so the heatmap colour map and the
- * in-target headline never drift from the line chart.
- */
-export const MOOD_GREEN_MIN = 3.5;
-export const MOOD_GREEN_MAX = 5;
-export const MOOD_ORANGE_MIN = 2;
-export const MOOD_ORANGE_MAX = 3.5;
+// Defined in a leaf module so the per-domain modules this hub re-exports can
+// read them without importing the hub back.
+export {
+  MOOD_GREEN_MAX,
+  MOOD_GREEN_MIN,
+  MOOD_ORANGE_MAX,
+  MOOD_ORANGE_MIN,
+} from "@/lib/insights/mood-bands";
 
 // --- Pair two daily-bucket series on dayOffset (lifted from mood-status) ---
 

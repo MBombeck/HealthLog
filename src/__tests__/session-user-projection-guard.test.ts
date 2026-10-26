@@ -3,7 +3,7 @@
  *
  * Every authenticated request resolves its caller through the session lookup
  * (`lib/auth/session.ts`), the Bearer resolver (`lib/auth/bearer.ts`) or, for a
- * switched record, the owner load in `lib/api-handler.ts`. They used to
+ * switched record, the owner load in `lib/auth/guards/record.ts`. They used to
  * `include: { user: true }` / `findUnique({ where })`, which copied the profile
  * picture (megabytes), the cached briefing text and every stored credential
  * into memory on each request. They now name `SESSION_USER_SELECT`.
@@ -19,19 +19,14 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { guardModuleOf } from "./helpers/auth-guards";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 import { SESSION_USER_SELECT } from "@/lib/auth/session-user";
 
 const SRC = join(process.cwd(), "src");
 
 function read(rel: string): string {
   return readFileSync(join(SRC, rel), "utf8");
-}
-
-function stripComments(src: string): string {
-  return src
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
 }
 
 /** The `{ ... }` argument of every call matching `callee`, braces balanced. */
@@ -70,7 +65,10 @@ describe("caller lookups load the session projection", () => {
   });
 
   it("the Bearer resolver and the switched-owner load select SESSION_USER_SELECT", () => {
-    for (const rel of ["lib/auth/bearer.ts", "lib/api-handler.ts"]) {
+    for (const rel of [
+      "lib/auth/bearer.ts",
+      guardModuleOf("resolveSwitchedRecord"),
+    ]) {
       const calls = callObjects(read(rel), USER_LOOKUP);
       expect(calls.length, rel).toBeGreaterThan(0);
       for (const body of calls) {

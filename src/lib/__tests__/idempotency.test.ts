@@ -8,6 +8,10 @@ vi.stubEnv("ENCRYPTION_ACTIVE_KEY_ID", "");
 vi.stubEnv("ENCRYPTION_KEY", "0".repeat(64));
 import { NextRequest, NextResponse } from "next/server";
 
+const pendingOwner = vi.hoisted(() => ({
+  value: null as null | { deletionRequestedAt: Date; deletionPurgeAt: null },
+}));
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     idempotencyKey: {
@@ -20,6 +24,9 @@ vi.mock("@/lib/db", () => ({
     },
     apiToken: {
       findUnique: vi.fn(),
+    },
+    user: {
+      findUnique: vi.fn(async () => pendingOwner.value),
     },
   },
 }));
@@ -54,13 +61,13 @@ import {
 } from "../idempotency";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
-vi.mock("@/lib/sharing/grants", () => ({
+vi.mock("@/lib/sharing/grant-access", () => ({
   findActiveGrant: vi.fn(),
 }));
 
 import { createHash } from "node:crypto";
 import { headers } from "next/headers";
-import { findActiveGrant } from "@/lib/sharing/grants";
+import { findActiveGrant } from "@/lib/sharing/grant-access";
 
 /** A live WRITE grant, whole record, as `delegatedGrantFacet` reads it. */
 const GRANT = { id: "grant-1", access: "WRITE", scopeJson: null };
@@ -424,6 +431,34 @@ describe("defaultUserIdResolver (audit C-4)", () => {
       expiresAt: null,
     } as never);
     expect(await defaultUserIdResolver()).toBeNull();
+  });
+
+  it("rejects the Bearer token of an account pending deletion", async () => {
+    vi.mocked(getSession).mockResolvedValue(null);
+    mockHeader("Bearer hlk_abcdef");
+    vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+      id: "tok-pending",
+      name: "connector",
+      userId: "u-bearer",
+      createdAt: new Date(),
+      expiresAt: null,
+      tokenHash: "hashed:hlk_abcdef",
+      permissions: ["*"],
+      lastUsedAt: null,
+      revoked: false,
+      mcpConnectionId: null,
+      mirrorToAppleHealth: false,
+      mirrorChangedAt: null,
+    });
+    pendingOwner.value = {
+      deletionRequestedAt: new Date(),
+      deletionPurgeAt: null,
+    };
+    try {
+      expect(await defaultUserIdResolver()).toBeNull();
+    } finally {
+      pendingOwner.value = null;
+    }
   });
 
   it("rejects expired Bearer tokens", async () => {

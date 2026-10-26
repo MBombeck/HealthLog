@@ -41,7 +41,11 @@ import {
   type AiRecordKind,
 } from "./resolve";
 import type { AiCapabilities } from "./types";
-import { loadAiUsageState, loadRecordUsageLevel } from "./usage";
+import {
+  loadAiUsageState,
+  loadRecordAiUsage,
+  loadRecordUsageLevel,
+} from "./usage";
 
 /** Whose record, seen by whom, through which grant. */
 export interface AiCapabilityScope {
@@ -81,6 +85,18 @@ function loadActiveConsents(
   );
 }
 
+/**
+ * Whether the record is pending deletion. No model work is admitted for one:
+ * it is locked, and nothing acts for it until it is erased or an admin undoes
+ * the deletion. This is the chokepoint every AI job and route passes, so a
+ * job that enumerates without the shared filter still starts nothing
+ * (`src/lib/account-deletion/active-account.ts`).
+ */
+async function loadRecordDeletionPending(recordId: string): Promise<boolean> {
+  // The same memoised point read as the usage level.
+  return (await loadRecordAiUsage(recordId)).deletionPending;
+}
+
 function scopeKey(scope: AiCapabilityScope): string {
   return [
     scope.recordId,
@@ -108,6 +124,7 @@ export function loadAiCapabilityInputs(
           provider,
           consents,
           usageLevel,
+          deletionPending,
         ] = await Promise.all([
           loadAssistantSwitches(),
           resolveModuleMap(scope.recordId),
@@ -115,6 +132,7 @@ export function loadAiCapabilityInputs(
           probeProviderChain(scope.recordId, scope.authority),
           loadActiveConsents(scope.recordId),
           loadRecordUsageLevel(scope.recordId),
+          loadRecordDeletionPending(scope.recordId),
         ]);
         if (switches === null) return null;
         const { moduleAccess } = buildModuleDisclosure(
@@ -125,7 +143,8 @@ export function loadAiCapabilityInputs(
         return {
           switches,
           moduleAccess,
-          providerWorkAdmitted: mayEnqueueProviderWork(scope.authority),
+          providerWorkAdmitted:
+            mayEnqueueProviderWork(scope.authority) && !deletionPending,
           provider,
           activeConsentKinds: consents.kinds,
           fullConsentSince: consents.fullSince,

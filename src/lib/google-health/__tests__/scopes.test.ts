@@ -4,7 +4,7 @@ import {
   GOOGLE_HEALTH_CORE_SCOPES,
   getGoogleHealthScopeString,
   resolveGoogleHealthScopes,
-} from "../client";
+} from "@/lib/google-health/oauth";
 
 describe("Google Health scope resolver", () => {
   it("ships exactly the four core Restricted read scopes", () => {

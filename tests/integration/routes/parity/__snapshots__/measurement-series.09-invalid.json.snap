@@ -1,0 +1,56 @@
+{
+  "status": 422,
+  "body": {
+    "data": null,
+    "error": "Validation failed",
+    "details": {
+      "issues": [
+        {
+          "path": "kind",
+          "code": "invalid_value",
+          "message": "Invalid option: expected one of \"weight\"|\"bloodPressure\"|\"pulse\"|\"bodyFat\"|\"glucose\"|\"sleep\"|\"steps\"|\"totalBodyWater\"|\"boneMass\"|\"oxygenSaturation\"|\"restingHeartRate\"|\"heartRateVariability\"|\"vo2Max\""
+        },
+        {
+          "path": "days",
+          "code": "too_small",
+          "message": "Too small: expected number to be >=1"
+        }
+      ]
+    },
+    "meta": {
+      "errorCode": "http.invalid",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 422,
+      "action": {
+        "name": "measurements.series.validation-failed"
+      },
+      "meta": {
+        "issue_count": 2,
+        "received_keys": [
+          "kind",
+          "days"
+        ],
+        "received_shape_excerpt": "{\"kind\":\"temperature\",\"days\":\"0\"}",
+        "zod_issues": [
+          {
+            "path": "kind",
+            "code": "invalid_value",
+            "message": "Invalid option: expected one of \"weight\"|\"bloodPressure\"|\"pulse\"|\"bodyFat\"|\"glucose\"|\"sleep\"|\"steps\"|\"totalBodyWater\"|\"boneMass\"|\"oxygenSaturation\"|\"restingHeartRate\"|\"heartRateVariability\"|\"vo2Max\""
+          },
+          {
+            "path": "days",
+            "code": "too_small",
+            "message": "Too small: expected number to be >=1"
+          }
+        ],
+        "rejected_attempt": "measurements.series.validation-failed"
+      },
+      "warnings": null,
+      "error": null
+    }
+  ]
+}

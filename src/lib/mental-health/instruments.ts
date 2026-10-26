@@ -11,19 +11,14 @@
  *   - PHQ-9: Kroenke 2001; GAD-7: Spitzer 2006 (public-domain Pfizer grant).
  *   - WHO-5: WHO/UCN/MSD/MHE/2024.1 (© WHO 2024, CC BY-NC-SA 3.0 IGO) — raw
  *     0–25, × 4 → 0–100; "a percentage score below 50 … an indication for
- *     further assessment". Five other app languages ship the PRU
- *     translations WHO republishes, verbatim (sources at `WHO5_LOCALES`).
+ *     further assessment".
  *   - SCI: Espie et al., BMJ Open 2014;4:e004183 (© Sleepio Ltd, licensed
  *     free for non-commercial use, CC BY-NC) — 8 items, 0–4 each, total 0–32,
  *     HIGHER = better sleep; "a score of ≤16 … seems reasonable to detect
- *     possible insomnia disorder". Item text is validated in English; app
- *     locales without a validated translation present the English items.
- * This module owns the canonical NUMERIC contract. The human wording lives in
- * `messages/*.json` under `mentalHealth.items.*` for the languages in an
- * instrument's validated set, and in `instrument-wording.ts` as the English
- * source every other language is shown (re-wording invalidates the score).
- * Surfaces resolve it through `instrumentText`, never a bare `t()`. See
- * `.planning/research/screening-instruments-2026-07.md`.
+ *     possible insomnia disorder".
+ * This module owns the canonical NUMERIC contract. The wording, per
+ * instrument and language with its source, lives in `./wording/` and is read
+ * through `instrument-wording.ts`; it never lives in `messages/*.json`.
  *
  * PHQ-9 item 9 (index 8) is the passive self-harm ideation screen and is the
  * safety-critical field (see `crisis-resources.ts` + the API handler): any
@@ -38,7 +33,7 @@ export type InstrumentId = "PHQ9" | "GAD7" | "WHO5" | "SCI";
 
 export interface InstrumentDefinition {
   id: InstrumentId;
-  /** Lowercase i18n slug — the key segment under `mentalHealth.*`. */
+  /** Lowercase slug — the key segment of the app's own copy under `mentalHealth.*`. */
   i18nKey: "phq9" | "gad7" | "who5" | "sci";
   /** Number of scored items (PHQ-9 = 9, GAD-7 = 7, WHO-5 = 5, SCI = 8). */
   itemCount: number;
@@ -51,22 +46,17 @@ export interface InstrumentDefinition {
    */
   optionOrder: readonly number[];
   /**
-   * Fully-qualified i18n namespace for the response-option labels: without
-   * `optionGroups` one shared anchor set (`<ns>.<value>`); with
-   * `optionGroups` (SCI) per-item anchor groups (`<ns>.<group>.<value>`,
-   * group = `optionGroups[itemIndex]`). v1.32.36 — qualified rather than
-   * relative so the reverse-i18n guard resolves the subtree from the literal
-   * instead of being handed the bare `mentalHealth` namespace.
+   * Item-specific anchor groups (SCI), one per item, naming the anchor set in
+   * the wording's `anchors`. Without it every item uses the single set `all`.
    */
-  optionNamespace: string;
   optionGroups?: readonly string[];
   /**
-   * Stem key per item under `mentalHealth.stems.`: the question the source
-   * form prints above its items (the PHQ-9 / GAD-7 "Over the last 2 weeks…",
-   * the WHO-5 "Over the last two weeks …", the SCI section stems). The
-   * wizard keeps it visible above every item.
+   * Stem id per item, naming the text in the wording's `stems`: the question
+   * the source form prints above its items (the PHQ-9 / GAD-7 "Over the last
+   * 2 weeks…", the WHO-5 "Over the last two weeks …", the SCI section stems).
+   * The wizard keeps it visible above every item.
    */
-  stemKeys: readonly string[];
+  stemIds: readonly string[];
   /** Multiplier from item-sum to the reported total (WHO-5: × 4). */
   scoreMultiplier: number;
   /** Inclusive REPORTED total range (WHO-5: 0–100 percentage). */
@@ -87,71 +77,12 @@ export interface InstrumentDefinition {
   /** Item index (0-based) of the safety-critical self-harm item, or null. */
   safetyItemIndex: number | null;
   /**
-   * Locales whose bundled item wording is a validated translation. A locale
-   * outside this list renders the validated source-language items plus an
-   * honest chrome note — NEVER a self-made translation.
-   */
-  validatedItemLocales: readonly string[];
-  /**
    * Required attribution — render VERBATIM on the instrument's start card and
    * the result view (and in exports). Stays in English by convention (the
    * developers' names and licence identifiers are not translated).
    */
   attribution: string;
 }
-
-/*
- * Which languages carry an instrument's own wording, and where it comes from.
- *
- * A language is listed only when its bundle reproduces a published version
- * word for word: the question stem, every item, every answer option and, for
- * the PHQ-9, the follow-up question. Each list below names its sources. A
- * language that is not listed shows the English original with the honest
- * note, and its bundle carries none of the instrument's keys
- * (`instrument-wording.ts`). Adding a language means bundling its published
- * form verbatim in the same change, with the source named here.
- *
- * Paper-form instructions ("mark your answer with a cross") and the
- * row-end full stops of the printed tables are left out; nothing else is
- * changed. The app's own copy may address the reader informally; the
- * instruments keep the address form they were published in.
- */
-
-/**
- * PHQ-9. English: the Pfizer form (phqscreeners.com). The others are the
- * official Pfizer translations, read from the PDFs as distributed:
- *  - de: "Gesundheitsfragebogen für Patienten (PHQ-9)", German for Germany,
- *        the PHQ-D wording of Löwe, Spitzer, Zipfel & Herzog (Pfizer 2002).
- *  - es: Spanish for Spain. it: Italian for Italy. pl: Polish for Poland.
- *    (ECFS Mental Health working group mirror of the Pfizer files:
- *    ecfs.eu/sites/default/files/general-content-files/working-groups/
- *    Mental Health/PHQ9_<language> for <country>.pdf)
- * Not listed: fr (the France version could not be obtained; the bundle's
- * wording matched neither it nor the Belgian one), ko (no published Korean
- * form could be checked), nl and pt-BR (never bundled).
- */
-const PHQ9_LOCALES = ["en", "de", "es", "it", "pl"] as const;
-
-/**
- * GAD-7. English: the Pfizer form. de: Löwe B et al., "Gesundheitsfragebogen
- * für Patienten (GAD-7)", German version © Bernd Löwe 2015, Universitätsklinikum
- * Hamburg-Eppendorf (validation: Löwe et al., Med Care 2008;46:266-274). es,
- * fr, it, pl: the Pfizer translations for Spain, France, Italy and Poland
- * (same ECFS mirror, GAD7_<language> for <country>.pdf). Not listed: ko, nl,
- * pt-BR, as for the PHQ-9.
- */
-const GAD7_LOCALES = ["en", "de", "es", "fr", "it", "pl"] as const;
-
-/**
- * WHO-5. English: WHO/UCN/MSD/MHE/2024.1. de, es, fr, it, pl: the Psychiatric
- * Research Unit translations (1998/1999 versions) that WHO republishes beside
- * the 2024 English text (cdn.who.int …/five-well-being-index-(who-5)/
- * who-5_<language>.pdf; the Spanish one via infocop.es). The Spanish sheet
- * misprints item 4 as "descandado"; the bundle keeps "descansado". Not
- * listed: ko (the Kim 2010 translation could not be checked against the
- * paper), nl and pt-BR.
- */
-const WHO5_LOCALES = ["en", "de", "es", "fr", "it", "pl"] as const;
 
 /**
  * The PHQ family is public-domain (Pfizer 2010); this is the canonical footer
@@ -168,7 +99,6 @@ const PHQ9: InstrumentDefinition = {
   itemCount: 9,
   itemMax: 3,
   optionOrder: [0, 1, 2, 3],
-  optionNamespace: "mentalHealth.options",
   scoreMultiplier: 1,
   minScore: 0,
   maxScore: 27,
@@ -183,11 +113,10 @@ const PHQ9: InstrumentDefinition = {
   ],
   // The form's own question, "Over the last 2 weeks, how often have you been
   // bothered by any of the following problems?", stands above every item.
-  stemKeys: Array(9).fill("phq9.period"),
+  stemIds: Array(9).fill("period"),
   actionThreshold: 10,
   // Item 9 ("Thoughts that you would be better off dead…") — the safety field.
   safetyItemIndex: 8,
-  validatedItemLocales: PHQ9_LOCALES,
   attribution: PHQ_GAD_ATTRIBUTION,
 };
 
@@ -197,10 +126,7 @@ const GAD7: InstrumentDefinition = {
   itemCount: 7,
   itemMax: 3,
   optionOrder: [0, 1, 2, 3],
-  // Its own anchors: the Italian GAD-7 words option 2 differently from the
-  // Italian PHQ-9, so the two cannot share one set.
-  optionNamespace: "mentalHealth.gad7Options",
-  stemKeys: Array(7).fill("gad7.period"),
+  stemIds: Array(7).fill("period"),
   scoreMultiplier: 1,
   minScore: 0,
   maxScore: 21,
@@ -214,7 +140,6 @@ const GAD7: InstrumentDefinition = {
   ],
   actionThreshold: 10,
   safetyItemIndex: null,
-  validatedItemLocales: GAD7_LOCALES,
   attribution: PHQ_GAD_ATTRIBUTION,
 };
 
@@ -233,8 +158,7 @@ const WHO5: InstrumentDefinition = {
   itemCount: 5,
   itemMax: 5,
   optionOrder: [5, 4, 3, 2, 1, 0],
-  optionNamespace: "mentalHealth.who5Options",
-  stemKeys: Array(5).fill("who5.period"),
+  stemIds: Array(5).fill("period"),
   scoreMultiplier: 4,
   minScore: 0,
   maxScore: 100,
@@ -246,7 +170,6 @@ const WHO5: InstrumentDefinition = {
   ],
   actionThreshold: 50,
   safetyItemIndex: null,
-  validatedItemLocales: WHO5_LOCALES,
   attribution:
     "World Health Organization. The World Health Organization-Five Well-Being " +
     "Index (WHO-5). Geneva: World Health Organization; 2024. Licence: " +
@@ -267,7 +190,6 @@ const SCI: InstrumentDefinition = {
   itemCount: 8,
   itemMax: 4,
   optionOrder: [4, 3, 2, 1, 0],
-  optionNamespace: "mentalHealth.sciOptions",
   optionGroups: [
     "duration",
     "duration",
@@ -278,15 +200,15 @@ const SCI: InstrumentDefinition = {
     "impact",
     "problemDuration",
   ],
-  stemKeys: [
-    "sci.night",
-    "sci.night",
-    "sci.night",
-    "sci.night",
-    "sci.impact",
-    "sci.impact",
-    "sci.impact",
-    "sci.finally",
+  stemIds: [
+    "night",
+    "night",
+    "night",
+    "night",
+    "impact",
+    "impact",
+    "impact",
+    "finally",
   ],
   scoreMultiplier: 1,
   minScore: 0,
@@ -299,13 +221,6 @@ const SCI: InstrumentDefinition = {
   ],
   actionThreshold: 16,
   safetyItemIndex: null,
-  // Validated in English (the CC BY-NC BMJ Open publication). French/Italian
-  // validations exist in the literature but their item text is not openly
-  // redistributable, and no validated German version is published (a search
-  // in October 2026 found the German ISI, Gerber et al. 2016, not the SCI),
-  // so every non-EN locale presents the English items with an honest note —
-  // never a self-made translation.
-  validatedItemLocales: ["en"],
   attribution:
     "Espie CA, Kyle SD, Hames P, et al. The Sleep Condition Indicator: a " +
     "clinical screening tool to evaluate insomnia disorder. BMJ Open " +
@@ -363,38 +278,6 @@ export function needsFollowUp(id: InstrumentId, total: number): boolean {
   return def.higherIsBetter
     ? total <= def.actionThreshold
     : total >= def.actionThreshold;
-}
-
-/**
- * i18n key (under `mentalHealth.`) for one response option of one item —
- * shared anchors (`options.2`), instrument-specific shared anchors
- * (`who5Options.5`), or the SCI's per-item anchor groups
- * (`sciOptions.duration.4`).
- */
-export function optionLabelKey(
-  id: InstrumentId,
-  itemIndex: number,
-  value: number,
-): string {
-  const def = INSTRUMENTS[id];
-  return def.optionGroups
-    ? `${def.optionNamespace}.${def.optionGroups[itemIndex]}.${value}`
-    : `${def.optionNamespace}.${value}`;
-}
-
-/** Stem caption key (under `mentalHealth.stems.`) for an item, or null. */
-export function stemKey(id: InstrumentId, itemIndex: number): string | null {
-  return INSTRUMENTS[id].stemKeys[itemIndex] ?? null;
-}
-
-/**
- * Whether the bundled item wording for `locale` is a validated translation.
- * When false the surface shows the validated source-language items plus a
- * localized "validated in English" chrome note.
- */
-export function hasValidatedItems(id: InstrumentId, locale: string): boolean {
-  const base = locale.toLowerCase().split("-")[0];
-  return INSTRUMENTS[id].validatedItemLocales.includes(base);
 }
 
 /**

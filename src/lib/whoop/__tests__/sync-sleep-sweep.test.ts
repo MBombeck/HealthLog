@@ -64,7 +64,7 @@ vi.mock("../client", async (importOriginal) => ({
   fetchSleepById: fetchSleepsMock,
 }));
 
-import type { WhoopSleep } from "../client";
+import type { WhoopSleep } from "@/lib/whoop/wire-types";
 import { syncUserSleep } from "../sync-sleep";
 
 const NIGHT: WhoopSleep = {

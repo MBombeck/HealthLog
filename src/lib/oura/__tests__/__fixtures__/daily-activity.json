@@ -1,0 +1,48 @@
+[
+  {
+    "id": "activity-0001",
+    "day": "2026-03-02",
+    "timestamp": "2026-03-02T04:00:00-05:00",
+    "steps": 8432,
+    "active_calories": 412.7,
+    "total_calories": 2380,
+    "equivalent_walking_distance": 9100
+  },
+  {
+    "id": "activity-0002",
+    "day": "2026-03-03",
+    "timestamp": "2026-03-03T04:00:00-05:00",
+    "steps": 0,
+    "active_calories": 0
+  },
+  {
+    "id": "activity-0003",
+    "day": "2026-03-04",
+    "steps": null,
+    "active_calories": 250
+  },
+  {
+    "id": "activity-0004",
+    "day": "2026-03-05",
+    "steps": -5,
+    "active_calories": -1
+  },
+  {
+    "id": "activity-0005",
+    "day": "2026-03-06",
+    "steps": 1234.6,
+    "active_calories": 98.765
+  },
+  {
+    "id": "activity-0006",
+    "day": "2026-03-07",
+    "equivalent_walking_distance": 4200
+  },
+  {
+    "id": "activity-0007",
+    "day": "2026-03-08",
+    "timestamp": "not-a-date",
+    "steps": 5000,
+    "active_calories": 300
+  }
+]

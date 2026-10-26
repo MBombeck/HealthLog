@@ -164,7 +164,9 @@ describe("POST /api/withings/webhook", () => {
     expect(body.status).toBe("ok");
 
     expect(prisma.withingsConnection.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { withingsUserId: "wu-1" } }),
+      expect.objectContaining({
+        where: { withingsUserId: "wu-1", user: { deletionRequestedAt: null } },
+      }),
     );
     expect(syncUserMeasurements).toHaveBeenCalledTimes(1);
     expect(syncUserMeasurements).toHaveBeenCalledWith("user-42");

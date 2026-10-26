@@ -1,0 +1,39 @@
+{
+  "status": 422,
+  "cacheControl": null,
+  "body": {
+    "data": null,
+    "error": "Validation failed",
+    "details": {
+      "issues": [
+        {
+          "path": "slice",
+          "code": "invalid_value",
+          "message": "Invalid input: expected \"summaries\""
+        }
+      ]
+    },
+    "meta": {
+      "errorCode": "analytics.invalid_query",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 422,
+      "action": {
+        "name": "analytics.get"
+      },
+      "meta": {
+        "outcome": "invalid_query"
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "healthScores": [],
+    "patterns": []
+  }
+}

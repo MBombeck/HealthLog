@@ -6,7 +6,7 @@ import en from "../../../../messages/en.json";
 const healthySchedule = {
   lastSuccessAt: "2026-09-01T03:00:00.000Z",
   lastSuccessAgeDays: 2,
-  staleAfterDays: 10,
+  staleAfterDays: 9,
   stale: false,
   lastRun: {
     at: "2026-09-01T03:00:12.000Z",
@@ -17,13 +17,9 @@ const healthySchedule = {
 };
 
 const mocks = vi.hoisted(() => ({
-  mutationOptions: [] as Array<{
-    onSuccess?: (data: { summary: Record<string, number> }) => void;
-  }>,
-  toastSuccess: vi.fn(),
   // Mutable so one file can render both a healthy schedule and a broken one;
   // the query mock reads it on every render.
-  queryData: { rows: [], retentionDays: 30 } as Record<string, unknown>,
+  queryData: { rows: [], preWipeCopyDays: 14 } as Record<string, unknown>,
 }));
 
 /**
@@ -43,7 +39,7 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("sonner", () => ({
   toast: {
-    success: mocks.toastSuccess,
+    success: vi.fn(),
     error: vi.fn(),
   },
 }));
@@ -55,21 +51,14 @@ vi.mock("@tanstack/react-query", () => ({
     isError: false,
   }),
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
-  useMutation: (options: unknown) => {
-    mocks.mutationOptions.push(
-      options as {
-        onSuccess?: (data: { summary: Record<string, number> }) => void;
-      },
-    );
-    return {
-      mutate: vi.fn(),
-      mutateAsync: vi.fn(),
-      isPending: false,
-      isError: false,
-      error: null,
-      variables: undefined,
-    };
-  },
+  useMutation: () => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+    isError: false,
+    error: null,
+    variables: undefined,
+  }),
 }));
 
 vi.mock("@/hooks/use-auth", () => ({
@@ -83,6 +72,7 @@ vi.mock("@/hooks/use-auth", () => ({
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { BackupsSection } from "../backups-section";
+import { uploadedRecordCount } from "../backups/use-backup-upload";
 import { primeLocales } from "@/__tests__/helpers/prime-locales";
 
 primeLocales("de");
@@ -90,7 +80,7 @@ primeLocales("de");
 function render(locale: "en" | "de" = "en") {
   mocks.queryData = {
     rows: [],
-    retentionDays: 30,
+    preWipeCopyDays: 14,
     schedule: healthySchedule,
   };
   return renderToStaticMarkup(
@@ -169,7 +159,7 @@ describe("BackupsSection — empty state", () => {
  */
 describe("BackupsSection — schedule health", () => {
   function withSchedule(schedule: Record<string, unknown>) {
-    mocks.queryData = { rows: [], retentionDays: 30, schedule };
+    mocks.queryData = { rows: [], preWipeCopyDays: 14, schedule };
     return renderToStaticMarkup(
       <I18nProvider initialLocale="en">
         <BackupsSection />
@@ -213,7 +203,7 @@ describe("BackupsSection — schedule health", () => {
   });
 
   it("survives a response that predates the schedule field", () => {
-    mocks.queryData = { rows: [], retentionDays: 30 };
+    mocks.queryData = { rows: [], preWipeCopyDays: 14 };
     expect(() =>
       renderToStaticMarkup(
         <I18nProvider initialLocale="en">
@@ -224,26 +214,16 @@ describe("BackupsSection — schedule health", () => {
   });
 });
 
-describe("BackupsSection — upload outcome", () => {
+describe("backup upload outcome", () => {
   it("includes health profile fact revisions in the restored record total", () => {
-    mocks.toastSuccess.mockClear();
-    const firstMutation = mocks.mutationOptions.length;
-    render();
-    const uploadOutcome = mocks.mutationOptions[firstMutation + 1]?.onSuccess;
-    expect(uploadOutcome).toBeTypeOf("function");
-
-    uploadOutcome!({
-      summary: {
+    expect(
+      uploadedRecordCount({
         measurements: 1,
         medications: 2,
         intakeEvents: 3,
         moodEntries: 4,
         healthProfileFactRevisions: 5,
-      },
-    });
-
-    expect(mocks.toastSuccess).toHaveBeenCalledWith(
-      expect.stringContaining("15"),
-    );
+      }),
+    ).toBe(15);
   });
 });

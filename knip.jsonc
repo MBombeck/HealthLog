@@ -100,6 +100,9 @@
     "e2e/**/*.test.ts",
     "tests/**/*.test.ts",
     "tests/**/setup.ts",
+    // Reached only through the browser project's `next/navigation` alias in
+    // vitest.config.mts, which no import statement names.
+    "tests/browser/next-navigation.ts",
     "vitest.config.ts",
     "vitest.config.integration.ts",
     "playwright.config.ts",
@@ -111,6 +114,7 @@
     "src/**/*.{ts,tsx}!",
     "scripts/**/*.{ts,mjs}!",
     "tests/**/*.ts",
+    "tests/**/*.tsx",
     "e2e/**/*.ts",
   ],
   "ignore": [

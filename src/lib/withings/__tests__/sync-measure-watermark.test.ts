@@ -37,9 +37,13 @@ vi.mock("@/lib/crypto", () => ({
 vi.mock("../client", () => ({
   WITHINGS_MEASTYPES: [1, 9, 10, 11],
   fetchMeasurements: vi.fn(),
-  refreshAccessToken: vi.fn(),
   subscribeWebhook: vi.fn(),
 }));
+
+vi.mock("../oauth", async (orig) => {
+  const actual = await orig<typeof import("../oauth")>();
+  return { ...actual, withingsOAuth: { refresh: vi.fn() } };
+});
 
 vi.mock("../credentials", () => ({
   getUserWithingsCredentials: vi.fn(async () => ({
@@ -70,7 +74,7 @@ vi.mock("@/lib/rollups/measurement-rollups", async () => {
   };
 });
 
-vi.mock("@/lib/insights/comprehensive-generate", () => ({
+vi.mock("@/lib/insights/status-invalidation", () => ({
   invalidateStatusInsightsForTypes: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -88,7 +92,8 @@ vi.mock("@/lib/logging/context", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { fetchMeasurements, refreshAccessToken } from "../client";
+import { fetchMeasurements } from "../client";
+import { withingsOAuth } from "../oauth";
 import {
   recordSyncFailure,
   recordSyncSuccess,
@@ -149,7 +154,7 @@ describe("getValidToken — serialized rotating refresh", () => {
 
     expect(result?.accessToken).toBe("winner-access");
     expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
-    expect(refreshAccessToken).not.toHaveBeenCalled();
+    expect(withingsOAuth.refresh).not.toHaveBeenCalled();
     expect(prisma.$transaction).toHaveBeenCalledWith(
       expect.any(Function),
       expect.objectContaining({
@@ -248,11 +253,11 @@ describe("syncUserMeasurements — watermark hold on hard row failure (F4)", () 
     expect(recordSyncFailure).not.toHaveBeenCalled();
   });
 
-  // Watched red: with the `invalidateUserMeasurements(userId)` call removed
-  // from the sync tail this fails — the pre-fix tail evicted only the
-  // dashboard snapshot, so correlations / analytics / targets / derived
-  // served pre-sync bodies until their TTL lapsed after every hourly sync
-  // (the correlations route documents the invariant this restores).
+  // Without the cache leg of the shared write tail this fails: an earlier
+  // tail evicted only the dashboard snapshot, so correlations, analytics,
+  // targets and derived served pre-sync bodies until their TTL lapsed after
+  // every hourly sync. The caches are marked stale back to the earliest
+  // reading the sync wrote, so closed blocks of older readings survive.
   it("marks the per-user measurement caches stale when rows landed", async () => {
     vi.mocked(fetchMeasurements).mockResolvedValue([
       {
@@ -268,6 +273,7 @@ describe("syncUserMeasurements — watermark hold on hard row failure (F4)", () 
       await import("@/lib/cache/invalidate");
     expect(vi.mocked(invalidateUserMeasurements)).toHaveBeenCalledWith(
       "user-1",
+      { touchedFrom: new Date("2026-05-16T08:00:00Z") },
     );
   });
 });

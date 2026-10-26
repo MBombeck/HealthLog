@@ -464,7 +464,7 @@ describe("Google Health backfill under rate limits and token expiry (#1194)", ()
     // A slice whose every heart-rate request fails moves nothing: it is
     // stuck, says where, and queues nothing.
     const { GOOGLE_HEALTH_TRANSIENT_RETRY } =
-      await import("@/lib/google-health/client");
+      await import("@/lib/google-health/request");
     const baseDelay = GOOGLE_HEALTH_TRANSIENT_RETRY.baseDelayMs;
     GOOGLE_HEALTH_TRANSIENT_RETRY.baseDelayMs = 0;
     fake.failHeartRate = true;

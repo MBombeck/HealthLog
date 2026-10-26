@@ -23,8 +23,8 @@ import {
   apiSuccess,
   getClientIp,
   returnAllZodIssues,
-  safeJson,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { withIdempotency } from "@/lib/idempotency";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { encryptNote } from "@/lib/crypto/note-cipher";
@@ -110,21 +110,13 @@ export const POST = apiHandler(
 async function postPractitioner(request: NextRequest): Promise<Response> {
   const { user } = await requireRecordAuth("write", "profile");
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, practitionerCreateSchema, {
     maxBytes: 16 * 1024,
+    action: "practitioner.contact.validation-failed",
+    countIssues: true,
+    errorCode: "practitioner.invalid",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = practitionerCreateSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    annotate({
-      action: { name: "practitioner.contact.validation-failed" },
-      meta: { issue_count: parsed.error.issues.length },
-    });
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "practitioner.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const entry = parsed.data;
 

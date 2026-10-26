@@ -332,6 +332,12 @@ export const measurementResource = z
       .describe("Soft-delete tombstone; null on a live row."),
     createdAt: isoDateTime().optional(),
     updatedAt: isoDateTime().optional(),
+    appleHealthMirror: z
+      .boolean()
+      .optional()
+      .describe(
+        "Whether the HealthLog app writes this reading into Apple Health. Resolved by the server on every stored row: true for WITHINGS, IMPORT and MANUAL, for an EXTERNAL row whatever its account chose for the token that sent it, false otherwise. Absent on the synthesised list rows.",
+      ),
     // Synthesised-row extras — present only on the collapsed day-sum mode.
     dayKey: z.string().optional(),
     sampleCount: z.number().int().optional(),
@@ -356,6 +362,36 @@ export const measurementResource = z
       .nonnegative()
       .optional()
       .describe("Time asleep across those naps, in minutes."),
+    sleepStages: z
+      .record(z.string(), z.number().nonnegative())
+      .optional()
+      .describe(
+        "The main night's minutes per stage (`IN_BED`, `ASLEEP`, `AWAKE`, `CORE`, `DEEP`, `REM`), each the union of that stage's spans; empty on a day of naps alone.",
+      ),
+    inBedMinutes: z
+      .number()
+      .nonnegative()
+      .nullable()
+      .optional()
+      .describe(
+        "The main night's time in bed in minutes, or null when no in-bed span was recorded.",
+      ),
+    awakeMinutes: z
+      .number()
+      .nonnegative()
+      .nullable()
+      .optional()
+      .describe(
+        "The main night's time awake in bed in minutes, or null when no awake span was recorded.",
+      ),
+    awakenings: z
+      .number()
+      .int()
+      .nonnegative()
+      .optional()
+      .describe(
+        "Awake spans between the main night's first and last time asleep.",
+      ),
   })
   .meta({
     id: "MeasurementResource",
@@ -388,6 +424,20 @@ const aggregatedMeasurementBucket = z
     value: z.number().describe("The bucket's aggregated value."),
     measuredAt: isoDateTime().describe("Bucket start."),
     count: z.number().int().nonnegative().optional(),
+    minValue: z
+      .number()
+      .nullable()
+      .optional()
+      .describe(
+        "The lowest reading in the bucket; absent on a summed (cumulative) type.",
+      ),
+    maxValue: z
+      .number()
+      .nullable()
+      .optional()
+      .describe(
+        "The highest reading in the bucket; absent on a summed (cumulative) type.",
+      ),
     unit: z.string().optional(),
   })
   .meta({
@@ -895,11 +945,15 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             "Created. A single resource for the object body; an array of resources, in request order, for the array body; for a named sleep-stage body, the stored row with `status: inserted`.",
           content: {
             "application/json": {
+              // The named-stage result first: it requires `status`, so a
+              // plain row falls through to `measurementResource`, while a
+              // union that tried the plain row first would read a named-stage
+              // answer as a plain row and drop its `status`.
               schema: dataEnvelope(
                 z.union([
+                  namedSleepStageResult,
                   measurementResource,
                   z.array(measurementResource),
-                  namedSleepStageResult,
                 ]),
                 "CreateMeasurementResponse",
               ),

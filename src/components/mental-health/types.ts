@@ -9,16 +9,28 @@
  * them for the history's expandable answer breakdown.
  */
 import type { InstrumentId } from "@/lib/mental-health/instruments";
+import type { AssessmentWording } from "@/lib/mental-health/wording/types";
 
 export type { InstrumentId };
 
 export type Phase = "choose" | "form" | "result";
 
+/** What a completed check-in submits. */
+export interface CheckInAnswers {
+  items: number[];
+  /** The unscored PHQ-9 follow-up, when it was answered. */
+  functionalDifficulty?: number;
+  /** The reader answered in the English original of their language's text. */
+  englishOriginal: boolean;
+}
+
 export interface AssessmentRow {
   id: string;
   instrument: InstrumentId;
-  /** Locale of the validated wording presented — re-derives crisis resources. */
+  /** The reader's app language — re-derives crisis resources. */
   locale: string;
+  /** Which text the answers were given in; null before v1.46 recorded it. */
+  wording: AssessmentWording | null;
   totalScore: number;
   severityBand: string;
   item9Flagged: boolean;

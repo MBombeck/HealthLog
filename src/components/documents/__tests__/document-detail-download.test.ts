@@ -21,13 +21,10 @@
  * disabled state is real. A render could not see either.
  */
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 
-const SHEET = readFileSync(
-  join(process.cwd(), "src/components/documents/document-detail-sheet.tsx"),
-  "utf8",
-);
+import { documentDetailSource } from "@/__tests__/helpers/document-detail-source";
+
+const SHEET = documentDetailSource();
 
 describe("the detail sheet's original-document transport", () => {
   it("has exactly one eager loader for the original", () => {

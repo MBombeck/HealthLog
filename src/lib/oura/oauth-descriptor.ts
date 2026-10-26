@@ -9,7 +9,7 @@ import {
   obtainAccessToken,
   type OAuthTokenDescriptor,
 } from "@/lib/integrations/oauth-kit/token";
-import { refreshAccessToken, type OuraCredentials } from "./client";
+import { type OuraCredentials, ouraOAuth } from "./oauth";
 import { getOuraClientCredentials } from "./credentials";
 
 export const ouraTokenDescriptor: OAuthTokenDescriptor<OuraCredentials> = {
@@ -45,7 +45,7 @@ export const ouraTokenDescriptor: OAuthTokenDescriptor<OuraCredentials> = {
   },
   loadCredentials: (userId) => getOuraClientCredentials(userId),
   refresh: (refreshToken, credentials) =>
-    refreshAccessToken(refreshToken, credentials),
+    ouraOAuth.refresh(refreshToken, credentials),
 };
 
 /**

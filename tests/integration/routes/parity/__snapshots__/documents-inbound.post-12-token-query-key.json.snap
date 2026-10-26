@@ -1,0 +1,79 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "id": "<id:1>",
+      "duplicate": true
+    },
+    "error": null,
+    "meta": {
+      "duplicate": true
+    }
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "documents.vault.upload"
+      },
+      "meta": {
+        "documentId": "<id:1>",
+        "duplicate": true,
+        "scoped": true,
+        "sourceSystem": "PAPERLESS",
+        "aiDeferred": false
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [],
+  "stored": [
+    {
+      "id": "<id:2>",
+      "kind": "DISCHARGE_LETTER",
+      "title": "Discharge letter",
+      "filename": "discharge.pdf",
+      "mimeType": "application/pdf",
+      "byteSize": 47,
+      "status": "STORED",
+      "documentDate": "2026-10-02T12:00:00.000Z",
+      "sourceSystem": null,
+      "sourceId": null,
+      "deletedAt": null,
+      "conditionLinks": [
+        {
+          "episodeId": "<id:3>"
+        }
+      ]
+    },
+    {
+      "id": "<id:1>",
+      "kind": "OTHER",
+      "title": null,
+      "filename": "imported.pdf",
+      "mimeType": "application/pdf",
+      "byteSize": 46,
+      "status": "STORED",
+      "documentDate": "<now>",
+      "sourceSystem": "PAPERLESS",
+      "sourceId": "41",
+      "deletedAt": null,
+      "conditionLinks": []
+    },
+    {
+      "id": "<id:4>",
+      "kind": "LAB_RESULT",
+      "title": "Blood test",
+      "filename": "labs.pdf",
+      "mimeType": "application/pdf",
+      "byteSize": 42,
+      "status": "STORED",
+      "documentDate": "2025-03-04T12:00:00.000Z",
+      "sourceSystem": null,
+      "sourceId": null,
+      "deletedAt": null,
+      "conditionLinks": []
+    }
+  ]
+}

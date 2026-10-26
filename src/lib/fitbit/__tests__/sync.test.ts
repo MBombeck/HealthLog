@@ -43,10 +43,11 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
   collapseToTypeDayKeys: (rows: Array<{ type: string; measuredAt: Date }>) =>
     rows,
   recomputeBucketsForMeasurement: vi.fn(async () => {}),
+  recomputeBucketsForKeys: vi.fn(async () => {}),
   recomputeUserRollups: vi.fn(async () => ({ rowsUpserted: 0, durationMs: 0 })),
 }));
 
-vi.mock("@/lib/insights/comprehensive-generate", () => ({
+vi.mock("@/lib/insights/status-invalidation", () => ({
   invalidateStatusInsightsForTypes: vi.fn(async () => {}),
 }));
 
@@ -55,11 +56,14 @@ vi.mock("@/lib/crypto", () => ({
   decrypt: (s: string) => s.replace(/^enc\(|\)$/g, ""),
 }));
 
-vi.mock("../client", async (orig) => {
-  const actual = await orig<typeof import("../client")>();
+vi.mock("../oauth", async (orig) => {
+  const actual = await orig<typeof import("../oauth")>();
   return {
     ...actual,
-    refreshAccessToken: (...a: unknown[]) => refreshAccessTokenMock(...a),
+    fitbitOAuth: {
+      ...actual.fitbitOAuth,
+      refresh: (...a: unknown[]) => refreshAccessTokenMock(...a),
+    },
   };
 });
 

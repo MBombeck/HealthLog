@@ -20,6 +20,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 let ledgerTotal = 0;
 /** …and of `coach_usage.operator_tokens`. */
 let ledgerOperator = 0;
+/** The status note row the cooling-down gate reads. */
+let noteWindow: { retryAt: Date | null } | null = null;
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -54,6 +56,11 @@ vi.mock("@/lib/db", () => ({
     ),
     user: {
       findUnique: vi.fn(async () => ({ aiResponseTimeoutSeconds: null })),
+    },
+    // #1279 — the note's negative window, read before any provider work.
+    insightStatusCache: {
+      findUnique: vi.fn(async () => noteWindow),
+      upsert: vi.fn(async () => ({})),
     },
   },
 }));
@@ -119,6 +126,8 @@ function mockProviderReply(tokensUsed: number | null) {
   runRawCompletionWithFallback.mockResolvedValue({
     result: { content: '{"summary":"ok"}', model: "m", tokensUsed },
     workingProvider: { providerType: "admin-openai" },
+    fallbackHops: [],
+    tokensSpent: 0,
   });
 }
 
@@ -126,6 +135,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   ledgerTotal = 0;
   ledgerOperator = 0;
+  noteWindow = null;
   resolveProviderChain.mockResolvedValue(OPERATOR_CHAIN);
   resolveProvider.mockResolvedValue({ type: "none" });
   aiCapabilityForRecord.mockResolvedValue({
@@ -262,6 +272,19 @@ describe("runStatusCompletion — ledger accounting", () => {
     expect(chat.allowed).toBe(true);
   });
 
+  it("charges what the hops that failed before the answer spent (#1279)", async () => {
+    runRawCompletionWithFallback.mockResolvedValue({
+      result: { content: '{"summary":"ok"}', model: "m", tokensUsed: 100 },
+      workingProvider: { providerType: "admin-openai" },
+      fallbackHops: [],
+      tokensSpent: 2700,
+    });
+
+    await runStatusCompletion(completionArgs());
+
+    expect(ledgerTotal).toBe(100 + 2700);
+  });
+
   it("charges the reservation when the provider reports no token count", async () => {
     mockProviderReply(null);
 
@@ -312,6 +335,90 @@ describe("runStatusCompletion — ledger accounting", () => {
     expect(result.kind).toBe("error");
     expect(ledgerTotal).toBe(0);
   });
+
+  it("aborts the call its bound cut off, so nothing runs on detached (#1279)", async () => {
+    vi.useFakeTimers();
+    try {
+      let signal: AbortSignal | undefined;
+      runRawCompletionWithFallback.mockImplementation(
+        (args: { params: { signal?: AbortSignal } }) => {
+          signal = args.params.signal;
+          return new Promise(() => {});
+        },
+      );
+      const pending = runStatusCompletion(completionArgs());
+      await vi.waitFor(() => expect(signal).toBeDefined());
+      expect(signal?.aborted).toBe(false);
+      await vi.advanceTimersByTimeAsync(10 * 60_000);
+      expect((await pending).kind).toBe("timeout");
+      expect(signal?.aborted).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("asks no provider about a note inside its negative window (#1279)", async () => {
+    noteWindow = { retryAt: new Date(Date.now() + 60_000) };
+    const result = await runStatusCompletion(
+      completionArgs({ cacheAction: "insights.weight-status.en" }),
+    );
+    expect(result.kind).toBe("error");
+    expect(runRawCompletionWithFallback).not.toHaveBeenCalled();
+    expect(ledgerTotal).toBe(0);
+
+    // The window lapsed: the note is generated again.
+    noteWindow = { retryAt: new Date(Date.now() - 1) };
+    mockProviderReply(100);
+    const again = await runStatusCompletion(
+      completionArgs({ cacheAction: "insights.weight-status.en" }),
+    );
+    expect(again.kind).toBe("ok");
+  });
+
+  it("holds the note without counting a run the bench sent nothing for (#1279)", async () => {
+    runRawCompletionWithFallback.mockRejectedValue(
+      Object.assign(new Error("All 1 configured providers failed"), {
+        sentNothing: true,
+      }),
+    );
+    const { prisma } = await import("@/lib/db");
+    const result = await runStatusCompletion(
+      completionArgs({ cacheAction: "insights.weight-status.en" }),
+    );
+    expect(result.kind).toBe("error");
+    expect(prisma.insightStatusCache.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ failureStreak: 0 }),
+        update: expect.not.objectContaining({
+          failureStreak: expect.anything(),
+        }),
+      }),
+    );
+  });
+
+  it("leaves a run that reached a provider to the caller's counted window", async () => {
+    runRawCompletionWithFallback.mockRejectedValue(new Error("upstream down"));
+    const { prisma } = await import("@/lib/db");
+    await runStatusCompletion(
+      completionArgs({ cacheAction: "insights.weight-status.en" }),
+    );
+    expect(prisma.insightStatusCache.upsert).not.toHaveBeenCalled();
+  });
+
+  it("charges what a failed chain reported spending (#1279)", async () => {
+    // A model that reasons and never answers is billed for every call; a
+    // full refund let background work spend without the ceiling seeing it.
+    runRawCompletionWithFallback.mockRejectedValue(
+      Object.assign(new Error("All 1 configured providers failed"), {
+        tokensSpent: 5400,
+      }),
+    );
+
+    const result = await runStatusCompletion(completionArgs());
+
+    expect(result.kind).toBe("error");
+    expect(ledgerTotal).toBe(5400);
+  });
 });
 
 describe("runStatusCompletion — cost owner decides the ceiling", () => {
@@ -337,6 +444,7 @@ describe("runStatusCompletion — cost owner decides the ceiling", () => {
     runRawCompletionWithFallback.mockResolvedValue({
       result: { content: '{"summary":"ok"}', model: "m", tokensUsed: 100 },
       workingProvider: { providerType: "anthropic" },
+      tokensSpent: 0,
     });
 
     const result = await runStatusCompletion(completionArgs());

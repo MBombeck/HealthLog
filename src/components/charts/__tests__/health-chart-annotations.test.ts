@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveAnnotationPositions } from "../health-chart";
+import { resolveAnnotationPositions } from "../health-chart/series-math";
 
 /**
  * v1.4.20 — storyboard-annotation pinning.

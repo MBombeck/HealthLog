@@ -30,6 +30,7 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
+import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 import {
   readClaimedRecordContext,
   selectorNamesAnAccount,
@@ -38,7 +39,7 @@ import { refuseStaleRecordSessionClaim } from "@/lib/sharing/record-session-fenc
 import { hashToken } from "@/lib/auth/hmac";
 import { annotate } from "@/lib/logging/context";
 import { isP2002 } from "@/lib/prisma-errors";
-import { findActiveGrant } from "@/lib/sharing/grants";
+import { findActiveGrant } from "@/lib/sharing/grant-access";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { createHash } from "node:crypto";
 import { looksSecretShaped } from "@/lib/secret-shape";
@@ -528,18 +529,16 @@ export function isCachableStatus(status: number): boolean {
 }
 
 /**
- * Default resolver: cookie session first, then Bearer token. The Bearer
- * fallback is what makes idempotency actually fire for native iOS / n8n
- * /external clients — without it, every Bearer-authed retry was running
- * the handler again and creating duplicate measurements (audit C-4).
+ * Default resolver: cookie session first, then Bearer token, without which
+ * a Bearer retry (iOS, n8n) ran the handler again and duplicated readings
+ * (audit C-4). A pending account's token resolves nobody, as in `bearer.ts`.
  *
  * It resolves the CALLER and only the caller — which record they are aiming at
  * is a separate question, answered by `readClaimedRecordContext()` above and
  * folded into the key. Neither answer authorises anything: the handler runs
  * its own `requireAuth()` / `requireRecordAuth()` either way.
  *
- * Exported for unit testing; production callers should let
- * `withIdempotency()` pick this up automatically via its default arg.
+ * Exported for unit testing; `withIdempotency()` uses it by default.
  */
 export async function defaultUserIdResolver(): Promise<string | null> {
   const session = await getSession().catch(() => null);
@@ -563,6 +562,7 @@ export async function defaultUserIdResolver(): Promise<string | null> {
     .catch(() => null);
 
   if (!apiToken || apiToken.revoked) return null;
+  if (await pendingDeletionOf(apiToken.userId)) return null;
   if (apiToken.expiresAt && apiToken.expiresAt <= new Date()) return null;
   return apiToken.userId;
 }

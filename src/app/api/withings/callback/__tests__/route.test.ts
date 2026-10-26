@@ -81,8 +81,8 @@ vi.mock("@/lib/crypto", () => ({
   encrypt: vi.fn((s: string) => `enc(${s})`),
 }));
 
-vi.mock("@/lib/withings/client", () => ({
-  exchangeCode: vi.fn(),
+vi.mock("@/lib/withings/oauth", () => ({
+  withingsOAuth: { exchange: vi.fn() },
   WITHINGS_OAUTH_SCOPE: "user.metrics,user.activity",
 }));
 
@@ -157,8 +157,8 @@ describe("withings/callback atomic nonce consumption (M3)", () => {
       clientId: "cid",
       clientSecret: "csec",
     } as never);
-    const { exchangeCode } = await import("@/lib/withings/client");
-    vi.mocked(exchangeCode).mockResolvedValue({
+    const { withingsOAuth } = await import("@/lib/withings/oauth");
+    vi.mocked(withingsOAuth.exchange).mockResolvedValue({
       userid: "wuid",
       access_token: "atok",
       refresh_token: "rtok",
@@ -221,8 +221,8 @@ describe("withings/callback atomic nonce consumption (M3)", () => {
       clientId: "cid",
       clientSecret: "csec",
     } as never);
-    const { exchangeCode } = await import("@/lib/withings/client");
-    vi.mocked(exchangeCode).mockResolvedValue({
+    const { withingsOAuth } = await import("@/lib/withings/oauth");
+    vi.mocked(withingsOAuth.exchange).mockResolvedValue({
       userid: "wuid",
       access_token: "atok",
       refresh_token: "rtok",
@@ -300,7 +300,7 @@ describe("withings/callback atomic nonce consumption (M3)", () => {
       expiredRow as never,
     );
 
-    const { exchangeCode } = await import("@/lib/withings/client");
+    const { withingsOAuth } = await import("@/lib/withings/oauth");
 
     const req = callbackRequest(NONCE, NONCE);
     const res = await GET(req);
@@ -310,7 +310,7 @@ describe("withings/callback atomic nonce consumption (M3)", () => {
       "withings=error&reason=expired",
     );
     // Single atomic round-trip consumed the row; no token exchange.
-    expect(exchangeCode).not.toHaveBeenCalled();
+    expect(withingsOAuth.exchange).not.toHaveBeenCalled();
     expect(annotateMock).toHaveBeenCalledWith({ meta: { reason: "expired" } });
   });
 
@@ -325,7 +325,7 @@ describe("withings/callback atomic nonce consumption (M3)", () => {
       crossUserRow as never,
     );
 
-    const { exchangeCode } = await import("@/lib/withings/client");
+    const { withingsOAuth } = await import("@/lib/withings/oauth");
 
     const req = callbackRequest(NONCE, NONCE);
     const res = await GET(req);
@@ -334,7 +334,7 @@ describe("withings/callback atomic nonce consumption (M3)", () => {
     expect(res.headers.get("location")).toContain(
       "withings=error&reason=cross_user",
     );
-    expect(exchangeCode).not.toHaveBeenCalled();
+    expect(withingsOAuth.exchange).not.toHaveBeenCalled();
     expect(annotateMock).toHaveBeenCalledWith({
       meta: { reason: "cross_user" },
     });

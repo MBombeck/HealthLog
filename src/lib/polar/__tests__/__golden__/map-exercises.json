@@ -1,0 +1,93 @@
+[
+  {
+    "id": "exercise-0001",
+    "row": {
+      "externalId": "exercise-0001",
+      "sportType": "running",
+      "startedAt": "2026-03-02T06:00:00.000Z",
+      "endedAt": "2026-03-02T07:02:30.000Z",
+      "durationSec": 3750,
+      "totalEnergyKcal": 645.5,
+      "totalDistanceM": 10250.4,
+      "avgHeartRate": 149,
+      "maxHeartRate": 176,
+      "elevationM": null,
+      "metadata": {
+        "polarSport": "RUNNING",
+        "polarDetailedSportInfo": "TRAIL_RUNNING",
+        "polarDevice": "Polar Vantage V3",
+        "polarDeviceId": "device-0001",
+        "trainingLoad": 112.3,
+        "startTimeUtcOffset": 60
+      }
+    }
+  },
+  {
+    "id": 4200017,
+    "row": {
+      "externalId": "4200017",
+      "sportType": "cycling",
+      "startedAt": "2026-03-03T23:30:00.000Z",
+      "endedAt": "2026-03-04T00:15:00.000Z",
+      "durationSec": 2700,
+      "totalEnergyKcal": 0,
+      "totalDistanceM": 0,
+      "avgHeartRate": 0,
+      "maxHeartRate": null,
+      "elevationM": null,
+      "metadata": { "polarSport": "CYCLING", "startTimeUtcOffset": -300 }
+    }
+  },
+  {
+    "id": "exercise-0003",
+    "row": {
+      "externalId": "exercise-0003",
+      "sportType": "other",
+      "startedAt": "2026-03-04T06:15:00.000Z",
+      "endedAt": "2026-03-05T08:15:00.000Z",
+      "durationSec": 93600,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "elevationM": null,
+      "metadata": { "polarDetailedSportInfo": "SOMETHING_POLAR_INVENTED" }
+    }
+  },
+  {
+    "id": "exercise-0004",
+    "row": {
+      "externalId": "exercise-0004",
+      "sportType": "strength",
+      "startedAt": "2026-03-05T12:00:00.000Z",
+      "endedAt": "2026-03-05T12:00:00.000Z",
+      "durationSec": 0,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "elevationM": null,
+      "metadata": { "polarSport": "STRENGTH_TRAINING" }
+    }
+  },
+  {
+    "id": "exercise-0005",
+    "row": {
+      "externalId": "exercise-0005",
+      "sportType": "other",
+      "startedAt": "2026-03-06T03:30:00.000Z",
+      "endedAt": "2026-03-06T04:00:16.000Z",
+      "durationSec": 1816,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "elevationM": null,
+      "metadata": { "polarSport": "OTHER", "startTimeUtcOffset": 330 }
+    }
+  },
+  { "id": null, "row": null },
+  { "id": "   ", "row": null },
+  { "id": "exercise-0008", "row": null },
+  { "id": "exercise-0009", "row": null }
+]

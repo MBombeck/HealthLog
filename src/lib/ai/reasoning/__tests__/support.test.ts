@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  answerOf,
   anthropicModelVersion,
   anthropicRefusesSampling,
   anthropicThinkingDialect,
@@ -74,6 +75,11 @@ describe("OpenAI families", () => {
   it.each([
     ["gpt-5.5", "gpt-5.1+", "none"],
     ["gpt-5.1-mini", "gpt-5.1+", "none"],
+    ["gpt-6-sol", "gpt-5.1+", "none"],
+    ["gpt-6-luna", "gpt-5.1+", "none"],
+    ["gpt-6-astra", "gpt-5.1+", "none"],
+    ["gpt-6.1-sol", "gpt-5.1+", "none"],
+    ["openai/gpt-6-sol", "gpt-5.1+", "none"],
     ["gpt-5", "gpt-5", "minimal"],
     ["gpt-5-mini", "gpt-5", "minimal"],
     ["o3", "o", "low"],
@@ -81,6 +87,15 @@ describe("OpenAI families", () => {
   ] as const)("%s", (model, family, off) => {
     expect(openAIReasoningFamily(model)).toBe(family);
     expect(openAIOffEffort(family)).toBe(off);
+  });
+
+  it("gives the gpt-6 line an effort and a real off on the operator's key", () => {
+    for (const model of ["gpt-6-sol", "gpt-6.1-sol", "gpt-6-luna"]) {
+      expect(reasoningSupport("admin-key", model), model).toMatchObject({
+        effort: true,
+        offIsReal: true,
+      });
+    }
   });
 
   it("does not treat a non-reasoning model as one", () => {
@@ -158,6 +173,76 @@ describe("parsing helpers", () => {
     expect(splitThinkTags("<think>still going")).toEqual({
       content: "",
       reasoning: "still going",
+    });
+  });
+
+  it("splits reasoning whose opening tag was part of the prompt", () => {
+    // GLM, Qwen3 and DeepSeek-R1 chat templates end the generation prompt
+    // with `<think>`, so the reply carries only the closing tag. A server
+    // without a reasoning parser returns that verbatim.
+    expect(
+      splitThinkTags("The user asks about sleep.\n</think>\n\nDein Schlaf."),
+    ).toEqual({
+      content: "Dein Schlaf.",
+      reasoning: "The user asks about sleep.",
+    });
+    expect(splitThinkTags("</think>The answer.")).toEqual({
+      content: "The answer.",
+      reasoning: null,
+    });
+    expect(splitThinkTags("<think></think>\nThe answer.")).toEqual({
+      content: "The answer.",
+      reasoning: null,
+    });
+  });
+
+  it("leaves a closing tag mentioned in a sentence alone, unless the model is known to reason", () => {
+    const prose =
+      "Some models end their thinking with </think> before they answer.";
+    expect(splitThinkTags(prose)).toEqual({ content: prose, reasoning: null });
+    // The same text from a model seen reasoning: the template opened the
+    // block, so the tag closes it wherever it sits.
+    expect(splitThinkTags("Weighing the week</think>Steady.", true)).toEqual({
+      content: "Steady.",
+      reasoning: "Weighing the week",
+    });
+    // A tag that opens a line splits whoever sent it.
+    expect(splitThinkTags("Weighing the week\n  </think>\nSteady.")).toEqual({
+      content: "Steady.",
+      reasoning: "Weighing the week",
+    });
+  });
+
+  describe("answerOf, a reply cut off at the ceiling", () => {
+    const cut = '{"summary": "Your weight has been stable and';
+    const reply = (knownReasoner: boolean) => ({
+      fieldedReasoning: false,
+      finishReason: "length",
+      hasToolCalls: false,
+      reasoningRoom: true,
+      knownReasoner,
+    });
+
+    it("is the answer from a model not known to reason", () => {
+      expect(answerOf(cut, reply(false))).toEqual({
+        content: cut,
+        reasoning: null,
+        unseparated: false,
+      });
+    });
+
+    it("is reasoning the server did not separate from a model known to reason", () => {
+      expect(answerOf(cut, reply(true))).toEqual({
+        content: "",
+        reasoning: cut,
+        unseparated: true,
+      });
+    });
+
+    it("is the answer when the ceiling held no room for reasoning", () => {
+      expect(
+        answerOf(cut, { ...reply(true), reasoningRoom: false }).content,
+      ).toBe(cut);
     });
   });
 

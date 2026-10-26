@@ -1,8 +1,12 @@
-import { safeFetch } from "@/lib/safe-fetch";
 import { callTimeoutMs } from "./effective-timeout";
 import { annotate } from "@/lib/logging/context";
 import { emitSignal } from "@/lib/logging/signal";
-import type { AIProvider, CompletionParams, CompletionResult } from "./types";
+import type {
+  AIProvider,
+  AiToolCall,
+  CompletionParams,
+  CompletionResult,
+} from "./types";
 import {
   isCanonicalOpenAIEndpoint,
   selectOpenAIChatCompletionsCapabilities,
@@ -10,13 +14,24 @@ import {
 } from "./openai-capabilities";
 import {
   ANSWERS_ONLY_UNREASONED,
-  annotateReasoningDowngrade,
-  isReasoningParameterRejection,
   learnedReasoningDialect,
-  rememberReasoningDialect,
+  noteReasoningSeen,
+  refusesReasoningField,
 } from "./reasoning/dialect-cache";
-import { REASONING_THINKING_BUDGET } from "./reasoning/levels";
 import {
+  askAgainUnreasoned,
+  knownReasoner,
+  reasonsUnasked,
+  repeatUnreasoned,
+} from "./reasoning/answerless";
+import { RequestHops } from "./request-hops";
+import { learnFromRefusal } from "./wire-refusal";
+import {
+  REASONING_THINKING_BUDGET,
+  uncontrolledThinkingRoom,
+} from "./reasoning/levels";
+import {
+  answerOf,
   isOpenRouterEndpoint,
   levelOfWireEffort,
   openAIOffEffort,
@@ -25,7 +40,6 @@ import {
 } from "./reasoning/support";
 import {
   hasLearnedJsonModeDialect,
-  isResponseFormatRejection,
   jsonModeDialectFor,
   rememberJsonModeDialect,
 } from "./json-dialect";
@@ -40,6 +54,7 @@ import {
   parseOpenAIToolCalls,
   raiseEmbeddedError,
   sanitiseBodyExcerpt,
+  type OpenAIChoice,
   type OpenAIResponseJson,
 } from "./openai-wire";
 
@@ -152,8 +167,13 @@ export class OpenAIClient implements AIProvider {
     return this.type === "openai-compatible";
   }
 
+  /**
+   * `hops` is the call's request budget (`request-hops.ts`): a caller never
+   * passes it, every repeat inside the call hands it on.
+   */
   async generateCompletion(
     params: CompletionParams,
+    hops: RequestHops = new RequestHops(),
   ): Promise<CompletionResult> {
     const url = `${this.config.baseUrl.replace(/\/$/, "")}/chat/completions`;
 
@@ -194,21 +214,19 @@ export class OpenAIClient implements AIProvider {
       this.config.model,
     );
     const reasoningWire = this.planReasoning(params, hasTools, capabilities);
-    // #1126 — the gateway entry's own setting, for a call without a resolved
-    // level (sent below unless the wire already carries `none`).
+    // #1126 — the gateway entry's own setting, for a call without a level,
+    // unless the wire carries one or the endpoint refused the field (#1279).
     const entryEffort =
-      !params.reasoning && this.isGateway ? this.reasoningEffort : null;
-    // Reasoning tokens count against the completion budget on every one of
-    // these wires, so the thinking budget rides on top of the answer budget
-    // (a ceiling, not a charge). Without it a 600-token Coach round spends
-    // its whole allowance thinking and returns no answer.
-    const wireLevel =
-      reasoningWire.kind === "none" || reasoningWire.effort === "none"
-        ? null
-        : levelOfWireEffort(reasoningWire.effort);
-    const thinkingTokens = wireLevel
-      ? REASONING_THINKING_BUDGET[wireLevel === "off" ? "low" : wireLevel]
-      : 0;
+      !params.reasoning &&
+      this.isGateway &&
+      this.reasoningEffort &&
+      reasoningWire.kind === "none" &&
+      !this.refusesField()
+        ? this.reasoningEffort
+        : null;
+    const sent =
+      reasoningWire.kind !== "none" ? reasoningWire.effort : entryEffort;
+    const thinkingTokens = this.thinkingRoom(params, reasoningWire);
     const tokenBudget = (params.maxTokens ?? 1000) + thinkingTokens;
     const capabilityParams = capabilities.supportsSamplingControls
       ? {
@@ -229,7 +247,7 @@ export class OpenAIClient implements AIProvider {
     const trimmedKey = this.config.apiKey?.trim();
     if (trimmedKey) headers.Authorization = `Bearer ${trimmedKey}`;
 
-    const res = await safeFetch(
+    const res = await hops.fetch(
       url,
       {
         method: "POST",
@@ -251,16 +269,11 @@ export class OpenAIClient implements AIProvider {
             ? { prompt_cache_key: params.cacheKey }
             : {}),
           // #1126 — the gateway entry's reasoning setting; Default sends
-          // nothing. `api.openai.com` and Codex never get it. v1.41 — a call
-          // that carries its own resolved level (`params.reasoning`) wins.
-          // #1267 — once a model answered nothing while reasoning, the wire
+          // nothing. `api.openai.com` and Codex never get it. A call that
+          // carries its own resolved level (`params.reasoning`) wins, and
+          // (#1267) once a model answered nothing while reasoning, the wire
           // below carries `none` instead (`planReasoning`).
-          ...(!params.reasoning &&
-          this.isGateway &&
-          this.reasoningEffort &&
-          reasoningWire.kind === "none"
-            ? { reasoning_effort: this.reasoningEffort }
-            : {}),
+          ...(entryEffort ? { reasoning_effort: this.reasoningEffort } : {}),
           ...(reasoningWire.kind === "reasoning_effort"
             ? { reasoning_effort: reasoningWire.effort }
             : reasoningWire.kind === "openrouter"
@@ -268,30 +281,15 @@ export class OpenAIClient implements AIProvider {
               : {}),
         }),
       },
-      // 60 s ceiling so a tar-pit upstream cannot pin a worker
-      // indefinitely. Real completions land well inside this budget.
-      // v1.11.2 — the base URL is user/admin-overridable (BYO gateway), so pin
-      // the connect-time DNS check: a base URL resolving to a private/metadata
-      // address is rejected, closing the SSRF/rebinding surface.
-      // v1.20.1 — compose the caller's cancel signal (Coach SSE disconnect) so
-      // a mid-generation abort tears the upstream call down early.
-      // The record owner's response-timeout setting, else the surface value, else 60 s.
-      // v1.33.1 (#470) — the gateway tag reuses the Local provider's host
-      // policy verbatim: public hosts always; a private host only when the
-      // operator granted its origin (`AI_PRIVATE_ORIGINS` or the legacy host
-      // list), and then only through the pinned operator-approved dispatcher.
-      //
-      // v1.37.30 — the `admin-key` tag consults the same policy. Its base URL
-      // is the one other operator-typed URL in this client (an operator can
-      // point the global provider at a private OpenAI-compatible proxy, e.g.
-      // an OAuth sidecar), and both ends of the grant are the operator's own:
-      // the URL comes from the admin settings, the allowlist from the
-      // operator's environment. Every non-operator construction of this tag
-      // pins the public `api.openai.com` constant, for which the policy
-      // resolves to `true` without ever consulting the allowlist — so the
-      // personal-key posture is unchanged. The `codex` tag keeps the hard
-      // pin: its base URL is a repository constant, there is nothing an
-      // operator legitimately redirects.
+      // The record owner's response-timeout setting (else the surface value,
+      // else 60 s), and the caller's cancel signal (a Coach disconnect tears
+      // the upstream call down). The gateway's base URL and the operator's
+      // `admin-key` one are typed by a person, so they take the Local
+      // provider's host policy: public hosts always, a private host only for
+      // an origin the operator granted (`AI_PRIVATE_ORIGINS`), dialled through
+      // the pinned operator-approved dispatcher; a personal key pins the
+      // public `api.openai.com`, for which the policy never consults the
+      // allowlist. `codex` keeps the hard pin: its URL is a repository constant.
       {
         timeoutMs: callTimeoutMs(params, this.responseTimeoutSeconds),
         ...(this.isGateway || this.type === "admin-key"
@@ -304,68 +302,7 @@ export class OpenAIClient implements AIProvider {
     );
 
     if (!res.ok) {
-      // Pull as much of the body as we can so upstream incidents (OpenAI 5xx,
-      // model-not-found, quota exceeded) are diagnosable from logs instead of
-      // surfacing as an opaque "OpenAI request failed (500)". Strip anything
-      // that looks like an API key from the excerpt before logging.
-      const rawBody = await res.text().catch(() => "");
-      const bodyExcerpt = sanitiseBodyExcerpt(rawBody);
-      // v1.41 — an endpoint or model that refuses the reasoning field is
-      // asked once more without it and remembers, so the answer never fails
-      // on a reasoning parameter. Checked before the JSON dialect: a body
-      // naming the reasoning field must not switch JSON mode off.
-      if (
-        reasoningWire.kind !== "none" &&
-        isReasoningParameterRejection(
-          res.status,
-          bodyExcerpt,
-          /reasoning|thinking/i,
-          this.config.model,
-        )
-      ) {
-        rememberReasoningDialect(this.reasoningDialectKey(), "none");
-        annotateReasoningDowngrade(this.type, reasoningWire.effort, "none");
-        return this.generateCompletion(params);
-      }
-      // v1.33.1 (#470) — dialect self-heal, gateway only. A 4xx whose body
-      // names `response_format` (or an unknown parameter) means this endpoint
-      // rejects the standard JSON flag: learn the no-flag dialect for the base
-      // URL and retry ONCE without it. The recursion terminates because the
-      // cached dialect is now "none". Unrelated 4xx/5xx errors are not retried
-      // and surface as the structured error they always were.
-      if (
-        this.isGateway &&
-        sendJsonFormat &&
-        isResponseFormatRejection(res.status, bodyExcerpt)
-      ) {
-        rememberJsonModeDialect(this.config.baseUrl, "none");
-        annotate({
-          action: { name: "ai.compat.jsonDialect" },
-          meta: { dialect: "none", httpStatus: res.status },
-        });
-        return this.generateCompletion(params);
-      }
-      // v1.42 — a proxy that stopped offering the configured model answers
-      // with a bare 500 that names nothing. Ask its model listing (free, no
-      // completion) and say so plainly when the name is gone, so the chain,
-      // the health card and the log name the actual fix.
-      const modelNotServed = await this.modelNoLongerServed(res.status);
-      const err = new Error(
-        modelNotServed
-          ? `${this.isGateway ? "OpenAI-compatible gateway" : "OpenAI"} request failed (${res.status}): model "${this.config.model}" is not offered by this endpoint`
-          : `${this.isGateway ? "OpenAI-compatible gateway" : "OpenAI"} request failed (${res.status})`,
-      );
-      // Keep the body in a structured field rather than the message so
-      // Error.message stays short and the excerpt lands in dedicated log
-      // fields (bodyExcerpt) that can be filtered/truncated centrally.
-      Object.assign(err, {
-        httpStatus: res.status,
-        upstream: this.isGateway ? "openai-compatible" : "openai",
-        model: this.config.model,
-        bodyExcerpt,
-        ...(modelNotServed ? { modelNotServed: true } : {}),
-      });
-      throw err;
+      return this.failed(res, params, hops, { sent, sendJsonFormat });
     }
 
     // v1.33.1 (#470) — the standard `response_format` request succeeded: pin
@@ -409,8 +346,12 @@ export class OpenAIClient implements AIProvider {
     }
 
     const choice = json.choices?.[0];
-    let content = choice?.message?.content;
     const toolCalls = parseOpenAIToolCalls(choice);
+    const reply = this.separateReasoning(choice, toolCalls, {
+      thinkingTokens,
+      sent,
+    });
+    let content: string = reply.content;
 
     // v1.28.28 (#470) — gateway JSON-mode shim. LiteLLM (and similar
     // OpenAI-compatible proxies) translate `response_format: json_object`
@@ -422,7 +363,7 @@ export class OpenAIClient implements AIProvider {
     // into `content` so the payload parses instead of silently emptying
     // the insight. The real tool loop (Coach F1) always has tools and
     // never enters JSON mode, so it is untouched.
-    const trimmedContent = content?.trim() ?? "";
+    const trimmedContent = content.trim();
     if (useJsonFormat && (trimmedContent === "" || trimmedContent === "{}")) {
       const args = choice?.message?.tool_calls?.[0]?.function?.arguments;
       if (typeof args === "string" && args.trim().length > 0) {
@@ -433,66 +374,15 @@ export class OpenAIClient implements AIProvider {
     // A reply with tool calls and no prose is valid (F1 tool loop); only an
     // empty reply with neither content NOR tool calls is an error.
     if (!content && !toolCalls) {
-      // #1267 — a gateway in front of a thinking model (Ollama serving
-      // Gemma 4, say) can answer with the thought in `reasoning` and no
-      // content. Asked with `none`, the same model answers; learn that once
-      // and ask again. Same rule as the Local client.
-      const sentEffort =
-        reasoningWire.kind !== "none" ? reasoningWire.effort : entryEffort;
-      const message = (choice?.message ?? {}) as Record<string, unknown>;
-      const hadReasoning = [message.reasoning, message.reasoning_content].some(
-        (v) => typeof v === "string" && v.trim().length > 0,
-      );
-      if (
-        this.isGateway &&
-        sentEffort !== "none" &&
-        (hadReasoning || sentEffort !== null)
-      ) {
-        rememberReasoningDialect(
-          this.reasoningDialectKey(),
-          ANSWERS_ONLY_UNREASONED,
-        );
-        annotateReasoningDowngrade(this.type, sentEffort ?? "default", "none");
-        emitSignal({
-          action: "ai.gateway.reasoning_answerless",
-          level: "warn",
-          meta: {
-            effort: sentEffort ?? "default",
-            finish:
-              choice?.finish_reason === "length" ||
-              choice?.finish_reason === "stop"
-                ? choice.finish_reason
-                : "other",
-            reasoning: hadReasoning,
-          },
-        });
-        return this.generateCompletion(params);
-      }
-      // v1.20.1 — tag the empty-reply throw with a sentinel `httpStatus: 0` +
-      // `kind` so the provider-chain classifier can tell an empty 200-OK reply
-      // apart from a genuine transport failure (ECONNRESET, DNS, timeout) in
-      // observability. The cascade is unchanged: `isHardProviderFailure`
-      // already treats `status <= 0` as a hard failure and walks to the next
-      // provider.
-      const err = new Error(
-        `${this.isGateway ? "OpenAI-compatible gateway" : "OpenAI"} returned empty content`,
-      );
-      Object.assign(err, {
-        httpStatus: 0,
-        kind: hadReasoning ? "reasoning_only" : "empty_response",
-        upstream: this.isGateway ? "openai-compatible" : "openai",
+      return this.answerless(params, hops, {
+        sent,
+        hadReasoning: reply.hadReasoning,
+        finishReason: choice?.finish_reason,
+        spent: json.usage?.total_tokens ?? null,
       });
-      throw err;
     }
 
-    // v1.41 — what the call reasoned. Gateways return the text as
-    // `reasoning` (OpenRouter, vLLM, Ollama) or `reasoning_content`
-    // (LiteLLM, llama.cpp); `api.openai.com` returns none on this wire.
-    const message = (choice?.message ?? {}) as Record<string, unknown>;
-    const reasoningText = [message.reasoning, message.reasoning_content].find(
-      (v): v is string => typeof v === "string" && v.trim().length > 0,
-    );
-    const summary = reasoningText ? [reasoningText.trim()] : [];
+    const summary = reply.reasoning ? [reply.reasoning.trim()] : [];
     const emit = params.reasoning ? params.onReasoning : undefined;
     if (emit) {
       for (const text of summary) {
@@ -502,22 +392,27 @@ export class OpenAIClient implements AIProvider {
       }
       emit({ kind: "done", text: "" });
     }
+    const message = (choice?.message ?? {}) as Record<string, unknown>;
     const roundTrip = ROUND_TRIP_FIELDS.filter(
       (field) => message[field] !== undefined && message[field] !== null,
     ).map((field) => ({ [field]: message[field] }));
     const usage = json.usage as
       { completion_tokens_details?: { reasoning_tokens?: number } } | undefined;
-    const learnedNone =
-      learnedReasoningDialect(this.reasoningDialectKey()) === "none";
+    const learnedNone = refusesReasoningField(
+      learnedReasoningDialect(this.reasoningDialectKey()),
+    );
 
     return {
-      content: content ?? "",
+      content,
       tokensUsed: json.usage?.total_tokens ?? null,
       cachedInputTokens: parseCachedTokens(json),
       model: this.config.model,
       providerType: this.type,
       ...(toolCalls ? { toolCalls } : {}),
-      finishReason: mapFinishReason(choice?.finish_reason),
+      // #1276 — the calls decide, as on the Anthropic and Codex wires.
+      finishReason: toolCalls
+        ? "tool_calls"
+        : mapFinishReason(choice?.finish_reason),
       ...(params.reasoning
         ? {
             reasoning: {
@@ -543,7 +438,213 @@ export class OpenAIClient implements AIProvider {
     };
   }
 
+  /**
+   * A reply with neither an answer nor tool calls. #1267 — a gateway in front
+   * of a thinking model (Ollama serving Gemma 4, say) can answer with the
+   * thought in `reasoning` and no content; asked with `none`, the same model
+   * answers, so that is learned once and the call asked again. #1279 — once,
+   * and never `none` again for a model the repeat showed ignores it. Same
+   * rule as the Local client (`reasoning/answerless.ts`).
+   *
+   * Otherwise the empty reply is thrown, tagged with a sentinel
+   * `httpStatus: 0` and its `kind` (v1.20.1) so the chain classifier can tell
+   * it apart from a transport failure (ECONNRESET, DNS, timeout). The cascade
+   * is unchanged: `isHardProviderFailure` treats `status <= 0` as hard. It
+   * carries what the reply cost, for the day's ledger to charge.
+   */
+  private answerless(
+    params: CompletionParams,
+    hops: RequestHops,
+    reply: {
+      sent: string | null;
+      hadReasoning: boolean;
+      finishReason: string | null | undefined;
+      spent: number | null;
+    },
+  ): Promise<CompletionResult> {
+    const failure = () =>
+      Object.assign(
+        new Error(
+          `${this.isGateway ? "OpenAI-compatible gateway" : "OpenAI"} returned empty content`,
+        ),
+        {
+          httpStatus: 0,
+          kind: reply.hadReasoning ? "reasoning_only" : "empty_response",
+          upstream: this.isGateway ? "openai-compatible" : "openai",
+          ...(reply.spent !== null ? { tokensUsed: reply.spent } : {}),
+        },
+      );
+    if (
+      this.isGateway &&
+      // The lesson holds even when the budget leaves no repeat for it.
+      askAgainUnreasoned({
+        key: this.reasoningDialectKey(),
+        provider: this.type,
+        signals: "ai.gateway",
+        sent: reply.sent,
+        hadReasoning: reply.hadReasoning,
+        finishReason: reply.finishReason,
+      }) &&
+      hops.canSend
+    ) {
+      return repeatUnreasoned(
+        this.generateCompletion(params, hops),
+        reply.spent,
+        failure,
+      );
+    }
+    throw failure();
+  }
+
+  /**
+   * A non-2xx reply. As much of the body as can be read goes into a
+   * structured field (with anything key-shaped stripped), so an upstream
+   * incident is diagnosable from the log instead of an opaque status.
+   *
+   * An endpoint or model that refuses the reasoning field, or (#470, gateway
+   * only) the JSON flag, is asked once more without it and remembers
+   * (`wire-refusal.ts`), inside the call's request budget. A refusal the
+   * budget leaves no repeat for is marked `reasoningRefused`.
+   *
+   * A proxy that stopped offering the configured model answers with a bare
+   * 500 that names nothing; its model listing (free, no completion) says so
+   * plainly, so the chain, the health card and the log name the fix.
+   */
+  private async failed(
+    res: Response,
+    params: CompletionParams,
+    hops: RequestHops,
+    sent: { sent: string | null; sendJsonFormat: boolean },
+  ): Promise<CompletionResult> {
+    const bodyExcerpt = sanitiseBodyExcerpt(await res.text().catch(() => ""));
+    // The entry's own setting (#1126) included: a refused field is learned
+    // whichever level put it on the wire.
+    const effort = sent.sent;
+    const lesson = learnFromRefusal({
+      status: res.status,
+      body: bodyExcerpt,
+      model: this.config.model,
+      reasoning:
+        effort === null
+          ? null
+          : {
+              sent: effort,
+              key: this.reasoningDialectKey(),
+              provider: this.type,
+              names: /reasoning|thinking/i,
+            },
+      json:
+        this.isGateway && sent.sendJsonFormat
+          ? { endpoint: this.config.baseUrl, action: "ai.compat.jsonDialect" }
+          : null,
+    });
+    if (lesson && hops.canSend) return this.generateCompletion(params, hops);
+    const modelNotServed = await this.modelNoLongerServed(res.status);
+    const label = this.isGateway ? "OpenAI-compatible gateway" : "OpenAI";
+    // The excerpt rides a structured field, not the message, so it lands in
+    // the log fields that are filtered and truncated centrally.
+    throw Object.assign(
+      new Error(
+        modelNotServed
+          ? `${label} request failed (${res.status}): model "${this.config.model}" is not offered by this endpoint`
+          : `${label} request failed (${res.status})`,
+      ),
+      {
+        httpStatus: res.status,
+        upstream: this.isGateway ? "openai-compatible" : "openai",
+        model: this.config.model,
+        bodyExcerpt,
+        ...(modelNotServed ? { modelNotServed: true } : {}),
+        ...(lesson === "reasoning" ? { reasoningRefused: true } : {}),
+      },
+    );
+  }
+
   // ── v1.41 reasoning ───────────────────────────────────────────────────────
+
+  /**
+   * The thinking room on top of the answer budget. Reasoning tokens count
+   * against the completion budget on every one of these wires, so without it
+   * a 600-token Coach round spends its whole allowance thinking and returns
+   * no answer. A ceiling, not a charge.
+   *
+   * #1276 — on a gateway the room follows the call's level, not the wire: a
+   * model behind it may reason whatever `reasoning_effort` says, `none`
+   * included, and a `none` sent for the person's Off or after the #1267
+   * lesson must not leave it the bare answer budget to think in. Without a
+   * level of its own, a call gets the `low` room once the model has shown it
+   * reasons unasked.
+   */
+  private thinkingRoom(
+    params: CompletionParams,
+    wire: OpenAIReasoningWire,
+  ): number {
+    if (this.isGateway) {
+      if (params.reasoning) {
+        return uncontrolledThinkingRoom(params.reasoning.effort);
+      }
+      return reasonsUnasked(this.reasoningDialectKey())
+        ? uncontrolledThinkingRoom("off")
+        : 0;
+    }
+    if (wire.kind === "none" || wire.effort === "none") return 0;
+    const level = levelOfWireEffort(wire.effort);
+    return REASONING_THINKING_BUDGET[level === "off" ? "low" : level];
+  }
+
+  /**
+   * The answer and what the call reasoned. Gateways return the reasoning as
+   * `reasoning` (OpenRouter, vLLM, Ollama) or `reasoning_content` (LiteLLM,
+   * llama.cpp), some in both with the same text: one copy is kept.
+   * `api.openai.com` returns none on this wire.
+   *
+   * #1276 — reasoning the server did not separate never becomes the answer:
+   * an inline `<think>` block (or only its closing tag, when the chat
+   * template opened it), or a reply that filled a ceiling sized for thinking
+   * with unlabelled text (`answerOf`). Only a gateway's ceiling is sized that
+   * way; `api.openai.com` never inlines its reasoning.
+   */
+  private separateReasoning(
+    choice: OpenAIChoice | undefined,
+    toolCalls: AiToolCall[] | undefined,
+    request: { thinkingTokens: number; sent: string | null },
+  ): { content: string; reasoning: string | null; hadReasoning: boolean } {
+    const message = (choice?.message ?? {}) as Record<string, unknown>;
+    const fielded = [message.reasoning, message.reasoning_content].find(
+      (v): v is string => typeof v === "string" && v.trim().length > 0,
+    );
+    const raw = choice?.message?.content ?? "";
+    const key = this.reasoningDialectKey();
+    const asked = request.sent !== null && request.sent !== "none";
+    const separated = answerOf(raw, {
+      fieldedReasoning: fielded !== undefined,
+      finishReason: choice?.finish_reason,
+      hasToolCalls: toolCalls !== undefined,
+      reasoningRoom: this.isGateway && request.thinkingTokens > 0,
+      knownReasoner: knownReasoner(key, asked),
+    });
+    const hadReasoning = fielded !== undefined || separated.content !== raw;
+    if (hadReasoning) noteReasoningSeen(key, asked);
+    if (separated.unseparated) {
+      emitSignal({
+        action: "ai.gateway.reasoning_unseparated",
+        level: "warn",
+        meta: { provider: this.type },
+      });
+    }
+    return {
+      content: separated.content,
+      reasoning: fielded ?? separated.reasoning,
+      hadReasoning,
+    };
+  }
+
+  /** #1279 — this endpoint and model refused the reasoning field. */
+  private refusesField(): boolean {
+    return refusesReasoningField(
+      learnedReasoningDialect(this.reasoningDialectKey()),
+    );
+  }
 
   private reasoningDialectKey() {
     return {
@@ -583,7 +684,7 @@ export class OpenAIClient implements AIProvider {
         : { kind: "reasoning_effort", effort: "none" };
     }
     if (!reasoning) return { kind: "none" };
-    if (learned === "none") return { kind: "none" };
+    if (refusesReasoningField(learned)) return { kind: "none" };
     const level = reasoning.effort;
     if (this.isGateway) {
       const effort = level === "off" ? "none" : level;

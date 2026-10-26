@@ -11,47 +11,44 @@
  * `src/lib/jobs/queue-runtime.ts` declares every queue `short`, `budgeted` or
  * `long`. This guard holds the tree to it:
  *
- *   - every queue bound with `createAndWork` is in the table, and every table
- *     entry is bound;
- *   - every `boss.send` and every schedule tuple names a queue in the table;
+ *   - every queue the worker registry declares (`jobs/registry/`) is in the
+ *     table, and every table entry is declared;
+ *   - every `boss.send` and every scheduled queue names a queue in the table;
  *   - a `long` queue has an expiry between the default and pg-boss's 24-hour
- *     ceiling, every send and schedule for it carries `expireInSeconds` (or an
- *     identifier the table names as its carrier), it stops on the job's budget
- *     where the table says (`jobBudget` / `jobDeadline`, or a declared
- *     one-shot), and it is exclusive per identity where the table says
- *     (`lockedPass` at the binding, or the named marker);
+ *     ceiling, every send for it carries `expireInSeconds` (or an identifier
+ *     the table names as its carrier) and its schedule's send options do, it
+ *     stops on the job's budget where the table says (`jobBudget` /
+ *     `jobDeadline`, or a declared one-shot), and it is exclusive per identity
+ *     where the table says (the definition's `lock`, or the named marker);
+ *   - a `bounded` queue (one unit of model work behind outer bounds) has an
+ *     expiry above its declared model time and every send carries it;
  *   - a `budgeted` queue stops on the budget and relies on the default expiry;
  *   - a `short` queue's sends set no expiry of their own, which would mean the
  *     job is longer than the table claims.
  *
  * Floors fail the guard if a matcher stops matching, and the "plants" cases
  * run the checks over a planted long queue that lacks each protection in turn
- * (the mutation proof kept in the suite). Removing `lockedPass` from the
- * pr-detection binding, or the expiry from its cron tuple, fails the real
+ * (the mutation proof kept in the suite). Removing the `lock` from the
+ * pr-detection definition, or the expiry from its schedule, fails the real
  * checks below.
  */
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 import {
   DEFAULT_JOB_EXPIRE_SECONDS,
   QUEUE_RUNTIME,
   type QueueRuntime,
-  type SourceSite,
 } from "@/lib/jobs/queue-runtime";
 import { SCHEDULED_AND_SENT_QUEUES } from "@/lib/jobs/reminder/registrar-shared";
 import { HEAVY_QUEUES } from "@/lib/jobs/heavy-lane";
+import type { JobDefinition } from "@/lib/jobs/registry/define-job";
+import { allJobDefinitions } from "@/lib/jobs/registry/index";
 
 const SRC = join(process.cwd(), "src");
-const REGISTRARS = [
-  "lib/jobs/reminder/register-integration-sync.ts",
-  "lib/jobs/reminder/register-maintenance.ts",
-  "lib/jobs/reminder/register-reminders.ts",
-  "lib/jobs/reminder/register-rollup.ts",
-  "lib/jobs/reminder/register-status.ts",
-];
+const DEFINITIONS = allJobDefinitions();
 /** pg-boss refuses an expiry of 24 hours or more. */
 const MAX_EXPIRE_SECONDS = 24 * 60 * 60;
 
@@ -63,11 +60,20 @@ const source = new Map(
   files.map((f) => [f, readFileSync(join(SRC, f), "utf8")]),
 );
 
-/** Strip comments so documentation that quotes code never matches. */
+/**
+ * Strip comments so documentation that quotes code never matches. Memoised
+ * per text: the planted cases rescan the whole tree once per finding, and
+ * stripping every file again each time made that one case take seconds,
+ * past the default timeout under a full parallel run.
+ */
+const stripped = new Map<string, string>();
 function code(text: string): string {
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  let out = stripped.get(text);
+  if (out === undefined) {
+    out = stripComments(text);
+    stripped.set(text, out);
+  }
+  return out;
 }
 
 /** Index just past the bracket that closes the one at `open`. */
@@ -120,27 +126,6 @@ interface Site {
   text: string;
 }
 
-/** Every `createAndWork(boss, QUEUE, …)` in the registrars. */
-function bindings(
-  texts: ReadonlyMap<string, string>,
-  definitions: Definitions,
-): Site[] {
-  const out: Site[] = [];
-  for (const file of REGISTRARS) {
-    const text = code(texts.get(file) ?? "");
-    for (const m of text.matchAll(
-      /createAndWork\s*(?:<[^(]*?>)?\(\s*boss\s*,\s*([A-Z][A-Z0-9_]*)/g,
-    )) {
-      const open = text.indexOf("(", m.index);
-      const queue = resolve(definitions, file, m[1]);
-      if (queue) {
-        out.push({ file, queue, text: text.slice(open, closeOf(text, open)) });
-      }
-    }
-  }
-  return out;
-}
-
 /** Every `boss.send(QUEUE, …)` / `getGlobalBoss()?.send(QUEUE, …)`. */
 function sends(
   texts: ReadonlyMap<string, string>,
@@ -162,31 +147,6 @@ function sends(
   return out;
 }
 
-/** Every `[QUEUE, CRON, options?]` tuple in a registrar's `schedules`. */
-function schedules(
-  texts: ReadonlyMap<string, string>,
-  definitions: Definitions,
-): Site[] {
-  const out: Site[] = [];
-  for (const file of REGISTRARS) {
-    const text = code(texts.get(file) ?? "");
-    const m = /const\s+schedules\s*:\s*ScheduleEntry\[\]\s*=\s*\[/.exec(text);
-    if (!m) continue;
-    const open = m.index + m[0].length - 1;
-    const body = text.slice(open + 1, closeOf(text, open) - 1);
-    for (let i = 0; i < body.length; i += 1) {
-      if (body[i] !== "[") continue;
-      const end = closeOf(body, i);
-      const tuple = body.slice(i, end);
-      const ident = /^\[\s*([A-Z][A-Z0-9_]*)/.exec(tuple)?.[1];
-      const queue = ident ? resolve(definitions, file, ident) : null;
-      if (queue) out.push({ file, queue, text: tuple });
-      i = end - 1;
-    }
-  }
-  return out;
-}
-
 /** The text of `fn` (a function or a const) in `file`. */
 function bodyOf(
   texts: ReadonlyMap<string, string>,
@@ -201,14 +161,6 @@ function bodyOf(
   return text.slice(m.index, end < 0 ? undefined : end + 2);
 }
 
-function siteText(
-  texts: ReadonlyMap<string, string>,
-  site: SourceSite,
-  binding: Site | undefined,
-): string {
-  return site === "binding" ? (binding?.text ?? "") : bodyOf(texts, site);
-}
-
 const STOPS = /\bjob(?:Budget|Deadline)\s*\(/;
 
 /** Every finding for one queue's declaration against the tree. */
@@ -216,99 +168,110 @@ function check(
   queue: string,
   entry: QueueRuntime,
   texts: ReadonlyMap<string, string>,
-  all: { bindings: Site[]; sends: Site[]; schedules: Site[] },
+  all: { definitions: readonly JobDefinition[]; sends: Site[] },
 ): string[] {
   const problems: string[] = [];
-  const binding = all.bindings.find((b) => b.queue === queue);
-  const carriers = [...all.sends, ...all.schedules].filter(
-    (s) => s.queue === queue,
-  );
-  if (entry.runtime === "long") {
+  const definition = all.definitions.find((d) => d.queue === queue);
+  const sends = all.sends.filter((s) => s.queue === queue);
+  const scheduledExpiry = definition?.scheduleOptions?.expireInSeconds;
+  if (entry.runtime === "long" || entry.runtime === "bounded") {
     if (
       !(entry.expireInSeconds > DEFAULT_JOB_EXPIRE_SECONDS) ||
       !(entry.expireInSeconds < MAX_EXPIRE_SECONDS)
     ) {
       problems.push(`${queue}: expiry ${entry.expireInSeconds}s out of range`);
     }
-    for (const site of carriers) {
+    for (const site of sends) {
       const carried =
         /\bexpireInSeconds\b/.test(site.text) ||
         entry.expiryVia.some((v) => new RegExp(`\\b${v}\\b`).test(site.text));
       if (!carried) {
-        problems.push(
-          `${queue}: ${site.file} sends or schedules it without an expiry`,
-        );
+        problems.push(`${queue}: ${site.file} sends it without an expiry`);
       }
     }
+    if (definition?.cron && typeof scheduledExpiry !== "number") {
+      problems.push(`${queue}: its schedule carries no expiry`);
+    }
+  }
+  if (entry.runtime === "bounded") {
+    if (!(entry.expireInSeconds > entry.modelSeconds)) {
+      problems.push(
+        `${queue}: expiry ${entry.expireInSeconds}s is not above its ${entry.modelSeconds}s of model work`,
+      );
+    }
+    if (sends.length === 0 && !definition?.cron) {
+      problems.push(`${queue}: no send or schedule carries its expiry`);
+    }
+  } else if (entry.runtime === "long") {
     if (typeof entry.stop === "object" && "oneShot" in entry.stop) {
       if (entry.stop.oneShot.length < 20) {
         problems.push(`${queue}: a one-shot needs its reason`);
       }
-    } else if (!STOPS.test(siteText(texts, entry.stop, binding))) {
+    } else if (!STOPS.test(bodyOf(texts, entry.stop))) {
       problems.push(`${queue}: does not stop on the job's budget`);
     }
     if (entry.exclusive === "lockedPass") {
-      if (!/\blockedPass\s*\(/.test(binding?.text ?? "")) {
-        problems.push(`${queue}: binding holds no lockedPass`);
+      if (!definition?.lock) {
+        problems.push(`${queue}: definition holds no lock`);
       }
     } else if (
-      !siteText(texts, entry.exclusive.at, binding).includes(
-        entry.exclusive.marker,
-      )
+      !bodyOf(texts, entry.exclusive.at).includes(entry.exclusive.marker)
     ) {
       problems.push(`${queue}: no "${entry.exclusive.marker}" where declared`);
     }
   } else {
     if (entry.runtime === "budgeted") {
-      if (!STOPS.test(siteText(texts, entry.budget, binding))) {
+      if (!STOPS.test(bodyOf(texts, entry.budget))) {
         problems.push(`${queue}: does not stop on the job's budget`);
       }
     }
-    for (const site of carriers) {
+    for (const site of sends) {
       if (/\bexpireInSeconds\b/.test(site.text)) {
         problems.push(
           `${queue}: ${site.file} sets an expiry on a queue declared ${entry.runtime}`,
         );
       }
     }
+    if (scheduledExpiry !== undefined) {
+      problems.push(
+        `${queue}: its schedule sets an expiry on a queue declared ${entry.runtime}`,
+      );
+    }
   }
   return problems;
 }
 
 function scan(texts: ReadonlyMap<string, string>) {
-  const definitions = definitionsOf(texts);
-  return {
-    bindings: bindings(texts, definitions),
-    sends: sends(texts, definitions),
-    schedules: schedules(texts, definitions),
-  };
+  return { sends: sends(texts, definitionsOf(texts)) };
 }
 
 describe("every queue declares its runtime", () => {
-  const all = scan(source);
-  const bound = new Set(all.bindings.map((b) => b.queue));
+  const all = { definitions: DEFINITIONS, ...scan(source) };
+  const declared = new Set(DEFINITIONS.map((d) => d.queue));
 
-  it("finds the bindings, sends and schedules it is meant to police", () => {
-    // Pinned below the counts on 2026-10-01 (112 / 64 / 74).
-    expect(all.bindings.length).toBeGreaterThanOrEqual(105);
+  it("finds the declarations, sends and schedules it is meant to police", () => {
+    // Pinned below the counts on 2026-10-23 (122 / 64 / 78).
+    expect(DEFINITIONS.length).toBeGreaterThanOrEqual(115);
     expect(all.sends.length).toBeGreaterThanOrEqual(50);
-    expect(all.schedules.length).toBeGreaterThanOrEqual(70);
+    expect(DEFINITIONS.filter((d) => d.cron).length).toBeGreaterThanOrEqual(70);
     expect(
       Object.values(QUEUE_RUNTIME).filter((e) => e.runtime === "long").length,
     ).toBeGreaterThanOrEqual(15);
   });
 
-  it("every bound queue is in the table, and every entry is bound", () => {
-    expect([...bound].filter((q) => !(q in QUEUE_RUNTIME)).sort()).toEqual([]);
+  it("every declared queue is in the table, and every entry is declared", () => {
+    expect([...declared].filter((q) => !(q in QUEUE_RUNTIME)).sort()).toEqual(
+      [],
+    );
     expect(
       Object.keys(QUEUE_RUNTIME)
-        .filter((q) => !bound.has(q))
+        .filter((q) => !declared.has(q))
         .sort(),
     ).toEqual([]);
   });
 
-  it("every send and schedule names a queue in the table", () => {
-    const unknown = [...all.sends, ...all.schedules]
+  it("every send names a queue in the table", () => {
+    const unknown = all.sends
       .filter((s) => !(s.queue in QUEUE_RUNTIME))
       .map((s) => `${s.file} → ${s.queue}`);
     expect(unknown).toEqual([]);
@@ -322,51 +285,56 @@ describe("every queue declares its runtime", () => {
   });
 
   it("plants: a long queue missing any protection is caught", () => {
-    const registrar = REGISTRARS[1];
-    const planted = (binding: string, schedule: string) =>
+    const file = "lib/jobs/planted.ts";
+    const texts = (handler: string) =>
       new Map([
         ...source,
-        [
-          registrar,
-          `const PLANT_QUEUE = "planted-long";\n` +
-            `const schedules: ScheduleEntry[] = [\n  ${schedule},\n];\n` +
-            `async function register(boss) {\n  await createAndWork(boss, PLANT_QUEUE, { localConcurrency: 1 }, ${binding});\n}\n`,
-        ],
+        [file, `export async function plant(jobs) {\n  ${handler}\n}\n`],
       ]);
     const entry: QueueRuntime = {
       runtime: "long",
       expireInSeconds: 3600,
       expiryVia: [],
-      stop: "binding",
+      stop: { file, fn: "plant" },
       exclusive: "lockedPass",
       why: "planted",
     };
-    const findings = (binding: string, schedule: string) => {
-      const texts = planted(binding, schedule);
-      return check("planted-long", entry, texts, scan(texts));
+    const planted = (overrides: Partial<JobDefinition>): JobDefinition => ({
+      queue: "planted-long",
+      cron: "0 3 * * *",
+      scheduleOptions: { expireInSeconds: 3600 },
+      work: { localConcurrency: 1 },
+      lock: () => "pass",
+      load: async () => async () => ({ ok: true, did: {} }),
+      ...overrides,
+    });
+    const findings = (
+      handler: string,
+      overrides: Partial<JobDefinition> = {},
+    ) => {
+      const t = texts(handler);
+      return check("planted-long", entry, t, {
+        definitions: [planted(overrides)],
+        ...scan(t),
+      });
     };
-    const safe = [
-      "lockedPass(PLANT_QUEUE, () => WHOLE_PASS, async (jobs) => run(jobBudget(jobs)))",
-      "[PLANT_QUEUE, CRON, { expireInSeconds: 3600 }]",
-    ] as const;
-    expect(findings(...safe)).toEqual([]);
-    expect(findings(safe[0], "[PLANT_QUEUE, CRON]")).toEqual([
-      `planted-long: ${registrar} sends or schedules it without an expiry`,
+    const budgeted = "return run(jobBudget(jobs));";
+    expect(findings(budgeted)).toEqual([]);
+    expect(findings(budgeted, { scheduleOptions: { retryLimit: 0 } })).toEqual([
+      "planted-long: its schedule carries no expiry",
     ]);
-    expect(
-      findings("lockedPass(PLANT_QUEUE, () => WHOLE_PASS, run)", safe[1]),
-    ).toEqual(["planted-long: does not stop on the job's budget"]);
-    expect(findings("async (jobs) => run(jobBudget(jobs))", safe[1])).toEqual([
-      "planted-long: binding holds no lockedPass",
+    expect(findings("return run(jobs);")).toEqual([
+      "planted-long: does not stop on the job's budget",
+    ]);
+    expect(findings(budgeted, { lock: undefined })).toEqual([
+      "planted-long: definition holds no lock",
     ]);
     expect(
       check(
         "planted-long",
         { ...entry, expireInSeconds: 900 },
-        ...((): [ReadonlyMap<string, string>, ReturnType<typeof scan>] => {
-          const texts = planted(...safe);
-          return [texts, scan(texts)];
-        })(),
+        texts(budgeted),
+        { definitions: [planted({})], ...scan(texts(budgeted)) },
       ),
     ).toEqual(["planted-long: expiry 900s out of range"]);
   });
@@ -374,12 +342,13 @@ describe("every queue declares its runtime", () => {
 
 /**
  * Queues a file sends to through a variable (`boss.send(queueName, …)`): every
- * known queue name the file spells out, as a constant or a map value, counts
- * as sent, because the matcher above cannot tell which one the variable holds.
+ * known queue the file names, as a literal, a map value or an imported
+ * `*_QUEUE` constant, counts as sent, because the matcher above cannot tell which one the variable holds.
  */
 function dynamicallySent(texts: ReadonlyMap<string, string>): Set<string> {
+  const definitions = definitionsOf(texts);
   const out = new Set<string>();
-  for (const [, raw] of texts) {
+  for (const [file, raw] of texts) {
     const text = code(raw);
     if (
       !/\b(?:boss|getGlobalBoss\(\)\??)\s*\.\s*send\s*(?:<[^(]*?>)?\(\s*[a-z]/.test(
@@ -391,13 +360,20 @@ function dynamicallySent(texts: ReadonlyMap<string, string>): Set<string> {
     for (const m of text.matchAll(/"([a-z0-9-]+)"/g)) {
       if (m[1] in QUEUE_RUNTIME) out.add(m[1]);
     }
+    // A queue named through an imported constant counts the same.
+    for (const m of text.matchAll(/\b([A-Z][A-Z0-9_]*_QUEUE)\b/g)) {
+      const queue = resolve(definitions, file, m[1]);
+      if (queue && queue in QUEUE_RUNTIME) out.add(queue);
+    }
   }
   return out;
 }
 
 describe("a cron-fed queue polls slowly, a sent one does not", () => {
   const all = scan(source);
-  const scheduled = new Set(all.schedules.map((s) => s.queue));
+  const scheduled = new Set(
+    DEFINITIONS.filter((d) => d.cron).map((d) => d.queue),
+  );
   const sent = new Set([
     ...all.sends.map((s) => s.queue),
     ...dynamicallySent(source),
@@ -418,24 +394,12 @@ describe("a cron-fed queue polls slowly, a sent one does not", () => {
 });
 
 describe("heavy jobs share the lane", () => {
-  const all = scan(source);
-  const laned = all.bindings.filter((b) => /\bheavyLane\s*\(/.test(b.text));
+  const laned = DEFINITIONS.filter((d) => d.lane);
 
-  it("binds every heavy queue in the lane, and nothing else", () => {
-    expect(laned.map((b) => b.queue).sort()).toEqual(
+  it("puts every heavy queue in the lane, and nothing else", () => {
+    expect(laned.map((d) => d.queue).sort()).toEqual(
       Object.keys(HEAVY_QUEUES).sort(),
     );
-  });
-
-  it("holds a lockedPass outside the lane, so an expiry retry finds the run going", () => {
-    // Outside, a retry pg-boss starts while the expired run still holds the
-    // lane finds the lock and settles; inside, the lane would defer it and
-    // run the job a second time once the first is done.
-    const inverted = laned
-      .filter((b) => /\blockedPass\s*\(/.test(b.text))
-      .filter((b) => b.text.indexOf("lockedPass") > b.text.indexOf("heavyLane"))
-      .map((b) => b.queue);
-    expect(inverted).toEqual([]);
   });
 
   it("declares every heavy queue long, so its expiry, stop and exclusivity are proven", () => {
@@ -464,41 +428,28 @@ describe("heavy jobs share the lane", () => {
     // A deferred job returns from active to created. Under `short` (one
     // queued job per key) and `stately` (one per state) a twin already
     // queued would refuse it, and the job would fail instead of waiting.
-    const policies = policiesOf(source);
-    expect(policies.size).toBeGreaterThanOrEqual(40);
-    const refused = Object.keys(HEAVY_QUEUES)
-      .filter((queue) => /^(?:short|stately)$/.test(policies.get(queue) ?? ""))
-      .sort();
-    expect(refused).toEqual([]);
-    // The planted case: the same check over a table that declares one.
-    const planted = new Map(source);
-    const file = REGISTRARS[2];
-    planted.set(
-      file,
-      `const DATA_BACKUP_QUEUE = "data-backup";\nconst queuePolicies: QueuePolicyTable = {\n  [DATA_BACKUP_QUEUE]: { policy: "short", reason: "x" },\n};\n`,
+    const refusing = (definitions: readonly JobDefinition[]) =>
+      definitions
+        .filter(
+          (d) => d.lane && /^(?:short|stately)$/.test(d.policy?.policy ?? ""),
+        )
+        .map((d) => d.queue)
+        .sort();
+    expect(DEFINITIONS.filter((d) => d.policy).length).toBeGreaterThanOrEqual(
+      40,
     );
-    expect(policiesOf(planted).get("data-backup")).toBe("short");
+    expect(refusing(DEFINITIONS)).toEqual([]);
+    // The planted case: the same check over a heavy queue declared `short`.
+    expect(
+      refusing([
+        {
+          queue: "data-backup",
+          policy: { policy: "short", reason: "x" },
+          work: { localConcurrency: 1 },
+          lane: true,
+          load: async () => async () => ({ ok: true, did: {} }),
+        },
+      ]),
+    ).toEqual(["data-backup"]);
   });
 });
-
-/** Every `[QUEUE]: { policy: "…" }` in a registrar's `queuePolicies`. */
-function policiesOf(texts: ReadonlyMap<string, string>): Map<string, string> {
-  const definitions = definitionsOf(texts);
-  const out = new Map<string, string>();
-  for (const file of REGISTRARS) {
-    const text = code(texts.get(file) ?? "");
-    const m = /const\s+queuePolicies\s*:\s*QueuePolicyTable\s*=\s*\{/.exec(
-      text,
-    );
-    if (!m) continue;
-    const open = m.index + m[0].length - 1;
-    const body = text.slice(open, closeOf(text, open));
-    for (const entry of body.matchAll(
-      /\[\s*([A-Z][A-Z0-9_]*)\s*\]\s*:\s*\{\s*policy\s*:\s*"([a-z]+)"/g,
-    )) {
-      const queue = resolve(definitions, file, entry[1]);
-      if (queue) out.set(queue, entry[2]);
-    }
-  }
-  return out;
-}

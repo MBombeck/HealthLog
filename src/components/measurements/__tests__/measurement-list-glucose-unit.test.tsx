@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -63,11 +61,33 @@ vi.mock("@/hooks/use-auth", () => ({
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { MeasurementList } from "../measurement-list";
+import type { UnitDisplay } from "@/hooks/use-unit-display";
+import { convertGlucose, toCanonicalMgdl } from "@/lib/glucose";
+import { getUnitForType } from "@/lib/measurements/unit-map";
+import { editSeedValue, storedValueFor } from "../list/use-measurement-edit";
+import { rowDisplayFor } from "../list/use-measurement-row-display";
 
-const listSource = readFileSync(
-  join(process.cwd(), "src/components/measurements/measurement-list.tsx"),
-  "utf8",
-);
+/** A metric reader on the given glucose unit, as the list's row display. */
+function displayOn(glucoseUnit: "mg/dL" | "mmol/L") {
+  const unitDisplay = {
+    preference: "metric",
+    isTransformed: () => false,
+    toDisplay: (_type: string, v: number) => v,
+    fromDisplay: (_type: string, v: number) => v,
+    unitFor: (type: string) => getUnitForType(type),
+  } as unknown as UnitDisplay;
+  return rowDisplayFor(glucoseUnit, unitDisplay);
+}
+
+const glucose = (value: number) => ({
+  id: "g1",
+  type: "BLOOD_GLUCOSE",
+  value,
+  unit: "mg/dL",
+  source: "MANUAL",
+  measuredAt: "2026-10-01T08:00:00.000Z",
+  notes: null,
+});
 
 function render() {
   return renderToStaticMarkup(
@@ -96,22 +116,27 @@ describe("MeasurementList — blood-glucose display unit", () => {
   });
 
   it("inverts an edited glucose value back to mg/dL before the save", () => {
-    expect(listSource).toMatch(
-      /editsConvertedGlucose\(editing\)[\s\S]{0,400}?canonicalValue = toCanonicalMgdl\(parsedValue, "mmol\/L"\)/,
-    );
+    // The label above the input says mmol/L, so the number in it is mmol/L;
+    // sent on unconverted it would rewrite a 95 mg/dL reading as 5.3.
+    const stored = storedValueFor(displayOn("mmol/L"), glucose(95), 5.3);
+    expect(stored).toBe(toCanonicalMgdl(5.3, "mmol/L"));
+    expect(stored).toBeGreaterThan(90);
   });
 
   it("seeds the edit input in the unit its own label names", () => {
-    expect(listSource).toMatch(
-      /const seedValue = editsConvertedGlucose\(measurement\)\s*\?\s*rd\.value/,
+    const display = displayOn("mmol/L");
+    expect(editSeedValue(display, glucose(95))).toBe(
+      convertGlucose(95, "mmol/L"),
     );
+    expect(display.rowDisplay(glucose(95)).unit).toBe("mmol/L");
   });
 
   it("leaves an mg/dL edit on the identity path so a note fix cannot round the value", () => {
     // `toCanonicalMgdl(v, "mg/dL")` rounds, so routing the mg/dL branch
     // through it would quantise a stored 95.48 on an unrelated edit.
-    expect(listSource).toMatch(
-      /editsConvertedGlucose[\s\S]{0,300}?glucoseUnit === "mmol\/L"/,
-    );
+    const display = displayOn("mg/dL");
+    expect(display.editsConvertedGlucose(glucose(95.48))).toBe(false);
+    expect(editSeedValue(display, glucose(95.48))).toBe(95.48);
+    expect(storedValueFor(display, glucose(95.48), 95.48)).toBe(95.48);
   });
 });

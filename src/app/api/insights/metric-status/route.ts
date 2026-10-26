@@ -33,10 +33,8 @@ import { requireModuleEnabled, type ModuleKey } from "@/lib/modules/gate";
 import { aiCapabilityToServe } from "@/lib/ai/capabilities/gate";
 import { unavailableStatusBody } from "@/lib/insights/status-unavailable";
 import { prisma } from "@/lib/db";
-import {
-  generateMetricStatus,
-  resolveMetricStatusLocale,
-} from "@/lib/insights/metric-status";
+import { generateMetricStatus } from "@/lib/insights/metric-status";
+import { normalizeLocale } from "@/lib/insights/status-shared";
 import {
   METRIC_STATUS_IDS,
   getMetricStatusMeta,
@@ -134,7 +132,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
     userLocale: user.locale ?? null,
     override: localeParam,
   });
-  const locale = resolveMetricStatusLocale(resolved);
+  const locale = normalizeLocale(resolved);
 
   const result = await generateMetricStatus({
     metric,

@@ -18,7 +18,11 @@
  *   5. what was deleted is back under its ORIGINAL id, and what arrived after
  *      the snapshot is gone — which is what "the restore replaces the
  *      account's data tables" in `docs/ops/backup-restore.md` means when it is
- *      spelled out.
+ *      spelled out;
+ *   6. a second person downloads their own full backup, their account is
+ *      recreated empty under the same id (the runbook's new host), the admin
+ *      uploads the file and restores it, and the person signs in to the same
+ *      rows under the same ids.
  *
  * Refusing controls, because a restore path that cannot say no is worse than
  * none: a stored copy with one flipped ciphertext byte is refused and changes
@@ -36,19 +40,20 @@
  *
  * Everything the journey does, it does through the app: the readings and the
  * document ride the page's own `fetch`, the archive and the snapshot ride the
- * real buttons, the restore rides the typed-confirmation dialog. The only two
+ * real buttons, the restore rides the typed-confirmation dialog. The only
  * things reaching Postgres directly are the ones a browser cannot express —
- * resetting the account between repetitions, and corrupting one stored copy so
- * the authenticated envelope has something to refuse. Both live in
- * `setup/backup-journey-fixture.ts`.
+ * resetting the accounts between repetitions, corrupting one stored copy so
+ * the authenticated envelope has something to refuse (both in
+ * `setup/backup-journey-fixture.ts`), and recreating the second account under
+ * its own id (`setup/critical-fixture.ts`).
  *
- * Serial and single-project: the four tests are four acts of one journey, they
- * mutate the account destructively, and the last one moves a session's record
+ * Serial and single-project: the five tests are five acts of one journey, they
+ * mutate the accounts destructively, and the last one moves a session's record
  * selector. Its jar is its own for the reason `global-setup.ts` spells out.
  */
 import { readFile } from "node:fs/promises";
 
-import type { Page } from "@playwright/test";
+import type { Page, Response } from "@playwright/test";
 
 import { EXPORT_ARGON2_PARAMS } from "@/lib/export/passphrase-archive";
 
@@ -66,6 +71,13 @@ import {
   storeTamperedCopy,
 } from "./setup/backup-journey-fixture";
 import {
+  accountRowCounts,
+  clearLoginBuckets,
+  criticalAccount,
+  recreateCriticalAccount,
+  resetCriticalAccount,
+} from "./setup/critical-fixture";
+import {
   actWithReproof,
   completeReproofWithPassword,
   expireRecentProof,
@@ -79,8 +91,20 @@ test.describe.configure({ mode: "serial" });
  * The pass backs up every account in the database, the restore rewrites a
  * dozen tables in one transaction, and the archive runs Argon2id at the OWASP
  * cost. None of that fits the suite's 30-second default on a loaded runner.
+ * On top of that, a test must hold the restore wait below in full.
  */
-test.setTimeout(180_000);
+test.setTimeout(240_000);
+
+/**
+ * How long a queued restore may take to finish. The restore shares the heavy
+ * lane with the backup pass, and a restore that finds the lane taken goes
+ * back to the queue for `LANE_DEFER_SECONDS` (60 s, `src/lib/jobs/heavy-lane.ts`).
+ * The pass this journey starts can still be finishing when the restore is
+ * asked for: on a loaded machine its tail ran 15 s, the restore was put back
+ * by 60, and a 60-second wait ran out one second before it started. The
+ * budget holds one deferral and a second yield with room to run.
+ */
+const RESTORE_BUDGET_MS = 135_000;
 
 /** Long enough to clear the export card's own 12-character minimum. */
 const ARCHIVE_PASSPHRASE = "e2e-backup-journey-passphrase";
@@ -91,6 +115,8 @@ const RESTORED_WEIGHT_KG = 81.4;
 const UNTOUCHED_PULSE_BPM = 58;
 /** The reading that arrives AFTER the snapshot and must not survive it. */
 const POST_SNAPSHOT_PULSE_BPM = 66;
+/** The second account's reading, carried through its own backup. */
+const FRESH_ACCOUNT_WEIGHT_KG = 67.3;
 
 const MEDICATION_NAME = "E2E Backup Tablet";
 
@@ -291,6 +317,45 @@ async function restoreThroughDialog(page: Page, id: string) {
   return answered;
 }
 
+/**
+ * Wait for a queued restore to finish, and fail with its code if it failed.
+ *
+ * The restore runs on the `backup-restore` queue: the request answers 202
+ * with the job and its status route, and the worker inside the server under
+ * test does the work. Nothing after this is read until the job says it is
+ * done, so every assertion is about the finished restore rather than a moment
+ * in the middle of it.
+ */
+async function awaitRestore(page: Page, response: Response): Promise<void> {
+  expect(response.status()).toBe(202);
+  const queued = (await response.json()) as {
+    data: { jobId: string; status: string; statusUrl: string };
+  };
+  expect(queued.data.status).toBe("queued");
+  expect(queued.data.statusUrl).toBe(
+    `/api/admin/backups/restores/${queued.data.jobId}`,
+  );
+  await expect
+    .poll(
+      async () => {
+        const res = await page.request.get(queued.data.statusUrl);
+        const body = (await res.json()) as {
+          data: {
+            status: string;
+            failure: { code: string } | null;
+          } | null;
+        };
+        // A failed job ends the wait with its code in the message instead of
+        // running the clock out on a state that will never change.
+        return body.data?.status === "failed"
+          ? `failed: ${body.data.failure?.code ?? "unknown"}`
+          : body.data?.status;
+      },
+      { timeout: RESTORE_BUDGET_MS, intervals: [250, 500, 1_000] },
+    )
+    .toBe("succeeded");
+}
+
 test.describe("Backup and restore, through the settings surfaces", () => {
   test.use({ storageState: BACKUP_STORAGE_STATE_PATH });
 
@@ -319,7 +384,7 @@ test.describe("Backup and restore, through the settings surfaces", () => {
     tamperedCopyId = null;
   });
 
-  test("a record is written, sealed into an HLX1 archive, and snapshotted", async ({
+  test("a record is written, sealed into an HLX1 archive, and snapshotted @critical", async ({
     page,
   }) => {
     await page.goto("/measurements", { waitUntil: "domcontentloaded" });
@@ -505,7 +570,7 @@ test.describe("Backup and restore, through the settings surfaces", () => {
     expect(await storedMeasurements()).toEqual(before);
   });
 
-  test("the snapshot puts back what was deleted and drops what came after", async ({
+  test("the snapshot puts back what was deleted and drops what came after @critical", async ({
     page,
   }) => {
     const record = requireSeeded();
@@ -563,39 +628,10 @@ test.describe("Backup and restore, through the settings surfaces", () => {
     expect(beforeRestore.map((m) => m.id)).toContain(laterId);
 
     await openBackupsConsole(page);
-    const response = await restoreThroughDialog(page, requireSnapshot());
-    // The restore runs on the `backup-restore` queue: the request answers 202
-    // with the job and its status route, and the worker inside the server
-    // under test does the work. Nothing below is read until the job says it
-    // is done, so every assertion is about the finished restore rather than
-    // a moment in the middle of it.
-    expect(response.status()).toBe(202);
-    const queued = (await response.json()) as {
-      data: { jobId: string; status: string; statusUrl: string };
-    };
-    expect(queued.data.status).toBe("queued");
-    expect(queued.data.statusUrl).toBe(
-      `/api/admin/backups/restores/${queued.data.jobId}`,
+    await awaitRestore(
+      page,
+      await restoreThroughDialog(page, requireSnapshot()),
     );
-    await expect
-      .poll(
-        async () => {
-          const res = await page.request.get(queued.data.statusUrl);
-          const body = (await res.json()) as {
-            data: {
-              status: string;
-              failure: { code: string } | null;
-            } | null;
-          };
-          // A failed job ends the wait with its code in the message instead
-          // of running the clock out on a state that will never change.
-          return body.data?.status === "failed"
-            ? `failed: ${body.data.failure?.code ?? "unknown"}`
-            : body.data?.status;
-        },
-        { timeout: 60_000, intervals: [250, 500, 1_000] },
-      )
-      .toBe("succeeded");
 
     const afterRestore = await storedMeasurements();
 
@@ -649,6 +685,166 @@ test.describe("Backup and restore, through the settings surfaces", () => {
           `[data-measurement-value="${POST_SNAPSHOT_PULSE_BPM}"]`,
       ),
     ).toHaveCount(0);
+  });
+
+  test("a full backup the operator restores brings the record back into a fresh account @critical", async ({
+    page,
+    browser,
+  }, testInfo) => {
+    // The second account: a person with a record of their own, who downloads
+    // the file the export card offers. Its jar is its own; the act below
+    // gives it a session that needs a re-proof, like the admin's.
+    const person = criticalAccount("restore", testInfo);
+    await resetCriticalAccount(person, [
+      "DELETE FROM measurement_rollups WHERE user_id = $1",
+      "DELETE FROM measurements WHERE user_id = $1",
+      "DELETE FROM mood_entry_rollups WHERE user_id = $1",
+      "DELETE FROM mood_entries WHERE user_id = $1",
+      "DELETE FROM rate_limits WHERE key = 'export:' || $1",
+    ]);
+
+    const context = await browser.newContext({
+      storageState: person.storageStatePath,
+      baseURL: testInfo.project.use.baseURL,
+    });
+    let backupPath = "";
+    let written: { weightId: string; moodId: string };
+    try {
+      const own = await context.newPage();
+      const endOwnSession = await useStaleSession(own, person.username);
+      try {
+        await own.goto("/measurements", { waitUntil: "domcontentloaded" });
+        await expect(own.locator(MEASUREMENTS_SETTLED).first()).toBeVisible({
+          timeout: 30_000,
+        });
+        written = await own.evaluate(async (weightKg: number) => {
+          const post = async (path: string, body: unknown) => {
+            const res = await fetch(path, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            });
+            const json = (await res.json()) as { data: { id: string } | null };
+            if (!res.ok || !json.data) {
+              throw new Error(`${path} answered ${res.status}`);
+            }
+            return json.data.id;
+          };
+          const at = new Date(Date.now() - 90 * 60_000).toISOString();
+          return {
+            weightId: await post("/api/measurements", {
+              type: "WEIGHT",
+              value: weightKg,
+              measuredAt: at,
+            }),
+            moodId: await post("/api/mood-entries", {
+              mood: "OKAY",
+              moodLoggedAt: at,
+            }),
+          };
+        }, FRESH_ACCOUNT_WEIGHT_KG);
+
+        await own.goto("/settings/export", { waitUntil: "domcontentloaded" });
+        await expect(own.getByTestId("export-card-full-backup")).toBeVisible({
+          timeout: 30_000,
+        });
+        const download = own.waitForEvent("download");
+        await actWithReproof(own, person.password, () =>
+          own.getByTestId("export-action-full-backup").click(),
+        );
+        // Kept past the context: a download's own file goes with it.
+        backupPath = testInfo.outputPath("full-backup.json");
+        await (await download).saveAs(backupPath);
+      } finally {
+        await endOwnSession();
+      }
+    } finally {
+      await context.close();
+    }
+
+    // ── the account is gone, and comes back empty under the same id ──────
+    // What a new host is to the runbook (`docs/ops/backup-restore.md`): the
+    // backup names its owner by id, so the account is recreated under it
+    // before the upload. A browser cannot express this; it is the one act
+    // here that goes to Postgres.
+    await recreateCriticalAccount(person);
+    expect(await accountRowCounts(person)).toEqual({
+      measurements: 0,
+      moodEntries: 0,
+    });
+
+    // ── the operator uploads the file and restores it ───────────────────
+    await openBackupsConsole(page);
+    const uploaded = page.waitForResponse(
+      (res) =>
+        new URL(res.url()).pathname === "/api/admin/backups/upload" &&
+        res.request().method() === "POST" &&
+        res.status() !== 401,
+    );
+    await actWithReproof(page, E2E_BACKUP_ADMIN.password, () =>
+      page
+        .locator('input[type="file"][accept*="application/gzip"]')
+        .setInputFiles(backupPath),
+    );
+    const upload = await uploaded;
+    expect(upload.status(), (await upload.text()).slice(0, 400)).toBe(201);
+    const uploadId = ((await upload.json()) as { data: { id: string } }).data
+      .id;
+    await expect(snapshotRow(page, uploadId)).toHaveCount(1, {
+      timeout: 30_000,
+    });
+    await awaitRestore(page, await restoreThroughDialog(page, uploadId));
+
+    // ── and the person signs in to their record ──────────────────────────
+    const back = await browser.newContext({
+      baseURL: testInfo.project.use.baseURL,
+    });
+    try {
+      await clearLoginBuckets();
+      const login = await back.request.post("/api/auth/login", {
+        data: { email: person.username, password: person.password },
+      });
+      expect(login.status()).toBe(200);
+      const signedIn = await back.newPage();
+
+      // The same rows, under their own ids: a restore, not a re-entry.
+      const measurements = (
+        (await (await signedIn.request.get("/api/measurements")).json()) as {
+          data: { measurements: Array<{ id: string; value: number }> };
+        }
+      ).data.measurements;
+      expect(measurements).toEqual([
+        expect.objectContaining({
+          id: written.weightId,
+          value: FRESH_ACCOUNT_WEIGHT_KG,
+        }),
+      ]);
+      const moods = (
+        (await (await signedIn.request.get("/api/mood-entries")).json()) as {
+          data: { entries: Array<{ id: string; mood: string }> };
+        }
+      ).data.entries;
+      expect(moods).toEqual([
+        expect.objectContaining({ id: written.moodId, mood: "OKAY" }),
+      ]);
+
+      await signedIn.goto("/measurements", { waitUntil: "domcontentloaded" });
+      await expect(
+        signedIn
+          .locator(
+            '[data-testid="measurement-row"][data-measurement-type="WEIGHT"]' +
+              `[data-measurement-value="${FRESH_ACCOUNT_WEIGHT_KG}"]`,
+          )
+          .first(),
+      ).toBeVisible({ timeout: 30_000 });
+    } finally {
+      await back.close();
+    }
+
+    // The admin's own record is untouched by a restore aimed at somebody else.
+    expect(
+      (await storedMeasurements()).filter((m) => m.deletedAt === null),
+    ).toHaveLength(2);
   });
 });
 

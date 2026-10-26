@@ -19,7 +19,7 @@ vi.mock("@/lib/ai/coach/persistence", () => ({ appendMessage: vi.fn() }));
 vi.mock("@/lib/ai/coach/memory/contract", () => ({
   buildMemoryContextBlock: vi.fn(async () => null),
 }));
-vi.mock("@/lib/ai/coach/tools/executor", async (importOriginal) => ({
+vi.mock("@/lib/ai/coach/tools/run/prior-results", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   admittedPriorResults: vi.fn(async () => []),
 }));

@@ -31,6 +31,7 @@ import {
   accountLabel,
   type AccountAccessEntry,
 } from "@/lib/sharing/account-access-view";
+import { useAccountDeletionGrace } from "@/lib/queries/use-privacy-summary";
 
 /**
  * v1.37.0 — the records this account looks after.
@@ -140,6 +141,7 @@ function ManagedProfileRow({
 }) {
   const { t, tCount } = useTranslations();
   const guardians = useManagedProfileGuardians(profile.accountId);
+  const grace = useAccountDeletionGrace();
   const name = accountLabel(profile);
   const failed =
     remove.isError &&
@@ -185,7 +187,7 @@ function ManagedProfileRow({
           >
             {t("recordSharing.managed.edit")}
           </Button>
-          {guardians.data && (
+          {guardians.data && !grace.pending && (
             <ConfirmButton
               slot="managed-profile-delete"
               destructive
@@ -198,6 +200,7 @@ function ManagedProfileRow({
                 tCount,
                 name,
                 activeGuardians: activeGuardianCount(guardians.data),
+                graceDays: grace.days ?? 0,
               })}
               confirmLabel={t("recordSharing.managed.deleteConfirm")}
               pending={remove.isPending}
@@ -335,6 +338,7 @@ export function deleteProfileBody({
   tCount,
   name,
   activeGuardians,
+  graceDays = 0,
 }: {
   t: (key: string, params?: Record<string, string | number>) => string;
   tCount: (
@@ -345,9 +349,17 @@ export function deleteProfileBody({
   name: string;
   /** Taken from the roster read, never from a local counter. */
   activeGuardians: number;
+  /**
+   * The deletion grace window (`GET /api/settings/privacy-summary`). Above 0
+   * the profile is locked and erased when it ends, and an admin can undo it
+   * until then; 0 erases it at once.
+   */
+  graceDays?: number;
 }): string {
   return [
-    t("recordSharing.managed.deleteBody", { name }),
+    graceDays > 0
+      ? t("recordSharing.managed.deleteBodyGrace", { name, days: graceDays })
+      : t("recordSharing.managed.deleteBody", { name }),
     tCount("recordSharing.managed.deleteGuardians", activeGuardians, {
       count: activeGuardians,
     }),

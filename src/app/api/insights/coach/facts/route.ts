@@ -31,12 +31,8 @@
  * Erasure that depends on the feature being on is no erasure.
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
@@ -142,12 +138,10 @@ export const POST = apiHandler(async (req: Request) => {
     return response;
   }
 
-  const { data: body, error: jsonError } = await safeJson(req, {
+  const parsed = await parseJsonBody(req, coachFactCreateSchema, {
     maxBytes: 1024,
   });
-  if (jsonError) return jsonError;
-  const parsed = coachFactCreateSchema.safeParse(body);
-  if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+  if (!parsed.ok) return parsed.error;
 
   const remembered = await rememberMessageAsFact({
     userId: user.id,

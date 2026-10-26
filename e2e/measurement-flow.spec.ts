@@ -1,140 +1,92 @@
+import type { Page } from "@playwright/test";
+
 import { expect, test } from "./setup/test";
 
-import { STORAGE_STATE_PATH } from "./setup/global-setup";
+import {
+  criticalAccount,
+  criticalStorageState,
+  resetCriticalAccount,
+} from "./setup/critical-fixture";
 import { openMenu } from "./open-menu";
 
 /**
- * Add-measurement flow — exercises the dashboard's quick-entry dropdown,
- * the dialog-mounted MeasurementForm, the POST to /api/measurements, and
- * the resulting query invalidation that surfaces the row on
- * `/measurements`.
+ * Add-measurement flow, against the real server: the dashboard's quick-entry
+ * menu, the dialog-mounted MeasurementForm, the real POST to
+ * `/api/measurements`, and then every surface that has to agree about the
+ * reading afterwards: the dashboard tile, the weight chart (through the data
+ * table that lists exactly the points it drew) and the day view.
  *
- * Weight is the simplest type (single numeric input + datetime), so it
- * keeps the spec focused on the round-trip rather than the BP three-field
- * batched submit.
+ * Until v1.46 this spec answered its own POST and its own list read with a
+ * route stub, so it proved that the list renders a row the test typed in.
+ * Nothing here is stubbed now. The account is the measurement journey's own,
+ * one per project (`critical-fixture.ts`), and is emptied of readings before
+ * the test, so "the tile shows the weight" can only mean the weight this test
+ * entered.
+ *
+ * Weight is the simplest type (single numeric input + datetime), so it keeps
+ * the spec on the round trip rather than on the blood-pressure batch.
  */
+
+/** Distinct from anything a fixture seeds, so a match is this reading. */
+const WEIGHT_KG = "81.7";
+
+/** Today in the browser's zone (`timezoneId` in `playwright.config.ts`). */
+function todayInBerlin(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+/** The account's weight readings, as the list route answers them. */
+async function storedWeights(
+  page: Page,
+): Promise<Array<{ value: number; unit: string }>> {
+  const res = await page.request.get("/api/measurements?type=WEIGHT");
+  expect(res.status()).toBe(200);
+  const { data } = (await res.json()) as {
+    data: { measurements: Array<{ value: number; unit: string }> };
+  };
+  return data.measurements.map(({ value, unit }) => ({ value, unit }));
+}
+
 test.describe("add measurement flow", () => {
-  test.use({ storageState: STORAGE_STATE_PATH });
+  test.use({ storageState: criticalStorageState("measurement") });
 
   // This journey lands on the dashboard, which is the most expensive page in
-  // the product to render cold: the route segment suspends behind the server
-  // render and shows `loading.tsx` until it resolves. On a shared runner with
-  // the whole suite in flight that has overrun the 30 s default, and the test
-  // then died on the quick-add trigger rather than on anything it is about.
-  // The subject here is the add-then-appears round trip, not the dashboard's
-  // cold-start latency, so the budget is the page's and the assertions stay
-  // exactly as tight as they were.
+  // the product to render cold, and then reads three more surfaces. The
+  // assertions stay as tight as they are; the budget is the pages'.
   test.setTimeout(90_000);
 
-  test("creating a weight reading surfaces it in the list", async ({
+  test.beforeEach(async ({}, testInfo) => {
+    // Fixture hygiene: what a previous run or a retry left on the account.
+    await resetCriticalAccount(criticalAccount("measurement", testInfo), [
+      "DELETE FROM measurement_rollups WHERE user_id = $1",
+      "DELETE FROM measurements WHERE user_id = $1",
+    ]);
+  });
+
+  test("a weight entered on the dashboard reaches the tile, the chart and the day view @critical", async ({
     page,
   }) => {
-    // Capture the POST payload so we can assert against it independently
-    // of any list-fetch response Playwright might cache. Match both
-    // `/api/measurements` (POST creates a reading) and the list query
-    // `/api/measurements?type=...&limit=...&offset=...` (GET).
-    let postedBody: unknown = null;
-    await page.route("**/api/measurements*", async (route) => {
-      const req = route.request();
-      if (req.method() === "POST") {
-        postedBody = JSON.parse(req.postData() ?? "null");
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            data: { id: "m_e2e_1", success: true },
-            error: null,
-          }),
-        });
-        return;
-      }
-      // GET — return the just-posted reading so the list view shows it.
-      // The list expects `data.measurements: Measurement[]` plus
-      // `data.meta.total`; chart fetches use the same envelope.
-      const body = postedBody as {
-        type?: string;
-        value?: number;
-        measuredAt?: string;
-      } | null;
-      // The list-page `Measurement` shape requires `unit` and `source`
-      // — without them the row crashes the render and the e2e poll
-      // never sees "78.4". Mock with the same fields a real reading
-      // carries.
-      const measurements = body
-        ? [
-            {
-              id: "m_e2e_1",
-              type: body.type,
-              value: body.value,
-              unit: body.type === "WEIGHT" ? "kg" : "",
-              source: "MANUAL",
-              measuredAt: body.measuredAt,
-              notes: null,
-            },
-          ]
-        : [];
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          data: { measurements, meta: { total: measurements.length } },
-          error: null,
-        }),
-      });
-    });
-
-    // Dashboard's analytics fetch — empty summaries are fine; we only
-    // need the page to render so we can click "Add".
-    //
-    // v1.4.39.3 — match `/api/analytics` AND any sliced variant
-    // (`?slice=summaries`). The v1.4.39.2 dashboard split fires both
-    // requests in parallel; the previous string glob missed the slim
-    // variant which then fell through to the real route and slowed
-    // the page paint enough that the post-mutation list query never
-    // surfaced inside the 10 s window.
-    await page.route(/\/api\/analytics(\?|$)/, (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          data: { summaries: {}, bpInTargetPct: null, glucoseByContext: {} },
-          error: null,
-        }),
-      }),
-    );
-    await page.route("**/api/mood/analytics", (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          data: { entries: [], summary: { count: 0 } },
-          error: null,
-        }),
-      }),
-    );
-
     await page.goto("/", { waitUntil: "domcontentloaded" });
 
-    // Open the "Add" dropdown — the dashboard's quick-entry trigger sits
-    // at the top-right of `<main>`. Scope the locator there so we don't
-    // accidentally match an "Add" button on the sidebar.
-    const main = page.locator("main");
-    const addTrigger = main
+    // The quick-entry trigger sits at the top of `<main>`. Waiting for it,
+    // rather than for the route skeleton to go, is waiting for the thing the
+    // next line clicks.
+    const addTrigger = page
+      .locator("main")
       .getByRole("button", { name: /^add$|hinzufügen|hinzufuegen/i })
       .first();
-    // Wait for the trigger itself rather than for the route-level skeleton to
-    // go. The skeleton is also absent while the protected shell holds the
-    // whole page behind its hydration gate, so its disappearance is not a
-    // statement about the suspended segment having resolved; the control the
-    // next line clicks is. `networkidle` says nothing about either.
     await expect(addTrigger).toBeVisible({ timeout: 60_000 });
-    await page.waitForLoadState("networkidle");
+    // The account holds no weight yet, so whatever the surfaces below show
+    // can only come from this reading.
+    expect(await storedWeights(page)).toEqual([]);
 
     await openMenu(page, addTrigger);
 
-    // v1.5: the menu items now have distinct labels — the
-    // measurement entry says "Measurement" / "Messung" instead of "Add",
-    // so we can target it directly.
     // The desktop rail opens a dropdown, the phone shell the capture sheet
     // the bottom nav's plus opens; the measurement entry is in either.
     await page
@@ -143,52 +95,63 @@ test.describe("add measurement flow", () => {
       .first()
       .click();
 
-    // Form should be visible inside the dialog. Switch type to WEIGHT
-    // (combo-box defaults to BLOOD_PRESSURE).
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
 
-    // The Select trigger renders the current label — click to open and
-    // pick the weight option.
+    // The type select defaults to blood pressure.
     await dialog.getByRole("combobox").first().click();
     await page
       .getByRole("option", { name: /weight|gewicht/i })
       .first()
       .click();
+    await dialog.locator("#value").fill(WEIGHT_KG);
 
-    // Weight is single-value mode — fill the value field with 78.4 kg.
-    const valueInput = dialog.locator("#value");
-    await valueInput.fill("78.4");
-
-    // Save
+    const created = page.waitForResponse(
+      (res) =>
+        new URL(res.url()).pathname === "/api/measurements" &&
+        res.request().method() === "POST",
+    );
     await dialog.getByRole("button", { name: /save|speichern/i }).click();
+    const response = await created;
+    expect(response.status()).toBe(201);
+    await expect(dialog).toBeHidden();
 
-    // Dialog closes when the mutation succeeds
-    await expect(dialog).toBeHidden({ timeout: 5_000 });
-
-    // Assert the POST went through with the expected shape
-    expect(postedBody).toMatchObject({
-      type: "WEIGHT",
-      value: 78.4,
+    await test.step("the server stored exactly that reading", async () => {
+      expect(await storedWeights(page)).toEqual([
+        { value: Number(WEIGHT_KG), unit: "kg" },
+      ]);
     });
 
-    // Navigate to the list and confirm the entry surfaces. The list
-    // page renders entries from /api/measurements which we've mocked
-    // to echo the just-posted row.
-    await page.goto("/measurements", { waitUntil: "domcontentloaded" });
+    await test.step("the dashboard tile", async () => {
+      await page.goto("/", { waitUntil: "domcontentloaded" });
+      const tile = page.locator(
+        '[data-slot="dashboard-tile-link"][data-tile-id="weight"]',
+      );
+      await expect(tile).toBeVisible({ timeout: 60_000 });
+      await expect(tile.locator('[data-slot="trend-card-value"]')).toHaveText(
+        WEIGHT_KG,
+      );
+    });
 
-    // The list renders a desktop table AND a mobile card grid (one is
-    // hidden via `md:hidden`/`hidden md:block`). At least one match
-    // means our row landed in the DOM regardless of viewport.
-    await expect
-      .poll(
-        async () =>
-          await page
-            .locator("main")
-            .getByText(/78[.,]4/)
-            .count(),
-        { timeout: 10_000 },
-      )
-      .toBeGreaterThanOrEqual(1);
+    await test.step("the weight chart", async () => {
+      await page.goto("/insights/weight", { waitUntil: "domcontentloaded" });
+      const table = page.locator('[data-slot="chart-data-table"]').first();
+      await expect(table).toBeVisible({ timeout: 30_000 });
+      await table.locator('[data-slot="chart-data-table-toggle"]').click();
+      const rows = table.locator('[data-slot="chart-data-table-row"]');
+      await expect(rows).toHaveCount(1);
+      await expect(rows.first()).toContainText(WEIGHT_KG);
+    });
+
+    await test.step("the day view", async () => {
+      await page.goto(`/measurements?day=${todayInBerlin()}`, {
+        waitUntil: "domcontentloaded",
+      });
+      const value = page.locator(
+        '[data-slot="day-view"] [data-slot="day-value"][data-type="WEIGHT"]',
+      );
+      await expect(value).toBeVisible({ timeout: 30_000 });
+      await expect(value).toContainText(WEIGHT_KG);
+    });
   });
 });

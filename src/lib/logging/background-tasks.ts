@@ -56,9 +56,14 @@ const inFlight = new Set<Promise<unknown>>();
 export function trackBackgroundTask(settled: Promise<unknown>): void {
   if (!TRACK_IN_FLIGHT) return;
 
-  inFlight.add(settled);
-  void settled.finally(() => {
-    inFlight.delete(settled);
+  // A test double that stands in for the background work often returns
+  // nothing at all. Filed as is, `undefined` would never leave the set and
+  // `settleBackgroundTasks` would spin on it forever at full CPU. A real
+  // promise passes through `Promise.resolve` as the same object.
+  const handle = Promise.resolve(settled);
+  inFlight.add(handle);
+  void handle.finally(() => {
+    inFlight.delete(handle);
   });
 }
 

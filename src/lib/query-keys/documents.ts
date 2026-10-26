@@ -86,6 +86,12 @@ export const documentKeys = {
    */
   inboundDocumentUsage: () => ["documents", "inbound", "usage"] as const,
   /**
+   * Recently deleted (`GET /api/documents/inbound/deleted`). Under the
+   * `["documents"]` prefix on purpose: a delete, a restore or a purge anywhere
+   * in the vault repaints it. The literal segment never collides with a cuid.
+   */
+  inboundDocumentsDeleted: () => ["documents", "inbound", "deleted"] as const,
+  /**
    * Document-scoped AI capability probe
    * (`GET /api/documents/inbound/capability`). Distinct from the labs
    * `ocrCapability` key because it resolves over the DOCUMENT provider order

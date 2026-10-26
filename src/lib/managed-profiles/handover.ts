@@ -41,7 +41,9 @@ import { withdrawConsentInTransaction } from "@/lib/consent/withdrawal";
 import { consentKindEnum } from "@/lib/validations/consent";
 import {
   activeGuardianWhere,
+  CLAIMABLE_PROFILE_SELECT,
   clearManagedProfileMarker,
+  isClaimableProfile,
   withManagedProfileLock,
 } from "@/lib/managed-profiles/lifecycle";
 import {
@@ -51,10 +53,10 @@ import {
   type HandoverAccess,
 } from "@/lib/managed-profiles/handover-access";
 import {
-  isGrantActive,
   settleHandoverGuardianGrant,
   withdrawPendingGrantsOfRecord,
 } from "@/lib/sharing/grants";
+import { isGrantActive } from "@/lib/sharing/grant-access";
 import { isP2002 } from "@/lib/prisma-errors";
 import type { Prisma } from "@/generated/prisma/client";
 
@@ -248,7 +250,7 @@ export async function createHandover(input: {
   const now = input.now ?? new Date();
   return prisma.$transaction((tx) =>
     withManagedProfileLock(tx, input.profileId, async (profile) => {
-      if (!profile?.managedProfileAt) throw new HandoverError("not_found");
+      if (!isClaimableProfile(profile)) throw new HandoverError("not_found");
 
       const guardians = await tx.accountGrant.findMany({
         where: { grantorId: profile.id, ...activeGuardianWhere(now) },
@@ -334,9 +336,9 @@ export async function readHandoverStatus(input: {
   const now = input.now ?? new Date();
   const profile = await prisma.user.findUnique({
     where: { id: input.profileId },
-    select: { managedProfileAt: true },
+    select: CLAIMABLE_PROFILE_SELECT,
   });
-  if (!profile?.managedProfileAt) return null;
+  if (!isClaimableProfile(profile)) return null;
   if (
     !(await isActiveGuardian(prisma, input.profileId, input.guardianId, now))
   ) {
@@ -446,8 +448,8 @@ export interface HandoverPreview {
 /**
  * The open link behind a stored row, or null when it can no longer be
  * claimed: used, withdrawn, expired, a state this code cannot read, a profile
- * no longer managed, or a creator who lost access. The one definition of
- * "usable" the preview, the single-sign-on start and the callback share.
+ * no longer managed or pending deletion, or a creator who lost access. The
+ * one definition of "usable" the preview, the SSO start and callback share.
  */
 async function usableHandover(
   row: Awaited<ReturnType<typeof findHandoverByToken>>,
@@ -463,9 +465,9 @@ async function usableHandover(
 
   const profile = await prisma.user.findUnique({
     where: { id: row.profileId },
-    select: { displayName: true, managedProfileAt: true },
+    select: { displayName: true, ...CLAIMABLE_PROFILE_SELECT },
   });
-  if (!profile?.managedProfileAt) return null;
+  if (!isClaimableProfile(profile)) return null;
   if (!(await isActiveGuardian(prisma, row.profileId, row.createdById, now))) {
     return null;
   }
@@ -526,10 +528,9 @@ export async function usableHandoverForToken(
 }
 
 /**
- * v1.43 (#959) — whether the link with this id can still be claimed. The
- * single-sign-on legs re-ask on every step, so a link withdrawn or replaced
- * while the person is at the identity provider is refused before any account
- * changes. The claim re-checks under the lock; this decides nothing alone.
+ * v1.43 (#959) — whether the link with this id can still be claimed. The SSO
+ * legs re-ask on every step, so a link withdrawn or replaced meanwhile is
+ * refused before any account changes; the claim re-checks under the lock.
  */
 export async function isHandoverUsable(
   handoverId: string,
@@ -589,7 +590,7 @@ export async function claimManagedProfile(input: {
   try {
     return await prisma.$transaction((tx) =>
       withManagedProfileLock(tx, found.profileId, async (profile) => {
-        if (!profile?.managedProfileAt) throw new HandoverError("invalid");
+        if (!isClaimableProfile(profile)) throw new HandoverError("invalid");
 
         // Re-read under the lock: a new link, a withdrawal or a second claim
         // that committed while this one waited is seen here.
@@ -866,9 +867,8 @@ export async function decideHandover(input: {
 }): Promise<HandoverDecisionResult> {
   const now = input.now ?? new Date();
   return prisma.$transaction((tx) =>
-    // The same key every lifecycle act on this record takes. The marker is
-    // gone, so nothing here depends on it; the lock orders this against a
-    // second decision from another tab.
+    // The same key every lifecycle act on this record takes: it orders this
+    // against a second decision from another tab.
     withManagedProfileLock(tx, input.userId, async () => {
       const row = await latestClaimedHandover(tx, input.userId);
       const state = row ? parseHandoverState(row.proposalsJson) : null;

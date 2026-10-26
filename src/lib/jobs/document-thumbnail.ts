@@ -29,16 +29,14 @@ import {
   decryptDocumentContent,
   encryptThumbnail,
 } from "@/lib/documents/store";
+import { withPdfWork } from "@/lib/documents/pdf-isolation";
+import { PdfReaderUnavailableError } from "@/lib/documents/pdfjs";
 import { generateThumbnail } from "@/lib/documents/thumbnail";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { annotate } from "@/lib/logging/context";
 import { logCaught } from "@/lib/logging/signal";
-
-export const DOCUMENT_THUMBNAIL_QUEUE = "document-thumbnail";
-
-/** Serial concurrency — canvas/pdfjs decode, kept off the request pool. */
-export const DOCUMENT_THUMBNAIL_CONCURRENCY = 1;
+import { DOCUMENT_THUMBNAIL_QUEUE } from "./document-thumbnail-queue";
 
 export interface DocumentThumbnailPayload {
   userId: string;
@@ -59,10 +57,12 @@ export async function runDocumentThumbnail(
   if (!userId || !documentId) return;
   await withBackgroundEvent("job.document_thumbnail", async (evt) => {
     evt.addMeta("document_id", documentId);
-    await renderThumbnail(userId, documentId, (reason) => {
-      evt.addMeta("thumbnail_missing_reason", reason);
-      evt.elevateLevel("warn");
-    });
+    await withPdfWork({ owner: userId, lane: "background" }, () =>
+      renderThumbnail(userId, documentId, (reason) => {
+        evt.addMeta("thumbnail_missing_reason", reason);
+        evt.elevateLevel("warn");
+      }),
+    );
   });
 }
 
@@ -111,6 +111,11 @@ async function renderThumbnail(
   }
 
   const result = await generateThumbnail(bytes, document.mimeType);
+  if (!result.ok && result.reason === "reader-busy") {
+    // The reader was taken by other work for longer than a background item
+    // waits. Nothing is wrong with the document: pg-boss runs the job again.
+    throw new PdfReaderUnavailableError("busy");
+  }
   if (!result.ok) {
     annotate({
       action: { name: "documents.thumbnail.run" },
@@ -155,6 +160,7 @@ async function renderThumbnail(
     },
   });
 
+  // account-deletion: the one document this job was handed.
   await prisma.documentThumbnailFailure.deleteMany({
     where: { documentId: document.id },
   });

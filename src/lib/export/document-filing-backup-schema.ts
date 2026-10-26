@@ -12,6 +12,11 @@ import {
   ExtractedFactType,
 } from "@/generated/prisma/enums";
 import { base64BytesSchema, isoDateTime } from "@/lib/export/backup-schema-kit";
+import {
+  DOCUMENT_SOURCE_ID_MAX,
+  DOCUMENT_SOURCE_INSTANCE_MAX,
+  DOCUMENT_SOURCE_SYSTEMS,
+} from "@/lib/validations/inbound-documents";
 
 /** One document filed against one condition episode. */
 export const documentConditionLinkBackupSchema = z
@@ -52,5 +57,23 @@ export const extractedFactBackupSchema = z
     provenance: z.json().optional(),
     createdAt: isoDateTime,
     updatedAt: isoDateTime,
+  })
+  .passthrough();
+
+/**
+ * One import source key the person deleted the document of (the import
+ * ledger). Closed and bounded like the upload's own fields, so a restore
+ * cannot write a key the upload could never have stored.
+ */
+export const documentImportKeyBackupSchema = z
+  .object({
+    sourceSystem: z.enum(DOCUMENT_SOURCE_SYSTEMS),
+    sourceId: z.string().min(1).max(DOCUMENT_SOURCE_ID_MAX),
+    sourceInstance: z
+      .string()
+      .max(DOCUMENT_SOURCE_INSTANCE_MAX)
+      .nullable()
+      .optional(),
+    createdAt: isoDateTime.optional(),
   })
   .passthrough();

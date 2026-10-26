@@ -1,0 +1,55 @@
+{
+  "status": 422,
+  "body": {
+    "data": null,
+    "error": "Uploaded file is empty",
+    "meta": {
+      "errorCode": "documents.inbound.invalidMetadata",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 422,
+      "action": null,
+      "meta": null,
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [],
+  "stored": [
+    {
+      "id": "<id:1>",
+      "kind": "DISCHARGE_LETTER",
+      "title": "Discharge letter",
+      "filename": "discharge.pdf",
+      "mimeType": "application/pdf",
+      "byteSize": 47,
+      "status": "STORED",
+      "documentDate": "2026-10-02T12:00:00.000Z",
+      "sourceSystem": null,
+      "sourceId": null,
+      "deletedAt": null,
+      "conditionLinks": [
+        {
+          "episodeId": "<id:2>"
+        }
+      ]
+    },
+    {
+      "id": "<id:3>",
+      "kind": "LAB_RESULT",
+      "title": "Blood test",
+      "filename": "labs.pdf",
+      "mimeType": "application/pdf",
+      "byteSize": 42,
+      "status": "STORED",
+      "documentDate": "2025-03-04T12:00:00.000Z",
+      "sourceSystem": null,
+      "sourceId": null,
+      "deletedAt": null,
+      "conditionLinks": []
+    }
+  ]
+}

@@ -35,12 +35,8 @@
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
-import {
-  apiError,
-  apiSuccess,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { apiHandler, requireAuth, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -223,27 +219,24 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Too many ECG submissions, try again later", 429);
   }
 
-  const { data: rawBody, error: jsonError } = await safeJson<unknown>(request, {
+  const parsed = await parseJsonBody(request, ecgIngestSchema, {
     maxBytes: MAX_BODY_BYTES,
+    onInvalid: (error) => {
+      // Which field was refused and why, never the value: without it a refused
+      // recording is a bare "invalid" in the log and the cause has to be guessed.
+      annotate({
+        action: { name: "insights.ecg.ingest" },
+        meta: {
+          outcome: "invalid",
+          invalidFields: error.issues
+            .map((issue) => `${issue.path.join(".") || "(body)"}:${issue.code}`)
+            .slice(0, 8)
+            .join(","),
+        },
+      });
+    },
   });
-  if (jsonError) return jsonError;
-
-  const parsed = ecgIngestSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    // Which field was refused and why, never the value: without it a refused
-    // recording is a bare "invalid" in the log and the cause has to be guessed.
-    annotate({
-      action: { name: "insights.ecg.ingest" },
-      meta: {
-        outcome: "invalid",
-        invalidFields: parsed.error.issues
-          .map((issue) => `${issue.path.join(".") || "(body)"}:${issue.code}`)
-          .slice(0, 8)
-          .join(","),
-      },
-    });
-    return returnAllZodIssues(parsed.error);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const body = parsed.data;
   const result = await persistEcgRecording(

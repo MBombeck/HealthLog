@@ -55,7 +55,7 @@ import {
   reconcileExternalMeasurement,
 } from "@/lib/measurements/reconcile-external-measurement";
 
-import { hasActivityScope } from "./client";
+import { hasActivityScope } from "./oauth";
 import {
   nextSleepStageReads,
   parseSleepStageReads,

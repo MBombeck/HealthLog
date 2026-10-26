@@ -42,7 +42,7 @@ import {
 } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
-import { BackupJsonError, scanBackupJson } from "@/lib/export/backup-json-scan";
+import { BackupJsonError } from "@/lib/export/backup-json-scan";
 import {
   BackupUploadDecodeError,
   decodeBackupUpload,
@@ -58,12 +58,15 @@ import {
   BackupBlobTooLargeError,
 } from "@/lib/export/backup-blob";
 import { storeBackupBlob } from "@/lib/export/store-backup-blob";
-import { StreamedBackupInvalidError } from "@/lib/export/streamed-backup";
+import {
+  readStreamedBackup,
+  StreamedBackupInvalidError,
+  type StreamedBackup,
+} from "@/lib/export/streamed-backup";
 import { annotate } from "@/lib/logging/context";
 import { checkRateLimit } from "@/lib/rate-limit";
 import type { BackupPayload } from "@/lib/validations/backup";
 import {
-  BACKUP_SCHEMA_VERSION,
   isCompatibleSchemaVersion,
   summarizeBackup,
   type BackupSummary,
@@ -219,9 +222,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
   let measurementCount = 0;
   let owner: { id: string; username: string } | null = null;
 
-  // Filled while the file is read; the preview is the summary this route
+  // Filled once the file is read; the preview is the summary this route
   // answers with and the key uses it already holds (`backup-preview.ts`).
-  const keys = new BackupKeyIdCollector();
+  let keys: BackupKeyIdCollector | undefined;
   let created: { id: string };
   try {
     created = await storeBackupBlob(
@@ -231,7 +234,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
         type: uploadType,
         ownerAfterRead: () => owner!.id,
         preview: () =>
-          payload
+          payload && keys
             ? {
                 summary: {
                   ...summarizeBackup(payload),
@@ -250,29 +253,15 @@ export const POST = apiHandler(async (request: NextRequest) => {
             yield chunk;
           }
         }
-        // Loaded on first use, not at import (see `backup-summary.ts`).
-        const { backupMeasurementSchema, backupPayloadSchema } =
-          await import("@/lib/validations/backup");
-        let firstWithoutId: number | null = null;
-        let scanned;
+        // Read through the one streamed reader every backup reader shares
+        // (`streamed-backup.ts`): the bulk sections an element at a time and
+        // the documents without their stored bytes, so a document vault of
+        // hundreds of megabytes is never in memory at once (#1239). It checks
+        // each measurement and the canonical v2 id rule as it goes, and
+        // gathers the key ids the file's inner ciphertext needs.
+        let streamed: StreamedBackup;
         try {
-          scanned = await scanBackupJson(storedAsRead(), {
-            streamKeys: new Set(["measurements"]),
-            onElement: (_key, element, index) => {
-              const parsed = backupMeasurementSchema.safeParse(element);
-              if (!parsed.success) {
-                const issue = parsed.error.issues[0];
-                throw new StreamedBackupInvalidError(
-                  ["measurements", index, ...(issue?.path ?? [])].join("."),
-                  issue?.message ?? "invalid measurement",
-                );
-              }
-              if (!parsed.data.id && firstWithoutId === null) {
-                firstWithoutId = index;
-              }
-              keys.visit(element, "measurements");
-            },
-          });
+          streamed = await readStreamedBackup(storedAsRead);
         } catch (err) {
           if (err instanceof BackupJsonError) {
             throw new UploadRefused(422, "Uploaded file is not valid JSON", {
@@ -291,10 +280,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
           }
           throw err;
         }
-        measurementCount = scanned.streamedCounts.measurements ?? 0;
+        measurementCount = streamed.measurementCount;
 
+        // Loaded on first use, not at import (see `backup-summary.ts`).
+        const { backupPayloadSchema } =
+          await import("@/lib/validations/backup");
         try {
-          payload = backupPayloadSchema.parse(scanned.document);
+          payload = backupPayloadSchema.parse(streamed.raw);
         } catch (err) {
           const issues =
             err instanceof ZodError
@@ -303,23 +295,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
                   message: i.message,
                 }))
               : [];
-          throw new UploadRefused(
-            422,
-            "Backup payload failed schema validation",
-            { reason: "schema_invalid", issues },
-            { issues },
-          );
-        }
-        if (
-          payload.schemaVersion === BACKUP_SCHEMA_VERSION &&
-          firstWithoutId !== null
-        ) {
-          const issues = [
-            {
-              path: `measurements.${firstWithoutId}.id`,
-              message: "Canonical v2 measurements require a stable id",
-            },
-          ];
           throw new UploadRefused(
             422,
             "Backup payload failed schema validation",
@@ -345,7 +320,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
         // nobody can open. Refused here, where the operator is looking, with
         // the key named. The instance settings are left to the restore, which
         // checks them only when they are asked for back.
-        keys.visit(scanned.document);
+        keys = streamed.keys;
         const keyVerdict = assessBackupKeys(keys, {
           ignoreSections: new Set(["appSettings"]),
         });

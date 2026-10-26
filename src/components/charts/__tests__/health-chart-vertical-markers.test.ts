@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveVerticalMarkerPositions } from "../health-chart";
+import { resolveVerticalMarkerPositions } from "../health-chart/series-math";
 
 /**
  * v1.4.25 — GLP-1 injection-day vertical-marker pinning.

@@ -38,7 +38,7 @@ import {
   type ReasoningSurface,
 } from "@/lib/ai/reasoning/resolve";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -114,12 +114,6 @@ const SETTERS = [
 
 const RESOLVER_IMPORT =
   /from\s+["']@\/lib\/ai\/reasoning\/(?:resolve|controls)["']/;
-
-function stripComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
-}
 
 describe("every call that carries reasoning took it from the resolver", () => {
   const files = walkSourceFiles(SRC, { floor: 3000 })

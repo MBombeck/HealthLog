@@ -245,17 +245,35 @@ export function MeasurementGroups({
         >
           {group.rows.map(({ type, stat }) => {
             const digits = reportStatFractionDigits(type, stat!, glucoseUnit);
+            const label = t(reportMeasurementLabelKey(type));
+            // A screener total answered in a translation that has not been
+            // validated says so under its row, as the PDF does.
+            const unvalidated =
+              report.screenerUnvalidatedTranslations?.[type] ?? 0;
             return (
-              <StatRow
-                key={type}
-                label={t(reportMeasurementLabelKey(type))}
-                value={statSummary(t, reportStatUnit(type, glucoseUnit, t), {
-                  latest: show(type, stat!.latest, digits),
-                  avg: show(type, stat!.avg, digits),
-                  min: show(type, stat!.min, digits),
-                  max: show(type, stat!.max, digits),
-                })}
-              />
+              <Fragment key={type}>
+                <StatRow
+                  label={label}
+                  value={statSummary(t, reportStatUnit(type, glucoseUnit, t), {
+                    latest: show(type, stat!.latest, digits),
+                    avg: show(type, stat!.avg, digits),
+                    min: show(type, stat!.min, digits),
+                    max: show(type, stat!.max, digits),
+                  })}
+                />
+                {unvalidated > 0 && (
+                  <p
+                    className="text-muted-foreground text-xs"
+                    data-slot="clinician-screener-translation-note"
+                  >
+                    {t("doctorReport.screenerUnvalidated", {
+                      label,
+                      count: unvalidated,
+                      total: stat!.count,
+                    })}
+                  </p>
+                )}
+              </Fragment>
             );
           })}
         </Section>

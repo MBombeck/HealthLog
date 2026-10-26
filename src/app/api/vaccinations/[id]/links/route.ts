@@ -19,12 +19,8 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import {
-  apiSuccess,
-  apiError,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { vaccinationLinkSchema } from "@/lib/validations/vaccinations";
 import { linkTargets, unlinkTargets } from "@/lib/links";
 import { loadVaccinationDocuments } from "@/lib/vaccinations/service";
@@ -41,17 +37,11 @@ async function handle(
 
   const { id } = await params;
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, vaccinationLinkSchema, {
     maxBytes: 16 * 1024,
+    errorCode: "vaccination.link.invalid",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = vaccinationLinkSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "vaccination.link.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const apply = verb === "link" ? linkTargets : unlinkTargets;
   const result = await apply(prisma, {

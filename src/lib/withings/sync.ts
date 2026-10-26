@@ -26,7 +26,6 @@ import {
   type WithinPlanResult,
 } from "./api-plan";
 import { annotate, getEvent } from "@/lib/logging/context";
-import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { dropImplausibleMeasurements } from "@/lib/measurements/plausibility-gate";
 import {
   isReauthRequired,
@@ -39,15 +38,7 @@ import {
   WithingsApiError,
   type WithingsClassification,
 } from "./response-classifier";
-import {
-  collapseToTypeDayKeys,
-  recomputeBucketsForKeys,
-} from "@/lib/rollups/measurement-rollups";
-import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
-import {
-  invalidateUserDashboardSnapshot,
-  invalidateUserMeasurements,
-} from "@/lib/cache/invalidate";
+import { afterProviderWrite } from "@/lib/integrations/sync-kit/after-write";
 import type { SyncWriteResult } from "@/lib/outcome/written-outcome";
 import { obtainAccessToken } from "@/lib/integrations/oauth-kit/token";
 import { withingsTokenDescriptor } from "./oauth-descriptor";
@@ -430,53 +421,17 @@ export async function syncUserMeasurements(
     }
   }
 
-  void emitInsertedMeasurementArrivals(
+  // The shared tail: arrivals, the rollup fold, the read caches back to the
+  // earliest touched reading and the touched status cards. The dashboard
+  // snapshot is evicted too: this server-side sync produces no client
+  // mutation event, so its cached body would otherwise outlive the import.
+  await afterProviderWrite({
     userId,
-    insertedArrivals,
-    "withings",
-  ).catch(() => {});
-
-  // v1.4.39.1 — refresh the persistent rollup table for every distinct
-  // (type, day) the sync touched. The chart-data + analytics read paths
-  // consume these buckets via `source=rollup`; without this hook,
-  // Withings-only metrics stayed off the rollup tier and the dashboard
-  // chart at the 30-day range under-counted recent days.
-  try {
-    const keys = collapseToTypeDayKeys(touched);
-    await recomputeBucketsForKeys(userId, keys);
-
-    // v1.8.0 — a Withings sync that lands new weight / BP / pulse /
-    // body-comp rows dirties the matching per-metric assessment caches.
-    // Drop them so the next mount / nightly warm pass regenerates
-    // against the new data. Fire-and-forget: never fails the sync.
-    invalidateStatusInsightsForTypes(
-      userId,
-      keys.map((k) => k.type),
-      { source: "sync" },
-    ).catch((err) => {
-      getEvent()?.addWarning(
-        `withings: status-insight invalidate failed for ${userId}: ${err}`,
-      );
-    });
-
-    // v1.18.9 (#38) — hard-evict the dashboard snapshot so a focus-refetch
-    // after this server-side sync returns the freshly-imported readings.
-    // The server-side Withings path produces no client mutation event, so
-    // without this the snapshot's `cachedSwr` entry kept serving the
-    // pre-sync body until its ~180 s TTL lapsed.
-    if (keys.length > 0) {
-      invalidateUserDashboardSnapshot(userId);
-      // Background-sync posture (mirrors the Fitbit tail): mark the
-      // per-user analytics / correlations / targets / achievements cells
-      // stale so the imported rows reach the cached readers before their
-      // TTL lapses — the correlations route documents this invariant.
-      invalidateUserMeasurements(userId);
-    }
-  } catch (err) {
-    getEvent()?.addWarning(
-      `withings: rollup recompute failed for ${userId}: ${err}`,
-    );
-  }
+    provider: "withings",
+    touched,
+    arrivals: { rows: insertedArrivals, source: "withings" },
+    evictDashboard: true,
+  });
 
   // v1.28.39 — HOLD the watermark on any hard row failure. Implements the
   // documented status-tracking contract above ("downstream measurement-upsert

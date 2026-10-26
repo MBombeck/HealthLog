@@ -44,7 +44,6 @@ vi.mock("@/lib/insights/mood-status", () => ({
     cached: true,
     updatedAt: new Date().toISOString(),
   })),
-  resolveMoodStatusLocale: () => "en",
 }));
 
 import { GET } from "../route";

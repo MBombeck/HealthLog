@@ -1,0 +1,167 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "processed": 1,
+      "inserted": 0,
+      "duplicates": 1,
+      "skipped": [],
+      "entries": [
+        {
+          "index": 0,
+          "status": "duplicate",
+          "id": "<id:1>",
+          "externalId": "sd-2"
+        }
+      ]
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "mood.bulk.ingest"
+      },
+      "meta": {
+        "write_bucket": "own",
+        "processed": 1,
+        "inserted": 0,
+        "duplicates": 1,
+        "skipped": 0,
+        "dropped_tag_keys": 0,
+        "dropped_factor_keys": 0,
+        "sync_checkpoint_at": "<now>"
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "stored": {
+    "entries": [
+      {
+        "id": "<id:2>",
+        "date": "2026-10-12",
+        "tz": "Europe/Berlin",
+        "mood": "GUT",
+        "score": 4,
+        "moodA1": 7,
+        "stressA2": null,
+        "energyA3": null,
+        "connectionA4": null,
+        "stabilityA5": null,
+        "tags": null,
+        "note": null,
+        "noteEncrypted": null,
+        "source": "MANUAL",
+        "externalId": "sd-4",
+        "moodLoggedAt": "2026-10-12T10:00:00.000Z",
+        "deletedAt": null,
+        "tagLinks": [],
+        "context": null
+      },
+      {
+        "id": "<id:1>",
+        "date": "2026-10-13",
+        "tz": "Europe/Berlin",
+        "mood": "SCHLECHT",
+        "score": 2,
+        "moodA1": 3,
+        "stressA2": null,
+        "energyA3": null,
+        "connectionA4": null,
+        "stabilityA5": null,
+        "tags": null,
+        "note": null,
+        "noteEncrypted": null,
+        "source": "MANUAL",
+        "externalId": "sd-2",
+        "moodLoggedAt": "2026-10-13T21:00:00.000Z",
+        "deletedAt": "2026-10-14T20:00:00.000Z",
+        "tagLinks": [],
+        "context": {
+          "moodEntryId": "<id:1>",
+          "userId": "<id:3>",
+          "workStatus": "regular",
+          "workMinutes": 480,
+          "overtimeMinutes": null,
+          "workLoad": null,
+          "workSatisfaction": null,
+          "contactCircles": null,
+          "contactForm": null,
+          "contactExtent": null,
+          "contactQuality": null,
+          "contactSupport": null,
+          "leisureCategories": null,
+          "leisureMinutes": null,
+          "leisureJoy": null,
+          "leisureRecovery": null,
+          "eventType": null,
+          "eventValence": null,
+          "eventAt": null,
+          "notesEncrypted": null,
+          "createdAt": "<createdAt>",
+          "updatedAt": "<updatedAt>"
+        }
+      },
+      {
+        "id": "<id:4>",
+        "date": "2026-10-14",
+        "tz": "Europe/Berlin",
+        "mood": "GUT",
+        "score": 4,
+        "moodA1": 7,
+        "stressA2": 7,
+        "energyA3": 4,
+        "connectionA4": null,
+        "stabilityA5": null,
+        "tags": "[\"slept well\"]",
+        "note": null,
+        "noteEncrypted": "<bytes:59>",
+        "source": "WEB",
+        "externalId": "sd-1",
+        "moodLoggedAt": "2026-10-14T07:00:00.000Z",
+        "deletedAt": null,
+        "tagLinks": [
+          {
+            "moodTag": {
+              "key": "alcohol"
+            },
+            "rating": null
+          },
+          {
+            "moodTag": {
+              "key": "factor_parity_short"
+            },
+            "rating": 1
+          }
+        ],
+        "context": null
+      },
+      {
+        "id": "<id:5>",
+        "date": "2026-10-14",
+        "tz": "Europe/Berlin",
+        "mood": "OKAY",
+        "score": 3,
+        "moodA1": 5,
+        "stressA2": null,
+        "energyA3": null,
+        "connectionA4": null,
+        "stabilityA5": null,
+        "tags": null,
+        "note": null,
+        "noteEncrypted": null,
+        "source": "MANUAL",
+        "externalId": null,
+        "moodLoggedAt": "2026-10-14T19:30:00.000Z",
+        "deletedAt": null,
+        "tagLinks": [],
+        "context": null
+      }
+    ],
+    "user": {
+      "lastSyncedAt": "<now>"
+    }
+  }
+}

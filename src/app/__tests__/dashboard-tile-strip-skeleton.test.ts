@@ -1,12 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 
 import {
   resolveChartRowPlaceholderCount,
   resolveConfiguredTileCount,
   resolveDashboardFirstPaintGate,
-} from "../page-client";
+} from "@/components/dashboard/dashboard-gates";
+import { dashboardSource } from "@/__tests__/helpers/dashboard-source";
 import {
   DEFAULT_DASHBOARD_LAYOUT,
   type DashboardLayout,
@@ -33,7 +32,6 @@ import {
  * snapshot fetch. The pure `resolveDashboardFirstPaintGate` carries the
  * behaviour; textual pins keep the wiring honest.
  */
-const PAGE_PATH = join(process.cwd(), "src/app/page-client.tsx");
 
 describe("resolveDashboardFirstPaintGate", () => {
   const base = {
@@ -173,14 +171,14 @@ describe("resolveChartRowPlaceholderCount (v1.16.8)", () => {
 
 describe("v1.4.43 W11 — dashboard tile-strip skeleton (wiring)", () => {
   it("derives `configuredTileCount` through the tile-capable resolver", () => {
-    const src = readFileSync(PAGE_PATH, "utf8");
+    const src = dashboardSource();
     expect(src).toMatch(
       /const\s+configuredTileCount\s*=\s*resolveConfiguredTileCount\(layout\);/,
     );
   });
 
   it("reserves the chart row while the primary query loads", () => {
-    const src = readFileSync(PAGE_PATH, "utf8");
+    const src = dashboardSource();
     // The placeholder count keys off the layout config minus the
     // already-mounted (layout-gated) cells, and only while loading.
     // `mounted &&` pins the hydration render to the SSR output — the
@@ -189,7 +187,7 @@ describe("v1.4.43 W11 — dashboard tile-strip skeleton (wiring)", () => {
     expect(src).toMatch(
       /const\s+chartRowPlaceholderCount\s*=\s*primaryLoading[\s\S]*?resolveChartRowPlaceholderCount\(layout,[\s\S]*?hasHeightCm:\s*mounted\s*&&\s*Boolean\(user\?\.heightCm\)/,
     );
-    expect(src).toMatch(/-\s*charts\.length/);
+    expect(src).toMatch(/-\s*chartEntries\.length/);
     // The reserved cells render as aria-hidden ChartSkeletons in their
     // own slot.
     const skeletonBlock = src.match(
@@ -201,7 +199,7 @@ describe("v1.4.43 W11 — dashboard tile-strip skeleton (wiring)", () => {
   });
 
   it("derives `primaryLoading` from the snapshot vs slim query", () => {
-    const src = readFileSync(PAGE_PATH, "utf8");
+    const src = dashboardSource();
     // v1.16.4 — `!mounted` pins SSR + the hydration render to the
     // skeleton branch so a late-hydrating boundary can't disagree with
     // the server HTML (React #418); see `useMounted`.
@@ -211,21 +209,21 @@ describe("v1.4.43 W11 — dashboard tile-strip skeleton (wiring)", () => {
   });
 
   it("routes the gate through `resolveDashboardFirstPaintGate`", () => {
-    const src = readFileSync(PAGE_PATH, "utf8");
+    const src = dashboardSource();
     expect(src).toMatch(
       /resolveDashboardFirstPaintGate\(\{[\s\S]*?primaryLoading,[\s\S]*?\}\)/,
     );
   });
 
   it("renders the skeleton with the same auto-fit grid track the real strip uses", () => {
-    const src = readFileSync(PAGE_PATH, "utf8");
+    const src = dashboardSource();
     expect(src).toMatch(
       /showTileStripSkeleton\s*&&\s*\(\s*<div[\s\S]*?\[grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,11rem\),1fr\)\)\]/,
     );
   });
 
   it("keys the skeleton card count off configuredTileCount", () => {
-    const src = readFileSync(PAGE_PATH, "utf8");
+    const src = dashboardSource();
     expect(src).toMatch(
       /Array\.from\(\{\s*length:\s*configuredTileCount\s*\}\)/,
     );
@@ -237,7 +235,7 @@ describe("v1.4.43 W11 — dashboard tile-strip skeleton (wiring)", () => {
     // Reduced motion moved into the component (the `<Skeleton>` primitive
     // carries `motion-reduce:animate-none`); the per-component test in
     // `dashboard-chart-reveal.test.tsx` pins that.
-    const src = readFileSync(PAGE_PATH, "utf8");
+    const src = dashboardSource();
     const skeletonBlock = src.match(
       /showTileStripSkeleton\s*&&[\s\S]*?<\/div>\s*\)\}/,
     );
@@ -248,12 +246,12 @@ describe("v1.4.43 W11 — dashboard tile-strip skeleton (wiring)", () => {
   });
 
   it("uses the structured silhouette as the per-tile Suspense fallback", () => {
-    const src = readFileSync(PAGE_PATH, "utf8");
+    const src = dashboardSource();
     expect(src).toMatch(/<Suspense fallback=\{<TrendCardSkeleton \/>\}>/);
   });
 
   it("gates the EmptyState on the resolved `showEmptyState` flag", () => {
-    const src = readFileSync(PAGE_PATH, "utf8");
+    const src = dashboardSource();
     expect(src).toMatch(/if\s*\(showEmptyState\)\s*\{/);
   });
 });

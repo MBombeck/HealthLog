@@ -1,0 +1,98 @@
+{
+  "status": 201,
+  "body": {
+    "data": {
+      "id": "<id:1>",
+      "duplicate": false
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 201,
+      "action": {
+        "name": "documents.summary.enqueueSkipped"
+      },
+      "meta": {
+        "documentId": "<id:1>",
+        "byteSize": 46,
+        "servingClass": "inline",
+        "linked": 0,
+        "linkedVisits": 0,
+        "scoped": true,
+        "sourceSystem": "PAPERLESS",
+        "aiDeferred": true,
+        "reason": "deferred"
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "enqueueDocumentIndex",
+      "args": [
+        "<id:2>",
+        "<id:1>",
+        {
+          "localOnly": true
+        }
+      ]
+    },
+    {
+      "effect": "enqueueDocumentThumbnail",
+      "args": [
+        "<id:2>",
+        "<id:1>"
+      ]
+    }
+  ],
+  "stored": [
+    {
+      "id": "<id:3>",
+      "kind": "DISCHARGE_LETTER",
+      "title": "Discharge letter",
+      "filename": "discharge.pdf",
+      "mimeType": "application/pdf",
+      "byteSize": 47,
+      "status": "STORED",
+      "documentDate": "2026-10-02T12:00:00.000Z",
+      "sourceSystem": null,
+      "sourceId": null,
+      "deletedAt": null,
+      "conditionLinks": [
+        {
+          "episodeId": "<id:4>"
+        }
+      ]
+    },
+    {
+      "id": "<id:1>",
+      "kind": "OTHER",
+      "title": null,
+      "filename": "imported.pdf",
+      "mimeType": "application/pdf",
+      "byteSize": 46,
+      "status": "STORED",
+      "documentDate": "<now>",
+      "sourceSystem": "PAPERLESS",
+      "sourceId": "41",
+      "deletedAt": null,
+      "conditionLinks": []
+    },
+    {
+      "id": "<id:5>",
+      "kind": "LAB_RESULT",
+      "title": "Blood test",
+      "filename": "labs.pdf",
+      "mimeType": "application/pdf",
+      "byteSize": 42,
+      "status": "STORED",
+      "documentDate": "2025-03-04T12:00:00.000Z",
+      "sourceSystem": null,
+      "sourceId": null,
+      "deletedAt": null,
+      "conditionLinks": []
+    }
+  ]
+}

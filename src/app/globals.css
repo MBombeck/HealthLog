@@ -60,6 +60,20 @@ body,
   --font-sans: "Inter", "Inter Fallback";
 }
 
+/*
+ * Recharts writes a label's font size into the measurement span and reads its
+ * box in the same task. The reduced-motion backstop below gives every element
+ * a near-zero transition, and the default transition property is `all`, so
+ * that write started a transition and the read returned the previous size: a
+ * label was sized at whatever the last one had, and the axes placed their
+ * labels differently from visit to visit. Nothing in the host is ever seen,
+ * so nothing in it transitions.
+ */
+[data-slot="chart-text-measurement-host"],
+[data-slot="chart-text-measurement-host"] * {
+  transition: none !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /*
@@ -612,8 +626,54 @@ body,
    * Scoping it to the body-scrolled branch leaves exactly one gutter per
    * branch.
    */
+  /*
+   * The home-indicator inset, read through one property by everything that
+   * owns the shell's bottom edge (the rail, `<main>`, the bottom bar, the
+   * Coach button). It is `env()` everywhere it matters; a test that needs an
+   * inset no desktop browser reports sets it instead
+   * (`e2e/tablet-shell.spec.ts`). The side insets are read the same way, by
+   * the shell and the rail (`.shell-safe-area` below).
+   */
+  :root {
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-left: env(safe-area-inset-left, 0px);
+    --safe-area-right: env(safe-area-inset-right, 0px);
+  }
   html[data-scroll="body"] {
     scrollbar-gutter: stable;
+  }
+  /*
+   * The app shell (`data-scroll="shell"`, also set by `AuthShell`) takes the
+   * window's edges and scrolls inside `<main>`, so the document has nothing
+   * to scroll and must not bounce either. On iOS a swipe that reached the end
+   * of `<main>` or of the rail chained to the document, the whole page
+   * rubber-banded and showed the page colour under the shell, and the next
+   * swipe went to that bounce instead of the list under the finger: the
+   * "sometimes it does not scroll" a tablet reported.
+   *
+   * `height: 100%` gives the body the window's box. The shell is
+   * `absolute inset-0`, which resolves against the initial containing block
+   * while the body is static, and against the body once a dialog's scroll
+   * lock makes it `position: relative` (react-remove-scroll does); an
+   * auto-height body is 0 px tall and the shell would collapse behind every
+   * dialog.
+   */
+  html[data-scroll="shell"],
+  html[data-scroll="shell"] body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  /*
+   * The colour of anything beyond the page. A browser built on WKWebView
+   * (Edge, Chrome, Firefox on iPadOS) can keep the strip over the home
+   * indicator out of the page's layout and fill it with the page's
+   * "under-page" colour, which it takes from the root. The root states the
+   * content colour itself rather than leaving it to propagate from the body,
+   * so that strip meets `<main>` in the same colour.
+   */
+  html[data-scroll="shell"] {
+    background-color: var(--background);
   }
   body {
     @apply bg-background text-foreground;
@@ -634,18 +694,34 @@ body,
 @layer components {
   /*
    * `.shell-safe-area` — the authenticated app shell's share of the installed
-   * app's safe area (see the note in `auth-shell.tsx`). The shell takes the top
-   * and side insets as padding, and the strip behind the status bar is painted
-   * in the chrome colour (`--card`, the top bar and the sidebar) rather than
-   * the page colour, so the status bar reads as part of the bar beneath it. A
-   * zero inset makes the gradient zero tall: nothing changes in a browser tab.
+   * app's safe area (see the note in `auth-shell.tsx`). The shell takes the
+   * top inset as padding (and the side insets in the phone shell), and the
+   * strip behind the status bar is painted in the chrome colour (`--card`,
+   * the top bar and the sidebar) rather than the page colour, so the status
+   * bar reads as part of the bar beneath it. A zero inset makes the gradient
+   * zero tall.
+   *
+   * The side insets are not always zero in a browser tab: an iPad in a Safari
+   * tab laid the shell out 10 px in from the left edge in portrait, with
+   * Safari's own toolbar buttons moved in by the same 10 px. Padded here, that
+   * inset showed the page colour in a strip left of the rail, from the logo
+   * band down to the account row, and cut the rail's band borders short of the
+   * edge. So the desktop shell leaves the sides to what meets them: the rail
+   * takes the left inset inside its own background (`sidebar-nav.tsx`), and
+   * on the right the top bar and `<main>` run to the edge with gutters wider
+   * than any tablet's side inset. The phone shell has no rail and keeps them
+   * here.
    */
   .shell-safe-area {
     padding-top: env(safe-area-inset-top, 0px);
-    padding-right: env(safe-area-inset-right, 0px);
-    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: var(--safe-area-right);
+    padding-left: var(--safe-area-left);
     background: linear-gradient(var(--card), var(--card)) top / 100%
       env(safe-area-inset-top, 0px) no-repeat;
+    @variant shell-desktop {
+      padding-right: 0;
+      padding-left: 0;
+    }
   }
 
   /*

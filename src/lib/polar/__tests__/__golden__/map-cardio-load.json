@@ -1,0 +1,128 @@
+[
+  {
+    "record": "2026-03-02",
+    "byZone": [
+      {
+        "tz": null,
+        "rows": [
+          {
+            "type": "CARDIO_LOAD",
+            "value": 87.65,
+            "unit": "score",
+            "measuredAt": "2026-03-02T12:00:00.000Z",
+            "fieldTag": "cardio_load",
+            "day": "2026-03-02"
+          }
+        ]
+      },
+      {
+        "tz": "Europe/Berlin",
+        "rows": [
+          {
+            "type": "CARDIO_LOAD",
+            "value": 87.65,
+            "unit": "score",
+            "measuredAt": "2026-03-02T11:00:00.000Z",
+            "fieldTag": "cardio_load",
+            "day": "2026-03-02"
+          }
+        ]
+      },
+      {
+        "tz": "America/New_York",
+        "rows": [
+          {
+            "type": "CARDIO_LOAD",
+            "value": 87.65,
+            "unit": "score",
+            "measuredAt": "2026-03-02T17:00:00.000Z",
+            "fieldTag": "cardio_load",
+            "day": "2026-03-02"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "record": "2026-03-03",
+    "byZone": [
+      {
+        "tz": null,
+        "rows": [
+          {
+            "type": "CARDIO_LOAD",
+            "value": 0,
+            "unit": "score",
+            "measuredAt": "2026-03-03T12:00:00.000Z",
+            "fieldTag": "cardio_load",
+            "day": "2026-03-03"
+          }
+        ]
+      },
+      {
+        "tz": "Europe/Berlin",
+        "rows": [
+          {
+            "type": "CARDIO_LOAD",
+            "value": 0,
+            "unit": "score",
+            "measuredAt": "2026-03-03T11:00:00.000Z",
+            "fieldTag": "cardio_load",
+            "day": "2026-03-03"
+          }
+        ]
+      },
+      {
+        "tz": "America/New_York",
+        "rows": [
+          {
+            "type": "CARDIO_LOAD",
+            "value": 0,
+            "unit": "score",
+            "measuredAt": "2026-03-03T17:00:00.000Z",
+            "fieldTag": "cardio_load",
+            "day": "2026-03-03"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "record": "2026-03-04",
+    "byZone": [
+      { "tz": null, "rows": [] },
+      { "tz": "Europe/Berlin", "rows": [] },
+      { "tz": "America/New_York", "rows": [] }
+    ]
+  },
+  {
+    "record": "2026-03-05",
+    "byZone": [
+      { "tz": null, "rows": [] },
+      { "tz": "Europe/Berlin", "rows": [] },
+      { "tz": "America/New_York", "rows": [] }
+    ]
+  },
+  {
+    "record": "2026-03-06",
+    "byZone": [
+      { "tz": null, "rows": [] },
+      { "tz": "Europe/Berlin", "rows": [] },
+      { "tz": "America/New_York", "rows": [] }
+    ]
+  },
+  {
+    "record": "not-a-date",
+    "byZone": [
+      { "tz": null, "rows": [] },
+      {
+        "tz": "Europe/Berlin",
+        "rows": { "threw": "RangeError: Invalid time value" }
+      },
+      {
+        "tz": "America/New_York",
+        "rows": { "threw": "RangeError: Invalid time value" }
+      }
+    ]
+  }
+]

@@ -1,0 +1,32 @@
+[
+  {
+    "baseUrl": "https://ns.example.org",
+    "count": 288,
+    "token": null,
+    "url": "https://ns.example.org/api/v1/entries.json?count=288&type=sgv"
+  },
+  {
+    "baseUrl": "https://ns.example.org/",
+    "count": 288,
+    "token": "reader-0123456789abcdef",
+    "url": "https://ns.example.org/api/v1/entries.json?count=288&type=sgv&token=reader-0123456789abcdef"
+  },
+  {
+    "baseUrl": "https://ns.example.org///",
+    "count": 1,
+    "token": "",
+    "url": "https://ns.example.org/api/v1/entries.json?count=1&type=sgv"
+  },
+  {
+    "baseUrl": "https://example.org/nightscout",
+    "count": 50,
+    "token": "token with spaces&more=1",
+    "url": "https://example.org/nightscout/api/v1/entries.json?count=50&type=sgv&token=token+with+spaces%26more%3D1"
+  },
+  {
+    "baseUrl": "http://ns.example.org:1337",
+    "count": 0,
+    "token": "reader-token",
+    "url": "http://ns.example.org:1337/api/v1/entries.json?count=0&type=sgv&token=reader-token"
+  }
+]

@@ -7,7 +7,7 @@
  * WHOOP user id is a connect still in flight and has no usable grant yet.
  */
 import type { OAuthTokenDescriptor } from "@/lib/integrations/oauth-kit/token";
-import { refreshAccessToken, type WhoopCredentials } from "./client";
+import { type WhoopCredentials, whoopOAuth } from "./oauth";
 import { getUserWhoopCredentials } from "./credentials";
 
 /** Refresh this long before the stored expiry. */
@@ -47,5 +47,5 @@ export const whoopTokenDescriptor: OAuthTokenDescriptor<WhoopCredentials> = {
   },
   loadCredentials: (userId) => getUserWhoopCredentials(userId),
   refresh: (refreshToken, credentials) =>
-    refreshAccessToken(refreshToken, credentials),
+    whoopOAuth.refresh(refreshToken, credentials),
 };

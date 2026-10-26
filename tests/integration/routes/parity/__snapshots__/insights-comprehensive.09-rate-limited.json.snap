@@ -1,0 +1,21 @@
+{
+  "status": 429,
+  "body": {
+    "data": null,
+    "error": "Too many analytics requests. Please retry later.",
+    "meta": {
+      "errorCode": "http.rate_limited",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 429,
+      "action": null,
+      "meta": null,
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": []
+}

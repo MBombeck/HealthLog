@@ -1,0 +1,108 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "serverNow": "<now>",
+      "cursor": "eyJ2IjoyLCJ0IjoxNzkyMDY1NjAwMDAwLCJkIjp7Im1lYXN1cmVtZW50cyI6eyJ1IjoxNzkyMDQ5NDAwMDAwLCJpIjoibS0wNCJ9LCJtb29kIjp7InUiOjE3OTIwNTE4MDAwMDAsImkiOiJtb29kLTAyIn0sImludGFrZXMiOnsidSI6MTc5MjA1MzYwMDAwMCwiaSI6ImluLTAzIn0sImN5Y2xlRGF5cyI6eyJ1IjoxNzkyMDU3MjAwMDAwLCJpIjoiY2QtMDMifSwiY3ljbGVzIjp7InUiOjE3OTIwNTU0MDAwMDAsImkiOiJjeS0wMyJ9fX0",
+      "hasMore": true,
+      "cursorExpired": false,
+      "changes": {
+        "measurements": {
+          "upserts": [
+            {
+              "id": "m-04",
+              "externalId": "stats:HKQuantityTypeIdentifierHeartRate:2026-06-17T09",
+              "type": "PULSE",
+              "value": 64,
+              "unit": "bpm",
+              "measuredAt": "2026-06-17T09:30:00.000Z",
+              "source": "APPLE_HEALTH",
+              "notes": null,
+              "appleHealthMirror": false,
+              "syncVersion": "<syncVersion>",
+              "updatedAt": "<updatedAt>"
+            }
+          ],
+          "tombstones": [
+            {
+              "id": "m-03",
+              "externalId": "w-weight-2",
+              "syncVersion": "<syncVersion>",
+              "deletedAt": "2026-10-15T11:30:00.000Z",
+              "updatedAt": "<updatedAt>"
+            }
+          ]
+        },
+        "mood": {
+          "upserts": [],
+          "tombstones": []
+        },
+        "intakes": {
+          "upserts": [],
+          "tombstones": [
+            {
+              "id": "in-03",
+              "syncVersion": "<syncVersion>",
+              "deletedAt": "2026-10-15T11:30:00.000Z",
+              "updatedAt": "<updatedAt>"
+            }
+          ]
+        },
+        "cycleDays": {
+          "upserts": [],
+          "tombstones": [
+            {
+              "id": "cd-03",
+              "externalId": "hk-cycle-0",
+              "syncVersion": "<syncVersion>",
+              "deletedAt": "2026-10-15T11:30:00.000Z",
+              "updatedAt": "<updatedAt>"
+            }
+          ]
+        },
+        "cycles": {
+          "upserts": [],
+          "tombstones": [
+            {
+              "id": "cy-03",
+              "syncVersion": "<syncVersion>",
+              "deletedAt": "2026-10-15T11:30:00.000Z",
+              "updatedAt": "<updatedAt>"
+            }
+          ]
+        },
+        "measurementMirror": {
+          "upserts": [],
+          "tombstones": []
+        }
+      }
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "sync.changes.pull"
+      },
+      "meta": {
+        "measurement_upserts": 1,
+        "measurement_tombstones": 1,
+        "mood_upserts": 0,
+        "mood_tombstones": 0,
+        "intake_upserts": 0,
+        "intake_tombstones": 1,
+        "cycle_day_upserts": 0,
+        "cycle_day_tombstones": 1,
+        "cycle_upserts": 0,
+        "cycle_tombstones": 1,
+        "measurement_mirror_upserts": 0,
+        "cycle_module_enabled": true,
+        "has_more": true,
+        "cursor_present": true
+      },
+      "warnings": null,
+      "error": null
+    }
+  ]
+}

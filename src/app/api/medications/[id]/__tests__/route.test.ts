@@ -41,6 +41,39 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+// The answer is the medication's read model (`medicationDetail`), whose
+// reads and resolution the integration walks hold against the contract.
+// Here it stands in with the part these tests read: the written row with
+// its schedules wired as every medication answer wires them.
+vi.mock("@/lib/medications/read-medication", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/medications/read-medication")>();
+  const { scheduleWireFields } =
+    await import("@/lib/medications/intake-tracking");
+  const { serializeScheduleUnitsPerDose } =
+    await import("@/lib/medications/schedule-units-dto");
+  return {
+    ...actual,
+    medicationDetail: vi.fn(
+      async ({
+        medication,
+      }: {
+        medication: Parameters<typeof actual.medicationDetail>[0]["medication"];
+      }) => ({
+        ...medication,
+        unitsPerDose: Number(medication.unitsPerDose),
+        ...scheduleWireFields(
+          medication.trackIntake,
+          serializeScheduleUnitsPerDose(
+            medication.schedules,
+            medication.unitsPerDose,
+          ),
+        ),
+      }),
+    ),
+  };
+});
+
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
@@ -600,7 +633,7 @@ describe("PUT /api/medications/[id] — primary-schedule grace bridge", () => {
     expect(res.status).toBe(200);
     expect(prisma.medicationSchedule.findFirst).toHaveBeenCalledWith({
       where: { medicationId: "m1" },
-      orderBy: { windowStart: "asc" },
+      orderBy: [{ windowStart: "asc" }, { id: "asc" }],
       select: { id: true },
     });
     expect(prisma.medicationSchedule.update).toHaveBeenCalledWith({

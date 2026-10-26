@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  QueryClient,
-  QueryClientProvider,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import {
   createContext,
@@ -49,7 +45,7 @@ import {
   startPersistingQueryCache,
 } from "@/lib/pwa/query-persister";
 import {
-  QUERY_CLIENT_DEFAULT_OPTIONS,
+  createAppQueryClient,
   subscribeToMeaningfulVisibilityRefresh,
 } from "@/lib/pwa/query-client-options";
 
@@ -417,9 +413,9 @@ export function Providers({
   children: ReactNode;
   initialLocale?: Locale;
 }) {
-  const [queryClient] = useState(
-    () => new QueryClient({ defaultOptions: QUERY_CLIENT_DEFAULT_OPTIONS }),
-  );
+  // On the server this client lives for one render; `createAppQueryClient`
+  // keeps its entries from holding that render past the response.
+  const [queryClient] = useState(createAppQueryClient);
 
   return (
     <QueryClientProvider client={queryClient}>

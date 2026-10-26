@@ -51,7 +51,7 @@ import { z } from "zod/v4";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { annotate } from "@/lib/logging/context";
 import { checkMcpWriteRateLimit } from "@/lib/rate-limit";
-import type { McpToolDefinition } from "./tools";
+import type { McpToolDefinition } from "./tools/types";
 import {
   logMcpMeasurement,
   logMcpMood,

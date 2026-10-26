@@ -22,8 +22,8 @@ const { fetchDataPointsMock, handleErrorMock, mapWeightMock } = vi.hoisted(
   }),
 );
 
-vi.mock("../client", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../client")>();
+vi.mock("../data-points", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../data-points")>();
   return {
     ...actual,
     fetchDataPoints: fetchDataPointsMock,
@@ -44,8 +44,11 @@ vi.mock("../client", async (importOriginal) => {
         if (points.length > 0) await onPage(points);
       },
     ),
-    mapWeight: mapWeightMock,
   };
+});
+vi.mock("../mappers", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../mappers")>();
+  return { ...actual, mapWeight: mapWeightMock };
 });
 
 vi.mock("../sync-core", () => ({

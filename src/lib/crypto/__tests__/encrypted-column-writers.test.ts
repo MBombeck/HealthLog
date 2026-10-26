@@ -44,6 +44,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { ENCRYPTED_COLUMNS, encryptedColumnKey } from "../encrypted-columns";
+import { stripComments } from "../../../__tests__/helpers/source-files";
 
 const ROOT = join(__dirname, "../../../..");
 const SRC = join(ROOT, "src");
@@ -114,13 +115,6 @@ function sourceFiles(dir: string, out: string[] = []): string[] {
     }
   }
   return out;
-}
-
-/** Strip comments so prose about `encrypt()` never counts as a call. */
-function stripComments(src: string): string {
-  return src
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:"'`\\])\/\/.*$/gm, "$1");
 }
 
 const callRe = (names: string[]) =>

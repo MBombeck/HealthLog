@@ -43,12 +43,12 @@ import {
   googleHealthBackfillRetryPending,
   readGoogleHealthBackfillProgress,
 } from "../backfill-progress";
+import { forEachDataPointPage } from "@/lib/google-health/data-points";
 import {
-  forEachDataPointPage,
-  GOOGLE_HEALTH_DATA_TYPES,
   noteGoogleHealthDeferred,
   runWithGoogleHealthClientOutcome,
-} from "../client";
+} from "@/lib/google-health/budget";
+import { GOOGLE_HEALTH_DATA_TYPES } from "@/lib/google-health/mappers";
 
 const MINUTE = 60_000;
 const T0 = Date.parse("2026-10-17T12:00:00Z");

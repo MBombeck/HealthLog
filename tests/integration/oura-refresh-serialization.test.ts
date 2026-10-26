@@ -26,7 +26,6 @@ vi.mock("@/lib/oura/client", async (importOriginal) => {
   const actual = await importOriginal<typeof OuraClientModule>();
   return {
     ...actual,
-    refreshAccessToken: ouraRefresh,
     fetchReadiness: collection,
     fetchSleep: collection,
     fetchDailyActivity: collection,
@@ -36,6 +35,13 @@ vi.mock("@/lib/oura/client", async (importOriginal) => {
     fetchCardiovascularAge: collection,
     fetchResilience: collection,
     fetchDailyCyclePhases: collection,
+  };
+});
+vi.mock("@/lib/oura/oauth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/oura/oauth")>();
+  return {
+    ...actual,
+    ouraOAuth: { ...actual.ouraOAuth, refresh: ouraRefresh },
   };
 });
 

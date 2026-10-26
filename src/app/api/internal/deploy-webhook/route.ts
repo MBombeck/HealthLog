@@ -1,11 +1,16 @@
 import { envOr } from "@/lib/env";
-import { timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
-import { getClientIp, safeJson } from "@/lib/api-response";
+import {
+  apiError,
+  getClientIp,
+  isJsonContentType,
+  readBodyText,
+} from "@/lib/api-response";
 import { dispatchLocalisedNotification } from "@/lib/notifications/dispatch-localised";
 import { prisma } from "@/lib/db";
 
@@ -87,23 +92,33 @@ function normalizePayload(payload: CoolifyDeployPayload): NormalizedEvent {
 }
 
 /**
- * Replay protection (v1.16.4). A captured webhook request carries a
- * static shared secret, so without a freshness check it can be replayed
- * indefinitely — re-paging admins with stale failure alerts and
- * polluting the audit log with forged deploy outcomes.
+ * Freshness and signature.
  *
- * The sender attaches `X-Deploy-Webhook-Timestamp` (unix seconds or
- * ISO-8601). Requests whose timestamp falls outside a ±5-minute window
- * are rejected. Two modes:
+ * The secret header alone cannot stop a replay: whoever holds a captured
+ * request holds the secret it carries, and can send a fresh request of any
+ * content. A timestamp beside it changed nothing, because the timestamp was
+ * covered by nothing and could be rewritten with the rest. Earlier versions
+ * called it replay protection; it was a staleness hint.
  *
- *   - Default (tolerant): a request WITHOUT the header passes — Coolify's
- *     stock notification sender does not attach one, and breaking the
- *     live integration would cost more than the residual replay window.
- *     A header that IS present but stale/invalid is always rejected, so
- *     a replayed capture of a timestamped request never lands.
- *   - `DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP=true`: the header becomes
- *     mandatory. For operators whose sender (or reverse proxy) can
- *     attach the timestamp; closes the replay window completely.
+ * A sender that can compute a signature authenticates without sending the
+ * secret at all: `X-Deploy-Webhook-Signature: sha256=<hex>` is the
+ * HMAC-SHA256, under `DEPLOY_WEBHOOK_SECRET`, of the timestamp header's
+ * value, a dot, and the raw body, and the timestamp must lie within five
+ * minutes. A capture of such a request is useless after the window and
+ * reveals no secret.
+ *
+ *   - Default: a signed request is verified as above; an unsigned one
+ *     authenticates with the secret header, as Coolify's stock sender does,
+ *     and a timestamp it carries must still be fresh.
+ *   - `DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP=true`: what it has always meant, the
+ *     secret header plus a fresh timestamp; an unsigned request without one
+ *     is refused. It keeps a stale capture out, not a fresh forgery by
+ *     someone who saw the secret. A signed request is accepted as above.
+ *   - `DEPLOY_WEBHOOK_REQUIRE_SIGNATURE=true`: only a signed request is
+ *     accepted; the secret header alone is refused. This is the setting
+ *     that stops a replay. It has its own name so that an operator who set
+ *     the timestamp flag, with a sender that adds a timestamp but cannot
+ *     sign, keeps the behaviour they asked for.
  *
  * See docs/ops/deploy.md ("Deploy-status webhook") for the operator
  * guidance.
@@ -123,17 +138,53 @@ function checkTimestampFreshness(
   now: number = Date.now(),
 ): { ok: boolean; reason?: string } {
   const raw = request.headers.get("x-deploy-webhook-timestamp");
-  const required =
-    process.env.DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP === "true" ||
-    process.env.DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP === "1";
   if (raw === null || raw === "") {
-    if (required) return { ok: false, reason: "timestamp_missing" };
-    return { ok: true };
+    return flagSet("DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP")
+      ? { ok: false, reason: "timestamp_missing" }
+      : { ok: true };
   }
   const ts = parseTimestamp(raw);
   if (ts === null) return { ok: false, reason: "timestamp_invalid" };
   if (Math.abs(now - ts) > TIMESTAMP_WINDOW_MS) {
     return { ok: false, reason: "timestamp_outside_window" };
+  }
+  return { ok: true };
+}
+
+function flagSet(
+  name: "DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP" | "DEPLOY_WEBHOOK_REQUIRE_SIGNATURE",
+): boolean {
+  const value = process.env[name]?.trim().toLowerCase();
+  return value === "true" || value === "1";
+}
+
+/**
+ * A signed request: the HMAC of `timestamp.body` under the shared secret,
+ * with a fresh timestamp. Null when the request carries no signature.
+ */
+function verifySignature(
+  request: NextRequest,
+  rawBody: string,
+  now: number = Date.now(),
+): { ok: boolean; reason?: string } | null {
+  const header = request.headers.get("x-deploy-webhook-signature");
+  if (header === null) return null;
+  const expected = process.env.DEPLOY_WEBHOOK_SECRET;
+  if (!expected) return { ok: false, reason: "secret_unset" };
+  const timestamp = request.headers.get("x-deploy-webhook-timestamp");
+  if (!timestamp) return { ok: false, reason: "timestamp_missing" };
+  const ts = parseTimestamp(timestamp);
+  if (ts === null) return { ok: false, reason: "timestamp_invalid" };
+  if (Math.abs(now - ts) > TIMESTAMP_WINDOW_MS) {
+    return { ok: false, reason: "timestamp_outside_window" };
+  }
+  const mac = createHmac("sha256", expected)
+    .update(`${timestamp}.${rawBody}`, "utf8")
+    .digest("hex");
+  const a = Buffer.from(`sha256=${mac}`, "utf8");
+  const b = Buffer.from(header.trim(), "utf8");
+  if (a.length !== b.length || !timingSafeEqual(a, b)) {
+    return { ok: false, reason: "signature_mismatch" };
   }
   return { ok: true };
 }
@@ -238,26 +289,47 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   const ip = getClientIp(request);
 
-  if (!hasValidSecret(request)) {
-    return NextResponse.json({ status: "unauthorized" }, { status: 401 });
+  if (!isJsonContentType(request.headers.get("content-type"))) {
+    return apiError("Content-Type must be application/json", 415);
+  }
+  // The raw body, because a signature covers the exact bytes sent.
+  const read = await readBodyText(request, 64 * 1024).catch(() => null);
+  if (!read) return apiError("Invalid request body", 400);
+  if (read.tooLarge) return apiError("Request body exceeds 65536 bytes", 413);
+
+  const signed = verifySignature(request, read.text);
+  if (signed) {
+    if (!signed.ok) {
+      annotate({ meta: { deploy_webhook_auth_reason: signed.reason } });
+      return NextResponse.json({ status: "unauthorized" }, { status: 401 });
+    }
+    getEvent()?.setAuth({ auth_method: "webhook_secret" });
+    annotate({ meta: { deploy_webhook_auth: "signature" } });
+  } else {
+    if (
+      flagSet("DEPLOY_WEBHOOK_REQUIRE_SIGNATURE") ||
+      !hasValidSecret(request)
+    ) {
+      return NextResponse.json({ status: "unauthorized" }, { status: 401 });
+    }
+    // Freshness AFTER the secret check: an unauthenticated caller learns
+    // nothing about the timestamp policy.
+    const freshness = checkTimestampFreshness(request);
+    if (!freshness.ok) {
+      annotate({
+        meta: { deploy_webhook_replay_reason: freshness.reason ?? "unknown" },
+      });
+      return NextResponse.json({ status: "stale" }, { status: 401 });
+    }
+    getEvent()?.setAuth({ auth_method: "webhook_secret" });
   }
 
-  // Freshness AFTER the secret check: an unauthenticated caller learns
-  // nothing about the timestamp policy, and a replayed-but-stale request
-  // from a captured legitimate call is rejected here.
-  const freshness = checkTimestampFreshness(request);
-  if (!freshness.ok) {
-    annotate({
-      meta: { deploy_webhook_replay_reason: freshness.reason ?? "unknown" },
-    });
-    return NextResponse.json({ status: "stale" }, { status: 401 });
+  let payload: CoolifyDeployPayload;
+  try {
+    payload = JSON.parse(read.text) as CoolifyDeployPayload;
+  } catch {
+    return apiError("Invalid JSON body", 400);
   }
-
-  getEvent()?.setAuth({ auth_method: "webhook_secret" });
-
-  const { data: payload, error: jsonError } =
-    await safeJson<CoolifyDeployPayload>(request, { maxBytes: 64 * 1024 });
-  if (jsonError) return jsonError;
 
   const event = normalizePayload(payload);
 

@@ -27,10 +27,15 @@ vi.mock("@/lib/fitbit/credentials", () => ({
   getUserFitbitCredentials: vi.fn(),
 }));
 
-vi.mock("@/lib/fitbit/client", () => ({
-  getAuthorizationUrl: vi.fn(
-    () => "https://www.fitbit.com/oauth2/authorize?state=nonce-stub",
-  ),
+vi.mock("@/lib/fitbit/oauth", () => ({
+  fitbitOAuth: {
+    authorizationUrl: vi.fn(
+      () => "https://www.fitbit.com/oauth2/authorize?state=nonce-stub",
+    ),
+  },
+}));
+
+vi.mock("@/lib/integrations/oauth-kit/pkce", () => ({
   generatePkcePair: vi.fn(() => ({
     verifier: "verifier-stub",
     challenge: "challenge-stub",

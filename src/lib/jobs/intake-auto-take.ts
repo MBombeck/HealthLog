@@ -52,7 +52,9 @@
  * The hourly auto-miss pass (`intake-auto-skip.ts`) leaves the slots this job
  * owns alone, so the two never write the same slot.
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
+import { MEDICATION_WINDOW_SELECT } from "@/lib/medications/course-window";
 
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
@@ -97,14 +99,6 @@ export {
   isInPauseEra,
   type SlotDecision,
 } from "@/lib/medications/auto-take";
-
-export const INTAKE_AUTO_TAKE_QUEUE = "intake-auto-take";
-
-/**
- * Every 15 minutes, off the reminder tick (:00/:15/:30/:45) and the hourly
- * auto-miss pass (:05). A 19:00 dose reads taken by 19:10 at the latest.
- */
-export const INTAKE_AUTO_TAKE_CRON = "10,25,40,55 * * * *";
 
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
@@ -162,6 +156,8 @@ interface AutoTakeMedication {
   userId: string;
   startsOn: Date | null;
   endsOn: Date | null;
+  /** #1280 — no slot at or after the instant the course was ended is filled. */
+  endedAt: Date | null;
   oneShot: boolean;
   createdAt: Date;
   autoMarkTakenSince: Date | null;
@@ -266,18 +262,21 @@ export async function runIntakeAutoTakePass(
   const medications = (await prisma.medication.findMany({
     // Opted in, active, not paused, not as-needed, intake tracked (a
     // record-only medication expects no dose, so none is recorded).
-    where: { ...autoTakeEligibleWhere(now), ...TRACKED_INTAKE_WHERE },
+    where: {
+      ...autoTakeEligibleWhere(now),
+      ...TRACKED_INTAKE_WHERE,
+      ...OWNED_BY_ACTIVE_ACCOUNT,
+    },
     select: {
       id: true,
       userId: true,
-      startsOn: true,
-      endsOn: true,
+      ...MEDICATION_WINDOW_SELECT,
       oneShot: true,
       createdAt: true,
       autoMarkTakenSince: true,
       schedules: { select: SCHEDULE_SELECT },
       scheduleRevisions: {
-        orderBy: { validFrom: "asc" },
+        orderBy: [{ validFrom: "asc" }, { id: "asc" }],
         select: {
           id: true,
           validFrom: true,
@@ -431,7 +430,7 @@ async function autoTakeMedication(
         deletedAt: null,
         takenAt: { not: null },
       },
-      orderBy: { takenAt: "desc" },
+      orderBy: [{ takenAt: "desc" }, { id: "desc" }],
       select: { takenAt: true },
     });
     lastIntakeAt = last?.takenAt ?? null;

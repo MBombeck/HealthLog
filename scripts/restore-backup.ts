@@ -28,6 +28,7 @@ import { pipeline } from "node:stream/promises";
 import { createGzip } from "node:zlib";
 
 import { scanBackupJson } from "@/lib/export/backup-json-scan";
+import { BACKUP_STREAM_KEYS } from "@/lib/export/streamed-backup";
 import {
   loadOffhostConfig,
   getS3Client,
@@ -115,7 +116,7 @@ async function main() {
   // Checked first, in one streamed pass that keeps only the small sections,
   // so nothing is written for an object that is not a backup.
   const { document, streamedCounts } = await scanBackupJson(source(), {
-    streamKeys: new Set(["measurements", "intakeEvents", "moodEntries"]),
+    streamKeys: BACKUP_STREAM_KEYS,
   });
   const body = validateBackupShape({
     ...document,

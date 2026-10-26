@@ -35,6 +35,7 @@
  * summary, never an overdue state, until a fresh block arrives.
  */
 import type { PrismaClient } from "@/generated/prisma/client";
+import { medicationWindow } from "@/lib/medications/course-window";
 import { projectTodayIntakesAndRecompute } from "@/lib/medications/scheduling/project-today-intakes";
 import { loadAutoTakeRollingAnchors } from "@/lib/medications/auto-take";
 import {
@@ -49,6 +50,7 @@ import {
   TRACKED_INTAKE_WHERE,
 } from "@/lib/medications/intake-tracking";
 import { liveEraStartsByMedication } from "@/lib/medications/scheduling/live-era";
+import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 
 export interface MedsTodayDueCandidate {
   medicationId: string;
@@ -138,8 +140,8 @@ export async function buildMedsTodayBlock(
       // place on the doses card: not counted, never the next due dose.
       prisma.medication.findMany({
         where: { userId, active: true, ...TRACKED_INTAKE_WHERE },
-        include: { schedules: true },
-        orderBy: { createdAt: "desc" },
+        include: { schedules: { orderBy: MEDICATION_SCHEDULE_ORDER } },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       }),
       prisma.medicationIntakeEvent.findMany({
         where: {
@@ -219,8 +221,7 @@ export async function buildMedsTodayBlock(
     const display = computeDisplayDue({
       medication: {
         id: m.id,
-        startsOn: m.startsOn,
-        endsOn: m.endsOn,
+        ...medicationWindow(m),
         oneShot: m.oneShot,
         createdAt: m.createdAt,
       },

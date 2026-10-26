@@ -228,8 +228,9 @@ describe("Google Health backfill over a dense heart-rate stream (#1023)", () => 
   }, 900_000);
 
   it("the same pages collected into one array outgrow the budget", async () => {
-    const { fetchDataPoints, GOOGLE_HEALTH_DATA_TYPES } =
-      await import("@/lib/google-health/client");
+    const { fetchDataPoints } = await import("@/lib/google-health/data-points");
+    const { GOOGLE_HEALTH_DATA_TYPES } =
+      await import("@/lib/google-health/mappers");
     let held: unknown[] = [];
     const { growth, samples } = await growthPastFirstQuarter(async () => {
       held = await fetchDataPoints(

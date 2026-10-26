@@ -31,7 +31,7 @@ vi.mock("@/lib/auth/audit", () => ({
 }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
 
-vi.mock("@/lib/sharing/grants", () => ({
+vi.mock("@/lib/sharing/grant-access", () => ({
   findActiveGrant: vi.fn(),
   grantAllows: vi.fn(() => true),
   grantCoversDomain: vi.fn(() => true),
@@ -60,7 +60,7 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { hashToken } from "@/lib/auth/hmac";
 import { auditLog } from "@/lib/auth/audit";
-import { findActiveGrant } from "@/lib/sharing/grants";
+import { findActiveGrant } from "@/lib/sharing/grant-access";
 import { ACCOUNT_SELECTOR_HEADER } from "@/lib/auth/acting-carrier";
 import { MEASUREMENTS_WRITE_SCOPE } from "@/lib/measurements/scopes";
 

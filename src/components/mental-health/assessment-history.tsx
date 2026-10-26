@@ -16,6 +16,9 @@
  * reveals the item-9 answer, and surfacing it triggers no third-party alert.
  * No new data leaves the safety boundary.
  *
+ * A row answered in a translation that has not been validated says so under
+ * its date, so the score reads as the orientation it is.
+ *
  * Each row also carries an opt-in answer breakdown: expanding it fetches the
  * per-administration detail read, where the server decrypts the stored
  * per-item answers (`AssessmentItemBreakdown`). Item 9 renders there like any
@@ -185,12 +188,21 @@ export function AssessmentHistory({
                   </Button>
                 </div>
               </div>
+              {row.wording === "unvalidated_translation" && (
+                <p
+                  className="text-muted-foreground text-xs"
+                  data-slot="history-wording-note"
+                >
+                  {t("mentalHealth.wording.historyUnvalidated")}
+                </p>
+              )}
               {flagged && open && <CrisisCard crisis={crisisFromRow(row)} />}
               {breakdownOpen && (
                 <div className="border-border/70 border-l pl-3">
                   <AssessmentItemBreakdown
                     assessmentId={row.id}
                     instrument={instrument}
+                    wording={row.wording}
                   />
                 </div>
               )}

@@ -14,8 +14,9 @@
  * v1.27.9 — the card generalises over the four-instrument registry and
  * carries the instrument's required attribution/licence line (WHO
  * CC BY-NC-SA citation for the WHO-5, the Sleepio CC BY-NC citation for
- * the SCI, the Pfizer grant for PHQ/GAD). A locale without validated item
- * wording additionally gets the honest "validated in English" note. The
+ * the SCI, the Pfizer grant for PHQ/GAD). A language whose text is the
+ * app's own translation additionally gets the note that it has not been
+ * validated. The
  * card BODY (header + last-result block) opens the per-instrument detail —
  * the Vorsorge-/med-card interaction — while the bottom-pinned Start
  * button stays a separate, non-overlapping action.
@@ -23,7 +24,7 @@
  * v1.27.24 — the attribution left the space UNDER the Start button (which
  * crowded the action) for a discreet info affordance at the top-right of
  * the card header, at the heading's height. A single icon button opens a
- * popover carrying the verbatim citation (+ the "validated in English"
+ * popover carrying the verbatim citation (+ the unvalidated-translation
  * note where it applies), so the Start button stands alone with clean
  * space below it. The citation still renders verbatim in full view on the
  * result and detail surfaces; here it is one tap away. The trigger is a
@@ -48,10 +49,8 @@ import {
   useDisplayTimezone,
 } from "@/lib/i18n/context";
 import { relativeCalendarDate } from "@/lib/i18n/relative-time";
-import {
-  INSTRUMENTS,
-  hasValidatedItems,
-} from "@/lib/mental-health/instruments";
+import { INSTRUMENTS } from "@/lib/mental-health/instruments";
+import { useQuestionnaireWording } from "@/hooks/use-questionnaire-wording";
 
 import type { AssessmentRow, InstrumentId } from "./types";
 
@@ -83,6 +82,8 @@ export function InstrumentCard({
   const displayTz = useDisplayTimezone();
   const def = INSTRUMENTS[instrument];
   const key = def.i18nKey;
+  const unvalidated =
+    useQuestionnaireWording(locale)?.[instrument].validated === false;
   const title = t(`mentalHealth.instrument.${key}`);
 
   return (
@@ -116,9 +117,7 @@ export function InstrumentCard({
             className="text-muted-foreground mt-1 text-xs leading-snug"
             data-slot="instrument-card-attribution"
           >
-            {!hasValidatedItems(instrument, locale) && (
-              <>{t("mentalHealth.validatedInEnglishNote")} </>
-            )}
+            {unvalidated && <>{t("mentalHealth.wording.unvalidatedNote")} </>}
             {def.attribution}
           </p>
         </PopoverContent>

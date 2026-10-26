@@ -1,0 +1,40 @@
+{
+  "status": 422,
+  "body": {
+    "data": null,
+    "error": "Validation failed",
+    "details": {
+      "issues": [
+        {
+          "path": "limit",
+          "code": "too_small",
+          "message": "Too small: expected number to be >=1"
+        },
+        {
+          "path": "sortDir",
+          "code": "invalid_value",
+          "message": "Invalid option: expected one of \"asc\"|\"desc\""
+        }
+      ]
+    },
+    "meta": {
+      "errorCode": "http.invalid",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 422,
+      "action": {
+        "name": "measurements.list.validation-failed"
+      },
+      "meta": {
+        "issue_count": 2,
+        "rejected_attempt": "measurements.list.validation-failed"
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": []
+}

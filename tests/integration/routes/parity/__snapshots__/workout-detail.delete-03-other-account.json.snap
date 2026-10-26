@@ -1,0 +1,63 @@
+{
+  "status": 404,
+  "body": {
+    "data": null,
+    "error": "Workout not found",
+    "meta": {
+      "errorCode": "http.not_found",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 404,
+      "action": null,
+      "meta": null,
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "workouts": [
+      {
+        "id": "<id:1>",
+        "source": "APPLE_HEALTH",
+        "externalId": "hk-run-0",
+        "sportType": "running"
+      },
+      {
+        "id": "<id:2>",
+        "source": "MANUAL",
+        "externalId": "manual:walk-1",
+        "sportType": "walking"
+      },
+      {
+        "id": "<id:3>",
+        "source": "APPLE_HEALTH",
+        "externalId": "hk-ride-1",
+        "sportType": "cycling"
+      },
+      {
+        "id": "<id:4>",
+        "source": "APPLE_HEALTH",
+        "externalId": "hk-run-1",
+        "sportType": "running"
+      },
+      {
+        "id": "<id:5>",
+        "source": "MANUAL",
+        "externalId": "manual:run-twin",
+        "sportType": "running"
+      }
+    ],
+    "records": [
+      {
+        "metricSlot": "longest_distance_run",
+        "value": 3000,
+        "externalId": "manual:walk-1",
+        "source": "MANUAL"
+      }
+    ]
+  }
+}

@@ -26,13 +26,8 @@ import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
@@ -63,13 +58,10 @@ async function postAction(request: NextRequest): Promise<Response> {
   );
   if (!rate.allowed) return apiError("coach.action.rateLimited", 429);
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, coachSuggestedActionSchema, {
     maxBytes: 4 * 1024,
   });
-  if (jsonError) return jsonError;
-
-  const parsed = coachSuggestedActionSchema.safeParse(body);
-  if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+  if (!parsed.ok) return parsed.error;
   const action = parsed.data;
 
   // ── checkup.create → a preventive-care Vorsorge reminder ─────

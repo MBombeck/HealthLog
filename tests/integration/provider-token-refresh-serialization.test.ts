@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as WhoopClientModule from "@/lib/whoop/client";
-import type * as WithingsClientModule from "@/lib/withings/client";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
@@ -17,14 +16,24 @@ const { whoopRefresh, withingsRefresh, whoopRecoveries } = vi.hoisted(() => ({
 
 vi.mock("@/lib/whoop/client", async (importOriginal) => ({
   ...(await importOriginal<typeof WhoopClientModule>()),
-  refreshAccessToken: whoopRefresh,
   fetchRecoveries: whoopRecoveries,
 }));
 
-vi.mock("@/lib/withings/client", async (importOriginal) => ({
-  ...(await importOriginal<typeof WithingsClientModule>()),
-  refreshAccessToken: withingsRefresh,
-}));
+vi.mock("@/lib/whoop/oauth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/whoop/oauth")>();
+  return {
+    ...actual,
+    whoopOAuth: { ...actual.whoopOAuth, refresh: whoopRefresh },
+  };
+});
+
+vi.mock("@/lib/withings/oauth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/withings/oauth")>();
+  return {
+    ...actual,
+    withingsOAuth: { ...actual.withingsOAuth, refresh: withingsRefresh },
+  };
+});
 
 import { encrypt, decrypt } from "@/lib/crypto";
 import { getValidToken as getValidWhoopToken } from "@/lib/whoop/sync-core";

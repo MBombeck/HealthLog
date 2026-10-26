@@ -162,6 +162,7 @@ describe("daily-briefing re-roll on unchanged data", () => {
       },
       workingProvider: { providerType: "openai" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
 
     const outcome = await generateComprehensiveInsight("u1", { locale: "de" });
@@ -226,6 +227,7 @@ describe("daily-briefing re-roll on unchanged data", () => {
       result: { content: "not json at all", tokensUsed: 5, model: "m" },
       workingProvider: { providerType: "openai" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
 
     const outcome = await generateComprehensiveInsight("u1", { locale: "de" });

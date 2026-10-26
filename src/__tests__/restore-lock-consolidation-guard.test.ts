@@ -19,6 +19,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { stripComments } from "./helpers/source-files";
 
 const ROOT = join(__dirname, "..", "lib");
 
@@ -38,9 +39,7 @@ function sourceFiles(dir: string): string[] {
 
 /** The text of a file with its comments blanked, so prose cannot match. */
 function code(path: string): string {
-  return readFileSync(path, "utf8")
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  return stripComments(readFileSync(path, "utf8"), path);
 }
 
 const passes = sourceFiles(ROOT).filter((path) =>

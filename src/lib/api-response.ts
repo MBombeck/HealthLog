@@ -3,6 +3,15 @@ import { NextResponse } from "next/server";
 import type { ZodError, ZodIssue } from "zod/v4";
 
 import { defaultErrorCodeForStatus } from "@/lib/api/default-error-codes";
+import {
+  peerAddressStampInstalled,
+  readPeerAddress,
+} from "@/lib/http/peer-address";
+import {
+  parseTrustProxyHops,
+  parseTrustedProxyCidrs,
+  peerMayForward,
+} from "@/lib/http/proxy-trust";
 
 export function apiSuccess<T>(data: T, status = 200) {
   return NextResponse.json({ data, error: null }, { status });
@@ -430,6 +439,17 @@ export async function readBodyText(
 }
 
 /**
+ * Whether a `Content-Type` names JSON: the media type itself, compared
+ * exactly, with any parameters after it (`; charset=utf-8`). A substring
+ * test accepted `text/plain; x=application/json`, a type a page on another
+ * origin can send without a CORS preflight.
+ */
+export function isJsonContentType(value: string | null | undefined): boolean {
+  if (!value) return false;
+  return value.split(";", 1)[0]!.trim().toLowerCase() === "application/json";
+}
+
+/**
  * Safely parse JSON body from a request.
  * Returns the parsed body or a 400 error response if parsing fails.
  *
@@ -445,8 +465,7 @@ export async function safeJson<T = unknown>(
   request: Request,
   opts?: { maxBytes?: number },
 ): Promise<{ data: T; error?: never } | { data?: never; error: Response }> {
-  const ct = request.headers.get("content-type");
-  if (!ct || !ct.includes("application/json")) {
+  if (!isJsonContentType(request.headers.get("content-type"))) {
     return { error: apiError("Content-Type must be application/json", 415) };
   }
   if (opts?.maxBytes !== undefined) {
@@ -485,12 +504,24 @@ export async function safeJson<T = unknown>(
  * Trust model (`TRUST_PROXY_HOPS` env):
  *   - "0"          → trust no forwarding header at all, XFF or x-real-ip
  *                    (use this if HealthLog is internet-facing without a
- *                    reverse proxy you control); the IP resolves to null
+ *                    reverse proxy you control); the IP is the connection's
+ *                    own peer address
  *   - "1" (default)→ trust exactly one hop (typical Coolify / Caddy /
  *                    Cloudflare-Tunnel single-proxy deployment); read the
  *                    rightmost XFF entry which is the IP your proxy
  *                    observed when the request arrived.
  *   - "N" (>1)     → trust N hops; read the Nth-from-rightmost XFF entry.
+ *
+ * Forwarding headers are read only from a connection whose peer may be a
+ * proxy (`peerMayForward` in `@/lib/http/proxy-trust`): one inside
+ * `TRUSTED_PROXY_CIDRS` when that is set, otherwise any loopback, private,
+ * unique-local or CGNAT (Tailscale) address. Any other connection reached the
+ * server directly, so whatever forwarding headers it sends are its own, and
+ * its own address is the client IP. The peer comes from
+ * `@/lib/http/peer-address`. Without that check, the default of one trusted
+ * hop let any direct caller name a fresh address per request and step around
+ * every per-IP limit. An invalid `TRUST_PROXY_HOPS` resolves no address
+ * (and is named at boot) instead of failing the request.
  *
  * Cloudflare opt-in (`TRUST_CF_CONNECTING_IP=1`): when the env flag is
  * set, the helper prefers the `cf-connecting-ip` header before walking
@@ -537,22 +568,24 @@ function readCfConnectingIp(request: Request): string | null {
   return looksLikeIp(trimmed) ? trimmed : null;
 }
 
-function parseTrustProxyHops(raw: string | undefined): number {
-  // Empty is unset. The shipped docker-compose.yml passes
-  // `TRUST_PROXY_HOPS: "${TRUST_PROXY_HOPS:-}"`, which is an empty string for
-  // every operator who never set it; reading that as invalid threw on every
-  // request that asked for the client IP.
-  const trimmed = raw?.trim() ?? "";
-  if (trimmed === "") return 1;
-  if (!/^\d+$/.test(trimmed)) {
-    // Reject explicitly-invalid values so an operator typo doesn't silently
-    // switch a real-proxy deployment to "no XFF trust" mode (review
-    // finding L-1: TRUST_PROXY_HOPS=garbage degraded to hops=0 silently).
-    throw new Error(
-      `TRUST_PROXY_HOPS must be a non-negative integer, got: ${JSON.stringify(raw)}`,
-    );
-  }
-  return parseInt(trimmed, 10);
+/**
+ * Once per process: `TRUST_PROXY_HOPS` is not a number. Every request that
+ * asks for the client address used to throw on it, so every route answered
+ * 500, `/api/health` included. It resolves no address instead, and says so.
+ */
+let invalidHopsWarned = false;
+
+function warnInvalidHopsOnce(raw: string | undefined): void {
+  if (invalidHopsWarned) return;
+  invalidHopsWarned = true;
+  console.warn(
+    `[getClientIp] TRUST_PROXY_HOPS=${JSON.stringify(raw)} is not a non-negative integer; no client address is read from forwarding headers until it is fixed, and every anonymous caller shares one rate-limit bucket.`,
+  );
+}
+
+/** Test-only reset for {@link warnInvalidHopsOnce}. */
+export function _resetInvalidHopsWarningForTests(): void {
+  invalidHopsWarned = false;
 }
 
 /**
@@ -611,6 +644,35 @@ function warnUnreadProxyHeadersOnce(hops: number, header: string): void {
 }
 
 /**
+ * Once per process: a connection from a public address carried forwarding
+ * headers, which are ignored. Either HealthLog is reachable without its
+ * proxy (the published port is open to the internet), or the proxy in front
+ * connects from a public address and needs `TRUST_CF_CONNECTING_IP` or a
+ * private network between it and HealthLog.
+ */
+let publicPeerForwardingWarned = false;
+
+function warnPublicPeerForwardingOnce(): void {
+  if (publicPeerForwardingWarned) return;
+  publicPeerForwardingWarned = true;
+  const listed =
+    parseTrustedProxyCidrs(process.env.TRUSTED_PROXY_CIDRS).kind !== "unset";
+  console.warn(
+    listed
+      ? "[getClientIp] a connection from outside TRUSTED_PROXY_CIDRS sent X-Forwarded-For or X-Real-IP; those headers are ignored and the connection's own address is used. " +
+          "If it was your proxy, add its address to TRUSTED_PROXY_CIDRS; otherwise the published port is reachable beyond the proxy."
+      : "[getClientIp] a connection from a public address sent X-Forwarded-For or X-Real-IP; those headers are ignored and the connection's own address is used. " +
+          "If HealthLog is meant to be reached only through a reverse proxy, the published port is open beyond it. " +
+          "If the proxy connects from a public address, set TRUSTED_PROXY_CIDRS to it.",
+  );
+}
+
+/** Test-only reset for {@link warnPublicPeerForwardingOnce}. */
+export function _resetPublicPeerForwardingWarningForTests(): void {
+  publicPeerForwardingWarned = false;
+}
+
+/**
  * Tagged return shape so a caller can apply a tighter universal
  * rate-limit when the trust chain is misconfigured. F-6 (mobile security
  * audit, 2026-05-16): callers today fall back to a literal `"unknown"`
@@ -639,6 +701,35 @@ export function getClientIpOrTrustWarning(request: Request): {
   if (cfIp) return { ip: cfIp, trustViolation: false };
 
   const hops = parseTrustProxyHops(process.env.TRUST_PROXY_HOPS);
+  if (hops === null) {
+    warnInvalidHopsOnce(process.env.TRUST_PROXY_HOPS);
+    return { ip: null, trustViolation: true };
+  }
+
+  // The connection's own peer, stamped by the server for every request it
+  // receives. `undefined` only for a request the server did not receive (a
+  // suite's hand-built request) — or, once the stamp is installed, one that
+  // arrived before it was, whose forwarding headers nothing vouches for.
+  const peer = readPeerAddress(request);
+  if (peer === null || (peer === undefined && peerAddressStampInstalled())) {
+    return { ip: null, trustViolation: false };
+  }
+  if (peer !== undefined) {
+    // No proxy declared: the peer is the client.
+    if (hops === 0) return { ip: peer, trustViolation: false };
+    // A peer that is not a proxy (outside TRUSTED_PROXY_CIDRS when it is
+    // set, on a public address when it is not) reached the server directly;
+    // its forwarding headers are its own choice, not a proxy's report.
+    if (!peerMayForward(peer)) {
+      if (
+        request.headers.has("x-real-ip") ||
+        request.headers.get("x-forwarded-for")?.trim() !== peer
+      ) {
+        warnPublicPeerForwardingOnce();
+      }
+      return { ip: peer, trustViolation: false };
+    }
+  }
 
   if (hops > 0) {
     const forwarded = request.headers.get("x-forwarded-for");

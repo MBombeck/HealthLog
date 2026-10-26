@@ -14,13 +14,8 @@
 import { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { withIdempotency } from "@/lib/idempotency";
@@ -71,16 +66,12 @@ async function postMedicationCategory(request: NextRequest): Promise<Response> {
     return apiError("Too many requests, try again later", 429);
   }
 
-  const { data: raw, error: jsonError } = await safeJson(request, {
-    maxBytes: 16 * 1024,
-  });
-  if (jsonError) return jsonError;
-  const parsed = createMedicationCategoryLabelSchema.safeParse(raw);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "medications.category.invalid",
-    });
-  }
+  const parsed = await parseJsonBody(
+    request,
+    createMedicationCategoryLabelSchema,
+    { maxBytes: 16 * 1024, errorCode: "medications.category.invalid" },
+  );
+  if (!parsed.ok) return parsed.error;
 
   const count = await prisma.medicationCategoryLabel.count({
     where: { userId: user.id },

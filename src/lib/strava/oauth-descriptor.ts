@@ -9,7 +9,7 @@ import {
   obtainAccessToken,
   type OAuthTokenDescriptor,
 } from "@/lib/integrations/oauth-kit/token";
-import { refreshAccessToken, type StravaCredentials } from "./client";
+import { type StravaCredentials, stravaOAuth } from "./oauth";
 import { getStravaClientCredentials } from "./credentials";
 
 export const stravaTokenDescriptor: OAuthTokenDescriptor<StravaCredentials> = {
@@ -45,7 +45,7 @@ export const stravaTokenDescriptor: OAuthTokenDescriptor<StravaCredentials> = {
   },
   loadCredentials: (userId) => getStravaClientCredentials(userId),
   refresh: (refreshToken, credentials) =>
-    refreshAccessToken(refreshToken, credentials),
+    stravaOAuth.refresh(refreshToken, credentials),
 };
 
 /**

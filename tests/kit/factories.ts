@@ -27,7 +27,8 @@ import type {
   Workout,
 } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
-import { createSession, SESSION_COOKIE_NAME } from "@/lib/auth/session";
+import { createSession } from "@/lib/auth/session";
+import { sessionCookieName } from "@/lib/auth/session-cookie";
 import { issueApiToken } from "@/lib/auth/issue-token";
 
 import { cookieJar } from "../integration/mock-next-headers";
@@ -91,7 +92,7 @@ export async function makeSession(
     "healthlog-kit",
     options.mfaVerifiedAt ?? null,
   );
-  const cookie = cookieJar.get(SESSION_COOKIE_NAME);
+  const cookie = cookieJar.get(sessionCookieName());
   cookieJar.clear();
   for (const [name, value] of before) cookieJar.set(name, value);
   if (!cookie) {

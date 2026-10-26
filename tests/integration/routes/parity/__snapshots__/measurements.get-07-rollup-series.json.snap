@@ -1,0 +1,51 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "measurements": [
+        {
+          "type": "ACTIVITY_STEPS",
+          "value": 7100,
+          "measuredAt": "2026-10-12T00:00:00.000Z",
+          "count": 1
+        },
+        {
+          "type": "ACTIVITY_STEPS",
+          "value": 8400,
+          "measuredAt": "2026-10-13T00:00:00.000Z",
+          "count": 1
+        },
+        {
+          "type": "ACTIVITY_STEPS",
+          "value": 5100,
+          "measuredAt": "2026-10-14T00:00:00.000Z",
+          "count": 1
+        }
+      ],
+      "meta": {
+        "total": 3,
+        "limit": 100,
+        "offset": 0,
+        "aggregate": "daily"
+      }
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "measurement.list"
+      },
+      "meta": {
+        "total": 3,
+        "type": "ACTIVITY_STEPS",
+        "aggregate": "daily",
+        "source": "live"
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": []
+}

@@ -64,6 +64,20 @@ const SCOPED_DIRS = [
   "lib/export",
   "lib/targets/",
   "lib/doctor-report",
+  // Request-handler logic moved out of its route into a service keeps the
+  // route's scope.
+  "lib/measurements/batch-ingest/",
+  "lib/measurements/create/",
+  "lib/measurements/list/measurement-list.ts",
+  "lib/medications/read-medication.ts",
+  "lib/medications/update-medication/",
+  "lib/medications/delete-medication.ts",
+  "lib/medications/record-intake/",
+  "lib/medications/list-intake-events.ts",
+  "lib/medications/intake-today.ts",
+  "lib/medications/intake-compliance.ts",
+  "lib/medications/update-intake-status/",
+  "lib/medications/intake-bulk/",
 ];
 
 /** Types a device writes at sampling rate rather than a few times a day. */
@@ -101,11 +115,11 @@ const ALLOWED: Record<string, string> = {
     "Same 30-day clinical glucose panel as the coach snapshot (per-reading metrics), grouped by meal context.",
   "lib/analytics/score/reader.ts::{ in: types":
     "Health-score inputs: steps (drained to one row per day nightly), sleep, waist, weight, blood pressure, fasting glucose only.",
-  'app/api/analytics/route.ts::"BLOOD_GLUCOSE"':
+  'lib/analytics/response/glucose.ts::"BLOOD_GLUCOSE"':
     "The 30-day per-context glucose summary, the same window and bound as the dashboard and coach glucose panels: at a sensor's fixed rate, below 45 000 rows.",
-  "app/api/measurements/batch/route.ts::p.row.type as MeasurementType":
+  "lib/measurements/batch-ingest/write-measurements.ts::p.row.type as MeasurementType":
     "Cross-source merge probe: one ±tolerance window around each posted reading's instant, so the rows found are bounded by the batch size.",
-  "app/api/measurements/route.ts::(shorthand)":
+  "lib/measurements/create/create-sleep-stage.ts::(shorthand)":
     "Cross-source merge probe for one posted sleep segment: SLEEP_DURATION in a ±tolerance window around its end.",
   "lib/targets/build-response.ts::{ in: recentTypes":
     "Thirty days of weight, blood pressure, resting heart rate, body fat and steps (drained to one row per day). PULSE is filtered out of `recentTypes` and folds in SQL.",

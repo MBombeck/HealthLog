@@ -39,6 +39,7 @@ import { ListRow } from "@/components/ui/list-row";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { type AdminUser, PasswordInput } from "./_shared";
+import { PendingDeletionControls } from "./pending-deletion-controls";
 import { apiGet, apiPost, apiPut } from "@/lib/api/api-fetch";
 import {
   recentProofErrorMessage,
@@ -56,8 +57,7 @@ type UserFilter = "all" | "admin" | "user";
 
 export function UserManagementSection() {
   const { t } = useTranslations();
-  const { user } = useAuth();
-  const currentUserId = user?.id ?? "";
+  const currentUserId = useAuth().user?.id ?? "";
   const queryClient = useQueryClient();
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [editUsername, setEditUsername] = useState("");
@@ -182,6 +182,7 @@ export function UserManagementSection() {
    */
   const renderUserActions = (u: AdminUser) => (
     <>
+      <PendingDeletionControls user={u} />
       <Button
         variant="ghost"
         size="sm"

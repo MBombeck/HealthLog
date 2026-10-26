@@ -3,7 +3,7 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
 import { loadOneConnectionHealth } from "@/lib/integrations/connection-health-load";
-import { hasActivityScope } from "@/lib/withings/client";
+import { hasActivityScope } from "@/lib/withings/oauth";
 import { obtainAccessToken } from "@/lib/integrations/oauth-kit/token";
 import { withingsTokenDescriptor } from "@/lib/withings/oauth-descriptor";
 import { isWithingsRefreshReauthFailure } from "@/lib/withings/sync";

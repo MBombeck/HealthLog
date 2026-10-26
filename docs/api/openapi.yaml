@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.45.0
+  version: 1.46.0
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -2201,11 +2201,20 @@ paths:
                   - $ref: "#/components/schemas/MfaRequiredResponse"
         "401": *a1
         "403":
-          description: "Password login is disabled — the operator runs `OIDC_ONLY=true`. `meta.errorCode` = `oidc_only`; sign in
+          description: >-
+            Password login is disabled — the operator runs `OIDC_ONLY=true`. `meta.errorCode` = `oidc_only`; sign in
             through SSO instead. The one exception is a browser the SSO callback sent back with a pending link to
             confirm an existing account: it may sign in with that one account's password, which links the account. A
             sign-in to any other account on that browser is refused before its password is checked, so the answer is the
-            same whether the password was right or wrong."
+            same whether the password was right or wrong.
+
+
+            Also 403 `auth.account.deletion_pending`, after the password was proved and before a second factor is asked
+            for: the account is pending deletion and locked. `meta.purgeAt` is when it is erased; an admin can undo the
+            deletion until then. Every other sign-in surface (passkey, second-factor completion, the native token
+            exchanges) refuses with the same code. A session, refresh token or API token issued before the deletion is
+            revoked by it, so those answer 401 (`auth.refresh.revoked` on refresh), the same as for a signed-out
+            session.
           content:
             application/json:
               schema:
@@ -3372,6 +3381,25 @@ paths:
         "422": *a4
         "429": *a5
   /api/tokens/measurements:
+    get:
+      tags:
+        - Auth
+      summary: Readings no measurement token reaches
+      description: Counts the caller's live EXTERNAL readings that are linked to no token. Readings are linked to the token
+        that sent them since v1.46; older ones were linked by a one-time pass only when the account held exactly one
+        measurement token, so the rest belong to none and no token's Apple Health setting reaches them. Cookie session
+        only.
+      responses:
+        "200":
+          description: The count.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeasurementTokenSummaryEnvelope"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
     post:
       tags:
         - Auth
@@ -3689,6 +3717,53 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
+        "429": *a5
+    patch:
+      tags:
+        - Auth
+      summary: Change a measurement token's Apple Health setting
+      description: "Sets whether the HealthLog app writes the readings this measurement token sent into Apple Health. The
+        readings keep their `EXTERNAL` source and are not rewritten: every measurement row resolves `appleHealthMirror`
+        from the token at read time, and a paired client learns of the change through the `measurementMirror` domain of
+        `GET /api/sync/changes`. Turning it off stops further writes; samples already in Apple Health stay. A revoked
+        token is accepted, since its readings stay in the record. Cookie session only, the caller's own tokens only
+        (another account's answers 404). Audited as `tokens.measurements.mirror.update` when the value changes. 30
+        changes per account per minute. Not gated on the instance-wide API switch: no credential is created or
+        extended."
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMeasurementTokenRequest"
+      responses:
+        "200":
+          description: The setting as it now stands.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateMeasurementTokenEnvelope"
+        "401": *a1
+        "403": *a9
+        "404":
+          description: Token not found or not owned by the caller.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: "Validation failed, or the token is not a measurement token (`meta.errorCode` =
+            `tokens.mirror.not_measurement_token`): a wildcard, connector or other narrow token has no such setting."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
   /api/auth/register:
     post:
@@ -4224,10 +4299,11 @@ paths:
         - Sync
       summary: Multi-domain delta feed
       description: "Incremental catch-up after the first-pair backfill (never a replacement for it). Pages over one opaque
-        keyset cursor spanning five domains — measurements, mood, medication intakes, cycle day logs and cycles. Each
-        domain carries `tombstones` (soft-deleted rows) and `upserts` (live rows); apply tombstones before upserts
-        within a domain. Tombstone identity is `externalId` for measurements and the server `id` everywhere else.
-        `cursorExpired: true` forces a clean re-init and the page is empty in every domain."
+        keyset cursor spanning six domains — measurements, mood, medication intakes, cycle day logs, cycles, and
+        `measurementMirror` (the Apple Health write-back of readings whose token setting changed). Each domain carries
+        `tombstones` (soft-deleted rows) and `upserts` (live rows); apply tombstones before upserts within a domain.
+        Tombstone identity is `externalId` for measurements and the server `id` everywhere else. `cursorExpired: true`
+        forces a clean re-init and the page is empty in every domain."
       parameters:
         - in: query
           name: cursor
@@ -4554,6 +4630,12 @@ paths:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+        - in: query
+          name: appleHealthMirror
+          schema:
+            type: string
+            enum:
+              - "true"
         - in: query
           name: valueMin
           schema:
@@ -6585,6 +6667,13 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateMedicationRequest"
       responses:
+        "200":
+          description: "A mirror create re-posting an `(externalSource, externalId)` pair the caller already holds: the existing
+            medication, nothing written."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateMedicationResponse"
         "201":
           description: Created medication with its schedules.
           content:
@@ -6779,6 +6868,50 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "409": *a7
+        "422": *a4
+        "429": *a5
+  /api/medications/{id}/courses/end:
+    post:
+      tags:
+        - Medications
+      summary: End the running course now
+      description: "#1280 — \"End course\". No body. The running course's last day becomes today on the person's clock and the
+        moment is stored as its `endedAt`: a dose slot later today is not due, not reminded and not expected by
+        compliance, a dose taken earlier today still counts, and `courseStatus` reads ENDED at once. Pending
+        placeholders for slots at or after the moment are removed (tombstoned for sync). A medication with no dates gets
+        the course its window describes, from creation to today. An end date set through `PUT /api/medications/{id}` or
+        the course editor keeps meaning the whole day; only this action ends a course at an instant. Refused with 409
+        `medications.course.notRunning` while no course is running — the rule the reads publish as `canEndCourse`. The
+        record's owner, or a delegate whose grant manages the record's medications (the level of the medication's PUT);
+        any other delegate is refused with 403."
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+        - *a6
+      responses:
+        "200":
+          description: The medication's window after ending.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EndMedicationCourseResponse"
+        "401": *a1
+        "403": *a15
+        "404":
+          description: Medication not found (`medications.course.notFound`), or another user's.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: "No course is running now (`medications.course.notRunning`): it has ended already or has not started."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
   /api/medications/{id}/courses/{courseId}:
@@ -12654,6 +12787,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+        "413":
+          description: The request body is over 16 KB. Nothing was generated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "422":
           description: No AI provider can serve the `briefing` capability (`meta.errorCode` = `ai.provider.none`, `meta.reason` =
             `no_provider`), or the provider answered something that was not valid JSON (`meta.errorCode` =
@@ -12668,6 +12807,13 @@ paths:
             hourly limit of generations for this account. `insights.generate.budgetExceeded`: the DAY's token ceiling
             refused the reservation before any provider was contacted — retry tomorrow, not in an hour. No code, with
             provider wording: the upstream provider rate-limited every hop of the chain."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "502":
+          description: The generated briefing did not pass the outbound safety screen and was discarded (`meta.errorCode` =
+            `insights.generate.outboundScreened`). Regenerating may succeed.
           content:
             application/json:
               schema:
@@ -14850,11 +14996,19 @@ paths:
     delete:
       tags:
         - Auth
-      summary: Permanently delete the account and everything in it
+      summary: Delete the account and everything in it
       description: >-
-        Erasure, not deactivation: the user row goes, every related row cascades with it, and the account's own audit
-        history — IP addresses, login geo — is purged inside the same transaction rather than being left orphaned. There
-        is no undo and no grace period.
+        Erasure, after a grace window. With `ACCOUNT_DELETION_GRACE_DAYS` above 0 (14 by default) the account is locked
+        at once — every session, refresh token, API token, connector and share link is revoked, sign-in is refused with
+        403 `auth.account.deletion_pending` and the erasure date in `meta.purgeAt`, and nothing acts for the account any
+        more — and the purge job erases it when the window ends. Until then an admin can undo the deletion, and the
+        record is exactly as it was. `scheduledPurgeAt` in the answer is that date. With the window set to 0 the account
+        is erased in this request, as before, and `scheduledPurgeAt` is null.
+
+
+        The erasure itself: the user row goes, every related row cascades with it, the off-host copies are purged, and
+        the account's own audit history — IP addresses, login geo — is purged inside the same transaction rather than
+        being left orphaned.
 
 
         Two gates, and they compose. The body must carry the typed confirmation. And for an account with a second factor
@@ -14883,7 +15037,8 @@ paths:
               $ref: "#/components/schemas/DeleteAccountRequest"
       responses:
         "200":
-          description: Account and all associated data deleted.
+          description: Account locked for deletion (erased at `scheduledPurgeAt`), or erased now when there is no grace window
+            (`scheduledPurgeAt` null).
           content:
             application/json:
               schema:
@@ -15184,6 +15339,12 @@ paths:
         data.
 
 
+        With a deletion grace window (`ACCOUNT_DELETION_GRACE_DAYS`, 14 days by default) the whole record is first
+        stored as an account copy of its own (`PRE_WIPE_<ms>`), through the writer the weekly copy uses. The wipe leaves
+        that copy in place, an admin can restore it until `restorableUntil`, and the off-host purge waits until then
+        too. A copy that cannot be written stops the wipe before anything is deleted: 503 `data_wipe.copy_failed`.
+
+
         Gated like account deletion: the typed confirmation, plus a fresh factor proof for an MFA-enrolled account — on
         a cookie session the second factor completed within the last five minutes, on a Bearer token a single-use
         `X-Step-Up` elevation minted at `POST /api/auth/step-up` against a `totp`, `webauthn`, or `passkey` proof. The
@@ -15252,6 +15413,13 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "422": *a4
         "429": *a5
+        "503":
+          description: The account copy kept before a wipe could not be written (`meta.errorCode` = `data_wipe.copy_failed`), so
+            nothing was deleted. Only with a deletion grace window.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /api/settings/module-list-layout:
     get:
       tags:
@@ -15288,45 +15456,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ModuleListLayoutSavedEnvelope"
-        "401": *a1
-        "403": *a9
-        "422": *a4
-        "429": *a5
-  /api/settings/preview-features:
-    get:
-      tags:
-        - Meta
-      summary: Get the preview-feature opt-ins
-      description: Every flag, off unless the caller switched it on.
-      responses:
-        "200":
-          description: The opt-ins.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PreviewFeaturesEnvelope"
-        "401": *a1
-        "403": *a9
-        "422": *a4
-        "429": *a5
-    patch:
-      tags:
-        - Meta
-      summary: Switch preview features on or off
-      description: Sets the flags the body names and keeps the rest. An unknown flag or an empty body is refused with 422.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PreviewFeaturesPatchBody"
-      responses:
-        "200":
-          description: The opt-ins as stored.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PreviewFeaturesSavedEnvelope"
         "401": *a1
         "403": *a9
         "422": *a4
@@ -16069,16 +16198,19 @@ paths:
       tags:
         - Import
       summary: Import measurements and mood entries from JSON
-      description: "Restores a JSON export (the structure `GET /api/export/json` emits): up to 10 000 measurements plus 10 000
-        mood entries per call, body ≤ 16 MB. Rows carrying an `externalId` upsert idempotently (re-import updates in
-        place); rows without one are first-write-wins and dedup against the existing unique keys, so an exact duplicate
-        is `skipped` rather than doubled. A row with an unstable `externalId` is skipped while the rest of the file
-        still lands. Every imported measurement stores `source = IMPORT`; every imported mood entry re-derives
-        pleasantness from its label. Writes are per-row, not transactional: on a mid-file write failure the response is
-        503 (`meta.errorCode` = `import.write_failed`, `meta.retryable` = true) with `meta.stats` carrying what landed —
-        rows already written stay written, and a retry is only safe against duplication for rows that carry an
-        `externalId`. Validation is fail-fast (the 422 carries the first issue's message, not the multi-issue envelope).
-        Rate-limited 5/hour per user (shared `import:` bucket with the CSV importer)."
+      description: "Imports the app's own files back: the JSON export (`GET /api/export?format=json`, read inside its `data`
+        envelope) or the portable full backup (`GET /api/export/full-backup`). Every field either file writes for a
+        reading or a mood entry is carried, apart from the row ids, the source and the sync bookkeeping; a backup's
+        deletion records are skipped and counted. Up to 10 000 measurements plus 10 000 mood entries per call, body ≤ 16
+        MB. Rows carrying an `externalId` upsert idempotently (re-import updates in place); rows without one are
+        first-write-wins and dedup against the existing unique keys, so an exact duplicate is `skipped` rather than
+        doubled. A row with an unstable `externalId` is skipped while the rest of the file still lands. Every imported
+        row stores `source = IMPORT`; a mood entry without `a1` derives pleasantness from its label. Writes are per-row,
+        not transactional: on a mid-file write failure the response is 503 (`meta.errorCode` = `import.write_failed`,
+        `meta.retryable` = true) with `meta.stats` carrying what landed — rows already written stay written, and a retry
+        is only safe against duplication for rows that carry an `externalId`. Validation is fail-fast (the 422 carries
+        the first issue's message, not the multi-issue envelope). Rate-limited 5/hour per user (shared `import:` bucket
+        with the CSV importer)."
       requestBody:
         required: true
         content:
@@ -19188,6 +19320,13 @@ paths:
                 $ref: "#/components/schemas/DocumentUploadEnvelope"
         "401": *a1
         "403": *a9
+        "404":
+          description: An `episodeIds` or `encounterIds` id is not a live episode or visit of the caller
+            (`documents.inbound.episodeNotFound` / `documents.inbound.encounterNotFound`). Nothing was stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "409":
           description: The same bytes are already stored under 20 other import source ids (`documents.inbound.sourceAliasLimit`).
             Nothing was stored or remembered.
@@ -19455,9 +19594,10 @@ paths:
       tags:
         - Documents
       summary: Restore a discarded document
-      description: Clears the soft-delete tombstone within the 30-day undo grace. 409 when the tombstone is already purged
-        (the undo window is over) or when an identical live document blocks the restore (`meta.reason =
-        "duplicateExists"`). Restoring an already-live document is a no-op success.
+      description: Clears the soft-delete tombstone within the 30-day undo grace, and forgets any import-ledger entry for the
+        document's source keys. 409 when the tombstone is already purged (the undo window is over, or the document was
+        deleted for good) or when an identical live document blocks the restore (`meta.reason = "duplicateExists"`).
+        Restoring an already-live document is a no-op success.
       parameters:
         - name: id
           in: path
@@ -19475,6 +19615,60 @@ paths:
         "403": *a9
         "409":
           description: "Not restorable: purged past the grace window, or an identical live document exists."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/documents/inbound/deleted:
+    get:
+      tags:
+        - Documents
+      summary: List Recently deleted
+      description: "The caller's deleted documents that the purge has not removed yet, newest deletion first, metadata only.
+        Each carries `purgeAt`, when the daily purge becomes due for it. Restore one with `POST
+        /api/documents/inbound/{id}/restore` (or the bulk `restore` action); remove one for good ahead of time with
+        `POST /api/documents/inbound/{id}/purge`. Capped at 200 rows (`meta.truncated`, `meta.limit`). Owner-only:
+        refused while acting inside somebody else's record."
+      responses:
+        "200":
+          description: Recently deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeletedDocumentListEnvelope"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
+  /api/documents/inbound/{id}/purge:
+    post:
+      tags:
+        - Documents
+      summary: Delete a deleted document for good
+      description: "Removes one deleted document now instead of when the grace window ends, through the same purge the daily
+        job runs: the row and everything that cascades from it go, and an imported document's source keys are kept in
+        the import ledger, so an importer re-sending it is still answered as deleted. Only a deleted document can be
+        purged: a live one answers 409 `documents.inbound.notDeleted`. 404 `documents.inbound.notFound` when the caller
+        has no such document. Owner-only."
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Removed for good.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentPurgeResultEnvelope"
+        "401": *a1
+        "403": *a9
+        "409":
+          description: The document is not deleted.
           content:
             application/json:
               schema:
@@ -19559,19 +19753,28 @@ paths:
         capability envelope when it is closed), then rate / budget gated. With no provider configured this returns 422
         (`documents.inbound.providerUnsupported`, with `meta.capability` and `meta.reason = \"no_provider\"`) — the
         stored document is untouched, only the enhancement fails. Three modes: VISION (empty body) decrypts and scans
-        the stored original (PDF needs an Anthropic vision provider); TEXT (`application/json`, opt-in local OCR) `{
-        mode: \"text\", text }` structures browser-OCR'd text; STORED (`application/json`) `{ mode: \"stored\" }`
-        structures the document's own stored extracted text (its content index) — the manual recovery for a
-        skipped/failed automatic staging run, 422 `documents.inbound.notIndexed` when no stored text exists. Extraction
-        reproduces what the document states — it never interprets. Nothing reaches the structured stores here; the
-        confirm route is the only write path. With `Prefer: respond-async` (v1.40) the extraction runs in the
+        the stored original (a PDF is rendered and read a page at a time; one that cannot be rendered needs a provider
+        that reads PDFs natively, else 422 `documents.inbound.pdfNeedsAnthropic`); TEXT (`application/json`, opt-in
+        local OCR) `{ mode: \"text\", text }` structures browser-OCR'd text; STORED (`application/json`) `{ mode:
+        \"stored\" }` structures the document's own stored extracted text (its content index) — the manual recovery for
+        a skipped/failed automatic staging run, 422 `documents.inbound.notIndexed` when no stored text exists. A long
+        document is read a page or a part at a time under the same per-read limits as the lab scan (`LABS_OCR_EXTRACT`),
+        each read after the first reserved against the day's budget on its own. Without `Prefer: respond-async` the
+        extraction runs inside the request and makes at most three reads (six model calls): a longer document has its
+        pages or text shared out between them, and what does not fit is left out and reported as `extractionIncomplete:
+        true` on the answered document; the background run reads it a page at a time within its own deadline; an
+        extraction in which no read produced a complete fact fails with 422 `documents.inbound.outputLimit` when the
+        reads stopped at the provider's output limit, 429 `documents.inbound.budgetExceeded` when the budget refused the
+        reads, and 422 `documents.inbound.extractFailed` only when the provider's answers were not the schema.
+        Extraction reproduces what the document states — it never interprets. Nothing reaches the structured stores
+        here; the confirm route is the only write path. With `Prefer: respond-async` (v1.40) the extraction runs in the
         background: after the same quick refusals the route answers 202 with a run id, a second request while an
         extraction of this document from the same input is queued or running answers with that run, and `GET
-        /api/ai-runs/{id}` serves `DocumentExtractRunResult` (`{ documentId, factsStaged, status }`, not the document
-        detail) as the run's `result`. Staging re-checks the document under a row lock, so a review finished while the
-        read ran fails the run with `documents.inbound.alreadyPartlyConfirmed` (409) or
-        `documents.inbound.alreadyConfirmed` (422) and leaves the review untouched; the synchronous form answers the
-        same in that race."
+        /api/ai-runs/{id}` serves `DocumentExtractRunResult` (`{ documentId, factsStaged, status }`, plus `incomplete`
+        when part of the document may be missing from the staged facts; not the document detail) as the run's `result`.
+        Staging re-checks the document under a row lock, so a review finished while the read ran fails the run with
+        `documents.inbound.alreadyPartlyConfirmed` (409) or `documents.inbound.alreadyConfirmed` (422) and leaves the
+        review untouched; the synchronous form answers the same in that race."
       parameters:
         - name: id
           in: path
@@ -19808,11 +20011,13 @@ paths:
         — no plaintext body, no plaintext token. Idempotent; re-indexing overwrites in place. A successful index
         continues into the same lab auto-staging the background worker performs (still-STORED lab-looking document with
         no facts, both modules on, provider + consent eligible); `labFactsStaged` reports how many facts were staged
-        PENDING for review — confirmation stays the only write into Labs. With `Prefer: respond-async` (v1.40) the read
-        runs in the background: after the same quick refusals the route answers 202 with a run id, a second request
-        while a read of this document is queued or running answers with that run, and `GET /api/ai-runs/{id}` serves
-        this body as the run's `result`. Text mode honours the preference too, because the lab staging it continues into
-        is model work."
+        PENDING for review — confirmation stays the only write into Labs. Without `Prefer: respond-async` that staging
+        runs inside the request and makes at most three reads (six model calls), like the extract route: what does not
+        fit is left out and reported as `extractionIncomplete: true` on the document. With `Prefer: respond-async`
+        (v1.40) the read runs in the background: after the same quick refusals the route answers 202 with a run id, a
+        second request while a read of this document is queued or running answers with that run, and `GET
+        /api/ai-runs/{id}` serves this body as the run's `result`. Text mode honours the preference too, because the lab
+        staging it continues into is model work."
       parameters:
         - name: id
           in: path
@@ -23244,10 +23449,16 @@ paths:
       tags:
         - Account sharing
       summary: Delete a managed record
-      description: "Ends the record and everything in it. This is the documented way OUT of the last-Guardian floor, which is
-        why it carries no last-Guardian refusal of its own: a Guardian may not strand a record with nobody looking after
-        it, but they may end the record. Any active Guardian may do it, from a cookie session with a fresh second
-        factor."
+      description: >-
+        Ends the record and everything in it. This is the documented way OUT of the last-Guardian floor, which is why it
+        carries no last-Guardian refusal of its own: a Guardian may not strand a record with nobody looking after it,
+        but they may end the record. Any active Guardian may do it, from a cookie session with a fresh second factor.
+
+
+        With a deletion grace window (`ACCOUNT_DELETION_GRACE_DAYS`, 14 days by default) the record is locked rather
+        than erased: it leaves every Guardian's view at once (reads of it answer 404), nothing acts for it, and the
+        purge job erases it at `scheduledPurgeAt`. Until then an admin can undo the deletion. Without a window it is
+        erased now and `scheduledPurgeAt` is null.
       parameters:
         - in: path
           name: id
@@ -23256,7 +23467,8 @@ paths:
           required: true
       responses:
         "200":
-          description: The record is gone.
+          description: The record is gone from the Guardian's view; it is erased at `scheduledPurgeAt`, or already was when that
+            is null.
           content:
             application/json:
               schema:
@@ -24689,9 +24901,9 @@ paths:
         **Auth is Bearer only.** A cookie session does not authenticate here: the route reads the `Authorization` header
         itself, hashes it and looks the token up, so a browser with a valid login and no token gets 401. The token must
         carry either the `*` wildcard or the `medication:ingest` scope — AND, once the named medication resolves, either
-        `*` or that medication's own `medication:{id}:ingest` scope. The second check runs after the lookup, which is
-        why a token scoped to one medication gets 404 for a name it may not touch only when the name does not exist, and
-        403 when it does.
+        `*` or that medication's own `medication:{id}:ingest` scope. The second check runs after the lookup. A token
+        scoped to one medication gets the same 403 for a name that does not exist as for one outside its scope, so it
+        cannot be used to learn which medications exist; only a `*` token gets 404 for an unknown name.
 
 
         **The operator can switch this off.** With the global API kill switch disabled every request is refused with 403
@@ -24699,8 +24911,9 @@ paths:
 
 
         **Replay is by `idempotencyKey`, and the status says which happened.** A key already stored for this token's
-        owner returns the existing row with **200**; a fresh dose returns **201**. Nothing else distinguishes them —
-        same body shape, same fields — so branch on the status code.
+        owner and the same medication returns the existing row with **200**; a fresh dose returns **201**; a key already
+        used for another medication returns **409** without its row. Replay is answered only after both scope checks.
+        Nothing else distinguishes them — same body shape, same fields — so branch on the status code.
 
 
         **A dose is attributed to its scheduled slot, not stamped ad-hoc.** When the take falls inside a schedule's
@@ -24744,14 +24957,22 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "403":
           description: Refused. Either the operator has the global API switch off (the message says so), or the token lacks
-            `medication:ingest` / `*`, or it lacks the resolved medication's own `medication:{id}:ingest` / `*` scope.
+            `medication:ingest` / `*`, or it lacks the resolved medication's own `medication:{id}:ingest` / `*` scope. A
+            token without `*` also gets this answer for a name that matches no active medication.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "404":
-          description: No ACTIVE medication of the token owner's matches `medicationName`. An inactive medication of the right
-            name is also a 404 — the name is only searched among active ones.
+          description: "Only for a `*` token: no ACTIVE medication of the token owner's matches `medicationName`. An inactive
+            medication of the right name is also a 404 — the name is only searched among active ones."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: The `idempotencyKey` is already stored for a dose of another medication. Nothing was written and that dose
+            is not returned.
           content:
             application/json:
               schema:
@@ -25323,9 +25544,12 @@ paths:
         waits and then answers `duplicate`. The key check counts toward the lookup allowance, the fetch toward the
         search allowance, and only a file that arrived toward the upload allowance. A source key the vault already holds
         is answered without a download: `duplicate` for a live document (same id), `deleted` for one the person deleted
-        in HealthLog, which is never stored again. Bytes already in the vault under another key are `duplicate` too, and
-        the key is remembered for that document. `link` files the document against the record the picker was opened from
-        (a condition, a visit or a vaccination, which must be the caller's own and live; checked before anything is
+        in HealthLog, which is not stored again unless the request sends `revive: true`: then a document still in
+        Recently deleted is restored (`restored`), and one already removed for good is fetched and stored again, its key
+        leaving the import ledger. A token upload (`POST /api/documents/inbound`) has no such switch, so an importer
+        never brings a deleted document back. Bytes already in the vault under another key are `duplicate` too, and the
+        key is remembered for that document. `link` files the document against the record the picker was opened from (a
+        condition, a visit or a vaccination, which must be the caller's own and live; checked before anything is
         fetched), including a duplicate. `kind` sets the document type (default OTHER). Automatic AI reading follows the
         person's own setting. Counts against the person's upload allowance (60 an hour) and storage quota. 201 for a new
         document, 200 otherwise. Cookie session only; not delegable."
@@ -25373,11 +25597,14 @@ paths:
                   required:
                     - kind
                     - id
+                revive:
+                  type: boolean
               required:
                 - sourceId
       responses:
         "200":
-          description: Already held (`duplicate`) or deleted in HealthLog (`deleted`).
+          description: Already held (`duplicate`), deleted in HealthLog (`deleted`), or brought back from Recently deleted
+            (`restored`).
           content:
             application/json:
               schema:
@@ -26999,6 +27226,61 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+  /api/settings/preview-features:
+    get:
+      security: []
+      deprecated: true
+      tags:
+        - Retired
+      summary: GET /api/settings/preview-features — removed in v1.46.0
+      description: >-
+        Removed in v1.46.0. Every request to this path answers 410 Gone, whatever the method and whatever credential it
+        carries. There is no replacement; the capability is gone rather than moved.
+
+
+        Stored per-account opt-ins to preview features, of which there was one, the topic overview pages. Those pages
+        were dropped before they shipped, so the switch governed nothing; the route and its column are gone, and no
+        preview is gated per account.
+
+
+        Retiring a path is deliberate, so the answer says so rather than leaving a client to read a 404 as a broken
+        deployment and retry forever. Treat 410 as terminal: drop the call, degrade the surface that depended on it, and
+        do not offer a retry.
+      responses:
+        "410":
+          description: The path was removed in v1.46.0 and will not answer again. `meta.errorCode` = `route.retired`,
+            `meta.removedIn` carries the version, and `meta.replacedBy` carries the replacement path or null.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    patch:
+      security: []
+      deprecated: true
+      tags:
+        - Retired
+      summary: PATCH /api/settings/preview-features — removed in v1.46.0
+      description: >-
+        Removed in v1.46.0. Every request to this path answers 410 Gone, whatever the method and whatever credential it
+        carries. There is no replacement; the capability is gone rather than moved.
+
+
+        Stored per-account opt-ins to preview features, of which there was one, the topic overview pages. Those pages
+        were dropped before they shipped, so the switch governed nothing; the route and its column are gone, and no
+        preview is gated per account.
+
+
+        Retiring a path is deliberate, so the answer says so rather than leaving a client to read a 404 as a broken
+        deployment and retry forever. Treat 410 as terminal: drop the call, degrade the surface that depended on it, and
+        do not offer a retry.
+      responses:
+        "410":
+          description: The path was removed in v1.46.0 and will not answer again. `meta.errorCode` = `route.retired`,
+            `meta.removedIn` carries the version, and `meta.replacedBy` carries the replacement path or null.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
 components:
   schemas:
     CreateCycleCustomSymptomRequest:
@@ -28115,12 +28397,15 @@ components:
           type: integer
           minimum: 1
           maximum: 365
+        mirrorToAppleHealth:
+          type: boolean
       required:
         - name
       description: "Mint a measurement-ingest Bearer. There is no `scope` field: this endpoint mints one shape and the
         permission array is a literal, so no request can widen it. `name` is what the token is listed under — name it
         after the thing you are pasting it into, because that is what you will be reading when you decide whether to
-        revoke it. `expiresInDays` defaults to 365."
+        revoke it. `expiresInDays` defaults to 365. `mirrorToAppleHealth` (default false) lets the HealthLog app write
+        the token's readings into Apple Health; it can be changed later at `PATCH /api/tokens/{id}`."
     CreateWorkoutTokenRequest:
       type: object
       properties:
@@ -28151,6 +28436,15 @@ components:
         - name
       description: "Mint a document-upload Bearer. No `scope` field: the endpoint mints one shape. `name` is what the token is
         listed under; name it after the system it is pasted into. `expiresInDays` defaults to 365."
+    UpdateMeasurementTokenRequest:
+      type: object
+      properties:
+        mirrorToAppleHealth:
+          type: boolean
+      required:
+        - mirrorToAppleHealth
+      additionalProperties: false
+      description: "The one setting a measurement token has. Strict: any other key is refused 422."
     RegisterRequest:
       type: object
       properties:
@@ -33039,12 +33333,6 @@ components:
         - version
         - list
       additionalProperties: false
-    PreviewFeaturesPatchBody:
-      type: object
-      properties:
-        topics:
-          type: boolean
-      additionalProperties: false
     ConsentPostBody:
       type: object
       properties:
@@ -33094,8 +33382,18 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/JsonImportMoodEntry"
-      description: JSON import payload, matching the structure `GET /api/export/json` emits. Both sections optional; up to 10
-        000 rows each.
+        customMoodTagCategories:
+          maxItems: 10000
+          type: array
+          items:
+            $ref: "#/components/schemas/JsonImportMoodTagCategory"
+        customMoodTags:
+          maxItems: 10000
+          type: array
+          items:
+            $ref: "#/components/schemas/JsonImportMoodTag"
+      description: "JSON import payload: the measurements and mood entries of the JSON export or the portable full backup, and
+        the backup's own mood vocabulary the entries link to. Every section optional; up to 10 000 rows each."
     JsonImportMeasurement:
       type: object
       properties:
@@ -33105,6 +33403,12 @@ components:
           type: number
           description: Checked against the type's server-side plausibility range; an out-of-range value fails the whole request
             with 422.
+        valueMin:
+          description: Lower bound of a range reading (an hourly heart-rate statistic). Not above `valueMax`.
+          type: number
+        valueMax:
+          description: Upper bound of a range reading.
+          type: number
         unit:
           type: string
         measuredAt:
@@ -33120,9 +33424,31 @@ components:
             - POSTPRANDIAL
             - RANDOM
             - BEDTIME
-        source:
-          description: "Accepted for export-format compatibility and ignored: every imported row stores `source = IMPORT`."
+        sleepStage:
+          description: A sleep row's stage.
           type: string
+          enum:
+            - IN_BED
+            - ASLEEP
+            - AWAKE
+            - CORE
+            - DEEP
+            - REM
+        rhythmClassification:
+          description: The device's own verdict on an ECG, a rhythm alert or a steadiness reading.
+          type: string
+          enum:
+            - IRREGULAR
+            - NOT_DETECTED
+            - INCONCLUSIVE
+            - LOW
+            - VERY_LOW
+            - FIRED
+        deviceType:
+          description: The writer of the reading (watch, phone).
+          type: string
+          minLength: 1
+          maxLength: 32
         notes:
           description: Encrypted at rest.
           type: string
@@ -33159,17 +33485,232 @@ components:
           type: integer
           minimum: 1
           maximum: 5
-          description: Stored as sent — the export format's own field. Pleasantness (`a1`) is re-derived from `mood` on every
-            imported row, never taken from this.
+          description: Stored as sent — the export format's own field. Pleasantness (`a1`) is never taken from this.
+        a1:
+          description: Pleasantness, 0–10. Absent → derived from `mood`.
+          type: integer
+          minimum: 0
+          maximum: 10
+        a2:
+          description: Stress, 0–10.
+          type: integer
+          minimum: 0
+          maximum: 10
+        a3:
+          description: Energy, 0–10.
+          type: integer
+          minimum: 0
+          maximum: 10
+        a4:
+          description: Connection, 0–10.
+          type: integer
+          minimum: 0
+          maximum: 10
+        a5:
+          description: Stability, 0–10. `a2` to `a5` absent leave a row the import updates as it was.
+          type: integer
+          minimum: 0
+          maximum: 10
         tags:
           description: JSON-encoded array of tag strings, stored verbatim.
           type: string
+        note:
+          description: The entry's note. Encrypted at rest.
+          type: string
+          maxLength: 500
         loggedAt:
           description: Bounded like `measuredAt`. Absent → the server derives a stable per-row instant within the `date` day, so a
             re-import of the same file dedups instead of duplicating.
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        tz:
+          description: IANA zone the `date` is anchored to. Absent → the legacy reading.
+          type: string
+          maxLength: 64
+        factors:
+          description: Rated factors by key (the catalogue's, or the account's own as for `structuredTags`); replaces the entry's
+            rated links. A key the account cannot resolve is dropped and named in `droppedFactorKeys`; a rating outside
+            the factor's own scale skips the entry.
+          maxItems: 30
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+                maxLength: 60
+              rating:
+                type: integer
+                minimum: 1
+                maximum: 5
+            required:
+              - key
+              - rating
+        structuredTags:
+          description: Ticked tags by key (the catalogue, the account's own, or one the file's `customMoodTags` brings); replaces
+            the entry's tag links. An unresolvable key is dropped and named in `droppedTagKeys`.
+          maxItems: 30
+          type: array
+          items:
+            type: string
+            maxLength: 60
+        context:
+          description: The day context; replaces the entry's context. `contactCircles` and `leisureCategories` are also read as
+            the backup's JSON-encoded string.
+          type: object
+          properties:
+            workStatus:
+              description: Shape of the working day.
+              anyOf:
+                - type: string
+                  enum:
+                    - off
+                    - partial
+                    - regular
+                    - overtime
+                - type: "null"
+            workMinutes:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 1440
+                - type: "null"
+            overtimeMinutes:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 1440
+                - type: "null"
+            workLoad:
+              description: "0-10, INVERSE-oriented: a higher value is a heavier day, not a better one."
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 10
+                - type: "null"
+            workSatisfaction:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 10
+                - type: "null"
+            contactCircles:
+              description: "Who the day's contact was with. Multi-select. Never scored: the count of people is not a good or a bad
+                number."
+              anyOf:
+                - type: array
+                  items:
+                    type: string
+                    enum:
+                      - partner
+                      - child
+                      - family
+                      - friends
+                      - colleagues
+                      - acquaintances
+                      - professional
+                      - other
+                - type: "null"
+            contactForm:
+              anyOf:
+                - type: string
+                  enum:
+                    - inPerson
+                    - phone
+                    - video
+                    - written
+                - type: "null"
+            contactExtent:
+              anyOf:
+                - type: string
+                  enum:
+                    - brief
+                    - medium
+                    - extended
+                - type: "null"
+            contactQuality:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 10
+                - type: "null"
+            contactSupport:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 10
+                - type: "null"
+            leisureCategories:
+              anyOf:
+                - type: array
+                  items:
+                    type: string
+                    enum:
+                      - film
+                      - reading
+                      - gaming
+                      - music
+                      - creative
+                      - outing
+                      - garden
+                      - cooking
+                      - timeWithChild
+                      - relaxation
+                      - other
+                - type: "null"
+            leisureMinutes:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 1440
+                - type: "null"
+            leisureJoy:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 10
+                - type: "null"
+            leisureRecovery:
+              anyOf:
+                - type: integer
+                  minimum: 0
+                  maximum: 10
+                - type: "null"
+            eventType:
+              description: One notable event. One per entry, not a list.
+              anyOf:
+                - type: string
+                  enum:
+                    - goodNews
+                    - badNews
+                    - success
+                    - disappointment
+                    - conflict
+                    - appointment
+                    - familyEvent
+                    - change
+                    - unexpected
+                - type: "null"
+            eventValence:
+              description: -5 (clearly bad) to +5 (clearly good).
+              anyOf:
+                - type: integer
+                  minimum: -5
+                  maximum: 5
+                - type: "null"
+            eventAt:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
+            note:
+              description: One free-text note for the whole context. AES-256-GCM at rest; the ciphertext never rides the wire.
+              anyOf:
+                - type: string
+                  maxLength: 500
+                - type: "null"
         externalId:
           description: "Source-stable id (e.g. a Daylio row id) making re-import idempotent (upsert on `(userId, source=IMPORT,
             externalId)`). Same stability rule as the measurement `externalId`: an unstable id skips the row."
@@ -33181,6 +33722,100 @@ components:
         - mood
         - score
       description: One mood-entry row of a JSON import file.
+    JsonImportMoodTagCategory:
+      type: object
+      properties:
+        id:
+          description: The file's own id, read only to find the group a tag names in `categoryId`.
+          type: string
+          maxLength: 120
+        key:
+          type: string
+          minLength: 1
+          maxLength: 80
+        labelKey:
+          type: string
+          minLength: 1
+          maxLength: 120
+        icon:
+          type: string
+          maxLength: 60
+        sortOrder:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        isActive:
+          type: boolean
+        label:
+          description: The group's own name.
+          type: string
+          maxLength: 200
+        labelEncrypted:
+          description: A disaster-recovery file's sealed name, used only when this server's keys open it.
+          type: string
+          maxLength: 2000
+      required:
+        - key
+        - labelKey
+      description: "A mood-tag group the account made itself. Matched by `key`: a group the account has is used as it is, a
+        missing one is created."
+    JsonImportMoodTag:
+      type: object
+      properties:
+        key:
+          type: string
+          minLength: 1
+          maxLength: 80
+        labelKey:
+          type: string
+          minLength: 1
+          maxLength: 120
+        categoryId:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: The group's id in the file; a group the file does not carry falls back to the seeded `custom` group.
+        kind:
+          type: string
+          enum:
+            - BINARY
+            - RATED
+        isActive:
+          type: boolean
+        icon:
+          type: string
+          maxLength: 60
+        sortOrder:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        label:
+          description: The tag's own name.
+          type: string
+          maxLength: 200
+        labelEncrypted:
+          description: A disaster-recovery file's sealed name, used only when this server's keys open it.
+          type: string
+          maxLength: 2000
+        scaleMin:
+          type: integer
+          minimum: 0
+          maximum: 10
+        scaleMax:
+          type: integer
+          minimum: 0
+          maximum: 10
+        inverse:
+          type: boolean
+      required:
+        - key
+        - labelKey
+        - categoryId
+        - kind
+      description: "A mood tag the account made itself, a rated factor included. Matched by `key`: the account's own tag of
+        that key is used and never overwritten (a different label is named in `keptMoodTagKeys`); a missing one is
+        created, within the account's custom-tag cap; a key another account of this server holds comes over under a key
+        derived from the account and the file's key, so a second import of the same file finds it."
     MeasurementReminderCreate:
       type: object
       properties:
@@ -34485,6 +35120,8 @@ components:
         locale:
           type: string
           maxLength: 16
+        englishOriginal:
+          type: boolean
         source:
           default: WEB
           type: string
@@ -34501,8 +35138,9 @@ components:
       description: "Record one completed screener administration: PHQ-9 (9 items, 0–3), GAD-7 (7 items, 0–3), WHO-5 (5 items,
         0–5) or SCI (8 items, 0–4). The array length and per-item ceiling must match the instrument. The item answers
         are encrypted at rest and never returned. The server computes the total (WHO-5 reports raw-sum × 4 as 0–100) +
-        severity band + item-9 safety flag. Opt-in, beside mood tracking — this is a screening surface, not a
-        diagnosis."
+        severity band + item-9 safety flag. `locale` is the reader's app language; set `englishOriginal` when the reader
+        answered in the English original instead of their language's text, and the server records the resulting
+        `wording`. Opt-in, beside mood tracking — this is a screening surface, not a diagnosis."
     CreateAllergyRequest:
       type: object
       properties:
@@ -35017,7 +35655,7 @@ components:
       properties:
         decisions:
           minItems: 1
-          maxItems: 120
+          maxItems: 400
           type: array
           items:
             type: object
@@ -36547,6 +37185,7 @@ components:
             - SECURITY_ALERT
             - DAILY_BRIEFING
             - SHARED_RECORD_INTAKE
+            - BACKUP_HEALTH
         enabled:
           type: boolean
       required:
@@ -37281,7 +37920,10 @@ components:
         `restoreInstanceSettings` defaults to false: the restore then replaces the snapshot owner's data tables and
         leaves the singleton instance settings — registration, MFA requirement, default locale and timezone, module
         availability, notification and AI configuration, document cap and quota — exactly as they are. Send `true` only
-        when rebuilding a host from a snapshot, because those settings apply to every account on the installation."
+        when this server's instance settings themselves need to go back to the ones in the copy, because those settings
+        apply to every account on the installation. An account copy restores one existing account on this server; it
+        does not rebuild a lost server, which takes a database dump and the encryption keys
+        (`docs/ops/disaster-recovery.md`)."
     CreateSymptomDefinitionRequest:
       type: object
       properties:
@@ -37883,15 +38525,16 @@ components:
                 one the native client names; the integration-probe classes (`credentials_rejected`, `rate_limited`,
                 `upstream_error`, `timeout`, `connection_failed` and the per-provider additions) are enumerated in each
                 `/test` operation instead, where the differences can be stated; and a 401 raised by a route checking a
-                credential of its own carries the generic `http.unauthenticated`. activity —
-                activity.calendar.future_date, activity.calendar.too_old; ai — ai.budget.exceeded, ai.provider.none,
-                ai.record.notPermitted, ai.unavailable, ai.usage.aboveCeiling, ai.usage.defaultAboveCeiling,
-                ai.usage.invalid, ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider — ai_provider.invalid,
-                ai_provider.no_fields; aiRuns — aiRuns.failed, aiRuns.notFound, aiRuns.timedOut,
-                aiRuns.workerUnavailable; allergy — allergy.invalid; analytics — analytics.invalid_query; anamnesis —
-                anamnesis.auditC.invalid, anamnesis.auditC.notFound, anamnesis.auditC.rateLimited,
-                anamnesis.fact.conflict, anamnesis.fact.currentExists, anamnesis.fact.invalidValue,
-                anamnesis.lifeConfirm.invalid, anamnesis.lifeSections.invalid; auth — auth.admin.required,
+                credential of its own carries the generic `http.unauthenticated`. account —
+                account.deletion.no_guardian, account.deletion.not_pending; activity — activity.calendar.future_date,
+                activity.calendar.too_old; ai — ai.budget.exceeded, ai.provider.none, ai.record.notPermitted,
+                ai.unavailable, ai.usage.aboveCeiling, ai.usage.defaultAboveCeiling, ai.usage.invalid,
+                ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider — ai_provider.invalid, ai_provider.no_fields;
+                aiRuns — aiRuns.failed, aiRuns.notFound, aiRuns.readerBusy, aiRuns.timedOut, aiRuns.workerUnavailable;
+                allergy — allergy.invalid; analytics — analytics.invalid_query; anamnesis — anamnesis.auditC.invalid,
+                anamnesis.auditC.notFound, anamnesis.auditC.rateLimited, anamnesis.fact.conflict,
+                anamnesis.fact.currentExists, anamnesis.fact.invalidValue, anamnesis.lifeConfirm.invalid,
+                anamnesis.lifeSections.invalid; auth — auth.account.deletion_pending, auth.admin.required,
                 auth.already_authenticated, auth.mfa.code_invalid, auth.missing, auth.refresh.invalid,
                 auth.refresh.reuse, auth.refresh.revoked, auth.reproof.failed, auth.reproof.required,
                 auth.reproof.too_weak, auth.scope.insufficient, auth.session.insecure_transport,
@@ -37907,16 +38550,17 @@ components:
                 cycle.calendar.range, cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid,
                 cycle.disabled, cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit;
                 cycle-prefs — cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach —
-                disable-coach.body.invalid_json; dawarich — dawarich.credentials_rejected, dawarich.home_place_unknown,
-                dawarich.invalid, dawarich.not_connected, dawarich.rate_limited, dawarich.unreachable; day —
-                day.invalid; demo — demo.readOnly; documents — documents.chat.conversationNotFound,
-                documents.chat.invalid, documents.inbound.alreadyConfirmed, documents.inbound.alreadyPartlyConfirmed,
-                documents.inbound.budgetExceeded, documents.inbound.decryptFailed, documents.inbound.encounterNotFound,
-                documents.inbound.episodeNotFound, documents.inbound.extractFailed, documents.inbound.factNotFound,
-                documents.inbound.factNotPending, documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge,
-                documents.inbound.fileType, documents.inbound.invalidMetadata, documents.inbound.invalidQuery,
-                documents.inbound.invalidUpdate, documents.inbound.localOcrDisabled, documents.inbound.notFound,
-                documents.inbound.notIndexed, documents.inbound.pdfNeedsAnthropic,
+                disable-coach.body.invalid_json; data_wipe — data_wipe.copy_failed; dawarich —
+                dawarich.credentials_rejected, dawarich.home_place_unknown, dawarich.invalid, dawarich.not_connected,
+                dawarich.rate_limited, dawarich.unreachable; day — day.invalid; demo — demo.readOnly; documents —
+                documents.chat.conversationNotFound, documents.chat.invalid, documents.inbound.alreadyConfirmed,
+                documents.inbound.alreadyPartlyConfirmed, documents.inbound.budgetExceeded,
+                documents.inbound.decryptFailed, documents.inbound.encounterNotFound, documents.inbound.episodeNotFound,
+                documents.inbound.extractFailed, documents.inbound.factNotFound, documents.inbound.factNotPending,
+                documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge, documents.inbound.fileType,
+                documents.inbound.invalidMetadata, documents.inbound.invalidQuery, documents.inbound.invalidUpdate,
+                documents.inbound.localOcrDisabled, documents.inbound.notDeleted, documents.inbound.notFound,
+                documents.inbound.notIndexed, documents.inbound.outputLimit, documents.inbound.pdfNeedsAnthropic,
                 documents.inbound.providerUnsupported, documents.inbound.quotaExceeded, documents.inbound.rateLimited,
                 documents.inbound.restoreDuplicate, documents.inbound.restoreGone, documents.inbound.sourceAliasLimit,
                 documents.inbound.uploadBusy, documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound,
@@ -37927,7 +38571,7 @@ components:
                 documents.sources.tokenRequired, documents.sources.unavailable, documents.sources.unreachable,
                 documents.sources.versionTooOld; encounter — encounter.invalid, encounter.link.invalid,
                 encounter.practitioner-not-found, encounter.reminder-conflict, encounter.reminder-not-found; encryption
-                — encryption.keyBackup.stale, encryption.key_mismatch; environment — environment.backfill_pending,
+                — encryption.key_mismatch; environment — environment.backfill_pending,
                 environment.backfill_rate_limited, environment.invalid, environment.no_home,
                 environment.range_too_large, environment.travel.not_found, environment.travel_suggestion.not_found;
                 export — export.selection.empty, export.selection.unknown_leaf; familyHistory — familyHistory.invalid;
@@ -37962,54 +38606,57 @@ components:
                 medication.intake.notTracked, medication.link.invalid; medications — medications.category.invalid,
                 medications.category.limitReached, medications.category.unknown, medications.course.currentOpen,
                 medications.course.invalid, medications.course.invalidRange, medications.course.notFound,
-                medications.course.oneShot, medications.course.overlap, medications.course.windowRequired,
-                medications.ingredients.extract.budgetExceeded, medications.ingredients.extract.failed,
-                medications.ingredients.extract.fileTooLarge, medications.ingredients.extract.fileType,
-                medications.ingredients.extract.rateLimited, medications.ingredients.invalid,
-                medications.ingredients.unitMismatch, medications.intake.bulk.apple_health_not_mirrored,
-                medications.intake.bulk.invalid, medications.intake.bulk.too_large,
-                medications.intake.force_slot.invalid, medications.intake.force_slot.occupied,
-                medications.intake.injection_site.disallowed, medications.intake.taken_at.before_start,
-                medications.mirror.limit_exceeded, medications.notFound; mentalHealth — mentalHealth.rateLimited; module
-                — module.disabled; modules — modules.body.invalid_json, modules.invalid; mood —
-                mood.bulk-delete.invalid, mood.bulk.invalid, mood.bulk.too_large, mood.create.external_id_not_delegable,
-                mood.create.invalid, mood.duplicate_timestamp, mood.linkedContext.invalid, mood.list.invalid,
-                mood.not_found, mood.ratedFactor.out_of_range, mood.restore.invalid, mood.update.invalid;
-                notification-prefs — notification-prefs.body.invalid_json; notification —
-                notification.action.already_used, notification.action.expired, notification.action.invalid,
-                notification.action.module_disabled; nutrient — nutrient.batch.invalid, nutrient.batch.too_large,
-                nutrient.daily.invalid, nutrient.read.invalid, nutrient.water.invalid, nutrient.water.invalid_day;
-                onboarding — onboarding.answers.invalid, onboarding.answers.rateLimited, onboarding.complete.invalid,
-                onboarding.complete.recordNotFound, onboarding.complete.recordTargetMismatch,
-                onboarding.disclaimer.invalid, onboarding.restart.invalid, onboarding.restart.rateLimited,
-                onboarding.tour.invalid; passkey — passkey.challenge.expired, passkey.response.invalid, passkey.unknown,
-                passkey.verification.failed; personal_records — personal_records.invalid_query; practitioner —
-                practitioner.invalid; profile — profile.update.emailInUse, profile.update.emailRateLimited,
-                profile.update.emailSecondFactorRequired, profile.update.invalidBody, profile.update.nothingSaved;
-                profile_claim — profile_claim.invalid, profile_claim.oidc_only_unsupported,
-                profile_claim.sso_unavailable, profile_claim.taken; record_write — record_write.rate_limited;
-                report-selection — report-selection.body.invalid_json, report-selection.body.invalid_shape,
-                report-selection.leaves.unknown; route — route.retired; search — search.invalid; security_activity —
-                security_activity.invalid; share-link — share-link.document.decryptFailed, share-link.document.notFound,
-                share-link.document.rateLimited, share-link.documents.invalid, share-link.report.notFound,
-                share-link.report.rateLimited, share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf;
-                sharing — sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending,
-                sharing.accept.revoked, sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid,
-                sharing.invite.invalid_scope, sharing.invite.manage_browser_only, sharing.invite.no_account,
-                sharing.invite.refused, sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended,
-                sharing.renounce.not_found, sharing.revoke.already_ended, sharing.revoke.not_found,
-                sharing.session.changed, sharing.switch.invalid, sharing.switch.wrong_transport; source-priority —
-                source-priority.body.invalid_json, source-priority.body.invalid_shape; symptoms —
-                symptoms.definition.limitReached, symptoms.definition.notFound, symptoms.episode.notOpen,
-                symptoms.event.notFound, symptoms.invalid; timeline — timeline.invalid; tokens —
-                tokens.documents.ceiling_reached, tokens.measurements.ceiling_reached, tokens.workouts.ceiling_reached;
-                vaccination — vaccination.booster-invalid, vaccination.booster-no-antigen,
-                vaccination.booster-out-of-scope, vaccination.custom-vaccine-not-found, vaccination.custom.invalid,
-                vaccination.custom.name-taken, vaccination.custom.not-found, vaccination.encounter-not-found,
-                vaccination.identity-required, vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
-                vaccination.practitioner-not-found; workout — workout.batch.invalid, workout.batch.payload_too_large,
-                workout.batch.source_not_permitted, workout.batch.too_large, workout.delete.synced_source; (unprefixed)
-                — about_me_conflict, ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
+                medications.course.notRunning, medications.course.oneShot, medications.course.overlap,
+                medications.course.windowRequired, medications.ingredients.extract.budgetExceeded,
+                medications.ingredients.extract.failed, medications.ingredients.extract.fileTooLarge,
+                medications.ingredients.extract.fileType, medications.ingredients.extract.rateLimited,
+                medications.ingredients.invalid, medications.ingredients.unitMismatch,
+                medications.intake.bulk.apple_health_not_mirrored, medications.intake.bulk.invalid,
+                medications.intake.bulk.too_large, medications.intake.force_slot.invalid,
+                medications.intake.force_slot.occupied, medications.intake.injection_site.disallowed,
+                medications.intake.taken_at.before_start, medications.mirror.limit_exceeded, medications.notFound;
+                mentalHealth — mentalHealth.rateLimited; module — module.disabled; modules — modules.body.invalid_json,
+                modules.invalid; mood — mood.bulk-delete.invalid, mood.bulk.invalid, mood.bulk.too_large,
+                mood.create.external_id_not_delegable, mood.create.invalid, mood.duplicate_timestamp,
+                mood.linkedContext.invalid, mood.list.invalid, mood.not_found, mood.ratedFactor.out_of_range,
+                mood.restore.invalid, mood.update.invalid; notification-prefs — notification-prefs.body.invalid_json;
+                notification — notification.action.already_used, notification.action.expired,
+                notification.action.invalid, notification.action.module_disabled; nutrient — nutrient.batch.invalid,
+                nutrient.batch.too_large, nutrient.daily.invalid, nutrient.read.invalid, nutrient.water.invalid,
+                nutrient.water.invalid_day; onboarding — onboarding.answers.invalid, onboarding.answers.rateLimited,
+                onboarding.complete.invalid, onboarding.complete.recordNotFound,
+                onboarding.complete.recordTargetMismatch, onboarding.disclaimer.invalid, onboarding.restart.invalid,
+                onboarding.restart.rateLimited, onboarding.tour.invalid; passkey — passkey.challenge.expired,
+                passkey.response.invalid, passkey.unknown, passkey.verification.failed; personal_records —
+                personal_records.invalid_query; practitioner — practitioner.invalid; profile —
+                profile.update.emailInUse, profile.update.emailRateLimited, profile.update.emailSecondFactorRequired,
+                profile.update.invalidBody, profile.update.nothingSaved; profile_claim — profile_claim.invalid,
+                profile_claim.oidc_only_unsupported, profile_claim.sso_unavailable, profile_claim.taken; record_write —
+                record_write.rate_limited; recovery — recovery.kit.stale; report-selection —
+                report-selection.body.invalid_json, report-selection.body.invalid_shape,
+                report-selection.leaves.unknown; request — request.cross_site; route — route.retired; search —
+                search.invalid; security_activity — security_activity.invalid; share-link —
+                share-link.document.decryptFailed, share-link.document.notFound, share-link.document.rateLimited,
+                share-link.documents.invalid, share-link.report.notFound, share-link.report.rateLimited,
+                share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf; sharing —
+                sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending, sharing.accept.revoked,
+                sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid, sharing.invite.invalid_scope,
+                sharing.invite.manage_browser_only, sharing.invite.no_account, sharing.invite.refused,
+                sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended, sharing.renounce.not_found,
+                sharing.revoke.already_ended, sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
+                sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
+                source-priority.body.invalid_shape; symptoms — symptoms.definition.limitReached,
+                symptoms.definition.notFound, symptoms.episode.notOpen, symptoms.event.notFound, symptoms.invalid;
+                timeline — timeline.invalid; tokens — tokens.documents.ceiling_reached,
+                tokens.measurements.ceiling_reached, tokens.mirror.not_measurement_token,
+                tokens.workouts.ceiling_reached; vaccination — vaccination.booster-invalid,
+                vaccination.booster-no-antigen, vaccination.booster-out-of-scope, vaccination.custom-vaccine-not-found,
+                vaccination.custom.invalid, vaccination.custom.name-taken, vaccination.custom.not-found,
+                vaccination.encounter-not-found, vaccination.identity-required, vaccination.invalid,
+                vaccination.link.invalid, vaccination.not-found, vaccination.practitioner-not-found; workout —
+                workout.batch.invalid, workout.batch.payload_too_large, workout.batch.source_not_permitted,
+                workout.batch.too_large, workout.delete.synced_source; (unprefixed) — about_me_conflict,
+                ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
                 health_score_config_conflict, insights_layout_conflict, invalid_base_updated_at,
                 json_carries_no_intake_time, json_not_an_array, medication_layout_conflict, missing_required_columns,
                 modules_conflict, mood_tag_layout_conflict, not_configured, notification_prefs_conflict, oidc_only,
@@ -40770,6 +41417,11 @@ components:
                 type:
                   - string
                   - "null"
+              ingestTokenId:
+                anyOf:
+                  - type: string
+                    maxLength: 64
+                  - type: "null"
               syncVersion:
                 type: integer
                 minimum: -9007199254740991
@@ -41494,6 +42146,11 @@ components:
                         - type: string
                           format: date
                           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                        - type: "null"
+                    endedAt:
+                      anyOf:
+                        - type: string
+                          minLength: 1
                         - type: "null"
                     note:
                       anyOf:
@@ -43322,6 +43979,8 @@ components:
                   - type: "null"
               aiReadDeferred:
                 type: boolean
+              extractionIncomplete:
+                type: boolean
               summary:
                 type:
                   - string
@@ -43420,6 +44079,34 @@ components:
               - needsReview
               - createdAt
               - updatedAt
+            additionalProperties: {}
+        documentImportKeys:
+          default: []
+          type: array
+          items:
+            type: object
+            properties:
+              sourceSystem:
+                type: string
+                enum:
+                  - PAPERLESS
+                  - PAPRA
+                  - OTHER
+              sourceId:
+                type: string
+                minLength: 1
+                maxLength: 128
+              sourceInstance:
+                anyOf:
+                  - type: string
+                    maxLength: 512
+                  - type: "null"
+              createdAt:
+                type: string
+                minLength: 1
+            required:
+              - sourceSystem
+              - sourceId
             additionalProperties: {}
         nutrientDays:
           default: []
@@ -44792,6 +45479,14 @@ components:
               locale:
                 type: string
                 minLength: 1
+              wording:
+                anyOf:
+                  - type: string
+                    enum:
+                      - validated
+                      - unvalidated_translation
+                      - original_en
+                  - type: "null"
               version:
                 type: string
               responsesEncrypted:
@@ -45934,6 +46629,7 @@ components:
         - documents
         - documentConditionLinks
         - extractedFacts
+        - documentImportKeys
         - nutrientDays
         - healthProfile
         - healthProfileFacts
@@ -47353,6 +48049,10 @@ components:
           type: boolean
           description: Revoked tokens stay in the list rather than disappearing, so a client must filter on this rather than treat
             presence as validity.
+        mirrorToAppleHealth:
+          type: boolean
+          description: "A measurement token's Apple Health setting: whether the HealthLog app writes the readings this token sent
+            into Apple Health. Changed with `PATCH /api/tokens/{id}`; false on every other token."
       required:
         - id
         - name
@@ -47361,6 +48061,36 @@ components:
         - expiresAt
         - createdAt
         - revoked
+        - mirrorToAppleHealth
+      additionalProperties: false
+    MeasurementTokenSummaryEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/MeasurementTokenSummaryResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    MeasurementTokenSummaryResponse:
+      type: object
+      properties:
+        unattributedReadings:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          description: "Live EXTERNAL readings that belong to no token: sent before readings were linked to their token, by an
+            account that held more than one. No token's Apple Health setting reaches them."
+      required:
+        - unattributedReadings
       additionalProperties: false
     CreateMeasurementTokenEnvelope:
       type: object
@@ -47493,6 +48223,34 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    UpdateMeasurementTokenEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/UpdateMeasurementTokenResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    UpdateMeasurementTokenResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        mirrorToAppleHealth:
+          type: boolean
+      required:
+        - id
+        - mirrorToAppleHealth
       additionalProperties: false
     RegisterEnvelope:
       type: object
@@ -48073,12 +48831,37 @@ components:
               additionalProperties: false
               description: Menstrual cycles, observed and forward-predicted. Present on every page, empty arrays when the account has
                 the cycle module off.
+            measurementMirror:
+              type: object
+              properties:
+                upserts:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/SyncMeasurementMirrorUpsert"
+                tombstones:
+                  maxItems: 0
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                    required:
+                      - id
+                    additionalProperties: false
+                  description: "Always empty: a deleted reading is a measurement tombstone."
+              required:
+                - upserts
+                - tombstones
+              additionalProperties: false
+              description: Apple Health write-back changes for readings that are otherwise unchanged. Apply after `measurements`.
           required:
             - measurements
             - mood
             - intakes
             - cycleDays
             - cycles
+            - measurementMirror
           additionalProperties: false
       required:
         - serverNow
@@ -48087,10 +48870,11 @@ components:
         - cursorExpired
         - changes
       additionalProperties: false
-      description: "Multi-domain delta page: measurements, mood, intakes, cycle day logs and cycles. One opaque multi-domain
-        keyset cursor; tombstones apply before upserts within each domain. Tombstone identity: measurements key on
-        externalId, every other domain on server id. All five keys are present on every response, including the
-        `cursorExpired` short-circuit — a domain with nothing to report sends empty arrays rather than being omitted."
+      description: "Multi-domain delta page: measurements, mood, intakes, cycle day logs, cycles, and the Apple Health
+        write-back changes of otherwise unchanged readings. One opaque multi-domain keyset cursor; tombstones apply
+        before upserts within each domain. Tombstone identity: measurements key on externalId, every other domain on
+        server id. All six keys are present on every response, including the `cursorExpired` short-circuit — a domain
+        with nothing to report sends empty arrays rather than being omitted."
     SyncMeasurementUpsert:
       type: object
       properties:
@@ -48183,6 +48967,10 @@ components:
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        appleHealthMirror:
+          type: boolean
+          description: Whether the HealthLog app writes this reading into Apple Health. Server-resolved; mirror exactly the rows
+            that say true.
         dayKey:
           type: string
         sampleCount:
@@ -48206,6 +48994,32 @@ components:
           description: Time asleep across those naps, in minutes.
           type: number
           minimum: 0
+        sleepStages:
+          description: The main night's minutes per stage (`IN_BED`, `ASLEEP`, `AWAKE`, `CORE`, `DEEP`, `REM`), each the union of
+            that stage's spans; empty on a day of naps alone.
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            type: number
+            minimum: 0
+        inBedMinutes:
+          description: The main night's time in bed in minutes, or null when no in-bed span was recorded.
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: "null"
+        awakeMinutes:
+          description: The main night's time awake in bed in minutes, or null when no awake span was recorded.
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: "null"
+        awakenings:
+          description: Awake spans between the main night's first and last time asleep.
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
       required:
         - id
         - type
@@ -48216,6 +49030,7 @@ components:
         - externalId
         - syncVersion
         - updatedAt
+        - appleHealthMirror
       additionalProperties: false
     MeasurementSource:
       type: string
@@ -48518,6 +49333,21 @@ components:
         - updatedAt
       additionalProperties: false
       description: A soft-deleted menstrual cycle, keyed on server `id`. Apply before upserts within the domain page.
+    SyncMeasurementMirrorUpsert:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The measurement's server id.
+        appleHealthMirror:
+          type: boolean
+          description: The reading's write-back as it now stands. False means stop writing it; samples already in Apple Health stay.
+      required:
+        - id
+        - appleHealthMirror
+      additionalProperties: false
+      description: A reading whose `appleHealthMirror` changed because the account switched the Apple Health setting of the
+        token that sent it. The reading itself did not change and is not re-sent in `measurements`.
     GetMeasurementsSeriesBatchResponse:
       type: object
       properties:
@@ -48953,6 +49783,11 @@ components:
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        appleHealthMirror:
+          description: "Whether the HealthLog app writes this reading into Apple Health. Resolved by the server on every stored
+            row: true for WITHINGS, IMPORT and MANUAL, for an EXTERNAL row whatever its account chose for the token that
+            sent it, false otherwise. Absent on the synthesised list rows."
+          type: boolean
         dayKey:
           type: string
         sampleCount:
@@ -48976,6 +49811,32 @@ components:
           description: Time asleep across those naps, in minutes.
           type: number
           minimum: 0
+        sleepStages:
+          description: The main night's minutes per stage (`IN_BED`, `ASLEEP`, `AWAKE`, `CORE`, `DEEP`, `REM`), each the union of
+            that stage's spans; empty on a day of naps alone.
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            type: number
+            minimum: 0
+        inBedMinutes:
+          description: The main night's time in bed in minutes, or null when no in-bed span was recorded.
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: "null"
+        awakeMinutes:
+          description: The main night's time awake in bed in minutes, or null when no awake span was recorded.
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: "null"
+        awakenings:
+          description: Awake spans between the main night's first and last time asleep.
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
       required:
         - id
         - type
@@ -49004,6 +49865,16 @@ components:
           type: integer
           minimum: 0
           maximum: 9007199254740991
+        minValue:
+          description: The lowest reading in the bucket; absent on a summed (cumulative) type.
+          type:
+            - number
+            - "null"
+        maxValue:
+          description: The highest reading in the bucket; absent on a summed (cumulative) type.
+          type:
+            - number
+            - "null"
         unit:
           type: string
       required:
@@ -49158,6 +50029,11 @@ components:
           type: string
           format: date-time
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        appleHealthMirror:
+          description: "Whether the HealthLog app writes this reading into Apple Health. Resolved by the server on every stored
+            row: true for WITHINGS, IMPORT and MANUAL, for an EXTERNAL row whatever its account chose for the token that
+            sent it, false otherwise. Absent on the synthesised list rows."
+          type: boolean
         dayKey:
           type: string
         sampleCount:
@@ -49181,6 +50057,32 @@ components:
           description: Time asleep across those naps, in minutes.
           type: number
           minimum: 0
+        sleepStages:
+          description: The main night's minutes per stage (`IN_BED`, `ASLEEP`, `AWAKE`, `CORE`, `DEEP`, `REM`), each the union of
+            that stage's spans; empty on a day of naps alone.
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            type: number
+            minimum: 0
+        inBedMinutes:
+          description: The main night's time in bed in minutes, or null when no in-bed span was recorded.
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: "null"
+        awakeMinutes:
+          description: The main night's time awake in bed in minutes, or null when no awake span was recorded.
+          anyOf:
+            - type: number
+              minimum: 0
+            - type: "null"
+        awakenings:
+          description: Awake spans between the main night's first and last time asleep.
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
         status:
           type: string
           enum:
@@ -49205,11 +50107,11 @@ components:
       properties:
         data:
           anyOf:
+            - $ref: "#/components/schemas/NamedSleepStageMeasurement"
             - $ref: "#/components/schemas/MeasurementResource"
             - type: array
               items:
                 $ref: "#/components/schemas/MeasurementResource"
-            - $ref: "#/components/schemas/NamedSleepStageMeasurement"
         error:
           type: "null"
         meta:
@@ -50393,8 +51295,28 @@ components:
           anyOf:
             - type: array
               items:
-                type: string
+                anyOf:
+                  - type: string
+                    format: date-time
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                  - type: object
+                    properties:
+                      t:
+                        type: string
+                        format: date-time
+                        pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                      speedMs:
+                        type: number
+                      hr:
+                        type: integer
+                        minimum: -9007199254740991
+                        maximum: 9007199254740991
+                    required:
+                      - t
+                    additionalProperties: false
             - type: "null"
+          description: "One entry per geometry point, as the track was stored: a bare instant, or (from the workout batch and the
+            Apple Health export) an object with its instant and, where recorded, speed (m/s) and heart rate (bpm)."
       required:
         - geometry
         - sampleTimestamps
@@ -53014,9 +53936,10 @@ components:
           type: boolean
           description: "v1.42.2 — whether the server sends dose reminders for this medication: true only when
             `notificationsEnabled` is on, the medication is `active`, its course has not ended (`endsOn` is today or
-            later on the person's clock, or unset), its intake is tracked (`trackIntake`), it is not `asNeeded`, and
-            `autoMarkTaken` is off. The same decision gates every server-side reminder send. A client that arms local
-            reminders arms them from this, not from `notificationsEnabled`. Read-only — computed, not stored."
+            later on the person's clock, or unset, and no `endedAt` has passed), its intake is tracked (`trackIntake`),
+            it is not `asNeeded`, and `autoMarkTaken` is off. The same decision gates every server-side reminder send. A
+            client that arms local reminders arms them from this, not from `notificationsEnabled`. Read-only — computed,
+            not stored."
         nextDueAt:
           anyOf:
             - type: string
@@ -53040,6 +53963,15 @@ components:
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
           description: v1.5 course end (ISO date). NULL means chronic. Equals `startsOn` when `oneShot` is true.
+        endedAt:
+          description: "#1280 — the instant the latest course was ended with `POST /api/medications/{id}/courses/end` (the
+            course's own `endedAt`). From it on no dose is due or reminded and `courseStatus` is ENDED; NULL when the
+            course runs to the end of `endsOn`. Read-only — written by the course writer only."
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
         oneShot:
           type: boolean
           description: v1.5 single-administration flag. When true the medication has at most one schedule (no `rrule` /
@@ -53123,7 +54055,10 @@ components:
         canStartCourse:
           type: boolean
           description: "v1.40 — whether `POST /api/medications/{id}/courses` may start a new course now: the medication is active,
-            not one-time, has a course and every course has ended."
+            not one-time, has a course and every course's last day is before today (a course ended today with `POST
+            /api/medications/{id}/courses/end` is over, but a course starting today would share its last day, so the
+            start is offered from the next day), and the caller is the record's owner (starting a course is not
+            delegable, so a delegate always reads false)."
         nextDueScheduleId:
           description: The schedule `nextDueAt` belongs to; null when nothing is due.
           type:
@@ -53137,12 +54072,20 @@ components:
             - ENDED
           description: "v1.39.4 — where today (on the user's clock) sits in the course: UPCOMING before `startsOn`, ENDED after
             `endsOn`, CURRENT otherwise. Calendar days, both ends inclusive, so a course that ends today is CURRENT all
-            day. Read-only — computed, not stored."
+            day, unless it was ended with `POST /api/medications/{id}/courses/end`: then it is ENDED from that instant
+            (`endedAt`). Read-only — computed, not stored."
         intakeActionable:
           type: boolean
           description: "v1.39.4 — whether the medication offers taken / skip today: true only when it is `active`, its intake is
             tracked (`trackIntake`) and `courseStatus` is CURRENT. Clients render the dose actions from this and do not
             re-derive it. Logging a past dose from the history is not gated by it. Read-only — computed, not stored."
+        canEndCourse:
+          type: boolean
+          description: '#1280 — whether `POST /api/medications/{id}/courses/end` may end the course now: true exactly while a
+            course is running (`courseStatus` CURRENT; a medication with no dates is running) and the caller may end it:
+            the owner of the record, or a delegate whose grant manages its medications. False to every other caller.
+            Clients offer "End course" from this and do not re-derive it; the action refuses with 409
+            `medications.course.notRunning` when it is false. Read-only — computed, not stored.'
         lastTakenAt:
           anyOf:
             - type: string
@@ -53228,6 +54171,7 @@ components:
         - nextDueScheduleId
         - courseStatus
         - intakeActionable
+        - canEndCourse
         - lastTakenAt
         - todayEventCount
         - stockUnitsRemaining
@@ -53264,13 +54208,23 @@ components:
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
             - type: "null"
           description: Last day, inclusive. NULL = open (only the latest course).
+        endedAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: "#1280 — the instant `POST /api/medications/{id}/courses/end` ended this course, on its `endsOn` day. No
+            dose slot at or after it is due, reminded or expected, and the course is ENDED from it on. NULL when the
+            whole `endsOn` day counts (an end date set in the editor). Any edit that moves `endsOn` clears it."
         status:
           type: string
           enum:
             - UPCOMING
             - CURRENT
             - ENDED
-          description: Where today, on the person's clock, sits in this course.
+          description: Where today, on the person's clock, sits in this course. A course with `endedAt` is ENDED on its `endsOn`
+            day already.
         takenDoses:
           type: integer
           minimum: 0
@@ -53285,6 +54239,7 @@ components:
         - id
         - startsOn
         - endsOn
+        - endedAt
         - status
         - takenDoses
         - note
@@ -53471,6 +54426,15 @@ components:
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
           description: v1.5 course end (ISO date). NULL means chronic. Equals `startsOn` when `oneShot` is true.
+        endedAt:
+          description: "#1280 — the instant the latest course was ended with `POST /api/medications/{id}/courses/end` (the
+            course's own `endedAt`). From it on no dose is due or reminded and `courseStatus` is ENDED; NULL when the
+            course runs to the end of `endsOn`. Read-only — written by the course writer only."
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
         oneShot:
           type: boolean
           description: v1.5 single-administration flag. When true the medication has at most one schedule (no `rrule` /
@@ -53554,7 +54518,10 @@ components:
         canStartCourse:
           type: boolean
           description: "v1.40 — whether `POST /api/medications/{id}/courses` may start a new course now: the medication is active,
-            not one-time, has a course and every course has ended."
+            not one-time, has a course and every course's last day is before today (a course ended today with `POST
+            /api/medications/{id}/courses/end` is over, but a course starting today would share its last day, so the
+            start is offered from the next day), and the caller is the record's owner (starting a course is not
+            delegable, so a delegate always reads false)."
         courseStatus:
           type: string
           enum:
@@ -53563,12 +54530,20 @@ components:
             - ENDED
           description: "v1.39.4 — where today (on the user's clock) sits in the course: UPCOMING before `startsOn`, ENDED after
             `endsOn`, CURRENT otherwise. Calendar days, both ends inclusive, so a course that ends today is CURRENT all
-            day. Read-only — computed, not stored."
+            day, unless it was ended with `POST /api/medications/{id}/courses/end`: then it is ENDED from that instant
+            (`endedAt`). Read-only — computed, not stored."
         intakeActionable:
           type: boolean
           description: "v1.39.4 — whether the medication offers taken / skip today: true only when it is `active`, its intake is
             tracked (`trackIntake`) and `courseStatus` is CURRENT. Clients render the dose actions from this and do not
             re-derive it. Logging a past dose from the history is not gated by it. Read-only — computed, not stored."
+        canEndCourse:
+          type: boolean
+          description: '#1280 — whether `POST /api/medications/{id}/courses/end` may end the course now: true exactly while a
+            course is running (`courseStatus` CURRENT; a medication with no dates is running) and the caller may end it:
+            the owner of the record, or a delegate whose grant manages its medications. False to every other caller.
+            Clients offer "End course" from this and do not re-derive it; the action refuses with 409
+            `medications.course.notRunning` when it is false. Read-only — computed, not stored.'
         stockUnitsRemaining:
           description: "v1.37.19 — usable inventory units left (same semantics as the list entry's field): NULL = inventory
             tracking off; 0 = tracking on, supply ran out."
@@ -53635,6 +54610,7 @@ components:
         - canStartCourse
         - courseStatus
         - intakeActionable
+        - canEndCourse
         - stockUnitsRemaining
         - stockDosesRemaining
         - runwayDays
@@ -53902,6 +54878,47 @@ components:
             - id
             - startsOn
             - endsOn
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    EndMedicationCourseResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            startsOn:
+              anyOf:
+                - type: string
+                  format: date
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                - type: "null"
+            endsOn:
+              anyOf:
+                - type: string
+                  format: date
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))$
+                - type: "null"
+            endedAt:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
+          required:
+            - startsOn
+            - endsOn
+            - endedAt
           additionalProperties: false
         error:
           type: "null"
@@ -66042,9 +67059,11 @@ components:
         - direction
         - confidence
       additionalProperties: false
-      description: A linear trend over a trailing window. The window is anchored on NOW, not on the newest reading, so a
+      description: "A linear trend over a trailing window. The window is anchored on NOW, not on the newest reading, so a
         series that stopped weeks ago reports `null` for the slope instead of describing a trend that has not been
-        observed since.
+        observed since. It is also `null` when the window's readings fall on fewer than 3 calendar days (UTC) or when
+        their first and last day lie less than half the window apart (4 days for the 7-day window, 15 for the 30-day
+        one): readings minutes apart cannot carry a slope per day."
     AnalyticsCorrelations:
       type: object
       properties:
@@ -72360,8 +73379,15 @@ components:
           properties:
             deleted:
               type: boolean
+            scheduledPurgeAt:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
           required:
             - deleted
+            - scheduledPurgeAt
           additionalProperties: false
         error:
           type: "null"
@@ -72551,10 +73577,20 @@ components:
             maximum: 9007199254740991
           description: Per-model row counts, listing only the models that actually had rows. A model absent from this map had
             nothing to delete — it was not skipped.
+        restorableUntil:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: "Until when an admin can restore the record from the account copy taken immediately before the wipe; the
+            off-host copies from before the wipe are kept until then too. Null when the instance has no deletion grace
+            window (`ACCOUNT_DELETION_GRACE_DAYS=0`): the wipe was final."
       required:
         - cleared
         - deletedRows
         - models
+        - restorableUntil
       additionalProperties: false
     ModuleListLayoutEnvelope:
       type: object
@@ -72649,50 +73685,6 @@ components:
         - data
         - error
       additionalProperties: false
-    PreviewFeaturesEnvelope:
-      type: object
-      properties:
-        data:
-          $ref: "#/components/schemas/PreviewFeatures"
-        error:
-          type: "null"
-        meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
-      required:
-        - data
-        - error
-      additionalProperties: false
-    PreviewFeatures:
-      type: object
-      properties:
-        topics:
-          type: boolean
-          description: Topic overview pages above the single-metric Insights pages. Off by default.
-      required:
-        - topics
-      additionalProperties: false
-      description: Per-user opt-in to preview features, one boolean per flag, every flag off by default.
-    PreviewFeaturesSavedEnvelope:
-      type: object
-      properties:
-        data:
-          $ref: "#/components/schemas/PreviewFeatures"
-        error:
-          type: "null"
-        meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
-      required:
-        - data
-        - error
-      additionalProperties: false
     PrivacySummaryEnvelope:
       type: object
       properties:
@@ -72732,10 +73724,19 @@ components:
               minimum: -9007199254740991
               maximum: 9007199254740991
               description: Fixed 90-day window on the push-attempt and mood-dispatch ledgers.
+            accountDeletionGraceDays:
+              type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+              description: Days between asking to delete the account (or a managed profile, or every entry) and the erasure
+                completing. The account is locked at once; until the window ends an admin can undo the deletion, or
+                restore the copy a data wipe took first. 0 means the erasure completes immediately. Read from the same
+                resolver the purge job uses.
           required:
             - coachMessagesDays
             - auditLogDays
             - deliveryLogDays
+            - accountDeletionGraceDays
           additionalProperties: false
           description: Retention windows as the privacy dashboard states them. Off-host backup retention is operator
             infrastructure rather than an app setting and is deliberately absent — it is disclosed as prose in the UI,
@@ -73472,7 +74473,30 @@ components:
           type: integer
           minimum: 0
           maximum: 9007199254740991
-          description: "Rows not written: duplicates of existing rows, and rows carrying an unstable `externalId`."
+          description: "Rows not written: duplicates of existing rows, rows carrying an unstable `externalId`, mood entries with a
+            factor rating outside its own scale, and a backup's deletion records."
+        droppedTagKeys:
+          description: Tag keys of imported mood entries this account cannot resolve (another account's custom tag, a retired
+            key). The entries landed without them. Present only when non-empty.
+          type: array
+          items:
+            type: string
+        droppedFactorKeys:
+          description: Rated-factor keys this account cannot resolve, as `droppedTagKeys`.
+          type: array
+          items:
+            type: string
+        keptMoodTagKeys:
+          description: Keys of the account's own tags the file names differently. The account's tag is kept as it is. Present only
+            when non-empty.
+          type: array
+          items:
+            type: string
+        keptMoodCategoryKeys:
+          description: The same, for the account's own tag groups.
+          type: array
+          items:
+            type: string
       required:
         - measurements
         - moodEntries
@@ -74817,7 +75841,8 @@ components:
           description: "Present once `status` is `FAILED`: the `meta.errorCode`, message and HTTP status the queuing route would
             have answered with, or one of the run's own codes: `aiRuns.workerUnavailable` (no worker took the run within
             fifteen minutes), `aiRuns.timedOut` (the read outlived the calls the AI response time allows),
-            `aiRuns.failed` (anything else)."
+            `aiRuns.readerBusy` (the server's document reader was busy past the wait a read gets, or stopped before it
+            answered; nothing was read or charged, try again in a minute), `aiRuns.failed` (anything else)."
         createdAt:
           type: string
         startedAt:
@@ -75185,6 +76210,14 @@ components:
             - FAILED
             - CONFIRMED
             - DISCARDED
+        incomplete:
+          description: "Present when part of the document's facts may be missing from the staged ones: a long document is read a
+            page or a part at a time, and a read stopped at the provider's output limit (its complete facts kept), a
+            part could not be read or was not reached (the day's budget, the run's deadline, AI turned off meanwhile),
+            or the document holds more facts than one review takes. The staged facts are still worth reviewing; the
+            person should check them against the document."
+          type: boolean
+          const: true
       required:
         - documentId
         - factsStaged
@@ -78040,6 +79073,19 @@ components:
             - SCI
         locale:
           type: string
+        wording:
+          anyOf:
+            - type: string
+              enum:
+                - validated
+                - unvalidated_translation
+                - original_en
+            - type: "null"
+          description: "Which text the answers were given in. `validated`: the published validated version for `locale` (the
+            original for English). `unvalidated_translation`: a translation written for HealthLog where no validated
+            version exists; clients show that the result is orientation only. `original_en`: the English original,
+            chosen by a reader of another language (`englishOriginal` on create). Null on administrations recorded
+            before v1.46."
         version:
           type: string
         totalScore:
@@ -78060,6 +79106,7 @@ components:
         - id
         - instrument
         - locale
+        - wording
         - version
         - totalScore
         - severityBand
@@ -78265,6 +79312,19 @@ components:
             - SCI
         locale:
           type: string
+        wording:
+          anyOf:
+            - type: string
+              enum:
+                - validated
+                - unvalidated_translation
+                - original_en
+            - type: "null"
+          description: "Which text the answers were given in. `validated`: the published validated version for `locale` (the
+            original for English). `unvalidated_translation`: a translation written for HealthLog where no validated
+            version exists; clients show that the result is orientation only. `original_en`: the English original,
+            chosen by a reader of another language (`englishOriginal` on create). Null on administrations recorded
+            before v1.46."
         version:
           type: string
         totalScore:
@@ -78301,6 +79361,7 @@ components:
         - id
         - instrument
         - locale
+        - wording
         - version
         - totalScore
         - severityBand
@@ -78739,6 +79800,7 @@ components:
                 - local-empty
                 - local-unsupported
                 - decrypt-error
+                - resource-limit
                 - raster-failed
                 - provider-error
                 - pdf-needs-anthropic
@@ -78849,6 +79911,15 @@ components:
           properties:
             requestId:
               type: string
+            duplicate:
+              description: "Present on a 200: the bytes or the source key were already stored, and `data` is the existing row (or the
+                receipt)."
+              type: boolean
+              const: true
+            deleted:
+              description: Present with `duplicate` when the source key belongs to a document the owner deleted. Nothing was stored.
+              type: boolean
+              const: true
           additionalProperties: false
       required:
         - data
@@ -79064,6 +80135,13 @@ components:
             - indexedCount
             - totalCount
           additionalProperties: false
+        deletedCount:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: How many of the caller's documents are deleted and not yet purged (Recently deleted, `GET
+            /api/documents/inbound/deleted`). Always 0 while acting inside somebody else's record, where Recently
+            deleted is not offered.
       required:
         - usedBytes
         - quotaBytes
@@ -79073,6 +80151,7 @@ components:
         - linkedProcedures
         - assistAvailable
         - contentIndex
+        - deletedCount
       additionalProperties: false
     DocumentsLayoutEnvelope:
       type: object
@@ -79294,6 +80373,7 @@ components:
                 - local-empty
                 - local-unsupported
                 - decrypt-error
+                - resource-limit
                 - raster-failed
                 - provider-error
                 - pdf-needs-anthropic
@@ -79346,6 +80426,13 @@ components:
             - READY
             - WITHHELD
             - UNAVAILABLE
+        extractionIncomplete:
+          type: boolean
+          description: "Whether the staged facts may leave part of the document out: a part of a long document was cut at the
+            provider's output limit or not read, the text or pages ran past what the reads take, or the document held
+            more facts than one review takes. Kept from the last extraction (the extract route, its background run, or
+            automatic lab staging) until the next one replaces the facts; false for a document never extracted. A review
+            shows it whenever it is opened, not only when the run ends."
       required:
         - id
         - kind
@@ -79377,6 +80464,7 @@ components:
         - summary
         - summaryGeneratedAt
         - summaryState
+        - extractionIncomplete
       additionalProperties: false
       description: 'A stored document plus its staged facts. `summary` is a short (3-4 sentence) plain-language description of
         WHAT the document is, generated once and then served from storage; it is descriptive only, never a diagnosis.
@@ -79587,6 +80675,133 @@ components:
       required:
         - data
         - error
+      additionalProperties: false
+    DeletedDocumentListEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DeletedDocumentList"
+        error:
+          type: "null"
+        meta:
+          $ref: "#/components/schemas/ListCapMeta"
+      required:
+        - data
+        - error
+        - meta
+      additionalProperties: false
+    DeletedDocumentList:
+      type: object
+      properties:
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeletedDocument"
+        graceDays:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Days a deleted document stays restorable.
+      required:
+        - documents
+        - graceDays
+      additionalProperties: false
+    DeletedDocument:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum:
+            - DOCTOR_REPORT
+            - DISCHARGE_LETTER
+            - LAB_RESULT
+            - IMAGING
+            - PRESCRIPTION
+            - REFERRAL
+            - INSURANCE
+            - VACCINATION
+            - SICK_NOTE
+            - OTHER
+        title:
+          type:
+            - string
+            - "null"
+        filename:
+          type:
+            - string
+            - "null"
+        mimeType:
+          type: string
+        byteSize:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        documentDate:
+          description: User-set filing date (YYYY-MM-DD), or null.
+          type:
+            - string
+            - "null"
+        sourceSystem:
+          anyOf:
+            - type: string
+              enum:
+                - PAPERLESS
+                - PAPRA
+                - OTHER
+            - type: "null"
+          description: The system an imported document came from, or null for one added in HealthLog.
+        deletedAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        purgeAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: "When the daily purge becomes due for this document: `deletedAt` plus `graceDays`. The purge runs once a
+            day, so the document is removed at the first run after this instant."
+      required:
+        - id
+        - kind
+        - title
+        - filename
+        - mimeType
+        - byteSize
+        - documentDate
+        - sourceSystem
+        - deletedAt
+        - purgeAt
+      additionalProperties: false
+    DocumentPurgeResultEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/DocumentPurgeResult"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DocumentPurgeResult:
+      type: object
+      properties:
+        id:
+          type: string
+        purged:
+          type: boolean
+          const: true
+      required:
+        - id
+        - purged
       additionalProperties: false
     InboundExtractEnvelope:
       type: object
@@ -81003,7 +82218,7 @@ components:
             - type: "null"
         syncHealth:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Present on the GET read; omitted from the PATCH echo."
+          description: "Deprecated, still served: read `health`. Present on the GET read; omitted from the PATCH echo."
           $ref: "#/components/schemas/SyncHealth"
         metricFreshness:
           description: Per-metric-type freshness for the `APPLE_HEALTH` source, with the per-type arrival facts. Present on the
@@ -81681,7 +82896,7 @@ components:
           type: boolean
         state:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           type: string
           enum:
             - connected
@@ -81704,14 +82919,14 @@ components:
             - type: "null"
         lastError:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Last recorded failure message, decrypted from the ledger.
-            Null when the last attempt succeeded or none has run."
+          description: "Deprecated, still served: read `health`. Last recorded failure message, decrypted from the ledger. Null
+            when the last attempt succeeded or none has run."
           type:
             - string
             - "null"
         syncHealth:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           $ref: "#/components/schemas/SyncHealth"
         health:
           description: The unified connection state. Present whenever the connection exists; null in the rare case it resolved to
@@ -81900,9 +83115,9 @@ components:
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         tokenExpired:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. The stored access token's expiry is in the past. Read
-            straight off the row — unlike the Withings status read, this endpoint does not refresh; the sync path
-            refreshes lazily instead."
+          description: "Deprecated, still served: read `health`. The stored access token's expiry is in the past. Read straight
+            off the row — unlike the Withings status read, this endpoint does not refresh; the sync path refreshes
+            lazily instead."
           type: boolean
         tokenExpiresAt:
           type: string
@@ -81991,8 +83206,7 @@ components:
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         tokenExpired:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. True after a refresh attempt that did not produce a live
-            token."
+          description: "Deprecated, still served: read `health`. True after a refresh attempt that did not produce a live token."
           type: boolean
         tokenRefreshFailed:
           description: The read tried to refresh an expired token and could not — either the per-user credentials are gone or
@@ -82012,8 +83226,8 @@ components:
             - "null"
         hasActivityScope:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Pre-computed convenience flag the reconnect banner reads. A
-            null `scope` counts as missing activity."
+          description: "Deprecated, still served: read `health`. Pre-computed convenience flag the reconnect banner reads. A null
+            `scope` counts as missing activity."
           type: boolean
         health:
           description: The unified connection state. Present whenever the connection exists; null in the rare case it resolved to
@@ -82322,8 +83536,8 @@ components:
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         tokenExpired:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Read straight off the row — this endpoint does not refresh;
-            the sync path refreshes lazily."
+          description: "Deprecated, still served: read `health`. Read straight off the row — this endpoint does not refresh; the
+            sync path refreshes lazily."
           type: boolean
         tokenExpiresAt:
           type: string
@@ -82493,8 +83707,8 @@ components:
           pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
         tokenExpired:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Read straight off the row — this endpoint does not refresh;
-            the sync path refreshes lazily."
+          description: "Deprecated, still served: read `health`. Read straight off the row — this endpoint does not refresh; the
+            sync path refreshes lazily."
           type: boolean
         tokenExpiresAt:
           type: string
@@ -82544,7 +83758,7 @@ components:
             when every type was read to its start. Kept after the backfill completes; cleared on reconnect.
         needsReauth:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. The stored refresh token was rejected with `invalid_grant` —
+          description: "Deprecated, still served: read `health`. The stored refresh token was rejected with `invalid_grant` —
             Google expires it after 7 days while the OAuth client is in Testing publishing mode, and a user-revoked
             grant lands here too. Distinct from `parked` and from `disconnected`: the connection still exists, it just
             cannot mint a token until the user reconnects. Only Google Health has this field."
@@ -82748,7 +83962,7 @@ components:
           description: The user has stored their own BYO client id and secret.
         state:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           type: string
           enum:
             - connected
@@ -82771,13 +83985,13 @@ components:
             - type: "null"
         lastError:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           type:
             - string
             - "null"
         syncHealth:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           $ref: "#/components/schemas/SyncHealth"
         health:
           description: The unified connection state. Present whenever the connection exists; null in the rare case it resolved to
@@ -83172,7 +84386,7 @@ components:
             - disconnected
             - parked
             - unknown
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           deprecated: true
         lastSuccessAt:
           anyOf:
@@ -83188,7 +84402,7 @@ components:
             - type: "null"
         lastError:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           type:
             - string
             - "null"
@@ -83215,11 +84429,11 @@ components:
               additionalProperties: false
             - type: "null"
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Per-kind consecutive-failure counters, or null when the row
-            has never written a bucket payload. Compare against the top-level `threshold` to know how close the provider
-            is to the operator alert."
+          description: "Deprecated, still served: read `health`. Per-kind consecutive-failure counters, or null when the row has
+            never written a bucket payload. Compare against the top-level `threshold` to know how close the provider is
+            to the operator alert."
         syncHealth:
-          description: "Deprecated: removed in v1.44, read `health`."
+          description: "Deprecated, still served: read `health`."
           deprecated: true
           $ref: "#/components/schemas/SyncHealth"
         metricFreshness:
@@ -83256,7 +84470,7 @@ components:
             - type: "null"
         tokenExpired:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Null — not false — when there is no connection to judge."
+          description: "Deprecated, still served: read `health`. Null — not false — when there is no connection to judge."
           type:
             - boolean
             - "null"
@@ -83299,14 +84513,14 @@ components:
             - "null"
         hasActivityScope:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Withings only."
+          description: "Deprecated, still served: read `health`. Withings only."
           type: boolean
         planUnavailable:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Withings only. The readings this connection's Withings API
-            plan withholds (status 277 since the 2026-10-12 plan split), deduplicated and in display order. Empty when
-            the plan refuses nothing. The sync skips these and keeps importing everything else; the list refreshes when
-            the weekly re-probe asks again."
+          description: "Deprecated, still served: read `health`. Withings only. The readings this connection's Withings API plan
+            withholds (status 277 since the 2026-10-12 plan split), deduplicated and in display order. Empty when the
+            plan refuses nothing. The sync skips these and keeps importing everything else; the list refreshes when the
+            weekly re-probe asks again."
           type: array
           items:
             type: string
@@ -83335,7 +84549,7 @@ components:
               - weight
         needsReauth:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Google Health only."
+          description: "Deprecated, still served: read `health`. Google Health only."
           type: boolean
         available:
           description: Oura / Polar / Strava only.
@@ -83345,7 +84559,7 @@ components:
           type: boolean
         scopeReconnect:
           deprecated: true
-          description: "Deprecated: removed in v1.44, read `health`. Oura only. Collections the stored grant does not cover: Oura
+          description: "Deprecated, still served: read `health`. Oura only. Collections the stored grant does not cover: Oura
             refused them for a missing scope (named in its 401, or inferred when sibling collections succeeded with the
             same token), or the scopes Oura reported at connect leave theirs out. Not a failure and not counted toward
             the reconnect threshold; one reconnect asks for the missing scopes. Empty when the grant covers everything
@@ -83401,7 +84615,7 @@ components:
           description: The unified connection state, null when the provider is not connected (and for Fitbit once
             `retirement.ended`). It supersedes `state`, `lastError`, `consecutiveFailuresByKind`, `syncHealth`,
             `tokenExpired`, `needsReauth`, `hasActivityScope`, `planUnavailable` and `scopeReconnect` on this entry;
-            those nine are deprecated and removed in v1.44.
+            those nine are deprecated and still served for clients that predate `health`.
       required:
         - integration
         - state
@@ -86391,8 +87605,15 @@ components:
             deleted:
               type: boolean
               const: true
+            scheduledPurgeAt:
+              anyOf:
+                - type: string
+                  format: date-time
+                  pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                - type: "null"
           required:
             - deleted
+            - scheduledPurgeAt
           additionalProperties: false
         error:
           type: "null"
@@ -86819,6 +88040,7 @@ components:
               - SECURITY_ALERT
               - DAILY_BRIEFING
               - SHARED_RECORD_INTAKE
+              - BACKUP_HEALTH
             description: Notification category a per-channel preference can toggle.
           additionalProperties:
             type: boolean
@@ -86840,6 +88062,7 @@ components:
             - SECURITY_ALERT
             - DAILY_BRIEFING
             - SHARED_RECORD_INTAKE
+            - BACKUP_HEALTH
           description: What each event does on a channel with no stored row, resolved for this account by the function delivery
             uses. Most are constant per category; the mood reminder follows the account's mood-reminder setting
             (`moodReminderEnabled` on `/api/user/profile`). Render a switch without a row from this map rather than from
@@ -86910,6 +88133,7 @@ components:
             - SECURITY_ALERT
             - DAILY_BRIEFING
             - SHARED_RECORD_INTAKE
+            - BACKUP_HEALTH
           description: Notification category a per-channel preference can toggle.
         enabled:
           type: boolean
@@ -89075,6 +90299,17 @@ components:
           anyOf:
             - $ref: "#/components/schemas/AdminBackupRestoreFailure"
             - type: "null"
+        waiting:
+          anyOf:
+            - type: string
+              enum:
+                - backup
+                - busy
+            - type: "null"
+          description: "Why a `queued` job has not started. A restore never runs beside a backup or another large job: while one
+            holds the server it goes back to the queue for a minute at a time. `backup` when a backup pass holds it,
+            `busy` for anything else (an import, a nightly pass, the memory guard). Null while the job only waits for
+            the worker, and on every job that is not queued."
         attempts:
           type: integer
           minimum: -9007199254740991
@@ -89100,6 +90335,7 @@ components:
         - progress
         - result
         - failure
+        - waiting
         - attempts
         - createdAt
         - startedAt
@@ -89467,6 +90703,8 @@ components:
             - imported
             - deleted
         documentId:
+          description: The vault document for `imported`. For `deleted`, the document while it is still in Recently deleted
+            (restorable), null once it has been removed for good.
           type:
             - string
             - "null"
@@ -89505,6 +90743,9 @@ components:
             - imported
             - duplicate
             - deleted
+            - restored
+          description: "`restored` only answers a request that sent `revive: true`: the deleted document was still in Recently
+            deleted and is back in the vault."
         documentId:
           type:
             - string
@@ -92798,6 +94039,15 @@ components:
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
           description: v1.5 course end (ISO date). NULL means chronic. Equals `startsOn` when `oneShot` is true.
+        endedAt:
+          description: "#1280 — the instant the latest course was ended with `POST /api/medications/{id}/courses/end` (the
+            course's own `endedAt`). From it on no dose is due or reminded and `courseStatus` is ENDED; NULL when the
+            course runs to the end of `endsOn`. Read-only — written by the course writer only."
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
         oneShot:
           type: boolean
           description: v1.5 single-administration flag. When true the medication has at most one schedule (no `rrule` /
@@ -93294,4 +94544,6 @@ components:
       type: apiKey
       in: cookie
       name: healthlog_session
-      description: Browser session cookie — set by /api/auth/login.
+      description: Browser session cookie — set by /api/auth/login. Named `__Host-healthlog_session` wherever the cookie is
+        `Secure` (every HTTPS install); a plain-HTTP install, which cannot hold a `__Host-` cookie, keeps
+        `healthlog_session`.

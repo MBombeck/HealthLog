@@ -135,6 +135,7 @@ describe("comprehensive timeout honouring", () => {
       result: { content: VALID, tokensUsed: 10, model: "m" },
       workingProvider: { providerType: "openai" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
 
     await generateComprehensiveInsight("u1", { locale: "de" });
@@ -150,6 +151,7 @@ describe("comprehensive timeout honouring", () => {
       result: { content: VALID, tokensUsed: 10, model: "m" },
       workingProvider: { providerType: "openai" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
 
     await generateComprehensiveInsight("u1", { locale: "de" });

@@ -3,9 +3,18 @@
  *
  * When NO AI provider is configured — or the user has not consented to one —
  * content search still needs a baseline. This module extracts a PDF's embedded
- * text layer SERVER-SIDE with `pdf-parse` (already a direct dependency; its
- * `getText()` touches only the pure-JS/wasm pdfjs core, never the native
- * `@napi-rs/canvas`), in milliseconds, with no OCR and no third-party egress.
+ * text layer SERVER-SIDE with pdfjs' `getTextContent` (the pure-JS/wasm core,
+ * never the native `@napi-rs/canvas`), in milliseconds, with no OCR and no
+ * third-party egress.
+ *
+ * It reads through `./pdfjs`, the one loader `./rasterize-pdf` opens documents
+ * with too, so both run the app's own `pdfjs-dist` with the same options. It
+ * used to go through `pdf-parse`, which brings a second pdfjs of its own, and
+ * the two cannot share a process: both take their worker from
+ * `globalThis.pdfjsWorker`, so whichever ran first broke the other ("The API
+ * version "6.4.299" does not match the Worker version "5.4.296""). Thumbnails
+ * and vision reads failed after a text extraction, and the text extraction
+ * failed after a raster.
  * The extracted text feeds the SAME blind, encrypted content index the provider
  * path writes (`upsertContentIndex`), so nothing readable is stored at rest.
  *
@@ -20,18 +29,14 @@
  */
 import { Buffer } from "node:buffer";
 
-// `pdf-parse` pulls in pdfjs, whose module top-level references the browser-only
-// `DOMMatrix` global. A STATIC import makes the Turbopack server chunk evaluate
-// that reference at instantiation and throw `DOMMatrix is not defined`, taking
-// down every route/worker that shares the chunk (the document routes among
-// them). The value is therefore loaded lazily inside `extractPdfText` via a
-// runtime `import()`, which lets pdf-parse initialise pdfjs on its own terms and
-// never touches DOMMatrix at load — verified to extract a real text layer under
-// plain Node. Keep the surface type as a type-only import (fully erased at
-// build, no runtime module evaluation).
-import type { PDFParse } from "pdf-parse";
-
 import { annotate } from "@/lib/logging/context";
+import { logCaught } from "@/lib/logging/signal";
+
+import {
+  PdfReaderUnavailableError,
+  PdfResourceLimitError,
+  readPdfText,
+} from "./pdfjs";
 
 /**
  * Minimum joined text length for a PDF to count as a real text-layer document.
@@ -53,49 +58,62 @@ export type LocalExtractSource = "local-pdf" | "local-ocr";
  *                     a provider vision pass is the only way to read it.
  *   - `unsupported` → a MIME the local path cannot read without OCR (images) or
  *                     at all; leave un-indexed locally.
+ *   - `resource-limit` → the PDF crossed the reader's memory or time bound
+ *                     (`PdfResourceLimitError`): too large or too complex to
+ *                     read here. The same bytes cross it again, so it is a
+ *                     final answer, as it is for thumbnails.
  *   - `error`       → the file was malformed / unreadable; treat as un-indexed.
  */
 export type LocalExtractResult =
   | { ok: true; text: string; source: LocalExtractSource }
-  | { ok: false; reason: "empty" | "unsupported" | "error" };
+  | {
+      ok: false;
+      reason: "empty" | "unsupported" | "resource-limit" | "error";
+    };
 
 /**
  * Extract a text-layer PDF's embedded text server-side. Returns `empty` for a
- * scanned/no-text-layer PDF and `error` for a malformed/encrypted one — never
- * throws, so a bad document can never abort the caller (the upload/backfill job
- * just leaves it un-indexed).
+ * scanned/no-text-layer PDF, `resource-limit` for one past the reader's memory
+ * or time bound, and `error` for a malformed/encrypted one, so a bad document
+ * can never abort the caller (the upload/backfill job just leaves it
+ * un-indexed). The one throw is `PdfReaderUnavailableError`: the reader was
+ * busy or its process ended for no measured reason, which says nothing about
+ * the document, so the job runs again instead of recording an outcome. An `error` leaves a `warn` line naming what
+ * pdf.js threw, because the outcome alone does not say why a document stayed
+ * out of the index.
  */
 export async function extractPdfText(
   buffer: Buffer,
 ): Promise<LocalExtractResult> {
-  let parser: PDFParse | null = null;
+  let text: string;
   try {
-    // Lazy load: keeps pdfjs/DOMMatrix out of the eager server chunk (see the
-    // import-site note). Resolved at first PDF extraction, then module-cached.
-    const { PDFParse } = await import("pdf-parse");
-    parser = new PDFParse({ data: new Uint8Array(buffer) });
-    const result = await parser.getText({
-      // Bound the page walk and drop the default "-- N of M --" page markers so
-      // only real document text is tokenised.
-      first: LOCAL_MAX_PAGES,
-      pageJoiner: "",
+    // Bound the page walk so a pathological many-page PDF costs no more.
+    text = (await readPdfText(buffer, LOCAL_MAX_PAGES)).trim();
+  } catch (err) {
+    if (err instanceof PdfReaderUnavailableError) throw err;
+    if (err instanceof PdfResourceLimitError) {
+      // Not a fault of the file's bytes being unreadable: they are readable,
+      // only not within the bounds this server gives one document.
+      annotate({
+        action: { name: "documents.localIndex.resourceLimit" },
+        meta: { limit: err.limit, bytes: buffer.length },
+      });
+      return { ok: false, reason: "resource-limit" };
+    }
+    const errorType = err instanceof Error ? err.name || "Error" : typeof err;
+    annotate({
+      action: { name: "documents.localIndex.extractFailed" },
+      meta: { localExtractError: errorType },
     });
-    const text = (result.text ?? "").trim();
-    if (text.length < LOCAL_TEXT_MIN_CHARS) {
-      return { ok: false, reason: "empty" };
-    }
-    return { ok: true, text, source: "local-pdf" };
-  } catch {
+    logCaught("documents.local_extract.failed", err, {
+      bytes: buffer.length,
+    });
     return { ok: false, reason: "error" };
-  } finally {
-    if (parser) {
-      try {
-        await parser.destroy();
-      } catch {
-        // Best-effort teardown; a destroy failure must not mask the result.
-      }
-    }
   }
+  if (text.length < LOCAL_TEXT_MIN_CHARS) {
+    return { ok: false, reason: "empty" };
+  }
+  return { ok: true, text, source: "local-pdf" };
 }
 
 /**

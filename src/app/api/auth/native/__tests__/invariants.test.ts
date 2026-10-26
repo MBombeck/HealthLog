@@ -11,6 +11,9 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { guardSourceOf } from "@/__tests__/helpers/auth-guards";
+import { stripComments } from "../../../../../__tests__/helpers/source-files";
+
 const SRC = join(process.cwd(), "src");
 const read = (rel: string) => readFileSync(join(SRC, rel), "utf8");
 
@@ -20,9 +23,7 @@ const read = (rel: string) => readFileSync(join(SRC, rel), "utf8");
  * `redirect_uri` parameter").
  */
 function code(rel: string): string {
-  return read(rel)
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  return stripComments(read(rel), rel);
 }
 
 const ROUTE_FILES = [
@@ -41,6 +42,8 @@ describe("T6 — open redirect / redirect_uri removed by construction", () => {
     // Comments legitimately state "there is no redirect_uri parameter"; the
     // invariant is that no CODE reads or builds one.
     for (const rel of files) {
+      // A file read as nothing would pass the ban below.
+      expect(code(rel)).toMatch(/\bexport\b/);
       expect(code(rel)).not.toMatch(/redirect_uri/);
     }
   });
@@ -54,6 +57,7 @@ describe("T6 — open redirect / redirect_uri removed by construction", () => {
     // The routes build the Location only through the helper, never a bespoke
     // scheme string in code (doc comments naming the scheme are fine).
     for (const rel of ROUTE_FILES) {
+      expect(code(rel)).toMatch(/\bexport\b/);
       expect(code(rel)).not.toMatch(/"healthlog:\/\//);
     }
   });
@@ -94,18 +98,15 @@ describe("T11/T13 — cookie-only boundaries and no bundle-in-browser", () => {
   });
 
   it("requireAdmin and requireFreshMfa remain cookie-only (getSession)", () => {
-    const handler = read("lib/api-handler.ts");
     // Both resolve via getSession() (cookie-only) — restated as a tripwire so a
-    // future edit that threads a Bearer into either trips this test.
-    const requireAdmin = handler.slice(
-      handler.indexOf("export async function requireAdmin"),
-      handler.indexOf("export async function requireAdmin") + 400,
-    );
-    expect(requireAdmin).toMatch(/getSession\(\)/);
-    const requireFresh = handler.slice(
-      handler.indexOf("export async function requireFreshMfa"),
-      handler.indexOf("export async function requireFreshMfa") + 400,
-    );
-    expect(requireFresh).toMatch(/getSession\(\)/);
+    // future edit that threads a Bearer into either trips this test. Read from
+    // the guard module that declares each, which throws if it is gone.
+    const opening = (name: string) => {
+      const src = guardSourceOf(name, [`export async function ${name}(`]);
+      const start = src.indexOf(`export async function ${name}(`);
+      return src.slice(start, start + 600);
+    };
+    expect(opening("requireAdmin")).toMatch(/getSession\(\)/);
+    expect(opening("requireFreshMfa")).toMatch(/getSession\(\)/);
   });
 });

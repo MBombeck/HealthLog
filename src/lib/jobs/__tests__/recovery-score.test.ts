@@ -25,14 +25,16 @@ import {
 
 const NOW = new Date("2026-06-02T08:00:00Z");
 
-function makePrisma(userIds: string[]) {
+function makePrisma(userIds: string[], pending: string[] = []) {
   const groupBy = vi
     .fn()
     .mockResolvedValue(userIds.map((userId) => ({ userId })));
+  const findMany = vi.fn().mockResolvedValue(pending.map((id) => ({ id })));
   return {
-    prisma: { measurement: { groupBy } } as unknown as Parameters<
-      typeof runRecoveryScore
-    >[0],
+    prisma: {
+      measurement: { groupBy },
+      user: { findMany },
+    } as unknown as Parameters<typeof runRecoveryScore>[0],
     groupBy,
   };
 }
@@ -70,6 +72,18 @@ describe("findRecoveryScoreCandidates", () => {
       { userId: "asc" },
     ]);
     expect(arg.take).toBe(100);
+    // No account pending deletion: nothing to leave out.
+    expect(where.userId).toBeUndefined();
+  });
+
+  // The cohort is capped; a frozen account must neither get a score written
+  // into its record nor take the slot of an active one.
+  it("leaves accounts pending deletion out before the cap", async () => {
+    const { prisma, groupBy } = makePrisma(["a"], ["frozen"]);
+    await findRecoveryScoreCandidates(prisma, NOW, 100);
+    expect(groupBy.mock.calls[0][0].where.userId).toEqual({
+      notIn: ["frozen"],
+    });
   });
 });
 

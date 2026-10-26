@@ -36,16 +36,14 @@ import {
   PICK_DECIDED_REASONS,
   type AiCapabilityKey,
 } from "@/lib/ai/capabilities/types";
-import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import { callTimeoutMs } from "@/lib/ai/effective-timeout";
 import { prisma } from "@/lib/db";
 import { loadOwnedDocument } from "@/lib/documents/ai-route-support";
 import { loadDocumentChatText } from "@/lib/documents/content-index";
 import { refusalAsFailure } from "@/lib/documents/ai-runs/http";
-import {
-  DOCUMENT_EXTRACT_MODEL_CALLS,
-  executeDocumentExtract,
-} from "@/lib/documents/ai-runs/extract-run";
+import { executeDocumentExtract } from "@/lib/documents/ai-runs/extract-run";
+import { withPdfWork } from "@/lib/documents/pdf-isolation";
+import { PdfReaderUnavailableError } from "@/lib/documents/pdfjs";
 import {
   DOCUMENT_INDEX_MODEL_CALLS,
   executeDocumentIndex,
@@ -77,6 +75,11 @@ import {
   type DocumentAiRunKindValue,
 } from "@/lib/documents/ai-runs/types";
 import {
+  OCR_EXTRACT_MODEL_CALLS,
+  type OcrSchedule,
+} from "@/lib/documents/ocr-plan";
+import { ocrReadCallMs } from "@/lib/documents/ocr-read";
+import {
   requireDocumentTextProvider,
   requireDocumentVisionProvider,
 } from "@/lib/documents/provider-order";
@@ -85,11 +88,7 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { jobDeadline } from "@/lib/jobs/job-budget";
 import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { requireLabsOcrProvider } from "@/lib/labs/ocr-capability";
-import {
-  executeOcrExtraction,
-  OCR_EXTRACT_MODEL_CALLS,
-  type OcrSchedule,
-} from "@/lib/labs/ocr-run";
+import { executeOcrExtraction } from "@/lib/labs/ocr-run";
 import { annotate } from "@/lib/logging/context";
 import { logCaught } from "@/lib/logging/signal";
 import {
@@ -97,11 +96,7 @@ import {
   executeSupplementLabelExtraction,
   requireSupplementLabelProvider,
 } from "@/lib/medications/ingredients/label-extract";
-
-export const DOCUMENT_AI_RUN_QUEUE = "document-ai-run";
-
-/** Two reads at a time: provider calls, kept off the request pool. */
-export const DOCUMENT_AI_RUN_CONCURRENCY = 2;
+import { DOCUMENT_AI_RUN_QUEUE } from "./document-ai-run-queue";
 
 /**
  * The job's expiry: one hour. Three model calls at the longest response
@@ -192,6 +187,34 @@ async function armDeadline(
   });
 }
 
+/**
+ * Move a running run's deadline by `ms`, never past the job's own expiry.
+ * The document reader calls it (`PdfWork.extendDeadline`): the deadline is
+ * model time, and a wait in the reader's queue or the read itself is not, so
+ * a person's read is not timed out because other work held the reader.
+ */
+export async function moveRunDeadline(
+  runId: string,
+  ms: number,
+  deadlineAt: number | undefined,
+): Promise<void> {
+  const delta = Math.round(ms);
+  if (deadlineAt === undefined) {
+    await prisma.$executeRaw`
+      UPDATE document_ai_runs
+      SET expires_at = expires_at + (${delta}::double precision * interval '1 millisecond')
+      WHERE id = ${runId} AND status = 'RUNNING'`;
+    return;
+  }
+  await prisma.$executeRaw`
+    UPDATE document_ai_runs
+    SET expires_at = LEAST(
+      expires_at + (${delta}::double precision * interval '1 millisecond'),
+      ${new Date(deadlineAt)}
+    )
+    WHERE id = ${runId} AND status = 'RUNNING'`;
+}
+
 async function runDocumentIndex(
   run: ClaimedAiRun,
   deadlineAt: number | undefined,
@@ -227,7 +250,16 @@ async function runDocumentIndex(
       userId: run.userId,
       document,
       input: { mode: "text", text: run.input?.toString("utf8") ?? "" },
-      origin: { ipAddress: null, worker: true },
+      origin: {
+        ipAddress: null,
+        worker: true,
+        schedule: deadlineSchedule(
+          run.id,
+          ocrReadCallMs(owner?.aiResponseTimeoutSeconds ?? null),
+          deadlineAt,
+          now,
+        ),
+      },
     });
   }
   const pick = await requireDocumentVisionProvider(run.userId);
@@ -244,26 +276,49 @@ async function runDocumentIndex(
     userId: run.userId,
     document,
     input: { mode: "vision", pick, budget: run.params.budget },
-    origin: { ipAddress: null, worker: true },
+    origin: {
+      ipAddress: null,
+      worker: true,
+      schedule: deadlineSchedule(
+        run.id,
+        ocrReadCallMs(pick.entry.instance.responseTimeoutSeconds),
+        deadlineAt,
+        now,
+      ),
+    },
   });
 }
 
 /**
- * Arm the deadline for one lab read and hand the read a schedule: it then
- * plans as many reads as the deadline allows (a long PDF a page at a time)
- * and moves the deadline to cover them.
+ * Arm the deadline for one report transcription (a lab scan or a document
+ * extraction) and hand it a schedule: it then plans as many reads as the
+ * deadline allows (a long PDF a page at a time, long text in parts) and
+ * moves the deadline to cover them. Both surfaces read under the same
+ * per-call timeout (`AI_BUDGETS.ocrExtract`), so the deadline is measured in
+ * the unit the reads actually run in.
  */
-async function labsOcrSchedule(
+async function ocrReadSchedule(
   runId: string,
   responseTimeoutSeconds: number | null | undefined,
   deadlineAt: number | undefined,
   now: () => number,
 ): Promise<OcrSchedule> {
-  const perCallMs = callTimeoutMs(
-    { timeoutMs: AI_BUDGETS.ocrExtract.timeoutMs },
-    responseTimeoutSeconds,
-  );
+  const perCallMs = ocrReadCallMs(responseTimeoutSeconds);
   await armDeadline(runId, perCallMs, OCR_EXTRACT_MODEL_CALLS, deadlineAt, now);
+  return deadlineSchedule(runId, perCallMs, deadlineAt, now);
+}
+
+/**
+ * The schedule of reads still to come before the job's deadline, armed only
+ * when the reads are planned: the lab staging after an index plans its reads
+ * once the transcription is done (#1274).
+ */
+function deadlineSchedule(
+  runId: string,
+  perCallMs: number,
+  deadlineAt: number | undefined,
+  now: () => number,
+): OcrSchedule {
   return {
     maxModelCalls: () =>
       deadlineAt === undefined
@@ -286,7 +341,7 @@ async function runLabsOcr(
   if (run.params.mode === "text") {
     const pick = await requireLabsOcrProvider(run.userId, "text");
     await assertRunMayEgress("labsOcr", run.userId, [pick.providerType]);
-    const schedule = await labsOcrSchedule(
+    const schedule = await ocrReadSchedule(
       run.id,
       pick.entry.instance.responseTimeoutSeconds,
       deadlineAt,
@@ -303,7 +358,7 @@ async function runLabsOcr(
   if (!mime) throw new Error("lab scan run without a MIME type");
   const pick = await requireLabsOcrProvider(run.userId, "vision");
   await assertRunMayEgress("labsOcr", run.userId, [pick.providerType]);
-  const schedule = await labsOcrSchedule(
+  const schedule = await ocrReadSchedule(
     run.id,
     pick.entry.instance.responseTimeoutSeconds,
     deadlineAt,
@@ -482,9 +537,24 @@ async function runDocumentExtractRead(
 ): Promise<AiRunOutcome<AiRunResult>> {
   const document = await loadRunDocument(run);
   const text = run.params.mode === "text" ? await extractText(run) : null;
-  const read = await pickForDocumentRead(
-    run,
-    DOCUMENT_EXTRACT_MODEL_CALLS,
+  // Picked the way the route picks, then the wire re-checked for exactly
+  // that provider.
+  const read =
+    run.params.mode === "text"
+      ? {
+          mode: "text" as const,
+          pick: await requireDocumentTextProvider(run.userId),
+        }
+      : {
+          mode: "vision" as const,
+          pick: await requireDocumentVisionProvider(run.userId),
+        };
+  await assertRunMayEgress("documentAi", run.userId, [read.pick.providerType]);
+  // The extraction reads a long document in parts, as the lab scan does, so
+  // its deadline is planned and armed the same way.
+  const schedule = await ocrReadSchedule(
+    run.id,
+    read.pick.entry.instance.responseTimeoutSeconds,
     deadlineAt,
     now,
   );
@@ -502,15 +572,19 @@ async function runDocumentExtractRead(
           }
         : { mode: "vision", pick: read.pick, budget },
     origin: { ipAddress: null, worker: true },
+    schedule,
   });
   if (!outcome.ok) return outcome;
-  // The facts are staged on the document; the run carries only the count.
+  // The facts are staged on the document; the run carries only the count,
+  // and whether part of the document may be missing from them.
+  const { document: staged, incomplete } = outcome.data;
   return {
     ok: true,
     data: {
-      documentId: outcome.data.id,
-      factsStaged: outcome.data.facts.length,
-      status: outcome.data.status,
+      documentId: staged.id,
+      factsStaged: staged.facts.length,
+      status: staged.status,
+      ...(incomplete ? { incomplete: true } : {}),
     },
   };
 }
@@ -570,7 +644,16 @@ export async function runDocumentAiRun(
 
   let outcome: AiRunOutcome<AiRunResult>;
   try {
-    outcome = await RUN_DISPATCH[run.kind](run, deadlineAt, now);
+    // A person asked for this read and is waiting on it: the document
+    // reader serves it ahead of background work, in turn with other people.
+    outcome = await withPdfWork(
+      {
+        owner: run.userId,
+        lane: "interactive",
+        extendDeadline: (ms) => moveRunDeadline(run.id, ms, deadlineAt),
+      },
+      () => RUN_DISPATCH[run.kind](run, deadlineAt, now),
+    );
   } catch (err) {
     // Everything that throws here threw before the body took over the
     // reservation, so it goes back here.
@@ -578,6 +661,13 @@ export async function runDocumentAiRun(
     const failure: AiRunFailure = (err instanceof RunRefused
       ? err.failure
       : null) ??
+      (err instanceof PdfReaderUnavailableError
+        ? {
+            status: 503,
+            errorCode: AI_RUN_ERROR_CODES.readerBusy,
+            message: "The document reader is busy. Try again in a minute.",
+          }
+        : null) ??
       refusalAsFailure(err) ?? {
         status: 500,
         errorCode: AI_RUN_ERROR_CODES.failed,

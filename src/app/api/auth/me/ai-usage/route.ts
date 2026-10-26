@@ -10,13 +10,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
@@ -40,16 +35,11 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     });
   }
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, aiUsagePutSchema, {
     maxBytes: 1024,
+    errorCode: "ai.usage.invalid",
   });
-  if (jsonError) return jsonError;
-  const parsed = aiUsagePutSchema.safeParse(body);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "ai.usage.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const { level } = parsed.data;
   const settings = await loadAiUsageSettings();

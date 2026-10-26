@@ -17,15 +17,18 @@ import {
   useRecentProof,
 } from "@/components/settings/security-section/use-recent-proof";
 import { loadDocument } from "@/lib/navigation/load-document";
+import { useAccountDeletionGrace } from "@/lib/queries/use-privacy-summary";
+import { formatDate } from "@/lib/format";
 
 /**
  * Settings → Advanced.
  *
  * v1.4.16: every export path (CSV, JSON, doctor-report PDF)
  * moved out into the dedicated `<ExportSection>` under `/settings/export`.
- * What stays here is the irreversible danger-zone — the "wipe all my
- * data" surface that should never live next to a single-click export
- * button.
+ * What stays here is the danger-zone — the "wipe all my data" and
+ * "delete my account" surfaces that should never live next to a
+ * single-click export button. Both complete after the deletion grace
+ * window (`ACCOUNT_DELETION_GRACE_DAYS`), which the dialogs state.
  *
  * v1.4.25 added a Research Mode opt-in here, gating the estimated GLP-1
  * drug-level curve behind an acknowledged disclaimer version. The chart
@@ -35,6 +38,21 @@ import { loadDocument } from "@/lib/navigation/load-document";
  * acknowledgment dialog, the endpoint behind it and the three user columns
  * it stamped are gone. This page is the destructive controls.
  */
+/**
+ * What deleting all data does. With a grace window it also says what a
+ * restore of the copy does not bring back: what arrives after the wipe is
+ * replaced, and connections, sharing, Guardian roles and share links are
+ * gone for good.
+ */
+export function wipeConfirmBody(
+  graceDays: number,
+  t: ReturnType<typeof useTranslations>["t"],
+): string {
+  return graceDays > 0
+    ? `${t("settings.dangerZoneConfirmDescriptionGrace", { days: graceDays })} ${t("settings.dangerZoneRestoreLimits")}`
+    : t("settings.dangerZoneConfirmDescription");
+}
+
 export function AdvancedSection() {
   // v1.18.6 — the visible heading + subtitle now come from the shared
   // `<SettingsSectionFrame>` in the route; this body is the advanced cards.
@@ -52,6 +70,10 @@ export function AdvancedSection() {
 function DataResetCard() {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
+  // With a grace window the wipe keeps a copy an admin can restore until the
+  // window ends; the dialog says so only once it knows the number.
+  const grace = useAccountDeletionGrace();
+  const graceDays = grace.days ?? 0;
   const recentProof = useRecentProof({
     description: t("settings.reproof.descriptionChange"),
   });
@@ -86,7 +108,14 @@ function DataResetCard() {
       }
 
       await queryClient.invalidateQueries();
-      setMsg(t("settings.dangerZoneSuccess"));
+      const restorableUntil: unknown = json?.data?.restorableUntil;
+      setMsg(
+        typeof restorableUntil === "string"
+          ? t("settings.dangerZoneSuccessGrace", {
+              date: formatDate(restorableUntil),
+            })
+          : t("settings.dangerZoneSuccess"),
+      );
       setMsgType("success");
       setConfirmOpen(false);
     } catch (err) {
@@ -132,7 +161,7 @@ function DataResetCard() {
           onClick={() => setConfirmOpen(true)}
           variant="destructive"
           size="sm"
-          disabled={deleting}
+          disabled={deleting || grace.pending}
           className="min-h-11 w-full shrink-0 sm:min-h-9 sm:w-auto"
         >
           {deleting ? (
@@ -151,7 +180,7 @@ function DataResetCard() {
             setConfirmOpen(open);
           }}
           title={t("settings.dangerZoneConfirm")}
-          body={t("settings.dangerZoneConfirmDescription")}
+          body={wipeConfirmBody(graceDays, t)}
           confirmLabel={t("settings.finalDelete")}
           onConfirm={() => void handleDeleteAllData()}
           pending={deleting}
@@ -180,6 +209,10 @@ function DataResetCard() {
  */
 function AccountDeleteCard() {
   const { t } = useTranslations();
+  // With a grace window the account is locked at once and erased when the
+  // window ends; until then an admin can undo it. Stated only once known.
+  const grace = useAccountDeletionGrace();
+  const graceDays = grace.days ?? 0;
   const recentProof = useRecentProof({
     description: t("settings.reproof.descriptionChange"),
   });
@@ -216,15 +249,32 @@ function AccountDeleteCard() {
         setDeleting(false);
         return;
       }
-      setMsg(t("settings.deleteAccountSuccess"));
+      let scheduledPurgeAt: unknown = null;
+      try {
+        scheduledPurgeAt = (await res.json())?.data?.scheduledPurgeAt;
+      } catch {
+        scheduledPurgeAt = null;
+      }
+      setMsg(
+        typeof scheduledPurgeAt === "string"
+          ? t("settings.deleteAccountScheduled", {
+              date: formatDate(scheduledPurgeAt),
+            })
+          : t("settings.deleteAccountSuccess"),
+      );
       setMsgType("success");
-      // The route destroyed every session before deleting the row;
-      // give the toast a beat to paint, then bounce to the login page.
-      // Leave `deleting` set so the confirm button keeps its pending
-      // state through the redirect — the row is gone, nothing to undo.
-      setTimeout(() => {
-        loadDocument("/auth/login");
-      }, 1_500);
+      // The route revoked every session (and, without a grace window,
+      // deleted the row); give the toast a beat to paint, then bounce to the
+      // login page. Leave `deleting` set so the confirm button keeps its
+      // pending state through the redirect: only an admin can undo it now.
+      // With a grace window the message names the erase date, so it stays
+      // long enough to read.
+      setTimeout(
+        () => {
+          loadDocument("/auth/login");
+        },
+        typeof scheduledPurgeAt === "string" ? 5_000 : 1_500,
+      );
     } catch (err) {
       setDeleting(false);
       const message = recentProofErrorMessage(
@@ -246,7 +296,11 @@ function AccountDeleteCard() {
         title={t("settings.deleteAccountCardTitle")}
         description={t("settings.deleteAccountCardDescription")}
       />
-      <p className="text-sm">{t("settings.deleteAccountCardDetail")}</p>
+      <p className="text-sm">
+        {graceDays > 0
+          ? t("settings.deleteAccountCardDetailGrace", { days: graceDays })
+          : t("settings.deleteAccountCardDetail")}
+      </p>
 
       {msg && (
         <p
@@ -262,7 +316,7 @@ function AccountDeleteCard() {
           onClick={() => setConfirmOpen(true)}
           variant="destructive"
           size="sm"
-          disabled={deleting}
+          disabled={deleting || grace.pending}
           className="min-h-11 w-full shrink-0 sm:min-h-9 sm:w-auto"
           data-slot="settings-account-delete-trigger"
         >
@@ -281,9 +335,23 @@ function AccountDeleteCard() {
             if (deleting) return;
             setConfirmOpen(open);
           }}
-          title={t("settings.deleteAccountConfirmTitle")}
-          body={t("settings.deleteAccountConfirmDescription")}
-          confirmLabel={t("settings.deleteAccountFinal")}
+          title={
+            graceDays > 0
+              ? t("settings.deleteAccountConfirmTitleGrace")
+              : t("settings.deleteAccountConfirmTitle")
+          }
+          body={
+            graceDays > 0
+              ? t("settings.deleteAccountConfirmDescriptionGrace", {
+                  days: graceDays,
+                })
+              : t("settings.deleteAccountConfirmDescription")
+          }
+          confirmLabel={
+            graceDays > 0
+              ? t("settings.deleteAccountFinalGrace")
+              : t("settings.deleteAccountFinal")
+          }
           onConfirm={() => void handleDeleteAccount()}
           pending={deleting}
           slot="settings-account-delete"

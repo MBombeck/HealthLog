@@ -59,6 +59,8 @@ export interface BackupSummary {
   documentConditionLinks: number;
   /** Facts staged out of a document, with their review decision. */
   extractedFacts: number;
+  /** Import source keys of documents the person deleted. */
+  documentImportKeys: number;
   /** 1 when the account's durable self-context rides the file, 0 otherwise. */
   healthProfile: number;
   /** Effective-dated structured health-profile revisions. */
@@ -159,6 +161,7 @@ export function summarizeBackup(payload: BackupPayload): BackupSummary {
     // did for visits.
     documentConditionLinks: payload.documentConditionLinks.length,
     extractedFacts: payload.extractedFacts.length,
+    documentImportKeys: payload.documentImportKeys.length,
     healthProfile: payload.healthProfile ? 1 : 0,
     healthProfileFactRevisions: payload.healthProfileFacts.length,
     customMetrics: payload.customMetrics.length,

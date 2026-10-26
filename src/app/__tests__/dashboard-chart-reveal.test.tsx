@@ -21,10 +21,16 @@
  * `resolveChartRevealState` resolver, the markup through
  * `renderToStaticMarkup`, and the page wiring through textual pins.
  */
-import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import type { ReactElement } from "react";
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+
+import { dashboardSource } from "@/__tests__/helpers/dashboard-source";
+import {
+  CHART_TILES,
+  revealChartIds,
+  type ChartTileContext,
+} from "@/components/dashboard/tiles/chart-tiles";
 
 import {
   CHART_REVEAL_TIMEOUT_MS,
@@ -33,8 +39,6 @@ import {
 } from "@/components/dashboard/chart-reveal";
 import { TrendCardSkeleton } from "@/components/charts/trend-card-skeleton";
 import { I18nProvider } from "@/lib/i18n/context";
-
-const PAGE_PATH = join(process.cwd(), "src/app/page-client.tsx");
 
 describe("resolveChartRevealState", () => {
   it("stays hidden while the gate is not armed (no visible charts yet)", () => {
@@ -145,46 +149,65 @@ describe("TrendCardSkeleton", () => {
   });
 });
 
-describe("dashboard chart-reveal wiring (page.tsx)", () => {
-  const src = readFileSync(PAGE_PATH, "utf8");
+describe("dashboard chart-reveal wiring (the chart registry)", () => {
+  const GATED = [
+    "weight-chart",
+    "bmi-chart",
+    "bp-chart",
+    "pulse-chart",
+    "bodyFat-chart",
+    "mood-chart",
+    "sleep-chart",
+    "steps-chart",
+    "medications",
+  ];
 
-  it("derives the gated id list from the chart visibility gates", () => {
-    expect(src).toMatch(/const\s+revealChartIds:\s*string\[\]\s*=\s*\[\];/);
-    expect(src).toMatch(/useDashboardChartReveal\(revealChartIds\)/);
+  it("derives the gated id list from the visible chart cards", () => {
+    expect(revealChartIds(CHART_TILES)).toEqual(GATED);
+    // A hidden card drops out of the list the reveal waits for.
+    expect(
+      revealChartIds(CHART_TILES.filter((tile) => tile.id !== "bp-chart")),
+    ).toEqual(GATED.filter((id) => id !== "bp-chart"));
+    expect(dashboardSource()).toMatch(
+      /useDashboardChartReveal\(revealChartIds\(chartTiles\)\)/,
+    );
   });
 
   it("every data-backed chart reports through onDataReady", () => {
-    for (const id of [
-      "weight-chart",
-      "bmi-chart",
-      "bp-chart",
-      "pulse-chart",
-      "bodyFat-chart",
-      "mood-chart",
-      "sleep-chart",
-      "steps-chart",
-      "medications",
-    ]) {
-      expect(src).toContain(`onDataReady={() => markChartReady("${id}")}`);
+    const markChartReady = vi.fn();
+    const ctx = {
+      t: (key: string) => key,
+      unitDisplay: {
+        unitFor: () => "kg",
+        transformFor: () => ({ factor: 1, offset: 0 }),
+      },
+      user: { heightCm: 180, timezone: "Europe/Berlin" },
+      summaries: {},
+      compareBaseline: "none",
+      preloadedSeries: undefined,
+      markChartReady,
+    } as unknown as ChartTileContext;
+    for (const tile of CHART_TILES.filter((t) => GATED.includes(t.id))) {
+      const node = tile.render(ctx) as ReactElement<{
+        onDataReady?: () => void;
+      }>;
+      node.props.onDataReady?.();
+      expect(markChartReady).toHaveBeenLastCalledWith(tile.id);
     }
+    expect(markChartReady).toHaveBeenCalledTimes(GATED.length);
   });
 
   it("gated entries render inside DashboardChartCell", () => {
-    expect(src).toMatch(
+    expect(dashboardSource()).toMatch(
       /entry\.revealGated\s*\?[\s\S]*?<DashboardChartCell revealed=\{chartsRevealed\}>/,
     );
   });
 
   it("self-skeletoning cards (achievements / workouts) stay outside the gate", () => {
-    // Their entries never set `revealGated`, so the ungated branch
-    // renders them directly.
-    const achievements = src.match(
-      /charts\.push\(\{\s*id:\s*"achievements"[\s\S]*?\}\);/,
-    );
-    const workouts = src.match(
-      /charts\.push\(\{\s*id:\s*"recentWorkouts"[\s\S]*?\}\);/,
-    );
-    expect(achievements?.[0]).not.toContain("revealGated");
-    expect(workouts?.[0]).not.toContain("revealGated");
+    for (const id of ["achievements", "recentWorkouts", "vorsorge"]) {
+      const tile = CHART_TILES.find((t) => t.id === id);
+      expect(tile, id).toBeDefined();
+      expect(tile?.revealGated, id).toBeUndefined();
+    }
   });
 });

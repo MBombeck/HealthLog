@@ -4,8 +4,8 @@
  * Exporting the whole record, making a clinician share link, minting a token,
  * and the admin backup, restore, wipe and reset actions ask for a fresh proof,
  * not only a live session (`requireRecentProof` / `assertRecentCookieProof` in
- * `src/lib/api-handler.ts`). This file pins which routes those are, so a route
- * cannot drop the gate, and a new one cannot quietly join the list of routes
+ * `src/lib/auth/guards/recent-proof.ts`, imported through `src/lib/api-handler.ts`).
+ * This file pins which routes those are, so a route cannot drop the gate, and a new one cannot quietly join the list of routes
  * whose Bearer arm still takes the token alone.
  *
  * Matching is on the IMPORT and then on calls of the local name, the way
@@ -16,11 +16,8 @@
 import { describe, it, expect } from "vitest";
 import { join } from "node:path";
 
-import {
-  readSource,
-  readSourceText,
-  walkSourceFiles,
-} from "./helpers/source-files";
+import { guardSourceOf } from "./helpers/auth-guards";
+import { readSourceText, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -185,10 +182,9 @@ describe("the recent-proof gate", () => {
   });
 
   it("the gate reads the session's own stamps, and only a second factor on an enrolled account", () => {
-    const src = readSource(
-      "src/lib/api-handler.ts",
+    const src = guardSourceOf("assertRecentCookieProof", [
       "export async function assertRecentCookieProof(",
-    );
+    ]);
     const start = src.indexOf("export async function assertRecentCookieProof(");
     expect(start).toBeGreaterThan(-1);
     const body = src.slice(start, src.indexOf("\nexport ", start + 1));

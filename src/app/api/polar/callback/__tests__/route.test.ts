@@ -76,8 +76,10 @@ vi.mock("@/lib/crypto", () => ({
 }));
 vi.mock("@/lib/auth/session", () => ({ getSession: getSessionMock }));
 vi.mock("@/lib/polar/client", () => ({
-  exchangeCode: exchangeCodeMock,
   registerUser: registerUserMock,
+}));
+vi.mock("@/lib/polar/oauth", () => ({
+  polarOAuth: { exchange: exchangeCodeMock },
 }));
 vi.mock("@/lib/polar/credentials", () => ({
   getPolarClientCredentials: getCredsMock,

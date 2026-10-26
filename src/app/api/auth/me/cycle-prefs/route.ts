@@ -27,7 +27,7 @@ import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { getOrCreateCycleProfile } from "@/lib/cycle/profile";
-import { isCycleEnabled } from "@/lib/cycle/gate";
+import { isCycleEnabled } from "@/lib/cycle/enabled";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { toCycleProfileDTO } from "@/lib/cycle/dto";
 import { cyclePrefsSchema } from "@/lib/validations/cycle";

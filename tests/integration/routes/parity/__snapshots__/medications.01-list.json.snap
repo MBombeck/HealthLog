@@ -1,0 +1,173 @@
+{
+  "status": 200,
+  "body": {
+    "data": [
+      {
+        "id": "<id:1>",
+        "userId": "<id:2>",
+        "name": "Existing tablet",
+        "dose": "10mg",
+        "treatmentClass": "GENERIC",
+        "dosesPerUnit": null,
+        "unitsPerDose": 1,
+        "active": true,
+        "notificationsEnabled": true,
+        "pausedAt": null,
+        "snoozedUntil": null,
+        "startsOn": "2026-10-01T00:00:00.000Z",
+        "endsOn": null,
+        "endedAt": null,
+        "oneShot": false,
+        "asNeeded": false,
+        "trackIntake": true,
+        "autoMarkTaken": false,
+        "autoMarkTakenSince": null,
+        "deliveryForm": "ORAL",
+        "trackInjectionSites": false,
+        "allowedInjectionSites": [],
+        "liveActivityEnabled": false,
+        "criticalAlarmEnabled": false,
+        "atcCode": null,
+        "rxNormCode": null,
+        "lowStockNotifiedAt": null,
+        "lowStockNotifiedThresholdDays": null,
+        "reorderLeadDays": null,
+        "externalSource": null,
+        "externalId": null,
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>",
+        "schedules": [
+          {
+            "id": "<id:3>",
+            "medicationId": "<id:1>",
+            "windowStart": "08:00",
+            "windowEnd": "10:00",
+            "label": null,
+            "dose": null,
+            "unitsPerDose": null,
+            "daysOfWeek": null,
+            "timesOfDay": [
+              "08:00"
+            ],
+            "reminderGraceMinutes": null,
+            "rrule": "FREQ=DAILY",
+            "rollingIntervalDays": null,
+            "scheduleType": "SCHEDULED",
+            "cyclicOnWeeks": null,
+            "cyclicOffWeeks": null,
+            "doseWindows": null,
+            "resolvedUnitsPerDose": 1
+          }
+        ],
+        "hasIngredients": false,
+        "category": "OTHER",
+        "categoryLabel": null,
+        "courses": [],
+        "courseCount": 0,
+        "previousCourseEndedOn": null,
+        "canStartCourse": false,
+        "lastTakenAt": null,
+        "todayEventCount": 0,
+        "nextDueAt": "2026-10-16T06:00:00.000Z",
+        "remindersActive": true,
+        "nextDueOverdue": false,
+        "nextDueScheduleId": "<id:3>",
+        "courseStatus": "CURRENT",
+        "intakeActionable": true,
+        "canEndCourse": true,
+        "stockUnitsRemaining": null,
+        "stockDosesRemaining": null,
+        "runwayDays": null
+      }
+    ],
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "medication.list"
+      },
+      "meta": {
+        "cache.medications.outcome": "miss",
+        "cache.medications.key_hash": "<key_hash>",
+        "count": 1
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "medications": [
+      {
+        "id": "<id:1>",
+        "userId": "<id:2>",
+        "name": "Existing tablet",
+        "dose": "10mg",
+        "treatmentClass": "GENERIC",
+        "dosesPerUnit": null,
+        "unitsPerDose": "1",
+        "active": true,
+        "notificationsEnabled": true,
+        "pausedAt": null,
+        "snoozedUntil": null,
+        "startsOn": "2026-10-01T00:00:00.000Z",
+        "endsOn": null,
+        "endedAt": null,
+        "oneShot": false,
+        "asNeeded": false,
+        "trackIntake": true,
+        "autoMarkTaken": false,
+        "autoMarkTakenSince": null,
+        "deliveryForm": "ORAL",
+        "trackInjectionSites": false,
+        "allowedInjectionSites": [],
+        "liveActivityEnabled": false,
+        "criticalAlarmEnabled": false,
+        "atcCode": null,
+        "rxNormCode": null,
+        "lowStockNotifiedAt": null,
+        "lowStockNotifiedThresholdDays": null,
+        "reorderLeadDays": null,
+        "externalSource": null,
+        "externalId": null,
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>"
+      }
+    ],
+    "schedules": [
+      {
+        "id": "<id:3>",
+        "medicationId": "<id:1>",
+        "windowStart": "08:00",
+        "windowEnd": "10:00",
+        "label": null,
+        "dose": null,
+        "unitsPerDose": null,
+        "daysOfWeek": null,
+        "timesOfDay": [
+          "08:00"
+        ],
+        "reminderGraceMinutes": null,
+        "rrule": "FREQ=DAILY",
+        "rollingIntervalDays": null,
+        "scheduleType": "SCHEDULED",
+        "cyclicOnWeeks": null,
+        "cyclicOffWeeks": null,
+        "doseWindows": null
+      }
+    ],
+    "revisions": [],
+    "pauseEras": [],
+    "courses": [],
+    "intakes": [],
+    "doseChanges": [],
+    "inventoryItems": [],
+    "inventoryEvents": [],
+    "categories": [],
+    "ingredients": [],
+    "audit": [],
+    "idempotency": []
+  }
+}

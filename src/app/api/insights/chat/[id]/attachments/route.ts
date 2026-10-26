@@ -11,13 +11,8 @@ import { type NextRequest } from "next/server";
 
 import { requireAiCapability } from "@/lib/ai/capabilities/gate";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  apiValidationError,
-  safeJson,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -72,21 +67,12 @@ export const POST = apiHandler(
       return response;
     }
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, coachAttachmentCreateSchema, {
       maxBytes: 4 * 1024,
+      errorCode: "coach.fenced.invalid",
+      message: "Invalid attachment request",
     });
-    if (jsonError) return jsonError;
-    const parsed = coachAttachmentCreateSchema.safeParse(body);
-    if (!parsed.success) {
-      return apiValidationError(
-        "Invalid attachment request",
-        sanitiseZodIssues(parsed.error.issues),
-        422,
-        {
-          errorCode: "coach.fenced.invalid",
-        },
-      );
-    }
+    if (!parsed.ok) return parsed.error;
     const { documentId } = parsed.data;
 
     // Ownership of the conversation — NOT filtered on `documentScoped` (this is

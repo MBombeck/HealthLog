@@ -67,6 +67,7 @@ for (const tz of ["Asia/Kolkata", "America/New_York"]) {
         createdAt: d1(16, 5),
         startsOn: new Date("2026-09-23T00:00:00Z"),
         endsOn: new Date("2026-09-28T00:00:00Z"),
+        endedAt: null,
         oneShot: false,
         asNeeded: false,
         trackIntake: true,

@@ -1,14 +1,8 @@
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
 import { auditLog } from "@/lib/auth/audit";
-import {
-  apiError,
-  apiSuccess,
-  apiValidationError,
-  getClientIp,
-  safeJson,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { encrypt } from "@/lib/crypto";
 import { z } from "zod/v4";
@@ -53,19 +47,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAdmin();
   annotate({ action: { name: "admin.webPushVapid.generate" } });
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, generateSchema, {
     maxBytes: 4 * 1024,
+    input: (body) => body ?? {},
+    message: "Invalid request",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = generateSchema.safeParse(body ?? {});
-  if (!parsed.success) {
-    return apiValidationError(
-      "Invalid request",
-      sanitiseZodIssues(parsed.error.issues),
-      422,
-    );
-  }
+  if (!parsed.ok) return parsed.error;
 
   const existing = await prisma.appSettings.findUnique({
     where: { id: "singleton" },

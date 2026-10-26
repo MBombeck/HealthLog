@@ -31,7 +31,7 @@ const CALL_SITES: Array<{ file: string; surface: string }> = [
     surface: "insight targets",
   },
   {
-    file: "src/app/api/insights/comprehensive/route.ts",
+    file: "src/lib/insights/comprehensive-overview/medication-compliance.ts",
     surface: "comprehensive insight",
   },
   {

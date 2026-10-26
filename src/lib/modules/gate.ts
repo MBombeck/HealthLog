@@ -46,7 +46,7 @@
  */
 import { apiError } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
-import { isCycleEnabled } from "@/lib/cycle/gate";
+import { isCycleEnabled } from "@/lib/cycle/enabled";
 import { getAssistantFlags } from "@/lib/feature-flags";
 import { memoizePerRequest } from "@/lib/request-cache";
 import {

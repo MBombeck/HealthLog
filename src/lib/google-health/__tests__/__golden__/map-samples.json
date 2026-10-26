@@ -1,0 +1,693 @@
+{
+  "measurements": [
+    {
+      "index": 0,
+      "key": "weight",
+      "tz": null,
+      "output": [
+        {
+          "type": "WEIGHT",
+          "value": 78.4,
+          "unit": "kg",
+          "measuredAt": "2026-06-02T06:15:00.000Z",
+          "fieldTag": "2026-06-02T06:15:00.000Z:weight"
+        }
+      ]
+    },
+    {
+      "index": 0,
+      "key": "weight",
+      "tz": "Europe/Berlin",
+      "output": [
+        {
+          "type": "WEIGHT",
+          "value": 78.4,
+          "unit": "kg",
+          "measuredAt": "2026-06-02T06:15:00.000Z",
+          "fieldTag": "2026-06-02T06:15:00.000Z:weight"
+        }
+      ]
+    },
+    {
+      "index": 0,
+      "key": "weight",
+      "tz": "America/New_York",
+      "output": [
+        {
+          "type": "WEIGHT",
+          "value": 78.4,
+          "unit": "kg",
+          "measuredAt": "2026-06-02T06:15:00.000Z",
+          "fieldTag": "2026-06-02T06:15:00.000Z:weight"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "key": "weight",
+      "tz": null,
+      "output": [
+        {
+          "type": "WEIGHT",
+          "value": 78.25,
+          "unit": "kg",
+          "measuredAt": "2026-06-03T05:30:00.000Z",
+          "fieldTag": "2026-06-03T05:30:00.000Z:weight"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "key": "weight",
+      "tz": "Europe/Berlin",
+      "output": [
+        {
+          "type": "WEIGHT",
+          "value": 78.25,
+          "unit": "kg",
+          "measuredAt": "2026-06-03T05:30:00.000Z",
+          "fieldTag": "2026-06-03T05:30:00.000Z:weight"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "key": "weight",
+      "tz": "America/New_York",
+      "output": [
+        {
+          "type": "WEIGHT",
+          "value": 78.25,
+          "unit": "kg",
+          "measuredAt": "2026-06-03T05:30:00.000Z",
+          "fieldTag": "2026-06-03T05:30:00.000Z:weight"
+        }
+      ]
+    },
+    { "index": 2, "key": "weight", "tz": null, "output": [] },
+    { "index": 2, "key": "weight", "tz": "Europe/Berlin", "output": [] },
+    { "index": 2, "key": "weight", "tz": "America/New_York", "output": [] },
+    {
+      "index": 3,
+      "key": "weight",
+      "tz": null,
+      "output": [
+        {
+          "type": "WEIGHT",
+          "value": 77.9,
+          "unit": "kg",
+          "measuredAt": "2026-06-04T23:45:00.000Z",
+          "fieldTag": "2026-06-04T23:45:00.000Z:weight"
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "key": "weight",
+      "tz": "Europe/Berlin",
+      "output": [
+        {
+          "type": "WEIGHT",
+          "value": 77.9,
+          "unit": "kg",
+          "measuredAt": "2026-06-04T21:45:00.000Z",
+          "fieldTag": "2026-06-04T23:45:00.000Z:weight"
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "key": "weight",
+      "tz": "America/New_York",
+      "output": [
+        {
+          "type": "WEIGHT",
+          "value": 77.9,
+          "unit": "kg",
+          "measuredAt": "2026-06-05T03:45:00.000Z",
+          "fieldTag": "2026-06-04T23:45:00.000Z:weight"
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "key": "bodyFat",
+      "tz": null,
+      "output": [
+        {
+          "type": "BODY_FAT",
+          "value": 21.4,
+          "unit": "%",
+          "measuredAt": "2026-06-02T06:15:00.000Z",
+          "fieldTag": "2026-06-02T06:15:00.000Z:body_fat"
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "key": "bodyFat",
+      "tz": "Europe/Berlin",
+      "output": [
+        {
+          "type": "BODY_FAT",
+          "value": 21.4,
+          "unit": "%",
+          "measuredAt": "2026-06-02T06:15:00.000Z",
+          "fieldTag": "2026-06-02T06:15:00.000Z:body_fat"
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "key": "bodyFat",
+      "tz": "America/New_York",
+      "output": [
+        {
+          "type": "BODY_FAT",
+          "value": 21.4,
+          "unit": "%",
+          "measuredAt": "2026-06-02T06:15:00.000Z",
+          "fieldTag": "2026-06-02T06:15:00.000Z:body_fat"
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "key": "bodyFat",
+      "tz": null,
+      "output": [
+        {
+          "type": "BODY_FAT",
+          "value": 20.9,
+          "unit": "%",
+          "measuredAt": "2026-07-01T09:00:00.000Z",
+          "fieldTag": "1970-01-01T00:00:00.000Z:body_fat"
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "key": "bodyFat",
+      "tz": "Europe/Berlin",
+      "output": [
+        {
+          "type": "BODY_FAT",
+          "value": 20.9,
+          "unit": "%",
+          "measuredAt": "2026-07-01T09:00:00.000Z",
+          "fieldTag": "1970-01-01T00:00:00.000Z:body_fat"
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "key": "bodyFat",
+      "tz": "America/New_York",
+      "output": [
+        {
+          "type": "BODY_FAT",
+          "value": 20.9,
+          "unit": "%",
+          "measuredAt": "2026-07-01T09:00:00.000Z",
+          "fieldTag": "1970-01-01T00:00:00.000Z:body_fat"
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "key": "heartRate",
+      "tz": null,
+      "output": [
+        {
+          "type": "PULSE",
+          "value": 64,
+          "unit": "bpm",
+          "measuredAt": "2026-06-02T16:00:30.000Z",
+          "fieldTag": "2026-06-02T16:00:30.000Z:hr"
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "key": "heartRate",
+      "tz": "Europe/Berlin",
+      "output": [
+        {
+          "type": "PULSE",
+          "value": 64,
+          "unit": "bpm",
+          "measuredAt": "2026-06-02T16:00:30.000Z",
+          "fieldTag": "2026-06-02T16:00:30.000Z:hr"
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "key": "heartRate",
+      "tz": "America/New_York",
+      "output": [
+        {
+          "type": "PULSE",
+          "value": 64,
+          "unit": "bpm",
+          "measuredAt": "2026-06-02T16:00:30.000Z",
+          "fieldTag": "2026-06-02T16:00:30.000Z:hr"
+        }
+      ]
+    },
+    { "index": 7, "key": "heartRate", "tz": null, "output": [] },
+    { "index": 7, "key": "heartRate", "tz": "Europe/Berlin", "output": [] },
+    { "index": 7, "key": "heartRate", "tz": "America/New_York", "output": [] },
+    {
+      "index": 8,
+      "key": "heartRate",
+      "tz": null,
+      "output": [
+        {
+          "type": "PULSE",
+          "value": 58,
+          "unit": "bpm",
+          "measuredAt": "2026-07-01T09:00:00.000Z",
+          "fieldTag": "1970-01-01T00:00:00.000Z:hr"
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "key": "heartRate",
+      "tz": "Europe/Berlin",
+      "output": [
+        {
+          "type": "PULSE",
+          "value": 58,
+          "unit": "bpm",
+          "measuredAt": "2026-07-01T09:00:00.000Z",
+          "fieldTag": "1970-01-01T00:00:00.000Z:hr"
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "key": "heartRate",
+      "tz": "America/New_York",
+      "output": [
+        {
+          "type": "PULSE",
+          "value": 58,
+          "unit": "bpm",
+          "measuredAt": "2026-07-01T09:00:00.000Z",
+          "fieldTag": "1970-01-01T00:00:00.000Z:hr"
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "key": "bloodGlucose",
+      "tz": null,
+      "output": [
+        {
+          "type": "BLOOD_GLUCOSE",
+          "value": 96.33,
+          "unit": "mg/dL",
+          "measuredAt": "2026-06-05T08:00:00.000Z",
+          "fieldTag": "2026-06-05T08:00:00.000Z:glucose"
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "key": "bloodGlucose",
+      "tz": "Europe/Berlin",
+      "output": [
+        {
+          "type": "BLOOD_GLUCOSE",
+          "value": 96.33,
+          "unit": "mg/dL",
+          "measuredAt": "2026-06-05T08:00:00.000Z",
+          "fieldTag": "2026-06-05T08:00:00.000Z:glucose"
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "key": "bloodGlucose",
+      "tz": "America/New_York",
+      "output": [
+        {
+          "type": "BLOOD_GLUCOSE",
+          "value": 96.33,
+          "unit": "mg/dL",
+          "measuredAt": "2026-06-05T08:00:00.000Z",
+          "fieldTag": "2026-06-05T08:00:00.000Z:glucose"
+        }
+      ]
+    },
+    { "index": 10, "key": "bloodGlucose", "tz": null, "output": [] },
+    { "index": 10, "key": "bloodGlucose", "tz": "Europe/Berlin", "output": [] },
+    {
+      "index": 10,
+      "key": "bloodGlucose",
+      "tz": "America/New_York",
+      "output": []
+    },
+    {
+      "index": 11,
+      "key": "coreBodyTemperature",
+      "tz": null,
+      "output": [
+        {
+          "type": "BODY_TEMPERATURE",
+          "value": 36.75,
+          "unit": "celsius",
+          "measuredAt": "2026-06-06T03:00:00.000Z",
+          "fieldTag": "2026-06-06T03:00:00.000Z:core_temp"
+        }
+      ]
+    },
+    {
+      "index": 11,
+      "key": "coreBodyTemperature",
+      "tz": "Europe/Berlin",
+      "output": [
+        {
+          "type": "BODY_TEMPERATURE",
+          "value": 36.75,
+          "unit": "celsius",
+          "measuredAt": "2026-06-06T01:00:00.000Z",
+          "fieldTag": "2026-06-06T03:00:00.000Z:core_temp"
+        }
+      ]
+    },
+    {
+      "index": 11,
+      "key": "coreBodyTemperature",
+      "tz": "America/New_York",
+      "output": [
+        {
+          "type": "BODY_TEMPERATURE",
+          "value": 36.75,
+          "unit": "celsius",
+          "measuredAt": "2026-06-06T07:00:00.000Z",
+          "fieldTag": "2026-06-06T03:00:00.000Z:core_temp"
+        }
+      ]
+    },
+    {
+      "index": 12,
+      "key": "height",
+      "tz": null,
+      "output": { "cm": 180.5, "sampledAt": "2026-01-15T10:00:00.000Z" }
+    },
+    {
+      "index": 12,
+      "key": "height",
+      "tz": "Europe/Berlin",
+      "output": { "cm": 180.5, "sampledAt": "2026-01-15T10:00:00.000Z" }
+    },
+    {
+      "index": 12,
+      "key": "height",
+      "tz": "America/New_York",
+      "output": { "cm": 180.5, "sampledAt": "2026-01-15T10:00:00.000Z" }
+    },
+    {
+      "index": 13,
+      "key": "height",
+      "tz": null,
+      "output": { "cm": 179.8, "sampledAt": null }
+    },
+    {
+      "index": 13,
+      "key": "height",
+      "tz": "Europe/Berlin",
+      "output": { "cm": 179.8, "sampledAt": null }
+    },
+    {
+      "index": 13,
+      "key": "height",
+      "tz": "America/New_York",
+      "output": { "cm": 179.8, "sampledAt": null }
+    },
+    { "index": 14, "key": "height", "tz": null, "output": null },
+    { "index": 14, "key": "height", "tz": "Europe/Berlin", "output": null },
+    { "index": 14, "key": "height", "tz": "America/New_York", "output": null }
+  ],
+  "sampleInstants": [
+    {
+      "index": 0,
+      "dataType": "weight",
+      "tz": null,
+      "instant": "2026-06-02T06:15:00.000Z"
+    },
+    {
+      "index": 0,
+      "dataType": "weight",
+      "tz": "Europe/Berlin",
+      "instant": "2026-06-02T06:15:00.000Z"
+    },
+    {
+      "index": 0,
+      "dataType": "weight",
+      "tz": "America/New_York",
+      "instant": "2026-06-02T06:15:00.000Z"
+    },
+    {
+      "index": 1,
+      "dataType": "weight",
+      "tz": null,
+      "instant": "2026-06-03T05:30:00.000Z"
+    },
+    {
+      "index": 1,
+      "dataType": "weight",
+      "tz": "Europe/Berlin",
+      "instant": "2026-06-03T05:30:00.000Z"
+    },
+    {
+      "index": 1,
+      "dataType": "weight",
+      "tz": "America/New_York",
+      "instant": "2026-06-03T05:30:00.000Z"
+    },
+    {
+      "index": 2,
+      "dataType": "weight",
+      "tz": null,
+      "instant": "2026-06-04T23:45:00.000Z"
+    },
+    {
+      "index": 2,
+      "dataType": "weight",
+      "tz": "Europe/Berlin",
+      "instant": "2026-06-04T21:45:00.000Z"
+    },
+    {
+      "index": 2,
+      "dataType": "weight",
+      "tz": "America/New_York",
+      "instant": "2026-06-05T03:45:00.000Z"
+    },
+    {
+      "index": 3,
+      "dataType": "weight",
+      "tz": null,
+      "instant": "2026-06-04T23:45:00.000Z"
+    },
+    {
+      "index": 3,
+      "dataType": "weight",
+      "tz": "Europe/Berlin",
+      "instant": "2026-06-04T21:45:00.000Z"
+    },
+    {
+      "index": 3,
+      "dataType": "weight",
+      "tz": "America/New_York",
+      "instant": "2026-06-05T03:45:00.000Z"
+    },
+    {
+      "index": 4,
+      "dataType": "bodyFat",
+      "tz": null,
+      "instant": "2026-06-02T06:15:00.000Z"
+    },
+    {
+      "index": 4,
+      "dataType": "bodyFat",
+      "tz": "Europe/Berlin",
+      "instant": "2026-06-02T06:15:00.000Z"
+    },
+    {
+      "index": 4,
+      "dataType": "bodyFat",
+      "tz": "America/New_York",
+      "instant": "2026-06-02T06:15:00.000Z"
+    },
+    { "index": 5, "dataType": "bodyFat", "tz": null, "instant": null },
+    {
+      "index": 5,
+      "dataType": "bodyFat",
+      "tz": "Europe/Berlin",
+      "instant": null
+    },
+    {
+      "index": 5,
+      "dataType": "bodyFat",
+      "tz": "America/New_York",
+      "instant": null
+    },
+    {
+      "index": 6,
+      "dataType": "heartRate",
+      "tz": null,
+      "instant": "2026-06-02T16:00:30.000Z"
+    },
+    {
+      "index": 6,
+      "dataType": "heartRate",
+      "tz": "Europe/Berlin",
+      "instant": "2026-06-02T16:00:30.000Z"
+    },
+    {
+      "index": 6,
+      "dataType": "heartRate",
+      "tz": "America/New_York",
+      "instant": "2026-06-02T16:00:30.000Z"
+    },
+    {
+      "index": 7,
+      "dataType": "heartRate",
+      "tz": null,
+      "instant": "2026-06-02T00:10:00.000Z"
+    },
+    {
+      "index": 7,
+      "dataType": "heartRate",
+      "tz": "Europe/Berlin",
+      "instant": "2026-06-01T22:10:00.000Z"
+    },
+    {
+      "index": 7,
+      "dataType": "heartRate",
+      "tz": "America/New_York",
+      "instant": "2026-06-02T04:10:00.000Z"
+    },
+    { "index": 8, "dataType": "heartRate", "tz": null, "instant": null },
+    {
+      "index": 8,
+      "dataType": "heartRate",
+      "tz": "Europe/Berlin",
+      "instant": null
+    },
+    {
+      "index": 8,
+      "dataType": "heartRate",
+      "tz": "America/New_York",
+      "instant": null
+    },
+    {
+      "index": 9,
+      "dataType": "bloodGlucose",
+      "tz": null,
+      "instant": "2026-06-05T08:00:00.000Z"
+    },
+    {
+      "index": 9,
+      "dataType": "bloodGlucose",
+      "tz": "Europe/Berlin",
+      "instant": "2026-06-05T08:00:00.000Z"
+    },
+    {
+      "index": 9,
+      "dataType": "bloodGlucose",
+      "tz": "America/New_York",
+      "instant": "2026-06-05T08:00:00.000Z"
+    },
+    {
+      "index": 10,
+      "dataType": "bloodGlucose",
+      "tz": null,
+      "instant": "2026-06-05T09:00:00.000Z"
+    },
+    {
+      "index": 10,
+      "dataType": "bloodGlucose",
+      "tz": "Europe/Berlin",
+      "instant": "2026-06-05T09:00:00.000Z"
+    },
+    {
+      "index": 10,
+      "dataType": "bloodGlucose",
+      "tz": "America/New_York",
+      "instant": "2026-06-05T09:00:00.000Z"
+    },
+    {
+      "index": 11,
+      "dataType": "coreBodyTemperature",
+      "tz": null,
+      "instant": "2026-06-06T03:00:00.000Z"
+    },
+    {
+      "index": 11,
+      "dataType": "coreBodyTemperature",
+      "tz": "Europe/Berlin",
+      "instant": "2026-06-06T01:00:00.000Z"
+    },
+    {
+      "index": 11,
+      "dataType": "coreBodyTemperature",
+      "tz": "America/New_York",
+      "instant": "2026-06-06T07:00:00.000Z"
+    },
+    {
+      "index": 12,
+      "dataType": "height",
+      "tz": null,
+      "instant": "2026-01-15T10:00:00.000Z"
+    },
+    {
+      "index": 12,
+      "dataType": "height",
+      "tz": "Europe/Berlin",
+      "instant": "2026-01-15T10:00:00.000Z"
+    },
+    {
+      "index": 12,
+      "dataType": "height",
+      "tz": "America/New_York",
+      "instant": "2026-01-15T10:00:00.000Z"
+    },
+    { "index": 13, "dataType": "height", "tz": null, "instant": null },
+    {
+      "index": 13,
+      "dataType": "height",
+      "tz": "Europe/Berlin",
+      "instant": null
+    },
+    {
+      "index": 13,
+      "dataType": "height",
+      "tz": "America/New_York",
+      "instant": null
+    },
+    {
+      "index": 14,
+      "dataType": "height",
+      "tz": null,
+      "instant": "2026-01-16T10:00:00.000Z"
+    },
+    {
+      "index": 14,
+      "dataType": "height",
+      "tz": "Europe/Berlin",
+      "instant": "2026-01-16T10:00:00.000Z"
+    },
+    {
+      "index": 14,
+      "dataType": "height",
+      "tz": "America/New_York",
+      "instant": "2026-01-16T10:00:00.000Z"
+    }
+  ],
+  "sampleInstantOfDailyType": null
+}

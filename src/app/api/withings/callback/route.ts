@@ -9,7 +9,7 @@ import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
-import { exchangeCode, WITHINGS_OAUTH_SCOPE } from "@/lib/withings/client";
+import { WITHINGS_OAUTH_SCOPE, withingsOAuth } from "@/lib/withings/oauth";
 import { getUserWithingsCredentials } from "@/lib/withings/credentials";
 import { WITHINGS_OAUTH_STATE_COOKIE } from "@/lib/withings/oauth-state";
 import { setupWebhook } from "@/lib/withings/sync";
@@ -209,7 +209,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
         );
       }
 
-      const tokens = await exchangeCode(code, creds);
+      const tokens = await withingsOAuth.exchange(code, creds);
 
       // One Withings account, one record. A guardian signed in to their own
       // Health Mate account must not attach it to the profile they manage:

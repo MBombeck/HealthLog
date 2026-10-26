@@ -19,6 +19,14 @@ import {
   LEGACY_ANY_HOST_WARNING,
   legacyAnyHostConfigured,
 } from "@/lib/ai/local-host-allowlist";
+import {
+  backupDirectoryStatus,
+  databaseBackupEnabled,
+  resolveBackupDir,
+  resolveBackupSchedule,
+  resolveDailyKeep,
+  type BackupDirectoryStatus,
+} from "@/lib/database-backup/dump-core.mjs";
 
 export interface ReadinessLine {
   /** Short label, e.g. "ENCRYPTION_KEY". */
@@ -60,8 +68,82 @@ function anySet(env: Env, keys: string[]): boolean {
   return keys.some((k) => (env[k] ?? "").trim().length > 0);
 }
 
-/** Inspect the environment and build the readiness report. Pure + side-effect free. */
-export function collectReadiness(env: Env = process.env): ReadinessReport {
+/**
+ * The nightly database dump's line. The dump is what rebuilds a lost server,
+ * so a host where it cannot be kept anywhere is said out loud at every boot,
+ * and so is one where it only goes off-host.
+ */
+export function databaseBackupReadiness(
+  env: Env,
+  directoryStatus: (dir: string) => BackupDirectoryStatus,
+): ReadinessLine[] {
+  const label = "Database dump";
+  if (!databaseBackupEnabled(env)) {
+    return [
+      {
+        label,
+        status: "warn",
+        detail:
+          "DB_BACKUP_ENABLED=false: no nightly database dump is taken; back the database up another way",
+      },
+    ];
+  }
+  const lines: ReadinessLine[] = [];
+  const schedule = resolveBackupSchedule(env);
+  if (!schedule.valid) {
+    lines.push({
+      label: "DB_BACKUP_SCHEDULE",
+      status: "warn",
+      detail: `not a five-field cron; using ${schedule.cron}`,
+    });
+  }
+  const dir = resolveBackupDir(env);
+  const offhost = allSet(env, [
+    "BACKUP_S3_ENDPOINT",
+    "BACKUP_S3_BUCKET",
+    "BACKUP_S3_ACCESS_KEY",
+    "BACKUP_S3_SECRET_KEY",
+    "BACKUP_ENCRYPTION_KEY",
+  ]);
+  const status = directoryStatus(dir);
+  if (status.persistent) {
+    lines.push({
+      label,
+      status: "ok",
+      detail: `nightly (${schedule.cron}) into ${dir}, keeping ${resolveDailyKeep(env)}${offhost ? ", copied off-host" : ""}`,
+    });
+    return lines;
+  }
+  // Writable but thrown away with the container (the image's own directory
+  // without the volume) or at a restart (a tmpfs): no dump is kept there,
+  // because one that is would be counted as kept and then lost.
+  const where = !status.writable
+    ? `${dir} is not writable`
+    : status.reason === "memory"
+      ? `${dir} is in memory (tmpfs), so a dump there is lost at the next restart`
+      : `${dir} is inside the container, not on a mounted volume, so a dump there is lost at the next update`;
+  const fix =
+    "Mount the backups volume (see docker-compose.yml) or set DB_BACKUP_DIR to a mounted directory";
+  lines.push({
+    label,
+    status: "warn",
+    detail: offhost
+      ? `${where}: the nightly dump goes off-host only, none is kept on this server and none is taken before a migration. ${fix}`
+      : `${where} and no off-host bucket is configured: no database dump is kept anywhere. ${fix}`,
+  });
+  return lines;
+}
+
+/**
+ * Inspect the environment and build the readiness report. Pure apart from
+ * `directoryStatus`, the probe of the dump directory, which tests replace.
+ */
+export function collectReadiness(
+  env: Env = process.env,
+  directoryStatus: (
+    dir: string,
+  ) => BackupDirectoryStatus = backupDirectoryStatus,
+): ReadinessReport {
   const lines: ReadinessLine[] = [];
 
   // --- Core secrets (boot blockers) ---------------------------------------
@@ -138,6 +220,8 @@ export function collectReadiness(env: Env = process.env): ReadinessReport {
       detail: LEGACY_ANY_HOST_WARNING,
     });
   }
+
+  lines.push(...databaseBackupReadiness(env, directoryStatus));
 
   // --- Optional subsystems (informational) --------------------------------
   const optional: Array<[string, boolean]> = [

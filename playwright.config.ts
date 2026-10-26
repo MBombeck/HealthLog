@@ -27,6 +27,14 @@ import {
  *
  * To run locally: `pnpm dlx playwright install --with-deps chromium`
  * once, then `pnpm e2e`.
+ *
+ * The journeys tagged `@critical` (`pnpm e2e:critical`) are the exception to
+ * the route interception above: they intercept nothing under `/api`, which
+ * `src/__tests__/e2e-critical-no-api-stub-guard.test.ts` holds. Most of them
+ * run in both Chromium projects on an account per project
+ * (`e2e/setup/critical-fixture.ts`), so they need no entry in the
+ * `chromium-mobile` ignore list below; the ones that are on that list are
+ * there for the reason written beside them.
  */
 /**
  * Drawn once here, before any server or worker exists, and published through
@@ -115,6 +123,8 @@ export default defineConfig({
         "pwa-offline.spec.ts",
         // Runs only in the WebKit phone project.
         "bottom-sheet.spec.ts",
+        // Runs only in the two tablet projects.
+        "tablet-shell.spec.ts",
       ],
       use: {
         ...devices["Desktop Chrome"],
@@ -232,6 +242,8 @@ export default defineConfig({
         "pwa-offline.spec.ts",
         // Runs only in the WebKit phone project.
         "bottom-sheet.spec.ts",
+        // Runs only in the two tablet projects.
+        "tablet-shell.spec.ts",
         // The Apple Health import journey uploads an archive into the one
         // shared account and its refusal control asserts that the account's
         // Apple-Health row count did not move. A second project running the
@@ -325,7 +337,28 @@ export default defineConfig({
               colorScheme: "dark" as const,
             },
           },
+          // The app shell on an iPad (`tablet-shell.spec.ts`): the rail
+          // under a finger, `<main>` to its last line, scroll after a modal.
+          // In CI's WebKit job beside `webkit-iphone`. The spec sets each
+          // iPad size itself; the profile supplies touch and `isMobile`.
+          {
+            name: "webkit-tablet",
+            testMatch: ["tablet-shell.spec.ts"],
+            use: {
+              ...devices["iPad Pro 11 landscape"],
+              colorScheme: "dark" as const,
+            },
+          },
         ]),
+    // The same spec on an Android tablet, in the Chromium shards.
+    {
+      name: "chromium-tablet",
+      testMatch: ["tablet-shell.spec.ts"],
+      use: {
+        ...devices["Galaxy Tab S4 landscape"],
+        colorScheme: "dark" as const,
+      },
+    },
   ],
 
   // Spin up the production build for E2E. `pnpm build` is run

@@ -14,13 +14,8 @@ import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { overwriteDetails } from "@/lib/sharing/audit-details";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { familyHistoryUpdateSchema } from "@/lib/validations/family-history";
 import { toFamilyHistoryEntryDTO } from "@/lib/records/dto";
@@ -76,17 +71,11 @@ export const PATCH = apiHandler(
       return apiError("Family history entry not found", 404);
     }
 
-    const { data: rawBody, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, familyHistoryUpdateSchema, {
       maxBytes: 16 * 1024,
+      errorCode: "familyHistory.invalid",
     });
-    if (jsonError) return jsonError;
-
-    const parsed = familyHistoryUpdateSchema.safeParse(rawBody);
-    if (!parsed.success) {
-      return returnAllZodIssues(parsed.error, 422, {
-        errorCode: "familyHistory.invalid",
-      });
-    }
+    if (!parsed.ok) return parsed.error;
     const entry = parsed.data;
 
     // Field-by-field — only fields actually present in the body are written.

@@ -1,0 +1,14 @@
+[
+  {
+    "date": "2026-03-02",
+    "cardio_load": 87.654,
+    "strain": 1.2,
+    "tolerance": 0.9,
+    "cardio_load_ratio": 1.33
+  },
+  { "date": "2026-03-03", "cardio_load": 0 },
+  { "date": "2026-03-04", "cardio_load": null, "strain": 0.4 },
+  { "date": "2026-03-05", "cardio_load": -3 },
+  { "date": "2026-03-06" },
+  { "date": "not-a-date", "cardio_load": 50 }
+]

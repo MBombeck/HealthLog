@@ -1,0 +1,32 @@
+[
+  {
+    "test_time": 1772438400,
+    "rows": [
+      {
+        "type": "OXYGEN_SATURATION",
+        "value": 97.46,
+        "unit": "%",
+        "measuredAt": "2026-03-02T08:00:00.000Z",
+        "fieldTag": "spo2",
+        "externalId": "spo2:1772438400:device-0001"
+      }
+    ]
+  },
+  {
+    "test_time": 1772524800,
+    "rows": [
+      {
+        "type": "OXYGEN_SATURATION",
+        "value": 100,
+        "unit": "%",
+        "measuredAt": "2026-03-03T08:00:00.000Z",
+        "fieldTag": "spo2",
+        "externalId": "spo2:1772524800:unknown"
+      }
+    ]
+  },
+  { "test_time": 1772611200, "rows": [] },
+  { "test_time": 1772697600, "rows": [] },
+  { "test_time": 1772784000, "rows": [] },
+  { "test_time": null, "rows": [] }
+]

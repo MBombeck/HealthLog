@@ -1,7 +1,74 @@
+/**
+ * The shared full-history backfill admission: every provider backfill and
+ * repair forwards into one database-coordinated drain. The boot discovery,
+ * the drain's binding and the source queues' forwarding are read off the
+ * worker registry; the boot discovery runs against stubbed enqueue helpers
+ * that record the stagger each pass hands them.
+ */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { SendOptions } from "pg-boss";
+
+const staggers = vi.hoisted(() => new Map<string, number>());
+const recordStagger = vi.hoisted(() => (kind: string, stagger: number) => {
+  staggers.set(kind, stagger);
+  return { enqueued: 0, skipped: 0, error: null };
+});
+vi.mock("@/lib/jobs/whoop-backfill", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/jobs/whoop-backfill")>()),
+  enqueueBootTimeWhoopBackfill: async (stagger: number) =>
+    recordStagger("whoop-backfill", stagger),
+}));
+vi.mock("@/lib/fitbit/jobs/backfill", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/fitbit/jobs/backfill")>()),
+  enqueueBootTimeFitbitBackfill: async (stagger: number) =>
+    recordStagger("fitbit-backfill", stagger),
+}));
+vi.mock("@/lib/jobs/google-health-backfill", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/lib/jobs/google-health-backfill")
+  >()),
+  enqueueBootTimeGoogleHealthBackfill: async (stagger: number) =>
+    recordStagger("google-health-backfill", stagger),
+}));
+vi.mock("@/lib/jobs/google-health-sleep-repair", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/lib/jobs/google-health-sleep-repair")
+  >()),
+  enqueueBootTimeGoogleHealthSleepRepair: async (stagger: number) =>
+    recordStagger("google-health-sleep-repair", stagger),
+}));
+vi.mock("@/lib/jobs/sleep-timeline-backfill", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/lib/jobs/sleep-timeline-backfill")
+  >()),
+  enqueueBootTimeSleepTimelineBackfill: async (stagger: number) =>
+    recordStagger("sleep-timeline-backfill", stagger),
+}));
+vi.mock("@/lib/jobs/lab-biomarker-backfill", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/lib/jobs/lab-biomarker-backfill")
+  >()),
+  enqueueBootTimeLabBiomarkerBackfill: async (stagger: number) =>
+    recordStagger("lab-biomarker-backfill", stagger),
+}));
+vi.mock("@/lib/jobs/strava-backfill", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/jobs/strava-backfill")>()),
+  enqueueBootTimeStravaBackfill: async (stagger: number) =>
+    recordStagger("strava-backfill", stagger),
+}));
+vi.mock("@/lib/fitbit/jobs/sleep-repair", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/fitbit/jobs/sleep-repair")>()),
+  enqueueBootTimeFitbitSleepRepair: async (stagger: number) =>
+    recordStagger("fitbit-sleep-repair", stagger),
+}));
+vi.mock("@/lib/jobs/oura-backfill", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/jobs/oura-backfill")>()),
+  enqueueBootTimeOuraBackfill: async (stagger: number) =>
+    recordStagger("oura-backfill", stagger),
+}));
+
 import {
   INTEGRATION_BACKFILL_ADMISSION_GROUP,
   INTEGRATION_BACKFILL_ADMISSION_QUEUE,
@@ -12,27 +79,44 @@ import {
   bootStaggerSecondsFor,
   enqueueIntegrationBackfillAdmission,
   integrationBackfillSourceOptions,
+  type IntegrationBackfillKind,
 } from "../integration-backfill-admission";
-
-const registrarSource = readFileSync(
-  join(__dirname, "../reminder/register-integration-sync.ts"),
-  "utf8",
-);
+import {
+  FITBIT_BACKFILL_QUEUE,
+  FITBIT_SLEEP_REPAIR_QUEUE,
+  FITBIT_SYNC_QUEUE,
+} from "@/lib/fitbit/jobs/queues";
+import { GOOGLE_HEALTH_BACKFILL_QUEUE } from "../google-health-backfill-queue";
+import { GOOGLE_HEALTH_SLEEP_REPAIR_QUEUE } from "../google-health-sleep-repair-queue";
+import {
+  GOOGLE_HEALTH_SYNC_QUEUE,
+  STRAVA_SYNC_QUEUE,
+} from "../integration-poll-queues";
+import { LAB_BIOMARKER_BACKFILL_QUEUE } from "../lab-biomarker-backfill";
+import { OURA_BACKFILL_QUEUE } from "../oura-backfill-queue";
+import {
+  groupNamed,
+  jobOf,
+  recordingBoss,
+} from "../registry/__tests__/registry-helpers";
+import { SLEEP_TIMELINE_BACKFILL_QUEUE } from "../sleep-timeline-backfill-queue";
+import { STRAVA_BACKFILL_QUEUE } from "../strava-backfill-queue";
+import { WHOOP_BACKFILL_QUEUE } from "../whoop-backfill-queue";
 
 const providerSources = [
   "whoop-backfill.ts",
-  "fitbit-backfill.ts",
+  "../fitbit/jobs/backfill.ts",
   "google-health-backfill.ts",
   "google-health-sleep-repair.ts",
   "sleep-timeline-backfill.ts",
   "lab-biomarker-backfill.ts",
   "strava-backfill.ts",
-  "fitbit-sleep-repair.ts",
+  "../fitbit/jobs/sleep-repair.ts",
   "oura-backfill.ts",
 ].map((file) => readFileSync(join(__dirname, "..", file), "utf8"));
 
 describe("shared full-history backfill admission", () => {
-  it("assigns every integration backfill a deterministic durable boot stagger", () => {
+  it("assigns every integration backfill a deterministic durable boot stagger", async () => {
     expect(INTEGRATION_BACKFILL_BOOT_ORDER).toEqual([
       "whoop-backfill",
       "fitbit-backfill",
@@ -54,23 +138,14 @@ describe("shared full-history backfill admission", () => {
       expect(source).toMatch(/startAfterSeconds:\s*number\s*=\s*0/);
     }
 
-    const discoveryCalls = {
-      "whoop-backfill": "enqueueBootTimeWhoopBackfill",
-      "fitbit-backfill": "enqueueBootTimeFitbitBackfill",
-      "google-health-backfill": "enqueueBootTimeGoogleHealthBackfill",
-      "google-health-sleep-repair": "enqueueBootTimeGoogleHealthSleepRepair",
-      "sleep-timeline-backfill": "enqueueBootTimeSleepTimelineBackfill",
-      "lab-biomarker-backfill": "enqueueBootTimeLabBiomarkerBackfill",
-      "strava-backfill": "enqueueBootTimeStravaBackfill",
-      "fitbit-sleep-repair": "enqueueBootTimeFitbitSleepRepair",
-      "oura-backfill": "enqueueBootTimeOuraBackfill",
-    } as const;
+    // Every kind has a boot discovery pass, and each pass hands its helper
+    // the kind's own stagger.
+    const passes = groupNamed("integration_sync").discovery ?? [];
     for (const kind of INTEGRATION_BACKFILL_BOOT_ORDER) {
-      expect(registrarSource).toMatch(
-        new RegExp(
-          `${discoveryCalls[kind]}\\(\\s*bootStaggerSecondsFor\\("${kind}"\\)`,
-        ),
-      );
+      const pass = passes.find((p) => p.name === kind);
+      expect(pass, kind).toBeDefined();
+      await pass!.run();
+      expect(staggers.get(kind), kind).toBe(bootStaggerSecondsFor(kind));
     }
   });
 
@@ -139,40 +214,51 @@ describe("shared full-history backfill admission", () => {
     ).not.toHaveProperty("startAfter");
   });
 
-  it("registers one shared globally bounded drain and leaves incremental workers outside it", () => {
-    expect(registrarSource).toMatch(
-      /INTEGRATION_BACKFILL_ADMISSION_QUEUE[\s\S]{0,220}localConcurrency:\s*INTEGRATION_BACKFILL_GLOBAL_CONCURRENCY[\s\S]{0,120}groupConcurrency:\s*INTEGRATION_BACKFILL_GLOBAL_CONCURRENCY/,
-    );
-    expect(registrarSource).toMatch(
-      /\[INTEGRATION_BACKFILL_ADMISSION_QUEUE\]:\s*\{[\s\S]{0,100}policy:\s*"exclusive"/,
-    );
+  it("registers one shared globally bounded drain and leaves incremental workers outside it", async () => {
+    const drain = jobOf(INTEGRATION_BACKFILL_ADMISSION_QUEUE);
+    expect(drain.work).toEqual({
+      localConcurrency: INTEGRATION_BACKFILL_GLOBAL_CONCURRENCY,
+      groupConcurrency: INTEGRATION_BACKFILL_GLOBAL_CONCURRENCY,
+    });
+    expect(drain.policy?.policy).toBe("exclusive");
 
-    for (const queue of [
-      "WHOOP_BACKFILL_QUEUE",
-      "FITBIT_BACKFILL_QUEUE",
-      "GOOGLE_HEALTH_BACKFILL_QUEUE",
-      "GOOGLE_HEALTH_SLEEP_REPAIR_QUEUE",
-      "SLEEP_TIMELINE_BACKFILL_QUEUE",
-      "LAB_BIOMARKER_BACKFILL_QUEUE",
-      "STRAVA_BACKFILL_QUEUE",
-      "FITBIT_SLEEP_REPAIR_QUEUE",
-      "OURA_BACKFILL_QUEUE",
-    ]) {
-      expect(registrarSource).toMatch(
-        new RegExp(
-          `${queue}[\\s\\S]{0,500}enqueueIntegrationBackfillAdmission`,
-        ),
-      );
+    const sources: ReadonlyArray<[string, IntegrationBackfillKind]> = [
+      [WHOOP_BACKFILL_QUEUE, "whoop-backfill"],
+      [FITBIT_BACKFILL_QUEUE, "fitbit-backfill"],
+      [GOOGLE_HEALTH_BACKFILL_QUEUE, "google-health-backfill"],
+      [GOOGLE_HEALTH_SLEEP_REPAIR_QUEUE, "google-health-sleep-repair"],
+      [SLEEP_TIMELINE_BACKFILL_QUEUE, "sleep-timeline-backfill"],
+      [LAB_BIOMARKER_BACKFILL_QUEUE, "lab-biomarker-backfill"],
+      [STRAVA_BACKFILL_QUEUE, "strava-backfill"],
+      [FITBIT_SLEEP_REPAIR_QUEUE, "fitbit-sleep-repair"],
+      [OURA_BACKFILL_QUEUE, "oura-backfill"],
+    ];
+    for (const [queue, kind] of sources) {
+      const { boss, sends } = recordingBoss();
+      const handler = await jobOf(queue).load({ boss });
+      await handler([
+        {
+          id: "j1",
+          name: queue,
+          data: { userId: "u1", provider: "WHOOP" },
+          expireInSeconds: 60,
+          heartbeatSeconds: null,
+          retryCount: 0,
+          signal: new AbortController().signal,
+        },
+      ]);
+      expect(sends, queue).toHaveLength(1);
+      expect(sends[0]!.queue).toBe(INTEGRATION_BACKFILL_ADMISSION_QUEUE);
+      expect(sends[0]!.data).toMatchObject({ kind });
     }
 
     for (const queue of [
-      "FITBIT_SYNC_QUEUE",
-      "GOOGLE_HEALTH_SYNC_QUEUE",
-      "STRAVA_SYNC_QUEUE",
+      FITBIT_SYNC_QUEUE,
+      GOOGLE_HEALTH_SYNC_QUEUE,
+      STRAVA_SYNC_QUEUE,
     ]) {
-      expect(registrarSource).toMatch(
-        new RegExp(`${queue}[\\s\\S]{0,100}localConcurrency:\\s*1`),
-      );
+      expect(jobOf(queue).work, queue).toEqual({ localConcurrency: 1 });
+      expect(jobOf(queue).lane, queue).toBeUndefined();
     }
   });
 });

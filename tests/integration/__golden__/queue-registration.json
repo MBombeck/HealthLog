@@ -1,0 +1,3776 @@
+{
+  "registeredQueueCount": 125,
+  "registeredQueues": [
+    "account-deletion-purge",
+    "achievement-unlock-sweep",
+    "apple-health-import",
+    "apple-health-import-reconcile",
+    "apple-health-import-v2",
+    "arrival-reaction-cleanup",
+    "audit-log-cleanup",
+    "auth-ledger-cleanup",
+    "backup-restore",
+    "coach-memory-refresh",
+    "coach-message-cleanup",
+    "coach-nudge",
+    "coach-plan-review",
+    "coach-reminder-sweep",
+    "compaction-tombstone-purge",
+    "cumulative-pr-rederive",
+    "cycle-prediction-refresh",
+    "cycle-reminder-check",
+    "daily-briefing",
+    "data-arrival",
+    "data-backup",
+    "data-backup-offhost",
+    "data-restore-drill",
+    "database-backup",
+    "dawarich-sync",
+    "dense-intraday-hourly-rebuild",
+    "dense-intraday-retention",
+    "document-ai-run",
+    "document-ai-run-reaper",
+    "document-content-index-backfill",
+    "document-index",
+    "document-summary",
+    "document-summary-catchup",
+    "document-summary-reaper",
+    "document-thumbnail",
+    "document-thumbnail-backfill",
+    "document-tombstone-purge",
+    "drain-per-sample-cumulative",
+    "encryption-key-rotate",
+    "environment-aq-history",
+    "environment-fetch",
+    "feedback-aggregator",
+    "fitbit-backfill",
+    "fitbit-oauth-state-cleanup",
+    "fitbit-sleep-repair",
+    "fitbit-sync",
+    "free-text-encryption-backfill",
+    "geo-backfill",
+    "geolite2-fetch",
+    "google-health-backfill",
+    "google-health-oauth-state-cleanup",
+    "google-health-sleep-repair",
+    "google-health-sync",
+    "health-connect-import",
+    "host-metric-sample",
+    "idempotency-cleanup",
+    "insight-pregenerate",
+    "insight-status-generate",
+    "insights-general-status",
+    "intake-auto-skip",
+    "intake-auto-take",
+    "intake-slot-dedup",
+    "integration-backfill-admission",
+    "integration-watchdog-daily",
+    "integration-watchdog-hourly",
+    "lab-biomarker-backfill",
+    "mcp-token-cleanup",
+    "mean-consolidation",
+    "measurement-fold-repair",
+    "measurement-maintenance",
+    "measurement-reminder-check",
+    "measurement-tombstone-cleanup",
+    "med-notes-encryption-backfill",
+    "medication-intake-import",
+    "medication-inventory-expire",
+    "medication-low-stock",
+    "medication-reminder-check",
+    "mood-prognosis-refresh",
+    "mood-reminder-check",
+    "mood-reminder-cleanup",
+    "mood-rollup-full-backfill",
+    "mood-rollup-recompute",
+    "morning-digest-refresh",
+    "nightscout-sync",
+    "note-encryption-backfill",
+    "offhost-backup-purge",
+    "oidc-native-handoff-cleanup",
+    "oura-backfill",
+    "oura-sync",
+    "period-narrative-warm",
+    "polar-sync",
+    "pr-detection",
+    "pulse-day-mean",
+    "push-attempt-cleanup",
+    "rate-limit-cleanup",
+    "reaction-line-generate",
+    "recovery-readiness",
+    "recovery-score-compute",
+    "reminder-satisfy",
+    "rollup-full-backfill",
+    "rollup-recompute",
+    "sleep-timeline-backfill",
+    "soft-delete-purge",
+    "step-consolidation",
+    "step-consolidation-repair",
+    "step-up-elevation-cleanup",
+    "strain-score-compute",
+    "strava-backfill",
+    "strava-sync",
+    "stress-score-compute",
+    "supplement-nutrient-recompute",
+    "tls-pin-monitor",
+    "whoop-backfill",
+    "whoop-cycle-sync",
+    "whoop-oauth-state-cleanup",
+    "whoop-recovery-sync",
+    "whoop-sleep-sync",
+    "whoop-workout-sync",
+    "withings-activity-sync",
+    "withings-ecg-sync",
+    "withings-fallback-sync",
+    "withings-oauth-state-cleanup",
+    "withings-sleep-sync",
+    "workout-insight-claim-cleanup",
+    "workout-insight-generate"
+  ],
+  "queues": [
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "account-deletion-purge",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "achievement-unlock-sweep",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "apple-health-import",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "apple-health-import-reconcile",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "apple-health-import-v2",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "arrival-reaction-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "audit-log-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "auth-ledger-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "backup-restore",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "coach-memory-refresh",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "coach-message-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "coach-nudge",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "coach-plan-review",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "coach-reminder-sweep",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "compaction-tombstone-purge",
+      "notify": false,
+      "partition": false,
+      "policy": "short",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "cumulative-pr-rederive",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "cycle-prediction-refresh",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "cycle-reminder-check",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "daily-briefing",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "data-arrival",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "data-backup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "data-backup-offhost",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "data-restore-drill",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "database-backup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "dawarich-sync",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "dense-intraday-hourly-rebuild",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "dense-intraday-retention",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "document-ai-run",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "document-ai-run-reaper",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "document-content-index-backfill",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "document-index",
+      "notify": false,
+      "partition": false,
+      "policy": "short",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "document-summary",
+      "notify": false,
+      "partition": false,
+      "policy": "short",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "document-summary-catchup",
+      "notify": false,
+      "partition": false,
+      "policy": "short",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "document-summary-reaper",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "document-thumbnail",
+      "notify": false,
+      "partition": false,
+      "policy": "short",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "document-thumbnail-backfill",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "document-tombstone-purge",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "drain-per-sample-cumulative",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "encryption-key-rotate",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "environment-aq-history",
+      "notify": false,
+      "partition": false,
+      "policy": "short",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "environment-fetch",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "feedback-aggregator",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "fitbit-backfill",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "fitbit-oauth-state-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "fitbit-sleep-repair",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "fitbit-sync",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "free-text-encryption-backfill",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "geo-backfill",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "geolite2-fetch",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "google-health-backfill",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "google-health-oauth-state-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "google-health-sleep-repair",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "google-health-sync",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "health-connect-import",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 345600,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "host-metric-sample",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "idempotency-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "insight-pregenerate",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 345600,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "insight-status-generate",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "insights-general-status",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "intake-auto-skip",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "intake-auto-take",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "intake-slot-dedup",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "integration-backfill-admission",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "integration-watchdog-daily",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "integration-watchdog-hourly",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "lab-biomarker-backfill",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "mcp-token-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "mean-consolidation",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "measurement-fold-repair",
+      "notify": false,
+      "partition": false,
+      "policy": "short",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "measurement-maintenance",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "measurement-reminder-check",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "measurement-tombstone-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "med-notes-encryption-backfill",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "medication-intake-import",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "medication-inventory-expire",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "medication-low-stock",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "medication-reminder-check",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "mood-prognosis-refresh",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "mood-reminder-check",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "mood-reminder-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "mood-rollup-full-backfill",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "mood-rollup-recompute",
+      "notify": false,
+      "partition": false,
+      "policy": "short",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "morning-digest-refresh",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "nightscout-sync",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "note-encryption-backfill",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "offhost-backup-purge",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "oidc-native-handoff-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "oura-backfill",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "oura-sync",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "period-narrative-warm",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "polar-sync",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "pr-detection",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "pulse-day-mean",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "push-attempt-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "rate-limit-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "reaction-line-generate",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "recovery-readiness",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "recovery-score-compute",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "reminder-satisfy",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "rollup-full-backfill",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 345600,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "rollup-recompute",
+      "notify": false,
+      "partition": false,
+      "policy": "short",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "sleep-timeline-backfill",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "soft-delete-purge",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "step-consolidation",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "step-consolidation-repair",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "step-up-elevation-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "strain-score-compute",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "strava-backfill",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "strava-sync",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "stress-score-compute",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "supplement-nutrient-recompute",
+      "notify": false,
+      "partition": false,
+      "policy": "short",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "tls-pin-monitor",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "whoop-backfill",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "whoop-cycle-sync",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "whoop-oauth-state-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "whoop-recovery-sync",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "whoop-sleep-sync",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "whoop-workout-sync",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "withings-activity-sync",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "withings-ecg-sync",
+      "notify": false,
+      "partition": false,
+      "policy": "short",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "withings-fallback-sync",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "withings-oauth-state-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "withings-sleep-sync",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "workout-insight-claim-cleanup",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "workout-insight-generate",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    }
+  ],
+  "schedules": [
+    {
+      "cron": "23 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "account-deletion-purge",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "25 4 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "achievement-unlock-sweep",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "*/15 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "apple-health-import-reconcile",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "10 4 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "arrival-reaction-cleanup",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "15 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "audit-log-cleanup",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "35 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "auth-ledger-cleanup",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "50 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "coach-message-cleanup",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "15 5 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "coach-nudge",
+      "options": {
+        "retryBackoff": true,
+        "retryDelay": 60,
+        "retryLimit": 2,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "25 5 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "coach-plan-review",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "20 5 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "coach-reminder-sweep",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "20 4 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "cycle-prediction-refresh",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "*/15 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "cycle-reminder-check",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "*/15 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "daily-briefing",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "0 3 * * 0",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "data-backup",
+      "options": {
+        "expireInSeconds": 7200,
+        "heartbeatSeconds": 300,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "30 2 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "data-backup-offhost",
+      "options": {
+        "expireInSeconds": 14400,
+        "heartbeatSeconds": 300,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "11 4 1 * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "data-restore-drill",
+      "options": {
+        "expireInSeconds": 14400,
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "30 1 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "database-backup",
+      "options": {
+        "expireInSeconds": 14400,
+        "heartbeatSeconds": 300,
+        "retryDelay": 900,
+        "retryLimit": 1,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "20 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "dawarich-sync",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "*/5 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "document-ai-run-reaper",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "50 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "document-summary-reaper",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "10 4 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "document-tombstone-purge",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "45 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "drain-per-sample-cumulative",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "40 2 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "environment-aq-history",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "10 2 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "environment-fetch",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "0 4 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "feedback-aggregator",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "24 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "fitbit-oauth-state-cleanup",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "8 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "fitbit-sync",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "7 4 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "free-text-encryption-backfill",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "40 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "geo-backfill",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "0 4 8 * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "geolite2-fetch",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "26 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "google-health-oauth-state-cleanup",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "18 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "google-health-sync",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "*/5 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "host-metric-sample",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "0 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "idempotency-cleanup",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "30 4 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "insight-pregenerate",
+      "options": {
+        "expireInSeconds": 10800,
+        "retryBackoff": true,
+        "retryDelay": 60,
+        "retryLimit": 3,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "0 2 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "insights-general-status",
+      "options": {
+        "expireInSeconds": 7200,
+        "retryBackoff": true,
+        "retryDelay": 60,
+        "retryLimit": 3,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "5 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "intake-auto-skip",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "10,25,40,55 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "intake-auto-take",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "28 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "intake-slot-dedup",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "52 4 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "integration-watchdog-daily",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "47 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "integration-watchdog-hourly",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "0 4 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "mcp-token-cleanup",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "40 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "measurement-maintenance",
+      "options": {
+        "expireInSeconds": 21600,
+        "retryLimit": 0,
+        "singletonKey": "measurement-maintenance",
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "*/15 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "measurement-reminder-check",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "40 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "measurement-tombstone-cleanup",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "5 4 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "med-notes-encryption-backfill",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "30 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "medication-inventory-expire",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "0 9 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "medication-low-stock",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "*/15 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "medication-reminder-check",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "35 4 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "mood-prognosis-refresh",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "*/15 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "mood-reminder-check",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "25 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "mood-reminder-cleanup",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "11 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "nightscout-sync",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "55 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "note-encryption-backfill",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "40 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "offhost-backup-purge",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "28 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "oidc-native-handoff-cleanup",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "15 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "oura-sync",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "5 5 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "period-narrative-warm",
+      "options": {
+        "expireInSeconds": 10800,
+        "retryBackoff": true,
+        "retryDelay": 60,
+        "retryLimit": 3,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "13 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "polar-sync",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "*/30 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "pr-detection",
+      "options": {
+        "expireInSeconds": 1500,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "35 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "push-attempt-cleanup",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "*/5 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "rate-limit-cleanup",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "33 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "recovery-readiness",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "45 4 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "recovery-score-compute",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "42 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "soft-delete-purge",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "*/15 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "step-up-elevation-cleanup",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "55 4 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "strain-score-compute",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "17 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "strava-sync",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "50 4 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "stress-score-compute",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "7 */6 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "tls-pin-monitor",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "50 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "whoop-cycle-sync",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "22 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "whoop-oauth-state-cleanup",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "5 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "whoop-recovery-sync",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "20 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "whoop-sleep-sync",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "35 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "whoop-workout-sync",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "0 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "withings-activity-sync",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "41 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "withings-ecg-sync",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "0 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "withings-fallback-sync",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "20 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "withings-oauth-state-cleanup",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "15 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "withings-sleep-sync",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
+      "cron": "52 3 * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "workout-insight-claim-cleanup",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    }
+  ],
+  "bindings": [
+    {
+      "queue": "account-deletion-purge",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "achievement-unlock-sweep",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "apple-health-import",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "apple-health-import-reconcile",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "apple-health-import-v2",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "arrival-reaction-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "audit-log-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "auth-ledger-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "backup-restore",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "coach-memory-refresh",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "coach-message-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "coach-nudge",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "coach-plan-review",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "coach-reminder-sweep",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "compaction-tombstone-purge",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "cumulative-pr-rederive",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "cycle-prediction-refresh",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "cycle-reminder-check",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "daily-briefing",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "data-arrival",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "data-backup",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "data-backup-offhost",
+      "options": {
+        "includeMetadata": true,
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "data-restore-drill",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "database-backup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "dawarich-sync",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "dense-intraday-hourly-rebuild",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "dense-intraday-retention",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "document-ai-run",
+      "options": {
+        "localConcurrency": 2
+      }
+    },
+    {
+      "queue": "document-ai-run-reaper",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "document-content-index-backfill",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "document-index",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "document-summary",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "document-summary-catchup",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "document-summary-reaper",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "document-thumbnail",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "document-thumbnail-backfill",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "document-tombstone-purge",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "drain-per-sample-cumulative",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "encryption-key-rotate",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "environment-aq-history",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "environment-fetch",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "feedback-aggregator",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "fitbit-backfill",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "fitbit-oauth-state-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "fitbit-sleep-repair",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "fitbit-sync",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "free-text-encryption-backfill",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "geo-backfill",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "geolite2-fetch",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "google-health-backfill",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "google-health-oauth-state-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "google-health-sleep-repair",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "google-health-sync",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "health-connect-import",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "host-metric-sample",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "idempotency-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "insight-pregenerate",
+      "options": {
+        "localConcurrency": 2
+      }
+    },
+    {
+      "queue": "insight-status-generate",
+      "options": {
+        "localConcurrency": 2
+      }
+    },
+    {
+      "queue": "insights-general-status",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "intake-auto-skip",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "intake-auto-take",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "intake-slot-dedup",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "integration-backfill-admission",
+      "options": {
+        "groupConcurrency": 1,
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "integration-watchdog-daily",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "integration-watchdog-hourly",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "lab-biomarker-backfill",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "mcp-token-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "mean-consolidation",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "measurement-fold-repair",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "measurement-maintenance",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "measurement-reminder-check",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "measurement-tombstone-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "med-notes-encryption-backfill",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "medication-intake-import",
+      "options": {
+        "includeMetadata": true,
+        "localConcurrency": 2
+      }
+    },
+    {
+      "queue": "medication-inventory-expire",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "medication-low-stock",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "medication-reminder-check",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "mood-prognosis-refresh",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "mood-reminder-check",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "mood-reminder-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "mood-rollup-full-backfill",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "mood-rollup-recompute",
+      "options": {
+        "localConcurrency": 2
+      }
+    },
+    {
+      "queue": "morning-digest-refresh",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "nightscout-sync",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "note-encryption-backfill",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "offhost-backup-purge",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "oidc-native-handoff-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "oura-backfill",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "oura-sync",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "period-narrative-warm",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "polar-sync",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "pr-detection",
+      "options": {
+        "localConcurrency": 5
+      }
+    },
+    {
+      "queue": "pulse-day-mean",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "push-attempt-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "rate-limit-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "reaction-line-generate",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "recovery-readiness",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "recovery-score-compute",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "reminder-satisfy",
+      "options": {
+        "localConcurrency": 5
+      }
+    },
+    {
+      "queue": "rollup-full-backfill",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "rollup-recompute",
+      "options": {
+        "localConcurrency": 2
+      }
+    },
+    {
+      "queue": "sleep-timeline-backfill",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "soft-delete-purge",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "step-consolidation",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "step-consolidation-repair",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "step-up-elevation-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "strain-score-compute",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "strava-backfill",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "strava-sync",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "stress-score-compute",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "supplement-nutrient-recompute",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "tls-pin-monitor",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "whoop-backfill",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "whoop-cycle-sync",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "whoop-oauth-state-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "whoop-recovery-sync",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "whoop-sleep-sync",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "whoop-workout-sync",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "withings-activity-sync",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "withings-ecg-sync",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "withings-fallback-sync",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "withings-oauth-state-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "withings-sleep-sync",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "workout-insight-claim-cleanup",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "workout-insight-generate",
+      "options": {
+        "localConcurrency": 1
+      }
+    }
+  ]
+}

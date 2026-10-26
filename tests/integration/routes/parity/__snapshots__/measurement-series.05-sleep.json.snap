@@ -1,0 +1,190 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "kind": "sleep",
+      "unit": "h",
+      "points": [
+        {
+          "id": "sleep:day-13",
+          "at": "anchor-13d+04:30:00",
+          "value": 5.5,
+          "secondary": null,
+          "sleepStages": {
+            "CORE": 3,
+            "DEEP": 1,
+            "REM": 1.5,
+            "AWAKE": 0.17
+          }
+        },
+        {
+          "id": "sleep:day-12",
+          "at": "anchor-12d+04:30:00",
+          "value": 5.5,
+          "secondary": null,
+          "sleepStages": {
+            "CORE": 3,
+            "DEEP": 1,
+            "REM": 1.5,
+            "AWAKE": 0.17
+          }
+        },
+        {
+          "id": "sleep:day-11",
+          "at": "anchor-11d+04:30:00",
+          "value": 5.5,
+          "secondary": null,
+          "sleepStages": {
+            "CORE": 3,
+            "DEEP": 1,
+            "REM": 1.5,
+            "AWAKE": 0.17
+          }
+        },
+        {
+          "id": "sleep:day-10",
+          "at": "anchor-10d+04:30:00",
+          "value": 5.5,
+          "secondary": null,
+          "sleepStages": {
+            "CORE": 3,
+            "DEEP": 1,
+            "REM": 1.5,
+            "AWAKE": 0.17
+          }
+        },
+        {
+          "id": "sleep:day-9",
+          "at": "anchor-9d+04:30:00",
+          "value": 5.5,
+          "secondary": null,
+          "sleepStages": {
+            "CORE": 3,
+            "DEEP": 1,
+            "REM": 1.5,
+            "AWAKE": 0.17
+          }
+        },
+        {
+          "id": "sleep:day-8",
+          "at": "anchor-8d+04:30:00",
+          "value": 5.5,
+          "secondary": null,
+          "sleepStages": {
+            "CORE": 3,
+            "DEEP": 1,
+            "REM": 1.5,
+            "AWAKE": 0.17
+          }
+        },
+        {
+          "id": "sleep:day-6",
+          "at": "anchor-6d+04:30:00",
+          "value": 5.5,
+          "secondary": null,
+          "sleepStages": {
+            "CORE": 3,
+            "DEEP": 1,
+            "REM": 1.5,
+            "AWAKE": 0.17
+          }
+        },
+        {
+          "id": "sleep:day-5",
+          "at": "anchor-5d+04:30:00",
+          "value": 5.5,
+          "secondary": null,
+          "sleepStages": {
+            "CORE": 3,
+            "DEEP": 1,
+            "REM": 1.5,
+            "AWAKE": 0.17
+          }
+        },
+        {
+          "id": "sleep:day-4",
+          "at": "anchor-4d+04:30:00",
+          "value": 5.5,
+          "secondary": null,
+          "sleepStages": {
+            "CORE": 3,
+            "DEEP": 1,
+            "REM": 1.5,
+            "AWAKE": 0.17
+          }
+        },
+        {
+          "id": "sleep:day-3",
+          "at": "anchor-3d+04:30:00",
+          "value": 5.5,
+          "secondary": null,
+          "sleepStages": {
+            "CORE": 3,
+            "DEEP": 1,
+            "REM": 1.5,
+            "AWAKE": 0.17
+          }
+        },
+        {
+          "id": "sleep:day-2",
+          "at": "anchor-2d+04:30:00",
+          "value": 5.5,
+          "secondary": null,
+          "sleepStages": {
+            "CORE": 3,
+            "DEEP": 1,
+            "REM": 1.5,
+            "AWAKE": 0.17
+          }
+        },
+        {
+          "id": "sleep:day-1",
+          "at": "anchor-1d+04:30:00",
+          "value": 5.5,
+          "secondary": null,
+          "sleepStages": {
+            "CORE": 3,
+            "DEEP": 1,
+            "REM": 1.5,
+            "AWAKE": 0.17
+          }
+        }
+      ],
+      "direction": {
+        "direction": "up-good",
+        "targetPosition": null,
+        "basis": "metric_default"
+      },
+      "change": {
+        "from": 5.5,
+        "to": 5.5,
+        "delta": 0,
+        "sentiment": "neutral"
+      },
+      "referenceLines": [],
+      "stats": {
+        "mean": 5.5,
+        "min": 5.5,
+        "max": 5.5,
+        "stdDev": 0,
+        "count": 12
+      }
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "measurements.series"
+      },
+      "meta": {
+        "kind": "sleep",
+        "days": 14,
+        "count": 12
+      },
+      "warnings": null,
+      "error": null
+    }
+  ]
+}

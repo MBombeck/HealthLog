@@ -22,19 +22,17 @@ import {
   buildSourceRankCase,
   canonicalMeasurementsFrom,
 } from "@/lib/analytics/source-rank-sql";
+import { instantLiteralSql } from "@/lib/analytics/request-clock-sql";
 
 const ENUM_RE = /^[A-Z0-9_]+$/;
 
 export function seriesRowsFrom(
   priorityJson: unknown,
   type: MeasurementType,
-  days: number,
+  since: Date,
 ): string {
   if (!ENUM_RE.test(type)) {
     throw new Error(`unsafe enum literal for SQL splice: ${type}`);
-  }
-  if (!Number.isInteger(days) || days < 1 || days > 3650) {
-    throw new Error(`days out of range for SQL splice: ${days}`);
   }
   if (!RANKED_TYPES.includes(type)) {
     return `(
@@ -47,10 +45,11 @@ export function seriesRowsFrom(
   }
   // One day wider than the request: the caller trims to its exact `since`, so
   // the edge day's source is picked from all of its readings, not from the
-  // slice the interval happens to include.
+  // slice the window happens to include. The window counts from the caller's
+  // `since`, its own clock, never from the database's.
   return canonicalMeasurementsFrom(
     buildSourceRankCase(priorityJson, '"type"', '"source"'),
-    `${days + 1} days`,
+    { from: instantLiteralSql(since), interval: "1 day" },
     type,
   );
 }

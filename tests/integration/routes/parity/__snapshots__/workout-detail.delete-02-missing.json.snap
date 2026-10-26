@@ -1,0 +1,21 @@
+{
+  "status": 404,
+  "body": {
+    "data": null,
+    "error": "Workout not found",
+    "meta": {
+      "errorCode": "http.not_found",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 404,
+      "action": null,
+      "meta": null,
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": []
+}

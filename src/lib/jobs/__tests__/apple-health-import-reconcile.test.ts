@@ -1,5 +1,5 @@
 /**
- * v1.32.1 (issue #588) — periodic orphan-`ImportJob` reconcile.
+ * Periodic orphan-`ImportJob` reconcile (issue #588).
  *
  * Before this change `reconcileOrphanImportJobs()` only ran once, at
  * worker boot. A worker that crashed mid-extraction (OOM, restart) and
@@ -11,10 +11,9 @@
  * that one boot-time pass. These tests cover both the periodic-tick
  * wiring (queue provisioned, cron scheduled, handler bound) and the
  * reconcile logic itself (a genuinely-abandoned row flips to `failed`;
- * a row another worker is still actively running does not).
+ * a row another worker is still actively running does not). The wiring is
+ * read off the worker registry.
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -45,19 +44,22 @@ vi.mock("@/lib/jobs/boss-instance", () => ({
 
 import {
   APPLE_HEALTH_IMPORT_PARSER_REVISION,
-  APPLE_HEALTH_IMPORT_V2_QUEUE,
-  IMPORT_JOB_RECONCILE_CRON,
-  IMPORT_JOB_RECONCILE_QUEUE,
   handleImportJobReconcileTick,
   reconcileOrphanImportJobs,
   stagedImportFilesInUse,
 } from "../apple-health-import-worker";
+import {
+  APPLE_HEALTH_IMPORT_V2_QUEUE,
+  IMPORT_JOB_RECONCILE_CRON,
+  IMPORT_JOB_RECONCILE_QUEUE,
+} from "@/lib/jobs/apple-health-import-queue";
 import { sweepStaleImportStaging } from "@/lib/import/apple-health-staging";
-
-const maintenanceSource = readFileSync(
-  join(process.cwd(), "src/lib/jobs/reminder/register-maintenance.ts"),
-  "utf8",
-);
+import { cronIsTheRetry } from "@/lib/jobs/reminder/registrar-shared";
+import {
+  groupOf,
+  jobOf,
+  loadedHandler,
+} from "@/lib/jobs/registry/__tests__/registry-helpers";
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -66,30 +68,21 @@ beforeEach(() => {
 });
 
 describe("periodic reconcile — wiring", () => {
-  it("provisions the queue, schedules a 15-minute cron, and binds the handler", () => {
+  it("provisions the queue, schedules a 15-minute cron, and binds the handler", async () => {
     expect(IMPORT_JOB_RECONCILE_QUEUE).toBe("apple-health-import-reconcile");
     expect(IMPORT_JOB_RECONCILE_CRON).toBe("*/15 * * * *");
 
-    const allQueues = maintenanceSource.match(
-      /const allQueues\s*=\s*\[([\s\S]*?)\];/,
-    );
-    expect(allQueues).not.toBeNull();
-    expect(allQueues![1]).toMatch(/\bIMPORT_JOB_RECONCILE_QUEUE\b/);
-
-    const schedules = maintenanceSource.match(
-      /const schedules[\s\S]*?=\s*\[([\s\S]*?)\];/,
-    );
-    expect(schedules).not.toBeNull();
-    // The third element pins the retry policy. It is load-bearing now that
+    expect(groupOf(IMPORT_JOB_RECONCILE_QUEUE).name).toBe("maintenance");
+    const job = jobOf(IMPORT_JOB_RECONCILE_QUEUE);
+    expect(job.cron).toBe(IMPORT_JOB_RECONCILE_CRON);
+    // The schedule options pin the retry policy. It is load-bearing now that
     // the handler reports a failed outcome instead of swallowing: without
     // `cronIsTheRetry` a database outage would run the same doomed sweep
     // three times per tick, and the next tick is already the retry.
-    expect(schedules![1]).toMatch(
-      /\[IMPORT_JOB_RECONCILE_QUEUE,\s*IMPORT_JOB_RECONCILE_CRON,\s*cronIsTheRetry\]/,
-    );
+    expect(job.scheduleOptions).toBe(cronIsTheRetry);
 
-    expect(maintenanceSource).toMatch(
-      /createAndWork\(\s*boss,\s*IMPORT_JOB_RECONCILE_QUEUE[\s\S]{0,120}handleImportJobReconcileTick/,
+    expect(await loadedHandler(IMPORT_JOB_RECONCILE_QUEUE)).toBe(
+      handleImportJobReconcileTick,
     );
   });
 });

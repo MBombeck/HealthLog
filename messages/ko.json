@@ -175,6 +175,9 @@
           "failed": "라벨을 읽지 못했어요. 더 선명한 사진으로 다시 시도하세요."
         }
       }
+    },
+    "aiRuns": {
+      "readerBusy": "문서 판독기가 다른 작업으로 바빠요. 1분 후에 다시 시도하세요."
     }
   },
   "doctorReport": {
@@ -435,7 +438,8 @@
       "autocorrelation": "전날 값에 크게 좌우되므로 범위가 여전히 너무 좁을 수 있음",
       "window": "{from}부터 {to}까지 분석, 보고 기간을 넘어설 수 있음",
       "windowLine": "{from}부터 {to}까지 분석했습니다. 이 기간은 보고 기간을 넘어설 수 있습니다."
-    }
+    },
+    "screenerUnvalidated": "{label}: {total}개 결과 중 {count}개는 과학적으로 검증되지 않은 번역으로 응답했습니다. 참고용으로만 보십시오."
   },
   "errorBoundary": {
     "title": "문제가 생겼어요",
@@ -628,7 +632,9 @@
       "title": "유효하지 않은 초대예요",
       "description": "이 초대 링크가 불완전하거나 잘못 복사되었어요. 초대한 분께 새 링크를 요청해 주세요.",
       "toLogin": "로그인으로 이동"
-    }
+    },
+    "deletionPending": "이 계정은 {date}에 삭제될 예정이며 그때까지 잠겨 있어요. 그 전에는 이 서버의 관리자가 삭제를 취소할 수 있어요.",
+    "deletionPendingNoDate": "이 계정은 삭제 예정이라 잠겨 있어요. 삭제가 끝나기 전까지는 이 서버의 관리자가 취소할 수 있어요."
   },
   "dashboard": {
     "title": "대시보드",
@@ -777,13 +783,13 @@
         "bmi": "kg/m²"
       }
     },
-    "keyBackupBanner": {
-      "title": "암호화 키를 백업하세요",
-      "body": "키 사본이 없으면 다시 설치한 뒤 데이터를 복구할 수 없습니다. 1분이면 됩니다.",
-      "action": "단계 열기"
-    },
     "quickAddSymptom": "증상 기록",
-    "todayCardVisible": "상단 카드 표시"
+    "todayCardVisible": "상단 카드 표시",
+    "recoveryKitBanner": {
+      "title": "복구 키트를 보관하세요",
+      "body": "이 서버가 사용하는 키의 사본이 없으면 다시 설치한 뒤 데이터를 복구할 수 없습니다. 몇 분이면 됩니다.",
+      "action": "키트 열기"
+    }
   },
   "measurements": {
     "title": "측정",
@@ -3019,6 +3025,7 @@
       "refusalInjection": "제 지시를 덮어쓰려는 표현이 보였어요. 저는 HealthLog 코치이고 회원님의 건강 데이터만 정리해 드려요. 그 범위로 질문을 다시 적어 주세요.",
       "errorBudget": "오늘 코치 사용 한도에 도달했어요. 사용량은 내 시간대의 자정에 초기화돼요.",
       "errorProvider": "지금은 코치가 인사이트 제공자에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.",
+      "errorReasoningOnly": "모델이 생각만 하고 답변을 쓰지 않았어요. 다시 시도하거나 AI 설정에서 다른 모델을 선택해 주세요.",
       "errorDemo": "데모에서는 코치가 답하지 않아요.",
       "errorNoProvider": "코치는 기록된 건강 데이터를 읽고 그에 대한 질문에 답해요(의학적 조언은 아니에요). 그러려면 HealthLog에 AI 제공자가 필요해요. 직접 발급한 키나 로컬 모델을 연결해 주세요.",
       "errorNoProviderAction": "AI 제공자 연결",
@@ -5731,7 +5738,7 @@
             "passphrasePlaceholder": "암호문구 (12자 이상)",
             "passphraseHelp": "Argon2id로 보관 파일 키를 만들고 AES-256-GCM으로 봉인해요. 파일은 .hlx 확장자로 저장해 주세요.",
             "noRecoveryWarning": "복구 수단이 없어요. 이 암호문구를 잃어버리면 보관 파일을 열 수 없어요. 안전한 곳에 보관해 주세요.",
-            "detail": "주간 자동 백업과 같은 형식이에요. 아직 담기지 않는 기록 유형이 있고, 파일의 매니페스트에 무엇이 들었는지 적혀 있어요.",
+            "detail": "보관하고 읽기 위한 기록의 휴대용 사본이에요. 값은 일반 JSON으로, 문서는 메타데이터만 들어 있어요. 이 서버가 계정을 되돌리려고 보관하는 주간 계정 사본이 아니며, 다른 서버에서 계정을 다시 만들 수 없어요. 아직 포함되지 않는 기록 유형도 있어요. 파일의 매니페스트에 들어 있는 항목이 나와요.",
             "contents": "측정, 복약, 기분, 생리 주기, 검사, 아픈 날 에피소드, 알레르기, 가족력, 영양, 운동, 건강 프로필, 사용자 지표를 JSON 파일 하나에."
           }
         },
@@ -5777,7 +5784,7 @@
             "cycleDaysFailed": "생리 주기 {count}일치를 쓰지 못했어요: {reason}"
           },
           "json": {
-            "title": "JSON 파일",
+            "title": "측정값과 기분 (JSON)",
             "description": "측정과 기분 기록이 담긴 JSON을 붙여 넣거나 .json 파일을 올려 주세요.",
             "pasteLabel": "JSON 붙여 넣기",
             "fileInputLabel": "불러올 JSON 파일 선택",
@@ -5793,8 +5800,11 @@
             "readFailed": "파일을 읽지 못했어요.",
             "resultSummary": "측정 {measurements}개와 기분 기록 {moods}개를 불러왔고, {skipped}개는 건너뛰었어요.",
             "resultSuccess": "측정 {measurements}개와 기분 기록 {moods}개를 불러왔어요",
+            "droppedLinks": "이 계정에 같은 이름의 태그가 없어 다음 태그 없이 가져왔습니다: {keys}",
+            "keptLabels": "이 계정에는 이미 같은 키의 태그나 그룹이 자체 이름으로 있어서 그대로 유지했어요: {keys}",
             "resultNothing": "불러온 게 없어요. {skipped}개 기록을 모두 건너뛰었어요.",
-            "resultEmpty": "그 파일에는 측정도 기분 기록도 없었어요."
+            "resultEmpty": "그 파일에는 측정도 기분 기록도 없었어요.",
+            "limitsHint": "최대 {mb}MB, 목록마다 최대 {rows}개 항목까지 가능해요. 기록에 항목을 추가할 뿐이며, 전체 백업을 복원하지는 않아요."
           },
           "csv": {
             "title": "CSV 파일",
@@ -5940,7 +5950,7 @@
             }
           }
         },
-        "subtitle": "데이터를 내보내거나 백업에서 불러와요."
+        "subtitle": "데이터를 내보내거나, 다른 앱과 파일에서 측정값과 기록을 가져와요."
       },
       "about": {
         "title": "앱 정보",
@@ -6854,7 +6864,14 @@
       "detail": "토큰은 한 번만 표시돼요.",
       "scopeNote": "본인 기록에 새 측정값을 추가하는 것만 할 수 있어요. 데이터를 읽거나, 무언가를 고치거나 지우거나, 다른 토큰을 만들 수는 없어요. 측정값은 외부 기기에서 온 것으로 표시되니 나중에 구분할 수 있고, 언제든 고칠 수 있어요.",
       "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
-      "namePlaceholder": "이름 (예: Home Assistant)"
+      "namePlaceholder": "이름 (예: Home Assistant)",
+      "appleHealth": {
+        "label": "측정값을 Apple Health에 기록",
+        "createHint": "그러면 iPhone의 HealthLog 앱이 이 토큰의 측정값을 Apple Health에 추가해요. 나중에 아래 토큰 목록에서 바꿀 수 있어요.",
+        "toggleAria": "{name}의 측정값을 Apple Health에 기록",
+        "updateFailed": "Apple Health 설정을 바꾸지 못했어요. 다시 시도해 주세요.",
+        "unattributed": "이 설정이 생기기 전에 보낸 측정값은 토큰과 연결할 수 없어서 Apple Health에 기록되지 않아요."
+      }
     },
     "workoutsToken": {
       "title": "운동 토큰",
@@ -6911,10 +6928,12 @@
     "deleteAccountCardDescription": "패스키, 감사 로그, 세션까지 함께 계정을 삭제해요.",
     "deleteAccountCta": "계정 삭제",
     "deleteAccountConfirmTitle": "계정을 영구히 삭제할까요?",
-    "deleteAccountConfirmDescription": "계정과 모든 건강 데이터, 패스키, 세션, 감사 기록이 영구히 삭제돼요. 삭제 직후 로그아웃돼요.",
+    "deleteAccountConfirmTitleGrace": "계정을 삭제할까요?",
+    "deleteAccountConfirmDescription": "계정과 모든 건강 데이터, 패스키, 세션, 감사 기록이 영구히 삭제돼요. 삭제 직후 로그아웃돼요. 이 서버 백업에 남은 사본은 보관 기간이 지나면 사라져요.",
     "deleteAccountSuccess": "계정을 삭제했어요. 로그아웃할게요.",
     "deleteAccountFailed": "계정을 삭제하지 못했어요",
     "deleteAccountFinal": "영구 삭제",
+    "deleteAccountFinalGrace": "계정 삭제",
     "saved": "저장됨",
     "savingError": "저장 중 오류",
     "about": {
@@ -7321,13 +7340,16 @@
         "coach": "코치 대화: {days}일 보관",
         "audit": "보안 활동 기록: {days}일 보관",
         "delivery": "알림 발송 기록: {days}일 보관",
-        "unavailable": "지금은 보관 기간 정보를 볼 수 없어요."
+        "unavailable": "지금은 보관 기간 정보를 볼 수 없어요.",
+        "accountDeletion": "계정, 관리 프로필 또는 모든 데이터 삭제: {days}일 뒤에 완료",
+        "accountDeletionImmediate": "계정, 관리 프로필 또는 모든 데이터 삭제: 즉시 완료"
       },
       "delete": {
         "title": "삭제 또는 초기화",
         "description": "계정을 완전히 없애거나, 계정은 두고 건강 기록만 지워요.",
-        "backupLag": "삭제하면 데이터는 즉시 지워져요. 이 서버가 암호화된 외부 백업을 보관한다면 그 저장소에 있는 데이터 사본도 곧바로 삭제되고, 저장소에 연결할 수 없으면 다음 야간 실행 때 삭제돼요.",
-        "openAdvanced": "삭제 또는 초기화"
+        "openAdvanced": "삭제 또는 초기화",
+        "immediateNotice": "삭제하면 데이터는 즉시 지워져요. 이 서버가 암호화된 외부 백업을 보관한다면 그 저장소에 있는 데이터 사본도 곧바로 삭제되고, 저장소에 연결할 수 없으면 다음 야간 실행 때 삭제돼요. 이 서버 백업에 남은 사본은 보관 기간이 지나면 사라져요.",
+        "graceNotice": "계정을 삭제하면 바로 잠기고 {days}일 뒤에 이 서버가 보관하는 모든 사본, 서버 밖에 암호화해 둔 사본까지 함께 완전히 지워져요. 그때까지는 이 서버의 관리자가 삭제를 취소할 수 있어요. 모든 데이터 삭제도 같은 방식이에요. 기록의 사본이 {days}일 동안 보관되어 관리자가 복원할 수 있어요. 이 서버 백업에 남은 사본은 보관 기간이 지나면 사라져요."
       },
       "posture": {
         "title": "개인정보 보호 수준",
@@ -7633,7 +7655,13 @@
       "off": "꺼짐",
       "change": "모듈에서 변경"
     },
-    "timezoneUseDevice": "이 기기의 시간대 사용 ({zone})"
+    "timezoneUseDevice": "이 기기의 시간대 사용 ({zone})",
+    "dangerZoneConfirmDescriptionGrace": "기록에 있는 모든 것이 삭제돼요: 측정값, 약, 기분 기록, 검사 결과, 주기 기록, 문서, AI 대화, 모든 연동 연결과 여기서 파생된 데이터, 앞서 삭제한 데이터까지 전부요. 의사에게 준 공유 링크도 바로 작동을 멈춰요. 계정은 그대로 남고, 로그인에 쓰는 자격 증명과 언어·시간대·단위 같은 표시 설정도 유지돼요. 기록의 사본은 {days}일 동안 보관되므로, 그때까지는 이 서버의 관리자가 복원할 수 있어요. 그 후에는 삭제가 최종적으로 확정돼요.",
+    "deleteAccountCardDetailGrace": "계정은 바로 잠기고 {days}일 뒤에 완전히 지워져요. 그때까지는 이 서버의 관리자가 삭제를 취소할 수 있어요.",
+    "deleteAccountConfirmDescriptionGrace": "바로 로그아웃되고 계정이 잠겨요. {days}일 뒤에는 모든 건강 데이터, 패스키, 세션, 감사 기록과 함께 완전히 지워져요. 그때까지는 이 서버의 관리자가 삭제를 취소할 수 있어요. 이 서버 백업에 남은 사본은 보관 기간이 지나면 사라져요.",
+    "deleteAccountScheduled": "계정이 잠겼고 {date}에 완전히 지워져요. 로그아웃하는 중이에요.",
+    "dangerZoneSuccessGrace": "건강 기록이 삭제됐어요. {date}까지는 이 서버의 관리자가 복원할 수 있어요.",
+    "dangerZoneRestoreLimits": "접근 권한도 끝나요: 다른 사람과 공유한 것, 다른 사람이 나와 공유한 것, 보호자 역할 모두요. 복원하면 기록이 지금 상태로 돌아와요. 삭제 후에 추가된 것은 대체되고, 연동 연결, 공유, 보호자 역할, 공유 링크는 돌아오지 않아서 다시 설정해야 해요."
   },
   "admin": {
     "title": "관리자",
@@ -8044,7 +8072,15 @@
         "cannotLogoutSelf": "자기 자신은 강제 로그아웃할 수 없어요",
         "emptyTitle": "이 화면에 사용자가 없어요",
         "emptyDescription": "현재 필터에 맞는 사용자가 없어요.",
-        "emptyResetFilter": "전체 사용자 보기"
+        "emptyResetFilter": "전체 사용자 보기",
+        "deletionPending": "{date} 삭제 예정",
+        "deletionPendingNoDate": "삭제 예정",
+        "undoDeletion": "삭제 취소",
+        "undoDeletionTitle": "{name} 삭제를 취소할까요?",
+        "undoDeletionBody": "{name} 님이 이 계정의 삭제를 요청했고, 유예 기간이 끝나면 지워져요. 취소하면 계정과 그 안의 모든 내용이 그대로 남아요. {name} 님은 다시 로그인할 수 있지만, API 토큰, 공유 링크, 신뢰하는 기기는 계속 취소된 상태라 다시 설정해야 해요.",
+        "undoDeletionBodyGuardian": "보호자가 관리 프로필 {name}을(를) 삭제했고, 유예 기간이 끝나면 지워져요. 취소하면 프로필과 그 안의 모든 내용이 그대로 남고, 보호자들이 다시 접근할 수 있어요. 공유 링크와 토큰은 계속 취소된 상태라 다시 설정해야 해요.",
+        "undoDeletionDone": "{name} 삭제를 취소했어요",
+        "undoDeletionFailed": "삭제를 취소하지 못했어요"
       },
       "invites": {
         "title": "초대",
@@ -8106,8 +8142,8 @@
       },
       "backups": {
         "title": "백업",
-        "subtitle": "PostgreSQL에 저장되는 주간 사용자별 데이터 스냅샷이에요.",
-        "description": "사용자마다 백업 유형별로 최신 스냅샷 하나를 굴려가며 보관해요. 크기는 암호화된 blob 기준이에요. 내려받기는 요청한 관리자에게만 스냅샷을 복호화해 주고, 암호문은 데이터베이스에 그대로 남아요.",
+        "subtitle": "이 서버의 데이터베이스에 보관된 계정 사본으로, 이 서버에서 계정 하나를 되돌릴 때 써요.",
+        "description": "각 계정에는 매주 일요일마다 교체되는 주간 사본 하나와, 여기서 올린 사본, \"모든 데이터 삭제\" 전에 만든 사본이 있어요. 사본은 이 서버에 있는 계정 하나를 되돌려요. 잃어버린 서버를 다시 만들 수는 없어요. 그러려면 데이터베이스 덤프와 암호화 키가 필요해요. 크기는 암호화된 사본 기준이에요. 다운로드하면 요청한 관리자를 위해 복호화되고, 암호문은 데이터베이스에 남아요.",
         "runNow": "지금 백업",
         "runEnqueued": "백업 작업을 큐에 넣었어요",
         "runFailed": "백업을 큐에 넣지 못했어요",
@@ -8117,12 +8153,11 @@
         "emptyDescription": "백업은 매주 일요일 03:00에 자동으로 돌아요. 지금 실행해서 첫 스냅샷을 만들 수도 있어요.",
         "colUser": "사용자",
         "colType": "유형",
-        "typeWeeklyAuto": "주간 (자동)",
+        "typeWeeklyAuto": "주간 계정 사본",
         "typeManual": "수동",
         "colSize": "크기",
         "colCreatedAt": "최근 스냅샷",
         "colActions": "동작",
-        "retentionLabel": "보관 기간: {days}일",
         "scheduleStaleTitle": "주간 백업이 중단되었습니다",
         "scheduleStaleDescription": "가장 최근의 예약 사본이 {days}일 전 것입니다. 정상적으로 도는 주간 실행은 {threshold}일보다 오래된 사본을 남기지 않습니다.",
         "scheduleFailedTitle": "마지막 예약 백업 실행이 실패했습니다",
@@ -8140,7 +8175,7 @@
         "downloadFailed": "다운로드하지 못했어요",
         "downloadStarted": "다운로드를 시작했어요",
         "uploadTitle": "백업 업로드",
-        "uploadDescription": "백업 파일을 검사한 뒤 수동 스냅샷으로 저장해요. 복원은 별도 단계예요.",
+        "uploadDescription": "계정 사본을 확인하고 이 서버의 사본 옆에 저장해요. 사본의 계정이 이 서버에 있어야 해요. 복원은 별도 단계예요.",
         "uploadButton": "파일 업로드",
         "uploadHelp": "HealthLog 백업 파일(.json 또는 .json.gz)이에요. 업로드 전에 압축되며, 압축된 크기는 최대 512 MB까지 가능해요.",
         "uploadSuccess": "백업을 업로드했어요 (기록 {count}개)",
@@ -8200,7 +8235,7 @@
         "restoreSkippedAccountSetting": "계정 설정",
         "restoreMissingTitle": "복원을 중단했어요. 파일이 불완전해요",
         "restoreMissingDescription": "파일의 매니페스트에는 아래 항목이 들어 있다고 적혀 있는데 실제로는 없어요. 아무것도 바꾸지 않았어요. 복원은 해당 기록 전체를 갈아엎기 때문에, 파일에 없는 항목을 되돌리면 그 항목이 통째로 비워졌을 거예요.",
-        "restoreMissingRemedy": "재해 복구용 스냅샷을 쓰거나, 계정을 다시 내보내서 새 파일을 업로드해 주세요. 매니페스트가 처음부터 '빠졌다'고 표시한 항목은 다른 경우라 정상적으로 복원돼요.",
+        "restoreMissingRemedy": "이 서버의 계정 사본이나 서버 밖 사본을 쓰거나, 계정을 다시 내보내 새 파일을 올려요. 매니페스트에서 생략됐다고 밝힌 섹션은 다른 경우이며 정상적으로 복원돼요.",
         "restoreMissingDocuments": "문서",
         "restoreMissingWorkouts": "운동",
         "restoreMissingMentalHealth": "정신 건강 선별 검사",
@@ -8230,6 +8265,9 @@
         "restoreActive": "이 계정의 복원이 이미 진행 중이에요. 끝날 때까지 기다려 주세요.",
         "restoreJobQueuedTitle": "{username} 복원이 시작을 기다리고 있어요",
         "restoreJobQueuedNote": "백그라운드 작업자가 가져가는 즉시 시작돼요.",
+        "restoreJobWaitingBackupNote": "서버에서 실행 중인 백업을 기다리고 있어요. 복원은 백업과 동시에 실행되지 않으며, 백업이 끝나고 1분쯤 뒤에 시작돼요.",
+        "restoreJobWaitingBusyNote": "가져오기나 야간 작업 같은 서버의 큰 작업이 끝나기를 기다리고 있어요. 그 후 1분쯤 뒤에 시작돼요.",
+        "restoreJobQueuedSince": "{when}부터 대기 중이에요.",
         "restoreJobRunningTitle": "{username} 복원 중",
         "restoreJobRunningNote": "복원이 끝날 때까지 계정에는 기존 데이터가 그대로 보여요. 이 페이지를 떠나도 복원은 서버에서 계속돼요.",
         "restoreJobResumed": "서버가 다시 시작된 뒤 복원을 다시 시작했어요.",
@@ -8250,7 +8288,7 @@
         "restoreFailureOwnerMismatch": "백업 안의 파일이 백업 행과 다른 계정의 것이에요.",
         "restoreFailureOwnerMissing": "이 백업이 속한 계정이 더 이상 없어요.",
         "restoreFailureSectionMissing": "파일이 불완전해요. 매니페스트에 적힌 항목이 파일에 없어요.",
-        "restoreFailureDocument": "휴대용 내보내기처럼 내용 없이 문서만 담긴 파일이에요. 재해 복구용 백업을 사용해 주세요.",
+        "restoreFailureDocument": "이 파일에는 휴대용 내보내기처럼 내용 없이 문서만 들어 있어요. 대신 이 서버의 계정 사본이나 서버 밖 사본을 써요.",
         "restoreFailureTimeBudget": "이 백업은 너무 커서 백그라운드 작업의 시간 제한 안에 복원할 수 없어요.",
         "restoreFailureTransaction": "데이터베이스가 복원 도중에 거부해서 모든 변경을 되돌렸어요. 서버 로그에 오류가 나와 있어요.",
         "restoreFailureCauseTimeout": "복원이 데이터베이스가 허용하는 시간보다 오래 걸려서 모든 변경을 되돌렸어요. 데이터베이스 호스트가 바빴다면 한가할 때 다시 시작하세요. 서버 로그에 해당 단계가 나와 있어요.",
@@ -8271,7 +8309,32 @@
         "restoreSkippedMoodLabelCiphertext": "이 서버에 없는 키로 암호화된 기분 태그 또는 그룹 이름(이름 없이 유지됨)",
         "restoreSkippedVisitCiphertext": "이 서버에 없는 키로 암호화된 진료 또는 의료진 텍스트(해당 내용 없이 유지됨)",
         "restoreSkippedVaccinationCiphertext": "이 서버에 없는 키로 암호화된 예방접종 메모(접종 기록은 메모 없이 유지됨)",
-        "restoreSkippedEnvironmentLocationCiphertext": "이 서버에 없는 키로 암호화된 환경 기간 또는 날짜의 위치(암호화된 채 유지되며 해당 날짜는 새로 가져오지 않음)"
+        "restoreSkippedEnvironmentLocationCiphertext": "이 서버에 없는 키로 암호화된 환경 기간 또는 날짜의 위치(암호화된 채 유지되며 해당 날짜는 새로 가져오지 않음)",
+        "typePreWipe": "모든 데이터 삭제 전",
+        "retentionNote": "주간 사본은 매주 일요일에 교체돼요. \"모든 데이터 삭제\" 전에 만든 사본은 {days}일 뒤에 삭제돼요. 올린 사본은 해당 계정이 지워질 때까지 남아요.",
+        "retentionNoteNoGrace": "주간 사본은 매주 일요일에 교체돼요. 올린 사본은 해당 계정이 지워질 때까지 남아요.",
+        "database": {
+          "title": "데이터베이스 덤프",
+          "lastGood": "마지막 정상 덤프 {when}, {size}, {where}.",
+          "whereBoth": "이 서버와 외부 저장소에 보관됨",
+          "whereLocal": "이 서버에 보관됨",
+          "whereOffhost": "외부 저장소에만 있음",
+          "none": "아직 데이터베이스 덤프가 없습니다. 첫 덤프는 오늘 밤에 실행됩니다.",
+          "failedTitle": "마지막 데이터베이스 덤프가 실패했습니다",
+          "failedDescription": "{when}: {reason}",
+          "disabled": "데이터베이스 덤프가 꺼져 있습니다(DB_BACKUP_ENABLED=false). 다른 방법으로 데이터베이스를 백업하세요.",
+          "noDirectoryOffhost": "이 서버는 {dir}에 쓸 수 없어 덤프가 외부 저장소로만 가고 여기에는 보관되지 않습니다. 백업 볼륨을 마운트하세요.",
+          "noDirectory": "이 서버는 {dir}에 쓸 수 없고 외부 저장소도 설정되지 않아 데이터베이스 덤프를 만들 수 없습니다. 백업 볼륨을 마운트하세요.",
+          "retentionLocal": "삭제된 계정은 덤프가 만료될 때까지 덤프에 남습니다. 이 서버에는 최신 야간 덤프 {nights}개가 보관되고, 마지막 업데이트 전에 만든 덤프는 다음 업데이트까지 남습니다.",
+          "retentionOffhost": "버킷의 수명 주기 규칙이 외부 사본을 {days}일 후에 삭제합니다.",
+          "retentionOffhostMissing": "버킷의 어떤 수명 주기 규칙도 database/를 다루지 않아 그곳의 덤프와 그 안의 삭제된 계정이 절대 삭제되지 않습니다. 이 접두사에 대한 규칙을 추가하세요.",
+          "notPersistentOffhost": "{dir}은(는) 영구 저장소에 있지 않습니다(마운트된 볼륨이 아니라 컨테이너 안이나 메모리에 있음). 그래서 여기에 쓴 덤프는 다음 업데이트 때 사라집니다. 덤프는 외부 저장소로만 가며, 여기에는 보관되지 않고 마이그레이션 전에도 만들어지지 않습니다. 백업 볼륨을 마운트하세요.",
+          "notPersistent": "{dir}은(는) 영구 저장소에 있지 않고(마운트된 볼륨이 아니라 컨테이너 안이나 메모리에 있음) 외부 버킷도 설정되지 않아, 데이터베이스 덤프가 어디에도 보관되지 않습니다. 백업 볼륨을 마운트하세요.",
+          "offhostFailedTitle": "최신 데이터베이스 덤프가 외부 버킷에 도달하지 못했습니다",
+          "offhostLastUpload": "버킷에 있는 최신 덤프는 {when}의 것입니다.",
+          "offhostNeverUploaded": "아직 버킷에 도달한 데이터베이스 덤프가 없습니다."
+        },
+        "restorePreWipeLimits": "이 사본은 계정의 데이터를 삭제하기 전에 만들어졌고, 복원하면 사본이 할 수 있는 만큼 그 삭제를 되돌려요: 그 후에 계정에 추가된 것은 대체되고, 연동 연결, 공유, 보호자 접근, 공유 링크는 돌아오지 않아요."
       },
       "danger-zone": {
         "title": "위험 구역",
@@ -8337,7 +8400,10 @@
         "columnsHide": "표 숨기기",
         "columnsShowAll": "열 {count}개 모두 보기",
         "columnsShowWithRows": "행이 있는 열만",
-        "columnsNoneWithRows": "아직 행이 있는 암호화 열이 없어요."
+        "columnsNoneWithRows": "아직 행이 있는 암호화 열이 없어요.",
+        "backupsDumpLocalLine": "키 {key}: 이 서버의 데이터베이스 덤프 {count}개가 이 키로 작성되었습니다. 보존 정책이 덤프를 지울 때까지 필요합니다.",
+        "backupsDumpOffhostLine": "키 {key}: 이 키로 작성된 최신 데이터베이스 덤프가 {when}에 버킷에 저장되었습니다. {until}까지 필요합니다",
+        "backupsDumpOffhostLineUnknown": "키 {key}: 이 키로 작성된 최신 데이터베이스 덤프가 {when}에 버킷에 저장되었습니다. 버킷이 database/를 얼마나 보관하는지 알 수 없으므로 그 덤프가 사라진 것을 확인할 때까지 키를 유지하세요."
       },
       "maintenance": {
         "title": "측정값 테이블 유지 관리",
@@ -8492,47 +8558,6 @@
       "title": "페이지의 이 부분을 표시할 수 없습니다",
       "description": "페이지의 나머지 부분은 계속 작동합니다. 다시 시도하거나 계속 실패하면 새로고침하세요."
     },
-    "keyBackup": {
-      "title": "암호화 키를 백업하세요",
-      "description": "이 키의 사본이 없으면 암호화된 데이터와 이 서버의 백업을 다시는 읽을 수 없습니다.",
-      "loading": "키 백업 상태를 불러오는 중…",
-      "loadError": "키 백업 상태를 불러오지 못했습니다.",
-      "badgeDue": "해야 함",
-      "badgeDone": "백업됨",
-      "keyId": "활성 키 ID",
-      "fingerprint": "지문",
-      "whatIsLost": "키의 사본을 이 서버 밖, 예를 들어 비밀번호 관리자에 보관하세요. 서버가 다른 키로 다시 설치되면 HealthLog는 원래 키가 돌아올 때까지 서비스를 시작하지 않습니다.",
-      "fingerprintHint": "지문은 키의 SHA-256 해시 앞 12자입니다. 키를 드러내지 않고 식별하므로 사본과 비교할 수 있습니다.",
-      "checkLabel": "내 사본 확인",
-      "checkButton": "확인",
-      "checkNote": "붙여넣은 키는 활성 키와 비교한 뒤 버립니다. 저장하거나 기록하지 않습니다.",
-      "checkInsecureNote": "이 페이지는 https://로 제공되지 않으므로 붙여넣은 키가 비밀번호와 마찬가지로 암호화되지 않은 채 네트워크를 지나갑니다. 비교한 뒤 버리며 저장하거나 기록하지 않습니다.",
-      "checkMatches": "사본이 활성 키와 일치합니다.",
-      "checkNoMatch": "사본이 활성 키와 일치하지 않습니다. 전체 값을 복사했는지 확인하세요.",
-      "checkFailed": "확인하지 못했습니다.",
-      "confirmButton": "이 키를 백업했습니다",
-      "confirmed": "키 백업이 확인되었습니다.",
-      "confirmFailed": "확인을 저장하지 못했습니다.",
-      "stale": "이 페이지를 연 뒤 서버의 키가 바뀌었습니다. 새 키 ID와 지문을 확인한 뒤 다시 확인하세요.",
-      "confirmedAt": "{date}에 확인됨.",
-      "confirmedAtBy": "{date}에 {who}님이 확인함.",
-      "dueAgain": "키 {keyId}의 백업이 확인되었지만 서버는 이제 다른 키를 사용합니다. 현재 키를 백업하세요.",
-      "tileLabel": "암호화 키 백업",
-      "tileDue": "확인 안 됨",
-      "tileDone": "확인됨",
-      "platform": {
-        "composeLabel": "Compose",
-        "composeWhere": "키는 docker-compose.yml 옆 .env 파일의 ENCRYPTION_KEY(또는 ENCRYPTION_KEYS)입니다.",
-        "truenasLabel": "TrueNAS",
-        "truenasWhere": "Apps에서 HealthLog를 선택하고 Edit을 누른 뒤 환경 설정에서 ENCRYPTION_KEY를 복사하세요.",
-        "coolifyLabel": "Coolify",
-        "coolifyWhere": "Coolify에서 애플리케이션을 열고 Environment Variables에서 ENCRYPTION_KEY를 복사하세요.",
-        "unraidLabel": "Unraid",
-        "unraidWhere": "Docker 탭에서 HealthLog 컨테이너를 편집하고 템플릿에서, 또는 Compose Manager 스택의 .env에서 ENCRYPTION_KEY를 복사하세요.",
-        "portainerLabel": "Portainer",
-        "portainerWhere": "Portainer에서 HealthLog 스택을 열고 환경 변수에서 ENCRYPTION_KEY를 복사하세요."
-      }
-    },
     "keyMismatch": {
       "title": "HealthLog가 데이터를 열 수 없습니다",
       "body": "이 서버를 시작한 암호화 키가 데이터베이스를 기록할 때 쓴 키와 다릅니다. 데이터를 보호하기 위해 이 문제가 해결될 때까지 HealthLog는 아무것도 제공하지 않습니다.",
@@ -8563,6 +8588,185 @@
       "defaultAboveCeiling": "기본 단계는 최고 단계보다 높을 수 없어요.",
       "gapLabel": "동기화 후 카드 새로 고침 간격(시간, 표준 단계)",
       "gapHint": "1에서 48 사이의 정수 시간이에요. 비워 두면 AI_SYNC_REGEN_GAP_HOURS를, 없으면 6을 사용해요. 현재 적용 값: {hours}시간."
+    },
+    "recoveryKit": {
+      "title": "복구 키트",
+      "description": "이 서버를 복원하는 데 필요한 모든 키를 ID와 지문으로 보여 줍니다.",
+      "intro": "아래 각 키의 사본을 이 서버 밖, 예를 들어 비밀번호 관리자에 보관하세요. 키가 없으면 데이터베이스 덤프도 백업 사본도 다시 읽을 수 없으며, 필요한 키가 없으면 HealthLog는 시작하지 않습니다.",
+      "loading": "복구 키트를 불러오는 중…",
+      "loadError": "복구 키트를 불러오지 못했습니다.",
+      "badgeDue": "해야 함",
+      "badgeDone": "보관됨",
+      "keyId": "ID",
+      "fingerprint": "지문",
+      "noFingerprint": "이 서버에 없음",
+      "kind": {
+        "application": "애플리케이션 키 {id}",
+        "backup": "외부 보관 백업 키",
+        "backupPrevious": "이전 외부 보관 백업 키",
+        "token": "토큰 키"
+      },
+      "need": {
+        "active": "새 데이터를 암호화합니다.",
+        "configured": "이 서버에 있습니다.",
+        "storedCopies": "저장된 사본 {count}개에 필요합니다.",
+        "offhostUntil": "{date}까지 외부 보관 사본에 필요합니다.",
+        "offhostUnknown": "버킷이 외부 보관 사본을 보관하는 동안 필요합니다.",
+        "backupActive": "새 외부 보관 사본을 모두 봉인합니다.",
+        "backupPrevious": "마지막 키 변경 전에 기록된 외부 보관 사본을 엽니다.",
+        "token": "세션, 토큰, 공유 링크에 서명합니다. 이 키가 없으면 모두 로그아웃되지만 데이터는 잃지 않습니다.",
+        "localDumps": "이 서버의 데이터베이스 덤프 {count}개에 필요합니다.",
+        "offhostDumpsUntil": "{date}까지 외부 보관 데이터베이스 덤프에 필요합니다.",
+        "offhostDumpsUnknown": "버킷이 외부 보관 데이터베이스 덤프를 보관하는 동안 필요합니다."
+      },
+      "source": "{variable}에 설정됨.",
+      "status": {
+        "confirmed": "보관됨",
+        "new": "아직 보관 안 됨",
+        "notConfigured": "이 서버에 없음",
+        "unreadable": "유효한 키가 아님"
+      },
+      "notConfiguredHint": "아직 이 키가 필요한 백업이 있지만 이 서버에는 키가 없습니다. 다른 곳에 보관한 사본만 그 백업을 읽을 수 있습니다. 그 사본을 확보한 뒤 키트를 확인하세요.",
+      "unreadableHint": "변수는 설정되어 있지만 유효한 키가 들어 있지 않습니다. 외부 보관 사본에 의존하기 전에 고치세요.",
+      "fingerprintHint": "지문은 키의 SHA-256 해시 앞 12자입니다. 키를 드러내지 않고 식별하므로 사본과 비교할 수 있습니다.",
+      "whereTitle": "키가 설정된 위치",
+      "platform": {
+        "composeLabel": "Compose",
+        "composeWhere": "키는 docker-compose.yml 옆 .env 파일에 있습니다: ENCRYPTION_KEY 또는 ENCRYPTION_KEYS, API_TOKEN_HMAC_KEY, 그리고 외부 보관 사본을 쓰는 경우 BACKUP_ENCRYPTION_KEY.",
+        "truenasLabel": "TrueNAS",
+        "truenasWhere": "Apps에서 HealthLog를 선택하고 Edit을 누르세요. 키는 HealthLog Configuration 아래에 있습니다. YAML로 설치한 앱이라면 환경 설정의 ENCRYPTION_KEY, API_TOKEN_HMAC_KEY, BACKUP_ENCRYPTION_KEY입니다.",
+        "coolifyLabel": "Coolify",
+        "coolifyWhere": "Coolify에서 애플리케이션을 열고 Environment Variables에서 ENCRYPTION_KEY, API_TOKEN_HMAC_KEY, BACKUP_ENCRYPTION_KEY를 복사하세요.",
+        "unraidLabel": "Unraid",
+        "unraidWhere": "Docker 탭에서 HealthLog 컨테이너를 편집하고 템플릿에서, 또는 Compose Manager 스택의 .env에서 ENCRYPTION_KEY, API_TOKEN_HMAC_KEY, BACKUP_ENCRYPTION_KEY를 복사하세요.",
+        "portainerLabel": "Portainer",
+        "portainerWhere": "Portainer에서 HealthLog 스택을 열고 환경 변수에서 ENCRYPTION_KEY, API_TOKEN_HMAC_KEY, BACKUP_ENCRYPTION_KEY를 복사하세요."
+      },
+      "restoreTitle": "이 서버 복원하기",
+      "restoreBody": "같은 키로 HealthLog를 설치하고, 가장 최근의 데이터베이스 덤프를 빈 데이터베이스에 복원한 다음 앱을 시작하세요. 가이드에서 단계별로 안내합니다.",
+      "restoreLink": "재해 복구 가이드",
+      "checkLabel": "내 사본 확인",
+      "checkKeyLabel": "확인할 키",
+      "checkValueLabel": "내가 보관한 키 사본",
+      "checkButton": "확인",
+      "checkNote": "붙여넣은 키는 이 서버의 키와 비교한 뒤 버립니다. 저장하거나 기록하지 않습니다.",
+      "checkInsecureNote": "이 페이지는 https://로 제공되지 않으므로 붙여넣은 키가 비밀번호와 마찬가지로 암호화되지 않은 채 네트워크를 지나갑니다. 비교한 뒤 버리며 저장하거나 기록하지 않습니다.",
+      "checkMatches": "사본이 이 키와 일치합니다.",
+      "checkNoMatch": "사본이 이 키와 일치하지 않습니다. 전체 값을 복사했는지 확인하세요.",
+      "checkFailed": "확인하지 못했습니다.",
+      "confirmButton": "모든 키의 사본을 보관했습니다",
+      "confirmed": "복구 키트가 확인되었습니다.",
+      "confirmFailed": "확인을 저장하지 못했습니다.",
+      "stale": "이 페이지를 연 뒤 키트가 바뀌었습니다. 지금 표시된 키를 확인한 뒤 다시 확인하세요.",
+      "confirmedAt": "{date}에 확인됨.",
+      "confirmedAtBy": "{date}에 {who}님이 확인함.",
+      "dueAgain": "키트는 {date}에 확인되었습니다. 이제 {keys}도 포함되며, 그 확인은 이를 다루지 않았습니다. 각각의 사본을 저장하고 다시 확인하십시오."
+    },
+    "recoveryReadiness": {
+      "title": "복구 준비 상태",
+      "description": "이 서버가 만드는 모든 백업을 기준으로, 서버를 잃었을 때 되살릴 수 있는지 판단합니다.",
+      "loading": "백업을 확인하는 중…",
+      "loadError": "복구 준비 상태를 불러오지 못했습니다.",
+      "state": {
+        "ok": "준비됨",
+        "attention": "확인 필요",
+        "failing": "위험"
+      },
+      "signal": {
+        "database_dump": "데이터베이스 덤프",
+        "weekly_copy": "주간 계정 사본",
+        "offhost_copies": "외부 보관 사본",
+        "restore_drill": "복원 훈련",
+        "offhost_setup": "외부 보관 백업",
+        "recovery_kit": "복구 키트",
+        "dump_retention": "버킷의 덤프"
+      },
+      "at": {
+        "database_dump": "최신 덤프: {date}",
+        "weekly_copy": "가장 오래된 계정 사본: {date}",
+        "offhost_copies": "가장 오래된 외부 보관 사본: {date}",
+        "restore_drill": "마지막 훈련: {date}",
+        "recovery_kit": "확인: {date}"
+      },
+      "dueBy": "{date}까지",
+      "fix": {
+        "database_dump": "백업 열기",
+        "weekly_copy": "백업 열기",
+        "offhost_copies": "백업 열기",
+        "restore_drill": "백업 열기",
+        "offhost_setup": "백업 열기",
+        "recovery_kit": "키트 열기",
+        "dump_retention": "백업 열기"
+      },
+      "reason": {
+        "database_dump": {
+          "not_available": "이 버전은 데이터베이스 덤프를 예약하지 않습니다.",
+          "disabled": "예약된 데이터베이스 덤프가 꺼져 있어 이 서버를 다시 구축할 수 있는 사본이 없습니다. 다시 켜려면 DB_BACKUP_ENABLED를 제거하거나 true로 설정한 뒤 HealthLog를 다시 시작하십시오.",
+          "unreadable": "데이터베이스 덤프 상태를 읽지 못했습니다.",
+          "never_succeeded": "아직 성공한 데이터베이스 덤프가 없으며 마지막 시도도 실패했습니다.",
+          "never_ran": "덤프를 켠 뒤 {hours}시간 동안 데이터베이스 덤프가 기록되지 않았습니다.",
+          "first_pending": "첫 데이터베이스 덤프가 아직 실행되지 않았습니다.",
+          "stale": "최신 데이터베이스 덤프가 {hours}시간 전 것입니다.",
+          "last_failed": "마지막 데이터베이스 덤프가 실패했습니다. 그 전 덤프는 아직 최근 것입니다.",
+          "fresh": "최신 데이터베이스 덤프가 최근 것입니다.",
+          "nowhere_to_write": "덤프 디렉터리 {directory}에 쓸 수 없고 외부 버킷도 설정되어 있지 않아 덤프를 보관할 수 없습니다.",
+          "not_persistent": "덤프 디렉터리 {directory}이(가) 영구 저장소에 있지 않고 외부 버킷도 설정되지 않아, 모든 덤프가 다음 업데이트 때 사라집니다. 백업 볼륨을 마운트하세요.",
+          "fresh_offhost_only": "최신 데이터베이스 덤프는 최근 것이며 외부 버킷에 있습니다. {directory}이(가) 영구 저장소에 있지 않아 이 서버에는 보관되지 않으며, 마이그레이션 전에도 만들어지지 않습니다.",
+          "offhost_failed": "최신 데이터베이스 덤프는 이 서버에 보관되어 있지만 외부 버킷으로의 업로드가 실패했습니다.",
+          "offhost_stale": "{hours}시간 동안 외부 버킷에 도달한 데이터베이스 덤프가 없습니다. 업로드가 계속 실패하고 있습니다. 이 서버를 잃으면 복구에 쓸 최근 덤프가 없습니다.",
+          "offhost_never": "외부 버킷에 도달한 데이터베이스 덤프가 한 번도 없습니다. 업로드가 실패합니다. 이 서버를 잃으면 복구에 쓸 덤프가 없습니다."
+        },
+        "weekly_copy": {
+          "no_accounts": "아직 복사할 계정이 없습니다.",
+          "stale": "가장 오래된 주간 사본이 {days}일 전 것입니다. 뒤처진 계정: {accounts}.",
+          "never": "{days}일 동안 주간 사본이 없는 계정이 있습니다. 뒤처진 계정: {accounts}.",
+          "first_pending": "첫 주간 사본은 일요일 이른 시간에 만들어집니다.",
+          "fresh": "모든 계정에 지난주 사본이 있습니다."
+        },
+        "offhost_copies": {
+          "not_configured": "외부 보관 버킷이 설정되지 않았습니다.",
+          "stale": "외부 보관 사본이 이틀 밤 넘게 뒤처져 있습니다. 뒤처진 계정: {accounts}.",
+          "first_pending": "야간 외부 보관 실행이 아직 어떤 계정에도 도달하지 않았습니다.",
+          "fresh": "모든 계정의 최근 사본이 외부 보관 버킷에 있습니다."
+        },
+        "restore_drill": {
+          "not_configured": "훈련은 외부 보관 버킷을 읽는데, 버킷이 설정되지 않았습니다.",
+          "not_run_yet": "월간 복원 훈련이 아직 실행되지 않았습니다.",
+          "failed": "마지막 복원 훈련이 실패했습니다: 사본 {checked}개 중 {failed}개를 다시 읽지 못했습니다.",
+          "failed_run": "마지막 복원 훈련을 끝까지 마치지 못했습니다.",
+          "passed": "마지막 복원 훈련에서 사본 {checked}개를 다시 읽었습니다.",
+          "nothing_checked": "마지막 복원 훈련이 사본을 하나도 다시 읽기 전에 시간 제한으로 멈췄기 때문에 아무것도 확인하지 못했습니다."
+        },
+        "offhost_setup": {
+          "configured": "사본이 매일 밤 이 서버 밖으로 나갑니다.",
+          "no_admin": "아직 관리자 계정이 없습니다.",
+          "not_configured": "외부 보관 버킷이 설정되지 않아 모든 사본이 이 서버에만 있습니다.",
+          "not_configured_grace": "외부 보관 버킷이 아직 설정되지 않아 모든 사본이 이 서버에만 있습니다."
+        },
+        "recovery_kit": {
+          "confirmed": "복원에 필요한 모든 키의 사본이 보관되어 있습니다.",
+          "out_of_date": "복구 키트에 이제 {keys}도 포함되며, 마지막 확인은 이를 다루지 않았습니다. 고장 난 것은 없습니다. 사본을 저장하고 키트를 다시 확인하십시오.",
+          "no_admin": "아직 관리자 계정이 없습니다.",
+          "not_confirmed": "복원에 필요한 키의 사본을 아무도 확인하지 않았습니다: {keys}.",
+          "not_confirmed_grace": "복원에 필요한 키의 사본을 보관하세요: {keys}."
+        },
+        "dump_retention": {
+          "not_configured": "외부 버킷이 설정되지 않았습니다.",
+          "no_offhost_dumps": "버킷으로 가는 데이터베이스 덤프가 없습니다.",
+          "missing": "버킷의 어떤 수명 주기 규칙도 database/를 다루지 않아 그곳의 덤프와 그 안의 삭제된 계정이 절대 삭제되지 않습니다. 이 접두사에 대한 규칙을 추가하세요.",
+          "configured": "버킷은 {days}일 후에 덤프를 삭제합니다.",
+          "unknown": "버킷이 오래된 덤프를 삭제하는 규칙이 있는지 알려 주지 않습니다. 수명 주기 규칙이 database/를 포함하는지 확인하세요."
+        }
+      },
+      "recovered": {
+        "database_dump": "데이터베이스 덤프가 다시 최신 상태입니다.",
+        "weekly_copy": "모든 계정에 다시 최근 주간 사본이 있습니다.",
+        "offhost_copies": "모든 계정에 다시 최근 외부 보관 사본이 있습니다.",
+        "restore_drill": "복원 훈련을 다시 통과했습니다.",
+        "offhost_setup": "이제 외부 보관 사본이 설정되었습니다.",
+        "recovery_kit": "복구 키트가 다시 확인되었습니다.",
+        "dump_retention": "이제 버킷의 수명 주기 규칙이 데이터베이스 덤프를 포함합니다."
+      }
     }
   },
   "achievements": {
@@ -8876,7 +9080,10 @@
       "offlineGeoUnavailableTitle": "오프라인 위치 데이터베이스가 로드되지 않았어요",
       "offlineGeoUnavailableBody": "HealthLog가 {host}의 온라인 조회로 로그인 위치를 확인하고 있어서, 모든 로그인 IP 주소가 이 서버를 벗어나요. 로컬에서 확인하려면 무료 MaxMind 계정으로 GeoLite2-City와 GeoLite2-ASN 데이터베이스를 내려받아 그 디렉터리를 컨테이너에 마운트하고 GEOLITE2_DIR가 이를 가리키게 하세요. 절차: {docsUrl}",
       "tlsPinChangedTitle": "TLS 리프 인증서 변경: {host}",
-      "tlsPinChangedBody": "{host}가 제공하는 TLS 리프의 SPKI 핀이 이제 {servedPin}인데, 알려진 핀 목록에 없어요. 기존 핀이 사라지면 핀을 검증하는 클라이언트(네이티브 앱)는 연결에 실패해요. 새 리프 핀을 다시 추출해 TLS_LEAF_SPKI_PINS와 네이티브 클라이언트 핀 목록에 추가하고, 이 인증서가 만료되는 {validTo} 전에 빌드를 배포하세요. docs/ops/tls-cert-pin.md를 참고하세요."
+      "tlsPinChangedBody": "{host}가 제공하는 TLS 리프의 SPKI 핀이 이제 {servedPin}인데, 알려진 핀 목록에 없어요. 기존 핀이 사라지면 핀을 검증하는 클라이언트(네이티브 앱)는 연결에 실패해요. 새 리프 핀을 다시 추출해 TLS_LEAF_SPKI_PINS와 네이티브 클라이언트 핀 목록에 추가하고, 이 인증서가 만료되는 {validTo} 전에 빌드를 배포하세요. docs/ops/tls-cert-pin.md를 참고하세요.",
+      "accountErasureRefusedTitle": "계정을 지우지 못했어요: {username}",
+      "accountErasureRefusedBody": "{username} 계정의 삭제 유예 기간이 끝났지만, 이 계정이 관리 프로필의 마지막 활성 보호자라서 지우지 않았어요. 계정은 계속 잠겨 있어요. 프로필에 다른 보호자를 추가하거나, 프로필을 삭제하거나, 관리자의 사용자 화면에서 삭제를 취소해 주세요.",
+      "accountErasureFailedBody": "{username} 계정의 삭제 유예 기간이 끝났지만 계정을 지우지 못했어요. 계정은 계속 잠겨 있고, 삭제할 다른 계정들 다음으로 매시간 다시 시도해요. 오류는 관리자 화면의 실패한 작업 카드에서 볼 수 있어요."
     },
     "user": {
       "telegramTestBody": "HealthLog: 연결에 성공했어요. Telegram 알림이 켜져 있어요."
@@ -9028,6 +9235,14 @@
     "checkupReminders": {
       "title": "검진 리마인더",
       "description": "검진 리마인더를 개별로 켜거나 끕니다."
+    },
+    "eventBackupHealth": "백업 상태",
+    "eventBackupHealthDesc": "백업이 멈추거나 뒤처지거나 다시 정상으로 돌아오면 보내요. 관리자에게만 보내요.",
+    "recoveryReadiness": {
+      "titleAttention": "백업에 확인이 필요해요",
+      "titleFailing": "백업이 위험해요",
+      "titleReminder": "백업이 여전히 위험해요",
+      "titleRecovered": "백업이 다시 정상이에요"
     }
   },
   "i18n": {
@@ -11054,7 +11269,6 @@
       "who5": "웰빙 점수가 50점 이하라면 좀 더 살펴볼 만해요. 원한다면 이 페이지의 PHQ-9 점검이 기분을 더 자세히 살펴봐요. 진단이 아니라 가벼운 제안이에요.",
       "sci": "이 설문의 바탕이 된 연구에서는 16점 이하가 불면증 가능성과 관련이 있었어요. 수면 문제가 계속 힘들게 한다면 전문가와 이야기해 보는 게 도움이 될 수 있어요. 진단은 아니에요."
     },
-    "validatedInEnglishNote": "이 설문은 영어로 검증된 도구예요. 문항은 원문 영어 표현 그대로 보여줘요.",
     "openDetail": "자세히 보기",
     "historyLoadError": "검사 기록을 불러오지 못했어요",
     "historyLoadErrorHint": "결과가 없다는 뜻은 아니에요. 목록을 가져오지 못했을 뿐이에요. 다시 시도해 주세요.",
@@ -11104,6 +11318,13 @@
         "belowThreshold": "지난 한 달 동안의 수면이 이 설문의 바탕이 된 연구에서 불면증 가능성이 높다고 본 범위에 있었어요.",
         "aboveThreshold": "지난 한 달 동안의 수면이 그 연구가 불면증과 연결한 범위 밖에 있었어요."
       }
+    },
+    "wording": {
+      "unvalidatedNote": "이 번역은 과학적으로 검증되지 않았어요. 결과는 참고용으로만 봐 주세요.",
+      "showOriginal": "영어 원문 보기",
+      "showTranslation": "번역 보기",
+      "resultUnvalidated": "과학적으로 검증되지 않은 번역으로 답했어요. 결과는 참고용으로만 봐 주세요.",
+      "historyUnvalidated": "과학적으로 검증되지 않은 번역으로 답함"
     }
   },
   "records": {
@@ -11631,7 +11852,8 @@
     "toast": {
       "duplicate": "이미 저장돼 있어요. 기존 문서를 표시해요.",
       "deleted": "문서를 삭제했어요",
-      "restoreFailed": "문서를 복구하지 못했어요."
+      "restoreFailed": "문서를 복구하지 못했어요.",
+      "deletedHint": "삭제한 문서는 {days}일 동안 최근 삭제됨에 남아 있어요."
     },
     "timeline": {
       "loadingMore": "더 불러오는 중…",
@@ -11676,7 +11898,8 @@
           "raster-failed": "PDF 페이지를 읽기용으로 렌더링하지 못했어요. 스캔 팩스 압축 형식이 흔한 원인이에요.",
           "provider-error": "지난번에 AI 제공자가 이 문서를 읽지 못했어요.",
           "pdf-needs-anthropic": "설정된 AI 제공자는 PDF 파일을 읽을 수 없어요. Claude 제공자나 로컬 OCR로는 읽을 수 있어요.",
-          "empty-transcription": "AI 제공자가 이 문서에서 텍스트를 찾지 못했어요."
+          "empty-transcription": "AI 제공자가 이 문서에서 텍스트를 찾지 못했어요.",
+          "resource-limit": "이 PDF는 너무 크거나 복잡해서 여기서 읽을 수 없습니다. 파일 자체는 정상이며 계속 열 수 있습니다."
         }
       },
       "loadError": "이 문서를 불러오지 못했어요.",
@@ -11748,7 +11971,7 @@
       "dismiss": "닫기",
       "empty": "이 문서에서 읽어낼 내용이 없었어요.",
       "unavailableBody": "AI 제공자를 설정하면 제목·종류·날짜를 추천해요.",
-      "unavailableLocalOcr": "AI 설정에서 로컬 OCR을 켜면 이 기기에서 이미지를 읽어요.",
+      "unavailableLocalOcr": "설정 → 모듈 → 검사에서 “이 기기에서 스캔 읽기”를 켜면 이 기기에서 이미지를 읽어요.",
       "unavailableAction": "AI 설정 열기",
       "errorGeneric": "문서를 읽지 못했어요. 다시 시도해 주세요.",
       "errorOcr": "이 이미지에서 텍스트를 읽지 못했어요.",
@@ -11760,11 +11983,13 @@
       "errorPdfNeedsVision": "PDF를 읽으려면 Claude 비전 제공자가 필요해요.",
       "errorFileType": "이 파일 형식은 읽을 수 없어요.",
       "errorNotIndexed": "문서를 먼저 읽은 뒤에 추출해 주세요.",
-      "errorLocalOcrDisabled": "AI 설정에서 로컬 OCR을 먼저 켜 주세요.",
+      "errorOutputLimit": "AI 제공자가 값을 하나도 돌려주기 전에 출력 한도에 도달했어요. 더 긴 답변을 허용하는 모델로 다시 시도해 주세요.",
+      "errorLocalOcrDisabled": "설정 → 모듈 → 검사에서 “이 기기에서 스캔 읽기”를 먼저 켜 주세요.",
       "errorProvider": "이 작업에 쓸 AI 제공자가 설정돼 있지 않아요.",
       "errorTextImageOnly": "로컬 OCR은 이미지만 읽어요. 이 파일은 읽을 수 없어요.",
       "errorConsent": "AI로 문서를 읽으려면 먼저 동의가 필요합니다.",
-      "errorUnavailable": "지금 여기에서는 AI로 문서를 읽을 수 없습니다."
+      "errorUnavailable": "지금 여기에서는 AI로 문서를 읽을 수 없습니다.",
+      "unavailableLocalOcrAction": "검사 설정 열기"
     },
     "summary": {
       "summarise": "요약하기",
@@ -11820,6 +12045,7 @@
       "extracting": "추출 중…",
       "extractHint": "이 문서에서 이미 읽은 텍스트를 사용해요. 추출한 값은 검토를 기다리며, 자동으로 저장되지 않아요.",
       "extractEmpty": "이 문서에서 추출할 수 있는 값이 없었어요.",
+      "extractIncomplete": "문서 일부를 끝까지 읽지 못해서 빠진 값이 있을 수 있어요. 목록을 문서와 비교해 주세요.",
       "failUnitRequired": "숫자 값을 저장하려면 단위가 필요해요.",
       "failUnitMismatch": "기재된 단위가 이 지표에 저장된 단위와 달라요. 수정한 뒤 검토를 다시 완료해 주세요.",
       "failGeneric": "이 값을 저장하지 못했어요.",
@@ -11867,6 +12093,7 @@
       "loadMore": "더 불러오기",
       "stateImported": "HealthLog에 있음",
       "stateDeleted": "HealthLog에서 삭제됨",
+      "stateInTrash": "최근 삭제됨에 있음",
       "selectedCount": "최대 {max}개 중 {count}개 선택",
       "importAction": "{count}개 가져오기",
       "importing": "문서를 하나씩 가져오는 중…",
@@ -11880,7 +12107,9 @@
         "importedLinked": "가져오고 연결함",
         "duplicate": "이미 HealthLog에 있음",
         "duplicateLinked": "이미 HealthLog에 있음, 이제 연결됨",
-        "deleted": "HealthLog에서 삭제됨, 그대로 둠"
+        "deleted": "HealthLog에서 삭제됨, 그대로 둠",
+        "restored": "최근 삭제됨에서 복구했어요",
+        "restoredLinked": "최근 삭제됨에서 복구하고 연결했어요"
       },
       "errors": {
         "unavailable": "이 서버에서는 문서 보관함이 활성화되어 있지 않습니다.",
@@ -11924,8 +12153,32 @@
     "deleteConfirm": {
       "titleOne": "이 문서를 삭제할까요?",
       "titleMany": "문서 {count}개를 삭제할까요?",
-      "body": "삭제 직후에는 되돌릴 수 있습니다. 30일이 지나면 완전히 삭제됩니다.",
+      "body": "삭제한 문서는 {days}일 동안 최근 삭제됨에 남아 있다가 완전히 삭제됩니다.",
       "action": "삭제"
+    },
+    "trash": {
+      "title": "최근 삭제됨",
+      "subtitle": "삭제한 문서는 {days}일 동안 여기 남아 있다가 완전히 삭제됩니다.",
+      "back": "문서",
+      "entryLabel": "최근 삭제됨 ({count})",
+      "loadError": "최근 삭제됨을 불러오지 못했어요.",
+      "emptyTitle": "최근 삭제됨이 비어 있어요",
+      "emptyDescription": "삭제한 문서는 완전히 삭제되기 전까지 {days}일 동안 여기서 기다려요.",
+      "count": "삭제한 문서 ({count})",
+      "restoreAll": "모두 복구",
+      "restore": "복구",
+      "purge": "지금 삭제",
+      "deletedOn": "{date}에 삭제함.",
+      "removesIn": "{days}일 후 완전히 삭제됩니다.",
+      "removesSoon": "하루 안에 완전히 삭제됩니다.",
+      "restored": "문서를 복구했어요",
+      "openRestored": "열기",
+      "restoreDuplicate": "같은 문서가 이미 저장되어 있어서 이 사본은 복구할 수 없어요.",
+      "restorePartial": "{total}개 중 {failed}개를 복구하지 못했어요",
+      "purged": "문서를 완전히 삭제했어요",
+      "purgeFailed": "문서를 삭제하지 못했어요.",
+      "purgeConfirmTitle": "이 문서를 완전히 삭제할까요?",
+      "purgeConfirmBody": "대기 기간이 끝나기 전에 지금 삭제되며 복구할 수 없습니다."
     }
   },
   "selfDescription": {
@@ -12610,7 +12863,8 @@
         "entryHint": "{name} 님이 이 기록을 직접 관리할 준비가 되었을 때.",
         "methodSso": "{name}님은 링크를 사용할 때 통합 로그인(SSO)으로 로그인합니다.",
         "methodBoth": "{name}님은 비밀번호를 정하거나 통합 로그인(SSO)으로 로그인할 수 있습니다."
-      }
+      },
+      "deleteBodyGrace": "{name} 님에 대해 기록한 모든 것이 프로필과 함께 사라져요. 측정값, 약, 문서, 메모 전부요. 프로필은 바로 잠기고 {days}일 뒤에 완전히 지워져요. 그때까지는 이 서버의 관리자가 삭제를 취소할 수 있어요."
     },
     "toast": {
       "savedTo": "{name} 님의 기록에 저장했어요"
@@ -12665,6 +12919,7 @@
       "practitionerContactRestore": "{name} 님이 주소록 항목을 복원했어요",
       "illnessDayLogUpsert": "{name} 님이 아픈 날 하루를 기록했어요",
       "medicationUpdate": "{name} 님이 약을 수정했어요",
+      "medicationCourseEnd": "{name} 님이 복용 기간을 끝냈어요",
       "medicationDelete": "{name} 님이 약을 삭제했어요",
       "medicationGlp1Update": "{name} 님이 GLP-1 요법을 수정했어요",
       "medicationScheduleCreate": "{name} 님이 복용 일정을 추가했어요",
@@ -12712,6 +12967,9 @@
       "rejectedDoseUpdate": "{name} 님이 복용 기록을 수정하려다 거절됐어요",
       "rejectedDoseImport": "{name} 님이 복용 기록을 불러오려다 거절됐어요",
       "rejectedTrackedValue": "{name} 님이 추적 값을 기록하려다 거절됐어요",
+      "rejectedTrackedValueTypeCreate": "{name} 님이 추적 값 종류를 추가하려다 거절됐어요",
+      "rejectedTrackedValueTypeUpdate": "{name} 님이 추적 값 종류를 수정하려다 거절됐어요",
+      "rejectedMedicationLayout": "{name} 님이 약 목록 순서를 바꾸려다 거절됐어요",
       "deniedDoseImport": "{name} 님이 시작한 복용 기록 불러오기를 대기열에 넣지 못했어요",
       "anamnesisFactCreate": "{name} 님이 건강 배경 항목을 추가했어요",
       "customMetricCreate": "{name} 님이 추적 값 종류를 추가했어요",
@@ -13021,7 +13279,8 @@
     "backgroundScan": "백그라운드에서 읽고 있어요. 느린 모델이면 몇 분 걸릴 수 있어요.",
     "waitingForWorker": "백그라운드 작업자를 기다리고 있어요. 계속 그대로라면 서버의 작업자가 실행 중이 아닐 수 있어요.",
     "errorWorkerUnavailable": "지금은 백그라운드 작업자를 사용할 수 없어요. 잠시 후 다시 시도하거나 서버 운영자에게 확인을 요청하세요.",
-    "errorTimedOut": "AI 응답 시간 설정보다 읽기가 오래 걸렸어요. 다시 시도하거나 AI 설정에서 응답 시간을 늘려 주세요."
+    "errorTimedOut": "AI 응답 시간 설정보다 읽기가 오래 걸렸어요. 다시 시도하거나 AI 설정에서 응답 시간을 늘려 주세요.",
+    "errorReaderBusy": "문서 판독기가 다른 작업으로 바빠요. 1분 후에 다시 시도하세요."
   },
   "symptoms": {
     "add": "새 증상",

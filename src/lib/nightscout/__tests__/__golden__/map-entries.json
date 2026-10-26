@@ -1,0 +1,72 @@
+{
+  "parsed": [
+    { "id": "6650a1b2c3d4e5f600000001", "sgv": 112, "date": 1772445600000 },
+    { "id": "6650a1b2c3d4e5f600000002", "sgv": 187.5, "date": 1772445900000 },
+    { "id": null, "sgv": 95, "date": 1772446200000 },
+    { "id": null, "sgv": 78, "date": 1772448300000 },
+    { "id": "6650a1b2c3d4e5f600000013", "sgv": 0, "date": 0 },
+    { "id": "", "sgv": 401, "date": 1772448600000 }
+  ],
+  "mapped": [
+    {
+      "externalId": "ns:6650a1b2c3d4e5f600000001",
+      "measurement": {
+        "type": "BLOOD_GLUCOSE",
+        "value": 112,
+        "unit": "mg/dL",
+        "measuredAt": "2026-03-02T10:00:00.000Z",
+        "externalId": "ns:6650a1b2c3d4e5f600000001"
+      }
+    },
+    {
+      "externalId": "ns:6650a1b2c3d4e5f600000002",
+      "measurement": {
+        "type": "BLOOD_GLUCOSE",
+        "value": 187.5,
+        "unit": "mg/dL",
+        "measuredAt": "2026-03-02T10:05:00.000Z",
+        "externalId": "ns:6650a1b2c3d4e5f600000002"
+      }
+    },
+    {
+      "externalId": "ns:date:1772446200000",
+      "measurement": {
+        "type": "BLOOD_GLUCOSE",
+        "value": 95,
+        "unit": "mg/dL",
+        "measuredAt": "2026-03-02T10:10:00.000Z",
+        "externalId": "ns:date:1772446200000"
+      }
+    },
+    {
+      "externalId": "ns:date:1772448300000",
+      "measurement": {
+        "type": "BLOOD_GLUCOSE",
+        "value": 78,
+        "unit": "mg/dL",
+        "measuredAt": "2026-03-02T10:45:00.000Z",
+        "externalId": "ns:date:1772448300000"
+      }
+    },
+    {
+      "externalId": "ns:6650a1b2c3d4e5f600000013",
+      "measurement": {
+        "type": "BLOOD_GLUCOSE",
+        "value": 0,
+        "unit": "mg/dL",
+        "measuredAt": "1970-01-01T00:00:00.000Z",
+        "externalId": "ns:6650a1b2c3d4e5f600000013"
+      }
+    },
+    {
+      "externalId": "ns:date:1772448600000",
+      "measurement": {
+        "type": "BLOOD_GLUCOSE",
+        "value": 401,
+        "unit": "mg/dL",
+        "measuredAt": "2026-03-02T10:50:00.000Z",
+        "externalId": "ns:date:1772448600000"
+      }
+    }
+  ]
+}

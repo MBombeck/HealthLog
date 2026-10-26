@@ -6,10 +6,9 @@ import {
   apiError,
   apiSuccess,
   getClientIp,
-  returnAllZodIssues,
-  safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import {
   type MedicationImportPayload,
@@ -106,7 +105,7 @@ export const POST = apiHandler(
 
     const { id } = await params;
     // v1.5.5 — route ownership through the shared helper so the
-    // 404 leak shape stays identical across every `[id]/**` handler.
+    // 404 leak shape stays identical across every `[id]` handler.
     const guard = await assertMedicationOwnership(id, user.id);
     if (guard) return guard;
 
@@ -121,55 +120,48 @@ export const POST = apiHandler(
       return apiError("Too many import submissions, try again later", 429);
     }
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    // v1.4.43 — CSV import; preserve the `Invalid format:` prefix
+    // semantics for the existing client-side branch by setting the
+    // `errorCode: "medication.intake.import.invalid_format"` meta.
+    // The client UI can now branch on `meta.errorCode` while every
+    // Zod issue is also surfaced under `details.issues`. Bulk-import
+    // path → audit breadcrumb keyed
+    // `medications.intake.import.validation-failed`.
+    const parsed = await parseJsonBody(request, validatedImportSchema, {
       maxBytes: 1024 * 1024,
+      // Support both direct arrays and object-with-array payloads
+      input: (body) =>
+        Array.isArray(body)
+          ? body
+          : typeof body === "object" && body !== null
+            ? Object.values(body).find((value) => Array.isArray(value))
+            : null,
+      action: "medications.intake.import.validation-failed",
+      countIssues: true,
+      meta: { medication_id: id },
+      errorCode: "medication.intake.import.invalid_format",
+      onInvalid: (error) => {
+        // v1.4.49 — strip `message` from the audit-ledger row; CSV
+        // imports carry caller-provided strings that Zod may echo.
+        const auditIssues = sanitiseZodIssues(error.issues, {
+          stripValuesFromMessage: true,
+        });
+        // v1.37.0 — through `auditLog()` rather than a bare `prisma.auditLog
+        // .create`, because that helper is the only writer that stamps
+        // `actorUserId`. Filed under the resolved record either way; without
+        // the stamp a manager's malformed payload would read as the owner's own.
+        void auditLog("medications.intake.import.validation-failed", {
+          userId: user.id,
+          details: {
+            issues: auditIssues,
+            medicationId: id,
+          },
+        }).catch(() => {
+          /* swallow — 422 response is the contract */
+        });
+      },
     });
-
-    if (jsonError) return jsonError;
-
-    // Support both direct arrays and object-with-array payloads
-    const payload = Array.isArray(body)
-      ? body
-      : typeof body === "object" && body !== null
-        ? Object.values(body).find((value) => Array.isArray(value))
-        : null;
-
-    const parsed = validatedImportSchema.safeParse(payload);
-    if (!parsed.success) {
-      // v1.4.43 — CSV import; preserve the `Invalid format:` prefix
-      // semantics for the existing client-side branch by setting the
-      // `errorCode: "medication.intake.import.invalid_format"` meta.
-      // The client UI can now branch on `meta.errorCode` while every
-      // Zod issue is also surfaced under `details.issues`. Bulk-import
-      // path → audit breadcrumb keyed
-      // `medications.intake.import.validation-failed`.
-      const issues = sanitiseZodIssues(parsed.error.issues);
-      annotate({
-        action: { name: "medications.intake.import.validation-failed" },
-        meta: { issue_count: issues.length, medication_id: id },
-      });
-      // v1.4.49 — strip `message` from the audit-ledger row; CSV
-      // imports carry caller-provided strings that Zod may echo.
-      const auditIssues = sanitiseZodIssues(parsed.error.issues, {
-        stripValuesFromMessage: true,
-      });
-      // v1.37.0 — through `auditLog()` rather than a bare `prisma.auditLog
-      // .create`, because that helper is the only writer that stamps
-      // `actorUserId`. Filed under the resolved record either way; without the
-      // stamp a manager's malformed payload would read as the owner's own.
-      void auditLog("medications.intake.import.validation-failed", {
-        userId: user.id,
-        details: {
-          issues: auditIssues,
-          medicationId: id,
-        },
-      }).catch(() => {
-        /* swallow — 422 response is the contract */
-      });
-      return returnAllZodIssues(parsed.error, 422, {
-        errorCode: "medication.intake.import.invalid_format",
-      });
-    }
+    if (!parsed.ok) return parsed.error;
 
     const entries = parsed.data;
     const normalized: MedicationImportPayload = {

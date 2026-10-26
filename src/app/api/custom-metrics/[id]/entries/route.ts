@@ -6,9 +6,9 @@ import {
   apiSuccess,
   getClientIp,
   returnAllZodIssues,
-  safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserCorrelationPatterns } from "@/lib/cache/invalidate";
 import { serialiseCustomMetricEntry } from "@/lib/custom-metrics/custom-metric-store";
@@ -117,29 +117,25 @@ async function postCustomMetricEntry(
     return apiError("Custom metric not found", 404);
   }
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, createCustomMetricEntrySchema, {
     maxBytes: 16 * 1024,
+    action: "custom-metric.entry.create.validation-failed",
+    countIssues: true,
+    meta: { customMetricId: id },
+    onInvalid: (error) => {
+      const auditIssues = sanitiseZodIssues(error.issues, {
+        stripValuesFromMessage: true,
+      });
+      // v1.36.x — through `auditLog()`, the only writer that stamps the actor.
+      void auditLog("custom-metric.entry.create.validation-failed", {
+        userId: user.id,
+        details: { issues: auditIssues, customMetricId: id },
+      }).catch(() => {
+        /* swallow — the 422 response is the contract */
+      });
+    },
   });
-  if (jsonError) return jsonError;
-
-  const parsed = createCustomMetricEntrySchema.safeParse(body);
-  if (!parsed.success) {
-    annotate({
-      action: { name: "custom-metric.entry.create.validation-failed" },
-      meta: { issue_count: parsed.error.issues.length, customMetricId: id },
-    });
-    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
-      stripValuesFromMessage: true,
-    });
-    // v1.36.x — through `auditLog()`, the only writer that stamps the actor.
-    void auditLog("custom-metric.entry.create.validation-failed", {
-      userId: user.id,
-      details: { issues: auditIssues, customMetricId: id },
-    }).catch(() => {
-      /* swallow — the 422 response is the contract */
-    });
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const { value, measuredAt, note } = parsed.data;
 

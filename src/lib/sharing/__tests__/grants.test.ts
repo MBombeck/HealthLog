@@ -13,15 +13,15 @@
  */
 import { describe, expect, it } from "vitest";
 
+import { inviteGrant } from "@/lib/sharing/grants";
 import {
   grantAllows,
   grantCoversDomain,
   grantState,
-  inviteGrant,
   isGrantActive,
   normaliseScope,
   type GrantLifecycle,
-} from "@/lib/sharing/grants";
+} from "@/lib/sharing/grant-access";
 import { SHARE_DOMAINS } from "@/lib/sharing/scope";
 import { Prisma } from "@/generated/prisma/client";
 import type { AccountGrant } from "@/generated/prisma/client";

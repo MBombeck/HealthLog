@@ -26,7 +26,8 @@
         "syncVersion": 1,
         "deletedAt": null,
         "createdAt": "2026-05-01T08:20:03.000Z",
-        "updatedAt": "2026-05-01T08:21:03.000Z"
+        "updatedAt": "2026-05-01T08:21:03.000Z",
+        "ingestTokenId": null
       },
       {
         "id": "<id:2>",
@@ -50,7 +51,8 @@
         "syncVersion": 1,
         "deletedAt": null,
         "createdAt": "2026-05-01T08:20:02.000Z",
-        "updatedAt": "2026-05-01T08:21:02.000Z"
+        "updatedAt": "2026-05-01T08:21:02.000Z",
+        "ingestTokenId": null
       },
       {
         "id": "<id:3>",
@@ -74,7 +76,8 @@
         "syncVersion": 4,
         "deletedAt": "<tombstone>",
         "createdAt": "2026-05-01T08:20:01.000Z",
-        "updatedAt": "2026-05-01T08:21:01.000Z"
+        "updatedAt": "2026-05-01T08:21:01.000Z",
+        "ingestTokenId": null
       },
       {
         "id": "<id:4>",
@@ -98,7 +101,8 @@
         "syncVersion": 1,
         "deletedAt": null,
         "createdAt": "2026-05-01T08:20:04.000Z",
-        "updatedAt": "2026-05-01T08:21:04.000Z"
+        "updatedAt": "2026-05-01T08:21:04.000Z",
+        "ingestTokenId": null
       },
       {
         "id": "<id:5>",
@@ -122,7 +126,8 @@
         "syncVersion": 1,
         "deletedAt": null,
         "createdAt": "2026-05-01T08:20:00.000Z",
-        "updatedAt": "2026-05-01T08:21:00.000Z"
+        "updatedAt": "2026-05-01T08:21:00.000Z",
+        "ingestTokenId": null
       }
     ],
     "IntradayCumulativeProfile": [
@@ -207,6 +212,7 @@
         "snoozedUntil": "2026-06-30T12:34:56.789Z",
         "startsOn": "2026-06-10T00:00:00.000Z",
         "endsOn": "2026-06-16T00:00:00.000Z",
+        "endedAt": "2026-06-16T09:30:00.000Z",
         "oneShot": true,
         "asNeeded": true,
         "trackIntake": false,
@@ -226,8 +232,8 @@
         "reorderLeadDays": 3,
         "externalSource": "WEB",
         "externalId": "rt-Medication-externalId",
-        "createdAt": "2026-05-01T11:50:00.000Z",
-        "updatedAt": "2026-05-01T11:51:00.000Z"
+        "createdAt": "2026-05-01T11:51:00.000Z",
+        "updatedAt": "2026-05-01T11:52:00.000Z"
       }
     ],
     "MedicationSchedule": [
@@ -398,9 +404,10 @@
         "userId": "round-trip-owner",
         "startsOn": "2026-03-01T00:00:00.000Z",
         "endsOn": "2026-03-07T00:00:00.000Z",
+        "endedAt": null,
         "noteEncrypted": "<sealed:v1:the March flu>",
-        "createdAt": "2026-05-02T00:46:00.000Z",
-        "updatedAt": "2026-05-02T00:47:00.000Z"
+        "createdAt": "2026-05-02T00:47:00.000Z",
+        "updatedAt": "2026-05-02T00:48:00.000Z"
       },
       {
         "id": "<id:19>",
@@ -408,9 +415,10 @@
         "userId": "round-trip-owner",
         "startsOn": "2026-06-10T00:00:00.000Z",
         "endsOn": "2026-06-16T00:00:00.000Z",
+        "endedAt": "2026-06-16T09:30:00.000Z",
         "noteEncrypted": null,
-        "createdAt": "2026-05-02T00:46:01.000Z",
-        "updatedAt": "2026-05-02T00:47:01.000Z"
+        "createdAt": "2026-05-02T00:47:01.000Z",
+        "updatedAt": "2026-05-02T00:48:01.000Z"
       }
     ],
     "MedicationIngredient": [
@@ -1231,8 +1239,9 @@
         "sourceId": "4711",
         "sourceInstance": "https://paperless.example.test",
         "aiReadDeferred": true,
-        "createdAt": "2026-05-04T01:24:00.000Z",
-        "updatedAt": "2026-05-04T01:25:00.000Z",
+        "extractionIncomplete": true,
+        "createdAt": "2026-05-04T01:25:00.000Z",
+        "updatedAt": "2026-05-04T01:26:00.000Z",
         "deletedAt": null
       },
       {
@@ -1260,8 +1269,9 @@
         "sourceId": null,
         "sourceInstance": null,
         "aiReadDeferred": false,
-        "createdAt": "2026-05-04T01:24:01.000Z",
-        "updatedAt": "2026-05-04T01:25:01.000Z",
+        "extractionIncomplete": false,
+        "createdAt": "2026-05-04T01:25:01.000Z",
+        "updatedAt": "2026-05-04T01:26:01.000Z",
         "deletedAt": "<tombstone>"
       }
     ],
@@ -1780,6 +1790,7 @@
         "userId": "round-trip-owner",
         "instrument": "GAD7",
         "locale": "en",
+        "wording": null,
         "version": "standard",
         "responsesEncrypted": "<sealed:v1:{\"items\":[1,1,0,1,0,1,0],\"schema\":1}>",
         "totalScore": 4,
@@ -1792,14 +1803,15 @@
         "externalId": null,
         "syncVersion": 0,
         "deletedAt": "<tombstone>",
-        "createdAt": "2026-05-05T13:56:01.000Z",
-        "updatedAt": "2026-05-05T13:57:01.000Z"
+        "createdAt": "2026-05-05T13:57:01.000Z",
+        "updatedAt": "2026-05-05T13:58:01.000Z"
       },
       {
         "id": "<id:100>",
         "userId": "round-trip-owner",
         "instrument": "PHQ9",
         "locale": "de",
+        "wording": "unvalidated_translation",
         "version": "rt-MentalHealthAssessment-version",
         "responsesEncrypted": "<sealed:v1:{\"items\":[2,1,2,2,1,1,2,1,2],\"schema\":1}>",
         "totalScore": 14,
@@ -1812,8 +1824,8 @@
         "externalId": "rt-MentalHealthAssessment-externalId",
         "syncVersion": 3,
         "deletedAt": null,
-        "createdAt": "2026-05-05T13:56:00.000Z",
-        "updatedAt": "2026-05-05T13:57:00.000Z"
+        "createdAt": "2026-05-05T13:57:00.000Z",
+        "updatedAt": "2026-05-05T13:58:00.000Z"
       }
     ],
     "ConsentReceipt": [
@@ -1862,9 +1874,19 @@
         "updatedAt": "2026-05-05T18:52:00.000Z"
       }
     ],
-    "PersonalRecord": [
+    "DocumentImportKey": [
       {
         "id": "<id:105>",
+        "userId": "round-trip-owner",
+        "sourceSystem": "PAPRA",
+        "sourceId": "doc_deleted",
+        "sourceInstance": "https://papra.example",
+        "createdAt": "2026-07-03T09:00:00.000Z"
+      }
+    ],
+    "PersonalRecord": [
+      {
+        "id": "<id:106>",
         "userId": "round-trip-owner",
         "metricType": "WALKING_RUNNING_DISTANCE",
         "metricSlot": "running_10km_time",
@@ -1875,10 +1897,10 @@
         "sourceMeasurementId": null,
         "source": "APPLE_HEALTH",
         "externalId": "workout-pr-10km",
-        "createdAt": "2026-05-05T20:31:02.000Z"
+        "createdAt": "2026-05-05T22:11:02.000Z"
       },
       {
-        "id": "<id:106>",
+        "id": "<id:107>",
         "userId": "round-trip-owner",
         "metricType": "WALKING_RUNNING_DISTANCE",
         "metricSlot": "running_5km_time",
@@ -1889,10 +1911,10 @@
         "sourceMeasurementId": null,
         "source": "APPLE_HEALTH",
         "externalId": "workout-pr-5km",
-        "createdAt": "2026-05-05T20:31:01.000Z"
+        "createdAt": "2026-05-05T22:11:01.000Z"
       },
       {
-        "id": "<id:107>",
+        "id": "<id:108>",
         "userId": "round-trip-owner",
         "metricType": "WEIGHT",
         "metricSlot": null,
@@ -1903,28 +1925,28 @@
         "sourceMeasurementId": "<id:5>",
         "source": "MANUAL",
         "externalId": null,
-        "createdAt": "2026-05-05T20:31:00.000Z"
+        "createdAt": "2026-05-05T22:11:00.000Z"
       }
     ],
     "UserAchievement": [
       {
-        "id": "<id:108>",
+        "id": "<id:109>",
         "userId": "round-trip-owner",
         "achievementId": "intake-total-10",
         "unlockedAt": "2026-02-21T10:15:00.000Z",
-        "createdAt": "2026-05-05T22:04:00.000Z"
+        "createdAt": "2026-05-05T23:44:00.000Z"
       },
       {
-        "id": "<id:109>",
+        "id": "<id:110>",
         "userId": "round-trip-owner",
         "achievementId": "retired-badge-from-an-older-release",
         "unlockedAt": "2025-11-05T08:00:00.000Z",
-        "createdAt": "2026-05-05T22:04:01.000Z"
+        "createdAt": "2026-05-05T23:44:01.000Z"
       }
     ],
     "EnvironmentContext": [
       {
-        "id": "<id:110>",
+        "id": "<id:111>",
         "userId": "round-trip-owner",
         "date": "2026-06-15",
         "locationEncrypted": "<sealed:v1:{\"lat\":41.4,\"lon\":2.2,\"label\":\"Barcelona\"}>",
@@ -1964,11 +1986,11 @@
         "aqHours": 3,
         "aqFetchedAt": "2026-06-30T12:34:56.789Z",
         "fetchedAt": "2026-06-16T03:15:00.000Z",
-        "createdAt": "2026-05-06T00:20:00.000Z",
-        "updatedAt": "2026-05-06T00:21:00.000Z"
+        "createdAt": "2026-05-06T02:00:00.000Z",
+        "updatedAt": "2026-05-06T02:01:00.000Z"
       },
       {
-        "id": "<id:111>",
+        "id": "<id:112>",
         "userId": "round-trip-owner",
         "date": "2026-07-01",
         "locationEncrypted": "<sealed:v1:{\"lat\":52.5,\"lon\":13.4,\"label\":\"Berlin\"}>",
@@ -2008,24 +2030,24 @@
         "aqHours": null,
         "aqFetchedAt": null,
         "fetchedAt": "2026-07-02T03:15:00.000Z",
-        "createdAt": "2026-05-06T00:20:01.000Z",
-        "updatedAt": "2026-05-06T00:21:01.000Z"
+        "createdAt": "2026-05-06T02:00:01.000Z",
+        "updatedAt": "2026-05-06T02:01:01.000Z"
       }
     ],
     "EnvironmentTravelLocation": [
       {
-        "id": "<id:112>",
+        "id": "<id:113>",
         "userId": "round-trip-owner",
         "startDate": "2026-06-10",
         "endDate": "2026-06-20",
         "locationEncrypted": "<sealed:v1:{\"lat\":41.4,\"lon\":2.2,\"label\":\"Barcelona\"}>",
-        "createdAt": "2026-05-06T01:25:00.000Z",
-        "updatedAt": "2026-05-06T01:26:00.000Z"
+        "createdAt": "2026-05-06T03:05:00.000Z",
+        "updatedAt": "2026-05-06T03:06:00.000Z"
       }
     ],
     "DawarichDay": [
       {
-        "id": "<id:113>",
+        "id": "<id:114>",
         "userId": "round-trip-owner",
         "date": "2026-06-15",
         "totalDistanceM": 48300,
@@ -2036,13 +2058,13 @@
         "countryCodeEncrypted": "<sealed:v1:country:ES>",
         "isTravelDay": true,
         "fetchedAt": "2026-06-16T03:20:00.000Z",
-        "createdAt": "2026-05-06T03:11:00.000Z",
-        "updatedAt": "2026-05-06T03:12:00.000Z"
+        "createdAt": "2026-05-06T04:51:00.000Z",
+        "updatedAt": "2026-05-06T04:52:00.000Z"
       }
     ],
     "MedicationScheduleRevision": [
       {
-        "id": "<id:114>",
+        "id": "<id:115>",
         "medicationId": "<id:7>",
         "validFrom": "2026-01-01T00:00:00.000Z",
         "validUntil": "2026-03-01T00:00:00.000Z",
@@ -2055,10 +2077,10 @@
         ],
         "source": "ARCHIVED",
         "supersededByRevisionId": null,
-        "createdAt": "2026-05-06T04:47:00.000Z"
+        "createdAt": "2026-05-06T06:27:00.000Z"
       },
       {
-        "id": "<id:115>",
+        "id": "<id:116>",
         "medicationId": "<id:7>",
         "validFrom": "2026-02-01T00:00:00.000Z",
         "validUntil": "2026-03-01T00:00:00.000Z",
@@ -2070,11 +2092,11 @@
           }
         ],
         "source": "ARCHIVED",
-        "supersededByRevisionId": "<id:116>",
-        "createdAt": "2026-05-06T04:47:02.000Z"
+        "supersededByRevisionId": "<id:117>",
+        "createdAt": "2026-05-06T06:27:02.000Z"
       },
       {
-        "id": "<id:116>",
+        "id": "<id:117>",
         "medicationId": "<id:7>",
         "validFrom": "2026-03-01T00:00:00.000Z",
         "validUntil": "2026-05-01T00:00:00.000Z",
@@ -2087,23 +2109,23 @@
         ],
         "source": "MANUAL",
         "supersededByRevisionId": null,
-        "createdAt": "2026-05-06T04:47:01.000Z"
+        "createdAt": "2026-05-06T06:27:01.000Z"
       }
     ],
     "MedicationEfficacyTarget": [
       {
-        "id": "<id:117>",
+        "id": "<id:118>",
         "medicationId": "<id:7>",
         "measurementType": "WEIGHT",
         "biomarkerId": "<id:26>",
         "primary": false,
-        "createdAt": "2026-05-06T06:25:00.000Z",
-        "updatedAt": "2026-05-06T06:26:00.000Z"
+        "createdAt": "2026-05-06T08:05:00.000Z",
+        "updatedAt": "2026-05-06T08:06:00.000Z"
       }
     ],
     "EcgRecording": [
       {
-        "id": "<id:118>",
+        "id": "<id:119>",
         "userId": "round-trip-owner",
         "source": "MANUAL",
         "externalRecordingId": "round-trip-signal-1",
@@ -2116,13 +2138,13 @@
         "averageHeartRate": 88,
         "rhythmClassification": "IRREGULAR",
         "measurementId": "<id:2>",
-        "createdAt": "2026-05-06T08:13:00.000Z",
-        "updatedAt": "2026-05-06T08:14:00.000Z"
+        "createdAt": "2026-05-06T09:53:00.000Z",
+        "updatedAt": "2026-05-06T09:54:00.000Z"
       }
     ],
     "OnboardingRecord": [
       {
-        "id": "<id:119>",
+        "id": "<id:120>",
         "userId": "round-trip-owner",
         "needsJson": {
           "areas": [
@@ -2161,80 +2183,80 @@
         },
         "modulesDerivedAt": "2026-07-01T08:00:00.000Z",
         "completedAt": "2026-07-01T08:00:00.000Z",
-        "createdAt": "2026-05-06T09:47:00.000Z",
-        "updatedAt": "2026-05-06T09:48:00.000Z"
+        "createdAt": "2026-05-06T11:27:00.000Z",
+        "updatedAt": "2026-05-06T11:28:00.000Z"
       }
     ],
     "BiomarkerAlias": [
       {
-        "id": "<id:120>",
+        "id": "<id:121>",
         "userId": "round-trip-owner",
         "biomarkerId": "<id:26>",
         "name": "Ferr.",
         "nameFolded": "ferr.",
         "source": "IMPORT_CHOICE",
-        "createdAt": "2026-05-06T11:26:00.000Z"
+        "createdAt": "2026-05-06T13:06:00.000Z"
       }
     ],
     "BiomarkerMerge": [
       {
-        "id": "<id:121>",
+        "id": "<id:122>",
         "userId": "round-trip-owner",
         "targetBiomarkerId": "<id:26>",
         "sourceBiomarkerId": "merged-away-marker",
         "sourceName": "Ferritin (Serum)",
         "readingCount": 3,
-        "mergedAt": "2026-05-06T13:06:00.000Z"
+        "mergedAt": "2026-05-06T14:46:00.000Z"
       }
     ],
     "LabResultDocumentLink": [
       {
-        "id": "<id:122>",
+        "id": "<id:123>",
         "labResultId": "<id:25>",
         "documentId": "<id:65>",
-        "userId": "round-trip-owner",
-        "createdAt": "2026-05-06T14:44:00.000Z"
-      }
-    ],
-    "EncounterMedicationLink": [
-      {
-        "id": "<id:123>",
-        "encounterId": "<id:70>",
-        "medicationId": "<id:7>",
         "userId": "round-trip-owner",
         "createdAt": "2026-05-06T16:24:00.000Z"
       }
     ],
-    "EncounterVaccinationLink": [
+    "EncounterMedicationLink": [
       {
         "id": "<id:124>",
         "encounterId": "<id:70>",
-        "vaccinationId": "<id:76>",
+        "medicationId": "<id:7>",
         "userId": "round-trip-owner",
         "createdAt": "2026-05-06T18:04:00.000Z"
       }
     ],
-    "MedicationDocumentLink": [
+    "EncounterVaccinationLink": [
       {
         "id": "<id:125>",
-        "medicationId": "<id:7>",
-        "documentId": "<id:65>",
+        "encounterId": "<id:70>",
+        "vaccinationId": "<id:76>",
         "userId": "round-trip-owner",
         "createdAt": "2026-05-06T19:44:00.000Z"
       }
     ],
-    "MedicationConditionLink": [
+    "MedicationDocumentLink": [
       {
         "id": "<id:126>",
         "medicationId": "<id:7>",
-        "episodeId": "<id:32>",
+        "documentId": "<id:65>",
         "userId": "round-trip-owner",
         "createdAt": "2026-05-06T21:24:00.000Z"
       }
     ],
-    "AccountGrant": [
+    "MedicationConditionLink": [
       {
         "id": "<id:127>",
+        "medicationId": "<id:7>",
+        "episodeId": "<id:32>",
+        "userId": "round-trip-owner",
+        "createdAt": "2026-05-06T23:04:00.000Z"
+      }
+    ],
+    "AccountGrant": [
+      {
+        "id": "<id:128>",
         "grantorId": "round-trip-owner",
         "granteeId": "parity-delegate",
         "access": "WRITE",
@@ -2243,13 +2265,13 @@
             "measurements"
           ]
         },
-        "invitedAt": "2026-05-07T02:25:00.000Z",
+        "invitedAt": "2026-05-07T04:05:00.000Z",
         "acceptedAt": "2026-07-02T09:00:00.000Z",
         "revokedAt": null,
         "revokedBy": null,
         "expiresAt": null,
         "lastUsedAt": null,
-        "createdAt": "2026-05-07T02:31:00.000Z"
+        "createdAt": "2026-05-07T04:11:00.000Z"
       }
     ],
     "User": {
@@ -2261,8 +2283,11 @@
       "oidcIssuer": "rt-User-oidcIssuer",
       "oidcSub": "rt-User-oidcSub",
       "createdAt": "2026-06-30T12:34:56.789Z",
-      "updatedAt": "2026-05-06T23:08:00.000Z",
+      "updatedAt": "2026-05-07T00:48:00.000Z",
       "managedProfileAt": "2026-06-30T12:34:56.789Z",
+      "deletionRequestedAt": "2026-06-30T12:34:56.789Z",
+      "deletionPurgeAt": "2026-06-30T12:34:56.789Z",
+      "deletionRequestedById": "rt-User-deletionRequestedById",
       "heightCm": 2.5,
       "dateOfBirth": "2026-06-30T12:34:56.789Z",
       "gender": "FEMALE",
@@ -2363,9 +2388,6 @@
       },
       "moduleListLayoutJson": {
         "roundTrip": "rt-User-moduleListLayoutJson"
-      },
-      "previewFeaturesJson": {
-        "roundTrip": "rt-User-previewFeaturesJson"
       },
       "activityGoalsJson": {
         "stepsPerMonth": 250000,
@@ -2496,10 +2518,6 @@
       },
       "documentMaxFileBytes": 3,
       "documentQuotaBytes": "bigint:5",
-      "encryptionKeyBackupConfirmedAt": "2026-06-30T12:34:56.789Z",
-      "encryptionKeyBackupConfirmedKeyId": "rt-AppSettings-encryptionKeyBackupConfirmedKeyId",
-      "encryptionKeyBackupConfirmedFingerprint": "rt-AppSettings-encryptionKeyBackupConfirmedFingerprint",
-      "encryptionKeyBackupConfirmedByUserId": "rt-AppSettings-encryptionKeyBackupConfirmedByUserId",
       "correlationSeasonalEngineSince": "2026-06-30T12:34:56.789Z",
       "pulseDayMeanMethod": "hour_mean_v1",
       "pulseDayMeanAppliedAt": "2026-06-30T12:34:56.789Z",

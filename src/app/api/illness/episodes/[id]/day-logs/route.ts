@@ -24,8 +24,8 @@ import {
   apiError,
   getClientIp,
   returnAllZodIssues,
-  safeJson,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { requireIllnessEnabled } from "@/lib/illness/gate";
 import {
   illnessDayLogInputSchema,
@@ -152,21 +152,13 @@ export const POST = apiHandler(
     const owned = await loadOwnedEpisode(id, user.id);
     if (!owned.ok) return owned.response;
 
-    const { data: rawBody, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, illnessDayLogInputSchema, {
       maxBytes: 16 * 1024,
+      action: "illness.day-log.validation-failed",
+      countIssues: true,
+      errorCode: "illness.day-log.invalid",
     });
-    if (jsonError) return jsonError;
-
-    const parsed = illnessDayLogInputSchema.safeParse(rawBody);
-    if (!parsed.success) {
-      annotate({
-        action: { name: "illness.day-log.validation-failed" },
-        meta: { issue_count: parsed.error.issues.length },
-      });
-      return returnAllZodIssues(parsed.error, 422, {
-        errorCode: "illness.day-log.invalid",
-      });
-    }
+    if (!parsed.ok) return parsed.error;
 
     const tz = user.timezone ?? DEFAULT_TIMEZONE;
     const result = await upsertIllnessDayLog(user.id, id, parsed.data, tz);

@@ -55,12 +55,8 @@ import type { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { assertAiEgress } from "@/lib/ai/capabilities/egress";
@@ -75,6 +71,7 @@ import {
   AllProvidersFailedError,
   runRawCompletionWithFallback,
 } from "@/lib/ai/provider-runner";
+import { spentOnFailure } from "@/lib/ai/reasoning/answerless";
 import { resolveProvider, resolveProviderChain } from "@/lib/ai/provider";
 import { singleUserTurn } from "@/lib/ai/types";
 
@@ -164,18 +161,16 @@ async function handleExtract(request: NextRequest): Promise<Response> {
   const userId = auth.user.id;
 
   // Body parse + Zod validation.
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const validated = await parseJsonBody(request, requestSchema, {
     maxBytes: 16 * 1024,
+    onInvalid: (error) => {
+      annotate({
+        action: { name: "medications.extract.invalid" },
+        meta: { issues: error.issues.length },
+      });
+    },
   });
-  if (jsonError) return jsonError;
-  const validated = requestSchema.safeParse(body);
-  if (!validated.success) {
-    annotate({
-      action: { name: "medications.extract.invalid" },
-      meta: { issues: validated.error.issues.length },
-    });
-    return returnAllZodIssues(validated.error);
-  }
+  if (!validated.ok) return validated.error;
 
   const { text, locale, today: todayOverride } = validated.data;
 
@@ -236,13 +231,9 @@ async function handleExtract(request: NextRequest): Promise<Response> {
     locale,
   });
 
-  // Atomically reserve the day's budget BEFORE the provider call. The old
-  // `enforceBudget` read-then-write left a TOCTOU window (concurrent calls
-  // could each observe a sub-cap total and all proceed) AND passed no cap, so
-  // it always measured against `OPERATOR_COST_CAP` — rationing a self-hoster
-  // paying for their own key by the operator's ceiling. `resolveDailyCap`
-  // charges the operator ceiling only when the chain's primary is the
-  // operator's own credential; every other chain gets the user-plan ceiling.
+  // Atomically reserve the day's budget BEFORE the provider call, against the
+  // cost owner's ceiling: the operator's only when the chain's primary is the
+  // operator's own credential, the user-plan ceiling for every other chain.
   const dateKey = accountToday;
   const estimatedTokens =
     MAX_OUTPUT_TOKENS +
@@ -274,11 +265,9 @@ async function handleExtract(request: NextRequest): Promise<Response> {
       params: singleUserTurn({
         system: systemPrompt,
         user: userPrompt,
-        // Low temperature because we want a deterministic field
-        // extractor, not a creative rephrase.
+        // A deterministic field extractor, not a creative rephrase.
         temperature: 0.1,
-        // The reply body is a single small JSON object; 600 is well
-        // over the empirical max we have seen on a 2k-char input.
+        // One small JSON object; well over the largest seen on 2k chars.
         maxTokens: MAX_OUTPUT_TOKENS,
         // Parsed with `parseModelJson` (JSON.parse) below — opt the OpenAI /
         // Codex chains into their strict JSON-object mode (gated on this flag).
@@ -286,12 +275,17 @@ async function handleExtract(request: NextRequest): Promise<Response> {
       }),
     });
   } catch (err) {
-    // Nothing was generated — refund the whole reservation rather than bill an
-    // invented figure. Best-effort: a failed refund must not mask the 503.
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
-      servedBy: null,
-      reservedOwner: reservation.owner,
-    }).catch(() => {});
+    // Nothing was generated — refund the reservation rather than bill an
+    // invented figure, keeping only what the failed hops reported spending
+    // (#1279). Best-effort: a failed refund must not mask the 503.
+    await reconcileSpend(
+      userId,
+      reservation.reserved,
+      spentOnFailure(err),
+      dateKey,
+      0,
+      { servedBy: null, reservedOwner: reservation.owner },
+    ).catch(() => {});
     if (err instanceof AllProvidersFailedError) {
       annotate({
         action: { name: "medications.extract.provider-failed" },
@@ -302,12 +296,12 @@ async function handleExtract(request: NextRequest): Promise<Response> {
     throw err;
   }
 
-  // Reconcile against what the provider actually reported. This runs for the
-  // unusable-reply branches too: those tokens were burned upstream even though
-  // the body could not be used, so they stay on the ledger rather than funding
-  // a free retry loop. Falls back to the reservation when the provider reports
-  // no count, so an unreported generation is never billed as zero.
-  const actualTokens = completion.result.tokensUsed ?? reservation.reserved;
+  // What the provider reported, plus (#1279) what the hops that failed before
+  // it spent; for the unusable-reply branches too, since those tokens were
+  // burned upstream. No count falls back to the reservation, never to zero.
+  const actualTokens =
+    (completion.result.tokensUsed ?? reservation.reserved) +
+    completion.tokensSpent;
   await reconcileSpend(userId, reservation.reserved, actualTokens, dateKey, 0, {
     servedBy: completion.workingProvider.providerType,
     reservedOwner: reservation.owner,

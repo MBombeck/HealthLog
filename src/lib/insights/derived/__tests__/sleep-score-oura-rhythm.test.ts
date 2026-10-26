@@ -20,7 +20,8 @@ vi.mock("@/lib/tz/resolver", () => ({
 }));
 
 import { prisma } from "@/lib/db";
-import { mapSleep, type OuraSleep } from "@/lib/oura/client";
+import { mapSleep } from "@/lib/oura/map";
+import { type OuraSleep } from "@/lib/oura/wire-types";
 import {
   computeSleepScore,
   reconstructNights,

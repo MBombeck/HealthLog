@@ -13,6 +13,7 @@ import {
   apiSuccess,
   returnAllZodIssues,
   safeJson,
+  isJsonContentType,
 } from "@/lib/api-response";
 import { loadDawarichConnection } from "@/lib/dawarich/connection";
 import { yesterdayKey } from "@/lib/dawarich/sync";
@@ -34,7 +35,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   // The body is optional: no body is the nightly window.
   let body: unknown = {};
-  if (request.headers.get("content-type")?.includes("application/json")) {
+  if (isJsonContentType(request.headers.get("content-type"))) {
     const read = await safeJson(request, { maxBytes: 1024 });
     if (read.error) return read.error;
     body = read.data;

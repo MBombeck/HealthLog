@@ -67,7 +67,7 @@ const VORSORGE_READ_SITES: ReadonlyArray<{ file: string; surface: string }> = [
     surface: "the insights preventive-care block",
   },
   {
-    file: "src/lib/mcp/tools.ts",
+    file: "src/lib/mcp/tools/get-preventive-care.ts",
     surface: "the MCP get_preventive_care tool",
   },
 ];

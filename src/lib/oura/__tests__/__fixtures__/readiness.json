@@ -1,0 +1,71 @@
+[
+  {
+    "id": "readiness-0001",
+    "day": "2026-03-02",
+    "timestamp": "2026-03-02T00:00:00+00:00",
+    "score": 82,
+    "temperature_deviation": -0.21,
+    "temperature_trend_deviation": 0.05,
+    "contributors": {
+      "activity_balance": 78,
+      "body_temperature": 95,
+      "hrv_balance": 70,
+      "previous_day_activity": 84,
+      "previous_night": 80,
+      "recovery_index": 90,
+      "resting_heart_rate": 88,
+      "sleep_balance": 76
+    }
+  },
+  {
+    "id": "readiness-0002",
+    "day": "2026-03-03",
+    "score": 75,
+    "temperature_deviation": 0.35
+  },
+  {
+    "id": "readiness-0003",
+    "day": "2026-03-04",
+    "score": null,
+    "temperature_deviation": 0.1,
+    "contributors": null
+  },
+  {
+    "id": "readiness-0004",
+    "day": "2026-03-05",
+    "timestamp": "2026-03-05T00:00:00+00:00",
+    "score": 0,
+    "temperature_deviation": 0
+  },
+  {
+    "id": "readiness-0005",
+    "day": "2026-03-06",
+    "timestamp": "2026-03-06T00:00:00+00:00",
+    "score": null,
+    "temperature_deviation": null
+  },
+  {
+    "id": "readiness-0006",
+    "day": "2026-03-07",
+    "timestamp": "not-a-date",
+    "score": 70,
+    "temperature_deviation": 0.2
+  },
+  {
+    "id": "readiness-0007",
+    "day": "2026-03-08",
+    "timestamp": "2026-03-08T06:15:00+02:00",
+    "score": 88.456,
+    "temperature_deviation": -0.125
+  },
+  {
+    "id": "readiness-0008",
+    "day": "2026-03-29",
+    "score": 64
+  },
+  {
+    "id": "readiness-0009",
+    "day": "2026-11-01",
+    "temperature_deviation": 0.48
+  }
+]

@@ -30,7 +30,10 @@ const scorePillVariants = cva(
         info: "bg-info/15 text-info",
         warning: "bg-warning/15 text-warning",
         destructive: "bg-destructive/15 text-destructive",
-        neutral: "bg-secondary text-muted-foreground",
+        // The secondary surface's own foreground: muted text on the secondary
+        // fill measured 3.6:1 in the dark theme, under the AA floor a pill
+        // label needs.
+        neutral: "bg-secondary text-secondary-foreground",
       },
       numeric: {
         true: "font-semibold tabular-nums",

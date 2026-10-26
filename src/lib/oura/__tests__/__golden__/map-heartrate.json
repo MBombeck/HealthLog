@@ -1,0 +1,68 @@
+[
+  {
+    "timestamp": "2026-03-02T08:00:00Z",
+    "bpm": 62,
+    "row": {
+      "type": "PULSE",
+      "value": 62,
+      "unit": "bpm",
+      "measuredAt": "2026-03-02T08:00:00.000Z",
+      "fieldTag": "hr",
+      "externalId": "heartrate:2026-03-02T08:00:00.000Z"
+    }
+  },
+  { "timestamp": "2026-03-02T08:05:00Z", "bpm": 19, "row": null },
+  {
+    "timestamp": "2026-03-02T03:00:00Z",
+    "bpm": 20,
+    "row": {
+      "type": "PULSE",
+      "value": 20,
+      "unit": "bpm",
+      "measuredAt": "2026-03-02T03:00:00.000Z",
+      "fieldTag": "hr",
+      "externalId": "heartrate:2026-03-02T03:00:00.000Z"
+    }
+  },
+  {
+    "timestamp": "2026-03-02T17:30:00Z",
+    "bpm": 250,
+    "row": {
+      "type": "PULSE",
+      "value": 250,
+      "unit": "bpm",
+      "measuredAt": "2026-03-02T17:30:00.000Z",
+      "fieldTag": "hr",
+      "externalId": "heartrate:2026-03-02T17:30:00.000Z"
+    }
+  },
+  { "timestamp": "2026-03-02T17:31:00Z", "bpm": 251, "row": null },
+  {
+    "timestamp": "2026-03-02T09:00:00.000Z",
+    "bpm": 71.6,
+    "row": {
+      "type": "PULSE",
+      "value": 72,
+      "unit": "bpm",
+      "measuredAt": "2026-03-02T09:00:00.000Z",
+      "fieldTag": "hr",
+      "externalId": "heartrate:2026-03-02T09:00:00.000Z"
+    }
+  },
+  { "timestamp": "2026-03-02T09:05:00Z", "bpm": null, "row": null },
+  { "timestamp": null, "bpm": 66, "row": null },
+  { "timestamp": "not-a-date", "bpm": 66, "row": null },
+  {
+    "timestamp": "2026-03-02T10:15:30+02:00",
+    "bpm": 74,
+    "row": {
+      "type": "PULSE",
+      "value": 74,
+      "unit": "bpm",
+      "measuredAt": "2026-03-02T08:15:30.000Z",
+      "fieldTag": "hr",
+      "externalId": "heartrate:2026-03-02T08:15:30.000Z"
+    }
+  },
+  { "timestamp": null, "bpm": 55, "row": null }
+]

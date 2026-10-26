@@ -40,11 +40,7 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { enqueueDocumentSummary } from "@/lib/jobs/document-summary";
 import { annotate } from "@/lib/logging/context";
 import { logCaught } from "@/lib/logging/signal";
-
-export const DOCUMENT_SUMMARY_CATCHUP_QUEUE = "document-summary-catchup";
-
-/** Serial concurrency — cheap discovery + fan-out enqueues. */
-export const DOCUMENT_SUMMARY_CATCHUP_CONCURRENCY = 1;
+import { DOCUMENT_SUMMARY_CATCHUP_QUEUE } from "./document-summary-catchup-queue";
 
 /** Discovery page size (id-only). */
 const PAGE_SIZE = 100;

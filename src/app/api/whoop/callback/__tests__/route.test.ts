@@ -52,14 +52,18 @@ vi.mock("@/lib/auth/audit", () => ({ auditLog: vi.fn() }));
 vi.mock("@/lib/crypto", () => ({ encrypt: (s: string) => `enc:${s}` }));
 
 vi.mock("@/lib/whoop/client", () => ({
-  WHOOP_OAUTH_SCOPE: "read:recovery",
-  exchangeCode: vi.fn(async () => ({
-    access_token: "at",
-    refresh_token: "rt",
-    expires_in: 3600,
-    scope: "read:recovery",
-  })),
   fetchProfile: vi.fn(async () => ({ user_id: 42 })),
+}));
+vi.mock("@/lib/whoop/oauth", () => ({
+  WHOOP_OAUTH_SCOPE: "read:recovery",
+  whoopOAuth: {
+    exchange: vi.fn(async () => ({
+      access_token: "at",
+      refresh_token: "rt",
+      expires_in: 3600,
+      scope: "read:recovery",
+    })),
+  },
 }));
 
 vi.mock("@/lib/whoop/credentials", () => ({

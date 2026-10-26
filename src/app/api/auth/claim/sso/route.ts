@@ -20,12 +20,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
@@ -44,12 +40,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const gate = await claimGate(request, "sso", (await getSession()) !== null);
   if (gate.refusal) return gate.refusal;
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, claimSsoSchema, {
     maxBytes: 4 * 1024,
   });
-  if (jsonError) return jsonError;
-  const parsed = claimSsoSchema.safeParse(body);
-  if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+  if (!parsed.ok) return parsed.error;
   const { token, username } = parsed.data;
 
   // The link first, so the username probe below is no oracle for anybody

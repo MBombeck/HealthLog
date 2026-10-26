@@ -1,0 +1,190 @@
+[
+  {
+    "label": "run with heart rate, power and a detail read",
+    "summaryHasHeartRate": true,
+    "row": {
+      "externalId": "10000000001",
+      "sportType": "running",
+      "startedAt": "2026-03-02T06:00:00.000Z",
+      "endedAt": "2026-03-02T06:55:00.000Z",
+      "durationSec": 3120,
+      "totalEnergyKcal": 712.4,
+      "totalDistanceM": 10234.5,
+      "avgHeartRate": 152,
+      "maxHeartRate": 178,
+      "elevationM": 85.2,
+      "metadata": {
+        "stravaName": "Morning Run",
+        "stravaDescription": "Easy loop around the park",
+        "elapsedTimeSec": 3300,
+        "stravaType": "TrailRun",
+        "averageWatts": 245.3,
+        "weightedAverageWatts": 252,
+        "deviceWatts": true,
+        "averageCadence": 86.5,
+        "trainer": false,
+        "commute": false,
+        "gearId": "gear-0001"
+      },
+      "summaryOnly": false
+    }
+  },
+  {
+    "label": "summary-only ride without heart rate",
+    "summaryHasHeartRate": false,
+    "row": {
+      "externalId": "10000000002",
+      "sportType": "cycling",
+      "startedAt": "2026-03-03T11:30:00.000Z",
+      "endedAt": "2026-03-03T12:55:00.000Z",
+      "durationSec": 4500,
+      "totalEnergyKcal": null,
+      "totalDistanceM": 32500,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "elevationM": 210,
+      "metadata": {
+        "stravaName": "Lunch Ride",
+        "elapsedTimeSec": 5100,
+        "stravaType": "Ride",
+        "averageWatts": 180.5,
+        "deviceWatts": false,
+        "trainer": true,
+        "commute": true
+      },
+      "summaryOnly": true
+    }
+  },
+  {
+    "label": "summary without a start, filled from the detail",
+    "summaryHasHeartRate": false,
+    "row": {
+      "externalId": "10000000003",
+      "sportType": "walking",
+      "startedAt": "2026-03-04T14:00:00.000Z",
+      "endedAt": "2026-03-04T14:50:00.000Z",
+      "durationSec": 2700,
+      "totalEnergyKcal": 0,
+      "totalDistanceM": 4200,
+      "avgHeartRate": 98,
+      "maxHeartRate": 122,
+      "elevationM": 12,
+      "metadata": {
+        "stravaName": "Afternoon Walk",
+        "elapsedTimeSec": 3000,
+        "stravaType": "Walk"
+      },
+      "summaryOnly": false
+    }
+  },
+  {
+    "label": "legacy type only",
+    "summaryHasHeartRate": false,
+    "row": {
+      "externalId": "10000000004",
+      "sportType": "hiking",
+      "startedAt": "2026-03-07T08:00:00.000Z",
+      "endedAt": "2026-03-07T11:00:00.000Z",
+      "durationSec": 10800,
+      "totalEnergyKcal": null,
+      "totalDistanceM": 14000.25,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "elevationM": null,
+      "metadata": { "stravaName": "Weekend Hike", "stravaType": "Hike" },
+      "summaryOnly": true
+    }
+  },
+  {
+    "label": "unknown sport, moving time only",
+    "summaryHasHeartRate": false,
+    "row": {
+      "externalId": "10000000005",
+      "sportType": "other",
+      "startedAt": "2026-03-08T23:00:00.000Z",
+      "endedAt": "2026-03-08T23:30:00.000Z",
+      "durationSec": 1800,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "elevationM": null,
+      "metadata": { "stravaType": "SomethingStravaAddedLater" },
+      "summaryOnly": true
+    }
+  },
+  {
+    "label": "no sport label anywhere",
+    "summaryHasHeartRate": false,
+    "row": {
+      "externalId": "10000000006",
+      "sportType": "other",
+      "startedAt": "2026-03-09T07:00:00.000Z",
+      "endedAt": "2026-03-09T07:25:00.000Z",
+      "durationSec": 1500,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "elevationM": null,
+      "metadata": { "elapsedTimeSec": 1500, "stravaType": "Workout" },
+      "summaryOnly": true
+    }
+  },
+  {
+    "label": "zero and negative values",
+    "summaryHasHeartRate": true,
+    "row": {
+      "externalId": "10000000007",
+      "sportType": "cycling",
+      "startedAt": "2026-03-10T19:00:00.000Z",
+      "endedAt": "2026-03-10T19:00:00.000Z",
+      "durationSec": 0,
+      "totalEnergyKcal": null,
+      "totalDistanceM": 0,
+      "avgHeartRate": null,
+      "maxHeartRate": 0,
+      "elevationM": null,
+      "metadata": { "elapsedTimeSec": 0, "stravaType": "Virtual Ride" },
+      "summaryOnly": false
+    }
+  },
+  {
+    "label": "detail sport type used when the summary has none",
+    "summaryHasHeartRate": false,
+    "row": {
+      "externalId": "10000000008",
+      "sportType": "strength",
+      "startedAt": "2026-03-11T05:45:00.000Z",
+      "endedAt": "2026-03-11T06:26:00.000Z",
+      "durationSec": 2400,
+      "totalEnergyKcal": 250.5,
+      "totalDistanceM": null,
+      "avgHeartRate": 112,
+      "maxHeartRate": null,
+      "elevationM": null,
+      "metadata": { "elapsedTimeSec": 2460, "stravaType": "weight_training" },
+      "summaryOnly": false
+    }
+  },
+  { "label": "no start anywhere", "summaryHasHeartRate": false, "row": null },
+  { "label": "unparseable start", "summaryHasHeartRate": false, "row": null },
+  {
+    "label": "no durations at all",
+    "summaryHasHeartRate": false,
+    "row": {
+      "externalId": "10000000011",
+      "sportType": "yoga",
+      "startedAt": "2026-03-12T20:00:00.000Z",
+      "endedAt": "2026-03-12T20:00:00.000Z",
+      "durationSec": 0,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "elevationM": null,
+      "metadata": { "stravaType": "Yoga" },
+      "summaryOnly": true
+    }
+  }
+]

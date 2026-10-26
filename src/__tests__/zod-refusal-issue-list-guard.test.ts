@@ -16,7 +16,10 @@
  * every `if (!<result>.success)` block whose identifier came from a `safeParse`
  * in that file is read on its own, and only the blocks that answer 422 are
  * judged — a 400, a 401 or a 403 raised off a parse result is a different
- * refusal and is left alone.
+ * refusal and is left alone. A route that reads its body through
+ * `parseJsonBody` has no such block: each call is a site of its own, carrying
+ * the issue list by construction, and its `message` option is read as the
+ * refused string by the token sweep below.
  *
  * The second half of the same audit item is the dotted token in `error`, and
  * it is checked by its own sweep at the bottom of this file rather than by the
@@ -94,11 +97,58 @@ interface RefusalSite {
   carriesIssues: boolean;
 }
 
+/**
+ * Every `parseJsonBody(…)` call in a file, as its paren-balanced source text
+ * with the line it starts on. The helper reads, validates and refuses in one
+ * call (`src/lib/api/body.ts`), so a route that uses it has no
+ * `if (!x.success)` block for the matcher above to find; its refusal is the
+ * helper's envelope, which always carries `details.issues`.
+ */
+function parseJsonBodyCalls(src: string): { text: string; line: number }[] {
+  const calls: { text: string; line: number }[] = [];
+  for (const m of src.matchAll(/\bparseJsonBody\s*\(/g)) {
+    const start = m.index ?? 0;
+    let depth = 0;
+    let end = src.length;
+    for (let j = start + m[0].length - 1; j < src.length; j++) {
+      if (src[j] === "(") depth++;
+      else if (src[j] === ")") {
+        depth--;
+        if (depth === 0) {
+          end = j + 1;
+          break;
+        }
+      }
+    }
+    calls.push({
+      text: src.slice(start, end),
+      line: src.slice(0, start).split("\n").length,
+    });
+  }
+  return calls;
+}
+
+/** The status a `parseJsonBody` call refuses with: its `status` option, else 422. */
+function parseJsonBodyStatus(call: string): number {
+  const m = /\bstatus:\s*(\d{3})\b/.exec(call);
+  return m ? Number(m[1]) : 422;
+}
+
 /** Every 422 refusal decided by a `safeParse` result, across the route tree. */
 function scanRefusalSites(): RefusalSite[] {
   const sites: RefusalSite[] = [];
   for (const file of routeFiles(API_ROOT)) {
     const src = readFileSync(file, "utf8");
+    // A `parseJsonBody` refusal is a 422 with the issue list unless the call
+    // names another status, which is then a different refusal, as below.
+    for (const call of parseJsonBodyCalls(src)) {
+      if (parseJsonBodyStatus(call.text) !== 422) continue;
+      sites.push({
+        route: relative(process.cwd(), file).split(sep).join("/"),
+        line: call.line,
+        carriesIssues: true,
+      });
+    }
     // Identifiers bound to a parse result. Both call styles are in the tree:
     // `schema.safeParse(body)` and the standalone `z.safeParse(schema, body)`.
     const parsed = new Set<string>();
@@ -228,12 +278,20 @@ function tokenRefusals(): string[] {
       /apiValidationError\(\s*"([^"]+)"/g,
       /new HttpError\(\s*422\s*,\s*"([^"]+)"/g,
     ];
+    const refused: string[] = [];
     for (const shape of shapes) {
-      for (const m of src.matchAll(shape)) {
-        if (!DOTTED_TOKEN.test(m[1])) continue;
-        const key = `${route} ${m[1]}`;
-        if (!found.includes(key)) found.push(key);
-      }
+      for (const m of src.matchAll(shape)) refused.push(m[1]);
+    }
+    // `parseJsonBody`'s `message` option is the 422's `error` string.
+    for (const call of parseJsonBodyCalls(src)) {
+      if (parseJsonBodyStatus(call.text) !== 422) continue;
+      const m = /\bmessage:\s*"([^"]+)"/.exec(call.text);
+      if (m) refused.push(m[1]);
+    }
+    for (const text of refused) {
+      if (!DOTTED_TOKEN.test(text)) continue;
+      const key = `${route} ${text}`;
+      if (!found.includes(key)) found.push(key);
     }
   }
   return found;

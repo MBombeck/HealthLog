@@ -17,7 +17,7 @@ describe("<ScorePill>", () => {
 
   it("defaults to the neutral tone", () => {
     const html = renderToStaticMarkup(<ScorePill>Low</ScorePill>);
-    expect(html).toContain("bg-secondary text-muted-foreground");
+    expect(html).toContain("bg-secondary text-secondary-foreground");
     expect(html).toContain('data-tone="neutral"');
   });
 

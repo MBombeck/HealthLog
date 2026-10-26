@@ -17,12 +17,8 @@ import { type NextRequest } from "next/server";
 
 import { requireAiCapability } from "@/lib/ai/capabilities/gate";
 import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
-import {
-  apiError,
-  apiValidationError,
-  safeJson,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiError } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -65,21 +61,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
   await requireAiCapability("coach", { pickDecides: true });
   await requireAiCapability("documentAi", { pickDecides: true });
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, fencedChatRequestSchema, {
     maxBytes: 64 * 1024,
+    errorCode: "coach.fenced.invalid",
+    message: "Invalid fenced chat request",
   });
-  if (jsonError) return jsonError;
-  const parsed = fencedChatRequestSchema.safeParse(body);
-  if (!parsed.success) {
-    return apiValidationError(
-      "Invalid fenced chat request",
-      sanitiseZodIssues(parsed.error.issues),
-      422,
-      {
-        errorCode: "coach.fenced.invalid",
-      },
-    );
-  }
+  if (!parsed.ok) return parsed.error;
   const {
     conversationId,
     message,

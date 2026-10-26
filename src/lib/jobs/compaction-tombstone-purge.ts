@@ -48,6 +48,7 @@
  * means as stored, and each account's delete takes the fold lock so it never
  * lands between a re-fold's reads.
  */
+// account-deletion(file): a retention sweep over rows already deleted, with its own retention clock; it does no work for an account.
 import { createHash } from "node:crypto";
 import type { Job } from "pg-boss";
 
@@ -67,8 +68,7 @@ import {
   findCompactionTombstones,
 } from "@/lib/measurements/folded-window";
 import { prisma as defaultPrisma } from "@/lib/db";
-
-export const COMPACTION_TOMBSTONE_PURGE_QUEUE = "compaction-tombstone-purge";
+import { COMPACTION_TOMBSTONE_PURGE_QUEUE } from "./compaction-tombstone-purge-queue";
 
 /** One key for every send, so a queued run absorbs a second boot's send. */
 export const COMPACTION_TOMBSTONE_PURGE_SINGLETON_KEY =

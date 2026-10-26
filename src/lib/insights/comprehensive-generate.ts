@@ -244,6 +244,8 @@ async function rerollBriefingParagraph(args: {
    * slow-backend allowance the main generation does.
    */
   effectiveTimeoutMs: number;
+  /** The caller's bound: a re-roll it gave up on sends nothing more. */
+  signal?: AbortSignal;
 }): Promise<{ text: string; providerType: string } | null> {
   let cached: Record<string, unknown>;
   try {
@@ -277,6 +279,7 @@ async function rerollBriefingParagraph(args: {
       // generation is not clipped at the client's 60 s default mid-stream.
       // v1.25 — honours the per-user response-timeout setting (see caller).
       timeoutMs: args.effectiveTimeoutMs,
+      signal: args.signal,
       stage: "reroll",
       // v1.41 — the re-roll is a fresh pass at the paragraph, so it may think
       // like the generation it replaces; the operator's switch still wins.
@@ -342,8 +345,8 @@ async function rerollBriefingParagraph(args: {
 
 /**
  * Parse + (best-effort) validate a comprehensive provider reply. Returns the
- * parsed payload (validated when it matches `insightResultSchema`, else the
- * raw object so the richer optional blocks survive), or null when the reply
+ * parsed payload (validated when it matches `insightResultSchema`, which
+ * keeps the richer optional blocks, else the raw object), or null when the reply
  * is not valid JSON even after fence-stripping. Null signals the caller to
  * run its one corrective retry.
  */
@@ -716,13 +719,10 @@ interface GenerateOptions {
   /** Skip the 24 h cache short-circuit and force a fresh generation. */
   force?: boolean;
   /**
-   * v1.9.0 — abort the generation when the caller has given up on it.
-   *
-   * The on-demand `forceWarmUser` path bounds the comprehensive step with a
-   * timeout and then proceeds to warm the per-status caches itself. Without
-   * this signal a comprehensive that resolves AFTER the timeout would still
-   * write a cache row + timestamp the caller no longer expects. The signal
-   * lets the caller cut the generation off before the cache write.
+   * The caller's bound gave up on the generation (the warms bound it, then
+   * move on). Every provider call carries it, so the call in flight is torn
+   * down and no later one is sent (#1279), and a generation that still
+   * resolves writes no cache row the caller no longer expects.
    */
   signal?: AbortSignal;
 }
@@ -1141,6 +1141,7 @@ export async function generateComprehensiveInsight(
         features,
         comparison: groundingExtra,
         effectiveTimeoutMs,
+        signal,
       });
       if (rerolled) {
         // The reroll rewrites content derived from the scope captured before
@@ -1232,6 +1233,7 @@ export async function generateComprehensiveInsight(
       // generation is not clipped at the client's 60 s default mid-stream.
       // v1.25 — honours the per-user response-timeout setting.
       timeoutMs: effectiveTimeoutMs,
+      signal,
       stage: "generate",
       // v1.41 — the briefing is one of the few background jobs that may
       // reason (medium on the person's own provider, low on the operator's,
@@ -1328,6 +1330,7 @@ export async function generateComprehensiveInsight(
         // v1.21.5 — wider upstream budget; see the first generation call.
         // v1.25 — honours the per-user response-timeout setting.
         timeoutMs: effectiveTimeoutMs,
+        signal,
         stage: "json-retry",
       });
       result = retry.result;
@@ -1421,6 +1424,7 @@ export async function generateComprehensiveInsight(
           // v1.21.5 — wider upstream budget; see the first generation call.
           // v1.25 — honours the per-user response-timeout setting.
           timeoutMs: effectiveTimeoutMs,
+          signal,
           stage: "grounding-retry",
         });
         const retryInsights = parseComprehensiveResult(retry.result.content);
@@ -1553,6 +1557,7 @@ export async function generateComprehensiveInsight(
         temperature: AI_BUDGETS.comprehensive.temperature,
         maxTokens: resolveInsightsMaxTokens(),
         timeoutMs: effectiveTimeoutMs,
+        signal,
         stage: "screen-retry",
       });
       const retryInsights = parseComprehensiveResult(retry.result.content);
@@ -1594,15 +1599,10 @@ export async function generateComprehensiveInsight(
     }
   }
 
-  // v1.9.0 — the caller abandoned this generation (its bounded timeout
-  // fired and it has moved on to warm the per-status caches itself). Bail
-  // out before the cache write so a late-resolving comprehensive cannot
-  // stamp a timestamp/text the caller no longer expects. The provider call
-  // already cost what it cost; what we must NOT do now is touch the cache.
+  // The caller abandoned this generation (its bound fired). Bail out before
+  // the cache write, annotated and marked like every other failure: an
+  // abandoned generation is a real "no fresh briefing tonight" outcome.
   if (signal?.aborted) {
-    // v1.28.30 — annotated + marked like every other failure: an abandoned
-    // generation is a real "no fresh briefing tonight" outcome, and the read
-    // path needs the marker to render an honest state instead of silence.
     return failBeforeProvider(userId, locale, "aborted");
   }
 

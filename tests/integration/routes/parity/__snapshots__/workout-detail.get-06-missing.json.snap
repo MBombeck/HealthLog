@@ -1,0 +1,25 @@
+{
+  "status": 404,
+  "body": {
+    "data": null,
+    "error": "Workout not found",
+    "meta": {
+      "errorCode": "http.not_found",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 404,
+      "action": {
+        "name": "workouts.detail"
+      },
+      "meta": {
+        "workoutId": "cmissingworkout000000000"
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": []
+}

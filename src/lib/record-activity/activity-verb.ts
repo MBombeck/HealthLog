@@ -61,6 +61,10 @@ export function recordActivityVerbLine(
   action: string,
   name: string,
 ): string {
+  const refused = refusedAttemptVerb(t, action, name);
+  if (refused !== null) return refused;
+  const medication = medicationManageVerb(t, action, name);
+  if (medication !== null) return medication;
   switch (action) {
     case "measurement.create":
       return t("recordSharing.activityVerb.measurementCreate", { name });
@@ -253,61 +257,6 @@ export function recordActivityVerbLine(
         name,
       });
 
-    case "medication.update":
-      return t("recordSharing.activityVerb.medicationUpdate", { name });
-    case "medication.category.custom.create":
-      return t("recordSharing.activityVerb.medicationCategoryCreate", {
-        name,
-      });
-    case "medication.delete":
-      return t("recordSharing.activityVerb.medicationDelete", { name });
-    case "medication.ingredients.update":
-      return t("recordSharing.activityVerb.medicationIngredientsUpdate", {
-        name,
-      });
-    case "medication.glp1.update":
-      return t("recordSharing.activityVerb.medicationGlp1Update", { name });
-    case "medication.schedule_revision.created":
-      return t("recordSharing.activityVerb.medicationScheduleCreate", { name });
-    case "medication.schedule_revision.updated":
-      return t("recordSharing.activityVerb.medicationScheduleUpdate", { name });
-    case "medication.schedule_revision.deleted":
-      return t("recordSharing.activityVerb.medicationScheduleDelete", { name });
-    case "medication.inventory.create":
-      return t("recordSharing.activityVerb.medicationInventoryCreate", {
-        name,
-      });
-    case "medication.inventory.update":
-      return t("recordSharing.activityVerb.medicationInventoryUpdate", {
-        name,
-      });
-    case "medication.inventory.delete":
-      return t("recordSharing.activityVerb.medicationInventoryDelete", {
-        name,
-      });
-    case "medication.sideEffect.delete":
-      return t("recordSharing.activityVerb.medicationSideEffectDelete", {
-        name,
-      });
-    case "medication.intake.update":
-      return t("recordSharing.activityVerb.medicationIntakeUpdate", { name });
-    case "medication.intake.delete":
-      return t("recordSharing.activityVerb.medicationIntakeDelete", { name });
-    case "medication.intake.bulk_delete":
-      return t("recordSharing.activityVerb.medicationIntakeBulkDelete", {
-        name,
-      });
-    // The one that empties a medication's whole history in one request. It
-    // says so, because "removed several doses" would read as a correction.
-    case "medication.intake.purge":
-      return t("recordSharing.activityVerb.medicationIntakePurge", { name });
-    case "medication.intake.import.kickoff":
-      return t("recordSharing.activityVerb.medicationIntakeImport", { name });
-    case "medication.intake.history.import.kickoff":
-      return t("recordSharing.activityVerb.medicationIntakeHistoryImport", {
-        name,
-      });
-
     case "moodEntry.create":
       return t("recordSharing.activityVerb.moodEntryCreate", { name });
     case "moodEntry.update":
@@ -342,6 +291,54 @@ export function recordActivityVerbLine(
     case "health-record.export":
       return t("recordSharing.activityVerb.healthRecordExport", { name });
 
+    /* ---------------------------------------------------------------- */
+    /* Acts a delegable module performs outside its own route file.      */
+    /*                                                                   */
+    /* The two below are filed by library modules the routes import — a  */
+    /* background worker's completion row and a lifecycle reconciliation */
+    /* — and a guard that walked only `route.ts` could not see either.   */
+    /* Both carry the actor through, so both reach the owner's feed.     */
+    /* ---------------------------------------------------------------- */
+
+    case "medication.intake.import":
+      return t("recordSharing.activityVerb.medicationIntakeImportFinished", {
+        name,
+      });
+    case "medication.oneShot.reconciled":
+      return t("recordSharing.activityVerb.medicationOneShotReconciled", {
+        name,
+      });
+
+    case "anamnesis.fact.create":
+      return t("recordSharing.activityVerb.anamnesisFactCreate", { name });
+    case "customMetric.create":
+      return t("recordSharing.activityVerb.customMetricCreate", { name });
+    case "customMetric.update":
+      return t("recordSharing.activityVerb.customMetricUpdate", { name });
+    case "customMetric.delete":
+      return t("recordSharing.activityVerb.customMetricDelete", { name });
+    case "documents.inbound.store":
+      return t("recordSharing.activityVerb.documentStore", { name });
+    case "documents.inbound.update":
+      return t("recordSharing.activityVerb.documentUpdate", { name });
+    case "documents.inbound.discard":
+      return t("recordSharing.activityVerb.documentDiscard", { name });
+
+    default:
+      return t("recordSharing.activity.acted", { name });
+  }
+}
+
+/**
+ * The sentence for an attempt that was refused, or null when `action` is no
+ * refusal. Asked first by `recordActivityVerbLine`.
+ */
+function refusedAttemptVerb(
+  t: Translator,
+  action: string,
+  name: string,
+): string | null {
+  switch (action) {
     /* ---------------------------------------------------------------- */
     /* Attempts that were REFUSED, and things that happened around them. */
     /*                                                                   */
@@ -407,47 +404,95 @@ export function recordActivityVerbLine(
       return t("recordSharing.activityVerb.rejectedDoseImport", { name });
     case "custom-metric.entry.create.validation-failed":
       return t("recordSharing.activityVerb.rejectedTrackedValue", { name });
+    case "custom-metric.metric.create.validation-failed":
+      return t("recordSharing.activityVerb.rejectedTrackedValueTypeCreate", {
+        name,
+      });
+    case "custom-metric.metric.update.validation-failed":
+      return t("recordSharing.activityVerb.rejectedTrackedValueTypeUpdate", {
+        name,
+      });
+    case "medication.layout.validation-failed":
+      return t("recordSharing.activityVerb.rejectedMedicationLayout", { name });
     // Not a validation failure: the request was well-formed and admitted,
     // and the queue would not take it. The owner sees an import that never
     // ran rather than one that was refused, because those need different
     // next steps.
     case "medication.intake.import.kickoff.denied":
       return t("recordSharing.activityVerb.deniedDoseImport", { name });
-
-    /* ---------------------------------------------------------------- */
-    /* Acts a delegable module performs outside its own route file.      */
-    /*                                                                   */
-    /* The two below are filed by library modules the routes import — a  */
-    /* background worker's completion row and a lifecycle reconciliation */
-    /* — and a guard that walked only `route.ts` could not see either.   */
-    /* Both carry the actor through, so both reach the owner's feed.     */
-    /* ---------------------------------------------------------------- */
-
-    case "medication.intake.import":
-      return t("recordSharing.activityVerb.medicationIntakeImportFinished", {
-        name,
-      });
-    case "medication.oneShot.reconciled":
-      return t("recordSharing.activityVerb.medicationOneShotReconciled", {
-        name,
-      });
-
-    case "anamnesis.fact.create":
-      return t("recordSharing.activityVerb.anamnesisFactCreate", { name });
-    case "customMetric.create":
-      return t("recordSharing.activityVerb.customMetricCreate", { name });
-    case "customMetric.update":
-      return t("recordSharing.activityVerb.customMetricUpdate", { name });
-    case "customMetric.delete":
-      return t("recordSharing.activityVerb.customMetricDelete", { name });
-    case "documents.inbound.store":
-      return t("recordSharing.activityVerb.documentStore", { name });
-    case "documents.inbound.update":
-      return t("recordSharing.activityVerb.documentUpdate", { name });
-    case "documents.inbound.discard":
-      return t("recordSharing.activityVerb.documentDiscard", { name });
-
     default:
-      return t("recordSharing.activity.acted", { name });
+      return null;
+  }
+}
+
+/**
+ * The sentence for a change to a medication the owner made (the MANAGE verbs
+ * of the medications section), or null when `action` is none of them. Asked
+ * by `recordActivityVerbLine` after the refusals.
+ */
+function medicationManageVerb(
+  t: Translator,
+  action: string,
+  name: string,
+): string | null {
+  switch (action) {
+    case "medication.update":
+      return t("recordSharing.activityVerb.medicationUpdate", { name });
+    case "medication.course.end":
+      return t("recordSharing.activityVerb.medicationCourseEnd", { name });
+    case "medication.category.custom.create":
+      return t("recordSharing.activityVerb.medicationCategoryCreate", {
+        name,
+      });
+    case "medication.delete":
+      return t("recordSharing.activityVerb.medicationDelete", { name });
+    case "medication.ingredients.update":
+      return t("recordSharing.activityVerb.medicationIngredientsUpdate", {
+        name,
+      });
+    case "medication.glp1.update":
+      return t("recordSharing.activityVerb.medicationGlp1Update", { name });
+    case "medication.schedule_revision.created":
+      return t("recordSharing.activityVerb.medicationScheduleCreate", { name });
+    case "medication.schedule_revision.updated":
+      return t("recordSharing.activityVerb.medicationScheduleUpdate", { name });
+    case "medication.schedule_revision.deleted":
+      return t("recordSharing.activityVerb.medicationScheduleDelete", { name });
+    case "medication.inventory.create":
+      return t("recordSharing.activityVerb.medicationInventoryCreate", {
+        name,
+      });
+    case "medication.inventory.update":
+      return t("recordSharing.activityVerb.medicationInventoryUpdate", {
+        name,
+      });
+    case "medication.inventory.delete":
+      return t("recordSharing.activityVerb.medicationInventoryDelete", {
+        name,
+      });
+    case "medication.sideEffect.delete":
+      return t("recordSharing.activityVerb.medicationSideEffectDelete", {
+        name,
+      });
+    case "medication.intake.update":
+      return t("recordSharing.activityVerb.medicationIntakeUpdate", { name });
+    case "medication.intake.delete":
+      return t("recordSharing.activityVerb.medicationIntakeDelete", { name });
+    case "medication.intake.bulk_delete":
+      return t("recordSharing.activityVerb.medicationIntakeBulkDelete", {
+        name,
+      });
+    // The one that empties a medication's whole history in one request. It
+    // says so, because "removed several doses" would read as a correction.
+    case "medication.intake.purge":
+      return t("recordSharing.activityVerb.medicationIntakePurge", { name });
+    case "medication.intake.import.kickoff":
+      return t("recordSharing.activityVerb.medicationIntakeImport", { name });
+    case "medication.intake.history.import.kickoff":
+      return t("recordSharing.activityVerb.medicationIntakeHistoryImport", {
+        name,
+      });
+    default:
+      return null;
   }
 }

@@ -1,0 +1,77 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "measurements": [
+        {
+          "id": "<id:1>",
+          "userId": "<id:2>",
+          "type": "BLOOD_PRESSURE_DIA",
+          "value": 82,
+          "valueMin": null,
+          "valueMax": null,
+          "unit": "mmHg",
+          "source": "MANUAL",
+          "measuredAt": "2026-10-14T08:00:00.000Z",
+          "notes": null,
+          "externalId": null,
+          "externalSourceVersion": null,
+          "aggregationProvenance": null,
+          "glucoseContext": null,
+          "sleepStage": null,
+          "rhythmClassification": null,
+          "deviceType": null,
+          "syncVersion": "<syncVersion>",
+          "deletedAt": null,
+          "createdAt": "<createdAt>",
+          "updatedAt": "<updatedAt>",
+          "appleHealthMirror": true
+        },
+        {
+          "id": "<id:3>",
+          "userId": "<id:2>",
+          "type": "BLOOD_PRESSURE_SYS",
+          "value": 128,
+          "valueMin": null,
+          "valueMax": null,
+          "unit": "mmHg",
+          "source": "MANUAL",
+          "measuredAt": "2026-10-14T08:00:00.000Z",
+          "notes": null,
+          "externalId": null,
+          "externalSourceVersion": null,
+          "aggregationProvenance": null,
+          "glucoseContext": null,
+          "sleepStage": null,
+          "rhythmClassification": null,
+          "deviceType": null,
+          "syncVersion": "<syncVersion>",
+          "deletedAt": null,
+          "createdAt": "<createdAt>",
+          "updatedAt": "<updatedAt>",
+          "appleHealthMirror": true
+        }
+      ],
+      "meta": {
+        "total": 6,
+        "limit": 2,
+        "offset": 1
+      }
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "measurement.list"
+      },
+      "meta": {
+        "total": 6
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": []
+}

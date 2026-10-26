@@ -28,12 +28,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { prisma } from "@/lib/db";
 import { defaultLocale, locales, type Locale } from "@/lib/i18n/config";
 import { annotate } from "@/lib/logging/context";
@@ -71,24 +67,20 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Too many searches. Please retry shortly.", 429);
   }
 
-  const { data: body, error: jsonError } = await safeJson<{
-    q?: unknown;
-    limit?: unknown;
-  }>(request, { maxBytes: SEARCH_BODY_MAX_BYTES });
-  if (jsonError) return jsonError;
-  const parsed = searchQuerySchema.safeParse({
-    q: body?.q ?? undefined,
-    limit: body?.limit ?? undefined,
+  const parsed = await parseJsonBody(request, searchQuerySchema, {
+    maxBytes: SEARCH_BODY_MAX_BYTES,
+    input: (raw) => {
+      const body = raw as { q?: unknown; limit?: unknown };
+      return {
+        q: body?.q ?? undefined,
+        limit: body?.limit ?? undefined,
+      };
+    },
+    action: "search.query.invalid",
+    countIssues: true,
+    errorCode: "search.invalid",
   });
-  if (!parsed.success) {
-    annotate({
-      action: { name: "search.query.invalid" },
-      meta: { issue_count: parsed.error.issues.length },
-    });
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "search.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const slot = beginSearch(actor.id, user.id);
   try {

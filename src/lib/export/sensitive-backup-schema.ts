@@ -9,6 +9,7 @@
 import { z } from "zod/v4";
 import { AssessmentInstrument } from "@/generated/prisma/enums";
 import { base64BytesSchema, isoDateTime } from "@/lib/export/backup-schema-kit";
+import { ASSESSMENT_WORDINGS } from "@/lib/mental-health/wording/types";
 
 /**
  * A completed screener administration. `responsesEncrypted` is REQUIRED rather
@@ -22,6 +23,7 @@ export const mentalHealthAssessmentBackupSchema = z
     id: z.string().min(1),
     instrument: z.enum(AssessmentInstrument),
     locale: z.string().min(1),
+    wording: z.enum(ASSESSMENT_WORDINGS).nullable().optional(),
     version: z.string().optional(),
     responsesEncrypted: base64BytesSchema,
     totalScore: z.number().int(),

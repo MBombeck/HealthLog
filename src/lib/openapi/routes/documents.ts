@@ -44,6 +44,7 @@ import {
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
+  listEnvelope,
   recordRefusal,
   stdResponses,
 } from "./shared";
@@ -299,6 +300,7 @@ const inboundDocument = z
         "local-empty",
         "local-unsupported",
         "decrypt-error",
+        "resource-limit",
         "raster-failed",
         "provider-error",
         "pdf-needs-anthropic",
@@ -327,6 +329,10 @@ const inboundDocumentDetail = inboundDocument
     summary: z.string().nullable(),
     summaryGeneratedAt: z.string().nullable(),
     summaryState: z.enum(DOCUMENT_SUMMARY_STATES),
+    extractionIncomplete: z.boolean().meta({
+      description:
+        "Whether the staged facts may leave part of the document out: a part of a long document was cut at the provider's output limit or not read, the text or pages ran past what the reads take, or the document held more facts than one review takes. Kept from the last extraction (the extract route, its background run, or automatic lab staging) until the next one replaces the facts; false for a document never extracted. A review shows it whenever it is opened, not only when the run ends.",
+    }),
   })
   .meta({
     id: "InboundDocumentDetail",
@@ -379,11 +385,31 @@ const documentUploadReceipt = z
   });
 
 // Shared by the POST 200 (duplicate) and 201 (created) responses — the
-// envelope id must be registered exactly once.
-const documentUploadEnvelope = dataEnvelope(
-  z.union([inboundDocument, documentUploadReceipt]),
-  "DocumentUploadEnvelope",
-);
+// envelope id must be registered exactly once. The duplicate answer flags
+// itself at the envelope level, beside the request id.
+const documentUploadEnvelope = z
+  .object({
+    data: z.union([inboundDocument, documentUploadReceipt]),
+    error: z.null(),
+    meta: z
+      .object({
+        requestId: z.string().optional(),
+        duplicate: z
+          .literal(true)
+          .optional()
+          .describe(
+            "Present on a 200: the bytes or the source key were already stored, and `data` is the existing row (or the receipt).",
+          ),
+        deleted: z
+          .literal(true)
+          .optional()
+          .describe(
+            "Present with `duplicate` when the source key belongs to a document the owner deleted. Nothing was stored.",
+          ),
+      })
+      .optional(),
+  })
+  .meta({ id: "DocumentUploadEnvelope" });
 
 /**
  * A `DOCUMENT_EXTRACT` run's result. Smaller than the synchronous extract
@@ -399,6 +425,12 @@ export const documentExtractRunResult = z
         "How many facts were staged PENDING for review. Read them from `GET /api/documents/inbound/{id}`; the confirm route stays the only write into the record.",
       ),
     status: statusEnum,
+    incomplete: z
+      .literal(true)
+      .optional()
+      .describe(
+        "Present when part of the document's facts may be missing from the staged ones: a long document is read a page or a part at a time, and a read stopped at the provider's output limit (its complete facts kept), a part could not be read or was not reached (the day's budget, the run's deadline, AI turned off meanwhile), or the document holds more facts than one review takes. The staged facts are still worth reviewing; the person should check them against the document.",
+      ),
   })
   .meta({ id: "DocumentExtractRunResult" });
 
@@ -435,6 +467,47 @@ export const documentIndexResponse = z
       ),
   })
   .meta({ id: "DocumentIndexResponse" });
+
+// ─── Recently deleted ──────────────────────────────────────────────────────
+
+const deletedDocument = z
+  .object({
+    id: z.string(),
+    kind: kindEnum,
+    title: z.string().nullable(),
+    filename: z.string().nullable(),
+    mimeType: z.string(),
+    byteSize: z.number().int(),
+    documentDate: z
+      .string()
+      .nullable()
+      .describe("User-set filing date (YYYY-MM-DD), or null."),
+    sourceSystem: z
+      .enum(DOCUMENT_SOURCE_SYSTEMS)
+      .nullable()
+      .describe(
+        "The system an imported document came from, or null for one added in HealthLog.",
+      ),
+    deletedAt: isoDateTime(),
+    purgeAt: isoDateTime().describe(
+      "When the daily purge becomes due for this document: `deletedAt` plus `graceDays`. The purge runs once a day, so the document is removed at the first run after this instant.",
+    ),
+  })
+  .meta({ id: "DeletedDocument" });
+
+const deletedDocumentList = z
+  .object({
+    documents: z.array(deletedDocument),
+    graceDays: z
+      .number()
+      .int()
+      .describe("Days a deleted document stays restorable."),
+  })
+  .meta({ id: "DeletedDocumentList" });
+
+const documentPurgeResult = z
+  .object({ id: z.string(), purged: z.literal(true) })
+  .meta({ id: "DocumentPurgeResult" });
 
 export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
   "/api/documents/inbound": {
@@ -672,6 +745,11 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             'Unsupported or unidentifiable type (`meta.reason = "unsupportedType"`). Executables, HTML/SVG, and generic archives are always refused.',
           content: { "application/json": { schema: errorEnvelope } },
         },
+        "404": {
+          description:
+            "An `episodeIds` or `encounterIds` id is not a live episode or visit of the caller (`documents.inbound.episodeNotFound` / `documents.inbound.encounterNotFound`). Nothing was stored.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
         ...stdResponses,
       },
     },
@@ -806,6 +884,12 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
                       indexedCount: z.number(),
                       totalCount: z.number(),
                     }),
+                    deletedCount: z
+                      .number()
+                      .int()
+                      .describe(
+                        "How many of the caller's documents are deleted and not yet purged (Recently deleted, `GET /api/documents/inbound/deleted`). Always 0 while acting inside somebody else's record, where Recently deleted is not offered.",
+                      ),
                   })
                   .meta({ id: "DocumentUsage" }),
                 "DocumentUsageEnvelope",
@@ -996,7 +1080,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Documents"],
       summary: "Restore a discarded document",
       description:
-        'Clears the soft-delete tombstone within the 30-day undo grace. 409 when the tombstone is already purged (the undo window is over) or when an identical live document blocks the restore (`meta.reason = "duplicateExists"`). Restoring an already-live document is a no-op success.',
+        'Clears the soft-delete tombstone within the 30-day undo grace, and forgets any import-ledger entry for the document\'s source keys. 409 when the tombstone is already purged (the undo window is over, or the document was deleted for good) or when an identical live document blocks the restore (`meta.reason = "duplicateExists"`). Restoring an already-live document is a no-op success.',
       parameters: [
         {
           name: "id",
@@ -1020,6 +1104,62 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         "409": {
           description:
             "Not restorable: purged past the grace window, or an identical live document exists.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/documents/inbound/deleted": {
+    get: {
+      tags: ["Documents"],
+      summary: "List Recently deleted",
+      description:
+        "The caller's deleted documents that the purge has not removed yet, newest deletion first, metadata only. Each carries `purgeAt`, when the daily purge becomes due for it. Restore one with `POST /api/documents/inbound/{id}/restore` (or the bulk `restore` action); remove one for good ahead of time with `POST /api/documents/inbound/{id}/purge`. Capped at 200 rows (`meta.truncated`, `meta.limit`). Owner-only: refused while acting inside somebody else's record.",
+      responses: {
+        "200": {
+          description: "Recently deleted.",
+          content: {
+            "application/json": {
+              schema: listEnvelope(
+                deletedDocumentList,
+                "DeletedDocumentListEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/documents/inbound/{id}/purge": {
+    post: {
+      tags: ["Documents"],
+      summary: "Delete a deleted document for good",
+      description:
+        "Removes one deleted document now instead of when the grace window ends, through the same purge the daily job runs: the row and everything that cascades from it go, and an imported document's source keys are kept in the import ledger, so an importer re-sending it is still answered as deleted. Only a deleted document can be purged: a live one answers 409 `documents.inbound.notDeleted`. 404 `documents.inbound.notFound` when the caller has no such document. Owner-only.",
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "string" },
+        },
+      ],
+      responses: {
+        "200": {
+          description: "Removed for good.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                documentPurgeResult,
+                "DocumentPurgeResultEnvelope",
+              ),
+            },
+          },
+        },
+        "409": {
+          description: "The document is not deleted.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,
@@ -1094,7 +1234,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Documents"],
       summary: "Extract facts from a stored document",
       description:
-        'Optional AI enhancement on an already-stored document. Runs the dedicated OCR/vision provider over the stored original and stages STRUCTURED FACTS for review. Answers under the `documentAi` capability (403 with the capability envelope when it is closed), then rate / budget gated. With no provider configured this returns 422 (`documents.inbound.providerUnsupported`, with `meta.capability` and `meta.reason = "no_provider"`) — the stored document is untouched, only the enhancement fails. Three modes: VISION (empty body) decrypts and scans the stored original (PDF needs an Anthropic vision provider); TEXT (`application/json`, opt-in local OCR) `{ mode: "text", text }` structures browser-OCR\'d text; STORED (`application/json`) `{ mode: "stored" }` structures the document\'s own stored extracted text (its content index) — the manual recovery for a skipped/failed automatic staging run, 422 `documents.inbound.notIndexed` when no stored text exists. Extraction reproduces what the document states — it never interprets. Nothing reaches the structured stores here; the confirm route is the only write path. With `Prefer: respond-async` (v1.40) the extraction runs in the background: after the same quick refusals the route answers 202 with a run id, a second request while an extraction of this document from the same input is queued or running answers with that run, and `GET /api/ai-runs/{id}` serves `DocumentExtractRunResult` (`{ documentId, factsStaged, status }`, not the document detail) as the run\'s `result`. Staging re-checks the document under a row lock, so a review finished while the read ran fails the run with `documents.inbound.alreadyPartlyConfirmed` (409) or `documents.inbound.alreadyConfirmed` (422) and leaves the review untouched; the synchronous form answers the same in that race.',
+        "Optional AI enhancement on an already-stored document. Runs the dedicated OCR/vision provider over the stored original and stages STRUCTURED FACTS for review. Answers under the `documentAi` capability (403 with the capability envelope when it is closed), then rate / budget gated. With no provider configured this returns 422 (`documents.inbound.providerUnsupported`, with `meta.capability` and `meta.reason = \"no_provider\"`) — the stored document is untouched, only the enhancement fails. Three modes: VISION (empty body) decrypts and scans the stored original (a PDF is rendered and read a page at a time; one that cannot be rendered needs a provider that reads PDFs natively, else 422 `documents.inbound.pdfNeedsAnthropic`); TEXT (`application/json`, opt-in local OCR) `{ mode: \"text\", text }` structures browser-OCR'd text; STORED (`application/json`) `{ mode: \"stored\" }` structures the document's own stored extracted text (its content index) — the manual recovery for a skipped/failed automatic staging run, 422 `documents.inbound.notIndexed` when no stored text exists. A long document is read a page or a part at a time under the same per-read limits as the lab scan (`LABS_OCR_EXTRACT`), each read after the first reserved against the day's budget on its own. Without `Prefer: respond-async` the extraction runs inside the request and makes at most three reads (six model calls): a longer document has its pages or text shared out between them, and what does not fit is left out and reported as `extractionIncomplete: true` on the answered document; the background run reads it a page at a time within its own deadline; an extraction in which no read produced a complete fact fails with 422 `documents.inbound.outputLimit` when the reads stopped at the provider's output limit, 429 `documents.inbound.budgetExceeded` when the budget refused the reads, and 422 `documents.inbound.extractFailed` only when the provider's answers were not the schema. Extraction reproduces what the document states — it never interprets. Nothing reaches the structured stores here; the confirm route is the only write path. With `Prefer: respond-async` (v1.40) the extraction runs in the background: after the same quick refusals the route answers 202 with a run id, a second request while an extraction of this document from the same input is queued or running answers with that run, and `GET /api/ai-runs/{id}` serves `DocumentExtractRunResult` (`{ documentId, factsStaged, status }`, plus `incomplete` when part of the document may be missing from the staged facts; not the document detail) as the run's `result`. Staging re-checks the document under a row lock, so a review finished while the read ran fails the run with `documents.inbound.alreadyPartlyConfirmed` (409) or `documents.inbound.alreadyConfirmed` (422) and leaves the review untouched; the synchronous form answers the same in that race.",
       parameters: [
         {
           name: "id",
@@ -1260,7 +1400,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Documents"],
       summary: "Build / refresh the content-search index",
       description:
-        "Populates or refreshes one document's content-search index so search matches INSIDE its body. VISION (empty body) decrypts the stored original and runs one provider transcription (answers under the `documentAi` capability — 403 with the capability envelope when it is closed, including a missing `ai_extraction` / `ai_full` receipt for a provider that leaves the machine — then rate / budget gated); TEXT (`application/json` `{ mode: \"text\", text }`, opt-in local OCR) indexes browser-OCR'd text with no provider egress and stays available with AI off, so search keeps working. Persists ONLY AES-256-GCM ciphertext of the text plus opaque HMAC token hashes — no plaintext body, no plaintext token. Idempotent; re-indexing overwrites in place. A successful index continues into the same lab auto-staging the background worker performs (still-STORED lab-looking document with no facts, both modules on, provider + consent eligible); `labFactsStaged` reports how many facts were staged PENDING for review — confirmation stays the only write into Labs. With `Prefer: respond-async` (v1.40) the read runs in the background: after the same quick refusals the route answers 202 with a run id, a second request while a read of this document is queued or running answers with that run, and `GET /api/ai-runs/{id}` serves this body as the run's `result`. Text mode honours the preference too, because the lab staging it continues into is model work.",
+        "Populates or refreshes one document's content-search index so search matches INSIDE its body. VISION (empty body) decrypts the stored original and runs one provider transcription (answers under the `documentAi` capability — 403 with the capability envelope when it is closed, including a missing `ai_extraction` / `ai_full` receipt for a provider that leaves the machine — then rate / budget gated); TEXT (`application/json` `{ mode: \"text\", text }`, opt-in local OCR) indexes browser-OCR'd text with no provider egress and stays available with AI off, so search keeps working. Persists ONLY AES-256-GCM ciphertext of the text plus opaque HMAC token hashes — no plaintext body, no plaintext token. Idempotent; re-indexing overwrites in place. A successful index continues into the same lab auto-staging the background worker performs (still-STORED lab-looking document with no facts, both modules on, provider + consent eligible); `labFactsStaged` reports how many facts were staged PENDING for review — confirmation stays the only write into Labs. Without `Prefer: respond-async` that staging runs inside the request and makes at most three reads (six model calls), like the extract route: what does not fit is left out and reported as `extractionIncomplete: true` on the document. With `Prefer: respond-async` (v1.40) the read runs in the background: after the same quick refusals the route answers 202 with a run id, a second request while a read of this document is queued or running answers with that run, and `GET /api/ai-runs/{id}` serves this body as the run's `result`. Text mode honours the preference too, because the lab staging it continues into is model work.",
       parameters: [
         { name: "id", in: "path", required: true, schema: { type: "string" } },
         preferRespondAsyncParameter,

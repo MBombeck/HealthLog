@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { apiSuccess, returnAllZodIssues, safeJson } from "@/lib/api-response";
+import { apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { phaseConfigSchema } from "@/lib/validations/phase-config";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { NextRequest } from "next/server";
@@ -54,19 +55,10 @@ export const PUT = apiHandler(
     const guard = await assertMedicationOwnership(id, user.id);
     if (guard) return guard;
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, phaseConfigSchema, {
       maxBytes: 64 * 1024,
     });
-
-    if (jsonError) return jsonError;
-    const parsed = phaseConfigSchema.safeParse(body);
-    if (!parsed.success) {
-      // v1.5.5 — every v1.5.5 route returns the multi-issue
-      // 422 envelope so iOS sees per-field feedback the same way the
-      // bulk-delete and intake routes already do. The old `400 Invalid
-      // input` flat response was the last hold-out in the surface.
-      return returnAllZodIssues(parsed.error, 422);
-    }
+    if (!parsed.ok) return parsed.error;
 
     // v1.5.5 — build the Prisma payload field-by-field rather
     // than spreading `parsed.data`. A future schema extension would

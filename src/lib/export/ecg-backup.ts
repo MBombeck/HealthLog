@@ -75,6 +75,7 @@ import {
   recordUnknownKeys,
   type RestoreSkipLog,
 } from "@/lib/export/restore-skips";
+import type { EcgTrace } from "@/lib/export/streamed-backup";
 
 export interface EcgBackupOptions {
   purpose?: "portable-export" | "disaster-recovery";
@@ -278,6 +279,11 @@ export function countEcgBackupSection(
   return { ecgRecordings: section.ecgRecordings.length };
 }
 
+/** Hands over each strip's trace from a second read of the file. */
+export type EcgTraceSource = (
+  fn: (trace: EcgTrace, index: number) => Promise<void>,
+) => Promise<void>;
+
 /** Counts the ECG restore wiped, for the audit trail. */
 export interface EcgRestoreCleared {
   ecgRecordings: number;
@@ -351,13 +357,37 @@ export async function restoreEcgData(
   payload: EcgRestoreInput,
   measurementIds: ReadonlySet<string>,
   skips: RestoreSkipLog,
+  forEachTrace: EcgTraceSource,
 ): Promise<EcgRestoreCleared> {
   const cleared = await tx.ecgRecording.deleteMany({
     where: { userId: ownerId },
   });
 
   const droppedMeasurementRefs: string[] = [];
-  for (const recording of payload.ecgRecordings) {
+  // The traces come from a second read of the file, one strip at a time
+  // (`forEachEcgTrace`): the first read kept each strip without its trace,
+  // because a long ECG history held whole is a vault of its own. The strips
+  // are in file order on both reads.
+  let traces = 0;
+  if (payload.ecgRecordings.length > 0) {
+    await forEachTrace(async (trace, index) => {
+      traces++;
+      const listed = payload.ecgRecordings[index];
+      if (!listed) {
+        throw new Error(
+          `ECG recording ${index} of the backup is missing from the first read`,
+        );
+      }
+      await writeRecording({ ...listed, ...trace });
+    });
+  }
+  if (traces !== payload.ecgRecordings.length) {
+    throw new Error(
+      `The backup lists ${payload.ecgRecordings.length} ECG recordings and the second read found ${traces}`,
+    );
+  }
+
+  async function writeRecording(recording: RestoredEcgRecording) {
     let measurementId = recording.measurementId ?? null;
     if (measurementId && !measurementIds.has(measurementId)) {
       droppedMeasurementRefs.push(measurementId);

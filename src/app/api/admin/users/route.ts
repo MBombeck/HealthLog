@@ -18,6 +18,9 @@ export const GET = apiHandler(async () => {
       createdAt: true,
       mfaEnforced: true,
       documentQuotaBytes: true,
+      deletionRequestedAt: true,
+      deletionPurgeAt: true,
+      deletionRequestedById: true,
       _count: { select: { passkeys: true } },
     },
     orderBy: { createdAt: "asc" },
@@ -39,6 +42,20 @@ export const GET = apiHandler(async () => {
       documentQuotaBytes:
         u.documentQuotaBytes === null ? null : Number(u.documentQuotaBytes),
       passkeyCount: u._count.passkeys,
+      // An account pending deletion: when it was asked for, when the
+      // purge job erases it, and whether the account asked itself or a
+      // Guardian deleted the managed profile. Null on every other account.
+      // The list offers "Undo deletion" on these rows until `purgeAt`.
+      deletion: u.deletionRequestedAt
+        ? {
+            requestedAt: u.deletionRequestedAt,
+            purgeAt: u.deletionPurgeAt,
+            requestedBy:
+              u.deletionRequestedById === u.id
+                ? ("self" as const)
+                : ("guardian" as const),
+          }
+        : null,
     })),
   );
 });

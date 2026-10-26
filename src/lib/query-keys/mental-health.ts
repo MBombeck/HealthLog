@@ -9,4 +9,7 @@ export const mentalHealthKeys = {
   /** One administration with its decrypted per-item answers. */
   mentalHealthAssessmentDetail: (id: string) =>
     ["mental-health-assessment-detail", id] as const,
+  /** Every questionnaire's text in one app language (a static chunk). */
+  mentalHealthWording: (locale: string) =>
+    ["mental-health-wording", locale] as const,
 };

@@ -130,11 +130,13 @@ describe("comprehensive JSON-retry", () => {
         },
         workingProvider: { providerType: "openai" },
         fallbackHops: [],
+        tokensSpent: 0,
       })
       .mockResolvedValueOnce({
         result: { content: VALID, tokensUsed: 10, model: "m" },
         workingProvider: { providerType: "openai" },
         fallbackHops: [],
+        tokensSpent: 0,
       });
 
     const outcome = await generateComprehensiveInsight("u1", { locale: "de" });
@@ -161,6 +163,7 @@ describe("comprehensive JSON-retry", () => {
       result: { content: "still not json", tokensUsed: 5, model: "m" },
       workingProvider: { providerType: "openai" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
 
     const outcome = await generateComprehensiveInsight("u1", { locale: "de" });
@@ -174,6 +177,7 @@ describe("comprehensive JSON-retry", () => {
       result: { content: VALID, tokensUsed: 10, model: "m" },
       workingProvider: { providerType: "openai" },
       fallbackHops: [],
+      tokensSpent: 0,
     });
 
     const outcome = await generateComprehensiveInsight("u1", { locale: "de" });

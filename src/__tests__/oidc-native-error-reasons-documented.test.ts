@@ -37,10 +37,13 @@ describe("native OIDC error reasons are documented", () => {
   // The login route answers both legs through `loginError`; the callback's
   // native-aware helper is `failRedirect`. `errorRedirect` in the callback is
   // the browser-only branch taken before the state (and so the native flag)
-  // could be read, and never reaches the app.
+  // could be read, and never reaches the app. The account resolution the
+  // callback calls names its refusals through `refuse`, and the callback
+  // hands each one to `failRedirect`.
   const sent = new Set([
     ...reasons(read("app/api/auth/oidc/login/route.ts"), ["loginError"]),
     ...reasons(read("app/api/auth/oidc/callback/route.ts"), ["failRedirect"]),
+    ...reasons(read("lib/auth/oidc-callback/resolve-account.ts"), ["refuse"]),
   ]);
 
   // The login route's 302 description is one string literal on one line.

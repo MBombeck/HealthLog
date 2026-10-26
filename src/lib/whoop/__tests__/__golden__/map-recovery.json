@@ -1,0 +1,143 @@
+[
+  {
+    "sleep_id": "sleep-0001",
+    "rows": [
+      {
+        "type": "RECOVERY_SCORE",
+        "value": 64,
+        "unit": "score",
+        "measuredAt": "2026-03-02T06:45:00.000Z",
+        "fieldTag": "recovery"
+      },
+      {
+        "type": "HRV_RMSSD",
+        "value": 48.2,
+        "unit": "ms",
+        "measuredAt": "2026-03-02T06:45:00.000Z",
+        "fieldTag": "hrv_rmssd"
+      },
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 54,
+        "unit": "bpm",
+        "measuredAt": "2026-03-02T06:45:00.000Z",
+        "fieldTag": "rhr"
+      },
+      {
+        "type": "OXYGEN_SATURATION",
+        "value": 96.5,
+        "unit": "%",
+        "measuredAt": "2026-03-02T06:45:00.000Z",
+        "fieldTag": "spo2"
+      },
+      {
+        "type": "SKIN_TEMPERATURE",
+        "value": 33.4,
+        "unit": "celsius",
+        "measuredAt": "2026-03-02T06:45:00.000Z",
+        "fieldTag": "skin_temp"
+      }
+    ]
+  },
+  {
+    "sleep_id": "sleep-0002",
+    "rows": [
+      {
+        "type": "RECOVERY_SCORE",
+        "value": 81,
+        "unit": "score",
+        "measuredAt": "2026-03-03T06:41:00.000Z",
+        "fieldTag": "recovery"
+      },
+      {
+        "type": "HRV_RMSSD",
+        "value": 61.73,
+        "unit": "ms",
+        "measuredAt": "2026-03-03T06:41:00.000Z",
+        "fieldTag": "hrv_rmssd"
+      },
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 50,
+        "unit": "bpm",
+        "measuredAt": "2026-03-03T06:41:00.000Z",
+        "fieldTag": "rhr"
+      }
+    ]
+  },
+  { "sleep_id": "sleep-0003", "rows": [] },
+  { "sleep_id": "sleep-0004", "rows": [] },
+  {
+    "sleep_id": "sleep-0005",
+    "rows": [
+      {
+        "type": "RECOVERY_SCORE",
+        "value": 0,
+        "unit": "score",
+        "measuredAt": "2026-03-06T05:15:30.000Z",
+        "fieldTag": "recovery"
+      },
+      {
+        "type": "HRV_RMSSD",
+        "value": 0,
+        "unit": "ms",
+        "measuredAt": "2026-03-06T05:15:30.000Z",
+        "fieldTag": "hrv_rmssd"
+      },
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 0,
+        "unit": "bpm",
+        "measuredAt": "2026-03-06T05:15:30.000Z",
+        "fieldTag": "rhr"
+      },
+      {
+        "type": "OXYGEN_SATURATION",
+        "value": 0,
+        "unit": "%",
+        "measuredAt": "2026-03-06T05:15:30.000Z",
+        "fieldTag": "spo2"
+      },
+      {
+        "type": "SKIN_TEMPERATURE",
+        "value": 0,
+        "unit": "celsius",
+        "measuredAt": "2026-03-06T05:15:30.000Z",
+        "fieldTag": "skin_temp"
+      }
+    ]
+  },
+  {
+    "sleep_id": "sleep-0006",
+    "rows": [
+      {
+        "type": "RECOVERY_SCORE",
+        "value": 100,
+        "unit": "score",
+        "measuredAt": "2026-03-07T06:30:00.000Z",
+        "fieldTag": "recovery"
+      },
+      {
+        "type": "HRV_RMSSD",
+        "value": 132.01,
+        "unit": "ms",
+        "measuredAt": "2026-03-07T06:30:00.000Z",
+        "fieldTag": "hrv_rmssd"
+      },
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 41.67,
+        "unit": "bpm",
+        "measuredAt": "2026-03-07T06:30:00.000Z",
+        "fieldTag": "rhr"
+      },
+      {
+        "type": "SKIN_TEMPERATURE",
+        "value": 34.13,
+        "unit": "celsius",
+        "measuredAt": "2026-03-07T06:30:00.000Z",
+        "fieldTag": "skin_temp"
+      }
+    ]
+  }
+]

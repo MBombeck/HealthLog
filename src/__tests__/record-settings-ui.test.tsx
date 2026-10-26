@@ -1,9 +1,24 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
 const fromRoot = (...segments: string[]) => resolve(process.cwd(), ...segments);
+
+/** The managed settings section and every family form it composes. */
+async function readManagedSettingsView(): Promise<string> {
+  const folder = fromRoot("src/components/settings/managed-record");
+  const forms = (await readdir(folder)).filter((name) => name.endsWith(".tsx"));
+  expect(forms.length).toBeGreaterThanOrEqual(7);
+  const sources = await Promise.all([
+    readFile(
+      fromRoot("src/components/settings/managed-record-settings-section.tsx"),
+      "utf8",
+    ),
+    ...forms.map((name) => readFile(resolve(folder, name), "utf8")),
+  ]);
+  return sources.join("\n");
+}
 
 function expectMatchingMessageKeys(expected: unknown, actual: unknown): void {
   if (
@@ -40,10 +55,7 @@ describe("managed record settings UI", () => {
         fromRoot("src/components/settings/managed-integration-status.tsx"),
         "utf8",
       ),
-      readFile(
-        fromRoot("src/components/settings/managed-record-settings-section.tsx"),
-        "utf8",
-      ),
+      readManagedSettingsView(),
       readFile(fromRoot("src/app/settings/[section]/page.tsx"), "utf8"),
       readFile(fromRoot("src/app/settings/layout/[module]/page.tsx"), "utf8"),
       readFile(

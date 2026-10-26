@@ -107,6 +107,18 @@ function framedRowsInCards(source: string): number[] {
   return lines;
 }
 
+/**
+ * Read failures that draw their own markup on purpose, each with its reason.
+ * Keyed by file, and held live by the case below: an entry whose file no
+ * longer hand-rolls a branch fails rather than lingering as a blind spot.
+ */
+const HAND_ROLLED_BY_DESIGN = new Map<string, string>([
+  [
+    "components/admin/backups/restore-dialog.tsx",
+    "the restore preview never blocks the restore: a failed preview states its own absence in the dialog, and names the missing key when that is why",
+  ],
+]);
+
 const files = walk(SRC).map((file) => ({
   file: relative(SRC, file),
   source: readFileSync(file, "utf8"),
@@ -143,11 +155,23 @@ describe("read failures render through a primitive", () => {
 
   it("never hand-rolls one beside a read", () => {
     const offenders = files.flatMap(({ file, source }) =>
-      readErrorBranches(source)
-        .filter((b) => b.handRolled)
-        .map((b) => `${file}:${b.line}`),
+      HAND_ROLLED_BY_DESIGN.has(file)
+        ? []
+        : readErrorBranches(source)
+            .filter((b) => b.handRolled)
+            .map((b) => `${file}:${b.line}`),
     );
     expect(offenders).toEqual([]);
+  });
+
+  it("keeps every deliberate exception live", () => {
+    const stale = [...HAND_ROLLED_BY_DESIGN.keys()].filter((name) => {
+      const entry = files.find(({ file }) => file === name);
+      return (
+        !entry || !readErrorBranches(entry.source).some((b) => b.handRolled)
+      );
+    });
+    expect(stale).toEqual([]);
   });
 });
 

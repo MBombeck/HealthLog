@@ -1,7 +1,7 @@
 /**
  * Structural guard: the three read routes that used to write must stay reads.
  *
- * `src/lib/api-handler.ts` states the invariant next to `READ_HTTP_METHODS` —
+ * `src/lib/auth/guards/context.ts` states the invariant next to `READ_HTTP_METHODS` —
  * an MCP-audience token is admitted on GET/HEAD/OPTIONS on the REST surface
  * because those methods are assumed side-effect-free, and adding a
  * side-effecting GET silently widens that token's reach. These three routes
@@ -20,6 +20,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
+import { stripComments } from "../../../__tests__/helpers/source-files";
 
 /** Mutating Prisma model methods, as they appear at a call site. */
 const PRISMA_WRITE =
@@ -48,7 +49,7 @@ function sourceOf(relative: string): string {
  * guard that fires on its own documentation.
  */
 function code(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  return stripComments(source);
 }
 
 describe("read routes issue no writes", () => {

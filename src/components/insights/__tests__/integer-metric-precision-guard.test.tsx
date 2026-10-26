@@ -182,7 +182,8 @@ describe("integer-metric precision guard", () => {
     // …and the unit reads in German, not as the English word. (The route
     // slug `/insights/steps` legitimately appears in the header links, so
     // match the unit in its rendered position: right after a number.)
-    expect(html).toContain("104 Schritte");
+    // The stat strip joins a value to its unit with a no-break space.
+    expect(html).toContain("104\u00A0Schritte");
     expect(html).not.toMatch(/\d\s*steps\b/);
   });
 });

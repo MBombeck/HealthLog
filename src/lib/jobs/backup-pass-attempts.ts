@@ -27,11 +27,17 @@
  * accounts at most every second run, and the account itself is attempted at
  * least every second run.
  */
+// account-deletion(file): reads the backup passes' own ledger; which accounts a pass walks is decided by the pass.
 import type { PrismaClient } from "@/generated/prisma/client";
 import { logCaught } from "@/lib/logging/signal";
 
-/** The pass's queue name, which is also the marker's key. */
-export type BackupPass = "data-backup" | "data-backup-offhost";
+/**
+ * The pass's queue name, which is also the marker's key. The account-deletion
+ * purge walks the due accounts the same way and keeps its marks here too: an
+ * account whose erasure failed or was refused stays open and is taken last.
+ */
+export type BackupPass =
+  "data-backup" | "data-backup-offhost" | "account-deletion-purge";
 
 type Db = Pick<PrismaClient, "backupPassAttempt">;
 

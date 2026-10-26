@@ -14,12 +14,15 @@ const mocks = vi.hoisted(() => ({
   noteHardFailure: vi.fn(),
 }));
 
-vi.mock("@/lib/google-health/client", () => ({
+vi.mock("@/lib/google-health/data-points", () => ({
   GOOGLE_HEALTH_ACTIVITY_PAGE_SIZE: 25,
+  fetchDataPoints: mocks.fetchDataPoints,
+}));
+
+vi.mock("@/lib/google-health/mappers", () => ({
   GOOGLE_HEALTH_DATA_TYPES: {
     exercise: { key: "exercise", dataType: "exercise" },
   },
-  fetchDataPoints: mocks.fetchDataPoints,
   mapWorkout: mocks.mapWorkout,
 }));
 

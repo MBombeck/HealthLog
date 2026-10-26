@@ -17,13 +17,8 @@ import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { overwriteDetails } from "@/lib/sharing/audit-details";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { requireCycleEnabled } from "@/lib/cycle/gate";
 import {
   ensureCycleForBleedingDay,
@@ -68,21 +63,13 @@ export const PATCH = apiHandler(
       return apiError("Day-log not found", 404);
     }
 
-    const { data: rawBody, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, cycleDayLogPatchSchema, {
       maxBytes: 64 * 1024,
+      action: "cycle.day-log.patch.validation-failed",
+      countIssues: true,
+      errorCode: "cycle.day-log.invalid",
     });
-    if (jsonError) return jsonError;
-
-    const parsed = cycleDayLogPatchSchema.safeParse(rawBody);
-    if (!parsed.success) {
-      annotate({
-        action: { name: "cycle.day-log.patch.validation-failed" },
-        meta: { issue_count: parsed.error.issues.length },
-      });
-      return returnAllZodIssues(parsed.error, 422, {
-        errorCode: "cycle.day-log.invalid",
-      });
-    }
+    if (!parsed.ok) return parsed.error;
 
     const body = parsed.data;
 

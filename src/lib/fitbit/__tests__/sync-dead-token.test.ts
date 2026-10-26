@@ -60,7 +60,7 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
   recomputeBucketsForMeasurement: vi.fn(async () => {}),
   recomputeUserRollups: vi.fn(async () => {}),
 }));
-vi.mock("@/lib/insights/comprehensive-generate", () => ({
+vi.mock("@/lib/insights/status-invalidation", () => ({
   invalidateStatusInsightsForTypes: vi.fn(async () => {}),
 }));
 vi.mock("@/lib/logging/context", () => ({
@@ -70,7 +70,9 @@ vi.mock("@/lib/logging/context", () => ({
 vi.mock("../credentials", () => ({
   getUserFitbitCredentials: getUserFitbitCredentialsMock,
 }));
-vi.mock("../client", () => ({ refreshAccessToken: refreshAccessTokenMock }));
+vi.mock("../oauth", () => ({
+  fitbitOAuth: { refresh: refreshAccessTokenMock },
+}));
 
 vi.mock("../sync-metrics", () => ({ syncUserMetrics: resourceFake }));
 vi.mock("../sync-activity", () => ({ syncUserActivity: resourceFake }));

@@ -28,6 +28,7 @@ vi.mock("@/lib/geo", async (importOriginal) => {
 import {
   buildMaxmindDownloadUrl,
   fetchGeoLite2Databases,
+  makeDirectory,
   MAXMIND_DOWNLOAD_BASE,
 } from "@/lib/geo/geolite2-fetch";
 
@@ -281,4 +282,29 @@ describe("fetchGeoLite2Databases — gating", () => {
       CITY_BYTES,
     );
   });
+});
+
+describe("makeDirectory", () => {
+  it("creates every missing level and accepts an existing one", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "hl-geo-mkdir-"));
+    try {
+      const dir = path.join(root, "a", "b");
+      await makeDirectory(dir);
+      await makeDirectory(dir);
+      expect(fs.statSync(dir).isDirectory()).toBe(true);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // The recursive form never settles below /proc; this one rejects.
+  it.runIf(process.platform === "linux")(
+    "rejects below /proc instead of never settling",
+    async () => {
+      await expect(
+        makeDirectory("/proc/healthlog-cannot-write-here/nested"),
+      ).rejects.toMatchObject({ code: "ENOENT" });
+    },
+    5_000,
+  );
 });

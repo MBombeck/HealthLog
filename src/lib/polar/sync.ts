@@ -53,18 +53,11 @@ import {
   toFailureKind,
   type FailureKind,
 } from "@/lib/integrations/status";
-import {
-  collapseToTypeDayKeys,
-  recomputeBucketsForKeys,
-} from "@/lib/rollups/measurement-rollups";
+import { afterProviderWrite } from "@/lib/integrations/sync-kit/after-write";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
-import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 import type { SyncWriteResult } from "@/lib/outcome/written-outcome";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";
-import {
-  emitInsertedMeasurementArrivals,
-  type InsertedMeasurementArrivalRow,
-} from "@/lib/arrivals/measurement-emit";
+import type { InsertedMeasurementArrivalRow } from "@/lib/arrivals/measurement-emit";
 import {
   MeasurementReconciliationError,
   reconcileExternalMeasurement,
@@ -75,13 +68,15 @@ import {
   fetchNightlyRecharges,
   fetchSleeps,
   fetchSpo2,
+} from "./client";
+import {
   mapActivity,
   mapCardioLoad,
   mapNightlyRecharge,
   mapSleep,
   mapSpo2,
   type MappedMeasurement,
-} from "./client";
+} from "./map";
 import {
   sweepStaleSleepSegments,
   type SleepSegmentSweep,
@@ -441,26 +436,12 @@ export async function upsertPolarMeasurements(
   }
 
   opts.onInserted?.(insertedRows);
-  void emitInsertedMeasurementArrivals(userId, insertedRows, "polar").catch(
-    () => {},
-  );
-  try {
-    const keys = collapseToTypeDayKeys(touched);
-    await recomputeBucketsForKeys(userId, keys);
-    invalidateStatusInsightsForTypes(
-      userId,
-      keys.map((k) => k.type),
-      { source: "sync" },
-    ).catch((err) => {
-      getEvent()?.addWarning(
-        `polar: status-insight invalidate failed for ${userId}: ${err}`,
-      );
-    });
-  } catch (err) {
-    getEvent()?.addWarning(
-      `polar: rollup recompute failed for ${userId}: ${err}`,
-    );
-  }
+  await afterProviderWrite({
+    userId,
+    provider: "polar",
+    touched,
+    arrivals: { rows: insertedRows, source: "polar" },
+  });
 
   return imported;
 }

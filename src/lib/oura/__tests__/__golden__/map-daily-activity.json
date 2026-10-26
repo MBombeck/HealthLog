@@ -1,0 +1,272 @@
+[
+  {
+    "id": "activity-0001",
+    "day": "2026-03-02",
+    "zone": null,
+    "rows": [
+      {
+        "type": "ACTIVITY_STEPS",
+        "value": 8432,
+        "unit": "steps",
+        "measuredAt": "2026-03-02T09:00:00.000Z",
+        "fieldTag": "steps"
+      },
+      {
+        "type": "ACTIVE_ENERGY_BURNED",
+        "value": 412.7,
+        "unit": "kcal",
+        "measuredAt": "2026-03-02T09:00:00.000Z",
+        "fieldTag": "active_energy"
+      }
+    ]
+  },
+  {
+    "id": "activity-0001",
+    "day": "2026-03-02",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "ACTIVITY_STEPS",
+        "value": 8432,
+        "unit": "steps",
+        "measuredAt": "2026-03-02T09:00:00.000Z",
+        "fieldTag": "steps"
+      },
+      {
+        "type": "ACTIVE_ENERGY_BURNED",
+        "value": 412.7,
+        "unit": "kcal",
+        "measuredAt": "2026-03-02T09:00:00.000Z",
+        "fieldTag": "active_energy"
+      }
+    ]
+  },
+  {
+    "id": "activity-0001",
+    "day": "2026-03-02",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "ACTIVITY_STEPS",
+        "value": 8432,
+        "unit": "steps",
+        "measuredAt": "2026-03-02T09:00:00.000Z",
+        "fieldTag": "steps"
+      },
+      {
+        "type": "ACTIVE_ENERGY_BURNED",
+        "value": 412.7,
+        "unit": "kcal",
+        "measuredAt": "2026-03-02T09:00:00.000Z",
+        "fieldTag": "active_energy"
+      }
+    ]
+  },
+  {
+    "id": "activity-0002",
+    "day": "2026-03-03",
+    "zone": null,
+    "rows": [
+      {
+        "type": "ACTIVITY_STEPS",
+        "value": 0,
+        "unit": "steps",
+        "measuredAt": "2026-03-03T09:00:00.000Z",
+        "fieldTag": "steps"
+      },
+      {
+        "type": "ACTIVE_ENERGY_BURNED",
+        "value": 0,
+        "unit": "kcal",
+        "measuredAt": "2026-03-03T09:00:00.000Z",
+        "fieldTag": "active_energy"
+      }
+    ]
+  },
+  {
+    "id": "activity-0002",
+    "day": "2026-03-03",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "ACTIVITY_STEPS",
+        "value": 0,
+        "unit": "steps",
+        "measuredAt": "2026-03-03T09:00:00.000Z",
+        "fieldTag": "steps"
+      },
+      {
+        "type": "ACTIVE_ENERGY_BURNED",
+        "value": 0,
+        "unit": "kcal",
+        "measuredAt": "2026-03-03T09:00:00.000Z",
+        "fieldTag": "active_energy"
+      }
+    ]
+  },
+  {
+    "id": "activity-0002",
+    "day": "2026-03-03",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "ACTIVITY_STEPS",
+        "value": 0,
+        "unit": "steps",
+        "measuredAt": "2026-03-03T09:00:00.000Z",
+        "fieldTag": "steps"
+      },
+      {
+        "type": "ACTIVE_ENERGY_BURNED",
+        "value": 0,
+        "unit": "kcal",
+        "measuredAt": "2026-03-03T09:00:00.000Z",
+        "fieldTag": "active_energy"
+      }
+    ]
+  },
+  {
+    "id": "activity-0003",
+    "day": "2026-03-04",
+    "zone": null,
+    "rows": [
+      {
+        "type": "ACTIVE_ENERGY_BURNED",
+        "value": 250,
+        "unit": "kcal",
+        "measuredAt": "2026-03-04T12:00:00.000Z",
+        "fieldTag": "active_energy"
+      }
+    ]
+  },
+  {
+    "id": "activity-0003",
+    "day": "2026-03-04",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "ACTIVE_ENERGY_BURNED",
+        "value": 250,
+        "unit": "kcal",
+        "measuredAt": "2026-03-04T11:00:00.000Z",
+        "fieldTag": "active_energy"
+      }
+    ]
+  },
+  {
+    "id": "activity-0003",
+    "day": "2026-03-04",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "ACTIVE_ENERGY_BURNED",
+        "value": 250,
+        "unit": "kcal",
+        "measuredAt": "2026-03-04T17:00:00.000Z",
+        "fieldTag": "active_energy"
+      }
+    ]
+  },
+  { "id": "activity-0004", "day": "2026-03-05", "zone": null, "rows": [] },
+  {
+    "id": "activity-0004",
+    "day": "2026-03-05",
+    "zone": "Europe/Berlin",
+    "rows": []
+  },
+  {
+    "id": "activity-0004",
+    "day": "2026-03-05",
+    "zone": "America/New_York",
+    "rows": []
+  },
+  {
+    "id": "activity-0005",
+    "day": "2026-03-06",
+    "zone": null,
+    "rows": [
+      {
+        "type": "ACTIVITY_STEPS",
+        "value": 1235,
+        "unit": "steps",
+        "measuredAt": "2026-03-06T12:00:00.000Z",
+        "fieldTag": "steps"
+      },
+      {
+        "type": "ACTIVE_ENERGY_BURNED",
+        "value": 98.77,
+        "unit": "kcal",
+        "measuredAt": "2026-03-06T12:00:00.000Z",
+        "fieldTag": "active_energy"
+      }
+    ]
+  },
+  {
+    "id": "activity-0005",
+    "day": "2026-03-06",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "ACTIVITY_STEPS",
+        "value": 1235,
+        "unit": "steps",
+        "measuredAt": "2026-03-06T11:00:00.000Z",
+        "fieldTag": "steps"
+      },
+      {
+        "type": "ACTIVE_ENERGY_BURNED",
+        "value": 98.77,
+        "unit": "kcal",
+        "measuredAt": "2026-03-06T11:00:00.000Z",
+        "fieldTag": "active_energy"
+      }
+    ]
+  },
+  {
+    "id": "activity-0005",
+    "day": "2026-03-06",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "ACTIVITY_STEPS",
+        "value": 1235,
+        "unit": "steps",
+        "measuredAt": "2026-03-06T17:00:00.000Z",
+        "fieldTag": "steps"
+      },
+      {
+        "type": "ACTIVE_ENERGY_BURNED",
+        "value": 98.77,
+        "unit": "kcal",
+        "measuredAt": "2026-03-06T17:00:00.000Z",
+        "fieldTag": "active_energy"
+      }
+    ]
+  },
+  { "id": "activity-0006", "day": "2026-03-07", "zone": null, "rows": [] },
+  {
+    "id": "activity-0006",
+    "day": "2026-03-07",
+    "zone": "Europe/Berlin",
+    "rows": []
+  },
+  {
+    "id": "activity-0006",
+    "day": "2026-03-07",
+    "zone": "America/New_York",
+    "rows": []
+  },
+  { "id": "activity-0007", "day": "2026-03-08", "zone": null, "rows": [] },
+  {
+    "id": "activity-0007",
+    "day": "2026-03-08",
+    "zone": "Europe/Berlin",
+    "rows": []
+  },
+  {
+    "id": "activity-0007",
+    "day": "2026-03-08",
+    "zone": "America/New_York",
+    "rows": []
+  }
+]

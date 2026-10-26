@@ -12,6 +12,7 @@ import {
   runRawCompletionWithFallback,
   type ProviderChainResolved,
 } from "@/lib/ai/provider-runner";
+import { spentOnFailure } from "@/lib/ai/reasoning/answerless";
 import { aiEgressRefusal } from "@/lib/ai/capabilities/egress";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -20,8 +21,13 @@ import {
   reserveBudget,
   resolveCostOwner,
   resolveDailyCapFor,
+  type BudgetCostOwner,
 } from "@/lib/ai/coach/budget";
-import { AI_BUDGETS, REFERENCE_AI_SEED } from "@/lib/ai/ai-budgets";
+import {
+  AI_BUDGETS,
+  REFERENCE_AI_SEED,
+  STATUS_MODEL_CALLS,
+} from "@/lib/ai/ai-budgets";
 import { singleUserTurn } from "@/lib/ai/types";
 import { STATUS_PROVIDER_TIMEOUT_MS, withTimeout } from "./with-timeout";
 import { prisma } from "@/lib/db";
@@ -31,6 +37,10 @@ import {
   type BackgroundReasoningJob,
 } from "@/lib/ai/reasoning/levels";
 import { resolveJobReasoning } from "@/lib/ai/reasoning/controls";
+import {
+  holdStatusNoteWhileBenched,
+  statusNoteCoolingDown,
+} from "./status-negative-window";
 
 /**
  * v1.41 — the fallback ceiling for a status-path call that reasons. Thinking
@@ -39,6 +49,19 @@ import { resolveJobReasoning } from "@/lib/ai/reasoning/controls";
  * still wins, as everywhere.
  */
 export const REASONING_JOB_TIMEOUT_MS = 90_000;
+
+/**
+ * The outer bound of one status run: the per-call timeout for each of the
+ * `STATUS_MODEL_CALLS` calls the run may make in a row. Bounded at one call,
+ * a thinking model whose first answer was reasoning alone timed out in the
+ * middle of the repeat that would have answered, and a slow local model the
+ * person had given 300 s or more per call never landed its note (#1274).
+ * Every caller is a background job; the job expiries in `queue-runtime.ts`
+ * sit above this at the largest setting.
+ */
+export function statusRunBoundMs(effectiveTimeoutMs: number): number {
+  return effectiveTimeoutMs * STATUS_MODEL_CALLS;
+}
 
 /**
  * Shared provider plumbing for the seven `*-status.ts` generators.
@@ -53,10 +76,9 @@ export const REASONING_JOB_TIMEOUT_MS = 90_000;
  * provider chain, fall back to the legacy single provider when the chain
  * is empty, and run `runRawCompletionWithFallback` so a degraded provider
  * cascades to the next. The whole thing is still wrapped in
- * `withTimeout` at the aligned 60 s budget so a total stall can't pin the
- * card — but a timeout / error is reported as a transient miss (the
- * caller serves the fallback for this render without persisting it),
- * never as the day's cached assessment.
+ * `withTimeout` (`statusRunBoundMs`) so a total stall cannot hold the job —
+ * but a timeout / error is reported as a transient miss (the caller serves
+ * the fallback without persisting it), never as the day's cached assessment.
  */
 
 export type StatusProviderResult =
@@ -147,7 +169,7 @@ export async function hasUsableStatusProvider(
 /**
  * Run a status generation across the user's provider chain, bounded by the
  * per-user response-timeout setting (falling back to `STATUS_PROVIDER_TIMEOUT_MS`
- * when unset). The result discriminates between
+ * when unset) for each call the run may make (`statusRunBoundMs`). The result discriminates between
  * no-provider / timeout / provider-error / success so the caller can
  * decide what to persist — only `ok` is ever cached as the day's
  * assessment.
@@ -175,6 +197,17 @@ export async function runStatusCompletion(
     return { kind: "none", reason: "no_provider" };
   }
 
+  // #1279 — a note whose last generations ended without one waits out its
+  // window here, whichever path selected it again (a data sync, a warm pass,
+  // a queued job). Reported as `error`, the transient miss, like a stall.
+  if (await statusNoteCoolingDown(userId, cacheAction)) {
+    annotate({
+      action: { name: "insights.status.cooling_down" },
+      meta: { cacheAction },
+    });
+    return { kind: "error" };
+  }
+
   // The wire re-check for exactly this chain (`aiEgressRefusal`, the one
   // helper every chokepoint uses): the capability again, and whether sending
   // to these providers needs a consent receipt under the capability's rule
@@ -199,15 +232,11 @@ export async function runStatusCompletion(
     return { kind: "none", reason: refusal.reason };
   }
 
-  // Honour the per-user response-timeout setting the operator dials in for a
-  // slow self-hosted / local backend (Settings → AI). This is the single
-  // chokepoint every status / reference surface funnels through — per-metric
-  // cards, the batched assessment, the derived assessments, and the period
-  // narratives — so resolving it here threads the setting onto all of them at
-  // once. A positive stored value wins (seconds → ms); unset falls back to the
-  // status-path budget. Applied to BOTH the upstream call's own `timeoutMs`
-  // and the outer `withTimeout` cap so a raised value is not silently clipped
-  // by the 60 s wall-clock that previously bounded the path.
+  // The per-user response-timeout setting (Settings → AI), threaded here onto
+  // every status / reference surface at once. A positive stored value wins
+  // (seconds → ms); unset falls back to the status-path budget. Applied to the
+  // call's own `timeoutMs` and, times the calls a run may make, to the outer
+  // `withTimeout` cap, so a raised value is not clipped by a shorter bound.
   const settingsRow = await prisma.user.findUnique({
     where: { id: userId },
     select: { aiResponseTimeoutSeconds: true },
@@ -231,12 +260,9 @@ export async function runStatusCompletion(
   // The answer budget. Each client adds the thinking budget on top itself.
   const maxTokens = args.maxTokens ?? AI_BUDGETS.status.maxTokens;
 
-  // The day's token ledger. Until now this chokepoint — the provider entry for
-  // EVERY status/reference family (the specialised cards, the generic metric
-  // cards, biomarker cards, the batched assessment, the derived scores, the
-  // period narrative, and the off-request Coach memory workers: rolling
-  // summary, fact extraction, plan proposals) — ran with no accounting at all,
-  // so none of that spend appeared in `coach_usage` and no ceiling applied.
+  // The day's token ledger, for EVERY status/reference family (the cards, the
+  // batched assessment, the derived scores, the period narrative, and the
+  // off-request Coach memory workers).
   //
   // The reservation is atomic (single upsert-increment), matching the Coach and
   // document paths: a read-then-write check would let concurrent generations
@@ -269,31 +295,14 @@ export async function runStatusCompletion(
     "job",
   );
   if (!reservation.allowed) {
-    // Over the day's ceiling. Reported as `error` — a TRANSIENT miss the caller
-    // serves the fallback for without persisting it — deliberately NOT `none`,
-    // which callers cache as the settled "no provider configured" assessment.
-    // The distinct annotation keeps the refusal observable even though the
-    // result shape is shared.
-    // v1.38.19 — the shared `error` outcome cannot say
-    // WHY the generation stopped, so the annotation has to. `surface: "job"`
-    // plus `cap` separates "this job used up the background share" from "the
-    // whole day is spent", and `limit` says which counter tripped. The operator
-    // sees the same split on the admin provider-health card.
-    annotate({
-      action: { name: "insights.status.budget_exceeded" },
-      meta: {
-        cacheAction,
-        owner: reservation.owner,
-        surface: "job",
-        limit: reservation.limit,
-        cap: jobCap,
-        totalAfter: reservation.totalAfter,
-        operatorAfter: reservation.operatorAfter,
-      },
-    });
+    annotateBudgetRefusal(cacheAction, reservation, jobCap);
     return { kind: "error" };
   }
 
+  // #1279 — the run's bound aborts the call it cuts off, so a provider call
+  // the bound gave up on (and any repeat inside it) stops instead of running
+  // on detached, with its spend reported nowhere.
+  const abort = new AbortController();
   const raced = await withTimeout(
     () =>
       runRawCompletionWithFallback({
@@ -316,39 +325,26 @@ export async function runStatusCompletion(
             responseFormat: args.responseFormat === "text" ? undefined : "json",
             timeoutMs: effectiveTimeoutMs,
           }),
+          signal: abort.signal,
           // v1.41 — only a named job ever carries this; see `reasoningJob`.
           ...(reasoning ? { reasoning } : {}),
         },
       }),
-    effectiveTimeoutMs,
+    statusRunBoundMs(effectiveTimeoutMs),
     null,
+    () => abort.abort(),
   );
 
-  if (raced.timedOut) {
-    // A timed-out generation may still have burned upstream tokens, but we have
-    // no reported count to charge — refund the reservation rather than bill an
-    // invented figure.
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
-      servedBy: null,
-      reservedOwner: reservation.owner,
-    });
-    return { kind: "timeout" };
-  }
-  if (raced.errored || raced.value === null) {
-    await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
-      servedBy: null,
-      reservedOwner: reservation.owner,
-    });
-    return { kind: "error" };
+  if (raced.timedOut || raced.errored || raced.value === null) {
+    return failedRun(raced, { userId, cacheAction, dateKey, reservation });
   }
 
-  const { result, workingProvider } = raced.value;
-  // Reconcile against what the provider actually reported. This runs for the
-  // empty-content branch too: those tokens were burned upstream even though the
-  // reply was unusable, so they stay on the ledger rather than being refunded
-  // into a free retry loop. Falls back to the reservation when the provider
-  // reports no count, so an unreported generation is never billed as zero.
-  const actualTokens = result.tokensUsed ?? reservation.reserved;
+  const { result, workingProvider, tokensSpent } = raced.value;
+  // What the provider reported, plus (#1279) what the hops that failed before
+  // it spent. The empty-content branch is charged too: those tokens were
+  // burned upstream. No count falls back to the reservation, never to zero.
+  const actualTokens =
+    (result.tokensUsed ?? reservation.reserved) + tokensSpent;
   await reconcileSpend(userId, reservation.reserved, actualTokens, dateKey, 0, {
     servedBy: workingProvider.providerType,
     reservedOwner: reservation.owner,
@@ -392,4 +388,74 @@ export async function runStatusCompletion(
     model: result.model ?? "unknown",
     tokensUsed: result.tokensUsed ?? null,
   };
+}
+
+/**
+ * A run that timed out or failed. It charges only what a reply reported
+ * spending, never an invented figure; #1279 — a failed chain's report counts,
+ * since a model that reasons without answering bills every call, and a full
+ * refund let background work spend without the day's ceiling seeing it. A
+ * chain that sent nothing (the bench) holds the note without counting it.
+ */
+async function failedRun(
+  raced: { timedOut: boolean; error?: unknown },
+  run: {
+    userId: string;
+    cacheAction: string;
+    dateKey: string;
+    reservation: { reserved: number; owner: BudgetCostOwner };
+  },
+): Promise<StatusProviderResult> {
+  const spent = spentOnFailure(raced.error);
+  await reconcileSpend(
+    run.userId,
+    run.reservation.reserved,
+    spent,
+    run.dateKey,
+    0,
+    {
+      servedBy: null,
+      reservedOwner: run.reservation.owner,
+    },
+  );
+  if ((raced.error as { sentNothing?: unknown } | null)?.sentNothing === true) {
+    await holdStatusNoteWhileBenched({
+      userId: run.userId,
+      cacheAction: run.cacheAction,
+      todayKey: run.dateKey,
+    });
+  }
+  return { kind: raced.timedOut ? "timeout" : "error" };
+}
+
+/**
+ * Over the day's ceiling. Reported as `error` — a TRANSIENT miss the caller
+ * serves the fallback for without persisting it — deliberately NOT `none`,
+ * which callers cache as the settled "no provider configured" assessment.
+ * The distinct annotation keeps the refusal observable even though the
+ * result shape is shared.
+ *
+ * v1.38.19 — the shared `error` outcome cannot say WHY the generation
+ * stopped, so the annotation has to. `surface: "job"` plus `cap` separates
+ * "this job used up the background share" from "the whole day is spent", and
+ * `limit` says which counter tripped. The operator sees the same split on the
+ * admin provider-health card.
+ */
+function annotateBudgetRefusal(
+  cacheAction: string,
+  reservation: Awaited<ReturnType<typeof reserveBudget>>,
+  jobCap: number,
+): void {
+  annotate({
+    action: { name: "insights.status.budget_exceeded" },
+    meta: {
+      cacheAction,
+      owner: reservation.owner,
+      surface: "job",
+      limit: reservation.limit,
+      cap: jobCap,
+      totalAfter: reservation.totalAfter,
+      operatorAfter: reservation.operatorAfter,
+    },
+  });
 }

@@ -1,4 +1,4 @@
-# HealthLog — two-container stack (app + Postgres 16).
+# HealthLog — two-container stack (app + Postgres 18).
 #
 # First run (clean host):
 #   cp .env.example .env
@@ -14,9 +14,13 @@
 # and login silently fails. This is the single most common self-host snag.
 # Leave it unset (or true) only when a TLS reverse proxy serves HTTPS.
 #
-# Persistent state lives in exactly one named volume (`pgdata`, Postgres'
-# data dir). The app container is stateless, so a backup of the database is
-# a backup of everything. The optional GeoLite2 databases are either baked
+# Persistent state lives in the named volume `postgres-data` (Postgres' data).
+# The app container is stateless, so a backup of the database is a backup of
+# everything. `backups` holds the database dumps the app takes every night and
+# before every migration (docs/ops/disaster-recovery.md); keep a copy of them
+# off this host, or set the off-host bucket below. `pgdata` is where Postgres 16 kept the data up to
+# v1.45; on an install that has it, `db-upgrade` moves it into Postgres 18 once
+# and then leaves it alone as the way back (docs/ops/postgres-major-upgrade.md). The optional GeoLite2 databases are either baked
 # into the image at build time or mounted read-only from the host and
 # pointed at with GEOLITE2_DIR — either way they are replaceable, not state.
 
@@ -88,8 +92,10 @@ x-healthlog-env: &healthlog_env
   TELEGRAM_WEBHOOK_SECRET: "${TELEGRAM_WEBHOOK_SECRET:-}"
   # v1.18.11 (W3) — client-IP resolution + geo lookup. Behind Cloudflare
   # the real visitor IP is in `cf-connecting-ip`; set
-  # TRUST_CF_CONNECTING_IP=1 ONLY when Cloudflare is in front (off by
-  # default — a direct-exposed host must not trust a forgeable header).
+  # TRUST_CF_CONNECTING_IP=1 ONLY when the origin accepts connections from
+  # Cloudflare alone (a Tunnel, or a firewall admitting only Cloudflare's
+  # ranges): the header is believed from every connection (off by default;
+  # see docs/self-hosting/reverse-proxy.md).
   # IP_GEO_LOOKUP_URL overrides the default ipwho.is provider (HTTPS by
   # default); IP_GEO_LOOKUP_DISABLED=1 stops all third-party IP egress.
   # IP_GEO_ALLOW_INSECURE=true permits a plain-HTTP provider URL (e.g. the
@@ -102,7 +108,14 @@ x-healthlog-env: &healthlog_env
   # collapses every anonymous caller into one rate-limit bucket. Listed here
   # so an operator value in .env reaches the container (the `environment:`
   # block is a whitelist).
+  # TRUSTED_PROXY_CIDRS names the addresses the reverse proxy connects from
+  # (comma-separated CIDRs). Set, only those connections may report a client
+  # address; unset, any private address may, which behind Docker Desktop,
+  # OrbStack or docker-proxy includes every caller of the published port.
+  # Same host: 127.0.0.1/32,::1/128. Docker network: the proxy's subnet.
+  # See docs/self-hosting/reverse-proxy.md.
   TRUST_PROXY_HOPS: "${TRUST_PROXY_HOPS:-}"
+  TRUSTED_PROXY_CIDRS: "${TRUSTED_PROXY_CIDRS:-}"
   TRUST_CF_CONNECTING_IP: "${TRUST_CF_CONNECTING_IP:-}"
   IP_GEO_LOOKUP_URL: "${IP_GEO_LOOKUP_URL:-}"
   IP_GEO_LOOKUP_DISABLED: "${IP_GEO_LOOKUP_DISABLED:-}"
@@ -145,6 +158,20 @@ x-healthlog-env: &healthlog_env
   # serves anyway. A last resort for a refusal you are certain is false: it
   # disables a safety check. See docs/self-hosting/getting-started.md.
   ENCRYPTION_KEY_CHECK: "${ENCRYPTION_KEY_CHECK:-}"
+  # The whole-database dump (docs/ops/disaster-recovery.md). Nightly at
+  # DB_BACKUP_SCHEDULE (five-field cron in Europe/Berlin time, default
+  # "30 1 * * *") into DB_BACKUP_DIR (default /var/lib/healthlog/backups, the
+  # `backups` volume below), keeping DB_BACKUP_KEEP daily dumps (default 7)
+  # and the last two taken before a migration. With the off-host bucket set,
+  # each nightly dump is also uploaded under `database/`, sealed with
+  # BACKUP_ENCRYPTION_KEY. DB_BACKUP_ENABLED=false stops the nightly dump;
+  # DB_BACKUP_BEFORE_MIGRATE=false skips the dump before migrations. Change
+  # DB_BACKUP_DIR only together with the volume mount.
+  DB_BACKUP_ENABLED: "${DB_BACKUP_ENABLED:-}"
+  DB_BACKUP_DIR: "${DB_BACKUP_DIR:-}"
+  DB_BACKUP_SCHEDULE: "${DB_BACKUP_SCHEDULE:-}"
+  DB_BACKUP_KEEP: "${DB_BACKUP_KEEP:-}"
+  DB_BACKUP_BEFORE_MIGRATE: "${DB_BACKUP_BEFORE_MIGRATE:-}"
   BACKUP_ENCRYPTION_KEY: "${BACKUP_ENCRYPTION_KEY:-}"
   BACKUP_ENCRYPTION_PREVIOUS_KEYS: "${BACKUP_ENCRYPTION_PREVIOUS_KEYS:-}"
   BACKUP_S3_ENDPOINT: "${BACKUP_S3_ENDPOINT:-}"
@@ -166,6 +193,7 @@ x-healthlog-env: &healthlog_env
   # the block exists: `environment:` is a whitelist, and a value in .env that
   # is not named here never arrives.
   AUDIT_LOG_RETENTION_DAYS: "${AUDIT_LOG_RETENTION_DAYS:-}"
+  ACCOUNT_DELETION_GRACE_DAYS: "${ACCOUNT_DELETION_GRACE_DAYS:-}"
   # How long Coach conversations are kept, in days (default 365, floor 30).
   # Like the audit window this number is PUBLISHED to the user on the Data &
   # Privacy page, so an instance running 90 has to be able to say 90.
@@ -278,17 +306,23 @@ x-healthlog-env: &healthlog_env
   OIDC_SCOPES: "${OIDC_SCOPES:-}"
   OIDC_BUTTON_LABEL: "${OIDC_BUTTON_LABEL:-}"
   OIDC_ONLY: "${OIDC_ONLY:-}"
-  # Deploy-result webhook (optional). DEPLOY_WEBHOOK_SECRET authenticates
-  # POST /api/internal/deploy-webhook; DEPLOY_LOGS_URL is the
-  # deployment-dashboard URL (e.g. the Coolify UI) linked in
-  # deploy-failure notifications. Listed here so operator values in
-  # .env reach the container (the `environment:` block is a whitelist).
+  # Deploy-result webhook (optional). POST /api/internal/deploy-webhook
+  # authenticates either with DEPLOY_WEBHOOK_SECRET in the
+  # X-Deploy-Webhook-Secret header (what Coolify's stock sender can do; no
+  # replay protection) or with X-Deploy-Webhook-Signature: sha256=<HMAC of
+  # "<X-Deploy-Webhook-Timestamp>.<body>" under the secret>, the timestamp
+  # within 5 minutes. DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP=true also requires a
+  # fresh X-Deploy-Webhook-Timestamp on a secret-header request;
+  # DEPLOY_WEBHOOK_REQUIRE_SIGNATURE=true accepts signed requests only, the
+  # one setting that stops a replay. DEPLOY_LOGS_URL is the
+  # deployment-dashboard URL (e.g. the Coolify UI) linked in deploy-failure
+  # notifications. Listed here so operator values in .env reach the
+  # container (the `environment:` block is a whitelist). See
+  # docs/ops/deploy.md.
   DEPLOY_WEBHOOK_SECRET: "${DEPLOY_WEBHOOK_SECRET:-}"
   DEPLOY_LOGS_URL: "${DEPLOY_LOGS_URL:-}"
-  # Optional replay hardening: when "true", the deploy webhook
-  # requires a fresh X-Deploy-Webhook-Timestamp header (±5 min).
-  # See docs/ops/deploy.md.
   DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP: "${DEPLOY_WEBHOOK_REQUIRE_TIMESTAMP:-}"
+  DEPLOY_WEBHOOK_REQUIRE_SIGNATURE: "${DEPLOY_WEBHOOK_REQUIRE_SIGNATURE:-}"
   # TLS leaf SPKI-change alarm baseline (optional). The native client
   # pins the served TLS leaf; this is the known-good pin set the monitor
   # alarms against on a rotation. Comma-separated for the dual-pin
@@ -473,6 +507,11 @@ services:
       - "3000:3000"
     environment:
       <<: *healthlog_env
+    # The database dumps (DB_BACKUP_DIR). Without this mount the app still
+    # copies its nightly dump off-host when the bucket is set, but keeps none
+    # here and takes none before a migration; the boot log says so.
+    volumes:
+      - backups:/var/lib/healthlog/backups
     # Bring your own GeoLite2 databases. The published image only carries
     # MMDBs if the build had a MaxMind licence key, so on `:latest` the
     # offline tier is usually absent and every login IP goes to the online
@@ -482,13 +521,15 @@ services:
     # matches GEOLITE2_DIR's default (/opt/geolite2), so this works as-is
     # once uncommented. Mounting at a different container path also works,
     # just also set GEOLITE2_DIR in .env to match it.
-    # Steps: docs/self-hosting/geolite2.md.
+    # Steps: docs/self-hosting/geolite2.md. The line goes under `volumes:`
+    # above, beside the backups line:
     #
-    # volumes:
     #   - ./geolite2:/opt/geolite2:ro
     depends_on:
       db:
         condition: service_healthy
+      db-upgrade:
+        condition: service_completed_successfully
     restart: unless-stopped
     # Bounded log rotation: the default json-file driver keeps every line
     # forever, which is exactly what fills the disk on the small NAS /
@@ -559,9 +600,14 @@ services:
   #   environment:
   #     <<: *healthlog_env
   #     HEALTHLOG_PROCESS_TYPE: "worker"
+  #   # The worker takes the nightly database dump, so it needs the volume.
+  #   volumes:
+  #     - backups:/var/lib/healthlog/backups
   #   depends_on:
   #     db:
   #       condition: service_healthy
+  #     db-upgrade:
+  #       condition: service_completed_successfully
   #   restart: unless-stopped
   #   logging:
   #     driver: json-file
@@ -572,12 +618,11 @@ services:
   #   stop_grace_period: 45s
 
   db:
-    # Pinned to the concrete minor instead of the floating `16-alpine`
+    # Pinned to the concrete minor instead of the floating `18-alpine`
     # alias so a database update is always a deliberate, reviewable
-    # change (at pin time `16-alpine` resolved to this same digest, so
-    # existing deployments see no image change). Minor releases share
-    # the on-disk format — bumping this pin is safe without a dump /
-    # restore; a major-version bump (17+) is not.
+    # change. Minor releases share the on-disk format, so bumping this pin
+    # is safe without a dump / restore; a major version is not, which is
+    # what `db-upgrade` below and docs/ops/postgres-major-upgrade.md are for.
     #
     # The pin only works as long as something watches it: PostgreSQL
     # publishes minor releases with security and data-corruption fixes and
@@ -587,7 +632,7 @@ services:
     # `.github/dependabot.yml` now raises a PR for each new minor;
     # `src/__tests__/database-pin-is-watched.test.ts` keeps both halves
     # (concrete pin, active watch) from being dropped.
-    image: postgres:16.15-alpine
+    image: postgres:18.6-alpine
     container_name: healthlog-db
     # Loads pg_stat_statements so slow queries can be found from measurements
     # instead of guesses. Loading the library only collects statistics; the
@@ -617,8 +662,12 @@ services:
       POSTGRES_USER: healthlog
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
       POSTGRES_DB: healthlog
+    # From 18 on, the image keeps its data under /var/lib/postgresql/18/docker
+    # and expects the volume one level up, so the next major can sit beside
+    # this one in the same volume. Mounting it at .../data, as 16 had it,
+    # makes the container refuse to start.
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U healthlog"]
       interval: 5s
@@ -639,5 +688,199 @@ services:
         max-size: "10m"
         max-file: "3"
 
+  # Moves a Postgres 16 database from v1.45 or earlier into Postgres 18, once,
+  # on the first start after the update. A major version cannot read the data
+  # directory of an older one, so changing the image line alone would leave
+  # the database refusing to start.
+  #
+  # On every start it decides in a second and exits:
+  # - no `pgdata` data (a new install): nothing to do;
+  # - the database service runs Postgres 16 (after going back): nothing to
+  #   do, the live 16 volume is left alone;
+  # - 16 was used again after an earlier move: refuses, so the app does not
+  #   start on the move-day copy;
+  # - Postgres 18 already holds the database: nothing to do;
+  # - otherwise it starts Postgres 16 inside this container on the old
+  #   volume, streams a dump into the new database in one transaction,
+  #   compares the row count of every table, gathers planner statistics and
+  #   marks the old volume as moved. `app` starts only after it succeeded.
+  #   A move cut short (a restart, a full disk) leaves a "moving" marker, and
+  #   the next start empties the new database and runs it again from scratch.
+  #
+  # The old volume is read, never changed, apart from that marker file, so
+  # going back is the previous image and volume lines. If anything fails, the
+  # new database stays empty, `app` does not start, and the log says why.
+  # It costs one small image pull; a later release removes the service.
+  db-upgrade:
+    image: postgres:16.15-alpine
+    container_name: healthlog-db-upgrade
+    # Runs once per `compose up` and exits. "no" also keeps hosts such as
+    # Coolify from reporting the exited container as a failed service.
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Read-only, only to check there is room for the copy before starting.
+      - postgres-data:/var/lib/postgresql/next:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # `$$` is how compose spells a literal `$`.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        set -o pipefail
+        log() { echo "db-upgrade: $$*"; }
+        OLD=/var/lib/postgresql/data
+        MARK="$$OLD/HEALTHLOG_MOVED_TO_POSTGRES_18"
+        MOVING="$$OLD/HEALTHLOG_MOVING_TO_POSTGRES_18"
+        export PGPASSWORD="$$POSTGRES_PASSWORD"
+        new() { psql -h db -U healthlog -d healthlog -v ON_ERROR_STOP=1 -Atqc "$$1"; }
+        old() { psql -h /tmp -U healthlog -d healthlog -v ON_ERROR_STOP=1 -Atqc "$$1"; }
+        empty_new() {
+          for S in $$(new "SELECT quote_ident(nspname) FROM pg_namespace WHERE nspname NOT LIKE 'pg\\_%' AND nspname <> 'information_schema'"); do
+            new "DROP SCHEMA $$S CASCADE"
+          done
+          new "CREATE SCHEMA public"
+        }
+        if [ ! -s "$$OLD/PG_VERSION" ]; then
+          log "no Postgres 16 database to move, nothing to do"
+          exit 0
+        fi
+        # The database service must be the new major. After going back to 16 the
+        # service runs on this very volume: touching it then would wipe the live data.
+        i=0
+        until NEWVER=$$(new "SHOW server_version_num" 2>/dev/null); do
+          i=$$((i + 1))
+          [ "$$i" -lt 60 ] || { log "the database service did not answer for a minute"; exit 1; }
+          sleep 1
+        done
+        if [ "$$NEWVER" -lt 180000 ]; then
+          log "the database service runs Postgres $$((NEWVER / 10000)), not 18: nothing to move, the old volume is left alone"
+          exit 0
+        fi
+        checkpoint() { pg_controldata "$$OLD" | awk -F': *' '/^Latest checkpoint location/ { print $$2 }'; }
+        USER_TABLES="FROM pg_tables WHERE schemaname NOT IN ('pg_catalog', 'information_schema')"
+        TABLES=$$(new "SELECT count(*) $$USER_TABLES")
+        if [ -e "$$MARK" ]; then
+          MOVED_ON=$$(sed -n 1p "$$MARK")
+          MOVED_CHECKPOINT=$$(sed -n 2p "$$MARK")
+          if [ -n "$$MOVED_CHECKPOINT" ] && [ "$$(checkpoint)" != "$$MOVED_CHECKPOINT" ]; then
+            log "the Postgres 16 database changed after it was moved on $$MOVED_ON: it was used again after going back to 16."
+            log "Postgres 18 still holds the state of that day, so it is not started on. To move the current 16 database,"
+            log "see docs/ops/postgres-major-upgrade.md, \"Updating again after going back\"."
+            exit 1
+          fi
+          if [ "$$TABLES" != 0 ]; then
+            log "the Postgres 16 database was moved on $$MOVED_ON, nothing to do"
+            exit 0
+          fi
+          log "the Postgres 16 database was moved on $$MOVED_ON, but the Postgres 18 database is empty now."
+          log "Not importing the old state again by itself. See docs/ops/postgres-major-upgrade.md, \"Starting over\"."
+          exit 1
+        fi
+        if [ -e "$$MOVING" ]; then
+          log "an earlier move did not finish; emptying the Postgres 18 database and starting it again"
+          empty_new
+        elif [ "$$TABLES" != 0 ]; then
+          log "the Postgres 18 database already holds data, leaving both as they are"
+          exit 0
+        fi
+        VERSION=$$(cat "$$OLD/PG_VERSION")
+        if [ "$$VERSION" != 16 ]; then
+          log "the old data directory is Postgres $$VERSION, this step moves Postgres 16 only."
+          log "See docs/ops/postgres-major-upgrade.md to move it by hand."
+          exit 1
+        fi
+        NEED=$$(du -sk "$$OLD" | cut -f1)
+        FREE=$$(df -Pk /var/lib/postgresql/next | awk 'NR == 2 { print $$4 }')
+        # Room for the copy, and for the dump the app takes before its first migration.
+        if [ "$$FREE" -le $$((NEED * 3 / 2)) ]; then
+          log "the move needs about $$((NEED * 3 / 2 / 1024)) MiB free for the new database and its first dump, the disk has $$((FREE / 1024)) MiB."
+          log "Nothing was changed. Free some space and start the stack again."
+          exit 1
+        fi
+        trap 'CODE=$$?; [ "$$CODE" = 0 ] || log "the move stopped (exit $$CODE). The old volume is untouched; the next start begins it again."' EXIT
+        date -u +%Y-%m-%dT%H:%M:%SZ > "$$MOVING"
+        log "moving the Postgres 16 database ($$((NEED / 1024)) MiB on disk) into Postgres 18"
+        su-exec postgres postgres -D "$$OLD" -c listen_addresses= -c unix_socket_directories=/tmp &
+        PID=$$!
+        i=0
+        until pg_isready -h /tmp -U healthlog -q; do
+          kill -0 "$$PID" 2>/dev/null || { log "the Postgres 16 server did not start, see the lines above"; exit 1; }
+          i=$$((i + 1))
+          [ "$$i" -lt 600 ] || { log "the Postgres 16 server did not get ready in ten minutes"; exit 1; }
+          sleep 1
+        done
+        pg_dump -h /tmp -U healthlog -Fc healthlog |
+          pg_restore -h db -U healthlog -d healthlog --no-owner --single-transaction --exit-on-error
+        COUNTED=0
+        for T in $$(old "SELECT quote_ident(schemaname) || '.' || quote_ident(tablename) $$USER_TABLES ORDER BY 1"); do
+          A=$$(old "SELECT count(*) FROM $$T")
+          B=$$(new "SELECT count(*) FROM $$T")
+          if [ "$$A" != "$$B" ]; then
+            log "table $$T has $$A rows in Postgres 16 but $$B in Postgres 18. Emptying the new database again."
+            log "Please report this with the lines above."
+            empty_new
+            exit 1
+          fi
+          COUNTED=$$((COUNTED + 1))
+        done
+        log "all $$COUNTED tables arrived with the same row counts"
+        vacuumdb -h db -U healthlog -d healthlog --analyze-in-stages --quiet
+        kill -INT "$$PID"
+        wait "$$PID" || true
+        # The marker keeps the old database's last checkpoint: a later start can tell
+        # whether 16 was used again after the move.
+        { date -u +%Y-%m-%dT%H:%M:%SZ; checkpoint; } > "$$MOVING"
+        mv "$$MOVING" "$$MARK"
+        log "done. The old volume stays as it was, as a way back; see docs/ops/postgres-major-upgrade.md"
+
+  # Restores a database dump into an EMPTY database (docs/ops/disaster-recovery.md).
+  # Never started by `docker compose up`; run it by name:
+  #
+  #   docker compose run --rm db-restore list
+  #   docker compose run --rm db-restore latest
+  #   docker compose run --rm db-restore healthlog-<time>-daily.dump
+  #   docker compose run --rm db-restore latest --from-bucket
+  #
+  # It checks the dump against its manifest and the keys in .env against the
+  # keys the dump was written with, refuses a database that already holds
+  # tables, restores in one transaction and compares every table's row count
+  # with the manifest. Start the app only after it says "Restored".
+  # `--from-bucket` downloads the dump and its manifest from the off-host bucket
+  # (`database/`, the BACKUP_S3_* variables) and opens them with
+  # BACKUP_ENCRYPTION_KEY: the restore after the host and its local dumps are
+  # gone. Files you downloaded yourself restore from a directory you mount:
+  # `docker compose run --rm -v ./restore:/restore:ro db-restore
+  # /restore/healthlog-<time>-daily.dump.enc`.
+  db-restore:
+    image: ghcr.io/mbombeck/healthlog${HEALTHLOG_IMAGE_REF:-:latest}
+    profiles: ["restore"]
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      <<: *healthlog_env
+    volumes:
+      - backups:/var/lib/healthlog/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["node", "scripts/db-restore.mjs"]
+    command: ["list"]
+
 volumes:
+  postgres-data:
   pgdata:
+  backups:

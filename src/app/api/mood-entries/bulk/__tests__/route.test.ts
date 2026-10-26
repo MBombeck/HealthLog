@@ -100,6 +100,7 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { createTagLinks } from "@/lib/mood/tag-links";
+import { auditLog } from "@/lib/auth/audit";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -139,6 +140,7 @@ function existingRow(overrides: {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(auditLog).mockResolvedValue(undefined);
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
   vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true } as never);
@@ -213,17 +215,15 @@ describe("POST /api/mood-entries/bulk — 422 multi-issue (v1.4.43 W6)", () => {
     );
     expect(res.status).toBe(422);
     await new Promise((r) => setTimeout(r, 5));
-    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
-    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
-      data: { userId: string; action: string };
-    };
-    expect(call.data.action).toBe("mood.bulk.validation-failed");
+    // Through `auditLog()`, which decides whether the refusal is filed.
+    expect(auditLog).toHaveBeenCalledWith(
+      "mood.bulk.validation-failed",
+      expect.anything(),
+    );
   });
 
   it("does not block the 422 when the audit-row write rejects", async () => {
-    vi.mocked(prisma.auditLog.create).mockRejectedValueOnce(
-      new Error("db down"),
-    );
+    vi.mocked(auditLog).mockRejectedValueOnce(new Error("db down"));
     const res = await POST(
       postReq({
         entries: [

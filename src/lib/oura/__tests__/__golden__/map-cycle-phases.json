@@ -1,0 +1,31 @@
+[
+  {
+    "scenario": "luteal then follicular on adjacent days marks the follicular day",
+    "periodDays": ["2026-03-03"]
+  },
+  {
+    "scenario": "a gap between luteal and follicular marks nothing",
+    "periodDays": []
+  },
+  {
+    "scenario": "a literal menstrual phase marks its own day",
+    "periodDays": ["2026-04-01", "2026-04-02"]
+  },
+  {
+    "scenario": "page order is not chronological",
+    "periodDays": ["2026-05-03"]
+  },
+  {
+    "scenario": "a null phase does not break the run, an unknown phase does",
+    "periodDays": []
+  },
+  {
+    "scenario": "records without a day are dropped and duplicates collapse",
+    "periodDays": ["2026-07-01"]
+  },
+  {
+    "scenario": "month boundary counts as adjacent",
+    "periodDays": ["2026-09-01"]
+  },
+  { "scenario": "an empty series", "periodDays": [] }
+]

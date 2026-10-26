@@ -1,0 +1,26 @@
+{
+  "status": 403,
+  "body": {
+    "data": null,
+    "error": "Module \"workouts\" is not enabled",
+    "meta": {
+      "errorCode": "module.disabled",
+      "module": "workouts",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 403,
+      "action": {
+        "name": "workouts.detail"
+      },
+      "meta": {
+        "workoutId": "<id:1>"
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": []
+}

@@ -1,19 +1,47 @@
 /**
  * Daily-briefing fallback cron: tz slot-gating + result accounting, plus
- * the dead-queue wiring guard (imported / in allQueues / scheduled / worked).
+ * the dead-queue wiring guard read off the worker registry (declared,
+ * scheduled, bound) and the morning push the finalised refresh fires.
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { describe, it, expect, vi } from "vitest";
+
+const { runMorningDigestRefresh, maybeDispatchPush } = vi.hoisted(() => ({
+  runMorningDigestRefresh: vi.fn(),
+  maybeDispatchPush: vi.fn(async () => "sent"),
+}));
+vi.mock("@/lib/jobs/morning-digest-refresh", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/lib/jobs/morning-digest-refresh")
+  >()),
+  runMorningDigestRefresh,
+}));
+vi.mock("@/lib/daily/daily-briefing-push", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/daily/daily-briefing-push")>()),
+  maybeDispatchDailyBriefing: maybeDispatchPush,
+}));
+vi.mock("@/lib/jobs/reminder/shared", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/jobs/reminder/shared")>()),
+  getWorkerPrisma: () => ({}),
+}));
 import type { PrismaClient } from "@/generated/prisma/client";
 
+import { runDailyBriefingTick } from "@/lib/jobs/daily-briefing";
 import {
-  runDailyBriefingTick,
   DAILY_BRIEFING_QUEUE,
   DAILY_BRIEFING_CRON,
-} from "@/lib/jobs/daily-briefing";
+} from "@/lib/jobs/daily-briefing-queue";
 import type { maybeDispatchDailyBriefing } from "@/lib/daily/daily-briefing-push";
+import type { MorningDigestRefreshPayload } from "@/lib/jobs/morning-digest-refresh-shared";
+import {
+  handleDailyBriefing,
+  handleMorningDigestRefresh,
+} from "@/lib/jobs/reminder/status-handlers";
+import {
+  groupOf,
+  jobOf,
+  loadedHandler,
+} from "@/lib/jobs/registry/__tests__/registry-helpers";
+import type { Job } from "pg-boss";
 
 // 06:00Z → 08:00 Berlin (the fallback hour) but 02:00 in New York (not the
 // slot), so a mixed-tz cohort exercises the per-user local-hour gate.
@@ -76,38 +104,44 @@ describe("runDailyBriefingTick — slot gating", () => {
   });
 });
 
-describe("reminder-worker — daily-briefing wiring", () => {
-  const registrar = readFileSync(
-    join(__dirname, "..", "reminder", "register-status.ts"),
-    "utf8",
-  );
+describe("daily-briefing registration", () => {
+  function refreshJob(): Job<MorningDigestRefreshPayload> {
+    return {
+      id: "j1",
+      name: "morning-digest-refresh",
+      data: { userId: "u1", localDate: "2026-07-16" },
+      expireInSeconds: 60,
+      heartbeatSeconds: null,
+      retryCount: 0,
+      signal: new AbortController().signal,
+    };
+  }
 
-  it("imports the queue symbols from the daily-briefing module", () => {
-    expect(registrar).toMatch(/from\s*["']@\/lib\/jobs\/daily-briefing["']/);
-    expect(registrar).toMatch(/\bDAILY_BRIEFING_QUEUE\b/);
-    expect(registrar).toMatch(/\bDAILY_BRIEFING_CRON\b/);
-    expect(registrar).toMatch(/\brunDailyBriefingTick\b/);
+  it("declares the queue in the status group and schedules the cron", () => {
+    expect(groupOf(DAILY_BRIEFING_QUEUE).name).toBe("status");
+    const job = jobOf(DAILY_BRIEFING_QUEUE);
+    expect(job.cron).toBe(DAILY_BRIEFING_CRON);
+    expect(job.work).toEqual({ localConcurrency: 1 });
   });
 
-  it("registers the queue in allQueues and schedules the cron", () => {
-    const allQueues = registrar.match(/const allQueues\s*=\s*\[([\s\S]*?)\];/);
-    expect(allQueues).not.toBeNull();
-    expect(allQueues![1]).toMatch(/\bDAILY_BRIEFING_QUEUE\b/);
-    expect(registrar).toMatch(
-      /\[DAILY_BRIEFING_QUEUE,\s*DAILY_BRIEFING_CRON\]/,
-    );
+  it("binds the handler that runs the tick", async () => {
+    expect(await loadedHandler(DAILY_BRIEFING_QUEUE)).toBe(handleDailyBriefing);
   });
 
-  it("wires a createAndWork handler that runs the tick", () => {
-    expect(registrar).toMatch(
-      /createAndWork[\s\S]{0,200}DAILY_BRIEFING_QUEUE[\s\S]{0,400}runDailyBriefingTick/,
+  it("fires the finalisation-hook push after a finalised morning refresh", async () => {
+    runMorningDigestRefresh.mockResolvedValueOnce({ status: "finalised" });
+    await handleMorningDigestRefresh([refreshJob()]);
+    expect(maybeDispatchPush).toHaveBeenCalledTimes(1);
+    expect(maybeDispatchPush).toHaveBeenCalledWith(
+      expect.anything(),
+      "u1",
+      expect.any(Date),
     );
-  });
 
-  it("fires the finalisation-hook push after a finalised morning refresh", () => {
-    expect(registrar).toMatch(
-      /result\.status\s*===\s*["']finalised["'][\s\S]{0,300}maybeDispatchDailyBriefing/,
-    );
+    maybeDispatchPush.mockClear();
+    runMorningDigestRefresh.mockResolvedValueOnce({ status: "already-final" });
+    await handleMorningDigestRefresh([refreshJob()]);
+    expect(maybeDispatchPush).not.toHaveBeenCalled();
   });
 
   it("uses an every-15-min cron for the fallback slot", () => {

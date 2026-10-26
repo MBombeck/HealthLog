@@ -22,13 +22,8 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { withIdempotency } from "@/lib/idempotency";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
@@ -65,17 +60,11 @@ async function postRestore(request: NextRequest): Promise<Response> {
     return apiError("Too many restore requests, try again later", 429);
   }
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, restoreSchema, {
     maxBytes: 256 * 1024,
+    errorCode: "measurement.restore.invalid",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = restoreSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "measurement.restore.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const { ids } = parsed.data;
 

@@ -1,0 +1,2161 @@
+{
+  "status": 200,
+  "cacheControl": "private, max-age=0, must-revalidate",
+  "body": {
+    "data": {
+      "summaries": {
+        "WEIGHT": {
+          "count": 60,
+          "latest": 82,
+          "min": 82,
+          "max": 84.4,
+          "mean": 83.18,
+          "median": 83.2,
+          "avg7": 82.11,
+          "avg30": 82.58,
+          "slope7": {
+            "slope": -0.042,
+            "direction": "down",
+            "confidence": 0.93
+          },
+          "slope30": {
+            "slope": -0.04,
+            "direction": "down",
+            "confidence": 0.99
+          },
+          "avg30LastMonth": 83.78,
+          "avg30LastYear": null
+        },
+        "BLOOD_PRESSURE_SYS": {
+          "count": 91,
+          "latest": 123,
+          "min": 123,
+          "max": 137,
+          "mean": 129.92,
+          "median": 130,
+          "avg7": 131.14,
+          "avg30": 130,
+          "slope7": {
+            "slope": -0.393,
+            "direction": "down",
+            "confidence": 0.04
+          },
+          "slope30": {
+            "slope": 0.071,
+            "direction": "up",
+            "confidence": 0.02
+          },
+          "avg30LastMonth": 130,
+          "avg30LastYear": null
+        },
+        "BLOOD_PRESSURE_DIA": {
+          "count": 91,
+          "latest": 78,
+          "min": 78,
+          "max": 86,
+          "mean": 81.96,
+          "median": 82,
+          "avg7": 81.43,
+          "avg30": 81.8,
+          "slope7": {
+            "slope": -0.714,
+            "direction": "down",
+            "confidence": 0.36
+          },
+          "slope30": {
+            "slope": -0.017,
+            "direction": "down",
+            "confidence": 0
+          },
+          "avg30LastMonth": 82.1,
+          "avg30LastYear": null
+        },
+        "PULSE": {
+          "count": 60,
+          "latest": 64,
+          "min": 64,
+          "max": 69,
+          "mean": 66.5,
+          "median": 66.5,
+          "avg7": 66.14,
+          "avg30": 66.5,
+          "slope7": {
+            "slope": -0.143,
+            "direction": "down",
+            "confidence": 0.04
+          },
+          "slope30": {
+            "slope": -0.02,
+            "direction": "down",
+            "confidence": 0.01
+          },
+          "avg30LastMonth": 66.5,
+          "avg30LastYear": null
+        },
+        "BODY_FAT": {
+          "count": 9,
+          "latest": 24,
+          "min": 24,
+          "max": 25.1,
+          "mean": 24.56,
+          "median": 24.6,
+          "avg7": 24,
+          "avg30": 24.28,
+          "slope7": null,
+          "slope30": {
+            "slope": -0.021,
+            "direction": "down",
+            "confidence": 0.99
+          },
+          "avg30LastMonth": 24.9,
+          "avg30LastYear": null
+        },
+        "ACTIVITY_STEPS": {
+          "count": 30,
+          "latest": 6000,
+          "min": 6000,
+          "max": 9833,
+          "mean": 7808.5,
+          "median": 7781.5,
+          "avg7": 7119,
+          "avg30": 7808.5,
+          "slope7": {
+            "slope": -373,
+            "direction": "down",
+            "confidence": 1
+          },
+          "slope30": {
+            "slope": -30.397,
+            "direction": "down",
+            "confidence": 0.06
+          },
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "TOTAL_BODY_WATER": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "BONE_MASS": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "OXYGEN_SATURATION": {
+          "count": 10,
+          "latest": 96,
+          "min": 96,
+          "max": 98,
+          "mean": 96.9,
+          "median": 97,
+          "avg7": 96.86,
+          "avg30": 96.9,
+          "slope7": {
+            "slope": -0.036,
+            "direction": "down",
+            "confidence": 0.01
+          },
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "HEART_RATE_VARIABILITY": {
+          "count": 30,
+          "latest": 45,
+          "min": 45,
+          "max": 52,
+          "mean": 48.3,
+          "median": 48,
+          "avg7": 48,
+          "avg30": 48.3,
+          "slope7": {
+            "slope": -1,
+            "direction": "down",
+            "confidence": 1
+          },
+          "slope30": {
+            "slope": -0.032,
+            "direction": "down",
+            "confidence": 0.02
+          },
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "ACTIVE_ENERGY_BURNED": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "FLIGHTS_CLIMBED": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "WALKING_RUNNING_DISTANCE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "VO2_MAX": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "BODY_TEMPERATURE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "FAT_FREE_MASS": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "FAT_MASS": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "MUSCLE_MASS": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "SKIN_TEMPERATURE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "PULSE_WAVE_VELOCITY": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "VASCULAR_AGE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "VISCERAL_FAT": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "AUDIO_EXPOSURE_ENV": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "AUDIO_EXPOSURE_HEADPHONE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "TIME_IN_DAYLIGHT": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "WALKING_STEADINESS": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "AUDIO_EXPOSURE_EVENT": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "RESPIRATORY_RATE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "BODY_MASS_INDEX": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "LEAN_BODY_MASS": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "WALKING_HEART_RATE_AVERAGE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "WALKING_ASYMMETRY": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "WALKING_DOUBLE_SUPPORT": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "WALKING_STEP_LENGTH": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "WALKING_SPEED": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "WRIST_TEMPERATURE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "FALL_COUNT": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "IRREGULAR_RHYTHM_NOTIFICATION": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "HIGH_HEART_RATE_EVENT": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "LOW_HEART_RATE_EVENT": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "WALKING_STEADINESS_EVENT": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "BREATHING_DISTURBANCE_EVENT": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "RECOVERY_SCORE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "STRESS_SCORE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "STRAIN_SCORE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "DAY_STRAIN": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "WORKOUT_STRAIN": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "SLEEP_PERFORMANCE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "SLEEP_EFFICIENCY": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "SLEEP_CONSISTENCY": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "SLEEP_NEED": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "ENERGY_EXPENDITURE_KJ": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "AVERAGE_HEART_RATE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "MAX_HEART_RATE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "SLEEP_DISTURBANCE_COUNT": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "ANS_CHARGE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "CARDIO_LOAD": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "SLEEP_SCORE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "BODY_TEMPERATURE_DEVIATION": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "RESILIENCE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "PHQ9_SCORE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "GAD7_SCORE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "GRIP_STRENGTH": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "PAIN_NRS": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "WAIST_CIRCUMFERENCE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "WAIST_TO_HEIGHT": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "WHO5_SCORE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "SCI_SCORE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "EXERCISE_MINUTES": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "STAND_MINUTES": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "STAND_HOURS": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "MINDFUL_MINUTES": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "STATE_OF_MIND_VALENCE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "AFIB_BURDEN": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "INDOOR_CO2": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "INDOOR_TEMPERATURE": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "INDOOR_HUMIDITY": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        }
+      },
+      "bmi": 25.9,
+      "bpInTargetPct": 7,
+      "bpInTargetPct7d": 14,
+      "bpInTargetPct30d": 10,
+      "bpInTargetPctAllTime": 8,
+      "bpInTargetPctPriorMonth": 10,
+      "bpInTargetPctPriorYear": null,
+      "bpInTargetCount90": 90,
+      "bpInTargetSpanDays90": 90,
+      "glucoseByContext": null,
+      "glucoseClinical": null,
+      "correlations": {
+        "bpCompliance": {
+          "kind": "bp-compliance",
+          "status": "insufficient",
+          "n": 24,
+          "reason": "not_significant",
+          "points": [
+            {
+              "x": 100,
+              "y": 125
+            },
+            {
+              "x": 100,
+              "y": 133
+            },
+            {
+              "x": 100,
+              "y": 126
+            },
+            {
+              "x": 100,
+              "y": 134
+            },
+            {
+              "x": 100,
+              "y": 127
+            },
+            {
+              "x": 0,
+              "y": 135
+            },
+            {
+              "x": 100,
+              "y": 128
+            },
+            {
+              "x": 100,
+              "y": 136
+            },
+            {
+              "x": 100,
+              "y": 137
+            },
+            {
+              "x": 100,
+              "y": 130
+            },
+            {
+              "x": 100,
+              "y": 123
+            },
+            {
+              "x": 50,
+              "y": 131
+            },
+            {
+              "x": 100,
+              "y": 124
+            },
+            {
+              "x": 100,
+              "y": 132
+            },
+            {
+              "x": 100,
+              "y": 125
+            },
+            {
+              "x": 100,
+              "y": 133
+            },
+            {
+              "x": 100,
+              "y": 134
+            },
+            {
+              "x": 0,
+              "y": 127
+            },
+            {
+              "x": 100,
+              "y": 135
+            },
+            {
+              "x": 100,
+              "y": 128
+            },
+            {
+              "x": 100,
+              "y": 136
+            },
+            {
+              "x": 100,
+              "y": 129
+            },
+            {
+              "x": 100,
+              "y": 137
+            },
+            {
+              "x": 100,
+              "y": 130
+            }
+          ]
+        },
+        "moodPulse": {
+          "kind": "mood-pulse",
+          "status": "insufficient",
+          "n": 28,
+          "reason": "not_significant",
+          "points": [
+            {
+              "x": 1,
+              "y": 58
+            },
+            {
+              "x": 4,
+              "y": 59
+            },
+            {
+              "x": 2,
+              "y": 60
+            },
+            {
+              "x": 5,
+              "y": 61
+            },
+            {
+              "x": 3,
+              "y": 58
+            },
+            {
+              "x": 1,
+              "y": 59
+            },
+            {
+              "x": 4,
+              "y": 60
+            },
+            {
+              "x": 2,
+              "y": 61
+            },
+            {
+              "x": 5,
+              "y": 58
+            },
+            {
+              "x": 3,
+              "y": 59
+            },
+            {
+              "x": 1,
+              "y": 60
+            },
+            {
+              "x": 4,
+              "y": 61
+            },
+            {
+              "x": 2,
+              "y": 58
+            },
+            {
+              "x": 5,
+              "y": 59
+            },
+            {
+              "x": 3,
+              "y": 60
+            },
+            {
+              "x": 1,
+              "y": 61
+            },
+            {
+              "x": 4,
+              "y": 58
+            },
+            {
+              "x": 2,
+              "y": 59
+            },
+            {
+              "x": 5,
+              "y": 60
+            },
+            {
+              "x": 3,
+              "y": 61
+            },
+            {
+              "x": 1,
+              "y": 58
+            },
+            {
+              "x": 4,
+              "y": 59
+            },
+            {
+              "x": 2,
+              "y": 60
+            },
+            {
+              "x": 5,
+              "y": 61
+            },
+            {
+              "x": 3,
+              "y": 58
+            },
+            {
+              "x": 1,
+              "y": 59
+            },
+            {
+              "x": 4,
+              "y": 60
+            },
+            {
+              "x": 2,
+              "y": 61
+            }
+          ]
+        },
+        "weightWeekday": {
+          "kind": "weight-weekday",
+          "status": "insufficient",
+          "n": 28,
+          "reason": "not_significant",
+          "points": [
+            {
+              "x": 5,
+              "y": 83.1
+            },
+            {
+              "x": 6,
+              "y": 83
+            },
+            {
+              "x": 0,
+              "y": 83
+            },
+            {
+              "x": 1,
+              "y": 83
+            },
+            {
+              "x": 2,
+              "y": 82.9
+            },
+            {
+              "x": 3,
+              "y": 82.9
+            },
+            {
+              "x": 4,
+              "y": 82.8
+            },
+            {
+              "x": 5,
+              "y": 82.8
+            },
+            {
+              "x": 6,
+              "y": 82.8
+            },
+            {
+              "x": 0,
+              "y": 82.7
+            },
+            {
+              "x": 1,
+              "y": 82.7
+            },
+            {
+              "x": 2,
+              "y": 82.6
+            },
+            {
+              "x": 3,
+              "y": 82.6
+            },
+            {
+              "x": 4,
+              "y": 82.6
+            },
+            {
+              "x": 5,
+              "y": 82.5
+            },
+            {
+              "x": 6,
+              "y": 82.5
+            },
+            {
+              "x": 0,
+              "y": 82.4
+            },
+            {
+              "x": 1,
+              "y": 82.4
+            },
+            {
+              "x": 2,
+              "y": 82.4
+            },
+            {
+              "x": 3,
+              "y": 82.3
+            },
+            {
+              "x": 4,
+              "y": 82.3
+            },
+            {
+              "x": 5,
+              "y": 82.2
+            },
+            {
+              "x": 6,
+              "y": 82.2
+            },
+            {
+              "x": 0,
+              "y": 82.2
+            },
+            {
+              "x": 1,
+              "y": 82.1
+            },
+            {
+              "x": 2,
+              "y": 82.1
+            },
+            {
+              "x": 3,
+              "y": 82
+            },
+            {
+              "x": 4,
+              "y": 82
+            }
+          ]
+        },
+        "degraded": false,
+        "windowDays": 28,
+        "path": "rollup"
+      },
+      "healthScore": {
+        "composite": {
+          "status": "ok",
+          "value": {
+            "score": 76,
+            "band": "green",
+            "bandSetter": null,
+            "composition": [
+              "BLOOD_PRESSURE",
+              "ACTIVITY"
+            ],
+            "configured": false,
+            "scoreBasis": {
+              "domains": 2,
+              "recommended": 3,
+              "tier": "partial",
+              "physiological": true
+            },
+            "noiseFloor": 3,
+            "scoreVersion": 4
+          },
+          "coverage": {
+            "requiredInputs": 3,
+            "presentInputs": 2,
+            "historyDays": 28,
+            "missing": [
+              "adiposity",
+              "wellbeing"
+            ]
+          },
+          "confidence": {
+            "score": 67,
+            "band": "medium"
+          },
+          "provenance": {
+            "inputs": [
+              "BLOOD_PRESSURE",
+              "ACTIVITY"
+            ],
+            "source": "live",
+            "windowDays": 90,
+            "computedAt": "anchor+0d+12:00:00"
+          }
+        },
+        "pillars": [
+          {
+            "id": "BLOOD_PRESSURE",
+            "domain": "cardiometabolic",
+            "result": {
+              "status": "ok",
+              "value": {
+                "score": 73,
+                "scoreBasis": {
+                  "axis": "diastolic",
+                  "relation": "above_ceiling",
+                  "offsetMmHg": 3,
+                  "boundaryMmHg": 79
+                },
+                "observed": {
+                  "value": 130,
+                  "unit": "mmHg",
+                  "label": "130/82 mmHg",
+                  "asOf": "anchor+0d+00:00:00",
+                  "sources": [
+                    "MANUAL"
+                  ]
+                },
+                "reference": {
+                  "kind": "clinical-threshold",
+                  "low": 120,
+                  "high": 129,
+                  "label": "120–129/70–79 mmHg",
+                  "source": "ESH 2023"
+                },
+                "personalReference": {
+                  "kind": "guideline-band",
+                  "low": 100,
+                  "high": 125,
+                  "label": "100–125/60–80 mmHg",
+                  "source": "personal target"
+                },
+                "noiseFloor": 1,
+                "deltaEligible": true,
+                "deltaIdentity": "graded_bp_pair_series"
+              },
+              "coverage": {
+                "requiredInputs": 12,
+                "presentInputs": 12,
+                "historyDays": 90,
+                "missing": []
+              },
+              "confidence": {
+                "score": 100,
+                "band": "high"
+              },
+              "provenance": {
+                "inputs": [
+                  "BLOOD_PRESSURE"
+                ],
+                "source": "DAY",
+                "windowDays": 90,
+                "computedAt": "anchor+0d+12:00:00"
+              }
+            }
+          },
+          {
+            "id": "GLYCAEMIA",
+            "domain": "cardiometabolic",
+            "result": {
+              "status": "insufficient",
+              "coverage": {
+                "requiredInputs": 8,
+                "presentInputs": 0,
+                "historyDays": 0,
+                "missing": [
+                  "8 fasting readings"
+                ]
+              },
+              "provenance": {
+                "inputs": [
+                  "GLYCAEMIA"
+                ],
+                "source": "live",
+                "windowDays": 90,
+                "computedAt": "anchor+0d+12:00:00"
+              },
+              "reason": "not_tracked"
+            }
+          },
+          {
+            "id": "ACTIVITY",
+            "domain": "activity",
+            "result": {
+              "status": "ok",
+              "value": {
+                "score": 78,
+                "observed": {
+                  "value": 7837,
+                  "unit": "steps/day",
+                  "label": "7,837 steps/day",
+                  "asOf": "anchor-1d+00:00:00",
+                  "sources": [
+                    "APPLE_HEALTH"
+                  ]
+                },
+                "reference": {
+                  "kind": "guideline-band",
+                  "low": 0,
+                  "high": 10000,
+                  "label": "benefit plateaus by 10,000 steps/day",
+                  "source": "Paluch 2022"
+                },
+                "noiseFloor": 5,
+                "deltaEligible": true,
+                "deltaIdentity": "ACTIVITY_STEPS"
+              },
+              "coverage": {
+                "requiredInputs": 21,
+                "presentInputs": 21,
+                "historyDays": 28,
+                "missing": []
+              },
+              "confidence": {
+                "score": 100,
+                "band": "high"
+              },
+              "provenance": {
+                "inputs": [
+                  "ACTIVITY"
+                ],
+                "source": "live",
+                "windowDays": 28,
+                "computedAt": "anchor+0d+12:00:00"
+              }
+            }
+          },
+          {
+            "id": "ADIPOSITY",
+            "domain": "adiposity",
+            "result": {
+              "status": "insufficient",
+              "coverage": {
+                "requiredInputs": 1,
+                "presentInputs": 0,
+                "historyDays": 0,
+                "missing": [
+                  "waist measurement"
+                ]
+              },
+              "provenance": {
+                "inputs": [
+                  "ADIPOSITY"
+                ],
+                "source": "live",
+                "windowDays": 180,
+                "computedAt": "anchor+0d+12:00:00"
+              },
+              "reason": "not_tracked"
+            }
+          },
+          {
+            "id": "WELLBEING",
+            "domain": "wellbeing",
+            "result": {
+              "status": "insufficient",
+              "coverage": {
+                "requiredInputs": 1,
+                "presentInputs": 0,
+                "historyDays": 0,
+                "missing": [
+                  "completed WHO-5, PHQ-9 or GAD-7"
+                ]
+              },
+              "provenance": {
+                "inputs": [
+                  "WELLBEING"
+                ],
+                "source": "live",
+                "windowDays": 90,
+                "computedAt": "anchor+0d+12:00:00"
+              },
+              "reason": "not_tracked"
+            }
+          },
+          {
+            "id": "LIPIDS",
+            "domain": "cardiometabolic",
+            "result": {
+              "status": "insufficient",
+              "coverage": {
+                "requiredInputs": 1,
+                "presentInputs": 0,
+                "historyDays": 0,
+                "missing": [
+                  "lipid panel with lab reference ranges"
+                ]
+              },
+              "provenance": {
+                "inputs": [
+                  "LIPIDS"
+                ],
+                "source": "live",
+                "windowDays": 365,
+                "computedAt": "anchor+0d+12:00:00"
+              },
+              "reason": "not_tracked"
+            }
+          }
+        ],
+        "delta": null,
+        "deltaReason": "first_eligibility_window",
+        "scoreVersion": 4,
+        "weightGoal": {
+          "status": "insufficient",
+          "coverage": {
+            "requiredInputs": 2,
+            "presentInputs": 1,
+            "historyDays": 1,
+            "missing": [
+              "personal weight target"
+            ]
+          },
+          "provenance": {
+            "inputs": [
+              "WEIGHT",
+              "personal weight target"
+            ],
+            "source": "live",
+            "windowDays": 60,
+            "computedAt": "anchor+0d+12:00:00"
+          },
+          "reason": "no_personal_goal"
+        },
+        "algorithmNotice": {
+          "itemKey": "health_score_algorithm:4",
+          "dismissed": false
+        },
+        "compositionNotice": null,
+        "restMode": {
+          "active": true,
+          "since": "anchor-3d+12:00:00",
+          "episodeCount": 1
+        }
+      },
+      "sleepStages": {
+        "windowDays": 30,
+        "nights": 21,
+        "totalMinutes": 8362,
+        "stages": {
+          "CORE": 4600,
+          "DEEP": 1575,
+          "REM": 1935,
+          "AWAKE": 252
+        },
+        "perNight": [
+          {
+            "dayKey": "day-20",
+            "stages": {
+              "CORE": 200,
+              "DEEP": 80,
+              "REM": 85,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day-19",
+            "stages": {
+              "CORE": 240,
+              "DEEP": 75,
+              "REM": 100,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day-18",
+            "stages": {
+              "CORE": 230,
+              "DEEP": 70,
+              "REM": 95,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day-17",
+            "stages": {
+              "CORE": 220,
+              "DEEP": 80,
+              "REM": 90,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day-16",
+            "stages": {
+              "CORE": 210,
+              "DEEP": 75,
+              "REM": 85,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day-15",
+            "stages": {
+              "CORE": 200,
+              "DEEP": 70,
+              "REM": 100,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day-14",
+            "stages": {
+              "CORE": 240,
+              "DEEP": 80,
+              "REM": 95,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day-13",
+            "stages": {
+              "CORE": 230,
+              "DEEP": 75,
+              "REM": 90,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day-12",
+            "stages": {
+              "CORE": 220,
+              "DEEP": 70,
+              "REM": 85,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day-11",
+            "stages": {
+              "CORE": 210,
+              "DEEP": 80,
+              "REM": 100,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day-10",
+            "stages": {
+              "CORE": 200,
+              "DEEP": 75,
+              "REM": 95,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day-9",
+            "stages": {
+              "CORE": 240,
+              "DEEP": 70,
+              "REM": 90,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day-8",
+            "stages": {
+              "CORE": 230,
+              "DEEP": 80,
+              "REM": 85,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day-7",
+            "stages": {
+              "CORE": 220,
+              "DEEP": 75,
+              "REM": 100,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day-6",
+            "stages": {
+              "CORE": 210,
+              "DEEP": 70,
+              "REM": 95,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day-5",
+            "stages": {
+              "CORE": 200,
+              "DEEP": 80,
+              "REM": 90,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day-4",
+            "stages": {
+              "CORE": 240,
+              "DEEP": 75,
+              "REM": 85,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day-3",
+            "stages": {
+              "CORE": 230,
+              "DEEP": 70,
+              "REM": 100,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day-2",
+            "stages": {
+              "CORE": 220,
+              "DEEP": 80,
+              "REM": 95,
+              "AWAKE": 12
+            },
+            "napMinutes": 35,
+            "napCount": 1
+          },
+          {
+            "dayKey": "day-1",
+            "stages": {
+              "CORE": 210,
+              "DEEP": 75,
+              "REM": 90,
+              "AWAKE": 12
+            }
+          },
+          {
+            "dayKey": "day+0",
+            "stages": {
+              "CORE": 200,
+              "DEEP": 70,
+              "REM": 85,
+              "AWAKE": 12
+            }
+          }
+        ]
+      },
+      "sleepSourceDiscrepancy": null,
+      "lastSeenByType": {
+        "WEIGHT": {
+          "lastSeenAt": "anchor+0d+06:30:00",
+          "daysAgo": 0
+        },
+        "BLOOD_PRESSURE_SYS": {
+          "lastSeenAt": "anchor+0d+07:00:00",
+          "daysAgo": 0
+        },
+        "BLOOD_PRESSURE_DIA": {
+          "lastSeenAt": "anchor+0d+07:00:00",
+          "daysAgo": 0
+        },
+        "PULSE": {
+          "lastSeenAt": "anchor+0d+07:01:00",
+          "daysAgo": 0
+        },
+        "BODY_FAT": {
+          "lastSeenAt": "anchor+0d+06:31:00",
+          "daysAgo": 0
+        },
+        "ACTIVITY_STEPS": {
+          "lastSeenAt": "anchor+0d+09:00:00",
+          "daysAgo": 0
+        },
+        "TOTAL_BODY_WATER": null,
+        "BONE_MASS": null,
+        "OXYGEN_SATURATION": {
+          "lastSeenAt": "anchor+0d+04:40:00",
+          "daysAgo": 0
+        },
+        "HEART_RATE_VARIABILITY": {
+          "lastSeenAt": "anchor+0d+04:30:00",
+          "daysAgo": 0
+        },
+        "ACTIVE_ENERGY_BURNED": null,
+        "FLIGHTS_CLIMBED": null,
+        "WALKING_RUNNING_DISTANCE": null,
+        "VO2_MAX": null,
+        "BODY_TEMPERATURE": null,
+        "FAT_FREE_MASS": null,
+        "FAT_MASS": null,
+        "MUSCLE_MASS": null,
+        "SKIN_TEMPERATURE": null,
+        "PULSE_WAVE_VELOCITY": null,
+        "VASCULAR_AGE": null,
+        "VISCERAL_FAT": null,
+        "AUDIO_EXPOSURE_ENV": null,
+        "AUDIO_EXPOSURE_HEADPHONE": null,
+        "TIME_IN_DAYLIGHT": null,
+        "WALKING_STEADINESS": null,
+        "AUDIO_EXPOSURE_EVENT": null,
+        "RESPIRATORY_RATE": null,
+        "BODY_MASS_INDEX": null,
+        "LEAN_BODY_MASS": null,
+        "WALKING_HEART_RATE_AVERAGE": null,
+        "WALKING_ASYMMETRY": null,
+        "WALKING_DOUBLE_SUPPORT": null,
+        "WALKING_STEP_LENGTH": null,
+        "WALKING_SPEED": null,
+        "WRIST_TEMPERATURE": null,
+        "FALL_COUNT": null,
+        "IRREGULAR_RHYTHM_NOTIFICATION": null,
+        "HIGH_HEART_RATE_EVENT": null,
+        "LOW_HEART_RATE_EVENT": null,
+        "WALKING_STEADINESS_EVENT": null,
+        "BREATHING_DISTURBANCE_EVENT": null,
+        "RECOVERY_SCORE": null,
+        "STRESS_SCORE": null,
+        "STRAIN_SCORE": null,
+        "DAY_STRAIN": null,
+        "WORKOUT_STRAIN": null,
+        "SLEEP_PERFORMANCE": null,
+        "SLEEP_EFFICIENCY": null,
+        "SLEEP_CONSISTENCY": null,
+        "SLEEP_NEED": null,
+        "ENERGY_EXPENDITURE_KJ": null,
+        "AVERAGE_HEART_RATE": null,
+        "MAX_HEART_RATE": null,
+        "SLEEP_DISTURBANCE_COUNT": null,
+        "ANS_CHARGE": null,
+        "CARDIO_LOAD": null,
+        "SLEEP_SCORE": null,
+        "BODY_TEMPERATURE_DEVIATION": null,
+        "RESILIENCE": null,
+        "PHQ9_SCORE": null,
+        "GAD7_SCORE": null,
+        "GRIP_STRENGTH": null,
+        "PAIN_NRS": null,
+        "WAIST_CIRCUMFERENCE": null,
+        "WAIST_TO_HEIGHT": null,
+        "WHO5_SCORE": null,
+        "SCI_SCORE": null,
+        "EXERCISE_MINUTES": null,
+        "STAND_MINUTES": null,
+        "STAND_HOURS": null,
+        "MINDFUL_MINUTES": null,
+        "STATE_OF_MIND_VALENCE": null,
+        "AFIB_BURDEN": null,
+        "INDOOR_CO2": null,
+        "INDOOR_TEMPERATURE": null,
+        "INDOOR_HUMIDITY": null
+      }
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "analytics.get"
+      },
+      "meta": {
+        "cache.summaries_slice.outcome": "hit",
+        "analytics": {
+          "bp_in_target": {
+            "path": "rollup",
+            "tz_guard": "near-utc"
+          }
+        },
+        "correlations": {
+          "bpCompliance": "insufficient",
+          "moodPulse": "insufficient",
+          "weightWeekday": "insufficient",
+          "path": "rollup",
+          "window_days": 28,
+          "degraded": false,
+          "tz_guard": "near-utc"
+        },
+        "cache.analytics.outcome": "miss",
+        "cache.analytics.key_hash": 364623463
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "ensureUserRollupsFresh",
+      "args": [
+        "<id:1>"
+      ]
+    }
+  ],
+  "stored": {
+    "healthScores": [
+      {
+        "dayKey": "day+0",
+        "timezone": "UTC",
+        "composite": 86,
+        "band": "green",
+        "scoreVersion": 4,
+        "composition": [
+          "BLOOD_PRESSURE",
+          "GLYCAEMIA",
+          "ACTIVITY",
+          "SLEEP"
+        ],
+        "pillarScores": {
+          "SLEEP": 92,
+          "ACTIVITY": 78,
+          "GLYCAEMIA": 100,
+          "BLOOD_PRESSURE": 73
+        },
+        "inputFingerprint": "5653cd8c051404182d6c6f813a48b1c2ebc3abe1116901466ab7cc1ab70cb276",
+        "computedAt": "anchor+0d+12:00:00"
+      }
+    ],
+    "patterns": []
+  }
+}

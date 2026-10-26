@@ -20,13 +20,13 @@
  * path for the guide and skip the origin comparison.
  */
 
-import { getFitbitRedirectUri } from "@/lib/fitbit/client";
-import { getGoogleHealthRedirectUri } from "@/lib/google-health/client";
-import { getOuraRedirectUri } from "@/lib/oura/client";
-import { getPolarRedirectUri } from "@/lib/polar/client";
-import { getStravaRedirectUri } from "@/lib/strava/client";
-import { getWhoopRedirectUri } from "@/lib/whoop/client";
-import { getWithingsRedirectUri } from "@/lib/withings/client";
+import { fitbitOAuth } from "@/lib/fitbit/oauth";
+import { googleHealthOAuth } from "@/lib/google-health/oauth";
+import { ouraOAuth } from "@/lib/oura/oauth";
+import { polarOAuth } from "@/lib/polar/oauth";
+import { stravaOAuth } from "@/lib/strava/oauth";
+import { whoopOAuth } from "@/lib/whoop/oauth";
+import { withingsOAuth } from "@/lib/withings/oauth";
 
 export const INTEGRATION_CALLBACK_PROVIDERS = [
   "withings",
@@ -48,13 +48,13 @@ export type IntegrationCallbackUrls = Record<
 >;
 
 const RESOLVERS: Record<IntegrationCallbackProvider, () => string> = {
-  withings: getWithingsRedirectUri,
-  whoop: getWhoopRedirectUri,
-  fitbit: getFitbitRedirectUri,
-  "google-health": getGoogleHealthRedirectUri,
-  polar: getPolarRedirectUri,
-  oura: getOuraRedirectUri,
-  strava: getStravaRedirectUri,
+  withings: withingsOAuth.redirectUri,
+  whoop: whoopOAuth.redirectUri,
+  fitbit: fitbitOAuth.redirectUri,
+  "google-health": googleHealthOAuth.redirectUri,
+  polar: polarOAuth.redirectUri,
+  oura: ouraOAuth.redirectUri,
+  strava: stravaOAuth.redirectUri,
 };
 
 function resolve(provider: IntegrationCallbackProvider): string | null {

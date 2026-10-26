@@ -32,13 +32,8 @@ import {
   destroyedDetails,
   overwriteDetails,
 } from "@/lib/sharing/audit-details";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { scheduleRevisionUpdateSchema } from "@/lib/validations/schedule-revision";
 import {
@@ -68,15 +63,11 @@ export const PATCH = apiHandler(
       return apiError("Medication not found", 404);
     }
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, scheduleRevisionUpdateSchema, {
       maxBytes: 16 * 1024,
+      input: (body) => body ?? {},
     });
-    if (jsonError) return jsonError;
-
-    const parsed = scheduleRevisionUpdateSchema.safeParse(body ?? {});
-    if (!parsed.success) {
-      return returnAllZodIssues(parsed.error, 422);
-    }
+    if (!parsed.ok) return parsed.error;
 
     const validFrom = new Date(parsed.data.validFrom);
     const validUntil = new Date(parsed.data.validUntil);

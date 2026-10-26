@@ -1,0 +1,200 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "serverNow": "<now>",
+      "cursor": "eyJ2IjoyLCJ0IjoxNzkyMDY1NjAwMDAwLCJkIjp7Im1lYXN1cmVtZW50cyI6eyJ1IjoxNzkyMDUwNjAwMDAwLCJpIjoibS0wNiJ9LCJtb29kIjp7InUiOjE3OTIwNTE4MDAwMDAsImkiOiJtb29kLTAyIn0sImludGFrZXMiOnsidSI6MTc5MjA1MzYwMDAwMCwiaSI6ImluLTAzIn19fQ",
+      "hasMore": false,
+      "cursorExpired": false,
+      "changes": {
+        "measurements": {
+          "upserts": [
+            {
+              "id": "m-01",
+              "externalId": null,
+              "type": "WEIGHT",
+              "value": 81.2,
+              "unit": "kg",
+              "measuredAt": "2026-10-14T06:30:00.000Z",
+              "source": "MANUAL",
+              "notes": "after the run",
+              "appleHealthMirror": true,
+              "syncVersion": "<syncVersion>",
+              "updatedAt": "<updatedAt>"
+            },
+            {
+              "id": "m-02",
+              "externalId": "w-pulse-1",
+              "type": "PULSE",
+              "value": 61,
+              "unit": "bpm",
+              "measuredAt": "2026-10-14T07:00:00.000Z",
+              "source": "WITHINGS",
+              "notes": null,
+              "appleHealthMirror": true,
+              "syncVersion": "<syncVersion>",
+              "updatedAt": "<updatedAt>"
+            },
+            {
+              "id": "m-04",
+              "externalId": "stats:HKQuantityTypeIdentifierHeartRate:2026-06-17T09",
+              "type": "PULSE",
+              "value": 64,
+              "unit": "bpm",
+              "measuredAt": "2026-06-17T09:30:00.000Z",
+              "source": "APPLE_HEALTH",
+              "notes": null,
+              "appleHealthMirror": false,
+              "syncVersion": "<syncVersion>",
+              "updatedAt": "<updatedAt>"
+            },
+            {
+              "id": "m-06",
+              "externalId": null,
+              "type": "BLOOD_PRESSURE_SYS",
+              "value": 128,
+              "unit": "mmHg",
+              "measuredAt": "2026-10-14T08:00:00.000Z",
+              "source": "MANUAL",
+              "notes": null,
+              "appleHealthMirror": true,
+              "syncVersion": "<syncVersion>",
+              "updatedAt": "<updatedAt>"
+            }
+          ],
+          "tombstones": [
+            {
+              "id": "m-03",
+              "externalId": "w-weight-2",
+              "syncVersion": "<syncVersion>",
+              "deletedAt": "2026-10-15T11:30:00.000Z",
+              "updatedAt": "<updatedAt>"
+            }
+          ]
+        },
+        "mood": {
+          "upserts": [
+            {
+              "id": "mood-01",
+              "date": "2026-10-14",
+              "mood": "GUT",
+              "score": 4,
+              "a1": 7,
+              "a2": 3,
+              "a3": null,
+              "a4": null,
+              "a5": null,
+              "context": {
+                "workStatus": "regular",
+                "workMinutes": 480,
+                "overtimeMinutes": null,
+                "workLoad": null,
+                "workSatisfaction": null,
+                "contactCircles": [],
+                "contactForm": null,
+                "contactExtent": null,
+                "contactQuality": null,
+                "contactSupport": null,
+                "leisureCategories": [],
+                "leisureMinutes": null,
+                "leisureJoy": null,
+                "leisureRecovery": null,
+                "eventType": null,
+                "eventValence": null,
+                "eventAt": null,
+                "note": null
+              },
+              "tags": "[\"slept well\"]",
+              "note": "a calm morning",
+              "moodLoggedAt": "2026-10-14T07:00:00.000Z",
+              "source": "MANUAL",
+              "syncVersion": "<syncVersion>",
+              "updatedAt": "<updatedAt>"
+            }
+          ],
+          "tombstones": [
+            {
+              "id": "mood-02",
+              "syncVersion": "<syncVersion>",
+              "deletedAt": "2026-10-15T11:30:00.000Z",
+              "updatedAt": "<updatedAt>"
+            }
+          ]
+        },
+        "intakes": {
+          "upserts": [
+            {
+              "id": "in-01",
+              "medicationId": "<id:1>",
+              "scheduledFor": "2026-10-14T06:00:00.000Z",
+              "takenAt": "2026-10-14T06:10:00.000Z",
+              "skipped": false,
+              "source": "WEB",
+              "autoRecorded": false,
+              "syncVersion": "<syncVersion>",
+              "updatedAt": "<updatedAt>"
+            },
+            {
+              "id": "in-02",
+              "medicationId": "<id:1>",
+              "scheduledFor": "2026-10-13T06:00:00.000Z",
+              "takenAt": "2026-10-13T06:00:00.000Z",
+              "skipped": false,
+              "source": "WEB",
+              "autoRecorded": true,
+              "syncVersion": "<syncVersion>",
+              "updatedAt": "<updatedAt>"
+            }
+          ],
+          "tombstones": [
+            {
+              "id": "in-03",
+              "syncVersion": "<syncVersion>",
+              "deletedAt": "2026-10-15T11:30:00.000Z",
+              "updatedAt": "<updatedAt>"
+            }
+          ]
+        },
+        "cycleDays": {
+          "upserts": [],
+          "tombstones": []
+        },
+        "cycles": {
+          "upserts": [],
+          "tombstones": []
+        },
+        "measurementMirror": {
+          "upserts": [],
+          "tombstones": []
+        }
+      }
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "sync.changes.pull"
+      },
+      "meta": {
+        "measurement_upserts": 4,
+        "measurement_tombstones": 1,
+        "mood_upserts": 1,
+        "mood_tombstones": 1,
+        "intake_upserts": 2,
+        "intake_tombstones": 1,
+        "cycle_day_upserts": 0,
+        "cycle_day_tombstones": 0,
+        "cycle_upserts": 0,
+        "cycle_tombstones": 0,
+        "measurement_mirror_upserts": 0,
+        "cycle_module_enabled": false,
+        "has_more": false,
+        "cursor_present": false
+      },
+      "warnings": null,
+      "error": null
+    }
+  ]
+}

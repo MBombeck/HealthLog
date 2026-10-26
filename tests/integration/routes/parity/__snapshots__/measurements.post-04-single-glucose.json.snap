@@ -1,0 +1,148 @@
+{
+  "status": 201,
+  "body": {
+    "data": {
+      "id": "<id:1>",
+      "userId": "<id:2>",
+      "type": "BLOOD_GLUCOSE",
+      "value": 104,
+      "valueMin": null,
+      "valueMax": null,
+      "unit": "mg/dL",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T07:00:00.000Z",
+      "notes": null,
+      "externalId": null,
+      "externalSourceVersion": null,
+      "aggregationProvenance": null,
+      "glucoseContext": "FASTING",
+      "sleepStage": null,
+      "rhythmClassification": null,
+      "deviceType": null,
+      "syncVersion": "<syncVersion>",
+      "deletedAt": null,
+      "createdAt": "<createdAt>",
+      "updatedAt": "<updatedAt>",
+      "appleHealthMirror": true
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 201,
+      "action": {
+        "name": "measurement.create",
+        "entity_type": "measurement",
+        "entity_id": "<id:1>"
+      },
+      "meta": null,
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "enqueueReminderSatisfy",
+      "args": [
+        "<id:2>"
+      ]
+    },
+    {
+      "effect": "emitInsertedMeasurementArrivals",
+      "args": [
+        "<id:2>",
+        [
+          {
+            "id": "<id:1>",
+            "userId": "<id:2>",
+            "type": "BLOOD_GLUCOSE",
+            "value": 104,
+            "valueMin": null,
+            "valueMax": null,
+            "unit": "mg/dL",
+            "source": "MANUAL",
+            "measuredAt": "2026-10-14T07:00:00.000Z",
+            "notes": null,
+            "notesEncrypted": null,
+            "externalId": null,
+            "externalSourceVersion": null,
+            "aggregationProvenance": null,
+            "glucoseContext": "FASTING",
+            "sleepStage": null,
+            "rhythmClassification": null,
+            "deviceType": null,
+            "syncVersion": "<syncVersion>",
+            "deletedAt": null,
+            "createdAt": "<createdAt>",
+            "updatedAt": "<updatedAt>",
+            "ingestTokenId": null,
+            "ingestToken": null
+          }
+        ],
+        "manual"
+      ]
+    },
+    {
+      "effect": "runSafetyFloorCheck",
+      "args": [
+        {
+          "userId": "<id:2>",
+          "written": [
+            {
+              "type": "BLOOD_GLUCOSE",
+              "value": 104,
+              "measuredAt": "2026-10-14T07:00:00.000Z",
+              "glucoseContext": "FASTING"
+            }
+          ],
+          "symptomsPresent": false,
+          "timezone": "UTC"
+        }
+      ]
+    },
+    {
+      "effect": "invalidateStatusInsightsForTypes",
+      "args": [
+        "<id:2>",
+        [
+          "BLOOD_GLUCOSE"
+        ],
+        {
+          "source": "manual"
+        }
+      ]
+    }
+  ],
+  "stored": [
+    {
+      "id": "<id:3>",
+      "type": "WEIGHT",
+      "value": 80.4,
+      "unit": "kg",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T06:30:00.000Z",
+      "notes": null,
+      "glucoseContext": null,
+      "deviceType": "scale",
+      "externalId": null,
+      "sleepStage": null,
+      "deletedAt": null,
+      "sealedNote": true
+    },
+    {
+      "id": "<id:1>",
+      "type": "BLOOD_GLUCOSE",
+      "value": 104,
+      "unit": "mg/dL",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T07:00:00.000Z",
+      "notes": null,
+      "glucoseContext": "FASTING",
+      "deviceType": null,
+      "externalId": null,
+      "sleepStage": null,
+      "deletedAt": null,
+      "sealedNote": false
+    }
+  ]
+}

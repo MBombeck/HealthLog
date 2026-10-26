@@ -18,6 +18,7 @@
  * `src/lib/jobs/reminder-worker.ts` so pg-boss provisions it at boot; an
  * unregistered queue silently never drains.
  */
+import { dropPendingDeletion } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -27,16 +28,7 @@ import {
   DENSE_INTRADAY_RETENTION_DAYS,
   DENSE_INTRADAY_FOLD_SOURCES,
 } from "@/lib/measurements/dense-intraday-retention";
-
-export const DENSE_INTRADAY_RETENTION_QUEUE = "dense-intraday-retention";
-
-/**
- * Serial concurrency — the drain walks every out-of-window per-sample
- * dense-tier row for a user and writes a transaction per day;
- * concurrency-1 keeps it from crowding the request pool, matching the
- * mean-consolidation + step-consolidation convention.
- */
-export const DENSE_INTRADAY_RETENTION_CONCURRENCY = 1;
+import { DENSE_INTRADAY_RETENTION_QUEUE } from "./dense-intraday-retention-queue";
 
 /**
  * Daily at 03:50 Europe/Berlin — inside the existing 03:xx maintenance
@@ -185,16 +177,20 @@ export async function enqueueBootTimeDenseIntradayRetention(): Promise<{
     // `distinct` dedups in the client AFTER pulling every matching row,
     // an instance-wide scan of every out-of-window dense-tier row just
     // to list user ids.
-    const users = await prisma.measurement.groupBy({
-      by: ["userId"],
-      where: {
-        source: { in: [...DENSE_INTRADAY_FOLD_SOURCES] },
-        type: { in: types },
-        deletedAt: null,
-        NOT: { externalId: { startsWith: "stats:" } },
-        measuredAt: { lt: windowStart },
-      },
-    });
+    const users = await dropPendingDeletion(
+      prisma,
+      await prisma.measurement.groupBy({
+        by: ["userId"],
+        where: {
+          source: { in: [...DENSE_INTRADAY_FOLD_SOURCES] },
+          type: { in: types },
+          deletedAt: null,
+          NOT: { externalId: { startsWith: "stats:" } },
+          measuredAt: { lt: windowStart },
+        },
+      }),
+      (u) => u.userId,
+    );
 
     if (users.length === 0) {
       return { enqueued: 0, skipped: 0, error: null };

@@ -13,7 +13,7 @@
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { decrypt, encrypt } from "@/lib/crypto";
-import { getOuraCredentials, type OuraCredentials } from "./client";
+import { getOuraCredentials, type OuraCredentials } from "./oauth";
 
 /**
  * Resolve the user's Oura OAuth client id/secret, DB-first then env.

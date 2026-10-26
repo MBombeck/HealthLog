@@ -34,6 +34,7 @@
  * took. Nothing here reads both tiers; the rollup replaces the legacy read and
  * falls back to live SQL only on a coverage miss.
  */
+import { activeAccountSql } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
@@ -996,9 +997,9 @@ async function persistRollupRows(
     : null;
 
   if (rows.length === 0) {
-    // Nothing to write. With a prune scope there is still work to do: the
-    // window is authoritatively empty, so every bucket in it must go. No
-    // transaction needed — there is no insert leg that could leave a gap.
+    // Nothing to write. With a prune scope the window is authoritatively
+    // empty and every bucket in it goes; no insert leg, so no transaction.
+    // account-deletion: `pruneWhere` is the one account this fold was handed.
     if (!pruneWhere) return 0;
     await prisma.measurementRollup.deleteMany({ where: pruneWhere });
     return 0;
@@ -1051,20 +1052,18 @@ async function persistRollupRows(
   // COMMITTED lets a later statement see it — without aborting the
   // batch.
   //
-  // Transaction sizing: one call covers ONE granularity, so the worst
-  // case is the full 5-year DAY fold of a multi-source power user —
-  // tens of thousands of rows in 500-row chunks, well inside Postgres
-  // limits but potentially slow on self-host disks. A per-type
-  // transaction was considered and rejected: it would re-open the
-  // committed-delete gap between types sharing the bucket range. The
-  // 120 s timeout (Prisma default: 5 s) covers the chunk round-trips
-  // with headroom; the incremental hook path is a single sub-500-row
-  // chunk and finishes far inside it.
+  // Transaction sizing: one call covers ONE granularity, so the worst case
+  // is a multi-source power user's 5-year DAY fold: tens of thousands of
+  // rows in 500-row chunks, slow on self-host disks. A per-type transaction
+  // would re-open the committed-delete gap between types sharing the bucket
+  // range. The 120 s timeout (Prisma default: 5 s) covers the round-trips;
+  // the incremental hook path is a single sub-500-row chunk.
   let touched = 0;
   await prisma.$transaction(
     async (tx) => {
       if (statementTimeoutMs)
         await applyStatementBudget(tx, statementTimeoutMs);
+      // account-deletion: `deleteWhere` is the one account this fold was handed.
       await tx.measurementRollup.deleteMany({ where: deleteWhere });
       for (let i = 0; i < ordered.length; i += CHUNK) {
         const slice = ordered.slice(i, i + CHUNK);
@@ -1436,6 +1435,7 @@ export async function enqueueBootTimeRollupBackfill(
           AND r."bucket_start" >= ${foldWindowStart}
           AND (r."sum_xy" IS NULL OR r."reading_min_value" IS NULL)
       ) discovered
+      WHERE ${activeAccountSql('discovered."id"')}
     `;
 
     if (users.length === 0) {

@@ -2,7 +2,7 @@
  * `GET /api/sync/state` is a read.
  *
  * It used to bump `User.lastSyncedAt` on every call, which is the exact
- * side-effecting GET the MCP-audience note in `api-handler.ts` warns against,
+ * side-effecting GET the MCP-audience note in `lib/auth/guards/context.ts` warns against,
  * and it advanced the checkpoint past a window the client had not drained.
  * The checkpoint is now owned by the ingest boundaries; this route reports it.
  */

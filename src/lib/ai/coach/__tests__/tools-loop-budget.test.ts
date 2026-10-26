@@ -7,7 +7,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { CoachToolResult } from "@/lib/ai/coach/tools/executor";
+import type { CoachToolResult } from "@/lib/ai/coach/tools/run/types";
 
 const executeCoachTool = vi.fn<(args?: unknown) => Promise<CoachToolResult>>();
 vi.mock("@/lib/ai/coach/tools/executor", () => ({
@@ -61,6 +61,7 @@ function round(
     },
     workingProvider: { providerType: "codex" },
     fallbackHops: [],
+    tokensSpent: 0,
   };
 }
 

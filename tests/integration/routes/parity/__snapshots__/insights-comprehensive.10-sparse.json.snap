@@ -1,0 +1,884 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "summaries": {
+        "WEIGHT": {
+          "count": 47,
+          "latest": 70.3,
+          "min": 70,
+          "max": 71.2,
+          "mean": 70.63,
+          "median": null,
+          "avg7": 70.55,
+          "avg30": 70.62,
+          "slope7": {
+            "slope": 0.043,
+            "direction": "up",
+            "confidence": 0.03
+          },
+          "slope30": {
+            "slope": -0.004,
+            "direction": "stable",
+            "confidence": 0.01
+          },
+          "anomalyCount": 0,
+          "avg30LastMonth": 70.63,
+          "avg30LastYear": null
+        },
+        "BLOOD_PRESSURE_SYS": {
+          "count": 47,
+          "latest": 134,
+          "min": 131,
+          "max": 163,
+          "mean": 139.66,
+          "median": null,
+          "avg7": 139.67,
+          "avg30": 139.93,
+          "slope7": {
+            "slope": -2.057,
+            "direction": "down",
+            "confidence": 0.18
+          },
+          "slope30": {
+            "slope": -0.03,
+            "direction": "down",
+            "confidence": 0
+          },
+          "anomalyCount": 4,
+          "avg30LastMonth": 139.26,
+          "avg30LastYear": null
+        },
+        "BLOOD_PRESSURE_DIA": {
+          "count": 47,
+          "latest": 86,
+          "min": 84,
+          "max": 90,
+          "mean": 87.04,
+          "median": null,
+          "avg7": 87.5,
+          "avg30": 87.07,
+          "slope7": {
+            "slope": -0.2,
+            "direction": "down",
+            "confidence": 0.04
+          },
+          "slope30": {
+            "slope": 0.034,
+            "direction": "up",
+            "confidence": 0.02
+          },
+          "anomalyCount": 0,
+          "avg30LastMonth": 87,
+          "avg30LastYear": null
+        },
+        "PULSE": {
+          "count": 141,
+          "latest": 93,
+          "min": 66,
+          "max": 96,
+          "mean": 81.67,
+          "median": null,
+          "avg7": 81.61,
+          "avg30": 81.61,
+          "slope7": {
+            "slope": 0.186,
+            "direction": "up",
+            "confidence": 0
+          },
+          "slope30": {
+            "slope": 0.027,
+            "direction": "up",
+            "confidence": 0
+          },
+          "anomalyCount": 0,
+          "avg30LastMonth": 81.75,
+          "avg30LastYear": null
+        }
+      },
+      "bmi": null,
+      "bmiClassification": null,
+      "bpClassification": {
+        "category": "High-normal",
+        "color": "var(--dracula-yellow)",
+        "severity": "elevated"
+      },
+      "bpPctInTarget": 0,
+      "bpTargets": {
+        "sysLow": 130,
+        "sysHigh": 139,
+        "diaLow": 70,
+        "diaHigh": 79
+      },
+      "weightBpCorrelation": {
+        "r": -0.631,
+        "strength": "moderat",
+        "n": 47
+      },
+      "scatterData": [
+        {
+          "weight": 71.2,
+          "sysBP": 135
+        },
+        {
+          "weight": 70.9,
+          "sysBP": 132
+        },
+        {
+          "weight": 70.6,
+          "sysBP": 140
+        },
+        {
+          "weight": 70.3,
+          "sysBP": 137
+        },
+        {
+          "weight": 70,
+          "sysBP": 156
+        },
+        {
+          "weight": 71.2,
+          "sysBP": 131
+        },
+        {
+          "weight": 70.9,
+          "sysBP": 139
+        },
+        {
+          "weight": 70.6,
+          "sysBP": 136
+        },
+        {
+          "weight": 70.3,
+          "sysBP": 133
+        },
+        {
+          "weight": 70,
+          "sysBP": 163
+        },
+        {
+          "weight": 71.2,
+          "sysBP": 138
+        },
+        {
+          "weight": 70.9,
+          "sysBP": 135
+        },
+        {
+          "weight": 70.6,
+          "sysBP": 132
+        },
+        {
+          "weight": 70.3,
+          "sysBP": 140
+        },
+        {
+          "weight": 70,
+          "sysBP": 159
+        },
+        {
+          "weight": 71.2,
+          "sysBP": 134
+        },
+        {
+          "weight": 70.9,
+          "sysBP": 131
+        },
+        {
+          "weight": 70.6,
+          "sysBP": 139
+        },
+        {
+          "weight": 70.3,
+          "sysBP": 136
+        },
+        {
+          "weight": 71.2,
+          "sysBP": 141
+        },
+        {
+          "weight": 70.9,
+          "sysBP": 138
+        },
+        {
+          "weight": 70.6,
+          "sysBP": 135
+        },
+        {
+          "weight": 70.3,
+          "sysBP": 132
+        },
+        {
+          "weight": 70,
+          "sysBP": 162
+        },
+        {
+          "weight": 71.2,
+          "sysBP": 137
+        },
+        {
+          "weight": 70.9,
+          "sysBP": 134
+        },
+        {
+          "weight": 70.6,
+          "sysBP": 131
+        },
+        {
+          "weight": 70.3,
+          "sysBP": 139
+        },
+        {
+          "weight": 70,
+          "sysBP": 158
+        },
+        {
+          "weight": 71.2,
+          "sysBP": 133
+        },
+        {
+          "weight": 70.9,
+          "sysBP": 141
+        },
+        {
+          "weight": 70.6,
+          "sysBP": 138
+        },
+        {
+          "weight": 70.3,
+          "sysBP": 135
+        },
+        {
+          "weight": 70,
+          "sysBP": 154
+        },
+        {
+          "weight": 71.2,
+          "sysBP": 140
+        },
+        {
+          "weight": 70.9,
+          "sysBP": 137
+        },
+        {
+          "weight": 70.6,
+          "sysBP": 134
+        },
+        {
+          "weight": 70.3,
+          "sysBP": 131
+        },
+        {
+          "weight": 70,
+          "sysBP": 161
+        },
+        {
+          "weight": 71.2,
+          "sysBP": 136
+        },
+        {
+          "weight": 70.9,
+          "sysBP": 133
+        },
+        {
+          "weight": 70.3,
+          "sysBP": 138
+        },
+        {
+          "weight": 70,
+          "sysBP": 157
+        },
+        {
+          "weight": 71.2,
+          "sysBP": 132
+        },
+        {
+          "weight": 70.9,
+          "sysBP": 140
+        },
+        {
+          "weight": 70.6,
+          "sysBP": 137
+        },
+        {
+          "weight": 70.3,
+          "sysBP": 134
+        }
+      ],
+      "bpMedicationCorrelation": {
+        "r": -0.941,
+        "strength": "stark",
+        "n": 28,
+        "medicationCount": 1
+      },
+      "bpMedicationScatterData": [
+        {
+          "continuityPct": 100,
+          "sysBP": 138
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 135
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 132
+        },
+        {
+          "continuityPct": 0,
+          "sysBP": 159
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 134
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 131
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 136
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 141
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 135
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 132
+        },
+        {
+          "continuityPct": 0,
+          "sysBP": 162
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 134
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 131
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 139
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 133
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 141
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 138
+        },
+        {
+          "continuityPct": 0,
+          "sysBP": 154
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 140
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 137
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 131
+        },
+        {
+          "continuityPct": 0,
+          "sysBP": 161
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 136
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 138
+        },
+        {
+          "continuityPct": 0,
+          "sysBP": 157
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 140
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 137
+        },
+        {
+          "continuityPct": 100,
+          "sysBP": 134
+        }
+      ],
+      "moodSummary": {
+        "count": 29,
+        "latest": 3,
+        "min": 1,
+        "max": 5,
+        "mean": 3.07,
+        "median": 3,
+        "avg7": 3,
+        "avg30": 3.04,
+        "slope7": {
+          "slope": 0.286,
+          "direction": "up",
+          "confidence": 0.14
+        },
+        "slope30": {
+          "slope": 0,
+          "direction": "stable",
+          "confidence": 0
+        },
+        "anomalyCount": 0,
+        "avg30LastMonth": 4,
+        "avg30LastYear": null
+      },
+      "moodBpCorrelation": {
+        "r": -0.683,
+        "strength": "moderat",
+        "n": 28
+      },
+      "moodBpScatterData": [
+        {
+          "mood": 4,
+          "sysBP": 141
+        },
+        {
+          "mood": 2,
+          "sysBP": 138
+        },
+        {
+          "mood": 5,
+          "sysBP": 135
+        },
+        {
+          "mood": 3,
+          "sysBP": 132
+        },
+        {
+          "mood": 1,
+          "sysBP": 162
+        },
+        {
+          "mood": 4,
+          "sysBP": 137
+        },
+        {
+          "mood": 2,
+          "sysBP": 134
+        },
+        {
+          "mood": 5,
+          "sysBP": 131
+        },
+        {
+          "mood": 3,
+          "sysBP": 139
+        },
+        {
+          "mood": 1,
+          "sysBP": 158
+        },
+        {
+          "mood": 4,
+          "sysBP": 133
+        },
+        {
+          "mood": 2,
+          "sysBP": 141
+        },
+        {
+          "mood": 5,
+          "sysBP": 138
+        },
+        {
+          "mood": 3,
+          "sysBP": 135
+        },
+        {
+          "mood": 1,
+          "sysBP": 154
+        },
+        {
+          "mood": 4,
+          "sysBP": 140
+        },
+        {
+          "mood": 2,
+          "sysBP": 137
+        },
+        {
+          "mood": 5,
+          "sysBP": 134
+        },
+        {
+          "mood": 3,
+          "sysBP": 131
+        },
+        {
+          "mood": 1,
+          "sysBP": 161
+        },
+        {
+          "mood": 4,
+          "sysBP": 136
+        },
+        {
+          "mood": 2,
+          "sysBP": 133
+        },
+        {
+          "mood": 3,
+          "sysBP": 138
+        },
+        {
+          "mood": 1,
+          "sysBP": 157
+        },
+        {
+          "mood": 4,
+          "sysBP": 132
+        },
+        {
+          "mood": 2,
+          "sysBP": 140
+        },
+        {
+          "mood": 5,
+          "sysBP": 137
+        },
+        {
+          "mood": 3,
+          "sysBP": 134
+        }
+      ],
+      "moodWeightCorrelation": {
+        "r": 0.482,
+        "strength": "moderat",
+        "n": 28
+      },
+      "moodWeightScatterData": [
+        {
+          "mood": 4,
+          "weight": 71.2
+        },
+        {
+          "mood": 2,
+          "weight": 70.9
+        },
+        {
+          "mood": 5,
+          "weight": 70.6
+        },
+        {
+          "mood": 3,
+          "weight": 70.3
+        },
+        {
+          "mood": 1,
+          "weight": 70
+        },
+        {
+          "mood": 4,
+          "weight": 71.2
+        },
+        {
+          "mood": 2,
+          "weight": 70.9
+        },
+        {
+          "mood": 5,
+          "weight": 70.6
+        },
+        {
+          "mood": 3,
+          "weight": 70.3
+        },
+        {
+          "mood": 1,
+          "weight": 70
+        },
+        {
+          "mood": 4,
+          "weight": 71.2
+        },
+        {
+          "mood": 2,
+          "weight": 70.9
+        },
+        {
+          "mood": 5,
+          "weight": 70.6
+        },
+        {
+          "mood": 3,
+          "weight": 70.3
+        },
+        {
+          "mood": 1,
+          "weight": 70
+        },
+        {
+          "mood": 4,
+          "weight": 71.2
+        },
+        {
+          "mood": 2,
+          "weight": 70.9
+        },
+        {
+          "mood": 5,
+          "weight": 70.6
+        },
+        {
+          "mood": 3,
+          "weight": 70.3
+        },
+        {
+          "mood": 1,
+          "weight": 70
+        },
+        {
+          "mood": 4,
+          "weight": 71.2
+        },
+        {
+          "mood": 2,
+          "weight": 70.9
+        },
+        {
+          "mood": 3,
+          "weight": 70.3
+        },
+        {
+          "mood": 1,
+          "weight": 70
+        },
+        {
+          "mood": 4,
+          "weight": 71.2
+        },
+        {
+          "mood": 2,
+          "weight": 70.9
+        },
+        {
+          "mood": 5,
+          "weight": 70.6
+        },
+        {
+          "mood": 3,
+          "weight": 70.3
+        }
+      ],
+      "moodPulseCorrelation": null,
+      "moodPulseScatterData": [
+        {
+          "mood": 2,
+          "pulse": 72
+        },
+        {
+          "mood": 5,
+          "pulse": 71
+        },
+        {
+          "mood": 3,
+          "pulse": 78
+        },
+        {
+          "mood": 1,
+          "pulse": 77
+        },
+        {
+          "mood": 4,
+          "pulse": 76
+        },
+        {
+          "mood": 2,
+          "pulse": 75
+        },
+        {
+          "mood": 5,
+          "pulse": 74
+        },
+        {
+          "mood": 3,
+          "pulse": 73
+        },
+        {
+          "mood": 1,
+          "pulse": 72
+        },
+        {
+          "mood": 4,
+          "pulse": 74
+        },
+        {
+          "mood": 2,
+          "pulse": 73
+        },
+        {
+          "mood": 5,
+          "pulse": 77
+        },
+        {
+          "mood": 3,
+          "pulse": 76
+        },
+        {
+          "mood": 1,
+          "pulse": 75
+        },
+        {
+          "mood": 4,
+          "pulse": 74
+        },
+        {
+          "mood": 2,
+          "pulse": 73
+        },
+        {
+          "mood": 5,
+          "pulse": 75
+        },
+        {
+          "mood": 3,
+          "pulse": 74
+        },
+        {
+          "mood": 1,
+          "pulse": 73
+        },
+        {
+          "mood": 4,
+          "pulse": 72
+        },
+        {
+          "mood": 2,
+          "pulse": 76
+        },
+        {
+          "mood": 1,
+          "pulse": 76
+        },
+        {
+          "mood": 4,
+          "pulse": 75
+        },
+        {
+          "mood": 2,
+          "pulse": 74
+        },
+        {
+          "mood": 5,
+          "pulse": 73
+        },
+        {
+          "mood": 3,
+          "pulse": 72
+        }
+      ],
+      "medications": [
+        {
+          "id": "<id:1>",
+          "name": "Amlodipine",
+          "dose": "5mg",
+          "category": "BLOOD_PRESSURE",
+          "categoryLabel": null,
+          "compliance7": 67,
+          "compliance30": 65,
+          "streak": 4,
+          "taken7": 4,
+          "skipped7": 1,
+          "missed7": 2
+        }
+      ],
+      "alerts": [
+        {
+          "level": "warning",
+          "title": "Blood pressure often outside target range",
+          "message": "Only 0% of your readings are within the target range."
+        },
+        {
+          "level": "warning",
+          "title": "Low compliance: Amlodipine",
+          "message": "Your 7-day compliance for Amlodipine is only 67%. Regular intake is important."
+        }
+      ],
+      "hasProvider": false,
+      "dataSpanDays": 50,
+      "totalMeasurements": 282,
+      "revalidating": false,
+      "ai": {
+        "briefing": {
+          "available": false,
+          "reason": "no_provider",
+          "onDeviceAllowed": true
+        },
+        "statusText": {
+          "available": false,
+          "reason": "no_provider",
+          "onDeviceAllowed": true
+        }
+      }
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "insights.comprehensive"
+      },
+      "meta": {
+        "cache.analytics.key_hash": 2016842294,
+        "cache.analytics.outcome": "miss",
+        "insights": {
+          "slope_source": "rollup",
+          "anomaly_source": "live",
+          "regression_source": "rollup"
+        },
+        "insights.sub_bpRaw_ms": "<insights.sub_bpRaw_ms>",
+        "insights.sub_buckets_ms": "<insights.sub_buckets_ms>",
+        "insights.sub_coverage_ms": "<insights.sub_coverage_ms>",
+        "insights.sub_firstAt_ms": "<insights.sub_firstAt_ms>",
+        "insights.sub_latests_ms": "<insights.sub_latests_ms>",
+        "insights.sub_narrow_ms": "<insights.sub_narrow_ms>",
+        "medications": 1,
+        "moodEntries": 29,
+        "totalMeasurements": 282
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "ensureUserRollupsFresh",
+      "args": [
+        "<id:2>"
+      ]
+    },
+    {
+      "effect": "ensureUserMoodRollupsFresh",
+      "args": [
+        "<id:2>"
+      ]
+    }
+  ]
+}

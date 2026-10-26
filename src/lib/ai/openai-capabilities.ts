@@ -1,3 +1,5 @@
+import { openAIModelFamily } from "./openai-model-family";
+
 export type OpenAIChatCompletionsCapabilities =
   | {
       tokenBudgetField: "max_completion_tokens";
@@ -18,20 +20,13 @@ const LEGACY_COMPATIBLE_CAPABILITIES = {
   supportsSamplingControls: true,
 } as const;
 
+/**
+ * A reasoning model (gpt-5 on, the gpt-6 line included, the o-series) takes
+ * `max_completion_tokens` and refuses sampling controls; the family reading
+ * is shared with the reasoning and vision gates.
+ */
 function isModernCanonicalModel(model: string): boolean {
-  const normalizedModel = model.toLowerCase();
-
-  return (
-    normalizedModel === "gpt-5" ||
-    normalizedModel.startsWith("gpt-5-") ||
-    normalizedModel.startsWith("gpt-5.") ||
-    normalizedModel === "o1" ||
-    normalizedModel.startsWith("o1-") ||
-    normalizedModel === "o3" ||
-    normalizedModel.startsWith("o3-") ||
-    normalizedModel === "o4" ||
-    normalizedModel.startsWith("o4-")
-  );
+  return openAIModelFamily(model)?.reasoning != null;
 }
 
 export function isCanonicalOpenAIEndpoint(baseUrl: string): boolean {

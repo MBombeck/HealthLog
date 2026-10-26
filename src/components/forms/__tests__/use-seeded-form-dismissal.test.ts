@@ -322,11 +322,28 @@ describe("safeInternalNavigationTarget", () => {
 });
 
 describe("seeded dismissal migrations", () => {
-  it.each([
-    "measurements/measurement-list.tsx",
-    "mood/mood-list.tsx",
-    "labs/lab-history-list.tsx",
-  ])(
+  it("routes every measurement-list edit exit through the shared contract", () => {
+    // The list's edit lives in its own hook and sheet.
+    const hook = readFileSync(
+      new URL(
+        "../../measurements/list/use-measurement-edit.ts",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    const sheet = readFileSync(
+      new URL(
+        "../../measurements/list/measurement-edit-sheet.tsx",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    expect(hook).toContain("useSeededFormDismissal({");
+    expect(hook).toContain("editDismissal.requestClose(dismissEdit)");
+    expect(sheet).toContain("<SeededFormDiscardDialog");
+  });
+
+  it.each(["mood/mood-list.tsx", "labs/lab-history-list.tsx"])(
     "routes every %s edit exit through the shared contract",
     (relativePath) => {
       const source = readFileSync(

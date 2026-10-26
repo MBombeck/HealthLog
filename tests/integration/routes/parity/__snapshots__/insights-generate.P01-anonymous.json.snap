@@ -1,0 +1,55 @@
+{
+  "status": 401,
+  "body": {
+    "data": null,
+    "error": "Not authenticated",
+    "meta": {
+      "errorCode": "auth.missing",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 401,
+      "action": null,
+      "meta": null,
+      "warnings": null,
+      "error": {
+        "type": "HttpError",
+        "message": "Not authenticated"
+      }
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "insightsCachedAt": "anchor+0d+10:00:00",
+    "insightsCachedLocale": "en",
+    "cachedPayload": {
+      "summary": "Cached summary.",
+      "classification": "gut",
+      "findings": [],
+      "correlations": [],
+      "recommendations": [],
+      "dataQuality": {
+        "coverage": "good",
+        "gaps": [],
+        "confidence": "hoch"
+      },
+      "dailyBriefing": null,
+      "briefingGeneratedAt": "anchor+0d+10:00:00"
+    },
+    "snapshotHash": null,
+    "audit": [
+      {
+        "action": "insights.briefing-failure",
+        "details": {
+          "reason": "briefing-ungrounded",
+          "httpStatus": null,
+          "failureKind": null
+        },
+        "ipAddress": null
+      }
+    ],
+    "usage": []
+  }
+}

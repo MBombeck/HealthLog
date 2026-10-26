@@ -175,6 +175,9 @@
           "failed": "The label could not be read. Try a sharper photo."
         }
       }
+    },
+    "aiRuns": {
+      "readerBusy": "The document reader is busy with other work. Try again in a minute."
     }
   },
   "doctorReport": {
@@ -435,7 +438,8 @@
       "autocorrelation": "strong day-to-day carry-over, so the ranges may still be too narrow",
       "window": "analysed {from} to {to}, which can reach beyond the report period",
       "windowLine": "Analysed {from} to {to}. This window can reach beyond the report period."
-    }
+    },
+    "screenerUnvalidated": "{label}: {count} of {total} results were answered in a translation that has not been scientifically validated; treat them as orientation."
   },
   "errorBoundary": {
     "title": "Something went wrong",
@@ -628,7 +632,9 @@
       "title": "Invitation invalid",
       "description": "This invitation link is incomplete or was copied wrongly. Ask the person who invited you for a new link.",
       "toLogin": "Go to sign in"
-    }
+    },
+    "deletionPending": "This account is scheduled for deletion on {date} and is locked until then. An admin of this server can undo the deletion before that date.",
+    "deletionPendingNoDate": "This account is scheduled for deletion and is locked. An admin of this server can undo the deletion until it completes."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -777,13 +783,13 @@
         "bmi": "kg/m²"
       }
     },
-    "keyBackupBanner": {
-      "title": "Back up your encryption key",
-      "body": "Without a copy of the key, your data cannot be recovered after a reinstall. It takes a minute.",
-      "action": "Open the step"
-    },
     "quickAddSymptom": "Log symptom",
-    "todayCardVisible": "Show the top card"
+    "todayCardVisible": "Show the top card",
+    "recoveryKitBanner": {
+      "title": "Save your recovery kit",
+      "body": "Without copies of the keys this server uses, its data cannot be recovered after a reinstall. It takes a few minutes.",
+      "action": "Open the kit"
+    }
   },
   "measurements": {
     "title": "Measurements",
@@ -3019,6 +3025,7 @@
       "refusalInjection": "I noticed wording that tries to override my instructions. I am the HealthLog Coach and only summarise your own health data. Please rephrase your question in those terms.",
       "errorBudget": "You've reached today's Coach usage limit. The budget refreshes at midnight in your time zone.",
       "errorProvider": "The Coach could not reach an Insights provider just now. Please try again in a moment.",
+      "errorReasoningOnly": "The model only reasoned and never wrote an answer. Try again, or choose a different model in your AI settings.",
       "errorDemo": "The Coach doesn't answer in the demo.",
       "errorNoProvider": "The Coach reads your logged health data and answers questions about it (not medical advice). HealthLog needs an AI provider for that. Connect your own key or a local model.",
       "errorNoProviderAction": "Connect an AI provider",
@@ -5731,7 +5738,7 @@
             "passphrasePlaceholder": "Passphrase (min. 12 characters)",
             "passphraseHelp": "Derives the archive key with Argon2id and seals it with AES-256-GCM. Save the file with a .hlx extension.",
             "noRecoveryWarning": "There is no recovery. If you lose this passphrase, the archive cannot be opened. Keep it somewhere safe.",
-            "detail": "Same shape as the weekly auto-backup. Some record types are not carried yet; the file's manifest names what is in it.",
+            "detail": "A portable copy of your record for you to keep and read: values in plain JSON, documents as metadata only. It is not the weekly account copy this server keeps for rolling an account back, and it cannot recreate an account on another server. Some record types are not carried yet; the file's manifest names what is in it.",
             "contents": "Your measurements, medications, mood, cycle, labs, illness episodes, allergies, family history, nutrients, workouts, health profile and custom metrics in one JSON file."
           }
         },
@@ -5777,7 +5784,7 @@
             "cycleDaysFailed": "{count} cycle days couldn't be written: {reason}"
           },
           "json": {
-            "title": "JSON file",
+            "title": "Measurements and mood (JSON)",
             "description": "Paste JSON or upload a .json file with measurements and mood entries.",
             "pasteLabel": "Paste JSON",
             "fileInputLabel": "Choose a JSON file to import",
@@ -5793,8 +5800,11 @@
             "readFailed": "Couldn't read that file.",
             "resultSummary": "Imported {measurements} measurements and {moods} mood entries, {skipped} skipped.",
             "resultSuccess": "Imported {measurements} measurements and {moods} mood entries",
+            "droppedLinks": "Imported without these tags, because this account has none by that name: {keys}",
+            "keptLabels": "This account already has tags or groups with these keys under its own names, so those were kept: {keys}",
             "resultNothing": "Nothing was imported. All {skipped} entries were skipped.",
-            "resultEmpty": "That file carried no measurements and no mood entries."
+            "resultEmpty": "That file carried no measurements and no mood entries.",
+            "limitsHint": "Up to {mb} MB and up to {rows} entries in each list. It adds entries to your record; it does not restore a full backup."
           },
           "csv": {
             "title": "CSV file",
@@ -5940,7 +5950,7 @@
             }
           }
         },
-        "subtitle": "Export your data or import from a backup."
+        "subtitle": "Export your data, or import measurements and records from other apps and files."
       },
       "about": {
         "title": "About this app",
@@ -6854,7 +6864,14 @@
       "detail": "The token is shown once.",
       "scopeNote": "It can only add new readings to your own record. It cannot read your data, change or delete anything, or create another token. Readings are marked as coming from an external device, so you can tell them apart later, and you can still correct them yourself.",
       "createFailed": "The token could not be created. Please try again.",
-      "namePlaceholder": "Name, e.g. Home Assistant"
+      "namePlaceholder": "Name, e.g. Home Assistant",
+      "appleHealth": {
+        "label": "Write readings to Apple Health",
+        "createHint": "The HealthLog app on your iPhone then adds this token's readings to Apple Health. You can change this later in the token list below.",
+        "toggleAria": "Write readings from {name} to Apple Health",
+        "updateFailed": "The Apple Health setting could not be changed. Please try again.",
+        "unattributed": "Readings sent before this setting existed can't be matched to a token, so they stay out of Apple Health."
+      }
     },
     "workoutsToken": {
       "title": "Workout tokens",
@@ -6911,10 +6928,12 @@
     "deleteAccountCardDescription": "Deletes your account along with passkeys, audit log, and sessions.",
     "deleteAccountCta": "Delete account",
     "deleteAccountConfirmTitle": "Delete account permanently?",
-    "deleteAccountConfirmDescription": "Your account, all health data, passkeys, sessions, and audit entries will be permanently deleted. You will be signed out immediately after.",
+    "deleteAccountConfirmTitleGrace": "Delete your account?",
+    "deleteAccountConfirmDescription": "Your account, all health data, passkeys, sessions, and audit entries will be permanently deleted. You will be signed out immediately after. Copies in this server's backups age out after their retention period.",
     "deleteAccountSuccess": "Account deleted. Signing you out.",
     "deleteAccountFailed": "Account could not be deleted",
     "deleteAccountFinal": "Delete permanently",
+    "deleteAccountFinalGrace": "Delete account",
     "saved": "Saved",
     "savingError": "Error saving",
     "about": {
@@ -7321,13 +7340,16 @@
         "coach": "Coach conversations: kept {days} days",
         "audit": "Security activity log: kept {days} days",
         "delivery": "Notification delivery log: kept {days} days",
-        "unavailable": "Retention details are unavailable right now."
+        "unavailable": "Retention details are unavailable right now.",
+        "accountDeletion": "Deleting your account, a managed profile or all data: completed after {days} days",
+        "accountDeletionImmediate": "Deleting your account, a managed profile or all data: completed immediately"
       },
       "delete": {
         "title": "Delete or reset",
         "description": "Remove your account entirely, or wipe your health records while keeping the account.",
-        "backupLag": "Deletion removes your data immediately. If this server keeps encrypted off-host backups, the copies of your data are deleted from that storage right after, or on the next nightly run if the storage is unreachable.",
-        "openAdvanced": "Delete or reset"
+        "openAdvanced": "Delete or reset",
+        "immediateNotice": "Deletion removes your data immediately. If this server keeps encrypted off-host backups, the copies of your data are deleted from that storage right after, or on the next nightly run if the storage is unreachable. Copies in this server's backups age out after their retention period.",
+        "graceNotice": "When you delete your account, it is locked immediately and erased after {days} days, together with every copy this server keeps of it, including encrypted off-host copies. Until then, an admin of this server can undo the deletion. Deleting all data works the same way: a copy of the record is kept for {days} days, so an admin can restore it. Copies in this server's backups age out after their retention period."
       },
       "posture": {
         "title": "Privacy posture",
@@ -7633,7 +7655,13 @@
       "off": "Off",
       "change": "Change in Modules"
     },
-    "timezoneUseDevice": "Use this device's timezone ({zone})"
+    "timezoneUseDevice": "Use this device's timezone ({zone})",
+    "dangerZoneConfirmDescriptionGrace": "This deletes everything in your record: measurements, medications, mood entries, lab results, cycle entries, documents, AI conversations and every integration connection, together with everything derived from them and anything you deleted earlier. Share links you gave to a doctor stop working immediately. Your account stays, along with the credentials you sign in with and display settings such as language, timezone and units. A copy of your record is kept for {days} days, so an admin of this server can restore it until then. After that the deletion is final.",
+    "deleteAccountCardDetailGrace": "Your account is locked right away and erased after {days} days. Until then, an admin of this server can undo the deletion.",
+    "deleteAccountConfirmDescriptionGrace": "You are signed out and your account is locked right away. After {days} days it is erased for good, with all health data, passkeys, sessions and audit entries. Until then, an admin of this server can undo the deletion. Copies in this server's backups age out after their retention period.",
+    "deleteAccountScheduled": "Your account is locked and will be erased on {date}. Signing you out.",
+    "dangerZoneSuccessGrace": "Your health record has been deleted. An admin of this server can restore it until {date}.",
+    "dangerZoneRestoreLimits": "Access ends too: what you share with others, what they share with you, and any Guardian role. A restore puts the record back as it is now. Anything added after the deletion is replaced, and integration connections, sharing, Guardian roles and share links do not come back; they have to be set up again."
   },
   "admin": {
     "title": "Administration",
@@ -8069,7 +8097,15 @@
         "cannotLogoutSelf": "Cannot force-logout yourself",
         "emptyTitle": "No users in this view",
         "emptyDescription": "There are no users matching the current filter.",
-        "emptyResetFilter": "Show all users"
+        "emptyResetFilter": "Show all users",
+        "deletionPending": "Deletion on {date}",
+        "deletionPendingNoDate": "Deletion pending",
+        "undoDeletion": "Undo deletion",
+        "undoDeletionTitle": "Undo the deletion of {name}?",
+        "undoDeletionBody": "{name} asked to delete this account, and it is erased when the grace window ends. Undoing keeps the account and everything in it as it was. {name} can sign in again, but API tokens, share links and trusted devices stay revoked and have to be set up again.",
+        "undoDeletionBodyGuardian": "A guardian deleted the managed profile {name}, and it is erased when the grace window ends. Undoing keeps the profile and everything in it as it was, and its guardians can reach it again. Its share links and tokens stay revoked and have to be set up again.",
+        "undoDeletionDone": "Deletion undone for {name}",
+        "undoDeletionFailed": "Could not undo the deletion"
       },
       "invites": {
         "title": "Invites",
@@ -8131,8 +8167,8 @@
       },
       "backups": {
         "title": "Backups",
-        "subtitle": "Weekly per-user data snapshots stored in PostgreSQL.",
-        "description": "Each user gets one rolling snapshot per backup type. Sizes show the encrypted blob. Download decrypts the snapshot for the admin who asks; the ciphertext stays in the database.",
+        "subtitle": "Account copies kept in this server's database, for rolling one account back on this server.",
+        "description": "Each account has one weekly copy, replaced every Sunday, plus any copy uploaded here and the copy taken before \"Delete all data\". A copy brings one existing account back on this server. It cannot rebuild a lost server: that takes a database dump and the encryption keys. Sizes show the encrypted copy. Download decrypts it for the admin who asks; the ciphertext stays in the database.",
         "runNow": "Backup now",
         "runEnqueued": "Backup job enqueued",
         "runFailed": "Failed to enqueue backup",
@@ -8142,12 +8178,11 @@
         "emptyDescription": "Backups run automatically every Sunday at 03:00, or trigger one now to create the first snapshot.",
         "colUser": "User",
         "colType": "Type",
-        "typeWeeklyAuto": "Weekly (auto)",
+        "typeWeeklyAuto": "Weekly account rollback",
         "typeManual": "Manual",
         "colSize": "Size",
         "colCreatedAt": "Last snapshot",
         "colActions": "Actions",
-        "retentionLabel": "Retention: {days} days",
         "scheduleStaleTitle": "The weekly backup has stopped",
         "scheduleStaleDescription": "The newest scheduled copy is {days} days old. A working weekly run never leaves one older than {threshold} days.",
         "scheduleFailedTitle": "The last scheduled backup run failed",
@@ -8165,7 +8200,7 @@
         "downloadFailed": "Download failed",
         "downloadStarted": "Download started",
         "uploadTitle": "Upload backup",
-        "uploadDescription": "Validate a backup file and store it as a manual snapshot. Restoring is a separate step.",
+        "uploadDescription": "Check an account copy and store it beside this server's copies. The account it belongs to must exist on this server. Restoring is a separate step.",
         "uploadButton": "Upload file",
         "uploadHelp": "A HealthLog backup as .json or .json.gz. The file is compressed before upload; compressed, it may be up to 512 MB.",
         "uploadSuccess": "Backup uploaded ({count} records)",
@@ -8225,7 +8260,7 @@
         "restoreSkippedAccountSetting": "Account setting",
         "restoreMissingTitle": "Restore refused: the file is incomplete",
         "restoreMissingDescription": "The file's own manifest says it carries the section below, and it does not. Nothing was changed: a restore replaces a whole class of records, so putting back a section that is not in the file would have emptied it.",
-        "restoreMissingRemedy": "Use a disaster-recovery snapshot, or export the account again and upload the new file. A section the manifest declares as omitted is a different thing and restores normally.",
+        "restoreMissingRemedy": "Use one of this server's account copies or an off-host copy, or export the account again and upload the new file. A section the manifest declares as omitted is a different thing and restores normally.",
         "restoreMissingDocuments": "Documents",
         "restoreMissingWorkouts": "Workouts",
         "restoreMissingMentalHealth": "Mental-health screeners",
@@ -8255,6 +8290,9 @@
         "restoreActive": "A restore of this account is already running. Wait for it to finish.",
         "restoreJobQueuedTitle": "Restore of {username} is waiting to start",
         "restoreJobQueuedNote": "It starts as soon as the background worker picks it up.",
+        "restoreJobWaitingBackupNote": "Waiting for the backup that is running on the server. A restore never runs beside one, and it starts about a minute after the backup finishes.",
+        "restoreJobWaitingBusyNote": "Waiting for a large job on the server to finish, such as an import or a nightly pass. It starts about a minute after that.",
+        "restoreJobQueuedSince": "Queued at {when}.",
         "restoreJobRunningTitle": "Restoring {username}",
         "restoreJobRunningNote": "The account keeps showing its current data until the restore finishes. You can leave this page; the restore continues on the server.",
         "restoreJobResumed": "Started again after the server restarted.",
@@ -8275,7 +8313,7 @@
         "restoreFailureOwnerMismatch": "The file inside the backup belongs to a different account than the backup row.",
         "restoreFailureOwnerMissing": "The account this backup belongs to no longer exists.",
         "restoreFailureSectionMissing": "The file is incomplete: its manifest names a section it does not carry.",
-        "restoreFailureDocument": "The file carries documents without their content, as a portable export does. Use a disaster-recovery backup.",
+        "restoreFailureDocument": "The file carries documents without their content, as a portable export does. Use one of this server's account copies or an off-host copy instead.",
         "restoreFailureTimeBudget": "This backup is too large to restore within the background job's time limit.",
         "restoreFailureTransaction": "The database refused the restore part-way, so everything was rolled back. The server log names the error.",
         "restoreFailureCauseTimeout": "The restore ran longer than the database allowed, so everything was rolled back. If the database host was busy, start the restore again when it is quieter. The server log names the step.",
@@ -8296,7 +8334,32 @@
         "restoreSkippedMoodLabelCiphertext": "Mood tag or group name sealed with a key this server does not hold (kept without its name)",
         "restoreSkippedVisitCiphertext": "Visit or practitioner text sealed with a key this server does not hold (kept without it)",
         "restoreSkippedVaccinationCiphertext": "Vaccination note sealed with a key this server does not hold (dose kept without it)",
-        "restoreSkippedEnvironmentLocationCiphertext": "Location of an environment period or day sealed with a key this server does not hold (kept sealed, those days are not refreshed)"
+        "restoreSkippedEnvironmentLocationCiphertext": "Location of an environment period or day sealed with a key this server does not hold (kept sealed, those days are not refreshed)",
+        "typePreWipe": "Before all data was deleted",
+        "retentionNote": "The weekly copy is replaced every Sunday. A copy taken before \"Delete all data\" is deleted after {days} days. Uploaded copies stay until their account is erased.",
+        "retentionNoteNoGrace": "The weekly copy is replaced every Sunday. Uploaded copies stay until their account is erased.",
+        "database": {
+          "title": "Database dump",
+          "lastGood": "Last good dump {when}, {size}, {where}.",
+          "whereBoth": "kept on this server and off-host",
+          "whereLocal": "kept on this server",
+          "whereOffhost": "off-host only",
+          "none": "No database dump yet. The first one runs tonight.",
+          "failedTitle": "The last database dump failed",
+          "failedDescription": "{when}: {reason}",
+          "disabled": "Database dumps are switched off (DB_BACKUP_ENABLED=false). Back the database up another way.",
+          "noDirectoryOffhost": "This server cannot write to {dir}, so dumps go off-host only and none is kept here. Mount the backups volume.",
+          "noDirectory": "This server cannot write to {dir} and no off-host bucket is set, so no database dump can be taken. Mount the backups volume.",
+          "retentionLocal": "Deleted accounts stay in the dumps until those age out: the newest {nights} nightly dumps are kept on this server, and the dump taken before the latest update stays until the next update.",
+          "retentionOffhost": "Off-host copies are removed after {days} days by the bucket's lifecycle rule.",
+          "retentionOffhostMissing": "No lifecycle rule in the bucket covers database/, so dumps there, and the deleted accounts inside them, are never removed. Add a rule for that prefix.",
+          "notPersistentOffhost": "{dir} is not on persistent storage (it sits inside the container rather than on a mounted volume, or in memory), so a dump written there would be lost at the next update. Dumps go off-host only: none is kept here and none is taken before a migration. Mount the backups volume.",
+          "notPersistent": "{dir} is not on persistent storage (it sits inside the container rather than on a mounted volume, or in memory) and no off-host bucket is set, so no database dump is kept anywhere. Mount the backups volume.",
+          "offhostFailedTitle": "The newest database dump did not reach the off-host bucket",
+          "offhostLastUpload": "The newest dump in the bucket is from {when}.",
+          "offhostNeverUploaded": "No database dump has reached the bucket yet."
+        },
+        "restorePreWipeLimits": "This copy was taken before the account's data was deleted, and restoring it undoes that deletion as far as a copy can: whatever the account added since is replaced, and integration connections, sharing and Guardian access, and share links do not come back."
       },
       "danger-zone": {
         "title": "Danger zone",
@@ -8362,7 +8425,10 @@
         "columnsHide": "Hide the table",
         "columnsShowAll": "Show all {count} columns",
         "columnsShowWithRows": "Only columns with rows",
-        "columnsNoneWithRows": "No encrypted column holds rows yet."
+        "columnsNoneWithRows": "No encrypted column holds rows yet.",
+        "backupsDumpLocalLine": "Key {key}: {count} database dumps on this server were written under it; it is needed until retention removes them.",
+        "backupsDumpOffhostLine": "Key {key}: the newest database dump written under it went into the bucket on {when}; needed there until {until}",
+        "backupsDumpOffhostLineUnknown": "Key {key}: the newest database dump written under it went into the bucket on {when}. How long the bucket keeps database/ is unknown, so keep the key until you know that dump is gone."
       },
       "maintenance": {
         "title": "Measurement table maintenance",
@@ -8492,47 +8558,6 @@
       "title": "This part of the page could not be shown",
       "description": "The rest of the page still works; try again or reload if it keeps failing."
     },
-    "keyBackup": {
-      "title": "Back up your encryption key",
-      "description": "Without a copy of this key, your encrypted data and this server's backups cannot be read again.",
-      "loading": "Loading the key backup status…",
-      "loadError": "Could not load the key backup status.",
-      "badgeDue": "To do",
-      "badgeDone": "Backed up",
-      "keyId": "Active key id",
-      "fingerprint": "Fingerprint",
-      "whatIsLost": "Keep a copy of the key somewhere outside this server, for example in a password manager. If the server is reinstalled with a different key, HealthLog refuses to start serving until the original key is back.",
-      "fingerprintHint": "The fingerprint is the first 12 characters of the SHA-256 hash of the key. It identifies the key without revealing it, so you can compare it with your copy.",
-      "checkLabel": "Check my copy",
-      "checkButton": "Check",
-      "checkNote": "The key you paste is compared with the active key and then discarded. It is never stored or logged.",
-      "checkInsecureNote": "This page is not served over https://, so the key you paste crosses the network unencrypted, just like your password does. It is compared and discarded, never stored or logged.",
-      "checkMatches": "Your copy matches the active key.",
-      "checkNoMatch": "Your copy does not match the active key. Check that you copied the whole value.",
-      "checkFailed": "The check failed.",
-      "confirmButton": "I have backed up this key",
-      "confirmed": "Key backup confirmed.",
-      "confirmFailed": "Could not save the confirmation.",
-      "stale": "The server's key changed since this page loaded. Check the new key id and fingerprint, then confirm again.",
-      "confirmedAt": "Confirmed on {date}.",
-      "confirmedAtBy": "Confirmed on {date} by {who}.",
-      "dueAgain": "A backup was confirmed for key {keyId}, but the server now uses another key. Back up the current one.",
-      "tileLabel": "Encryption key backup",
-      "tileDue": "Not confirmed",
-      "tileDone": "Confirmed",
-      "platform": {
-        "composeLabel": "Compose",
-        "composeWhere": "The key is ENCRYPTION_KEY (or ENCRYPTION_KEYS) in the .env file next to docker-compose.yml.",
-        "truenasLabel": "TrueNAS",
-        "truenasWhere": "Open Apps, select HealthLog, choose Edit and copy ENCRYPTION_KEY from the environment settings.",
-        "coolifyLabel": "Coolify",
-        "coolifyWhere": "Open the application in Coolify and copy ENCRYPTION_KEY from its Environment Variables.",
-        "unraidLabel": "Unraid",
-        "unraidWhere": "On the Docker tab, edit the HealthLog container and copy ENCRYPTION_KEY from the template, or from the .env of your Compose Manager stack.",
-        "portainerLabel": "Portainer",
-        "portainerWhere": "Open the HealthLog stack in Portainer and copy ENCRYPTION_KEY from its environment variables."
-      }
-    },
     "keyMismatch": {
       "title": "HealthLog cannot open its data",
       "body": "The encryption key this server was started with is not the key its database was written with. To protect your data, HealthLog does not serve anything until this is fixed.",
@@ -8563,6 +8588,185 @@
       "defaultAboveCeiling": "The default level cannot be above the highest level.",
       "gapLabel": "Hours between card refreshes after a sync (Standard)",
       "gapHint": "Whole hours from 1 to 48. Leave empty to use AI_SYNC_REGEN_GAP_HOURS, else 6. In effect now: {hours} h."
+    },
+    "recoveryKit": {
+      "title": "Recovery kit",
+      "description": "Every key a restore of this server needs, by id and fingerprint.",
+      "intro": "Keep a copy of each key below outside this server, for example in a password manager. Without them, neither a database dump nor a backup copy can be read again, and HealthLog refuses to start if a key it needs is missing.",
+      "loading": "Loading the recovery kit…",
+      "loadError": "Could not load the recovery kit.",
+      "badgeDue": "To do",
+      "badgeDone": "Saved",
+      "keyId": "Id",
+      "fingerprint": "Fingerprint",
+      "noFingerprint": "Not on this server",
+      "kind": {
+        "application": "Application key {id}",
+        "backup": "Off-host backup key",
+        "backupPrevious": "Previous off-host backup key",
+        "token": "Token key"
+      },
+      "need": {
+        "active": "Encrypts new data.",
+        "configured": "Held by this server.",
+        "storedCopies": "Needed by {count} stored copies.",
+        "offhostUntil": "Needed by off-host copies until {date}.",
+        "offhostUnknown": "Needed by off-host copies for as long as the bucket keeps them.",
+        "backupActive": "Seals every new off-host copy.",
+        "backupPrevious": "Opens off-host copies written before the last key change.",
+        "token": "Signs sessions, tokens and share links. Without it everyone is signed out, but no data is lost.",
+        "localDumps": "Needed by {count} database dumps on this server.",
+        "offhostDumpsUntil": "Needed by off-host database dumps until {date}.",
+        "offhostDumpsUnknown": "Needed by off-host database dumps for as long as the bucket keeps them."
+      },
+      "source": "Set in {variable}.",
+      "status": {
+        "confirmed": "Saved",
+        "new": "Not saved yet",
+        "notConfigured": "Not on this server",
+        "unreadable": "Not a valid key"
+      },
+      "notConfiguredHint": "A backup still needs this key and this server does not hold it. Only a copy you keep elsewhere can read those backups. Confirm the kit once you have that copy.",
+      "unreadableHint": "The variable is set but does not hold a valid key. Fix it before you rely on the off-host copies.",
+      "fingerprintHint": "A fingerprint is the first 12 characters of the SHA-256 hash of a key. It identifies the key without revealing it, so you can compare it with your copy.",
+      "whereTitle": "Where the keys are set",
+      "platform": {
+        "composeLabel": "Compose",
+        "composeWhere": "The keys are in the .env file next to docker-compose.yml: ENCRYPTION_KEY or ENCRYPTION_KEYS, API_TOKEN_HMAC_KEY and, with off-host copies, BACKUP_ENCRYPTION_KEY.",
+        "truenasLabel": "TrueNAS",
+        "truenasWhere": "Open Apps, select HealthLog and choose Edit. The keys are under HealthLog Configuration; in an app installed via YAML, they are ENCRYPTION_KEY, API_TOKEN_HMAC_KEY and BACKUP_ENCRYPTION_KEY in the environment settings.",
+        "coolifyLabel": "Coolify",
+        "coolifyWhere": "Open the application in Coolify and copy ENCRYPTION_KEY, API_TOKEN_HMAC_KEY and BACKUP_ENCRYPTION_KEY from its Environment Variables.",
+        "unraidLabel": "Unraid",
+        "unraidWhere": "On the Docker tab, edit the HealthLog container and copy ENCRYPTION_KEY, API_TOKEN_HMAC_KEY and BACKUP_ENCRYPTION_KEY from the template, or from the .env of your Compose Manager stack.",
+        "portainerLabel": "Portainer",
+        "portainerWhere": "Open the HealthLog stack in Portainer and copy ENCRYPTION_KEY, API_TOKEN_HMAC_KEY and BACKUP_ENCRYPTION_KEY from its environment variables."
+      },
+      "restoreTitle": "Restoring this server",
+      "restoreBody": "Install HealthLog with the same keys, restore the newest database dump into an empty database, then start the app. The guide walks through each step.",
+      "restoreLink": "Disaster recovery guide",
+      "checkLabel": "Check my copy",
+      "checkKeyLabel": "Key to check",
+      "checkValueLabel": "Your copy of the key",
+      "checkButton": "Check",
+      "checkNote": "The key you paste is compared with the one this server holds and then discarded. It is never stored or logged.",
+      "checkInsecureNote": "This page is not served over https://, so the key you paste crosses the network unencrypted, just like your password does. It is compared and discarded, never stored or logged.",
+      "checkMatches": "Your copy matches this key.",
+      "checkNoMatch": "Your copy does not match this key. Check that you copied the whole value.",
+      "checkFailed": "The check failed.",
+      "confirmButton": "I have a copy of every key",
+      "confirmed": "Recovery kit confirmed.",
+      "confirmFailed": "Could not save the confirmation.",
+      "stale": "The kit changed since this page loaded. Check the keys it lists now, then confirm again.",
+      "confirmedAt": "Confirmed on {date}.",
+      "confirmedAtBy": "Confirmed on {date} by {who}.",
+      "dueAgain": "The kit was confirmed on {date}. It now also lists {keys}, which that confirmation did not cover. Save a copy of each and confirm again."
+    },
+    "recoveryReadiness": {
+      "title": "Recovery readiness",
+      "description": "Whether this server could be put back after a loss, judged from every backup it makes.",
+      "loading": "Checking the backups…",
+      "loadError": "Could not load the recovery readiness.",
+      "state": {
+        "ok": "Ready",
+        "attention": "Needs attention",
+        "failing": "At risk"
+      },
+      "signal": {
+        "database_dump": "Database dump",
+        "weekly_copy": "Weekly account copies",
+        "offhost_copies": "Off-host copies",
+        "restore_drill": "Restore drill",
+        "offhost_setup": "Off-host backup",
+        "recovery_kit": "Recovery kit",
+        "dump_retention": "Dumps in the bucket"
+      },
+      "at": {
+        "database_dump": "Newest dump: {date}",
+        "weekly_copy": "Oldest account copy: {date}",
+        "offhost_copies": "Least recent off-host copy: {date}",
+        "restore_drill": "Last drill: {date}",
+        "recovery_kit": "Confirmed: {date}"
+      },
+      "dueBy": "Due by {date}",
+      "fix": {
+        "database_dump": "Open backups",
+        "weekly_copy": "Open backups",
+        "offhost_copies": "Open backups",
+        "restore_drill": "Open backups",
+        "offhost_setup": "Open backups",
+        "recovery_kit": "Open the kit",
+        "dump_retention": "Open backups"
+      },
+      "reason": {
+        "database_dump": {
+          "not_available": "This version does not schedule a database dump.",
+          "disabled": "The scheduled database dump is switched off, so no copy can rebuild this server. To turn it back on, remove DB_BACKUP_ENABLED or set it to true, then restart HealthLog.",
+          "unreadable": "The status of the database dump could not be read.",
+          "never_succeeded": "No database dump has succeeded yet, and the last attempt failed.",
+          "never_ran": "No database dump has been written in the {hours} hours since dumps were switched on.",
+          "first_pending": "The first database dump has not run yet.",
+          "stale": "The newest database dump is {hours} hours old.",
+          "last_failed": "The last database dump failed. The one before it is still recent.",
+          "fresh": "The newest database dump is recent.",
+          "nowhere_to_write": "The dump directory {directory} cannot be written to and no off-host bucket is set up, so no dump can be kept.",
+          "not_persistent": "The dump directory {directory} is not on persistent storage and no off-host bucket is set up, so every dump would be lost at the next update. Mount the backups volume.",
+          "fresh_offhost_only": "The newest database dump is recent and in the off-host bucket. None is kept on this server, because {directory} is not on persistent storage, and none is taken before a migration.",
+          "offhost_failed": "The newest database dump is kept on this server, but its upload to the off-host bucket failed.",
+          "offhost_stale": "No database dump has reached the off-host bucket for {hours} hours: the uploads keep failing. If this server is lost, there is no recent dump to rebuild it from.",
+          "offhost_never": "No database dump has ever reached the off-host bucket: the upload fails. If this server is lost, there is no dump to rebuild it from."
+        },
+        "weekly_copy": {
+          "no_accounts": "There are no accounts to copy yet.",
+          "stale": "The oldest weekly copy is {days} days old. Accounts behind: {accounts}.",
+          "never": "An account has had no weekly copy for {days} days. Accounts behind: {accounts}.",
+          "first_pending": "The first weekly copy is made early on Sunday.",
+          "fresh": "Every account has a copy from the last week."
+        },
+        "offhost_copies": {
+          "not_configured": "No off-host bucket is set up.",
+          "stale": "Off-host copies are more than two nights behind. Accounts behind: {accounts}.",
+          "first_pending": "The nightly off-host run has not reached any account yet.",
+          "fresh": "Every account has a recent copy in the off-host bucket."
+        },
+        "restore_drill": {
+          "not_configured": "The drill reads the off-host bucket, which is not set up.",
+          "not_run_yet": "The monthly restore drill has not run yet.",
+          "failed": "The last restore drill failed: {failed} of {checked} copies could not be read back.",
+          "failed_run": "The last restore drill could not finish.",
+          "passed": "The last restore drill read back {checked} copies.",
+          "nothing_checked": "The last restore drill stopped on its time limit before it read back a single copy, so it proved nothing."
+        },
+        "offhost_setup": {
+          "configured": "Copies leave this server every night.",
+          "no_admin": "There is no admin account yet.",
+          "not_configured": "No off-host bucket is set up, so every copy lives on this server only.",
+          "not_configured_grace": "No off-host bucket is set up yet, so every copy lives on this server only."
+        },
+        "recovery_kit": {
+          "confirmed": "A copy of every key a restore needs is kept.",
+          "out_of_date": "The recovery kit now also lists {keys}, which the last confirmation did not cover. Nothing is broken: save a copy and confirm the kit again.",
+          "no_admin": "There is no admin account yet.",
+          "not_confirmed": "Nobody has confirmed a copy of the keys a restore needs: {keys}.",
+          "not_confirmed_grace": "Save a copy of the keys a restore needs: {keys}."
+        },
+        "dump_retention": {
+          "not_configured": "No off-host bucket is set up.",
+          "no_offhost_dumps": "No database dump goes to the bucket.",
+          "missing": "No lifecycle rule in the bucket covers database/, so dumps there, and the deleted accounts inside them, are never removed. Add a rule for that prefix.",
+          "configured": "The bucket removes dumps after {days} days.",
+          "unknown": "The bucket does not say whether a rule removes old dumps. Check that a lifecycle rule covers database/."
+        }
+      },
+      "recovered": {
+        "database_dump": "The database dump is recent again.",
+        "weekly_copy": "Every account has a recent weekly copy again.",
+        "offhost_copies": "Every account has a recent off-host copy again.",
+        "restore_drill": "The restore drill passed again.",
+        "offhost_setup": "Off-host copies are set up now.",
+        "recovery_kit": "The recovery kit is confirmed again.",
+        "dump_retention": "A lifecycle rule in the bucket covers the database dumps now."
+      }
     }
   },
   "achievements": {
@@ -8876,7 +9080,10 @@
       "offlineGeoUnavailableTitle": "Offline geolocation databases not loaded",
       "offlineGeoUnavailableBody": "HealthLog is resolving login locations through the online lookup at {host}, so every login IP address leaves this server. To resolve them locally instead, download the GeoLite2-City and GeoLite2-ASN databases with a free MaxMind account, mount the directory into the container, and point GEOLITE2_DIR at it. Steps: {docsUrl}",
       "tlsPinChangedTitle": "TLS leaf certificate changed: {host}",
-      "tlsPinChangedBody": "The TLS leaf served by {host} now has SPKI pin {servedPin}, which is not in the known pin set. Pinned clients (the native app) will fail to connect once the old pin is gone. Re-extract the new leaf pin, add it to TLS_LEAF_SPKI_PINS and the native client's pin set, and ship a build before this certificate expires on {validTo}. See docs/ops/tls-cert-pin.md."
+      "tlsPinChangedBody": "The TLS leaf served by {host} now has SPKI pin {servedPin}, which is not in the known pin set. Pinned clients (the native app) will fail to connect once the old pin is gone. Re-extract the new leaf pin, add it to TLS_LEAF_SPKI_PINS and the native client's pin set, and ship a build before this certificate expires on {validTo}. See docs/ops/tls-cert-pin.md.",
+      "accountErasureRefusedTitle": "Account could not be erased: {username}",
+      "accountErasureRefusedBody": "The deletion window of {username} has ended, but the account is the last active guardian of a managed profile, so it was not erased. It stays locked. Add another guardian to the profile, delete the profile, or undo the deletion in Administration, Users.",
+      "accountErasureFailedBody": "The deletion window of {username} has ended, but erasing the account failed. It stays locked and is tried again every hour, after the other accounts due. The failing jobs card in Administration has the error."
     },
     "user": {
       "telegramTestBody": "HealthLog: connection successful. Telegram notifications are active."
@@ -9028,6 +9235,14 @@
     "checkupReminders": {
       "title": "Checkup reminders",
       "description": "Switch individual checkup reminders on or off."
+    },
+    "eventBackupHealth": "Backup health",
+    "eventBackupHealthDesc": "When a backup stops, falls behind or recovers. Sent to admins only.",
+    "recoveryReadiness": {
+      "titleAttention": "Backups need attention",
+      "titleFailing": "Backups are at risk",
+      "titleReminder": "Backups are still at risk",
+      "titleRecovered": "Backups are back to normal"
     }
   },
   "i18n": {
@@ -10947,25 +11162,6 @@
       "who5": "Well-being check, 5 questions",
       "sci": "Sleep check, 8 questions"
     },
-    "options": {
-      "0": "Not at all",
-      "1": "Several days",
-      "2": "More than half the days",
-      "3": "Nearly every day"
-    },
-    "gad7Options": {
-      "0": "Not at all",
-      "1": "Several days",
-      "2": "More than half the days",
-      "3": "Nearly every day"
-    },
-    "functionalTitle": "If you checked off any problems, how difficult have these problems made it for you to do your work, take care of things at home, or get along with other people?",
-    "functional": {
-      "0": "Not difficult at all",
-      "1": "Somewhat difficult",
-      "2": "Very difficult",
-      "3": "Extremely difficult"
-    },
     "functionalOptionalHint": "Optional: you can submit without answering this question.",
     "result": {
       "title": "Your result",
@@ -11014,45 +11210,6 @@
       "intro": "You indicated thoughts of being better off dead or of hurting yourself. Support is available right now, and reaching out is a sign of strength.",
       "ifDanger": "If you are in immediate danger, call {emergency} now.",
       "resourcesTitle": "People who can help"
-    },
-    "items": {
-      "phq9": {
-        "1": "Little interest or pleasure in doing things",
-        "2": "Feeling down, depressed, or hopeless",
-        "3": "Trouble falling or staying asleep, or sleeping too much",
-        "4": "Feeling tired or having little energy",
-        "5": "Poor appetite or overeating",
-        "6": "Feeling bad about yourself — or that you are a failure or have let yourself or your family down",
-        "7": "Trouble concentrating on things, such as reading the newspaper or watching television",
-        "8": "Moving or speaking so slowly that other people could have noticed. Or the opposite — being so fidgety or restless that you have been moving around a lot more than usual",
-        "9": "Thoughts that you would be better off dead, or of hurting yourself in some way"
-      },
-      "gad7": {
-        "1": "Feeling nervous, anxious, or on edge",
-        "2": "Not being able to stop or control worrying",
-        "3": "Worrying too much about different things",
-        "4": "Trouble relaxing",
-        "5": "Being so restless that it is hard to sit still",
-        "6": "Becoming easily annoyed or irritable",
-        "7": "Feeling afraid as if something awful might happen"
-      },
-      "who5": {
-        "1": "I have felt cheerful and in good spirits",
-        "2": "I have felt calm and relaxed",
-        "3": "I have felt active and vigorous",
-        "4": "I woke up feeling fresh and rested",
-        "5": "My daily life has been filled with things that interest me"
-      },
-      "sci": {
-        "1": "… how long does it take you to fall asleep?",
-        "2": "… if you then wake up during the night … how long are you awake for in total? (add all the wakenings up)",
-        "3": "… how many nights a week do you have a problem with your sleep?",
-        "4": "… how would you rate your sleep quality?",
-        "5": "… affected your mood, energy, or relationships?",
-        "6": "… affected your concentration, productivity, or ability to stay awake?",
-        "7": "… troubled you in general?",
-        "8": "… how long have you had a problem with your sleep?"
-      }
     },
     "crisisResource": {
       "telefonSeelsorge": {
@@ -11112,68 +11269,6 @@
       "who5": "A well-being score of 50 or below can be worth a closer look. If you like, the PHQ-9 check-in on this page looks at mood in more depth. This is a gentle suggestion, not a diagnosis.",
       "sci": "In the study behind this questionnaire, scores of 16 or below were associated with probable insomnia. If poor sleep keeps troubling you, talking to a health professional may help. This is not a diagnosis."
     },
-    "validatedInEnglishNote": "This questionnaire is validated in English; the questions are shown in the original English wording.",
-    "who5Options": {
-      "0": "At no time",
-      "1": "Some of the time",
-      "2": "Less than half of the time",
-      "3": "More than half of the time",
-      "4": "Most of the time",
-      "5": "All of the time"
-    },
-    "sciOptions": {
-      "duration": {
-        "0": "≥ 61 min",
-        "1": "46–60 min",
-        "2": "31–45 min",
-        "3": "16–30 min",
-        "4": "0–15 min"
-      },
-      "nights": {
-        "0": "5–7",
-        "1": "4",
-        "2": "3",
-        "3": "2",
-        "4": "0–1"
-      },
-      "quality": {
-        "0": "Very poor",
-        "1": "Poor",
-        "2": "Average",
-        "3": "Good",
-        "4": "Very good"
-      },
-      "impact": {
-        "0": "Very much",
-        "1": "Much",
-        "2": "Somewhat",
-        "3": "A little",
-        "4": "Not at all"
-      },
-      "problemDuration": {
-        "0": "> 1 year",
-        "1": "7–12 months",
-        "2": "3–6 months",
-        "3": "1–2 months",
-        "4": "I don't have a problem / < 1 month"
-      }
-    },
-    "stems": {
-      "phq9": {
-        "period": "Over the last 2 weeks, how often have you been bothered by any of the following problems?"
-      },
-      "gad7": {
-        "period": "Over the last 2 weeks, how often have you been bothered by the following problems?"
-      },
-      "who5": {
-        "period": "Over the last two weeks …"
-      },
-      "sci": {
-        "night": "Thinking about a typical night in the last month …",
-        "impact": "Thinking about the past month, to what extent has poor sleep …",
-        "finally": "Finally …"
-      }
-    },
     "openDetail": "Show details",
     "historyLoadError": "Your assessment history could not be loaded",
     "historyLoadErrorHint": "This does not mean you have no results; the list could not be fetched. Try again.",
@@ -11223,6 +11318,13 @@
         "belowThreshold": "Your sleep over the last month was in the range where the study behind this questionnaire found insomnia likely.",
         "aboveThreshold": "Your sleep over the last month was outside the range that study linked with insomnia."
       }
+    },
+    "wording": {
+      "unvalidatedNote": "This translation has not been scientifically validated; treat the result as orientation.",
+      "showOriginal": "Show original English wording",
+      "showTranslation": "Show translation",
+      "resultUnvalidated": "Answered in a translation that has not been scientifically validated; treat the result as orientation.",
+      "historyUnvalidated": "Answered in a translation that has not been scientifically validated"
     }
   },
   "records": {
@@ -11750,7 +11852,8 @@
     "toast": {
       "duplicate": "Already stored. The existing document is highlighted.",
       "deleted": "Document deleted",
-      "restoreFailed": "Couldn't restore the document."
+      "restoreFailed": "Couldn't restore the document.",
+      "deletedHint": "Deleted documents stay in Recently deleted for {days} days."
     },
     "timeline": {
       "loadingMore": "Loading more…",
@@ -11795,7 +11898,8 @@
           "raster-failed": "The PDF pages couldn't be rendered for reading. Scanned fax compression formats are a known cause.",
           "provider-error": "The AI provider couldn't read this document on the last try.",
           "pdf-needs-anthropic": "The configured AI provider can't read PDF files. A Claude provider or local OCR can.",
-          "empty-transcription": "The AI provider returned no text for this document."
+          "empty-transcription": "The AI provider returned no text for this document.",
+          "resource-limit": "This PDF is too large or complex to read here. The file itself is fine and still opens."
         }
       },
       "loadError": "Couldn't load this document.",
@@ -11867,7 +11971,7 @@
       "dismiss": "Dismiss",
       "empty": "Nothing could be read from this document.",
       "unavailableBody": "Set up an AI provider to suggest a title, type, and date.",
-      "unavailableLocalOcr": "Turn on local OCR in the AI settings to read images on this device.",
+      "unavailableLocalOcr": "Turn on “Read scans on this device” under Settings → Modules → Labs to read images on this device.",
       "unavailableAction": "Open AI settings",
       "errorGeneric": "Couldn't read the document. Try again.",
       "errorOcr": "Couldn't read text from this image.",
@@ -11879,11 +11983,13 @@
       "errorPdfNeedsVision": "Scanning PDFs needs a Claude vision provider.",
       "errorFileType": "This file type can't be read.",
       "errorNotIndexed": "Read the document first, then extract.",
-      "errorLocalOcrDisabled": "Turn on local OCR in the AI settings first.",
+      "errorOutputLimit": "The AI provider reached its output limit before it returned a single value. Try a model that allows longer answers.",
+      "errorLocalOcrDisabled": "Turn on “Read scans on this device” under Settings → Modules → Labs first.",
       "errorProvider": "No AI provider is set up for this.",
       "errorTextImageOnly": "Local OCR reads images only, not this file.",
       "errorConsent": "Reading documents with AI needs your consent first.",
-      "errorUnavailable": "Reading documents with AI is not available here right now."
+      "errorUnavailable": "Reading documents with AI is not available here right now.",
+      "unavailableLocalOcrAction": "Open lab settings"
     },
     "summary": {
       "summarise": "Summarise",
@@ -11939,6 +12045,7 @@
       "extracting": "Extracting…",
       "extractHint": "Uses the text already read from this document. Extracted values wait for your review; nothing is saved automatically.",
       "extractEmpty": "No values could be extracted from this document.",
+      "extractIncomplete": "Part of the document could not be read in full, so some values may be missing. Check the list against the document.",
       "failUnitRequired": "A numeric value needs a unit before it can be saved.",
       "failUnitMismatch": "The stated unit does not match the saved unit for this marker. Adjust it, then finish the review again.",
       "failGeneric": "This value could not be saved.",
@@ -11986,6 +12093,7 @@
       "loadMore": "Load more",
       "stateImported": "In HealthLog",
       "stateDeleted": "Deleted in HealthLog",
+      "stateInTrash": "In Recently deleted",
       "selectedCount": "{count} of up to {max} selected",
       "importAction": "Import {count}",
       "importing": "Importing, one document at a time…",
@@ -11999,7 +12107,9 @@
         "importedLinked": "Imported and linked",
         "duplicate": "Already in HealthLog",
         "duplicateLinked": "Already in HealthLog, now linked",
-        "deleted": "Deleted in HealthLog, left alone"
+        "deleted": "Deleted in HealthLog, left alone",
+        "restored": "Restored from Recently deleted",
+        "restoredLinked": "Restored from Recently deleted and linked"
       },
       "errors": {
         "unavailable": "Document archives are not enabled on this server.",
@@ -12043,8 +12153,32 @@
     "deleteConfirm": {
       "titleOne": "Delete this document?",
       "titleMany": "Delete {count} documents?",
-      "body": "You can undo this right afterwards. After 30 days it is removed for good.",
+      "body": "Deleted documents stay in Recently deleted for {days} days, then they are removed for good.",
       "action": "Delete"
+    },
+    "trash": {
+      "title": "Recently deleted",
+      "subtitle": "Deleted documents stay here for {days} days, then they are removed for good.",
+      "back": "Documents",
+      "entryLabel": "Recently deleted ({count})",
+      "loadError": "Couldn't load Recently deleted.",
+      "emptyTitle": "Nothing in Recently deleted",
+      "emptyDescription": "Documents you delete wait here for {days} days before they are removed for good.",
+      "count": "Deleted documents ({count})",
+      "restoreAll": "Restore all",
+      "restore": "Restore",
+      "purge": "Delete now",
+      "deletedOn": "Deleted {date}.",
+      "removesIn": "Removed for good in {days} days.",
+      "removesSoon": "Removed for good within a day.",
+      "restored": "Document restored",
+      "openRestored": "Open",
+      "restoreDuplicate": "An identical document is already stored, so this copy cannot be restored.",
+      "restorePartial": "{failed} of {total} could not be restored",
+      "purged": "Document deleted for good",
+      "purgeFailed": "Couldn't delete the document.",
+      "purgeConfirmTitle": "Delete this document for good?",
+      "purgeConfirmBody": "It is removed now instead of at the end of the waiting period, and cannot be restored."
     }
   },
   "selfDescription": {
@@ -12729,7 +12863,8 @@
         "entryHint": "When {name} is ready to look after this record themselves.",
         "methodSso": "{name} signs in through single sign-on when they use the link.",
         "methodBoth": "{name} can set a password or sign in through single sign-on."
-      }
+      },
+      "deleteBodyGrace": "Everything recorded for {name} goes with the profile: readings, medications, documents and notes. The profile is locked right away and erased after {days} days. Until then, an admin of this server can undo the deletion."
     },
     "toast": {
       "savedTo": "Saved to {name}'s record"
@@ -12784,6 +12919,7 @@
       "practitionerContactRestore": "{name} restored an address book entry",
       "illnessDayLogUpsert": "{name} recorded an illness day",
       "medicationUpdate": "{name} changed a medication",
+      "medicationCourseEnd": "{name} ended a medication course",
       "medicationDelete": "{name} removed a medication",
       "medicationGlp1Update": "{name} changed a GLP-1 course",
       "medicationScheduleCreate": "{name} added a dosing schedule",
@@ -12831,6 +12967,9 @@
       "rejectedDoseUpdate": "{name} tried to change a dose and was refused",
       "rejectedDoseImport": "{name} tried to import doses and was refused",
       "rejectedTrackedValue": "{name} tried to log a tracked value and was refused",
+      "rejectedTrackedValueTypeCreate": "{name} tried to add a tracked value type and was refused",
+      "rejectedTrackedValueTypeUpdate": "{name} tried to change a tracked value type and was refused",
+      "rejectedMedicationLayout": "{name} tried to rearrange the medication list and was refused",
       "deniedDoseImport": "A dose import {name} started could not be queued",
       "anamnesisFactCreate": "{name} added a health background fact",
       "customMetricCreate": "{name} added a tracked value type",
@@ -13140,7 +13279,8 @@
     "backgroundScan": "Reading in the background. With a slow model this can take a few minutes.",
     "waitingForWorker": "Waiting for the background worker. If this does not change, the server's worker may not be running.",
     "errorWorkerUnavailable": "The background worker is not available right now. Try again in a moment, or ask the server operator to check it.",
-    "errorTimedOut": "Reading took longer than your AI response time allows. Try again, or raise the response time in the AI settings."
+    "errorTimedOut": "Reading took longer than your AI response time allows. Try again, or raise the response time in the AI settings.",
+    "errorReaderBusy": "The document reader is busy with other work. Try again in a minute."
   },
   "symptoms": {
     "add": "New symptom",

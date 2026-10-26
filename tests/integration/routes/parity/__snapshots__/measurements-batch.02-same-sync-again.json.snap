@@ -1,0 +1,497 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "processed": 21,
+      "inserted": 0,
+      "updated": 7,
+      "duplicates": 9,
+      "failed": 0,
+      "skipped": [
+        {
+          "index": 12,
+          "reason": "unmappable_identifier"
+        },
+        {
+          "index": 13,
+          "reason": "value_out_of_range"
+        },
+        {
+          "index": 14,
+          "reason": "implausible_timestamp"
+        },
+        {
+          "index": 15,
+          "reason": "malformed_hr_bucket_id"
+        },
+        {
+          "index": 16,
+          "reason": "unstable_external_id"
+        }
+      ],
+      "entries": [
+        {
+          "index": 0,
+          "status": "duplicate"
+        },
+        {
+          "index": 1,
+          "status": "duplicate"
+        },
+        {
+          "index": 2,
+          "status": "duplicate"
+        },
+        {
+          "index": 3,
+          "status": "duplicate"
+        },
+        {
+          "index": 4,
+          "status": "updated"
+        },
+        {
+          "index": 5,
+          "status": "updated"
+        },
+        {
+          "index": 6,
+          "status": "updated"
+        },
+        {
+          "index": 7,
+          "status": "updated"
+        },
+        {
+          "index": 8,
+          "status": "duplicate"
+        },
+        {
+          "index": 9,
+          "status": "duplicate"
+        },
+        {
+          "index": 10,
+          "status": "updated"
+        },
+        {
+          "index": 11,
+          "status": "updated"
+        },
+        {
+          "index": 12,
+          "status": "skipped",
+          "reason": "unmappable_identifier"
+        },
+        {
+          "index": 13,
+          "status": "skipped",
+          "reason": "value_out_of_range",
+          "convertedValue": 900,
+          "range": {
+            "min": 20,
+            "max": 300,
+            "unit": "bpm"
+          }
+        },
+        {
+          "index": 14,
+          "status": "skipped",
+          "reason": "implausible_timestamp"
+        },
+        {
+          "index": 15,
+          "status": "skipped",
+          "reason": "malformed_hr_bucket_id"
+        },
+        {
+          "index": 16,
+          "status": "skipped",
+          "reason": "unstable_external_id"
+        },
+        {
+          "index": 17,
+          "status": "duplicate"
+        },
+        {
+          "index": 18,
+          "status": "duplicate"
+        },
+        {
+          "index": 19,
+          "status": "duplicate",
+          "reason": "superseded_in_batch"
+        },
+        {
+          "index": 20,
+          "status": "updated"
+        }
+      ]
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "measurement.batch.ingest"
+      },
+      "meta": {
+        "write_bucket": "own",
+        "external_id_rejected": 1,
+        "external_id_shapes": "object_description",
+        "external_id_surface": "measurement.batch",
+        "attempted": 3,
+        "inserted": 0,
+        "updated": 5,
+        "processed": 21,
+        "duplicate": 0,
+        "skipped": 5,
+        "failed": 0,
+        "pr_detection_enqueued": true,
+        "pr_detection_silent": false,
+        "stats_unchanged": 4,
+        "duplicates": 9,
+        "skipped_by_reason": {
+          "unmappable_identifier": 1,
+          "value_out_of_range": 1,
+          "implausible_timestamp": 1,
+          "malformed_hr_bucket_id": 1,
+          "unstable_external_id": 1
+        },
+        "syncTrigger": "foreground",
+        "folded_window": 0,
+        "set_inserted": 0
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "enqueueReminderSatisfy",
+      "args": [
+        "<id:1>"
+      ]
+    },
+    {
+      "effect": "enqueuePrDetection",
+      "args": [
+        "<id:1>",
+        {
+          "silent": false
+        }
+      ]
+    },
+    {
+      "effect": "maybeEnqueueMorningRefresh",
+      "args": [
+        "<id:1>",
+        []
+      ]
+    }
+  ],
+  "stored": {
+    "measurements": [
+      {
+        "id": "<id:2>",
+        "type": "WEIGHT",
+        "value": 80.4,
+        "valueMin": null,
+        "valueMax": null,
+        "unit": "kg",
+        "source": "APPLE_HEALTH",
+        "measuredAt": "2026-10-14T06:30:00.000Z",
+        "externalId": "uuid-mass-1",
+        "externalSourceVersion": null,
+        "sleepStage": null,
+        "rhythmClassification": null,
+        "deviceType": "scale",
+        "aggregationProvenance": null,
+        "deletedAt": null
+      },
+      {
+        "id": "<id:3>",
+        "type": "PULSE",
+        "value": 62,
+        "valueMin": null,
+        "valueMax": null,
+        "unit": "bpm",
+        "source": "APPLE_HEALTH",
+        "measuredAt": "2026-10-14T07:00:00.000Z",
+        "externalId": "uuid-hr-1",
+        "externalSourceVersion": null,
+        "sleepStage": null,
+        "rhythmClassification": null,
+        "deviceType": "watch",
+        "aggregationProvenance": null,
+        "deletedAt": null
+      },
+      {
+        "id": "<id:4>",
+        "type": "PULSE",
+        "value": 64,
+        "valueMin": null,
+        "valueMax": null,
+        "unit": "bpm",
+        "source": "APPLE_HEALTH",
+        "measuredAt": "2026-10-14T07:05:00.000Z",
+        "externalId": "uuid-hr-2",
+        "externalSourceVersion": null,
+        "sleepStage": null,
+        "rhythmClassification": null,
+        "deviceType": null,
+        "aggregationProvenance": null,
+        "deletedAt": null
+      },
+      {
+        "id": "<id:5>",
+        "type": "PULSE",
+        "value": 65,
+        "valueMin": null,
+        "valueMax": null,
+        "unit": "bpm",
+        "source": "APPLE_HEALTH",
+        "measuredAt": "2026-10-14T07:25:00.000Z",
+        "externalId": "uuid-hr-twice",
+        "externalSourceVersion": null,
+        "sleepStage": null,
+        "rhythmClassification": null,
+        "deviceType": null,
+        "aggregationProvenance": null,
+        "deletedAt": null
+      },
+      {
+        "id": "<id:6>",
+        "type": "PULSE",
+        "value": 71,
+        "valueMin": 66,
+        "valueMax": 79,
+        "unit": "bpm",
+        "source": "APPLE_HEALTH",
+        "measuredAt": "2026-10-14T08:10:00.000Z",
+        "externalId": "stats:HKQuantityTypeIdentifierHeartRate:2026-10-14T08:10:00.000Z",
+        "externalSourceVersion": null,
+        "sleepStage": null,
+        "rhythmClassification": null,
+        "deviceType": null,
+        "aggregationProvenance": "HEALTHKIT_STATISTICS",
+        "deletedAt": null
+      },
+      {
+        "id": "<id:7>",
+        "type": "PULSE",
+        "value": 70,
+        "valueMin": null,
+        "valueMax": null,
+        "unit": "bpm",
+        "source": "APPLE_HEALTH",
+        "measuredAt": "2026-10-14T08:20:00.000Z",
+        "externalId": "stats:HKQuantityTypeIdentifierHeartRate:2026-10-14T08:20:00.000Z",
+        "externalSourceVersion": null,
+        "sleepStage": null,
+        "rhythmClassification": null,
+        "deviceType": null,
+        "aggregationProvenance": "HEALTHKIT_STATISTICS",
+        "deletedAt": null
+      },
+      {
+        "id": "<id:8>",
+        "type": "SLEEP_DURATION",
+        "value": 0,
+        "valueMin": null,
+        "valueMax": null,
+        "unit": "minutes",
+        "source": "APPLE_HEALTH",
+        "measuredAt": "2026-10-14T01:00:00.000Z",
+        "externalId": "uuid-sleep-1",
+        "externalSourceVersion": null,
+        "sleepStage": "CORE",
+        "rhythmClassification": null,
+        "deviceType": null,
+        "aggregationProvenance": null,
+        "deletedAt": null
+      },
+      {
+        "id": "<id:9>",
+        "type": "SLEEP_DURATION",
+        "value": 0,
+        "valueMin": null,
+        "valueMax": null,
+        "unit": "minutes",
+        "source": "APPLE_HEALTH",
+        "measuredAt": "2026-10-14T02:30:00.000Z",
+        "externalId": "uuid-sleep-2",
+        "externalSourceVersion": null,
+        "sleepStage": "DEEP",
+        "rhythmClassification": null,
+        "deviceType": null,
+        "aggregationProvenance": null,
+        "deletedAt": null
+      },
+      {
+        "id": "<id:10>",
+        "type": "ACTIVITY_STEPS",
+        "value": 7250,
+        "valueMin": null,
+        "valueMax": null,
+        "unit": "steps",
+        "source": "APPLE_HEALTH",
+        "measuredAt": "2026-10-12T18:00:00.000Z",
+        "externalId": "stats:HKQuantityTypeIdentifierStepCount:2026-10-12",
+        "externalSourceVersion": null,
+        "sleepStage": null,
+        "rhythmClassification": null,
+        "deviceType": null,
+        "aggregationProvenance": "HEALTHKIT_STATISTICS",
+        "deletedAt": null
+      },
+      {
+        "id": "<id:11>",
+        "type": "ACTIVITY_STEPS",
+        "value": 8400,
+        "valueMin": null,
+        "valueMax": null,
+        "unit": "steps",
+        "source": "APPLE_HEALTH",
+        "measuredAt": "2026-10-13T18:00:00.000Z",
+        "externalId": "stats:HKQuantityTypeIdentifierStepCount:2026-10-13",
+        "externalSourceVersion": null,
+        "sleepStage": null,
+        "rhythmClassification": null,
+        "deviceType": "phone",
+        "aggregationProvenance": "HEALTHKIT_STATISTICS",
+        "deletedAt": null
+      },
+      {
+        "id": "<id:12>",
+        "type": "ACTIVITY_STEPS",
+        "value": 5100,
+        "valueMin": null,
+        "valueMax": null,
+        "unit": "steps",
+        "source": "APPLE_HEALTH",
+        "measuredAt": "2026-10-14T18:00:00.000Z",
+        "externalId": "stats:HKQuantityTypeIdentifierStepCount:2026-10-14",
+        "externalSourceVersion": null,
+        "sleepStage": null,
+        "rhythmClassification": null,
+        "deviceType": null,
+        "aggregationProvenance": "HEALTHKIT_STATISTICS",
+        "deletedAt": null
+      },
+      {
+        "id": "<id:13>",
+        "type": "OXYGEN_SATURATION",
+        "value": 97,
+        "valueMin": null,
+        "valueMax": null,
+        "unit": "%",
+        "source": "APPLE_HEALTH",
+        "measuredAt": "2026-10-14T07:10:00.000Z",
+        "externalId": "uuid-spo2-1",
+        "externalSourceVersion": null,
+        "sleepStage": null,
+        "rhythmClassification": null,
+        "deviceType": null,
+        "aggregationProvenance": null,
+        "deletedAt": null
+      }
+    ],
+    "hours": [
+      {
+        "id": "<id:14>",
+        "userId": "<id:1>",
+        "type": "ACTIVITY_STEPS",
+        "dateKey": "2026-10-14",
+        "hourlyCumulative": [],
+        "dayTotal": 0,
+        "sampleCount": 0,
+        "hourlyIncrements": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          900,
+          1300,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "basis": "PER_SAMPLE",
+        "bucketCount": 2,
+        "timezone": "UTC",
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>"
+      }
+    ],
+    "user": {
+      "lastSyncedAt": "<now>",
+      "healthKitLastSyncedAt": "<now>",
+      "healthKitLastSyncTrigger": "foreground",
+      "healthKitLastBackgroundSyncAt": null
+    },
+    "typeSync": [
+      {
+        "userId": "<id:1>",
+        "type": "ACTIVITY_STEPS",
+        "lastReceivedAt": "<now>",
+        "lastTrigger": "foreground",
+        "lastNewSampleAt": "<now>",
+        "lastBackgroundAt": null,
+        "lastSeenDuplicateAt": null
+      },
+      {
+        "userId": "<id:1>",
+        "type": "OXYGEN_SATURATION",
+        "lastReceivedAt": "<now>",
+        "lastTrigger": "foreground",
+        "lastNewSampleAt": "<now>",
+        "lastBackgroundAt": null,
+        "lastSeenDuplicateAt": "<now>"
+      },
+      {
+        "userId": "<id:1>",
+        "type": "PULSE",
+        "lastReceivedAt": "<now>",
+        "lastTrigger": "foreground",
+        "lastNewSampleAt": "<now>",
+        "lastBackgroundAt": null,
+        "lastSeenDuplicateAt": "<now>"
+      },
+      {
+        "userId": "<id:1>",
+        "type": "SLEEP_DURATION",
+        "lastReceivedAt": "<now>",
+        "lastTrigger": "foreground",
+        "lastNewSampleAt": "<now>",
+        "lastBackgroundAt": null,
+        "lastSeenDuplicateAt": "<now>"
+      },
+      {
+        "userId": "<id:1>",
+        "type": "WEIGHT",
+        "lastReceivedAt": "<now>",
+        "lastTrigger": "foreground",
+        "lastNewSampleAt": "<now>",
+        "lastBackgroundAt": null,
+        "lastSeenDuplicateAt": "<now>"
+      }
+    ]
+  }
+}

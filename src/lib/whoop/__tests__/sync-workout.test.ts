@@ -47,7 +47,7 @@ vi.mock("@/lib/logging/context", () => ({
 }));
 
 import { upsertWhoopWorkout } from "../sync-workout";
-import type { WhoopWorkout } from "../client";
+import type { WhoopWorkout } from "@/lib/whoop/wire-types";
 
 function scoredWorkout(overrides: Partial<WhoopWorkout>): WhoopWorkout {
   return {

@@ -38,6 +38,9 @@ export const SESSION_USER_SELECT = {
   createdAt: true,
   updatedAt: true,
   managedProfileAt: true,
+  // Pending deletion: the session and Bearer resolvers refuse the account,
+  // and the acting-account resolver refuses it as a record.
+  deletionRequestedAt: true,
   heightCm: true,
   dateOfBirth: true,
   gender: true,

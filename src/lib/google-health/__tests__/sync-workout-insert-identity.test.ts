@@ -29,10 +29,12 @@ vi.mock("@/lib/logging/context", () => ({
 vi.mock("@/lib/tz/resolver", () => ({
   resolveUserTimezone: vi.fn(async () => "UTC"),
 }));
-vi.mock("../client", () => ({
+vi.mock("../data-points", () => ({
   GOOGLE_HEALTH_ACTIVITY_PAGE_SIZE: 100,
-  GOOGLE_HEALTH_DATA_TYPES: { exercise: "exercise" },
   fetchDataPoints,
+}));
+vi.mock("../mappers", () => ({
+  GOOGLE_HEALTH_DATA_TYPES: { exercise: "exercise" },
   mapWorkout,
 }));
 vi.mock("../sync-core", () => ({

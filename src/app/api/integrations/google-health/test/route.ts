@@ -5,13 +5,13 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { getValidToken } from "@/lib/google-health/sync-core";
+import { fetchDailyRollUp } from "@/lib/google-health/client";
 import {
   GOOGLE_HEALTH_ACTIVITY_PAGE_SIZE,
-  GOOGLE_HEALTH_API_BASE,
-  GOOGLE_HEALTH_DATA_TYPES,
-  fetchDailyRollUp,
   fetchDataPoints,
-} from "@/lib/google-health/client";
+} from "@/lib/google-health/data-points";
+import { GOOGLE_HEALTH_API_BASE } from "@/lib/google-health/request";
+import { GOOGLE_HEALTH_DATA_TYPES } from "@/lib/google-health/mappers";
 import { GoogleHealthApiError } from "@/lib/google-health/response-classifier";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { safeFetch, SafeFetchError } from "@/lib/safe-fetch";

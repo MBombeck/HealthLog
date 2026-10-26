@@ -238,7 +238,7 @@ async function medicationsLane(frame: LaneFrame): Promise<LaneRead> {
         endsOn: true,
         updatedAt: true,
       },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     }),
     prisma.medicationIntakeEvent.groupBy({
       by: ["medicationId"],

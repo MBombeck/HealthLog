@@ -1,0 +1,70 @@
+{
+  "status": 409,
+  "body": {
+    "data": null,
+    "error": "Only a workout entered by hand can be deleted here",
+    "meta": {
+      "errorCode": "workout.delete.synced_source",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 409,
+      "action": {
+        "name": "workout.delete",
+        "entity_type": "workout",
+        "entity_id": "<id:1>"
+      },
+      "meta": {
+        "outcome": "synced_source",
+        "source": "APPLE_HEALTH"
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "workouts": [
+      {
+        "id": "<id:2>",
+        "source": "APPLE_HEALTH",
+        "externalId": "hk-run-0",
+        "sportType": "running"
+      },
+      {
+        "id": "<id:3>",
+        "source": "MANUAL",
+        "externalId": "manual:walk-1",
+        "sportType": "walking"
+      },
+      {
+        "id": "<id:1>",
+        "source": "APPLE_HEALTH",
+        "externalId": "hk-ride-1",
+        "sportType": "cycling"
+      },
+      {
+        "id": "<id:4>",
+        "source": "APPLE_HEALTH",
+        "externalId": "hk-run-1",
+        "sportType": "running"
+      },
+      {
+        "id": "<id:5>",
+        "source": "MANUAL",
+        "externalId": "manual:run-twin",
+        "sportType": "running"
+      }
+    ],
+    "records": [
+      {
+        "metricSlot": "longest_distance_run",
+        "value": 3000,
+        "externalId": "manual:walk-1",
+        "source": "MANUAL"
+      }
+    ]
+  }
+}

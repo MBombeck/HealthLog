@@ -1,0 +1,35 @@
+[
+  {
+    "start_time": "2026-03-02T00:00:00",
+    "active_calories": 512.345,
+    "steps": 9876,
+    "calories": 2450,
+    "distance_from_steps": 7123.456
+  },
+  {
+    "start_time": "2026-03-03T00:00:00.000",
+    "active_calories": 0,
+    "steps": 0,
+    "distance_from_steps": 0
+  },
+  {
+    "start_time": "2026-03-04",
+    "steps": 4321.6,
+    "active_calories": null,
+    "distance_from_steps": null
+  },
+  {
+    "start_time": "2026-03-05T00:00:00",
+    "steps": -5,
+    "active_calories": -10,
+    "distance_from_steps": -1
+  },
+  {
+    "active_calories": 300,
+    "steps": 5000
+  },
+  {
+    "start_time": "garbled-day",
+    "steps": 1000
+  }
+]

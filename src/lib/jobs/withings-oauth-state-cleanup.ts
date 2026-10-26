@@ -18,6 +18,7 @@
  * matches zero rows the second time because the first pass deleted
  * everything older than `now()`.
  */
+// account-deletion(file): expires abandoned OAuth state rows; acts for no account.
 import type { PrismaClient } from "@/generated/prisma/client";
 
 export async function cleanupExpiredWithingsOAuthStates(

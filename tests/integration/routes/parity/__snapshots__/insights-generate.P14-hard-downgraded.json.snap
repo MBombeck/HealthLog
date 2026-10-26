@@ -1,0 +1,278 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "insights": {
+        "summary": "Your tracked metrics held steady over the last 30 days.",
+        "classification": "gut",
+        "findings": [],
+        "correlations": [],
+        "recommendations": [],
+        "dataQuality": {
+          "coverage": "good",
+          "gaps": [],
+          "confidence": "hoch"
+        },
+        "dailyBriefing": {
+          "paragraph": "Your readings held steady this week, with no surprises.",
+          "signalsOfDay": [
+            {
+              "sourceMetric": "weight",
+              "tone": "info",
+              "headline": "Weight is steady",
+              "nudge": "Keep weighing in at the same time each morning.",
+              "delta": null
+            }
+          ],
+          "keyFindings": []
+        },
+        "briefingGeneratedAt": "anchor+0d+12:00:00"
+      },
+      "cached": false,
+      "legacyPayload": false,
+      "briefingOmittedReason": null
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "insights.generate"
+      },
+      "meta": {
+        "ai_reasoning_effort": "medium",
+        "ai_reasoning_job": "daily_briefing",
+        "ai_reasoning_source": "job",
+        "cached": false,
+        "chainProviderType": "anthropic",
+        "fallbackHopCount": 0,
+        "include_raw": false,
+        "insights_features_downgraded": true,
+        "insights_features_hard_downgraded": true,
+        "insights_features_oversize_bytes": 5400000,
+        "model": "claude-parity",
+        "providerType": "anthropic",
+        "scopes": 13,
+        "since_days": 400,
+        "tokensUsed": 1200
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "ensureUserMoodRollupsFresh",
+      "args": [
+        "<id:1>"
+      ]
+    },
+    {
+      "effect": "provider",
+      "args": [
+        {
+          "surface": "job",
+          "chain": [
+            "anthropic"
+          ],
+          "params": {
+            "temperature": 0.3,
+            "maxTokens": 2500,
+            "responseFormat": "json",
+            "timeoutMs": 180000,
+            "reasoning": {
+              "effort": "medium",
+              "summaries": false
+            }
+          },
+          "promptChars": 34193,
+          "promptSha256": "f11bae5de41f1344113977970c832df38427bcdf4b24a6f7fb8b05cef899c5af"
+        }
+      ]
+    },
+    {
+      "effect": "enqueueStatusGeneration",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "metric": "blood-pressure",
+          "locale": "en"
+        }
+      ]
+    },
+    {
+      "effect": "enqueueStatusGeneration",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "metric": "pulse",
+          "locale": "en"
+        }
+      ]
+    },
+    {
+      "effect": "enqueueStatusGeneration",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "metric": "weight",
+          "locale": "en"
+        }
+      ]
+    },
+    {
+      "effect": "enqueueStatusGeneration",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "metric": "bmi",
+          "locale": "en"
+        }
+      ]
+    },
+    {
+      "effect": "enqueueStatusGeneration",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "metric": "mood",
+          "locale": "en"
+        }
+      ]
+    },
+    {
+      "effect": "enqueueStatusGeneration",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "metric": "medication-compliance",
+          "locale": "en"
+        }
+      ]
+    },
+    {
+      "effect": "enqueueStatusGeneration",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "metric": "general",
+          "locale": "en"
+        }
+      ]
+    },
+    {
+      "effect": "enqueueStatusGeneration",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "metric": "metric:SLEEP_DURATION",
+          "locale": "en"
+        }
+      ]
+    },
+    {
+      "effect": "enqueueStatusGeneration",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "metric": "metric:STEPS",
+          "locale": "en"
+        }
+      ]
+    },
+    {
+      "effect": "enqueueStatusGeneration",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "metric": "metric:BLOOD_GLUCOSE",
+          "locale": "en"
+        }
+      ]
+    },
+    {
+      "effect": "enqueueStatusGeneration",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "metric": "metric:OXYGEN_SATURATION",
+          "locale": "en"
+        }
+      ]
+    },
+    {
+      "effect": "enqueueStatusGeneration",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "metric": "metric:HEART_RATE_VARIABILITY",
+          "locale": "en"
+        }
+      ]
+    },
+    {
+      "effect": "enqueueStatusGeneration",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "metric": "metric:RESTING_HEART_RATE",
+          "locale": "en"
+        }
+      ]
+    }
+  ],
+  "stored": {
+    "insightsCachedAt": "anchor+0d+12:00:00",
+    "insightsCachedLocale": "en",
+    "cachedPayload": {
+      "summary": "Your tracked metrics held steady over the last 30 days.",
+      "classification": "gut",
+      "findings": [],
+      "correlations": [],
+      "recommendations": [],
+      "dataQuality": {
+        "coverage": "good",
+        "gaps": [],
+        "confidence": "hoch"
+      },
+      "dailyBriefing": {
+        "paragraph": "Your readings held steady this week, with no surprises.",
+        "signalsOfDay": [
+          {
+            "sourceMetric": "weight",
+            "tone": "info",
+            "headline": "Weight is steady",
+            "nudge": "Keep weighing in at the same time each morning.",
+            "delta": null
+          }
+        ],
+        "keyFindings": []
+      },
+      "briefingGeneratedAt": "anchor+0d+12:00:00"
+    },
+    "snapshotHash": "11a4fb0ae0188e5a95cbe69124afaccdb326b76ea8e8ad73affbc819255a01cc",
+    "audit": [
+      {
+        "action": "insights.generate",
+        "details": {
+          "privacyMode": "raw",
+          "tokensUsed": 1200,
+          "providerType": "anthropic",
+          "chainProviderType": "anthropic",
+          "fallbackHopCount": 0,
+          "model": "claude-parity"
+        },
+        "ipAddress": null
+      }
+    ],
+    "usage": [
+      {
+        "dateKey": "day+0",
+        "totalTokens": 1200,
+        "operatorTokens": 0,
+        "messageCount": 1
+      }
+    ]
+  }
+}

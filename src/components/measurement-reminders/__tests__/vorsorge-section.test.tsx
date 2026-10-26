@@ -33,7 +33,8 @@ vi.mock("@/hooks/use-measurement-reminders", () => ({
   }),
 }));
 
-import { VorsorgeSection, postponeOffsetTargets } from "../vorsorge-section";
+import { VorsorgeSection } from "../vorsorge-section";
+import { postponeOffsetTargets } from "../checkups/postpone-sheet";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 /**

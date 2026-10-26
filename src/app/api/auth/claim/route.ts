@@ -24,12 +24,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { recordSignInDevice } from "@/lib/auth/login-alert";
 import { checkPasswordStrength, hashPassword } from "@/lib/auth/password";
@@ -59,12 +55,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (gate.refusal) return gate.refusal;
   const ip = gate.ip ?? "unknown";
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, claimSchema, {
     maxBytes: 16 * 1024,
   });
-  if (jsonError) return jsonError;
-  const parsed = claimSchema.safeParse(body);
-  if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+  if (!parsed.ok) return parsed.error;
   const { token, username, email, password } = parsed.data;
 
   // The link first. Without this the collision probe below would answer 409

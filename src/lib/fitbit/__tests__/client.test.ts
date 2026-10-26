@@ -4,13 +4,9 @@ import {
   FITBIT_API_BASE,
   FITBIT_RETRY_AFTER_WAIT_CAP_S,
   FITBIT_FIELD_MAP,
-  FITBIT_OAUTH_SCOPE,
-  exchangeCode,
   fetchSleepRange,
   fetchSpo2Range,
   fetchWeightRange,
-  generatePkcePair,
-  getAuthorizationUrl,
   mapActiveCalories,
   mapBodyFat,
   mapDistance,
@@ -29,9 +25,11 @@ import {
   parseVo2Max,
   readActivityList,
   readSleepSessions,
-  refreshAccessToken,
   resolveFitbitUserId,
 } from "../client";
+import { FITBIT_OAUTH_SCOPE } from "@/lib/fitbit/oauth";
+import { fitbitOAuth } from "../oauth";
+import { generatePkcePair } from "@/lib/integrations/oauth-kit/pkce";
 
 const CREDS = { clientId: "cid", clientSecret: "csecret" };
 
@@ -89,7 +87,7 @@ describe("generatePkcePair", () => {
 
 describe("getAuthorizationUrl", () => {
   it("builds the classic Fitbit authorize URL with PKCE S256", () => {
-    const url = getAuthorizationUrl("nonce123", CREDS, "chal-xyz");
+    const url = fitbitOAuth.authorizationUrl("nonce123", CREDS, "chal-xyz");
     expect(url).toContain("www.fitbit.com/oauth2/authorize");
     expect(url).toContain("response_type=code");
     expect(url).toContain("client_id=cid");
@@ -118,7 +116,7 @@ describe("getAuthorizationUrl", () => {
   });
 
   it("carries the configured app origin in the redirect_uri", () => {
-    const url = getAuthorizationUrl("nonce123", CREDS, "c");
+    const url = fitbitOAuth.authorizationUrl("nonce123", CREDS, "c");
     const redirect = new URL(url).searchParams.get("redirect_uri");
     expect(redirect).toBe("https://app.example.test/api/fitbit/callback");
   });
@@ -133,12 +131,14 @@ describe("redirect_uri allowlist", () => {
 
   it("rejects a non-https app origin", () => {
     process.env.NEXT_PUBLIC_APP_URL = "http://app.example.test";
-    expect(() => getAuthorizationUrl("n", CREDS, "c")).toThrow(/must be https/);
+    expect(() => fitbitOAuth.authorizationUrl("n", CREDS, "c")).toThrow(
+      /must be https/,
+    );
   });
 
   it("allows http on localhost (dev)", () => {
     process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
-    const url = getAuthorizationUrl("n", CREDS, "c");
+    const url = fitbitOAuth.authorizationUrl("n", CREDS, "c");
     expect(new URL(url).searchParams.get("redirect_uri")).toBe(
       "http://localhost:3000/api/fitbit/callback",
     );
@@ -146,7 +146,7 @@ describe("redirect_uri allowlist", () => {
 
   it("rejects an explicit redirect that targets the wrong path", () => {
     process.env.FITBIT_REDIRECT_URI = "https://app.example.test/evil";
-    expect(() => getAuthorizationUrl("n", CREDS, "c")).toThrow(
+    expect(() => fitbitOAuth.authorizationUrl("n", CREDS, "c")).toThrow(
       /must target \/api\/fitbit\/callback/,
     );
   });
@@ -155,7 +155,7 @@ describe("redirect_uri allowlist", () => {
     process.env.NEXT_PUBLIC_APP_URL = "https://app.example.test";
     process.env.FITBIT_REDIRECT_URI =
       "https://attacker.example.test/api/fitbit/callback";
-    expect(() => getAuthorizationUrl("n", CREDS, "c")).toThrow(
+    expect(() => fitbitOAuth.authorizationUrl("n", CREDS, "c")).toThrow(
       /does not match/,
     );
   });
@@ -175,7 +175,9 @@ describe("token exchange + refresh", () => {
         },
       },
     ]);
-    const tok = await exchangeCode("code", "verifier-123", CREDS);
+    const tok = await fitbitOAuth.exchange("code", CREDS, {
+      codeVerifier: "verifier-123",
+    });
     expect(tok.access_token).toBe("at");
     expect(tok.refresh_token).toBe("rt");
     expect(tok.expires_in).toBe(28800);
@@ -202,7 +204,7 @@ describe("token exchange + refresh", () => {
         },
       },
     ]);
-    const tok = await refreshAccessToken("rt1", CREDS);
+    const tok = await fitbitOAuth.refresh("rt1", CREDS);
     expect(tok.access_token).toBe("at2");
     // Classic Fitbit rotates: a fresh refresh token is returned every time.
     expect(tok.refresh_token).toBe("rt2");
@@ -220,7 +222,9 @@ describe("token exchange + refresh", () => {
     installFetchMock([
       { status: 401, body: { errors: [{ errorType: "invalid_grant" }] } },
     ]);
-    await expect(exchangeCode("bad", "v", CREDS)).rejects.toMatchObject({
+    await expect(
+      fitbitOAuth.exchange("bad", CREDS, { codeVerifier: "v" }),
+    ).rejects.toMatchObject({
       name: "FitbitApiError",
       classification: "reauth_required",
     });
@@ -231,7 +235,9 @@ describe("token exchange + refresh", () => {
   // TypeError. It must surface as a classified transient integration error.
   it("classifies a 2xx with an empty body instead of casting null", async () => {
     installFetchMock([{ status: 200, body: null }]);
-    await expect(exchangeCode("code", "v", CREDS)).rejects.toMatchObject({
+    await expect(
+      fitbitOAuth.exchange("code", CREDS, { codeVerifier: "v" }),
+    ).rejects.toMatchObject({
       name: "FitbitApiError",
       classification: "transient",
       reason: "empty_token_body",

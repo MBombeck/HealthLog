@@ -31,12 +31,8 @@ import { z } from "zod/v4";
 import { apiHandler, requireRecentProof } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
-import {
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { randomBytes } from "node:crypto";
 import { createReadStream } from "node:fs";
@@ -105,15 +101,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
   // The body is a single passphrase string — small and bounded. 8 KB is far
   // above any legitimate passphrase while rejecting a large body before parse.
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, encryptedExportSchema, {
     maxBytes: 8 * 1024,
   });
-  if (jsonError) return jsonError;
-
-  const parsed = encryptedExportSchema.safeParse(body);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error);
-  }
+  if (!parsed.ok) return parsed.error;
   const { passphrase } = parsed.data;
   await auth.commitElevation();
 

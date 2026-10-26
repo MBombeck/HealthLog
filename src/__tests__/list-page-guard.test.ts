@@ -25,7 +25,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -36,10 +36,6 @@ const LIST_MODULES = new Set([
   // The MCP tools' name for `listPage`; its reads are checked at its callers.
   "lib/mcp/capped.ts",
 ]);
-
-function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-}
 
 /** The text of a call's argument list, from the `(` after `name` to its match. */
 function callBodies(code: string, name: string): string[] {

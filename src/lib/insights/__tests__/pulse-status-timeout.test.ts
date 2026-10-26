@@ -141,7 +141,9 @@ describe("generatePulseStatusForUser — provider timeout fallback", () => {
     expect(persisted.create.textEncrypted).toBeUndefined();
     expect(persisted.create.negativeReason).toBe("timeout");
     // The update arm moves only the window, never an existing note.
+    // #1279 — and the streak that sizes the next window.
     expect(Object.keys(persisted.update).sort()).toEqual([
+      "failureStreak",
       "negativeReason",
       "retryAt",
     ]);

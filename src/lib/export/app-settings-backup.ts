@@ -9,9 +9,11 @@
  * reconfigures the host for everybody on it, silently and hours or weeks out
  * of date: an operator putting a single record back on Wednesday has no
  * reason to expect Monday's registration switch and Monday's upload cap to
- * come with it. Rebuilding a host from a snapshot is a real case, so the
- * write stays available — as an answer the operator gives
- * (`restoreInstanceSettings`), not one the account restore assumes.
+ * come with it. Putting the instance settings themselves back is a real
+ * case, so the write stays available — as an answer the operator gives
+ * (`restoreInstanceSettings`), not one the account restore assumes. An
+ * account copy does not rebuild a lost host; a database dump and the keys do
+ * (`docs/ops/disaster-recovery.md`).
  */
 import { DEFAULT_REASONING_MAX_EFFORT } from "@/lib/ai/reasoning/levels";
 import type {

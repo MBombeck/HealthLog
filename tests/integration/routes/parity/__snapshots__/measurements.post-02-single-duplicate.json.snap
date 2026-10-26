@@ -1,0 +1,38 @@
+{
+  "status": 409,
+  "body": {
+    "data": null,
+    "error": "A measurement with this data already exists",
+    "meta": {
+      "errorCode": "measurement.duplicate_timestamp",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 409,
+      "action": null,
+      "meta": null,
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [],
+  "stored": [
+    {
+      "id": "<id:1>",
+      "type": "WEIGHT",
+      "value": 80.4,
+      "unit": "kg",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T06:30:00.000Z",
+      "notes": null,
+      "glucoseContext": null,
+      "deviceType": "scale",
+      "externalId": null,
+      "sleepStage": null,
+      "deletedAt": null,
+      "sealedNote": true
+    }
+  ]
+}

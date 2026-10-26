@@ -1,0 +1,243 @@
+{
+  "get_metric_series": {
+    "result": {
+      "present": false,
+      "reason": "invalid_arguments"
+    },
+    "annotations": [
+      {
+        "action": "coach.tool.bad_arguments",
+        "tool": "get_metric_series",
+        "reason": "schema"
+      },
+      {
+        "action": "coach.tool.executed",
+        "tool": "get_metric_series"
+      }
+    ]
+  },
+  "get_glucose_panel": {
+    "result": {
+      "present": false,
+      "reason": "invalid_arguments"
+    },
+    "annotations": [
+      {
+        "action": "coach.tool.bad_arguments",
+        "tool": "get_glucose_panel",
+        "reason": "schema"
+      },
+      {
+        "action": "coach.tool.executed",
+        "tool": "get_glucose_panel"
+      }
+    ]
+  },
+  "get_sleep": {
+    "result": {
+      "present": false,
+      "reason": "invalid_arguments"
+    },
+    "annotations": [
+      {
+        "action": "coach.tool.bad_arguments",
+        "tool": "get_sleep",
+        "reason": "schema"
+      },
+      {
+        "action": "coach.tool.executed",
+        "tool": "get_sleep"
+      }
+    ]
+  },
+  "get_medication_compliance": {
+    "result": {
+      "present": false,
+      "reason": "invalid_arguments"
+    },
+    "annotations": [
+      {
+        "action": "coach.tool.bad_arguments",
+        "tool": "get_medication_compliance",
+        "reason": "schema"
+      },
+      {
+        "action": "coach.tool.executed",
+        "tool": "get_medication_compliance"
+      }
+    ]
+  },
+  "get_labs": {
+    "result": {
+      "present": false,
+      "reason": "invalid_arguments"
+    },
+    "annotations": [
+      {
+        "action": "coach.tool.bad_arguments",
+        "tool": "get_labs",
+        "reason": "schema"
+      },
+      {
+        "action": "coach.tool.executed",
+        "tool": "get_labs"
+      }
+    ]
+  },
+  "get_illness_recovery": {
+    "result": {
+      "present": false,
+      "reason": "retrieval_failed"
+    },
+    "annotations": [
+      {
+        "action": "coach.tool.error",
+        "tool": "get_illness_recovery",
+        "reason": "Error"
+      }
+    ]
+  },
+  "get_workouts": {
+    "result": {
+      "present": false,
+      "reason": "invalid_arguments"
+    },
+    "annotations": [
+      {
+        "action": "coach.tool.bad_arguments",
+        "tool": "get_workouts",
+        "reason": "schema"
+      },
+      {
+        "action": "coach.tool.executed",
+        "tool": "get_workouts"
+      }
+    ]
+  },
+  "get_cycle": {
+    "result": {
+      "present": false,
+      "reason": "invalid_arguments"
+    },
+    "annotations": [
+      {
+        "action": "coach.tool.bad_arguments",
+        "tool": "get_cycle",
+        "reason": "schema"
+      },
+      {
+        "action": "coach.tool.executed",
+        "tool": "get_cycle"
+      }
+    ]
+  },
+  "get_correlations": {
+    "result": {
+      "present": false,
+      "reason": "invalid_arguments"
+    },
+    "annotations": [
+      {
+        "action": "coach.tool.bad_arguments",
+        "tool": "get_correlations",
+        "reason": "schema"
+      },
+      {
+        "action": "coach.tool.executed",
+        "tool": "get_correlations"
+      }
+    ]
+  },
+  "get_metric_table": {
+    "result": {
+      "present": false,
+      "reason": "invalid_arguments"
+    },
+    "annotations": [
+      {
+        "action": "coach.tool.bad_arguments",
+        "tool": "get_metric_table",
+        "reason": "schema"
+      },
+      {
+        "action": "coach.tool.executed",
+        "tool": "get_metric_table"
+      }
+    ]
+  },
+  "get_environment": {
+    "result": {
+      "present": false,
+      "reason": "invalid_arguments"
+    },
+    "annotations": [
+      {
+        "action": "coach.tool.bad_arguments",
+        "tool": "get_environment",
+        "reason": "schema"
+      },
+      {
+        "action": "coach.tool.executed",
+        "tool": "get_environment"
+      }
+    ]
+  },
+  "get_day": {
+    "result": {
+      "present": false,
+      "reason": "invalid_arguments"
+    },
+    "annotations": [
+      {
+        "action": "coach.tool.bad_arguments",
+        "tool": "get_day",
+        "reason": "schema"
+      },
+      {
+        "action": "coach.tool.executed",
+        "tool": "get_day"
+      }
+    ]
+  },
+  "show_result": {
+    "result": {
+      "present": false,
+      "reason": "invalid_arguments"
+    },
+    "annotations": [
+      {
+        "action": "coach.tool.bad_arguments",
+        "tool": "show_result",
+        "reason": "schema"
+      },
+      {
+        "action": "coach.tool.executed",
+        "tool": "show_result"
+      }
+    ]
+  },
+  "compare_series": {
+    "result": {
+      "present": false,
+      "reason": "unknown_tool"
+    },
+    "annotations": [
+      {
+        "action": "coach.tool.unknown",
+        "tool": "compare_series"
+      }
+    ]
+  },
+  "not_a_tool": {
+    "result": {
+      "present": false,
+      "reason": "unknown_tool"
+    },
+    "annotations": [
+      {
+        "action": "coach.tool.unknown",
+        "tool": "not_a_tool"
+      }
+    ]
+  }
+}

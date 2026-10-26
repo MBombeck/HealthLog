@@ -68,6 +68,20 @@ export const REASONING_THINKING_BUDGET: Readonly<
 };
 
 /**
+ * #1276 — the thinking room a call gets on a wire whose reasoning switch the
+ * client cannot verify (an OpenAI-compatible gateway, a local server). There,
+ * `reasoning_effort: "none"` is a request, not a promise: a model that always
+ * reasons (GLM behind vLLM, say) ignores it and spends the answer budget
+ * thinking until `finish_reason: "length"`. So `off` keeps the `low` room,
+ * and a call sent as `none` because the endpoint once answered with reasoning
+ * alone keeps the room of its own level. A ceiling, not a charge: a model
+ * that does switch off never touches it.
+ */
+export function uncontrolledThinkingRoom(level: ReasoningLevel): number {
+  return REASONING_THINKING_BUDGET[level === "off" ? "low" : level];
+}
+
+/**
  * The background jobs that may reason. Every other unattended surface (status
  * cards, batch notes, archetypes, workout and reaction lines, nudges, document
  * reading, OCR) never does, and the inventory test freezes this list.

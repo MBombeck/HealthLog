@@ -188,6 +188,39 @@ function jpegWithGps(marker: string): Buffer {
 
 export const KNIE_EPISODE_ID = "e2evaultknie000000000001";
 export const MRT_DOC_ID = "e2evaultmrt0000000000001";
+
+/**
+ * The vault corpus's ids for one account. The shared account keeps the ids
+ * above; an account of its own gets the same corpus under ids of the same
+ * length with its own five-letter tag in place of `vault`, so two accounts'
+ * vaults never claim one row. Only `ensureVaultFixture` and
+ * `seedNamespaceDocs` take an account.
+ */
+const VAULT_TAGS: Record<string, string> = {
+  "e2e-vault": "vspec",
+  "e2e-vault-layout": "vqolx",
+};
+
+function vaultTag(username: string): string {
+  if (username === E2E_USER.username) return "vault";
+  const tag = VAULT_TAGS[username];
+  if (!tag) throw new Error(`[vault-fixture] no id tag for ${username}`);
+  return tag;
+}
+
+function inVault(id: string, username: string): string {
+  return id.replace(/^e2evault/, `e2e${vaultTag(username)}`);
+}
+
+export function vaultFixtureIds(username: string): {
+  knieEpisodeId: string;
+  mrtDocId: string;
+} {
+  return {
+    knieEpisodeId: inVault(KNIE_EPISODE_ID, username),
+    mrtDocId: inVault(MRT_DOC_ID, username),
+  };
+}
 /** A stored PDF the AI-assist specs drive (mocked provider); title/kind are
  *  bland so an applied suggestion is visibly different. */
 export const AI_PROBE_DOC_ID = "e2evaultaiprobe000000001";
@@ -268,10 +301,10 @@ async function withVaultSeedLock(
   }
 }
 
-async function getUserId(pool: pg.Pool): Promise<string> {
+async function getUserId(pool: pg.Pool, username: string): Promise<string> {
   const res = await pool.query<{ id: string }>(
     "SELECT id FROM users WHERE username = $1",
-    [E2E_USER.username],
+    [username],
   );
   const id = res.rows[0]?.id;
   if (!id) {
@@ -344,7 +377,7 @@ export async function resetEncounters(): Promise<void> {
   if (!url) throw new Error("[vault-fixture] DATABASE_URL is not set");
   const pool = new pg.Pool({ connectionString: url });
   try {
-    const userId = await getUserId(pool);
+    const userId = await getUserId(pool, E2E_USER.username);
     await pool.query(
       "DELETE FROM encounter_document_links WHERE user_id = $1",
       [userId],
@@ -360,13 +393,15 @@ export async function resetEncounters(): Promise<void> {
  * corpus. Safe to call from every spec's beforeAll — every statement
  * upserts.
  */
-export async function ensureVaultFixture(): Promise<void> {
+export async function ensureVaultFixture(
+  username: string = E2E_USER.username,
+): Promise<void> {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("[vault-fixture] DATABASE_URL is not set");
   const pool = new pg.Pool({ connectionString: url });
   try {
     await withVaultSeedLock(pool, async () => {
-      const userId = await getUserId(pool);
+      const userId = await getUserId(pool, username);
 
       // Opt-in module: merge, never overwrite other module preferences.
       await pool.query(
@@ -385,7 +420,7 @@ export async function ensureVaultFixture(): Promise<void> {
        VALUES ($1, $2, 'Knie', 'INJURY', 'ACUTE', '2025-09-01T00:00:00Z', NOW(), NOW())
        ON CONFLICT (id) DO UPDATE SET
          label = EXCLUDED.label, deleted_at = NULL, updated_at = NOW()`,
-        [KNIE_EPISODE_ID, userId],
+        [inVault(KNIE_EPISODE_ID, username), userId],
       );
 
       // 60 background documents spread over 36 months (newest ~current).
@@ -393,7 +428,10 @@ export async function ensureVaultFixture(): Promise<void> {
       for (let i = 0; i < 60; i++) {
         const monthsBack = Math.floor((i * 36) / 60);
         const anchor = new Date(Date.UTC(2026, 5 - monthsBack, 1 + (i % 25)));
-        const id = `e2evaultdoc${String(i).padStart(12, "0")}`;
+        const id = inVault(
+          `e2evaultdoc${String(i).padStart(12, "0")}`,
+          username,
+        );
         docs.push({
           id,
           kind: FIXTURE_KINDS[i % FIXTURE_KINDS.length],
@@ -406,17 +444,17 @@ export async function ensureVaultFixture(): Promise<void> {
       }
       // The MRT report + two adjacent images, same date, all linked to Knie.
       docs.push({
-        id: MRT_DOC_ID,
+        id: inVault(MRT_DOC_ID, username),
         kind: "IMAGING",
         title: "MRT Knie",
         filename: "mrt-knie.pdf",
         mimeType: "application/pdf",
         documentDate: MRT_DOC_DATE,
-        bytes: tinyPdf(MRT_DOC_ID),
+        bytes: tinyPdf(inVault(MRT_DOC_ID, username)),
       });
       for (const n of [1, 2]) {
         docs.push({
-          id: `e2evaultimg000000000000${n}`,
+          id: inVault(`e2evaultimg000000000000${n}`, username),
           kind: "IMAGING",
           title: `MRT Aufnahme ${n}`,
           filename: `mrt-aufnahme-${n}.png`,
@@ -432,14 +470,19 @@ export async function ensureVaultFixture(): Promise<void> {
         MRT_DOC_ID,
         "e2evaultimg0000000000001",
         "e2evaultimg0000000000002",
-      ];
+      ].map((id) => inVault(id, username));
       for (const [i, docId] of linked.entries()) {
         await pool.query(
           `INSERT INTO document_condition_links
           (id, document_id, episode_id, user_id, created_at)
          VALUES ($1, $2, $3, $4, NOW())
          ON CONFLICT (document_id, episode_id) DO NOTHING`,
-          [`e2evaultlink00000000000${i + 1}`, docId, KNIE_EPISODE_ID, userId],
+          [
+            inVault(`e2evaultlink00000000000${i + 1}`, username),
+            docId,
+            inVault(KNIE_EPISODE_ID, username),
+            userId,
+          ],
         );
       }
     });
@@ -462,7 +505,7 @@ export async function ensureVaultAiFixture(): Promise<void> {
   const pool = new pg.Pool({ connectionString: url });
   try {
     await withVaultSeedLock(pool, async () => {
-      const userId = await getUserId(pool);
+      const userId = await getUserId(pool, E2E_USER.username);
 
       await upsertDocs(pool, userId, [
         {
@@ -522,12 +565,13 @@ export async function ensureVaultAiFixture(): Promise<void> {
 export async function seedNamespaceDocs(
   prefix: string,
   count: number,
+  username: string = E2E_USER.username,
 ): Promise<void> {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("[vault-fixture] DATABASE_URL is not set");
   const pool = new pg.Pool({ connectionString: url });
   try {
-    const userId = await getUserId(pool);
+    const userId = await getUserId(pool, username);
     const docs: DocRow[] = [];
     for (let i = 0; i < count; i++) {
       const id = `e2e${prefix}${String(i).padStart(8, "0")}`;
@@ -569,7 +613,7 @@ export async function ensureProcedureFixture(): Promise<void> {
   await seedNamespaceDocs(PROCEDURE_DOC_PREFIX, 3);
   const pool = new pg.Pool({ connectionString: url });
   try {
-    const userId = await getUserId(pool);
+    const userId = await getUserId(pool, E2E_USER.username);
     const procedures = [
       {
         id: PROCEDURE_KNEE_ID,
@@ -636,7 +680,7 @@ export async function ensureShareDocFixture(): Promise<void> {
   if (!url) throw new Error("[vault-fixture] DATABASE_URL is not set");
   const pool = new pg.Pool({ connectionString: url });
   try {
-    const userId = await getUserId(pool);
+    const userId = await getUserId(pool, E2E_USER.username);
     await pool.query(
       `UPDATE users
        SET module_preferences_json =

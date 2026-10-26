@@ -5,10 +5,9 @@ import {
   apiError,
   apiSuccess,
   getClientIp,
-  returnAllZodIssues,
-  safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserCorrelationPatterns } from "@/lib/cache/invalidate";
 import {
@@ -81,36 +80,27 @@ export const PATCH = apiHandler(
       return apiError("Custom metric not found", 404);
     }
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, updateCustomMetricSchema, {
       maxBytes: 16 * 1024,
-    });
-    if (jsonError) return jsonError;
-
-    const parsed = updateCustomMetricSchema.safeParse(body);
-    if (!parsed.success) {
-      annotate({
-        action: { name: "custom-metric.metric.update.validation-failed" },
-        meta: { issue_count: parsed.error.issues.length, customMetricId: id },
-      });
-      const auditIssues = sanitiseZodIssues(parsed.error.issues, {
-        stripValuesFromMessage: true,
-      });
-      prisma.auditLog
-        .create({
-          data: {
-            userId: user.id,
-            action: "custom-metric.metric.update.validation-failed",
-            details: JSON.stringify({
-              issues: auditIssues,
-              customMetricId: id,
-            }),
+      action: "custom-metric.metric.update.validation-failed",
+      countIssues: true,
+      meta: { customMetricId: id },
+      onInvalid: (error) => {
+        const auditIssues = sanitiseZodIssues(error.issues, {
+          stripValuesFromMessage: true,
+        });
+        auditLog("custom-metric.metric.update.validation-failed", {
+          userId: user.id,
+          details: {
+            issues: auditIssues,
+            customMetricId: id,
           },
-        })
-        .catch(() => {
+        }).catch(() => {
           /* swallow — the 422 response is the contract */
         });
-      return returnAllZodIssues(parsed.error, 422);
-    }
+      },
+    });
+    if (!parsed.ok) return parsed.error;
 
     const d = parsed.data;
 

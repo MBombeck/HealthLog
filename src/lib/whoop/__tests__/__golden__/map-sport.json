@@ -1,0 +1,27 @@
+[
+  { "sportId": 0, "sportName": "Running", "sportType": "running" },
+  { "sportId": 1, "sportName": null, "sportType": "cycling" },
+  {
+    "sportId": 52,
+    "sportName": "ignored when the id resolves",
+    "sportType": "hiking"
+  },
+  { "sportId": 9999, "sportName": "Hiking/Rucking", "sportType": "hiking" },
+  { "sportId": null, "sportName": "hiking_rucking", "sportType": "hiking" },
+  { "sportId": null, "sportName": "  Track & Field  ", "sportType": "running" },
+  {
+    "sportId": null,
+    "sportName": "Functional Fitness",
+    "sportType": "crossTraining"
+  },
+  { "sportId": null, "sportName": "whoop_sport_63", "sportType": "other" },
+  {
+    "sportId": null,
+    "sportName": "Underwater Basket Weaving",
+    "sportType": "other"
+  },
+  { "sportId": null, "sportName": "   ", "sportType": "other" },
+  { "sportId": 9999, "sportName": null, "sportType": "other" },
+  { "sportId": -1, "sportName": null, "sportType": "other" },
+  { "sportId": null, "sportName": null, "sportType": "other" }
+]

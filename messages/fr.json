@@ -175,6 +175,9 @@
           "failed": "L’étiquette n’a pas pu être lue. Essayez une photo plus nette."
         }
       }
+    },
+    "aiRuns": {
+      "readerBusy": "Le lecteur de documents est occupé par d'autres tâches. Réessayez dans une minute."
     }
   },
   "doctorReport": {
@@ -435,7 +438,8 @@
       "autocorrelation": "forte dépendance à la veille, les plages peuvent donc rester trop étroites",
       "window": "analysé du {from} au {to}, ce qui peut dépasser la période du rapport",
       "windowLine": "Analysé du {from} au {to}. Cette fenêtre peut dépasser la période du rapport."
-    }
+    },
+    "screenerUnvalidated": "{label} : {count} résultat(s) sur {total} ont été obtenus avec une traduction non validée scientifiquement ; à considérer comme une indication."
   },
   "errorBoundary": {
     "title": "Une erreur est survenue",
@@ -628,7 +632,9 @@
       "title": "Invitation invalide",
       "description": "Ce lien d’invitation est incomplet ou a été mal copié. Demandez un nouveau lien à la personne qui vous a invité.",
       "toLogin": "Aller à la connexion"
-    }
+    },
+    "deletionPending": "Ce compte sera supprimé le {date} et reste verrouillé d’ici là. Un administrateur de ce serveur peut annuler la suppression avant cette date.",
+    "deletionPendingNoDate": "Ce compte est programmé pour suppression et il est verrouillé. Un administrateur de ce serveur peut annuler la suppression tant qu’elle n’est pas terminée."
   },
   "dashboard": {
     "title": "Tableau de bord",
@@ -777,13 +783,13 @@
         "bmi": "kg/m²"
       }
     },
-    "keyBackupBanner": {
-      "title": "Sauvegarde ta clé de chiffrement",
-      "body": "Sans copie de la clé, tes données ne peuvent pas être récupérées après une réinstallation. Ça prend une minute.",
-      "action": "Ouvrir l'étape"
-    },
     "quickAddSymptom": "Noter un symptôme",
-    "todayCardVisible": "Afficher la carte du haut"
+    "todayCardVisible": "Afficher la carte du haut",
+    "recoveryKitBanner": {
+      "title": "Sauvegardez votre kit de récupération",
+      "body": "Sans copies des clés utilisées par ce serveur, ses données ne peuvent pas être récupérées après une réinstallation. Ça prend quelques minutes.",
+      "action": "Ouvrir le kit"
+    }
   },
   "measurements": {
     "title": "Mesures",
@@ -3019,6 +3025,7 @@
       "refusalInjection": "Ton message contient des instructions qui cherchent à remplacer mes consignes. Je suis le coach HealthLog et je ne résume que tes propres données de santé. Reformule ta question dans ce cadre.",
       "errorBudget": "Tu as atteint la limite quotidienne du coach. Le quota se réinitialise à minuit dans ton fuseau horaire.",
       "errorProvider": "Le coach n’a pas pu joindre un fournisseur d’analyse maintenant. Réessaie dans un instant.",
+      "errorReasoningOnly": "Le modèle a seulement réfléchi, sans écrire de réponse. Réessaie ou choisis un autre modèle dans les réglages IA.",
       "errorDemo": "Dans la démo, le Coach ne répond pas.",
       "errorNoProvider": "Le coach lit tes données de santé enregistrées et répond aux questions à leur sujet (pas un avis médical). HealthLog a besoin d'un fournisseur d'IA pour cela : connecte ta propre clé ou un modèle local.",
       "errorNoProviderAction": "Connecter un fournisseur d'IA",
@@ -5731,7 +5738,7 @@
             "passphrasePlaceholder": "Phrase secrète (12 caractères min.)",
             "passphraseHelp": "Dérive la clé de l'archive avec Argon2id et la scelle avec AES-256-GCM. Enregistrez le fichier avec l'extension .hlx.",
             "noRecoveryWarning": "Aucune récupération possible : si vous perdez cette phrase secrète, l'archive ne pourra pas être ouverte. Conservez-la en lieu sûr.",
-            "detail": "Même format que la sauvegarde automatique hebdomadaire. Certains types d'enregistrement ne sont pas encore inclus : le manifeste du fichier indique ce qu'il contient.",
+            "detail": "Une copie portable de votre dossier, à conserver et à lire : valeurs en JSON simple, documents limités à leurs métadonnées. Ce n’est pas la copie hebdomadaire du compte que ce serveur garde pour restaurer un compte, et elle ne peut pas recréer un compte sur un autre serveur. Certains types de données ne sont pas encore inclus ; le manifeste du fichier indique ce qu’il contient.",
             "contents": "Vos mesures, médicaments, humeur, cycle, analyses, épisodes de maladie, allergies, antécédents familiaux, nutriments, séances, votre profil de santé et vos mesures personnalisées dans un seul fichier JSON."
           }
         },
@@ -5777,7 +5784,7 @@
             "cycleDaysFailed": "{count} jours de cycle n'ont pas pu être écrits : {reason}"
           },
           "json": {
-            "title": "Fichier JSON",
+            "title": "Mesures et humeur (JSON)",
             "description": "Collez du JSON ou importez un fichier .json contenant des mesures et des entrées d'humeur.",
             "pasteLabel": "Coller du JSON",
             "fileInputLabel": "Choisir un fichier JSON à importer",
@@ -5793,8 +5800,11 @@
             "readFailed": "Impossible de lire ce fichier.",
             "resultSummary": "{measurements} mesures et {moods} entrées d'humeur importées, {skipped} ignorées.",
             "resultSuccess": "{measurements} mesures et {moods} entrées d'humeur importées",
+            "droppedLinks": "Importé sans ces étiquettes, car ce compte n’en a aucune de ce nom : {keys}",
+            "keptLabels": "Ce compte a déjà des étiquettes ou des groupes avec ces clés sous son propre nom, ils ont été conservés : {keys}",
             "resultNothing": "Rien n'a été importé. Les {skipped} entrées ont toutes été ignorées.",
-            "resultEmpty": "Ce fichier ne contenait ni mesures ni entrées d'humeur."
+            "resultEmpty": "Ce fichier ne contenait ni mesures ni entrées d'humeur.",
+            "limitsHint": "Jusqu’à {mb} Mo et jusqu’à {rows} entrées par liste. Cela ajoute des entrées à votre dossier ; cela ne restaure pas une sauvegarde complète."
           },
           "csv": {
             "title": "Fichier CSV",
@@ -5940,7 +5950,7 @@
             }
           }
         },
-        "subtitle": "Exportez vos données ou importez depuis une sauvegarde."
+        "subtitle": "Exportez vos données, ou importez des mesures et des entrées depuis d’autres applis et fichiers."
       },
       "about": {
         "title": "À propos de cette app",
@@ -6854,7 +6864,14 @@
       "detail": "Le jeton n'est affiché qu'une fois.",
       "scopeNote": "Il peut uniquement ajouter de nouvelles mesures à votre propre dossier : il ne peut pas lire vos données, ni modifier ou supprimer quoi que ce soit, ni créer un autre jeton. Les mesures sont signalées comme provenant d'un appareil externe, ce qui vous permet de les reconnaître plus tard, et vous pouvez toujours les corriger.",
       "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer.",
-      "namePlaceholder": "Nom, p. ex. Home Assistant"
+      "namePlaceholder": "Nom, p. ex. Home Assistant",
+      "appleHealth": {
+        "label": "Écrire les mesures dans Apple Health",
+        "createHint": "L'app HealthLog de votre iPhone ajoutera alors les mesures de ce jeton à Apple Health. Vous pourrez modifier ce choix plus tard dans la liste des jetons ci-dessous.",
+        "toggleAria": "Écrire les mesures de {name} dans Apple Health",
+        "updateFailed": "Le réglage Apple Health n'a pas pu être modifié. Veuillez réessayer.",
+        "unattributed": "Les mesures envoyées avant l'existence de ce réglage ne peuvent être rattachées à aucun jeton : elles restent donc hors d'Apple Health."
+      }
     },
     "workoutsToken": {
       "title": "Jetons d'entraînements",
@@ -6911,10 +6928,12 @@
     "deleteAccountCardDescription": "Supprime votre compte ainsi que les clés d’accès, le journal d’audit et les sessions.",
     "deleteAccountCta": "Supprimer le compte",
     "deleteAccountConfirmTitle": "Supprimer définitivement le compte ?",
-    "deleteAccountConfirmDescription": "Votre compte, toutes vos données de santé, vos clés d’accès, vos sessions et vos entrées d’audit seront définitivement supprimés. Vous serez déconnecté immédiatement après.",
+    "deleteAccountConfirmTitleGrace": "Supprimer votre compte ?",
+    "deleteAccountConfirmDescription": "Votre compte, toutes vos données de santé, vos clés d’accès, vos sessions et vos entrées d’audit seront définitivement supprimés. Vous serez déconnecté immédiatement après. Les copies dans les sauvegardes de ce serveur expirent à la fin de leur durée de conservation.",
     "deleteAccountSuccess": "Compte supprimé, déconnexion en cours.",
     "deleteAccountFailed": "Le compte n’a pas pu être supprimé",
     "deleteAccountFinal": "Supprimer définitivement",
+    "deleteAccountFinalGrace": "Supprimer le compte",
     "saved": "Enregistré",
     "savingError": "Erreur lors de l’enregistrement",
     "about": {
@@ -7321,13 +7340,16 @@
         "coach": "Conversations avec le coach : {days} jours",
         "audit": "Journal de sécurité : {days} jours",
         "delivery": "Journal d'envoi des notifications : {days} jours",
-        "unavailable": "Les détails de conservation sont indisponibles pour le moment."
+        "unavailable": "Les détails de conservation sont indisponibles pour le moment.",
+        "accountDeletion": "Suppression de votre compte, d’un profil géré ou de toutes les données : effective au bout de {days} jours",
+        "accountDeletionImmediate": "Suppression de votre compte, d’un profil géré ou de toutes les données : effective immédiatement"
       },
       "delete": {
         "title": "Supprimer ou réinitialiser",
         "description": "Supprimez complètement votre compte, ou effacez vos données de santé tout en conservant le compte.",
-        "backupLag": "La suppression efface vos données immédiatement. Si ce serveur conserve des sauvegardes externes chiffrées, les copies de vos données sont supprimées de ce stockage juste après, ou lors du prochain passage nocturne s'il est injoignable.",
-        "openAdvanced": "Supprimer ou réinitialiser"
+        "openAdvanced": "Supprimer ou réinitialiser",
+        "immediateNotice": "La suppression efface vos données immédiatement. Si ce serveur conserve des sauvegardes externes chiffrées, les copies de vos données sont supprimées de ce stockage juste après, ou lors du prochain passage nocturne s'il est injoignable. Les copies dans les sauvegardes de ce serveur expirent à la fin de leur durée de conservation.",
+        "graceNotice": "Lorsque vous supprimez votre compte, il est verrouillé immédiatement et effacé au bout de {days} jours, avec chaque copie que ce serveur en conserve, y compris les copies chiffrées hors du serveur. D’ici là, un administrateur de ce serveur peut annuler la suppression. La suppression de toutes les données fonctionne de la même façon : une copie du dossier est conservée pendant {days} jours, afin qu’un administrateur puisse la restaurer. Les copies dans les sauvegardes de ce serveur expirent à la fin de leur durée de conservation."
       },
       "posture": {
         "title": "Posture de confidentialité",
@@ -7633,7 +7655,13 @@
       "off": "Désactivé",
       "change": "Modifier dans Modules"
     },
-    "timezoneUseDevice": "Utiliser le fuseau horaire de cet appareil ({zone})"
+    "timezoneUseDevice": "Utiliser le fuseau horaire de cet appareil ({zone})",
+    "dangerZoneConfirmDescriptionGrace": "Cette action supprime tout ce que contient votre dossier : mesures, médicaments, entrées d’humeur, résultats de laboratoire, entrées de cycle, documents, conversations avec l’IA et toutes les connexions d’intégration, ainsi que tout ce qui en découle et tout ce que vous aviez supprimé auparavant. Les liens de partage remis à un cabinet cessent aussitôt de fonctionner. Votre compte reste en place, de même que vos identifiants de connexion et vos réglages d’affichage comme la langue, le fuseau horaire et les unités. Une copie de votre dossier est conservée pendant {days} jours, afin qu’un administrateur de ce serveur puisse la restaurer d’ici là. Ensuite, la suppression est définitive.",
+    "deleteAccountCardDetailGrace": "Votre compte est verrouillé immédiatement et effacé au bout de {days} jours. D’ici là, un administrateur de ce serveur peut annuler la suppression.",
+    "deleteAccountConfirmDescriptionGrace": "Vous êtes déconnecté et votre compte est verrouillé immédiatement. Au bout de {days} jours, il est effacé définitivement, avec toutes vos données de santé, vos clés d’accès, vos sessions et vos entrées d’audit. D’ici là, un administrateur de ce serveur peut annuler la suppression. Les copies dans les sauvegardes de ce serveur expirent à la fin de leur durée de conservation.",
+    "deleteAccountScheduled": "Votre compte est verrouillé et sera effacé le {date}. Déconnexion en cours.",
+    "dangerZoneSuccessGrace": "Votre dossier de santé a été supprimé. Un administrateur de ce serveur peut le restaurer jusqu’au {date}.",
+    "dangerZoneRestoreLimits": "Les accès prennent fin aussi : ce que vous partagez avec d’autres, ce qu’ils partagent avec vous, et tout rôle de personne responsable. Une restauration remet le dossier tel qu’il est maintenant. Ce qui est ajouté après la suppression est remplacé, et les connexions d’intégration, les partages, les rôles de personne responsable et les liens de partage ne reviennent pas ; il faut les configurer à nouveau."
   },
   "admin": {
     "title": "Administration",
@@ -8069,7 +8097,15 @@
         "cannotLogoutSelf": "Impossible de forcer votre propre déconnexion",
         "emptyTitle": "Aucun utilisateur dans cette vue",
         "emptyDescription": "Aucun utilisateur ne correspond au filtre actuel.",
-        "emptyResetFilter": "Afficher tous les utilisateurs"
+        "emptyResetFilter": "Afficher tous les utilisateurs",
+        "deletionPending": "Suppression le {date}",
+        "deletionPendingNoDate": "Suppression programmée",
+        "undoDeletion": "Annuler la suppression",
+        "undoDeletionTitle": "Annuler la suppression de {name} ?",
+        "undoDeletionBody": "{name} a demandé la suppression de ce compte, qui sera effacé à la fin du délai de grâce. Annuler conserve le compte et tout son contenu tels quels. {name} peut se reconnecter, mais les jetons d’API, les liens de partage et les appareils de confiance restent révoqués et doivent être configurés à nouveau.",
+        "undoDeletionBodyGuardian": "Une personne responsable a supprimé le profil géré {name}, qui sera effacé à la fin du délai de grâce. Annuler conserve le profil et tout son contenu tels quels, et les personnes responsables y ont de nouveau accès. Ses liens de partage et jetons restent révoqués et doivent être configurés à nouveau.",
+        "undoDeletionDone": "Suppression de {name} annulée",
+        "undoDeletionFailed": "Impossible d’annuler la suppression"
       },
       "invites": {
         "title": "Invitations",
@@ -8131,8 +8167,8 @@
       },
       "backups": {
         "title": "Sauvegardes",
-        "subtitle": "Instantanés de données hebdomadaires par utilisateur stockés dans PostgreSQL.",
-        "description": "Chaque utilisateur dispose d'un instantané glissant par type de sauvegarde. Les tailles indiquent le blob chiffré. Télécharger déchiffre l'instantané pour l'administrateur qui le demande ; le texte chiffré reste dans la base de données.",
+        "subtitle": "Copies de comptes dans la base de données de ce serveur, pour restaurer un compte ici.",
+        "description": "Chaque compte dispose d’une copie hebdomadaire, remplacée chaque dimanche, ainsi que des copies téléversées ici et de la copie prise avant « Supprimer toutes les données ». Une copie restaure un compte existant sur ce serveur. Elle ne peut pas reconstruire un serveur perdu : il faut pour cela une sauvegarde de la base de données et les clés de chiffrement. Les tailles indiquent la copie chiffrée. Le téléchargement la déchiffre pour l’administrateur qui la demande ; le texte chiffré reste dans la base de données.",
         "runNow": "Sauvegarder maintenant",
         "runEnqueued": "Tâche de sauvegarde mise en file d'attente",
         "runFailed": "Échec de la mise en file d'attente de la sauvegarde",
@@ -8142,12 +8178,11 @@
         "emptyDescription": "Les sauvegardes s'exécutent automatiquement chaque dimanche à 03:00, ou lancez-en une maintenant pour créer le premier instantané.",
         "colUser": "Utilisateur",
         "colType": "Type",
-        "typeWeeklyAuto": "Hebdomadaire (auto)",
+        "typeWeeklyAuto": "Copie hebdomadaire du compte",
         "typeManual": "Manuelle",
         "colSize": "Taille",
         "colCreatedAt": "Dernier instantané",
         "colActions": "Actions",
-        "retentionLabel": "Conservation : {days} jours",
         "scheduleStaleTitle": "La sauvegarde hebdomadaire s'est arrêtée",
         "scheduleStaleDescription": "La copie planifiée la plus récente date de {days} jours. Une exécution hebdomadaire qui fonctionne n'en laisse jamais une dépasser {threshold} jours.",
         "scheduleFailedTitle": "La dernière exécution planifiée de la sauvegarde a échoué",
@@ -8165,7 +8200,7 @@
         "downloadFailed": "Échec du téléchargement",
         "downloadStarted": "Téléchargement démarré",
         "uploadTitle": "Téléverser une sauvegarde",
-        "uploadDescription": "Validez un fichier de sauvegarde et stockez-le comme instantané manuel. La restauration est une étape distincte.",
+        "uploadDescription": "Vérifie une copie de compte et la stocke à côté des copies de ce serveur. Le compte auquel elle appartient doit exister sur ce serveur. La restauration est une étape distincte.",
         "uploadButton": "Téléverser un fichier",
         "uploadHelp": "Une sauvegarde HealthLog au format .json ou .json.gz. Le fichier est compressé avant l’envoi ; compressé, il peut atteindre 512 Mo.",
         "uploadSuccess": "Sauvegarde téléversée ({count} enregistrements)",
@@ -8225,7 +8260,7 @@
         "restoreSkippedAccountSetting": "Réglage du compte",
         "restoreMissingTitle": "Restauration refusée : le fichier est incomplet",
         "restoreMissingDescription": "Le manifeste du fichier indique qu'il contient la section ci-dessous, et il ne la contient pas. Rien n'a été modifié : une restauration remplace toute une classe d'enregistrements, une section absente l'aurait donc vidée.",
-        "restoreMissingRemedy": "Utilise une sauvegarde de reprise après sinistre, ou réexporte le compte et téléverse le nouveau fichier. Une section que le manifeste déclare omise est autre chose et se restaure normalement.",
+        "restoreMissingRemedy": "Utilisez l’une des copies de compte de ce serveur ou une copie hors du serveur, ou exportez à nouveau le compte et téléversez le nouveau fichier. Une section que le manifeste déclare omise est un autre cas et se restaure normalement.",
         "restoreMissingDocuments": "Documents",
         "restoreMissingWorkouts": "Séances",
         "restoreMissingMentalHealth": "Questionnaires de santé mentale",
@@ -8255,6 +8290,9 @@
         "restoreActive": "Une restauration de ce compte est déjà en cours. Attends qu'elle se termine.",
         "restoreJobQueuedTitle": "La restauration de {username} attend de démarrer",
         "restoreJobQueuedNote": "Elle démarre dès que le processus en arrière-plan la prend en charge.",
+        "restoreJobWaitingBackupNote": "En attente de la sauvegarde en cours sur le serveur. Une restauration ne tourne jamais en même temps qu’une sauvegarde, et elle démarre environ une minute après la fin de celle-ci.",
+        "restoreJobWaitingBusyNote": "En attente de la fin d’une tâche lourde sur le serveur, comme une importation ou un traitement nocturne. Elle démarre environ une minute après.",
+        "restoreJobQueuedSince": "En file d’attente depuis {when}.",
         "restoreJobRunningTitle": "Restauration de {username} en cours",
         "restoreJobRunningNote": "Le compte affiche ses données actuelles jusqu'à la fin de la restauration. Tu peux quitter cette page ; la restauration continue sur le serveur.",
         "restoreJobResumed": "Relancée après le redémarrage du serveur.",
@@ -8275,7 +8313,7 @@
         "restoreFailureOwnerMismatch": "Le fichier de la sauvegarde appartient à un autre compte que la ligne de sauvegarde.",
         "restoreFailureOwnerMissing": "Le compte auquel appartient cette sauvegarde n'existe plus.",
         "restoreFailureSectionMissing": "Le fichier est incomplet : son manifeste nomme une section qu'il ne contient pas.",
-        "restoreFailureDocument": "Le fichier contient des documents sans leur contenu, comme un export portable. Utilise une sauvegarde de reprise après sinistre.",
+        "restoreFailureDocument": "Le fichier contient des documents sans leur contenu, comme un export portable. Utilisez plutôt l’une des copies de compte de ce serveur ou une copie hors du serveur.",
         "restoreFailureTimeBudget": "Cette sauvegarde est trop volumineuse pour être restaurée dans le temps imparti au processus en arrière-plan.",
         "restoreFailureTransaction": "La base de données a refusé la restauration en cours de route, tout a donc été annulé. Le journal du serveur indique l'erreur.",
         "restoreFailureCauseTimeout": "La restauration a duré plus longtemps que la base de données ne l'autorise, tout a donc été annulé. Si l'hôte de la base était chargé, relancez-la quand il est plus calme. Le journal du serveur indique l'étape.",
@@ -8296,7 +8334,32 @@
         "restoreSkippedMoodLabelCiphertext": "Nom d’étiquette ou de groupe d’humeur chiffré avec une clé que ce serveur ne possède pas (conservé sans son nom)",
         "restoreSkippedVisitCiphertext": "Texte de consultation ou de praticien chiffré avec une clé que ce serveur ne possède pas (conservé sans)",
         "restoreSkippedVaccinationCiphertext": "Note de vaccination chiffrée avec une clé que ce serveur ne possède pas (dose conservée sans)",
-        "restoreSkippedEnvironmentLocationCiphertext": "Lieu d'une période ou d'un jour environnemental chiffré avec une clé que ce serveur ne possède pas (conservé chiffré, ces jours ne sont pas actualisés)"
+        "restoreSkippedEnvironmentLocationCiphertext": "Lieu d'une période ou d'un jour environnemental chiffré avec une clé que ce serveur ne possède pas (conservé chiffré, ces jours ne sont pas actualisés)",
+        "typePreWipe": "Avant la suppression de toutes les données",
+        "retentionNote": "La copie hebdomadaire est remplacée chaque dimanche. Une copie prise avant « Supprimer toutes les données » est supprimée au bout de {days} jours. Les copies téléversées restent jusqu’à l’effacement de leur compte.",
+        "retentionNoteNoGrace": "La copie hebdomadaire est remplacée chaque dimanche. Les copies téléversées restent jusqu’à l’effacement de leur compte.",
+        "database": {
+          "title": "Dump de la base de données",
+          "lastGood": "Dernier dump valide {when}, {size}, {where}.",
+          "whereBoth": "conservé sur ce serveur et hors site",
+          "whereLocal": "conservé sur ce serveur",
+          "whereOffhost": "hors site uniquement",
+          "none": "Aucun dump de la base de données pour l'instant. Le premier a lieu cette nuit.",
+          "failedTitle": "Le dernier dump de la base de données a échoué",
+          "failedDescription": "{when} : {reason}",
+          "disabled": "Les dumps de la base de données sont désactivés (DB_BACKUP_ENABLED=false). Sauvegardez la base de données autrement.",
+          "noDirectoryOffhost": "Ce serveur ne peut pas écrire dans {dir} : les dumps partent uniquement hors site et aucun n'est conservé ici. Montez le volume de sauvegarde.",
+          "noDirectory": "Ce serveur ne peut pas écrire dans {dir} et aucun stockage hors site n'est configuré : aucun dump ne peut être fait. Montez le volume de sauvegarde.",
+          "retentionLocal": "Les comptes supprimés restent dans les dumps jusqu'à leur expiration : ce serveur conserve les {nights} dumps nocturnes les plus récents, et le dump pris avant la dernière mise à jour reste jusqu'à la suivante.",
+          "retentionOffhost": "La règle de cycle de vie du bucket supprime les copies hors site après {days} jours.",
+          "retentionOffhostMissing": "Aucune règle de cycle de vie du bucket ne couvre database/ : les dumps qui s'y trouvent, et les comptes supprimés qu'ils contiennent, ne sont jamais effacés. Ajoutez une règle pour ce préfixe.",
+          "notPersistentOffhost": "{dir} n'est pas sur un stockage persistant (il se trouve dans le conteneur et non sur un volume monté, ou en mémoire) : un dump écrit là serait perdu à la prochaine mise à jour. Les dumps partent uniquement hors site : aucun n'est conservé ici et aucun n'est pris avant une migration. Montez le volume de sauvegarde.",
+          "notPersistent": "{dir} n'est pas sur un stockage persistant (il se trouve dans le conteneur et non sur un volume monté, ou en mémoire) et aucun bucket hors site n'est configuré : aucun dump de la base n'est conservé nulle part. Montez le volume de sauvegarde.",
+          "offhostFailedTitle": "Le dump le plus récent de la base de données n'est pas arrivé dans le bucket externe",
+          "offhostLastUpload": "Le dump le plus récent du bucket date du {when}.",
+          "offhostNeverUploaded": "Aucun dump de la base de données n'est encore arrivé dans le bucket."
+        },
+        "restorePreWipeLimits": "Cette copie a été prise avant la suppression des données du compte, et la restaurer annule cette suppression autant qu’une copie le peut : ce que le compte a ajouté depuis est remplacé, et les connexions d’intégration, les partages, l’accès des personnes responsables et les liens de partage ne reviennent pas."
       },
       "danger-zone": {
         "title": "Zone de danger",
@@ -8362,7 +8425,10 @@
         "columnsHide": "Masquer le tableau",
         "columnsShowAll": "Afficher les {count} colonnes",
         "columnsShowWithRows": "Seulement les colonnes avec des lignes",
-        "columnsNoneWithRows": "Aucune colonne chiffrée ne contient encore de lignes."
+        "columnsNoneWithRows": "Aucune colonne chiffrée ne contient encore de lignes.",
+        "backupsDumpLocalLine": "Clé {key} : {count} dumps de la base de données sur ce serveur ont été écrits avec elle ; elle est nécessaire jusqu'à ce que la rétention les supprime.",
+        "backupsDumpOffhostLine": "Clé {key} : le dump de la base de données le plus récent écrit avec elle est arrivé dans le bucket le {when} ; nécessaire jusqu'au {until}",
+        "backupsDumpOffhostLineUnknown": "Clé {key} : le dump de la base de données le plus récent écrit avec elle est arrivé dans le bucket le {when}. La durée de conservation de database/ dans le bucket est inconnue : gardez la clé jusqu'à être sûr que ce dump a disparu."
       },
       "maintenance": {
         "title": "Maintenance de la table des mesures",
@@ -8492,47 +8558,6 @@
       "title": "Cette partie de la page n’a pas pu s’afficher",
       "description": "Le reste de la page fonctionne ; réessayez ou rechargez si le problème persiste."
     },
-    "keyBackup": {
-      "title": "Sauvegarde ta clé de chiffrement",
-      "description": "Sans copie de cette clé, tes données chiffrées et les sauvegardes de ce serveur ne pourront plus être lues.",
-      "loading": "Chargement de l'état de la sauvegarde de la clé…",
-      "loadError": "Impossible de charger l'état de la sauvegarde de la clé.",
-      "badgeDue": "À faire",
-      "badgeDone": "Sauvegardée",
-      "keyId": "ID de la clé active",
-      "fingerprint": "Empreinte",
-      "whatIsLost": "Garde une copie de la clé en dehors de ce serveur, par exemple dans un gestionnaire de mots de passe. Si le serveur est réinstallé avec une autre clé, HealthLog ne sert plus rien tant que la clé d'origine n'est pas revenue.",
-      "fingerprintHint": "L'empreinte correspond aux 12 premiers caractères du hachage SHA-256 de la clé. Elle identifie la clé sans la révéler, pour que tu puisses la comparer à ta copie.",
-      "checkLabel": "Vérifier ma copie",
-      "checkButton": "Vérifier",
-      "checkNote": "La clé collée est comparée à la clé active puis oubliée. Elle n'est jamais stockée ni journalisée.",
-      "checkInsecureNote": "Cette page n'est pas servie en https://, donc la clé collée traverse le réseau en clair, comme ton mot de passe. Elle est comparée puis oubliée, jamais stockée ni journalisée.",
-      "checkMatches": "Ta copie correspond à la clé active.",
-      "checkNoMatch": "Ta copie ne correspond pas à la clé active. Vérifie que tu as copié toute la valeur.",
-      "checkFailed": "La vérification a échoué.",
-      "confirmButton": "J'ai sauvegardé cette clé",
-      "confirmed": "Sauvegarde de la clé confirmée.",
-      "confirmFailed": "Impossible d'enregistrer la confirmation.",
-      "stale": "La clé du serveur a changé depuis le chargement de cette page. Vérifie le nouvel ID et l'empreinte, puis confirme à nouveau.",
-      "confirmedAt": "Confirmée le {date}.",
-      "confirmedAtBy": "Confirmée le {date} par {who}.",
-      "dueAgain": "Une sauvegarde a été confirmée pour la clé {keyId}, mais le serveur utilise maintenant une autre clé. Sauvegarde la clé actuelle.",
-      "tileLabel": "Sauvegarde de la clé de chiffrement",
-      "tileDue": "Non confirmée",
-      "tileDone": "Confirmée",
-      "platform": {
-        "composeLabel": "Compose",
-        "composeWhere": "La clé est ENCRYPTION_KEY (ou ENCRYPTION_KEYS) dans le fichier .env à côté de docker-compose.yml.",
-        "truenasLabel": "TrueNAS",
-        "truenasWhere": "Ouvre Apps, sélectionne HealthLog, choisis Modifier et copie ENCRYPTION_KEY dans les variables d'environnement.",
-        "coolifyLabel": "Coolify",
-        "coolifyWhere": "Ouvre l'application dans Coolify et copie ENCRYPTION_KEY depuis ses Environment Variables.",
-        "unraidLabel": "Unraid",
-        "unraidWhere": "Dans l'onglet Docker, modifie le conteneur HealthLog et copie ENCRYPTION_KEY depuis le modèle, ou depuis le .env de ta pile Compose Manager.",
-        "portainerLabel": "Portainer",
-        "portainerWhere": "Ouvre la pile HealthLog dans Portainer et copie ENCRYPTION_KEY depuis ses variables d'environnement."
-      }
-    },
     "keyMismatch": {
       "title": "HealthLog ne peut pas ouvrir ses données",
       "body": "La clé de chiffrement avec laquelle ce serveur a démarré n'est pas celle avec laquelle sa base de données a été écrite. Pour protéger tes données, HealthLog ne sert rien tant que ce n'est pas corrigé.",
@@ -8563,6 +8588,185 @@
       "defaultAboveCeiling": "Le niveau par défaut ne peut pas dépasser le niveau le plus élevé.",
       "gapLabel": "Heures entre deux mises à jour des cartes après une synchronisation (Standard)",
       "gapHint": "Heures entières de 1 à 48. Laissez vide pour utiliser AI_SYNC_REGEN_GAP_HOURS, sinon 6. En vigueur : {hours} h."
+    },
+    "recoveryKit": {
+      "title": "Kit de récupération",
+      "description": "Chaque clé nécessaire à la restauration de ce serveur, avec son ID et son empreinte.",
+      "intro": "Gardez une copie de chaque clé ci-dessous en dehors de ce serveur, par exemple dans un gestionnaire de mots de passe. Sans elles, ni un dump de la base de données ni une copie de sauvegarde ne peuvent être relus, et HealthLog refuse de démarrer s'il manque une clé dont il a besoin.",
+      "loading": "Chargement du kit de récupération…",
+      "loadError": "Impossible de charger le kit de récupération.",
+      "badgeDue": "À faire",
+      "badgeDone": "Sauvegardé",
+      "keyId": "ID",
+      "fingerprint": "Empreinte",
+      "noFingerprint": "Absente de ce serveur",
+      "kind": {
+        "application": "Clé d'application {id}",
+        "backup": "Clé des sauvegardes hors hôte",
+        "backupPrevious": "Ancienne clé des sauvegardes hors hôte",
+        "token": "Clé des jetons"
+      },
+      "need": {
+        "active": "Chiffre les nouvelles données.",
+        "configured": "Présente sur ce serveur.",
+        "storedCopies": "Nécessaire à {count} copies stockées.",
+        "offhostUntil": "Nécessaire aux copies hors hôte jusqu'au {date}.",
+        "offhostUnknown": "Nécessaire aux copies hors hôte tant que le bucket les conserve.",
+        "backupActive": "Scelle chaque nouvelle copie hors hôte.",
+        "backupPrevious": "Ouvre les copies hors hôte écrites avant le dernier changement de clé.",
+        "token": "Signe les sessions, les jetons et les liens de partage. Sans elle, tout le monde est déconnecté, mais aucune donnée n'est perdue.",
+        "localDumps": "Nécessaire à {count} dumps de la base de données sur ce serveur.",
+        "offhostDumpsUntil": "Nécessaire aux dumps de la base de données hors hôte jusqu'au {date}.",
+        "offhostDumpsUnknown": "Nécessaire aux dumps de la base de données hors hôte tant que le bucket les conserve."
+      },
+      "source": "Définie dans {variable}.",
+      "status": {
+        "confirmed": "Sauvegardée",
+        "new": "Pas encore sauvegardée",
+        "notConfigured": "Absente de ce serveur",
+        "unreadable": "Clé non valide"
+      },
+      "notConfiguredHint": "Une sauvegarde a encore besoin de cette clé et ce serveur ne l'a pas. Seule une copie que vous conservez ailleurs peut lire ces sauvegardes. Confirmez le kit une fois que vous avez cette copie.",
+      "unreadableHint": "La variable est définie mais ne contient pas de clé valide. Corrigez-la avant de vous fier aux copies hors hôte.",
+      "fingerprintHint": "L'empreinte correspond aux 12 premiers caractères du hachage SHA-256 d'une clé. Elle identifie la clé sans la révéler, pour que vous puissiez la comparer à votre copie.",
+      "whereTitle": "Où les clés sont définies",
+      "platform": {
+        "composeLabel": "Compose",
+        "composeWhere": "Les clés se trouvent dans le fichier .env à côté de docker-compose.yml : ENCRYPTION_KEY ou ENCRYPTION_KEYS, API_TOKEN_HMAC_KEY et, avec les copies hors hôte, BACKUP_ENCRYPTION_KEY.",
+        "truenasLabel": "TrueNAS",
+        "truenasWhere": "Ouvrez Apps, sélectionnez HealthLog et choisissez Edit. Les clés se trouvent sous HealthLog Configuration ; pour une app installée via YAML, ce sont ENCRYPTION_KEY, API_TOKEN_HMAC_KEY et BACKUP_ENCRYPTION_KEY dans les paramètres d'environnement.",
+        "coolifyLabel": "Coolify",
+        "coolifyWhere": "Ouvrez l'application dans Coolify et copiez ENCRYPTION_KEY, API_TOKEN_HMAC_KEY et BACKUP_ENCRYPTION_KEY depuis ses Environment Variables.",
+        "unraidLabel": "Unraid",
+        "unraidWhere": "Dans l'onglet Docker, modifiez le conteneur HealthLog et copiez ENCRYPTION_KEY, API_TOKEN_HMAC_KEY et BACKUP_ENCRYPTION_KEY depuis le modèle, ou depuis le .env de votre pile Compose Manager.",
+        "portainerLabel": "Portainer",
+        "portainerWhere": "Ouvrez la pile HealthLog dans Portainer et copiez ENCRYPTION_KEY, API_TOKEN_HMAC_KEY et BACKUP_ENCRYPTION_KEY depuis ses variables d'environnement."
+      },
+      "restoreTitle": "Restaurer ce serveur",
+      "restoreBody": "Installez HealthLog avec les mêmes clés, restaurez le dump de la base de données le plus récent dans une base vide, puis démarrez l'app. Le guide détaille chaque étape.",
+      "restoreLink": "Guide de reprise après sinistre",
+      "checkLabel": "Vérifier ma copie",
+      "checkKeyLabel": "Clé à vérifier",
+      "checkValueLabel": "Votre copie de la clé",
+      "checkButton": "Vérifier",
+      "checkNote": "La clé collée est comparée à celle que détient ce serveur puis oubliée. Elle n'est jamais stockée ni journalisée.",
+      "checkInsecureNote": "Cette page n'est pas servie en https://, donc la clé collée traverse le réseau en clair, comme votre mot de passe. Elle est comparée puis oubliée, jamais stockée ni journalisée.",
+      "checkMatches": "Votre copie correspond à cette clé.",
+      "checkNoMatch": "Votre copie ne correspond pas à cette clé. Vérifiez que vous avez copié toute la valeur.",
+      "checkFailed": "La vérification a échoué.",
+      "confirmButton": "J'ai une copie de chaque clé",
+      "confirmed": "Kit de récupération confirmé.",
+      "confirmFailed": "Impossible d'enregistrer la confirmation.",
+      "stale": "Le kit a changé depuis le chargement de cette page. Vérifiez les clés qu'il liste maintenant, puis confirmez à nouveau.",
+      "confirmedAt": "Confirmé le {date}.",
+      "confirmedAtBy": "Confirmé le {date} par {who}.",
+      "dueAgain": "Le kit a été confirmé le {date}. Il liste désormais aussi {keys}, que cette confirmation ne couvrait pas. Sauvegardez une copie de chacune et confirmez à nouveau."
+    },
+    "recoveryReadiness": {
+      "title": "Capacité de restauration",
+      "description": "Indique si ce serveur pourrait être remis en route après une perte, d'après chaque sauvegarde qu'il réalise.",
+      "loading": "Vérification des sauvegardes…",
+      "loadError": "Impossible de charger la capacité de restauration.",
+      "state": {
+        "ok": "Prêt",
+        "attention": "Demande de l'attention",
+        "failing": "Menacé"
+      },
+      "signal": {
+        "database_dump": "Dump de la base de données",
+        "weekly_copy": "Copies hebdomadaires des comptes",
+        "offhost_copies": "Copies hors hôte",
+        "restore_drill": "Test de restauration",
+        "offhost_setup": "Sauvegarde hors hôte",
+        "recovery_kit": "Kit de récupération",
+        "dump_retention": "Dumps dans le bucket"
+      },
+      "at": {
+        "database_dump": "Dump le plus récent : {date}",
+        "weekly_copy": "Copie de compte la plus ancienne : {date}",
+        "offhost_copies": "Copie hors hôte la plus ancienne : {date}",
+        "restore_drill": "Dernier test : {date}",
+        "recovery_kit": "Confirmé : {date}"
+      },
+      "dueBy": "À faire avant le {date}",
+      "fix": {
+        "database_dump": "Ouvrir les sauvegardes",
+        "weekly_copy": "Ouvrir les sauvegardes",
+        "offhost_copies": "Ouvrir les sauvegardes",
+        "restore_drill": "Ouvrir les sauvegardes",
+        "offhost_setup": "Ouvrir les sauvegardes",
+        "recovery_kit": "Ouvrir le kit",
+        "dump_retention": "Ouvrir les sauvegardes"
+      },
+      "reason": {
+        "database_dump": {
+          "not_available": "Cette version ne planifie pas de dump de la base de données.",
+          "disabled": "Le dump planifié de la base de données est désactivé, donc aucune copie ne peut reconstruire ce serveur. Pour le réactiver, supprimez DB_BACKUP_ENABLED ou mettez-le à true, puis redémarrez HealthLog.",
+          "unreadable": "L'état du dump de la base de données n'a pas pu être lu.",
+          "never_succeeded": "Aucun dump de la base de données n'a encore réussi, et la dernière tentative a échoué.",
+          "never_ran": "Aucun dump de la base de données n'a été écrit dans les {hours} heures écoulées depuis l'activation des dumps.",
+          "first_pending": "Le premier dump de la base de données n'a pas encore été lancé.",
+          "stale": "Le dump de la base de données le plus récent date de {hours} heures.",
+          "last_failed": "Le dernier dump de la base de données a échoué. Le précédent est encore récent.",
+          "fresh": "Le dernier dump de la base de données est récent.",
+          "nowhere_to_write": "Le dossier des dumps {directory} n'est pas accessible en écriture et aucun bucket externe n'est configuré, donc aucun dump ne peut être conservé.",
+          "not_persistent": "Le répertoire des dumps {directory} n'est pas sur un stockage persistant et aucun bucket hors site n'est configuré : chaque dump serait perdu à la prochaine mise à jour. Montez le volume de sauvegarde.",
+          "fresh_offhost_only": "Le dump de base le plus récent est à jour et se trouve dans le bucket hors site. Aucun n'est conservé sur ce serveur, car {directory} n'est pas sur un stockage persistant, et aucun n'est pris avant une migration.",
+          "offhost_failed": "Le dump le plus récent de la base de données est conservé sur ce serveur, mais son envoi vers le bucket externe a échoué.",
+          "offhost_stale": "Aucun dump de la base de données n'est arrivé dans le bucket externe depuis {hours} heures : les envois échouent à chaque fois. Si ce serveur est perdu, aucun dump récent ne permet de le reconstruire.",
+          "offhost_never": "Aucun dump de la base de données n'est jamais arrivé dans le bucket externe : l'envoi échoue. Si ce serveur est perdu, aucun dump ne permet de le reconstruire."
+        },
+        "weekly_copy": {
+          "no_accounts": "Il n'y a pas encore de compte à copier.",
+          "stale": "La copie hebdomadaire la plus ancienne date de {days} jours. Comptes en retard : {accounts}.",
+          "never": "Un compte n'a pas eu de copie hebdomadaire depuis {days} jours. Comptes en retard : {accounts}.",
+          "first_pending": "La première copie hebdomadaire est faite tôt le dimanche matin.",
+          "fresh": "Chaque compte a une copie de la semaine dernière."
+        },
+        "offhost_copies": {
+          "not_configured": "Aucun bucket hors hôte n'est configuré.",
+          "stale": "Les copies hors hôte ont plus de deux nuits de retard. Comptes en retard : {accounts}.",
+          "first_pending": "L'envoi nocturne hors hôte n'a encore atteint aucun compte.",
+          "fresh": "Chaque compte a une copie récente dans le bucket hors hôte."
+        },
+        "restore_drill": {
+          "not_configured": "Le test lit le bucket hors hôte, qui n'est pas configuré.",
+          "not_run_yet": "Le test de restauration mensuel n'a pas encore été lancé.",
+          "failed": "Le dernier test de restauration a échoué : {failed} copies sur {checked} n'ont pas pu être relues.",
+          "failed_run": "Le dernier test de restauration n'a pas pu aller jusqu'au bout.",
+          "passed": "Le dernier test de restauration a relu {checked} copies.",
+          "nothing_checked": "Le dernier test de restauration s'est arrêté sur sa limite de temps avant de relire une seule copie : il n'a rien prouvé."
+        },
+        "offhost_setup": {
+          "configured": "Les copies quittent ce serveur chaque nuit.",
+          "no_admin": "Il n'y a pas encore de compte administrateur.",
+          "not_configured": "Aucun bucket hors hôte n'est configuré, donc chaque copie se trouve uniquement sur ce serveur.",
+          "not_configured_grace": "Aucun bucket hors hôte n'est encore configuré, donc chaque copie se trouve uniquement sur ce serveur."
+        },
+        "recovery_kit": {
+          "confirmed": "Une copie de chaque clé nécessaire à une restauration est conservée.",
+          "out_of_date": "Le kit de récupération liste désormais aussi {keys}, que la dernière confirmation ne couvrait pas. Rien n'est cassé : sauvegardez une copie et confirmez à nouveau le kit.",
+          "no_admin": "Il n'y a pas encore de compte administrateur.",
+          "not_confirmed": "Personne n'a confirmé de copie des clés nécessaires à une restauration : {keys}.",
+          "not_confirmed_grace": "Sauvegardez une copie des clés nécessaires à une restauration : {keys}."
+        },
+        "dump_retention": {
+          "not_configured": "Aucun bucket hors site n'est configuré.",
+          "no_offhost_dumps": "Aucun dump de la base ne part dans le bucket.",
+          "missing": "Aucune règle de cycle de vie du bucket ne couvre database/ : les dumps qui s'y trouvent, et les comptes supprimés qu'ils contiennent, ne sont jamais effacés. Ajoutez une règle pour ce préfixe.",
+          "configured": "Le bucket efface les dumps au bout de {days} jours.",
+          "unknown": "Le bucket n'indique pas si une règle efface les anciens dumps. Vérifiez qu'une règle de cycle de vie couvre database/."
+        }
+      },
+      "recovered": {
+        "database_dump": "Le dump de la base de données est de nouveau récent.",
+        "weekly_copy": "Chaque compte a de nouveau une copie hebdomadaire récente.",
+        "offhost_copies": "Chaque compte a de nouveau une copie hors hôte récente.",
+        "restore_drill": "Le test de restauration réussit de nouveau.",
+        "offhost_setup": "Les copies hors hôte sont maintenant configurées.",
+        "recovery_kit": "Le kit de récupération est de nouveau confirmé.",
+        "dump_retention": "Une règle de cycle de vie du bucket couvre désormais les dumps de la base."
+      }
     }
   },
   "achievements": {
@@ -8876,7 +9080,10 @@
       "offlineGeoUnavailableTitle": "Bases de géolocalisation hors ligne non chargées",
       "offlineGeoUnavailableBody": "HealthLog résout les localisations de connexion via la requête en ligne vers {host}, donc chaque adresse IP de connexion quitte ce serveur. Pour les résoudre localement, téléchargez les bases GeoLite2-City et GeoLite2-ASN avec un compte MaxMind gratuit, montez le répertoire dans le conteneur et faites-y pointer GEOLITE2_DIR. Étapes : {docsUrl}",
       "tlsPinChangedTitle": "Certificat feuille TLS modifié : {host}",
-      "tlsPinChangedBody": "La feuille TLS servie par {host} a maintenant le pin SPKI {servedPin}, qui ne figure pas dans l'ensemble de pins connus. Les clients épinglés (l'app native) ne pourront plus se connecter une fois l'ancien pin disparu. Réextrayez le nouveau pin de la feuille, ajoutez-le à TLS_LEAF_SPKI_PINS et à l'ensemble de pins du client natif, et publiez une version avant l'expiration de ce certificat le {validTo}. Voir docs/ops/tls-cert-pin.md."
+      "tlsPinChangedBody": "La feuille TLS servie par {host} a maintenant le pin SPKI {servedPin}, qui ne figure pas dans l'ensemble de pins connus. Les clients épinglés (l'app native) ne pourront plus se connecter une fois l'ancien pin disparu. Réextrayez le nouveau pin de la feuille, ajoutez-le à TLS_LEAF_SPKI_PINS et à l'ensemble de pins du client natif, et publiez une version avant l'expiration de ce certificat le {validTo}. Voir docs/ops/tls-cert-pin.md.",
+      "accountErasureRefusedTitle": "Le compte n’a pas pu être effacé : {username}",
+      "accountErasureRefusedBody": "Le délai de suppression de {username} est écoulé, mais ce compte est la dernière personne responsable active d’un profil géré : il n’a donc pas été effacé. Il reste verrouillé. Ajoutez une autre personne responsable au profil, supprimez le profil ou annulez la suppression dans Administration, Utilisateurs.",
+      "accountErasureFailedBody": "Le délai de suppression de {username} est écoulé, mais l’effacement du compte a échoué. Il reste verrouillé et une nouvelle tentative a lieu chaque heure, après les autres comptes en attente. L’erreur figure dans la carte des tâches en échec, dans Administration."
     },
     "user": {
       "telegramTestBody": "HealthLog: connexion réussie. Les notifications Telegram sont actives."
@@ -9028,6 +9235,14 @@
     "checkupReminders": {
       "title": "Rappels de bilans",
       "description": "Activez ou désactivez chaque rappel de bilan."
+    },
+    "eventBackupHealth": "État des sauvegardes",
+    "eventBackupHealthDesc": "Quand une sauvegarde s'arrête, prend du retard ou repart. Envoyé uniquement aux administrateurs.",
+    "recoveryReadiness": {
+      "titleAttention": "Les sauvegardes demandent de l'attention",
+      "titleFailing": "Les sauvegardes sont menacées",
+      "titleReminder": "Les sauvegardes sont toujours menacées",
+      "titleRecovered": "Les sauvegardes sont revenues à la normale"
     }
   },
   "i18n": {
@@ -10947,12 +11162,6 @@
       "who5": "Test de bien-être, 5 questions",
       "sci": "Test de sommeil, 8 questions"
     },
-    "gad7Options": {
-      "0": "Jamais",
-      "1": "Plusieurs jours",
-      "2": "Plus de la moitié du temps",
-      "3": "Presque tous les jours"
-    },
     "functionalOptionalHint": "Facultatif : tu peux envoyer sans répondre à cette question.",
     "result": {
       "title": "Ton résultat",
@@ -11001,24 +11210,6 @@
       "intro": "Tu as indiqué des pensées qu'il vaudrait mieux être mort(e) ou de te faire du mal. De l'aide est disponible dès maintenant, et demander de l'aide est un signe de force.",
       "ifDanger": "Si tu es en danger immédiat, appelle le {emergency} maintenant.",
       "resourcesTitle": "Des personnes qui peuvent aider"
-    },
-    "items": {
-      "gad7": {
-        "1": "Un sentiment de nervosité, d’anxiété ou de tension",
-        "2": "Une incapacité à arrêter de s’inquiéter ou à contrôler ses inquiétudes",
-        "3": "Une inquiétude excessive à propos de différentes choses",
-        "4": "Des difficultés à se détendre",
-        "5": "Une agitation telle qu’il est difficile à tenir en place",
-        "6": "Une tendance à être facilement contrarié(e) ou irritable",
-        "7": "Un sentiment de peur comme si quelque chose de terrible risquait de se produire"
-      },
-      "who5": {
-        "1": "Je me suis senti(e) bien et de bonne humeur",
-        "2": "Je me suis senti(e) calme et tranquille",
-        "3": "Je me suis senti(e) plein(e) d'énergie et vigoureux(se)",
-        "4": "Je me suis réveillé(e) en me sentant frais(che) et dispos(e)",
-        "5": "Ma vie quotidienne a été remplie de choses intéressantes"
-      }
     },
     "crisisResource": {
       "telefonSeelsorge": {
@@ -11078,23 +11269,6 @@
       "who5": "Un score de bien-être de 50 ou moins peut mériter un regard plus attentif. Si tu le souhaites, le PHQ-9 sur cette page explore l'humeur plus en détail. C'est une suggestion bienveillante, pas un diagnostic.",
       "sci": "Dans l'étude de ce questionnaire, des scores de 16 ou moins étaient associés à une insomnie probable. Si un mauvais sommeil continue de te peser, parler à un professionnel de santé peut aider. Ce n'est pas un diagnostic."
     },
-    "validatedInEnglishNote": "Ce questionnaire est validé en anglais ; les questions sont affichées dans leur version originale anglaise.",
-    "who5Options": {
-      "0": "Jamais",
-      "1": "De temps en temps",
-      "2": "Moins de la moitié du temps",
-      "3": "Plus de la moitié du temps",
-      "4": "La plupart du temps",
-      "5": "Tout le temps"
-    },
-    "stems": {
-      "gad7": {
-        "period": "Au cours des 2 dernières semaines, selon quelle fréquence avez-vous été gêné(e) par les problèmes suivants ?"
-      },
-      "who5": {
-        "period": "Au cours des deux dernières semaines"
-      }
-    },
     "openDetail": "Voir les détails",
     "historyLoadError": "Ton historique d'évaluations n'a pas pu être chargé",
     "historyLoadErrorHint": "Cela ne veut pas dire que tu n'as aucun résultat : la liste n'a pas pu être récupérée. Réessaie.",
@@ -11144,6 +11318,13 @@
         "belowThreshold": "Votre sommeil du dernier mois se situait dans la zone où l’étude à l’origine de ce questionnaire jugeait une insomnie probable.",
         "aboveThreshold": "Votre sommeil du dernier mois se situait en dehors de la zone que cette étude associe à l’insomnie."
       }
+    },
+    "wording": {
+      "unvalidatedNote": "Cette traduction n’a pas été validée scientifiquement ; considérez le résultat comme une indication.",
+      "showOriginal": "Afficher le texte original en anglais",
+      "showTranslation": "Afficher la traduction",
+      "resultUnvalidated": "Réponses données dans une traduction qui n’a pas été validée scientifiquement ; considérez le résultat comme une indication.",
+      "historyUnvalidated": "Réponses données dans une traduction non validée scientifiquement"
     }
   },
   "records": {
@@ -11671,7 +11852,8 @@
     "toast": {
       "duplicate": "Déjà enregistré. Le document existant est mis en évidence.",
       "deleted": "Document supprimé",
-      "restoreFailed": "Impossible de restaurer le document."
+      "restoreFailed": "Impossible de restaurer le document.",
+      "deletedHint": "Les documents supprimés restent {days} jours dans Supprimés récemment."
     },
     "timeline": {
       "loadingMore": "Chargement…",
@@ -11716,7 +11898,8 @@
           "raster-failed": "Les pages du PDF n’ont pas pu être rendues pour la lecture. Les formats de compression de fax numérisés en sont une cause connue.",
           "provider-error": "Le fournisseur d’IA n’a pas pu lire ce document lors de la dernière tentative.",
           "pdf-needs-anthropic": "Le fournisseur d’IA configuré ne peut pas lire les fichiers PDF. Un fournisseur Claude ou l’OCR local le peut.",
-          "empty-transcription": "Le fournisseur d’IA n’a renvoyé aucun texte pour ce document."
+          "empty-transcription": "Le fournisseur d’IA n’a renvoyé aucun texte pour ce document.",
+          "resource-limit": "Ce PDF est trop volumineux ou trop complexe pour être lu ici. Le fichier lui-même est intact et s'ouvre toujours."
         }
       },
       "loadError": "Impossible de charger ce document.",
@@ -11788,7 +11971,7 @@
       "dismiss": "Ignorer",
       "empty": "Impossible de lire ce document.",
       "unavailableBody": "Configurez un fournisseur d'IA pour suggérer un titre, un type et une date.",
-      "unavailableLocalOcr": "Activez l'OCR local dans les paramètres d'IA pour lire les images sur cet appareil.",
+      "unavailableLocalOcr": "Activez « Lire les scans sur cet appareil » dans Paramètres → Modules → Analyses pour lire les images sur cet appareil.",
       "unavailableAction": "Ouvrir les paramètres d'IA",
       "errorGeneric": "Impossible de lire le document. Réessayez.",
       "errorOcr": "Impossible de lire le texte de cette image.",
@@ -11800,11 +11983,13 @@
       "errorPdfNeedsVision": "La lecture des PDF nécessite un fournisseur de vision Claude.",
       "errorFileType": "Ce type de fichier ne peut pas être lu.",
       "errorNotIndexed": "Lisez d’abord le document, puis extrayez.",
-      "errorLocalOcrDisabled": "Activez d'abord l'OCR local dans les paramètres d'IA.",
+      "errorOutputLimit": "Le fournisseur d’IA a atteint sa limite de sortie avant de renvoyer la moindre valeur. Essayez un modèle qui accepte des réponses plus longues.",
+      "errorLocalOcrDisabled": "Activez d'abord « Lire les scans sur cet appareil » dans Paramètres → Modules → Analyses.",
       "errorProvider": "Aucun fournisseur d'IA n'est configuré pour cela.",
       "errorTextImageOnly": "L'OCR local ne lit que les images, pas ce fichier.",
       "errorConsent": "La lecture de documents par IA nécessite d'abord votre consentement.",
-      "errorUnavailable": "La lecture de documents par IA n'est pas disponible ici pour le moment."
+      "errorUnavailable": "La lecture de documents par IA n'est pas disponible ici pour le moment.",
+      "unavailableLocalOcrAction": "Ouvrir les paramètres des analyses"
     },
     "summary": {
       "summarise": "Résumer",
@@ -11860,6 +12045,7 @@
       "extracting": "Extraction…",
       "extractHint": "Utilise le texte déjà lu de ce document. Les valeurs extraites attendent votre vérification ; rien n’est enregistré automatiquement.",
       "extractEmpty": "Aucune valeur n’a pu être extraite de ce document.",
+      "extractIncomplete": "Une partie du document n’a pas pu être lue entièrement, des valeurs peuvent donc manquer. Comparez la liste avec le document.",
       "failUnitRequired": "Une valeur numérique a besoin d’une unité avant de pouvoir être enregistrée.",
       "failUnitMismatch": "L’unité indiquée ne correspond pas à l’unité enregistrée pour ce marqueur. Ajustez-la, puis terminez à nouveau la vérification.",
       "failGeneric": "Cette valeur n’a pas pu être enregistrée.",
@@ -11907,6 +12093,7 @@
       "loadMore": "Charger plus",
       "stateImported": "Dans HealthLog",
       "stateDeleted": "Supprimé dans HealthLog",
+      "stateInTrash": "Dans Supprimés récemment",
       "selectedCount": "{count} sélectionnés sur {max} au plus",
       "importAction": "Importer {count}",
       "importing": "Import en cours, un document après l'autre…",
@@ -11920,7 +12107,9 @@
         "importedLinked": "Importé et lié",
         "duplicate": "Déjà dans HealthLog",
         "duplicateLinked": "Déjà dans HealthLog, désormais lié",
-        "deleted": "Supprimé dans HealthLog, laissé tel quel"
+        "deleted": "Supprimé dans HealthLog, laissé tel quel",
+        "restored": "Restauré depuis Supprimés récemment",
+        "restoredLinked": "Restauré depuis Supprimés récemment et lié"
       },
       "errors": {
         "unavailable": "Les archives de documents ne sont pas activées sur ce serveur.",
@@ -11964,8 +12153,32 @@
     "deleteConfirm": {
       "titleOne": "Supprimer ce document ?",
       "titleMany": "Supprimer {count} documents ?",
-      "body": "Vous pouvez annuler juste après. Au bout de 30 jours, la suppression est définitive.",
+      "body": "Les documents supprimés restent {days} jours dans Supprimés récemment, puis ils sont supprimés définitivement.",
       "action": "Supprimer"
+    },
+    "trash": {
+      "title": "Supprimés récemment",
+      "subtitle": "Les documents supprimés restent ici {days} jours, puis ils sont supprimés définitivement.",
+      "back": "Documents",
+      "entryLabel": "Supprimés récemment ({count})",
+      "loadError": "Impossible de charger Supprimés récemment.",
+      "emptyTitle": "Rien dans Supprimés récemment",
+      "emptyDescription": "Ce que vous supprimez attend ici {days} jours avant d'être supprimé définitivement.",
+      "count": "Documents supprimés ({count})",
+      "restoreAll": "Tout restaurer",
+      "restore": "Restaurer",
+      "purge": "Supprimer maintenant",
+      "deletedOn": "Supprimé le {date}.",
+      "removesIn": "Supprimé définitivement dans {days} jours.",
+      "removesSoon": "Supprimé définitivement dans moins d'un jour.",
+      "restored": "Document restauré",
+      "openRestored": "Ouvrir",
+      "restoreDuplicate": "Un document identique est déjà enregistré, cette copie ne peut donc pas être restaurée.",
+      "restorePartial": "{failed} sur {total} n'ont pas pu être restaurés",
+      "purged": "Document supprimé définitivement",
+      "purgeFailed": "Impossible de supprimer le document.",
+      "purgeConfirmTitle": "Supprimer ce document définitivement ?",
+      "purgeConfirmBody": "Il est supprimé maintenant plutôt qu'à la fin du délai d'attente et ne peut pas être restauré."
     }
   },
   "selfDescription": {
@@ -12650,7 +12863,8 @@
         "entryHint": "Quand {name} souhaite tenir ce dossier de façon autonome.",
         "methodSso": "{name} se connecte par authentification unique en utilisant le lien.",
         "methodBoth": "{name} peut définir un mot de passe ou se connecter par authentification unique."
-      }
+      },
+      "deleteBodyGrace": "Tout ce qui a été enregistré pour {name} disparaît avec le profil : mesures, médicaments, documents et notes. Le profil est verrouillé immédiatement et effacé au bout de {days} jours. D’ici là, un administrateur de ce serveur peut annuler la suppression."
     },
     "toast": {
       "savedTo": "Enregistré dans le dossier de {name}"
@@ -12705,6 +12919,7 @@
       "practitionerContactRestore": "{name} a restauré une entrée du carnet d'adresses",
       "illnessDayLogUpsert": "{name} a enregistré une journée de maladie",
       "medicationUpdate": "{name} a modifié un médicament",
+      "medicationCourseEnd": "{name} a terminé un traitement",
       "medicationDelete": "{name} a supprimé un médicament",
       "medicationGlp1Update": "{name} a modifié un traitement GLP-1",
       "medicationScheduleCreate": "{name} a ajouté un schéma de prise",
@@ -12752,6 +12967,9 @@
       "rejectedDoseUpdate": "{name} a tenté de modifier une prise et a été refusé",
       "rejectedDoseImport": "{name} a tenté d'importer des prises et a été refusé",
       "rejectedTrackedValue": "{name} a tenté d'enregistrer une valeur personnalisée et a été refusé",
+      "rejectedTrackedValueTypeCreate": "{name} a tenté d'ajouter un type de valeur personnalisée et a été refusé",
+      "rejectedTrackedValueTypeUpdate": "{name} a tenté de modifier un type de valeur personnalisée et a été refusé",
+      "rejectedMedicationLayout": "{name} a tenté de réorganiser la liste des médicaments et a été refusé",
       "deniedDoseImport": "Un import de prises lancé par {name} n'a pas pu être mis en file",
       "anamnesisFactCreate": "{name} a ajouté un élément d'antécédents de santé",
       "customMetricCreate": "{name} a ajouté un type de valeur personnalisée",
@@ -13061,7 +13279,8 @@
     "backgroundScan": "Lecture en arrière-plan. Avec un modèle lent, cela peut prendre quelques minutes.",
     "waitingForWorker": "En attente du traitement en arrière-plan. Si rien ne change, le worker du serveur n'est peut-être pas lancé.",
     "errorWorkerUnavailable": "Le traitement en arrière-plan n'est pas disponible pour le moment. Réessayez dans un instant ou demandez à la personne qui gère le serveur de le vérifier.",
-    "errorTimedOut": "La lecture a pris plus de temps que votre délai de réponse IA ne le permet. Réessayez ou augmentez ce délai dans les réglages IA."
+    "errorTimedOut": "La lecture a pris plus de temps que votre délai de réponse IA ne le permet. Réessayez ou augmentez ce délai dans les réglages IA.",
+    "errorReaderBusy": "Le lecteur de documents est occupé par d'autres tâches. Réessayez dans une minute."
   },
   "symptoms": {
     "add": "Nouveau symptôme",

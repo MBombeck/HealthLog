@@ -41,7 +41,7 @@ import {
 } from "./metric-freshness";
 import { parseWithingsApiPlanState } from "@/lib/withings/api-plan";
 import { withingsPlanUnavailableFeatures } from "@/lib/withings/plan-features";
-import { hasActivityScope } from "@/lib/withings/client";
+import { hasActivityScope } from "@/lib/withings/oauth";
 import { readOuraScopeDenied } from "@/lib/oura/credentials";
 import { ouraScopeReconnectList } from "@/lib/oura/scope";
 import { localDayWindow } from "@/lib/tz/local-day";

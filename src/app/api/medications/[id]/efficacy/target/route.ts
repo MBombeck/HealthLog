@@ -1,12 +1,8 @@
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import {
-  apiSuccess,
-  apiError,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { efficacyTargetOverrideSchema } from "@/lib/validations/medication-efficacy";
 
@@ -32,15 +28,10 @@ export const PUT = apiHandler(
     const guard = await assertMedicationOwnership(id, user.id);
     if (guard) return guard;
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, efficacyTargetOverrideSchema, {
       maxBytes: 8 * 1024,
     });
-    if (jsonError) return jsonError;
-
-    const parsed = efficacyTargetOverrideSchema.safeParse(body);
-    if (!parsed.success) {
-      return returnAllZodIssues(parsed.error, 422);
-    }
+    if (!parsed.ok) return parsed.error;
     const { clear, measurementType, biomarkerId, primary } = parsed.data;
 
     // Clearing reverts to the derived resolution — drop every override row.

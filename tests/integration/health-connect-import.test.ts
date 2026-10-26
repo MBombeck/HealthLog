@@ -34,9 +34,9 @@ import { importHealthConnectExport } from "@/lib/import/health-connect/import";
 import { runDenseIntradayRetention } from "@/lib/measurements/dense-intraday-retention";
 import {
   HEALTH_CONNECT_IMPORT_KIND,
-  HEALTH_CONNECT_IMPORT_QUEUE,
   runHealthConnectImport,
 } from "@/lib/jobs/health-connect-import-worker";
+import { HEALTH_CONNECT_IMPORT_QUEUE } from "@/lib/jobs/health-connect-import-queue";
 import {
   _setWorkerPrismaForTests,
   reconcileOrphanImportJobs,

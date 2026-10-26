@@ -65,7 +65,10 @@ describe.each([
 describe("health chart wiring", () => {
   it("builds its fetch window from today's key, not the mount instant", () => {
     const chart = readFileSync(
-      join(process.cwd(), "src/components/charts/health-chart.tsx"),
+      join(
+        process.cwd(),
+        "src/components/charts/health-chart/use-health-chart-series.ts",
+      ),
       "utf8",
     );
     const memo = chart.slice(chart.indexOf("const fetchWindow = useMemo("));

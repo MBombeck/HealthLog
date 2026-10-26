@@ -31,9 +31,13 @@ describe("the bundled database pin", () => {
       ...read("docker-compose.yml").matchAll(/^\s*image:\s*(postgres:\S+)/gm),
     ].map((match) => match[1]);
 
-    expect(images.length).toBe(1);
-    // `postgres:16-alpine` or `postgres:16` would match a moving target.
-    expect(images[0]).toMatch(/^postgres:\d+\.\d+-alpine$/);
+    // The database itself and `db-upgrade`, which reads the Postgres 16 data
+    // of an install from v1.45 or earlier.
+    expect(images.length).toBe(2);
+    for (const image of images) {
+      // `postgres:18-alpine` or `postgres:18` would match a moving target.
+      expect(image).toMatch(/^postgres:\d+\.\d+-alpine$/);
+    }
   });
 
   it("lets a major version through only as a decision, never as an update PR", () => {

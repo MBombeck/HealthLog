@@ -5,9 +5,9 @@ import {
   apiError,
   getClientIp,
   returnAllZodIssues,
-  safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import {
   createMoodEntrySchema,
   listMoodEntriesSchema,
@@ -108,44 +108,39 @@ async function postMoodEntry(request: NextRequest) {
   // the `externalId` refusal below.
   const { user, actor } = await requireRecordAuth("manage", "mind");
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  // v1.4.43 — iOS mood log hot path; multi-issue 422 + audit
+  // breadcrumb keyed `mood-entries.create.validation-failed`.
+  const parsed = await parseJsonBody(request, createMoodEntrySchema, {
     maxBytes: 64 * 1024,
+    errorCode: "mood.create.invalid",
+    onInvalid: (error, body) => {
+      const shape = unstableExternalIdShape(body);
+      annotate({
+        action: { name: "mood-entries.create.validation-failed" },
+        meta: {
+          issue_count: error.issues.length,
+          ...(shape ? unstableExternalIdMeta("mood.create", [shape]) : {}),
+        },
+      });
+      // v1.4.49 — strip `message` from the audit-ledger row; the
+      // mood-create schema's free-text `note` + `tags` could land in a
+      // Zod issue message verbatim.
+      const auditIssues = sanitiseZodIssues(error.issues, {
+        stripValuesFromMessage: true,
+      });
+      // v1.37.0 — through `auditLog()` rather than a bare `prisma.auditLog
+      // .create`, because that helper is the only writer that stamps
+      // `actorUserId`. Filed under the resolved record either way; without the
+      // stamp a manager's malformed payload would read as the owner's own.
+      void auditLog("mood-entries.create.validation-failed", {
+        userId: user.id,
+        details: { issues: auditIssues },
+      }).catch(() => {
+        /* swallow — 422 response is the contract */
+      });
+    },
   });
-
-  if (jsonError) return jsonError;
-  const parsed = createMoodEntrySchema.safeParse(body);
-  if (!parsed.success) {
-    // v1.4.43 — iOS mood log hot path; multi-issue 422 + audit
-    // breadcrumb keyed `mood-entries.create.validation-failed`.
-    const issues = sanitiseZodIssues(parsed.error.issues);
-    const shape = unstableExternalIdShape(body);
-    annotate({
-      action: { name: "mood-entries.create.validation-failed" },
-      meta: {
-        issue_count: issues.length,
-        ...(shape ? unstableExternalIdMeta("mood.create", [shape]) : {}),
-      },
-    });
-    // v1.4.49 — strip `message` from the audit-ledger row; the
-    // mood-create schema's free-text `note` + `tags` could land in a
-    // Zod issue message verbatim.
-    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
-      stripValuesFromMessage: true,
-    });
-    // v1.37.0 — through `auditLog()` rather than a bare `prisma.auditLog
-    // .create`, because that helper is the only writer that stamps
-    // `actorUserId`. Filed under the resolved record either way; without the
-    // stamp a manager's malformed payload would read as the owner's own.
-    void auditLog("mood-entries.create.validation-failed", {
-      userId: user.id,
-      details: { issues: auditIssues },
-    }).catch(() => {
-      /* swallow — 422 response is the contract */
-    });
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "mood.create.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const {
     mood,

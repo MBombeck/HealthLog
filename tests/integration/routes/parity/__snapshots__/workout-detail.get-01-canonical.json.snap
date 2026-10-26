@@ -1,0 +1,188 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "id": "<id:1>",
+      "sportType": "running",
+      "startedAt": "2026-10-14T06:30:00.000Z",
+      "endedAt": "2026-10-14T06:46:00.000Z",
+      "dayKey": "2026-10-14",
+      "durationSec": 960,
+      "distanceM": 3200,
+      "activeEnergyKcal": 260,
+      "avgHr": 146,
+      "maxHr": 158,
+      "minHr": null,
+      "storedAvgHr": 146,
+      "storedMaxHr": 158,
+      "stepCount": null,
+      "elevationM": 6,
+      "pauseDurationSec": null,
+      "source": "APPLE_HEALTH",
+      "externalId": "hk-run-1",
+      "metadata": null,
+      "route": {
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              7.2162,
+              51.4818,
+              98
+            ],
+            [
+              7.2262,
+              51.4868,
+              104
+            ],
+            [
+              7.2383,
+              51.4929,
+              101
+            ]
+          ]
+        },
+        "sampleTimestamps": [
+          {
+            "t": "2026-10-14T06:30:00.000Z",
+            "hr": 120
+          },
+          {
+            "t": "2026-10-14T06:38:00.000Z",
+            "hr": 141
+          },
+          {
+            "t": "2026-10-14T06:46:00.000Z",
+            "hr": 150
+          }
+        ]
+      },
+      "samples": {
+        "sampleCount": 4,
+        "samples": [
+          {
+            "t": "2026-10-14T06:30:00.000Z",
+            "hr": 121
+          },
+          {
+            "t": "2026-10-14T06:35:00.000Z",
+            "hr": 142
+          },
+          {
+            "t": "2026-10-14T06:40:00.000Z",
+            "hr": 151
+          },
+          {
+            "t": "2026-10-14T06:45:00.000Z",
+            "hr": 147
+          }
+        ]
+      },
+      "hrSeries": {
+        "source": "workout_series",
+        "bucketSec": 5,
+        "points": [
+          {
+            "tSec": 0,
+            "mean": 121,
+            "min": 121,
+            "max": 121
+          },
+          {
+            "tSec": 300,
+            "mean": 142,
+            "min": 142,
+            "max": 142
+          },
+          {
+            "tSec": 600,
+            "mean": 151,
+            "min": 151,
+            "max": 151
+          },
+          {
+            "tSec": 900,
+            "mean": 147,
+            "min": 147,
+            "max": 147
+          }
+        ],
+        "envelope": false
+      },
+      "zones": {
+        "model": "tanaka",
+        "hrMax": 176,
+        "zones": [
+          {
+            "zone": 1,
+            "lowBpm": 88,
+            "highBpm": 106,
+            "seconds": 0
+          },
+          {
+            "zone": 2,
+            "lowBpm": 106,
+            "highBpm": 123,
+            "seconds": 5
+          },
+          {
+            "zone": 3,
+            "lowBpm": 123,
+            "highBpm": 141,
+            "seconds": 0
+          },
+          {
+            "zone": 4,
+            "lowBpm": 141,
+            "highBpm": 158,
+            "seconds": 15
+          },
+          {
+            "zone": 5,
+            "lowBpm": 158,
+            "highBpm": null,
+            "seconds": 0
+          }
+        ]
+      },
+      "splits": [
+        {
+          "km": 1,
+          "durationSec": 530,
+          "paceSecPerKm": 530
+        }
+      ],
+      "sportContext": {
+        "count": 1,
+        "avgDurationSec": 1800,
+        "avgDistanceM": 5000,
+        "avgAvgHr": 140
+      },
+      "aiInsight": null,
+      "ai": {
+        "available": false,
+        "reason": "no_provider",
+        "onDeviceAllowed": true
+      },
+      "canonicalId": "<id:1>",
+      "previousWorkoutId": "<id:2>"
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "workouts.detail.hr_series"
+      },
+      "meta": {
+        "workoutId": "<id:1>",
+        "source": "workout_series",
+        "points": 4
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": []
+}

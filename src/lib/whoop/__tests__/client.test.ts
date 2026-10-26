@@ -1,10 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  KJ_TO_KCAL,
-  WHOOP_FIELD_MAP,
-  WHOOP_OAUTH_SCOPE,
   WHOOP_PAGE_LIMIT,
-  exchangeCode,
   fetchBodyMeasurement,
   fetchRecoveryByCycleId,
   fetchSleepById,
@@ -15,16 +11,22 @@ import {
   fetchRecoveries,
   fetchSleeps,
   fetchWorkouts,
-  getAuthorizationUrl,
+} from "../client";
+import {
+  KJ_TO_KCAL,
+  WHOOP_FIELD_MAP,
   mapCycle,
   mapRecovery,
   mapSleep,
-  refreshAccessToken,
+} from "@/lib/whoop/map";
+import {
   type WhoopCycle,
   type WhoopRecovery,
   type WhoopSleep,
-} from "../client";
+} from "@/lib/whoop/wire-types";
+import { WHOOP_OAUTH_SCOPE } from "@/lib/whoop/oauth";
 import { WhoopApiError } from "../response-classifier";
+import { whoopOAuth } from "../oauth";
 
 const CREDS = { clientId: "cid", clientSecret: "csecret" };
 
@@ -50,7 +52,7 @@ afterEach(() => {
 
 describe("getAuthorizationUrl", () => {
   it("builds the v2 authorize URL with the offline scope and state", () => {
-    const url = getAuthorizationUrl("nonce123", CREDS);
+    const url = whoopOAuth.authorizationUrl("nonce123", CREDS);
     expect(url).toContain("api.prod.whoop.com/oauth/oauth2/auth");
     expect(url).toContain("response_type=code");
     expect(url).toContain("client_id=cid");
@@ -76,7 +78,7 @@ describe("token exchange + refresh", () => {
         },
       },
     ]);
-    const tok = await exchangeCode("code", CREDS);
+    const tok = await whoopOAuth.exchange("code", CREDS);
     expect(tok.access_token).toBe("at");
     expect(tok.refresh_token).toBe("rt");
     expect(tok.expires_in).toBe(3600);
@@ -89,7 +91,7 @@ describe("token exchange + refresh", () => {
         body: { access_token: "at2", refresh_token: "rt2", expires_in: 3600 },
       },
     ]);
-    const tok = await refreshAccessToken("rt1", CREDS);
+    const tok = await whoopOAuth.refresh("rt1", CREDS);
     expect(tok.refresh_token).toBe("rt2");
     const [, init] = fetchMock.mock.calls[0] as unknown as [
       string,
@@ -101,7 +103,7 @@ describe("token exchange + refresh", () => {
 
   it("throws a classified WhoopApiError on a 401 token response", async () => {
     installFetchMock([{ status: 401, body: { error: "invalid_grant" } }]);
-    await expect(exchangeCode("bad", CREDS)).rejects.toMatchObject({
+    await expect(whoopOAuth.exchange("bad", CREDS)).rejects.toMatchObject({
       name: "WhoopApiError",
       classification: "reauth_required",
     });

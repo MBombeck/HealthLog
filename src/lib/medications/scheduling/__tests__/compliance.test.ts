@@ -23,6 +23,7 @@ function ctx(
   return {
     startsOn: null,
     endsOn: null,
+    endedAt: null,
     oneShot: false,
     createdAt: d("2025-05-01T00:00:00Z"),
     lastIntakeAt: null,

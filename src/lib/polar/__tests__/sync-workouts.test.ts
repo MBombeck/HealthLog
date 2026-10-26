@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { PolarWorkoutRow } from "../client";
+import type { PolarWorkoutRow } from "@/lib/polar/map";
 
 const {
   createManyAndReturn,

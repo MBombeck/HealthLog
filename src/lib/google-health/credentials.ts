@@ -10,7 +10,7 @@
  */
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
-import type { GoogleHealthCredentials } from "./client";
+import type { GoogleHealthCredentials } from "./oauth";
 
 /**
  * Fetch and decrypt the user's Google Health API credentials.

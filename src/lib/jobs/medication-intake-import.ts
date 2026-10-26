@@ -9,9 +9,6 @@ import { jobBudget } from "@/lib/jobs/job-budget";
 import { enqueueSupplementNutrientRecompute } from "@/lib/medications/ingredients/recompute-job";
 import { consumeImportedIntakesBatch } from "@/lib/medications/inventory/consumption";
 import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
-
-export const MEDICATION_INTAKE_IMPORT_QUEUE = "medication-intake-import";
-export const MEDICATION_INTAKE_IMPORT_CONCURRENCY = 2;
 export const MEDICATION_INTAKE_IMPORT_CHUNK_SIZE = 100;
 export const MEDICATION_INTAKE_IMPORT_STALE_AFTER_MS = 15 * 60_000;
 

@@ -18,14 +18,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  apiValidationError,
-  getClientIp,
-  safeJson,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { decrypt, encrypt } from "@/lib/crypto";
 import { prisma } from "@/lib/db";
@@ -70,18 +64,11 @@ export const PUT = apiHandler(
       );
     }
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, documentSourceSaveSchema, {
       maxBytes: 8 * 1024,
+      message: "Invalid connection details",
     });
-    if (jsonError) return jsonError;
-    const parsed = documentSourceSaveSchema.safeParse(body);
-    if (!parsed.success) {
-      return apiValidationError(
-        "Invalid connection details",
-        sanitiseZodIssues(parsed.error.issues),
-        422,
-      );
-    }
+    if (!parsed.ok) return parsed.error;
 
     const verdict = evaluateSourceBaseUrl(parsed.data.baseUrl);
     if (!verdict.ok) {

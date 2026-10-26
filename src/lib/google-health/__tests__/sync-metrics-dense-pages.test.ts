@@ -46,10 +46,8 @@ vi.mock("@/lib/tz/resolver", () => ({
   resolveUserTimezone: vi.fn(async () => "UTC"),
 }));
 
-import {
-  GOOGLE_HEALTH_PAGE_SIZE,
-  runWithGoogleHealthClientOutcome,
-} from "../client";
+import { GOOGLE_HEALTH_PAGE_SIZE } from "@/lib/google-health/data-points";
+import { runWithGoogleHealthClientOutcome } from "@/lib/google-health/budget";
 import { syncUserMetrics } from "../sync-metrics";
 
 const PAGES = 3;

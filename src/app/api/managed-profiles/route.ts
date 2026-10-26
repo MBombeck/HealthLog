@@ -5,12 +5,8 @@ import {
   MFA_STEP_UP_MAX_AGE_SECONDS,
   requireFreshMfa,
 } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { createManagedProfile } from "@/lib/managed-profiles/create";
 import { toManagedProfileView } from "@/lib/managed-profiles/lifecycle";
@@ -48,13 +44,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   if (!rateLimit.allowed) {
     return apiError("Too many profiles created, try again later", 429);
   }
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, createManagedProfileSchema, {
     maxBytes: 64 * 1024,
   });
-  if (jsonError) return jsonError;
-
-  const parsed = createManagedProfileSchema.safeParse(body);
-  if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+  if (!parsed.ok) return parsed.error;
 
   const { profile, creatorGrant } = await createManagedProfile({
     creatorId: user.id,

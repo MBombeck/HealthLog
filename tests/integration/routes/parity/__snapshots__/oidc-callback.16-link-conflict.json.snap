@@ -1,0 +1,141 @@
+{
+  "status": 307,
+  "location": "http://localhost:3000/auth/login?error=oidc_identity_conflict",
+  "setCookies": [
+    "oidc_auth_state=; Path=/api/auth/oidc; Expires=<date>"
+  ],
+  "events": [
+    {
+      "status": 307,
+      "action": {
+        "name": "auth.oidc.callback"
+      },
+      "meta": {
+        "reason": "identity_conflict"
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "users": [
+      {
+        "username": "First",
+        "email": "first.new@example.test",
+        "role": "ADMIN",
+        "timezone": "Europe/Berlin",
+        "oidcIssuer": "https://id.example.test",
+        "oidcSub": "sub-first"
+      },
+      {
+        "username": "linked-elsewhere",
+        "email": "conflict@example.test",
+        "role": "USER",
+        "timezone": "Europe/Berlin",
+        "oidcIssuer": "https://other.example.test",
+        "oidcSub": "other-sub"
+      },
+      {
+        "username": "second",
+        "email": "second@example.test",
+        "role": "USER",
+        "timezone": "Europe/Berlin",
+        "oidcIssuer": "https://id.example.test",
+        "oidcSub": "sub-second"
+      },
+      {
+        "username": "userinfo",
+        "email": "userinfo@example.test",
+        "role": "USER",
+        "timezone": "Europe/Berlin",
+        "oidcIssuer": "https://id.example.test",
+        "oidcSub": "sub-userinfo"
+      }
+    ],
+    "sessions": [
+      {
+        "user": {
+          "username": "First"
+        },
+        "mfaVerifiedAt": null
+      },
+      {
+        "user": {
+          "username": "First"
+        },
+        "mfaVerifiedAt": null
+      },
+      {
+        "user": {
+          "username": "First"
+        },
+        "mfaVerifiedAt": null
+      },
+      {
+        "user": {
+          "username": "second"
+        },
+        "mfaVerifiedAt": null
+      },
+      {
+        "user": {
+          "username": "userinfo"
+        },
+        "mfaVerifiedAt": null
+      }
+    ],
+    "audit": [
+      {
+        "action": "auth.oidc.link_conflict",
+        "user": {
+          "username": "linked-elsewhere"
+        }
+      },
+      {
+        "action": "auth.oidc.login",
+        "user": {
+          "username": "First"
+        }
+      },
+      {
+        "action": "auth.oidc.login",
+        "user": {
+          "username": "second"
+        }
+      },
+      {
+        "action": "auth.oidc.login",
+        "user": {
+          "username": "First"
+        }
+      },
+      {
+        "action": "auth.oidc.login",
+        "user": {
+          "username": "userinfo"
+        }
+      },
+      {
+        "action": "auth.oidc.provisioned",
+        "user": {
+          "username": "userinfo"
+        }
+      },
+      {
+        "action": "auth.oidc.provisioned",
+        "user": {
+          "username": "second"
+        }
+      },
+      {
+        "action": "auth.oidc.provisioned",
+        "user": {
+          "username": "First"
+        }
+      }
+    ],
+    "challenges": 0,
+    "handoffs": 0
+  }
+}

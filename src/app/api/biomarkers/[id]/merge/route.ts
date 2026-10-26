@@ -19,13 +19,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
 import { withIdempotency } from "@/lib/idempotency";
@@ -47,16 +42,11 @@ async function mergeBiomarkers(
   const { user } = await requireRecordAuth("manage", "labs");
   const { id } = await params;
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, biomarkerMergeSchema, {
     maxBytes: 4 * 1024,
+    errorCode: "labs.biomarker.merge.invalid",
   });
-  if (jsonError) return jsonError;
-  const parsed = biomarkerMergeSchema.safeParse(body);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "labs.biomarker.merge.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
   if (parsed.data.sourceIds.includes(id)) {
     return apiError("The target cannot be one of the sources", 422, {
       errorCode: "labs.biomarker.merge.invalid",

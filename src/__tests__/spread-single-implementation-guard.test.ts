@@ -90,10 +90,7 @@ describe("one standard deviation", () => {
   it("the series API and the AI and MCP payload report the same spread", () => {
     expect(
       stripComments(
-        readSource(
-          "src/app/api/measurements/series/route.ts",
-          "READING_SPREAD",
-        ),
+        readSource("src/lib/measurements/series/kinds.ts", "READING_SPREAD"),
       ),
     ).toMatch(/standardDeviation\(\s*values,\s*READING_SPREAD\s*\)/);
     const features = stripComments(

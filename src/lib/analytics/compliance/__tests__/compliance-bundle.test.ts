@@ -136,7 +136,13 @@ describe("buildMedicationComplianceBundle — parity with the per-window composi
     const schedules = [dailySchedule()];
     const events = dailyFixtureEvents();
     const ctx = buildComplianceMedicationContext(
-      { startsOn: null, endsOn: null, oneShot: false, createdAt },
+      {
+        startsOn: null,
+        endsOn: null,
+        endedAt: null,
+        oneShot: false,
+        createdAt,
+      },
       lastNonSkippedTakenAt(events),
       TZ,
     );
@@ -191,6 +197,7 @@ describe("buildMedicationComplianceBundle — parity with the per-window composi
       {
         startsOn: new Date(NOW.getTime() - 380 * DAY_MS),
         endsOn: null,
+        endedAt: null,
         oneShot: false,
         createdAt,
       },
@@ -223,7 +230,13 @@ describe("buildMedicationComplianceBundle — parity with the per-window composi
   it("empty schedule list: zeros short-circuit matches calculateCompliance", () => {
     const createdAt = new Date(NOW.getTime() - 10 * DAY_MS);
     const ctx = buildComplianceMedicationContext(
-      { startsOn: null, endsOn: null, oneShot: false, createdAt },
+      {
+        startsOn: null,
+        endsOn: null,
+        endedAt: null,
+        oneShot: false,
+        createdAt,
+      },
       null,
       TZ,
     );
@@ -250,7 +263,13 @@ describe("dailyComplianceRatesFromLedger — cadence-aware per-day series", () =
     const createdAt = new Date(NOW.getTime() - 60 * DAY_MS);
     const schedules = [weeklyMondaySchedule()];
     const ctx = buildComplianceMedicationContext(
-      { startsOn: null, endsOn: null, oneShot: false, createdAt },
+      {
+        startsOn: null,
+        endsOn: null,
+        endedAt: null,
+        oneShot: false,
+        createdAt,
+      },
       null,
       TZ,
     );
@@ -300,7 +319,13 @@ describe("dailyComplianceRatesFromLedger — cadence-aware per-day series", () =
     const createdAt = new Date(NOW.getTime() - 60 * DAY_MS);
     const schedules = [weeklyMondaySchedule()];
     const ctx = buildComplianceMedicationContext(
-      { startsOn: null, endsOn: null, oneShot: false, createdAt },
+      {
+        startsOn: null,
+        endsOn: null,
+        endedAt: null,
+        oneShot: false,
+        createdAt,
+      },
       null,
       TZ,
     );
@@ -383,7 +408,13 @@ describe("tallyLedgerRows — windowed tallies over one shared ledger", () => {
     const schedules = [dailySchedule()];
     const events = dailyFixtureEvents();
     const ctx = buildComplianceMedicationContext(
-      { startsOn: null, endsOn: null, oneShot: false, createdAt },
+      {
+        startsOn: null,
+        endsOn: null,
+        endedAt: null,
+        oneShot: false,
+        createdAt,
+      },
       lastNonSkippedTakenAt(events),
       TZ,
     );
@@ -407,7 +438,13 @@ describe("tallyLedgerRows — windowed tallies over one shared ledger", () => {
     const schedules = [dailySchedule()];
     const events = dailyFixtureEvents();
     const ctx = buildComplianceMedicationContext(
-      { startsOn: null, endsOn: null, oneShot: false, createdAt },
+      {
+        startsOn: null,
+        endsOn: null,
+        endedAt: null,
+        oneShot: false,
+        createdAt,
+      },
       lastNonSkippedTakenAt(events),
       TZ,
     );

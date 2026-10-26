@@ -11,6 +11,7 @@
  * 30-minute fallback cron in `reminder-worker.ts` is the safety net
  * for any ingest path that forgets to enqueue.
  */
+import { activeAccountSql } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 
@@ -71,16 +72,19 @@ export async function listPrDetectionFallbackUserIds(
   const rows = await prisma.$queryRaw<Array<{ id: string }>>`
     SELECT u."id"
     FROM "users" u
-    WHERE EXISTS (
-        SELECT 1 FROM "measurements" m
-        WHERE m."user_id" = u."id"
-          AND m."updated_at" > ${since}
-          AND m."deleted_at" IS NULL
+    WHERE (
+        EXISTS (
+          SELECT 1 FROM "measurements" m
+          WHERE m."user_id" = u."id"
+            AND m."updated_at" > ${since}
+            AND m."deleted_at" IS NULL
+        )
+        OR EXISTS (
+          SELECT 1 FROM "workouts" w
+          WHERE w."user_id" = u."id" AND w."updated_at" > ${since}
+        )
       )
-      OR EXISTS (
-        SELECT 1 FROM "workouts" w
-        WHERE w."user_id" = u."id" AND w."updated_at" > ${since}
-      )
+      AND ${activeAccountSql(`u."id"`)}
     ORDER BY u."id"
   `;
   return rows.map((row) => row.id);

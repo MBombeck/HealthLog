@@ -93,6 +93,7 @@ describe("buildCompliancePayload", () => {
         createdAt: new Date("2026-01-01T00:00:00Z"),
         startsOn: null,
         endsOn: null,
+        endedAt: null,
         oneShot: false,
         asNeeded: false,
         trackIntake: false,

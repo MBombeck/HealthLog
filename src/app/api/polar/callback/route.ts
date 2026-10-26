@@ -9,7 +9,8 @@ import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
-import { exchangeCode, registerUser } from "@/lib/polar/client";
+import { registerUser } from "@/lib/polar/client";
+import { polarOAuth } from "@/lib/polar/oauth";
 import { getPolarClientCredentials } from "@/lib/polar/credentials";
 import {
   oauthStateCookieName,
@@ -115,7 +116,7 @@ async function completeCallback(
     const creds = await getPolarClientCredentials(userId);
     if (!creds) return ERR("nocreds");
 
-    const tokens = await exchangeCode(code, creds);
+    const tokens = await polarOAuth.exchange(code, creds);
     // Guard against an off-spec token body without `x_user_id`: persisting the
     // string "undefined" as the member id would break every later data read
     // (`/v3/users/undefined/...`) with no clear cause.

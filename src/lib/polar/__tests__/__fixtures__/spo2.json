@@ -1,0 +1,24 @@
+[
+  {
+    "source_device_id": "device-0001",
+    "test_time": 1772438400,
+    "blood_oxygen_percent": 97.456
+  },
+  { "test_time": 1772524800, "blood_oxygen_percent": 100 },
+  {
+    "source_device_id": "device-0001",
+    "test_time": 1772611200,
+    "blood_oxygen_percent": 0
+  },
+  {
+    "source_device_id": "device-0001",
+    "test_time": 1772697600,
+    "blood_oxygen_percent": 100.5
+  },
+  {
+    "source_device_id": "device-0002",
+    "test_time": 1772784000,
+    "blood_oxygen_percent": null
+  },
+  { "source_device_id": "device-0002", "blood_oxygen_percent": 95 }
+]

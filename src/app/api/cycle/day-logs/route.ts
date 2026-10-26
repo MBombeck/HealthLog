@@ -24,8 +24,8 @@ import {
   apiError,
   getClientIp,
   returnAllZodIssues,
-  safeJson,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { withIdempotency } from "@/lib/idempotency";
 import { requireCycleEnabled } from "@/lib/cycle/gate";
 import {
@@ -99,27 +99,23 @@ async function postDayLog(request: NextRequest): Promise<Response> {
   const gate = await requireCycleEnabled(user.id, user.gender);
   if (!gate.enabled) return gate.response;
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, cycleDayLogCreateSchema, {
     maxBytes: 64 * 1024,
+    errorCode: "cycle.day-log.invalid",
+    onInvalid: (error, rawBody) => {
+      const shape = unstableExternalIdShape(rawBody);
+      annotate({
+        action: { name: "cycle.day-log.validation-failed" },
+        meta: {
+          issue_count: error.issues.length,
+          ...(shape
+            ? unstableExternalIdMeta("cycle.day_log.create", [shape])
+            : {}),
+        },
+      });
+    },
   });
-  if (jsonError) return jsonError;
-
-  const parsed = cycleDayLogCreateSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    const shape = unstableExternalIdShape(rawBody);
-    annotate({
-      action: { name: "cycle.day-log.validation-failed" },
-      meta: {
-        issue_count: parsed.error.issues.length,
-        ...(shape
-          ? unstableExternalIdMeta("cycle.day_log.create", [shape])
-          : {}),
-      },
-    });
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "cycle.day-log.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const entry = parsed.data;
   const tz = user.timezone ?? DEFAULT_TIMEZONE;

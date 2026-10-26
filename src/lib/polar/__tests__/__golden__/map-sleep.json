@@ -1,0 +1,811 @@
+[
+  {
+    "record": "2026-03-02",
+    "byZone": [
+      {
+        "tz": null,
+        "rows": [
+          {
+            "type": "SLEEP_DURATION",
+            "value": 40,
+            "unit": "minutes",
+            "measuredAt": "2026-03-01T22:50:00.000Z",
+            "fieldTag": "sleep_awake",
+            "externalId": "sleep:2026-03-02:seg:sleep_awake",
+            "sleepStage": "AWAKE",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 240,
+            "unit": "minutes",
+            "measuredAt": "2026-03-02T02:50:00.000Z",
+            "fieldTag": "sleep_core",
+            "externalId": "sleep:2026-03-02:seg:sleep_core",
+            "sleepStage": "CORE",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 90,
+            "unit": "minutes",
+            "measuredAt": "2026-03-02T04:20:00.000Z",
+            "fieldTag": "sleep_deep",
+            "externalId": "sleep:2026-03-02:seg:sleep_deep",
+            "sleepStage": "DEEP",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 105,
+            "unit": "minutes",
+            "measuredAt": "2026-03-02T06:05:00.000Z",
+            "fieldTag": "sleep_rem",
+            "externalId": "sleep:2026-03-02:seg:sleep_rem",
+            "sleepStage": "REM",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 475,
+            "unit": "minutes",
+            "measuredAt": "2026-03-02T06:05:00.000Z",
+            "fieldTag": "sleep_in_bed",
+            "sleepStage": "IN_BED"
+          },
+          {
+            "type": "SLEEP_PERFORMANCE",
+            "value": 82.5,
+            "unit": "%",
+            "measuredAt": "2026-03-02T06:05:00.000Z",
+            "fieldTag": "sleep_score"
+          }
+        ]
+      },
+      {
+        "tz": "Europe/Berlin",
+        "rows": [
+          {
+            "type": "SLEEP_DURATION",
+            "value": 40,
+            "unit": "minutes",
+            "measuredAt": "2026-03-01T22:50:00.000Z",
+            "fieldTag": "sleep_awake",
+            "externalId": "sleep:2026-03-02:seg:sleep_awake",
+            "sleepStage": "AWAKE",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 240,
+            "unit": "minutes",
+            "measuredAt": "2026-03-02T02:50:00.000Z",
+            "fieldTag": "sleep_core",
+            "externalId": "sleep:2026-03-02:seg:sleep_core",
+            "sleepStage": "CORE",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 90,
+            "unit": "minutes",
+            "measuredAt": "2026-03-02T04:20:00.000Z",
+            "fieldTag": "sleep_deep",
+            "externalId": "sleep:2026-03-02:seg:sleep_deep",
+            "sleepStage": "DEEP",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 105,
+            "unit": "minutes",
+            "measuredAt": "2026-03-02T06:05:00.000Z",
+            "fieldTag": "sleep_rem",
+            "externalId": "sleep:2026-03-02:seg:sleep_rem",
+            "sleepStage": "REM",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 475,
+            "unit": "minutes",
+            "measuredAt": "2026-03-02T06:05:00.000Z",
+            "fieldTag": "sleep_in_bed",
+            "sleepStage": "IN_BED"
+          },
+          {
+            "type": "SLEEP_PERFORMANCE",
+            "value": 82.5,
+            "unit": "%",
+            "measuredAt": "2026-03-02T06:05:00.000Z",
+            "fieldTag": "sleep_score"
+          }
+        ]
+      },
+      {
+        "tz": "America/New_York",
+        "rows": [
+          {
+            "type": "SLEEP_DURATION",
+            "value": 40,
+            "unit": "minutes",
+            "measuredAt": "2026-03-01T22:50:00.000Z",
+            "fieldTag": "sleep_awake",
+            "externalId": "sleep:2026-03-02:seg:sleep_awake",
+            "sleepStage": "AWAKE",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 240,
+            "unit": "minutes",
+            "measuredAt": "2026-03-02T02:50:00.000Z",
+            "fieldTag": "sleep_core",
+            "externalId": "sleep:2026-03-02:seg:sleep_core",
+            "sleepStage": "CORE",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 90,
+            "unit": "minutes",
+            "measuredAt": "2026-03-02T04:20:00.000Z",
+            "fieldTag": "sleep_deep",
+            "externalId": "sleep:2026-03-02:seg:sleep_deep",
+            "sleepStage": "DEEP",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 105,
+            "unit": "minutes",
+            "measuredAt": "2026-03-02T06:05:00.000Z",
+            "fieldTag": "sleep_rem",
+            "externalId": "sleep:2026-03-02:seg:sleep_rem",
+            "sleepStage": "REM",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 475,
+            "unit": "minutes",
+            "measuredAt": "2026-03-02T06:05:00.000Z",
+            "fieldTag": "sleep_in_bed",
+            "sleepStage": "IN_BED"
+          },
+          {
+            "type": "SLEEP_PERFORMANCE",
+            "value": 82.5,
+            "unit": "%",
+            "measuredAt": "2026-03-02T06:05:00.000Z",
+            "fieldTag": "sleep_score"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "record": "2026-03-03",
+    "byZone": [
+      {
+        "tz": null,
+        "rows": [
+          {
+            "type": "SLEEP_DURATION",
+            "value": 270,
+            "unit": "minutes",
+            "measuredAt": "2026-03-03T08:00:00.000Z",
+            "fieldTag": "sleep_core",
+            "externalId": "sleep:2026-03-03:seg:sleep_core",
+            "sleepStage": "CORE",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 120,
+            "unit": "minutes",
+            "measuredAt": "2026-03-03T10:00:00.000Z",
+            "fieldTag": "sleep_rem",
+            "externalId": "sleep:2026-03-03:seg:sleep_rem",
+            "sleepStage": "REM",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 450,
+            "unit": "minutes",
+            "measuredAt": "2026-03-03T11:00:00.000Z",
+            "fieldTag": "sleep_in_bed",
+            "sleepStage": "IN_BED"
+          }
+        ]
+      },
+      {
+        "tz": "Europe/Berlin",
+        "rows": [
+          {
+            "type": "SLEEP_DURATION",
+            "value": 270,
+            "unit": "minutes",
+            "measuredAt": "2026-03-03T08:00:00.000Z",
+            "fieldTag": "sleep_core",
+            "externalId": "sleep:2026-03-03:seg:sleep_core",
+            "sleepStage": "CORE",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 120,
+            "unit": "minutes",
+            "measuredAt": "2026-03-03T10:00:00.000Z",
+            "fieldTag": "sleep_rem",
+            "externalId": "sleep:2026-03-03:seg:sleep_rem",
+            "sleepStage": "REM",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 450,
+            "unit": "minutes",
+            "measuredAt": "2026-03-03T11:00:00.000Z",
+            "fieldTag": "sleep_in_bed",
+            "sleepStage": "IN_BED"
+          }
+        ]
+      },
+      {
+        "tz": "America/New_York",
+        "rows": [
+          {
+            "type": "SLEEP_DURATION",
+            "value": 270,
+            "unit": "minutes",
+            "measuredAt": "2026-03-03T08:00:00.000Z",
+            "fieldTag": "sleep_core",
+            "externalId": "sleep:2026-03-03:seg:sleep_core",
+            "sleepStage": "CORE",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 120,
+            "unit": "minutes",
+            "measuredAt": "2026-03-03T10:00:00.000Z",
+            "fieldTag": "sleep_rem",
+            "externalId": "sleep:2026-03-03:seg:sleep_rem",
+            "sleepStage": "REM",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 450,
+            "unit": "minutes",
+            "measuredAt": "2026-03-03T11:00:00.000Z",
+            "fieldTag": "sleep_in_bed",
+            "sleepStage": "IN_BED"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "record": "2026-03-04",
+    "byZone": [
+      {
+        "tz": null,
+        "rows": [
+          {
+            "type": "SLEEP_DURATION",
+            "value": 20.57,
+            "unit": "minutes",
+            "measuredAt": "2026-03-04T12:00:00.000Z",
+            "fieldTag": "sleep_awake",
+            "sleepStage": "AWAKE",
+            "day": "2026-03-04"
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 250,
+            "unit": "minutes",
+            "measuredAt": "2026-03-04T12:00:00.000Z",
+            "fieldTag": "sleep_core",
+            "sleepStage": "CORE",
+            "day": "2026-03-04"
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 80,
+            "unit": "minutes",
+            "measuredAt": "2026-03-04T12:00:00.000Z",
+            "fieldTag": "sleep_deep",
+            "sleepStage": "DEEP",
+            "day": "2026-03-04"
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 100,
+            "unit": "minutes",
+            "measuredAt": "2026-03-04T12:00:00.000Z",
+            "fieldTag": "sleep_rem",
+            "sleepStage": "REM",
+            "day": "2026-03-04"
+          },
+          {
+            "type": "SLEEP_PERFORMANCE",
+            "value": 76,
+            "unit": "%",
+            "measuredAt": "2026-03-04T12:00:00.000Z",
+            "fieldTag": "sleep_score",
+            "day": "2026-03-04"
+          }
+        ]
+      },
+      {
+        "tz": "Europe/Berlin",
+        "rows": [
+          {
+            "type": "SLEEP_DURATION",
+            "value": 20.57,
+            "unit": "minutes",
+            "measuredAt": "2026-03-04T11:00:00.000Z",
+            "fieldTag": "sleep_awake",
+            "sleepStage": "AWAKE",
+            "day": "2026-03-04"
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 250,
+            "unit": "minutes",
+            "measuredAt": "2026-03-04T11:00:00.000Z",
+            "fieldTag": "sleep_core",
+            "sleepStage": "CORE",
+            "day": "2026-03-04"
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 80,
+            "unit": "minutes",
+            "measuredAt": "2026-03-04T11:00:00.000Z",
+            "fieldTag": "sleep_deep",
+            "sleepStage": "DEEP",
+            "day": "2026-03-04"
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 100,
+            "unit": "minutes",
+            "measuredAt": "2026-03-04T11:00:00.000Z",
+            "fieldTag": "sleep_rem",
+            "sleepStage": "REM",
+            "day": "2026-03-04"
+          },
+          {
+            "type": "SLEEP_PERFORMANCE",
+            "value": 76,
+            "unit": "%",
+            "measuredAt": "2026-03-04T11:00:00.000Z",
+            "fieldTag": "sleep_score",
+            "day": "2026-03-04"
+          }
+        ]
+      },
+      {
+        "tz": "America/New_York",
+        "rows": [
+          {
+            "type": "SLEEP_DURATION",
+            "value": 20.57,
+            "unit": "minutes",
+            "measuredAt": "2026-03-04T17:00:00.000Z",
+            "fieldTag": "sleep_awake",
+            "sleepStage": "AWAKE",
+            "day": "2026-03-04"
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 250,
+            "unit": "minutes",
+            "measuredAt": "2026-03-04T17:00:00.000Z",
+            "fieldTag": "sleep_core",
+            "sleepStage": "CORE",
+            "day": "2026-03-04"
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 80,
+            "unit": "minutes",
+            "measuredAt": "2026-03-04T17:00:00.000Z",
+            "fieldTag": "sleep_deep",
+            "sleepStage": "DEEP",
+            "day": "2026-03-04"
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 100,
+            "unit": "minutes",
+            "measuredAt": "2026-03-04T17:00:00.000Z",
+            "fieldTag": "sleep_rem",
+            "sleepStage": "REM",
+            "day": "2026-03-04"
+          },
+          {
+            "type": "SLEEP_PERFORMANCE",
+            "value": 76,
+            "unit": "%",
+            "measuredAt": "2026-03-04T17:00:00.000Z",
+            "fieldTag": "sleep_score",
+            "day": "2026-03-04"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "record": "2026-03-05",
+    "byZone": [
+      {
+        "tz": null,
+        "rows": [
+          {
+            "type": "SLEEP_DURATION",
+            "value": 0,
+            "unit": "minutes",
+            "measuredAt": "2026-03-05T12:00:00.000Z",
+            "fieldTag": "sleep_core",
+            "sleepStage": "CORE",
+            "day": "2026-03-05"
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 50,
+            "unit": "minutes",
+            "measuredAt": "2026-03-05T12:00:00.000Z",
+            "fieldTag": "sleep_rem",
+            "sleepStage": "REM",
+            "day": "2026-03-05"
+          }
+        ]
+      },
+      {
+        "tz": "Europe/Berlin",
+        "rows": [
+          {
+            "type": "SLEEP_DURATION",
+            "value": 0,
+            "unit": "minutes",
+            "measuredAt": "2026-03-05T11:00:00.000Z",
+            "fieldTag": "sleep_core",
+            "sleepStage": "CORE",
+            "day": "2026-03-05"
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 50,
+            "unit": "minutes",
+            "measuredAt": "2026-03-05T11:00:00.000Z",
+            "fieldTag": "sleep_rem",
+            "sleepStage": "REM",
+            "day": "2026-03-05"
+          }
+        ]
+      },
+      {
+        "tz": "America/New_York",
+        "rows": [
+          {
+            "type": "SLEEP_DURATION",
+            "value": 0,
+            "unit": "minutes",
+            "measuredAt": "2026-03-05T17:00:00.000Z",
+            "fieldTag": "sleep_core",
+            "sleepStage": "CORE",
+            "day": "2026-03-05"
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 50,
+            "unit": "minutes",
+            "measuredAt": "2026-03-05T17:00:00.000Z",
+            "fieldTag": "sleep_rem",
+            "sleepStage": "REM",
+            "day": "2026-03-05"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "record": "2026-03-06",
+    "byZone": [
+      {
+        "tz": null,
+        "rows": [
+          {
+            "type": "SLEEP_DURATION",
+            "value": 15,
+            "unit": "minutes",
+            "measuredAt": "2026-03-06T12:00:00.000Z",
+            "fieldTag": "sleep_awake",
+            "sleepStage": "AWAKE",
+            "day": "2026-03-06"
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 225,
+            "unit": "minutes",
+            "measuredAt": "2026-03-06T12:00:00.000Z",
+            "fieldTag": "sleep_core",
+            "sleepStage": "CORE",
+            "day": "2026-03-06"
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 90,
+            "unit": "minutes",
+            "measuredAt": "2026-03-06T12:00:00.000Z",
+            "fieldTag": "sleep_rem",
+            "sleepStage": "REM",
+            "day": "2026-03-06"
+          },
+          {
+            "type": "SLEEP_PERFORMANCE",
+            "value": 70,
+            "unit": "%",
+            "measuredAt": "2026-03-06T12:00:00.000Z",
+            "fieldTag": "sleep_score",
+            "day": "2026-03-06"
+          }
+        ]
+      },
+      {
+        "tz": "Europe/Berlin",
+        "rows": [
+          {
+            "type": "SLEEP_DURATION",
+            "value": 15,
+            "unit": "minutes",
+            "measuredAt": "2026-03-06T11:00:00.000Z",
+            "fieldTag": "sleep_awake",
+            "sleepStage": "AWAKE",
+            "day": "2026-03-06"
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 225,
+            "unit": "minutes",
+            "measuredAt": "2026-03-06T11:00:00.000Z",
+            "fieldTag": "sleep_core",
+            "sleepStage": "CORE",
+            "day": "2026-03-06"
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 90,
+            "unit": "minutes",
+            "measuredAt": "2026-03-06T11:00:00.000Z",
+            "fieldTag": "sleep_rem",
+            "sleepStage": "REM",
+            "day": "2026-03-06"
+          },
+          {
+            "type": "SLEEP_PERFORMANCE",
+            "value": 70,
+            "unit": "%",
+            "measuredAt": "2026-03-06T11:00:00.000Z",
+            "fieldTag": "sleep_score",
+            "day": "2026-03-06"
+          }
+        ]
+      },
+      {
+        "tz": "America/New_York",
+        "rows": [
+          {
+            "type": "SLEEP_DURATION",
+            "value": 15,
+            "unit": "minutes",
+            "measuredAt": "2026-03-06T17:00:00.000Z",
+            "fieldTag": "sleep_awake",
+            "sleepStage": "AWAKE",
+            "day": "2026-03-06"
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 225,
+            "unit": "minutes",
+            "measuredAt": "2026-03-06T17:00:00.000Z",
+            "fieldTag": "sleep_core",
+            "sleepStage": "CORE",
+            "day": "2026-03-06"
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 90,
+            "unit": "minutes",
+            "measuredAt": "2026-03-06T17:00:00.000Z",
+            "fieldTag": "sleep_rem",
+            "sleepStage": "REM",
+            "day": "2026-03-06"
+          },
+          {
+            "type": "SLEEP_PERFORMANCE",
+            "value": 70,
+            "unit": "%",
+            "measuredAt": "2026-03-06T17:00:00.000Z",
+            "fieldTag": "sleep_score",
+            "day": "2026-03-06"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "record": "2026-03-07",
+    "byZone": [
+      {
+        "tz": null,
+        "rows": [
+          {
+            "type": "SLEEP_DURATION",
+            "value": 205.76,
+            "unit": "minutes",
+            "measuredAt": "2026-03-07T02:25:45.600Z",
+            "fieldTag": "sleep_core",
+            "externalId": "sleep:2026-03-07:seg:sleep_core",
+            "sleepStage": "CORE",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 76.12,
+            "unit": "minutes",
+            "measuredAt": "2026-03-07T03:41:52.600Z",
+            "fieldTag": "sleep_deep",
+            "externalId": "sleep:2026-03-07:seg:sleep_deep",
+            "sleepStage": "DEEP",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 94.63,
+            "unit": "minutes",
+            "measuredAt": "2026-03-07T05:16:30.600Z",
+            "fieldTag": "sleep_rem",
+            "externalId": "sleep:2026-03-07:seg:sleep_rem",
+            "sleepStage": "REM",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 465,
+            "unit": "minutes",
+            "measuredAt": "2026-03-07T06:45:00.000Z",
+            "fieldTag": "sleep_in_bed",
+            "sleepStage": "IN_BED"
+          },
+          {
+            "type": "SLEEP_PERFORMANCE",
+            "value": 0,
+            "unit": "%",
+            "measuredAt": "2026-03-07T06:45:00.000Z",
+            "fieldTag": "sleep_score"
+          }
+        ]
+      },
+      {
+        "tz": "Europe/Berlin",
+        "rows": [
+          {
+            "type": "SLEEP_DURATION",
+            "value": 205.76,
+            "unit": "minutes",
+            "measuredAt": "2026-03-07T02:25:45.600Z",
+            "fieldTag": "sleep_core",
+            "externalId": "sleep:2026-03-07:seg:sleep_core",
+            "sleepStage": "CORE",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 76.12,
+            "unit": "minutes",
+            "measuredAt": "2026-03-07T03:41:52.600Z",
+            "fieldTag": "sleep_deep",
+            "externalId": "sleep:2026-03-07:seg:sleep_deep",
+            "sleepStage": "DEEP",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 94.63,
+            "unit": "minutes",
+            "measuredAt": "2026-03-07T05:16:30.600Z",
+            "fieldTag": "sleep_rem",
+            "externalId": "sleep:2026-03-07:seg:sleep_rem",
+            "sleepStage": "REM",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 465,
+            "unit": "minutes",
+            "measuredAt": "2026-03-07T06:45:00.000Z",
+            "fieldTag": "sleep_in_bed",
+            "sleepStage": "IN_BED"
+          },
+          {
+            "type": "SLEEP_PERFORMANCE",
+            "value": 0,
+            "unit": "%",
+            "measuredAt": "2026-03-07T06:45:00.000Z",
+            "fieldTag": "sleep_score"
+          }
+        ]
+      },
+      {
+        "tz": "America/New_York",
+        "rows": [
+          {
+            "type": "SLEEP_DURATION",
+            "value": 205.76,
+            "unit": "minutes",
+            "measuredAt": "2026-03-07T02:25:45.600Z",
+            "fieldTag": "sleep_core",
+            "externalId": "sleep:2026-03-07:seg:sleep_core",
+            "sleepStage": "CORE",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 76.12,
+            "unit": "minutes",
+            "measuredAt": "2026-03-07T03:41:52.600Z",
+            "fieldTag": "sleep_deep",
+            "externalId": "sleep:2026-03-07:seg:sleep_deep",
+            "sleepStage": "DEEP",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 94.63,
+            "unit": "minutes",
+            "measuredAt": "2026-03-07T05:16:30.600Z",
+            "fieldTag": "sleep_rem",
+            "externalId": "sleep:2026-03-07:seg:sleep_rem",
+            "sleepStage": "REM",
+            "reconstructed": true
+          },
+          {
+            "type": "SLEEP_DURATION",
+            "value": 465,
+            "unit": "minutes",
+            "measuredAt": "2026-03-07T06:45:00.000Z",
+            "fieldTag": "sleep_in_bed",
+            "sleepStage": "IN_BED"
+          },
+          {
+            "type": "SLEEP_PERFORMANCE",
+            "value": 0,
+            "unit": "%",
+            "measuredAt": "2026-03-07T06:45:00.000Z",
+            "fieldTag": "sleep_score"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "record": "not-a-date",
+    "byZone": [
+      { "tz": null, "rows": [] },
+      {
+        "tz": "Europe/Berlin",
+        "rows": { "threw": "RangeError: Invalid time value" }
+      },
+      {
+        "tz": "America/New_York",
+        "rows": { "threw": "RangeError: Invalid time value" }
+      }
+    ]
+  }
+]

@@ -22,7 +22,7 @@ import { join } from "node:path";
 import { DOCUMENT_AI_RUN_KINDS } from "@/lib/documents/ai-runs/types";
 import type { runStatusCompletion } from "@/lib/insights/status-provider";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -37,13 +37,6 @@ const EGRESS_CALL =
  */
 const CAPABILITY_CHECK =
   /\b(?:aiCapabilityForJob|aiCapabilityForRecord|requireAiCapability|getAiCapability|aiEgressRefusal|assertAiEgress)\s*\(/;
-
-/** Comments name the helpers too; only code counts. */
-function stripComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
-}
 
 function sourceFiles(): string[] {
   return walkSourceFiles(SRC, { floor: 3000 })
@@ -110,20 +103,15 @@ const EGRESS_SITES: Record<string, EgressSite> = {
     reason:
       "Document summary and transcription; reached from the summary and index routes, the summary job, and the background run worker (`lib/jobs/document-ai-run.ts`), which resolve `documentAi` first.",
   },
-  "lib/documents/extract.ts": {
-    recheck: false,
-    reason:
-      "Document extraction/indexing; reached from the document routes and the index jobs, which resolve `documentAi` first.",
-  },
   "lib/medications/ingredients/label-extract.ts": {
     recheck: false,
     reason:
       "Supplement label read (v1.43); reached from the background run worker (`lib/jobs/document-ai-run.ts`), which re-checks `supplementLabel` for the picked provider, for a label the ingredients extract route queued under that capability.",
   },
-  "lib/labs/ocr-extract.ts": {
+  "lib/documents/ocr-read.ts": {
     recheck: true,
     reason:
-      "Lab report scan; reached from the background run worker (`lib/jobs/document-ai-run.ts`), which checks `labsOcr` for the picked provider before the first read. A long report's reads run for many minutes after that, so every further read re-checks the wire (`aiEgressRefusal`) and stops when AI was turned off meanwhile.",
+      "Report transcription, the one read core of the lab scan (`labsOcr`) and the document extraction (`documentAi`, the manual extract and the lab auto-staging); reached from the background run worker, the extract route and the index job, which check the capability for the picked provider before the first read. A long report's reads run for many minutes after that, so every read re-checks the wire (`aiEgressRefusal`, for the surface's own capability) and stops when AI was turned off meanwhile.",
   },
   "app/api/medications/extract/route.ts": {
     recheck: false,
@@ -312,10 +300,10 @@ describe("workout route geometry never reaches an AI path", () => {
     /\breadRouteGeometry\s*\(|\bencryptRouteGeometry\s*\(|\bgeometryEncrypted\b|\bgeometry\s*:\s*true\b/;
 
   const ROUTE_READERS: Record<string, string> = {
-    "app/api/workouts/[id]/route.ts":
+    "lib/workouts/detail.ts":
       "The workout detail read: serves the track to the person's own map.",
-    "app/api/workouts/batch/route.ts":
-      "Writes a kept track (opt-in) and derives its climb before storage.",
+    "lib/workouts/batch-ingest/write.ts":
+      "The workout batch ingest's write: stores a kept track (opt-in), sealed.",
     "lib/apple-health/route-import.ts":
       "Writes a kept track from the Apple Health export (opt-in).",
     "lib/crypto/encrypted-columns.ts":

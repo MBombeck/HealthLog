@@ -18,12 +18,8 @@
 import { NextRequest } from "next/server";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { fireAndForget } from "@/lib/logging/fire-and-forget";
-import {
-  apiError,
-  apiSuccess,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { checkConsentRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -50,16 +46,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
     });
   }
 
-  const { data: body, error } = await safeJson(request, {
+  // v1.4.43 — multi-issue 400 (consent routes use 400 not 422).
+  const parsed = await parseJsonBody(request, consentPostBody, {
     maxBytes: 128 * 1024,
+    status: 400,
   });
-  if (error) return error;
-
-  const parsed = consentPostBody.safeParse(body);
-  if (!parsed.success) {
-    // v1.4.43 — multi-issue 400 (consent routes use 400 not 422).
-    return returnAllZodIssues(parsed.error, 400);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const { kind, artefact, signedAt, confirm } = parsed.data;
   if (confirm !== true) {
@@ -82,10 +74,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // is rebuilt from a backup. Fire-and-forget; audit failures must
   // never bubble into a user-facing 500.
   fireAndForget(
-    auditLog("consent.ai.grant", {
-      userId: user.id,
-      details: { kind, receiptId: receipt.id },
-    }),
+    () =>
+      auditLog("consent.ai.grant", {
+        userId: user.id,
+        details: { kind, receiptId: receipt.id },
+      }),
     { action: "consent.ai.audit" },
   );
 

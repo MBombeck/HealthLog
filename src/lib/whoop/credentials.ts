@@ -9,7 +9,7 @@
  */
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
-import type { WhoopCredentials } from "./client";
+import type { WhoopCredentials } from "./oauth";
 
 /**
  * Fetch and decrypt the user's WHOOP API credentials.

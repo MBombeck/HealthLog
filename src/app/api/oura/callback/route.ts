@@ -6,11 +6,8 @@ import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
-import {
-  exchangeCode,
-  fetchOuraAccountId,
-  isAcceptedOuraIssuer,
-} from "@/lib/oura/client";
+import { fetchOuraAccountId } from "@/lib/oura/client";
+import { exchangeOuraCode, isAcceptedOuraIssuer } from "@/lib/oura/oauth";
 import {
   ALREADY_LINKED_REASON,
   accountLinkedElsewhere,
@@ -27,10 +24,8 @@ import { markReconnected } from "@/lib/integrations/status";
 import { OURA_SYNC_QUEUE } from "@/lib/jobs/integration-poll-queues";
 import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { integrationBackfillSourceOptions } from "@/lib/jobs/integration-backfill-admission";
-import {
-  OURA_BACKFILL_QUEUE,
-  type OuraBackfillPayload,
-} from "@/lib/jobs/oura-backfill";
+import { type OuraBackfillPayload } from "@/lib/jobs/oura-backfill";
+import { OURA_BACKFILL_QUEUE } from "@/lib/jobs/oura-backfill-queue";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -139,7 +134,7 @@ async function completeCallback(
     const creds = await getOuraClientCredentials(userId);
     if (!creds) return ERR("nocreds");
 
-    const tokens = await exchangeCode(code, creds, iss);
+    const tokens = await exchangeOuraCode(code, creds, iss);
 
     // One Oura account, one record: a guardian signed in to their own Oura
     // account must not attach it to the profile they manage.

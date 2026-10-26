@@ -26,6 +26,7 @@
  * is no value-level cycle between the two — a cycle would otherwise trip
  * a module-init TDZ in the production bundle.
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { annotate } from "@/lib/logging/context";
 import { AccountRestoreInProgressError } from "@/lib/export/restore-lock";
 import type {
@@ -115,6 +116,7 @@ export async function loadConsolidationUsers(
         select: { id: true, timezone: true },
       })
     : prismaClient.user.findMany({
+        where: ACTIVE_ACCOUNT,
         select: { id: true, timezone: true },
       });
 }
@@ -354,6 +356,7 @@ export async function* iterateSourcePages<
         }
       : baseWhere;
 
+    // account-deletion: pages through the rows its caller scoped (`baseWhere`), one account at a time.
     const page = (await prismaClient.measurement.findMany({
       where,
       select: scanSelect,

@@ -4,11 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cookieJar, headerJar, queuedSessionIds } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables, switchSessionTo } from "./setup";
 import { createManagedProfile } from "@/lib/managed-profiles/create";
-import {
-  acceptGrant,
-  findActiveGrant,
-  inviteGrant,
-} from "@/lib/sharing/grants";
+import { acceptGrant, inviteGrant } from "@/lib/sharing/grants";
+import { findActiveGrant } from "@/lib/sharing/grant-access";
 import {
   clearManagedProfileMarker,
   ManagedProfileLifecycleError,

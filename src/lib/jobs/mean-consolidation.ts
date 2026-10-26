@@ -13,6 +13,7 @@
  * `src/lib/jobs/reminder-worker.ts` so pg-boss provisions it at boot;
  * an unregistered queue silently never drains.
  */
+import { dropPendingDeletion } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -120,15 +121,19 @@ export async function enqueueBootTimeMeanConsolidation(
     // an instance-wide unbounded scan just to list user ids. No date
     // bound on purpose: a fresh import of OLD per-sample rows must still
     // surface its user here, however old the rows are.
-    const users = await prisma.measurement.groupBy({
-      by: ["userId"],
-      where: {
-        source: "APPLE_HEALTH",
-        type: { in: types },
-        deletedAt: null,
-        NOT: { externalId: { startsWith: "stats:" } },
-      },
-    });
+    const users = await dropPendingDeletion(
+      prisma,
+      await prisma.measurement.groupBy({
+        by: ["userId"],
+        where: {
+          source: "APPLE_HEALTH",
+          type: { in: types },
+          deletedAt: null,
+          NOT: { externalId: { startsWith: "stats:" } },
+        },
+      }),
+      (u) => u.userId,
+    );
 
     if (users.length === 0) {
       return { enqueued: 0, skipped: 0, error: null };

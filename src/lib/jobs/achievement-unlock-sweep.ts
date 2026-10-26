@@ -23,6 +23,7 @@
  *
  * Runs at 04:25 Europe/Berlin, after the cycle-prediction refresh (04:20).
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { Job } from "pg-boss";
 
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
@@ -30,10 +31,6 @@ import { withBackgroundEvent } from "@/lib/logging/background";
 import { resolveModuleMap } from "@/lib/modules/gate";
 import { buildAchievementsResult } from "@/lib/gamification/achievements-result";
 import { getWorkerPrisma } from "./reminder/shared";
-
-export const ACHIEVEMENT_UNLOCK_SWEEP_QUEUE = "achievement-unlock-sweep";
-
-export const ACHIEVEMENT_UNLOCK_SWEEP_CRON = "25 4 * * *";
 
 export interface AchievementUnlockSweepPayload {
   triggeredAt: string;
@@ -64,7 +61,10 @@ export async function runAchievementUnlockSweep(
   const buildResult = options.buildResult ?? buildAchievementsResult;
   const prisma = getWorkerPrisma();
 
-  const users = await prisma.user.findMany({ orderBy: { id: "asc" } });
+  const users = await prisma.user.findMany({
+    where: ACTIVE_ACCOUNT,
+    orderBy: { id: "asc" },
+  });
 
   const summary: AchievementUnlockSweepSummary = {
     scanned: users.length,

@@ -57,6 +57,7 @@ export const GET = apiHandler(async () => {
     capability,
     indexedCount,
     totalCount,
+    deletedCount,
   ] = await Promise.all([
     resolveDocumentLimits(user.id),
     prisma.$queryRaw<Array<{ used: bigint }>>`
@@ -93,6 +94,15 @@ export const GET = apiHandler(async () => {
     prisma.inboundDocument.count({
       where: { userId: user.id, deletedAt: null },
     }),
+    // How many sit in Recently deleted — the vault's way in to it shows only
+    // when there is something there. Recently deleted is the owner's own
+    // (restore and delete-now are owner-only writes), so a delegate gets 0
+    // and the vault offers them no way in.
+    grantId === null
+      ? prisma.inboundDocument.count({
+          where: { userId: user.id, deletedAt: { not: null } },
+        })
+      : Promise.resolve(0),
   ]);
   const usedBytes = Number(rows[0]?.used ?? 0);
 
@@ -121,6 +131,7 @@ export const GET = apiHandler(async () => {
       indexedCount,
       totalCount,
     },
+    deletedCount,
   };
   return apiSuccess(payload);
 });

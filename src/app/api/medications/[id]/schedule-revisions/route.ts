@@ -27,13 +27,8 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { assertMedicationOwnership } from "@/lib/medications/route-guards";
 import { scheduleRevisionCreateSchema } from "@/lib/validations/schedule-revision";
 import {
@@ -91,7 +86,7 @@ export const GET = apiHandler(
       // Superseded rows are audit records behind a correction — the
       // timeline shows the corrected state, like every era consumer.
       where: { medicationId: id, supersededByRevisionId: null },
-      orderBy: { validFrom: "desc" },
+      orderBy: [{ validFrom: "desc" }, { id: "desc" }],
       select: {
         id: true,
         validFrom: true,
@@ -151,15 +146,11 @@ export const POST = apiHandler(
       return apiError("Medication not found", 404);
     }
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, scheduleRevisionCreateSchema, {
       maxBytes: 16 * 1024,
+      input: (body) => body ?? {},
     });
-    if (jsonError) return jsonError;
-
-    const parsed = scheduleRevisionCreateSchema.safeParse(body ?? {});
-    if (!parsed.success) {
-      return returnAllZodIssues(parsed.error, 422);
-    }
+    if (!parsed.ok) return parsed.error;
 
     const validFrom = new Date(parsed.data.validFrom);
     const validUntil = new Date(parsed.data.validUntil);

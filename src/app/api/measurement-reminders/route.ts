@@ -9,13 +9,8 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
-import {
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiSuccess, getClientIp, sanitiseZodIssues } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { withIdempotency } from "@/lib/idempotency";
 import { createMeasurementReminderSchema } from "@/lib/validations/measurement-reminders";
@@ -57,33 +52,27 @@ async function postReminder(request: NextRequest): Promise<Response> {
   // row is listed, editable and removable by the owner.
   const { user } = await requireRecordAuth("manage", "measurements");
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, createMeasurementReminderSchema, {
     maxBytes: 16 * 1024,
+    action: "measurement-reminders.create.validation-failed",
+    countIssues: true,
+    onInvalid: (error) => {
+      const auditIssues = sanitiseZodIssues(error.issues, {
+        stripValuesFromMessage: true,
+      });
+      // v1.37.0 — through `auditLog()` rather than a bare `prisma.auditLog
+      // .create`, because that helper is the only writer that stamps
+      // `actorUserId`. Filed under the resolved record either way; without the
+      // stamp a manager's malformed payload would read as the owner's own.
+      void auditLog("measurement-reminders.create.validation-failed", {
+        userId: user.id,
+        details: { issues: auditIssues },
+      }).catch(() => {
+        /* swallow — 422 response is the contract */
+      });
+    },
   });
-  if (jsonError) return jsonError;
-
-  const parsed = createMeasurementReminderSchema.safeParse(body);
-  if (!parsed.success) {
-    const issues = sanitiseZodIssues(parsed.error.issues);
-    annotate({
-      action: { name: "measurement-reminders.create.validation-failed" },
-      meta: { issue_count: issues.length },
-    });
-    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
-      stripValuesFromMessage: true,
-    });
-    // v1.37.0 — through `auditLog()` rather than a bare `prisma.auditLog
-    // .create`, because that helper is the only writer that stamps
-    // `actorUserId`. Filed under the resolved record either way; without the
-    // stamp a manager's malformed payload would read as the owner's own.
-    void auditLog("measurement-reminders.create.validation-failed", {
-      userId: user.id,
-      details: { issues: auditIssues },
-    }).catch(() => {
-      /* swallow — 422 response is the contract */
-    });
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const data = parsed.data;
 

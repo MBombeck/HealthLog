@@ -30,7 +30,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -57,22 +57,26 @@ const INTAKE_READ =
  */
 const INTAKE_MAY_SEE_EVERY_ROW: Record<string, string> = {
   "app/api/admin/status/route.ts": "instance row counts",
-  "app/api/dashboard/summary/route.ts":
+  "lib/dashboard/summary/build.ts":
     "engagement streak of days with any logged action, no rate",
   "app/api/export/medications/route.ts": "export of the recorded history",
   "app/api/export/route.ts": "export of the recorded history",
   "lib/export/medications-backup.ts": "backup of the recorded history",
   "app/api/sync/state/route.ts": "sync watermarks, no rate",
+  "lib/sync/changes/read-rows.ts":
+    "delta feed mirroring the recorded rows to a paired client, no rate",
   "lib/jobs/measurement-tombstone-cleanup.ts": "tombstone purge",
   "lib/ai/coach/tools/availability.ts":
     "whether any intake history exists, and its date range",
-  "app/api/medications/[id]/intake/route.ts":
-    "one medication's recorded history, listed or written",
+  "lib/medications/list-intake-events.ts":
+    "one medication's recorded history, listed",
   "app/api/medications/[id]/intake/bulk-delete/route.ts":
     "deletes rows the person chose",
-  "app/api/medications/[id]/route.ts":
-    "one medication's slots; tombstones on the tracking switch",
-  "app/api/medications/intake/bulk/route.ts": "writes recorded doses",
+  "lib/medications/update-medication/write.ts":
+    "one medication's open slots, tombstoned on a schedule replace or the tracking switch",
+  "lib/medications/course-end-placeholders.ts":
+    "gives back the open slots one medication's End course took, no rate",
+  "lib/medications/intake-bulk/ingest.ts": "writes recorded doses",
   "lib/medications/scheduling/slot-upsert.ts":
     "binds a recorded dose to its slot",
   "lib/medications/scheduling/worker-helpers.ts":
@@ -113,6 +117,21 @@ const MAY_READ_EVERY_ROW: Record<string, string> = {
     "units consumed by a recorded dose",
   "lib/medications/intake-slot-dedup.ts":
     "folds duplicate rows of doses already recorded",
+  // The medication create and edit write the schedule rows and answer
+  // through `medicationDetail` (read-medication.ts), which shapes them with
+  // scheduleWireFields and derives the due state the switch allows.
+  "lib/medications/create-medication.ts":
+    "writes the schedules; answers through medicationDetail",
+  "lib/medications/update-medication/update-medication.ts":
+    "writes the schedules; answers through medicationDetail",
+  // The medication edit: the schedule count and the primary schedule's id
+  // for the reminder-window bridge, and the replaced rows archived as an era
+  // whose payload is empty for a stretch with tracking off. Nothing due comes
+  // out of either; the edit answers through medicationDetail.
+  "lib/medications/update-medication/preflight.ts":
+    "schedule count and the primary schedule's id, derives nothing due",
+  "lib/medications/update-medication/write.ts":
+    "archives the replaced schedule; the era payload follows the tracking switch",
   // Readers that hand the rows to a builder whose input TYPE requires
   // `trackIntake` and which gates on it: the per-medication compliance
   // payload (`buildCompliancePayload`, INTAKE_NOT_TRACKED) and the doctor
@@ -141,12 +160,6 @@ function sourceFiles(): string[] {
 }
 
 /** Drop line and block comments so a mention in prose never counts. */
-function stripComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
-}
-
 function code(rel: string): string {
   return stripComments(readFileSync(join(SRC, rel), "utf8"));
 }

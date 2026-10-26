@@ -31,6 +31,7 @@
  * (`src/lib/jobs/reminder/register-maintenance.ts`) so pg-boss provisions it.
  */
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
+import { aiEgressRefusal } from "@/lib/ai/capabilities/egress";
 import { aiCapabilityForJob } from "@/lib/ai/capabilities/gate";
 import { PICK_DECIDED_REASONS } from "@/lib/ai/capabilities/types";
 import {
@@ -39,7 +40,9 @@ import {
   reserveBudget,
   resolveCostOwner,
   resolveDailyCapFor,
+  type BudgetCostOwner,
 } from "@/lib/ai/coach/budget";
+import type { ProviderChainType } from "@/lib/ai/provider-chain";
 import { prisma } from "@/lib/db";
 import {
   loadOwnedDocument,
@@ -52,14 +55,12 @@ import {
   upsertContentIndex,
 } from "@/lib/documents/content-index";
 import { transcribeDocument } from "@/lib/documents/describe";
+import { withPdfWork } from "@/lib/documents/pdf-isolation";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { resolveDocumentVisionProvider } from "@/lib/documents/provider-order";
 import { annotate } from "@/lib/logging/context";
-
-export const CONTENT_INDEX_BACKFILL_QUEUE = "document-content-index-backfill";
-
-/** Serial concurrency — provider calls, kept off the request pool. */
-export const CONTENT_INDEX_BACKFILL_CONCURRENCY = 1;
+import { spentTokensOf } from "@/lib/ai/reasoning/answerless";
+import { CONTENT_INDEX_BACKFILL_QUEUE } from "./document-content-index-backfill-queue";
 
 /** Discovery page size (id-only; blobs are loaded one at a time). */
 const PAGE_SIZE = 50;
@@ -72,8 +73,25 @@ const PAGE_SIZE = 50;
  */
 export const CONTENT_INDEX_BACKFILL_EXPIRE_SECONDS = 3 * 60 * 60;
 
-/** Max documents one job indexes before yielding (bounds spend + runtime). */
+/**
+ * Max provider calls one job makes before yielding (bounds spend + runtime).
+ * #1279 — calls, not successes: counted on indexed documents only, a
+ * provider that failed every call never reached it, and the walk went on
+ * until the job's time ran out.
+ */
 const MAX_DOCS_PER_RUN = 200;
+
+/**
+ * #1279 — provider calls in a row that may fail before the walk stops. One
+ * document the model cannot read is that document; several in a row is the
+ * provider, and the rest of the walk would only repeat it.
+ */
+export const BACKFILL_FAILURES_IN_A_ROW = 3;
+
+/** The provider the document pick chose. */
+type VisionPick = NonNullable<
+  Awaited<ReturnType<typeof resolveDocumentVisionProvider>>["pick"]
+>;
 
 /** Image MIME types the vision path can always index. */
 const IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp"] as const;
@@ -104,7 +122,13 @@ export interface ContentIndexBackfillSummary {
    */
   failed: number;
   reason:
-    "ok" | "no-provider" | "no-consent" | "budget-reached" | "unavailable";
+    | "ok"
+    | "no-provider"
+    | "no-consent"
+    | "budget-reached"
+    | "unavailable"
+    /** #1279 — `BACKFILL_FAILURES_IN_A_ROW` provider calls failed in a row. */
+    | "provider-failing";
   /**
    * The job's time budget ran out before the walk did. The documents not
    * reached stay un-indexed for the next run.
@@ -238,12 +262,14 @@ export async function runContentIndexBackfillForUser(
   let indexed = 0;
   let skipped = 0;
   let failed = stale.failed;
+  let calls = 0;
+  let failedInARow = 0;
   let reason: ContentIndexBackfillSummary["reason"] = "ok";
   let cursor: string | null = null;
   let stoppedEarly = false;
 
   outer: for (;;) {
-    if (indexed >= MAX_DOCS_PER_RUN) break;
+    if (calls >= MAX_DOCS_PER_RUN) break;
     const rows: { id: string }[] = await prisma.inboundDocument.findMany({
       where: {
         userId,
@@ -262,7 +288,11 @@ export async function runContentIndexBackfillForUser(
     if (rows.length === 0) break;
 
     for (const { id } of rows) {
-      if (indexed >= MAX_DOCS_PER_RUN) break outer;
+      if (calls >= MAX_DOCS_PER_RUN) break outer;
+      if (failedInARow >= BACKFILL_FAILURES_IN_A_ROW) {
+        reason = "provider-failing";
+        break outer;
+      }
       if (shouldStop()) {
         stoppedEarly = true;
         break outer;
@@ -291,7 +321,10 @@ export async function runContentIndexBackfillForUser(
         skipped += 1;
         continue;
       }
-      const vision = await prepareVisionInput(document, pick.pdfSupported);
+      const vision = await withPdfWork(
+        { owner: userId, lane: "background" },
+        () => prepareVisionInput(document, pick.pdfSupported),
+      );
       if (!vision.ok) {
         // Not vision-indexable after all (undecryptable, unreadable bytes,
         // or a PDF the rasteriser could not render) — refund and move on so
@@ -305,40 +338,34 @@ export async function runContentIndexBackfillForUser(
         continue;
       }
 
-      try {
-        const { text } = await transcribeDocument({
-          provider: pick.entry.instance,
-          providerType: pick.providerType,
-          images: vision.images,
-          documents: vision.documents,
-        });
-        await reconcileSpend(
-          userId,
-          reservation.reserved,
-          reservation.reserved,
-          dateKey,
-          0,
-          {
-            servedBy: pick.entry.providerType,
-            reservedOwner: reservation.owner,
-          },
-        );
-        await upsertContentIndex({
-          userId,
-          documentId: document.id,
-          text,
-          source: "vision",
-          providerType: pick.providerType,
-        });
-        indexed += 1;
-      } catch {
-        // A provider miss on one document must not abort the batch — refund and
-        // leave it un-indexed (a later run retries it).
+      // The wire again, before every read: a consent withdrawn or a switch
+      // turned off while the walk runs stops it at the next document, not
+      // at the next run.
+      const refusal = await aiEgressRefusal("documentAi", userId, [
+        pick.providerType,
+      ]);
+      if (refusal) {
         await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
           servedBy: null,
           reservedOwner: reservation.owner,
         });
+        reason =
+          refusal.reason === "consent_required" ? "no-consent" : "unavailable";
+        break outer;
+      }
+
+      calls += 1;
+      const read = await transcribeAndIndex(userId, document.id, pick, vision, {
+        reserved: reservation.reserved,
+        owner: reservation.owner,
+        dateKey,
+      });
+      if (read === "indexed") {
+        indexed += 1;
+        failedInARow = 0;
+      } else {
         failed += 1;
+        failedInARow += 1;
       }
     }
 
@@ -365,6 +392,56 @@ export async function runContentIndexBackfillForUser(
     reason,
     ...(stoppedEarly ? { stoppedEarly } : {}),
   };
+}
+
+/**
+ * One document's provider read and its index row, with the reservation
+ * settled either way. A provider miss on one document must not abort the
+ * batch: it is refunded and left un-indexed (a later run retries it).
+ * #1279 — what the failed reply reported spending stays charged, and the
+ * caller stops the walk after several misses in a row.
+ */
+async function transcribeAndIndex(
+  userId: string,
+  documentId: string,
+  pick: VisionPick,
+  vision: Extract<Awaited<ReturnType<typeof prepareVisionInput>>, { ok: true }>,
+  budget: { reserved: number; owner: BudgetCostOwner; dateKey: string },
+): Promise<"indexed" | { error: unknown }> {
+  const settle = (spent: number, servedBy: ProviderChainType | null) =>
+    reconcileSpend(userId, budget.reserved, spent, budget.dateKey, 0, {
+      servedBy,
+      reservedOwner: budget.owner,
+    });
+  let text: string;
+  try {
+    ({ text } = await transcribeDocument({
+      provider: pick.entry.instance,
+      providerType: pick.providerType,
+      images: vision.images,
+      documents: vision.documents,
+    }));
+  } catch (err) {
+    await settle(spentTokensOf(err) ?? 0, null);
+    // Counted into the run's `failed` tally by the caller.
+    return { error: err };
+  }
+  // Settled once, for the read that was made. The index write below is ours,
+  // not the provider's: a failure there charges nothing back, or the
+  // reservation would be handed back a second time.
+  await settle(budget.reserved, pick.entry.providerType);
+  try {
+    await upsertContentIndex({
+      userId,
+      documentId,
+      text,
+      source: "vision",
+      providerType: pick.providerType,
+    });
+  } catch (err) {
+    return { error: err };
+  }
+  return "indexed";
 }
 
 /**

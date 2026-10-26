@@ -1,19 +1,12 @@
 import { prisma } from "@/lib/db";
 import { getMoodSystemPrompt, getMoodUserPrompt } from "@/lib/ai/prompts/mood";
-import { openerArchetypeHint } from "@/lib/ai/prompts/opener-archetype";
-import type { Locale } from "@/lib/i18n/config";
 import { getNoKeyMoodStatusText } from "@/lib/insights/no-key-fallbacks";
-import {
-  formatPreviousContextForPrompt,
-  getPreviousInsightContext,
-} from "@/lib/insights/memory";
-import {
-  buildAssessmentContextBlock,
-  computeSteadyRun,
-  pickVarietyLead,
-} from "@/lib/insights/assessment-context";
+import { computeSteadyRun } from "@/lib/insights/assessment-context";
 import { significantPearsonCorrelation } from "@/lib/analytics/correlations";
-import { applyPayloadBudget } from "@/lib/insights/bucket-series";
+import {
+  applyPayloadBudget,
+  type DailyBucket,
+} from "@/lib/insights/bucket-series";
 import {
   type TagInfluenceRow,
   MOOD_GREEN_MAX,
@@ -34,37 +27,26 @@ import {
   pairDailyBuckets,
 } from "@/lib/insights/mood-aggregates";
 import { computeMoodNarratives } from "@/lib/insights/mood-narratives";
-import {
-  buildGradedSeriesFromPoints,
-  degradeStatusSnapshotToBudget,
-} from "@/lib/insights/graded-series";
-import { statusSnapshotCharsForRecord } from "@/lib/ai/capabilities/usage";
+import { buildGradedSeriesFromPoints } from "@/lib/insights/graded-series";
 import { buildMetricSignal } from "@/lib/insights/metric-signal";
-import {
-  type SupportedLocale,
-  normalizeLocale,
-  finalizeStatusSummary,
-  persistStatusInsight,
-  round,
-  summarizeSeries,
-} from "@/lib/insights/status-shared";
-import {
-  readFreshStatusText,
-  refreshUnchangedStatusInsight,
-  resolveReadOnlyStatusMiss,
-  statusCacheAction,
-} from "@/lib/insights/status-cache";
-import { hashInsightSnapshot } from "@/lib/insights/snapshot-hash";
-import { returnTimeoutFallback } from "@/lib/insights/timeout-fallback";
+import { round, summarizeSeries } from "@/lib/insights/status-shared";
 import {
   runPreparedStatusCard,
   type PreparedStatusCard,
-  type StatusCardResult,
 } from "@/lib/insights/status-card-generation";
+import {
+  coverageSpan,
+  prepareStatusCard,
+  textStatusCodec,
+  type StatusCardBuild,
+  type StatusCardContext,
+  type StatusCardOptions,
+  type StatusCardPlugin,
+  type StatusTextResult,
+} from "@/lib/insights/status-pipeline";
 import { annotate } from "@/lib/logging/context";
 import { createCustomLabelResolver } from "@/lib/mood/custom-tags";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
-import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
 
 /**
  * Drop the ranking-only `pooledSd` before a tag-influence row enters the
@@ -127,117 +109,212 @@ export function crossMetricDailySeries(
  */
 export async function generateMoodStatusForUser(
   userId: string,
-  options?: {
-    locale?: string | null;
-    force?: boolean;
-    /** v1.8.3 — read-only navigation path; see weight-status for the rationale. */
-    readOnly?: boolean;
-  },
-): Promise<{
-  hasProvider: boolean;
-  text: string | null;
-  cached: boolean;
-  updatedAt: string | null;
-  preparing?: boolean;
-  /** v1.9.0 — last-good text served while a refresh is in flight; keep polling. */
-  revalidating?: boolean;
-}> {
+  options?: StatusCardOptions,
+): Promise<StatusTextResult> {
   const prepared = await prepareMoodStatusForUser(userId, options);
-  const result = await runPreparedStatusCard(prepared);
-  return result as {
-    hasProvider: boolean;
-    text: string | null;
-    cached: boolean;
-    updatedAt: string | null;
-    preparing?: boolean;
-    revalidating?: boolean;
+  return (await runPreparedStatusCard(prepared)) as StatusTextResult;
+}
+
+/**
+ * Everything up to (not including) the provider call, through the shared
+ * status pipeline (`status-pipeline.ts`); this card supplies its snapshot.
+ */
+export function prepareMoodStatusForUser(
+  userId: string,
+  options?: StatusCardOptions,
+): Promise<PreparedStatusCard> {
+  return prepareStatusCard(MOOD_STATUS_CARD, userId, options);
+}
+
+type MoodStatusEntry = Awaited<
+  ReturnType<typeof readMoodEntriesForStatus>
+>[number];
+type CrossMetricMeasurement = Awaited<
+  ReturnType<typeof readCrossMetricMeasurements>
+>[number];
+
+/**
+ * The mood snapshot: the mood series against its band, the tag and factor
+ * boards the mood page shows, the narrative feed, and the cross-metric
+ * context.
+ */
+async function buildMoodSnapshot(
+  ctx: StatusCardContext,
+): Promise<StatusCardBuild<undefined>> {
+  const { userId, locale, userTz, todayKey } = ctx;
+  const entries = await readMoodEntriesForStatus(userId);
+
+  const now = new Date();
+
+  // v1.2.5 — every day-bucketing pass below keys on the user's own
+  // calendar day. `userTz` was already resolved above for the cache day-key.
+
+  const moodPoints = entries.map((entry) => ({
+    measuredAt: entry.moodLoggedAt,
+    value: entry.score,
+  }));
+  // `applyPayloadBudget` daily buckets drive the in-target %, latest,
+  // and correlations; the compact graded series reaches the prompt.
+  const moodSeries = applyPayloadBudget(moodPoints, { now, tz: userTz });
+  const moodGraded = buildGradedSeriesFromPoints(moodPoints, now, userTz);
+  const moodSummary = summarizeSeries(
+    moodSeries.daily.map((bucket) => ({ value: bucket.value })),
+  );
+
+  const greenMin = MOOD_GREEN_MIN;
+  const greenMax = MOOD_GREEN_MAX;
+  const orangeMin = MOOD_ORANGE_MIN;
+  const orangeMax = MOOD_ORANGE_MAX;
+
+  // "Last 30 daily points" = the newest 30 daily buckets (offsets 0..29).
+  const inTargetPctLast30DailyPoints = computeInTargetPct(moodSeries.daily);
+
+  // daily[0] = newest bucket (lowest dayOffset).
+  const latestMood = moodSeries.daily[0] ?? null;
+  const previousMood = moodSeries.daily[1] ?? null;
+
+  const { totalSpanDays, newestDaysAgo: newestEntryDaysAgo } = coverageSpan(
+    entries.length > 0 ? entries[0].moodLoggedAt : null,
+    entries.length > 0 ? entries[entries.length - 1].moodLoggedAt : null,
+  );
+
+  const measurements = await readCrossMetricMeasurements(userId, now);
+  const relations = await computeMoodRelations({
+    userId,
+    entries,
+    measurements,
+    moodDaily: moodSeries.daily,
+    inTargetPctLast30DailyPoints,
+    now,
+    userTz,
+  });
+
+  // v1.18.10 — hand the model the finished recent-vs-baseline
+  // comparison + normal-swing verdict instead of asking it to derive them.
+  // Mood reads higher-better against the green band.
+  const moodSignal = buildMetricSignal({
+    metric: locale === "en" ? "your mood" : "deine Stimmung",
+    unit: "/5",
+    direction: "higher-better",
+    graded: moodGraded,
+    normalRange: { low: greenMin, high: greenMax },
+    newestDaysAgo: newestEntryDaysAgo,
+  });
+
+  const snapshot = {
+    locale,
+    generatedForDay: todayKey,
+    focus: "mood",
+    dataCoverage: {
+      totalEntries: entries.length,
+      totalSpanDays,
+      newestEntryDaysAgo,
+    },
+    mood: {
+      ...(moodSignal ? { signal: moodSignal } : {}),
+      summary: moodSummary,
+      series: moodGraded,
+      latestDayFocus: latestMood
+        ? {
+            dayOffset: latestMood.dayOffset,
+            value: latestMood.value,
+            deltaToPreviousDailyPoint:
+              previousMood == null
+                ? null
+                : round(latestMood.value - previousMood.value, 2),
+          }
+        : null,
+      target: {
+        greenMin,
+        greenMax,
+        orangeMin,
+        orangeMax,
+        inTargetPctLast30DailyPoints,
+      },
+      tags: relations.tagSummary.length > 0 ? relations.tagSummary : null,
+      // v1.11.5 — with-vs-without tag influence (only the populated
+      // axes are emitted so the prompt stays compact).
+      tagInfluence:
+        relations.tagInfluence.flat.length > 0 ||
+        relations.tagInfluence.structured.length > 0
+          ? {
+              flat:
+                relations.tagInfluence.flat.length > 0
+                  ? relations.tagInfluence.flat.map(stripRankingOnly)
+                  : null,
+              structured:
+                relations.tagInfluence.structured.length > 0
+                  ? relations.tagInfluence.structured.map(stripRankingOnly)
+                  : null,
+            }
+          : null,
+      // v1.11.5 — the ranked "better days" board the user sees, so the
+      // model's relations prose matches the on-screen list (shown == sent).
+      betterDays: relations.betterDays.length > 0 ? relations.betterDays : null,
+      // v1.14.0 — RATED-factor → vital deviation rows (low-vs-high-day Welch
+      // delta, FDR-gated). Lets the model say "your data shows sleep runs ~X
+      // shorter on days you rate work low (n=N, association not cause)". Only
+      // the surviving rows reach the prompt; an empty board emits null.
+      factorCrosstab:
+        relations.factorCrosstab.length > 0
+          ? relations.factorCrosstab.map(stripFactorCrosstab)
+          : null,
+      narratives: relations.narratives.length > 0 ? relations.narratives : null,
+      // v1.9.0 — only emit the daypart pattern when it cleared its
+      // spread/sample floors, so the model never reasons over a once-a-day
+      // logger's single-bucket artefact.
+      timeOfDay: relations.timeOfDay.reliable
+        ? {
+            buckets: relations.timeOfDay.buckets,
+            best: relations.timeOfDay.best,
+            worst: relations.timeOfDay.worst,
+          }
+        : null,
+      stability: relations.stability,
+    },
+    crossMetricContext: moodCrossMetricContext(relations),
+  };
+
+  // MOOD is mood-entry backed (not a MeasurementType), so the cross-metric
+  // RELATIONS sub-block is sourced from the snapshot's own crossMetricContext
+  // rather than the measurement discovery engine; relations stays empty here
+  // and the variety / data-strength / repetition signals carry the rotation.
+  return {
+    snapshot,
+    finish: () => ({
+      context: {
+        repeatCount: computeSteadyRun(moodGraded.weekly, moodGraded.monthly),
+        points: moodSeries.daily.length,
+        newestDaysAgo: newestEntryDaysAgo,
+        relationsFor: null,
+      },
+      fallbackText: getNoKeyMoodStatusText(locale, moodSignal),
+      prompts: (snapshotJson, context) => ({
+        systemPrompt: getMoodSystemPrompt(locale),
+        userPrompt: getMoodUserPrompt(
+          snapshotJson,
+          todayKey,
+          locale,
+          context.previousContextBlock,
+          context.assessmentContextBlock,
+          context.openerHint,
+        ),
+      }),
+      detail: undefined,
+    }),
   };
 }
 
 /**
- * v1.18.7 — everything up to (not including) the provider call.
- * Returns a finished `served` result for every path that never needed the
- * LLM, or a `pending` descriptor the single-card path and the batch path
- * both drive. See `status-card-generation.ts` for the contract.
+ * The latest 90 mood entries, oldest first, with their structured tags and
+ * their rated factors.
  */
-export async function prepareMoodStatusForUser(
-  userId: string,
-  options?: {
-    locale?: string | null;
-    force?: boolean;
-    /** v1.8.3 — read-only navigation path; see weight-status for the rationale. */
-    readOnly?: boolean;
-  },
-): Promise<PreparedStatusCard> {
-  const locale = normalizeLocale(options?.locale);
-  const force = options?.force === true;
-  const readOnly = options?.readOnly === true;
-  const cacheAction = statusCacheAction("mood", locale);
-  // v1.30.3 — resolve the user's own tz BEFORE the day-key so the
-  // cache rolls over at the user's local midnight, not Berlin's. Has to
-  // happen ahead of the cache read below (the earliest possible return
-  // path), not just the later day-bucketing reads.
-  const userTz = await resolveUserTimezone(userId);
-  const todayKey = userDayKey(new Date(), userTz);
-
-  const cached = await readFreshStatusText({
-    userId,
-    cacheAction,
-    todayKey,
-    force,
-  });
-  if (cached) {
-    return {
-      phase: "served",
-      result: {
-        hasProvider: true,
-        text: cached.text,
-        cached: true,
-        updatedAt: cached.updatedAt,
-      },
-    };
-  }
-
-  if (readOnly) {
-    const outcome = await resolveReadOnlyStatusMiss({
-      userId,
-      metric: "mood",
-      locale,
-    });
-    // Unavailable for any reason serves the deterministic line and enqueues
-    // nothing. `hasProvider` is provider presence only.
-    if (outcome.kind === "unavailable") {
-      return {
-        phase: "served",
-        result: {
-          hasProvider: outcome.hasProvider,
-          text: getNoKeyMoodStatusText(locale),
-          cached: true,
-          updatedAt: null,
-        },
-      };
-    }
-    // v1.8.7 — stale-while-revalidate: serve the last good assessment
-    // (if any) instantly while the worker re-warms; only fall to the empty
-    // preparing skeleton when none was ever produced.
-    return {
-      phase: "served",
-      result: {
-        hasProvider: true,
-        text: outcome.lastGood?.text ?? null,
-        cached: outcome.lastGood !== null,
-        updatedAt: outcome.lastGood?.updatedAt ?? null,
-        preparing: outcome.lastGood === null,
-        revalidating: outcome.revalidating,
-      },
-    };
-  }
-
+function readMoodEntriesForStatus(userId: string) {
   // v1.4.28 — cap at 90 entries (~3 months) for the mood
   // surface. The downstream `applyPayloadBudget` slims further.
   // Order desc + reverse so the per-row consumers downstream (which
   // expect oldest-first) see the same shape.
-  const entries = await prisma.moodEntry
+  return prisma.moodEntry
     .findMany({
       where: {
         userId,
@@ -318,50 +395,13 @@ export async function prepareMoodStatusForUser(
           })),
       }));
     });
+}
 
-  const now = new Date();
-
-  // v1.2.5 — every day-bucketing pass below keys on the user's own
-  // calendar day. `userTz` was already resolved above for the cache day-key.
-
-  const moodPoints = entries.map((entry) => ({
-    measuredAt: entry.moodLoggedAt,
-    value: entry.score,
-  }));
-  // `applyPayloadBudget` daily buckets drive the in-target %, latest,
-  // and correlations; the compact graded series reaches the prompt.
-  const moodSeries = applyPayloadBudget(moodPoints, { now, tz: userTz });
-  const moodGraded = buildGradedSeriesFromPoints(moodPoints, now, userTz);
-  const moodSummary = summarizeSeries(
-    moodSeries.daily.map((bucket) => ({ value: bucket.value })),
-  );
-
-  const greenMin = MOOD_GREEN_MIN;
-  const greenMax = MOOD_GREEN_MAX;
-  const orangeMin = MOOD_ORANGE_MIN;
-  const orangeMax = MOOD_ORANGE_MAX;
-
-  // "Last 30 daily points" = the newest 30 daily buckets (offsets 0..29).
-  const inTargetPctLast30DailyPoints = computeInTargetPct(moodSeries.daily);
-
-  // daily[0] = newest bucket (lowest dayOffset).
-  const latestMood = moodSeries.daily[0] ?? null;
-  const previousMood = moodSeries.daily[1] ?? null;
-
-  const oldestEntry = entries.length > 0 ? entries[0].moodLoggedAt : null;
-  const newestEntry =
-    entries.length > 0 ? entries[entries.length - 1].moodLoggedAt : null;
-  const totalSpanDays =
-    oldestEntry && newestEntry
-      ? Math.round(
-          (newestEntry.getTime() - oldestEntry.getTime()) /
-            (24 * 60 * 60 * 1000),
-        )
-      : 0;
-  const newestEntryDaysAgo = newestEntry
-    ? Math.round((Date.now() - newestEntry.getTime()) / (24 * 60 * 60 * 1000))
-    : null;
-
+/**
+ * The cross-metric measurements the correlations and the factor crosstab
+ * pair against, bounded to the ~365-day window they can pair in.
+ */
+async function readCrossMetricMeasurements(userId: string, now: Date) {
   // Fetch cross-metric context for enrichment. v1.4.28 FB-D2 — cap at
   // 1095 = 365 d × 3 channels so power users do not pull unbounded
   // rows. Order desc + reverse so the downstream filters see oldest-
@@ -415,6 +455,33 @@ export async function prepareMoodStatusForUser(
     annotate({ meta: { cross_metric_truncated: true } });
   }
 
+  return measurements;
+}
+
+/**
+ * Mood against the other metrics and its own tags: the correlations, the
+ * tag summaries and influence, the "better days" board, the factor
+ * crosstab, the time-of-day pattern, stability and the narrative feed — the
+ * same aggregates the visible mood page shows.
+ */
+async function computeMoodRelations(args: {
+  userId: string;
+  entries: MoodStatusEntry[];
+  measurements: CrossMetricMeasurement[];
+  moodDaily: DailyBucket[];
+  inTargetPctLast30DailyPoints: number | null;
+  now: Date;
+  userTz: string;
+}) {
+  const {
+    userId,
+    entries,
+    measurements,
+    inTargetPctLast30DailyPoints,
+    now,
+    userTz,
+  } = args;
+  const moodSeries = { daily: args.moodDaily };
   const weightSeries = crossMetricDailySeries(
     measurements,
     "WEIGHT",
@@ -540,275 +607,75 @@ export async function prepareMoodStatusForUser(
     tz: userTz,
   });
 
-  // v1.18.10 — hand the model the finished recent-vs-baseline
-  // comparison + normal-swing verdict instead of asking it to derive them.
-  // Mood reads higher-better against the green band.
-  const moodSignal = buildMetricSignal({
-    metric: locale === "en" ? "your mood" : "deine Stimmung",
-    unit: "/5",
-    direction: "higher-better",
-    graded: moodGraded,
-    normalRange: { low: greenMin, high: greenMax },
-    newestDaysAgo: newestEntryDaysAgo,
-  });
-
-  const snapshot = {
-    locale,
-    generatedForDay: todayKey,
-    focus: "mood",
-    dataCoverage: {
-      totalEntries: entries.length,
-      totalSpanDays,
-      newestEntryDaysAgo,
-    },
-    mood: {
-      ...(moodSignal ? { signal: moodSignal } : {}),
-      summary: moodSummary,
-      series: moodGraded,
-      latestDayFocus: latestMood
-        ? {
-            dayOffset: latestMood.dayOffset,
-            value: latestMood.value,
-            deltaToPreviousDailyPoint:
-              previousMood == null
-                ? null
-                : round(latestMood.value - previousMood.value, 2),
-          }
-        : null,
-      target: {
-        greenMin,
-        greenMax,
-        orangeMin,
-        orangeMax,
-        inTargetPctLast30DailyPoints,
-      },
-      tags: tagSummary.length > 0 ? tagSummary : null,
-      // v1.11.5 — with-vs-without tag influence (only the populated
-      // axes are emitted so the prompt stays compact).
-      tagInfluence:
-        tagInfluence.flat.length > 0 || tagInfluence.structured.length > 0
-          ? {
-              flat:
-                tagInfluence.flat.length > 0
-                  ? tagInfluence.flat.map(stripRankingOnly)
-                  : null,
-              structured:
-                tagInfluence.structured.length > 0
-                  ? tagInfluence.structured.map(stripRankingOnly)
-                  : null,
-            }
-          : null,
-      // v1.11.5 — the ranked "better days" board the user sees, so the
-      // model's relations prose matches the on-screen list (shown == sent).
-      betterDays: betterDays.length > 0 ? betterDays : null,
-      // v1.14.0 — RATED-factor → vital deviation rows (low-vs-high-day Welch
-      // delta, FDR-gated). Lets the model say "your data shows sleep runs ~X
-      // shorter on days you rate work low (n=N, association not cause)". Only
-      // the surviving rows reach the prompt; an empty board emits null.
-      factorCrosstab:
-        factorCrosstab.length > 0
-          ? factorCrosstab.map(stripFactorCrosstab)
-          : null,
-      narratives: narratives.length > 0 ? narratives : null,
-      // v1.9.0 — only emit the daypart pattern when it cleared its
-      // spread/sample floors, so the model never reasons over a once-a-day
-      // logger's single-bucket artefact.
-      timeOfDay: timeOfDay.reliable
-        ? {
-            buckets: timeOfDay.buckets,
-            best: timeOfDay.best,
-            worst: timeOfDay.worst,
-          }
-        : null,
-      stability,
-    },
-    crossMetricContext:
-      weightSeries.daily.length >= 3 ||
-      sysSeries.daily.length >= 3 ||
-      pulseSeries.daily.length >= 3
-        ? {
-            weight:
-              weightSeries.daily.length >= 3
-                ? {
-                    summary: summarizeSeries(
-                      weightSeries.daily.map((bucket) => ({
-                        value: bucket.value,
-                      })),
-                    ),
-                    correlation: moodVsWeightCorrelation,
-                  }
-                : null,
-            bloodPressureSystolic:
-              sysSeries.daily.length >= 3
-                ? {
-                    summary: summarizeSeries(
-                      sysSeries.daily.map((bucket) => ({
-                        value: bucket.value,
-                      })),
-                    ),
-                    correlation: moodVsSysCorrelation,
-                  }
-                : null,
-            pulse:
-              pulseSeries.daily.length >= 3
-                ? {
-                    summary: summarizeSeries(
-                      pulseSeries.daily.map((bucket) => ({
-                        value: bucket.value,
-                      })),
-                    ),
-                    correlation: moodVsPulseCorrelation,
-                  }
-                : null,
-          }
-        : null,
-  };
-
-  const shed = degradeStatusSnapshotToBudget(
-    snapshot as unknown as Record<string, unknown>,
-    { maxChars: await statusSnapshotCharsForRecord(userId) },
-  );
-  const snapshotJson = JSON.stringify(snapshot);
-
-  annotate({
-    action: { name: cacheAction },
-    meta: {
-      payload_size_bytes: snapshotJson.length,
-      ...(shed.length > 0 ? { snapshot_shed: shed } : {}),
-    },
-  });
-
-  // Content-hash gate (v1.16.8): when the snapshot is unchanged since the
-  // last real assessment, refresh the cache timestamp and skip the LLM.
-  const snapshotHash = hashInsightSnapshot(snapshot);
-  const unchanged = await refreshUnchangedStatusInsight({
-    userId,
-    cacheAction,
-    todayKey,
-    snapshotHash,
-  });
-  if (unchanged) {
-    return {
-      phase: "served",
-      result: {
-        hasProvider: true,
-        text: unchanged.text,
-        cached: true,
-        updatedAt: unchanged.updatedAt,
-      },
-    };
-  }
-
-  const previousContext = await getPreviousInsightContext(
-    userId,
-    "mood-status",
-    locale,
-    12,
-  );
-  const previousContextBlock = formatPreviousContextForPrompt(
-    previousContext,
-    locale,
-  );
-
-  // v1.12.7 — diversity / anti-repetition block (see blood-pressure-status).
-  // MOOD is mood-entry backed (not a MeasurementType), so the cross-metric
-  // RELATIONS sub-block is sourced from the snapshot's own crossMetricContext
-  // rather than the measurement discovery engine; relations stays empty here
-  // and the variety / data-strength / repetition signals carry the rotation.
-  const varietyLead = pickVarietyLead(userId, "mood", todayKey);
-  const steadyRun = computeSteadyRun(moodGraded.weekly, moodGraded.monthly);
-  const assessmentContextBlock = buildAssessmentContextBlock(
-    {
-      varietyLead,
-      dataStrength: {
-        points: moodSeries.daily.length,
-        newestDaysAgo: newestEntryDaysAgo,
-      },
-      repeatCount: steadyRun,
-      relations: [],
-    },
-    locale,
-  );
-
-  // The provider call is deferred to the caller — the single-card path runs
-  // ONE completion, the batch path folds this prompt into one shared call.
-  // A timeout / error is a transient miss (fallback served, no assessment
-  // persisted); `none` (no provider / no consent) serves the no-key text.
   return {
-    phase: "pending",
-    metric: "mood",
-    userId,
-    cacheAction,
-    systemPrompt: getMoodSystemPrompt(locale),
-    userPrompt: getMoodUserPrompt(
-      snapshotJson,
-      todayKey,
-      locale,
-      previousContextBlock,
-      assessmentContextBlock,
-      // v1.28.40 — rotating opener hint, per (user, metric, day).
-      openerArchetypeHint(`${userId}:mood:${todayKey}`, locale as Locale),
-    ),
-    snapshotHash,
-    // v1.12.7 — match the archetype cards' 0.45.
-    temperature: 0.45,
-    noProvider: {
-      hasProvider: false,
-      text: getNoKeyMoodStatusText(locale, moodSignal),
-      cached: true,
-      updatedAt: null,
-    },
-    timeout: (reason): StatusCardResult =>
-      returnTimeoutFallback({
-        cacheAction,
-        reason,
-        userId,
-        todayKey,
-        stubText: getNoKeyMoodStatusText(locale, moodSignal),
-      }),
-    finalize: async (outcome): Promise<StatusCardResult> => {
-      // Outbound safety screen. The only transform here used to be
-      // whitespace-normalisation, so a dose-change imperative or a fabricated
-      // clinical risk score persisted as the day's cached assessment. Policy
-      // for a background-generated card is WITHHOLD: serve the deterministic
-      // stub and persist no model text (see `finalizeStatusSummary`).
-      const screened = finalizeStatusSummary(outcome.content, locale);
-      if (!screened.ok) {
-        annotate({
-          action: { name: "insights.status.outbound_blocked" },
-          meta: { cacheAction, reason: screened.reason },
-        });
-        return returnTimeoutFallback({
-          cacheAction,
-          reason: "screened",
-          userId: userId,
-          todayKey: todayKey,
-          stubText: getNoKeyMoodStatusText(locale, moodSignal),
-        });
-      }
-      const summary = screened.text;
-      if (!summary) {
-        throw new Error("Mood-status summary was empty after normalization");
-      }
-      const updatedAt = await persistStatusInsight({
-        userId,
-        cacheAction,
-        todayKey,
-        text: summary,
-        snapshotHash,
-      });
-      return {
-        hasProvider: true,
-        text: summary,
-        cached: false,
-        updatedAt,
-      };
-    },
+    weightSeries,
+    sysSeries,
+    pulseSeries,
+    moodVsWeightCorrelation,
+    moodVsSysCorrelation,
+    moodVsPulseCorrelation,
+    tagSummary,
+    tagInfluence,
+    betterDays,
+    factorCrosstab,
+    timeOfDay,
+    stability,
+    narratives,
   };
 }
 
-export function resolveMoodStatusLocale(
-  locale: string | null | undefined,
-): SupportedLocale {
-  return normalizeLocale(locale);
+/**
+ * The cross-metric block: each of weight, systolic and pulse with at least
+ * three daily points, summarised with its mood correlation.
+ */
+function moodCrossMetricContext(
+  r: Awaited<ReturnType<typeof computeMoodRelations>>,
+) {
+  return r.weightSeries.daily.length >= 3 ||
+    r.sysSeries.daily.length >= 3 ||
+    r.pulseSeries.daily.length >= 3
+    ? {
+        weight:
+          r.weightSeries.daily.length >= 3
+            ? {
+                summary: summarizeSeries(
+                  r.weightSeries.daily.map((bucket) => ({
+                    value: bucket.value,
+                  })),
+                ),
+                correlation: r.moodVsWeightCorrelation,
+              }
+            : null,
+        bloodPressureSystolic:
+          r.sysSeries.daily.length >= 3
+            ? {
+                summary: summarizeSeries(
+                  r.sysSeries.daily.map((bucket) => ({
+                    value: bucket.value,
+                  })),
+                ),
+                correlation: r.moodVsSysCorrelation,
+              }
+            : null,
+        pulse:
+          r.pulseSeries.daily.length >= 3
+            ? {
+                summary: summarizeSeries(
+                  r.pulseSeries.daily.map((bucket) => ({
+                    value: bucket.value,
+                  })),
+                ),
+                correlation: r.moodVsPulseCorrelation,
+              }
+            : null,
+      }
+    : null;
 }
+
+const MOOD_STATUS_CARD: StatusCardPlugin<StatusTextResult, undefined> = {
+  scope: "mood",
+  codec: textStatusCodec,
+  unavailableText: (locale) => getNoKeyMoodStatusText(locale),
+  emptyMessage: "Mood-status summary was empty after normalization",
+  build: buildMoodSnapshot,
+};

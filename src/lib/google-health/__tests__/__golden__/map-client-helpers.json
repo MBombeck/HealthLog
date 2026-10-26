@@ -1,0 +1,604 @@
+{
+  "resolveGoogleHealthUserId": [
+    { "profile": { "name": "users/1234567890" }, "userId": "1234567890" },
+    { "profile": { "name": "users/", "id": "id-0002" }, "userId": "id-0002" },
+    { "profile": { "name": "plain-0003" }, "userId": "plain-0003" },
+    { "profile": { "id": "id-0004" }, "userId": "id-0004" },
+    { "profile": {}, "userId": "me" }
+  ],
+  "formatCivilBound": [
+    {
+      "instant": "2026-06-01T21:59:59.000Z",
+      "tz": null,
+      "bound": "2026-06-01T21:59:59"
+    },
+    {
+      "instant": "2026-06-01T21:59:59.000Z",
+      "tz": "Europe/Berlin",
+      "bound": "2026-06-01T23:59:59"
+    },
+    {
+      "instant": "2026-06-01T21:59:59.000Z",
+      "tz": "America/New_York",
+      "bound": "2026-06-01T17:59:59"
+    },
+    {
+      "instant": "2026-06-01T22:00:00.000Z",
+      "tz": null,
+      "bound": "2026-06-01T22:00:00"
+    },
+    {
+      "instant": "2026-06-01T22:00:00.000Z",
+      "tz": "Europe/Berlin",
+      "bound": "2026-06-02T00:00:00"
+    },
+    {
+      "instant": "2026-06-01T22:00:00.000Z",
+      "tz": "America/New_York",
+      "bound": "2026-06-01T18:00:00"
+    },
+    {
+      "instant": "2026-03-29T00:30:00.000Z",
+      "tz": null,
+      "bound": "2026-03-29T00:30:00"
+    },
+    {
+      "instant": "2026-03-29T00:30:00.000Z",
+      "tz": "Europe/Berlin",
+      "bound": "2026-03-29T01:30:00"
+    },
+    {
+      "instant": "2026-03-29T00:30:00.000Z",
+      "tz": "America/New_York",
+      "bound": "2026-03-28T20:30:00"
+    },
+    {
+      "instant": "2026-12-31T23:30:15.500Z",
+      "tz": null,
+      "bound": "2026-12-31T23:30:15"
+    },
+    {
+      "instant": "2026-12-31T23:30:15.500Z",
+      "tz": "Europe/Berlin",
+      "bound": "2027-01-01T00:30:15"
+    },
+    {
+      "instant": "2026-12-31T23:30:15.500Z",
+      "tz": "America/New_York",
+      "bound": "2026-12-31T18:30:15"
+    }
+  ],
+  "civilDateInTz": [
+    {
+      "instant": "2026-06-01T21:59:59.000Z",
+      "tz": null,
+      "date": { "year": 2026, "month": 6, "day": 1 }
+    },
+    {
+      "instant": "2026-06-01T21:59:59.000Z",
+      "tz": "Europe/Berlin",
+      "date": { "year": 2026, "month": 6, "day": 1 }
+    },
+    {
+      "instant": "2026-06-01T21:59:59.000Z",
+      "tz": "America/New_York",
+      "date": { "year": 2026, "month": 6, "day": 1 }
+    },
+    {
+      "instant": "2026-06-01T22:00:00.000Z",
+      "tz": null,
+      "date": { "year": 2026, "month": 6, "day": 1 }
+    },
+    {
+      "instant": "2026-06-01T22:00:00.000Z",
+      "tz": "Europe/Berlin",
+      "date": { "year": 2026, "month": 6, "day": 2 }
+    },
+    {
+      "instant": "2026-06-01T22:00:00.000Z",
+      "tz": "America/New_York",
+      "date": { "year": 2026, "month": 6, "day": 1 }
+    },
+    {
+      "instant": "2026-03-29T00:30:00.000Z",
+      "tz": null,
+      "date": { "year": 2026, "month": 3, "day": 29 }
+    },
+    {
+      "instant": "2026-03-29T00:30:00.000Z",
+      "tz": "Europe/Berlin",
+      "date": { "year": 2026, "month": 3, "day": 29 }
+    },
+    {
+      "instant": "2026-03-29T00:30:00.000Z",
+      "tz": "America/New_York",
+      "date": { "year": 2026, "month": 3, "day": 28 }
+    },
+    {
+      "instant": "2026-12-31T23:30:15.500Z",
+      "tz": null,
+      "date": { "year": 2026, "month": 12, "day": 31 }
+    },
+    {
+      "instant": "2026-12-31T23:30:15.500Z",
+      "tz": "Europe/Berlin",
+      "date": { "year": 2027, "month": 1, "day": 1 }
+    },
+    {
+      "instant": "2026-12-31T23:30:15.500Z",
+      "tz": "America/New_York",
+      "date": { "year": 2026, "month": 12, "day": 31 }
+    }
+  ],
+  "incrementalFilter": [
+    {
+      "dataType": "weight",
+      "style": "camel",
+      "tz": null,
+      "filter": {
+        "field": "weight.sample_time.physical_time",
+        "bound": "2026-06-01T22:00:00.000Z"
+      }
+    },
+    {
+      "dataType": "weight",
+      "style": "camel",
+      "tz": "Europe/Berlin",
+      "filter": {
+        "field": "weight.sample_time.physical_time",
+        "bound": "2026-06-01T22:00:00.000Z"
+      }
+    },
+    {
+      "dataType": "weight",
+      "style": "camel",
+      "tz": "America/New_York",
+      "filter": {
+        "field": "weight.sample_time.physical_time",
+        "bound": "2026-06-01T22:00:00.000Z"
+      }
+    },
+    {
+      "dataType": "weight",
+      "style": "snake",
+      "tz": null,
+      "filter": {
+        "field": "weight.sample_time.physical_time",
+        "bound": "2026-06-01T22:00:00.000Z"
+      }
+    },
+    {
+      "dataType": "weight",
+      "style": "snake",
+      "tz": "Europe/Berlin",
+      "filter": {
+        "field": "weight.sample_time.physical_time",
+        "bound": "2026-06-01T22:00:00.000Z"
+      }
+    },
+    {
+      "dataType": "weight",
+      "style": "snake",
+      "tz": "America/New_York",
+      "filter": {
+        "field": "weight.sample_time.physical_time",
+        "bound": "2026-06-01T22:00:00.000Z"
+      }
+    },
+    {
+      "dataType": "daily-heart-rate-variability",
+      "style": "camel",
+      "tz": null,
+      "filter": {
+        "field": "dailyHeartRateVariability.date",
+        "bound": "2026-06-01"
+      }
+    },
+    {
+      "dataType": "daily-heart-rate-variability",
+      "style": "camel",
+      "tz": "Europe/Berlin",
+      "filter": {
+        "field": "dailyHeartRateVariability.date",
+        "bound": "2026-06-01"
+      }
+    },
+    {
+      "dataType": "daily-heart-rate-variability",
+      "style": "camel",
+      "tz": "America/New_York",
+      "filter": {
+        "field": "dailyHeartRateVariability.date",
+        "bound": "2026-06-01"
+      }
+    },
+    {
+      "dataType": "daily-heart-rate-variability",
+      "style": "snake",
+      "tz": null,
+      "filter": {
+        "field": "daily_heart_rate_variability.date",
+        "bound": "2026-06-01"
+      }
+    },
+    {
+      "dataType": "daily-heart-rate-variability",
+      "style": "snake",
+      "tz": "Europe/Berlin",
+      "filter": {
+        "field": "daily_heart_rate_variability.date",
+        "bound": "2026-06-01"
+      }
+    },
+    {
+      "dataType": "daily-heart-rate-variability",
+      "style": "snake",
+      "tz": "America/New_York",
+      "filter": {
+        "field": "daily_heart_rate_variability.date",
+        "bound": "2026-06-01"
+      }
+    },
+    {
+      "dataType": "sleep",
+      "style": "camel",
+      "tz": null,
+      "filter": {
+        "field": "sleep.interval.end_time",
+        "bound": "2026-06-01T22:00:00.000Z"
+      }
+    },
+    {
+      "dataType": "sleep",
+      "style": "camel",
+      "tz": "Europe/Berlin",
+      "filter": {
+        "field": "sleep.interval.end_time",
+        "bound": "2026-06-01T22:00:00.000Z"
+      }
+    },
+    {
+      "dataType": "sleep",
+      "style": "camel",
+      "tz": "America/New_York",
+      "filter": {
+        "field": "sleep.interval.end_time",
+        "bound": "2026-06-01T22:00:00.000Z"
+      }
+    },
+    {
+      "dataType": "sleep",
+      "style": "snake",
+      "tz": null,
+      "filter": {
+        "field": "sleep.interval.end_time",
+        "bound": "2026-06-01T22:00:00.000Z"
+      }
+    },
+    {
+      "dataType": "sleep",
+      "style": "snake",
+      "tz": "Europe/Berlin",
+      "filter": {
+        "field": "sleep.interval.end_time",
+        "bound": "2026-06-01T22:00:00.000Z"
+      }
+    },
+    {
+      "dataType": "sleep",
+      "style": "snake",
+      "tz": "America/New_York",
+      "filter": {
+        "field": "sleep.interval.end_time",
+        "bound": "2026-06-01T22:00:00.000Z"
+      }
+    },
+    {
+      "dataType": "exercise",
+      "style": "camel",
+      "tz": null,
+      "filter": {
+        "field": "exercise.interval.civil_start_time",
+        "bound": "2026-06-01T22:00:00"
+      }
+    },
+    {
+      "dataType": "exercise",
+      "style": "camel",
+      "tz": "Europe/Berlin",
+      "filter": {
+        "field": "exercise.interval.civil_start_time",
+        "bound": "2026-06-02T00:00:00"
+      }
+    },
+    {
+      "dataType": "exercise",
+      "style": "camel",
+      "tz": "America/New_York",
+      "filter": {
+        "field": "exercise.interval.civil_start_time",
+        "bound": "2026-06-01T18:00:00"
+      }
+    },
+    {
+      "dataType": "exercise",
+      "style": "snake",
+      "tz": null,
+      "filter": {
+        "field": "exercise.interval.civil_start_time",
+        "bound": "2026-06-01T22:00:00"
+      }
+    },
+    {
+      "dataType": "exercise",
+      "style": "snake",
+      "tz": "Europe/Berlin",
+      "filter": {
+        "field": "exercise.interval.civil_start_time",
+        "bound": "2026-06-02T00:00:00"
+      }
+    },
+    {
+      "dataType": "exercise",
+      "style": "snake",
+      "tz": "America/New_York",
+      "filter": {
+        "field": "exercise.interval.civil_start_time",
+        "bound": "2026-06-01T18:00:00"
+      }
+    },
+    {
+      "dataType": "steps",
+      "style": "camel",
+      "tz": null,
+      "filter": {
+        "threw": "Google Health data type steps reads via :dailyRollUp, not dataPoints.list"
+      }
+    },
+    {
+      "dataType": "steps",
+      "style": "camel",
+      "tz": "Europe/Berlin",
+      "filter": {
+        "threw": "Google Health data type steps reads via :dailyRollUp, not dataPoints.list"
+      }
+    },
+    {
+      "dataType": "steps",
+      "style": "camel",
+      "tz": "America/New_York",
+      "filter": {
+        "threw": "Google Health data type steps reads via :dailyRollUp, not dataPoints.list"
+      }
+    },
+    {
+      "dataType": "steps",
+      "style": "snake",
+      "tz": null,
+      "filter": {
+        "threw": "Google Health data type steps reads via :dailyRollUp, not dataPoints.list"
+      }
+    },
+    {
+      "dataType": "steps",
+      "style": "snake",
+      "tz": "Europe/Berlin",
+      "filter": {
+        "threw": "Google Health data type steps reads via :dailyRollUp, not dataPoints.list"
+      }
+    },
+    {
+      "dataType": "steps",
+      "style": "snake",
+      "tz": "America/New_York",
+      "filter": {
+        "threw": "Google Health data type steps reads via :dailyRollUp, not dataPoints.list"
+      }
+    }
+  ],
+  "incrementalFilterDefaultStyle": {
+    "field": "dailyRestingHeartRate.date",
+    "bound": "2026-06-01"
+  },
+  "chunkCivilRange": [
+    {
+      "start": { "year": 2026, "month": 1, "day": 1 },
+      "end": { "year": 2026, "month": 7, "day": 1 },
+      "maxDays": null,
+      "chunks": [
+        {
+          "start": { "year": 2026, "month": 1, "day": 1 },
+          "end": { "year": 2026, "month": 4, "day": 1 }
+        },
+        {
+          "start": { "year": 2026, "month": 4, "day": 1 },
+          "end": { "year": 2026, "month": 6, "day": 30 }
+        },
+        {
+          "start": { "year": 2026, "month": 6, "day": 30 },
+          "end": { "year": 2026, "month": 7, "day": 1 }
+        }
+      ]
+    },
+    {
+      "start": { "year": 2026, "month": 2, "day": 20 },
+      "end": { "year": 2026, "month": 3, "day": 10 },
+      "maxDays": 14,
+      "chunks": [
+        {
+          "start": { "year": 2026, "month": 2, "day": 20 },
+          "end": { "year": 2026, "month": 3, "day": 6 }
+        },
+        {
+          "start": { "year": 2026, "month": 3, "day": 6 },
+          "end": { "year": 2026, "month": 3, "day": 10 }
+        }
+      ]
+    },
+    {
+      "start": { "year": 2026, "month": 6, "day": 1 },
+      "end": { "year": 2026, "month": 6, "day": 1 },
+      "maxDays": null,
+      "chunks": []
+    },
+    {
+      "start": { "year": 2026, "month": 6, "day": 2 },
+      "end": { "year": 2026, "month": 6, "day": 1 },
+      "maxDays": null,
+      "chunks": []
+    }
+  ],
+  "buildDailyRollUpBody": [
+    {
+      "chunk": {
+        "start": { "year": 2026, "month": 1, "day": 1 },
+        "end": { "year": 2026, "month": 4, "day": 1 }
+      },
+      "pageToken": null,
+      "body": {
+        "range": {
+          "start": {
+            "date": { "year": 2026, "month": 1, "day": 1 },
+            "time": { "hours": 0, "minutes": 0, "seconds": 0, "nanos": 0 }
+          },
+          "end": {
+            "date": { "year": 2026, "month": 3, "day": 31 },
+            "time": { "hours": 23, "minutes": 59, "seconds": 59, "nanos": 0 }
+          }
+        },
+        "windowSizeDays": 1
+      }
+    },
+    {
+      "chunk": {
+        "start": { "year": 2026, "month": 2, "day": 20 },
+        "end": { "year": 2026, "month": 3, "day": 1 }
+      },
+      "pageToken": "page-token-0002",
+      "body": {
+        "range": {
+          "start": {
+            "date": { "year": 2026, "month": 2, "day": 20 },
+            "time": { "hours": 0, "minutes": 0, "seconds": 0, "nanos": 0 }
+          },
+          "end": {
+            "date": { "year": 2026, "month": 2, "day": 28 },
+            "time": { "hours": 23, "minutes": 59, "seconds": 59, "nanos": 0 }
+          }
+        },
+        "windowSizeDays": 1,
+        "pageToken": "page-token-0002"
+      }
+    },
+    {
+      "chunk": {
+        "start": { "year": 2026, "month": 12, "day": 31 },
+        "end": { "year": 2027, "month": 1, "day": 1 }
+      },
+      "pageToken": "",
+      "body": {
+        "range": {
+          "start": {
+            "date": { "year": 2026, "month": 12, "day": 31 },
+            "time": { "hours": 0, "minutes": 0, "seconds": 0, "nanos": 0 }
+          },
+          "end": {
+            "date": { "year": 2026, "month": 12, "day": 31 },
+            "time": { "hours": 23, "minutes": 59, "seconds": 59, "nanos": 0 }
+          }
+        },
+        "windowSizeDays": 1
+      }
+    }
+  ],
+  "extractGoogleApiErrorDetail": [
+    {
+      "body": {
+        "error": {
+          "code": 400,
+          "status": "INVALID_ARGUMENT",
+          "message": "Invalid filter for https://health.googleapis.com/v4/users/me/dataTypes/weight/dataPoints?filter=weight.date",
+          "details": [
+            {
+              "@type": "type.googleapis.com/google.rpc.BadRequest",
+              "fieldViolations": [
+                {
+                  "field": "filter",
+                  "description": "Unknown field weight.date"
+                },
+                { "field": "page_size" },
+                { "description": "Authorization: Bearer abc.def.ghi rejected" },
+                { "field": "fourth", "description": "dropped past the third" }
+              ]
+            }
+          ]
+        }
+      },
+      "detail": "INVALID_ARGUMENT: Invalid filter for https://health.googleapis.com/v4/users/me/dataTypes/weight/dataPoints?[REDACTED] [filter: Unknown field weight.date; page_size; Authorization: Bearer [REDACTED] rejected]"
+    },
+    {
+      "body": { "error": { "status": "RESOURCE_EXHAUSTED" } },
+      "detail": "RESOURCE_EXHAUSTED"
+    },
+    {
+      "body": {
+        "error": {
+          "message": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        }
+      },
+      "detail": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    {
+      "body": {
+        "error": { "details": [null, { "fieldViolations": [{}, 5] }] }
+      },
+      "detail": null
+    },
+    { "body": { "error": "invalid_grant" }, "detail": null },
+    { "body": { "error": {} }, "detail": null },
+    { "body": null, "detail": null },
+    { "body": "plain text", "detail": null }
+  ],
+  "refusesEdgeFilter": [
+    { "detail": null, "refuses": true },
+    { "detail": "INVALID_ARGUMENT", "refuses": true },
+    { "detail": "INVALID_ARGUMENT: Invalid filter", "refuses": true },
+    { "detail": "INVALID_ARGUMENT: Invalid page token", "refuses": false },
+    { "detail": "INVALID_ARGUMENT: page_size out of range", "refuses": false },
+    { "detail": "INVALID_ARGUMENT: pageSize too large", "refuses": false },
+    { "detail": "UNAUTHENTICATED: access token expired", "refuses": false },
+    { "detail": "FAILED_PRECONDITION: something else", "refuses": false },
+    { "detail": "Bad filter and bad token", "refuses": true }
+  ],
+  "googleHealthRetryDelayMs": [
+    { "headers": { "retry-after": "30" }, "body": null, "delayMs": 30000 },
+    { "headers": { "retry-after": "1.5" }, "body": null, "delayMs": 1500 },
+    {
+      "headers": { "retry-after": "Wed, 01 Jul 2026 09:00:45 GMT" },
+      "body": null,
+      "delayMs": 45000
+    },
+    { "headers": { "retry-after": "-3" }, "body": null, "delayMs": null },
+    {
+      "headers": {},
+      "body": {
+        "error": {
+          "details": [
+            { "@type": "type.googleapis.com/google.rpc.ErrorInfo" },
+            {
+              "@type": "type.googleapis.com/google.rpc.RetryInfo",
+              "retryDelay": "12.5s"
+            }
+          ]
+        }
+      },
+      "delayMs": 12500
+    },
+    {
+      "headers": {},
+      "body": { "error": { "details": [{ "retryDelay": "soon" }] } },
+      "delayMs": null
+    },
+    { "headers": {}, "body": null, "delayMs": null }
+  ]
+}

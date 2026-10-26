@@ -84,12 +84,12 @@ const INVENTORY: Readonly<Record<string, Poll>> = {
     shape: "until-done",
     cadence: "2 s until the job reports a terminal status",
   },
-  "components/admin/backups-section.tsx": {
+  "components/admin/backups/use-backup-restores.ts": {
     sites: 1,
     shape: "until-done",
     cadence: "2 s until no restore is active",
   },
-  "components/documents/documents-view.tsx": {
+  "components/documents/vault/use-vault-library.ts": {
     sites: 1,
     shape: "until-done",
     cadence:
@@ -122,17 +122,19 @@ const INVENTORY: Readonly<Record<string, Poll>> = {
     sites: 3,
     shape: "bounded",
     cadence:
-      "4 s, nextStatusPollInterval, 12 attempts (metric, biomarker, general cards)",
+      "4 s, then 15 s, nextStatusPollInterval, attempts from the response timeout so the note can land (metric, biomarker, general cards)",
   },
   "app/insights/medications/page.tsx": {
     sites: 1,
     shape: "bounded",
-    cadence: "4 s, nextStatusPollInterval, 12 attempts (compliance card)",
+    cadence:
+      "4 s, then 15 s, nextStatusPollInterval, attempts from the response timeout so the note can land (compliance card)",
   },
   "components/insights/use-insights-advisor.ts": {
     sites: 1,
     shape: "bounded",
-    cadence: "25 s, nextAdvisorPollInterval, 10 attempts (advisor)",
+    cadence:
+      "25 s, nextAdvisorPollInterval, attempts from the response timeout so the warm can land (advisor); 10 while settling",
   },
   "components/insights/insights-layout-shell.tsx": {
     sites: 1,

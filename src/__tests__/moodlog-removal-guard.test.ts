@@ -18,11 +18,12 @@
  */
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
+
+import { allJobDefinitions } from "@/lib/jobs/registry/index";
 import { describe, expect, it } from "vitest";
 
 import { INTEGRATION_CADENCE } from "@/lib/integrations/sync-verdict";
 import { INTEGRATION_DISPLAY_NAMES } from "@/components/settings/integrations/integration-fallback-row";
-import { readSource } from "@/__tests__/helpers/source-files";
 
 const ROOT = path.resolve(__dirname, "../..");
 
@@ -76,12 +77,9 @@ describe("moodLog integration stays removed", () => {
   });
 
   it("registers no moodlog queue, cron or handler binding", () => {
-    const registrar = readSource(
-      "src/lib/jobs/reminder/register-integration-sync.ts",
-      "export async function registerIntegrationSyncQueues",
-    );
-    expect(registrar).not.toContain("moodlog");
-    expect(registrar).not.toContain("MoodLog");
+    const queues = allJobDefinitions().map((job) => job.queue);
+    expect(queues.length).toBeGreaterThan(100);
+    expect(queues.filter((queue) => /mood-?log/i.test(queue))).toEqual([]);
   });
 
   it("carries no moodlog integration key on the status envelope", () => {

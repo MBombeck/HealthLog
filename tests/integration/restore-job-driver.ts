@@ -17,10 +17,8 @@ import type { PgBoss } from "pg-boss";
 
 import { POST as queueRestore } from "@/app/api/admin/backups/[id]/restore/route";
 import { getGlobalBoss, setGlobalBoss } from "@/lib/jobs/boss-instance";
-import {
-  readBackupRestoreJob,
-  runBackupRestoreJob,
-} from "@/lib/jobs/backup-restore";
+import { runBackupRestoreJob } from "@/lib/jobs/backup-restore";
+import { readBackupRestoreJob } from "@/lib/jobs/backup-restore-view";
 
 /** The status the synchronous route answered each refusal with. */
 const LEGACY_STATUS: Record<string, number> = {

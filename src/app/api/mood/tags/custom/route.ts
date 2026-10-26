@@ -1,13 +1,8 @@
 import { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -36,12 +31,10 @@ export const dynamic = "force-dynamic";
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
 
-  const { data: rawJsonBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, createCustomTagSchema, {
     maxBytes: 64 * 1024,
   });
-  if (jsonError) return jsonError;
-  const parsed = createCustomTagSchema.safeParse(rawJsonBody);
-  if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+  if (!parsed.ok) return parsed.error;
 
   const activeCount = await prisma.moodTag.count({
     where: { userId: user.id, isActive: true },

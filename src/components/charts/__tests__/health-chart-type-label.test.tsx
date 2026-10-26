@@ -113,7 +113,7 @@ describe("measurementLabelKey", () => {
   it("matches the canonical label map for every type outside the chart's own labels", async () => {
     const { MEASUREMENT_TYPE_LABEL_KEYS } =
       await import("@/lib/measurements/type-label-keys");
-    const { measurementLabelKey } = await import("../health-chart");
+    const { measurementLabelKey } = await import("../health-chart/series-math");
     // The four types whose key breaks the convention carry a chart label.
     const chartLabelled = new Set([
       "WEIGHT",

@@ -24,6 +24,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
+import { stripComments } from "./helpers/source-files";
 
 const ROOT = join(__dirname, "..", "..");
 const SRC = join(ROOT, "src");
@@ -53,15 +54,6 @@ const SERVER_SIDE_EXEMPT = new Set([
 
 /** A direct call, tolerant of whitespace between the parts. */
 const DIRECT_CALL = /\bcrypto\s*\.\s*randomUUID\s*\(/;
-
-/**
- * Comments are prose, not calls. Without this the guard fires on the very
- * doc comments that explain why the call was removed — a guard that its own
- * explanation trips is one the next reader deletes.
- */
-function stripComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
-}
 
 /** Every `.ts(x)` under `src/`, as a repo-relative POSIX path. */
 function sourceFiles(dir: string = SRC, out: string[] = []): string[] {

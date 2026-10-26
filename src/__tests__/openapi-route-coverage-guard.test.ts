@@ -114,6 +114,7 @@ import { describe, expect, it } from "vitest";
 
 import { openApiPaths } from "@/lib/openapi/routes";
 import { RETIRED_ROUTES } from "@/lib/http/retired-routes";
+import { stripComments } from "./helpers/source-files";
 
 const ROOT = process.cwd();
 
@@ -135,7 +136,7 @@ type HttpMethod = (typeof HTTP_METHODS)[number];
  */
 const REASONS = {
   /**
-   * `requireAdmin()` is cookie-only by construction (`src/lib/api-handler.ts`),
+   * `requireAdmin()` is cookie-only by construction (`src/lib/auth/guards/cookie.ts`),
    * so a Bearer token cannot reach these however wide its scope. The only
    * caller that can is the operator's own browser on the admin console, which
    * ships with the server and does not read a spec to find out what it talks
@@ -241,18 +242,6 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
     kind: "adminConsole",
     methods: ["POST"],
   },
-  "/api/admin/encryption/key-backup": {
-    kind: "adminConsole",
-    methods: ["GET"],
-  },
-  "/api/admin/encryption/key-backup/confirm": {
-    kind: "adminConsole",
-    methods: ["POST"],
-  },
-  "/api/admin/encryption/key-backup/verify": {
-    kind: "adminConsole",
-    methods: ["POST"],
-  },
   "/api/admin/encryption/rotate": { kind: "adminConsole", methods: ["POST"] },
   "/api/admin/encryption/status": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/host-metrics": { kind: "adminConsole", methods: ["GET"] },
@@ -275,6 +264,19 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
   "/api/admin/provider-health": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/notifications/health": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/notifications/test": { kind: "adminConsole", methods: ["POST"] },
+  "/api/admin/recovery-kit": { kind: "adminConsole", methods: ["GET"] },
+  "/api/admin/recovery-kit/confirm": {
+    kind: "adminConsole",
+    methods: ["POST"],
+  },
+  "/api/admin/recovery-kit/verify": {
+    kind: "adminConsole",
+    methods: ["POST"],
+  },
+  "/api/admin/recovery-readiness": {
+    kind: "adminConsole",
+    methods: ["GET"],
+  },
   "/api/admin/rollups/recompute": { kind: "adminConsole", methods: ["POST"] },
   "/api/admin/settings": { kind: "adminConsole", methods: ["GET", "PUT"] },
   "/api/admin/settings/assistant-flags": {
@@ -299,6 +301,10 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
     methods: ["POST"],
   },
   "/api/admin/users/{id}/reset-password": {
+    kind: "adminConsole",
+    methods: ["POST"],
+  },
+  "/api/admin/users/{id}/undo-deletion": {
     kind: "adminConsole",
     methods: ["POST"],
   },
@@ -377,10 +383,6 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
     methods: ["GET"],
   },
 };
-
-function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|\s)\/\/.*$/gm, "$1");
-}
 
 /** `src/app/api/foo/[id]/route.ts` → `/api/foo/{id}`. */
 function toApiPath(file: string): string {

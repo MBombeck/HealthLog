@@ -13,12 +13,8 @@
  */
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
-import {
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { hashToken } from "@/lib/auth/hmac";
@@ -62,15 +58,11 @@ export const GET = apiHandler(async () => {
 export const POST = apiHandler(async (req: Request) => {
   const { user } = await requireAdmin();
 
-  const { data: body, error: jsonError } = await safeJson(req, {
+  const parsed = await parseJsonBody(req, inviteCreateSchema, {
     maxBytes: 16 * 1024,
+    input: (body) => body ?? {},
   });
-  if (jsonError) return jsonError;
-
-  const parsed = inviteCreateSchema.safeParse(body ?? {});
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const { expiresInDays, maxUses } = parsed.data;
   const rawToken = generateInviteToken();

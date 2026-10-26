@@ -46,11 +46,13 @@ const predictionFindManyMock = vi.fn();
 const deleteManyMock = vi.fn();
 
 import {
-  MOOD_PROGNOSIS_REFRESH_CRON,
-  MOOD_PROGNOSIS_REFRESH_QUEUE,
   handleMoodPrognosisRefresh,
   runMoodPrognosisRefresh,
 } from "@/lib/jobs/mood-prognosis-refresh";
+import {
+  MOOD_PROGNOSIS_REFRESH_CRON,
+  MOOD_PROGNOSIS_REFRESH_QUEUE,
+} from "@/lib/jobs/mood-prognosis-refresh-queue";
 import { MIN_ENTRIES_FOR_FORECAST } from "@/lib/analytics/mood-prognosis/thresholds";
 
 const NOW = new Date("2026-08-08T02:35:00.000Z");

@@ -13,7 +13,7 @@ vi.mock("@/lib/crypto", () => ({
 }));
 
 // The env fallback lives in ./client; stub it so the precedence is observable.
-vi.mock("../client", () => ({
+vi.mock("../oauth", () => ({
   getOuraCredentials: () => getOuraCredentials(),
 }));
 

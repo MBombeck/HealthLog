@@ -312,7 +312,7 @@ describe("requireAuth — MCP-audience tokens have no REST reach", () => {
   // method — reads included. Its audience narrows from "/mcp + REST reads" to
   // "/mcp only", which is what RFC 8707 audience binding asked for.
   //
-  // The `isMcpAudienceToken` guard is retained in `api-handler.ts` as defence
+  // The `isMcpAudienceToken` guard is retained in `lib/auth/guards/caller.ts` as defence
   // in depth; it is unreachable on this path, which is exactly why these tests
   // assert `undeclared_scope` rather than `mcp_audience_write_blocked`.
   const route = apiHandler(async (req) => {

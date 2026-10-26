@@ -13,7 +13,7 @@ import {
   avgInWindow,
   roundedSpread,
   toDataPoints,
-} from "@/lib/insights/features";
+} from "@/lib/insights/feature-window";
 import {
   SAME_HOURS_MIN_DAYS,
   SAME_HOURS_TYPES,

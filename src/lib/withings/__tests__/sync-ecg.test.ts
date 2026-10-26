@@ -84,10 +84,6 @@ vi.mock("@/lib/rollups/measurement-rollups", async () => {
   };
 });
 
-vi.mock("@/lib/insights/comprehensive-generate", () => ({
-  invalidateStatusInsightsForTypes: vi.fn().mockResolvedValue(undefined),
-}));
-
 import { prisma } from "@/lib/db";
 import {
   isReauthRequired,

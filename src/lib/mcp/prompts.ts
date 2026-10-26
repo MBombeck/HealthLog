@@ -567,6 +567,18 @@ export const MCP_PROMPTS: McpPromptDefinition[] = [
       "Assemble a grounded per-analyte lab trajectory — latest reading vs prior readings, against the stored reference range, for one named analyte or across the panel. Reads the user's own lab store directly (the latest-only labs tool can't show a trend). Reference ranges are the lab's own stored bounds, never recomputed. Facts only: no diagnosis, no verdict.",
     argsShape: { analyte: z.string().min(1).max(80).optional() },
     async run(ctx, args) {
+      // The same door `get_labs` has: refuse with the module off rather than
+      // hand the assistant an empty panel to narrate as "no labs on file".
+      if (!(await isModuleEnabled(ctx.userId, "labs"))) {
+        annotate({
+          action: { name: "mcp.prompt.invoked" },
+          meta: { prompt: "lab_trend_brief", refused: "module_disabled" },
+        });
+        throw new Error(
+          'The "labs" module is turned off for this account, so the lab trend ' +
+            "brief is not available.",
+        );
+      }
       const analyte =
         typeof args.analyte === "string" && args.analyte.trim() !== ""
           ? args.analyte.trim()

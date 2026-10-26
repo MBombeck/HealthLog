@@ -1,0 +1,436 @@
+[
+  {
+    "record": "2026-03-02",
+    "byZone": [
+      {
+        "tz": null,
+        "rows": [
+          {
+            "type": "RECOVERY_SCORE",
+            "value": 60,
+            "unit": "score",
+            "measuredAt": "2026-03-02T12:00:00.000Z",
+            "fieldTag": "recovery",
+            "day": "2026-03-02"
+          },
+          {
+            "type": "HRV_RMSSD",
+            "value": 42.12,
+            "unit": "ms",
+            "measuredAt": "2026-03-02T12:00:00.000Z",
+            "fieldTag": "hrv_rmssd",
+            "day": "2026-03-02"
+          },
+          {
+            "type": "RESTING_HEART_RATE",
+            "value": 56,
+            "unit": "bpm",
+            "measuredAt": "2026-03-02T12:00:00.000Z",
+            "fieldTag": "rhr",
+            "day": "2026-03-02"
+          },
+          {
+            "type": "RESPIRATORY_RATE",
+            "value": 14.25,
+            "unit": "breaths/min",
+            "measuredAt": "2026-03-02T12:00:00.000Z",
+            "fieldTag": "resp_rate",
+            "day": "2026-03-02"
+          },
+          {
+            "type": "ANS_CHARGE",
+            "value": 3.46,
+            "unit": "score",
+            "measuredAt": "2026-03-02T12:00:00.000Z",
+            "fieldTag": "ans_charge",
+            "day": "2026-03-02"
+          }
+        ]
+      },
+      {
+        "tz": "Europe/Berlin",
+        "rows": [
+          {
+            "type": "RECOVERY_SCORE",
+            "value": 60,
+            "unit": "score",
+            "measuredAt": "2026-03-02T11:00:00.000Z",
+            "fieldTag": "recovery",
+            "day": "2026-03-02"
+          },
+          {
+            "type": "HRV_RMSSD",
+            "value": 42.12,
+            "unit": "ms",
+            "measuredAt": "2026-03-02T11:00:00.000Z",
+            "fieldTag": "hrv_rmssd",
+            "day": "2026-03-02"
+          },
+          {
+            "type": "RESTING_HEART_RATE",
+            "value": 56,
+            "unit": "bpm",
+            "measuredAt": "2026-03-02T11:00:00.000Z",
+            "fieldTag": "rhr",
+            "day": "2026-03-02"
+          },
+          {
+            "type": "RESPIRATORY_RATE",
+            "value": 14.25,
+            "unit": "breaths/min",
+            "measuredAt": "2026-03-02T11:00:00.000Z",
+            "fieldTag": "resp_rate",
+            "day": "2026-03-02"
+          },
+          {
+            "type": "ANS_CHARGE",
+            "value": 3.46,
+            "unit": "score",
+            "measuredAt": "2026-03-02T11:00:00.000Z",
+            "fieldTag": "ans_charge",
+            "day": "2026-03-02"
+          }
+        ]
+      },
+      {
+        "tz": "America/New_York",
+        "rows": [
+          {
+            "type": "RECOVERY_SCORE",
+            "value": 60,
+            "unit": "score",
+            "measuredAt": "2026-03-02T17:00:00.000Z",
+            "fieldTag": "recovery",
+            "day": "2026-03-02"
+          },
+          {
+            "type": "HRV_RMSSD",
+            "value": 42.12,
+            "unit": "ms",
+            "measuredAt": "2026-03-02T17:00:00.000Z",
+            "fieldTag": "hrv_rmssd",
+            "day": "2026-03-02"
+          },
+          {
+            "type": "RESTING_HEART_RATE",
+            "value": 56,
+            "unit": "bpm",
+            "measuredAt": "2026-03-02T17:00:00.000Z",
+            "fieldTag": "rhr",
+            "day": "2026-03-02"
+          },
+          {
+            "type": "RESPIRATORY_RATE",
+            "value": 14.25,
+            "unit": "breaths/min",
+            "measuredAt": "2026-03-02T17:00:00.000Z",
+            "fieldTag": "resp_rate",
+            "day": "2026-03-02"
+          },
+          {
+            "type": "ANS_CHARGE",
+            "value": 3.46,
+            "unit": "score",
+            "measuredAt": "2026-03-02T17:00:00.000Z",
+            "fieldTag": "ans_charge",
+            "day": "2026-03-02"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "record": "2026-03-03",
+    "byZone": [
+      {
+        "tz": null,
+        "rows": [
+          {
+            "type": "RECOVERY_SCORE",
+            "value": 0,
+            "unit": "score",
+            "measuredAt": "2026-03-03T12:00:00.000Z",
+            "fieldTag": "recovery",
+            "day": "2026-03-03"
+          },
+          {
+            "type": "ANS_CHARGE",
+            "value": -7.2,
+            "unit": "score",
+            "measuredAt": "2026-03-03T12:00:00.000Z",
+            "fieldTag": "ans_charge",
+            "day": "2026-03-03"
+          }
+        ]
+      },
+      {
+        "tz": "Europe/Berlin",
+        "rows": [
+          {
+            "type": "RECOVERY_SCORE",
+            "value": 0,
+            "unit": "score",
+            "measuredAt": "2026-03-03T11:00:00.000Z",
+            "fieldTag": "recovery",
+            "day": "2026-03-03"
+          },
+          {
+            "type": "ANS_CHARGE",
+            "value": -7.2,
+            "unit": "score",
+            "measuredAt": "2026-03-03T11:00:00.000Z",
+            "fieldTag": "ans_charge",
+            "day": "2026-03-03"
+          }
+        ]
+      },
+      {
+        "tz": "America/New_York",
+        "rows": [
+          {
+            "type": "RECOVERY_SCORE",
+            "value": 0,
+            "unit": "score",
+            "measuredAt": "2026-03-03T17:00:00.000Z",
+            "fieldTag": "recovery",
+            "day": "2026-03-03"
+          },
+          {
+            "type": "ANS_CHARGE",
+            "value": -7.2,
+            "unit": "score",
+            "measuredAt": "2026-03-03T17:00:00.000Z",
+            "fieldTag": "ans_charge",
+            "day": "2026-03-03"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "record": "2026-03-04",
+    "byZone": [
+      {
+        "tz": null,
+        "rows": [
+          {
+            "type": "RECOVERY_SCORE",
+            "value": 100,
+            "unit": "score",
+            "measuredAt": "2026-03-04T12:00:00.000Z",
+            "fieldTag": "recovery",
+            "day": "2026-03-04"
+          },
+          {
+            "type": "ANS_CHARGE",
+            "value": 0,
+            "unit": "score",
+            "measuredAt": "2026-03-04T12:00:00.000Z",
+            "fieldTag": "ans_charge",
+            "day": "2026-03-04"
+          }
+        ]
+      },
+      {
+        "tz": "Europe/Berlin",
+        "rows": [
+          {
+            "type": "RECOVERY_SCORE",
+            "value": 100,
+            "unit": "score",
+            "measuredAt": "2026-03-04T11:00:00.000Z",
+            "fieldTag": "recovery",
+            "day": "2026-03-04"
+          },
+          {
+            "type": "ANS_CHARGE",
+            "value": 0,
+            "unit": "score",
+            "measuredAt": "2026-03-04T11:00:00.000Z",
+            "fieldTag": "ans_charge",
+            "day": "2026-03-04"
+          }
+        ]
+      },
+      {
+        "tz": "America/New_York",
+        "rows": [
+          {
+            "type": "RECOVERY_SCORE",
+            "value": 100,
+            "unit": "score",
+            "measuredAt": "2026-03-04T17:00:00.000Z",
+            "fieldTag": "recovery",
+            "day": "2026-03-04"
+          },
+          {
+            "type": "ANS_CHARGE",
+            "value": 0,
+            "unit": "score",
+            "measuredAt": "2026-03-04T17:00:00.000Z",
+            "fieldTag": "ans_charge",
+            "day": "2026-03-04"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "record": "2026-03-05",
+    "byZone": [
+      {
+        "tz": null,
+        "rows": [
+          {
+            "type": "RECOVERY_SCORE",
+            "value": 100,
+            "unit": "score",
+            "measuredAt": "2026-03-05T12:00:00.000Z",
+            "fieldTag": "recovery",
+            "day": "2026-03-05"
+          },
+          {
+            "type": "RESTING_HEART_RATE",
+            "value": 61,
+            "unit": "bpm",
+            "measuredAt": "2026-03-05T12:00:00.000Z",
+            "fieldTag": "rhr",
+            "day": "2026-03-05"
+          }
+        ]
+      },
+      {
+        "tz": "Europe/Berlin",
+        "rows": [
+          {
+            "type": "RECOVERY_SCORE",
+            "value": 100,
+            "unit": "score",
+            "measuredAt": "2026-03-05T11:00:00.000Z",
+            "fieldTag": "recovery",
+            "day": "2026-03-05"
+          },
+          {
+            "type": "RESTING_HEART_RATE",
+            "value": 61,
+            "unit": "bpm",
+            "measuredAt": "2026-03-05T11:00:00.000Z",
+            "fieldTag": "rhr",
+            "day": "2026-03-05"
+          }
+        ]
+      },
+      {
+        "tz": "America/New_York",
+        "rows": [
+          {
+            "type": "RECOVERY_SCORE",
+            "value": 100,
+            "unit": "score",
+            "measuredAt": "2026-03-05T17:00:00.000Z",
+            "fieldTag": "recovery",
+            "day": "2026-03-05"
+          },
+          {
+            "type": "RESTING_HEART_RATE",
+            "value": 61,
+            "unit": "bpm",
+            "measuredAt": "2026-03-05T17:00:00.000Z",
+            "fieldTag": "rhr",
+            "day": "2026-03-05"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "record": "2026-03-06",
+    "byZone": [
+      {
+        "tz": null,
+        "rows": [
+          {
+            "type": "RECOVERY_SCORE",
+            "value": 0,
+            "unit": "score",
+            "measuredAt": "2026-03-06T12:00:00.000Z",
+            "fieldTag": "recovery",
+            "day": "2026-03-06"
+          },
+          {
+            "type": "HRV_RMSSD",
+            "value": 38,
+            "unit": "ms",
+            "measuredAt": "2026-03-06T12:00:00.000Z",
+            "fieldTag": "hrv_rmssd",
+            "day": "2026-03-06"
+          }
+        ]
+      },
+      {
+        "tz": "Europe/Berlin",
+        "rows": [
+          {
+            "type": "RECOVERY_SCORE",
+            "value": 0,
+            "unit": "score",
+            "measuredAt": "2026-03-06T11:00:00.000Z",
+            "fieldTag": "recovery",
+            "day": "2026-03-06"
+          },
+          {
+            "type": "HRV_RMSSD",
+            "value": 38,
+            "unit": "ms",
+            "measuredAt": "2026-03-06T11:00:00.000Z",
+            "fieldTag": "hrv_rmssd",
+            "day": "2026-03-06"
+          }
+        ]
+      },
+      {
+        "tz": "America/New_York",
+        "rows": [
+          {
+            "type": "RECOVERY_SCORE",
+            "value": 0,
+            "unit": "score",
+            "measuredAt": "2026-03-06T17:00:00.000Z",
+            "fieldTag": "recovery",
+            "day": "2026-03-06"
+          },
+          {
+            "type": "HRV_RMSSD",
+            "value": 38,
+            "unit": "ms",
+            "measuredAt": "2026-03-06T17:00:00.000Z",
+            "fieldTag": "hrv_rmssd",
+            "day": "2026-03-06"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "record": "2026-03-07",
+    "byZone": [
+      { "tz": null, "rows": [] },
+      { "tz": "Europe/Berlin", "rows": [] },
+      { "tz": "America/New_York", "rows": [] }
+    ]
+  },
+  {
+    "record": "not-a-date",
+    "byZone": [
+      { "tz": null, "rows": [] },
+      {
+        "tz": "Europe/Berlin",
+        "rows": { "threw": "RangeError: Invalid time value" }
+      },
+      {
+        "tz": "America/New_York",
+        "rows": { "threw": "RangeError: Invalid time value" }
+      }
+    ]
+  }
+]

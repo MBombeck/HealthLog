@@ -14,7 +14,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiSuccess, returnAllZodIssues, safeJson } from "@/lib/api-response";
+import { apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { prisma } from "@/lib/db";
@@ -29,21 +30,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const gate = await requireModuleEnabled(user.id, "environment");
   if (!gate.enabled) return gate.response;
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, travelLocationSchema, {
     maxBytes: 4 * 1024,
+    action: "environment.travel.validation-failed",
+    countIssues: true,
+    errorCode: "environment.invalid",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = travelLocationSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    annotate({
-      action: { name: "environment.travel.validation-failed" },
-      meta: { issue_count: parsed.error.issues.length },
-    });
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "environment.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const entry = parsed.data;
   const location = {

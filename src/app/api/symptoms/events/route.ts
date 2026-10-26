@@ -23,8 +23,8 @@ import {
   apiError,
   getClientIp,
   returnAllZodIssues,
-  safeJson,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { withIdempotency } from "@/lib/idempotency";
@@ -107,16 +107,11 @@ async function postEvent(request: NextRequest): Promise<Response> {
   const gate = await requireIllnessEnabled(user.id);
   if (!gate.enabled) return gate.response;
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, symptomEventCreateSchema, {
     maxBytes: 16 * 1024,
+    errorCode: "symptoms.invalid",
   });
-  if (jsonError) return jsonError;
-  const parsed = symptomEventCreateSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "symptoms.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
   const entry = parsed.data;
 
   // A hidden definition stays loggable from an older client's cached list;

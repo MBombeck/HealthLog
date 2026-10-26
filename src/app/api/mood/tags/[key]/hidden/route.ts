@@ -1,12 +1,8 @@
 import { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
-import {
-  apiSuccess,
-  apiError,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { hideCatalogueTagSchema, isCustomTagKey } from "@/lib/mood/custom-tags";
@@ -34,12 +30,10 @@ export const PUT = apiHandler(
       );
     }
 
-    const { data: rawJsonBody, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, hideCatalogueTagSchema, {
       maxBytes: 64 * 1024,
     });
-    if (jsonError) return jsonError;
-    const parsed = hideCatalogueTagSchema.safeParse(rawJsonBody);
-    if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+    if (!parsed.ok) return parsed.error;
 
     // Resolve against the catalogue (user_id NULL) only.
     const tag = await prisma.moodTag.findFirst({

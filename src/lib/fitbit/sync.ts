@@ -2,10 +2,9 @@
 import pLimit from "p-limit";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { prisma } from "@/lib/db";
-import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 import { isReauthRequired, recordSyncSuccess } from "@/lib/integrations/status";
 import { annotate, getEvent } from "@/lib/logging/context";
-import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
+import { afterProviderBackfill } from "@/lib/integrations/sync-kit/after-write";
 import { syncUserActivity } from "./sync-activity";
 import {
   hardFailStorage,
@@ -127,22 +126,10 @@ export async function syncUserFitbit(
   // + 3 queue sends). Best-effort: a populator hiccup never fails the backfill.
   if (opts.fullSync && deferTracker.keys.size > 0) {
     try {
-      const days = Array.from(deferTracker.keys.values());
-      const types = Array.from(new Set(days.map((k) => k.type)));
-      const sorted = days
-        .map((k) => k.measuredAt.getTime())
-        .sort((a, b) => a - b);
-      const from = new Date(sorted[0]!);
-      // The keys are UTC day-starts; extend `to` past the last touched day so
-      // the aggregator's `< to` upper bound covers it.
-      const to = new Date(sorted[sorted.length - 1]! + 24 * 60 * 60 * 1000);
-      await recomputeUserRollups(userId, { types, from, to });
-      invalidateStatusInsightsForTypes(userId, types, {
-        source: "sync",
-      }).catch((err) => {
-        getEvent()?.addWarning(
-          `fitbit: status-insight invalidate failed for ${userId}: ${err}`,
-        );
+      await afterProviderBackfill({
+        userId,
+        provider: "fitbit",
+        keys: Array.from(deferTracker.keys.values()),
       });
     } catch (err) {
       getEvent()?.addWarning(

@@ -51,3 +51,50 @@ export function computePaddedYDomain(
   const paddingTop = Math.max(span * 0.16, 1);
   return [clampLower(min - paddingBottom), max + paddingTop];
 }
+
+/**
+ * Evenly spaced round ticks for a value axis, and the domain padded out to
+ * them.
+ *
+ * Handed only a domain, Recharts started its ticks at the domain's lower
+ * bound and forced the upper bound in as the last tick, so a padded
+ * blood-pressure domain read 74, 94, 114, 134, 149: round-ish numbers that
+ * were not round, and a last step shorter than the others. The step here is
+ * 1, 2 or 5 times a power of ten, the smallest that keeps the axis at
+ * `maxTicks` labels or fewer, and the domain becomes the multiples of it
+ * around the padded data, so every gap is the same and every label is
+ * round. A non-negative domain stays non-negative.
+ */
+export function niceYAxis(
+  domain: readonly [number, number],
+  maxTicks = 6,
+): { domain: [number, number]; ticks: number[] } {
+  const [low, high] = domain;
+  const span = high - low;
+  if (!Number.isFinite(span) || span <= 0) {
+    return { domain: [low, high], ticks: [low, high] };
+  }
+  const intervals = Math.max(1, maxTicks - 1);
+  const raw = span / intervals;
+  const magnitude = 10 ** Math.floor(Math.log10(raw));
+  let step = magnitude * 10;
+  for (const factor of [1, 2, 5, 10]) {
+    const candidate = factor * magnitude;
+    if (
+      Math.ceil(high / candidate) - Math.floor(low / candidate) <=
+      intervals
+    ) {
+      step = candidate;
+      break;
+    }
+  }
+  const first = Math.floor(low / step) * step;
+  const last = Math.ceil(high / step) * step;
+  const ticks: number[] = [];
+  // Rounded to the step's own precision, so 0.1 + 0.2 never reads 0.30000…
+  const digits = Math.max(0, -Math.floor(Math.log10(step)));
+  for (let k = 0; first + k * step <= last + step / 2; k += 1) {
+    ticks.push(Number((first + k * step).toFixed(digits)));
+  }
+  return { domain: [ticks[0]!, ticks[ticks.length - 1]!], ticks };
+}

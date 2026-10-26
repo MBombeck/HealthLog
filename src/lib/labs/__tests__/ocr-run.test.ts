@@ -28,16 +28,17 @@ vi.mock("@/lib/labs/ocr-extract", async () => {
 
 import { reconcileSpend, reserveBudget } from "@/lib/ai/coach/budget";
 import { rasterizePdf } from "@/lib/documents/rasterize-pdf";
-import { OcrExtractError, runOcrExtraction } from "@/lib/labs/ocr-extract";
-import type { RunOcrExtractionArgs } from "@/lib/labs/ocr-extract";
 import {
-  executeOcrExtraction,
   OCR_MAX_PAGES,
   OCR_TEXT_READ_CHARS,
   OCR_TEXT_READ_MAX_CHARS,
   planPageReads,
   splitOcrText,
-} from "@/lib/labs/ocr-run";
+} from "@/lib/documents/ocr-plan";
+import { OcrExtractError } from "@/lib/documents/ocr-read";
+import { runOcrExtraction } from "@/lib/labs/ocr-extract";
+import type { RunOcrExtractionArgs } from "@/lib/labs/ocr-extract";
+import { executeOcrExtraction } from "@/lib/labs/ocr-run";
 import { AiUnavailableError } from "@/lib/ai/capabilities/refusal";
 import { annotate } from "@/lib/logging/context";
 
@@ -93,6 +94,8 @@ const schedule = (maxModelCalls: number) => ({
   maxModelCalls: () => maxModelCalls,
   arm: vi.fn().mockResolvedValue(undefined),
 });
+/** A run whose deadline leaves room for every read. */
+const noDeadline = () => schedule(Number.POSITIVE_INFINITY);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -155,6 +158,18 @@ describe("planning the reads", () => {
   });
 });
 
+describe("a scan is always planned against a schedule", () => {
+  it("cannot be started without one", () => {
+    // The scan only runs in the worker, which hands it the run's deadline.
+    // A caller with no schedule would read a twenty-page report as forty
+    // model calls, so the signature leaves no such call to write.
+    const start = () =>
+      // @ts-expect-error -- `schedule` is required
+      executeOcrExtraction({ userId: "u1", input: text(), budget });
+    expect(typeof start).toBe("function");
+  });
+});
+
 describe("text mode", () => {
   it("charges what the provider reported to the provider that served", async () => {
     vi.mocked(runOcrExtraction).mockImplementation(extraction(2345));
@@ -162,6 +177,7 @@ describe("text mode", () => {
       userId: "u1",
       input: text(),
       budget,
+      schedule: noDeadline(),
     });
     expect(out).toEqual({ ok: true, data: { rows: [] } });
     expect(reconcileSpend).toHaveBeenCalledWith(
@@ -176,7 +192,12 @@ describe("text mode", () => {
 
   it("charges the reservation when the provider reported nothing", async () => {
     vi.mocked(runOcrExtraction).mockImplementation(extraction(0));
-    await executeOcrExtraction({ userId: "u1", input: text(), budget });
+    await executeOcrExtraction({
+      userId: "u1",
+      input: text(),
+      budget,
+      schedule: noDeadline(),
+    });
     expect(reconcileSpend).toHaveBeenCalledWith(
       "u1",
       1500,
@@ -209,7 +230,12 @@ describe("text mode", () => {
 
   it("passes the cached share of what was spent to the ledger", async () => {
     vi.mocked(runOcrExtraction).mockImplementation(extraction(3000, 1200));
-    await executeOcrExtraction({ userId: "u1", input: text(), budget });
+    await executeOcrExtraction({
+      userId: "u1",
+      input: text(),
+      budget,
+      schedule: noDeadline(),
+    });
     expect(reconcileSpend).toHaveBeenCalledWith(
       "u1",
       1500,
@@ -230,7 +256,12 @@ describe("text mode", () => {
       expect(await args.reserveRead!()).toBe(true);
       return extraction(20_000)(args);
     });
-    await executeOcrExtraction({ userId: "u1", input: text(), budget });
+    await executeOcrExtraction({
+      userId: "u1",
+      input: text(),
+      budget,
+      schedule: noDeadline(),
+    });
     expect(reserveBudget).toHaveBeenCalledWith(
       "u1",
       8000,
@@ -264,6 +295,7 @@ describe("text mode", () => {
       userId: "u1",
       input: text(),
       budget: { ...budget, owner: "user" },
+      schedule: noDeadline(),
     });
     expect(vi.mocked(reserveBudget).mock.calls[0][3]).toBe(2_000_000);
     expect(vi.mocked(reserveBudget).mock.calls[0][4]).toBe("user");
@@ -292,7 +324,12 @@ describe("text mode", () => {
       answer = await args.reserveRead!();
       return { data: { rows: [] } as never, spentTokens: 0, cachedTokens: 0 };
     });
-    await executeOcrExtraction({ userId: "u1", input: text(), budget });
+    await executeOcrExtraction({
+      userId: "u1",
+      input: text(),
+      budget,
+      schedule: noDeadline(),
+    });
     // 18 500 caught up first (allowed, the day stood at 190 000); the next
     // read is then judged at 208 500 and refused. Booking only the 8 000
     // ceiling, or both in one reservation, would have let it through.
@@ -321,7 +358,12 @@ describe("text mode", () => {
       await args.reserveRead!();
       return { data: { rows: [] } as never, spentTokens: 0, cachedTokens: 0 };
     });
-    await executeOcrExtraction({ userId: "u1", input: text(), budget });
+    await executeOcrExtraction({
+      userId: "u1",
+      input: text(),
+      budget,
+      schedule: noDeadline(),
+    });
     // 20 000 spent, 4 000 of it cached: 16 000 net against 1 500 reserved.
     expect(vi.mocked(reserveBudget).mock.calls[0][1]).toBe(14_500);
   });
@@ -336,6 +378,7 @@ describe("text mode", () => {
       userId: "u1",
       input: text(),
       budget: { ...budget, owner: undefined as never },
+      schedule: noDeadline(),
     });
     expect(answer).toBe(false);
     expect(reserveBudget).not.toHaveBeenCalled();
@@ -346,7 +389,12 @@ describe("text mode", () => {
       new OcrExtractError("x", "budget"),
     );
     expect(
-      await executeOcrExtraction({ userId: "u1", input: text(), budget }),
+      await executeOcrExtraction({
+        userId: "u1",
+        input: text(),
+        budget,
+        schedule: noDeadline(),
+      }),
     ).toMatchObject({ status: 429, errorCode: "labs.ocr.budgetExceeded" });
 
     vi.mocked(runOcrExtraction).mockRejectedValueOnce(
@@ -357,14 +405,24 @@ describe("text mode", () => {
       ),
     );
     expect(
-      await executeOcrExtraction({ userId: "u1", input: text(), budget }),
+      await executeOcrExtraction({
+        userId: "u1",
+        input: text(),
+        budget,
+        schedule: noDeadline(),
+      }),
     ).toMatchObject({ ok: false, errorCode: "consent.ai.required" });
 
     vi.mocked(runOcrExtraction).mockRejectedValueOnce(
       new OcrExtractError("x", "error"),
     );
     expect(
-      await executeOcrExtraction({ userId: "u1", input: text(), budget }),
+      await executeOcrExtraction({
+        userId: "u1",
+        input: text(),
+        budget,
+        schedule: noDeadline(),
+      }),
     ).toMatchObject({ status: 500, errorCode: "aiRuns.failed" });
   });
 
@@ -378,7 +436,12 @@ describe("text mode", () => {
       answer = await args.reserveRead!();
       return extraction(4000)(args);
     });
-    await executeOcrExtraction({ userId: "u1", input: text(), budget });
+    await executeOcrExtraction({
+      userId: "u1",
+      input: text(),
+      budget,
+      schedule: noDeadline(),
+    });
     expect(answer).toBe(false);
     // The refused reservation was handed back by reserveBudget itself; the
     // run settles against the first read's alone.
@@ -398,6 +461,7 @@ describe("text mode", () => {
       userId: "u1",
       input: text("x".repeat(OCR_TEXT_READ_MAX_CHARS + 1)),
       budget,
+      schedule: noDeadline(),
     });
     expect(out).toMatchObject({
       ok: false,
@@ -420,7 +484,12 @@ describe("text mode", () => {
       args.meter!.spent += 900;
       throw new OcrExtractError("x");
     });
-    await executeOcrExtraction({ userId: "u1", input: text(), budget });
+    await executeOcrExtraction({
+      userId: "u1",
+      input: text(),
+      budget,
+      schedule: noDeadline(),
+    });
     expect(reconcileSpend).toHaveBeenCalledWith(
       "u1",
       1500,
@@ -437,6 +506,7 @@ describe("text mode", () => {
       userId: "u1",
       input: text(),
       budget,
+      schedule: noDeadline(),
     });
     expect(out).toMatchObject({
       ok: false,
@@ -461,6 +531,7 @@ describe("text mode", () => {
       userId: "u1",
       input: text(),
       budget,
+      schedule: noDeadline(),
     });
     expect(out).toMatchObject({
       ok: false,
@@ -481,6 +552,7 @@ describe("text mode", () => {
       userId: "u1",
       input: text(),
       budget,
+      schedule: noDeadline(),
     });
     expect(out).toMatchObject({ ok: false, status: 502 });
     expect(JSON.stringify(out)).toContain("configured AI provider");
@@ -562,6 +634,7 @@ describe("vision mode", () => {
       userId: "u1",
       input: pdf(anthropicPick),
       budget,
+      schedule: noDeadline(),
     });
     const args = vi.mocked(runOcrExtraction).mock.calls[0][0];
     expect(args.chunks.map((c) => c.pages)).toEqual([[1], [2], [3], [4]]);
@@ -584,6 +657,7 @@ describe("vision mode", () => {
         userId: "u1",
         input: pdf(anthropicPick),
         budget,
+        schedule: noDeadline(),
       });
       const args = vi.mocked(runOcrExtraction).mock.calls[i][0];
       expect(args.chunks).toHaveLength(1);
@@ -626,6 +700,7 @@ describe("vision mode", () => {
       userId: "u1",
       input: pdf(),
       budget,
+      schedule: noDeadline(),
     });
     expect(out).toEqual({
       ok: true,
@@ -642,6 +717,7 @@ describe("vision mode", () => {
       userId: "u1",
       input: pdf(),
       budget,
+      schedule: noDeadline(),
     });
     expect(out).toMatchObject({
       ok: false,

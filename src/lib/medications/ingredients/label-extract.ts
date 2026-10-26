@@ -29,6 +29,7 @@ import {
   type AIProvider,
   type CompletionParams,
 } from "@/lib/ai/types";
+import { readerBusyFailure } from "@/lib/documents/ai-runs/run-support";
 import { settleAiRunBudget } from "@/lib/documents/ai-runs/store";
 import type {
   AiRunBudget,
@@ -232,6 +233,13 @@ export async function executeSupplementLabelExtraction(args: {
       ];
     } else {
       const raster = await rasterizePdf(bytes);
+      if (
+        !raster.ok &&
+        (raster.reason === "busy" || raster.reason === "interrupted")
+      ) {
+        await settleAiRunBudget(userId, budget, 0, null);
+        return readerBusyFailure();
+      }
       if (!raster.ok) {
         await settleAiRunBudget(userId, budget, 0, null);
         return failure({

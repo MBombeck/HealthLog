@@ -8,6 +8,8 @@
  * indistinguishable from never-existed by construction, and owner-scoped
  * either way) or when restoring would collide with a live duplicate of the
  * same bytes (the `inbound_documents_user_sha_live` partial unique index).
+ * The restore itself is the shared one (`src/lib/documents/tombstones.ts`):
+ * it also clears any import-ledger entry for the document's source keys.
  */
 import { NextRequest } from "next/server";
 
@@ -20,11 +22,10 @@ import {
   loadDocumentEncounterLinks,
 } from "@/lib/documents/links";
 import { serialiseDocumentDetail } from "@/lib/documents/store";
+import { restoreDocumentTombstone } from "@/lib/documents/tombstones";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
-import { isP2002 } from "@/lib/prisma-errors";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
-import type { InboundDocumentStatus } from "@/generated/prisma/client";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -33,18 +34,6 @@ export const dynamic = "force-dynamic";
 /** Shares the write posture of the other owner-scoped document mutations. */
 const WRITE_LIMIT_PER_HOUR = 240;
 const WRITE_WINDOW_MS = 60 * 60 * 1000;
-
-/**
- * Post-restore lifecycle status, derived from the staged facts: no facts →
- * STORED, any PENDING → EXTRACTED, otherwise every fact was acted on →
- * CONFIRMED. (DELETE stamped DISCARDED; the prior status is not persisted.)
- */
-function restoredStatus(
-  facts: Array<{ status: string }>,
-): InboundDocumentStatus {
-  if (facts.length === 0) return "STORED";
-  return facts.some((f) => f.status === "PENDING") ? "EXTRACTED" : "CONFIRMED";
-}
 
 export const POST = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
@@ -68,80 +57,26 @@ export const POST = apiHandler(
     }
 
     const { id } = await params;
-    const row = await prisma.inboundDocument.findFirst({
-      where: { id, userId: user.id },
-      omit: { contentEncrypted: true },
-      include: { facts: { orderBy: { createdAt: "asc" } } },
-    });
-
-    if (!row) {
-      // Purged (past the 30-day grace) or never existed — the tombstone is
-      // gone either way, so the undo window is over: 409, not 404.
+    const outcome = await restoreDocumentTombstone(user.id, id);
+    if (outcome.kind === "gone") {
+      // Purged (past the 30-day grace, or deleted now from Recently deleted)
+      // or never existed — the tombstone is gone either way, so the undo
+      // window is over: 409, not 404.
       return apiError("This document can no longer be restored.", 409, {
         errorCode: "documents.inbound.restoreGone",
         reason: "purged",
       });
     }
-
-    if (row.deletedAt === null) {
-      // Already live — restoring twice is a no-op, not an error (the undo
-      // toast may fire after a concurrent restore).
-      const [links, visitLinks] = await Promise.all([
-        loadConditionLinks(user.id, [row.id]),
-        loadDocumentEncounterLinks(user.id, [row.id]),
-      ]);
-      return apiSuccess(
-        serialiseDocumentDetail(
-          row,
-          row.facts,
-          links.get(row.id) ?? [],
-          false,
-          null,
-          false,
-          visitLinks.get(row.id) ?? [],
-        ),
-      );
-    }
-
-    // A live duplicate of the same bytes blocks the restore (the partial
-    // unique index would reject it; check first for a clean 409).
-    if (row.contentSha256) {
-      const conflict = await prisma.inboundDocument.findFirst({
-        where: {
-          userId: user.id,
-          contentSha256: row.contentSha256,
-          deletedAt: null,
-          id: { not: row.id },
-        },
-        select: { id: true },
+    if (outcome.kind === "duplicate") {
+      return apiError("An identical document is already stored.", 409, {
+        errorCode: "documents.inbound.restoreDuplicate",
+        reason: "duplicateExists",
+        ...(outcome.existingId ? { existingId: outcome.existingId } : {}),
       });
-      if (conflict) {
-        return apiError("An identical document is already stored.", 409, {
-          errorCode: "documents.inbound.restoreDuplicate",
-          reason: "duplicateExists",
-          existingId: conflict.id,
-        });
-      }
-    }
-
-    try {
-      await prisma.inboundDocument.update({
-        where: { id: row.id },
-        data: { deletedAt: null, status: restoredStatus(row.facts) },
-      });
-    } catch (err) {
-      if (isP2002(err)) {
-        // Raced a concurrent identical upload into the partial unique index.
-        return apiError("An identical document is already stored.", 409, {
-          errorCode: "documents.inbound.restoreDuplicate",
-          reason: "duplicateExists",
-        });
-      }
-      throw err;
     }
 
     const restored = await prisma.inboundDocument.findFirstOrThrow({
-      where: { id: row.id },
+      where: { id, userId: user.id },
       omit: { contentEncrypted: true },
       include: { facts: { orderBy: { createdAt: "asc" } } },
     });
@@ -150,15 +85,19 @@ export const POST = apiHandler(
       loadDocumentEncounterLinks(user.id, [restored.id]),
     ]);
 
-    await auditLog("documents.inbound.restore", {
-      userId: user.id,
-      ipAddress: getClientIp(request),
-      details: { documentId: restored.id },
-    });
+    // Restoring an already-live document is a no-op success (the undo toast
+    // may fire after a concurrent restore); only a real restore is audited.
+    if (outcome.kind === "restored") {
+      await auditLog("documents.inbound.restore", {
+        userId: user.id,
+        ipAddress: getClientIp(request),
+        details: { documentId: restored.id },
+      });
+    }
 
     annotate({
       action: { name: "documents.vault.restore" },
-      meta: { documentId: restored.id },
+      meta: { documentId: restored.id, alreadyLive: outcome.kind === "live" },
     });
 
     return apiSuccess(

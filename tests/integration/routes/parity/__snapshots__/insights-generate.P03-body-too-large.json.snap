@@ -1,0 +1,29 @@
+{
+  "status": 413,
+  "body": {
+    "data": null,
+    "error": "Request body exceeds 16384 bytes",
+    "meta": {
+      "errorCode": "http.payload_too_large",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 413,
+      "action": null,
+      "meta": null,
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "insightsCachedAt": null,
+    "insightsCachedLocale": null,
+    "cachedPayload": null,
+    "snapshotHash": null,
+    "audit": [],
+    "usage": []
+  }
+}

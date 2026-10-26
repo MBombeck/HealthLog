@@ -46,10 +46,7 @@ import { reportWorkerError } from "@/lib/jobs/report-worker-error";
 import { getWorkerPrisma } from "@/lib/jobs/reminder/shared";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { logCaught } from "@/lib/logging/signal";
-
-export const OFFHOST_PURGE_QUEUE = "offhost-backup-purge";
-/** 03:40, after the nightly upload (02:30) has had its hour. */
-export const OFFHOST_PURGE_CRON = "40 3 * * *";
+import { OFFHOST_PURGE_QUEUE, offhostPurgeDue } from "./offhost-purge-queue";
 
 export type OffhostPurgeReason =
   "account_deleted" | "data_wiped" | "managed_profile_deleted";
@@ -75,15 +72,20 @@ type PurgeDb = Pick<
  * transaction that deletes the account or wipes its data, so the request and
  * the deletion commit together. A host without off-host backup configured has
  * nothing in any bucket this could reach, and records nothing.
+ *
+ * `notBefore` holds the purge back until then: a data wipe passes the end of
+ * the deletion grace window, so the copies from before the wipe stay as long
+ * as the account copy the wipe took first (v1.46).
  */
 export async function requestOffhostPurge(
   db: Db,
   subjectId: string,
   reason: OffhostPurgeReason,
+  options: { notBefore?: Date | null } = {},
 ): Promise<boolean> {
   if (!offhostBackupConfigured()) return false;
   await db.offhostPurgeRequest.create({
-    data: { subjectId, reason },
+    data: { subjectId, reason, notBefore: options.notBefore ?? null },
     select: { id: true },
   });
   return true;
@@ -133,7 +135,10 @@ export async function processOffhostPurges(
   prisma: PurgeDb,
   s3Override?: S3Like,
 ): Promise<OffhostPurgeReport> {
+  // A request held back to the end of a grace window is not this run's.
+  // account-deletion: purge requests: the account is gone, or the request waits for its window.
   const requests = await prisma.offhostPurgeRequest.findMany({
+    where: offhostPurgeDue(new Date()),
     orderBy: { requestedAt: "asc" },
     take: REQUESTS_PER_RUN,
   });

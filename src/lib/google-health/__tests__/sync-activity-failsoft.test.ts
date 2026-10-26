@@ -16,11 +16,11 @@ const { fetchDailyRollUpMock, fetchDataPointsMock, handleErrorMock } =
 
 vi.mock("../client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../client")>();
-  return {
-    ...actual,
-    fetchDailyRollUp: fetchDailyRollUpMock,
-    fetchDataPoints: fetchDataPointsMock,
-  };
+  return { ...actual, fetchDailyRollUp: fetchDailyRollUpMock };
+});
+vi.mock("../data-points", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../data-points")>();
+  return { ...actual, fetchDataPoints: fetchDataPointsMock };
 });
 vi.mock("../sync-core", () => ({
   getValidToken: vi.fn(async () => ({

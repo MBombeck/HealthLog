@@ -15,13 +15,8 @@ import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { overwriteDetails } from "@/lib/sharing/audit-details";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { requireIllnessEnabled } from "@/lib/illness/gate";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { illnessEpisodeUpdateSchema } from "@/lib/validations/illness";
@@ -98,17 +93,11 @@ export const PATCH = apiHandler(
       return apiError("Episode not found", 404);
     }
 
-    const { data: rawBody, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, illnessEpisodeUpdateSchema, {
       maxBytes: 16 * 1024,
+      errorCode: "illness.episode.invalid",
     });
-    if (jsonError) return jsonError;
-
-    const parsed = illnessEpisodeUpdateSchema.safeParse(rawBody);
-    if (!parsed.success) {
-      return returnAllZodIssues(parsed.error, 422, {
-        errorCode: "illness.episode.invalid",
-      });
-    }
+    if (!parsed.ok) return parsed.error;
     const entry = parsed.data;
 
     // Window invariant against the MERGED state: a partial edit touching only

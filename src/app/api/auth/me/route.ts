@@ -50,7 +50,7 @@ import { buildAvatarUrl } from "@/lib/avatar";
 import { decrypt } from "@/lib/crypto";
 import { prisma } from "@/lib/db";
 import { resolveStoredTimezone } from "@/lib/tz/resolver";
-import { isCycleEnabled } from "@/lib/cycle/gate";
+import { isCycleEnabled } from "@/lib/cycle/enabled";
 import {
   resolveModuleMap,
   getOperatorModuleAvailability,

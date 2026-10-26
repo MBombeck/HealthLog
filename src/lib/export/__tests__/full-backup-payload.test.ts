@@ -210,6 +210,8 @@ function makePrisma() {
               id: "course-march",
               startsOn: new Date("2026-03-01T00:00:00.000Z"),
               endsOn: new Date("2026-03-07T00:00:00.000Z"),
+              // #1280 — ended with "End course" after the morning dose.
+              endedAt: new Date("2026-03-07T09:30:00.000Z"),
               noteEncrypted: encryptToBytes("the March flu"),
               createdAt: new Date("2026-03-01T08:00:00.000Z"),
               updatedAt: new Date("2026-03-01T08:05:00.000Z"),
@@ -218,6 +220,7 @@ function makePrisma() {
               id: "course-june",
               startsOn: new Date("2026-06-10T00:00:00.000Z"),
               endsOn: null,
+              endedAt: null,
               noteEncrypted: null,
               createdAt: new Date("2026-06-10T08:00:00.000Z"),
               updatedAt: new Date("2026-06-10T08:05:00.000Z"),
@@ -460,6 +463,8 @@ function makePrisma() {
     // Empty for the same reason as the sections above.
     documentConditionLink: { findMany: vi.fn().mockResolvedValue([]) },
     extractedFact: { findMany: vi.fn().mockResolvedValue([]) },
+    documentImportKey: { findMany: vi.fn().mockResolvedValue([]) },
+    inboundDocument: { findMany: vi.fn().mockResolvedValue([]) },
     // The ECG strips. Empty for the same reason as the sections above:
     // an account whose watch has never taken one is the ordinary case the
     // builder must still answer for.
@@ -806,12 +811,14 @@ describe("buildFullBackupPayload — medication courses (v1.40, #1024)", () => {
       {
         startsOn: "2026-03-01",
         endsOn: "2026-03-07",
+        endedAt: "2026-03-07T09:30:00.000Z",
         note: "the March flu",
         createdAt: "2026-03-01T08:00:00.000Z",
       },
       {
         startsOn: "2026-06-10",
         endsOn: null,
+        endedAt: null,
         note: null,
         createdAt: "2026-06-10T08:00:00.000Z",
       },
@@ -823,6 +830,7 @@ describe("buildFullBackupPayload — medication courses (v1.40, #1024)", () => {
     expect(march).toMatchObject({
       startsOn: "2026-03-01",
       endsOn: "2026-03-07",
+      endedAt: "2026-03-07T09:30:00.000Z",
       note: null,
       createdAt: "2026-03-01T08:00:00.000Z",
       updatedAt: "2026-03-01T08:05:00.000Z",
@@ -1002,10 +1010,14 @@ describe("buildFullBackupPayload — aggregation provenance", () => {
     );
 
     const rows = payload.measurements as Array<Record<string, unknown>>;
-    // The portable arm carries the human-readable subset only — no
-    // externalSourceVersion, no glucoseContext, and no provenance either.
+    // The portable arm carries the human-readable subset only: none of the
+    // sync bookkeeping (source ids, their version, the provenance), but every
+    // attribute of the reading itself, its glucose context among them.
     expect(rows[0]).not.toHaveProperty("aggregationProvenance");
     expect(rows[0]).not.toHaveProperty("externalSourceVersion");
+    expect(rows[0]).not.toHaveProperty("externalId");
+    expect(rows[0]).toHaveProperty("glucoseContext");
+    expect(rows[0]).toHaveProperty("sleepStage");
   });
 });
 

@@ -30,10 +30,6 @@ import { getWorkerPrisma } from "@/lib/jobs/reminder/shared";
 import { SUMMARY_PENDING_TTL_MS } from "@/lib/documents/store";
 import type { PrismaClient } from "@/generated/prisma/client";
 
-export const DOCUMENT_SUMMARY_REAPER_QUEUE = "document-summary-reaper";
-/** Hourly at :50 — off the maintenance herd's minute marks. */
-export const DOCUMENT_SUMMARY_REAPER_CRON = "50 * * * *";
-
 export interface DocumentSummaryReaperPayload {
   triggeredAt?: string;
 }
@@ -49,6 +45,7 @@ export async function reapStalePendingSummaries(
   now: Date = new Date(),
 ): Promise<number> {
   const cutoff = new Date(now.getTime() - SUMMARY_PENDING_TTL_MS);
+  // account-deletion: releases summaries stuck in PENDING by a run that died; it starts no work.
   const { count } = await prisma.inboundDocument.updateMany({
     where: { summaryState: "PENDING", updatedAt: { lt: cutoff } },
     data: { summaryState: "UNAVAILABLE" },

@@ -65,7 +65,12 @@ describe("recentProofErrorMessage", () => {
   });
 });
 
-describe.each([
+/**
+ * [component, gated route, the hook that sends it]. The component holds the
+ * flow and renders its dialog; the request runs through `recentProof.run`,
+ * in the component itself or in a hook the component hands the flow to.
+ */
+describe.each<[string, string, string?]>([
   ["components/settings/export-section.tsx", "/api/export/full-backup"],
   ["components/settings/export-section.tsx", "/api/export/encrypted"],
   ["components/settings/share-link-create-form.tsx", "/api/share-links"],
@@ -73,21 +78,43 @@ describe.each([
   ["components/settings/api-section.tsx", "/api/tokens/measurements"],
   ["components/settings/api-section.tsx", "/api/tokens/documents"],
   ["components/settings/api-section.tsx", "/api/tokens/workouts"],
-  ["components/admin/backups-section.tsx", "/download"],
-  ["components/admin/backups-section.tsx", "/restore"],
-  ["components/admin/backups-section.tsx", "/api/admin/backups/upload"],
+  [
+    "components/admin/backups-section.tsx",
+    "/download",
+    "components/admin/backups/use-backup-actions.ts",
+  ],
+  [
+    "components/admin/backups-section.tsx",
+    "/restore",
+    "components/admin/backups/use-backup-restores.ts",
+  ],
+  [
+    "components/admin/backups-section.tsx",
+    "/api/admin/backups/upload",
+    "components/admin/backups/use-backup-upload.ts",
+  ],
   ["components/admin/danger-zone-section.tsx", "/api/admin/data"],
   ["components/admin/user-management-section.tsx", "/reset-password"],
-])("%s → %s", (file, endpoint) => {
+])("%s → %s", (file, endpoint, caller = file) => {
   const source = read(file);
+  const calling = read(caller);
 
   it("calls the gated route", () => {
-    expect(source).toContain(endpoint);
+    expect(calling).toContain(endpoint);
   });
 
   it("runs it through the recent-proof hook and renders the dialog", () => {
     expect(source).toContain("useRecentProof()");
-    expect(source).toMatch(/recentProof\.run\(/);
+    expect(calling).toMatch(/recentProof\.run\(/);
     expect(source).toContain("{recentProof.dialog}");
+    if (caller !== file) {
+      // The component hands its flow to the hook that sends the request.
+      const hook = caller
+        .split("/")
+        .pop()!
+        .replace(/\.tsx?$/, "");
+      expect(source).toMatch(new RegExp(`from "\\./[\\w/-]*${hook}"`));
+      expect(source).toMatch(/\(recentProof\)/);
+    }
   });
 });

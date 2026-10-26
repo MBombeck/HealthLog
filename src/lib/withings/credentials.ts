@@ -3,7 +3,7 @@
  */
 import { prisma } from "@/lib/db";
 import { decrypt } from "@/lib/crypto";
-import type { WithingsCredentials } from "./client";
+import type { WithingsCredentials } from "./oauth";
 
 /**
  * Fetch and decrypt the user's Withings API credentials.

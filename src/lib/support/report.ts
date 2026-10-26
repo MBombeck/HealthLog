@@ -38,12 +38,10 @@ import {
   PROBLEMS_BUFFER_MAX,
 } from "@/lib/logging/in-memory-buffer";
 import type { WideEvent } from "@/lib/logging/types";
-import {
-  offhostBackupConfigured,
-  OFFHOST_BACKUP_QUEUE,
-} from "@/lib/jobs/offhost-backup";
+import { offhostBackupConfigured } from "@/lib/jobs/offhost-backup";
+import { OFFHOST_BACKUP_QUEUE } from "@/lib/jobs/offhost-backup-queue";
 import { DATA_BACKUP_QUEUE } from "@/lib/jobs/data-backup-policy";
-import { RESTORE_DRILL_QUEUE } from "@/lib/jobs/restore-drill";
+import { RESTORE_DRILL_QUEUE } from "@/lib/jobs/restore-drill-queue";
 import {
   JOB_FAILURE_WINDOW_HOURS,
   readFailingQueues,

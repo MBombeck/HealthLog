@@ -14,6 +14,7 @@
  * `register-integration-sync.ts` or pg-boss never provisions it and the boot
  * enqueue silently never drains (the v1.4.37 dead-queue class).
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -27,15 +28,7 @@ import {
   withPageWalkLedger,
 } from "@/lib/integrations/page-walk";
 import { syncStravaHistory } from "@/lib/strava/sync";
-
-export const STRAVA_BACKFILL_QUEUE = "strava-backfill";
-
-/**
- * Serial concurrency — a backfill walks the account's activity history and is
- * rate-bounded by Strava's 200-req / 15-min cap; concurrency-1 keeps it from
- * crowding the request pool, matching `WHOOP_BACKFILL_CONCURRENCY`.
- */
-export const STRAVA_BACKFILL_CONCURRENCY = 1;
+import { STRAVA_BACKFILL_QUEUE } from "./strava-backfill-queue";
 
 export interface StravaBackfillPayload {
   userId: string;
@@ -202,6 +195,7 @@ export async function enqueueBootTimeStravaBackfill(
       where: {
         stravaAccessTokenEncrypted: { not: null },
         stravaBackfillCompletedAt: null,
+        ...ACTIVE_ACCOUNT,
       },
       select: { id: true },
     });

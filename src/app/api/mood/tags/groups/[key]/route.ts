@@ -1,13 +1,8 @@
 import { NextRequest } from "next/server";
 
 import { prisma, toJson } from "@/lib/db";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -42,12 +37,10 @@ export const PATCH = apiHandler(
     const { key } = await params;
     if (!isCustomCategoryKey(key)) return apiError("Not a custom group", 404);
 
-    const { data: rawJsonBody, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, updateCustomGroupSchema, {
       maxBytes: 64 * 1024,
     });
-    if (jsonError) return jsonError;
-    const parsed = updateCustomGroupSchema.safeParse(rawJsonBody);
-    if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+    if (!parsed.ok) return parsed.error;
 
     const owned = await prisma.moodTagCategory.findFirst({
       where: { key, userId: user.id },

@@ -1,0 +1,4734 @@
+{
+  "withings": {
+    "redirectUri": "https://healthlog.example/api/withings/callback",
+    "authorize": {
+      "url": "https://account.withings.com/oauth2_user/authorize2",
+      "query": {
+        "client_id": "client-id-1",
+        "redirect_uri": "https://healthlog.example/api/withings/callback",
+        "response_type": "code",
+        "scope": "user.metrics,user.activity",
+        "state": "state-nonce-1"
+      }
+    },
+    "exchange": {
+      "ok": {
+        "result": {
+          "userid": "4711",
+          "access_token": "access-1",
+          "refresh_token": "refresh-1",
+          "expires_in": 3600,
+          "token_type": "Bearer",
+          "scope": "granted"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://wbsapi.withings.net/v2/oauth2",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "action": "requesttoken",
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/withings/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "withings",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "empty_body": {
+        "error": {
+          "name": "WithingsApiError",
+          "message": "Withings token error: ?",
+          "classification": "transient",
+          "reason": "no_status_field",
+          "verb": "token"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://wbsapi.withings.net/v2/oauth2",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "action": "requesttoken",
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/withings/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "withings",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200,
+                "error": "no_status_field"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_grant": {
+        "error": {
+          "name": "WithingsApiError",
+          "message": "Withings token error: 503 - Invalid Params",
+          "classification": "transient",
+          "withingsStatus": 503,
+          "reason": "withings_503",
+          "verb": "token"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://wbsapi.withings.net/v2/oauth2",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "action": "requesttoken",
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/withings/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "withings",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200,
+                "error": "withings_503"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "revoked": {
+        "error": {
+          "name": "WithingsApiError",
+          "message": "Withings token error: 100 - The hash is missing",
+          "classification": "reauth_required",
+          "withingsStatus": 100,
+          "reason": "withings_100",
+          "verb": "token"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://wbsapi.withings.net/v2/oauth2",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "action": "requesttoken",
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/withings/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "withings",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200,
+                "error": "withings_100"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_client": {
+        "error": {
+          "name": "WithingsApiError",
+          "message": "Withings token error: 401 - invalid_client",
+          "classification": "transient",
+          "withingsStatus": 401,
+          "reason": "withings_401_unknown",
+          "verb": "token"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://wbsapi.withings.net/v2/oauth2",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "action": "requesttoken",
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/withings/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "withings",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200,
+                "error": "withings_401_unknown"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "rate_limited": {
+        "error": {
+          "name": "WithingsApiError",
+          "message": "Withings token error: 601 - Too Many Requests",
+          "classification": "transient",
+          "withingsStatus": 601,
+          "reason": "withings_601",
+          "verb": "token"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://wbsapi.withings.net/v2/oauth2",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "action": "requesttoken",
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/withings/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "withings",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200,
+                "error": "withings_601"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "outage": {
+        "error": {
+          "name": "WithingsApiError",
+          "message": "Withings token error: ?",
+          "classification": "transient",
+          "reason": "http_503",
+          "verb": "token"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://wbsapi.withings.net/v2/oauth2",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "action": "requesttoken",
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/withings/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "withings",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 503,
+                "error": "http_503"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      }
+    },
+    "refresh": {
+      "ok": {
+        "result": {
+          "userid": "4711",
+          "access_token": "access-1",
+          "refresh_token": "refresh-1",
+          "expires_in": 3600,
+          "token_type": "Bearer",
+          "scope": "granted"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://wbsapi.withings.net/v2/oauth2",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "action": "requesttoken",
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "withings",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "empty_body": {
+        "error": {
+          "name": "WithingsApiError",
+          "message": "Withings refresh error: ?",
+          "classification": "transient",
+          "reason": "no_status_field",
+          "verb": "refresh"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://wbsapi.withings.net/v2/oauth2",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "action": "requesttoken",
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "withings",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 200,
+                "error": "no_status_field"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_grant": {
+        "error": {
+          "name": "WithingsApiError",
+          "message": "Withings refresh error: 503 - Invalid Params",
+          "classification": "transient",
+          "withingsStatus": 503,
+          "reason": "withings_503",
+          "verb": "refresh"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://wbsapi.withings.net/v2/oauth2",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "action": "requesttoken",
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "withings",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 200,
+                "error": "withings_503"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "revoked": {
+        "error": {
+          "name": "WithingsApiError",
+          "message": "Withings refresh error: 100 - The hash is missing",
+          "classification": "reauth_required",
+          "withingsStatus": 100,
+          "reason": "withings_100",
+          "verb": "refresh"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://wbsapi.withings.net/v2/oauth2",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "action": "requesttoken",
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "withings",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 200,
+                "error": "withings_100"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_client": {
+        "error": {
+          "name": "WithingsApiError",
+          "message": "Withings refresh error: 401 - invalid_client",
+          "classification": "transient",
+          "withingsStatus": 401,
+          "reason": "withings_401_unknown",
+          "verb": "refresh"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://wbsapi.withings.net/v2/oauth2",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "action": "requesttoken",
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "withings",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 200,
+                "error": "withings_401_unknown"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "rate_limited": {
+        "error": {
+          "name": "WithingsApiError",
+          "message": "Withings refresh error: 601 - Too Many Requests",
+          "classification": "transient",
+          "withingsStatus": 601,
+          "reason": "withings_601",
+          "verb": "refresh"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://wbsapi.withings.net/v2/oauth2",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "action": "requesttoken",
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "withings",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 200,
+                "error": "withings_601"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "outage": {
+        "error": {
+          "name": "WithingsApiError",
+          "message": "Withings refresh error: ?",
+          "classification": "transient",
+          "reason": "http_503",
+          "verb": "refresh"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://wbsapi.withings.net/v2/oauth2",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "action": "requesttoken",
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "withings",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 503,
+                "error": "http_503"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      }
+    }
+  },
+  "whoop": {
+    "redirectUri": "https://healthlog.example/api/whoop/callback",
+    "authorize": {
+      "url": "https://api.prod.whoop.com/oauth/oauth2/auth",
+      "query": {
+        "client_id": "client-id-1",
+        "redirect_uri": "https://healthlog.example/api/whoop/callback",
+        "response_type": "code",
+        "scope": "offline read:recovery read:sleep read:workout read:cycles read:profile read:body_measurement",
+        "state": "state-nonce-1"
+      }
+    },
+    "exchange": {
+      "ok": {
+        "result": {
+          "access_token": "access-1",
+          "refresh_token": "refresh-1",
+          "expires_in": 3600,
+          "token_type": "Bearer",
+          "scope": "granted"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.prod.whoop.com/oauth/oauth2/token",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/whoop/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "whoop",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "empty_body": {
+        "error": {
+          "name": "WhoopApiError",
+          "message": "WHOOP exchangeCode error: 200",
+          "classification": "transient",
+          "httpStatus": 200,
+          "reason": "empty_token_body",
+          "verb": "exchangeCode",
+          "vendor": "WHOOP"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.prod.whoop.com/oauth/oauth2/token",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/whoop/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "whoop",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_grant": {
+        "error": {
+          "name": "WhoopApiError",
+          "message": "WHOOP exchangeCode error: 400 - invalid_grant",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "exchangeCode",
+          "upstreamError": "invalid_grant",
+          "vendor": "WHOOP"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.prod.whoop.com/oauth/oauth2/token",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/whoop/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "whoop",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "strava_fault": {
+        "error": {
+          "name": "WhoopApiError",
+          "message": "WHOOP exchangeCode error: 400",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "exchangeCode",
+          "vendor": "WHOOP"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.prod.whoop.com/oauth/oauth2/token",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/whoop/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "whoop",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_client": {
+        "error": {
+          "name": "WhoopApiError",
+          "message": "WHOOP exchangeCode error: 401 - invalid_client",
+          "classification": "reauth_required",
+          "httpStatus": 401,
+          "reason": "http_401",
+          "verb": "exchangeCode",
+          "upstreamError": "invalid_client",
+          "vendor": "WHOOP"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.prod.whoop.com/oauth/oauth2/token",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/whoop/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "whoop",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 401,
+                "error": "http_401"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "rate_limited": {
+        "error": {
+          "name": "WhoopApiError",
+          "message": "WHOOP exchangeCode error: 429 - rate_limited",
+          "classification": "transient",
+          "httpStatus": 429,
+          "reason": "http_429",
+          "verb": "exchangeCode",
+          "upstreamError": "rate_limited",
+          "vendor": "WHOOP"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.prod.whoop.com/oauth/oauth2/token",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/whoop/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "whoop",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 429,
+                "error": "http_429"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "outage": {
+        "error": {
+          "name": "WhoopApiError",
+          "message": "WHOOP exchangeCode error: 503",
+          "classification": "transient",
+          "httpStatus": 503,
+          "reason": "http_503",
+          "verb": "exchangeCode",
+          "vendor": "WHOOP"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.prod.whoop.com/oauth/oauth2/token",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/whoop/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "whoop",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 503,
+                "error": "http_503"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      }
+    },
+    "refresh": {
+      "ok": {
+        "result": {
+          "access_token": "access-1",
+          "refresh_token": "refresh-1",
+          "expires_in": 3600,
+          "token_type": "Bearer",
+          "scope": "granted"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.prod.whoop.com/oauth/oauth2/token",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0",
+              "scope": "offline"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "whoop",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "empty_body": {
+        "error": {
+          "name": "WhoopApiError",
+          "message": "WHOOP refreshAccessToken error: 200",
+          "classification": "transient",
+          "httpStatus": 200,
+          "reason": "empty_token_body",
+          "verb": "refreshAccessToken",
+          "vendor": "WHOOP"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.prod.whoop.com/oauth/oauth2/token",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0",
+              "scope": "offline"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "whoop",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_grant": {
+        "error": {
+          "name": "WhoopApiError",
+          "message": "WHOOP refreshAccessToken error: 400 - invalid_grant",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "refreshAccessToken",
+          "upstreamError": "invalid_grant",
+          "vendor": "WHOOP"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.prod.whoop.com/oauth/oauth2/token",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0",
+              "scope": "offline"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "whoop",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "strava_fault": {
+        "error": {
+          "name": "WhoopApiError",
+          "message": "WHOOP refreshAccessToken error: 400",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "refreshAccessToken",
+          "vendor": "WHOOP"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.prod.whoop.com/oauth/oauth2/token",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0",
+              "scope": "offline"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "whoop",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_client": {
+        "error": {
+          "name": "WhoopApiError",
+          "message": "WHOOP refreshAccessToken error: 401 - invalid_client",
+          "classification": "reauth_required",
+          "httpStatus": 401,
+          "reason": "http_401",
+          "verb": "refreshAccessToken",
+          "upstreamError": "invalid_client",
+          "vendor": "WHOOP"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.prod.whoop.com/oauth/oauth2/token",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0",
+              "scope": "offline"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "whoop",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 401,
+                "error": "http_401"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "rate_limited": {
+        "error": {
+          "name": "WhoopApiError",
+          "message": "WHOOP refreshAccessToken error: 429 - rate_limited",
+          "classification": "transient",
+          "httpStatus": 429,
+          "reason": "http_429",
+          "verb": "refreshAccessToken",
+          "upstreamError": "rate_limited",
+          "vendor": "WHOOP"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.prod.whoop.com/oauth/oauth2/token",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0",
+              "scope": "offline"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "whoop",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 429,
+                "error": "http_429"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "outage": {
+        "error": {
+          "name": "WhoopApiError",
+          "message": "WHOOP refreshAccessToken error: 503",
+          "classification": "transient",
+          "httpStatus": 503,
+          "reason": "http_503",
+          "verb": "refreshAccessToken",
+          "vendor": "WHOOP"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.prod.whoop.com/oauth/oauth2/token",
+            "query": {},
+            "headers": {
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0",
+              "scope": "offline"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "whoop",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 503,
+                "error": "http_503"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      }
+    }
+  },
+  "strava": {
+    "redirectUri": "https://healthlog.example/api/strava/callback",
+    "authorize": {
+      "url": "https://www.strava.com/oauth/authorize",
+      "query": {
+        "approval_prompt": "auto",
+        "client_id": "client-id-1",
+        "redirect_uri": "https://healthlog.example/api/strava/callback",
+        "response_type": "code",
+        "scope": "activity:read_all",
+        "state": "state-nonce-1"
+      }
+    },
+    "exchange": {
+      "ok": {
+        "result": {
+          "access_token": "access-1",
+          "refresh_token": "refresh-1",
+          "expires_in": 3600,
+          "token_type": "Bearer",
+          "scope": "granted"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://www.strava.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "strava",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "empty_body": {
+        "error": {
+          "name": "StravaApiError",
+          "message": "Strava exchangeCode error: 200",
+          "classification": "transient",
+          "httpStatus": 200,
+          "reason": "empty_token_body",
+          "verb": "exchangeCode",
+          "vendor": "Strava"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://www.strava.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "strava",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_grant": {
+        "error": {
+          "name": "StravaApiError",
+          "message": "Strava exchangeCode error: 400 - invalid_grant",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "exchangeCode",
+          "upstreamError": "invalid_grant",
+          "vendor": "Strava"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://www.strava.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "strava",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "strava_fault": {
+        "error": {
+          "name": "StravaApiError",
+          "message": "Strava exchangeCode error: 400 - RefreshToken.refresh_token:invalid",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "exchangeCode",
+          "upstreamError": "RefreshToken.refresh_token:invalid",
+          "vendor": "Strava"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://www.strava.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "strava",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_client": {
+        "error": {
+          "name": "StravaApiError",
+          "message": "Strava exchangeCode error: 401 - invalid_client",
+          "classification": "reauth_required",
+          "httpStatus": 401,
+          "reason": "http_401",
+          "verb": "exchangeCode",
+          "upstreamError": "invalid_client",
+          "vendor": "Strava"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://www.strava.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "strava",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 401,
+                "error": "http_401"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "rate_limited": {
+        "error": {
+          "name": "StravaApiError",
+          "message": "Strava exchangeCode error: 429 - rate_limited",
+          "classification": "transient",
+          "httpStatus": 429,
+          "reason": "http_429",
+          "verb": "exchangeCode",
+          "upstreamError": "rate_limited",
+          "vendor": "Strava"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://www.strava.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "strava",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 429,
+                "error": "http_429"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "outage": {
+        "error": {
+          "name": "StravaApiError",
+          "message": "Strava exchangeCode error: 503",
+          "classification": "transient",
+          "httpStatus": 503,
+          "reason": "http_503",
+          "verb": "exchangeCode",
+          "vendor": "Strava"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://www.strava.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "strava",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 503,
+                "error": "http_503"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      }
+    },
+    "refresh": {
+      "ok": {
+        "result": {
+          "access_token": "access-1",
+          "refresh_token": "refresh-1",
+          "expires_in": 3600,
+          "token_type": "Bearer",
+          "scope": "granted"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://www.strava.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "strava",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "empty_body": {
+        "error": {
+          "name": "StravaApiError",
+          "message": "Strava refreshAccessToken error: 200",
+          "classification": "transient",
+          "httpStatus": 200,
+          "reason": "empty_token_body",
+          "verb": "refreshAccessToken",
+          "vendor": "Strava"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://www.strava.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "strava",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_grant": {
+        "error": {
+          "name": "StravaApiError",
+          "message": "Strava refreshAccessToken error: 400 - invalid_grant",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "refreshAccessToken",
+          "upstreamError": "invalid_grant",
+          "vendor": "Strava"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://www.strava.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "strava",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "strava_fault": {
+        "error": {
+          "name": "StravaApiError",
+          "message": "Strava refreshAccessToken error: 400 - RefreshToken.refresh_token:invalid",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "refreshAccessToken",
+          "upstreamError": "RefreshToken.refresh_token:invalid",
+          "vendor": "Strava"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://www.strava.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "strava",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_client": {
+        "error": {
+          "name": "StravaApiError",
+          "message": "Strava refreshAccessToken error: 401 - invalid_client",
+          "classification": "reauth_required",
+          "httpStatus": 401,
+          "reason": "http_401",
+          "verb": "refreshAccessToken",
+          "upstreamError": "invalid_client",
+          "vendor": "Strava"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://www.strava.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "strava",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 401,
+                "error": "http_401"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "rate_limited": {
+        "error": {
+          "name": "StravaApiError",
+          "message": "Strava refreshAccessToken error: 429 - rate_limited",
+          "classification": "transient",
+          "httpStatus": 429,
+          "reason": "http_429",
+          "verb": "refreshAccessToken",
+          "upstreamError": "rate_limited",
+          "vendor": "Strava"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://www.strava.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "strava",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 429,
+                "error": "http_429"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "outage": {
+        "error": {
+          "name": "StravaApiError",
+          "message": "Strava refreshAccessToken error: 503",
+          "classification": "transient",
+          "httpStatus": 503,
+          "reason": "http_503",
+          "verb": "refreshAccessToken",
+          "vendor": "Strava"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://www.strava.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "strava",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 503,
+                "error": "http_503"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      }
+    },
+    "deauthorize_ok": {
+      "result": null,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://www.strava.com/oauth/deauthorize",
+          "query": {},
+          "headers": {
+            "Accept": "application/json",
+            "Authorization": "Bearer access-1"
+          },
+          "form": null,
+          "body": null
+        }
+      ],
+      "events": [
+        {
+          "method": "addExternalCall",
+          "args": [
+            {
+              "service": "strava",
+              "method": "deauthorize",
+              "duration_ms": 0,
+              "status": 200
+            }
+          ]
+        }
+      ],
+      "unansweredScript": 0
+    },
+    "deauthorize_refused": {
+      "result": null,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://www.strava.com/oauth/deauthorize",
+          "query": {},
+          "headers": {
+            "Accept": "application/json",
+            "Authorization": "Bearer access-1"
+          },
+          "form": null,
+          "body": null
+        }
+      ],
+      "events": [
+        {
+          "method": "addExternalCall",
+          "args": [
+            {
+              "service": "strava",
+              "method": "deauthorize",
+              "duration_ms": 0,
+              "status": 401,
+              "error": "http_401"
+            }
+          ]
+        }
+      ],
+      "unansweredScript": 0
+    }
+  },
+  "oura": {
+    "redirectUri": "https://healthlog.example/api/oura/callback",
+    "authorize": {
+      "url": "https://cloud.ouraring.com/oauth/authorize",
+      "query": {
+        "client_id": "client-id-1",
+        "redirect_uri": "https://healthlog.example/api/oura/callback",
+        "response_type": "code",
+        "scope": "daily spo2 heart_health stress workout heartrate personal",
+        "state": "state-nonce-1"
+      }
+    },
+    "exchange": {
+      "ok": {
+        "result": {
+          "access_token": "access-1",
+          "refresh_token": "refresh-1",
+          "expires_in": 3600,
+          "token_type": "Bearer",
+          "scope": "granted"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/oura/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "empty_body": {
+        "error": {
+          "name": "OuraApiError",
+          "message": "Oura exchangeCode error: 200",
+          "classification": "transient",
+          "httpStatus": 200,
+          "reason": "empty_token_body",
+          "verb": "exchangeCode",
+          "vendor": "Oura"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/oura/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_grant": {
+        "error": {
+          "name": "OuraApiError",
+          "message": "Oura exchangeCode error: 400 - invalid_grant",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "exchangeCode",
+          "upstreamError": "invalid_grant",
+          "vendor": "Oura"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/oura/callback"
+            },
+            "body": null
+          },
+          {
+            "method": "POST",
+            "url": "https://api.ouraring.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/oura/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          },
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "exchangeCode.legacy",
+                "duration_ms": 0,
+                "status": 599,
+                "error": "http_599"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "strava_fault": {
+        "error": {
+          "name": "OuraApiError",
+          "message": "Oura exchangeCode error: 400",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "exchangeCode",
+          "vendor": "Oura"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/oura/callback"
+            },
+            "body": null
+          },
+          {
+            "method": "POST",
+            "url": "https://api.ouraring.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/oura/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          },
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "exchangeCode.legacy",
+                "duration_ms": 0,
+                "status": 599,
+                "error": "http_599"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_client": {
+        "error": {
+          "name": "OuraApiError",
+          "message": "Oura exchangeCode error: 401 - invalid_client",
+          "classification": "reauth_required",
+          "httpStatus": 401,
+          "reason": "http_401",
+          "verb": "exchangeCode",
+          "upstreamError": "invalid_client",
+          "vendor": "Oura"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/oura/callback"
+            },
+            "body": null
+          },
+          {
+            "method": "POST",
+            "url": "https://api.ouraring.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/oura/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 401,
+                "error": "http_401"
+              }
+            ]
+          },
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "exchangeCode.legacy",
+                "duration_ms": 0,
+                "status": 599,
+                "error": "http_599"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "rate_limited": {
+        "error": {
+          "name": "OuraApiError",
+          "message": "Oura exchangeCode error: 429 - rate_limited",
+          "classification": "transient",
+          "httpStatus": 429,
+          "reason": "http_429",
+          "verb": "exchangeCode",
+          "upstreamError": "rate_limited",
+          "vendor": "Oura"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/oura/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 429,
+                "error": "http_429"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "outage": {
+        "error": {
+          "name": "OuraApiError",
+          "message": "Oura exchangeCode error: 503",
+          "classification": "transient",
+          "httpStatus": 503,
+          "reason": "http_503",
+          "verb": "exchangeCode",
+          "vendor": "Oura"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/oura/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 503,
+                "error": "http_503"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      }
+    },
+    "refresh": {
+      "ok": {
+        "result": {
+          "access_token": "access-1",
+          "refresh_token": "refresh-1",
+          "expires_in": 3600,
+          "token_type": "Bearer",
+          "scope": "granted"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "empty_body": {
+        "error": {
+          "name": "OuraApiError",
+          "message": "Oura refreshAccessToken error: 200",
+          "classification": "transient",
+          "httpStatus": 200,
+          "reason": "empty_token_body",
+          "verb": "refreshAccessToken",
+          "vendor": "Oura"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_grant": {
+        "error": {
+          "name": "OuraApiError",
+          "message": "Oura refreshAccessToken error: 400 - invalid_grant",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "refreshAccessToken",
+          "upstreamError": "invalid_grant",
+          "vendor": "Oura"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          },
+          {
+            "method": "POST",
+            "url": "https://api.ouraring.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          },
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "refreshAccessToken.legacy",
+                "duration_ms": 0,
+                "status": 599,
+                "error": "http_599"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "strava_fault": {
+        "error": {
+          "name": "OuraApiError",
+          "message": "Oura refreshAccessToken error: 400",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "refreshAccessToken",
+          "vendor": "Oura"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          },
+          {
+            "method": "POST",
+            "url": "https://api.ouraring.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          },
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "refreshAccessToken.legacy",
+                "duration_ms": 0,
+                "status": 599,
+                "error": "http_599"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_client": {
+        "error": {
+          "name": "OuraApiError",
+          "message": "Oura refreshAccessToken error: 401 - invalid_client",
+          "classification": "reauth_required",
+          "httpStatus": 401,
+          "reason": "http_401",
+          "verb": "refreshAccessToken",
+          "upstreamError": "invalid_client",
+          "vendor": "Oura"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          },
+          {
+            "method": "POST",
+            "url": "https://api.ouraring.com/oauth/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 401,
+                "error": "http_401"
+              }
+            ]
+          },
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "refreshAccessToken.legacy",
+                "duration_ms": 0,
+                "status": 599,
+                "error": "http_599"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "rate_limited": {
+        "error": {
+          "name": "OuraApiError",
+          "message": "Oura refreshAccessToken error: 429 - rate_limited",
+          "classification": "transient",
+          "httpStatus": 429,
+          "reason": "http_429",
+          "verb": "refreshAccessToken",
+          "upstreamError": "rate_limited",
+          "vendor": "Oura"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 429,
+                "error": "http_429"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "outage": {
+        "error": {
+          "name": "OuraApiError",
+          "message": "Oura refreshAccessToken error: 503",
+          "classification": "transient",
+          "httpStatus": 503,
+          "reason": "http_503",
+          "verb": "refreshAccessToken",
+          "vendor": "Oura"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "client_secret": "client-secret-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "oura",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 503,
+                "error": "http_503"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      }
+    },
+    "exchange_from_moi_refused": {
+      "error": {
+        "name": "OuraApiError",
+        "message": "Oura exchangeCode error: 400 - invalid_grant",
+        "classification": "persistent",
+        "httpStatus": 400,
+        "reason": "http_400",
+        "verb": "exchangeCode",
+        "upstreamError": "invalid_grant",
+        "vendor": "Oura"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+          "query": {},
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "form": {
+            "client_id": "client-id-1",
+            "client_secret": "client-secret-1",
+            "code": "code-1",
+            "grant_type": "authorization_code",
+            "redirect_uri": "https://healthlog.example/api/oura/callback"
+          },
+          "body": null
+        }
+      ],
+      "events": [
+        {
+          "method": "addExternalCall",
+          "args": [
+            {
+              "service": "oura",
+              "method": "exchangeCode",
+              "duration_ms": 0,
+              "status": 400,
+              "error": "http_400"
+            }
+          ]
+        }
+      ],
+      "unansweredScript": 0
+    },
+    "exchange_legacy_fallback": {
+      "result": {
+        "access_token": "access-1",
+        "refresh_token": "refresh-1",
+        "expires_in": 3600,
+        "token_type": "Bearer",
+        "scope": "granted"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+          "query": {},
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "form": {
+            "client_id": "client-id-1",
+            "client_secret": "client-secret-1",
+            "code": "code-1",
+            "grant_type": "authorization_code",
+            "redirect_uri": "https://healthlog.example/api/oura/callback"
+          },
+          "body": null
+        },
+        {
+          "method": "POST",
+          "url": "https://api.ouraring.com/oauth/token",
+          "query": {},
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "form": {
+            "client_id": "client-id-1",
+            "client_secret": "client-secret-1",
+            "code": "code-1",
+            "grant_type": "authorization_code",
+            "redirect_uri": "https://healthlog.example/api/oura/callback"
+          },
+          "body": null
+        }
+      ],
+      "events": [
+        {
+          "method": "addExternalCall",
+          "args": [
+            {
+              "service": "oura",
+              "method": "exchangeCode",
+              "duration_ms": 0,
+              "status": 400,
+              "error": "http_400"
+            }
+          ]
+        },
+        {
+          "method": "addExternalCall",
+          "args": [
+            {
+              "service": "oura",
+              "method": "exchangeCode.legacy",
+              "duration_ms": 0,
+              "status": 200
+            }
+          ]
+        }
+      ],
+      "unansweredScript": 0
+    },
+    "exchange_both_refused": {
+      "error": {
+        "name": "OuraApiError",
+        "message": "Oura exchangeCode error: 401 - invalid_client",
+        "classification": "reauth_required",
+        "httpStatus": 401,
+        "reason": "http_401",
+        "verb": "exchangeCode",
+        "upstreamError": "invalid_client",
+        "vendor": "Oura"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+          "query": {},
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "form": {
+            "client_id": "client-id-1",
+            "client_secret": "client-secret-1",
+            "code": "code-1",
+            "grant_type": "authorization_code",
+            "redirect_uri": "https://healthlog.example/api/oura/callback"
+          },
+          "body": null
+        },
+        {
+          "method": "POST",
+          "url": "https://api.ouraring.com/oauth/token",
+          "query": {},
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "form": {
+            "client_id": "client-id-1",
+            "client_secret": "client-secret-1",
+            "code": "code-1",
+            "grant_type": "authorization_code",
+            "redirect_uri": "https://healthlog.example/api/oura/callback"
+          },
+          "body": null
+        }
+      ],
+      "events": [
+        {
+          "method": "addExternalCall",
+          "args": [
+            {
+              "service": "oura",
+              "method": "exchangeCode",
+              "duration_ms": 0,
+              "status": 401,
+              "error": "http_401"
+            }
+          ]
+        },
+        {
+          "method": "addExternalCall",
+          "args": [
+            {
+              "service": "oura",
+              "method": "exchangeCode.legacy",
+              "duration_ms": 0,
+              "status": 400,
+              "error": "http_400"
+            }
+          ]
+        }
+      ],
+      "unansweredScript": 0
+    },
+    "refresh_legacy_fallback": {
+      "result": {
+        "access_token": "access-1",
+        "refresh_token": "refresh-1",
+        "expires_in": 3600,
+        "token_type": "Bearer",
+        "scope": "granted"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+          "query": {},
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "form": {
+            "client_id": "client-id-1",
+            "client_secret": "client-secret-1",
+            "grant_type": "refresh_token",
+            "refresh_token": "refresh-0"
+          },
+          "body": null
+        },
+        {
+          "method": "POST",
+          "url": "https://api.ouraring.com/oauth/token",
+          "query": {},
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "form": {
+            "client_id": "client-id-1",
+            "client_secret": "client-secret-1",
+            "grant_type": "refresh_token",
+            "refresh_token": "refresh-0"
+          },
+          "body": null
+        }
+      ],
+      "events": [
+        {
+          "method": "addExternalCall",
+          "args": [
+            {
+              "service": "oura",
+              "method": "refreshAccessToken",
+              "duration_ms": 0,
+              "status": 404,
+              "error": "http_404"
+            }
+          ]
+        },
+        {
+          "method": "addExternalCall",
+          "args": [
+            {
+              "service": "oura",
+              "method": "refreshAccessToken.legacy",
+              "duration_ms": 0,
+              "status": 200
+            }
+          ]
+        }
+      ],
+      "unansweredScript": 0
+    },
+    "refresh_outage_no_fallback": {
+      "error": {
+        "name": "OuraApiError",
+        "message": "Oura refreshAccessToken error: 502",
+        "classification": "transient",
+        "httpStatus": 502,
+        "reason": "http_502",
+        "verb": "refreshAccessToken",
+        "vendor": "Oura"
+      },
+      "requests": [
+        {
+          "method": "POST",
+          "url": "https://moi.ouraring.com/oauth/v2/ext/oauth-token",
+          "query": {},
+          "headers": {
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          "form": {
+            "client_id": "client-id-1",
+            "client_secret": "client-secret-1",
+            "grant_type": "refresh_token",
+            "refresh_token": "refresh-0"
+          },
+          "body": null
+        }
+      ],
+      "events": [
+        {
+          "method": "addExternalCall",
+          "args": [
+            {
+              "service": "oura",
+              "method": "refreshAccessToken",
+              "duration_ms": 0,
+              "status": 502,
+              "error": "http_502"
+            }
+          ]
+        }
+      ],
+      "unansweredScript": 0
+    }
+  },
+  "polar": {
+    "redirectUri": "https://healthlog.example/api/polar/callback",
+    "authorize": {
+      "url": "https://flow.polar.com/oauth2/authorization",
+      "query": {
+        "client_id": "client-id-1",
+        "redirect_uri": "https://healthlog.example/api/polar/callback",
+        "response_type": "code",
+        "scope": "accesslink.read_all",
+        "state": "state-nonce-1"
+      }
+    },
+    "exchange": {
+      "ok": {
+        "result": {
+          "access_token": "access-1",
+          "refresh_token": "refresh-1",
+          "expires_in": 3600,
+          "token_type": "Bearer",
+          "scope": "granted"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://polarremote.com/v2/oauth2/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/polar/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "polar",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "empty_body": {
+        "error": {
+          "name": "PolarApiError",
+          "message": "Polar exchangeCode error: 200",
+          "classification": "transient",
+          "httpStatus": 200,
+          "reason": "empty_token_body",
+          "verb": "exchangeCode",
+          "vendor": "Polar"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://polarremote.com/v2/oauth2/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/polar/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "polar",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_grant": {
+        "error": {
+          "name": "PolarApiError",
+          "message": "Polar exchangeCode error: 400 - invalid_grant",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "exchangeCode",
+          "upstreamError": "invalid_grant",
+          "vendor": "Polar"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://polarremote.com/v2/oauth2/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/polar/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "polar",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "strava_fault": {
+        "error": {
+          "name": "PolarApiError",
+          "message": "Polar exchangeCode error: 400",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "exchangeCode",
+          "vendor": "Polar"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://polarremote.com/v2/oauth2/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/polar/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "polar",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_client": {
+        "error": {
+          "name": "PolarApiError",
+          "message": "Polar exchangeCode error: 401 - invalid_client",
+          "classification": "reauth_required",
+          "httpStatus": 401,
+          "reason": "http_401",
+          "verb": "exchangeCode",
+          "upstreamError": "invalid_client",
+          "vendor": "Polar"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://polarremote.com/v2/oauth2/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/polar/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "polar",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 401,
+                "error": "http_401"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "rate_limited": {
+        "error": {
+          "name": "PolarApiError",
+          "message": "Polar exchangeCode error: 429 - rate_limited",
+          "classification": "transient",
+          "httpStatus": 429,
+          "reason": "http_429",
+          "verb": "exchangeCode",
+          "upstreamError": "rate_limited",
+          "vendor": "Polar"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://polarremote.com/v2/oauth2/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/polar/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "polar",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 429,
+                "error": "http_429"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "outage": {
+        "error": {
+          "name": "PolarApiError",
+          "message": "Polar exchangeCode error: 503",
+          "classification": "transient",
+          "httpStatus": 503,
+          "reason": "http_503",
+          "verb": "exchangeCode",
+          "vendor": "Polar"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://polarremote.com/v2/oauth2/token",
+            "query": {},
+            "headers": {
+              "Accept": "application/json",
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "code": "code-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/polar/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "polar",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 503,
+                "error": "http_503"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      }
+    }
+  },
+  "google-health": {
+    "redirectUri": "https://healthlog.example/api/google-health/callback",
+    "authorize": {
+      "url": "https://accounts.google.com/o/oauth2/v2/auth",
+      "query": {
+        "access_type": "offline",
+        "client_id": "client-id-1",
+        "code_challenge": "pkce-challenge-1",
+        "code_challenge_method": "S256",
+        "prompt": "consent",
+        "redirect_uri": "https://healthlog.example/api/google-health/callback",
+        "response_type": "code",
+        "scope": "https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly https://www.googleapis.com/auth/googlehealth.health_metrics_and_measurements.readonly https://www.googleapis.com/auth/googlehealth.sleep.readonly https://www.googleapis.com/auth/googlehealth.profile.readonly",
+        "state": "state-nonce-1"
+      }
+    },
+    "exchange": {
+      "ok": {
+        "result": {
+          "access_token": "access-1",
+          "refresh_token": "refresh-1",
+          "expires_in": 3600,
+          "token_type": "Bearer",
+          "scope": "granted"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://oauth2.googleapis.com/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "code": "code-1",
+              "code_verifier": "pkce-verifier-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/google-health/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "google-health",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "empty_body": {
+        "error": {
+          "name": "GoogleHealthApiError",
+          "message": "GoogleHealth exchangeCode error: 200",
+          "classification": "transient",
+          "httpStatus": 200,
+          "reason": "empty_token_body",
+          "verb": "exchangeCode",
+          "vendor": "GoogleHealth"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://oauth2.googleapis.com/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "code": "code-1",
+              "code_verifier": "pkce-verifier-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/google-health/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "google-health",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_grant": {
+        "error": {
+          "name": "GoogleHealthApiError",
+          "message": "GoogleHealth exchangeCode error: 400 - invalid_grant",
+          "classification": "reauth_required",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "exchangeCode",
+          "upstreamError": "invalid_grant",
+          "vendor": "GoogleHealth"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://oauth2.googleapis.com/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "code": "code-1",
+              "code_verifier": "pkce-verifier-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/google-health/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "google-health",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "strava_fault": {
+        "error": {
+          "name": "GoogleHealthApiError",
+          "message": "GoogleHealth exchangeCode error: 400",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "exchangeCode",
+          "vendor": "GoogleHealth"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://oauth2.googleapis.com/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "code": "code-1",
+              "code_verifier": "pkce-verifier-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/google-health/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "google-health",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_client": {
+        "error": {
+          "name": "GoogleHealthApiError",
+          "message": "GoogleHealth exchangeCode error: 401 - invalid_client",
+          "classification": "reauth_required",
+          "httpStatus": 401,
+          "reason": "http_401",
+          "verb": "exchangeCode",
+          "upstreamError": "invalid_client",
+          "vendor": "GoogleHealth"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://oauth2.googleapis.com/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "code": "code-1",
+              "code_verifier": "pkce-verifier-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/google-health/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "google-health",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 401,
+                "error": "http_401"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "rate_limited": {
+        "error": {
+          "name": "GoogleHealthApiError",
+          "message": "GoogleHealth exchangeCode error: 429 - rate_limited",
+          "classification": "transient",
+          "httpStatus": 429,
+          "reason": "http_429",
+          "verb": "exchangeCode",
+          "upstreamError": "rate_limited",
+          "vendor": "GoogleHealth"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://oauth2.googleapis.com/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "code": "code-1",
+              "code_verifier": "pkce-verifier-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/google-health/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "google-health",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 429,
+                "error": "http_429"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "outage": {
+        "error": {
+          "name": "GoogleHealthApiError",
+          "message": "GoogleHealth exchangeCode error: 503",
+          "classification": "transient",
+          "httpStatus": 503,
+          "reason": "http_503",
+          "verb": "exchangeCode",
+          "vendor": "GoogleHealth"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://oauth2.googleapis.com/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "code": "code-1",
+              "code_verifier": "pkce-verifier-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/google-health/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "google-health",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 503,
+                "error": "http_503"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      }
+    },
+    "refresh": {
+      "ok": {
+        "result": {
+          "access_token": "access-1",
+          "refresh_token": "refresh-1",
+          "expires_in": 3600,
+          "token_type": "Bearer",
+          "scope": "granted"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://oauth2.googleapis.com/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "google-health",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "empty_body": {
+        "error": {
+          "name": "GoogleHealthApiError",
+          "message": "GoogleHealth refreshAccessToken error: 200",
+          "classification": "transient",
+          "httpStatus": 200,
+          "reason": "empty_token_body",
+          "verb": "refreshAccessToken",
+          "vendor": "GoogleHealth"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://oauth2.googleapis.com/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "google-health",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_grant": {
+        "error": {
+          "name": "GoogleHealthApiError",
+          "message": "GoogleHealth refreshAccessToken error: 400 - invalid_grant",
+          "classification": "reauth_required",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "refreshAccessToken",
+          "upstreamError": "invalid_grant",
+          "vendor": "GoogleHealth"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://oauth2.googleapis.com/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "google-health",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "strava_fault": {
+        "error": {
+          "name": "GoogleHealthApiError",
+          "message": "GoogleHealth refreshAccessToken error: 400",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "refreshAccessToken",
+          "vendor": "GoogleHealth"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://oauth2.googleapis.com/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "google-health",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_client": {
+        "error": {
+          "name": "GoogleHealthApiError",
+          "message": "GoogleHealth refreshAccessToken error: 401 - invalid_client",
+          "classification": "reauth_required",
+          "httpStatus": 401,
+          "reason": "http_401",
+          "verb": "refreshAccessToken",
+          "upstreamError": "invalid_client",
+          "vendor": "GoogleHealth"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://oauth2.googleapis.com/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "google-health",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 401,
+                "error": "http_401"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "rate_limited": {
+        "error": {
+          "name": "GoogleHealthApiError",
+          "message": "GoogleHealth refreshAccessToken error: 429 - rate_limited",
+          "classification": "transient",
+          "httpStatus": 429,
+          "reason": "http_429",
+          "verb": "refreshAccessToken",
+          "upstreamError": "rate_limited",
+          "vendor": "GoogleHealth"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://oauth2.googleapis.com/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "google-health",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 429,
+                "error": "http_429"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "outage": {
+        "error": {
+          "name": "GoogleHealthApiError",
+          "message": "GoogleHealth refreshAccessToken error: 503",
+          "classification": "transient",
+          "httpStatus": 503,
+          "reason": "http_503",
+          "verb": "refreshAccessToken",
+          "vendor": "GoogleHealth"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://oauth2.googleapis.com/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "google-health",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 503,
+                "error": "http_503"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      }
+    }
+  },
+  "fitbit": {
+    "redirectUri": "https://healthlog.example/api/fitbit/callback",
+    "authorize": {
+      "url": "https://www.fitbit.com/oauth2/authorize",
+      "query": {
+        "client_id": "client-id-1",
+        "code_challenge": "pkce-challenge-1",
+        "code_challenge_method": "S256",
+        "redirect_uri": "https://healthlog.example/api/fitbit/callback",
+        "response_type": "code",
+        "scope": "activity cardio_fitness heartrate oxygen_saturation profile respiratory_rate sleep weight",
+        "state": "state-nonce-1"
+      }
+    },
+    "exchange": {
+      "ok": {
+        "result": {
+          "access_token": "access-1",
+          "refresh_token": "refresh-1",
+          "expires_in": 3600,
+          "token_type": "Bearer",
+          "scope": "granted"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.fitbit.com/oauth2/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "code": "code-1",
+              "code_verifier": "pkce-verifier-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/fitbit/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "fitbit",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "empty_body": {
+        "error": {
+          "name": "FitbitApiError",
+          "message": "Fitbit exchangeCode error: 200",
+          "classification": "transient",
+          "httpStatus": 200,
+          "reason": "empty_token_body",
+          "verb": "exchangeCode",
+          "vendor": "Fitbit"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.fitbit.com/oauth2/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "code": "code-1",
+              "code_verifier": "pkce-verifier-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/fitbit/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "fitbit",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_grant": {
+        "error": {
+          "name": "FitbitApiError",
+          "message": "Fitbit exchangeCode error: 400 - invalid_grant",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "exchangeCode",
+          "upstreamError": "invalid_grant",
+          "vendor": "Fitbit"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.fitbit.com/oauth2/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "code": "code-1",
+              "code_verifier": "pkce-verifier-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/fitbit/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "fitbit",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "strava_fault": {
+        "error": {
+          "name": "FitbitApiError",
+          "message": "Fitbit exchangeCode error: 400",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "exchangeCode",
+          "vendor": "Fitbit"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.fitbit.com/oauth2/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "code": "code-1",
+              "code_verifier": "pkce-verifier-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/fitbit/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "fitbit",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_client": {
+        "error": {
+          "name": "FitbitApiError",
+          "message": "Fitbit exchangeCode error: 401 - invalid_client",
+          "classification": "reauth_required",
+          "httpStatus": 401,
+          "reason": "http_401",
+          "verb": "exchangeCode",
+          "upstreamError": "invalid_client",
+          "vendor": "Fitbit"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.fitbit.com/oauth2/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "code": "code-1",
+              "code_verifier": "pkce-verifier-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/fitbit/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "fitbit",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 401,
+                "error": "http_401"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "rate_limited": {
+        "error": {
+          "name": "FitbitApiError",
+          "message": "Fitbit exchangeCode error: 429 - rate_limited",
+          "classification": "transient",
+          "httpStatus": 429,
+          "reason": "http_429",
+          "verb": "exchangeCode",
+          "upstreamError": "rate_limited",
+          "vendor": "Fitbit"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.fitbit.com/oauth2/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "code": "code-1",
+              "code_verifier": "pkce-verifier-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/fitbit/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "fitbit",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 429,
+                "error": "http_429"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "outage": {
+        "error": {
+          "name": "FitbitApiError",
+          "message": "Fitbit exchangeCode error: 503",
+          "classification": "transient",
+          "httpStatus": 503,
+          "reason": "http_503",
+          "verb": "exchangeCode",
+          "vendor": "Fitbit"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.fitbit.com/oauth2/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "code": "code-1",
+              "code_verifier": "pkce-verifier-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/fitbit/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "fitbit",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 503,
+                "error": "http_503"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "fitbit_errors": {
+        "error": {
+          "name": "FitbitApiError",
+          "message": "Fitbit exchangeCode error: 400 - invalid_grant",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "exchangeCode",
+          "upstreamError": "invalid_grant",
+          "vendor": "Fitbit"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.fitbit.com/oauth2/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "client_id": "client-id-1",
+              "code": "code-1",
+              "code_verifier": "pkce-verifier-1",
+              "grant_type": "authorization_code",
+              "redirect_uri": "https://healthlog.example/api/fitbit/callback"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "fitbit",
+                "method": "exchangeCode",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      }
+    },
+    "refresh": {
+      "ok": {
+        "result": {
+          "access_token": "access-1",
+          "refresh_token": "refresh-1",
+          "expires_in": 3600,
+          "token_type": "Bearer",
+          "scope": "granted"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.fitbit.com/oauth2/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "fitbit",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "empty_body": {
+        "error": {
+          "name": "FitbitApiError",
+          "message": "Fitbit refreshAccessToken error: 200",
+          "classification": "transient",
+          "httpStatus": 200,
+          "reason": "empty_token_body",
+          "verb": "refreshAccessToken",
+          "vendor": "Fitbit"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.fitbit.com/oauth2/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "fitbit",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 200
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_grant": {
+        "error": {
+          "name": "FitbitApiError",
+          "message": "Fitbit refreshAccessToken error: 400 - invalid_grant",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "refreshAccessToken",
+          "upstreamError": "invalid_grant",
+          "vendor": "Fitbit"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.fitbit.com/oauth2/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "fitbit",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "strava_fault": {
+        "error": {
+          "name": "FitbitApiError",
+          "message": "Fitbit refreshAccessToken error: 400",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "refreshAccessToken",
+          "vendor": "Fitbit"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.fitbit.com/oauth2/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "fitbit",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "invalid_client": {
+        "error": {
+          "name": "FitbitApiError",
+          "message": "Fitbit refreshAccessToken error: 401 - invalid_client",
+          "classification": "reauth_required",
+          "httpStatus": 401,
+          "reason": "http_401",
+          "verb": "refreshAccessToken",
+          "upstreamError": "invalid_client",
+          "vendor": "Fitbit"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.fitbit.com/oauth2/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "fitbit",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 401,
+                "error": "http_401"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "rate_limited": {
+        "error": {
+          "name": "FitbitApiError",
+          "message": "Fitbit refreshAccessToken error: 429 - rate_limited",
+          "classification": "transient",
+          "httpStatus": 429,
+          "reason": "http_429",
+          "verb": "refreshAccessToken",
+          "upstreamError": "rate_limited",
+          "vendor": "Fitbit"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.fitbit.com/oauth2/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "fitbit",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 429,
+                "error": "http_429"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "outage": {
+        "error": {
+          "name": "FitbitApiError",
+          "message": "Fitbit refreshAccessToken error: 503",
+          "classification": "transient",
+          "httpStatus": 503,
+          "reason": "http_503",
+          "verb": "refreshAccessToken",
+          "vendor": "Fitbit"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.fitbit.com/oauth2/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "fitbit",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 503,
+                "error": "http_503"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      },
+      "fitbit_errors": {
+        "error": {
+          "name": "FitbitApiError",
+          "message": "Fitbit refreshAccessToken error: 400 - invalid_grant",
+          "classification": "persistent",
+          "httpStatus": 400,
+          "reason": "http_400",
+          "verb": "refreshAccessToken",
+          "upstreamError": "invalid_grant",
+          "vendor": "Fitbit"
+        },
+        "requests": [
+          {
+            "method": "POST",
+            "url": "https://api.fitbit.com/oauth2/token",
+            "query": {},
+            "headers": {
+              "Authorization": "Basic Y2xpZW50LWlkLTE6Y2xpZW50LXNlY3JldC0x",
+              "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "form": {
+              "grant_type": "refresh_token",
+              "refresh_token": "refresh-0"
+            },
+            "body": null
+          }
+        ],
+        "events": [
+          {
+            "method": "addExternalCall",
+            "args": [
+              {
+                "service": "fitbit",
+                "method": "refreshAccessToken",
+                "duration_ms": 0,
+                "status": 400,
+                "error": "http_400"
+              }
+            ]
+          }
+        ],
+        "unansweredScript": 0
+      }
+    }
+  }
+}

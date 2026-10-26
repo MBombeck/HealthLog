@@ -1,75 +1,136 @@
 /**
- * v1.4.37 — pg-boss queue registration for the nightly drain of
- * per-sample APPLE_HEALTH cumulative rows. The drain helper exists
- * since v1.4.30 but only ran via the admin endpoint / CLI; the
- * scheduled wrapper closes the loop so the list view stops painting
- * hundreds of step chunks per day.
+ * pg-boss queue registration for the nightly drain of per-sample
+ * APPLE_HEALTH cumulative rows. The drain helper once ran only via the admin
+ * endpoint / CLI; the scheduled wrapper closes the loop so the list view
+ * stops painting hundreds of step chunks per day.
  *
- * Same source-text-grep approach as the Withings queue regression
- * guard so we never have to boot pg-boss + Prisma to assert the
- * scheduler wiring stays intact.
+ * Reads the worker registry (the queue, its cron and its binding) and runs
+ * the bound handler against mocked passes, so pg-boss and Prisma never boot.
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { describe, expect, it, vi } from "vitest";
 
-import { describe, expect, it } from "vitest";
+const drainPerSampleCumulative = vi.hoisted(() =>
+  vi.fn(async () => ({
+    stoppedEarly: false,
+    totals: {
+      usersScanned: 0,
+      bucketsCollapsed: 0,
+      perSampleRowsDeleted: 0,
+      dailyRowsUpserted: 0,
+    },
+  })),
+);
+vi.mock(
+  "@/lib/measurements/drain-per-sample-cumulative",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("@/lib/measurements/drain-per-sample-cumulative")
+    >()),
+    drainPerSampleCumulative,
+  }),
+);
+vi.mock(
+  "@/lib/measurements/consolidate-daily-mean",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("@/lib/measurements/consolidate-daily-mean")
+    >()),
+    consolidateDailyMean: vi.fn(async () => ({
+      stoppedEarly: false,
+      totals: {
+        usersScanned: 0,
+        daysConsolidated: 0,
+        perSampleRowsSoftDeleted: 0,
+        dailyRowsUpserted: 0,
+        daysFailed: 0,
+      },
+    })),
+  }),
+);
+vi.mock(
+  "@/lib/measurements/dense-intraday-retention",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("@/lib/measurements/dense-intraday-retention")
+    >()),
+    runDenseIntradayRetention: vi.fn(async () => ({
+      stoppedEarly: false,
+      totals: {
+        usersScanned: 0,
+        daysConsolidated: 0,
+        perSampleRowsSoftDeleted: 0,
+        hourlyRowsUpserted: 0,
+        dailyRowsRetired: 0,
+      },
+    })),
+  }),
+);
+vi.mock("@/lib/jobs/reminder/shared", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/jobs/reminder/shared")>()),
+  getWorkerPrisma: () => ({}),
+}));
 
-// v1.18.1 — the drain-cumulative wiring moved out of the 2143-LOC
-// reminder-worker boot file into the rollup registrar. The dead-queue guard
-// follows the wiring there.
-const REGISTRAR_PATH = join(__dirname, "..", "reminder", "register-rollup.ts");
-const source = readFileSync(REGISTRAR_PATH, "utf8");
+import {
+  DRAIN_CUMULATIVE_CRON,
+  DRAIN_CUMULATIVE_QUEUE,
+} from "@/lib/jobs/drain-cumulative-queue";
+import { cronIsTheRetry } from "@/lib/jobs/reminder/registrar-shared";
+import {
+  groupOf,
+  jobOf,
+  recordingBoss,
+} from "@/lib/jobs/registry/__tests__/registry-helpers";
+import { DRAIN_CUMULATIVE_CUTOFF_HOURS } from "@/lib/measurements/drain-per-sample-cumulative";
 
-describe("reminder-worker — drainPerSampleCumulative nightly schedule", () => {
+describe("drainPerSampleCumulative nightly schedule", () => {
   it("declares the drain queue at the documented Berlin cadence", () => {
-    expect(source).toMatch(
-      /DRAIN_CUMULATIVE_QUEUE\s*=\s*["']drain-per-sample-cumulative["']/,
-    );
+    expect(DRAIN_CUMULATIVE_QUEUE).toBe("drain-per-sample-cumulative");
     // 03:45 Europe/Berlin — between audit-log cleanup (03:15) and the
     // feedback aggregator (04:00). Keep the slot stable so an operator
     // staring at the cron table can find the job easily.
-    expect(source).toMatch(/DRAIN_CUMULATIVE_CRON\s*=\s*["']45 3 \* \* \*["']/);
+    expect(DRAIN_CUMULATIVE_CRON).toBe("45 3 * * *");
   });
 
-  it("passes the 36 hour grace window into the drain helper", () => {
-    // v1.4.38 — the literal `36` lives in the helper module so the
-    // worker, the admin route, and the CLI all read one source of
-    // truth. The worker still references the constant by name in the
-    // cutoffHours slot so the cron's behaviour is unchanged.
-    expect(source).toMatch(/cutoffHours:\s*DRAIN_CUMULATIVE_CUTOFF_HOURS/);
-  });
-
-  it("imports the cutoff constant and the helper from the drain module", () => {
-    // v1.4.38 — the import is now a multi-symbol form. Match the helper
-    // and the constant separately so a future contributor who adds a
-    // third symbol does not break the assertion.
-    expect(source).toMatch(
-      /from\s*["']@\/lib\/measurements\/drain-per-sample-cumulative["']/,
+  it("passes the 36 hour grace window into the drain helper", async () => {
+    // The literal `36` lives in the helper module so the worker, the admin
+    // route, and the CLI all read one source of truth.
+    expect(DRAIN_CUMULATIVE_CUTOFF_HOURS).toBe(36);
+    const { boss, sends } = recordingBoss();
+    const handler = await jobOf(DRAIN_CUMULATIVE_QUEUE).load({ boss });
+    await handler([
+      {
+        id: "j1",
+        name: DRAIN_CUMULATIVE_QUEUE,
+        data: { triggeredAt: "2026-01-01T03:45:00.000Z" },
+        expireInSeconds: 900,
+        heartbeatSeconds: null,
+        retryCount: 0,
+        signal: new AbortController().signal,
+      },
+    ]);
+    expect(drainPerSampleCumulative).toHaveBeenCalledTimes(1);
+    expect(drainPerSampleCumulative).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        dryRun: false,
+        cutoffHours: DRAIN_CUMULATIVE_CUTOFF_HOURS,
+      }),
     );
-    expect(source).toMatch(/\bdrainPerSampleCumulative\b/);
-    expect(source).toMatch(/\bDRAIN_CUMULATIVE_CUTOFF_HOURS\b/);
+    // A tick that finished inside its budget hands nothing on.
+    expect(sends).toEqual([]);
   });
 
-  it("registers a createAndWork handler against the drain queue", () => {
-    expect(source).toMatch(
-      /createAndWork[\s\S]{0,200}DRAIN_CUMULATIVE_QUEUE[\s\S]{0,1100}drainPerSampleCumulative/,
-    );
+  it("schedules the drain cron with the cron as the retry", () => {
+    const job = jobOf(DRAIN_CUMULATIVE_QUEUE);
+    expect(job.cron).toBe(DRAIN_CUMULATIVE_CRON);
+    expect(job.scheduleOptions).toBe(cronIsTheRetry);
+    expect(job.work).toEqual({ localConcurrency: 1 });
   });
 
-  it("schedules the drain cron via boss.schedule (allQueues + schedules)", () => {
-    expect(source).toMatch(
-      /\[DRAIN_CUMULATIVE_QUEUE,\s*DRAIN_CUMULATIVE_CRON,\s*cronIsTheRetry\]/,
-    );
-  });
-
-  it("registers the drain queue in the allQueues createQueue loop", () => {
-    // pg-boss v12 requires explicit createQueue before scheduling. The
-    // allQueues array drives the boot-time `for (const q of allQueues)`
-    // loop; missing the entry silently no-ops the schedule below.
-    const allQueuesMatch = source.match(
-      /const allQueues\s*=\s*\[([\s\S]*?)\];/,
-    );
-    expect(allQueuesMatch).not.toBeNull();
-    expect(allQueuesMatch![1]).toMatch(/\bDRAIN_CUMULATIVE_QUEUE\b/);
+  it("declares the drain queue in the rollup group", () => {
+    // pg-boss v12 requires explicit createQueue before scheduling; a queue
+    // the registry does not declare is never created and its schedule
+    // silently no-ops.
+    expect(groupOf(DRAIN_CUMULATIVE_QUEUE).name).toBe("rollup");
   });
 });

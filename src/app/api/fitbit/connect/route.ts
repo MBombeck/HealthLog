@@ -2,7 +2,8 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { getAuthorizationUrl, generatePkcePair } from "@/lib/fitbit/client";
+import { fitbitOAuth } from "@/lib/fitbit/oauth";
+import { generatePkcePair } from "@/lib/integrations/oauth-kit/pkce";
 import { getUserFitbitCredentials } from "@/lib/fitbit/credentials";
 import {
   FITBIT_OAUTH_STATE_COOKIE,
@@ -94,7 +95,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
     );
   }
 
-  const url = getAuthorizationUrl(nonce, creds, pkce.challenge);
+  const url = fitbitOAuth.authorizationUrl(nonce, creds, pkce.challenge);
 
   const response = NextResponse.redirect(url);
   response.cookies.set(FITBIT_OAUTH_STATE_COOKIE, nonce, {

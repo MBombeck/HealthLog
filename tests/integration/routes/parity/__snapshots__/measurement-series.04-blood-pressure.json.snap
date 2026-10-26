@@ -1,0 +1,187 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "kind": "bloodPressure",
+      "unit": "mmHg",
+      "points": [
+        {
+          "id": "<id:1>",
+          "at": "anchor-20d+07:01:00",
+          "value": 126,
+          "secondary": 83
+        },
+        {
+          "id": "<id:2>",
+          "at": "anchor-19d+07:01:00",
+          "value": 130,
+          "secondary": 82
+        },
+        {
+          "id": "<id:3>",
+          "at": "anchor-18d+07:01:00",
+          "value": 129,
+          "secondary": 81
+        },
+        {
+          "id": "<id:4>",
+          "at": "anchor-17d+07:01:00",
+          "value": 128,
+          "secondary": 83
+        },
+        {
+          "id": "<id:5>",
+          "at": "anchor-16d+07:01:00",
+          "value": 127,
+          "secondary": 82
+        },
+        {
+          "id": "<id:6>",
+          "at": "anchor-15d+07:01:00",
+          "value": 126,
+          "secondary": 81
+        },
+        {
+          "id": "<id:7>",
+          "at": "anchor-13d+07:01:00",
+          "value": 129,
+          "secondary": 82
+        },
+        {
+          "id": "<id:8>",
+          "at": "anchor-12d+07:01:00",
+          "value": 128,
+          "secondary": 81
+        },
+        {
+          "id": "<id:9>",
+          "at": "anchor-11d+07:01:00",
+          "value": 127,
+          "secondary": 83
+        },
+        {
+          "id": "<id:10>",
+          "at": "anchor-10d+07:01:00",
+          "value": 126,
+          "secondary": 82
+        },
+        {
+          "id": "<id:11>",
+          "at": "anchor-9d+07:01:00",
+          "value": 130,
+          "secondary": 81
+        },
+        {
+          "id": "<id:12>",
+          "at": "anchor-8d+07:01:00",
+          "value": 129,
+          "secondary": 83
+        },
+        {
+          "id": "<id:13>",
+          "at": "anchor-6d+07:01:00",
+          "value": 127,
+          "secondary": 81
+        },
+        {
+          "id": "<id:14>",
+          "at": "anchor-5d+07:01:00",
+          "value": 126,
+          "secondary": 83
+        },
+        {
+          "id": "<id:15>",
+          "at": "anchor-4d+07:01:00",
+          "value": 130,
+          "secondary": 82
+        },
+        {
+          "id": "<id:16>",
+          "at": "anchor-3d+07:01:00",
+          "value": 129,
+          "secondary": 81
+        },
+        {
+          "id": "<id:17>",
+          "at": "anchor-2d+07:01:00",
+          "value": 128,
+          "secondary": 83
+        },
+        {
+          "id": "<id:18>",
+          "at": "anchor-1d+07:01:00",
+          "value": 127,
+          "secondary": 82
+        }
+      ],
+      "direction": {
+        "direction": "hold",
+        "targetPosition": "inside",
+        "basis": "profile_default"
+      },
+      "change": {
+        "from": 126,
+        "to": 127,
+        "delta": 1,
+        "sentiment": "neutral"
+      },
+      "referenceLines": [
+        {
+          "value": 120,
+          "kind": "lower",
+          "source": "personal",
+          "appliesTo": "value",
+          "labelKey": "series.reference.targetLower",
+          "label": "Your target, lower limit"
+        },
+        {
+          "value": 129,
+          "kind": "upper",
+          "source": "personal",
+          "appliesTo": "value",
+          "labelKey": "series.reference.targetUpper",
+          "label": "Your target, upper limit"
+        },
+        {
+          "value": 70,
+          "kind": "lower",
+          "source": "personal",
+          "appliesTo": "secondary",
+          "labelKey": "series.reference.targetLower",
+          "label": "Your target, lower limit"
+        },
+        {
+          "value": 79,
+          "kind": "upper",
+          "source": "personal",
+          "appliesTo": "secondary",
+          "labelKey": "series.reference.targetUpper",
+          "label": "Your target, upper limit"
+        }
+      ],
+      "stats": {
+        "mean": 127.89,
+        "min": 126,
+        "max": 130,
+        "stdDev": 1.41,
+        "count": 18
+      }
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "measurements.series"
+      },
+      "meta": {
+        "kind": "bloodPressure",
+        "days": 30,
+        "count": 18
+      },
+      "warnings": null,
+      "error": null
+    }
+  ]
+}

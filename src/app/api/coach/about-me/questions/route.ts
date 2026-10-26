@@ -13,7 +13,8 @@
 import { z } from "zod/v4";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiSuccess, returnAllZodIssues, safeJson } from "@/lib/api-response";
+import { apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import {
   getPendingQuestionsForUser,
@@ -48,15 +49,11 @@ export const DELETE = apiHandler(async (req: Request) => {
   const gate = await requireModuleEnabled(user.id, "coach");
   if (!gate.enabled) return gate.response;
 
-  const { data: body, error: jsonError } = await safeJson(req, {
+  const parsed = await parseJsonBody(req, dismissSchema, {
     maxBytes: 4 * 1024,
+    input: (body) => body ?? {},
   });
-  if (jsonError) return jsonError;
-
-  const parsed = dismissSchema.safeParse(body ?? {});
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const current = await getPendingQuestionsForUser(user.id);
   const remaining =

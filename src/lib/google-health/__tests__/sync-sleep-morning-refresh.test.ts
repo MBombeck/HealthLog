@@ -26,10 +26,12 @@ const {
   maybeEnqueueMorningRefreshMock: vi.fn(async () => {}),
 }));
 
-vi.mock("../client", () => ({
+vi.mock("../data-points", () => ({
   GOOGLE_HEALTH_ACTIVITY_PAGE_SIZE: 100,
-  GOOGLE_HEALTH_DATA_TYPES: { sleep: "sleep" },
   fetchDataPoints: fetchDataPointsMock,
+}));
+vi.mock("../mappers", () => ({
+  GOOGLE_HEALTH_DATA_TYPES: { sleep: "sleep" },
   mapSleepSessionDetailed: mapSleepSessionDetailedMock,
 }));
 

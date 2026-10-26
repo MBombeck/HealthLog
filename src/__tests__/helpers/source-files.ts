@@ -144,70 +144,192 @@ export function walkSourceFiles(
 }
 
 /**
- * A source file with its comments removed, line comments FIRST.
+ * A source file with its comments removed, read the way the compiler reads it.
  *
- * The order is the whole reason this is shared rather than re-spelled per
- * guard. Every private copy in this directory strips block comments first,
- * with one non-greedy `/\*[\s\S]*?\*\//` pass, and that pass cannot tell a
- * real block opener from a `/*` that happens to sit inside a line comment.
- * This tree has one: `src/app/mood/page-client.tsx` explains its gate with
- * "Every `/api/mood-entries/*` route also enforces the gate", and the `/*` in
- * that path opened a fake block that swallowed the next 2.2 kB of real code —
- * the module gate three lines below it included. A guard reading that source
- * was searching a file with a hole in it and reporting a clean sweep.
+ * Shared rather than re-spelled per guard because the per-guard copies were
+ * one or two regular expressions, and every spelling was wrong somewhere:
+ *   - block comments stripped first, with one non-greedy pass, cannot tell a
+ *     real opener from a `/*` inside a line comment. `src/app/mood/
+ *     page-client.tsx` explains its gate with "Every `/api/mood-entries/*`
+ *     route also enforces the gate", and that `/*` opened a fake block that
+ *     swallowed the next 2.2 kB of real code, the module gate included;
+ *   - a scanner that takes the first opener on a line still opens a block at
+ *     a `/*` inside a string, which every e2e route glob (`"**\/api/*"`) has;
+ *   - a line comment matched only at the start of a line keeps a trailing
+ *     `// …` after code, and one matched anywhere eats `https://`.
  *
- * So each line is walked once, left to right: whichever opener comes first
- * wins, a line comment ends the line, and a block comment carries its state to
- * the next one. Line-comment detection needs `//` at the start of a line or
- * after whitespace, so a URL inside a string survives.
+ * So the text is scanned once, left to right, knowing what the parser knows:
+ * strings, template literals (with their `${…}` expressions, which may hold
+ * comments), and regular expressions keep every character, and a `/*` or
+ * `//` inside any of them opens nothing. A slash starts a regular expression
+ * where the language allows one: after an operator, an opening bracket, a
+ * keyword such as `return`, or at the start. Line breaks are kept, so a line
+ * number read off the result is the file's own.
  *
- * Its honest limit: it is a scanner, not a parser. A `/*` inside a string
- * literal still opens a block, and a guard that needs more than this needs a
- * real parse.
+ * It is a scanner, not the parser, and is held to the parser instead of
+ * trusted: `strip-comments-parity.test.ts` strips every source file both
+ * ways and fails on the first that differs. `//` right after a `:` is read
+ * as part of a URL in JSX text, never as a comment. CSS, which has no line
+ * comments, is stripped of its block comments only (pass its `fileName`).
  */
-export function stripComments(source: string): string {
-  const lines: string[] = [];
-  let inBlock = false;
-
-  for (const line of source.split("\n")) {
-    let rest = line;
-    let kept = "";
-
-    while (rest.length > 0) {
-      if (inBlock) {
-        const closes = rest.indexOf("*/");
-        if (closes === -1) break;
-        rest = rest.slice(closes + 2);
-        inBlock = false;
-        continue;
-      }
-
-      const lineComment = rest.search(/(^|\s)\/\//);
-      const blockComment = rest.indexOf("/*");
-
-      if (
-        blockComment !== -1 &&
-        (lineComment === -1 || blockComment < lineComment)
+export function stripComments(source: string, fileName?: string): string {
+  if (fileName?.endsWith(".css")) {
+    return source.replace(/\/\*[\s\S]*?\*\//g, blankKeepingLines);
+  }
+  const text = source;
+  const n = text.length;
+  let out = "";
+  let i = 0;
+  // Template nesting: "template" for a template body, a number for the brace
+  // depth of the `${…}` expression being read, restored when it closes.
+  const stack: Array<"template" | number> = [];
+  let depth = 0;
+  while (i < n) {
+    const top = stack[stack.length - 1];
+    if (top === "template") {
+      let j = i;
+      while (
+        j < n &&
+        text[j] !== "`" &&
+        !(text[j] === "$" && text[j + 1] === "{")
       ) {
-        kept += rest.slice(0, blockComment);
-        rest = rest.slice(blockComment + 2);
-        inBlock = true;
+        j += text[j] === "\\" ? 2 : 1;
+      }
+      out += text.slice(i, Math.min(j, n));
+      if (j >= n) break;
+      if (text[j] === "`") {
+        stack.pop();
+        out += "`";
+        i = j + 1;
         continue;
       }
-
-      if (lineComment !== -1) {
-        kept += rest.slice(0, rest.indexOf("//", lineComment));
-        break;
-      }
-
-      kept += rest;
-      break;
+      stack.push(depth);
+      depth = 0;
+      out += "${";
+      i = j + 2;
+      continue;
     }
 
-    lines.push(kept);
-  }
+    SPECIAL.lastIndex = i;
+    const found = SPECIAL.exec(text);
+    if (!found) {
+      out += text.slice(i);
+      break;
+    }
+    const j = found.index;
+    out += text.slice(i, j);
+    const c = text[j];
+    const next = text[j + 1];
 
-  return lines.join("\n");
+    if (c === "/" && next === "/" && text[j - 1] !== ":") {
+      const end = text.indexOf("\n", j);
+      i = end === -1 ? n : end;
+      continue;
+    }
+    if (c === "/" && next === "*") {
+      const close = text.indexOf("*/", j + 2);
+      const end = close === -1 ? n : close + 2;
+      out += blankKeepingLines(text.slice(j, end));
+      i = end;
+      continue;
+    }
+    if (c === "'" || c === '"') {
+      let end = j + 1;
+      while (end < n && text[end] !== c && text[end] !== "\n") {
+        end += text[end] === "\\" ? 2 : 1;
+      }
+      if (text[end] === c) end += 1;
+      out += text.slice(j, end);
+      i = end;
+      continue;
+    }
+    if (c === "`") {
+      stack.push("template");
+      out += "`";
+      i = j + 1;
+      continue;
+    }
+    if (c === "/") {
+      const end = regexMayStart(out) ? regexEnd(text, j) : -1;
+      if (end !== -1) {
+        out += text.slice(j, end);
+        i = end;
+        continue;
+      }
+      out += "/";
+      i = j + 1;
+      continue;
+    }
+    if (c === "{") {
+      depth += 1;
+    } else if (depth === 0 && typeof top === "number") {
+      depth = stack.pop() as number;
+    } else {
+      depth -= 1;
+    }
+    out += c;
+    i = j + 1;
+  }
+  return out;
+}
+
+const SPECIAL = /[/'"`{}]/g;
+const WORD = /[A-Za-z_$0-9]/;
+const REGEX_AFTER = new Set("(,=:[!&|?{};+-*%<>~^".split(""));
+const REGEX_KEYWORDS = new Set([
+  "return",
+  "typeof",
+  "case",
+  "do",
+  "else",
+  "in",
+  "of",
+  "void",
+  "yield",
+  "await",
+  "delete",
+  "instanceof",
+  "new",
+  "throw",
+]);
+
+function blankKeepingLines(comment: string): string {
+  return comment.replace(/[^\n]/g, "");
+}
+
+/** Whether a `/` after this code starts a regular expression. */
+function regexMayStart(code: string): boolean {
+  let k = code.length - 1;
+  while (k >= 0 && /\s/.test(code[k]!)) k -= 1;
+  if (k < 0) return true;
+  const last = code[k]!;
+  if (REGEX_AFTER.has(last)) return true;
+  if (!WORD.test(last)) return false;
+  let start = k;
+  while (start > 0 && WORD.test(code[start - 1]!)) start -= 1;
+  return REGEX_KEYWORDS.has(code.slice(start, k + 1));
+}
+
+/** The end of the regular expression opening at `start`, or -1 if none. */
+function regexEnd(text: string, start: number): number {
+  let end = start + 1;
+  let inClass = false;
+  while (end < text.length && text[end] !== "\n") {
+    const ch = text[end];
+    if (ch === "\\") {
+      end += 2;
+      continue;
+    }
+    if (ch === "[") inClass = true;
+    else if (ch === "]") inClass = false;
+    else if (ch === "/" && !inClass) {
+      end += 1;
+      while (end < text.length && /[a-z]/i.test(text[end]!)) end += 1;
+      return end;
+    }
+    end += 1;
+  }
+  return -1;
 }
 
 /**

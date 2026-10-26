@@ -1,3 +1,4 @@
+import { dashboardSource } from "@/__tests__/helpers/dashboard-source";
 import { describe, it, expect, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -127,7 +128,10 @@ describe("dashboard snapshot invalidation — same-tab staleness mechanism", () 
 
 describe("dashboard layout save — every layout source is covered (source pins)", () => {
   const sectionSrc = readFileSync(
-    join(process.cwd(), "src/components/settings/dashboard-layout-section.tsx"),
+    join(
+      process.cwd(),
+      "src/components/settings/dashboard-layout/use-dashboard-layout-draft.ts",
+    ),
     "utf8",
   );
 
@@ -151,10 +155,7 @@ describe("dashboard layout save — every layout source is covered (source pins)
   });
 
   it("the dashboard reads layout from the snapshot (or the dashboardWidgets cell) only", () => {
-    const pageSrc = readFileSync(
-      join(process.cwd(), "src/app/page-client.tsx"),
-      "utf8",
-    );
+    const pageSrc = dashboardSource();
     // Snapshot path: layout comes off the snapshot payload…
     expect(pageSrc).toContain("snapshotQuery.data?.layout");
     // …legacy path: the dashboardWidgets factory key (no bare literal).

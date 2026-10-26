@@ -1,0 +1,65 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "deleted": true
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "workout.delete",
+        "entity_type": "workout",
+        "entity_id": "<id:1>"
+      },
+      "meta": {
+        "outcome": "deleted",
+        "personalRecordsRemoved": 1
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "enqueuePrDetection",
+      "args": [
+        "<id:2>",
+        {
+          "silent": true
+        }
+      ]
+    }
+  ],
+  "stored": {
+    "workouts": [
+      {
+        "id": "<id:3>",
+        "source": "APPLE_HEALTH",
+        "externalId": "hk-run-0",
+        "sportType": "running"
+      },
+      {
+        "id": "<id:4>",
+        "source": "APPLE_HEALTH",
+        "externalId": "hk-ride-1",
+        "sportType": "cycling"
+      },
+      {
+        "id": "<id:5>",
+        "source": "APPLE_HEALTH",
+        "externalId": "hk-run-1",
+        "sportType": "running"
+      },
+      {
+        "id": "<id:6>",
+        "source": "MANUAL",
+        "externalId": "manual:run-twin",
+        "sportType": "running"
+      }
+    ],
+    "records": []
+  }
+}

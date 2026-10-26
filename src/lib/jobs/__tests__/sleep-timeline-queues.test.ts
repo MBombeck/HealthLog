@@ -1,50 +1,60 @@
 /**
- * v1.17.1 — pg-boss queue registration for the one-shot sleep-timeline backfill.
+ * pg-boss queue registration for the one-shot sleep-timeline backfill.
  *
- * The reminder-worker imports heavy infrastructure, so we read the source as
- * text and assert the queue constant is declared, registered in `allQueues`,
- * wired to a `createAndWork` handler, and enqueued at boot — the fast guard that
- * catches the v1.4.37 dead-queue class (a queue declared but never registered,
- * which silently never drains).
+ * Reads the worker registry: the source queue is declared in the
+ * integration-sync group, forwards each job to the shared admission queue,
+ * and is offered again by the boot discovery. This is the fast guard for the
+ * dead-queue class (a queue declared but never registered, which silently
+ * never drains).
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { describe, expect, it } from "vitest";
 
-// v1.18.1 — the queue wiring + boot discovery moved out of the 2143-LOC
-// reminder-worker boot file into domain registrars; the sleep-timeline backfill
-// lives in the integration-sync registrar. The dead-queue guard follows it.
-const REGISTRAR_PATH = join(
-  __dirname,
-  "..",
-  "reminder",
-  "register-integration-sync.ts",
-);
-const source = readFileSync(REGISTRAR_PATH, "utf8");
+import { INTEGRATION_BACKFILL_ADMISSION_QUEUE } from "@/lib/jobs/integration-backfill-admission";
+import {
+  discoveryOf,
+  groupOf,
+  jobOf,
+  recordingBoss,
+} from "@/lib/jobs/registry/__tests__/registry-helpers";
+import {
+  SLEEP_TIMELINE_BACKFILL_CONCURRENCY,
+  SLEEP_TIMELINE_BACKFILL_QUEUE,
+} from "@/lib/jobs/sleep-timeline-backfill-queue";
 
-describe("reminder-worker — sleep-timeline backfill queue", () => {
-  it("registers the queue in allQueues (v1.4.37 dead-queue guard)", () => {
-    const block = /const allQueues = \[([\s\S]*?)\];/.exec(source);
-    expect(block).not.toBeNull();
-    expect(block![1]!).toContain("SLEEP_TIMELINE_BACKFILL_QUEUE");
+describe("sleep-timeline backfill registration", () => {
+  it("declares the queue in the integration-sync group", () => {
+    expect(groupOf(SLEEP_TIMELINE_BACKFILL_QUEUE).name).toBe(
+      "integration_sync",
+    );
+    const job = jobOf(SLEEP_TIMELINE_BACKFILL_QUEUE);
+    expect(job.policy?.policy).toBe("exclusive");
+    expect(job.work).toEqual({
+      localConcurrency: SLEEP_TIMELINE_BACKFILL_CONCURRENCY,
+    });
   });
 
-  it("wires a createAndWork handler through the shared admission queue", () => {
-    expect(source).toMatch(
-      /createAndWork[\s\S]{0,260}SLEEP_TIMELINE_BACKFILL_QUEUE[\s\S]{0,300}enqueueIntegrationBackfillAdmission/,
-    );
+  it("forwards each job through the shared admission queue", async () => {
+    const { boss, sends } = recordingBoss();
+    const handler = await jobOf(SLEEP_TIMELINE_BACKFILL_QUEUE).load({ boss });
+    await handler([
+      {
+        id: "j1",
+        name: SLEEP_TIMELINE_BACKFILL_QUEUE,
+        data: { userId: "u1", provider: "WHOOP" },
+        expireInSeconds: 60,
+        heartbeatSeconds: null,
+        retryCount: 0,
+        signal: new AbortController().signal,
+      },
+    ]);
+    expect(sends).toHaveLength(1);
+    expect(sends[0]!.queue).toBe(INTEGRATION_BACKFILL_ADMISSION_QUEUE);
+    expect(sends[0]!.data).toMatchObject({ kind: "sleep-timeline-backfill" });
   });
 
   it("wires the boot discovery", () => {
-    expect(source).toMatch(
-      /enqueueBootTimeSleepTimelineBackfill\(\s*bootStaggerSecondsFor\("sleep-timeline-backfill"\)/,
-    );
-  });
-
-  it("imports the backfill exports", () => {
-    expect(source).toMatch(
-      /from\s*["']@\/lib\/jobs\/sleep-timeline-backfill["']/,
+    expect(discoveryOf("integration_sync")).toContain(
+      "sleep-timeline-backfill",
     );
   });
 });

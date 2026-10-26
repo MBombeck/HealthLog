@@ -57,23 +57,50 @@ arrays:
 }
 ```
 
-Each array holds at most **10 000** entries. The endpoint is rate-limited
-to **5 imports per hour per account**. Existing rows (matched on the
-type + timestamp uniqueness, or on `externalId` for mood entries) are
-skipped and counted under `skipped` in the response.
+Each array holds at most **10 000** entries and the file at most 16 MB.
+The endpoint is rate-limited to **5 imports per hour per account**.
+Existing rows (matched on the type + timestamp uniqueness, or on
+`externalId` for mood entries) are skipped and counted under `skipped` in
+the response.
+
+The app's own files go straight in: the JSON export (**Export → JSON**,
+read inside its `data` envelope) and the portable full backup. Every field
+either file writes for a reading or a mood entry comes back, apart from
+the row ids, the source (every imported row is stored as `IMPORT`) and the
+sync bookkeeping of the account the file came from. An empty field, `null`
+in the backup and `""` in the export, reads as absent, a backup's deletion
+records are skipped and counted, and a reading in a display unit (lb, °F,
+mmol/L) is converted to the stored one.
+
+A mood entry's tags and rated factors are linked by key. A full backup
+also carries the account's own tags, rated factors and tag groups, and the
+import brings them along: a tag the importing account already has is used
+as it is, and one it lacks is created (within the account's limit of 50
+custom tags and 12 groups). The account's own tag is never overwritten: when
+the file names it differently, the account's name stays and the response
+lists the key in `keptMoodTagKeys` (`keptMoodCategoryKeys` for a group).
+Moving a file between two accounts of one server works too; the tags come
+over under keys of their own. A key the account cannot resolve at all is
+dropped from that entry and named in `droppedTagKeys` or
+`droppedFactorKeys`, and the rest of the entry lands.
 
 ### Measurement entry
 
-| Field            | Required | Type   | Notes                                                                                                                                                           |
-| ---------------- | -------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `type`           | yes      | enum   | One of the `MeasurementType` values in the table below.                                                                                                         |
-| `value`          | yes      | number | Plausibility-checked per type; out-of-range values are rejected.                                                                                                |
-| `unit`           | yes      | string | The canonical unit for the type (see the table).                                                                                                                |
-| `measuredAt`     | yes      | string | ISO-8601 datetime, e.g. `2026-05-01T08:00:00.000Z`.                                                                                                             |
-| `source`         | no       | string | Free-text origin label. Imported rows are tagged `IMPORT` server-side regardless.                                                                               |
-| `notes`          | no       | string | Optional free text.                                                                                                                                             |
-| `glucoseContext` | no       | enum   | Only for `BLOOD_GLUCOSE`. See [Glucose context](#glucose-context).                                                                                              |
-| `externalId`     | no       | string | A source-stable id (1–120 chars). When present, a re-import upserts on `(user, type, source, externalId)` so an edit upstream is reflected rather than skipped. |
+| Field                  | Required | Type   | Notes                                                                                                                                                           |
+| ---------------------- | -------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`                 | yes      | enum   | One of the `MeasurementType` values in the table below.                                                                                                         |
+| `value`                | yes      | number | Plausibility-checked per type; out-of-range values are rejected.                                                                                                |
+| `unit`                 | yes      | string | The canonical unit for the type (see the table).                                                                                                                |
+| `measuredAt`           | yes      | string | ISO-8601 datetime, e.g. `2026-05-01T08:00:00.000Z`.                                                                                                             |
+| `source`               | no       | string | Free-text origin label, not stored. Imported rows are tagged `IMPORT` server-side regardless.                                                                   |
+| `notes`                | no       | string | Optional free text.                                                                                                                                             |
+| `glucoseContext`       | no       | enum   | Only for `BLOOD_GLUCOSE`. See [Glucose context](#glucose-context).                                                                                              |
+| `valueMin`             | no       | number | Lower bound of a range reading, such as an hourly heart-rate statistic. Not above `valueMax`.                                                                   |
+| `valueMax`             | no       | number | Upper bound of a range reading.                                                                                                                                 |
+| `sleepStage`           | no       | enum   | A sleep row's stage: `IN_BED`, `ASLEEP`, `AWAKE`, `CORE`, `DEEP` or `REM`.                                                                                      |
+| `rhythmClassification` | no       | enum   | The device's verdict on an ECG, a rhythm alert or a steadiness reading.                                                                                         |
+| `deviceType`           | no       | string | The writer of the reading (watch, phone), 1–32 chars.                                                                                                           |
+| `externalId`           | no       | string | A source-stable id (1–120 chars). When present, a re-import upserts on `(user, type, source, externalId)` so an edit upstream is reflected rather than skipped. |
 
 ### Glucose context
 
@@ -98,14 +125,20 @@ moment you know it.
 
 ### Mood entry
 
-| Field        | Required | Type    | Notes                                                                                                                                                     |
-| ------------ | -------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `date`       | yes      | string  | `YYYY-MM-DD`.                                                                                                                                             |
-| `mood`       | yes      | enum    | One of `SUPER_GUT`, `GUT`, `OKAY`, `SCHLECHT`, `LAUSIG`.                                                                                                  |
-| `score`      | yes      | integer | `1`–`5`.                                                                                                                                                  |
-| `tags`       | no       | string  | Comma-separated tags.                                                                                                                                     |
-| `loggedAt`   | no       | string  | ISO-8601 datetime; defaults to the start of the given `date` in the default timezone.                                                                     |
-| `externalId` | no       | string  | A source-stable id (1–120 chars). When present, a re-import upserts on `(user, source, externalId)` so an edit upstream is reflected rather than skipped. |
+| Field            | Required | Type    | Notes                                                                                                                                                     |
+| ---------------- | -------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `date`           | yes      | string  | `YYYY-MM-DD`.                                                                                                                                             |
+| `mood`           | yes      | enum    | One of `SUPER_GUT`, `GUT`, `OKAY`, `SCHLECHT`, `LAUSIG`.                                                                                                  |
+| `score`          | yes      | integer | `1`–`5`.                                                                                                                                                  |
+| `tags`           | no       | string  | Comma-separated tags.                                                                                                                                     |
+| `note`           | no       | string  | The entry's note, up to 500 chars.                                                                                                                        |
+| `a1`–`a5`        | no       | integer | The five level-A values, `0`–`10`. Without `a1`, pleasantness is derived from `mood`.                                                                     |
+| `loggedAt`       | no       | string  | ISO-8601 datetime; defaults to the start of the given `date` in the default timezone.                                                                     |
+| `tz`             | no       | string  | The IANA zone `date` is anchored to.                                                                                                                      |
+| `factors`        | no       | array   | Rated factors, `[{ "key": "…", "rating": 1–5 }]`; replace the entry's rated links.                                                                        |
+| `structuredTags` | no       | array   | Ticked tags by key; replace the entry's tag links.                                                                                                        |
+| `context`        | no       | object  | The day context (work, contacts, leisure, an event, a note), as the backup writes it; replaces the entry's context.                                       |
+| `externalId`     | no       | string  | A source-stable id (1–120 chars). When present, a re-import upserts on `(user, source, externalId)` so an edit upstream is reflected rather than skipped. |
 
 ### `MeasurementType` values and canonical units
 

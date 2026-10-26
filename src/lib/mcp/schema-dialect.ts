@@ -26,7 +26,7 @@ import {
   type ListToolsResult,
 } from "@modelcontextprotocol/sdk/types.js";
 
-import type { McpToolDefinition } from "./tools";
+import type { McpToolDefinition } from "./tools/types";
 
 type JsonSchemaObject = Record<string, unknown>;
 

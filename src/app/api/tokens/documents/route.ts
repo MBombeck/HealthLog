@@ -28,13 +28,8 @@ import {
   assertRecentCookieProof,
   requireCookieAuth,
 } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -79,15 +74,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Too many token mints, try again later", 429);
   }
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, createDocumentTokenSchema, {
     maxBytes: 16 * 1024,
   });
-  if (jsonError) return jsonError;
-
-  const parsed = createDocumentTokenSchema.safeParse(body);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   // Counted live and per scope, after validation and before the create; the
   // count-then-create race is bounded by the mint bucket above. See the

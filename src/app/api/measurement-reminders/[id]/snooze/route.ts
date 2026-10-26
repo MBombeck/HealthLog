@@ -18,13 +18,8 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  safeJson,
-  returnAllZodIssues,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { toMeasurementReminderDto } from "@/lib/measurement-reminders/dto";
 import { snoozeMeasurementReminderSchema } from "@/lib/validations/measurement-reminders";
@@ -43,12 +38,11 @@ export const POST = apiHandler(
     const { user } = await requireRecordAuth("manage", "measurements");
     const { id } = await params;
 
-    const body = await safeJson(request);
-    if (body.error) return body.error;
-    const parsed = snoozeMeasurementReminderSchema.safeParse(body.data);
-    if (!parsed.success) {
-      return returnAllZodIssues(parsed.error, 422);
-    }
+    const parsed = await parseJsonBody(
+      request,
+      snoozeMeasurementReminderSchema,
+    );
+    if (!parsed.ok) return parsed.error;
 
     // An appointment reminder is not addressable here — see the sibling
     // routes; snoozing one would move a date the visit record still owns.

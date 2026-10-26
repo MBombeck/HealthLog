@@ -36,9 +36,6 @@ import {
   retireCanariesWithoutData,
   type CanaryClient,
 } from "@/lib/crypto/canary";
-
-export const ENCRYPTION_KEY_ROTATE_QUEUE = "encryption-key-rotate";
-export const ENCRYPTION_KEY_ROTATE_CONCURRENCY = 1;
 /** Fixed key so duplicate admin triggers coalesce into one queued run. */
 export const ENCRYPTION_KEY_ROTATE_SINGLETON = "encryption-key-rotate";
 

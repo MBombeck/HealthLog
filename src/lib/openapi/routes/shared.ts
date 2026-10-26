@@ -176,7 +176,7 @@ export function listEnvelope<T extends z.ZodType>(payload: T, id: string) {
 // annotated clone is exported from here under the name the use sites already
 // spell and the base import is aliased. A module that wants the published
 // form imports it from `./shared`; importing the raw schema from
-// `@/lib/validations/*` instead is what inlined these anonymously.
+// a `@/lib/validations` module instead is what inlined these anonymously.
 
 export const measurementTypeEnum = measurementTypeEnumBase.meta({
   id: "MeasurementType",

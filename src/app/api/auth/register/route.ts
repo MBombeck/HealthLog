@@ -9,12 +9,8 @@ import { hashPassword, checkPasswordStrength } from "@/lib/auth/password";
 import { createSession, getSession } from "@/lib/auth/session";
 import { recordSignInDevice } from "@/lib/auth/login-alert";
 import { auditLog } from "@/lib/auth/audit";
-import {
-  apiSuccess,
-  apiError,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { checkAuthSurfaceRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { ensureDbCompatibility } from "@/lib/db-compat";
 import { NextRequest, NextResponse } from "next/server";
@@ -100,17 +96,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   } catch {
     // Table may not exist yet; allow registration
   }
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, registerSchema, {
     maxBytes: 64 * 1024,
   });
-
-  if (jsonError) return jsonError;
-  const parsed = registerSchema.safeParse(body);
-
-  if (!parsed.success) {
-    // v1.4.43 — multi-issue 422.
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const {
     email,

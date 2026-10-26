@@ -112,53 +112,105 @@ describe("chooseTickInterval (v1.4.25 W3b day-aware policy)", () => {
   });
 });
 
-describe("computeTickPositions (v1.4.29 numeric-axis helper)", () => {
-  // Recharts ignores `interval` on `type="number"` axes; the pulse +
-  // mood charts switched to numeric axes and silently lost the
-  // density policy. `computeTickPositions` translates the policy
-  // into explicit indices the numeric axis can consume.
+describe("computeTickPositions — ticks on a calendar grid", () => {
+  const DAY = 86_400_000;
+  /** Daily points at noon UTC from `start`, leaving out the `missing` days. */
+  function daily(start: string, count: number, missing: number[] = []) {
+    const t0 = Date.parse(`${start}T12:00:00.000Z`);
+    return Array.from({ length: count }, (_, i) => i)
+      .filter((i) => !missing.includes(i))
+      .map((i) => ({ timestamp: t0 + i * DAY }));
+  }
+  const dates = (data: { timestamp: number }[], ticks: number[]) =>
+    ticks.map((i) => new Date(data[i]!.timestamp).toISOString().slice(0, 10));
 
-  it("returns every index when the chart has fewer points than the bucket threshold", () => {
-    const data = Array.from({ length: 5 }, (_, i) => ({ timestamp: i }));
-    expect(computeTickPositions(data, 393)).toEqual([0, 1, 2, 3, 4]);
-  });
-
-  it("returns [0] for a single-point chart", () => {
+  it("returns [] for an empty chart and [0] for one point", () => {
+    expect(computeTickPositions([], 393)).toEqual([]);
     expect(computeTickPositions([{ timestamp: 0 }], 393)).toEqual([0]);
   });
 
-  it("returns [] for an empty chart", () => {
-    expect(computeTickPositions([], 393)).toEqual([]);
+  it("labels every day of a week where the width holds it, every other on a phone", () => {
+    const data = daily("2026-10-17", 7);
+    expect(computeTickPositions(data, 1440)).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    const phone = dates(data, computeTickPositions(data, 393));
+    expect(phone).toHaveLength(3);
   });
 
-  it("caps ticks to ~12 for a 365-point series", () => {
-    const data = Array.from({ length: 365 }, (_, i) => ({ timestamp: i }));
-    const ticks = computeTickPositions(data, 393);
-    expect(ticks.length).toBeLessThanOrEqual(13);
-    expect(ticks.length).toBeGreaterThanOrEqual(6);
-    // First + last indices always present.
-    expect(ticks[0]).toBe(0);
-    expect(ticks[ticks.length - 1]).toBe(364);
+  it("puts a 90-day chart with missed days on a two-week grid of Mondays", () => {
+    // The reported chart: readings with gaps, labelled every n-th point,
+    // fell 18, 14, 13, 17 and 23 days apart.
+    const data = daily(
+      "2026-07-23",
+      90,
+      [10, 11, 12, 40, 41, 70, 71, 72, 73, 80],
+    );
+    const ticks = dates(data, computeTickPositions(data, 1440));
+    // 3 August is a grid Monday with no reading; the nearest day stands in.
+    expect(ticks).toEqual([
+      "2026-08-01",
+      "2026-08-17",
+      "2026-08-31",
+      "2026-09-14",
+      "2026-09-28",
+      "2026-10-12",
+    ]);
+    for (const tick of ticks.slice(1)) {
+      expect(new Date(`${tick}T12:00:00Z`).getUTCDay()).toBe(1);
+    }
   });
 
-  it("hits a weekly-rhythm cadence on a 30-day chart at mobile width", () => {
-    const data = Array.from({ length: 30 }, (_, i) => ({ timestamp: i }));
-    const ticks = computeTickPositions(data, 393);
-    // 30 points / 7-day skip → 5 ticks (0, 7, 14, 21, 28) + last (29).
-    expect(ticks.length).toBeGreaterThanOrEqual(4);
-    expect(ticks.length).toBeLessThanOrEqual(6);
-    expect(ticks[0]).toBe(0);
-    expect(ticks[ticks.length - 1]).toBe(29);
+  it("takes the nearest point within half a step when the grid date has none", () => {
+    // 2026-09-14 (a grid Monday) is missing; the 13th or 15th stands in.
+    const data = daily("2026-08-03", 60, [42]);
+    const ticks = dates(data, computeTickPositions(data, 1440));
+    expect(ticks).toContain("2026-08-17");
+    expect(ticks.some((t) => t === "2026-09-13" || t === "2026-09-15")).toBe(
+      true,
+    );
   });
 
-  it("never returns duplicate or out-of-bounds indices", () => {
-    for (const length of [2, 7, 14, 30, 90, 180, 365]) {
-      const data = Array.from({ length }, (_, i) => ({ timestamp: i }));
-      const ticks = computeTickPositions(data, 393);
-      expect(new Set(ticks).size).toBe(ticks.length);
-      for (const t of ticks) {
-        expect(t).toBeGreaterThanOrEqual(0);
-        expect(t).toBeLessThan(length);
+  it("does not force the last point in, so the final label never crowds", () => {
+    const data = daily("2026-07-23", 90);
+    const ticks = computeTickPositions(data, 1440);
+    expect(ticks[ticks.length - 1]).not.toBe(data.length - 1);
+  });
+
+  it("steps to calendar months and quarters on longer spans", () => {
+    const year = daily("2025-10-23", 365);
+    const months = dates(year, computeTickPositions(year, 1440));
+    expect(months.length).toBeGreaterThanOrEqual(4);
+    for (const tick of months) expect(tick.endsWith("-01")).toBe(true);
+
+    // Weekly buckets over a year and a bit, on a phone: quarter starts, each
+    // taken by the nearest weekly point.
+    const weeks = Array.from({ length: 58 }, (_, i) => ({
+      timestamp: Date.parse("2025-10-01T12:00:00Z") + i * 7 * DAY,
+    }));
+    for (const tick of dates(weeks, computeTickPositions(weeks, 393))) {
+      const at = Date.parse(`${tick}T12:00:00Z`);
+      const quarter = [0, 3, 6, 9].flatMap((m) =>
+        [2025, 2026, 2027].map((y) => Date.UTC(y, m, 1, 12)),
+      );
+      const off = Math.min(...quarter.map((q) => Math.abs(q - at))) / DAY;
+      expect(off).toBeLessThanOrEqual(3.5);
+    }
+  });
+
+  it("keeps under the width's cap, with no duplicate or out-of-range index", () => {
+    for (const [width, cap] of [
+      [393, 5],
+      [1440, 8],
+    ] as const) {
+      for (const length of [2, 7, 14, 30, 90, 180, 365, 730]) {
+        const data = daily("2024-01-01", length);
+        const ticks = computeTickPositions(data, width);
+        expect(ticks.length).toBeLessThanOrEqual(cap);
+        expect(new Set(ticks).size).toBe(ticks.length);
+        expect([...ticks].sort((a, b) => a - b)).toEqual(ticks);
+        for (const t of ticks) {
+          expect(t).toBeGreaterThanOrEqual(0);
+          expect(t).toBeLessThan(data.length);
+        }
       }
     }
   });

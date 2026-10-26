@@ -13,7 +13,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiSuccess, returnAllZodIssues, safeJson } from "@/lib/api-response";
+import { apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { prisma } from "@/lib/db";
@@ -27,17 +28,11 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
   const gate = await requireModuleEnabled(user.id, "environment");
   if (!gate.enabled) return gate.response;
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, environmentPreferencesSchema, {
     maxBytes: 1024,
+    errorCode: "environment.invalid",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = environmentPreferencesSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "environment.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const before = await prisma.user.findUnique({
     where: { id: user.id },

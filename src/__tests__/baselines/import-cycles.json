@@ -1,46 +1,11 @@
 {
   "$comment": "Runtime import cycles under src/: the back-edge count and the strongly connected components. Maintained by src/__tests__/import-cycle-guard.test.ts.",
-  "cycles": 13,
+  "cycles": 2,
   "components": [
     [
       "components/command-palette/command-palette.tsx",
       "components/command-palette/palette-store.ts",
       "components/layout/global-shortcuts.tsx"
-    ],
-    [
-      "lib/analytics/compliance.ts",
-      "lib/analytics/compliance/display.ts",
-      "lib/analytics/compliance/ledger.ts",
-      "lib/analytics/compliance/occurrences.ts",
-      "lib/analytics/compliance/windows.ts",
-      "lib/medications/scheduling/band-minter.ts",
-      "lib/medications/scheduling/cadence.ts",
-      "lib/medications/scheduling/compliance.ts",
-      "lib/medications/scheduling/schedule-eras.ts"
-    ],
-    [
-      "lib/auth/audit.ts",
-      "lib/geo.ts",
-      "lib/integrations/oauth-kit/connect-target.ts",
-      "lib/jobs/offhost-purge.ts",
-      "lib/managed-profiles/lifecycle.ts",
-      "lib/notifications/channel-state.ts",
-      "lib/notifications/delivery-identity.ts",
-      "lib/notifications/dispatch-localised.ts",
-      "lib/notifications/dispatcher.ts",
-      "lib/sharing/grants.ts"
-    ],
-    [
-      "lib/cycle/gate.ts",
-      "lib/modules/gate.ts"
-    ],
-    [
-      "lib/insights/features.ts",
-      "lib/insights/signals-of-day.ts"
-    ],
-    [
-      "lib/insights/mood-aggregates.ts",
-      "lib/insights/mood-patterns.ts"
     ],
     [
       "lib/jobs/boss-instance.ts",

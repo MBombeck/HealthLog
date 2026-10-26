@@ -50,6 +50,19 @@ describe("summariseBackupSchedule", () => {
     expect(status.lastRunFailed).toBe(false);
   });
 
+  it("draws the line where the readiness model does: past nine days", () => {
+    const at = (ms: number) =>
+      summariseBackupSchedule({
+        scheduledCreatedAt: [new Date(NOW.getTime() - ms)],
+        lastRun: null,
+        now: NOW,
+      }).stale;
+    const DAY = 24 * 60 * 60 * 1000;
+    expect(BACKUP_STALE_AFTER_DAYS).toBe(9);
+    expect(at(9 * DAY)).toBe(false);
+    expect(at(9 * DAY + 1)).toBe(true);
+  });
+
   it("surfaces a failed last run even while the copy is still in window", () => {
     const status = summariseBackupSchedule({
       scheduledCreatedAt: [daysAgo(3)],

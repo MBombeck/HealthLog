@@ -1,0 +1,135 @@
+[
+  {
+    "id": 900001,
+    "rows": [
+      {
+        "type": "DAY_STRAIN",
+        "value": 12.46,
+        "unit": "score",
+        "measuredAt": "2026-03-01T22:30:00.000Z",
+        "fieldTag": "day_strain"
+      },
+      {
+        "type": "ENERGY_EXPENDITURE_KJ",
+        "value": 9876.54,
+        "unit": "kJ",
+        "measuredAt": "2026-03-01T22:30:00.000Z",
+        "fieldTag": "energy_kj"
+      },
+      {
+        "type": "AVERAGE_HEART_RATE",
+        "value": 68,
+        "unit": "bpm",
+        "measuredAt": "2026-03-01T22:30:00.000Z",
+        "fieldTag": "avg_hr"
+      },
+      {
+        "type": "MAX_HEART_RATE",
+        "value": 172,
+        "unit": "bpm",
+        "measuredAt": "2026-03-01T22:30:00.000Z",
+        "fieldTag": "max_hr"
+      }
+    ]
+  },
+  {
+    "id": 900002,
+    "rows": [
+      {
+        "type": "DAY_STRAIN",
+        "value": 3.1,
+        "unit": "score",
+        "measuredAt": "2026-03-02T22:05:00.000Z",
+        "fieldTag": "day_strain"
+      },
+      {
+        "type": "ENERGY_EXPENDITURE_KJ",
+        "value": 2500,
+        "unit": "kJ",
+        "measuredAt": "2026-03-02T22:05:00.000Z",
+        "fieldTag": "energy_kj"
+      },
+      {
+        "type": "AVERAGE_HEART_RATE",
+        "value": 62,
+        "unit": "bpm",
+        "measuredAt": "2026-03-02T22:05:00.000Z",
+        "fieldTag": "avg_hr"
+      },
+      {
+        "type": "MAX_HEART_RATE",
+        "value": 121,
+        "unit": "bpm",
+        "measuredAt": "2026-03-02T22:05:00.000Z",
+        "fieldTag": "max_hr"
+      }
+    ]
+  },
+  { "id": 900003, "rows": [] },
+  {
+    "id": 900004,
+    "rows": [
+      {
+        "type": "DAY_STRAIN",
+        "value": 0,
+        "unit": "score",
+        "measuredAt": "2026-03-04T22:15:00.000Z",
+        "fieldTag": "day_strain"
+      },
+      {
+        "type": "ENERGY_EXPENDITURE_KJ",
+        "value": 0,
+        "unit": "kJ",
+        "measuredAt": "2026-03-04T22:15:00.000Z",
+        "fieldTag": "energy_kj"
+      },
+      {
+        "type": "AVERAGE_HEART_RATE",
+        "value": 0,
+        "unit": "bpm",
+        "measuredAt": "2026-03-04T22:15:00.000Z",
+        "fieldTag": "avg_hr"
+      },
+      {
+        "type": "MAX_HEART_RATE",
+        "value": 0,
+        "unit": "bpm",
+        "measuredAt": "2026-03-04T22:15:00.000Z",
+        "fieldTag": "max_hr"
+      }
+    ]
+  },
+  {
+    "id": 900005,
+    "rows": [
+      {
+        "type": "DAY_STRAIN",
+        "value": 21,
+        "unit": "score",
+        "measuredAt": "2026-03-06T02:00:00.000Z",
+        "fieldTag": "day_strain"
+      },
+      {
+        "type": "ENERGY_EXPENDITURE_KJ",
+        "value": 18000.01,
+        "unit": "kJ",
+        "measuredAt": "2026-03-06T02:00:00.000Z",
+        "fieldTag": "energy_kj"
+      },
+      {
+        "type": "AVERAGE_HEART_RATE",
+        "value": 95,
+        "unit": "bpm",
+        "measuredAt": "2026-03-06T02:00:00.000Z",
+        "fieldTag": "avg_hr"
+      },
+      {
+        "type": "MAX_HEART_RATE",
+        "value": 198,
+        "unit": "bpm",
+        "measuredAt": "2026-03-06T02:00:00.000Z",
+        "fieldTag": "max_hr"
+      }
+    ]
+  }
+]

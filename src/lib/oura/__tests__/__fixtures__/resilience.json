@@ -1,0 +1,11 @@
+[
+  { "id": "resilience-0001", "day": "2026-03-02", "level": "limited" },
+  { "id": "resilience-0002", "day": "2026-03-03", "level": "adequate" },
+  { "id": "resilience-0003", "day": "2026-03-04", "level": "Solid" },
+  { "id": "resilience-0004", "day": "2026-03-05", "level": "STRONG" },
+  { "id": "resilience-0005", "day": "2026-03-06", "level": "exceptional" },
+  { "id": "resilience-0006", "day": "2026-03-07", "level": "unknown_band" },
+  { "id": "resilience-0007", "day": "2026-03-08", "level": null },
+  { "id": "resilience-0008", "day": "2026-03-09", "level": "" },
+  { "day": "2026-03-10", "level": "solid" }
+]

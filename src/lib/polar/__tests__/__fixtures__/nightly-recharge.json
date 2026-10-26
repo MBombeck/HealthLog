@@ -1,0 +1,45 @@
+[
+  {
+    "date": "2026-03-02",
+    "nightly_recharge_status": 4,
+    "ans_charge": 3.456,
+    "ans_charge_status": 3,
+    "heart_rate_avg": 55.6,
+    "heart_rate_variability_avg": 42.123,
+    "breathing_rate_avg": 14.25
+  },
+  {
+    "date": "2026-03-03",
+    "nightly_recharge_status": 1,
+    "ans_charge": -7.2,
+    "heart_rate_avg": 0,
+    "heart_rate_variability_avg": 0,
+    "breathing_rate_avg": 0
+  },
+  {
+    "date": "2026-03-04",
+    "nightly_recharge_status": 6,
+    "ans_charge": 0
+  },
+  {
+    "date": "2026-03-05",
+    "nightly_recharge_status": 9,
+    "heart_rate_avg": 61
+  },
+  {
+    "date": "2026-03-06",
+    "nightly_recharge_status": 0,
+    "ans_charge": null,
+    "heart_rate_avg": null,
+    "heart_rate_variability_avg": 38,
+    "breathing_rate_avg": null
+  },
+  {
+    "date": "2026-03-07"
+  },
+  {
+    "date": "not-a-date",
+    "nightly_recharge_status": 3,
+    "heart_rate_avg": 58
+  }
+]

@@ -178,7 +178,7 @@ export const createWorkoutSchema = z
     // The only writer of this schema is the batch ingest, which enforces
     // external-id stability per entry rather than at the field: a
     // schema-level refusal would fail the whole batch on one bad row.
-    // @external-id-checked-per-entry: src/app/api/workouts/batch/route.ts
+    // @external-id-checked-per-entry: src/lib/workouts/batch-ingest/entries.ts
     externalId: z.string().max(128).optional(),
     externalSourceVersion: z.string().max(64).optional(),
     metadata: z.record(z.string(), z.unknown()).optional(),

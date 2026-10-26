@@ -175,6 +175,9 @@
           "failed": "Het etiket kon niet worden gelezen. Probeer een scherpere foto."
         }
       }
+    },
+    "aiRuns": {
+      "readerBusy": "De documentlezer is met ander werk bezig. Probeer het over een minuut opnieuw."
     }
   },
   "doctorReport": {
@@ -435,7 +438,8 @@
       "autocorrelation": "sterke afhankelijkheid van de vorige dag, dus de bereiken kunnen nog te smal zijn",
       "window": "geanalyseerd van {from} tot {to}, dit kan buiten de rapportperiode vallen",
       "windowLine": "Geanalyseerd van {from} tot {to}. Deze periode kan buiten de rapportperiode vallen."
-    }
+    },
+    "screenerUnvalidated": "{label}: {count} van {total} uitkomsten zijn beantwoord in een niet wetenschappelijk gevalideerde vertaling; zie ze als een indicatie."
   },
   "errorBoundary": {
     "title": "Er is iets misgegaan",
@@ -628,7 +632,9 @@
       "title": "Ongeldige uitnodiging",
       "description": "Deze uitnodigingslink is onvolledig of verkeerd gekopieerd. Vraag de persoon die je heeft uitgenodigd om een nieuwe link.",
       "toLogin": "Naar inloggen"
-    }
+    },
+    "deletionPending": "Dit account wordt op {date} verwijderd en is tot dan vergrendeld. Een beheerder van deze server kan de verwijdering vóór die datum ongedaan maken.",
+    "deletionPendingNoDate": "Dit account staat gepland voor verwijdering en is vergrendeld. Een beheerder van deze server kan de verwijdering ongedaan maken tot die voltooid is."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -777,13 +783,13 @@
         "bmi": "kg/m²"
       }
     },
-    "keyBackupBanner": {
-      "title": "Maak een back-up van je versleutelingssleutel",
-      "body": "Zonder een kopie van de sleutel kunnen je gegevens na een herinstallatie niet worden hersteld. Het kost een minuutje.",
-      "action": "Stap openen"
-    },
     "quickAddSymptom": "Symptoom vastleggen",
-    "todayCardVisible": "Bovenste kaart tonen"
+    "todayCardVisible": "Bovenste kaart tonen",
+    "recoveryKitBanner": {
+      "title": "Bewaar je herstelkit",
+      "body": "Zonder kopieën van de sleutels die deze server gebruikt, kunnen de gegevens na een herinstallatie niet worden hersteld. Het kost een paar minuten.",
+      "action": "Kit openen"
+    }
   },
   "measurements": {
     "title": "Metingen",
@@ -3019,6 +3025,7 @@
       "refusalInjection": "Ik zie formuleringen die proberen mijn instructies te omzeilen. Ik ben de HealthLog Coach en vat alleen je eigen gezondheidsgegevens samen. Formuleer je vraag opnieuw binnen dat kader.",
       "errorBudget": "Je hebt de gebruikslimiet van de Coach voor vandaag bereikt. Het budget wordt om middernacht in jouw tijdzone vernieuwd.",
       "errorProvider": "De Coach kan op dit moment geen provider voor Inzichten bereiken. Probeer het zo opnieuw.",
+      "errorReasoningOnly": "Het model heeft alleen nagedacht en geen antwoord geschreven. Probeer het opnieuw of kies een ander model in de AI-instellingen.",
       "errorDemo": "De Coach geeft in de demo geen antwoord.",
       "errorNoProvider": "De Coach leest je vastgelegde gezondheidsgegevens en beantwoordt vragen daarover (geen medisch advies). Daarvoor heeft HealthLog een AI-provider nodig. Koppel je eigen sleutel of een lokaal model.",
       "errorNoProviderAction": "AI-provider koppelen",
@@ -5731,7 +5738,7 @@
             "passphrasePlaceholder": "Wachtzin (min. 12 tekens)",
             "passphraseHelp": "Leidt de archiefsleutel af met Argon2id en versleutelt het archief met AES-256-GCM. Sla het bestand op met de extensie .hlx.",
             "noRecoveryWarning": "Herstellen is niet mogelijk. Als je deze wachtzin kwijtraakt, kan het archief niet worden geopend. Bewaar hem op een veilige plek.",
-            "detail": "Zelfde opbouw als de wekelijkse automatische back-up. Sommige soorten gegevens worden nog niet meegenomen; het manifest van het bestand vermeldt wat erin zit.",
+            "detail": "Een draagbare kopie van je dossier om te bewaren en te lezen: waarden als gewone JSON, documenten alleen als metadata. Het is niet de wekelijkse accountkopie die deze server bewaart om een account terug te zetten, en het kan geen account op een andere server opnieuw aanmaken. Sommige soorten gegevens zitten er nog niet in; het manifest van het bestand noemt wat erin staat.",
             "contents": "Je metingen, medicatie, stemming, cyclus, labuitslagen, ziekte-episodes, allergieën, familiegeschiedenis, voedingsstoffen, trainingen, gezondheidsprofiel en eigen meetwaarden in één JSON-bestand."
           }
         },
@@ -5777,7 +5784,7 @@
             "cycleDaysFailed": "{count} cyclusdagen konden niet worden opgeslagen: {reason}"
           },
           "json": {
-            "title": "JSON-bestand",
+            "title": "Metingen en stemming (JSON)",
             "description": "Plak JSON of upload een .json-bestand met metingen en stemmingsregistraties.",
             "pasteLabel": "JSON plakken",
             "fileInputLabel": "Kies een JSON-bestand om te importeren",
@@ -5793,8 +5800,11 @@
             "readFailed": "Dat bestand kon niet worden gelezen.",
             "resultSummary": "{measurements} metingen en {moods} stemmingsregistraties geïmporteerd, {skipped} overgeslagen.",
             "resultSuccess": "{measurements} metingen en {moods} stemmingsregistraties geïmporteerd",
+            "droppedLinks": "Geïmporteerd zonder deze tags, omdat dit account er geen met die naam heeft: {keys}",
+            "keptLabels": "Dit account heeft al tags of groepen met deze sleutels onder een eigen naam, die zijn behouden: {keys}",
             "resultNothing": "Er is niets geïmporteerd. Alle {skipped} registraties zijn overgeslagen.",
-            "resultEmpty": "Dat bestand bevatte geen metingen en geen stemmingsregistraties."
+            "resultEmpty": "Dat bestand bevatte geen metingen en geen stemmingsregistraties.",
+            "limitsHint": "Tot {mb} MB en tot {rows} items per lijst. Het voegt items toe aan je dossier; het zet geen volledige back-up terug."
           },
           "csv": {
             "title": "CSV-bestand",
@@ -5940,7 +5950,7 @@
             }
           }
         },
-        "subtitle": "Exporteer je gegevens of importeer ze uit een back-up."
+        "subtitle": "Exporteer je gegevens, of importeer metingen en gegevens uit andere apps en bestanden."
       },
       "about": {
         "title": "Over deze app",
@@ -6854,7 +6864,14 @@
       "detail": "Het token wordt één keer getoond.",
       "scopeNote": "Het kan alleen nieuwe metingen aan je eigen dossier toevoegen. Het kan je gegevens niet lezen, niets wijzigen of verwijderen en geen ander token aanmaken. Metingen worden gemarkeerd als afkomstig van een extern apparaat, zodat je ze later kunt onderscheiden, en je kunt ze nog steeds zelf corrigeren.",
       "createFailed": "Het token kon niet worden aangemaakt. Probeer het opnieuw.",
-      "namePlaceholder": "Naam, bijv. Home Assistant"
+      "namePlaceholder": "Naam, bijv. Home Assistant",
+      "appleHealth": {
+        "label": "Metingen naar Apple Health schrijven",
+        "createHint": "De HealthLog-app op je iPhone zet de metingen van dit token dan in Apple Health. Je kunt dit later wijzigen in de tokenlijst hieronder.",
+        "toggleAria": "Metingen van {name} naar Apple Health schrijven",
+        "updateFailed": "De Apple Health-instelling kon niet worden gewijzigd. Probeer het opnieuw.",
+        "unattributed": "Metingen die zijn verstuurd voordat deze instelling bestond, kunnen niet aan een token worden gekoppeld en blijven daarom buiten Apple Health."
+      }
     },
     "workoutsToken": {
       "title": "Trainingstokens",
@@ -6911,10 +6928,12 @@
     "deleteAccountCardDescription": "Verwijdert je account samen met passkeys, auditlogboek en sessies.",
     "deleteAccountCta": "Account verwijderen",
     "deleteAccountConfirmTitle": "Account definitief verwijderen?",
-    "deleteAccountConfirmDescription": "Je account, alle gezondheidsgegevens, passkeys, sessies en auditregistraties worden definitief verwijderd. Je wordt daarna direct uitgelogd.",
+    "deleteAccountConfirmTitleGrace": "Je account verwijderen?",
+    "deleteAccountConfirmDescription": "Je account, alle gezondheidsgegevens, passkeys, sessies en auditregistraties worden definitief verwijderd. Je wordt daarna direct uitgelogd. Kopieën in de back-ups van deze server verlopen na hun bewaartermijn.",
     "deleteAccountSuccess": "Account verwijderd. Je wordt uitgelogd.",
     "deleteAccountFailed": "Account kon niet worden verwijderd",
     "deleteAccountFinal": "Definitief verwijderen",
+    "deleteAccountFinalGrace": "Account verwijderen",
     "saved": "Opgeslagen",
     "savingError": "Fout bij opslaan",
     "about": {
@@ -7321,13 +7340,16 @@
         "coach": "Coach-gesprekken: {days} dagen bewaard",
         "audit": "Logboek van beveiligingsactiviteit: {days} dagen bewaard",
         "delivery": "Logboek van bezorgde meldingen: {days} dagen bewaard",
-        "unavailable": "Details over de bewaartermijn zijn op dit moment niet beschikbaar."
+        "unavailable": "Details over de bewaartermijn zijn op dit moment niet beschikbaar.",
+        "accountDeletion": "Je account, een beheerd profiel of alle gegevens verwijderen: voltooid na {days} dagen",
+        "accountDeletionImmediate": "Je account, een beheerd profiel of alle gegevens verwijderen: meteen voltooid"
       },
       "delete": {
         "title": "Verwijderen of wissen",
         "description": "Verwijder je account volledig, of wis je gezondheidsgegevens en behoud je account.",
-        "backupLag": "Bij verwijderen worden je gegevens direct gewist. Als deze server versleutelde back-ups buiten de host bewaart, worden de kopieën van je gegevens direct daarna uit die opslag verwijderd, of bij de volgende nachtelijke run als de opslag niet bereikbaar is.",
-        "openAdvanced": "Verwijderen of wissen"
+        "openAdvanced": "Verwijderen of wissen",
+        "immediateNotice": "Bij verwijderen worden je gegevens direct gewist. Als deze server versleutelde back-ups buiten de host bewaart, worden de kopieën van je gegevens direct daarna uit die opslag verwijderd, of bij de volgende nachtelijke run als de opslag niet bereikbaar is. Kopieën in de back-ups van deze server verlopen na hun bewaartermijn.",
+        "graceNotice": "Als je je account verwijdert, wordt het meteen vergrendeld en na {days} dagen gewist, samen met elke kopie die deze server ervan bewaart, ook versleutelde kopieën buiten de server. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken. Alle gegevens verwijderen werkt net zo: een kopie van het dossier wordt {days} dagen bewaard, zodat een beheerder die kan terugzetten. Kopieën in de back-ups van deze server verlopen na hun bewaartermijn."
       },
       "posture": {
         "title": "Privacyniveau",
@@ -7633,7 +7655,13 @@
       "off": "Uit",
       "change": "Wijzigen in Modules"
     },
-    "timezoneUseDevice": "Tijdzone van dit apparaat gebruiken ({zone})"
+    "timezoneUseDevice": "Tijdzone van dit apparaat gebruiken ({zone})",
+    "dangerZoneConfirmDescriptionGrace": "Hiermee wordt alles in je dossier verwijderd: metingen, medicatie, stemmingsregistraties, labuitslagen, cyclusregistraties, documenten, AI-gesprekken en alle koppelingen, samen met alles wat daarvan is afgeleid en alles wat je eerder hebt verwijderd. Deellinks die je aan een arts hebt gegeven, werken direct niet meer. Je account blijft bestaan, net als de inloggegevens waarmee je inlogt en weergave-instellingen zoals taal, tijdzone en eenheden. Een kopie van je dossier wordt {days} dagen bewaard, zodat een beheerder van deze server die tot dan kan terugzetten. Daarna is de verwijdering definitief.",
+    "deleteAccountCardDetailGrace": "Je account wordt meteen vergrendeld en na {days} dagen gewist. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken.",
+    "deleteAccountConfirmDescriptionGrace": "Je wordt uitgelogd en je account wordt meteen vergrendeld. Na {days} dagen wordt het definitief gewist, met alle gezondheidsgegevens, passkeys, sessies en auditregels. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken. Kopieën in de back-ups van deze server verlopen na hun bewaartermijn.",
+    "deleteAccountScheduled": "Je account is vergrendeld en wordt op {date} gewist. Je wordt uitgelogd.",
+    "dangerZoneSuccessGrace": "Je gezondheidsdossier is verwijderd. Een beheerder van deze server kan het tot {date} terugzetten.",
+    "dangerZoneRestoreLimits": "Ook toegang eindigt: wat je met anderen deelt, wat anderen met jou delen en elke rol als verzorger. Terugzetten brengt het dossier terug zoals het nu is. Wat na het verwijderen is toegevoegd, wordt vervangen, en koppelingen, delen, verzorgersrollen en deellinks komen niet terug; die moeten opnieuw worden ingesteld."
   },
   "admin": {
     "title": "Beheer",
@@ -8069,7 +8097,15 @@
         "cannotLogoutSelf": "Je kunt jezelf niet geforceerd uitloggen",
         "emptyTitle": "Geen gebruikers in deze weergave",
         "emptyDescription": "Er zijn geen gebruikers die aan het huidige filter voldoen.",
-        "emptyResetFilter": "Alle gebruikers tonen"
+        "emptyResetFilter": "Alle gebruikers tonen",
+        "deletionPending": "Verwijdering op {date}",
+        "deletionPendingNoDate": "Verwijdering gepland",
+        "undoDeletion": "Verwijdering ongedaan maken",
+        "undoDeletionTitle": "Verwijdering van {name} ongedaan maken?",
+        "undoDeletionBody": "{name} heeft gevraagd dit account te verwijderen; het wordt gewist als de bedenktijd afloopt. Ongedaan maken houdt het account en alles erin zoals het was. {name} kan weer inloggen, maar API-tokens, deellinks en vertrouwde apparaten blijven ingetrokken en moeten opnieuw worden ingesteld.",
+        "undoDeletionBodyGuardian": "Een verzorger heeft het beheerde profiel {name} verwijderd; het wordt gewist als de bedenktijd afloopt. Ongedaan maken houdt het profiel en alles erin zoals het was, en de verzorgers kunnen het weer bereiken. De deellinks en tokens blijven ingetrokken en moeten opnieuw worden ingesteld.",
+        "undoDeletionDone": "Verwijdering van {name} ongedaan gemaakt",
+        "undoDeletionFailed": "Verwijdering kon niet ongedaan worden gemaakt"
       },
       "invites": {
         "title": "Uitnodigingen",
@@ -8131,8 +8167,8 @@
       },
       "backups": {
         "title": "Back-ups",
-        "subtitle": "Wekelijkse snapshots van de gegevens per gebruiker, opgeslagen in PostgreSQL.",
-        "description": "Elke gebruiker krijgt per back-uptype één doorlopende snapshot. De getoonde grootte is die van de versleutelde blob. Bij downloaden wordt de snapshot ontsleuteld voor de beheerder die erom vraagt; de versleutelde gegevens blijven in de database.",
+        "subtitle": "Accountkopieën in de database van deze server, om één account op deze server terug te zetten.",
+        "description": "Elk account heeft één wekelijkse kopie, die elke zondag wordt vervangen, plus kopieën die hier zijn geüpload en de kopie die vóór 'Alle gegevens verwijderen' wordt gemaakt. Een kopie zet een bestaand account op deze server terug. Een verloren server kan ze niet herbouwen: daarvoor zijn een databasedump en de encryptiesleutels nodig. De groottes gelden voor de versleutelde kopie. Downloaden ontsleutelt die voor de beheerder die erom vraagt; de versleutelde tekst blijft in de database.",
         "runNow": "Nu back-up maken",
         "runEnqueued": "Back-uptaak in de wachtrij gezet",
         "runFailed": "Back-up in de wachtrij zetten mislukt",
@@ -8142,12 +8178,11 @@
         "emptyDescription": "Back-ups worden automatisch elke zondag om 03:00 gemaakt. Je kunt er ook nu een starten om de eerste snapshot te maken.",
         "colUser": "Gebruiker",
         "colType": "Type",
-        "typeWeeklyAuto": "Wekelijks (automatisch)",
+        "typeWeeklyAuto": "Wekelijkse accountkopie",
         "typeManual": "Handmatig",
         "colSize": "Grootte",
         "colCreatedAt": "Laatste snapshot",
         "colActions": "Acties",
-        "retentionLabel": "Bewaartermijn: {days} dagen",
         "scheduleStaleTitle": "De wekelijkse back-up is gestopt",
         "scheduleStaleDescription": "De nieuwste geplande kopie is {days} dagen oud. Een goed werkende wekelijkse run laat nooit een kopie ouder worden dan {threshold} dagen.",
         "scheduleFailedTitle": "De laatste geplande back-uprun is mislukt",
@@ -8165,7 +8200,7 @@
         "downloadFailed": "Downloaden mislukt",
         "downloadStarted": "Download gestart",
         "uploadTitle": "Back-up uploaden",
-        "uploadDescription": "Controleer een back-upbestand en sla het op als handmatige snapshot. Terugzetten is een aparte stap.",
+        "uploadDescription": "Controleert een accountkopie en bewaart die naast de kopieën van deze server. Het account waar ze bij hoort, moet op deze server bestaan. Terugzetten is een aparte stap.",
         "uploadButton": "Bestand uploaden",
         "uploadHelp": "Een HealthLog-back-up als .json of .json.gz. Het bestand wordt vóór het uploaden gecomprimeerd; gecomprimeerd mag het maximaal 512 MB zijn.",
         "uploadSuccess": "Back-up geüpload ({count} records)",
@@ -8225,7 +8260,7 @@
         "restoreSkippedAccountSetting": "Accountinstelling",
         "restoreMissingTitle": "Terugzetten geweigerd: het bestand is onvolledig",
         "restoreMissingDescription": "Volgens het eigen manifest van het bestand bevat het de onderstaande sectie, maar die ontbreekt. Er is niets gewijzigd: terugzetten vervangt een complete categorie records, dus het terugzetten van een sectie die niet in het bestand staat, zou die categorie hebben leeggemaakt.",
-        "restoreMissingRemedy": "Gebruik een snapshot voor noodherstel, of exporteer het account opnieuw en upload het nieuwe bestand. Een sectie die het manifest als weggelaten aanmerkt, is iets anders en wordt normaal teruggezet.",
+        "restoreMissingRemedy": "Gebruik een van de accountkopieën van deze server of een kopie buiten de server, of exporteer het account opnieuw en upload het nieuwe bestand. Een sectie die het manifest als weggelaten opgeeft, is iets anders en wordt gewoon teruggezet.",
         "restoreMissingDocuments": "Documenten",
         "restoreMissingWorkouts": "Trainingen",
         "restoreMissingMentalHealth": "Vragenlijsten mentale gezondheid",
@@ -8255,6 +8290,9 @@
         "restoreActive": "Er wordt al een back-up van dit account teruggezet. Wacht tot dat klaar is.",
         "restoreJobQueuedTitle": "Terugzetten van {username} wacht op start",
         "restoreJobQueuedNote": "Het begint zodra de achtergrondworker het oppakt.",
+        "restoreJobWaitingBackupNote": "Wacht op de back-up die nu op de server draait. Terugzetten draait nooit naast een back-up en begint ongeveer een minuut nadat die klaar is.",
+        "restoreJobWaitingBusyNote": "Wacht tot een grote taak op de server klaar is, zoals een import of een nachtelijke run. Het begint ongeveer een minuut daarna.",
+        "restoreJobQueuedSince": "In de wachtrij sinds {when}.",
         "restoreJobRunningTitle": "{username} wordt teruggezet",
         "restoreJobRunningNote": "Het account toont de huidige gegevens tot het terugzetten klaar is. Je kunt deze pagina verlaten; het terugzetten gaat op de server verder.",
         "restoreJobResumed": "Opnieuw gestart nadat de server is herstart.",
@@ -8275,7 +8313,7 @@
         "restoreFailureOwnerMismatch": "Het bestand in de back-up hoort bij een ander account dan de back-uprij.",
         "restoreFailureOwnerMissing": "Het account waar deze back-up bij hoort bestaat niet meer.",
         "restoreFailureSectionMissing": "Het bestand is onvolledig: het manifest noemt een sectie die er niet in staat.",
-        "restoreFailureDocument": "Het bestand bevat documenten zonder hun inhoud, zoals bij een overdraagbare export. Gebruik een back-up voor noodherstel.",
+        "restoreFailureDocument": "Het bestand bevat documenten zonder hun inhoud, zoals een draagbare export. Gebruik in plaats daarvan een van de accountkopieën van deze server of een kopie buiten de server.",
         "restoreFailureTimeBudget": "Deze back-up is te groot om binnen de tijdslimiet van de achtergrondtaak terug te zetten.",
         "restoreFailureTransaction": "De database weigerde het terugzetten halverwege, dus alles is teruggedraaid. In het serverlog staat de fout.",
         "restoreFailureCauseTimeout": "Het terugzetten duurde langer dan de database toestond, dus alles is teruggedraaid. Als de databasehost druk was, start het terugzetten dan opnieuw wanneer het rustiger is. In het serverlog staat de stap.",
@@ -8296,7 +8334,32 @@
         "restoreSkippedMoodLabelCiphertext": "Stemmingslabel of groepsnaam versleuteld met een sleutel die deze server niet heeft (behouden zonder naam)",
         "restoreSkippedVisitCiphertext": "Tekst van bezoek of zorgverlener versleuteld met een sleutel die deze server niet heeft (behouden zonder)",
         "restoreSkippedVaccinationCiphertext": "Vaccinatienotitie versleuteld met een sleutel die deze server niet heeft (dosis behouden zonder)",
-        "restoreSkippedEnvironmentLocationCiphertext": "Locatie van een omgevingsperiode of -dag versleuteld met een sleutel die deze server niet heeft (versleuteld behouden, die dagen worden niet bijgewerkt)"
+        "restoreSkippedEnvironmentLocationCiphertext": "Locatie van een omgevingsperiode of -dag versleuteld met een sleutel die deze server niet heeft (versleuteld behouden, die dagen worden niet bijgewerkt)",
+        "typePreWipe": "Voor het verwijderen van alle gegevens",
+        "retentionNote": "De wekelijkse kopie wordt elke zondag vervangen. Een kopie die vóór 'Alle gegevens verwijderen' is gemaakt, wordt na {days} dagen verwijderd. Geüploade kopieën blijven tot hun account gewist wordt.",
+        "retentionNoteNoGrace": "De wekelijkse kopie wordt elke zondag vervangen. Geüploade kopieën blijven tot hun account gewist wordt.",
+        "database": {
+          "title": "Databasedump",
+          "lastGood": "Laatste geldige dump {when}, {size}, {where}.",
+          "whereBoth": "bewaard op deze server en extern",
+          "whereLocal": "bewaard op deze server",
+          "whereOffhost": "alleen extern",
+          "none": "Nog geen databasedump. De eerste wordt vannacht gemaakt.",
+          "failedTitle": "De laatste databasedump is mislukt",
+          "failedDescription": "{when}: {reason}",
+          "disabled": "Databasedumps staan uit (DB_BACKUP_ENABLED=false). Maak op een andere manier een back-up van de database.",
+          "noDirectoryOffhost": "Deze server kan niet schrijven naar {dir}, dus dumps gaan alleen extern en hier wordt er geen bewaard. Koppel het back-upvolume.",
+          "noDirectory": "Deze server kan niet schrijven naar {dir} en er is geen externe opslag ingesteld, dus er kan geen databasedump worden gemaakt. Koppel het back-upvolume.",
+          "retentionLocal": "Verwijderde accounts blijven in de dumps tot die verlopen: op deze server blijven de nieuwste {nights} nachtelijke dumps bewaard, en de dump van vóór de laatste update blijft tot de volgende update.",
+          "retentionOffhost": "De levenscyclusregel van de bucket verwijdert externe kopieën na {days} dagen.",
+          "retentionOffhostMissing": "Geen levenscyclusregel in de bucket geldt voor database/, dus dumps daar, en de verwijderde accounts erin, worden nooit verwijderd. Voeg een regel voor dat voorvoegsel toe.",
+          "notPersistentOffhost": "{dir} staat niet op blijvende opslag (in de container in plaats van op een gekoppeld volume, of in het geheugen), dus een dump die daar wordt geschreven gaat bij de volgende update verloren. Dumps gaan alleen extern: hier wordt er geen bewaard en vóór een migratie wordt er geen gemaakt. Koppel het back-upvolume.",
+          "notPersistent": "{dir} staat niet op blijvende opslag (in de container in plaats van op een gekoppeld volume, of in het geheugen) en er is geen externe bucket ingesteld, dus nergens wordt een databasedump bewaard. Koppel het back-upvolume.",
+          "offhostFailedTitle": "De nieuwste databasedump is niet in de externe bucket aangekomen",
+          "offhostLastUpload": "De nieuwste dump in de bucket is van {when}.",
+          "offhostNeverUploaded": "Er is nog geen databasedump in de bucket aangekomen."
+        },
+        "restorePreWipeLimits": "Deze kopie is gemaakt voordat de gegevens van het account werden verwijderd, en terugzetten maakt dat verwijderen ongedaan voor zover een kopie dat kan: wat het account sindsdien heeft toegevoegd, wordt vervangen, en koppelingen, delen, verzorgerstoegang en deellinks komen niet terug."
       },
       "danger-zone": {
         "title": "Gevarenzone",
@@ -8362,7 +8425,10 @@
         "columnsHide": "Tabel verbergen",
         "columnsShowAll": "Alle {count} kolommen tonen",
         "columnsShowWithRows": "Alleen kolommen met rijen",
-        "columnsNoneWithRows": "Nog geen enkele versleutelde kolom bevat rijen."
+        "columnsNoneWithRows": "Nog geen enkele versleutelde kolom bevat rijen.",
+        "backupsDumpLocalLine": "Sleutel {key}: {count} databasedumps op deze server zijn onder deze sleutel geschreven; hij is nodig tot de bewaartermijn ze verwijdert.",
+        "backupsDumpOffhostLine": "Sleutel {key}: de nieuwste databasedump onder deze sleutel is op {when} in de bucket gezet; daar nodig tot {until}",
+        "backupsDumpOffhostLineUnknown": "Sleutel {key}: de nieuwste databasedump onder deze sleutel is op {when} in de bucket gezet. Hoe lang de bucket database/ bewaart, is onbekend, dus bewaar de sleutel tot je zeker weet dat die dump weg is."
       },
       "maintenance": {
         "title": "Onderhoud van de metingentabel",
@@ -8492,47 +8558,6 @@
       "title": "Dit deel van de pagina kon niet worden weergegeven",
       "description": "De rest van de pagina werkt nog; probeer het opnieuw of herlaad de pagina als het blijft mislukken."
     },
-    "keyBackup": {
-      "title": "Maak een back-up van je versleutelingssleutel",
-      "description": "Zonder een kopie van deze sleutel kunnen je versleutelde gegevens en de back-ups van deze server niet meer worden gelezen.",
-      "loading": "Status van de sleutelback-up laden…",
-      "loadError": "De status van de sleutelback-up kon niet worden geladen.",
-      "badgeDue": "Te doen",
-      "badgeDone": "Back-up gemaakt",
-      "keyId": "Actieve sleutel-ID",
-      "fingerprint": "Vingerafdruk",
-      "whatIsLost": "Bewaar een kopie van de sleutel ergens buiten deze server, bijvoorbeeld in een wachtwoordmanager. Als de server opnieuw wordt geïnstalleerd met een andere sleutel, weigert HealthLog te starten tot de oorspronkelijke sleutel terug is.",
-      "fingerprintHint": "De vingerafdruk bestaat uit de eerste 12 tekens van de SHA-256-hash van de sleutel. Hij identificeert de sleutel zonder deze prijs te geven, zodat je hem met je kopie kunt vergelijken.",
-      "checkLabel": "Mijn kopie controleren",
-      "checkButton": "Controleren",
-      "checkNote": "De sleutel die je plakt, wordt vergeleken met de actieve sleutel en daarna weggegooid. Hij wordt nooit opgeslagen of gelogd.",
-      "checkInsecureNote": "Deze pagina wordt niet via https:// geserveerd, dus de sleutel die je plakt gaat onversleuteld over het netwerk, net als je wachtwoord. Hij wordt vergeleken en weggegooid, nooit opgeslagen of gelogd.",
-      "checkMatches": "Je kopie komt overeen met de actieve sleutel.",
-      "checkNoMatch": "Je kopie komt niet overeen met de actieve sleutel. Controleer of je de hele waarde hebt gekopieerd.",
-      "checkFailed": "De controle is mislukt.",
-      "confirmButton": "Ik heb een back-up van deze sleutel gemaakt",
-      "confirmed": "Sleutelback-up bevestigd.",
-      "confirmFailed": "De bevestiging kon niet worden opgeslagen.",
-      "stale": "De sleutel van de server is gewijzigd sinds deze pagina is geladen. Controleer de nieuwe sleutel-ID en vingerafdruk en bevestig daarna opnieuw.",
-      "confirmedAt": "Bevestigd op {date}.",
-      "confirmedAtBy": "Bevestigd op {date} door {who}.",
-      "dueAgain": "Er is een back-up bevestigd voor sleutel {keyId}, maar de server gebruikt nu een andere sleutel. Maak een back-up van de huidige sleutel.",
-      "tileLabel": "Back-up van versleutelingssleutel",
-      "tileDue": "Niet bevestigd",
-      "tileDone": "Bevestigd",
-      "platform": {
-        "composeLabel": "Compose",
-        "composeWhere": "De sleutel is ENCRYPTION_KEY (of ENCRYPTION_KEYS) in het .env-bestand naast docker-compose.yml.",
-        "truenasLabel": "TrueNAS",
-        "truenasWhere": "Open Apps, selecteer HealthLog, kies Edit en kopieer ENCRYPTION_KEY uit de omgevingsinstellingen.",
-        "coolifyLabel": "Coolify",
-        "coolifyWhere": "Open de applicatie in Coolify en kopieer ENCRYPTION_KEY uit de Environment Variables.",
-        "unraidLabel": "Unraid",
-        "unraidWhere": "Bewerk op het tabblad Docker de HealthLog-container en kopieer ENCRYPTION_KEY uit de template, of uit het .env-bestand van je Compose Manager-stack.",
-        "portainerLabel": "Portainer",
-        "portainerWhere": "Open de HealthLog-stack in Portainer en kopieer ENCRYPTION_KEY uit de omgevingsvariabelen."
-      }
-    },
     "keyMismatch": {
       "title": "HealthLog kan zijn gegevens niet openen",
       "body": "De versleutelingssleutel waarmee deze server is gestart, is niet de sleutel waarmee de database is geschreven. Om je gegevens te beschermen, levert HealthLog niets uit totdat dit is opgelost.",
@@ -8563,6 +8588,185 @@
       "defaultAboveCeiling": "Het standaardniveau kan niet hoger zijn dan het hoogste niveau.",
       "gapLabel": "Uren tussen het vernieuwen van kaarten na een synchronisatie (Standaard)",
       "gapHint": "Hele uren van 1 tot 48. Laat leeg om AI_SYNC_REGEN_GAP_HOURS te gebruiken, anders 6. Nu van kracht: {hours} u."
+    },
+    "recoveryKit": {
+      "title": "Herstelkit",
+      "description": "Elke sleutel die nodig is om deze server terug te zetten, met ID en vingerafdruk.",
+      "intro": "Bewaar van elke sleutel hieronder een kopie buiten deze server, bijvoorbeeld in een wachtwoordmanager. Zonder die kopieën kunnen een databasedump en een back-upkopie niet meer worden gelezen, en HealthLog weigert te starten als een benodigde sleutel ontbreekt.",
+      "loading": "Herstelkit laden…",
+      "loadError": "De herstelkit kon niet worden geladen.",
+      "badgeDue": "Te doen",
+      "badgeDone": "Bewaard",
+      "keyId": "ID",
+      "fingerprint": "Vingerafdruk",
+      "noFingerprint": "Niet op deze server",
+      "kind": {
+        "application": "Applicatiesleutel {id}",
+        "backup": "Sleutel voor externe back-ups",
+        "backupPrevious": "Vorige sleutel voor externe back-ups",
+        "token": "Tokensleutel"
+      },
+      "need": {
+        "active": "Versleutelt nieuwe gegevens.",
+        "configured": "Staat op deze server.",
+        "storedCopies": "Nodig voor {count} opgeslagen kopieën.",
+        "offhostUntil": "Nodig voor externe kopieën tot {date}.",
+        "offhostUnknown": "Nodig voor externe kopieën zolang de bucket ze bewaart.",
+        "backupActive": "Verzegelt elke nieuwe externe kopie.",
+        "backupPrevious": "Opent externe kopieën die vóór de laatste sleutelwissel zijn geschreven.",
+        "token": "Ondertekent sessies, tokens en deellinks. Zonder deze sleutel wordt iedereen afgemeld, maar gaan er geen gegevens verloren.",
+        "localDumps": "Nodig voor {count} databasedumps op deze server.",
+        "offhostDumpsUntil": "Nodig voor externe databasedumps tot {date}.",
+        "offhostDumpsUnknown": "Nodig voor externe databasedumps zolang de bucket ze bewaart."
+      },
+      "source": "Ingesteld in {variable}.",
+      "status": {
+        "confirmed": "Bewaard",
+        "new": "Nog niet bewaard",
+        "notConfigured": "Niet op deze server",
+        "unreadable": "Geen geldige sleutel"
+      },
+      "notConfiguredHint": "Een back-up heeft deze sleutel nog nodig, maar deze server heeft hem niet. Alleen een kopie die je elders bewaart, kan die back-ups lezen. Bevestig de kit zodra je die kopie hebt.",
+      "unreadableHint": "De variabele is ingesteld, maar bevat geen geldige sleutel. Los dat op voordat je op de externe kopieën vertrouwt.",
+      "fingerprintHint": "De vingerafdruk bestaat uit de eerste 12 tekens van de SHA-256-hash van een sleutel. Hij identificeert de sleutel zonder deze prijs te geven, zodat je hem met je kopie kunt vergelijken.",
+      "whereTitle": "Waar de sleutels zijn ingesteld",
+      "platform": {
+        "composeLabel": "Compose",
+        "composeWhere": "De sleutels staan in het .env-bestand naast docker-compose.yml: ENCRYPTION_KEY of ENCRYPTION_KEYS, API_TOKEN_HMAC_KEY en, bij externe kopieën, BACKUP_ENCRYPTION_KEY.",
+        "truenasLabel": "TrueNAS",
+        "truenasWhere": "Open Apps, selecteer HealthLog en kies Edit. De sleutels staan onder HealthLog Configuration; bij een app die via YAML is geïnstalleerd, zijn het ENCRYPTION_KEY, API_TOKEN_HMAC_KEY en BACKUP_ENCRYPTION_KEY in de omgevingsinstellingen.",
+        "coolifyLabel": "Coolify",
+        "coolifyWhere": "Open de applicatie in Coolify en kopieer ENCRYPTION_KEY, API_TOKEN_HMAC_KEY en BACKUP_ENCRYPTION_KEY uit de Environment Variables.",
+        "unraidLabel": "Unraid",
+        "unraidWhere": "Bewerk op het tabblad Docker de HealthLog-container en kopieer ENCRYPTION_KEY, API_TOKEN_HMAC_KEY en BACKUP_ENCRYPTION_KEY uit de template, of uit het .env-bestand van je Compose Manager-stack.",
+        "portainerLabel": "Portainer",
+        "portainerWhere": "Open de HealthLog-stack in Portainer en kopieer ENCRYPTION_KEY, API_TOKEN_HMAC_KEY en BACKUP_ENCRYPTION_KEY uit de omgevingsvariabelen."
+      },
+      "restoreTitle": "Deze server terugzetten",
+      "restoreBody": "Installeer HealthLog met dezelfde sleutels, zet de nieuwste databasedump terug in een lege database en start dan de app. De handleiding loopt elke stap door.",
+      "restoreLink": "Handleiding voor noodherstel",
+      "checkLabel": "Mijn kopie controleren",
+      "checkKeyLabel": "Te controleren sleutel",
+      "checkValueLabel": "Jouw kopie van de sleutel",
+      "checkButton": "Controleren",
+      "checkNote": "De sleutel die je plakt, wordt vergeleken met die op deze server en daarna weggegooid. Hij wordt nooit opgeslagen of gelogd.",
+      "checkInsecureNote": "Deze pagina wordt niet via https:// geserveerd, dus de sleutel die je plakt gaat onversleuteld over het netwerk, net als je wachtwoord. Hij wordt vergeleken en weggegooid, nooit opgeslagen of gelogd.",
+      "checkMatches": "Je kopie komt overeen met deze sleutel.",
+      "checkNoMatch": "Je kopie komt niet overeen met deze sleutel. Controleer of je de hele waarde hebt gekopieerd.",
+      "checkFailed": "De controle is mislukt.",
+      "confirmButton": "Ik heb een kopie van elke sleutel",
+      "confirmed": "Herstelkit bevestigd.",
+      "confirmFailed": "De bevestiging kon niet worden opgeslagen.",
+      "stale": "De kit is gewijzigd sinds deze pagina is geladen. Controleer de sleutels die er nu in staan en bevestig daarna opnieuw.",
+      "confirmedAt": "Bevestigd op {date}.",
+      "confirmedAtBy": "Bevestigd op {date} door {who}.",
+      "dueAgain": "De kit is bevestigd op {date}. Hij vermeldt nu ook {keys}, die die bevestiging niet dekte. Bewaar van elk een kopie en bevestig opnieuw."
+    },
+    "recoveryReadiness": {
+      "title": "Herstelbaarheid",
+      "description": "Of deze server na verlies weer op te bouwen is, beoordeeld op basis van elke back-up die hij maakt.",
+      "loading": "Back-ups controleren…",
+      "loadError": "De herstelbaarheid kon niet worden geladen.",
+      "state": {
+        "ok": "Gereed",
+        "attention": "Aandacht nodig",
+        "failing": "In gevaar"
+      },
+      "signal": {
+        "database_dump": "Databasedump",
+        "weekly_copy": "Wekelijkse accountkopieën",
+        "offhost_copies": "Externe kopieën",
+        "restore_drill": "Hersteltest",
+        "offhost_setup": "Externe back-up",
+        "recovery_kit": "Herstelkit",
+        "dump_retention": "Dumps in de bucket"
+      },
+      "at": {
+        "database_dump": "Nieuwste dump: {date}",
+        "weekly_copy": "Oudste accountkopie: {date}",
+        "offhost_copies": "Oudste externe kopie: {date}",
+        "restore_drill": "Laatste test: {date}",
+        "recovery_kit": "Bevestigd: {date}"
+      },
+      "dueBy": "Uiterlijk {date}",
+      "fix": {
+        "database_dump": "Back-ups openen",
+        "weekly_copy": "Back-ups openen",
+        "offhost_copies": "Back-ups openen",
+        "restore_drill": "Back-ups openen",
+        "offhost_setup": "Back-ups openen",
+        "recovery_kit": "Kit openen",
+        "dump_retention": "Back-ups openen"
+      },
+      "reason": {
+        "database_dump": {
+          "not_available": "Deze versie plant geen databasedump in.",
+          "disabled": "De geplande databasedump staat uit, dus geen enkele kopie kan deze server opnieuw opbouwen. Verwijder DB_BACKUP_ENABLED of zet het op true en herstart HealthLog om hem weer aan te zetten.",
+          "unreadable": "De status van de databasedump kon niet worden gelezen.",
+          "never_succeeded": "Er is nog geen databasedump gelukt, en de laatste poging is mislukt.",
+          "never_ran": "In de {hours} uur sinds dumps zijn ingeschakeld, is er geen databasedump geschreven.",
+          "first_pending": "De eerste databasedump is nog niet uitgevoerd.",
+          "stale": "De nieuwste databasedump is {hours} uur oud.",
+          "last_failed": "De laatste databasedump is mislukt. De dump daarvoor is nog recent.",
+          "fresh": "De nieuwste databasedump is recent.",
+          "nowhere_to_write": "De dumpmap {directory} is niet beschrijfbaar en er is geen externe bucket ingesteld, dus er kan geen dump worden bewaard.",
+          "not_persistent": "De dumpmap {directory} staat niet op blijvende opslag en er is geen externe bucket ingesteld, dus elke dump gaat bij de volgende update verloren. Koppel het back-upvolume.",
+          "fresh_offhost_only": "De nieuwste databasedump is recent en staat in de externe bucket. Op deze server wordt er geen bewaard, omdat {directory} niet op blijvende opslag staat, en vóór een migratie wordt er geen gemaakt.",
+          "offhost_failed": "De nieuwste databasedump staat op deze server, maar het uploaden naar de externe bucket is mislukt.",
+          "offhost_stale": "Al {hours} uur is er geen databasedump in de externe bucket aangekomen: het uploaden blijft mislukken. Gaat deze server verloren, dan is er geen recente dump om hem mee te herstellen.",
+          "offhost_never": "Er is nog nooit een databasedump in de externe bucket aangekomen: het uploaden mislukt. Gaat deze server verloren, dan is er geen dump om hem mee te herstellen."
+        },
+        "weekly_copy": {
+          "no_accounts": "Er zijn nog geen accounts om te kopiëren.",
+          "stale": "De oudste wekelijkse kopie is {days} dagen oud. Achterlopende accounts: {accounts}.",
+          "never": "Een account heeft al {days} dagen geen wekelijkse kopie. Achterlopende accounts: {accounts}.",
+          "first_pending": "De eerste wekelijkse kopie wordt vroeg op zondag gemaakt.",
+          "fresh": "Elk account heeft een kopie van de afgelopen week."
+        },
+        "offhost_copies": {
+          "not_configured": "Er is geen externe bucket ingesteld.",
+          "stale": "Externe kopieën lopen meer dan twee nachten achter. Achterlopende accounts: {accounts}.",
+          "first_pending": "De nachtelijke run voor externe kopieën heeft nog geen enkel account bereikt.",
+          "fresh": "Elk account heeft een recente kopie in de externe bucket."
+        },
+        "restore_drill": {
+          "not_configured": "De test leest de externe bucket, en die is niet ingesteld.",
+          "not_run_yet": "De maandelijkse hersteltest is nog niet uitgevoerd.",
+          "failed": "De laatste hersteltest is mislukt: {failed} van {checked} kopieën konden niet worden teruggelezen.",
+          "failed_run": "De laatste hersteltest kon niet worden afgerond.",
+          "passed": "De laatste hersteltest heeft {checked} kopieën teruggelezen.",
+          "nothing_checked": "De laatste hersteltest stopte op zijn tijdslimiet voordat hij ook maar één kopie had teruggelezen, en heeft dus niets aangetoond."
+        },
+        "offhost_setup": {
+          "configured": "Kopieën verlaten deze server elke nacht.",
+          "no_admin": "Er is nog geen beheerdersaccount.",
+          "not_configured": "Er is geen externe bucket ingesteld, dus elke kopie staat alleen op deze server.",
+          "not_configured_grace": "Er is nog geen externe bucket ingesteld, dus elke kopie staat alleen op deze server."
+        },
+        "recovery_kit": {
+          "confirmed": "Van elke sleutel die een herstel nodig heeft, wordt een kopie bewaard.",
+          "out_of_date": "De herstelkit vermeldt nu ook {keys}, die de laatste bevestiging niet dekte. Er is niets kapot: bewaar een kopie en bevestig de kit opnieuw.",
+          "no_admin": "Er is nog geen beheerdersaccount.",
+          "not_confirmed": "Niemand heeft een kopie bevestigd van de sleutels die een herstel nodig heeft: {keys}.",
+          "not_confirmed_grace": "Bewaar een kopie van de sleutels die een herstel nodig heeft: {keys}."
+        },
+        "dump_retention": {
+          "not_configured": "Er is geen externe bucket ingesteld.",
+          "no_offhost_dumps": "Er gaat geen databasedump naar de bucket.",
+          "missing": "Geen levenscyclusregel in de bucket geldt voor database/, dus dumps daar, en de verwijderde accounts erin, worden nooit verwijderd. Voeg een regel voor dat voorvoegsel toe.",
+          "configured": "De bucket verwijdert dumps na {days} dagen.",
+          "unknown": "De bucket zegt niet of een regel oude dumps verwijdert. Controleer of een levenscyclusregel database/ dekt."
+        }
+      },
+      "recovered": {
+        "database_dump": "De databasedump is weer recent.",
+        "weekly_copy": "Elk account heeft weer een recente wekelijkse kopie.",
+        "offhost_copies": "Elk account heeft weer een recente externe kopie.",
+        "restore_drill": "De hersteltest is weer geslaagd.",
+        "offhost_setup": "Externe kopieën zijn nu ingesteld.",
+        "recovery_kit": "De herstelkit is weer bevestigd.",
+        "dump_retention": "Een levenscyclusregel in de bucket dekt nu de databasedumps."
+      }
     }
   },
   "achievements": {
@@ -8876,7 +9080,10 @@
       "offlineGeoUnavailableTitle": "Offline geolocatiedatabases niet geladen",
       "offlineGeoUnavailableBody": "HealthLog bepaalt inloglocaties via de online opzoekdienst op {host}, dus elk IP-adres waarmee wordt ingelogd, verlaat deze server. Wil je ze lokaal bepalen, download dan de databases GeoLite2-City en GeoLite2-ASN met een gratis MaxMind-account, koppel de map aan de container en laat GEOLITE2_DIR ernaar verwijzen. Stappen: {docsUrl}",
       "tlsPinChangedTitle": "TLS-leafcertificaat gewijzigd: {host}",
-      "tlsPinChangedBody": "Het TLS-leafcertificaat dat {host} aanbiedt, heeft nu SPKI-pin {servedPin}, die niet in de set bekende pins staat. Clients met pinning (de native app) kunnen geen verbinding meer maken zodra de oude pin verdwenen is. Haal de nieuwe leaf-pin opnieuw op, voeg hem toe aan TLS_LEAF_SPKI_PINS en aan de pinset van de native client, en breng een build uit voordat dit certificaat op {validTo} verloopt. Zie docs/ops/tls-cert-pin.md."
+      "tlsPinChangedBody": "Het TLS-leafcertificaat dat {host} aanbiedt, heeft nu SPKI-pin {servedPin}, die niet in de set bekende pins staat. Clients met pinning (de native app) kunnen geen verbinding meer maken zodra de oude pin verdwenen is. Haal de nieuwe leaf-pin opnieuw op, voeg hem toe aan TLS_LEAF_SPKI_PINS en aan de pinset van de native client, en breng een build uit voordat dit certificaat op {validTo} verloopt. Zie docs/ops/tls-cert-pin.md.",
+      "accountErasureRefusedTitle": "Account kon niet worden gewist: {username}",
+      "accountErasureRefusedBody": "De verwijdertermijn van {username} is afgelopen, maar het account is de laatste actieve verzorger van een beheerd profiel en is daarom niet gewist. Het blijft vergrendeld. Voeg een andere verzorger toe aan het profiel, verwijder het profiel of maak de verwijdering ongedaan in Beheer, Gebruikers.",
+      "accountErasureFailedBody": "De verwijdertermijn van {username} is afgelopen, maar het wissen van het account is mislukt. Het blijft vergrendeld en wordt elk uur opnieuw geprobeerd, na de andere accounts die aan de beurt zijn. De fout staat op de kaart met mislukte taken in Beheer."
     },
     "user": {
       "telegramTestBody": "HealthLog: verbinding geslaagd. Telegram-meldingen zijn actief."
@@ -9028,6 +9235,14 @@
     "checkupReminders": {
       "title": "Herinneringen voor controles",
       "description": "Zet afzonderlijke herinneringen voor controles aan of uit."
+    },
+    "eventBackupHealth": "Status van back-ups",
+    "eventBackupHealthDesc": "Wordt verstuurd als een back-up stopt, achterloopt of weer bijgewerkt is. Alleen voor beheerders.",
+    "recoveryReadiness": {
+      "titleAttention": "Back-ups hebben aandacht nodig",
+      "titleFailing": "Back-ups lopen gevaar",
+      "titleReminder": "Back-ups lopen nog steeds gevaar",
+      "titleRecovered": "Back-ups zijn weer in orde"
     }
   },
   "i18n": {
@@ -11054,7 +11269,6 @@
       "who5": "Een welzijnsscore van 50 of lager kan het waard zijn om beter naar te kijken. Als je wilt, gaat de PHQ-9-check-in op deze pagina dieper in op je stemming. Dit is een voorzichtige suggestie, geen diagnose.",
       "sci": "In het onderzoek achter deze vragenlijst hingen scores van 16 of lager samen met waarschijnlijke slapeloosheid. Blijf je last houden van slecht slapen, dan kan een gesprek met een zorgverlener helpen. Dit is geen diagnose."
     },
-    "validatedInEnglishNote": "Deze vragenlijst is in het Engels gevalideerd; de vragen worden in de oorspronkelijke Engelse formulering getoond.",
     "openDetail": "Details tonen",
     "historyLoadError": "Je testgeschiedenis kon niet worden geladen",
     "historyLoadErrorHint": "Dit betekent niet dat je geen resultaten hebt; de lijst kon niet worden opgehaald. Probeer het opnieuw.",
@@ -11104,6 +11318,13 @@
         "belowThreshold": "Je slaap in de afgelopen maand lag in het bereik waarin het onderzoek achter deze vragenlijst slapeloosheid waarschijnlijk vond.",
         "aboveThreshold": "Je slaap in de afgelopen maand lag buiten het bereik dat dat onderzoek met slapeloosheid verbindt."
       }
+    },
+    "wording": {
+      "unvalidatedNote": "Deze vertaling is niet wetenschappelijk gevalideerd; zie de uitkomst als een indicatie.",
+      "showOriginal": "Oorspronkelijke Engelse tekst tonen",
+      "showTranslation": "Vertaling tonen",
+      "resultUnvalidated": "Beantwoord in een vertaling die niet wetenschappelijk gevalideerd is; zie de uitkomst als een indicatie.",
+      "historyUnvalidated": "Beantwoord in een niet wetenschappelijk gevalideerde vertaling"
     }
   },
   "records": {
@@ -11631,7 +11852,8 @@
     "toast": {
       "duplicate": "Al opgeslagen. Het bestaande document is gemarkeerd.",
       "deleted": "Document verwijderd",
-      "restoreFailed": "Het document kon niet worden hersteld."
+      "restoreFailed": "Het document kon niet worden hersteld.",
+      "deletedHint": "Verwijderde documenten blijven {days} dagen in Recent verwijderd."
     },
     "timeline": {
       "loadingMore": "Meer laden…",
@@ -11676,7 +11898,8 @@
           "raster-failed": "De PDF-pagina's konden niet worden weergegeven om te lezen. Compressieformaten van gescande faxen zijn een bekende oorzaak.",
           "provider-error": "De AI-provider kon dit document bij de laatste poging niet lezen.",
           "pdf-needs-anthropic": "De ingestelde AI-provider kan geen PDF-bestanden lezen. Een Claude-provider of lokale OCR kan dat wel.",
-          "empty-transcription": "De AI-provider gaf geen tekst terug voor dit document."
+          "empty-transcription": "De AI-provider gaf geen tekst terug voor dit document.",
+          "resource-limit": "Deze pdf is te groot of te complex om hier te lezen. Het bestand zelf is in orde en opent nog steeds."
         }
       },
       "loadError": "Dit document kon niet worden geladen.",
@@ -11748,7 +11971,7 @@
       "dismiss": "Negeren",
       "empty": "Er kon niets uit dit document worden gelezen.",
       "unavailableBody": "Stel een AI-provider in om een titel, soort en datum voor te stellen.",
-      "unavailableLocalOcr": "Zet lokale OCR aan in de AI-instellingen om afbeeldingen op dit apparaat te lezen.",
+      "unavailableLocalOcr": "Zet “Scans op dit apparaat lezen” aan onder Instellingen → Modules → Labwaarden om afbeeldingen op dit apparaat te lezen.",
       "unavailableAction": "AI-instellingen openen",
       "errorGeneric": "Het document kon niet worden gelezen. Probeer het opnieuw.",
       "errorOcr": "Er kon geen tekst uit deze afbeelding worden gelezen.",
@@ -11760,11 +11983,13 @@
       "errorPdfNeedsVision": "Voor het scannen van PDF's is een Claude-provider met beeldherkenning nodig.",
       "errorFileType": "Dit bestandstype kan niet worden gelezen.",
       "errorNotIndexed": "Laat het document eerst lezen en extraheer daarna.",
-      "errorLocalOcrDisabled": "Zet eerst lokale OCR aan in de AI-instellingen.",
+      "errorOutputLimit": "De AI-provider bereikte zijn uitvoerlimiet voordat hij één waarde teruggaf. Probeer een model dat langere antwoorden toestaat.",
+      "errorLocalOcrDisabled": "Zet eerst “Scans op dit apparaat lezen” aan onder Instellingen → Modules → Labwaarden.",
       "errorProvider": "Hiervoor is geen AI-provider ingesteld.",
       "errorTextImageOnly": "Lokale OCR leest alleen afbeeldingen, niet dit bestand.",
       "errorConsent": "Voor het lezen van documenten met AI is eerst je toestemming nodig.",
-      "errorUnavailable": "Documenten lezen met AI is hier op dit moment niet beschikbaar."
+      "errorUnavailable": "Documenten lezen met AI is hier op dit moment niet beschikbaar.",
+      "unavailableLocalOcrAction": "Instellingen voor labwaarden openen"
     },
     "summary": {
       "summarise": "Samenvatten",
@@ -11820,6 +12045,7 @@
       "extracting": "Extraheren…",
       "extractHint": "Gebruikt de tekst die al uit dit document is gelezen. Geëxtraheerde waarden wachten op jouw controle; er wordt niets automatisch opgeslagen.",
       "extractEmpty": "Er konden geen waarden uit dit document worden geëxtraheerd.",
+      "extractIncomplete": "Een deel van het document kon niet volledig worden gelezen, dus er kunnen waarden ontbreken. Vergelijk de lijst met het document.",
       "failUnitRequired": "Een numerieke waarde heeft een eenheid nodig voordat ze kan worden opgeslagen.",
       "failUnitMismatch": "De opgegeven eenheid komt niet overeen met de opgeslagen eenheid voor deze biomarker. Pas de eenheid aan en rond de controle daarna opnieuw af.",
       "failGeneric": "Deze waarde kon niet worden opgeslagen.",
@@ -11867,6 +12093,7 @@
       "loadMore": "Meer laden",
       "stateImported": "Staat in HealthLog",
       "stateDeleted": "Verwijderd in HealthLog",
+      "stateInTrash": "In Recent verwijderd",
       "selectedCount": "{count} van maximaal {max} geselecteerd",
       "importAction": "{count} importeren",
       "importing": "Importeren, één document tegelijk…",
@@ -11880,7 +12107,9 @@
         "importedLinked": "Geïmporteerd en gekoppeld",
         "duplicate": "Staat al in HealthLog",
         "duplicateLinked": "Staat al in HealthLog, nu gekoppeld",
-        "deleted": "Verwijderd in HealthLog, ongemoeid gelaten"
+        "deleted": "Verwijderd in HealthLog, ongemoeid gelaten",
+        "restored": "Hersteld uit Recent verwijderd",
+        "restoredLinked": "Hersteld uit Recent verwijderd en gekoppeld"
       },
       "errors": {
         "unavailable": "Documentarchieven zijn niet ingeschakeld op deze server.",
@@ -11924,8 +12153,32 @@
     "deleteConfirm": {
       "titleOne": "Dit document verwijderen?",
       "titleMany": "{count} documenten verwijderen?",
-      "body": "Je kunt dit direct daarna ongedaan maken. Na 30 dagen wordt het definitief verwijderd.",
+      "body": "Verwijderde documenten blijven {days} dagen in Recent verwijderd en worden daarna definitief verwijderd.",
       "action": "Verwijderen"
+    },
+    "trash": {
+      "title": "Recent verwijderd",
+      "subtitle": "Verwijderde documenten blijven hier {days} dagen en worden daarna definitief verwijderd.",
+      "back": "Documenten",
+      "entryLabel": "Recent verwijderd ({count})",
+      "loadError": "Recent verwijderd kon niet worden geladen.",
+      "emptyTitle": "Niets in Recent verwijderd",
+      "emptyDescription": "Wat je verwijdert, wacht hier {days} dagen voordat het definitief wordt verwijderd.",
+      "count": "Verwijderde documenten ({count})",
+      "restoreAll": "Alles herstellen",
+      "restore": "Herstellen",
+      "purge": "Nu verwijderen",
+      "deletedOn": "Verwijderd op {date}.",
+      "removesIn": "Wordt over {days} dagen definitief verwijderd.",
+      "removesSoon": "Wordt binnen een dag definitief verwijderd.",
+      "restored": "Document hersteld",
+      "openRestored": "Openen",
+      "restoreDuplicate": "Er is al een identiek document opgeslagen, dus deze kopie kan niet worden hersteld.",
+      "restorePartial": "{failed} van {total} konden niet worden hersteld",
+      "purged": "Document definitief verwijderd",
+      "purgeFailed": "Het document kon niet worden verwijderd.",
+      "purgeConfirmTitle": "Dit document definitief verwijderen?",
+      "purgeConfirmBody": "Het wordt nu verwijderd in plaats van aan het einde van de wachttijd en kan niet worden hersteld."
     }
   },
   "selfDescription": {
@@ -12610,7 +12863,8 @@
         "entryHint": "Wanneer {name} er klaar voor is om zelf voor dit dossier te zorgen.",
         "methodSso": "{name} logt via single sign-on in bij het gebruiken van de link.",
         "methodBoth": "{name} kan een wachtwoord instellen of inloggen via single sign-on."
-      }
+      },
+      "deleteBodyGrace": "Alles wat voor {name} is vastgelegd, verdwijnt samen met het profiel: metingen, medicatie, documenten en notities. Het profiel wordt meteen vergrendeld en na {days} dagen gewist. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken."
     },
     "toast": {
       "savedTo": "Opgeslagen in het dossier van {name}"
@@ -12665,6 +12919,7 @@
       "practitionerContactRestore": "{name} heeft een item in het adresboek hersteld",
       "illnessDayLogUpsert": "{name} heeft een ziektedag vastgelegd",
       "medicationUpdate": "{name} heeft een medicijn gewijzigd",
+      "medicationCourseEnd": "{name} heeft een medicijnkuur beëindigd",
       "medicationDelete": "{name} heeft een medicijn verwijderd",
       "medicationGlp1Update": "{name} heeft een GLP-1-kuur gewijzigd",
       "medicationScheduleCreate": "{name} heeft een doseerschema toegevoegd",
@@ -12712,6 +12967,9 @@
       "rejectedDoseUpdate": "{name} probeerde een dosis te wijzigen, maar dat werd geweigerd",
       "rejectedDoseImport": "{name} probeerde doses te importeren, maar dat werd geweigerd",
       "rejectedTrackedValue": "{name} probeerde een bijgehouden waarde vast te leggen, maar dat werd geweigerd",
+      "rejectedTrackedValueTypeCreate": "{name} probeerde een type bijgehouden waarde toe te voegen, maar dat werd geweigerd",
+      "rejectedTrackedValueTypeUpdate": "{name} probeerde een type bijgehouden waarde te wijzigen, maar dat werd geweigerd",
+      "rejectedMedicationLayout": "{name} probeerde de medicijnlijst anders te ordenen, maar dat werd geweigerd",
       "deniedDoseImport": "Een dosisimport die {name} had gestart, kon niet in de wachtrij worden gezet",
       "anamnesisFactCreate": "{name} heeft een gegeven aan de gezondheidsachtergrond toegevoegd",
       "customMetricCreate": "{name} heeft een type bijgehouden waarde toegevoegd",
@@ -13021,7 +13279,8 @@
     "backgroundScan": "Wordt op de achtergrond gelezen. Met een traag model kan dit een paar minuten duren.",
     "waitingForWorker": "Wachten op het achtergrondproces. Als dit niet verandert, draait het achtergrondproces van de server mogelijk niet.",
     "errorWorkerUnavailable": "Het achtergrondproces is op dit moment niet beschikbaar. Probeer het zo opnieuw, of vraag de beheerder van de server om het te controleren.",
-    "errorTimedOut": "Het lezen duurde langer dan je ingestelde AI-responstijd toestaat. Probeer het opnieuw, of verhoog de responstijd in de AI-instellingen."
+    "errorTimedOut": "Het lezen duurde langer dan je ingestelde AI-responstijd toestaat. Probeer het opnieuw, of verhoog de responstijd in de AI-instellingen.",
+    "errorReaderBusy": "De documentlezer is met ander werk bezig. Probeer het over een minuut opnieuw."
   },
   "symptoms": {
     "add": "Nieuw symptoom",

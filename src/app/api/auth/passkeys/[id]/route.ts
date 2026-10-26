@@ -1,12 +1,7 @@
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { NextRequest } from "next/server";
 import {
   apiHandler,
@@ -24,20 +19,10 @@ export const PATCH = apiHandler(
     const { user } = await requireAuth();
     const { id } = await params;
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, passkeyRenameSchema, {
       maxBytes: 4 * 1024,
     });
-    if (jsonError) return jsonError;
-
-    const parsed = passkeyRenameSchema.safeParse(body);
-    if (!parsed.success) {
-      // Multi-issue, like every sibling that parses a body. The flat
-      // `apiError("Invalid request", 422)` this replaces discarded the issues,
-      // so a person renaming a passkey could not tell an empty name from one
-      // over the 64-character limit — the form had nothing to put beside the
-      // field.
-      return returnAllZodIssues(parsed.error, 422);
-    }
+    if (!parsed.ok) return parsed.error;
 
     const passkey = await prisma.passkey.findUnique({
       where: { id },

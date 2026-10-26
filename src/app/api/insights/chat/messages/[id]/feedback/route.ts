@@ -31,14 +31,8 @@ import type { NextRequest } from "next/server";
 import { z } from "zod/v4";
 
 import { apiHandler, requireAuth, HttpError } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  apiValidationError,
-  getClientIp,
-  safeJson,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
@@ -79,28 +73,19 @@ async function handlePost(request: NextRequest, ctx: RouteContext) {
     return apiError("Too many feedback submissions, try again later", 429);
   }
 
-  const { data: rawBody, error } = await safeJson<unknown>(request, {
+  // The dotted token keeps its place in `error`: this refusal keeps its 422,
+  // so moving the string would be a wire change with nothing forcing it —
+  // the `invalid_json` siblings moved only because their status moved to 400
+  // anyway. `meta.errorCode` publishes the same token in the field a machine
+  // code belongs in, and `details.issues` names the fields that were refused.
+  const parsed = await parseJsonBody(request, coachMessageFeedbackSchema, {
     maxBytes: 64 * 1024,
+    action: "insights.coach.message.feedback",
+    meta: { outcome: "validation_failed" },
+    message: "feedback.body.invalid",
+    errorCode: "feedback.body.invalid",
   });
-  if (error) return error;
-  const parsed = coachMessageFeedbackSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    annotate({
-      action: { name: "insights.coach.message.feedback" },
-      meta: { outcome: "validation_failed" },
-    });
-    // The dotted token keeps its place in `error`: this refusal keeps its 422,
-    // so moving the string would be a wire change with nothing forcing it —
-    // the `invalid_json` siblings moved only because their status moved to 400
-    // anyway. `meta.errorCode` publishes the same token in the field a machine
-    // code belongs in, and `details.issues` names the fields that were refused.
-    return apiValidationError(
-      "feedback.body.invalid",
-      sanitiseZodIssues(parsed.error.issues),
-      422,
-      { errorCode: "feedback.body.invalid" },
-    );
-  }
+  if (!parsed.ok) return parsed.error;
   const body = parsed.data;
 
   // Verify ownership only — we no longer touch encryptedContent. The

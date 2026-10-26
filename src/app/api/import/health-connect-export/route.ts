@@ -28,10 +28,10 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import {
   HEALTH_CONNECT_IMPORT_KIND,
   HEALTH_CONNECT_IMPORT_PARSER_REVISION,
-  HEALTH_CONNECT_IMPORT_QUEUE,
   HEALTH_CONNECT_IMPORT_SEND_OPTIONS,
   type HealthConnectImportPayload,
 } from "@/lib/jobs/health-connect-import-worker";
+import { HEALTH_CONNECT_IMPORT_QUEUE } from "@/lib/jobs/health-connect-import-queue";
 import { streamMultipartToDisk } from "@/lib/multipart/stream-to-disk";
 import {
   createImportJobUnlessBusy,

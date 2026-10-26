@@ -12,13 +12,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { annotate } from "@/lib/logging/context";
 import { updateLifeAiSections } from "@/lib/profile/life-circumstances";
@@ -27,16 +22,11 @@ import { lifeAiSectionsPatchSchema } from "@/lib/validations/life-circumstances"
 export const PATCH = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, lifeAiSectionsPatchSchema, {
     maxBytes: 4 * 1024,
+    errorCode: "anamnesis.lifeSections.invalid",
   });
-  if (jsonError) return jsonError;
-  const parsed = lifeAiSectionsPatchSchema.safeParse(body);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "anamnesis.lifeSections.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const outcome = await updateLifeAiSections(
     user.id,

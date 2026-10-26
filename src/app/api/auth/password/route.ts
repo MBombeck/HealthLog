@@ -7,13 +7,8 @@ import {
 } from "@/lib/auth/password";
 import { changePasswordSchema } from "@/lib/validations/auth";
 import { auditLog } from "@/lib/auth/audit";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import {
   recordReproofFailure,
   refundReproof,
@@ -46,16 +41,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const limited = await throttleReproof(user.id, ip, "password_change");
   if (limited) return limited;
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, changePasswordSchema, {
     maxBytes: 64 * 1024,
   });
-
-  if (jsonError) return jsonError;
-  const parsed = changePasswordSchema.safeParse(body);
-  if (!parsed.success) {
-    // v1.4.43 — multi-issue 422.
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const { currentPassword, newPassword } = parsed.data;
   const credential = await prisma.user.findUnique({

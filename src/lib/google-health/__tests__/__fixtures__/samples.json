@@ -1,0 +1,105 @@
+[
+  {
+    "name": "users/me/dataTypes/weight/dataPoints/weight-0001",
+    "weight": {
+      "sampleTime": { "physicalTime": "2026-06-02T06:15:00Z" },
+      "weightGrams": 78400
+    }
+  },
+  {
+    "name": "users/me/dataTypes/weight/dataPoints/weight-0002",
+    "weight": {
+      "sampleTime": { "physicalTime": "2026-06-03T07:30:00+02:00" },
+      "weightGrams": "78250.5"
+    }
+  },
+  {
+    "name": "users/me/dataTypes/weight/dataPoints/weight-0003",
+    "weight": {
+      "sampleTime": { "physicalTime": "2026-06-04T23:45:00" },
+      "weightGrams": 0
+    }
+  },
+  {
+    "name": "users/me/dataTypes/weight/dataPoints/weight-0004",
+    "weight": {
+      "sampleTime": { "physicalTime": "2026-06-04T23:45:00" },
+      "weightGrams": 77900
+    }
+  },
+  {
+    "name": "users/me/dataTypes/body-fat/dataPoints/body-fat-0001",
+    "bodyFat": {
+      "sampleTime": { "physicalTime": "2026-06-02T06:15:00.000Z" },
+      "percentage": 21.4
+    }
+  },
+  {
+    "name": "users/me/dataTypes/body-fat/dataPoints/body-fat-0002",
+    "bodyFat": {
+      "percentage": "20.9"
+    }
+  },
+  {
+    "name": "users/me/dataTypes/heart-rate/dataPoints/heart-rate-0001",
+    "heartRate": {
+      "sampleTime": { "physicalTime": "2026-06-02T12:00:30-04:00" },
+      "beatsPerMinute": "64"
+    }
+  },
+  {
+    "name": "users/me/dataTypes/heart-rate/dataPoints/heart-rate-0002",
+    "heartRate": {
+      "sampleTime": { "physicalTime": "2026-06-02 00:10" },
+      "beatsPerMinute": "   "
+    }
+  },
+  {
+    "name": "users/me/dataTypes/heart-rate/dataPoints/heart-rate-0003",
+    "heartRate": {
+      "sampleTime": { "physicalTime": "not-a-time" },
+      "beatsPerMinute": 58
+    }
+  },
+  {
+    "name": "users/me/dataTypes/blood-glucose/dataPoints/blood-glucose-0001",
+    "bloodGlucose": {
+      "sampleTime": { "physicalTime": "2026-06-05T08:00:00Z" },
+      "bloodGlucoseMilligramsPerDeciliter": 96.333333
+    }
+  },
+  {
+    "name": "users/me/dataTypes/blood-glucose/dataPoints/blood-glucose-0002",
+    "bloodGlucose": {
+      "sampleTime": { "physicalTime": "2026-06-05T09:00:00Z" },
+      "bloodGlucoseMilligramsPerDeciliter": -5
+    }
+  },
+  {
+    "name": "users/me/dataTypes/core-body-temperature/dataPoints/core-temp-0001",
+    "coreBodyTemperature": {
+      "sampleTime": { "physicalTime": "2026-06-06T03:00:00" },
+      "temperatureCelsius": 36.75
+    }
+  },
+  {
+    "name": "users/me/dataTypes/height/dataPoints/height-0001",
+    "height": {
+      "sampleTime": { "physicalTime": "2026-01-15T10:00:00Z" },
+      "heightMillimeters": "1805"
+    }
+  },
+  {
+    "name": "users/me/dataTypes/height/dataPoints/height-0002",
+    "height": {
+      "heightMillimeters": 1798
+    }
+  },
+  {
+    "name": "users/me/dataTypes/height/dataPoints/height-0003",
+    "height": {
+      "sampleTime": { "physicalTime": "2026-01-16T10:00:00Z" },
+      "heightMillimeters": "0"
+    }
+  }
+]

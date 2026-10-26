@@ -124,3 +124,96 @@ describe("the keys stored backups still need", () => {
     expect(body.safeToDropRetiredKeys).toBe(false);
   });
 });
+
+describe("the keys the database dumps still need", () => {
+  // Every row rotated and no stored copy on the old key: the view called the
+  // old key safe to drop while the dumps from before the rotation, the
+  // pre-migration one that is the way back from an update among them, could
+  // only be restored with it.
+  it("names the key a dump on this server or in the bucket was written under", async () => {
+    const prisma = getPrismaClient();
+    const admin = await prisma.user.create({
+      data: { username: "dump-admin", email: "d@example.test", role: "ADMIN" },
+    });
+    const session = await prisma.session.create({
+      data: { userId: admin.id, expiresAt: new Date(Date.now() + 60_000) },
+    });
+    cookieJar.set("healthlog_session", session.id);
+
+    const { mkdtempSync, writeFileSync, rmSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { buildManifest, dumpBaseName } =
+      await import("@/lib/database-backup/dump-core.mjs");
+    const dir = mkdtempSync(join(tmpdir(), "hl-key-needs-"));
+    const savedDir = process.env.DB_BACKUP_DIR;
+    process.env.DB_BACKUP_DIR = dir;
+    try {
+      // A pre-migration dump taken while "old" was the active key.
+      useKeys("old");
+      const base = dumpBaseName(
+        "pre-migration",
+        new Date(Date.now() - 86_400_000),
+      );
+      writeFileSync(join(dir, `${base}.dump`), "PGDMP");
+      writeFileSync(
+        join(dir, `${base}.manifest.json`),
+        JSON.stringify(
+          buildManifest({
+            kind: "pre-migration",
+            file: `${base}.dump`,
+            createdAt: new Date(),
+            latestMigration: null,
+            server: { version: "18", versionNum: 180000 },
+            pgDump: null,
+            archive: { bytes: 5, sha256: "x", entries: 1 },
+            rowCounts: {},
+            env: process.env,
+          }),
+        ),
+      );
+      useKeys("cur");
+
+      const { GET } = await import("@/app/api/admin/encryption/status/route");
+      const read = async () =>
+        (await (await GET()).json()).data as {
+          safeToDropRetiredKeys: boolean;
+          backups: {
+            dumps: Array<{ keyId: string; local: number }>;
+            retiredKeysStillNeeded: string[];
+          };
+        };
+      const local = await read();
+      expect(local.backups.dumps).toEqual([
+        expect.objectContaining({ keyId: "old", local: 1 }),
+      ]);
+      expect(local.backups.retiredKeysStillNeeded).toEqual(["old"]);
+      expect(local.safeToDropRetiredKeys).toBe(false);
+
+      // Gone from this server; its off-host copy, written under "old", is
+      // still in a bucket whose rule for database/ nobody could read.
+      rmSync(join(dir, `${base}.dump`));
+      rmSync(join(dir, `${base}.manifest.json`));
+      await prisma.databaseBackupRun.create({
+        data: {
+          startedAt: new Date(Date.now() - 86_400_000),
+          finishedAt: new Date(Date.now() - 86_000_000),
+          status: "succeeded",
+          fileName: "healthlog-x-daily.dump",
+          localResult: "not_persistent",
+          offhostResult: "uploaded",
+          activeKeyId: "old",
+        },
+      });
+      const offhost = await read();
+      expect(offhost.backups.dumps).toEqual([
+        expect.objectContaining({ keyId: "old", local: 0 }),
+      ]);
+      expect(offhost.backups.retiredKeysStillNeeded).toEqual(["old"]);
+    } finally {
+      process.env.DB_BACKUP_DIR = savedDir ?? "";
+      if (savedDir === undefined) delete process.env.DB_BACKUP_DIR;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

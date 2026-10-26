@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { mapExercise, type PolarExercise } from "../client";
+import { mapExercise } from "@/lib/polar/map";
+import { type PolarExercise } from "@/lib/polar/wire-types";
+import { mapActivity as mapStravaActivity } from "@/lib/strava/map";
 import {
-  mapActivity as mapStravaActivity,
   type StravaSummaryActivity,
   type StravaDetailedActivity,
-} from "@/lib/strava/client";
+} from "@/lib/strava/wire-types";
 
 /**
  * Sensitive-cohort parity guard (mirrors the google-parity precedent): the SAME

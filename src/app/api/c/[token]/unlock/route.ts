@@ -23,12 +23,8 @@ import { NextRequest } from "next/server";
 
 import { apiHandler } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import {
-  apiError,
-  apiSuccess,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { checkAuthSurfaceRateLimit } from "@/lib/rate-limit";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 import { resolveShareGateState } from "@/lib/clinician-share/resolve-share-token";
@@ -69,13 +65,10 @@ export const POST = apiHandler(
       return apiError("Too many attempts", 429);
     }
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, unlockShareLinkSchema, {
       maxBytes: 4 * 1024,
     });
-    if (jsonError) return jsonError;
-
-    const parsed = unlockShareLinkSchema.safeParse(body);
-    if (!parsed.success) return returnAllZodIssues(parsed.error);
+    if (!parsed.ok) return parsed.error;
 
     // A token with no live gate, or one carrying no passphrase, cannot be
     // unlocked. `verifyPassphrase` is constant-time and returns false for a

@@ -1,0 +1,51 @@
+{
+  "status": 401,
+  "cacheControl": null,
+  "body": {
+    "data": null,
+    "error": "Not authenticated",
+    "meta": {
+      "errorCode": "auth.missing",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 401,
+      "action": null,
+      "meta": null,
+      "warnings": null,
+      "error": {
+        "type": "HttpError",
+        "message": "Not authenticated"
+      }
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "healthScores": [
+      {
+        "dayKey": "day+0",
+        "timezone": "UTC",
+        "composite": 86,
+        "band": "green",
+        "scoreVersion": 4,
+        "composition": [
+          "BLOOD_PRESSURE",
+          "GLYCAEMIA",
+          "ACTIVITY",
+          "SLEEP"
+        ],
+        "pillarScores": {
+          "SLEEP": 92,
+          "ACTIVITY": 78,
+          "GLYCAEMIA": 100,
+          "BLOOD_PRESSURE": 73
+        },
+        "inputFingerprint": "5653cd8c051404182d6c6f813a48b1c2ebc3abe1116901466ab7cc1ab70cb276",
+        "computedAt": "anchor+0d+12:00:00"
+      }
+    ],
+    "patterns": []
+  }
+}

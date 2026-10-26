@@ -18,8 +18,8 @@ vi.mock("@/lib/cycle/profile", () => ({
     getOrCreateCycleProfileMock(...args),
 }));
 
+import { isCycleEnabled } from "../enabled";
 import {
-  isCycleEnabled,
   isCycleAvailableForUser,
   requireCycleEnabled,
   CYCLE_DISABLED_ERROR_CODE,

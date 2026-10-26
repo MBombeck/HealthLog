@@ -43,10 +43,10 @@ import {
 import { isoDateTime } from "@/lib/validations/datetime";
 
 // ── Cycle tracking (v1.15.0) ─────────────────────────────────────────
-// The `/api/cycle/*` capture / calendar / history / settings surface +
+// The `/api/cycle` capture / calendar / history / settings surface +
 // the cycle-prefs PATCH. Request bodies come from the Zod validation
 // module so the spec stays single-source; response DTOs are declared
-// here mirroring `src/lib/cycle/dto.ts`. Every `/api/cycle/*` route also
+// here mirroring `src/lib/cycle/dto.ts`. Every `/api/cycle` route also
 // 403s `{ errorCode:"cycle.disabled" }` when the feature gate is off.
 
 const predictionMethodEnumOpenapi = z

@@ -23,12 +23,12 @@
  */
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import {
-  MEDICATION_INTAKE_IMPORT_QUEUE,
   MEDICATION_INTAKE_IMPORT_SEND_OPTIONS,
   MEDICATION_INTAKE_IMPORT_STALE_AFTER_MS,
   type MedicationImportPayload,
   type MedicationImportProgress,
 } from "@/lib/jobs/medication-intake-import";
+import { MEDICATION_INTAKE_IMPORT_QUEUE } from "@/lib/jobs/medication-intake-import-queue";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma, toJson } from "@/lib/db";
 

@@ -15,7 +15,7 @@
  *
  * Pure: no database, no provider.
  */
-import type { CoachToolResult } from "./executor";
+import type { CoachToolResult } from "./run/types";
 
 /** Misses that tell the model nothing new about the record. */
 const EMPTY_REASONS: ReadonlySet<string> = new Set([

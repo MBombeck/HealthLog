@@ -102,6 +102,7 @@ vi.mock("@/lib/documents/extract", async (importOriginal) => ({
     reportDate: "2027-01-10",
     kind: "OTHER",
     providerType: "anthropic",
+    incomplete: false,
     facts: [
       {
         factType: "OBSERVATION",
@@ -539,6 +540,68 @@ describe("the reaper", () => {
   });
 });
 
+/**
+ * A run's deadline is model time. The document reader moves it by the time
+ * a read waited for the reader and took, so a person's lab scan is not
+ * timed out because other work held the reader; never past the job's own
+ * expiry, and only while the run is running.
+ */
+describe("the deadline while the document reader works", () => {
+  async function runningRun(expiresAt: Date) {
+    const user = await makeUser();
+    await grantConsent(user.id);
+    await signIn(user.id);
+    const queued = await postLabScanText("Glucose 95 mg/dL");
+    const { runId } = queued.body.data as { runId: string };
+    await getPrismaClient().documentAiRun.update({
+      where: { id: runId },
+      data: { status: "RUNNING", expiresAt },
+    });
+    return runId;
+  }
+  const expiry = async (runId: string) =>
+    (
+      await getPrismaClient().documentAiRun.findUniqueOrThrow({
+        where: { id: runId },
+      })
+    ).expiresAt.getTime();
+
+  it("moves a running run's deadline by the reader's time, so the reaper leaves it alone", async () => {
+    const { moveRunDeadline } = await import("@/lib/jobs/document-ai-run");
+    const { reapAiRuns } = await import("@/lib/documents/ai-runs/store");
+    const armed = new Date(Date.now() + 5_000);
+    const runId = await runningRun(armed);
+
+    // The slot is granted after a 60 s wait, with 70 s allowed for the read.
+    await moveRunDeadline(runId, 130_000, undefined);
+    expect(await expiry(runId)).toBe(armed.getTime() + 130_000);
+    // Without the move the reaper would have taken it a minute later.
+    expect(
+      (await reapAiRuns(new Date(armed.getTime() + 60_000))).timedOut,
+    ).toBe(0);
+
+    // The read took 10 s of its 70: the unused 60 s go back.
+    await moveRunDeadline(runId, -60_000, undefined);
+    expect(await expiry(runId)).toBe(armed.getTime() + 70_000);
+  });
+
+  it("never moves it past the job's own expiry, and leaves a run that is not running alone", async () => {
+    const { moveRunDeadline } = await import("@/lib/jobs/document-ai-run");
+    const armed = new Date(Date.now() + 5_000);
+    const runId = await runningRun(armed);
+    const jobEnds = armed.getTime() + 20_000;
+    await moveRunDeadline(runId, 130_000, jobEnds);
+    expect(await expiry(runId)).toBe(jobEnds);
+
+    await getPrismaClient().documentAiRun.update({
+      where: { id: runId },
+      data: { status: "FAILED" },
+    });
+    await moveRunDeadline(runId, 130_000, undefined);
+    expect(await expiry(runId)).toBe(jobEnds);
+  });
+});
+
 describe("a summary in the background", () => {
   it("marks a stored summary PENDING while queued and READY when it lands", async () => {
     const user = await makeUser();
@@ -851,5 +914,125 @@ describe("fact extraction in the background", () => {
     });
     expect((res.body.data as { facts: unknown[] }).facts).toHaveLength(1);
     expect(await getPrismaClient().documentAiRun.count()).toBe(0);
+  });
+});
+
+async function documentDetail(documentId: string) {
+  const { GET } = await import("@/app/api/documents/inbound/[id]/route");
+  const { NextRequest } = await import("next/server");
+  const res = await GET(
+    new NextRequest(
+      `http://localhost/api/documents/inbound/${documentId}`,
+    ) as never,
+    { params: Promise.resolve({ id: documentId }) } as never,
+  );
+  return {
+    status: res.status,
+    body: (await res.json()) as Envelope<Record<string, unknown>>,
+  };
+}
+
+/** The extraction mock's default answer, cut short. */
+async function answerIncompleteOnce() {
+  const actual = await vi.mocked(runInboundExtraction).getMockImplementation()!(
+    {} as never,
+  );
+  vi.mocked(runInboundExtraction).mockResolvedValueOnce({
+    ...actual,
+    incomplete: true,
+  });
+}
+
+describe("an extraction that did not read the whole document", () => {
+  it("keeps saying so on the document until a whole read replaces it", async () => {
+    const user = await makeUser();
+    await grantConsent(user.id);
+    const document = await indexedDocument(user.id);
+    await signIn(user.id);
+
+    await answerIncompleteOnce();
+    const cut = await postStoredExtract(document.id, false);
+    expect(cut.status).toBe(200);
+    expect(cut.body.data).toMatchObject({ extractionIncomplete: true });
+    // Opened later, the review still says it is not the whole document.
+    const later = await documentDetail(document.id);
+    expect(later.status).toBe(200);
+    expect(later.body.data).toMatchObject({ extractionIncomplete: true });
+
+    const whole = await postStoredExtract(document.id, false);
+    expect(whole.status).toBe(200);
+    expect(whole.body.data).toMatchObject({ extractionIncomplete: false });
+    expect((await documentDetail(document.id)).body.data).toMatchObject({
+      extractionIncomplete: false,
+    });
+  });
+
+  it("records it from a background run as well", async () => {
+    const user = await makeUser();
+    await grantConsent(user.id);
+    const document = await indexedDocument(user.id);
+    await signIn(user.id);
+
+    await answerIncompleteOnce();
+    const queued = await postStoredExtract(document.id, true);
+    expect(queued.status).toBe(202);
+    const { runId } = queued.body.data as { runId: string };
+    expect(await work(runId)).toBe("succeeded");
+    expect((await poll(runId)).body.data).toMatchObject({
+      result: { incomplete: true },
+    });
+    expect((await documentDetail(document.id)).body.data).toMatchObject({
+      extractionIncomplete: true,
+    });
+  });
+});
+
+describe("a synchronous extraction stays inside one request", () => {
+  /** A stored text of many reads' worth: forty lab lines per part. */
+  async function longIndexedDocument(userId: string) {
+    const document = await storeDocument(userId);
+    const { upsertContentIndex } =
+      await import("@/lib/documents/content-index");
+    const lines = Array.from(
+      { length: 1200 },
+      (_, i) => `Analyte ${i} ${(i % 90) + 10}.0 mg/dL reference 10-100`,
+    );
+    await upsertContentIndex({
+      userId,
+      documentId: document.id,
+      text: lines.join("\n"),
+      source: "text-ocr",
+      providerType: null,
+    });
+    return document;
+  }
+
+  it("reads a long document in a few reads and says what it left out", async () => {
+    const user = await makeUser();
+    await grantConsent(user.id);
+    const document = await longIndexedDocument(user.id);
+    await signIn(user.id);
+
+    const res = await postStoredExtract(document.id, false);
+    expect(res.status).toBe(200);
+    const { SYNC_EXTRACT_MAX_READS } = await import("@/lib/documents/ocr-plan");
+    const args = vi.mocked(runInboundExtraction).mock.calls[0][0];
+    expect(args.chunks.length).toBeGreaterThan(0);
+    expect(args.chunks.length).toBeLessThanOrEqual(SYNC_EXTRACT_MAX_READS);
+    expect(res.body.data).toMatchObject({ extractionIncomplete: true });
+  });
+
+  it("reads it in full in the background", async () => {
+    const user = await makeUser();
+    await grantConsent(user.id);
+    const document = await longIndexedDocument(user.id);
+    await signIn(user.id);
+
+    const queued = await postStoredExtract(document.id, true);
+    const { runId } = queued.body.data as { runId: string };
+    expect(await work(runId)).toBe("succeeded");
+    const { SYNC_EXTRACT_MAX_READS } = await import("@/lib/documents/ocr-plan");
+    const args = vi.mocked(runInboundExtraction).mock.calls[0][0];
+    expect(args.chunks.length).toBeGreaterThan(SYNC_EXTRACT_MAX_READS);
   });
 });

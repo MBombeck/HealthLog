@@ -46,15 +46,15 @@ vi.mock("@/lib/logging/context", () => ({
 // coupling the slice unit test to the rank builder's enum-whitelist
 // internals.
 vi.mock("@/lib/analytics/source-rank-sql", () => {
-  const cte = (_rank: string, sinceInterval?: string) =>
+  const cte = (_rank: string, window?: { from: string; interval?: string }) =>
     `
         SELECT mm.*
         FROM measurements mm
         WHERE mm."user_id" = $1
           AND mm."deleted_at" IS NULL
           ${
-            sinceInterval
-              ? `AND mm."measured_at" >= NOW() - INTERVAL '${sinceInterval}'`
+            window
+              ? `AND mm."measured_at" >= ${window.from} - INTERVAL '${window.interval}'`
               : ""
           }`;
   return {
@@ -174,6 +174,12 @@ describe("computeSummariesSlice", () => {
             r2_30: 0.42,
             slope90: 0.001,
             r2_90: 0.12,
+            // Readings on 6 days spanning 6 (7-day window) and on 20 days
+            // spanning 29 (30-day window): both windows earn a trend.
+            days7: 6,
+            span7: 6,
+            days30: 20,
+            span30: 29,
           },
         ])
         .mockResolvedValueOnce([
@@ -354,37 +360,32 @@ describe("computeSummariesSlice", () => {
         ]);
 
       // v1.20.0 — the 90-day accumulator findMany (first measurementRollup
-      // .findMany in the Promise.all). Two single-reading DAY buckets one day
-      // apart inside the 7-day window: x = epoch-days, y = 82.00 then 82.02.
-      // composeWindowedRegression over them yields slope = 0.02/day with a
-      // perfect fit (r² = 1) — a deterministic, hand-checkable regression.
-      const dayB = startOfUtcDay(new Date());
-      const dayA = startOfUtcDay(new Date(Date.now() - 24 * 60 * 60 * 1000));
-      const xA = dayA.getTime() / 86_400_000;
-      const xB = dayB.getTime() / 86_400_000;
+      // .findMany in the Promise.all). Three single-reading DAY buckets six
+      // and three days apart inside the 7-day window: x = epoch-days, y =
+      // 82.00, 82.06, 82.12. composeWindowedRegression over them yields
+      // slope = 0.02/day with a perfect fit (r² = 1) — a deterministic,
+      // hand-checkable regression over enough days to carry a trend.
+      const day = (daysAgo: number) =>
+        startOfUtcDay(new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000));
+      const bucket = (daysAgo: number, value: number) => {
+        const bucketStart = day(daysAgo);
+        const x = bucketStart.getTime() / 86_400_000;
+        return {
+          type: "WEIGHT",
+          source: "MANUAL",
+          bucketStart,
+          count: 1,
+          mean: value,
+          sumX: x,
+          sumXy: x * value,
+          sumXx: x * x,
+          sumYy: value * value,
+        };
+      };
       ROLLUP_FIND_MANY.mockResolvedValueOnce([
-        {
-          type: "WEIGHT",
-          source: "MANUAL",
-          bucketStart: dayA,
-          count: 1,
-          mean: 82.0,
-          sumX: xA,
-          sumXy: xA * 82.0,
-          sumXx: xA * xA,
-          sumYy: 82.0 * 82.0,
-        },
-        {
-          type: "WEIGHT",
-          source: "MANUAL",
-          bucketStart: dayB,
-          count: 1,
-          mean: 82.02,
-          sumX: xB,
-          sumXy: xB * 82.02,
-          sumXx: xB * xB,
-          sumYy: 82.02 * 82.02,
-        },
+        bucket(6, 82.0),
+        bucket(3, 82.06),
+        bucket(0, 82.12),
       ]);
 
       const result = await computeSummariesSlice("user-rollup");
@@ -400,7 +401,7 @@ describe("computeSummariesSlice", () => {
       expect(weight.latest).toBe(82.7);
       expect(weight.avg7).toBe(82);
       // v1.20.0 — slope composed from the accumulator buckets: a clean
-      // +0.02/day with a perfect two-point fit.
+      // +0.02/day with a perfect three-day fit.
       expect(weight.slope7).toEqual({
         slope: 0.02,
         direction: "up",
@@ -604,20 +605,20 @@ describe("computeSummariesSlice", () => {
       // raw alias (`mm.`) rather than the outer `m.`. Pin that the cap
       // survives the source-rank refactor.
       const narrowsCap = joined.match(
-        /AND mm\."measured_at" >= NOW\(\) - INTERVAL '90 days'/g,
+        /AND mm\."measured_at" >= \$2::timestamp - INTERVAL '90 days'/g,
       );
       expect(narrowsCap).not.toBeNull();
       expect(narrowsCap?.length).toBeGreaterThanOrEqual(1);
 
       // v1.11.1 — the cold-fallback `windowed` scan delegates its outer
-      // 90-day cap to `canonicalMeasurementsCte(rank, "90 days")` (a CTE
-      // now, so the day weights can read it twice). The
-      // helper lives in `@/lib/analytics/source-rank-sql` (stubbed
-      // above), so pin the contract at the call boundary: the slice
-      // must ask for the 90-day window.
+      // 90-day cap to `canonicalMeasurementsCte` (a CTE now, so the day
+      // weights can read it twice). The helper lives in
+      // `@/lib/analytics/source-rank-sql` (stubbed above), so pin the
+      // contract at the call boundary: the slice must ask for the 90-day
+      // window, counted from the request's `now` bound at `$2`.
       expect(canonicalMeasurementsCte).toHaveBeenCalledWith(
         expect.any(String),
-        "90 days",
+        { from: "$2::timestamp", interval: "90 days" },
       );
       // v1.18.10 — the `allTime` aggregate is now capped at a generous
       // 15-year scan-DoS floor (far beyond any real history) so a
@@ -625,8 +626,116 @@ describe("computeSummariesSlice", () => {
       // scan. It no longer calls the helper without an interval.
       expect(canonicalMeasurementsCte).toHaveBeenCalledWith(
         expect.any(String),
-        "15 years",
+        { from: "$2::timestamp", interval: "15 years" },
       );
+      // Every window is cut against the request's clock, bound with each
+      // statement; none reads the database clock.
+      expect(joined).not.toMatch(/NOW\(\)|CURRENT_TIMESTAMP|CURRENT_DATE/i);
+      for (const call of UNSAFE.mock.calls) {
+        if (String(call[0]).includes("$2::timestamp")) {
+          expect(call[2]).toBeInstanceOf(Date);
+        }
+      }
+    });
+  });
+
+  /**
+   * A window whose only readings sit minutes apart must not publish a
+   * slope per day. The dashboard blood-pressure tile printed
+   * "7-Tage-Trend: 125 (−11.412)" from three readings taken in one sitting:
+   * the regression's x-span was minutes, so the slope per day exploded and
+   * the tile multiplied it by seven. Both read paths withhold it.
+   */
+  describe("trend evidence", () => {
+    it("withholds the warm-path slope when the window's readings are minutes apart on one day", async () => {
+      RAW.mockResolvedValueOnce([
+        { type: "BLOOD_PRESSURE_SYS", has_buckets: true },
+      ]);
+      UNSAFE.mockResolvedValueOnce([
+        { type: "BLOOD_PRESSURE_SYS", avg7: 124, avg30: 124, median: 124 },
+      ])
+        .mockResolvedValueOnce([
+          { type: "BLOOD_PRESSURE_SYS", value: 124, measured_at: new Date() },
+        ])
+        .mockResolvedValueOnce([
+          {
+            type: "BLOOD_PRESSURE_SYS",
+            count: 3,
+            days: 1,
+            min: 118,
+            max: 130,
+            mean: 124,
+          },
+        ]);
+      // One DAY bucket holding three readings 2 and 4 minutes apart:
+      // 130, 124, 118 mmHg. The composed fit is −1.5 mmHg per minute,
+      // about −2,160 mmHg per day, about −15,000 projected onto 7 days.
+      const bucketStart = startOfUtcDay(new Date());
+      const base = bucketStart.getTime() / 86_400_000 + 0.25;
+      const minute = 1 / (24 * 60);
+      const xs = [base, base + 2 * minute, base + 4 * minute];
+      const ys = [130, 124, 118];
+      ROLLUP_FIND_MANY.mockResolvedValueOnce([
+        {
+          type: "BLOOD_PRESSURE_SYS",
+          source: "MANUAL",
+          bucketStart,
+          count: 3,
+          mean: 124,
+          sumValue: 372,
+          sumX: xs.reduce((a, x) => a + x, 0),
+          sumXy: xs.reduce((a, x, i) => a + x * ys[i], 0),
+          sumXx: xs.reduce((a, x) => a + x * x, 0),
+          sumYy: ys.reduce((a, y) => a + y * y, 0),
+        },
+      ]);
+
+      const result = await computeSummariesSlice("user-cluster");
+      const sys = result.summaries.BLOOD_PRESSURE_SYS;
+      expect(sys.avg7).toBe(124);
+      expect(sys.slope7).toBeNull();
+      expect(sys.slope30).toBeNull();
+    });
+
+    it("withholds the cold-path slope on the evidence columns, not on the SQL slope", async () => {
+      RAW.mockResolvedValueOnce([
+        { type: "BLOOD_PRESSURE_SYS", has_buckets: false },
+      ]);
+      UNSAFE.mockResolvedValueOnce([
+        {
+          type: "BLOOD_PRESSURE_SYS",
+          count: BigInt(5),
+          min_value: 118,
+          max_value: 130,
+          mean_value: 124,
+        },
+      ])
+        .mockResolvedValueOnce([
+          {
+            type: "BLOOD_PRESSURE_SYS",
+            avg7: 124,
+            avg30: 126,
+            // REGR_SLOPE over three readings minutes apart.
+            slope7: -2160,
+            r2_7: 1,
+            // The 30-day window adds two readings on two more days, but
+            // they span only 9 days: too little of the window for a trend.
+            slope30: -1.2,
+            r2_30: 0.4,
+            days7: 1,
+            span7: 0,
+            days30: 3,
+            span30: 9,
+          },
+        ])
+        .mockResolvedValueOnce([
+          { type: "BLOOD_PRESSURE_SYS", value: 124, measured_at: new Date() },
+        ]);
+
+      const result = await computeSummariesSlice("user-cluster-cold");
+      const sys = result.summaries.BLOOD_PRESSURE_SYS;
+      expect(sys.slope7).toBeNull();
+      expect(sys.slope30).toBeNull();
     });
   });
 
@@ -635,8 +744,8 @@ describe("computeSummariesSlice", () => {
    * `computeFromRollups` path windows the regression on UTC-midnight
    * (`startOfUtcDay(now − N days)` + `composeWindowedRegression`). The
    * cold-fallback `windowed` query must anchor its REGR_* FILTERs on the
-   * SAME UTC-midnight boundary — `date_trunc('day', NOW() AT TIME ZONE
-   * 'UTC') − INTERVAL 'N days'` — so a warm→cold coverage transition
+   * SAME UTC-midnight boundary of the same `now` — `date_trunc('day',
+   * $2::timestamp) − INTERVAL 'N days'` — so a warm→cold coverage transition
    * returns identical boundary-day membership for slope7/30/90 instead of
    * a cache-dependent answer to the same request.
    */
@@ -659,30 +768,32 @@ describe("computeSummariesSlice", () => {
       const sql = windowedSql as string;
 
       // Every regression window (7/30 for slope + r²) anchors on the
-      // day-truncated UTC boundary. Four FILTERs total (the 90-day pair
-      // left with slope90 in v1.37.19).
+      // day-truncated UTC boundary. Four regression FILTERs (the 90-day
+      // pair left with slope90 in v1.37.19) plus three per window for the
+      // trend evidence (distinct days, first day, last day), which must
+      // read the same rows the regression fits.
       for (const days of ["7 days", "30 days"]) {
         expect(sql).toContain(
-          `m."measured_at" >= (date_trunc('day', NOW() AT TIME ZONE 'UTC') - INTERVAL '${days}')`,
+          `m."measured_at" >= (date_trunc('day', $2::timestamp) - INTERVAL '${days}')`,
         );
       }
       const anchored = sql.match(
-        /date_trunc\('day', NOW\(\) AT TIME ZONE 'UTC'\) - INTERVAL '(?:7|30) days'\)/g,
+        /date_trunc\('day', \$2::timestamp\) - INTERVAL '(?:7|30) days'\)/g,
       );
-      expect(anchored?.length).toBe(4);
+      expect(anchored?.length).toBe(10);
       // The bound stays a naive UTC timestamp like measured_at: converting
       // it to timestamptz would route the comparison through the session
       // time zone.
       expect(sql).not.toMatch(/INTERVAL '(?:7|30) days'\) AT TIME ZONE/);
 
-      // The regression windows must NOT fall back to the bare wall-clock
-      // `NOW() - INTERVAL 'N days'` bound the warm path never uses for the
-      // slope. Isolate the slope columns (everything from the first
-      // REGR_SLOPE onward) so the avg7/avg30 windows above — which DO stay
-      // wall-clock by design — don't trip the assertion.
+      // The regression windows must NOT fall back to the bare instant
+      // bound the warm path never uses for the slope. Isolate the slope
+      // columns (everything from the first REGR_SLOPE onward) so the
+      // avg7/avg30 windows above, which DO count from the instant by
+      // design, don't trip the assertion.
       const slopeBlock = sql.slice(sql.indexOf("REGR_SLOPE"));
       expect(slopeBlock).not.toMatch(
-        /WHERE m\."measured_at" >= \(?NOW\(\)( AT TIME ZONE 'UTC'\))? -/,
+        /WHERE m\."measured_at" >= \$2::timestamp -/,
       );
     });
   });

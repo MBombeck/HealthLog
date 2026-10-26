@@ -35,7 +35,7 @@ const LIB = join(process.cwd(), "src", "lib");
  * three outcomes cannot carry.
  */
 const EXCEPTIONS: Readonly<Record<string, { matches: number; why: string }>> = {
-  "google-health/client.ts": {
+  "google-health/data-points.ts": {
     matches: 1,
     why: "progress-bounded streaming list walk with slice budget and resume (forEachDataPointPage)",
   },

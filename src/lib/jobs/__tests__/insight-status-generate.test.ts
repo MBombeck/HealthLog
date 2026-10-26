@@ -1,18 +1,16 @@
 /**
- * v1.8.3 — unit tests for the on-demand per-metric status generation queue.
+ * Unit tests for the on-demand per-metric status generation queue.
  *
  * Covers:
  *   - the dispatch runs the matching generator with force:true;
  *   - an unknown metric is annotated and skipped, not thrown;
  *   - the enqueue helper no-ops without a global boss instance and de-dupes
  *     with a singletonKey when one is present;
- *   - the queue is registered in `allQueues` AND wired to a `createAndWork`
- *     handler in reminder-worker.ts (the v1.4.37 W10 unregistered-queue
- *     catch — a queue built but never registered silently never drains).
+ *   - the worker registry declares the queue and binds its handler (the
+ *     unregistered-queue catch — a queue built but never registered silently
+ *     never drains).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import fs from "node:fs";
-import path from "node:path";
 
 const getGlobalBoss = vi.fn();
 vi.mock("@/lib/jobs/boss-instance", () => ({
@@ -47,6 +45,12 @@ vi.mock("@/lib/ai/capabilities/gate", () => ({
   aiCapabilityForJob: (...a: unknown[]) => aiCapabilityForJob(...a),
   aiCapabilityForRecord: vi.fn(),
 }));
+// The worker's insights handlers (loaded to check the queue's binding) also
+// import the nightly status batch; stub it so its card table never reads the
+// stubbed generators above.
+vi.mock("@/lib/insights/status-batch", () => ({
+  generateStatusBatchForUser: vi.fn(),
+}));
 const annotate = vi.fn();
 vi.mock("@/lib/logging/context", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/logging/context")>()),
@@ -59,6 +63,13 @@ import {
   INSIGHT_STATUS_GENERATE_QUEUE,
   INSIGHT_STATUS_METRICS,
 } from "../insight-status-generate";
+import { INSIGHT_STATUS_GENERATE_CONCURRENCY } from "../insight-status-generate-queue";
+import { handleInsightStatusGenerate } from "../reminder/insights-handlers";
+import {
+  groupOf,
+  jobOf,
+  loadedHandler,
+} from "../registry/__tests__/registry-helpers";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -259,23 +270,18 @@ describe("enqueueStatusGeneration", () => {
 });
 
 describe("queue registration", () => {
-  // v1.18.1 — the insight-status-generate wiring moved out of the 2143-LOC
-  // reminder-worker boot file into the status registrar. The dead-queue guard
-  // follows the wiring there.
-  const workerSrc = fs.readFileSync(
-    path.resolve(__dirname, "../reminder/register-status.ts"),
-    "utf8",
-  );
-
-  it("registers the queue name in the allQueues createQueue loop", () => {
-    const match = workerSrc.match(/const allQueues\s*=\s*\[([\s\S]*?)\];/);
-    expect(match).not.toBeNull();
-    expect(match![1]).toMatch(/\bINSIGHT_STATUS_GENERATE_QUEUE\b/);
+  it("declares the queue in the status group, low-concurrency and cron-free", () => {
+    expect(groupOf(INSIGHT_STATUS_GENERATE_QUEUE).name).toBe("status");
+    const job = jobOf(INSIGHT_STATUS_GENERATE_QUEUE);
+    expect(job.work).toEqual({
+      localConcurrency: INSIGHT_STATUS_GENERATE_CONCURRENCY,
+    });
+    expect(job.cron).toBeUndefined();
   });
 
-  it("registers a createAndWork handler for the queue", () => {
-    expect(workerSrc).toMatch(
-      /createAndWork[\s\S]{0,120}INSIGHT_STATUS_GENERATE_QUEUE/,
+  it("binds the status handler to the queue", async () => {
+    expect(await loadedHandler(INSIGHT_STATUS_GENERATE_QUEUE)).toBe(
+      handleInsightStatusGenerate,
     );
   });
 

@@ -242,7 +242,7 @@ describe("daily-reads refetch guard", () => {
       expect(read(rel)).toMatch(/invalidateMedicationReads\(/);
     }
     const pairInPlace = [
-      "components/medications/dose-history-ledger.tsx",
+      "components/medications/dose-history/use-dose-history-ledger.ts",
       "components/medications/dose-history-add-dialog.tsx",
     ];
     for (const rel of pairInPlace) {

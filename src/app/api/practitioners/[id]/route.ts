@@ -19,13 +19,8 @@ import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { overwriteDetails } from "@/lib/sharing/audit-details";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { practitionerUpdateSchema } from "@/lib/validations/practitioners";
 import { encryptNote } from "@/lib/crypto/note-cipher";
@@ -73,17 +68,11 @@ export const PATCH = apiHandler(
       return apiError("Practitioner not found", 404);
     }
 
-    const { data: rawBody, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, practitionerUpdateSchema, {
       maxBytes: 16 * 1024,
+      errorCode: "practitioner.invalid",
     });
-    if (jsonError) return jsonError;
-
-    const parsed = practitionerUpdateSchema.safeParse(rawBody);
-    if (!parsed.success) {
-      return returnAllZodIssues(parsed.error, 422, {
-        errorCode: "practitioner.invalid",
-      });
-    }
+    if (!parsed.ok) return parsed.error;
 
     const entry = parsed.data;
 

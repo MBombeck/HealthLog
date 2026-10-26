@@ -21,7 +21,11 @@ import { join } from "node:path";
 
 const ROOT = join(__dirname, "../../..");
 const INSIGHTS_PATH = join(ROOT, "src/app/insights/page-client.tsx");
-const ANALYTICS_ROUTE_PATH = join(ROOT, "src/app/api/analytics/route.ts");
+/** The analytics default body, built outside its route. */
+const ANALYTICS_BODY_PATHS = [
+  join(ROOT, "src/lib/analytics/response/default-body.ts"),
+  join(ROOT, "src/lib/analytics/response/correlations.ts"),
+];
 const ADVISOR_HOOK_PATH = join(
   ROOT,
   "src/components/insights/use-insights-advisor.ts",
@@ -84,7 +88,7 @@ describe("v1.4.20 B3 — /api/analytics surfaces correlations", () => {
   });
 
   it("returns a `correlations` block on the success payload", () => {
-    const src = load(ANALYTICS_ROUTE_PATH);
+    const src = ANALYTICS_BODY_PATHS.map(load).join("\n");
     expect(src).toMatch(/correlations:\s*correlationsWithPatterns,/);
     expect(src).toMatch(/computeCorrelationHypotheses/);
   });

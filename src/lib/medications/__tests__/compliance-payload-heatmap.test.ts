@@ -55,6 +55,7 @@ it("counts an off-schedule row as taken only when it has a taken time", async ()
       createdAt: new Date("2026-01-01T00:00:00Z"),
       startsOn: null,
       endsOn: null,
+      endedAt: null,
       oneShot: false,
       asNeeded: false,
       trackIntake: true,

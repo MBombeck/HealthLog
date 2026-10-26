@@ -43,7 +43,7 @@ import { deriveFollowUps } from "@/lib/ai/coach/follow-ups/derive";
 import type { ResolvedFollowUp } from "@/lib/ai/coach/follow-ups/resolve";
 import { parseCoachPrefs } from "@/lib/validations/coach-prefs";
 import { readCoachReach } from "@/lib/ai/coach/history-reach-read";
-import { tableRangeWithinReach } from "@/lib/ai/coach/tools/executor";
+import { tableRangeWithinReach } from "@/lib/ai/coach/tools/run/prior-results";
 import { createSseStream } from "@/lib/sse/create-stream";
 
 import {

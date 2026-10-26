@@ -9,8 +9,7 @@ already installed, longer if a TLS-fronted public hostname is in scope
 
 - **Docker 24+ with Compose v2.** The bundled `docker-compose.yml`
   pulls a multi-arch image from GitHub Container Registry (linux/amd64
-  - linux/arm64), so a Raspberry Pi 5 or an x86 VPS both work
-    unchanged.
+  and linux/arm64), so a Raspberry Pi 5 or an x86 VPS both work unchanged.
 - **3 GB RAM (4 GB recommended), 10 GB free disk.** The Postgres data
   volume grows with measurement history; the Apple Health import worker
   can briefly hold a 1.5 GB upload in `/tmp` while it parses. The app
@@ -23,11 +22,12 @@ already installed, longer if a TLS-fronted public hostname is in scope
   below the supported floor. On a busy instance, raise it.
 - **Outbound HTTPS** to `ghcr.io` (image pulls) plus whichever
   integration endpoints you plan to enable (Withings, OpenAI, etc.).
-  The opt-in environmental-context module additionally reaches
-  `archive-api.open-meteo.com` and `geocoding-api.open-meteo.com` for
-  weather and daylight; it stays off until you
-  enable it and set a home location, and every outbound call goes
-  through the SSRF-guarded egress wrapper.
+  The environmental-context module additionally reaches
+  `archive-api.open-meteo.com`, `air-quality-api.open-meteo.com` and
+  `geocoding-api.open-meteo.com` for weather, air quality and the city
+  search. It is on by default, but nothing leaves the host until someone
+  sets a home location, and every outbound call goes through the
+  SSRF-guarded egress wrapper.
   Three requests happen by default without anything connected: the
   HaveIBeenPwned range query when a password is set (only the first five
   characters of the password's SHA-1 are sent), a daily check of the
@@ -81,7 +81,9 @@ explicitly in `.env` (see the commented example there).
 
 ### Using an existing or shared Postgres
 
-HealthLog can live in a database on a Postgres instance you already run.
+HealthLog can live in a database on a Postgres instance you already run,
+version 16 or newer; the compose file ships 18, and every release is tested
+on both.
 It stores every time as UTC and pins each connection it opens to UTC
 (`TimeZone=UTC`, sent with the libpq `options` startup parameter), so the
 server's or the database's own `timezone` setting does not matter: an
@@ -105,9 +107,12 @@ ALTER DATABASE healthlog SET timezone TO 'UTC';
 docker compose up -d
 ```
 
-Compose starts two services:
+Compose starts two services and one short-lived step:
 
-- `db` — PostgreSQL 16 with a named volume for persistence.
+- `db` — PostgreSQL 18 with a named volume for persistence.
+- `db-upgrade` — moves a Postgres 16 database from v1.45 or earlier into
+  the new one, once, and exits; on a new install it has nothing to do. See
+  [Moving to a newer Postgres major](../ops/postgres-major-upgrade.md).
 - `app` — HealthLog itself, listening on `localhost:3000`. The image
   runs `prisma migrate deploy` on boot so the schema lands
   automatically; subsequent restarts no-op when the database is
@@ -265,30 +270,53 @@ ps` — the `app` healthcheck polls `/api/health` every 30 seconds
   `pull_policy: always` on the `app` service, and verify the running
   build with `GET /api/version` (it returns `version` + `buildSha`).
 
-## Back up your encryption key
+## Save the recovery kit
 
-`ENCRYPTION_KEY` (or the `ENCRYPTION_KEYS` map) is not stored in the database.
-Without it, the encrypted parts of the database and every in-database backup
-cannot be read. Keep a copy outside the server, then confirm it under Admin,
-Encryption: the step shows the key id and a fingerprint (the first 12 hex
-characters of SHA-256 over the key) and can check a pasted copy without
-storing it. Admins see a dashboard reminder until the active key is confirmed.
+No key HealthLog encrypts with is stored in the database. Without them the
+encrypted parts of the database, a database dump and every backup copy cannot
+be read. The recovery kit under Admin, Encryption lists every key a restore of
+this server needs:
 
-| Platform  | Where the key is set                                            |
-| --------- | --------------------------------------------------------------- |
-| Compose   | `.env` next to `docker-compose.yml`                             |
-| TrueNAS   | Apps, HealthLog, Edit, Environment                              |
-| Coolify   | the application's Environment Variables                         |
-| Unraid    | the container template (Docker tab, Edit) or the Compose `.env` |
-| Portainer | the stack's Environment variables                               |
+- `ENCRYPTION_KEY` (or each id in the `ENCRYPTION_KEYS` map), including a
+  retired id for as long as a stored or off-host backup copy still needs it;
+- `BACKUP_ENCRYPTION_KEY` and any `BACKUP_ENCRYPTION_PREVIOUS_KEYS`, when
+  off-host copies are set up;
+- `API_TOKEN_HMAC_KEY`, without which every session, token and share link ends
+  (no data is lost).
+
+Each key is shown by id and a fingerprint (the first 12 hex characters of
+SHA-256 over the key), never the key itself, and **Check my copy** compares a
+pasted copy without storing it. Keep a copy of each outside the server, then
+confirm the kit. Admins see a dashboard reminder until it is confirmed, and the
+kit is due again whenever a key it needs changes: a rotation, a new backup
+key, a re-keyed install. The kit also links the
+[disaster recovery guide](../ops/disaster-recovery.md).
+
+The **Recovery readiness** card on the admin overview and the Backups page
+judges every backup signal in one place: the database dump, the weekly account
+copies, the off-host copies, the last restore drill, whether off-host copies
+are set up, whether the bucket ever removes old database dumps, and the
+recovery kit. An hourly check sends each admin a
+**Backup health** notification when a signal turns to "needs attention" or "at
+risk", once a day while it stays at risk, and once when it recovers. Route or
+switch it off per channel under Notifications.
+
+| Platform  | Where the key is set                                                                               |
+| --------- | -------------------------------------------------------------------------------------------------- |
+| Compose   | `.env` next to `docker-compose.yml`                                                                |
+| TrueNAS   | Apps, HealthLog, Edit: the Encryption Key field (`ENCRYPTION_KEY` in a YAML install's environment) |
+| Coolify   | the application's Environment Variables                                                            |
+| Unraid    | the container template (Docker tab, Edit) or the Compose `.env`                                    |
+| Portainer | the stack's Environment variables                                                                  |
 
 Set `HEALTHLOG_PLATFORM` (`compose`, `truenas`, `coolify`, `unraid`,
-`portainer`) to open the step on your platform's instructions.
+`portainer`) to open the kit on your platform's instructions.
 
-To compute the fingerprint of your copy:
+To compute the fingerprint of your copy of a hex key, and of the token key:
 
 ```bash
 echo -n "<your key>" | xxd -r -p | sha256sum | cut -c1-12
+printf %s "<API_TOKEN_HMAC_KEY>" | sha256sum | cut -c1-12
 ```
 
 **HealthLog refuses to serve: encryption key does not match this database.**
@@ -341,6 +369,15 @@ written under that key, so remove the setting once the key is confirmed.
 Your database is the only stateful piece — back it up, and back up the
 key that decrypts it.
 
+**Database dumps the app takes itself.** Every night, and before an update
+applies migrations, the app writes a `pg_dump` of the whole database with a
+manifest into the `backups` volume and keeps the newest few. With the
+off-host bucket configured, each nightly dump is also uploaded, encrypted.
+`docker compose run --rm db-restore latest` restores one into an empty
+database. What is kept where, the keys a restore needs, and restoring onto a
+new server: [`docs/ops/disaster-recovery.md`](../ops/disaster-recovery.md).
+Keep a copy of those dumps off this host.
+
 **Local snapshot (the common single-box case).** Dump the `db` service
 with `pg_dump`:
 
@@ -374,8 +411,11 @@ encryption key safely (keep the old key until zero rows remain on it) see
 A new image can bring database migrations, and `docker-entrypoint.sh`
 applies them on the first start of that image. Most are additive, but some
 rewrite data, and going back to the previous image does not undo them. The
-only way back from a migration that went wrong is the dump you took before
-it. So take one before every pull:
+way back from a migration that went wrong is a dump taken before it. The
+entrypoint takes one itself (`healthlog-<time>-pre-migration.dump` in the
+`backups` volume, see
+[`docs/ops/disaster-recovery.md`](../ops/disaster-recovery.md)); a dump of
+your own before every pull, kept off the host, is the second copy:
 
 ```bash
 # 1. Dump the database (same command as under "Backup and restore").
@@ -393,17 +433,27 @@ curl -s http://localhost:3000/api/version
 Keep the dump until the new version has run for a few days, and keep your
 encryption key with it: a dump without the key cannot be read.
 
+The database image is a separate matter: a new Postgres minor is a change of
+the `image:` line. The move from 16 to 18 runs by itself on the first start
+of the compose file from v1.46; a database you run yourself moves by dump
+and restore. Both are in
+[`docs/ops/postgres-major-upgrade.md`](../ops/postgres-major-upgrade.md).
+
 The start log says what is about to happen before the migrations run:
 
 ```text
-HealthLog: 2 database migrations pending. Back up the database before updating (pg_dump, see the Updates section of docs/self-hosting/getting-started.md); a migration is not undone by going back to the previous image.
+HealthLog: 2 database migrations pending. Unless DB_BACKUP_BEFORE_MIGRATE=false, a pg_dump of the database is written to DB_BACKUP_DIR before they run (docs/ops/disaster-recovery.md); a migration is not undone by going back to the previous image.
+HealthLog: taking a database dump before 2 pending migration(s) into /var/lib/healthlog/backups...
+HealthLog: pre-migration dump written: healthlog-20261025T081502Z-pre-migration.dump (212.4 MB, 231 tables, 38 s).
 HealthLog: Running database migrations...
 ```
 
 or `HealthLog: Database schema is up to date.` when the image brings none.
-The line is a notice and does not pause the start: the migrations run right
-after it. So the dump belongs before step 2, not after you see the line; by
-then the database is already being migrated.
+The migrations run right after the dump. A dump that fails on a writable
+directory stops the start before anything is migrated, and the log names the
+switch that skips it once (`DB_BACKUP_BEFORE_MIGRATE=false`). Your own dump
+belongs before step 2, not after you see these lines; by then the database is
+already being migrated.
 
 If an update to v1.43 stops at migration `0409_drop_plaintext_location`,
 nothing was changed; the recovery is in

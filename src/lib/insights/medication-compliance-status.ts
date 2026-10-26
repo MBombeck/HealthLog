@@ -3,8 +3,6 @@ import {
   getMedicationComplianceSystemPrompt,
   getMedicationComplianceUserPrompt,
 } from "@/lib/ai/prompts/medication-compliance";
-import { openerArchetypeHint } from "@/lib/ai/prompts/opener-archetype";
-import type { Locale } from "@/lib/i18n/config";
 import {
   buildComplianceMedicationContext,
   COURSES_COMPLIANCE_SELECT,
@@ -14,44 +12,37 @@ import {
   lastNonSkippedTakenAt,
   SCHEDULE_COMPLIANCE_SELECT,
 } from "@/lib/analytics/compliance";
-import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
 import { getMedicationCategories } from "@/lib/medication-category";
 import { sanitizeForPrompt } from "@/lib/insights/sanitize";
 import { getNoKeyMedicationComplianceStatusText } from "@/lib/insights/no-key-fallbacks";
-import {
-  formatPreviousContextForPrompt,
-  getPreviousInsightContext,
-} from "@/lib/insights/memory";
-import {
-  buildAssessmentContextBlock,
-  pickVarietyLead,
-} from "@/lib/insights/assessment-context";
 import { applyPayloadBudget } from "@/lib/insights/bucket-series";
 import { buildGradedSeriesFromPoints } from "@/lib/insights/graded-series";
-import { statusSnapshotCharsForRecord } from "@/lib/ai/capabilities/usage";
 import { buildMetricSignal } from "@/lib/insights/metric-signal";
-import { degradeStatusSnapshotToBudget } from "@/lib/insights/graded-series";
 import {
-  type SupportedLocale,
-  finalizeStatusSummary,
-  normalizeLocale,
   normalizeSummaryText,
   round,
+  type SupportedLocale,
 } from "@/lib/insights/status-shared";
 import {
   readFreshStatusItems,
   refreshUnchangedStatusItems,
-  resolveReadOnlyStatusMiss,
-  statusCacheAction,
   writeStatusNote,
 } from "@/lib/insights/status-cache";
-import { hashInsightSnapshot } from "@/lib/insights/snapshot-hash";
 import { returnTimeoutFallback } from "@/lib/insights/timeout-fallback";
 import {
   runPreparedStatusCard,
   type PreparedStatusCard,
 } from "@/lib/insights/status-card-generation";
-import { annotate } from "@/lib/logging/context";
+import {
+  coverageSpan,
+  prepareStatusCard,
+  type ServedBuild,
+  type StatusCardBuild,
+  type StatusCardContext,
+  type StatusCardOptions,
+  type StatusCardPlugin,
+  type StatusNoteCodec,
+} from "@/lib/insights/status-pipeline";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
 
 // 360 daily days + 24 monthly windows ≈ 1080 days of intake history.
@@ -80,7 +71,7 @@ function parseMedicationItems(items: unknown[]): MedicationSummaryItem[] {
  * status result. It flows through the shared `PreparedStatusCard` union via
  * the open index signature on `StatusCardResult`.
  */
-interface MedicationComplianceResult {
+type MedicationComplianceResult = {
   hasProvider: boolean;
   summary: string | null;
   medications: MedicationSummaryItem[];
@@ -88,7 +79,7 @@ interface MedicationComplianceResult {
   updatedAt: string | null;
   preparing?: boolean;
   revalidating?: boolean;
-}
+};
 
 /**
  * Public entry — unchanged signature. Prepares the card then runs ONE
@@ -97,11 +88,7 @@ interface MedicationComplianceResult {
  */
 export async function generateMedicationComplianceStatusForUser(
   userId: string,
-  options?: {
-    locale?: string | null;
-    force?: boolean;
-    readOnly?: boolean;
-  },
+  options?: StatusCardOptions,
 ): Promise<MedicationComplianceResult> {
   const prepared = await prepareMedicationComplianceStatusForUser(
     userId,
@@ -112,114 +99,157 @@ export async function generateMedicationComplianceStatusForUser(
 }
 
 /**
- * v1.18.7 — everything up to (not including) the provider call.
- * Carries the richer `{ summary, medications }` result through the shared
- * prepare/run/finalize contract. See `status-card-generation.ts`.
+ * Everything up to (not including) the provider call, through the shared
+ * status pipeline (`status-pipeline.ts`). Carries the richer
+ * `{ summary, medications }` result through its own note codec.
  */
-export async function prepareMedicationComplianceStatusForUser(
+export function prepareMedicationComplianceStatusForUser(
   userId: string,
-  options?: {
-    locale?: string | null;
-    force?: boolean;
-    /** v1.8.3 — read-only navigation path; see weight-status for the rationale. */
-    readOnly?: boolean;
-  },
+  options?: StatusCardOptions,
 ): Promise<PreparedStatusCard> {
-  const locale = normalizeLocale(options?.locale);
-  const force = options?.force === true;
-  const readOnly = options?.readOnly === true;
-  const cacheAction = statusCacheAction("medication-compliance", locale);
-  // v1.30.3 — resolve the user's own tz BEFORE the day-key so the
-  // cache rolls over at the user's local midnight, not Berlin's. Has to
-  // happen ahead of the cache read below (the earliest possible return
-  // path), not just the later day-bucketing reads.
-  const userTz = await resolveUserTimezone(userId);
-  const todayKey = userDayKey(new Date(), userTz);
+  return prepareStatusCard(MEDICATION_COMPLIANCE_STATUS_CARD, userId, options);
+}
 
-  // This card stores per-medication lines next to its summary, so it reads
-  // its note through the items variant of the shared reader.
-  if (!force) {
+/**
+ * This card stores per-medication lines next to its summary, so it reads and
+ * re-dates its note through the items variants of the shared readers, and
+ * its result carries the lines as `medications`.
+ */
+const medicationComplianceCodec: StatusNoteCodec<
+  MedicationComplianceResult,
+  MedicationSummaryItem[]
+> = {
+  async readFresh(ctx) {
+    if (ctx.force) return null;
     const cached = await readFreshStatusItems({
-      userId,
-      cacheAction,
-      todayKey,
+      userId: ctx.userId,
+      cacheAction: ctx.cacheAction,
+      todayKey: ctx.todayKey,
     });
-    if (cached && Array.isArray(cached.items)) {
-      return {
-        phase: "served",
-        result: {
-          hasProvider: true,
-          summary: cached.text,
-          medications: parseMedicationItems(cached.items),
-          cached: true,
-          updatedAt: cached.updatedAt,
-        },
-      };
-    }
-  }
-
-  // v1.8.3 — read-only navigation path: never block on the provider.
-  // Enqueue generation out of band and return preparing / no-provider.
-  if (readOnly) {
-    const outcome = await resolveReadOnlyStatusMiss({
-      userId,
-      metric: "medication-compliance",
-      locale,
+    if (!cached || !Array.isArray(cached.items)) return null;
+    return {
+      hasProvider: true,
+      summary: cached.text,
+      medications: parseMedicationItems(cached.items),
+      cached: true,
+      updatedAt: cached.updatedAt,
+    };
+  },
+  async refreshUnchanged(ctx, snapshotHash) {
+    const unchanged = await refreshUnchangedStatusItems({
+      userId: ctx.userId,
+      cacheAction: ctx.cacheAction,
+      todayKey: ctx.todayKey,
+      snapshotHash,
     });
+    if (!unchanged || !Array.isArray(unchanged.items)) return null;
+    return {
+      hasProvider: true,
+      summary: unchanged.text,
+      medications: parseMedicationItems(unchanged.items),
+      cached: true,
+      updatedAt: unchanged.updatedAt,
+    };
+  },
+  readOnly(outcome, unavailableText) {
     // Unavailable for any reason: the deterministic line, no enqueue.
     // `hasProvider` is provider presence only.
     if (outcome.kind === "unavailable") {
       return {
-        phase: "served",
-        result: {
-          hasProvider: outcome.hasProvider,
-          summary: getNoKeyMedicationComplianceStatusText(locale),
-          medications: [],
-          cached: true,
-          updatedAt: null,
-        },
+        hasProvider: outcome.hasProvider,
+        summary: unavailableText,
+        medications: [],
+        cached: true,
+        updatedAt: null,
       };
     }
-    // v1.8.7 — stale-while-revalidate: serve the last good narrative (if
-    // any) while the worker re-warms; only show the empty preparing
-    // skeleton when none was ever produced.
+    // Stale-while-revalidate: serve the last good narrative (if any) while
+    // the worker re-warms; only show the empty preparing skeleton when none
+    // was ever produced.
     return {
-      phase: "served",
-      result: {
-        hasProvider: true,
-        summary: outcome.lastGood?.text ?? null,
-        medications: [],
-        cached: outcome.lastGood !== null,
-        updatedAt: outcome.lastGood?.updatedAt ?? null,
-        preparing: outcome.lastGood === null,
-        revalidating: outcome.revalidating,
-      },
+      hasProvider: true,
+      summary: outcome.lastGood?.text ?? null,
+      medications: [],
+      cached: outcome.lastGood !== null,
+      updatedAt: outcome.lastGood?.updatedAt ?? null,
+      preparing: outcome.lastGood === null,
+      revalidating: outcome.revalidating,
     };
-  }
+  },
+  noProvider(text) {
+    return {
+      hasProvider: false,
+      summary: text,
+      medications: [],
+      cached: true,
+      updatedAt: null,
+    };
+  },
+  fallback(ctx, reason, stubText, medicationSummaries) {
+    // Transient miss or a withheld reply — write the short-TTL negative stub
+    // (so the read-only route does not re-enqueue while the provider is
+    // degraded) and serve the fallback for this render without persisting an
+    // assessment. A withheld reply still renders the per-medication rows.
+    returnTimeoutFallback({
+      cacheAction: ctx.cacheAction,
+      reason,
+      userId: ctx.userId,
+      todayKey: ctx.todayKey,
+      stubText,
+    });
+    return {
+      hasProvider: true,
+      summary: stubText,
+      medications: reason === "screened" ? medicationSummaries : [],
+      cached: true,
+      updatedAt: null,
+    };
+  },
+  async persist(ctx, summary, hashes, medicationSummaries) {
+    // The compliance prompt returns a single `{ summary }` envelope — it
+    // does not emit per-medication text. The per-medication cards carry a
+    // placeholder so the UI surfaces a row per active medication; the
+    // overall `summary` is the model-authored assessment.
+    const generatedAt = await writeStatusNote({
+      userId: ctx.userId,
+      cacheAction: ctx.cacheAction,
+      todayKey: ctx.todayKey,
+      text: summary,
+      items: medicationSummaries,
+      snapshotHash: hashes.snapshotHash,
+    });
+    return {
+      hasProvider: true,
+      summary,
+      medications: medicationSummaries,
+      cached: false,
+      updatedAt: generatedAt.toISOString(),
+    };
+  },
+};
 
-  const medicationRows = await prisma.medication.findMany({
-    // v1.16.11 — as-needed (PRN) medications never surface a compliance
-    // rate (no expected doses).
-    where: { userId, active: true, asNeeded: false, ...TRACKED_INTAKE_WHERE },
-    // v1.15.20 — schedules through the shared compliance select so the
-    // configured per-dose windows reach this surface like every other.
-    include: {
-      schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
-      // v1.16.3 — archived schedule eras for era-aware compliance.
-      scheduleRevisions: { orderBy: { validFrom: "asc" } },
-      // v1.25 — pause eras so paused days drop out of the denominator.
-      pauseEras: { select: { pausedAt: true, resumedAt: true } },
-      // v1.40 (#1024) — the courses, so a gap between two expects nothing.
-      courses: COURSES_COMPLIANCE_SELECT,
-    },
-    orderBy: { name: "asc" },
-  });
+type ComplianceMedication = Awaited<
+  ReturnType<typeof readComplianceMedications>
+>[number];
+type ComplianceIntakeEvent = {
+  medicationId: string;
+  scheduledFor: Date;
+  takenAt: Date | null;
+  skipped: boolean;
+};
 
-  // A medication with no schedule expects no dose, and `calculateCompliance`
-  // answers 100 % for that case. The `asNeeded: false` filter above catches
-  // only the PRN arm; the empty schedule is reachable on a scheduled
-  // medication and would otherwise report perfect adherence.
-  const medications = medicationRows.filter(expectsDoses);
+/**
+ * The adherence snapshot: one block per active, scheduled medication with
+ * its compliance, streak and per-day series, and the overall averages.
+ */
+async function buildMedicationComplianceSnapshot(
+  ctx: StatusCardContext,
+): Promise<
+  | StatusCardBuild<MedicationSummaryItem[]>
+  | ServedBuild<MedicationComplianceResult>
+> {
+  const { userId, locale, userTz, todayKey } = ctx;
+  const medications = await readComplianceMedications(userId);
 
   if (medications.length === 0) {
     return {
@@ -256,7 +286,7 @@ export async function prepareMedicationComplianceStatusForUser(
       medicationId: { in: medications.map((medication) => medication.id) },
       scheduledFor: { gte: rangeStart },
     },
-    orderBy: { scheduledFor: "asc" },
+    orderBy: [{ scheduledFor: "asc" }, { id: "asc" }],
     select: {
       medicationId: true,
       scheduledFor: true,
@@ -269,89 +299,16 @@ export async function prepareMedicationComplianceStatusForUser(
   // the canonical engine on the user's own tz. `userTz` was already
   // resolved above for the cache day-key.
 
-  const medicationSnapshots = medications.map((medication) => {
-    const events = medicationEvents.filter(
-      (event) => event.medicationId === medication.id,
-    );
-
-    const medicationContext = buildComplianceMedicationContext(
+  const medicationSnapshots = medications.map((medication) =>
+    medicationSnapshot({
       medication,
-      lastNonSkippedTakenAt(events),
-      userTz,
-    );
-    // v1.18.0 — one shared cadence-aware expansion pass yields BOTH the
-    // canonical compliance7 / compliance30 (the values shown in this same
-    // snapshot) AND the unified dose-history ledger the per-day series is
-    // built from, so the series can never disagree with compliance30.
-    const bundle = buildMedicationComplianceBundle(
-      events,
-      medication.schedules,
-      medicationContext,
+      medicationEvents,
+      categoryMap,
       now,
-    );
-    const compliance7 = bundle.compliance7;
-    const compliance30 = bundle.compliance30;
-
-    // v1.18.0 — the per-day series honours the medication's cadence
-    // (daysOfWeek + intervalWeeks + rolling / RRULE / cyclic): only days the
-    // schedule actually expected a dose produce a point, and each day's rate
-    // uses the SAME taken / (taken + missed) tally as compliance30. The old
-    // path divided every event-day by `schedules.length`, treating every
-    // calendar day as fully dose-due — which made a weekly-cadence med's
-    // per-day series contradict its own compliance30. Reusing the canonical
-    // ledger fixes that by construction.
-    const perDayRecords = dailyComplianceRatesFromLedger(
-      bundle.ledgerRows,
       userTz,
-    ).map((day) => ({
-      measuredAt: day.date,
-      value: round(day.rate, 1),
-    }));
-
-    // `applyPayloadBudget` gives the latest-day focus; the compact
-    // graded series is what reaches the prompt.
-    const dailyBudgeted = applyPayloadBudget(perDayRecords, {
-      now,
-      tz: userTz,
-    });
-    const dailySeries = buildGradedSeriesFromPoints(perDayRecords, now, userTz);
-    const latestDay = dailyBudgeted.daily[0] ?? null;
-
-    // v1.18.10 — the finished recent-vs-baseline adherence comparison
-    // + normal-swing verdict, computed from the canonical per-day rate series
-    // so the model states the trend rather than deriving it. The compliance %
-    // itself stays server-computed (compliance7/30 above); this adds only the
-    // trend signal. Adherence reads higher-better; the band is 0–100%.
-    const signal = buildMetricSignal({
-      metric:
-        locale === "en"
-          ? `adherence for ${sanitizeForPrompt(medication.name)}`
-          : `Einnahmetreue für ${sanitizeForPrompt(medication.name)}`,
-      unit: "%",
-      direction: "higher-better",
-      graded: dailySeries,
-      // Recency is surfaced separately via dataCoverage.newestMeasurementDaysAgo
-      // (computed after this map); the per-med signal leaves it null.
-      newestDaysAgo: null,
-    });
-
-    return {
-      medicationId: medication.id,
-      name: sanitizeForPrompt(medication.name),
-      dose: sanitizeForPrompt(medication.dose, 50),
-      category: categoryMap[medication.id] ?? "OTHER",
-      schedulesPerDay: medication.schedules.length,
-      compliance7: compliance7.rate,
-      compliance30: compliance30.rate,
-      streak: compliance7.streak,
-      taken7: compliance7.taken,
-      skipped7: compliance7.skipped,
-      missed7: compliance7.missed,
-      ...(signal ? { signal } : {}),
-      dailySeries,
-      latestDay,
-    };
-  });
+      locale,
+    }),
+  );
 
   const avgCompliance30 =
     medicationSnapshots.length > 0
@@ -364,22 +321,13 @@ export async function prepareMedicationComplianceStatusForUser(
         )
       : null;
 
-  const oldestEvent =
-    medicationEvents.length > 0 ? medicationEvents[0].scheduledFor : null;
-  const newestEvent =
-    medicationEvents.length > 0
-      ? medicationEvents[medicationEvents.length - 1].scheduledFor
-      : null;
-  const totalSpanDays =
-    oldestEvent && newestEvent
-      ? Math.round(
-          (newestEvent.getTime() - oldestEvent.getTime()) /
-            (24 * 60 * 60 * 1000),
-        )
-      : 0;
-  const newestMeasurementDaysAgo = newestEvent
-    ? Math.round((Date.now() - newestEvent.getTime()) / (24 * 60 * 60 * 1000))
-    : null;
+  const { totalSpanDays, newestDaysAgo: newestMeasurementDaysAgo } =
+    coverageSpan(
+      medicationEvents.length > 0 ? medicationEvents[0].scheduledFor : null,
+      medicationEvents.length > 0
+        ? medicationEvents[medicationEvents.length - 1].scheduledFor
+        : null,
+    );
 
   const snapshot = {
     locale,
@@ -404,206 +352,185 @@ export async function prepareMedicationComplianceStatusForUser(
     medications: medicationSnapshots,
   };
 
-  const shed = degradeStatusSnapshotToBudget(
-    snapshot as unknown as Record<string, unknown>,
-    { maxChars: await statusSnapshotCharsForRecord(userId) },
-  );
-  const snapshotJson = JSON.stringify(snapshot);
-
-  annotate({
-    action: { name: cacheAction },
-    meta: {
-      payload_size_bytes: snapshotJson.length,
-      ...(shed.length > 0 ? { snapshot_shed: shed } : {}),
-    },
-  });
-
-  // Content-hash gate (v1.16.8): when the snapshot is unchanged since the
-  // last real assessment, refresh the cache timestamp and skip the LLM.
-  // This card stores per-medication lines next to the summary, so it uses
-  // the items variant of the shared gate.
-  const snapshotHash = hashInsightSnapshot(snapshot);
-  const unchanged = await refreshUnchangedStatusItems({
-    userId,
-    cacheAction,
-    todayKey,
-    snapshotHash,
-  });
-  if (unchanged && Array.isArray(unchanged.items)) {
-    return {
-      phase: "served",
-      result: {
-        hasProvider: true,
-        summary: unchanged.text,
-        medications: parseMedicationItems(unchanged.items),
-        cached: true,
-        updatedAt: unchanged.updatedAt,
-      },
-    };
-  }
-
-  const previousContext = await getPreviousInsightContext(
-    userId,
-    "medication-compliance-status",
-    locale,
-    12,
-  );
-  const previousContextBlock = formatPreviousContextForPrompt(
-    previousContext,
-    locale,
-  );
-
-  // v1.12.7 — diversity / anti-repetition block (see blood-pressure-status).
-  // Adherence spans multiple medications with no single card-level graded
-  // mean to band, so the steady-run signal is left to the previous-context
-  // comparison (repeatCount 0) and there is no measurement discovery channel
-  // (relations empty); the variety lead + data-strength carry the rotation.
-  const varietyLead = pickVarietyLead(
-    userId,
-    "medication-compliance",
-    todayKey,
-  );
-  const assessmentContextBlock = buildAssessmentContextBlock(
-    {
-      varietyLead,
-      dataStrength: {
+  return {
+    snapshot,
+    finish: () => ({
+      // Adherence spans multiple medications with no single card-level graded
+      // mean to band, so the steady-run signal is left to the previous-context
+      // comparison (repeatCount 0) and there is no measurement discovery
+      // channel (relations empty); the variety lead + data-strength carry the
+      // rotation.
+      context: {
+        repeatCount: 0,
         points: medicationEvents.length,
         newestDaysAgo: newestMeasurementDaysAgo,
+        relationsFor: null,
       },
-      repeatCount: 0,
-      relations: [],
-    },
-    locale,
-  );
-
-  // The per-medication placeholder rows the UI surfaces alongside the
-  // model-authored overall `summary`. Computed here so both `finalize`
-  // (success) reuses them; the model's compliance prompt returns only the
-  // single `{ summary }` envelope.
-  const medicationSummaries: MedicationSummaryItem[] = medicationSnapshots.map(
-    (medication) => ({
-      medicationId: medication.medicationId,
-      text: normalizeSummaryText(
-        locale === "de"
-          ? `${medication.name}: Es liegen noch nicht genügend konsistente Detaildaten für eine belastbare Kurzbewertung vor.`
-          : `${medication.name}: There is currently not enough consistent detail data for a robust short assessment.`,
-      ),
-    }),
-  );
-
-  // The provider call is deferred to the caller — single-card path runs ONE
-  // completion; the batch path folds this prompt into one shared call.
-  return {
-    phase: "pending",
-    metric: "medication-compliance",
-    userId,
-    cacheAction,
-    systemPrompt: getMedicationComplianceSystemPrompt(locale),
-    userPrompt: getMedicationComplianceUserPrompt(
-      snapshotJson,
-      todayKey,
-      locale,
-      previousContextBlock,
-      assessmentContextBlock,
-      // v1.28.40 — rotating opener hint, per (user, metric, day).
-      openerArchetypeHint(
-        `${userId}:medication-compliance:${todayKey}`,
-        locale as Locale,
-      ),
-    ),
-    snapshotHash,
-    // v1.12.7 — match the archetype cards' 0.45.
-    temperature: 0.45,
-    noProvider: {
-      hasProvider: false,
-      summary: getNoKeyMedicationComplianceStatusText(locale),
-      medications: [],
-      cached: true,
-      updatedAt: null,
-    },
-    timeout: (reason) => {
-      // Transient miss — write the short-TTL negative stub (so the read-only
-      // route does not re-enqueue while the provider is degraded) and serve
-      // the fallback for this render without persisting an assessment.
-      returnTimeoutFallback({
-        cacheAction,
-        reason,
-        userId,
-        todayKey,
-        stubText: getNoKeyMedicationComplianceStatusText(locale),
-      });
-      return {
-        hasProvider: true,
-        summary: getNoKeyMedicationComplianceStatusText(locale),
-        medications: [],
-        cached: true,
-        updatedAt: null,
-      };
-    },
-    finalize: async (outcome) => {
-      // The compliance prompt returns a single `{ summary }` envelope — it
-      // does not emit per-medication text. The per-medication cards carry a
-      // placeholder so the UI surfaces a row per active medication; the
-      // overall `summary` is the model-authored assessment.
-      //
-      // v1.32.20 — route the completion through the shared status chokepoint,
-      // so this card enforces the exact contracts its seven siblings do rather
-      // than only withholding unparseable envelopes. `finalizeStatusSummary`
-      // parses the `{ summary }` envelope, scrubs chart tokens + whitespace,
-      // then SCREENS the prose against `INSIGHTS_CONTRACTS` (dose / risk /
-      // causal). This is the highest-leverage surface for the outbound screen —
-      // a medication card is exactly where a dose-change imperative or a
-      // fabricated figure lands. WITHHOLD on any block or unparseable envelope:
-      // serve the deterministic no-key line, write a short negative stub, and
-      // persist no model text. The per-medication rows still render.
-      const finalized = finalizeStatusSummary(outcome.content, locale);
-      if (!finalized.ok) {
-        annotate({
-          action: { name: "insights.status.outbound_blocked" },
-          meta: { cacheAction, reason: finalized.reason },
-        });
-        returnTimeoutFallback({
-          cacheAction,
-          reason: "screened",
-          userId,
+      fallbackText: getNoKeyMedicationComplianceStatusText(locale),
+      prompts: (snapshotJson, context) => ({
+        systemPrompt: getMedicationComplianceSystemPrompt(locale),
+        userPrompt: getMedicationComplianceUserPrompt(
+          snapshotJson,
           todayKey,
-          stubText: getNoKeyMedicationComplianceStatusText(locale),
-        });
-        return {
-          hasProvider: true,
-          summary: getNoKeyMedicationComplianceStatusText(locale),
-          medications: medicationSummaries,
-          cached: true,
-          updatedAt: null,
-        };
-      }
-      const summary = finalized.text;
-      if (!summary) {
-        throw new Error(
-          "Medication-compliance-status summary was empty after normalization",
-        );
-      }
-      const generatedAt = await writeStatusNote({
-        userId,
-        cacheAction,
-        todayKey,
-        text: summary,
-        items: medicationSummaries,
-        snapshotHash,
-      });
-      return {
-        hasProvider: true,
-        summary,
-        medications: medicationSummaries,
-        cached: false,
-        updatedAt: generatedAt.toISOString(),
-      };
-    },
+          locale,
+          context.previousContextBlock,
+          context.assessmentContextBlock,
+          context.openerHint,
+        ),
+      }),
+      detail: medicationPlaceholderLines(medicationSnapshots, locale),
+    }),
   };
 }
 
-export function resolveMedicationComplianceStatusLocale(
-  locale: string | null | undefined,
-): SupportedLocale {
-  return normalizeLocale(locale);
+/** The active, scheduled medications whose adherence the card reports. */
+async function readComplianceMedications(userId: string) {
+  const medicationRows = await prisma.medication.findMany({
+    // v1.16.11 — as-needed (PRN) medications never surface a compliance
+    // rate (no expected doses).
+    where: { userId, active: true, asNeeded: false, ...TRACKED_INTAKE_WHERE },
+    // v1.15.20 — schedules through the shared compliance select so the
+    // configured per-dose windows reach this surface like every other.
+    include: {
+      schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
+      // v1.16.3 — archived schedule eras for era-aware compliance.
+      scheduleRevisions: { orderBy: [{ validFrom: "asc" }, { id: "asc" }] },
+      // v1.25 — pause eras so paused days drop out of the denominator.
+      pauseEras: { select: { pausedAt: true, resumedAt: true } },
+      // v1.40 (#1024) — the courses, so a gap between two expects nothing.
+      courses: COURSES_COMPLIANCE_SELECT,
+    },
+    orderBy: [{ name: "asc" }, { id: "asc" }],
+  });
+
+  // A medication with no schedule expects no dose, and `calculateCompliance`
+  // answers 100 % for that case. The `asNeeded: false` filter above catches
+  // only the PRN arm; the empty schedule is reachable on a scheduled
+  // medication and would otherwise report perfect adherence.
+  return medicationRows.filter(expectsDoses);
 }
+
+/** One medication's block in the adherence snapshot. */
+function medicationSnapshot(args: {
+  medication: ComplianceMedication;
+  medicationEvents: ComplianceIntakeEvent[];
+  categoryMap: Record<string, string>;
+  now: Date;
+  userTz: string;
+  locale: SupportedLocale;
+}) {
+  const { medication, medicationEvents, categoryMap, now, userTz, locale } =
+    args;
+  const events = medicationEvents.filter(
+    (event) => event.medicationId === medication.id,
+  );
+
+  const medicationContext = buildComplianceMedicationContext(
+    medication,
+    lastNonSkippedTakenAt(events),
+    userTz,
+  );
+  // v1.18.0 — one shared cadence-aware expansion pass yields BOTH the
+  // canonical compliance7 / compliance30 (the values shown in this same
+  // snapshot) AND the unified dose-history ledger the per-day series is
+  // built from, so the series can never disagree with compliance30.
+  const bundle = buildMedicationComplianceBundle(
+    events,
+    medication.schedules,
+    medicationContext,
+    now,
+  );
+  const compliance7 = bundle.compliance7;
+  const compliance30 = bundle.compliance30;
+
+  // v1.18.0 — the per-day series honours the medication's cadence
+  // (daysOfWeek + intervalWeeks + rolling / RRULE / cyclic): only days the
+  // schedule actually expected a dose produce a point, and each day's rate
+  // uses the SAME taken / (taken + missed) tally as compliance30. The old
+  // path divided every event-day by `schedules.length`, treating every
+  // calendar day as fully dose-due — which made a weekly-cadence med's
+  // per-day series contradict its own compliance30. Reusing the canonical
+  // ledger fixes that by construction.
+  const perDayRecords = dailyComplianceRatesFromLedger(
+    bundle.ledgerRows,
+    userTz,
+  ).map((day) => ({
+    measuredAt: day.date,
+    value: round(day.rate, 1),
+  }));
+
+  // `applyPayloadBudget` gives the latest-day focus; the compact
+  // graded series is what reaches the prompt.
+  const dailyBudgeted = applyPayloadBudget(perDayRecords, {
+    now,
+    tz: userTz,
+  });
+  const dailySeries = buildGradedSeriesFromPoints(perDayRecords, now, userTz);
+  const latestDay = dailyBudgeted.daily[0] ?? null;
+
+  // v1.18.10 — the finished recent-vs-baseline adherence comparison
+  // + normal-swing verdict, computed from the canonical per-day rate series
+  // so the model states the trend rather than deriving it. The compliance %
+  // itself stays server-computed (compliance7/30 above); this adds only the
+  // trend signal. Adherence reads higher-better; the band is 0–100%.
+  const signal = buildMetricSignal({
+    metric:
+      locale === "en"
+        ? `adherence for ${sanitizeForPrompt(medication.name)}`
+        : `Einnahmetreue für ${sanitizeForPrompt(medication.name)}`,
+    unit: "%",
+    direction: "higher-better",
+    graded: dailySeries,
+    // Recency is surfaced separately via dataCoverage.newestMeasurementDaysAgo
+    // (computed after this map); the per-med signal leaves it null.
+    newestDaysAgo: null,
+  });
+
+  return {
+    medicationId: medication.id,
+    name: sanitizeForPrompt(medication.name),
+    dose: sanitizeForPrompt(medication.dose, 50),
+    category: categoryMap[medication.id] ?? "OTHER",
+    schedulesPerDay: medication.schedules.length,
+    compliance7: compliance7.rate,
+    compliance30: compliance30.rate,
+    streak: compliance7.streak,
+    taken7: compliance7.taken,
+    skipped7: compliance7.skipped,
+    missed7: compliance7.missed,
+    ...(signal ? { signal } : {}),
+    dailySeries,
+    latestDay,
+  };
+}
+
+/**
+ * The per-medication placeholder rows the UI surfaces alongside the
+ * model-authored overall `summary`; the model's compliance prompt returns
+ * only the single `{ summary }` envelope.
+ */
+function medicationPlaceholderLines(
+  medicationSnapshots: ReadonlyArray<{ medicationId: string; name: string }>,
+  locale: SupportedLocale,
+): MedicationSummaryItem[] {
+  return medicationSnapshots.map((medication) => ({
+    medicationId: medication.medicationId,
+    text: normalizeSummaryText(
+      locale === "de"
+        ? `${medication.name}: Es liegen noch nicht genügend konsistente Detaildaten für eine belastbare Kurzbewertung vor.`
+        : `${medication.name}: There is currently not enough consistent detail data for a robust short assessment.`,
+    ),
+  }));
+}
+
+const MEDICATION_COMPLIANCE_STATUS_CARD: StatusCardPlugin<
+  MedicationComplianceResult,
+  MedicationSummaryItem[]
+> = {
+  scope: "medication-compliance",
+  codec: medicationComplianceCodec,
+  unavailableText: (locale) => getNoKeyMedicationComplianceStatusText(locale),
+  emptyMessage:
+    "Medication-compliance-status summary was empty after normalization",
+  build: buildMedicationComplianceSnapshot,
+};

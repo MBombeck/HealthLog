@@ -9,7 +9,7 @@ const { findUnique, update, findActiveGrant, auditLog } = vi.hoisted(() => ({
 
 vi.mock("@/lib/db", () => ({ prisma: { user: { findUnique, update } } }));
 vi.mock("@/lib/auth/audit", () => ({ auditLog }));
-vi.mock("@/lib/sharing/grants", () => ({
+vi.mock("@/lib/sharing/grant-access", () => ({
   findActiveGrant,
   grantAllows: (
     grant: { access: string; revokedAt: Date | null },

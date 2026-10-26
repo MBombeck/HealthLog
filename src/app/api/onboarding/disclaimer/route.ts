@@ -3,12 +3,8 @@ import { z } from "zod/v4";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import {
-  apiSuccess,
-  apiValidationError,
-  safeJson,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { DISCLAIMER_VERSION } from "@/lib/onboarding/disclaimer";
 
 /**
@@ -36,22 +32,12 @@ const bodySchema = z
 export const POST = apiHandler(async (request) => {
   const { user } = await requireAuth();
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, bodySchema, {
     maxBytes: 4 * 1024,
+    message: "Invalid input",
+    errorCode: "onboarding.disclaimer.invalid",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = z.safeParse(bodySchema, rawBody);
-  if (!parsed.success) {
-    return apiValidationError(
-      "Invalid input",
-      sanitiseZodIssues(parsed.error.issues),
-      422,
-      {
-        errorCode: "onboarding.disclaimer.invalid",
-      },
-    );
-  }
+  if (!parsed.ok) return parsed.error;
 
   // The server pins the canonical version it stamps — the body version is
   // only a freshness signal, never the source of truth.

@@ -350,6 +350,13 @@ describe("a large account under the production heap", () => {
   const YEARS = 2;
   /** The production container's heap ceiling. */
   const PROD_HEAP_MB = 524;
+  /**
+   * The seed's transactions run past Prisma's 5 s default under a loaded
+   * host: a month took at most 0.55 s on a quiet machine and 9.9 s at a load
+   * average near 95, which expired the transaction. The bound is the
+   * fixture's, not the code's under test.
+   */
+  const SEED_TRANSACTION = { maxWait: 30_000, timeout: 120_000 };
 
   beforeAll(async () => {
     await prisma.user.create({
@@ -359,9 +366,10 @@ describe("a large account under the production heap", () => {
     // seventh hour holding a single reading so the two methods disagree.
     //
     // Written a month at a time, each month in its own transaction with the
-    // statement timeout lifted for that transaction only: as one statement
+    // statement timeout lifted for that transaction only and a transaction
+    // timeout sized for a loaded host (`SEED_TRANSACTION`): as one statement
     // the million-row insert outran the timeout on CI's shared Postgres, and
-    // the timeout guards the code under test, not this fixture.
+    // both timeouts guard the code under test, not this fixture.
     const end = new Date();
     end.setUTCHours(0, 0, 0, 0);
     const start = new Date(end.getTime() - YEARS * 365 * DAY);
@@ -369,9 +377,9 @@ describe("a large account under the production heap", () => {
     for (let from = start.getTime(); from < end.getTime(); from += CHUNK) {
       const chunkFrom = new Date(from);
       const chunkTo = new Date(Math.min(from + CHUNK, end.getTime()));
-      await prisma.$transaction([
-        prisma.$executeRaw`SET LOCAL statement_timeout = 0`,
-        prisma.$executeRaw`
+      await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SET LOCAL statement_timeout = 0`;
+        await tx.$executeRaw`
           INSERT INTO measurements (id, user_id, type, unit, source, value, measured_at, created_at, updated_at)
           SELECT 'big-' || (extract(epoch FROM ts)::bigint / 60)::text, ${BIG}, 'PULSE', 'bpm', 'APPLE_HEALTH',
                  60 + ((extract(epoch FROM ts)::bigint / 60) % 40),
@@ -382,13 +390,13 @@ describe("a large account under the production heap", () => {
                  interval '1 minute'
                ) AS s(ts)
           WHERE extract(hour FROM ts)::int % 7 <> 3 OR extract(minute FROM ts)::int = 0
-        `,
-      ]);
+        `;
+      }, SEED_TRANSACTION);
     }
-    await prisma.$transaction([
-      prisma.$executeRaw`SET LOCAL statement_timeout = 0`,
-      prisma.$executeRaw`ANALYZE measurements`,
-    ]);
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SET LOCAL statement_timeout = 0`;
+      await tx.$executeRaw`ANALYZE measurements`;
+    }, SEED_TRANSACTION);
   }, 600_000);
 
   async function peakHeapMb(work: () => Promise<unknown>) {

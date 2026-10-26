@@ -1,6 +1,5 @@
 /**
- * v1.28.33 (issue #486) — send-policy pins for the Apple Health import
- * queue.
+ * Send-policy pins for the Apple Health import queue (issue #486).
  *
  * The queue defaults (retryLimit 2, expireInSeconds 900) redelivered a
  * long-running import after its staged `/tmp` upload was already
@@ -21,20 +20,27 @@ vi.mock("@/lib/db", () => ({
 
 import {
   APPLE_HEALTH_IMPORT_PARSER_REVISION,
-  APPLE_HEALTH_IMPORT_LEGACY_QUEUE,
   APPLE_HEALTH_IMPORT_SEND_OPTIONS,
-  APPLE_HEALTH_IMPORT_V2_QUEUE,
 } from "../apple-health-import-worker";
+import {
+  APPLE_HEALTH_IMPORT_LEGACY_QUEUE,
+  APPLE_HEALTH_IMPORT_V2_QUEUE,
+} from "@/lib/jobs/apple-health-import-queue";
+import {
+  handleAppleHealthImportJobs,
+  handleLegacyAppleHealthImportJobs,
+} from "@/lib/jobs/reminder/maintenance-handlers";
+import {
+  groupOf,
+  jobOf,
+  loadedHandler,
+} from "@/lib/jobs/registry/__tests__/registry-helpers";
 
 const ROUTE_FILES = [
   "src/app/api/import/apple-health-export/route.ts",
   "src/app/api/admin/import-apple-health-export/route.ts",
 ];
 
-const maintenanceSource = readFileSync(
-  join(process.cwd(), "src/lib/jobs/reminder/register-maintenance.ts"),
-  "utf8",
-);
 const workerSource = readFileSync(
   join(process.cwd(), "src/lib/jobs/apple-health-import-worker.ts"),
   "utf8",
@@ -80,21 +86,18 @@ describe("apple health import — parser revision boundary", () => {
     expect(APPLE_HEALTH_IMPORT_LEGACY_QUEUE).toBe("apple-health-import");
   });
 
-  it("drains current-parser jobs separately while bridging legacy backlog", () => {
-    const allQueues = maintenanceSource.match(
-      /const allQueues\s*=\s*\[([\s\S]*?)\];/,
+  it("drains current-parser jobs separately while bridging legacy backlog", async () => {
+    expect(groupOf(APPLE_HEALTH_IMPORT_V2_QUEUE).name).toBe("maintenance");
+    expect(groupOf(APPLE_HEALTH_IMPORT_LEGACY_QUEUE).name).toBe("maintenance");
+    // Only the current-parser queue runs in the heavy lane; the legacy
+    // bridge re-sends its backlog onto it.
+    expect(jobOf(APPLE_HEALTH_IMPORT_V2_QUEUE).lane).toBe(true);
+    expect(jobOf(APPLE_HEALTH_IMPORT_LEGACY_QUEUE).lane).toBeUndefined();
+    expect(await loadedHandler(APPLE_HEALTH_IMPORT_V2_QUEUE)).toBe(
+      handleAppleHealthImportJobs,
     );
-    expect(allQueues).not.toBeNull();
-    expect(allQueues![1]).toMatch(/\bAPPLE_HEALTH_IMPORT_V2_QUEUE\b/);
-    expect(allQueues![1]).toMatch(/\bAPPLE_HEALTH_IMPORT_LEGACY_QUEUE\b/);
-    // The v2 window is the wider of the two: its binding wraps the batch in
-    // a loop that keeps the first failed outcome, so the handler call sits
-    // further from the queue name than the legacy bridge's does.
-    expect(maintenanceSource).toMatch(
-      /createAndWork[\s\S]{0,200}APPLE_HEALTH_IMPORT_V2_QUEUE[\s\S]{0,600}handleAppleHealthImport/,
-    );
-    expect(maintenanceSource).toMatch(
-      /createAndWork[\s\S]{0,200}APPLE_HEALTH_IMPORT_LEGACY_QUEUE[\s\S]{0,400}migrateLegacyAppleHealthImport/,
+    expect(await loadedHandler(APPLE_HEALTH_IMPORT_LEGACY_QUEUE)).toBe(
+      handleLegacyAppleHealthImportJobs,
     );
   });
 

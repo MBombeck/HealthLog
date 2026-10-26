@@ -18,7 +18,7 @@ import type {
 import { queryKeys, refetchInactiveDailyReads } from "@/lib/query-keys";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { useAiCapability, useAiProviderState } from "@/hooks/use-ai-capability";
-import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
+import { AI_BUDGETS, COMPREHENSIVE_MODEL_CALLS } from "@/lib/ai/ai-budgets";
 import { clientAbortMs } from "@/lib/ai/effective-timeout";
 import type { BriefingFailureClass } from "@/lib/insights/briefing-failure-marker";
 
@@ -128,6 +128,12 @@ const ADVISOR_TIMEOUT_MS = 8_000;
  * answered nothing is asked once more inside the first, so three calls at the
  * per-call timeout, at least the briefing's own 180 s default each. Never
  * shorter than the server: the abort is only for a request nobody answers.
+ *
+ * Fewer than `COMPREHENSIVE_MODEL_CALLS` on purpose: the route runs its own
+ * pipeline (`src/lib/insights/briefing-request/`), not the background
+ * generator, and answers an unparseable reply or a screened payload with a
+ * refusal instead of the generator's JSON retry and screen repair.
+ * `ai-call-timeout-guard.test.ts` holds that pipeline to these two stages.
  */
 const FORCE_ADVISOR_MODEL_CALLS = 3;
 
@@ -147,14 +153,40 @@ export function forceAdvisorTimeoutMs(
  * `revalidating: true` (stale briefing served, out-of-band warm in
  * flight). The query's 1 h `staleTime` plus the app-default
  * `refetchOnWindowFocus: false` means a stale-served briefing would
- * otherwise never refresh in-session. 25 s comfortably covers the warm
- * job's 45 s budget within two polls; the attempt ceiling stops a
+ * otherwise never refresh in-session. The attempt ceiling stops a
  * persistently failing generation from polling an open page forever.
  * Same bounded-poll shape as `nextStatusPollInterval`
  * (`src/hooks/use-insight-status.ts`).
+ *
+ * `ADVISOR_REVALIDATE_POLL_MAX_ATTEMPTS` is the ceiling for a settling
+ * regenerate and for callers whose poll waits on no model; the briefing read
+ * itself waits as long as the warm may run (`advisorRevalidatePollMaxAttempts`).
  */
 export const ADVISOR_REVALIDATE_POLL_MS = 25_000;
 export const ADVISOR_REVALIDATE_POLL_MAX_ATTEMPTS = 10;
+
+/**
+ * The attempt ceiling for the briefing read while the warm is in flight.
+ *
+ * #1274 — a fixed ten attempts stopped watching after 225 s, while the warm
+ * the read enqueued may run for the person's response timeout on each of the
+ * generation's sequential calls (`COMPREHENSIVE_MODEL_CALLS`). A local model
+ * needing 300 s per answer delivered its briefing to a page that had stopped
+ * looking, which kept the empty or the previous failure state on screen. The
+ * window is the warm's own bound read off the published setting, never less
+ * per call than the briefing's 180 s default (`clientAbortMs`), plus the first
+ * read and one interval for the queue to pick the warm up.
+ */
+export function advisorRevalidatePollMaxAttempts(
+  responseTimeoutMs: number | null | undefined,
+): number {
+  const warmMs = clientAbortMs(
+    responseTimeoutMs,
+    COMPREHENSIVE_MODEL_CALLS,
+    AI_BUDGETS.comprehensive.timeoutMs,
+  );
+  return Math.ceil(warmMs / ADVISOR_REVALIDATE_POLL_MS) + 2;
+}
 
 /**
  * Refs #786 — the settling state a timed-out force regenerate enters.
@@ -237,6 +269,7 @@ export function nextAdvisorPollInterval(
   revalidating: boolean | undefined,
   dataUpdateCount: number,
   settling?: Pick<AdvisorSettleState, "startedAtUpdateCount"> | null,
+  maxAttempts: number = ADVISOR_REVALIDATE_POLL_MAX_ATTEMPTS,
 ): number | false {
   if (settling) {
     if (
@@ -248,7 +281,7 @@ export function nextAdvisorPollInterval(
     return ADVISOR_REVALIDATE_POLL_MS;
   }
   if (!revalidating) return false;
-  if (dataUpdateCount >= ADVISOR_REVALIDATE_POLL_MAX_ATTEMPTS) return false;
+  if (dataUpdateCount >= maxAttempts) return false;
   return ADVISOR_REVALIDATE_POLL_MS;
 }
 
@@ -487,6 +520,7 @@ export function useInsightsAdvisorQuery(
         query.state.data?.payload?.revalidating,
         pollAttemptCount(query.state),
         settling,
+        advisorRevalidatePollMaxAttempts(responseTimeoutMs),
       ),
   });
 

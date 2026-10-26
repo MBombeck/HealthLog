@@ -1,16 +1,17 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   MEASURE_TYPE_MAP,
-  WITHINGS_OAUTH_SCOPE,
-  exchangeCode,
   fetchMeasurements,
-  hasActivityScope,
-  parseWithingsScope,
-  refreshAccessToken,
   subscribeWebhook,
 } from "../client";
+import {
+  WITHINGS_OAUTH_SCOPE,
+  hasActivityScope,
+  parseWithingsScope,
+} from "@/lib/withings/oauth";
 import { WithingsApiError } from "../response-classifier";
 import { WITHINGS_NOTIFY_APPLIS } from "../sync";
+import { withingsOAuth } from "../oauth";
 
 /**
  * Withings client — meastype mapping + payload-parsing unit tests.
@@ -400,7 +401,7 @@ describe("client off-response handling — refreshAccessToken", () => {
       })),
     );
 
-    await expect(refreshAccessToken("rt", creds)).rejects.toMatchObject({
+    await expect(withingsOAuth.refresh("rt", creds)).rejects.toMatchObject({
       name: "WithingsApiError",
       classification: "reauth_required",
       withingsStatus: 101,
@@ -416,7 +417,7 @@ describe("client off-response handling — refreshAccessToken", () => {
       })),
     );
 
-    const err = await refreshAccessToken("rt", creds).catch((e) => e);
+    const err = await withingsOAuth.refresh("rt", creds).catch((e) => e);
     expect(err).toBeInstanceOf(WithingsApiError);
     expect((err as WithingsApiError).classification).toBe("transient");
     expect((err as WithingsApiError).reason).toBe("http_503");
@@ -434,7 +435,9 @@ describe("client off-response handling — exchangeCode", () => {
         json: async () => ({ status: 100, error: "Authentication failed" }),
       })),
     );
-    const err = await exchangeCode("auth-code", creds).catch((e) => e);
+    const err = await withingsOAuth
+      .exchange("auth-code", creds)
+      .catch((e) => e);
     expect(err).toBeInstanceOf(WithingsApiError);
     expect((err as WithingsApiError).classification).toBe("reauth_required");
   });

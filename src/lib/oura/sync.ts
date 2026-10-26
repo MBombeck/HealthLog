@@ -45,12 +45,10 @@ import {
   toFailureKind,
   type FailureKind,
 } from "@/lib/integrations/status";
-import {
-  emitInsertedMeasurementArrivals,
-  type InsertedMeasurementArrivalRow,
-} from "@/lib/arrivals/measurement-emit";
+import type { InsertedMeasurementArrivalRow } from "@/lib/arrivals/measurement-emit";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
+import { afterProviderWrite } from "@/lib/integrations/sync-kit/after-write";
 import type { SyncWriteResult } from "@/lib/outcome/written-outcome";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";
 import {
@@ -71,6 +69,8 @@ import {
   fetchSleep,
   fetchVo2Max,
   fetchWorkouts,
+} from "./client";
+import {
   isRetiredOuraSleepPeriod,
   mapCardiovascularAge,
   mapDailyActivity,
@@ -81,7 +81,7 @@ import {
   mapSleep,
   mapVo2Max,
   type MappedMeasurement,
-} from "./client";
+} from "./map";
 import { getOuraConnection, syncOuraScopeDenied } from "./credentials";
 import { refreshOuraAfterRefusal } from "./oauth-descriptor";
 import { OuraApiError, classifyOuraError } from "./response-classifier";
@@ -885,17 +885,15 @@ export async function upsertOuraMeasurements(
   }
 
   opts.onInserted?.(insertedRows);
-  if (opts.emitArrivals !== false) {
-    void emitInsertedMeasurementArrivals(userId, insertedRows, "oura").catch(
-      () => {},
-    );
-  }
-  // The shared tail: the rollups, the measurement read caches back to the
-  // oldest reading written (a history backfill writes through here and has
-  // no other invalidation), and the cached assessments of the types.
-  await afterMeasurementMutation(userId, touched, {
-    source: "sync",
-    label: "oura",
+  // The shared tail (a history backfill writes through here and has no other
+  // invalidation); the caller may emit the arrivals itself.
+  await afterProviderWrite({
+    userId,
+    provider: "oura",
+    touched,
+    ...(opts.emitArrivals !== false
+      ? { arrivals: { rows: insertedRows, source: "oura" as const } }
+      : {}),
   });
 
   return imported;

@@ -45,10 +45,12 @@
  *     `enqueueBootTimeMoodRollupBackfill` mints the rollups on the
  *     next worker boot so subsequent reads converge on the fast path.
  */
+import { activeAccountSql } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { annotate } from "@/lib/logging/context";
+import { runDetached } from "@/lib/logging/detached";
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { startOfUtcDay } from "@/lib/tz/start-of-utc-day";
 import {
@@ -318,25 +320,27 @@ export async function recomputeMoodBucketsForEntry(
   // write on a detached handle, and one that lands while a vitest worker is
   // closing its RPC channel fails the whole run. No-op outside test.
   trackBackgroundTask(
-    Promise.all(
-      ASYNC_GRANULARITIES.map((granularity) => {
-        const { from, to } = bucketSpan(dateLabel, granularity);
-        return enqueueMoodRollupRecompute({
-          userId,
-          granularity,
-          from,
-          to,
-        }).catch((err: unknown) => {
-          const message = err instanceof Error ? err.message : String(err);
-          annotate({
-            meta: {
-              mood_rollup_enqueue_failed: true,
-              mood_rollup_enqueue_error: message,
-            },
+    runDetached(() =>
+      Promise.all(
+        ASYNC_GRANULARITIES.map((granularity) => {
+          const { from, to } = bucketSpan(dateLabel, granularity);
+          return enqueueMoodRollupRecompute({
+            userId,
+            granularity,
+            from,
+            to,
+          }).catch((err: unknown) => {
+            const message = err instanceof Error ? err.message : String(err);
+            annotate({
+              meta: {
+                mood_rollup_enqueue_failed: true,
+                mood_rollup_enqueue_error: message,
+              },
+            });
+            console.error("[mood-rollups] async enqueue failed:", message);
           });
-          console.error("[mood-rollups] async enqueue failed:", message);
-        });
-      }),
+        }),
+      ),
     ),
   );
 }
@@ -561,6 +565,7 @@ export async function enqueueBootTimeMoodRollupBackfill(
         ON  r."user_id"     = mt."user_id"
         AND r."granularity" = 'DAY'
       WHERE r."bucket_start" IS NULL
+        AND ${activeAccountSql('mt."user_id"')}
     `;
 
     if (users.length === 0) {
@@ -682,6 +687,7 @@ async function persistMoodRollupRows(
       (row) =>
         Prisma.sql`(${userId}, ${granularity}::"measurement_rollup_granularity", ${row.bucket_start}, ${Number(row.count)}, ${row.mean ?? 0}, ${row.min_score ?? 0}, ${row.max_score ?? 0}, ${row.sd}, ${computedAt})`,
     );
+    // account-deletion: writes the buckets of the one account this fold was handed.
     await client.$executeRaw`
       INSERT INTO "mood_entry_rollups"
         ("user_id", "granularity", "bucket_start", "count", "mean", "min_score", "max_score", "sd", "computed_at")

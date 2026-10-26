@@ -244,11 +244,67 @@ describe("the matcher sees what it looks for", () => {
   });
 });
 
+/**
+ * Delegable write routes whose handler bodies live in service modules under
+ * `src/lib/`, keyed by the route relative to `src/`. The route keeps the
+ * resolver call, so membership is read off the route; the awaited audit
+ * actions are read off the route AND these modules, because that is where the
+ * rows are written now. Each module has to be imported by its route (leg
+ * below), so an entry cannot outlive the delegation it describes.
+ */
+const HANDLER_BODY_MODULES: Record<string, readonly string[]> = {
+  "app/api/medications/route.ts": ["lib/medications/create-medication.ts"],
+  "app/api/medications/[id]/intake/route.ts": [
+    "lib/medications/record-intake/record-intake.ts",
+  ],
+  "app/api/medications/intake/route.ts": [
+    "lib/medications/update-intake-status/admission.ts",
+    "lib/medications/update-intake-status/update-intake-status.ts",
+  ],
+};
+
+function handlerAuditActions(file: string): string[] {
+  const rel = relative(join(process.cwd(), "src"), file);
+  return (HANDLER_BODY_MODULES[rel] ?? []).flatMap((body) => {
+    const path = join(process.cwd(), "src", body);
+    return moduleFacts(readFileSync(path, "utf8"), path).awaitedAuditActions;
+  });
+}
+
 describe("the owner's activity view names what a delegate did", () => {
   const routes = routeFiles(API);
   const writeModules = routes
-    .map((file) => ({ file, ...moduleFacts(readFileSync(file, "utf8"), file) }))
+    .map((file) => {
+      const facts = moduleFacts(readFileSync(file, "utf8"), file);
+      return {
+        file,
+        writesToRecord: facts.writesToRecord,
+        awaitedAuditActions: [
+          ...facts.awaitedAuditActions,
+          ...handlerAuditActions(file),
+        ],
+      };
+    })
     .filter((m) => m.writesToRecord);
+
+  it("reads each moved handler body where its route imports it from", () => {
+    const entries = Object.entries(HANDLER_BODY_MODULES);
+    expect(entries.length).toBeGreaterThan(0);
+    for (const [route, modules] of entries) {
+      const source = readFileSync(join(process.cwd(), "src", route), "utf8");
+      expect(moduleFacts(source, route).writesToRecord, route).toBe(true);
+      for (const body of modules) {
+        const specifier = `@/${body.replace(/\.ts$/, "")}`;
+        expect(source, `${route} does not import ${specifier}`).toContain(
+          `"${specifier}"`,
+        );
+        expect(
+          handlerAuditActions(join(process.cwd(), "src", route)).length,
+          `${body} awaits no audit row`,
+        ).toBeGreaterThan(0);
+      }
+    }
+  });
 
   it("reads a plausible number of route modules", () => {
     // A walk that finds nothing agrees with a map that covers nothing.

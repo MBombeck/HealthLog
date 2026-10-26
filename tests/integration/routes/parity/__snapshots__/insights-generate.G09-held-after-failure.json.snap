@@ -1,0 +1,102 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "insights": {
+        "summary": "Cached summary.",
+        "classification": "gut",
+        "findings": [],
+        "correlations": [],
+        "recommendations": [],
+        "dataQuality": {
+          "coverage": "good",
+          "gaps": [],
+          "confidence": "hoch"
+        },
+        "dailyBriefing": {
+          "paragraph": "Your readings held steady this week, with no surprises.",
+          "signalsOfDay": [
+            {
+              "sourceMetric": "weight",
+              "tone": "info",
+              "headline": "Weight is steady",
+              "nudge": "Keep weighing in at the same time each morning.",
+              "delta": null
+            }
+          ],
+          "keyFindings": []
+        },
+        "briefingGeneratedAt": "anchor+0d+09:00:00"
+      },
+      "cached": true,
+      "cachedAt": "anchor+0d+09:00:00",
+      "legacyPayload": false,
+      "revalidating": false,
+      "hasProvider": true,
+      "generationFailed": true,
+      "generationFailureClass": "rate-limit",
+      "briefingOmittedReason": null
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "insights.generate.read"
+      },
+      "meta": {
+        "cached": true,
+        "hasProvider": true,
+        "legacyPayload": false,
+        "revalidating": false
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "insightsCachedAt": "anchor+0d+09:00:00",
+    "insightsCachedLocale": "en",
+    "cachedPayload": {
+      "summary": "Cached summary.",
+      "classification": "gut",
+      "findings": [],
+      "correlations": [],
+      "recommendations": [],
+      "dataQuality": {
+        "coverage": "good",
+        "gaps": [],
+        "confidence": "hoch"
+      },
+      "dailyBriefing": {
+        "paragraph": "Your readings held steady this week, with no surprises.",
+        "signalsOfDay": [
+          {
+            "sourceMetric": "weight",
+            "tone": "info",
+            "headline": "Weight is steady",
+            "nudge": "Keep weighing in at the same time each morning.",
+            "delta": null
+          }
+        ],
+        "keyFindings": []
+      },
+      "briefingGeneratedAt": "anchor+0d+09:00:00"
+    },
+    "snapshotHash": null,
+    "audit": [
+      {
+        "action": "insights.briefing-failure",
+        "details": {
+          "reason": "all-providers-failed",
+          "httpStatus": 429,
+          "failureKind": null
+        },
+        "ipAddress": null
+      }
+    ],
+    "usage": []
+  }
+}

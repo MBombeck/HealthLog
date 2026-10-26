@@ -71,7 +71,7 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
   collapseToTypeDayKeys: vi.fn(() => []),
   recomputeBucketsForMeasurement: vi.fn(async () => {}),
 }));
-vi.mock("@/lib/insights/comprehensive-generate", () => ({
+vi.mock("@/lib/insights/status-invalidation", () => ({
   invalidateStatusInsightsForTypes: vi.fn(async () => {}),
 }));
 vi.mock("@/lib/arrivals/measurement-emit", () => ({
@@ -84,9 +84,12 @@ vi.mock("@/lib/logging/context", () => ({
 vi.mock("../credentials", () => ({
   getUserWhoopCredentials: getUserWhoopCredentialsMock,
 }));
-vi.mock("../client", async (orig) => {
-  const actual = await orig<typeof import("../client")>();
-  return { ...actual, refreshAccessToken: refreshAccessTokenMock };
+vi.mock("../oauth", async (orig) => {
+  const actual = await orig<typeof import("../oauth")>();
+  return {
+    ...actual,
+    whoopOAuth: { ...actual.whoopOAuth, refresh: refreshAccessTokenMock },
+  };
 });
 
 // Each resource resolves the token first (the ledger-registration seam).

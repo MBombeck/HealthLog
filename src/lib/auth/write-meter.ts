@@ -7,7 +7,7 @@
  * PATCH and DELETE on an `[id]` among them. A positive list of routes that
  * remember to call it can only fall behind the routes that exist, so the
  * ceiling now sits on the path every authenticated write already takes: the
- * identity resolvers in `src/lib/api-handler.ts` call {@link meterAccountWrite}
+ * identity resolvers in `src/lib/auth/guards/` call {@link meterAccountWrite}
  * once the caller is known, and it charges the bucket for any request whose
  * method writes.
  *

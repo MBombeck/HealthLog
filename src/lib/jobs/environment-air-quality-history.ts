@@ -31,6 +31,7 @@
  * `src/lib/jobs/reminder/register-maintenance.ts`, or the sends silently
  * no-op.
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { PgBoss } from "pg-boss";
 
 import { prisma } from "@/lib/db";
@@ -130,6 +131,7 @@ export async function discoverAirQualityHistory(
     prisma.user.findMany({
       where: {
         environmentAirQualityEnabled: true,
+        ...ACTIVE_ACCOUNT,
         OR: [
           { homeLocationEncrypted: { not: null } },
           { environmentTravelLocations: { some: {} } },

@@ -15,13 +15,10 @@
  * the new prefs for the supplied `chartKey`, and writes it back inside the
  * same request.
  */
+import { auditLog } from "@/lib/auth/audit";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiSuccess,
-  returnAllZodIssues,
-  safeJson,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiSuccess, sanitiseZodIssues } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { shouldEmitAuditRow } from "@/lib/audit-dedup";
 import { annotate } from "@/lib/logging/context";
 import { prisma, toJson } from "@/lib/db";
@@ -60,42 +57,32 @@ const prefsSchema = z
 export const PUT = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  // v1.4.43 — sibling of `/api/dashboard/widgets`; the per-chart
+  // overlay popover hits this on every toggle so the multi-issue
+  // envelope matches widgets exactly. Audit breadcrumb keyed
+  // `dashboard.chart-overlay.validation-failed`, deduped via the
+  // shared `shouldEmitAuditRow` 60 s `(userId, action)` window so a
+  // misbehaving iOS client looping the popover cannot flood the
+  // audit ledger.
+  const parsed = await parseJsonBody(request, prefsSchema, {
     maxBytes: 64 * 1024,
-  });
-  if (jsonError) return jsonError;
-
-  const parsed = prefsSchema.safeParse(body);
-  if (!parsed.success) {
-    // v1.4.43 — sibling of `/api/dashboard/widgets`; the per-chart
-    // overlay popover hits this on every toggle so the multi-issue
-    // envelope matches widgets exactly. Audit breadcrumb keyed
-    // `dashboard.chart-overlay.validation-failed`, deduped via the
-    // shared `shouldEmitAuditRow` 60 s `(userId, action)` window so a
-    // misbehaving iOS client looping the popover cannot flood the
-    // audit ledger.
-    const issues = sanitiseZodIssues(parsed.error.issues);
-    annotate({
-      action: { name: "dashboard.chart-overlay.validation-failed" },
-      meta: { issue_count: issues.length },
-    });
-    if (
-      shouldEmitAuditRow(user.id, "dashboard.chart-overlay.validation-failed")
-    ) {
-      prisma.auditLog
-        .create({
-          data: {
-            userId: user.id,
-            action: "dashboard.chart-overlay.validation-failed",
-            details: JSON.stringify({ issues }),
-          },
-        })
-        .catch(() => {
+    action: "dashboard.chart-overlay.validation-failed",
+    countIssues: true,
+    onInvalid: (error) => {
+      if (
+        shouldEmitAuditRow(user.id, "dashboard.chart-overlay.validation-failed")
+      ) {
+        const issues = sanitiseZodIssues(error.issues);
+        auditLog("dashboard.chart-overlay.validation-failed", {
+          userId: user.id,
+          details: { issues },
+        }).catch(() => {
           /* swallow — 422 response is the contract */
         });
-    }
-    return returnAllZodIssues(parsed.error, 422);
-  }
+      }
+    },
+  });
+  if (!parsed.ok) return parsed.error;
 
   // Read-modify-write under a row lock, so two concurrent toggles (two
   // tabs, two charts flipped in quick succession) can neither drop one

@@ -17,6 +17,12 @@ import { join } from "node:path";
 
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
+import {
+  readSource,
+  readSourceFolder,
+  requireFloor,
+} from "@/__tests__/helpers/source-files";
+
 import type { CoachSnapshotResult } from "@/lib/ai/coach/snapshot";
 
 const buildCoachSnapshot =
@@ -348,12 +354,24 @@ describe("the reported case: a metric whose whole history is outside the window"
 
 describe("no empty window read can bypass the probe again", () => {
   it("the executor returns no hand-written no_data for a missing section", () => {
-    const source = readFileSync(
-      join(process.cwd(), "src/lib/ai/coach/tools/executor.ts"),
-      "utf8",
-    );
+    // The dispatcher plus one module per tool under `tools/run/`.
+    const sources = [
+      [
+        "executor.ts",
+        readSource("src/lib/ai/coach/tools/executor.ts", [
+          "async function dispatchRead(",
+        ]),
+      ],
+      ...readSourceFolder("src/lib/ai/coach/tools/run", { floor: 15 }),
+    ];
+    const source = sources.map(([, text]) => text).join("\n");
     // Every miss goes through `emptyRead(...)`. A hand-written literal is how
     // the defect got in: four sites, one reason, two meanings.
+    requireFloor(
+      "emptyRead calls in the tool executors",
+      [...source.matchAll(/\bemptyRead\(/g)],
+      9,
+    );
     expect(source).not.toMatch(
       /return \{ present: false, reason: "no_data" \}/,
     );

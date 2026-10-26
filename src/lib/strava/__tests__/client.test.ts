@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+import { mapActivity, summaryHasHeartRate } from "@/lib/strava/map";
 import {
-  mapActivity,
-  summaryHasHeartRate,
   type StravaSummaryActivity,
   type StravaDetailedActivity,
-} from "../client";
+} from "@/lib/strava/wire-types";
 import { classifyStravaResponse } from "../response-classifier";
 
 const baseSummary: StravaSummaryActivity = {

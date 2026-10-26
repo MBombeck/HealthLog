@@ -132,7 +132,9 @@ export const GET = apiHandler(
         tags: item.tags,
         sizeBytes: item.sizeBytes,
         state: held?.state ?? "new",
-        documentId: held?.state === "imported" ? held.documentId : null,
+        // The vault document for `imported`; for `deleted`, the one still in
+        // Recently deleted (null once the purge removed it).
+        documentId: held?.documentId ?? null,
       };
     });
 

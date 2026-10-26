@@ -2,7 +2,7 @@
  * `GET /api/gamification/achievements` is a read.
  *
  * It used to INSERT a `UserAchievement` row for every unlock it noticed,
- * which is the side-effecting GET the MCP-audience note in `api-handler.ts`
+ * which is the side-effecting GET the MCP-audience note in `lib/auth/guards/context.ts`
  * warns against. The evaluation still runs here; only the persistence moved
  * to the `achievement-unlock-sweep` job.
  *

@@ -1,0 +1,32 @@
+{
+  "status": 422,
+  "body": {
+    "data": null,
+    "error": "Your data exceeds the AI payload size limit. Reduce the data window or exclude optional blocks in Settings > AI.",
+    "meta": {
+      "errorCode": "http.invalid",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 422,
+      "action": null,
+      "meta": {
+        "insights_payload_oversize_bytes": 5200000,
+        "insights_payload_too_large": true
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "insightsCachedAt": null,
+    "insightsCachedLocale": null,
+    "cachedPayload": null,
+    "snapshotHash": null,
+    "audit": [],
+    "usage": []
+  }
+}

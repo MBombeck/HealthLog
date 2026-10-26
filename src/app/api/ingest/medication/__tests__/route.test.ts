@@ -30,6 +30,9 @@ vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/lib/auth/hmac", () => ({ hashToken: (s: string) => `hash(${s})` }));
+vi.mock("@/lib/account-deletion/pending", () => ({
+  pendingDeletionOf: vi.fn(async () => null),
+}));
 vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: vi.fn(),
   checkAuthSurfaceRateLimit: vi.fn(),
@@ -66,6 +69,8 @@ import { prisma } from "@/lib/db";
 import { checkAuthSurfaceRateLimit, checkRateLimit } from "@/lib/rate-limit";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
+import { auditLog } from "@/lib/auth/audit";
+import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 
 function postReq(
   body: unknown,
@@ -83,6 +88,7 @@ function postReq(
 
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(auditLog).mockResolvedValue(undefined);
   vi.mocked(checkRateLimit).mockResolvedValue({ allowed: true } as never);
   vi.mocked(checkAuthSurfaceRateLimit).mockResolvedValue({
     allowed: true,
@@ -145,18 +151,15 @@ describe("POST /api/ingest/medication — 422 multi-issue (v1.4.43 W6)", () => {
     const res = await POST(postReq({ medicationName: "" }));
     expect(res.status).toBe(422);
     await new Promise((r) => setTimeout(r, 5));
-    expect(prisma.auditLog.create).toHaveBeenCalledTimes(1);
-    const call = vi.mocked(prisma.auditLog.create).mock.calls[0]?.[0] as {
-      data: { userId: string; action: string };
-    };
-    expect(call.data.userId).toBe("user-1");
-    expect(call.data.action).toBe("ingest.medication.validation-failed");
+    // Through `auditLog()`, which decides whether the refusal is filed.
+    expect(auditLog).toHaveBeenCalledWith(
+      "ingest.medication.validation-failed",
+      expect.objectContaining({ userId: "user-1" }),
+    );
   });
 
   it("does not block the 422 when the audit-row write rejects", async () => {
-    vi.mocked(prisma.auditLog.create).mockRejectedValueOnce(
-      new Error("db down"),
-    );
+    vi.mocked(auditLog).mockRejectedValueOnce(new Error("db down"));
     const res = await POST(postReq({ medicationName: "" }));
     expect(res.status).toBe(422);
   });
@@ -349,6 +352,7 @@ describe("POST /api/ingest/medication — slot attribution + convergence (v1.16.
     // The replay probe finds the original event.
     vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValue({
       id: "evt-original",
+      medicationId: "med-1",
     } as never);
     const res = await POST(
       postReq({
@@ -359,6 +363,53 @@ describe("POST /api/ingest/medication — slot attribution + convergence (v1.16.
     );
     expect(res.status).toBe(200);
     expect(consumeForIntake).not.toHaveBeenCalled();
+  });
+  /**
+   * A token handed to an automation for one medication used to tell a name
+   * it may not touch (403) from one that does not exist (404), and to replay
+   * any of the owner's doses by key before checking its scope.
+   */
+  function narrowToken(scopes: string[]) {
+    vi.mocked(prisma.apiToken.findUnique).mockResolvedValue({
+      id: "tok-2",
+      userId: "user-1",
+      permissions: ["medication:ingest", ...scopes],
+      revoked: false,
+      expiresAt: null,
+      lastUsedAt: null,
+    } as Awaited<ReturnType<typeof prisma.apiToken.findUnique>>);
+  }
+
+  it("gives a one-medication token the same 403 for an unknown and an out-of-scope name", async () => {
+    wireHappyPath();
+    narrowToken(["medication:med-other:ingest"]);
+    const known = await POST(
+      postReq({ medicationName: "Metformin", idempotencyKey: "k-known-1" }),
+    );
+    vi.mocked(prisma.medication.findFirst).mockResolvedValue(null);
+    const unknown = await POST(
+      postReq({ medicationName: "Nonexistent", idempotencyKey: "k-unknown-1" }),
+    );
+    expect(known.status).toBe(403);
+    expect(unknown.status).toBe(403);
+    expect((await unknown.json()).error).toBe((await known.json()).error);
+    // No replay was looked up for a medication outside the scope.
+    expect(prisma.medicationIntakeEvent.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("never replays another medication's dose to a scoped token", async () => {
+    wireHappyPath();
+    narrowToken(["medication:med-1:ingest"]);
+    vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValue({
+      id: "evt-other",
+      medicationId: "med-other",
+      takenAt: new Date(),
+    } as Awaited<ReturnType<typeof prisma.medicationIntakeEvent.findFirst>>);
+    const res = await POST(
+      postReq({ medicationName: "Metformin", idempotencyKey: "k-spent-1" }),
+    );
+    expect(res.status).toBe(409);
+    expect(JSON.stringify(await res.json())).not.toContain("evt-other");
   });
 });
 
@@ -551,6 +602,20 @@ describe("POST /api/ingest/medication — the rate-limit bucket", () => {
     expect(windowMs).toBe(60_000);
     // No token resolved, so no token bucket was charged.
     expect(vi.mocked(checkRateLimit)).not.toHaveBeenCalled();
+  });
+
+  // The deletion revokes every token in its own transaction; one issued in
+  // the same instant would slip past that, and is refused here as well.
+  it("refuses the token of an account pending deletion", async () => {
+    vi.mocked(pendingDeletionOf).mockResolvedValueOnce({
+      requestedAt: new Date(),
+      purgeAt: null,
+    });
+    const res = await POST(
+      postReq({ medicationName: "Metformin", idempotencyKey: "k-pending-001" }),
+    );
+    expect(res.status).toBe(401);
+    expect(pendingDeletionOf).toHaveBeenCalledWith("user-1");
   });
 
   it("falls back to the per-IP bucket when the token does not resolve", async () => {

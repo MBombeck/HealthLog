@@ -31,13 +31,15 @@ import { encrypt } from "@/lib/crypto";
 import {
   GrantError,
   acceptGrant,
-  findActiveGrant,
-  grantAllows,
   inviteGrant,
   renounceGrant,
   revokeGrant,
-  touchGrantUsage,
 } from "@/lib/sharing/grants";
+import {
+  findActiveGrant,
+  grantAllows,
+  touchGrantUsage,
+} from "@/lib/sharing/grant-access";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";

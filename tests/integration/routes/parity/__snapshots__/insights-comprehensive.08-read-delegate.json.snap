@@ -1,0 +1,26 @@
+{
+  "status": 403,
+  "body": {
+    "data": null,
+    "error": "Account access denied",
+    "meta": {
+      "errorCode": "sharing.access.denied",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 403,
+      "action": null,
+      "meta": {
+        "sharing_refusal": "insufficient_access"
+      },
+      "warnings": null,
+      "error": {
+        "type": "SharingAccessDeniedError",
+        "message": "Account access denied"
+      }
+    }
+  ],
+  "effects": []
+}

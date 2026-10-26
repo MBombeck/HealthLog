@@ -36,7 +36,7 @@ const HOME_IMPORT = 'from "@/lib/measurement-reminders/due-day"';
  * shared body, that is the regression, not a reason to relax the test.
  */
 const RENDERING_SURFACES = [
-  "components/measurement-reminders/vorsorge-section.tsx",
+  "components/measurement-reminders/checkups/checkup-card.tsx",
   "components/measurement-reminders/vorsorge-dashboard-card.tsx",
 ];
 

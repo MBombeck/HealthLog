@@ -65,12 +65,12 @@ import {
 } from "@/lib/ai/coach/activity/catalog";
 import { screenCheckpoint } from "@/lib/ai/coach/activity/screen";
 import { parseCoachToolArgs, type CoachToolName } from "./definitions";
-import {
-  executeCoachTool,
-  type CoachToolResult,
-  type CoachToolTrace,
-  type CoachToolTurnContext,
-} from "./executor";
+import { executeCoachTool } from "./executor";
+import type {
+  CoachToolResult,
+  CoachToolTrace,
+  CoachToolTurnContext,
+} from "./run/types";
 import {
   COMPARE_SERIES_TOOL_NAME,
   compareSeriesArgsSchema,
@@ -401,7 +401,7 @@ export async function runCoachToolLoop(args: {
     });
     if (spend) {
       await spend.settleRound({
-        tokens: result.tokensUsed ?? 0,
+        tokens: (result.tokensUsed ?? 0) + fallback.tokensSpent,
         cachedTokens: result.cachedInputTokens ?? 0,
         servedBy: fallback.workingProvider.providerType as ProviderChainType,
         final: isFinal,

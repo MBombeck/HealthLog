@@ -9,14 +9,22 @@
  * columns for a medication that has courses, so reminders, the next-due line
  * and `intakeActionable` — which read the columns — can never disagree with
  * the course list.
+ *
+ * #1280 — "End course" (`endCurrentCourse`) ends the running course at the
+ * moment it is pressed: `endsOn` becomes today and `endedAt` records the
+ * instant, so no slot after it is due, reminded or expected. Every other
+ * write that moves a course's `endsOn` clears `endedAt`: an end date chosen
+ * in the editor means the whole day.
  */
 import type { Prisma } from "@/generated/prisma/client";
 import { decryptFromBytes, encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { prisma } from "@/lib/db";
 import {
+  canEndCourse,
   canStartCourse,
+  courseEndNow,
   courseFromWindow,
-  courseStatusOn,
+  courseStatusAt,
   dateOfDayKey,
   dayKeyOfDate,
   previousCourseEndedOn,
@@ -27,6 +35,7 @@ import {
   type CourseStatus,
 } from "@/lib/medications/course-window";
 import { userDayKey } from "@/lib/tz/format";
+import { reviveEndedPlaceholders } from "@/lib/medications/course-end-placeholders";
 import {
   moveAutoTakeFloorToNow,
   windowWidens,
@@ -39,7 +48,9 @@ export type CourseWriteRefusal =
   /** Clearing the window of a medication that has several courses. */
   | "windowRequired"
   /** The course or the medication is not the caller's. */
-  | "notFound";
+  | "notFound"
+  /** #1280 — "End course" on a medication with no course running now. */
+  | "notRunning";
 
 export class CourseWriteError extends Error {
   constructor(readonly refusal: CourseWriteRefusal) {
@@ -85,6 +96,12 @@ export function courseRefusalResponse(refusal: CourseWriteRefusal): {
         errorCode: "medications.course.invalidRange",
         message: "A course cannot end before it starts",
       };
+    case "notRunning":
+      return {
+        status: 409,
+        errorCode: "medications.course.notRunning",
+        message: "No course is running to end",
+      };
     case "windowRequired":
       return {
         status: 422,
@@ -99,8 +116,18 @@ export interface CourseRow {
   id: string;
   startsOn: Date;
   endsOn: Date | null;
+  endedAt: Date | null;
   noteEncrypted: Uint8Array | null;
 }
+
+/** The course columns every course read and write selects. */
+const COURSE_ROW_SELECT = {
+  id: true,
+  startsOn: true,
+  endsOn: true,
+  endedAt: true,
+  noteEncrypted: true,
+} as const;
 
 async function lockMedication(tx: Tx, medicationId: string) {
   await tx.$queryRaw`
@@ -119,19 +146,24 @@ async function loadOwned(tx: Tx, userId: string, medicationId: string) {
       oneShot: true,
       startsOn: true,
       endsOn: true,
+      endedAt: true,
       createdAt: true,
     },
   });
   if (!medication) throw new CourseWriteError("notFound");
   const courses = await tx.medicationCourse.findMany({
     where: { medicationId },
-    orderBy: { startsOn: "asc" },
-    select: { id: true, startsOn: true, endsOn: true, noteEncrypted: true },
+    orderBy: [{ startsOn: "asc" }, { id: "asc" }],
+    select: COURSE_ROW_SELECT,
   });
   return { medication, courses };
 }
 
-type ProjectedWindow = { startsOn: Date | null; endsOn: Date | null };
+type ProjectedWindow = {
+  startsOn: Date | null;
+  endsOn: Date | null;
+  endedAt: Date | null;
+};
 
 /**
  * Write the medication's window from its courses. The only writer.
@@ -139,25 +171,49 @@ type ProjectedWindow = { startsOn: Date | null; endsOn: Date | null };
  * v1.42.2 — a window that now reaches further into the past than before
  * (an earlier start, a later or removed end) would let the auto-take pass
  * fill the days it reopens as taken; its floor moves to now instead.
+ *
+ * #1280 — a write that takes back an "End course" (the end moved, removed,
+ * or the ended course deleted) brings back the placeholders the End
+ * tombstoned (`reviveEndedPlaceholders`).
  */
-async function project(tx: Tx, medicationId: string): Promise<ProjectedWindow> {
+async function project(
+  tx: Tx,
+  medicationId: string,
+  timeZone: string,
+): Promise<ProjectedWindow> {
   const [before, courses] = await Promise.all([
     tx.medication.findUnique({
       where: { id: medicationId },
-      select: { startsOn: true, endsOn: true },
+      select: { userId: true, startsOn: true, endsOn: true, endedAt: true },
     }),
     tx.medicationCourse.findMany({
       where: { medicationId },
-      select: { startsOn: true, endsOn: true },
+      select: { startsOn: true, endsOn: true, endedAt: true },
     }),
   ]);
   const window = projectCourseWindow(courses);
   await tx.medication.update({
     where: { id: medicationId },
-    data: { startsOn: window.startsOn, endsOn: window.endsOn },
+    data: {
+      startsOn: window.startsOn,
+      endsOn: window.endsOn,
+      endedAt: window.endedAt,
+    },
   });
   if (before && windowWidens(before, window)) {
     await moveAutoTakeFloorToNow(tx, medicationId);
+  }
+  if (
+    before?.endedAt &&
+    before.endedAt.getTime() !== window.endedAt?.getTime()
+  ) {
+    await reviveEndedPlaceholders(tx, {
+      userId: before.userId,
+      medicationId,
+      endedAt: before.endedAt,
+      courses,
+      timeZone,
+    });
   }
   return window;
 }
@@ -244,9 +300,9 @@ export async function createCourse(
         endsOn: args.endsOn,
         noteEncrypted: encryptNote(args.note) ?? null,
       },
-      select: { id: true, startsOn: true, endsOn: true, noteEncrypted: true },
+      select: COURSE_ROW_SELECT,
     });
-    await project(tx, args.medicationId);
+    await project(tx, args.medicationId, args.timeZone);
     return created;
   });
 }
@@ -269,9 +325,11 @@ export async function updateCourse(
     );
     const current = courses.find((c) => c.id === args.courseId);
     if (!current) throw new CourseWriteError("notFound");
+    const endsOn = args.endsOn === undefined ? current.endsOn : args.endsOn;
     const next = {
       startsOn: args.startsOn ?? current.startsOn,
-      endsOn: args.endsOn === undefined ? current.endsOn : args.endsOn,
+      endsOn,
+      endedAt: keptEndedAt(current, endsOn),
     };
     refuseIfInvalid(
       courses.map((c) => (c.id === current.id ? next : c)),
@@ -284,11 +342,12 @@ export async function updateCourse(
       data: {
         startsOn: next.startsOn,
         endsOn: next.endsOn,
+        endedAt: next.endedAt,
         ...(noteEncrypted !== undefined && { noteEncrypted }),
       },
-      select: { id: true, startsOn: true, endsOn: true, noteEncrypted: true },
+      select: COURSE_ROW_SELECT,
     });
-    await project(tx, args.medicationId);
+    await project(tx, args.medicationId, args.timeZone);
     return updated;
   });
 }
@@ -307,7 +366,7 @@ export async function deleteCourse(
       throw new CourseWriteError("notFound");
     }
     await tx.medicationCourse.delete({ where: { id: args.courseId } });
-    await project(tx, args.medicationId);
+    await project(tx, args.medicationId, args.timeZone);
   });
 }
 
@@ -370,10 +429,10 @@ async function writeCurrentWindow(
   const latest = sortCourses(courses).at(-1);
 
   if (args.startsOn === null && args.endsOn === null) {
-    if (!latest) return project(tx, args.medicationId);
+    if (!latest) return project(tx, args.medicationId, args.timeZone);
     if (courses.length > 1) throw new CourseWriteError("windowRequired");
     await tx.medicationCourse.delete({ where: { id: latest.id } });
-    return project(tx, args.medicationId);
+    return project(tx, args.medicationId, args.timeZone);
   }
 
   const next = windowAsCourse(
@@ -385,14 +444,15 @@ async function writeCurrentWindow(
   );
 
   if (latest) {
+    const edited = { ...next, endedAt: keptEndedAt(latest, next.endsOn) };
     refuseIfInvalid(
-      courses.map((c) => (c.id === latest.id ? next : c)),
+      courses.map((c) => (c.id === latest.id ? edited : c)),
       todayKey,
       medication.oneShot,
     );
     await tx.medicationCourse.update({
       where: { id: latest.id },
-      data: next,
+      data: edited,
     });
   } else {
     refuseIfInvalid([next], todayKey, medication.oneShot);
@@ -404,7 +464,117 @@ async function writeCurrentWindow(
       },
     });
   }
-  return project(tx, args.medicationId);
+  return project(tx, args.medicationId, args.timeZone);
+}
+
+/**
+ * #1280 — the `endedAt` a course keeps through an edit: its own while its
+ * `endsOn` stays the day it was ended on, none once the end moves. An end
+ * date written in the editor is a whole day; only "End course" ends a course
+ * at an instant.
+ */
+function keptEndedAt(
+  course: { endsOn: Date | null; endedAt: Date | null },
+  nextEndsOn: Date | null,
+): Date | null {
+  if (!course.endedAt || !course.endsOn || !nextEndsOn) return null;
+  return course.endsOn.getTime() === nextEndsOn.getTime()
+    ? course.endedAt
+    : null;
+}
+
+/**
+ * #1280 — "End course": end the running course now.
+ *
+ * The course's last day becomes today on the person's clock and `endedAt`
+ * records the moment. Doses earlier today stay inside the course and count;
+ * a slot later today is not due, not reminded and not expected, and the
+ * course reads as ENDED at once (`courseStatusAt`). A medication without a
+ * course row (chronic since creation, or a window never materialised) gets
+ * the course its window describes, ended now.
+ *
+ * The pending placeholders already minted for slots at or after that moment
+ * (the today projector mints the whole day) are tombstoned, as a schedule
+ * replace does, so no list shows them and the auto-miss pass never stamps
+ * them a miss. An actioned row is history and stays.
+ *
+ * Refused with `notRunning` unless a course is running now
+ * (`canEndCourse`): ending an ended course would reopen it up to today, and
+ * ending one that has not started would invent a one-day course.
+ */
+export async function endCurrentCourse(args: WriteContext): Promise<{
+  /** The window the medication reads after the end. */
+  window: ProjectedWindow;
+  /** The window it read before, for the audit row's overwrite (C4). */
+  previous: ProjectedWindow;
+  /** How many pending placeholders at or after the moment were tombstoned. */
+  droppedPlaceholders: number;
+}> {
+  const now = args.now ?? new Date();
+  const todayKey = userDayKey(now, args.timeZone);
+  const { endsOn: today, endedAt } = courseEndNow(now, args.timeZone);
+  return prisma.$transaction(async (tx) => {
+    await lockMedication(tx, args.medicationId);
+    const { medication, courses } = await loadOwned(
+      tx,
+      args.userId,
+      args.medicationId,
+    );
+    if (!canEndCourse(courseStatusAt(medication, now, args.timeZone))) {
+      throw new CourseWriteError("notRunning");
+    }
+    const latest = sortCourses(courses).at(-1);
+    if (latest) {
+      const ended = { startsOn: latest.startsOn, endsOn: today, endedAt };
+      refuseIfInvalid(
+        courses.map((c) => (c.id === latest.id ? ended : c)),
+        todayKey,
+        medication.oneShot,
+      );
+      await tx.medicationCourse.update({
+        where: { id: latest.id },
+        data: { endsOn: today, endedAt },
+      });
+    } else {
+      const implicit = windowAsCourse(
+        medication.startsOn,
+        today,
+        undefined,
+        medication.createdAt,
+        args.timeZone,
+      );
+      refuseIfInvalid([implicit], todayKey, medication.oneShot);
+      await tx.medicationCourse.create({
+        data: {
+          medicationId: args.medicationId,
+          userId: args.userId,
+          ...implicit,
+          endedAt,
+        },
+      });
+    }
+    const dropped = await tx.medicationIntakeEvent.updateMany({
+      where: {
+        userId: args.userId,
+        medicationId: args.medicationId,
+        deletedAt: null,
+        takenAt: null,
+        skipped: false,
+        autoMissed: false,
+        scheduledFor: { gte: now },
+      },
+      data: { deletedAt: now, syncVersion: { increment: 1 } },
+    });
+    return {
+      window: await project(tx, args.medicationId, args.timeZone),
+      previous: {
+        startsOn: medication.startsOn,
+        endsOn: medication.endsOn,
+        endedAt: medication.endedAt,
+      },
+      droppedPlaceholders: dropped.count,
+    };
+  });
 }
 
 /**
@@ -423,8 +593,8 @@ export async function checkCurrentWindow(
   const todayKey = userDayKey(args.now ?? new Date(), args.timeZone);
   const courses = await prisma.medicationCourse.findMany({
     where: { medicationId: args.medicationId, userId: args.userId },
-    orderBy: { startsOn: "asc" },
-    select: { id: true, startsOn: true, endsOn: true },
+    orderBy: [{ startsOn: "asc" }, { id: "asc" }],
+    select: { id: true, startsOn: true, endsOn: true, endedAt: true },
   });
   const latest = courses.at(-1);
   if (args.startsOn === null && args.endsOn === null) {
@@ -438,7 +608,13 @@ export async function checkCurrentWindow(
     args.timeZone,
   );
   return validateCourses(
-    latest ? courses.map((c) => (c.id === latest.id ? next : c)) : [next],
+    latest
+      ? courses.map((c) =>
+          c.id === latest.id
+            ? { ...next, endedAt: keptEndedAt(latest, next.endsOn) }
+            : c,
+        )
+      : [next],
     todayKey,
     args.oneShot,
   );
@@ -450,6 +626,11 @@ export interface MedicationCourseDto {
   id: string;
   startsOn: string;
   endsOn: string | null;
+  /**
+   * #1280 — the instant "End course" ended this course (ISO), or null when
+   * the whole `endsOn` day counts.
+   */
+  endedAt: string | null;
   status: CourseStatus;
   /** Doses logged as taken whose slot falls on a day of this course. */
   takenDoses: number;
@@ -472,14 +653,8 @@ export async function loadCoursesFor(
   if (medicationIds.length === 0) return byMedication;
   const rows = await prisma.medicationCourse.findMany({
     where: { medicationId: { in: medicationIds } },
-    orderBy: { startsOn: "asc" },
-    select: {
-      id: true,
-      medicationId: true,
-      startsOn: true,
-      endsOn: true,
-      noteEncrypted: true,
-    },
+    orderBy: [{ startsOn: "asc" }, { id: "asc" }],
+    select: { ...COURSE_ROW_SELECT, medicationId: true },
   });
   for (const { medicationId, ...row } of rows) {
     const list = byMedication.get(medicationId) ?? [];
@@ -530,7 +705,10 @@ export function buildCourseFields(
       id: c.id,
       startsOn: dayKeyOfDate(c.startsOn),
       endsOn: c.endsOn ? dayKeyOfDate(c.endsOn) : null,
-      status: courseStatusOn(c, todayKey),
+      endedAt: c.endedAt ? c.endedAt.toISOString() : null,
+      // The instant-aware reading the medication's own `courseStatus` uses,
+      // so a course and its medication never disagree about now.
+      status: courseStatusAt(c, now, timeZone),
       takenDoses: takenByCourse.get(c.id) ?? 0,
       note: c.noteEncrypted ? decryptFromBytes(c.noteEncrypted) : null,
     })),

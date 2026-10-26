@@ -1,0 +1,81 @@
+[
+  {
+    "cycle_id": 900001,
+    "sleep_id": "sleep-0001",
+    "user_id": 10001,
+    "created_at": "2026-03-02T06:40:00.000Z",
+    "updated_at": "2026-03-02T06:45:00.000Z",
+    "score_state": "SCORED",
+    "score": {
+      "user_calibrating": false,
+      "recovery_score": 64,
+      "resting_heart_rate": 54,
+      "hrv_rmssd_milli": 48.2,
+      "spo2_percentage": 96.5,
+      "skin_temp_celsius": 33.4
+    }
+  },
+  {
+    "cycle_id": 900002,
+    "sleep_id": "sleep-0002",
+    "user_id": 10001,
+    "created_at": "2026-03-03T06:40:00.000Z",
+    "updated_at": "2026-03-03T06:41:00.000Z",
+    "score_state": "SCORED",
+    "score": {
+      "user_calibrating": false,
+      "recovery_score": 81,
+      "resting_heart_rate": 50,
+      "hrv_rmssd_milli": 61.73456
+    }
+  },
+  {
+    "cycle_id": 900003,
+    "sleep_id": "sleep-0003",
+    "user_id": 10001,
+    "created_at": "2026-03-04T06:40:00.000Z",
+    "updated_at": "2026-03-04T06:40:00.000Z",
+    "score_state": "PENDING_SCORE",
+    "score": null
+  },
+  {
+    "cycle_id": 900004,
+    "sleep_id": "sleep-0004",
+    "user_id": 10001,
+    "created_at": "2026-03-05T06:40:00.000Z",
+    "updated_at": "2026-03-05T06:40:00.000Z",
+    "score_state": "UNSCORABLE",
+    "score": null
+  },
+  {
+    "cycle_id": 900005,
+    "sleep_id": "sleep-0005",
+    "user_id": 10001,
+    "created_at": "2026-03-06T05:00:00.000Z",
+    "updated_at": "2026-03-06T07:15:30.000+02:00",
+    "score_state": "SCORED",
+    "score": {
+      "user_calibrating": true,
+      "recovery_score": 0,
+      "resting_heart_rate": 0,
+      "hrv_rmssd_milli": 0,
+      "spo2_percentage": 0,
+      "skin_temp_celsius": 0
+    }
+  },
+  {
+    "cycle_id": 900006,
+    "sleep_id": "sleep-0006",
+    "user_id": 10001,
+    "created_at": "2026-03-07T06:40:00.000Z",
+    "updated_at": "2026-03-07T01:30:00.000-05:00",
+    "score_state": "SCORED",
+    "score": {
+      "user_calibrating": false,
+      "recovery_score": 100,
+      "resting_heart_rate": 41.666,
+      "hrv_rmssd_milli": 132.005,
+      "skin_temp_celsius": 34.125
+    }
+  }
+]

@@ -24,9 +24,9 @@ import {
   apiError,
   apiSuccess,
   returnAllZodIssues,
-  safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
 import { auditLog } from "@/lib/auth/audit";
@@ -53,6 +53,7 @@ import {
   type InstrumentId,
 } from "@/lib/mental-health/instruments";
 import { crisisResourcesForLocale } from "@/lib/mental-health/crisis-resources";
+import { presentedWording } from "@/lib/mental-health/wording/resolve";
 import type {
   MeasurementType,
   MeasurementSource,
@@ -70,10 +71,26 @@ import {
 const TREND_READ_CAP = 1500;
 import { listPage } from "@/lib/http/list-query";
 
+/** The columns every read of an administration returns (`shapeRow`). */
+const ASSESSMENT_SELECT = {
+  id: true,
+  instrument: true,
+  locale: true,
+  wording: true,
+  version: true,
+  totalScore: true,
+  severityBand: true,
+  item9Flagged: true,
+  crisisShownAt: true,
+  takenAt: true,
+  createdAt: true,
+} as const;
+
 function shapeRow(row: {
   id: string;
   instrument: string;
   locale: string;
+  wording: string | null;
   version: string;
   totalScore: number;
   severityBand: string;
@@ -86,6 +103,7 @@ function shapeRow(row: {
     id: row.id,
     instrument: row.instrument,
     locale: row.locale,
+    wording: row.wording,
     version: row.version,
     totalScore: row.totalScore,
     severityBand: row.severityBand,
@@ -145,18 +163,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       orderBy: [{ takenAt: "desc" }, { id: "desc" }],
       take,
       skip: offset ?? 0,
-      select: {
-        id: true,
-        instrument: true,
-        locale: true,
-        version: true,
-        totalScore: true,
-        severityBand: true,
-        item9Flagged: true,
-        crisisShownAt: true,
-        takenAt: true,
-        createdAt: true,
-      },
+      select: ASSESSMENT_SELECT,
     }),
   );
   // v1.44 — the change of each screener against its meaningful-change
@@ -232,28 +239,23 @@ async function postAssessment(request: NextRequest): Promise<Response> {
   }
 
   // Bounded body read BEFORE validation (the item answers are small; cap so an
-  // unbounded body can never reach `request.json()`). Destructure the
-  // `{ data, error }` envelope — passing the wrapper to `safeParse` would never
-  // match the schema, which is what left this route dead-on-arrival.
-  const { data: body, error: jsonError } = await safeJson(request, {
+  // unbounded body can never reach `request.json()`).
+  const parsed = await parseJsonBody(request, createAssessmentSchema, {
     maxBytes: 8 * 1024,
+    onInvalid: (error, body) => {
+      const shape = unstableExternalIdShape(body);
+      annotate({
+        action: { name: "mental-health.create.validation-failed" },
+        meta: {
+          issue_count: error.issues.length,
+          ...(shape
+            ? unstableExternalIdMeta("mental_health.assessment.create", [shape])
+            : {}),
+        },
+      });
+    },
   });
-  if (jsonError) return jsonError;
-
-  const parsed = createAssessmentSchema.safeParse(body);
-  if (!parsed.success) {
-    const shape = unstableExternalIdShape(body);
-    annotate({
-      action: { name: "mental-health.create.validation-failed" },
-      meta: {
-        issue_count: sanitiseZodIssues(parsed.error.issues).length,
-        ...(shape
-          ? unstableExternalIdMeta("mental_health.assessment.create", [shape])
-          : {}),
-      },
-    });
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const {
     instrument,
@@ -262,6 +264,7 @@ async function postAssessment(request: NextRequest): Promise<Response> {
     takenAt,
     tz,
     locale,
+    englishOriginal,
     source,
     externalId,
   } = parsed.data;
@@ -282,18 +285,7 @@ async function postAssessment(request: NextRequest): Promise<Response> {
         externalId,
         instrument: { in: [...SCREENER_INSTRUMENTS] },
       },
-      select: {
-        id: true,
-        instrument: true,
-        locale: true,
-        version: true,
-        totalScore: true,
-        severityBand: true,
-        item9Flagged: true,
-        crisisShownAt: true,
-        takenAt: true,
-        createdAt: true,
-      },
+      select: ASSESSMENT_SELECT,
     });
     if (existing) return respondExisting(existing);
   }
@@ -311,6 +303,15 @@ async function postAssessment(request: NextRequest): Promise<Response> {
   // `actor` is the caller in every case and equals `user` for everyone acting
   // on their own record, so this is the record's own locale for them.
   const presentedLocale = locale ?? actor.locale ?? "en";
+  // Which text the answers were given in, resolved here rather than taken
+  // from the client: the client says only whether the reader switched to the
+  // English original; whether their language's text is validated is the
+  // wording registry's answer.
+  const wording = presentedWording(
+    id,
+    presentedLocale,
+    englishOriginal ?? false,
+  );
   const when = takenAt ? new Date(takenAt) : new Date();
 
   // Encrypt the per-item answers + the (unscored) functional-impairment follow-up.
@@ -322,19 +323,6 @@ async function postAssessment(request: NextRequest): Promise<Response> {
     }),
   );
 
-  const assessmentSelect = {
-    id: true,
-    instrument: true,
-    locale: true,
-    version: true,
-    totalScore: true,
-    severityBand: true,
-    item9Flagged: true,
-    crisisShownAt: true,
-    takenAt: true,
-    createdAt: true,
-  } as const;
-
   let assessment;
   try {
     assessment = await prisma.mentalHealthAssessment.create({
@@ -342,6 +330,7 @@ async function postAssessment(request: NextRequest): Promise<Response> {
         userId: user.id,
         instrument: id,
         locale: presentedLocale,
+        wording,
         version: "standard",
         responsesEncrypted: blob,
         totalScore: total,
@@ -353,7 +342,7 @@ async function postAssessment(request: NextRequest): Promise<Response> {
         source,
         externalId: externalId ?? null,
       },
-      select: assessmentSelect,
+      select: ASSESSMENT_SELECT,
     });
   } catch (err: unknown) {
     // Concurrent replay: two requests carrying the same externalId raced past
@@ -373,7 +362,7 @@ async function postAssessment(request: NextRequest): Promise<Response> {
           externalId,
           instrument: { in: [...SCREENER_INSTRUMENTS] },
         },
-        select: assessmentSelect,
+        select: ASSESSMENT_SELECT,
       });
       if (winner) {
         annotate({
@@ -438,7 +427,7 @@ async function postAssessment(request: NextRequest): Promise<Response> {
   });
   annotate({
     action: { name: "mental-health.create" },
-    meta: { instrument: id, item9_flagged: flagged },
+    meta: { instrument: id, item9_flagged: flagged, wording },
   });
 
   // SAFETY: surface the locale-aware crisis resources on a positive item-9.

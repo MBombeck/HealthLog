@@ -15,23 +15,38 @@
  * `use-insights-advisor-force.test.ts` proves the behaviour for the
  * regenerate with fake timers.
  *
+ * #1274 — the same holds for a browser that waits on a model by polling: the
+ * briefing read polls while the warm it enqueued runs, and a fixed ten polls
+ * (225 s) gave up on a warm the setting allowed far longer, so a briefing that
+ * landed later never reached the open page. The read's poll ceiling comes
+ * from `advisorRevalidatePollMaxAttempts(responseTimeoutMs)`;
+ * `insight-pregenerate.test.ts` proves it outlasts the warm's own bound for
+ * every setting.
+ *
+ * The status cards poll the same way while their note is generated, and
+ * stopped after 48 s whatever the setting, so a slow model's note never
+ * reached the open card. Every status poll passes
+ * `statusPollMaxAttempts(responseTimeoutMs)`, to the schedule and to the
+ * exhaustion that ends it; `status-provider-slow-model.test.ts` proves the
+ * window outlasts the run's own bound for every setting.
+ *
  * Mutation check: put `FORCE_ADVISOR_TIMEOUT_MS = 45_000` back into the
- * advisor, or drop the `signal` from one about-me save, and this goes red.
+ * advisor, drop the `signal` from one about-me save, or drop the ceiling
+ * argument from the advisor read's poll or from one status poll, and this
+ * goes red.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import {
+  readSourceText,
+  stripComments,
+  walkSourceFiles,
+} from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
-
-function stripComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
-}
 
 /** The text of the call that starts at `open` (the index of its `(`). */
 function callText(source: string, open: number): string {
@@ -61,6 +76,51 @@ describe("browser aborts for model-backed requests", () => {
     expect(source).toMatch(
       /fetchAdvisor\(\{\s*force:\s*true,\s*responseTimeoutMs\s*\}\)/,
     );
+  });
+
+  it("the briefing read polls for the warm as long as the setting allows", () => {
+    const source = stripComments(
+      readFileSync(
+        join(SRC, "components/insights/use-insights-advisor.ts"),
+        "utf8",
+      ),
+    );
+    const polls = [...source.matchAll(/\bnextAdvisorPollInterval\s*\(/g)]
+      .map((m) => callText(source, (m.index ?? 0) + m[0].length - 1))
+      // The definition, not a call.
+      .filter((text) => !/:\s*boolean\s*\|\s*undefined/.test(text));
+    expect(polls).toHaveLength(1);
+    expect(polls[0]).toMatch(
+      /advisorRevalidatePollMaxAttempts\(\s*responseTimeoutMs\s*\)/,
+    );
+  });
+
+  it("every status card polls for its note as long as the setting allows", () => {
+    const calls: Array<{ rel: string; text: string }> = [];
+    for (const rel of walkSourceFiles(SRC, { floor: 3000 })) {
+      if (rel.includes("__tests__/") || rel.startsWith("generated/")) continue;
+      const source = stripComments(readSourceText(join(SRC, rel)));
+      for (const m of source.matchAll(
+        /\b(?:nextStatusPollInterval|applyStatusPollExhaustion)\s*\(/g,
+      )) {
+        const text = callText(source, (m.index ?? 0) + m[0].length - 1);
+        // The definitions, not calls.
+        if (/:\s*(?:boolean|InsightStatusData)\s*\|\s*undefined/.test(text)) {
+          continue;
+        }
+        calls.push({ rel, text });
+      }
+    }
+    // Three hooks poll and end the poll, the compliance card polls.
+    expect(calls.length).toBeGreaterThanOrEqual(7);
+    expect(
+      calls
+        .filter(
+          ({ text }) =>
+            !/statusPollMaxAttempts\(\s*responseTimeoutMs\s*\)/.test(text),
+        )
+        .map(({ rel }) => rel),
+    ).toEqual([]);
   });
 
   it("every about-me save carries the setting-derived signal", () => {

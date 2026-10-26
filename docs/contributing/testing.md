@@ -11,6 +11,7 @@ is about choosing and writing tests.
 | Pure logic: statistics, time zones, cadence, parsers, unit conversion, formatting                                                       | `src/**/__tests__/*.test.ts` (unit)         | `pnpm test`             |
 | Laws of that logic over random inputs                                                                                                   | `*.property.test.ts` next to the unit tests | `pnpm test`             |
 | What a component renders for a given state                                                                                              | `src/**/__tests__/*.test.tsx` (unit)        | `pnpm test`             |
+| How a component behaves when someone types, clicks or presses keys, and what it sends                                                   | `src/**/__tests__/*.browser.test.tsx`       | `pnpm test`             |
 | A structural rule about the tree (a guard)                                                                                              | `src/__tests__/` with a stated floor        | `pnpm test`             |
 | A route: auth, scope, validation, what it stores and what it answers                                                                    | `tests/integration/routes/` with the kit    | `pnpm test:integration` |
 | Anything whose truth lives in Postgres: constraints, `where` semantics, transactions, locks, cascades, time zones in SQL, backups, jobs | `tests/integration/`                        | `pnpm test:integration` |
@@ -26,6 +27,28 @@ ones: `src/__tests__/test-realism-ratchet.test.ts` counts route tests that mock
 `@/lib/db` wholesale or stub `apiHandler`, and `as never` casts in tests, and
 those numbers may only fall. Mock at the process boundary you do not own instead: provider HTTP
 (`safeFetch`), APNs, SMTP, the model.
+
+## Critical journeys
+
+A few e2e journeys carry `@critical` in their test titles: signing in with a
+password and a passkey and signing out, a reading reaching the dashboard, a
+dose moving compliance, a mood entry, a lab CSV import, a questionnaire in
+German and Brazilian Portuguese, a setting that persists, a backup coming
+back, sharing a record, and the offline page. `pnpm e2e:critical` runs them.
+
+They run against the real server and a seeded Postgres. A spec file that
+carries the tag may not intercept anything under `/api`, directly or through
+a helper it imports; `src/__tests__/e2e-critical-no-api-stub-guard.test.ts`
+refuses it and keeps a floor on the number of tagged tests. Stubbing an
+unreachable third-party host that is not the journey's subject is allowed,
+with the reason next to the call.
+
+A journey that writes gets an account nobody else writes. The accounts in
+`e2e/setup/critical-fixture.ts` are seeded by global setup, one per journey
+and per Chromium project, so a journey runs at both widths without the two
+projects meeting. Reset what a previous run left with `resetCriticalAccount`
+in a `beforeEach`, and read results through the app's own routes rather than
+through the database.
 
 ## The route test kit
 
@@ -114,6 +137,43 @@ into a fresh account and reads it back there. A new setting column without a
 table entry fails the file. A column with no write route says why in its
 entry.
 
+## Browser tests
+
+Interaction belongs in the `browser` project: `*.browser.test.tsx` files run
+in headless Chromium through Vitest's Playwright provider, as part of
+`pnpm test`. Run them alone with `pnpm test --project browser`, or one file
+with `pnpm exec vitest run --project browser <path>`. The Node projects never
+collect these files and this project collects nothing else. CI installs the
+browser it needs (`playwright install --only-shell chromium`); locally, run
+that once.
+
+Reach for it when the claim is about behaviour a markup test cannot see:
+focus, keys, an open menu, a pending state, the body a form posts, the URL a
+filter writes. A `renderToStaticMarkup` grep stays the tool for what a given
+state renders, and bottom-sheet gestures stay in `e2e/`.
+
+The helper is `tests/browser/`:
+
+- `renderWithApp(ui, { locale, user })` mounts the app's own providers: a real
+  TanStack `QueryClient` (no retries) and `I18nProvider` with the real
+  catalog. The signed-in account is seeded where `useAuth` reads it, with
+  `authUser()` defaults under `user`. The app stylesheet and the default
+  theme class are loaded, so layout, visibility and colour tokens resolve.
+- `stubFetch()` replaces `fetch` and nothing above it. Answer a route with
+  `.on(method, path, { status, data, error, meta })`, hold one with
+  `.deferred(...)` to assert a pending state, and read the parsed bodies from
+  `.calls(method, path)`. An unmatched request gets a 404 envelope and is
+  recorded. Do not mock `@tanstack/react-query` or `@/lib/api/api-fetch`.
+- `next/navigation` is aliased to a shim over the page's real `location` and
+  `history`; `url.ts` sets the starting query, records pushes and replaces,
+  and simulates Back or an edited address.
+- `pinDate(iso)` fakes `Date` only, so timers and animation frames still run.
+
+Every test gets the real `fetch`, clock, address and an empty `localStorage`
+back afterwards. Locate by role and accessible name, the way a person finds a
+control; a `Label` adds a colon to its name, so match a labelled combobox with
+`/^Type/` rather than `"Type"`.
+
 ## The integration database
 
 Global setup boots one Postgres container and migrates one template database.
@@ -152,7 +212,8 @@ node scripts/test-durations.mjs unit unit.json
 The nightly workflow (`.github/workflows/test-nightly.yml`) uploads a file
 regenerated from CI timings, which is the better source.
 
-The unit suite is three projects, decided per file from its source
+The unit suite is three Node projects and the `browser` project above. The
+Node ones are decided per file from its source
 (`tests/unit-projects.ts`): `guards` and `unit` share a module graph within a
 worker, `isolated` gives each file a fresh one. A file lands in `isolated` when
 it mocks, spies, stubs env or globals, fakes timers or resets modules. If a

@@ -33,11 +33,11 @@ vi.mock("@/lib/rollups/measurement-rollups", async (importOriginal) => ({
   >()),
   recomputeBucketsForKeys: vi.fn(async () => {}),
 }));
-vi.mock("@/lib/insights/comprehensive-generate", () => ({
+vi.mock("@/lib/insights/status-invalidation", () => ({
   invalidateStatusInsightsForTypes: vi.fn(async () => {}),
 }));
 
-import { mapHeartRateSample } from "../client";
+import { mapHeartRateSample } from "@/lib/oura/map";
 import { OuraApiError } from "../response-classifier";
 import { mapOuraSportType } from "../sport-map";
 import {

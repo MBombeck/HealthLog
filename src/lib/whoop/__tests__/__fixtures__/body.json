@@ -1,0 +1,9 @@
+[
+  { "height_meter": 1.8, "weight_kilogram": 78.456, "max_heart_rate": 192 },
+  { "height_meter": 1.655, "weight_kilogram": 62.3, "max_heart_rate": 187.6 },
+  {},
+  { "weight_kilogram": 90 },
+  { "height_meter": 0, "weight_kilogram": 0, "max_heart_rate": 0 },
+  { "height_meter": -1.7, "weight_kilogram": -70, "max_heart_rate": -180 },
+  { "height_meter": 1.72345, "max_heart_rate": 175.4 }
+]

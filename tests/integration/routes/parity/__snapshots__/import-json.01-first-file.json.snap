@@ -1,0 +1,220 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "measurements": 4,
+      "moodEntries": 4,
+      "skipped": 2
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "import.upload"
+      },
+      "meta": {
+        "import_stats": {
+          "measurements": 4,
+          "moodEntries": 4,
+          "skipped": 2
+        },
+        "import_dropped_link_keys": 0,
+        "external_id_rejected": 2,
+        "external_id_shapes": "object_description",
+        "external_id_surface": "import.json"
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "emitDataArrival",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "kind": "weight",
+          "newestSampleAt": "2026-10-11T06:30:00.000Z",
+          "insertedCount": 2,
+          "refId": "<id:2>",
+          "source": "json_import"
+        }
+      ]
+    },
+    {
+      "effect": "maybeEnqueueMorningRefresh",
+      "args": [
+        "<id:1>",
+        [
+          "2026-10-12T06:00:00.000Z"
+        ]
+      ]
+    },
+    {
+      "effect": "invalidateStatusInsightsForTypes",
+      "args": [
+        "<id:1>",
+        [
+          "WEIGHT",
+          "BLOOD_GLUCOSE",
+          "SLEEP_DURATION"
+        ],
+        {
+          "source": "manual"
+        }
+      ]
+    }
+  ],
+  "stored": {
+    "measurements": [
+      {
+        "type": "WEIGHT",
+        "value": 81.4,
+        "unit": "kg",
+        "source": "IMPORT",
+        "externalId": "exp-w-1",
+        "measuredAt": "2026-10-10T06:30:00.000Z",
+        "notes": null,
+        "notesEncrypted": "<bytes:59>",
+        "glucoseContext": null
+      },
+      {
+        "type": "WEIGHT",
+        "value": 81.9,
+        "unit": "kg",
+        "source": "IMPORT",
+        "externalId": null,
+        "measuredAt": "2026-10-11T06:30:00.000Z",
+        "notes": null,
+        "notesEncrypted": null,
+        "glucoseContext": null
+      },
+      {
+        "type": "BLOOD_GLUCOSE",
+        "value": 104,
+        "unit": "mg/dL",
+        "source": "IMPORT",
+        "externalId": "exp-g-1",
+        "measuredAt": "2026-10-11T08:00:00.000Z",
+        "notes": null,
+        "notesEncrypted": null,
+        "glucoseContext": "FASTING"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 412,
+        "unit": "min",
+        "source": "IMPORT",
+        "externalId": "exp-s-1",
+        "measuredAt": "2026-10-12T06:00:00.000Z",
+        "notes": null,
+        "notesEncrypted": null,
+        "glucoseContext": null
+      }
+    ],
+    "mood": [
+      {
+        "date": "2026-10-10",
+        "mood": "GUT",
+        "score": 4,
+        "moodA1": 7,
+        "tags": "slept well",
+        "source": "IMPORT",
+        "externalId": "daylio-1",
+        "moodLoggedAt": "2026-10-10T07:00:00.000Z"
+      },
+      {
+        "date": "2026-10-11",
+        "mood": "OKAY",
+        "score": 3,
+        "moodA1": 5,
+        "tags": null,
+        "source": "IMPORT",
+        "externalId": null,
+        "moodLoggedAt": "2026-10-10T22:02:08.803Z"
+      },
+      {
+        "date": "2026-10-11",
+        "mood": "OKAY",
+        "score": 3,
+        "moodA1": 5,
+        "tags": null,
+        "source": "IMPORT",
+        "externalId": null,
+        "moodLoggedAt": "2026-10-10T22:02:32.701Z"
+      },
+      {
+        "date": "2026-10-12",
+        "mood": "SCHLECHT",
+        "score": 2,
+        "moodA1": 3,
+        "tags": null,
+        "source": "IMPORT",
+        "externalId": null,
+        "moodLoggedAt": "2026-10-12T20:00:00.000Z"
+      }
+    ],
+    "measurementRollups": [
+      {
+        "type": "WEIGHT",
+        "granularity": "DAY",
+        "bucketStart": "2026-10-10T00:00:00.000Z",
+        "source": "IMPORT",
+        "count": 1,
+        "mean": 81.4
+      },
+      {
+        "type": "WEIGHT",
+        "granularity": "DAY",
+        "bucketStart": "2026-10-11T00:00:00.000Z",
+        "source": "IMPORT",
+        "count": 1,
+        "mean": 81.9
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "granularity": "DAY",
+        "bucketStart": "2026-10-12T00:00:00.000Z",
+        "source": "IMPORT",
+        "count": 1,
+        "mean": 412
+      },
+      {
+        "type": "BLOOD_GLUCOSE",
+        "granularity": "DAY",
+        "bucketStart": "2026-10-11T00:00:00.000Z",
+        "source": "IMPORT",
+        "count": 1,
+        "mean": 104
+      }
+    ],
+    "moodRollups": [
+      {
+        "granularity": "DAY",
+        "bucketStart": "2026-10-10T00:00:00.000Z",
+        "count": 1,
+        "mean": 4
+      },
+      {
+        "granularity": "DAY",
+        "bucketStart": "2026-10-11T00:00:00.000Z",
+        "count": 2,
+        "mean": 3
+      },
+      {
+        "granularity": "DAY",
+        "bucketStart": "2026-10-12T00:00:00.000Z",
+        "count": 1,
+        "mean": 2
+      }
+    ],
+    "audit": [
+      {
+        "action": "import.upload",
+        "details": "{\"measurements\":4,\"moodEntries\":4,\"skipped\":2}"
+      }
+    ]
+  }
+}

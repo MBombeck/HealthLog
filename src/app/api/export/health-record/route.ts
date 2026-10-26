@@ -29,12 +29,8 @@ import {
 } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
-import {
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { prisma, toJson } from "@/lib/db";
@@ -122,15 +118,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // The selection payload is small and bounded. 64 KB is far above any
   // legitimate one while still rejecting a multi-megabyte body before it
   // reaches `JSON.parse`. A DoS ceiling, not a tight bound.
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, exportSelectionSchema, {
     maxBytes: 64 * 1024,
   });
-  if (jsonError) return jsonError;
-
-  const parsed = exportSelectionSchema.safeParse(body);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error);
-  }
+  if (!parsed.ok) return parsed.error;
   const input = parsed.data;
 
   const minted = selectionFromRequest(input.selection);

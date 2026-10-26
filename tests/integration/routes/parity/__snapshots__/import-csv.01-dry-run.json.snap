@@ -1,0 +1,70 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "inserted": 7,
+      "updated": 0,
+      "skipped": 1,
+      "total": 8,
+      "dryRun": true,
+      "rows": [
+        {
+          "line": 2,
+          "status": "inserted"
+        },
+        {
+          "line": 3,
+          "status": "inserted"
+        },
+        {
+          "line": 4,
+          "status": "inserted"
+        },
+        {
+          "line": 5,
+          "status": "inserted"
+        },
+        {
+          "line": 6,
+          "status": "inserted"
+        },
+        {
+          "line": 7,
+          "status": "inserted"
+        },
+        {
+          "line": 8,
+          "status": "inserted"
+        },
+        {
+          "line": 9,
+          "status": "skipped",
+          "reason": "invalid_value"
+        }
+      ]
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "import.csv.upload"
+      },
+      "meta": {
+        "import_csv_inserted": 7,
+        "import_csv_updated": 0,
+        "import_csv_skipped": 1,
+        "import_csv_dry_run": true
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "measurements": [],
+    "rollups": [],
+    "audit": []
+  }
+}

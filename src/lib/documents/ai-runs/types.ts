@@ -74,6 +74,7 @@ export const AI_RUN_ERROR_CODES = {
   workerUnavailable: "aiRuns.workerUnavailable",
   timedOut: "aiRuns.timedOut",
   failed: "aiRuns.failed",
+  readerBusy: "aiRuns.readerBusy",
 } as const;
 
 /** How long a queued run waits for a worker before it is failed. */
@@ -145,6 +146,12 @@ export interface DocumentExtractRunResult {
   documentId: string;
   factsStaged: number;
   status: InboundDocumentStatusValue;
+  /**
+   * Present (true) when part of the document's facts may be missing: a read
+   * stopped at the provider's output limit, a part could not be read or was
+   * not reached, or the document holds more facts than one review takes.
+   */
+  incomplete?: true;
 }
 
 /**

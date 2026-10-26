@@ -3,7 +3,8 @@ import { readOperatorRow } from "@/lib/settings/operator-row";
 import { bindResponseTimeout } from "./effective-timeout";
 import { bindReasoningEffort } from "./reasoning-effort";
 import { prisma } from "@/lib/db";
-import { decrypt } from "@/lib/crypto";
+import { openStoredKey } from "./stored-key";
+import { isAnthropicBaseUrl } from "./anthropic-host";
 import { CodexClient, resolveCodexVisionSlug } from "./codex-client";
 import { OpenAIClient } from "./openai-client";
 import { AnthropicClient } from "./anthropic-client";
@@ -400,8 +401,12 @@ function buildCompatProvider(row: {
 }): AIProvider | null {
   const model = row.aiCompatModel?.trim() || row.aiModel?.trim() || null;
   if (!row.aiCompatBaseUrl || !model) return null;
+  const apiKey = row.aiCompatKeyEncrypted
+    ? openStoredKey(row.aiCompatKeyEncrypted)
+    : "";
+  if (apiKey === null) return null;
   return new OpenAIClient({
-    apiKey: row.aiCompatKeyEncrypted ? decrypt(row.aiCompatKeyEncrypted) : "",
+    apiKey,
     model,
     baseUrl: row.aiCompatBaseUrl,
     providerType: "openai-compatible",
@@ -424,17 +429,21 @@ function buildUserProvider(row: UserAIRow): AIProvider | null {
       // configuration survived in the row, refuse to forward an Anthropic
       // key to it. Anthropic has no per-tenant base URL the UI exposes;
       // the SDK default is correct.
+      const apiKey = openStoredKey(row.aiAnthropicKeyEncrypted);
+      if (apiKey === null) return null;
       return new AnthropicClient({
-        apiKey: decrypt(row.aiAnthropicKeyEncrypted),
+        apiKey,
         model: row.aiModel ?? "claude-sonnet-4-6",
       });
     }
     case "LOCAL": {
       if (!row.aiBaseUrl) return null;
+      const apiKey = row.aiLocalKeyEncrypted
+        ? openStoredKey(row.aiLocalKeyEncrypted)
+        : null;
+      if (row.aiLocalKeyEncrypted && apiKey === null) return null;
       return new LocalOpenAICompatibleClient({
-        apiKey: row.aiLocalKeyEncrypted
-          ? decrypt(row.aiLocalKeyEncrypted)
-          : null,
+        apiKey,
         model: row.aiModel ?? "local-model",
         baseUrl: row.aiBaseUrl,
         operatorTrusted: isOperatorOwned(row),
@@ -454,9 +463,12 @@ function buildUserProvider(row: UserAIRow): AIProvider | null {
       // Belt-and-braces: ignore any persisted `aiBaseUrl`. The column is
       // shared with LOCAL, so a stale LAN URL there would otherwise
       // redirect the user's OpenAI key to a private host.
-      if (!row.aiOpenaiKeyEncrypted) return null;
+      const apiKey = row.aiOpenaiKeyEncrypted
+        ? openStoredKey(row.aiOpenaiKeyEncrypted)
+        : null;
+      if (apiKey === null) return null;
       return new OpenAIClient({
-        apiKey: decrypt(row.aiOpenaiKeyEncrypted),
+        apiKey,
         model: row.aiModel ?? "gpt-4o",
         baseUrl: "https://api.openai.com/v1",
       });
@@ -467,25 +479,6 @@ function buildUserProvider(row: UserAIRow): AIProvider | null {
     default:
       return null;
   }
-}
-
-/**
- * True when a base URL addresses Anthropic's API: the host itself or any
- * subdomain of `anthropic.com`, case-insensitively. Parsed rather than
- * substring-matched, so `https://anthropic.com.attacker.example/v1` and
- * `https://evil.example/?x=api.anthropic.com` both answer false.
- *
- * An unparseable value answers false and keeps the OpenAI path, which is the
- * behaviour that value had before this function existed.
- */
-export function isAnthropicBaseUrl(baseUrl: string): boolean {
-  let host: string;
-  try {
-    host = new URL(baseUrl).hostname.toLowerCase();
-  } catch {
-    return false;
-  }
-  return host === "anthropic.com" || host.endsWith(".anthropic.com");
 }
 
 /**
@@ -515,17 +508,20 @@ async function resolveAdminProvider(): Promise<AIProvider> {
     where: { id: "singleton" },
   });
 
-  if (settings?.adminAiKeyEncrypted) {
+  const adminKey = settings?.adminAiKeyEncrypted
+    ? openStoredKey(settings.adminAiKeyEncrypted)
+    : null;
+  if (settings && adminKey !== null) {
     const baseUrl = settings.adminAiBaseUrl ?? "https://api.openai.com/v1";
     if (isAnthropicBaseUrl(baseUrl)) {
       return new AnthropicClient({
-        apiKey: decrypt(settings.adminAiKeyEncrypted),
+        apiKey: adminKey,
         model: settings.adminAiModel ?? "claude-sonnet-4-6",
         baseUrl,
       });
     }
     return new OpenAIClient({
-      apiKey: decrypt(settings.adminAiKeyEncrypted),
+      apiKey: adminKey,
       model: settings.adminAiModel ?? "gpt-4o",
       baseUrl,
       // The instance-wide provider is the operator's own configuration.
@@ -1351,27 +1347,31 @@ async function resolveProviderForType(
     }
     case "openai": {
       const enc = ctx.userRow?.aiOpenaiKeyEncrypted;
-      if (!enc) return null;
+      const apiKey = enc ? openStoredKey(enc) : null;
+      if (apiKey === null) return null;
       return new OpenAIClient({
-        apiKey: decrypt(enc),
+        apiKey,
         model: ctx.userRow?.aiModel ?? "gpt-4o",
         baseUrl: "https://api.openai.com/v1",
       });
     }
     case "anthropic": {
       const enc = ctx.userRow?.aiAnthropicKeyEncrypted;
-      if (!enc) return null;
+      const apiKey = enc ? openStoredKey(enc) : null;
+      if (apiKey === null) return null;
       return new AnthropicClient({
-        apiKey: decrypt(enc),
+        apiKey,
         model: ctx.userRow?.aiModel ?? "claude-sonnet-4-6",
       });
     }
     case "local": {
       if (!ctx.userRow?.aiBaseUrl) return null;
+      const apiKey = ctx.userRow.aiLocalKeyEncrypted
+        ? openStoredKey(ctx.userRow.aiLocalKeyEncrypted)
+        : null;
+      if (ctx.userRow.aiLocalKeyEncrypted && apiKey === null) return null;
       return new LocalOpenAICompatibleClient({
-        apiKey: ctx.userRow.aiLocalKeyEncrypted
-          ? decrypt(ctx.userRow.aiLocalKeyEncrypted)
-          : null,
+        apiKey,
         model: ctx.userRow.aiModel ?? "local-model",
         baseUrl: ctx.userRow.aiBaseUrl,
         operatorTrusted: isOperatorOwned(ctx.userRow),
@@ -1505,7 +1505,7 @@ async function resolveProviderForTestUnbound(
       const apiKey =
         override.anthropicKey?.trim() ||
         (stored?.aiAnthropicKeyEncrypted
-          ? decrypt(stored.aiAnthropicKeyEncrypted)
+          ? (openStoredKey(stored.aiAnthropicKeyEncrypted) ?? "")
           : "");
       if (!apiKey) {
         throw new AITestConfigError(422, "Anthropic API key not configured");
@@ -1534,7 +1534,7 @@ async function resolveProviderForTestUnbound(
       const apiKey =
         override.localKey?.trim() ||
         (stored?.aiLocalKeyEncrypted
-          ? decrypt(stored.aiLocalKeyEncrypted)
+          ? (openStoredKey(stored.aiLocalKeyEncrypted) ?? null)
           : null);
       return new LocalOpenAICompatibleClient({
         apiKey,
@@ -1583,7 +1583,7 @@ async function resolveProviderForTestUnbound(
       const apiKey =
         override.compatKey?.trim() ||
         (stored?.aiCompatKeyEncrypted
-          ? decrypt(stored.aiCompatKeyEncrypted)
+          ? (openStoredKey(stored.aiCompatKeyEncrypted) ?? "")
           : "");
       return new OpenAIClient({
         apiKey,
@@ -1608,7 +1608,7 @@ async function resolveProviderForTestUnbound(
       const userKey =
         override.openaiKey?.trim() ||
         (stored?.aiOpenaiKeyEncrypted
-          ? decrypt(stored.aiOpenaiKeyEncrypted)
+          ? (openStoredKey(stored.aiOpenaiKeyEncrypted) ?? "")
           : "");
       if (userKey) {
         return new OpenAIClient({

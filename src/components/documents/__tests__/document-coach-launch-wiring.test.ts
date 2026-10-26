@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { documentDetailSource } from "@/__tests__/helpers/document-detail-source";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -15,10 +16,6 @@ import { join } from "node:path";
  *      stays connected end-to-end.
  */
 const ROOT = join(__dirname, "../../../..");
-const DETAIL_SHEET = join(
-  ROOT,
-  "src/components/documents/document-detail-sheet.tsx",
-);
 const MOUNT = join(ROOT, "src/components/insights/layout-coach-mount.tsx");
 const DRAWER = join(
   ROOT,
@@ -30,7 +27,7 @@ function load(path: string): string {
 }
 
 describe("document detail sheet — Ask the Coach opens the drawer", () => {
-  const src = load(DETAIL_SHEET);
+  const src = documentDetailSource();
 
   it("launches the doc-scoped coach drawer via askCoach(..., doc.id)", () => {
     expect(src).toContain("useCoachLaunch");

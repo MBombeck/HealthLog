@@ -34,6 +34,7 @@
  *      `briefing` switch is on; when it is off the 04:30 pass no-ops, so the
  *      02:00 batch keeps covering everyone.
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { getAssistantFlags } from "@/lib/feature-flags";
 import { PREGENERATE_STALE_MS } from "@/lib/jobs/insight-pregenerate";
@@ -53,7 +54,10 @@ export async function findStatusCronCandidates(
 
   const optedOut = await userIdsWithModuleOff(prisma, "insights");
   const users = await prisma.user.findMany({
-    where: optedOut.length > 0 ? { id: { notIn: optedOut } } : {},
+    where: {
+      ...ACTIVE_ACCOUNT,
+      ...(optedOut.length > 0 ? { id: { notIn: optedOut } } : {}),
+    },
     select: { id: true, locale: true, insightsCachedAt: true },
   });
   if (users.length === 0) return [];

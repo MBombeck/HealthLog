@@ -8,7 +8,7 @@ import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess } from "@/lib/api-response";
 import { requireCycleEnabled } from "@/lib/cycle/gate";
-import { isCycleEnabled } from "@/lib/cycle/gate";
+import { isCycleEnabled } from "@/lib/cycle/enabled";
 import { toCycleProfileDTO } from "@/lib/cycle/dto";
 
 export const dynamic = "force-dynamic";

@@ -1,0 +1,12 @@
+[
+  { "label": "no headers", "seconds": 450 },
+  { "label": "retry-after seconds", "seconds": 120 },
+  { "label": "retry-after HTTP date", "seconds": 150 },
+  { "label": "retry-after zero falls through", "seconds": 450 },
+  { "label": "15-minute window spent", "seconds": 450 },
+  { "label": "daily window spent", "seconds": 49950 },
+  { "label": "daily read window spent", "seconds": 49950 },
+  { "label": "malformed pair", "seconds": 450 },
+  { "label": "exactly on a quarter hour", "seconds": 900 },
+  { "label": "half a second before midnight, daily spent", "seconds": 1 }
+]

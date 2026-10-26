@@ -29,7 +29,8 @@ import {
 import {
   OFFHOST_BACKUP_QUEUE,
   OFFHOST_BACKUP_SEND_OPTIONS,
-} from "../offhost-backup";
+} from "@/lib/jobs/offhost-backup-queue";
+import { jobOf } from "../registry/__tests__/registry-helpers";
 
 const read = (file: string) => readFileSync(join(process.cwd(), file), "utf8");
 
@@ -59,13 +60,12 @@ describe("data-backup — pg-boss send policy", () => {
   });
 
   it("the weekly and nightly schedules carry the policy", () => {
-    const source = read("src/lib/jobs/reminder/register-maintenance.ts");
-    expect(source).toMatch(
-      /\[\s*DATA_BACKUP_QUEUE,\s*DATA_BACKUP_CRON,\s*DATA_BACKUP_SEND_OPTIONS,?\s*\]/,
-    );
-    expect(source).toMatch(
-      /\[\s*OFFHOST_BACKUP_QUEUE,\s*OFFHOST_BACKUP_CRON,\s*OFFHOST_BACKUP_SEND_OPTIONS,?\s*\]/,
-    );
+    const weekly = jobOf(DATA_BACKUP_QUEUE);
+    expect(weekly.cron).toBe("0 3 * * 0");
+    expect(weekly.scheduleOptions).toBe(DATA_BACKUP_SEND_OPTIONS);
+    const nightly = jobOf(OFFHOST_BACKUP_QUEUE);
+    expect(nightly.cron).toBe("30 2 * * *");
+    expect(nightly.scheduleOptions).toBe(OFFHOST_BACKUP_SEND_OPTIONS);
   });
 
   it("the admin run-now route sends with the same policy", () => {

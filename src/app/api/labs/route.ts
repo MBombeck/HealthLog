@@ -7,9 +7,9 @@ import {
   apiSuccess,
   getClientIp,
   returnAllZodIssues,
-  safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
@@ -157,35 +157,29 @@ async function postLabResult(request: NextRequest) {
   // that leaves the owner with a usable catalogue afterwards.
   const { user } = await requireRecordAuth("write", "labs");
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, createLabResultSchema, {
     maxBytes: 16 * 1024,
+    action: "labs.create.validation-failed",
+    countIssues: true,
+    errorCode: "labs.create.invalid",
+    onInvalid: (error) => {
+      // Free-text `analyte` / `unit` / `note` could land verbatim in a Zod
+      // issue message — strip values from the audit-ledger breadcrumb.
+      const auditIssues = sanitiseZodIssues(error.issues, {
+        stripValuesFromMessage: true,
+      });
+      // v1.36.x — through `auditLog()`, the only writer that stamps
+      // `actorUserId`. A bare `prisma.auditLog.create` files a delegate's
+      // malformed payload as if the owner had typed it.
+      void auditLog("labs.create.validation-failed", {
+        userId: user.id,
+        details: { issues: auditIssues },
+      }).catch(() => {
+        /* swallow — the 422 response is the contract */
+      });
+    },
   });
-  if (jsonError) return jsonError;
-
-  const parsed = createLabResultSchema.safeParse(body);
-  if (!parsed.success) {
-    annotate({
-      action: { name: "labs.create.validation-failed" },
-      meta: { issue_count: parsed.error.issues.length },
-    });
-    // Free-text `analyte` / `unit` / `note` could land verbatim in a Zod
-    // issue message — strip values from the audit-ledger breadcrumb.
-    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
-      stripValuesFromMessage: true,
-    });
-    // v1.36.x — through `auditLog()`, the only writer that stamps
-    // `actorUserId`. A bare `prisma.auditLog.create` files a delegate's
-    // malformed payload as if the owner had typed it.
-    void auditLog("labs.create.validation-failed", {
-      userId: user.id,
-      details: { issues: auditIssues },
-    }).catch(() => {
-      /* swallow — the 422 response is the contract */
-    });
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "labs.create.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const {
     biomarkerId,
@@ -379,7 +373,7 @@ async function postLabResult(request: NextRequest) {
   // v1.18.1 — eventful Lab↔Vorsorge satisfaction. A lab panel just
   // landed; resolve the user's free-text "annual blood panel" reminders
   // now rather than waiting on the 15-min cron. Fire-and-forget.
-  fireAndForget(enqueueReminderSatisfy(user.id), {
+  fireAndForget(() => enqueueReminderSatisfy(user.id), {
     action: "reminder.satisfy.enqueue",
   });
 

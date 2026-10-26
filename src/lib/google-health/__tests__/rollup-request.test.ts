@@ -20,15 +20,15 @@ vi.mock("@/lib/safe-fetch", async (importOriginal) => {
 });
 
 import {
-  GOOGLE_HEALTH_DATA_TYPES,
   GOOGLE_HEALTH_ROLLUP_FALLBACK_RANGE_DAYS,
   GOOGLE_HEALTH_ROLLUP_RANGE_DAYS,
   buildDailyRollUpBody,
-  extractGoogleApiErrorDetail,
   fetchDailyRollUp,
-  runWithGoogleHealthClientOutcome,
   type GoogleHealthRollupShape,
 } from "../client";
+import { extractGoogleApiErrorDetail } from "@/lib/google-health/request";
+import { runWithGoogleHealthClientOutcome } from "@/lib/google-health/budget";
+import { GOOGLE_HEALTH_DATA_TYPES } from "@/lib/google-health/mappers";
 import { GoogleHealthApiError } from "../response-classifier";
 
 function jsonResponse(status: number, body: unknown): Response {

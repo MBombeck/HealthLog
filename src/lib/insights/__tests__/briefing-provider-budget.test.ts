@@ -110,6 +110,7 @@ function mockProviderReply(
     },
     workingProvider: { providerType: "admin-openai" },
     fallbackHops: [],
+    tokensSpent: 0,
   });
 }
 
@@ -131,6 +132,43 @@ describe("runBriefingCompletion — ledger accounting", () => {
     // existed the total stayed at zero forever, no matter how many briefings
     // the account generated.
     expect(ledgerTotal).toBe(1234);
+  });
+
+  it("charges what the hops that failed before the answer spent (#1279)", async () => {
+    runRawCompletionWithFallback.mockResolvedValue({
+      result: { content: "{}", model: "m", tokensUsed: 1234 },
+      workingProvider: { providerType: "admin-openai" },
+      fallbackHops: [],
+      tokensSpent: 2700,
+    });
+
+    await runBriefingCompletion(completionArgs());
+
+    expect(ledgerTotal).toBe(1234 + 2700);
+  });
+
+  it("reserves and sends nothing once the caller's bound fired (#1279)", async () => {
+    mockProviderReply(100);
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(
+      runBriefingCompletion(completionArgs({ signal: controller.signal })),
+    ).rejects.toThrow();
+
+    expect(runRawCompletionWithFallback).not.toHaveBeenCalled();
+    expect(ledgerTotal).toBe(0);
+  });
+
+  it("hands the bound's signal to the provider call", async () => {
+    mockProviderReply(100);
+    const controller = new AbortController();
+
+    await runBriefingCompletion(completionArgs({ signal: controller.signal }));
+
+    expect(runRawCompletionWithFallback.mock.calls[0][0].params.signal).toBe(
+      controller.signal,
+    );
   });
 
   it("charges the reservation when the provider reports no token count", async () => {
@@ -183,6 +221,17 @@ describe("runBriefingCompletion — ledger accounting", () => {
     // A failed generation must not leave an estimate parked on the ledger,
     // which would ration the retry the user is entitled to.
     expect(ledgerTotal).toBe(0);
+  });
+
+  it("charges what a failed chain reported spending (#1279)", async () => {
+    runRawCompletionWithFallback.mockRejectedValue(
+      Object.assign(new Error("chain exhausted"), { tokensSpent: 5400 }),
+    );
+
+    await expect(runBriefingCompletion(completionArgs())).rejects.toThrow(
+      "chain exhausted",
+    );
+    expect(ledgerTotal).toBe(5400);
   });
 
   it("re-throws the provider error unchanged so callers keep their mapping", async () => {

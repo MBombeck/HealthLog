@@ -1,0 +1,1298 @@
+[
+  {
+    "id": "sleep-0001",
+    "day": "2026-03-02",
+    "zone": null,
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 10,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T21:40:00.000Z",
+        "fieldTag": "seg:2026-03-01T21:30:00.000Z",
+        "sleepStage": "AWAKE",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T21:30:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 20,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T22:00:00.000Z",
+        "fieldTag": "seg:2026-03-01T21:40:00.000Z",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T21:40:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 20,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T22:20:00.000Z",
+        "fieldTag": "seg:2026-03-01T22:00:00.000Z",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T22:00:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 20,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T22:40:00.000Z",
+        "fieldTag": "seg:2026-03-01T22:20:00.000Z",
+        "sleepStage": "REM",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T22:20:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 20,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T23:00:00.000Z",
+        "fieldTag": "seg:2026-03-01T22:40:00.000Z",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T22:40:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 5,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T23:05:00.000Z",
+        "fieldTag": "seg:2026-03-01T23:00:00.000Z",
+        "sleepStage": "AWAKE",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T23:00:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 5,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T23:10:00.000Z",
+        "fieldTag": "seg:2026-03-01T23:05:00.000Z",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T23:05:00.000Z"
+      },
+      {
+        "type": "SLEEP_EFFICIENCY",
+        "value": 91,
+        "unit": "%",
+        "measuredAt": "2026-03-02T05:40:00.000Z",
+        "fieldTag": "sleep_eff",
+        "externalId": "sleep:sleep-0001:sleep_eff"
+      },
+      {
+        "type": "HRV_RMSSD",
+        "value": 48.5,
+        "unit": "ms",
+        "measuredAt": "2026-03-02T05:40:00.000Z",
+        "fieldTag": "hrv_rmssd",
+        "externalId": "sleep:sleep-0001:hrv_rmssd"
+      },
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 52,
+        "unit": "bpm",
+        "measuredAt": "2026-03-02T05:40:00.000Z",
+        "fieldTag": "rhr",
+        "externalId": "sleep:sleep-0001:rhr"
+      },
+      {
+        "type": "RESPIRATORY_RATE",
+        "value": 14.25,
+        "unit": "breaths/min",
+        "measuredAt": "2026-03-02T05:40:00.000Z",
+        "fieldTag": "resp_rate",
+        "externalId": "sleep:sleep-0001:resp_rate"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0001",
+    "day": "2026-03-02",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 10,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T21:40:00.000Z",
+        "fieldTag": "seg:2026-03-01T21:30:00.000Z",
+        "sleepStage": "AWAKE",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T21:30:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 20,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T22:00:00.000Z",
+        "fieldTag": "seg:2026-03-01T21:40:00.000Z",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T21:40:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 20,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T22:20:00.000Z",
+        "fieldTag": "seg:2026-03-01T22:00:00.000Z",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T22:00:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 20,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T22:40:00.000Z",
+        "fieldTag": "seg:2026-03-01T22:20:00.000Z",
+        "sleepStage": "REM",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T22:20:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 20,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T23:00:00.000Z",
+        "fieldTag": "seg:2026-03-01T22:40:00.000Z",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T22:40:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 5,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T23:05:00.000Z",
+        "fieldTag": "seg:2026-03-01T23:00:00.000Z",
+        "sleepStage": "AWAKE",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T23:00:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 5,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T23:10:00.000Z",
+        "fieldTag": "seg:2026-03-01T23:05:00.000Z",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T23:05:00.000Z"
+      },
+      {
+        "type": "SLEEP_EFFICIENCY",
+        "value": 91,
+        "unit": "%",
+        "measuredAt": "2026-03-02T05:40:00.000Z",
+        "fieldTag": "sleep_eff",
+        "externalId": "sleep:sleep-0001:sleep_eff"
+      },
+      {
+        "type": "HRV_RMSSD",
+        "value": 48.5,
+        "unit": "ms",
+        "measuredAt": "2026-03-02T05:40:00.000Z",
+        "fieldTag": "hrv_rmssd",
+        "externalId": "sleep:sleep-0001:hrv_rmssd"
+      },
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 52,
+        "unit": "bpm",
+        "measuredAt": "2026-03-02T05:40:00.000Z",
+        "fieldTag": "rhr",
+        "externalId": "sleep:sleep-0001:rhr"
+      },
+      {
+        "type": "RESPIRATORY_RATE",
+        "value": 14.25,
+        "unit": "breaths/min",
+        "measuredAt": "2026-03-02T05:40:00.000Z",
+        "fieldTag": "resp_rate",
+        "externalId": "sleep:sleep-0001:resp_rate"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0001",
+    "day": "2026-03-02",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 10,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T21:40:00.000Z",
+        "fieldTag": "seg:2026-03-01T21:30:00.000Z",
+        "sleepStage": "AWAKE",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T21:30:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 20,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T22:00:00.000Z",
+        "fieldTag": "seg:2026-03-01T21:40:00.000Z",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T21:40:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 20,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T22:20:00.000Z",
+        "fieldTag": "seg:2026-03-01T22:00:00.000Z",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T22:00:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 20,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T22:40:00.000Z",
+        "fieldTag": "seg:2026-03-01T22:20:00.000Z",
+        "sleepStage": "REM",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T22:20:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 20,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T23:00:00.000Z",
+        "fieldTag": "seg:2026-03-01T22:40:00.000Z",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T22:40:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 5,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T23:05:00.000Z",
+        "fieldTag": "seg:2026-03-01T23:00:00.000Z",
+        "sleepStage": "AWAKE",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T23:00:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 5,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T23:10:00.000Z",
+        "fieldTag": "seg:2026-03-01T23:05:00.000Z",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0001:seg:2026-03-01T23:05:00.000Z"
+      },
+      {
+        "type": "SLEEP_EFFICIENCY",
+        "value": 91,
+        "unit": "%",
+        "measuredAt": "2026-03-02T05:40:00.000Z",
+        "fieldTag": "sleep_eff",
+        "externalId": "sleep:sleep-0001:sleep_eff"
+      },
+      {
+        "type": "HRV_RMSSD",
+        "value": 48.5,
+        "unit": "ms",
+        "measuredAt": "2026-03-02T05:40:00.000Z",
+        "fieldTag": "hrv_rmssd",
+        "externalId": "sleep:sleep-0001:hrv_rmssd"
+      },
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 52,
+        "unit": "bpm",
+        "measuredAt": "2026-03-02T05:40:00.000Z",
+        "fieldTag": "rhr",
+        "externalId": "sleep:sleep-0001:rhr"
+      },
+      {
+        "type": "RESPIRATORY_RATE",
+        "value": 14.25,
+        "unit": "breaths/min",
+        "measuredAt": "2026-03-02T05:40:00.000Z",
+        "fieldTag": "resp_rate",
+        "externalId": "sleep:sleep-0001:resp_rate"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0002",
+    "day": "2026-03-03",
+    "zone": null,
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 240,
+        "unit": "minutes",
+        "measuredAt": "2026-03-03T06:00:00.000Z",
+        "fieldTag": "sleep_core",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0002:sleep_core"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 90,
+        "unit": "minutes",
+        "measuredAt": "2026-03-03T06:00:00.000Z",
+        "fieldTag": "sleep_deep",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0002:sleep_deep"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 105,
+        "unit": "minutes",
+        "measuredAt": "2026-03-03T06:00:00.000Z",
+        "fieldTag": "sleep_rem",
+        "sleepStage": "REM",
+        "externalId": "sleep:sleep-0002:sleep_rem"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 30,
+        "unit": "minutes",
+        "measuredAt": "2026-03-03T06:00:00.000Z",
+        "fieldTag": "sleep_awake",
+        "sleepStage": "AWAKE",
+        "externalId": "sleep:sleep-0002:sleep_awake"
+      },
+      {
+        "type": "SLEEP_EFFICIENCY",
+        "value": 88,
+        "unit": "%",
+        "measuredAt": "2026-03-03T06:00:00.000Z",
+        "fieldTag": "sleep_eff",
+        "externalId": "sleep:sleep-0002:sleep_eff"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0002",
+    "day": "2026-03-03",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 240,
+        "unit": "minutes",
+        "measuredAt": "2026-03-03T06:00:00.000Z",
+        "fieldTag": "sleep_core",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0002:sleep_core"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 90,
+        "unit": "minutes",
+        "measuredAt": "2026-03-03T06:00:00.000Z",
+        "fieldTag": "sleep_deep",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0002:sleep_deep"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 105,
+        "unit": "minutes",
+        "measuredAt": "2026-03-03T06:00:00.000Z",
+        "fieldTag": "sleep_rem",
+        "sleepStage": "REM",
+        "externalId": "sleep:sleep-0002:sleep_rem"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 30,
+        "unit": "minutes",
+        "measuredAt": "2026-03-03T06:00:00.000Z",
+        "fieldTag": "sleep_awake",
+        "sleepStage": "AWAKE",
+        "externalId": "sleep:sleep-0002:sleep_awake"
+      },
+      {
+        "type": "SLEEP_EFFICIENCY",
+        "value": 88,
+        "unit": "%",
+        "measuredAt": "2026-03-03T06:00:00.000Z",
+        "fieldTag": "sleep_eff",
+        "externalId": "sleep:sleep-0002:sleep_eff"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0002",
+    "day": "2026-03-03",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 240,
+        "unit": "minutes",
+        "measuredAt": "2026-03-03T06:00:00.000Z",
+        "fieldTag": "sleep_core",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0002:sleep_core"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 90,
+        "unit": "minutes",
+        "measuredAt": "2026-03-03T06:00:00.000Z",
+        "fieldTag": "sleep_deep",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0002:sleep_deep"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 105,
+        "unit": "minutes",
+        "measuredAt": "2026-03-03T06:00:00.000Z",
+        "fieldTag": "sleep_rem",
+        "sleepStage": "REM",
+        "externalId": "sleep:sleep-0002:sleep_rem"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 30,
+        "unit": "minutes",
+        "measuredAt": "2026-03-03T06:00:00.000Z",
+        "fieldTag": "sleep_awake",
+        "sleepStage": "AWAKE",
+        "externalId": "sleep:sleep-0002:sleep_awake"
+      },
+      {
+        "type": "SLEEP_EFFICIENCY",
+        "value": 88,
+        "unit": "%",
+        "measuredAt": "2026-03-03T06:00:00.000Z",
+        "fieldTag": "sleep_eff",
+        "externalId": "sleep:sleep-0002:sleep_eff"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0003",
+    "day": "2026-03-02",
+    "zone": null,
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 25,
+        "unit": "minutes",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "sleep_core",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0003:sleep_core"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 0,
+        "unit": "minutes",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "sleep_deep",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0003:sleep_deep"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 0,
+        "unit": "minutes",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "sleep_awake",
+        "sleepStage": "AWAKE",
+        "externalId": "sleep:sleep-0003:sleep_awake"
+      },
+      {
+        "type": "SLEEP_EFFICIENCY",
+        "value": 83.33,
+        "unit": "%",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "sleep_eff",
+        "externalId": "sleep:sleep-0003:sleep_eff"
+      },
+      {
+        "type": "HRV_RMSSD",
+        "value": 35.13,
+        "unit": "ms",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "hrv_rmssd",
+        "externalId": "sleep:sleep-0003:hrv_rmssd"
+      },
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 62,
+        "unit": "bpm",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "rhr",
+        "externalId": "sleep:sleep-0003:rhr"
+      },
+      {
+        "type": "RESPIRATORY_RATE",
+        "value": 15,
+        "unit": "breaths/min",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "resp_rate",
+        "externalId": "sleep:sleep-0003:resp_rate"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0003",
+    "day": "2026-03-02",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 25,
+        "unit": "minutes",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "sleep_core",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0003:sleep_core"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 0,
+        "unit": "minutes",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "sleep_deep",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0003:sleep_deep"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 0,
+        "unit": "minutes",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "sleep_awake",
+        "sleepStage": "AWAKE",
+        "externalId": "sleep:sleep-0003:sleep_awake"
+      },
+      {
+        "type": "SLEEP_EFFICIENCY",
+        "value": 83.33,
+        "unit": "%",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "sleep_eff",
+        "externalId": "sleep:sleep-0003:sleep_eff"
+      },
+      {
+        "type": "HRV_RMSSD",
+        "value": 35.13,
+        "unit": "ms",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "hrv_rmssd",
+        "externalId": "sleep:sleep-0003:hrv_rmssd"
+      },
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 62,
+        "unit": "bpm",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "rhr",
+        "externalId": "sleep:sleep-0003:rhr"
+      },
+      {
+        "type": "RESPIRATORY_RATE",
+        "value": 15,
+        "unit": "breaths/min",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "resp_rate",
+        "externalId": "sleep:sleep-0003:resp_rate"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0003",
+    "day": "2026-03-02",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 25,
+        "unit": "minutes",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "sleep_core",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0003:sleep_core"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 0,
+        "unit": "minutes",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "sleep_deep",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0003:sleep_deep"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 0,
+        "unit": "minutes",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "sleep_awake",
+        "sleepStage": "AWAKE",
+        "externalId": "sleep:sleep-0003:sleep_awake"
+      },
+      {
+        "type": "SLEEP_EFFICIENCY",
+        "value": 83.33,
+        "unit": "%",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "sleep_eff",
+        "externalId": "sleep:sleep-0003:sleep_eff"
+      },
+      {
+        "type": "HRV_RMSSD",
+        "value": 35.13,
+        "unit": "ms",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "hrv_rmssd",
+        "externalId": "sleep:sleep-0003:hrv_rmssd"
+      },
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 62,
+        "unit": "bpm",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "rhr",
+        "externalId": "sleep:sleep-0003:rhr"
+      },
+      {
+        "type": "RESPIRATORY_RATE",
+        "value": 15,
+        "unit": "breaths/min",
+        "measuredAt": "2026-03-02T13:40:00.000Z",
+        "fieldTag": "resp_rate",
+        "externalId": "sleep:sleep-0003:resp_rate"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0004",
+    "day": "2026-03-04",
+    "zone": null,
+    "rows": [],
+    "retired": true
+  },
+  {
+    "id": "sleep-0004",
+    "day": "2026-03-04",
+    "zone": "Europe/Berlin",
+    "rows": [],
+    "retired": true
+  },
+  {
+    "id": "sleep-0004",
+    "day": "2026-03-04",
+    "zone": "America/New_York",
+    "rows": [],
+    "retired": true
+  },
+  {
+    "id": "sleep-0005",
+    "day": "2026-03-05",
+    "zone": null,
+    "rows": [],
+    "retired": true
+  },
+  {
+    "id": "sleep-0005",
+    "day": "2026-03-05",
+    "zone": "Europe/Berlin",
+    "rows": [],
+    "retired": true
+  },
+  {
+    "id": "sleep-0005",
+    "day": "2026-03-05",
+    "zone": "America/New_York",
+    "rows": [],
+    "retired": true
+  },
+  {
+    "id": "sleep-0006",
+    "day": "2026-03-06",
+    "zone": null,
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 200,
+        "unit": "minutes",
+        "measuredAt": "2026-03-06T12:00:00.000Z",
+        "fieldTag": "sleep_core",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0006:sleep_core"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 80,
+        "unit": "minutes",
+        "measuredAt": "2026-03-06T12:00:00.000Z",
+        "fieldTag": "sleep_deep",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0006:sleep_deep"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 95,
+        "unit": "minutes",
+        "measuredAt": "2026-03-06T12:00:00.000Z",
+        "fieldTag": "sleep_rem",
+        "sleepStage": "REM",
+        "externalId": "sleep:sleep-0006:sleep_rem"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 15,
+        "unit": "minutes",
+        "measuredAt": "2026-03-06T12:00:00.000Z",
+        "fieldTag": "sleep_awake",
+        "sleepStage": "AWAKE",
+        "externalId": "sleep:sleep-0006:sleep_awake"
+      },
+      {
+        "type": "RESPIRATORY_RATE",
+        "value": 13.8,
+        "unit": "breaths/min",
+        "measuredAt": "2026-03-06T12:00:00.000Z",
+        "fieldTag": "resp_rate",
+        "externalId": "sleep:sleep-0006:resp_rate"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0006",
+    "day": "2026-03-06",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 200,
+        "unit": "minutes",
+        "measuredAt": "2026-03-06T11:00:00.000Z",
+        "fieldTag": "sleep_core",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0006:sleep_core"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 80,
+        "unit": "minutes",
+        "measuredAt": "2026-03-06T11:00:00.000Z",
+        "fieldTag": "sleep_deep",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0006:sleep_deep"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 95,
+        "unit": "minutes",
+        "measuredAt": "2026-03-06T11:00:00.000Z",
+        "fieldTag": "sleep_rem",
+        "sleepStage": "REM",
+        "externalId": "sleep:sleep-0006:sleep_rem"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 15,
+        "unit": "minutes",
+        "measuredAt": "2026-03-06T11:00:00.000Z",
+        "fieldTag": "sleep_awake",
+        "sleepStage": "AWAKE",
+        "externalId": "sleep:sleep-0006:sleep_awake"
+      },
+      {
+        "type": "RESPIRATORY_RATE",
+        "value": 13.8,
+        "unit": "breaths/min",
+        "measuredAt": "2026-03-06T11:00:00.000Z",
+        "fieldTag": "resp_rate",
+        "externalId": "sleep:sleep-0006:resp_rate"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0006",
+    "day": "2026-03-06",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 200,
+        "unit": "minutes",
+        "measuredAt": "2026-03-06T17:00:00.000Z",
+        "fieldTag": "sleep_core",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0006:sleep_core"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 80,
+        "unit": "minutes",
+        "measuredAt": "2026-03-06T17:00:00.000Z",
+        "fieldTag": "sleep_deep",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0006:sleep_deep"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 95,
+        "unit": "minutes",
+        "measuredAt": "2026-03-06T17:00:00.000Z",
+        "fieldTag": "sleep_rem",
+        "sleepStage": "REM",
+        "externalId": "sleep:sleep-0006:sleep_rem"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 15,
+        "unit": "minutes",
+        "measuredAt": "2026-03-06T17:00:00.000Z",
+        "fieldTag": "sleep_awake",
+        "sleepStage": "AWAKE",
+        "externalId": "sleep:sleep-0006:sleep_awake"
+      },
+      {
+        "type": "RESPIRATORY_RATE",
+        "value": 13.8,
+        "unit": "breaths/min",
+        "measuredAt": "2026-03-06T17:00:00.000Z",
+        "fieldTag": "resp_rate",
+        "externalId": "sleep:sleep-0006:resp_rate"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0007",
+    "day": "2026-03-07",
+    "zone": null,
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 10,
+        "unit": "minutes",
+        "measuredAt": "2026-03-07T04:35:00.000Z",
+        "fieldTag": "seg:2026-03-07T04:25:00.000Z",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0007:seg:2026-03-07T04:25:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 10,
+        "unit": "minutes",
+        "measuredAt": "2026-03-07T04:50:00.000Z",
+        "fieldTag": "seg:2026-03-07T04:40:00.000Z",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0007:seg:2026-03-07T04:40:00.000Z"
+      },
+      {
+        "type": "SLEEP_EFFICIENCY",
+        "value": 85,
+        "unit": "%",
+        "measuredAt": "2026-03-07T05:00:00.000Z",
+        "fieldTag": "sleep_eff",
+        "externalId": "sleep:sleep-0007:sleep_eff"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0007",
+    "day": "2026-03-07",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 10,
+        "unit": "minutes",
+        "measuredAt": "2026-03-07T04:35:00.000Z",
+        "fieldTag": "seg:2026-03-07T04:25:00.000Z",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0007:seg:2026-03-07T04:25:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 10,
+        "unit": "minutes",
+        "measuredAt": "2026-03-07T04:50:00.000Z",
+        "fieldTag": "seg:2026-03-07T04:40:00.000Z",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0007:seg:2026-03-07T04:40:00.000Z"
+      },
+      {
+        "type": "SLEEP_EFFICIENCY",
+        "value": 85,
+        "unit": "%",
+        "measuredAt": "2026-03-07T05:00:00.000Z",
+        "fieldTag": "sleep_eff",
+        "externalId": "sleep:sleep-0007:sleep_eff"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0007",
+    "day": "2026-03-07",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 10,
+        "unit": "minutes",
+        "measuredAt": "2026-03-07T04:35:00.000Z",
+        "fieldTag": "seg:2026-03-07T04:25:00.000Z",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0007:seg:2026-03-07T04:25:00.000Z"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 10,
+        "unit": "minutes",
+        "measuredAt": "2026-03-07T04:50:00.000Z",
+        "fieldTag": "seg:2026-03-07T04:40:00.000Z",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0007:seg:2026-03-07T04:40:00.000Z"
+      },
+      {
+        "type": "SLEEP_EFFICIENCY",
+        "value": 85,
+        "unit": "%",
+        "measuredAt": "2026-03-07T05:00:00.000Z",
+        "fieldTag": "sleep_eff",
+        "externalId": "sleep:sleep-0007:sleep_eff"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0008",
+    "day": "2026-03-08",
+    "zone": null,
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 220,
+        "unit": "minutes",
+        "measuredAt": "2026-03-08T07:00:00.000Z",
+        "fieldTag": "sleep_core",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0008:sleep_core"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 100,
+        "unit": "minutes",
+        "measuredAt": "2026-03-08T07:00:00.000Z",
+        "fieldTag": "sleep_deep",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0008:sleep_deep"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 100,
+        "unit": "minutes",
+        "measuredAt": "2026-03-08T07:00:00.000Z",
+        "fieldTag": "sleep_rem",
+        "sleepStage": "REM",
+        "externalId": "sleep:sleep-0008:sleep_rem"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 20,
+        "unit": "minutes",
+        "measuredAt": "2026-03-08T07:00:00.000Z",
+        "fieldTag": "sleep_awake",
+        "sleepStage": "AWAKE",
+        "externalId": "sleep:sleep-0008:sleep_awake"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0008",
+    "day": "2026-03-08",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 220,
+        "unit": "minutes",
+        "measuredAt": "2026-03-08T07:00:00.000Z",
+        "fieldTag": "sleep_core",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0008:sleep_core"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 100,
+        "unit": "minutes",
+        "measuredAt": "2026-03-08T07:00:00.000Z",
+        "fieldTag": "sleep_deep",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0008:sleep_deep"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 100,
+        "unit": "minutes",
+        "measuredAt": "2026-03-08T07:00:00.000Z",
+        "fieldTag": "sleep_rem",
+        "sleepStage": "REM",
+        "externalId": "sleep:sleep-0008:sleep_rem"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 20,
+        "unit": "minutes",
+        "measuredAt": "2026-03-08T07:00:00.000Z",
+        "fieldTag": "sleep_awake",
+        "sleepStage": "AWAKE",
+        "externalId": "sleep:sleep-0008:sleep_awake"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0008",
+    "day": "2026-03-08",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 220,
+        "unit": "minutes",
+        "measuredAt": "2026-03-08T07:00:00.000Z",
+        "fieldTag": "sleep_core",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0008:sleep_core"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 100,
+        "unit": "minutes",
+        "measuredAt": "2026-03-08T07:00:00.000Z",
+        "fieldTag": "sleep_deep",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0008:sleep_deep"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 100,
+        "unit": "minutes",
+        "measuredAt": "2026-03-08T07:00:00.000Z",
+        "fieldTag": "sleep_rem",
+        "sleepStage": "REM",
+        "externalId": "sleep:sleep-0008:sleep_rem"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 20,
+        "unit": "minutes",
+        "measuredAt": "2026-03-08T07:00:00.000Z",
+        "fieldTag": "sleep_awake",
+        "sleepStage": "AWAKE",
+        "externalId": "sleep:sleep-0008:sleep_awake"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0009",
+    "day": "2026-03-09",
+    "zone": null,
+    "rows": [],
+    "retired": false
+  },
+  {
+    "id": "sleep-0009",
+    "day": "2026-03-09",
+    "zone": "Europe/Berlin",
+    "rows": [],
+    "retired": false
+  },
+  {
+    "id": "sleep-0009",
+    "day": "2026-03-09",
+    "zone": "America/New_York",
+    "rows": [],
+    "retired": false
+  },
+  {
+    "id": "sleep-0010",
+    "day": "2026-03-10",
+    "zone": null,
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 60.02,
+        "unit": "minutes",
+        "measuredAt": "2026-03-10T06:00:00.000Z",
+        "fieldTag": "sleep_deep",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0010:sleep_deep"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 66.67,
+        "unit": "minutes",
+        "measuredAt": "2026-03-10T06:00:00.000Z",
+        "fieldTag": "sleep_rem",
+        "sleepStage": "REM",
+        "externalId": "sleep:sleep-0010:sleep_rem"
+      },
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 50,
+        "unit": "bpm",
+        "measuredAt": "2026-03-10T06:00:00.000Z",
+        "fieldTag": "rhr",
+        "externalId": "sleep:sleep-0010:rhr"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0010",
+    "day": "2026-03-10",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 60.02,
+        "unit": "minutes",
+        "measuredAt": "2026-03-10T06:00:00.000Z",
+        "fieldTag": "sleep_deep",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0010:sleep_deep"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 66.67,
+        "unit": "minutes",
+        "measuredAt": "2026-03-10T06:00:00.000Z",
+        "fieldTag": "sleep_rem",
+        "sleepStage": "REM",
+        "externalId": "sleep:sleep-0010:sleep_rem"
+      },
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 50,
+        "unit": "bpm",
+        "measuredAt": "2026-03-10T06:00:00.000Z",
+        "fieldTag": "rhr",
+        "externalId": "sleep:sleep-0010:rhr"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0010",
+    "day": "2026-03-10",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 60.02,
+        "unit": "minutes",
+        "measuredAt": "2026-03-10T06:00:00.000Z",
+        "fieldTag": "sleep_deep",
+        "sleepStage": "DEEP",
+        "externalId": "sleep:sleep-0010:sleep_deep"
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 66.67,
+        "unit": "minutes",
+        "measuredAt": "2026-03-10T06:00:00.000Z",
+        "fieldTag": "sleep_rem",
+        "sleepStage": "REM",
+        "externalId": "sleep:sleep-0010:sleep_rem"
+      },
+      {
+        "type": "RESTING_HEART_RATE",
+        "value": 50,
+        "unit": "bpm",
+        "measuredAt": "2026-03-10T06:00:00.000Z",
+        "fieldTag": "rhr",
+        "externalId": "sleep:sleep-0010:rhr"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0011",
+    "day": "2026-03-11",
+    "zone": null,
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 0,
+        "unit": "minutes",
+        "measuredAt": "2026-03-11T06:00:00.000Z",
+        "fieldTag": "sleep_core",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0011:sleep_core"
+      },
+      {
+        "type": "SLEEP_EFFICIENCY",
+        "value": 0,
+        "unit": "%",
+        "measuredAt": "2026-03-11T06:00:00.000Z",
+        "fieldTag": "sleep_eff",
+        "externalId": "sleep:sleep-0011:sleep_eff"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0011",
+    "day": "2026-03-11",
+    "zone": "Europe/Berlin",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 0,
+        "unit": "minutes",
+        "measuredAt": "2026-03-11T06:00:00.000Z",
+        "fieldTag": "sleep_core",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0011:sleep_core"
+      },
+      {
+        "type": "SLEEP_EFFICIENCY",
+        "value": 0,
+        "unit": "%",
+        "measuredAt": "2026-03-11T06:00:00.000Z",
+        "fieldTag": "sleep_eff",
+        "externalId": "sleep:sleep-0011:sleep_eff"
+      }
+    ],
+    "retired": false
+  },
+  {
+    "id": "sleep-0011",
+    "day": "2026-03-11",
+    "zone": "America/New_York",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 0,
+        "unit": "minutes",
+        "measuredAt": "2026-03-11T06:00:00.000Z",
+        "fieldTag": "sleep_core",
+        "sleepStage": "CORE",
+        "externalId": "sleep:sleep-0011:sleep_core"
+      },
+      {
+        "type": "SLEEP_EFFICIENCY",
+        "value": 0,
+        "unit": "%",
+        "measuredAt": "2026-03-11T06:00:00.000Z",
+        "fieldTag": "sleep_eff",
+        "externalId": "sleep:sleep-0011:sleep_eff"
+      }
+    ],
+    "retired": false
+  }
+]

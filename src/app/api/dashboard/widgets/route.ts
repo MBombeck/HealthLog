@@ -6,17 +6,9 @@
  * DELETE resets web-controlled choices and preserves the other preferences.
  */
 import { apiHandler, requireAuth, requireRecordAuth } from "@/lib/api-handler";
-import {
-  apiSuccess,
-  buildPayloadDiagnostic,
-  safeJson,
-  returnAllZodIssues,
-  sanitiseZodIssues,
-} from "@/lib/api-response";
+import { apiSuccess, safeJson, returnAllZodIssues } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
-import { isModuleEnabled } from "@/lib/modules/gate";
-import { unavailableWidgetIds } from "@/lib/dashboard/widget-modules";
-import { prisma, toJson } from "@/lib/db";
+import { toJson } from "@/lib/db";
 import {
   takeBaseToken,
   guardedUserUpdate,
@@ -24,8 +16,6 @@ import {
 } from "@/lib/optimistic-lock";
 import {
   resolveDashboardLayout,
-  serializeDashboardLayout,
-  DEFAULT_DASHBOARD_LAYOUT,
   DASHBOARD_WIDGET_CATALOGUE_IDS,
   COMPARISON_BASELINES,
   CHART_OVERLAY_KEYS,
@@ -34,16 +24,19 @@ import {
   HERO_RING_IDS,
   MAX_HERO_RING_ORDER,
   HERO_PRIMARY_CONTENTS,
-  layoutNeedsPreserveRead,
-  mergePreservedLayoutFields,
   type DashboardLayout,
   type DashboardLayoutWithToken,
 } from "@/lib/dashboard-layout";
+import { buildDashboardLayout } from "@/lib/dashboard/widgets/read-layout";
+import { resolveUnavailableWidgetIds } from "@/lib/dashboard/widgets/unavailable-widgets";
+import { dropUnknownWidgetIds } from "@/lib/dashboard/widgets/unknown-ids";
+import { reportLayoutValidationFailure } from "@/lib/dashboard/widgets/validation-report";
+import { layoutToStore } from "@/lib/dashboard/widgets/merge-stored";
+import { resetDashboardLayout } from "@/lib/dashboard/widgets/reset-layout";
 import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
 import { z } from "zod/v4";
 import { invalidateUserDashboardWidgets } from "@/lib/cache/invalidate";
 import { cached, caches, type ServerCache } from "@/lib/cache/server-cache";
-import { redactForExcerpt } from "@/lib/observability/redact-payload";
 import type { NextRequest } from "next/server";
 
 // Single source of truth — every widget id the layout accepts. The
@@ -179,21 +172,6 @@ const layoutSchema = z.object({
   // field, and pulling it pre-Zod keeps the domain schema pure.
 });
 
-async function buildDashboardLayout(
-  userId: string,
-): Promise<DashboardLayoutWithToken> {
-  const row = await prisma.user.findUnique({
-    where: { id: userId },
-    // v1.32.16 (issue #581) — `updatedAt` rides the cached layout so GET
-    // hands the client the optimistic-concurrency token alongside the
-    // layout it applies to. Cached together (and busted on every write)
-    // so the (layout, token) pair a client reads is always consistent.
-    select: { dashboardWidgetsJson: true, updatedAt: true },
-  });
-  const layout = resolveDashboardLayout(row?.dashboardWidgetsJson);
-  return { ...layout, updatedAt: row?.updatedAt?.toISOString() };
-}
-
 export const GET = apiHandler(async () => {
   // Read: the RECORD's layout. Write: refused — see the PUT and DELETE below.
   //
@@ -224,42 +202,8 @@ export const GET = apiHandler(async () => {
     annotate,
   );
 
-  // Which toggles cannot do anything for this account. Resolved here, on
-  // the server, so the Settings screen never has to fetch dashboard data
-  // to find out whether a switch it is about to draw is dead.
-  //
-  // Deliberately OUTSIDE the cached layout above: the layout cell is keyed
-  // on the user and holds their arrangement, which does not change when a
-  // module is toggled. Folding a module-dependent answer into it would
-  // serve a stale one for the rest of the 5-minute TTL — the switch would
-  // linger for minutes after Recovery went off, which is the confusion this
-  // is removing.
-  //
-  // The HRV probes are index-only existence checks
-  // (`@@index([userId, type, measuredAt])`), not a summaries read; it runs
-  // only when Recovery is off, so the common account pays nothing.
-  // One flag, read the way this codebase reads one flag — not the whole
-  // module map. `hrv` is the only conditionally-dead widget and `recovery`
-  // is the only module that decides it.
-  const recoveryEnabled = await isModuleEnabled(user.id, "recovery");
-  let hasSdnn = true;
-  let hasRmssd = true;
-  if (!recoveryEnabled) {
-    const [sdnnRow, rmssdRow] = await Promise.all(
-      (["HEART_RATE_VARIABILITY", "HRV_RMSSD"] as const).map((type) =>
-        prisma.measurement.findFirst({
-          where: { userId: user.id, type, deletedAt: null },
-          select: { id: true },
-        }),
-      ),
-    );
-    hasSdnn = sdnnRow !== null;
-    hasRmssd = rmssdRow !== null;
-  }
-  const unavailable = unavailableWidgetIds(
-    { recovery: recoveryEnabled },
-    { hasSdnn, hasRmssd },
-  );
+  // Outside the cached layout on purpose; see `resolveUnavailableWidgetIds`.
+  const unavailable = await resolveUnavailableWidgetIds(user.id);
   return apiSuccess(
     unavailable.length > 0
       ? { ...layout, unavailableWidgetIds: unavailable }
@@ -295,76 +239,13 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   const base = taken.base;
   const body = taken.rest;
 
-  // v1.7.0 — accept-and-ignore widget ids OUTSIDE the 27-id catalogue
-  // on write. The 27 ids (16 web + 11 iOS-only) all validate + persist;
-  // only a genuinely-unknown id (a retired tile, or a typo) is filtered
-  // out here BEFORE Zod so it can't 422 the whole blob. The strict enum
-  // still validates the surviving ids, so a malformed entry (non-string
-  // id, missing `order`) still 422s. An id outside the catalogue
-  // silently vanishes — acceptable, and greppable via the annotation.
-  const knownWidgetIds = new Set<string>(DASHBOARD_WIDGET_CATALOGUE_IDS);
-  if (
-    body &&
-    typeof body === "object" &&
-    Array.isArray((body as { widgets?: unknown }).widgets)
-  ) {
-    const widgetsBody = body as {
-      widgets: Array<{ id?: unknown }>;
-    };
-    const droppedIds = widgetsBody.widgets
-      .map((w) => w?.id)
-      .filter(
-        (id): id is string => typeof id === "string" && !knownWidgetIds.has(id),
-      );
-    if (droppedIds.length > 0) {
-      widgetsBody.widgets = widgetsBody.widgets.filter(
-        (w) => !(typeof w?.id === "string" && !knownWidgetIds.has(w.id)),
-      );
-      // v1.7.0 — the unknown-id filter runs over the FULL incoming
-      // `widgets` array BEFORE Zod's `.max(20)` applies, so `droppedIds`
-      // is bounded only by the request body limit. Cap the logged array
-      // (keep the full `dropped_count`) so a single large request can't
-      // push thousands of strings into one wide-event line.
-      annotate({
-        action: { name: "dashboard.widgets.unknown-id-dropped" },
-        meta: {
-          dropped_ids: droppedIds.slice(0, 20),
-          dropped_count: droppedIds.length,
-        },
-      });
-    }
-  }
+  // Ids outside the catalogue are dropped before Zod (a retired tile must
+  // not 422 the whole blob).
+  dropUnknownWidgetIds(body);
 
   const parsed = layoutSchema.safeParse(body);
   if (!parsed.success) {
-    // v1.4.42 — the legacy `issues[0].message` envelope dropped
-    // every issue past the first. iOS contract debugging hit one
-    // round-trip per wrong field; the new helper surfaces every
-    // issue under `details.issues`. We additionally emit an
-    // append-only audit-ledger row so the operator can grep
-    // `/api/admin/audit` for these without combing the iOS dev
-    // console.
-    const issues = sanitiseZodIssues(parsed.error.issues);
-    // v1.4.48 H-iOS-1 — surface the iOS-sent payload shape alongside
-    // the Zod rejection so a single wide-event line carries enough
-    // detail to diagnose serialiser drift in `HealthLog-iOS`. We log
-    // ONLY the top-level keys plus a hard 256-char JSON excerpt — never
-    // the full body — so PII / token-like fields cannot leak. The
-    // diagnostic shape is built by the shared `buildPayloadDiagnostic`
-    // helper (v1.4.49) so the widget + series routes can't drift; the
-    // body is routed through `redactForExcerpt` first so any
-    // future field matching the denylist (password / token / secret /
-    // apiKey / authorization / csrfState / nonce) lands as the literal
-    // `"[redacted]"` instead of its raw value.
-    const payloadDiagnostic = buildPayloadDiagnostic(redactForExcerpt(body));
-    annotate({
-      action: { name: "dashboard.widgets.validation-failed" },
-      meta: {
-        issue_count: issues.length,
-        ...payloadDiagnostic,
-        zod_issues: issues,
-      },
-    });
+    reportLayoutValidationFailure(body, parsed.error);
     // No audit row: this write resolves the caller (`requireAuth`), so the
     // refusal can only ever be the caller's own, which is telemetry and
     // lives on the wide event above. Only a delegate's refused attempt is
@@ -372,66 +253,15 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     return returnAllZodIssues(parsed.error, 422);
   }
 
-  // Preserve every omitted client-owned field from the stored layout instead
-  // of clamping it to a default. The disposition map is exhaustive over
-  // `DashboardLayout`, so adding a field requires an explicit merge decision.
-  // One stored-layout read covers every fallback. The read is skipped only
-  // when the client supplied every preserved field and every supplied chart
-  // preference has rangePoints.
-  //
-  // The Zod shape leaves per-chart `comparisonBaseline` optional while
-  // `ChartOverlayPrefs` requires it. `coerceChartOverlayPrefsMap` inside the
-  // serializer fills that gap, so the assertion below is safe.
-  // v1.32.16 (issue #581) — the concurrency token was already split off the
-  // body pre-Zod (`takeBaseToken`), so `parsed.data` is pure layout and can
-  // never leak the token into the stored blob.
-  let toSerialize = parsed.data as Partial<DashboardLayout>;
-  const incomingChartOverlayPrefs = toSerialize.chartOverlayPrefs;
-  const needsRangePointsPreserve =
-    incomingChartOverlayPrefs !== undefined &&
-    CHART_OVERLAY_KEYS.some((chartKey) => {
-      const prefs = incomingChartOverlayPrefs[chartKey];
-      return prefs !== undefined && prefs.rangePoints === undefined;
-    });
-  const needsPreserveRead =
-    layoutNeedsPreserveRead(toSerialize) || needsRangePointsPreserve;
-  if (needsPreserveRead) {
-    const existing = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { dashboardWidgetsJson: true },
-    });
-    const existingLayout = resolveDashboardLayout(
-      existing?.dashboardWidgetsJson,
-    );
-    toSerialize = mergePreservedLayoutFields(toSerialize, existingLayout);
-
-    if (needsRangePointsPreserve && toSerialize.chartOverlayPrefs) {
-      let mergedChartOverlayPrefs = toSerialize.chartOverlayPrefs;
-      for (const chartKey of CHART_OVERLAY_KEYS) {
-        const incomingPrefs = toSerialize.chartOverlayPrefs[chartKey];
-        const storedRangePoints =
-          existingLayout.chartOverlayPrefs?.[chartKey]?.rangePoints;
-        if (
-          incomingPrefs !== undefined &&
-          incomingPrefs.rangePoints === undefined &&
-          storedRangePoints !== undefined
-        ) {
-          if (mergedChartOverlayPrefs === toSerialize.chartOverlayPrefs) {
-            mergedChartOverlayPrefs = { ...toSerialize.chartOverlayPrefs };
-          }
-          mergedChartOverlayPrefs[chartKey] = {
-            ...incomingPrefs,
-            rangePoints: storedRangePoints,
-          };
-        }
-      }
-      toSerialize = {
-        ...toSerialize,
-        chartOverlayPrefs: mergedChartOverlayPrefs,
-      };
-    }
-  }
-  const normalized = serializeDashboardLayout(toSerialize as DashboardLayout);
+  // Omitted fields are carried forward from the stored layout. The Zod shape
+  // leaves per-chart `comparisonBaseline` optional while `ChartOverlayPrefs`
+  // requires it; `coerceChartOverlayPrefsMap` inside the serializer fills
+  // that gap, so the assertion is safe. The concurrency token was split off
+  // pre-Zod, so `parsed.data` can never leak it into the stored blob.
+  const normalized = await layoutToStore(
+    user.id,
+    parsed.data as Partial<DashboardLayout>,
+  );
 
   // Optimistic concurrency through the shared `guardedUserUpdate` helper.
   // When a client sends the `baseUpdatedAt` token it read with the layout, the
@@ -472,33 +302,7 @@ export const DELETE = apiHandler(async () => {
   // dashboard to defaults is the loudest possible version of redecorating it.
   const { user } = await requireAuth();
 
-  // Under a row lock rather than Serializable isolation: a reset racing a
-  // chart-overlay toggle on the same account waits for it instead of
-  // failing with a serialization error (a 500).
-  const { normalized, updatedAt } = await prisma.$transaction(async (tx) => {
-    await tx.$queryRaw`SELECT id FROM users WHERE id = ${user.id} FOR UPDATE`;
-    const existing = await tx.user.findUnique({
-      where: { id: user.id },
-      select: { dashboardWidgetsJson: true },
-    });
-    const existingLayout = resolveDashboardLayout(
-      existing?.dashboardWidgetsJson,
-    );
-    const normalized = serializeDashboardLayout({
-      ...existingLayout,
-      widgets: DEFAULT_DASHBOARD_LAYOUT.widgets,
-      enabledHeroItemKinds: DEFAULT_DASHBOARD_LAYOUT.enabledHeroItemKinds,
-      // A reset brings a hidden top card back.
-      todayCardVisible: DEFAULT_DASHBOARD_LAYOUT.todayCardVisible,
-    });
-
-    const updated = await tx.user.update({
-      where: { id: user.id },
-      data: { dashboardWidgetsJson: toJson(normalized) },
-      select: { updatedAt: true },
-    });
-    return { normalized, updatedAt: updated.updatedAt.toISOString() };
-  });
+  const { normalized, updatedAt } = await resetDashboardLayout(user.id);
 
   annotate({ action: { name: "dashboard.widgets.reset" } });
 

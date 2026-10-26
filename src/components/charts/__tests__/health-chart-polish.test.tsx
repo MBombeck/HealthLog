@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { computePersonalBaseline } from "../health-chart";
+import { computePersonalBaseline } from "../health-chart/series-math";
 
 /**
  * v1.4.16 — HealthChart Apple-Health-style polish contract.

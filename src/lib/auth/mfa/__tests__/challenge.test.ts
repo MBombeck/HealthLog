@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+/** The account row the pending-deletion check reads. */
+const accountRow = vi.hoisted(() => ({
+  current: {
+    deletionRequestedAt: null as Date | null,
+    deletionPurgeAt: null as Date | null,
+  },
+}));
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     mfaChallenge: {
@@ -8,6 +16,7 @@ vi.mock("@/lib/db", () => ({
       update: vi.fn(),
       updateMany: vi.fn(),
     },
+    user: { findUnique: vi.fn(async () => accountRow.current) },
   },
 }));
 
@@ -29,6 +38,7 @@ import { prisma } from "@/lib/db";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  accountRow.current = { deletionRequestedAt: null, deletionPurgeAt: null };
 });
 
 function activeRow(overrides: Record<string, unknown> = {}) {
@@ -53,6 +63,20 @@ describe("mfa challenge", () => {
     expect(arg.data.ticketHash).toBe(`H${ticket.length}`);
     // Raw ticket is never persisted.
     expect(JSON.stringify(arg)).not.toContain(ticket);
+  });
+
+  it("asks no second factor of an account pending deletion", async () => {
+    const purgeAt = new Date("2026-11-08T10:00:00.000Z");
+    accountRow.current = {
+      deletionRequestedAt: new Date("2026-10-25T10:00:00.000Z"),
+      deletionPurgeAt: purgeAt,
+    };
+    await expect(createMfaChallenge("user-1", "login")).rejects.toMatchObject({
+      statusCode: 403,
+      errorCode: "auth.account.deletion_pending",
+      extraMeta: { purgeAt: purgeAt.toISOString() },
+    });
+    expect(prisma.mfaChallenge.create).not.toHaveBeenCalled();
   });
 
   it("loads an active challenge by hash", async () => {

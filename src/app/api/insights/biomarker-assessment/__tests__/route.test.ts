@@ -54,10 +54,6 @@ vi.mock("@/lib/insights/biomarker-status", () => ({
   })),
 }));
 
-vi.mock("@/lib/insights/metric-status", () => ({
-  resolveMetricStatusLocale: () => "en",
-}));
-
 import { GET } from "../route";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";

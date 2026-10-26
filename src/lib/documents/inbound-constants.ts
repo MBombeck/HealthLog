@@ -50,6 +50,9 @@ export const DOCUMENT_LIST_DEFAULT_LIMIT = 50;
 /** Max document ids one bulk request may touch. */
 export const DOCUMENT_BULK_MAX_IDS = 100;
 
+/** Days a deleted document stays in Recently deleted (see the purge queue). */
+export { DOCUMENT_PURGE_GRACE_DAYS } from "@/lib/jobs/document-purge-queue";
+
 /** Max documents attachable to one coach conversation. Bounds prompt size + the
  * numeric-grounding union; five labelled documents is already past the point a
  * chat answer stays useful. */

@@ -124,17 +124,39 @@ function persistLocale(newLocale: Locale) {
 // cooperation from the client. What this call still earns its place for is
 // the server-set cookie the route emits in reply: Safari's ITP caps the
 // script-written copy at 7 days, and a Set-Cookie is exempt.
+//
+// Once per tab session and per locale, not on every mount: every page load
+// mounts the provider, and every authenticated write is charged to the
+// account's shared write bucket, so a mount-time PUT spent one write per page
+// view on a value that had not changed. A switch still writes at once (the
+// locale differs from the one recorded), and a new tab writes once.
+const LOCALE_SYNCED_KEY = "healthlog-locale-synced";
+
 function persistLocaleToServer(newLocale: Locale) {
+  try {
+    if (sessionStorage.getItem(LOCALE_SYNCED_KEY) === newLocale) return;
+  } catch {
+    // Storage unavailable: write as before.
+  }
   void apiFetchRaw("/api/auth/me/locale", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ locale: newLocale }),
     credentials: "same-origin",
     keepalive: true,
-  }).catch(() => {
-    // Best-effort: the cookie remains the first-paint source of truth, and
-    // the next mount retries the backfill.
-  });
+  })
+    .then((res) => {
+      if (!res.ok) return;
+      try {
+        sessionStorage.setItem(LOCALE_SYNCED_KEY, newLocale);
+      } catch {
+        // Storage unavailable: the next mount writes again.
+      }
+    })
+    .catch(() => {
+      // Best-effort: the cookie remains the first-paint source of truth, and
+      // the next mount retries the backfill.
+    });
 }
 
 export function I18nProvider({
@@ -217,9 +239,10 @@ export function I18nProvider({
   }, [locale]);
 
   // v1.25.0 — keep `User.locale` in step with the committed UI locale. Runs on
-  // mount (backfilling the column for users who set their language before this
-  // landed) and on every switch, so the proactive Coach nudge and other
-  // cookie-blind background paths render in the language the user reads.
+  // the first mount of a tab session (backfilling the column for users who set
+  // their language before this landed) and on every switch, so the proactive
+  // Coach nudge and other cookie-blind background paths render in the language
+  // the user reads.
   useEffect(() => {
     persistLocaleToServer(locale);
   }, [locale]);

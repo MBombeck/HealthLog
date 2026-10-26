@@ -18,6 +18,7 @@
  * (`NATIVE_REFRESH_TOKEN_DAYS` + margin) so it moves automatically if the
  * refresh-token lifetime changes — the two never drift.
  */
+// account-deletion(file): a retention sweep over rows already deleted, with its own retention clock; it does no work for an account.
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { TOMBSTONE_RETENTION_DAYS } from "@/lib/auth/native-client";
 import {

@@ -7,7 +7,9 @@
  * (support before numbers), then one result card with the score on the
  * instrument's own scale, its band, what the band means in plain words, the
  * change since the last check-in measured against the meaningful-change
- * threshold, and the next step: the direction-aware follow-up hint when the
+ * threshold, a note when the answers were given in a translation that has
+ * not been validated (the score then reads as orientation), and the next
+ * step: the direction-aware follow-up hint when the
  * score crosses the instrument's threshold, a routine note otherwise. The
  * attribution and "take another" close the view.
  *
@@ -122,6 +124,14 @@ export function AssessmentResult({
           <p data-slot="result-meaning">
             {t(`mentalHealth.bandMeaning.${instrument}.${band}`)}
           </p>
+          {assessment.wording === "unvalidated_translation" && (
+            <p
+              className="text-muted-foreground text-xs"
+              data-slot="result-wording-note"
+            >
+              {t("mentalHealth.wording.resultUnvalidated")}
+            </p>
+          )}
           {ownTrend && ownTrend.previous ? (
             <AssessmentTrendNote trend={ownTrend} />
           ) : ownTrend ? (

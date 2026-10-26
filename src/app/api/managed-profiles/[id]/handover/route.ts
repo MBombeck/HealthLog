@@ -23,12 +23,8 @@ import {
   requireCookieAuth,
   requireFreshMfa,
 } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { buildHandoverUrl } from "@/lib/auth/handover-token";
 import { annotate } from "@/lib/logging/context";
 import { handoverMethods } from "@/lib/managed-profiles/claim-gate";
@@ -111,12 +107,10 @@ export const POST = apiHandler(
     if (handoverMethods().length === 0) return noMethodRefusal();
     const { id } = await params;
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, createHandoverSchema, {
       maxBytes: 16 * 1024,
     });
-    if (jsonError) return jsonError;
-    const parsed = createHandoverSchema.safeParse(body);
-    if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+    if (!parsed.ok) return parsed.error;
 
     let created;
     try {

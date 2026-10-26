@@ -128,6 +128,8 @@ export interface ScheduleLike {
 export interface CadenceEngineContext {
   startsOn: Date | null;
   endsOn: Date | null;
+  /** #1280 — when "End course" ended the latest course; null: whole day. */
+  endedAt: Date | null;
   oneShot: boolean;
   createdAt: Date;
   /** Latest non-skipped intake — only read by rolling cadences. */
@@ -150,18 +152,17 @@ export interface CadenceEngineContext {
 }
 
 /** v1.40 (#1024) — the span a timeline expands over (see `courses`). */
-function mintWindow(engineCtx: CadenceEngineContext): {
-  startsOn: Date | null;
-  endsOn: Date | null;
-} {
+function mintWindow(engineCtx: CadenceEngineContext) {
   const courses = engineCtx.courses;
+  const endedAt = engineCtx.endedAt ?? null;
   if (!courses || courses.length < 2) {
-    return { startsOn: engineCtx.startsOn, endsOn: engineCtx.endsOn };
+    return { startsOn: engineCtx.startsOn, endsOn: engineCtx.endsOn, endedAt };
   }
   const sorted = sortCourses(courses);
   return {
     startsOn: sorted[0].startsOn,
     endsOn: sorted[sorted.length - 1].endsOn,
+    endedAt,
   };
 }
 
@@ -169,7 +170,7 @@ function mintWindow(engineCtx: CadenceEngineContext): {
 function onCourseDay(engineCtx: CadenceEngineContext, at: Date): boolean {
   const courses = engineCtx.courses;
   if (!courses || courses.length < 2) return true;
-  return isInsideCourses(userDayKey(at, engineCtx.timeZone), courses);
+  return isInsideCourses(userDayKey(at, engineCtx.timeZone), courses, at);
 }
 
 /** Build a `CanonicalSchedule` from a `ScheduleLike` + its index. */
@@ -201,8 +202,7 @@ function toRecurrenceContext(
   return {
     medication: {
       id: "cadence-med",
-      startsOn: window.startsOn,
-      endsOn: window.endsOn,
+      ...window,
       oneShot: engineCtx.oneShot,
       createdAt: engineCtx.createdAt,
     },
@@ -908,16 +908,14 @@ function missedFromLedger(
   const window = mintWindow(engineCtx);
   const medication: BandMinterMedication = {
     id: "missed-tally",
-    startsOn: window.startsOn,
-    endsOn: window.endsOn,
+    ...window,
     oneShot: engineCtx.oneShot,
     createdAt: engineCtx.createdAt,
   };
   const recurrenceCtx: RecurrenceContext = {
     medication: {
       id: "missed-tally",
-      startsOn: window.startsOn,
-      endsOn: window.endsOn,
+      ...window,
       oneShot: engineCtx.oneShot,
       createdAt: engineCtx.createdAt,
     },

@@ -41,14 +41,9 @@ import {
   type FailureKind,
 } from "@/lib/integrations/status";
 import { walkPages } from "@/lib/integrations/page-walk";
-import {
-  fetchActivities,
-  fetchActivityById,
-  mapActivity,
-  summaryHasHeartRate,
-  type StravaDetailedActivity,
-  type StravaWorkoutRow,
-} from "./client";
+import { fetchActivities, fetchActivityById } from "./client";
+import { mapActivity, summaryHasHeartRate, type StravaWorkoutRow } from "./map";
+import { type StravaDetailedActivity } from "./wire-types";
 import { getStravaConnection } from "./credentials";
 import { refreshStravaAfterRefusal } from "./oauth-descriptor";
 import {

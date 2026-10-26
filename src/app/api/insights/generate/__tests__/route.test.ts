@@ -71,6 +71,9 @@ vi.mock("@/lib/db", () => ({
     consentReceipt: {
       findFirst: vi.fn(async () => ({ id: "receipt-1" })),
     },
+    // The provider health ledger the chain walk reads. Nothing benched by
+    // default; the bench case below seeds a row.
+    providerHealth: { findMany: vi.fn(async () => []) },
   },
 }));
 
@@ -159,6 +162,8 @@ vi.mock("@/lib/ai/prompts/insight-system-prompt", () => ({
 vi.mock("@/lib/i18n/server-locale", () => ({
   resolveServerLocale: vi.fn(async () => "en"),
 }));
+
+import { NextRequest } from "next/server";
 
 import { GET, POST, resolveInsightsRateLimit } from "../route";
 import { enqueueStatusRefillForUser } from "@/lib/insights/comprehensive-generate";
@@ -281,6 +286,51 @@ describe("POST /api/insights/generate — daily token ceiling", () => {
     // stays intact and the card does not blank.
     expect(prisma.user.updateMany).not.toHaveBeenCalled();
     expect(enqueueStatusRefillForUser).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/insights/generate — a provider the health ledger benched", () => {
+  // #1279 — "Re-run analysis" is a person waiting on the answer. Background
+  // work leaves a benched provider out; this call walks it at the tail of
+  // the chain, so it reaches the provider and reports what the provider
+  // said, not a connection failure that never happened.
+  it("still asks the benched provider and reports its own refusal", async () => {
+    const now = Date.now();
+    vi.mocked(prisma.providerHealth.findMany).mockResolvedValueOnce([
+      {
+        id: "ph-1",
+        userId: "u-1",
+        providerType: "admin-openai",
+        lastResult: "auth_failed",
+        lastStatus: 401,
+        consecutiveFailures: 1,
+        lastOkAt: null,
+        lastFailureAt: new Date(now),
+        nextRetryAt: new Date(now + 60 * 60 * 1000),
+        updatedAt: new Date(now),
+      },
+    ]);
+    const err = Object.assign(new Error("OpenAI request failed (401)"), {
+      httpStatus: 401,
+    });
+    makeProviderThatThrows(err);
+    const provider = await vi.mocked(resolveProvider)("u-1");
+    const body = JSON.stringify({ force: true });
+    const request = new NextRequest("http://localhost/api/insights/generate", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "content-length": String(body.length),
+      },
+      body,
+    });
+
+    const res = await POST(request);
+
+    expect(provider.generateCompletion).toHaveBeenCalledTimes(1);
+    expect(res.status).toBe(422);
+    const envelope = (await res.json()) as ApiErrorEnvelope;
+    expect(envelope.error).toMatch(/AI provider rejected/i);
   });
 });
 

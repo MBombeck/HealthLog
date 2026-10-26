@@ -83,7 +83,13 @@ describe("useDashboardSnapshot — auto-refresh on an open page", () => {
     useDashboardSnapshot();
     const opts = lastOpts();
     expect(opts.staleTime).toBe(60_000);
-    expect(opts.refetchOnMount).toBe(false);
+    const refetchOnMount = opts.refetchOnMount as (query: {
+      state: { isInvalidated: boolean };
+    }) => boolean;
+    // A live cell is read as it is on remount ...
+    expect(refetchOnMount({ state: { isInvalidated: false } })).toBe(false);
+    // ... and one restored from the offline copy (invalidated) fetches.
+    expect(refetchOnMount({ state: { isInvalidated: true } })).toBe(true);
   });
 
   it("always refetches on focus so freshness is not suppressed by staleTime", () => {

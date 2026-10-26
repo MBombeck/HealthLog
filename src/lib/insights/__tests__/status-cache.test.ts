@@ -53,7 +53,6 @@ import {
   readStatusNegativeCache,
   refreshUnchangedStatusInsight,
   resolveReadOnlyStatusMiss,
-  writeStatusNegativeWindow,
   writeStatusNote,
 } from "../status-cache";
 
@@ -100,7 +99,7 @@ beforeEach(() => {
   probeProviderPresence.mockResolvedValue(true);
 });
 
-describe("writeStatusNote / writeStatusNegativeWindow", () => {
+describe("writeStatusNote", () => {
   it("upserts one encrypted row per (user, metric, locale) and clears the negative window", async () => {
     vi.mocked(prisma.insightStatusCache.upsert).mockResolvedValue({} as never);
     await writeStatusNote({
@@ -128,21 +127,8 @@ describe("writeStatusNote / writeStatusNegativeWindow", () => {
     expect(arg.update.snapshotHash).toBe("s".repeat(64));
     expect(arg.update.retryAt).toBeNull();
     expect(arg.update.negativeReason).toBeNull();
-  });
-
-  it("opens a negative window without touching the stored note", async () => {
-    const retryAt = new Date(Date.now() + 60_000);
-    await writeStatusNegativeWindow({
-      userId: "u1",
-      cacheAction: "insights.pulse-status.de",
-      todayKey: TODAY,
-      reason: "timeout",
-      retryAt,
-    });
-    const arg = vi.mocked(prisma.insightStatusCache.upsert).mock
-      .calls[0][0] as { update: Record<string, unknown> };
-    // Only the window moves: a stall must not hide yesterday's text.
-    expect(arg.update).toEqual({ retryAt, negativeReason: "timeout" });
+    // #1279 — a note ends the run of failures that sized its window.
+    expect(arg.update.failureStreak).toBe(0);
   });
 });
 

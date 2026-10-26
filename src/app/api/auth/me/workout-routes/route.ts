@@ -15,13 +15,8 @@
  * the resolved next state in the response.
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -67,16 +62,11 @@ export const PATCH = apiHandler(async (req: Request) => {
     return response;
   }
 
-  const { data: body, error: jsonError } = await safeJson(req, {
+  const parsed = await parseJsonBody(req, workoutRoutesPatchSchema, {
     maxBytes: 1024,
+    action: "auth.me.workoutRoutes.patch.invalid_shape",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = workoutRoutesPatchSchema.safeParse(body);
-  if (!parsed.success) {
-    annotate({ action: { name: "auth.me.workoutRoutes.patch.invalid_shape" } });
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const next = parsed.data.storeWorkoutRoutes;
 

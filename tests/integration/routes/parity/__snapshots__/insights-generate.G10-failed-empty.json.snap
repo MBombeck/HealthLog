@@ -1,0 +1,71 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "insights": null,
+      "cached": false,
+      "legacyPayload": false,
+      "revalidating": true,
+      "hasProvider": true,
+      "generationFailed": true,
+      "generationFailureClass": "format",
+      "briefingOmittedReason": null
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "insights.generate.read"
+      },
+      "meta": {
+        "cached": false,
+        "hasProvider": true,
+        "languageMismatch": false,
+        "readerLocale": "en",
+        "revalidating": true
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "enqueueForceWarm",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "locale": "en"
+        }
+      ]
+    }
+  ],
+  "stored": {
+    "insightsCachedAt": null,
+    "insightsCachedLocale": null,
+    "cachedPayload": null,
+    "snapshotHash": null,
+    "audit": [
+      {
+        "action": "insights.briefing-failure",
+        "details": {
+          "reason": "provider-error",
+          "httpStatus": null,
+          "failureKind": null
+        },
+        "ipAddress": null
+      },
+      {
+        "action": "insights.briefing-failure",
+        "details": {
+          "reason": "invalid-json",
+          "httpStatus": null,
+          "failureKind": null
+        },
+        "ipAddress": null
+      }
+    ],
+    "usage": []
+  }
+}

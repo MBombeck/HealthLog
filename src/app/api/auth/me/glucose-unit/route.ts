@@ -25,13 +25,8 @@
  * update without an extra round-trip.
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -81,16 +76,11 @@ export const PATCH = apiHandler(async (req: Request) => {
 
   // The body is a single enum value — bound the parse so a malformed or
   // oversized payload is rejected before it is materialised.
-  const { data: body, error: jsonError } = await safeJson(req, {
+  const parsed = await parseJsonBody(req, glucoseUnitPatchSchema, {
     maxBytes: 1024,
+    action: "auth.me.glucose-unit.patch.invalid_shape",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = glucoseUnitPatchSchema.safeParse(body);
-  if (!parsed.success) {
-    annotate({ action: { name: "auth.me.glucose-unit.patch.invalid_shape" } });
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   const next = parsed.data.glucoseUnit;
 

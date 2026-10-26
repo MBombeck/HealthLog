@@ -15,6 +15,7 @@ import {
   buildSourceRankCase,
   canonicalMeasurementsCte,
 } from "@/lib/analytics/source-rank-sql";
+import { instantLiteralSql } from "@/lib/analytics/request-clock-sql";
 import {
   readDayProvenance,
   readSourceComparison,
@@ -102,7 +103,7 @@ beforeAll(async () => {
 async function canonicalSource(type: string, date: string, priority: unknown) {
   const rank = buildSourceRankCase(priority, '"type"', '"source"');
   const found = await prisma.$queryRawUnsafe<Array<{ source: string }>>(
-    `SELECT DISTINCT m."source"::text AS source FROM (${canonicalMeasurementsCte(rank, "30 days")}) m
+    `SELECT DISTINCT m."source"::text AS source FROM (${canonicalMeasurementsCte(rank, { from: instantLiteralSql(new Date()), interval: "30 days" })}) m
      WHERE m."type"::text = $2 AND to_char(date_trunc('day', m."measured_at"), 'YYYY-MM-DD') = $3`,
     USER,
     type,

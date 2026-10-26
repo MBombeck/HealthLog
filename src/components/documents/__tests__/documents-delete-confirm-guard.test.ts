@@ -16,9 +16,15 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { documentDetailSource } from "@/__tests__/helpers/document-detail-source";
+
 const dir = join(process.cwd(), "src/components/documents");
-const view = readFileSync(join(dir, "documents-view.tsx"), "utf8");
-const sheet = readFileSync(join(dir, "document-detail-sheet.tsx"), "utf8");
+// The page and the selection hook it takes its delete path from.
+const view = [
+  readFileSync(join(dir, "documents-view.tsx"), "utf8"),
+  readFileSync(join(dir, "vault/use-vault-selection.ts"), "utf8"),
+].join("\n");
+const sheet = documentDetailSource();
 const bar = readFileSync(join(dir, "document-bulk-bar.tsx"), "utf8");
 
 describe("vault delete paths confirm before deleting", () => {

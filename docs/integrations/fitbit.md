@@ -103,7 +103,7 @@ The Fitbit client id/secret are per-user (Settings), not env vars.
 
 If Fitbit and another source (Withings, WHOOP, Apple Health) both supply the same
 vital — resting heart rate, blood oxygen, body temperature or respiratory rate —
-the source priority ladder in **Settings → Sources** decides which one wins
+the source priority ladder in **Settings → Source priority** decides which one wins
 per metric. FITBIT is ranked in every default metric ladder; override
 per metric on that page.
 

@@ -19,7 +19,7 @@
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { auditLog } from "@/lib/auth/audit";
-import { findActiveGrant, grantAllows } from "@/lib/sharing/grants";
+import { findActiveGrant, grantAllows } from "@/lib/sharing/grant-access";
 import type { OAuthKitProvider } from "./token";
 
 export type CallbackActorVerdict =

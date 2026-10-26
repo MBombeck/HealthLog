@@ -64,12 +64,14 @@ export const HARD_FAILURE_SKIP_THRESHOLD = 3;
  * From `PROVIDER_PAUSE_THRESHOLD` consecutive hard failures on, each failure
  * re-arms the skip window at `PROVIDER_PAUSE_BASE_MS` doubled per further
  * failure, capped at `PROVIDER_PAUSE_MAX_MS`. Paused is the same skip as
- * backoff (the provider moves to the tail of the chain, behind everything
- * healthy, and is still walked as a last resort, so a chain never loses its
- * only provider). When the window lifts, the next call tries it again: one
- * success clears the count and resumes it in place, one more failure doubles
- * the pause. Nothing needs to be reset by hand. The admin provider-health card
- * shows a paused provider and until when.
+ * backoff: an interactive call moves the provider to the tail of the chain,
+ * behind everything healthy, and still walks it as a last resort, so a person
+ * never loses their only provider; background work leaves it out until the
+ * window lifts (#1279, `background-bench.ts`). When the window lifts, the next
+ * call tries it again: one success clears the count and resumes it in place,
+ * one more failure doubles the pause. Saving a fixed provider forgets its
+ * record (`forgetProviderHealth`). The admin provider-health card shows a
+ * paused provider and until when.
  *
  * Conservative on purpose: five failures in a row is far past a brown-out,
  * the first pause is half an hour, and the ceiling is a day, so a provider
@@ -149,6 +151,16 @@ export function classifyFailure(httpStatus: number | null): {
  * `provider_health` table. Writes use an atomic SQL upsert (the
  * rate-limiter pattern) so concurrent workers never clobber each other's
  * counters.
+ *
+ * One clock: the app's. Every instant a write stores is the `Date` the
+ * write took, bound as a parameter, never the database's `NOW()`, because
+ * every reader (`getSkipHints`, the background bench, the admin card, the
+ * server-health tri-state, the support report) compares those instants
+ * with the app's clock. Two clocks put a window wherever their skew put
+ * it: a process whose clock is pinned saw a five-minute backoff last until
+ * the database's clock plus five minutes, months away or already over.
+ * The columns are naive UTC timestamps, so the bound instant is cast with
+ * `::timestamp` (see `request-clock-sql.ts`).
  */
 export const postgresProviderHealthLedger: ProviderHealthLedger = {
   async getSkipHints(userId) {
@@ -196,6 +208,7 @@ export const postgresProviderHealthLedger: ProviderHealthLedger = {
   async recordSuccess(userId, providerType) {
     try {
       // Atomic upsert; a success always clears the negative cache.
+      const now = new Date();
       await prisma.$executeRaw`
         INSERT INTO provider_health
           (id, user_id, provider_type, last_result, last_status,
@@ -203,14 +216,14 @@ export const postgresProviderHealthLedger: ProviderHealthLedger = {
            next_retry_at, updated_at)
         VALUES
           (gen_random_uuid()::text, ${userId}, ${providerType}, 'ok', NULL,
-           0, (NOW() AT TIME ZONE 'UTC'), NULL, NULL, (NOW() AT TIME ZONE 'UTC'))
+           0, ${now}::timestamp, NULL, NULL, ${now}::timestamp)
         ON CONFLICT (user_id, provider_type) DO UPDATE SET
           last_result = 'ok',
           last_status = NULL,
           consecutive_failures = 0,
-          last_ok_at = (NOW() AT TIME ZONE 'UTC'),
+          last_ok_at = ${now}::timestamp,
           next_retry_at = NULL,
-          updated_at = (NOW() AT TIME ZONE 'UTC')
+          updated_at = ${now}::timestamp
       `;
     } catch {
       // Fire-and-forget — a failed write never blocks the hot path.
@@ -228,10 +241,12 @@ export const postgresProviderHealthLedger: ProviderHealthLedger = {
     const pauseFrom = PROVIDER_PAUSE_THRESHOLD;
     const pauseBase = `${PROVIDER_PAUSE_BASE_MS} milliseconds`;
     const pauseMax = `${PROVIDER_PAUSE_MAX_MS} milliseconds`;
+    const now = new Date();
     try {
       // Atomic upsert. `consecutive_failures` accumulates across workers;
       // an auth failure forces the cooldown regardless of count, a hard
-      // failure extends it. The cooldown anchors on NOW() so a fresh failure
+      // failure extends it. The cooldown anchors on the failure's own
+      // instant (the app's clock, like every reader) so a fresh failure
       // always re-arms the skip window.
       await prisma.$executeRaw`
         INSERT INTO provider_health
@@ -240,13 +255,13 @@ export const postgresProviderHealthLedger: ProviderHealthLedger = {
            next_retry_at, updated_at)
         VALUES
           (gen_random_uuid()::text, ${userId}, ${providerType}, ${result},
-           ${status}, 1, NULL, (NOW() AT TIME ZONE 'UTC'), (NOW() AT TIME ZONE 'UTC') + ${interval}::interval, (NOW() AT TIME ZONE 'UTC'))
+           ${status}, 1, NULL, ${now}::timestamp, ${now}::timestamp + ${interval}::interval, ${now}::timestamp)
         ON CONFLICT (user_id, provider_type) DO UPDATE SET
           last_result = ${result},
           last_status = ${status},
           consecutive_failures = provider_health.consecutive_failures + 1,
-          last_failure_at = (NOW() AT TIME ZONE 'UTC'),
-          next_retry_at = (NOW() AT TIME ZONE 'UTC') + CASE
+          last_failure_at = ${now}::timestamp,
+          next_retry_at = ${now}::timestamp + CASE
             WHEN ${result} = 'hard_failed'
               AND provider_health.consecutive_failures + 1 >= ${pauseFrom}::int
             THEN LEAST(
@@ -258,7 +273,7 @@ export const postgresProviderHealthLedger: ProviderHealthLedger = {
             )
             ELSE ${interval}::interval
           END,
-          updated_at = (NOW() AT TIME ZONE 'UTC')
+          updated_at = ${now}::timestamp
       `;
     } catch {
       // Fire-and-forget.
@@ -270,12 +285,12 @@ export const postgresProviderHealthLedger: ProviderHealthLedger = {
  * Drop the recorded outcomes of a credential that has just been replaced.
  *
  * The ledger describes a credential, not a provider slot: once the person
- * (or, for `admin-codex`, the operator) signs in again, the `auth_failed`
- * row of the refused credential would otherwise keep the fresh one at the
- * tail of the chain and reported as expired for the rest of its cooldown.
- * Without `userId` the rows of every account are dropped — the operator's
- * central connection is one credential shared by all of them. Best effort,
- * like every ledger write.
+ * (or, for the `admin-*` providers, the operator) signs in again or saves a
+ * fixed setup, the row of the refused one would otherwise keep the fresh one
+ * at the tail of every interactive chain, out of background work entirely
+ * (#1279), and reported as expired for the rest of its window. Without
+ * `userId` the rows of every account are dropped: an operator provider is one
+ * credential shared by all of them. Best effort, like every ledger write.
  */
 export async function forgetProviderHealth(target: {
   providerType: ProviderChainType;
@@ -289,7 +304,8 @@ export async function forgetProviderHealth(target: {
       },
     });
   } catch {
-    // A stale row only deprioritises; it never blocks.
+    // A stale row lapses with its window; until then it keeps background
+    // work off the replaced credential (#1279).
   }
 }
 

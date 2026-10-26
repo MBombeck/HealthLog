@@ -28,13 +28,8 @@ import {
   overwriteDetails,
 } from "@/lib/sharing/audit-details";
 import { annotate } from "@/lib/logging/context";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { updateInventoryItemSchema } from "@/lib/validations/medication";
 import {
   computeExpiresAt,
@@ -53,16 +48,10 @@ export const PATCH = apiHandler(
     const { user } = await requireRecordAuth("manage", "medications");
     const { id, itemId } = await params;
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, updateInventoryItemSchema, {
       maxBytes: 64 * 1024,
     });
-    if (jsonError) return jsonError;
-
-    const parsed = updateInventoryItemSchema.safeParse(body);
-    if (!parsed.success) {
-      // v1.4.43 — multi-issue 422.
-      return returnAllZodIssues(parsed.error, 422);
-    }
+    if (!parsed.ok) return parsed.error;
 
     const {
       markAsFirstUseAt,

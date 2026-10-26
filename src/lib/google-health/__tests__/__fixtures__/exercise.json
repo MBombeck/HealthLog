@@ -1,0 +1,102 @@
+[
+  {
+    "name": "users/me/dataTypes/exercise/dataPoints/exercise-0001",
+    "exercise": {
+      "interval": {
+        "startTime": "2026-06-02T17:00:00Z",
+        "endTime": "2026-06-02T17:42:30Z",
+        "civilStartTime": {
+          "date": { "year": 2026, "month": 6, "day": 2 },
+          "time": { "hours": 19 }
+        }
+      },
+      "exerciseType": "RUNNING",
+      "metricsSummary": {
+        "caloriesKcal": 412.6,
+        "distanceMillimeters": "7012345",
+        "averageHeartRateBeatsPerMinute": "151"
+      }
+    }
+  },
+  {
+    "name": "users/me/dataTypes/exercise/dataPoints/exercise-0002",
+    "exercise": {
+      "interval": {
+        "startTime": "2026-06-03T07:00:00",
+        "endTime": "2026-06-03T08:00:00"
+      },
+      "exerciseType": "strength training",
+      "metricsSummary": {
+        "caloriesKcal": "250",
+        "averageHeartRateBeatsPerMinute": 0
+      }
+    }
+  },
+  {
+    "exercise": {
+      "interval": {
+        "startTime": "2026-06-04T06:30:00+02:00",
+        "endTime": "2026-06-04T07:15:00+02:00"
+      },
+      "exerciseType": " KITESURFING ",
+      "metricsSummary": {
+        "distanceMillimeters": -100,
+        "averageHeartRateBeatsPerMinute": "128.6"
+      }
+    }
+  },
+  {
+    "name": "users/me/dataTypes/exercise/dataPoints/exercise-0004",
+    "exercise": {
+      "interval": {
+        "startTime": "2026-06-05T12:00:00Z",
+        "endTime": "2026-06-05T12:30:00Z"
+      },
+      "exerciseType": "   "
+    }
+  },
+  {
+    "name": "users/me/dataTypes/exercise/dataPoints/exercise-0005",
+    "exercise": {
+      "interval": {
+        "startTime": "2026-06-06T12:00:00Z",
+        "endTime": "2026-06-06T12:00:00Z"
+      },
+      "exerciseType": "WALKING"
+    }
+  },
+  {
+    "name": "users/me/dataTypes/exercise/dataPoints/exercise-0006",
+    "exercise": {
+      "interval": {
+        "startTime": "2026-06-07T12:00:00Z"
+      },
+      "exerciseType": "WALKING"
+    }
+  },
+  {
+    "name": "users/me/dataTypes/exercise/dataPoints/exercise-0007",
+    "exercise": {
+      "interval": {
+        "startTime": "2026-06-08T18:00:00Z",
+        "endTime": "2026-06-08T19:05:00Z"
+      },
+      "exerciseType": "Mountain-Biking",
+      "metricsSummary": {
+        "caloriesKcal": 0,
+        "distanceMillimeters": "0",
+        "averageHeartRateBeatsPerMinute": "x"
+      }
+    }
+  },
+  {
+    "name": "users/me/dataTypes/exercise/dataPoints/exercise-0008",
+    "exercise": {
+      "interval": {
+        "startTime": "2026-06-09T20:00:00Z",
+        "endTime": "2026-06-09T20:20:00Z"
+      },
+      "exerciseType": "STAIR_CLIMBER"
+    }
+  }
+]

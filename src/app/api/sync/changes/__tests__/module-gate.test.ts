@@ -22,6 +22,8 @@ vi.mock("@/lib/modules/gate", () => ({ isModuleEnabled: vi.fn() }));
 vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: { findMany: vi.fn() },
+    // The mirror walk's token lookup: no token switched, so no walk.
+    apiToken: { findMany: vi.fn(async () => []) },
     moodEntry: { findMany: vi.fn() },
     medicationIntakeEvent: { findMany: vi.fn() },
     cycleDayLog: { findMany: vi.fn() },
@@ -106,22 +108,25 @@ beforeEach(() => {
   } as never);
   // Non-cycle domains always return rows so a 403/empty-everything result
   // cannot be mistaken for a passing "cycle omitted" assertion.
-  vi.mocked(prisma.measurement.findMany).mockResolvedValue([
-    {
-      id: "m-1",
-      externalId: "ext-m-1",
-      type: "WEIGHT",
-      value: 80,
-      unit: "kg",
-      measuredAt: NOW,
-      source: "MANUAL",
-      notes: null,
-      notesEncrypted: null,
-      syncVersion: 1,
-      deletedAt: null,
-      updatedAt: NOW,
-    },
-  ] as never);
+  // The `measurementMirror` walk reads measurements too (the readings of
+  // tokens whose Apple Health setting changed); it finds none here.
+  const measurementRow = {
+    id: "m-1",
+    externalId: "ext-m-1",
+    type: "WEIGHT",
+    value: 80,
+    unit: "kg",
+    measuredAt: NOW,
+    source: "MANUAL",
+    notes: null,
+    notesEncrypted: null,
+    syncVersion: 1,
+    deletedAt: null,
+    updatedAt: NOW,
+  };
+  vi.mocked(prisma.measurement.findMany).mockImplementation((async (args: {
+    where?: { ingestToken?: unknown };
+  }) => (args.where?.ingestToken ? [] : [measurementRow])) as never);
   vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
     [] as never,

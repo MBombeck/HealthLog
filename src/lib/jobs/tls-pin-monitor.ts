@@ -28,6 +28,7 @@
  * set from, and an unset baseline fails LOUD ("not configured"), never by
  * auto-adopting whatever it observed.
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -39,16 +40,6 @@ import {
   resolveAppTlsTarget,
   type LeafProbeResult,
 } from "@/lib/tls/leaf-spki";
-
-/**
- * pg-boss queue name + cron. Every 6 hours at :07 (offset off the :00 / :05
- * / :08 hourly sync crons so the probe doesn't pile onto a busy boss poll).
- * GTS leaves renew roughly every ~90 days; a 6-hour cadence surfaces a
- * change well inside the ≥11-day re-pin window the runbook targets while
- * costing one short outbound TLS handshake per tick.
- */
-export const TLS_PIN_MONITOR_QUEUE = "tls-pin-monitor";
-export const TLS_PIN_MONITOR_CRON = "7 */6 * * *";
 
 export interface TlsPinMonitorSummary {
   /** "ok" served pin is in the known set; "changed" it is not; "skipped" no target / no baseline; "probe_failed" the TLS probe threw. */
@@ -72,7 +63,7 @@ async function alertAdminsOfPinChange(
   knownPins: string[],
 ): Promise<void> {
   const admins = await prisma.user.findMany({
-    where: { role: "ADMIN" },
+    where: { role: "ADMIN", ...ACTIVE_ACCOUNT },
     select: { id: true },
   });
 

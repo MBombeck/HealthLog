@@ -1,0 +1,118 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "kind": "steps",
+      "unit": "steps",
+      "points": [
+        {
+          "id": "<id:1>",
+          "at": "anchor-13d+12:00:00",
+          "value": 7300,
+          "secondary": null
+        },
+        {
+          "id": "<id:2>",
+          "at": "anchor-12d+12:00:00",
+          "value": 7200,
+          "secondary": null
+        },
+        {
+          "id": "<id:3>",
+          "at": "anchor-11d+12:00:00",
+          "value": 7100,
+          "secondary": null
+        },
+        {
+          "id": "<id:4>",
+          "at": "anchor-10d+12:00:00",
+          "value": 7000,
+          "secondary": null
+        },
+        {
+          "id": "<id:5>",
+          "at": "anchor-9d+12:00:00",
+          "value": 6900,
+          "secondary": null
+        },
+        {
+          "id": "<id:6>",
+          "at": "anchor-8d+12:00:00",
+          "value": 6800,
+          "secondary": null
+        },
+        {
+          "id": "<id:7>",
+          "at": "anchor-6d+12:00:00",
+          "value": 6600,
+          "secondary": null
+        },
+        {
+          "id": "<id:8>",
+          "at": "anchor-5d+12:00:00",
+          "value": 6500,
+          "secondary": null
+        },
+        {
+          "id": "<id:9>",
+          "at": "anchor-4d+12:00:00",
+          "value": 6400,
+          "secondary": null
+        },
+        {
+          "id": "<id:10>",
+          "at": "anchor-3d+12:00:00",
+          "value": 6300,
+          "secondary": null
+        },
+        {
+          "id": "<id:11>",
+          "at": "anchor-2d+12:00:00",
+          "value": 6200,
+          "secondary": null
+        },
+        {
+          "id": "<id:12>",
+          "at": "anchor-1d+12:00:00",
+          "value": 6100,
+          "secondary": null
+        }
+      ],
+      "direction": {
+        "direction": "up-good",
+        "targetPosition": null,
+        "basis": "metric_default"
+      },
+      "change": {
+        "from": 7300,
+        "to": 6100,
+        "delta": -1200,
+        "sentiment": "negative"
+      },
+      "referenceLines": [],
+      "stats": {
+        "mean": 6700,
+        "min": 6100,
+        "max": 7300,
+        "stdDev": 389.44,
+        "count": 12
+      }
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "measurements.series"
+      },
+      "meta": {
+        "kind": "steps",
+        "days": 14,
+        "count": 12
+      },
+      "warnings": null,
+      "error": null
+    }
+  ]
+}

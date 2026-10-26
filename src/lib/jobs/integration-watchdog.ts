@@ -16,18 +16,6 @@ import {
   type WatchdogMode,
 } from "@/lib/integrations/watchdog";
 
-export const INTEGRATION_WATCHDOG_HOURLY_QUEUE = "integration-watchdog-hourly";
-export const INTEGRATION_WATCHDOG_DAILY_QUEUE = "integration-watchdog-daily";
-
-/**
- * :47 is a free minute off every hourly sync tick (used: 0, 5, 8, 11, 13, 15,
- * 17, 18, 20, 30, 35, 41, 50), late enough in the hour that the syncs before it
- * have written what they fetched.
- */
-export const INTEGRATION_WATCHDOG_HOURLY_CRON = "47 * * * *";
-/** Once a day, inside the maintenance window, off the hourly :47. */
-export const INTEGRATION_WATCHDOG_DAILY_CRON = "52 4 * * *";
-
 const LOCK_KEY = "job:integration-watchdog:pass";
 
 export interface IntegrationWatchdogPayload {

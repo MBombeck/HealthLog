@@ -1,6 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import fs from "node:fs";
-import path from "node:path";
 
 const checkRateLimit = vi.fn();
 const getAssistantFlags = vi.fn();
@@ -34,6 +32,14 @@ import {
   PERIOD_NARRATIVE_QUEUE,
   PERIOD_NARRATIVE_CRON,
 } from "../period-narrative-warm";
+import { PERIOD_NARRATIVE_EXPIRE_SECONDS } from "../period-narrative-queue";
+import { handlePeriodNarrative } from "../reminder/status-handlers";
+import { insightRetryOptions } from "../reminder/registrar-shared";
+import {
+  groupOf,
+  jobOf,
+  loadedHandler,
+} from "../registry/__tests__/registry-helpers";
 
 function makePrisma(
   users: Array<{ id: string; locale: string | null }>,
@@ -106,7 +112,10 @@ describe("findNarrativeCandidates", () => {
     const result = await findNarrativeCandidates(prisma as any, 50);
     expect(queryRaw.mock.calls[0].slice(1)).toContain("insights");
     const arg = findMany.mock.calls[0][0];
-    expect(arg.where).toEqual({ id: { notIn: ["opted-out"] } });
+    expect(arg.where).toEqual({
+      deletionRequestedAt: null,
+      id: { notIn: ["opted-out"] },
+    });
     expect(arg.where.disableCoach).toBeUndefined();
     expect(result).toEqual([{ id: "u1", locale: "de" }]);
     // Below the cap the ordering aggregate never runs.
@@ -234,29 +243,22 @@ describe("runPeriodNarrativeWarm", () => {
 });
 
 describe("queue registration", () => {
-  // v1.18.1 — the period-narrative wiring moved out of the 2143-LOC
-  // reminder-worker boot file into the status registrar. The dead-queue guard
-  // follows the wiring there.
-  const workerSrc = fs.readFileSync(
-    path.resolve(__dirname, "../reminder/register-status.ts"),
-    "utf8",
-  );
-
-  it("registers the queue in the allQueues createQueue loop", () => {
-    const match = workerSrc.match(/const allQueues\s*=\s*\[([\s\S]*?)\];/);
-    expect(match).not.toBeNull();
-    expect(match![1]).toMatch(/\bPERIOD_NARRATIVE_QUEUE\b/);
+  it("declares the queue in the status group", () => {
+    expect(groupOf(PERIOD_NARRATIVE_QUEUE).name).toBe("status");
   });
 
-  it("schedules the cron in the schedules table (with retry policy)", () => {
-    expect(workerSrc).toMatch(
-      /\[\s*PERIOD_NARRATIVE_QUEUE\s*,\s*PERIOD_NARRATIVE_CRON\s*,\s*\{\s*\.\.\.insightRetryOptions\s*,\s*expireInSeconds:\s*PERIOD_NARRATIVE_EXPIRE_SECONDS\s*,?\s*\}\s*,?\s*\]/,
-    );
+  it("schedules the cron with the retry policy", () => {
+    const job = jobOf(PERIOD_NARRATIVE_QUEUE);
+    expect(job.cron).toBe(PERIOD_NARRATIVE_CRON);
+    expect(job.scheduleOptions).toEqual({
+      ...insightRetryOptions,
+      expireInSeconds: PERIOD_NARRATIVE_EXPIRE_SECONDS,
+    });
   });
 
-  it("registers a createAndWork handler for the queue", () => {
-    expect(workerSrc).toMatch(
-      /createAndWork[\s\S]{0,120}PERIOD_NARRATIVE_QUEUE/,
+  it("binds the warm handler to the queue", async () => {
+    expect(await loadedHandler(PERIOD_NARRATIVE_QUEUE)).toBe(
+      handlePeriodNarrative,
     );
   });
 

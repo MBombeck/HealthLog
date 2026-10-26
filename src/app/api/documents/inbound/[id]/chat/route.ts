@@ -29,9 +29,9 @@ import {
   apiError,
   apiSuccess,
   apiValidationError,
-  safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
@@ -101,21 +101,12 @@ export const POST = apiHandler(
       });
     }
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, documentChatRequestSchema, {
       maxBytes: 64 * 1024,
+      errorCode: "documents.chat.invalid",
+      message: "Invalid document chat request",
     });
-    if (jsonError) return jsonError;
-    const parsed = documentChatRequestSchema.safeParse(body);
-    if (!parsed.success) {
-      return apiValidationError(
-        "Invalid document chat request",
-        sanitiseZodIssues(parsed.error.issues),
-        422,
-        {
-          errorCode: "documents.chat.invalid",
-        },
-      );
-    }
+    if (!parsed.ok) return parsed.error;
     const { conversationId, message, locale: bodyLocale } = parsed.data;
 
     const rl = await checkRateLimit(

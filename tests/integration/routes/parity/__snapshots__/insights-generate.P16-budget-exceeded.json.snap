@@ -1,0 +1,58 @@
+{
+  "status": 429,
+  "body": {
+    "data": null,
+    "error": "Daily AI token budget reached. Insights will be available again tomorrow.",
+    "meta": {
+      "errorCode": "insights.generate.budgetExceeded",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 429,
+      "action": {
+        "name": "insights.briefing.budget_exceeded"
+      },
+      "meta": {
+        "ai_reasoning_effort": "medium",
+        "ai_reasoning_job": "daily_briefing",
+        "ai_reasoning_source": "job",
+        "cap": 1600000,
+        "include_raw": false,
+        "limit": "owner-cap",
+        "operatorAfter": 0,
+        "owner": "user",
+        "since_days": 400,
+        "stage": "generate",
+        "surface": "job",
+        "totalAfter": 5000000
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "ensureUserMoodRollupsFresh",
+      "args": [
+        "<id:1>"
+      ]
+    }
+  ],
+  "stored": {
+    "insightsCachedAt": null,
+    "insightsCachedLocale": null,
+    "cachedPayload": null,
+    "snapshotHash": null,
+    "audit": [],
+    "usage": [
+      {
+        "dateKey": "day+0",
+        "totalTokens": 5000000,
+        "operatorTokens": 0,
+        "messageCount": 0
+      }
+    ]
+  }
+}

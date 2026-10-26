@@ -35,10 +35,8 @@
 import { prisma } from "@/lib/db";
 import { getEvent } from "@/lib/logging/context";
 import { isCycleAvailableForUser } from "@/lib/cycle/gate";
-import {
-  fetchDailyCyclePhases,
-  derivePeriodDaysFromCyclePhases,
-} from "./client";
+import { fetchDailyCyclePhases } from "./client";
+import { derivePeriodDaysFromCyclePhases } from "./map";
 
 /** The conservative "logged but unspecified intensity" flow level — mirrors
  * the HealthKit `unspecified` → `LIGHT` boundary documented in

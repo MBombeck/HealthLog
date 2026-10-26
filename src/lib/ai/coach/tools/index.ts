@@ -7,7 +7,7 @@
  * stays alive as the no-tools fallback (per-provider `supportsTools`).
  */
 export { COACH_TOOL_DEFS, parseCoachToolArgs } from "./definitions";
-export type { CoachToolTrace } from "./executor";
+export type { CoachToolTrace } from "./run/types";
 export {
   buildCoachDataInventory,
   renderDataInventory,

@@ -51,7 +51,7 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
   },
 }));
 
-vi.mock("@/lib/insights/comprehensive-generate", () => ({
+vi.mock("@/lib/insights/status-invalidation", () => ({
   invalidateStatusInsightsForTypes: invalidateMock,
 }));
 

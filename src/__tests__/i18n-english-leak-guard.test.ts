@@ -153,10 +153,9 @@ const LEGIT_IDENTICAL = new Set<string>([
   "mentalHealth.crisisResource.lifeline988.name",
   "mentalHealth.crisisResource.nummerGegenKummer.name",
   "mentalHealth.crisisResource.telefonSeelsorge.name",
-  // Questionnaire items, answers and stems are absent from every bundle whose
-  // language an instrument is not validated in (`instrument-wording.ts`), so
-  // no entry is needed for them here: a locale either carries a validated
-  // translation or nothing.
+  // Questionnaire items, answers and stems live in code with their sources
+  // (`src/lib/mental-health/wording/`), never in a bundle, so no entry is
+  // needed for them here.
   // Proper nouns, a URL label and an acronym — the accepted written form in
   // Korean is the Latin original, so these stay identical to en.json.
   "auth.emailPlaceholder",

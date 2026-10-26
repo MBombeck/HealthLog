@@ -4,7 +4,7 @@ The server and runtime toolkit. Everything that is not a page, component, or rou
 
 ## Core request kit
 
-- **`api-handler.ts`** — the `apiHandler` wrapper every route uses. Auth resolver (cookie OR Bearer), `requireAuth` / `requireAdmin` (admin is cookie-only by construction), idempotency plumbing, Wide-Event builder, GlitchTip forwarder.
+- **`api-handler.ts`** — the `apiHandler` wrapper every route uses (Wide-Event builder, error envelope, GlitchTip forwarder) and the one public entry for the request guards in `auth/guards/`: the auth resolver (cookie OR Bearer), `requireAuth` / `requireRecordAuth` / `requireAdmin` (admin is cookie-only by construction), the step-up gates.
 - **`api-response.ts`** — the `{ data, error, meta? }` envelope: `apiSuccess` / `apiError`, `safeJson`, trusted-proxy IP resolver, `returnAllZodIssues` + `sanitiseZodIssues`.
 - **`rate-limit.ts`** — Postgres-backed sliding-window limiter (single atomic upsert); multi-instance correct.
 - **`idempotency.ts`** — user-scoped idempotency keys that refuse to cache secret-shaped responses.

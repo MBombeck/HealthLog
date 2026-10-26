@@ -77,6 +77,25 @@ model User {
   /// delivery fanout after it defines consent and preference semantics.
   managedProfileAt DateTime? @map("managed_profile_at")
 
+  /// When deletion of this account was asked for. Non-null means the
+  /// account is pending deletion: it is locked (every session, refresh token
+  /// and API token was revoked in the same transaction, and sign-in is
+  /// refused), every background pass skips it (`ACTIVE_ACCOUNT`,
+  /// `src/lib/account-deletion/active-account.ts`), and its data, stored
+  /// copies and off-host objects stay untouched until `deletionPurgeAt`. An
+  /// admin can undo it until then. Null on every account nobody asked to
+  /// delete. Readers: the session and Bearer resolvers, the sign-in refusal,
+  /// the admin users list and the undo route.
+  deletionRequestedAt   DateTime? @map("deletion_requested_at")
+  /// When the account-deletion purge job erases the account for good:
+  /// `deletionRequestedAt` plus `ACCOUNT_DELETION_GRACE_DAYS`. The sign-in
+  /// refusal names this date. Reader: `processDueAccountDeletions`.
+  deletionPurgeAt       DateTime? @map("deletion_purge_at")
+  /// Who asked: the account itself, or the Guardian who deleted a
+  /// managed profile. A plain id, not a relation: the requester's own
+  /// deletion must not touch this row. Reader: the admin users list.
+  deletionRequestedById String?   @map("deletion_requested_by_id")
+
   // Profile
   heightCm    Float?    @map("height_cm")
   dateOfBirth DateTime? @map("date_of_birth")
@@ -387,11 +406,6 @@ model User {
   // copies a stored browser value up once when the server has none for that list.
   // Shape: { "version": 1, "labs": { "view": "list", "order": ["<id>"], "sortDir": "manual" }, ... }
   moduleListLayoutJson     Json?                @map("module_list_layout_json")
-  /// Per-user opt-in to preview features, one boolean per flag, all off by
-  /// default (`src/lib/settings/preview-features.ts`). Read and written
-  /// through `/api/settings/preview-features` and carried by the backup.
-  /// @pending-consumer(topics preview) the `topics` flag is stored, but no surface reads it and the Settings > System switch is unlisted until the topic overview pages ship.
-  previewFeaturesJson      Json?                @map("preview_features_json")
   /// Optional activity goals the person set for themselves: workouts, active
   /// minutes and steps per week, steps per month. Null or an absent key = no
   /// goal. Parsed by `src/lib/validations/activity-goals.ts`, written through
@@ -1159,6 +1173,7 @@ model User {
   // OIDC key (both NULL on accounts that never signed in via SSO; Postgres
   // unique indexes ignore NULL pairs).
   @@unique([oidcIssuer, oidcSub])
+  @@index([deletionPurgeAt], map: "users_deletion_purge_at_idx")
   @@map("users")
 }
 
@@ -1808,9 +1823,16 @@ model MentalHealthAssessment {
   id                 String               @id @default(cuid())
   userId             String               @map("user_id")
   instrument         AssessmentInstrument
-  /// The validated translation actually presented (officially-validated wording
-  /// per locale, English fallback otherwise — recorded for the audit trail).
+  /// The reader's app language when the administration was taken. It selects
+  /// the crisis-resource copy; with `wording` it says which text was shown.
   locale             String
+  /// Which text the answers were given in: "validated" (the published
+  /// validated version for `locale`, the original for English),
+  /// "unvalidated_translation" (the app's own translation, shown with a note)
+  /// or "original_en" (the English original, chosen by a reader of another
+  /// language). Null on rows recorded before it was stored. Closed set:
+  /// ASSESSMENT_WORDINGS in src/lib/mental-health/instrument-wording.ts.
+  wording            String?
   /// Instrument variant identifier (e.g. "standard"); future-proofs revisions.
   version            String               @default("standard")
   /// Encrypted JSON blob: { items: number[], functionalDifficulty?: 0..3, schema: 1 }.
@@ -2111,8 +2133,15 @@ model Measurement {
   deletedAt             DateTime?                         @map("deleted_at")
   createdAt             DateTime                          @default(now()) @map("created_at")
   updatedAt             DateTime                          @updatedAt @map("updated_at")
+  /// The `measurements:write` token that carried this reading, set on every
+  /// `EXTERNAL` row (#1272). Read through to the token's `mirrorToAppleHealth`
+  /// when the row is answered; never on the wire itself. SET NULL if the token
+  /// row is ever removed (a revoke keeps it), and the row then stops being
+  /// mirrored.
+  ingestTokenId         String?                           @map("ingest_token_id")
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ingestToken   ApiToken?      @relation(fields: [ingestTokenId], references: [id], onDelete: SetNull)
   // v1.19.0 — optional back-relation to the full ECG waveform recording(s)
   // paired with this EVENT row. SET NULL on the FK side keeps the trace if
   // the EVENT row is re-keyed / removed.
@@ -2168,6 +2197,9 @@ model Measurement {
   // changes nothing else, so those stay HOT; the table also carries
   // `fillfactor = 85` and a 5 % autovacuum threshold from the same migration.
   @@index([userId, updatedAt, id])
+  // The rows a token carried, walked by the `measurementMirror` feed domain
+  // in id order and by the FK's SET NULL (migration 0477).
+  @@index([ingestTokenId, id])
   // `measurements_legacy_step_consolidation_idx` is a partial index
   // over `type = 'ACTIVITY_STEPS' AND deleted_at IS NULL` — see
   // migration 0087. It accelerates the v1.5.6 legacy step-consolidation
@@ -2886,6 +2918,12 @@ model Medication {
   /// minting slots past this date. NULL = no end date (chronic).
   /// When `oneShot` is true, `endsOn` always equals `startsOn`.
   endsOn                        DateTime?              @map("ends_on") @db.Date
+  /// #1280 — the instant the latest course was ended with "End course", the
+  /// projection of `MedicationCourse.endedAt` written next to `startsOn` /
+  /// `endsOn` by `src/lib/medications/courses.ts` only. On the `endsOn` day;
+  /// no dose slot at or after it is due, reminded or expected, and the course
+  /// reads as ended from it on. NULL = the course runs to the end of `endsOn`.
+  endedAt                       DateTime?              @map("ended_at") @db.Timestamptz(6)
   /// v1.5 — single-administration medication (flu shot, vaccine,
   /// post-op single dose, etc.). When true the medication has at
   /// most one MedicationIntakeEvent and `active` flips to false once
@@ -3140,6 +3178,13 @@ model MedicationCourse {
   startsOn      DateTime  @map("starts_on") @db.Date
   /// Last day, inclusive. NULL = open (only the latest course may be open).
   endsOn        DateTime? @map("ends_on") @db.Date
+  /// #1280 — set by "End course": the instant the course ended, on the
+  /// `endsOn` day. A dose slot at or after it is not part of the course (not
+  /// due, not reminded, not expected by compliance), so the course ends when
+  /// the person ends it rather than at local midnight. NULL = the whole
+  /// `endsOn` day counts, the reading of an end date set in the editor. Any
+  /// later write that moves `endsOn` clears it.
+  endedAt       DateTime? @map("ended_at") @db.Timestamptz(6)
   /// Why this course, in the person's words. AES-256-GCM at rest.
   noteEncrypted Bytes?    @map("note_encrypted")
   createdAt     DateTime  @default(now()) @map("created_at")
@@ -3929,26 +3974,37 @@ model TelegramPromptContext {
 // ─── API Tokens (for external ingest) ──────────────────────
 
 model ApiToken {
-  id              String    @id @default(cuid())
-  userId          String    @map("user_id")
-  name            String
-  tokenHash       String    @unique @map("token_hash") // SHA-256 of the token
-  permissions     String[]  @default(["medication:ingest"])
-  lastUsedAt      DateTime? @map("last_used_at")
-  expiresAt       DateTime? @map("expires_at")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  revoked         Boolean   @default(false)
+  id                  String    @id @default(cuid())
+  userId              String    @map("user_id")
+  name                String
+  tokenHash           String    @unique @map("token_hash") // SHA-256 of the token
+  permissions         String[]  @default(["medication:ingest"])
+  lastUsedAt          DateTime? @map("last_used_at")
+  expiresAt           DateTime? @map("expires_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  revoked             Boolean   @default(false)
   // The MCP OAuth connection this access token belongs to, when it was minted
   // through the `/api/mcp/oauth` bridge. Null for manually-minted tokens and
   // native-client tokens. Lets a connection revoke kill every access row it
   // ever issued (H2), and lets the connector token list exclude the transient
   // 60-minute access rows so it does not flood (M2).
-  mcpConnectionId String?   @map("mcp_connection_id")
+  mcpConnectionId     String?   @map("mcp_connection_id")
+  /// Whether the HealthLog app writes the readings this `measurements:write`
+  /// token carried into Apple Health (#1272). The person decides per token;
+  /// the server resolves it onto every row as `appleHealthMirror`
+  /// (`src/lib/measurements/apple-health-mirror.ts`). False for every other
+  /// kind of token, which `PATCH /api/tokens/{id}` refuses to set.
+  mirrorToAppleHealth Boolean   @default(false) @map("mirror_to_apple_health")
+  /// When `mirrorToAppleHealth` last changed. The keyset of the
+  /// `measurementMirror` domain of `/api/sync/changes`, which re-delivers the
+  /// token's rows with their new value without touching the rows themselves.
+  mirrorChangedAt     DateTime? @map("mirror_changed_at")
 
-  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mcpConnection    McpOAuthConnection? @relation(fields: [mcpConnectionId], references: [id], onDelete: SetNull)
+  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mcpConnection        McpOAuthConnection? @relation(fields: [mcpConnectionId], references: [id], onDelete: SetNull)
+  ingestedMeasurements Measurement[]
   // v1.30.34 — step-up elevations bound to this token. Cascade-deleted with it.
-  stepUpElevations StepUpElevation[]
+  stepUpElevations     StepUpElevation[]
 
   @@index([userId])
   @@index([mcpConnectionId])
@@ -5433,21 +5489,6 @@ model AppSettings {
   documentMaxFileBytes Int    @default(26214400) @map("document_max_file_bytes")
   documentQuotaBytes   BigInt @default(1073741824) @map("document_quota_bytes")
 
-  // The operator's confirmation that the encryption key is backed up, bound to
-  // the key it was given for: the active key id and its fingerprint (the first
-  // twelve hex characters of SHA-256 over the raw key bytes). A rotation or a
-  // re-keyed install changes either one, and the step is due again. Never the
-  // key itself. Written by `POST /api/admin/encryption/key-backup/confirm`;
-  // consumer: `readKeyBackupStatus` (the admin step, the overview tile and the
-  // dashboard banner for admins).
-  encryptionKeyBackupConfirmedAt          DateTime? @map("encryption_key_backup_confirmed_at")
-  encryptionKeyBackupConfirmedKeyId       String?   @map("encryption_key_backup_confirmed_key_id")
-  encryptionKeyBackupConfirmedFingerprint String?   @map("encryption_key_backup_confirmed_fingerprint")
-  /// Plain id, not a relation: the instance row must not become user-scoped,
-  /// and a deleted admin leaves the confirmation standing. Consumer: the admin
-  /// step names who confirmed when the account still exists.
-  encryptionKeyBackupConfirmedByUserId    String?   @map("encryption_key_backup_confirmed_by_user_id")
-
   /// When this instance first stored a discovery finding under the seasonally
   /// adjusted correlation engine (v1.42). Stamped once, by the first
   /// `syncAcceptedPatterns` run of a discovery family, before it writes; null
@@ -5738,7 +5779,8 @@ model BackupRestoreJob {
   restoreInstanceSettings Boolean   @default(false) @map("restore_instance_settings")
   /// `pg-boss` job id of the latest delivery. Consumer: the boot sweep, which
   /// completes a delivery whose worker is gone so it does not later surface as
-  /// a timed-out job.
+  /// a timed-out job, and the status routes, which read from it whether the
+  /// heavy lane put a queued restore back (`backup-restore-wait.ts`).
   pgBossJobId             String?   @map("pg_boss_job_id")
   /// `queued | running | succeeded | failed`. Consumer: every reader.
   status                  String    @default("queued")
@@ -5842,7 +5884,9 @@ model OffhostBackupState {
 /// `readBackupPassActivity()` behind `GET /api/admin/backups`.
 model BackupPassAttempt {
   userId     String    @map("user_id")
-  /// The pass's queue name: `data-backup` or `data-backup-offhost`.
+  /// The pass's queue name: `data-backup`, `data-backup-offhost`, or
+  /// `account-deletion-purge` (the hourly erasure of accounts whose deletion
+  /// window ended, which takes an account whose erasure failed last).
   pass       String
   /// When the pass last started on this account.
   startedAt  DateTime  @map("started_at")
@@ -5869,6 +5913,70 @@ model OffhostBackupKeyUse {
   @@map("offhost_backup_key_use")
 }
 
+/// The monthly restore drill's last result, one row for the instance. pg-boss
+/// forgets a failed run after seven days and the failing-jobs card looks back
+/// 72 hours, so the drill's verdict lives here for as long as it is the last
+/// one. Written by `recordRestoreDrillOutcome` at the end of every drill that
+/// had something to check; consumer: `readRecoveryReadiness` (the readiness
+/// tile and the hourly evaluation).
+model RestoreDrillOutcome {
+  id                String    @id @default("singleton")
+  /// When the last drill finished. Consumer: the tile's drill row.
+  lastRunAt         DateTime  @map("last_run_at")
+  /// When a drill last passed every object it checked. A failure stays the
+  /// verdict until a later success. Consumer: the readiness model.
+  lastSuccessAt     DateTime? @map("last_success_at")
+  /// When a drill last failed. Consumer: the readiness model.
+  lastFailureAt     DateTime? @map("last_failure_at")
+  /// One line naming why, already redacted. Consumer: the tile's drill row.
+  lastFailureReason String?   @map("last_failure_reason")
+  /// Objects the last drill checked and how many of them failed. Consumer:
+  /// the tile's drill row.
+  accountsChecked   Int       @default(0) @map("accounts_checked")
+  accountsFailed    Int       @default(0) @map("accounts_failed")
+
+  @@map("restore_drill_outcomes")
+}
+
+/// Per readiness signal, the state the admins were last notified about. The
+/// hourly evaluation compares the current state against it: a change to
+/// attention or failing notifies once, a failing signal is reminded at most
+/// once a day, and a return to ok is announced once. The update is a
+/// compare-and-set on both columns, so two workers never send the same
+/// notice. Written and read by `notifyReadinessChanges`.
+model RecoveryReadinessNotice {
+  /// The signal's id (`database_dump`, `weekly_copy`, …).
+  signal        String    @id
+  /// `ok`, `attention` or `failing`; null until anything was announced.
+  notifiedState String?   @map("notified_state")
+  notifiedAt    DateTime? @map("notified_at")
+  /// Since when the evaluation has seen the signal apply (not `inactive`);
+  /// cleared when it stops applying. Consumer: the readiness model, which
+  /// judges a dump that has never been attempted against it.
+  watchedSince  DateTime? @map("watched_since")
+
+  @@map("recovery_readiness_notices")
+}
+
+/// The recovery kit an admin confirmed: every key a restore needs, by kind,
+/// id and fingerprint, never the key itself. The kit is due again as soon as
+/// a key it needs is not in this set (a rotation, a new backup key). Written
+/// by `POST /api/admin/recovery-kit/confirm`; consumer: `readRecoveryKit`
+/// (the kit card, the dashboard banner for admins and the readiness model).
+model RecoveryKitConfirmation {
+  id                String   @id @default("singleton")
+  confirmedAt       DateTime @map("confirmed_at")
+  /// Plain id, not a relation: the instance row must not become user-scoped,
+  /// and a deleted admin leaves the confirmation standing. Consumer: the kit
+  /// card names who confirmed while the account still exists.
+  confirmedByUserId String?  @map("confirmed_by_user_id")
+  /// `[{ kind, id, fingerprint }]`, validated on read
+  /// (`parseKitEntries`). Consumer: `assessRecoveryKit`.
+  entries           Json
+
+  @@map("recovery_kit_confirmations")
+}
+
 /// An account whose off-host copies have to leave the bucket: it was deleted,
 /// or its data was wiped. Written in the same transaction as the deletion, so
 /// the request cannot be lost between the two, and deleted once every object
@@ -5887,9 +5995,51 @@ model OffhostPurgeRequest {
   lastAttemptAt DateTime? @map("last_attempt_at")
   /// The bucket's last refusal, trimmed; shown to the operator.
   lastFailure   String?   @map("last_failure")
+  /// The purge leaves this request alone until then. A data wipe
+  /// writes its request with the end of the deletion grace window here, so
+  /// the off-host copies from before the wipe stay restorable as long as the
+  /// account copy taken before it. Null: due at once (every account deletion,
+  /// which writes its request only when the purge erases the account).
+  notBefore     DateTime? @map("not_before")
 
   @@index([requestedAt])
   @@map("offhost_purge_requests")
+}
+
+/// One run of the nightly whole-database dump (the `database-backup` job):
+/// whether a dump was written on this server and copied off-host, and why not
+/// when it was not. Instance metadata, not an account's data. Written by
+/// `runDatabaseBackup`; read by `getDatabaseBackupHealth`, which feeds the
+/// database row of the admin backups card and the backup alerts. A row left
+/// `running` by a process that died is read as a failed run once the job's
+/// expiry has passed.
+model DatabaseBackupRun {
+  id            String    @id @default(cuid())
+  startedAt     DateTime  @map("started_at")
+  finishedAt    DateTime? @map("finished_at")
+  /// `running`, `succeeded`, `failed` or `skipped`.
+  status        String
+  /// The dump's file name, once one was written and checked.
+  fileName      String?   @map("file_name")
+  /// Size of the dump in bytes.
+  dumpBytes     BigInt?   @map("dump_bytes")
+  /// `written` (kept in DB_BACKUP_DIR), `no_directory` (no writable
+  /// directory, the dump went off-host only), `not_persistent` (writable but
+  /// in the container's layer or in memory, so nothing was kept there),
+  /// `skipped`, or `failed`.
+  localResult   String    @map("local_result")
+  /// `uploaded`, `not_configured` or `failed`.
+  offhostResult String    @map("offhost_result")
+  /// Why the run failed or was skipped, trimmed. Never key material.
+  error         String?
+  /// The application key id the dump's rows were written under (its
+  /// manifest's active key). A restore refuses without it. Reader:
+  /// `readBackupKeyNeeds`, which keeps the key in the recovery kit while the
+  /// off-host copy of this dump may still be in the bucket.
+  activeKeyId   String?   @map("active_key_id")
+
+  @@index([startedAt])
+  @@map("database_backup_runs")
 }
 
 // ─── Apple Health export.zip import (v1.4.34) ───────────────
@@ -7807,6 +7957,9 @@ model InsightStatusCache {
   /// Why the last generation served the deterministic line instead of a note:
   /// `timeout` | `error` | `screened`. Set together with `retryAt`.
   negativeReason String?   @map("negative_reason")
+  /// Generations in a row that ended without a note; sets the length of the
+  /// next negative-cache window. Reset to 0 when a note is written or re-dated.
+  failureStreak  Int       @default(0) @map("failure_streak")
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
@@ -8851,9 +9004,9 @@ enum ExtractedFactStatus {
 }
 
 model InboundDocument {
-  id                 String                @id @default(cuid())
-  userId             String                @map("user_id")
-  kind               InboundDocumentKind   @default(OTHER)
+  id                   String                @id @default(cuid())
+  userId               String                @map("user_id")
+  kind                 InboundDocumentKind   @default(OTHER)
   /// User-given label. Deliberately plaintext (like `filename`) so the library
   /// list can ILIKE-search + ORDER BY in SQL. The document BODY stays
   /// encrypted; only this short, user-authored title is clear-text. Tradeoff:
@@ -8861,18 +9014,18 @@ model InboundDocument {
   /// cleartext at rest / in backups — the same exposure the pre-existing
   /// plaintext `filename` already carries. Accepted to keep server-side search
   /// and sort.
-  title              String?
+  title                String?
   /// Original filename as uploaded (sanitised, optional).
-  filename           String?
+  filename             String?
   /// Magic-byte-sniffed MIME type the document was stored as.
-  mimeType           String                @map("mime_type")
+  mimeType             String                @map("mime_type")
   /// Stored byte length of the original (pre-encryption) document.
-  byteSize           Int                   @map("byte_size")
+  byteSize             Int                   @map("byte_size")
   /// AES-256-GCM ciphertext of the raw document bytes (base64 of the binary
   /// → `encrypt()` string → UTF-8 BYTEA), the `*_encrypted` Bytes convention
   /// shared with the note columns. The original is sensitive and never
   /// stored in the clear or logged.
-  contentEncrypted   Bytes                 @map("content_encrypted")
+  contentEncrypted     Bytes                 @map("content_encrypted")
   /// Lowercase-hex SHA-256 of the PLAINTEXT document bytes, computed at
   /// upload for same-user duplicate detection. Nullable: rows stored before
   /// the vault release are not backfilled (only new uploads dedupe). A
@@ -8881,29 +9034,29 @@ model InboundDocument {
   ///   CREATE UNIQUE INDEX inbound_documents_user_sha_live
   ///     ON inbound_documents (user_id, content_sha256)
   ///     WHERE deleted_at IS NULL AND content_sha256 IS NOT NULL;
-  contentSha256      String?               @map("content_sha256") @db.VarChar(64)
+  contentSha256        String?               @map("content_sha256") @db.VarChar(64)
   /// Storage codec of `contentEncrypted`. "base64v1" = legacy string path
   /// (base64-of-binary → `encrypt()` string → UTF-8 bytes); "binary2" = the
   /// binary AES-256-GCM layout written by `encryptBytes()` (no base64
   /// detour). Explicit column, never header-sniffed; the default keeps every
   /// pre-existing row correct.
-  contentCodec       String                @default("base64v1") @map("content_codec")
-  status             InboundDocumentStatus @default(STORED)
+  contentCodec         String                @default("base64v1") @map("content_codec")
+  status               InboundDocumentStatus @default(STORED)
   /// Provider type that ran the extraction (e.g. "anthropic", "openai",
   /// "local"). Diagnostic only. Null on a store-only document.
-  providerType       String?               @map("provider_type")
+  providerType         String?               @map("provider_type")
   /// The document's stated report/collection date (YYYY-MM-DD at UTC), as
   /// transcribed by the model — never inferred, never user-set.
-  reportDate         DateTime?             @map("report_date")
+  reportDate           DateTime?             @map("report_date")
   /// Effective filing date the library sorts, groups, and range-filters on
   /// (editable). Distinct from `reportDate`, which is the model-transcribed
   /// value. On store it defaults to the upload day (now) when the user does
   /// not supply one, so a stored row's filing date is never NULL and display
   /// == sort == filter. It stays user-editable and MAY be cleared back to
   /// NULL via PATCH (the list then sorts such rows last).
-  documentDate       DateTime?             @map("document_date")
+  documentDate         DateTime?             @map("document_date")
   /// Failure reason when status = FAILED (a short code, never the document).
-  errorReason        String?               @map("error_reason")
+  errorReason          String?               @map("error_reason")
   /// AES-256-GCM ciphertext of a short (3-4 sentence) plain-language summary
   /// of WHAT the document is, generated ONCE in the background right after
   /// upload when the user's `documentsAutoAiRead` opt-in is ON (that flag is
@@ -8911,39 +9064,39 @@ model InboundDocument {
   /// provider is configured, or generation has not run yet. Descriptive only —
   /// never a diagnosis. `encrypt()`-string-as-UTF-8 BYTEA, the shared Bytes
   /// codec every other note column uses; PHI, never logged.
-  summaryEncrypted   Bytes?                @map("summary_encrypted")
+  summaryEncrypted     Bytes?                @map("summary_encrypted")
   /// When the background summary was generated (null until it runs). Surfaced
   /// as meta beside the summary in the document detail view.
-  summaryGeneratedAt DateTime?             @map("summary_generated_at")
+  summaryGeneratedAt   DateTime?             @map("summary_generated_at")
   /// What actually happened to this document's summary, so the detail view can
   /// tell the four outcomes apart instead of reading a null column as "still
   /// generating". `summaryEncrypted` alone cannot: a document nobody ever
   /// enqueued, one whose provider is missing, one the safety screen withheld,
   /// and one mid-flight all leave it null. NONE is the default, which keeps
   /// every pre-existing row correct — none of them were ever attempted.
-  summaryState       DocumentSummaryState  @default(NONE) @map("summary_state")
+  summaryState         DocumentSummaryState  @default(NONE) @map("summary_state")
   /// When the most recent content-index attempt finished (auto job, corpus
   /// backfill, or the manual index route — they share one recorder),
   /// successful or not. Null until any attempt ran. Diagnostic state the
   /// detail view pairs with `lastIndexOutcome`; carried verbatim in the
   /// disaster-recovery backup like its summary siblings.
-  lastIndexAttemptAt DateTime?             @map("last_index_attempt_at")
+  lastIndexAttemptAt   DateTime?             @map("last_index_attempt_at")
   /// Why the most recent index attempt produced NO index — a closed string
   /// enum (`DocumentIndexOutcomeValue` in
   /// `src/lib/validations/inbound-documents.ts`): local-empty |
-  /// local-unsupported | decrypt-error | raster-failed | provider-error |
-  /// pdf-needs-anthropic | empty-transcription. Null after a successful
-  /// attempt (the `DocumentContentIndex` row itself is the success signal)
-  /// and before the first attempt. Lets the detail view tell "never tried"
+  /// local-unsupported | decrypt-error | resource-limit | raster-failed |
+  /// provider-error | pdf-needs-anthropic | empty-transcription. Null after a
+  /// successful attempt (the `DocumentContentIndex` row itself is the success
+  /// signal) and before the first attempt. Lets the detail view tell "never tried"
   /// from "tried and here is why it failed" instead of showing a bare
   /// not-indexed state for both.
-  lastIndexOutcome   String?               @map("last_index_outcome")
+  lastIndexOutcome     String?               @map("last_index_outcome")
   /// v1.39.2 (#1038) — where an imported document came from: a closed string
   /// enum (`DOCUMENT_SOURCE_SYSTEMS` in
   /// `src/lib/validations/inbound-documents.ts`): PAPERLESS | PAPRA | OTHER.
   /// Null for a document added in HealthLog itself. Sent by the import script
   /// and the Paperless workflow recipe; shown on the detail sheet.
-  sourceSystem       String?               @map("source_system") @db.VarChar(16)
+  sourceSystem         String?               @map("source_system") @db.VarChar(16)
   /// v1.39.2 (#1038) — the document's id in `sourceSystem`. Together with
   /// `userId`, `sourceSystem` and `sourceInstance` it is unique across live
   /// AND tombstoned rows (raw SQL in migrations 0353 and 0356, not expressible
@@ -8951,7 +9104,7 @@ model InboundDocument {
   /// Including tombstones is the point: re-running an importer must not bring
   /// back a document the person deleted. The purge carries the key over to
   /// `DocumentImportKey` when it removes the row.
-  sourceId           String?               @map("source_id") @db.VarChar(128)
+  sourceId             String?               @map("source_id") @db.VarChar(128)
   /// v1.39.3 (#1038) — which instance of `sourceSystem` the document came
   /// from: the normalised origin (`scheme://host[:port]`) of the Paperless-ngx
   /// or Papra it was fetched from, so id 123 on one Paperless and id 123 on
@@ -8962,12 +9115,20 @@ model InboundDocument {
   /// source-key unique index since migration 0356, which rebuilt it as
   ///   (user_id, source_system, source_instance, source_id) NULLS NOT DISTINCT
   ///   WHERE source_id IS NOT NULL.
-  sourceInstance     String?               @map("source_instance") @db.VarChar(512)
+  sourceInstance       String?               @map("source_instance") @db.VarChar(512)
   /// v1.39.2 (#1038) — the upload asked for `aiRead=defer`: nothing may send
   /// this document to an AI provider on its own (the summary catch-up, the
   /// summary job, lab auto-staging all skip it). Cleared when the person
   /// explicitly reads it with AI or generates its summary.
-  aiReadDeferred     Boolean               @default(false) @map("ai_read_deferred")
+  aiReadDeferred       Boolean               @default(false) @map("ai_read_deferred")
+  /// Whether the facts staged by the last extraction may leave part of the
+  /// document out: a read stopped at the provider's output limit, came back
+  /// unreadable or was never sent, the text or pages ran past what the reads
+  /// take, or the document held more facts than one review takes. Written by
+  /// both stagings (the extract route or run, and lab auto-staging) with the
+  /// facts they replace, so a review opened later says so, not only the
+  /// notice at the end of the run. False for a document never extracted.
+  extractionIncomplete Boolean               @default(false) @map("extraction_incomplete")
 
   facts            ExtractedFact[]
   conditionLinks   DocumentConditionLink[]

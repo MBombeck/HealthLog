@@ -25,6 +25,7 @@
  * is found by its sealed copy as well as by the readable columns the
  * encryption backfill has not cleared yet.
  */
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import type { PgBoss } from "pg-boss";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -150,7 +151,7 @@ export async function enqueueEnvironmentFetchDiscovery(
   // consults the per-user preference map + the operator availability.
   const [candidates, operatorAvailability] = await Promise.all([
     prisma.user.findMany({
-      where: { homeLocationEncrypted: { not: null } },
+      where: { homeLocationEncrypted: { not: null }, ...ACTIVE_ACCOUNT },
       select: { id: true, modulePreferencesJson: true },
     }),
     getOperatorModuleAvailability(),

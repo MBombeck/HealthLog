@@ -21,12 +21,12 @@ vi.mock("@/lib/safe-fetch", async (importOriginal) => {
   return { ...actual, safeFetch: safeFetchMock };
 });
 
+import { fetchDataPoints } from "@/lib/google-health/data-points";
 import {
-  GOOGLE_HEALTH_DATA_TYPES,
   GOOGLE_HEALTH_RATE_LIMIT,
-  fetchDataPoints,
   googleHealthRetryDelayMs,
-} from "../client";
+} from "@/lib/google-health/request";
+import { GOOGLE_HEALTH_DATA_TYPES } from "@/lib/google-health/mappers";
 import { collapseNaturalKeyTwins } from "../sync-core";
 import { GoogleHealthApiError } from "../response-classifier";
 

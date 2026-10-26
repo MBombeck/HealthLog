@@ -4,7 +4,7 @@
  * Two things in the app have to answer that question, and they have to answer
  * it the same way:
  *
- *   * `requireRecordAuth` (`src/lib/api-handler.ts`), which turns the claim
+ *   * `requireRecordAuth` (`src/lib/auth/guards/record.ts`), which turns the claim
  *     into a data scope after checking a live grant.
  *   * `withIdempotency` (`src/lib/idempotency.ts`), which files the replay cell
  *     under the record the request claims — before any handler runs, so it

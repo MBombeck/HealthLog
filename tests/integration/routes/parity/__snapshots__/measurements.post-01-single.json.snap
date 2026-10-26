@@ -1,0 +1,132 @@
+{
+  "status": 201,
+  "body": {
+    "data": {
+      "id": "<id:1>",
+      "userId": "<id:2>",
+      "type": "WEIGHT",
+      "value": 80.4,
+      "valueMin": null,
+      "valueMax": null,
+      "unit": "kg",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T06:30:00.000Z",
+      "notes": "after the run",
+      "externalId": null,
+      "externalSourceVersion": null,
+      "aggregationProvenance": null,
+      "glucoseContext": null,
+      "sleepStage": null,
+      "rhythmClassification": null,
+      "deviceType": "scale",
+      "syncVersion": "<syncVersion>",
+      "deletedAt": null,
+      "createdAt": "<createdAt>",
+      "updatedAt": "<updatedAt>",
+      "appleHealthMirror": true
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 201,
+      "action": {
+        "name": "measurement.create",
+        "entity_type": "measurement",
+        "entity_id": "<id:1>"
+      },
+      "meta": null,
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "enqueueReminderSatisfy",
+      "args": [
+        "<id:2>"
+      ]
+    },
+    {
+      "effect": "emitInsertedMeasurementArrivals",
+      "args": [
+        "<id:2>",
+        [
+          {
+            "id": "<id:1>",
+            "userId": "<id:2>",
+            "type": "WEIGHT",
+            "value": 80.4,
+            "valueMin": null,
+            "valueMax": null,
+            "unit": "kg",
+            "source": "MANUAL",
+            "measuredAt": "2026-10-14T06:30:00.000Z",
+            "notes": null,
+            "notesEncrypted": "<bytes:59>",
+            "externalId": null,
+            "externalSourceVersion": null,
+            "aggregationProvenance": null,
+            "glucoseContext": null,
+            "sleepStage": null,
+            "rhythmClassification": null,
+            "deviceType": "scale",
+            "syncVersion": "<syncVersion>",
+            "deletedAt": null,
+            "createdAt": "<createdAt>",
+            "updatedAt": "<updatedAt>",
+            "ingestTokenId": null,
+            "ingestToken": null
+          }
+        ],
+        "manual"
+      ]
+    },
+    {
+      "effect": "runSafetyFloorCheck",
+      "args": [
+        {
+          "userId": "<id:2>",
+          "written": [
+            {
+              "type": "WEIGHT",
+              "value": 80.4,
+              "measuredAt": "2026-10-14T06:30:00.000Z",
+              "glucoseContext": null
+            }
+          ],
+          "timezone": "UTC"
+        }
+      ]
+    },
+    {
+      "effect": "invalidateStatusInsightsForTypes",
+      "args": [
+        "<id:2>",
+        [
+          "WEIGHT"
+        ],
+        {
+          "source": "manual"
+        }
+      ]
+    }
+  ],
+  "stored": [
+    {
+      "id": "<id:1>",
+      "type": "WEIGHT",
+      "value": 80.4,
+      "unit": "kg",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T06:30:00.000Z",
+      "notes": null,
+      "glucoseContext": null,
+      "deviceType": "scale",
+      "externalId": null,
+      "sleepStage": null,
+      "deletedAt": null,
+      "sealedNote": true
+    }
+  ]
+}

@@ -26,6 +26,7 @@
  * Returns the counts so the caller can surface them on `annotate(...)`.
  */
 import { prisma } from "@/lib/db";
+import { MEDICATION_WINDOW_SELECT } from "@/lib/medications/course-window";
 import {
   buildCanonicalSchedule,
   buildRecurrenceContext,
@@ -58,8 +59,7 @@ export async function projectTodayIntakesAndRecompute(input: {
     where: { userId, active: true, ...TRACKED_INTAKE_WHERE },
     select: {
       id: true,
-      startsOn: true,
-      endsOn: true,
+      ...MEDICATION_WINDOW_SELECT,
       oneShot: true,
       createdAt: true,
       // The live era start: no slot anchored before it is projected. Turning
@@ -123,7 +123,7 @@ export async function projectTodayIntakesAndRecompute(input: {
           deletedAt: null,
           takenAt: { not: null },
         },
-        orderBy: { takenAt: "desc" },
+        orderBy: [{ takenAt: "desc" }, { id: "desc" }],
         select: { takenAt: true },
       });
       lastIntakeAt = lastIntake?.takenAt ?? null;
@@ -160,6 +160,9 @@ export async function projectTodayIntakesAndRecompute(input: {
         if (!Number.isFinite(h) || !Number.isFinite(m)) continue;
         const scheduledFor = localHmAsUtc(now, userTz, h, m);
         if (isBeforeLiveEra(scheduledFor, eraStart)) continue;
+        // #1280 — a course ended with "End course" expects nothing from
+        // that instant on; the schedule still emits its earlier slots today.
+        if (med.endedAt && scheduledFor >= med.endedAt) continue;
         projected.push({
           medicationId: schedule.medicationId,
           scheduledFor,

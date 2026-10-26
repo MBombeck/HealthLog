@@ -1,0 +1,69 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "measurements": [
+        {
+          "id": "day:ACTIVITY_STEPS:2026-10-14",
+          "type": "ACTIVITY_STEPS",
+          "value": 5100,
+          "unit": "steps",
+          "source": "APPLE_HEALTH",
+          "measuredAt": "2026-10-14T12:00:00.000Z",
+          "notes": null,
+          "dayKey": "2026-10-14",
+          "sampleCount": 1
+        },
+        {
+          "id": "day:ACTIVITY_STEPS:2026-10-13",
+          "type": "ACTIVITY_STEPS",
+          "value": 8400,
+          "unit": "steps",
+          "source": "APPLE_HEALTH",
+          "measuredAt": "2026-10-13T12:00:00.000Z",
+          "notes": null,
+          "dayKey": "2026-10-13",
+          "sampleCount": 1
+        },
+        {
+          "id": "day:ACTIVITY_STEPS:2026-10-12",
+          "type": "ACTIVITY_STEPS",
+          "value": 7100,
+          "unit": "steps",
+          "source": "APPLE_HEALTH",
+          "measuredAt": "2026-10-12T12:00:00.000Z",
+          "notes": null,
+          "dayKey": "2026-10-12",
+          "sampleCount": 1
+        }
+      ],
+      "meta": {
+        "total": 3,
+        "limit": 100,
+        "offset": 0,
+        "groupBy": "day",
+        "droppedDuplicates": 0
+      }
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "measurement.list"
+      },
+      "meta": {
+        "total": 3,
+        "type": "ACTIVITY_STEPS",
+        "groupBy": "day",
+        "days": 3,
+        "rowsScanned": 3,
+        "droppedDuplicates": 0
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": []
+}

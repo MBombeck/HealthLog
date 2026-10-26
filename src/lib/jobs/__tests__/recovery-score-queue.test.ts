@@ -1,10 +1,10 @@
 /**
- * v1.10.0 — computed scores (WX-C). Recovery-score queue registration guard.
+ * Computed scores: recovery-score queue registration guard.
  *
- * Same source-text-grep approach as the other queue-wiring guards: assert
- * the queue is imported, registered in `allQueues`, scheduled, and wired to
- * a `createAndWork` handler — without booting pg-boss + Prisma. An unregistered
- * queue silently never drains (the recurring past bug this guards against).
+ * Reads the worker registry: the queue is declared in the status group,
+ * scheduled on its cron, and bound to the handler that runs the pass. An
+ * unregistered queue silently never drains (the recurring past bug this
+ * guards against).
  *
  * Also pins the iOS-write rejection of the server-owned COMPUTED source on
  * the batch ingest route: the `batchSourceEnum` allowlist must stay exactly
@@ -16,11 +16,16 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-// v1.18.1 — the queue wiring moved out of the 2143-LOC reminder-worker boot
-// file into domain registrars; the recovery-score queue lives in the status
-// registrar. The dead-queue guard follows the wiring there.
-const REGISTRAR_PATH = join(__dirname, "..", "reminder", "register-status.ts");
-const workerSource = readFileSync(REGISTRAR_PATH, "utf8");
+import {
+  RECOVERY_SCORE_CRON,
+  RECOVERY_SCORE_QUEUE,
+} from "@/lib/jobs/recovery-score-queue";
+import { handleRecoveryScore } from "@/lib/jobs/reminder/status-handlers";
+import {
+  groupOf,
+  jobOf,
+  loadedHandler,
+} from "@/lib/jobs/registry/__tests__/registry-helpers";
 
 const BATCH_ROUTE_PATH = join(
   __dirname,
@@ -35,32 +40,19 @@ const BATCH_ROUTE_PATH = join(
 );
 const batchSource = readFileSync(BATCH_ROUTE_PATH, "utf8");
 
-describe("reminder-worker — recovery-score wiring", () => {
-  it("imports the queue symbols from the recovery-score module", () => {
-    expect(workerSource).toMatch(/from\s*["']@\/lib\/jobs\/recovery-score["']/);
-    expect(workerSource).toMatch(/\bRECOVERY_SCORE_QUEUE\b/);
-    expect(workerSource).toMatch(/\bRECOVERY_SCORE_CRON\b/);
-    expect(workerSource).toMatch(/\brunRecoveryScore\b/);
-  });
-
-  it("registers the recovery-score queue in the allQueues loop", () => {
-    const allQueuesMatch = workerSource.match(
-      /const allQueues\s*=\s*\[([\s\S]*?)\];/,
-    );
-    expect(allQueuesMatch).not.toBeNull();
-    expect(allQueuesMatch![1]).toMatch(/\bRECOVERY_SCORE_QUEUE\b/);
+describe("recovery-score registration", () => {
+  it("declares the recovery-score queue in the status group", () => {
+    expect(groupOf(RECOVERY_SCORE_QUEUE).name).toBe("status");
   });
 
   it("schedules the recovery-score cron", () => {
-    expect(workerSource).toMatch(
-      /\[RECOVERY_SCORE_QUEUE,\s*RECOVERY_SCORE_CRON\]/,
-    );
+    const job = jobOf(RECOVERY_SCORE_QUEUE);
+    expect(job.cron).toBe(RECOVERY_SCORE_CRON);
+    expect(job.work).toEqual({ localConcurrency: 1 });
   });
 
-  it("registers a createAndWork handler that runs the recovery-score pass", () => {
-    expect(workerSource).toMatch(
-      /createAndWork[\s\S]{0,200}RECOVERY_SCORE_QUEUE[\s\S]{0,400}runRecoveryScore/,
-    );
+  it("binds the handler that runs the recovery-score pass", async () => {
+    expect(await loadedHandler(RECOVERY_SCORE_QUEUE)).toBe(handleRecoveryScore);
   });
 });
 

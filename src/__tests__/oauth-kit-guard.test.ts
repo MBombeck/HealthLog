@@ -10,17 +10,23 @@
  *
  *   A. Each kit provider has `src/lib/<provider>/oauth-descriptor.ts`, and the
  *      descriptor names that provider.
- *   B. A provider client's `refreshAccessToken` is imported by that
- *      provider's descriptor and by nothing else outside tests.
+ *   B. A provider's refresh (`<provider>OAuth.refresh(…)`, from the shared
+ *      OAuth client factory) is called by that provider's descriptor and by
+ *      nothing else outside tests.
  *   C. The refresh lock is taken by the kit and by the AI provider store
  *      (`src/lib/ai/provider.ts`, which is not an integration) only.
  *   D. A token is sealed into a connection row only by a callback route
  *      (the connect-time write). The kit writes ciphertext the descriptor is
  *      handed and never encrypts on its own.
+ *   E. A provider integration speaks to a token endpoint only through the
+ *      factory (`oauth-kit/client.ts`): no other integration module builds a
+ *      `grant_type` form. Sign-in (OIDC), the MCP authorization server and
+ *      the Codex device login are not provider integrations.
  *
- * Fitbit is the one listed exception: the classic Fitbit Web API is retired
- * on 2026-10-30 and its integration rides out on its own refresh until then,
- * rather than being migrated onto a lifecycle it will never use.
+ * Fitbit is the one listed exception to the lifecycle: the classic Fitbit Web
+ * API is retired on 2026-10-30 and its integration rides out on its own
+ * refresh until then, rather than being migrated onto a lifecycle it will
+ * never use. Its wire goes through the factory like every other provider's.
  *
  * Every leg asserts a non-empty match set before it compares, so a matcher
  * that stops matching fails instead of passing.
@@ -68,21 +74,18 @@ describe("OAuth token lifecycle guard", () => {
     }
   });
 
-  it("B: a provider's refreshAccessToken is imported only by its descriptor", () => {
-    const importers = files.filter((f) => {
-      const src = read(f);
-      return /import\s*\{[^}]*\brefreshAccessToken\b[^}]*\}\s*from\s*["'](?:\.\/client|@\/lib\/[a-z-]+\/client)["']/.test(
-        src,
-      );
-    });
-    expect(importers.length).toBeGreaterThan(0);
+  it("B: a provider's refresh is called only by its descriptor", () => {
+    const callers = files.filter((f) =>
+      /\b[a-z][A-Za-z]*OAuth\.refresh\s*\(/.test(read(f)),
+    );
+    expect(callers.length).toBeGreaterThan(0);
     const allowed = new Set([
       ...KIT_PROVIDERS.filter((p) => p !== "polar").map(
         (p) => `src/lib/${p}/oauth-descriptor.ts`,
       ),
       ...RETIRED,
     ]);
-    expect(importers.filter((f) => !allowed.has(f))).toEqual([]);
+    expect(callers.filter((f) => !allowed.has(f))).toEqual([]);
   });
 
   it("C: only the kit and the AI provider store take the refresh lock", () => {
@@ -110,5 +113,19 @@ describe("OAuth token lifecycle guard", () => {
         !/^src\/app\/api\/[a-z-]+\/callback\/route\.ts$/.test(f),
     );
     expect(offenders).toEqual([]);
+  });
+
+  it("E: provider integrations reach a token endpoint only through the factory", () => {
+    const forms = files.filter((f) => /\bgrant_type\b/.test(read(f)));
+    expect(forms.length).toBeGreaterThan(0);
+    const NOT_INTEGRATIONS = new Set([
+      "src/lib/integrations/oauth-kit/client.ts",
+      "src/lib/auth/oidc.ts",
+      "src/lib/ai/codex-oauth.ts",
+      "src/lib/mcp/oauth/metadata.ts",
+      "src/app/api/mcp/oauth/token/route.ts",
+      "src/app/api/mcp/oauth/register/route.ts",
+    ]);
+    expect(forms.filter((f) => !NOT_INTEGRATIONS.has(f)).sort()).toEqual([]);
   });
 });

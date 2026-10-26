@@ -1,0 +1,11 @@
+[
+  { "value": "", "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709" },
+  {
+    "value": "example-api-secret",
+    "sha1": "ae2d76b7397b1eed862868b41007d75ab043c31c"
+  },
+  {
+    "value": "secret-with-umlaut-äöü",
+    "sha1": "7f13c4ff16a35003f36132c3ba41217605e390f0"
+  }
+]

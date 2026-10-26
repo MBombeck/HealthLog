@@ -1,0 +1,40 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "measurements": [
+        {
+          "type": "PULSE",
+          "value": 68.5,
+          "measuredAt": "2026-10-12T00:00:00.000Z",
+          "count": 2,
+          "minValue": 66,
+          "maxValue": 71
+        }
+      ],
+      "meta": {
+        "total": 1,
+        "limit": 100,
+        "offset": 0,
+        "aggregate": "weekly"
+      }
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "measurement.list"
+      },
+      "meta": {
+        "total": 1,
+        "type": "PULSE",
+        "aggregate": "weekly"
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": []
+}

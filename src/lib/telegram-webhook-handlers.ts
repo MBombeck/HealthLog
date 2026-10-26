@@ -1,3 +1,4 @@
+import { activeAccount } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { isP2025 } from "@/lib/prisma-errors";
 import { decrypt } from "@/lib/crypto";
@@ -147,9 +148,8 @@ async function isManagedReminderCallback(input: {
   );
 }
 
-// v1.19.0 — the auto-delete window dropped from 1 h to ~30 min and moved to
-// the shared `scheduleTelegramAutoDelete` helper so the inbound (free-text)
-// and outbound (unanswered prompt) paths agree on the window.
+// The auto-delete window lives in `scheduleTelegramAutoDelete`, so the inbound
+// (free-text) and outbound (unanswered prompt) paths agree on it.
 async function scheduleAutoDelete(
   userId: string,
   chatId: string,
@@ -160,11 +160,11 @@ async function scheduleAutoDelete(
 
 async function findTelegramUser(chatId: string) {
   return prisma.user.findFirst({
-    where: {
+    where: activeAccount({
       telegramEnabled: true,
       telegramChatId: chatId,
       telegramBotToken: { not: null },
-    },
+    }),
     select: {
       id: true,
       telegramBotToken: true,
@@ -1164,7 +1164,7 @@ export async function handleTextMessage(update: TelegramUpdate) {
     const meds = await prisma.medication.findMany({
       where: { userId: user.id, active: true, ...TRACKED_INTAKE_WHERE },
       select: { id: true, name: true, dose: true },
-      orderBy: { name: "asc" },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
     });
 
     if (meds.length === 0) {
@@ -1280,7 +1280,7 @@ export async function handleTextMessage(update: TelegramUpdate) {
     const meds = await prisma.medication.findMany({
       where: { userId: user.id, active: true, ...TRACKED_INTAKE_WHERE },
       select: { id: true, name: true },
-      orderBy: { name: "asc" },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
       take: 2,
     });
     if (meds.length === 1) {

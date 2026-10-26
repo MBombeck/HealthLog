@@ -1,0 +1,29 @@
+{
+  "status": 422,
+  "body": {
+    "data": null,
+    "error": "Invalid list query",
+    "details": {
+      "issues": [
+        {
+          "path": "sort",
+          "code": "invalid_value",
+          "message": "Invalid option: expected one of \"documentDate\"|\"createdAt\"|\"title\""
+        }
+      ]
+    },
+    "meta": {
+      "errorCode": "documents.inbound.invalidQuery",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 422,
+      "action": null,
+      "meta": null,
+      "warnings": null,
+      "error": null
+    }
+  ]
+}

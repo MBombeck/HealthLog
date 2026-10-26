@@ -21,7 +21,7 @@ import {
   grantState,
   normaliseScope,
   type GrantState,
-} from "@/lib/sharing/grants";
+} from "@/lib/sharing/grant-access";
 import { SHARE_DOMAINS, type ShareDomain } from "@/lib/sharing/scope";
 import type { AccountGrant } from "@/generated/prisma/client";
 import type { Prisma } from "@/generated/prisma/client";

@@ -5,10 +5,9 @@ import {
   apiError,
   apiSuccess,
   getClientIp,
-  returnAllZodIssues,
-  safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import {
   destroyedDetails,
@@ -122,34 +121,29 @@ export const PUT = apiHandler(
       });
     }
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, updateBiomarkerSchema, {
       maxBytes: 16 * 1024,
+      action: "labs.biomarker.update.validation-failed",
+      countIssues: true,
+      meta: { biomarkerId: id },
+      errorCode: "labs.biomarker.update.invalid",
+      onInvalid: (error) => {
+        const auditIssues = sanitiseZodIssues(error.issues, {
+          stripValuesFromMessage: true,
+        });
+        // v1.37.0 — through `auditLog()` rather than a bare `prisma.auditLog
+        // .create`, because that helper is the only writer that stamps
+        // `actorUserId`. Filed under the resolved record either way; without
+        // the stamp a manager's malformed payload would read as the owner's own.
+        void auditLog("labs.biomarker.update.validation-failed", {
+          userId: user.id,
+          details: { issues: auditIssues, biomarkerId: id },
+        }).catch(() => {
+          /* swallow — the 422 response is the contract */
+        });
+      },
     });
-    if (jsonError) return jsonError;
-
-    const parsed = updateBiomarkerSchema.safeParse(body);
-    if (!parsed.success) {
-      annotate({
-        action: { name: "labs.biomarker.update.validation-failed" },
-        meta: { issue_count: parsed.error.issues.length, biomarkerId: id },
-      });
-      const auditIssues = sanitiseZodIssues(parsed.error.issues, {
-        stripValuesFromMessage: true,
-      });
-      // v1.37.0 — through `auditLog()` rather than a bare `prisma.auditLog
-      // .create`, because that helper is the only writer that stamps
-      // `actorUserId`. Filed under the resolved record either way; without the
-      // stamp a manager's malformed payload would read as the owner's own.
-      void auditLog("labs.biomarker.update.validation-failed", {
-        userId: user.id,
-        details: { issues: auditIssues, biomarkerId: id },
-      }).catch(() => {
-        /* swallow — the 422 response is the contract */
-      });
-      return returnAllZodIssues(parsed.error, 422, {
-        errorCode: "labs.biomarker.update.invalid",
-      });
-    }
+    if (!parsed.ok) return parsed.error;
 
     const d = parsed.data;
 

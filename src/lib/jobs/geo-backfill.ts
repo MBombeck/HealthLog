@@ -49,6 +49,7 @@
  * counts off the returned summary and decide whether to keep
  * scheduling.
  */
+// account-deletion(file): fills the place of audit rows by their IP address; bookkeeping on rows, not work for an account.
 import type { PrismaClient } from "@/generated/prisma/client";
 import { lookupIpGeo } from "@/lib/geo";
 

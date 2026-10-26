@@ -99,7 +99,46 @@ describe("Local reasoning request", () => {
     expect(body(mock, 1).reasoning_effort).toBe("medium");
     expect(body(mock, 1).max_tokens).toBe(600 + 4096);
     expect(body(mock, 2).reasoning_effort).toBe("none");
-    expect(body(mock, 2).max_tokens).toBe(600);
+    // #1276 — `none` is a request a model may ignore: Off keeps the low room.
+    expect(body(mock, 2).max_tokens).toBe(600 + 1024);
+  });
+
+  it("keeps the level's room when it asks with none after a reasoning-only reply", async () => {
+    const mock = vi
+      .fn()
+      .mockImplementationOnce(
+        async () =>
+          new Response(
+            JSON.stringify({
+              choices: [
+                {
+                  message: { content: null, reasoning: "Thinking on and on" },
+                  finish_reason: "length",
+                },
+              ],
+            }),
+            { status: 200 },
+          ),
+      )
+      .mockImplementation(buffered({ content: "ok" }));
+    vi.stubGlobal("fetch", mock);
+    const c = client();
+    const wanted = params({ reasoning: { effort: "medium", summaries: true } });
+    expect((await c.generateCompletion(wanted)).content).toBe("ok");
+    await c.generateCompletion(wanted);
+    // A call without a level of its own, once the model reasons unasked.
+    await c.generateCompletion(params());
+    expect(
+      [0, 1, 2, 3].map((i) => [
+        body(mock, i).reasoning_effort,
+        body(mock, i).max_tokens,
+      ]),
+    ).toEqual([
+      ["medium", 600 + 4096],
+      ["none", 600 + 4096],
+      ["none", 600 + 4096],
+      ["none", 600 + 1024],
+    ]);
   });
 
   it("retries once without the field when the server refuses it, and remembers", async () => {
@@ -160,7 +199,7 @@ describe("Local reasoning replies", () => {
     },
   );
 
-  it("splits an inline think block only for a caller that asked for reasoning", async () => {
+  it("splits an inline think block for every caller, and reports it only to one that asked", async () => {
     const reply = "<think>check the window</think>\n\nThe answer.";
     vi.stubGlobal(
       "fetch",
@@ -171,9 +210,105 @@ describe("Local reasoning replies", () => {
     );
     expect(asked.content).toBe("The answer.");
     expect(asked.reasoning?.summary).toEqual(["check the window"]);
+    // #1276 — reasoning is never an answer, asked for or not.
     const unasked = await client().generateCompletion(params());
-    expect(unasked.content).toBe(reply);
+    expect(unasked.content).toBe("The answer.");
     expect(unasked.reasoning).toBeUndefined();
+  });
+
+  it("splits reasoning whose opening tag the chat template sent", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(
+        buffered({
+          content: "The user asks about sleep.\n</think>\n\nDein Schlaf.",
+        }),
+      ),
+    );
+    const result = await client().generateCompletion(
+      params({ reasoning: { effort: "low", summaries: true } }),
+    );
+    expect(result.content).toBe("Dein Schlaf.");
+    expect(result.reasoning?.summary).toEqual(["The user asks about sleep."]);
+  });
+
+  it("never answers with unlabelled text that filled the reasoning ceiling, once the model reasons", async () => {
+    const cut = async () =>
+      new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: { content: "The user asks about sleep. I need to" },
+              finish_reason: "length",
+            },
+          ],
+        }),
+        { status: 200 },
+      );
+    // The model has answered with a reasoning field before.
+    const mock = vi
+      .fn()
+      .mockImplementationOnce(
+        buffered({ content: "ok", reasoning: "Thinking first" }),
+      )
+      .mockImplementation(cut);
+    vi.stubGlobal("fetch", mock);
+    const c = client();
+    const wanted = params({ reasoning: { effort: "medium", summaries: true } });
+    expect((await c.generateCompletion(wanted)).content).toBe("ok");
+    await expect(c.generateCompletion(wanted)).rejects.toMatchObject({
+      httpStatus: 0,
+      kind: "reasoning_only",
+    });
+    // Asked once more with `none` (#1267), which this model ignores.
+    expect(mock).toHaveBeenCalledTimes(3);
+  });
+
+  it("keeps a cut answer from a model never seen reasoning, whatever the level", async () => {
+    const mock = vi.fn().mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: { content: '{"summary": "Steady and' },
+                finish_reason: "length",
+              },
+            ],
+          }),
+          { status: 200 },
+        ),
+    );
+    vi.stubGlobal("fetch", mock);
+    const result = await client().generateCompletion(
+      params({ reasoning: { effort: "medium", summaries: true } }),
+    );
+    expect(result.content).toBe('{"summary": "Steady and');
+    expect(result.finishReason).toBe("length");
+    expect(mock).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a cut answer when the ceiling held no room for reasoning", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(
+        async () =>
+          new Response(
+            JSON.stringify({
+              choices: [
+                {
+                  message: { content: "A long answer that ran" },
+                  finish_reason: "length",
+                },
+              ],
+            }),
+            { status: 200 },
+          ),
+      ),
+    );
+    const result = await client().generateCompletion(params());
+    expect(result.content).toBe("A long answer that ran");
+    expect(result.finishReason).toBe("length");
   });
 });
 
@@ -239,7 +374,7 @@ describe("Local reasoning stream", () => {
     expect(result.reasoning?.summary).toEqual(["weigh the two readings"]);
   });
 
-  it("streams untouched for a caller that asked for no reasoning", async () => {
+  it("keeps reasoning out of the answer for a caller that asked for none, and tells it nothing", async () => {
     vi.stubGlobal(
       "fetch",
       vi
@@ -258,10 +393,88 @@ describe("Local reasoning stream", () => {
       params({ onReasoning }),
       (d) => deltas.push(d),
     );
-    expect(deltas).toEqual(["<think>x</think>", "y"]);
-    expect(result.content).toBe("<think>x</think>y");
+    expect(deltas).toEqual(["y"]);
+    expect(result.content).toBe("y");
     expect(result.reasoning).toBeUndefined();
     expect(onReasoning).not.toHaveBeenCalled();
+  });
+
+  it("splits a closing-only think block at the end of the stream", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockImplementation(
+          stream([
+            { content: "The user asks" },
+            { content: " about sleep.\n</thi" },
+            { content: "nk>\n\nDein " },
+            { content: "Schlaf." },
+          ]),
+        ),
+    );
+    const result = await client().generateCompletionStream(
+      params({ reasoning: { effort: "low", summaries: true } }),
+      () => {},
+    );
+    expect(result.content).toBe("Dein Schlaf.");
+    expect(result.reasoning?.summary).toEqual(["The user asks about sleep."]);
+  });
+
+  it("reads a vLLM stream: empty first content, both reasoning fields, usage on every chunk", async () => {
+    const encoder = new TextEncoder();
+    const usage = (n: number) => ({
+      prompt_tokens: 100,
+      completion_tokens: n,
+      total_tokens: 100 + n,
+    });
+    const frames = [
+      {
+        choices: [{ delta: { role: "assistant", content: "" } }],
+        usage: usage(0),
+      },
+      {
+        choices: [
+          { delta: { reasoning: "Plan the ", reasoning_content: "Plan the " } },
+        ],
+        usage: usage(2),
+      },
+      {
+        choices: [
+          { delta: { reasoning: "answer.", reasoning_content: "answer." } },
+        ],
+        usage: usage(3),
+      },
+      { choices: [{ delta: { content: "Hallo." } }], usage: usage(5) },
+      { choices: [{ delta: {}, finish_reason: "stop" }], usage: usage(6) },
+    ];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(
+        async () =>
+          new Response(
+            new ReadableStream<Uint8Array>({
+              start(c) {
+                for (const f of frames) {
+                  c.enqueue(encoder.encode(`data: ${JSON.stringify(f)}\n\n`));
+                }
+                c.enqueue(encoder.encode("data: [DONE]\n\n"));
+                c.close();
+              },
+            }),
+            { status: 200, headers: { "content-type": "text/event-stream" } },
+          ),
+      ),
+    );
+    const result = await client().generateCompletionStream(
+      params({ reasoning: { effort: "low", summaries: true } }),
+      () => {},
+    );
+    expect(result.content).toBe("Hallo.");
+    // The two fields carry the same text: one copy.
+    expect(result.reasoning?.summary).toEqual(["Plan the answer."]);
+    // A usage block on every chunk is not an end: the last one counts.
+    expect(result.tokensUsed).toBe(106);
   });
 
   it("passes a short reply that only looked like it might open a think block", async () => {

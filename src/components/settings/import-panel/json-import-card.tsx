@@ -12,51 +12,121 @@ import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { ImportCardShell } from "./import-card-shell";
 import { IMPORT_GUIDE_URL, MAX_PASTE_CHARS } from "./constants";
 import {
+  JSON_IMPORT_MAX_BYTES,
+  JSON_IMPORT_MAX_ROWS,
+} from "@/lib/import/json/limits";
+import {
   EXAMPLE_IMPORT_DOWNLOAD_HREF,
   parseImportJson,
 } from "./import-examples";
 import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
 import { classifyWrittenOutcome } from "@/lib/outcome/written-outcome";
 
-interface JsonImportResult {
+export interface JsonImportResult {
   measurements: number;
   moodEntries: number;
   skipped: number;
+  /**
+   * Tag and factor keys of imported mood entries this account has no tag
+   * for (another account's own tags, mostly). The entries landed without
+   * those links, which the count alone would not say.
+   */
+  droppedLinkKeys: string[];
+  /**
+   * Keys of the account's own tags and groups the file names differently.
+   * The account's names were kept, never overwritten.
+   */
+  keptLabelKeys: string[];
 }
 
-export function JsonImportCard() {
+/** The route's `data`, read field by field; a missing count reads as none. */
+export function readJsonImportResult(
+  data: {
+    measurements?: number;
+    moodEntries?: number;
+    skipped?: number;
+    droppedTagKeys?: string[];
+    droppedFactorKeys?: string[];
+    keptMoodTagKeys?: string[];
+    keptMoodCategoryKeys?: string[];
+  } | null,
+): JsonImportResult {
+  return {
+    measurements: data?.measurements ?? 0,
+    moodEntries: data?.moodEntries ?? 0,
+    skipped: data?.skipped ?? 0,
+    droppedLinkKeys: [
+      ...(data?.droppedTagKeys ?? []),
+      ...(data?.droppedFactorKeys ?? []),
+    ],
+    keptLabelKeys: [
+      ...(data?.keptMoodTagKeys ?? []),
+      ...(data?.keptMoodCategoryKeys ?? []),
+    ],
+  };
+}
+
+/** What an import wrote, and the links it could not make. */
+export function JsonImportResultView({ result }: { result: JsonImportResult }) {
   const { t } = useTranslations();
 
   // Same reasoning as the CSV card: the JSON route answers 200 with a per-
   // concept count envelope, so a payload where every entry was refused used
   // to render the success tick. The counts decide the tone.
-  const jsonOutcome = (r: JsonImportResult) =>
-    classifyWrittenOutcome({
-      written: r.measurements + r.moodEntries,
-      skipped: r.skipped,
-    });
-  const jsonMessage = (r: JsonImportResult) => {
-    const outcome = jsonOutcome(r);
-    if (outcome === "empty") {
-      return t("settings.sections.export.import.json.resultEmpty");
-    }
-    if (outcome === "failed") {
-      return t("settings.sections.export.import.json.resultNothing", {
-        skipped: r.skipped,
-      });
-    }
-    if (outcome === "partial") {
-      return t("settings.sections.export.import.json.resultSummary", {
-        measurements: r.measurements,
-        moods: r.moodEntries,
-        skipped: r.skipped,
-      });
-    }
-    return t("settings.sections.export.import.json.resultSuccess", {
-      measurements: r.measurements,
-      moods: r.moodEntries,
-    });
-  };
+  const outcome = classifyWrittenOutcome({
+    written: result.measurements + result.moodEntries,
+    skipped: result.skipped,
+  });
+  const message =
+    outcome === "empty"
+      ? t("settings.sections.export.import.json.resultEmpty")
+      : outcome === "failed"
+        ? t("settings.sections.export.import.json.resultNothing", {
+            skipped: result.skipped,
+          })
+        : outcome === "partial"
+          ? t("settings.sections.export.import.json.resultSummary", {
+              measurements: result.measurements,
+              moods: result.moodEntries,
+              skipped: result.skipped,
+            })
+          : t("settings.sections.export.import.json.resultSuccess", {
+              measurements: result.measurements,
+              moods: result.moodEntries,
+            });
+  return (
+    <>
+      <WrittenOutcomeLine
+        outcome={outcome}
+        message={message}
+        testId="import-json-result"
+      />
+      {result.droppedLinkKeys.length > 0 && (
+        <p
+          className="text-muted-foreground text-xs"
+          data-testid="import-json-dropped-links"
+        >
+          {t("settings.sections.export.import.json.droppedLinks", {
+            keys: result.droppedLinkKeys.join(", "),
+          })}
+        </p>
+      )}
+      {result.keptLabelKeys.length > 0 && (
+        <p
+          className="text-muted-foreground text-xs"
+          data-testid="import-json-kept-labels"
+        >
+          {t("settings.sections.export.import.json.keptLabels", {
+            keys: result.keptLabelKeys.join(", "),
+          })}
+        </p>
+      )}
+    </>
+  );
+}
+
+export function JsonImportCard() {
+  const { t, locale } = useTranslations();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [text, setText] = useState("");
@@ -112,12 +182,7 @@ export function JsonImportCard() {
         setError(t("settings.sections.export.import.json.failed"));
         return;
       }
-      const data = (await res.json()).data as JsonImportResult;
-      setResult({
-        measurements: data?.measurements ?? 0,
-        moodEntries: data?.moodEntries ?? 0,
-        skipped: data?.skipped ?? 0,
-      });
+      setResult(readJsonImportResult((await res.json()).data ?? null));
     } catch {
       setError(t("settings.sections.export.import.json.failed"));
     } finally {
@@ -165,6 +230,15 @@ export function JsonImportCard() {
         onChange={onFileChange}
       />
 
+      {/* What this import is, and its limits: it adds measurements and mood
+          entries; it is not a way back from a full backup. The numbers are
+          the ones the route enforces. */}
+      <p className="text-muted-foreground text-xs">
+        {t("settings.sections.export.import.json.limitsHint", {
+          mb: JSON_IMPORT_MAX_BYTES / (1024 * 1024),
+          rows: JSON_IMPORT_MAX_ROWS.toLocaleString(locale),
+        })}
+      </p>
       <p className="text-muted-foreground text-xs">
         {t("settings.sections.export.import.json.schemaHint")}{" "}
         {/* The import guide lives on the external docs site — the app
@@ -180,13 +254,7 @@ export function JsonImportCard() {
       </p>
 
       <div aria-live="polite" className="space-y-2">
-        {result && (
-          <WrittenOutcomeLine
-            outcome={jsonOutcome(result)}
-            message={jsonMessage(result)}
-            testId="import-json-result"
-          />
-        )}
+        {result && <JsonImportResultView result={result} />}
         {error && (
           <p
             role="alert"

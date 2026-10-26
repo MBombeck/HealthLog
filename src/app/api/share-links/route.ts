@@ -19,13 +19,8 @@ import { apiHandler, requireAuth, requireRecentProof } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { hashToken } from "@/lib/auth/hmac";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
 import {
@@ -149,15 +144,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Maximum 20 share-link operations per hour", 429);
   }
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, createShareLinkSchema, {
     maxBytes: 16 * 1024,
   });
-  if (jsonError) return jsonError;
-
-  const parsed = createShareLinkSchema.safeParse(body);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error);
-  }
+  if (!parsed.ok) return parsed.error;
   const input = parsed.data;
 
   // v1.28.13 — a documents-only share carries NO report scope. Force it empty

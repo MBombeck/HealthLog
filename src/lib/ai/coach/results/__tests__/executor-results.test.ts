@@ -44,11 +44,9 @@ vi.mock("@/lib/modules/gate", () => ({
   resolveModuleMap: (...a: unknown[]) => resolveModuleMap(...a),
 }));
 
-import {
-  admittedPriorResults,
-  executeCoachTool,
-  type CoachToolTurnContext,
-} from "@/lib/ai/coach/tools/executor";
+import { executeCoachTool } from "@/lib/ai/coach/tools/executor";
+import { admittedPriorResults } from "@/lib/ai/coach/tools/run/prior-results";
+import type { CoachToolTurnContext } from "@/lib/ai/coach/tools/run/types";
 import { createResultRefAllocator } from "../refs";
 import { UNBOUNDED_REACH } from "@/lib/ai/coach/history-reach";
 import { findUnverifiedCoachNumbers } from "@/lib/ai/coach/coach-prose-grounding";

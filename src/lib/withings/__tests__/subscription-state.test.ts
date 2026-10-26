@@ -31,9 +31,15 @@ vi.mock("@/lib/crypto", () => ({
 
 vi.mock("../client", () => ({
   fetchMeasurements: vi.fn(),
-  refreshAccessToken: vi.fn(),
   subscribeWebhook: vi.fn(),
 }));
+vi.mock("../oauth", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../oauth")>();
+  return {
+    ...actual,
+    withingsOAuth: { ...actual.withingsOAuth, refresh: vi.fn() },
+  };
+});
 
 vi.mock("../credentials", () => ({
   getUserWithingsCredentials: vi.fn(async () => ({
@@ -64,7 +70,7 @@ vi.mock("@/lib/rollups/measurement-rollups", async () => {
   };
 });
 
-vi.mock("@/lib/insights/comprehensive-generate", () => ({
+vi.mock("@/lib/insights/status-invalidation", () => ({
   invalidateStatusInsightsForTypes: vi.fn().mockResolvedValue(undefined),
 }));
 

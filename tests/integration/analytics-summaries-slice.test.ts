@@ -137,12 +137,13 @@ describe("GET /api/analytics?slice=summaries (C1)", () => {
     const prisma = getPrismaClient();
     const user = await seedSession("slim-populated-user");
 
-    // 14 descending-WEIGHT entries spaced one day apart. Slope per
-    // day = (84.0 - 80.0) / 13 ≈ -0.308 — solidly inside the "down"
-    // band (|slope| >= 0.01 units/day threshold).
+    // 21 descending-WEIGHT entries spaced one day apart. Slope per
+    // day = (84.0 - 80.0) / 20 = -0.2 — solidly inside the "down"
+    // band (|slope| >= 0.01 units/day threshold). Twenty days of span
+    // clear the 15 a 30-day window needs before it carries a trend.
     const now = Date.now();
     const DAY_MS = 24 * 60 * 60 * 1000;
-    const N = 14;
+    const N = 21;
     const rows = Array.from({ length: N }, (_, i) => ({
       userId: user.id,
       type: "WEIGHT" as const,
@@ -167,7 +168,7 @@ describe("GET /api/analytics?slice=summaries (C1)", () => {
     expect(weight.count).toBe(N);
     // Most-recent row in DESCENDING construction = index 0 = value 80.
     expect(weight.latest).toBeCloseTo(80, 1);
-    // Min / max across the 14 rows.
+    // Min / max across the 21 rows.
     expect(weight.min).toBeCloseTo(80, 1);
     expect(weight.max).toBeCloseTo(84, 1);
     // 7-day window covers the first 7 entries (descending dates).
@@ -183,6 +184,37 @@ describe("GET /api/analytics?slice=summaries (C1)", () => {
 
     // Sanity-check: PULSE is empty on this fixture.
     expect(envelope.data.summaries.PULSE.count).toBe(0);
+  });
+
+  it("reports no trend for readings taken minutes apart in one sitting", async () => {
+    // Three systolic readings 2 and 4 minutes apart, the only ones the
+    // account holds. REGR_SLOPE over them is about −2,160 mmHg per day;
+    // the dashboard tile printed seven days of that as its 7-day trend.
+    const prisma = getPrismaClient();
+    const user = await seedSession("slim-one-sitting-user");
+    const start = Date.now() - 30 * 60 * 1000;
+    await prisma.measurement.createMany({
+      data: [130, 124, 118].map((value, i) => ({
+        userId: user.id,
+        type: "BLOOD_PRESSURE_SYS" as const,
+        value,
+        unit: "mmHg",
+        source: "MANUAL" as const,
+        measuredAt: new Date(start + i * 2 * 60 * 1000),
+      })),
+    });
+
+    const { GET } = await import("@/app/api/analytics/route");
+    const response = await (
+      GET as unknown as (req: Request) => Promise<Response>
+    )(new Request("http://localhost/api/analytics?slice=summaries"));
+    expect(response.status).toBe(200);
+    const sys = ((await response.json()) as SlimEnvelope).data.summaries
+      .BLOOD_PRESSURE_SYS;
+    expect(sys.count).toBe(3);
+    expect(sys.avg7).toBeCloseTo(124, 1);
+    expect(sys.slope7).toBeNull();
+    expect(sys.slope30).toBeNull();
   });
 
   it("summarises sleep over the whole history, not the last year", async () => {

@@ -6,9 +6,11 @@
  * It carries the entire ingest gauntlet that upload used to run inline —
  * requireAiCapability("documentAi") → resolve document provider (local-first,
  * codex last) and re-check the capability for that pick, consent receipt
- * included → rate-limit → reserveBudget → runInboundExtraction → reconcileSpend → stage
- * facts — but now against a row that already exists. Absent a provider this 422s
- * the ENHANCEMENT only; the stored document is untouched and remains filed.
+ * included → rate-limit → reserveBudget → runInboundExtraction (the document
+ * read a page or a part at a time, every read after the first reserved on its
+ * own) → reconcileSpend → stage facts — but now against a row that already
+ * exists. Absent a provider this 422s the ENHANCEMENT only; the stored
+ * document is untouched and remains filed.
  *
  * Three modes:
  *   - VISION (no JSON body): decrypt the stored original, re-derive its MIME,
@@ -28,9 +30,13 @@
  * answered here, then the route answers 202 with a run id. The run's result is
  * `{ documentId, factsStaged, status }` rather than the whole detail (the
  * facts are staged on the document; the client reads them from there).
- * Without the header the route behaves exactly as before; the iPhone app
- * relies on that. Both paths run one body (`executeDocumentExtract`), which
- * re-checks the document under a row lock before it stages anything.
+ * Without the header the route answers the document detail as before; the
+ * iPhone app relies on that. Both paths run one body (`executeDocumentExtract`),
+ * which re-checks the document under a row lock before it stages anything.
+ * Inside the request the reads are bounded (`SYNC_EXTRACT_MAX_READS`): a
+ * twenty-page report read a page at a time with a retry each was forty model
+ * calls in one HTTP request. What does not fit is reported on the document as
+ * `extractionIncomplete`, and the background run reads it in full.
  */
 import { Buffer } from "node:buffer";
 
@@ -44,6 +50,7 @@ import {
   getClientIp,
   safeJson,
   sanitiseZodIssues,
+  isJsonContentType,
 } from "@/lib/api-response";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import { requireAiCapability } from "@/lib/ai/capabilities/gate";
@@ -146,7 +153,7 @@ export const POST = apiHandler(
 
     const background = prefersRespondAsync(request);
     const contentType = request.headers.get("content-type") ?? "";
-    if (contentType.includes("application/json")) {
+    if (isJsonContentType(contentType)) {
       // One body read for both JSON modes, BEFORE any bucket charge — a
       // malformed body never needs a refund because nothing was charged yet.
       const { data: body, error: jsonError } = await safeJson(request, {
@@ -244,17 +251,18 @@ async function runNow(
     origin: { ipAddress: getClientIp(request), worker: false },
   });
   if (!outcome.ok) return outcomeResponse(outcome);
+  const { document: staged } = outcome.data;
   return apiSuccess(
     serialiseDocumentDetail(
-      outcome.data,
-      outcome.data.facts,
+      staged,
+      staged.facts,
       undefined,
       undefined,
       undefined,
       undefined,
       undefined,
       undefined,
-      await markerIndexForFacts(userId, outcome.data.facts),
+      await markerIndexForFacts(userId, staged.facts),
     ),
   );
 }

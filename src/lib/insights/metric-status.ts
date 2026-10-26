@@ -1,17 +1,17 @@
 /**
- * v1.8.7.1 — generic per-HealthKit-metric assessment generator.
+ * Generic per-HealthKit-metric assessment generator.
  *
- * The seven specialised generators (`pulse-status.ts`, …) each hand-roll
- * a metric-specific snapshot + prompt. This one generator covers every
- * registered HealthKit metric (`metric-status-registry.ts`) through the
- * archetype prompt templates (`prompts/metric-archetypes.ts`), reusing
- * the exact same machinery the specialised cards use:
+ * The specialised cards (`pulse-status.ts`, …) each plug a metric-specific
+ * snapshot + prompt into the status pipeline (`status-pipeline.ts`). This one
+ * generator covers every registered HealthKit metric
+ * (`metric-status-registry.ts`) through the archetype prompt templates
+ * (`prompts/metric-archetypes.ts`), on the same pipeline stages:
  *   - the graded-series snapshot builder (`buildGradedSeriesWithRollups`),
- *   - the shared provider runner (`runStatusCompletion`),
- *   - the stale-while-revalidate cache (`readFreshStatusText` /
- *     `resolveReadOnlyStatusMiss`),
- *   - the standard cache-row persist (`persistStatusInsight`),
- *   - the previous-context comparison block (`getPreviousInsightContext`).
+ *   - the stale-while-revalidate cache (`readCachedStatus` /
+ *     `resolveReadOnlyStatus`),
+ *   - the snapshot seal and content-hash gate,
+ *   - the previous-context and anti-repetition blocks,
+ *   - the single-card provider run and the standard note persist.
  *
  * The return shape is byte-identical to the specialised generators so
  * `InsightStatusCard` consumes it unchanged.
@@ -34,23 +34,12 @@ import {
   type MetricStatusMeta,
   type MetricStatusMetricId,
 } from "@/lib/insights/metric-status-registry";
-import {
-  formatPreviousContextForPrompt,
-  getPreviousInsightContext,
-} from "@/lib/insights/memory";
-import {
-  buildAssessmentContextBlock,
-  computeSteadyRun,
-  pickVarietyLead,
-} from "@/lib/insights/assessment-context";
-import { getRelevantCorrelationsForMetric } from "@/lib/insights/metric-correlation-context";
+import { computeSteadyRun } from "@/lib/insights/assessment-context";
 import { getAgeFromDateOfBirth } from "@/lib/analytics/pulse-targets";
 import { lookupNormalRange } from "@/lib/insights/derived/norms";
 import { buildMetricSignal } from "@/lib/insights/metric-signal";
 import { PROMPT_VERSION } from "@/lib/ai/prompts/base-system";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
-import { openerArchetypeHint } from "@/lib/ai/prompts/opener-archetype";
-import type { Locale } from "@/lib/i18n/config";
 import {
   getNoKeyGeneralStatusText,
   getNoKeyMetricStatusText,
@@ -60,29 +49,27 @@ import {
   buildGradedSeriesFromPoints,
   buildGradedSeriesWithRollups,
   convertGradedSeries,
-  degradeStatusSnapshotToBudget,
   type GradedSeries,
 } from "@/lib/insights/graded-series";
-import { statusSnapshotCharsForRecord } from "@/lib/ai/capabilities/usage";
+import { summarizeSeries } from "@/lib/insights/status-shared";
 import {
-  type SupportedLocale,
-  normalizeLocale,
-  finalizeStatusSummary,
-  persistStatusInsight,
-  summarizeSeries,
-} from "@/lib/insights/status-shared";
-import { runStatusCompletion } from "@/lib/insights/status-provider";
+  runPreparedStatusCard,
+  type PreparedStatusCard,
+} from "@/lib/insights/status-card-generation";
+import {
+  buildStatusPromptContext,
+  coverageSpan,
+  openStatusCard,
+  pendingStatusCard,
+  readCachedStatus,
+  refreshUnchangedStatus,
+  resolveReadOnlyStatus,
+  sealStatusSnapshot,
+  textStatusCodec,
+  type StatusCardContext,
+} from "@/lib/insights/status-pipeline";
 import { readSleepNights } from "@/lib/measurements/list/sleep-nights";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
-import { resolveUserTimezone, userDayKey } from "@/lib/tz/resolver";
-import {
-  readFreshStatusText,
-  refreshUnchangedStatusInsight,
-  resolveReadOnlyStatusMiss,
-  statusCacheAction,
-} from "@/lib/insights/status-cache";
-import { hashInsightSnapshot } from "@/lib/insights/snapshot-hash";
-import { returnTimeoutFallback } from "@/lib/insights/timeout-fallback";
 import { annotate } from "@/lib/logging/context";
 import { binaryReferenceSex } from "@/lib/profile/sex";
 import {
@@ -155,33 +142,32 @@ export async function generateMetricStatus(args: {
       insufficient: true,
     };
   }
+  const prepared = await prepareMetricStatus(meta, args);
+  return (await runPreparedStatusCard(prepared)) as MetricStatusResult;
+}
 
-  const locale = normalizeLocale(args.locale);
-  const force = args.force === true;
-  const readOnly = args.readOnly === true;
-  const scope = metricStatusScope(meta.id);
-  const cacheAction = statusCacheAction(scope, locale);
-  // v1.30.3 — resolve the user's own tz BEFORE the day-key so the
-  // cache rolls over at the user's local midnight, not Berlin's. Has to
-  // happen ahead of the cache read below (the earliest possible return
-  // path), not just the later day-bucketing reads.
-  const userTz = await resolveUserTimezone(args.userId);
-  const todayKey = userDayKey(new Date(), userTz);
+/**
+ * Everything up to (not including) the provider call, on the shared
+ * pipeline stages, with the empty-data gate between the cache read and the
+ * read-only path.
+ */
+async function prepareMetricStatus(
+  meta: MetricStatusMeta,
+  args: {
+    userId: string;
+    locale?: string | null;
+    force?: boolean;
+    readOnly?: boolean;
+  },
+): Promise<PreparedStatusCard> {
+  const ctx = await openStatusCard(
+    args.userId,
+    metricStatusScope(meta.id),
+    args,
+  );
 
-  const cached = await readFreshStatusText({
-    userId: args.userId,
-    cacheAction,
-    todayKey,
-    force,
-  });
-  if (cached) {
-    return {
-      hasProvider: true,
-      text: cached.text,
-      cached: true,
-      updatedAt: cached.updatedAt,
-    };
-  }
+  const cached = await readCachedStatus(ctx, textStatusCodec);
+  if (cached) return { phase: "served", result: cached };
 
   // Empty-data guard — no readings means no assessment to generate. Done
   // BEFORE the read-only enqueue so an empty metric never queues an LLM
@@ -194,45 +180,143 @@ export async function generateMetricStatus(args: {
       meta: { metric: meta.id },
     });
     return {
-      hasProvider: true,
-      text: null,
-      cached: false,
-      updatedAt: null,
-      insufficient: true,
-    };
-  }
-
-  if (readOnly) {
-    const outcome = await resolveReadOnlyStatusMiss({
-      userId: args.userId,
-      metric: scope,
-      locale,
-    });
-    // Unavailable for any reason serves the deterministic line and enqueues
-    // nothing. `hasProvider` is provider presence only.
-    if (outcome.kind === "unavailable") {
-      return {
-        hasProvider: outcome.hasProvider,
-        text: getNoKeyGeneralStatusText(locale),
-        cached: true,
+      phase: "served",
+      result: {
+        hasProvider: true,
+        text: null,
+        cached: false,
         updatedAt: null,
-      };
-    }
-    // Stale-while-revalidate: serve the last good assessment (if any)
-    // instantly while the worker re-warms the cache; only fall to the
-    // empty preparing skeleton when none was ever produced.
-    return {
-      hasProvider: true,
-      text: outcome.lastGood?.text ?? null,
-      cached: outcome.lastGood !== null,
-      updatedAt: outcome.lastGood?.updatedAt ?? null,
-      preparing: outcome.lastGood === null,
-      revalidating: outcome.revalidating,
+        insufficient: true,
+      },
     };
   }
 
+  if (ctx.readOnly) {
+    // The read-only miss serves the general deterministic line when notes
+    // are unavailable; it has no signal to ground a metric line in.
+    return {
+      phase: "served",
+      result: await resolveReadOnlyStatus(
+        ctx,
+        textStatusCodec,
+        getNoKeyGeneralStatusText(ctx.locale),
+      ),
+    };
+  }
+
+  const built = await buildMetricSnapshot(ctx, meta);
+  const { snapshotJson, snapshotHash } = await sealStatusSnapshot(
+    ctx,
+    built.snapshot,
+  );
+  const unchanged = await refreshUnchangedStatus(
+    ctx,
+    textStatusCodec,
+    snapshotHash,
+  );
+  if (unchanged) return { phase: "served", result: unchanged };
+
+  const {
+    graded,
+    summary,
+    series,
+    newestDaysAgo,
+    signal,
+    latest,
+    reading,
+    sex,
+  } = built;
+  const { locale, todayKey } = ctx;
+
+  // v1.12.1 — diversity / anti-repetition context, all from already-computed
+  // data (no new statistics, no new persistence). Grounding is untouched:
+  // these blocks add a rotating opening angle, an explicit data-strength
+  // line, a steady-run repetition signal, and the FDR-surviving cross-metric
+  // correlations that involve THIS metric. The correlation fetch is
+  // best-effort and decorative — a failure resolves to no block, never a
+  // generation failure. The opener hint is keyed per (user, metric, day)
+  // exactly as `derived-assessment-ai.ts` does for the score cards, so the
+  // per-metric card opens verdict-first and varies run-to-run.
+  const context = await buildStatusPromptContext(ctx, {
+    varietyKey: meta.id,
+    repeatCount: computeSteadyRun(graded.weekly, graded.monthly),
+    points: summary?.points ?? series.daily.length,
+    newestDaysAgo,
+    relationsFor: meta.measurementType,
+  });
+
+  // v1.27.13 — the guideline interpretation block for metrics the
+  // knowledge base covers (visceral fat, resting HR, SpO₂, respiratory rate,
+  // body temperature, sleep duration, waist, PWV). The band position is
+  // computed from the signal's current value (or the latest day when no signal
+  // window exists); absent for uncovered metrics (fail-soft to personal-
+  // relative). Sex-split bands (waist) resolve only when the profile carries a
+  // sex.
+  // The guideline bands are canonical, so the band position is classified on
+  // the canonical value; the block then prints in the reader's unit.
+  const interpretationValue = signal?.current ?? latest?.value ?? null;
+  const interpretationBlock =
+    interpretationValue !== null
+      ? buildInterpretationBlock({
+          metricKey: meta.id,
+          value: reading.toCanonical(interpretationValue),
+          sex,
+          locale,
+          ...(reading.converts
+            ? {
+                display: {
+                  unit: reading.unit,
+                  convert: reading.toDisplay,
+                },
+              }
+            : {}),
+        })
+      : undefined;
+
+  const fallbackText = getNoKeyMetricStatusText(
+    locale,
+    signal,
+    reading.decimals,
+  );
+  return pendingStatusCard(ctx, textStatusCodec, {
+    systemPrompt: getMetricArchetypeSystemPrompt(built.shownMeta, locale),
+    userPrompt: getMetricArchetypeUserPrompt(
+      built.shownMeta,
+      snapshotJson,
+      todayKey,
+      locale,
+      context.previousContextBlock,
+      context.assessmentContextBlock,
+      interpretationBlock,
+      context.openerHint,
+    ),
+    hashes: { snapshotHash },
+    // v1.12.1 — the phrasing task benefits from a touch more sampling
+    // entropy while the FACTS stay pinned by the snapshot + the
+    // forbidden-phrase guards. 0.3 was conservative for a 2-4 sentence prose
+    // task; 0.45 varies cadence without loosening grounding. The pair used to
+    // sit inline here, bypassing the registry that documents every surface's
+    // ceiling; it now reads from `AI_BUDGETS.statusArchetype`.
+    temperature: AI_BUDGETS.statusArchetype.temperature,
+    maxTokens: AI_BUDGETS.statusArchetype.maxTokens,
+    fallbackText,
+    emptyMessage: `Metric-status summary was empty for ${meta.id}`,
+    detail: undefined,
+  });
+}
+
+/**
+ * The metric snapshot, in the reader's units: the series, the reference
+ * band (sharpened by age and sex where the norms cover the metric), the
+ * signal, and the data coverage.
+ */
+async function buildMetricSnapshot(
+  ctx: StatusCardContext,
+  meta: MetricStatusMeta,
+) {
+  const { userId, locale, userTz, todayKey } = ctx;
   const user = await prisma.user.findUnique({
-    where: { id: args.userId },
+    where: { id: userId },
     select: {
       dateOfBirth: true,
       gender: true,
@@ -269,57 +353,14 @@ export async function generateMetricStatus(args: {
 
   const now = new Date();
 
-  // Bounded raw read for the derived recent stats; the monthly/yearly
-  // tail comes from the rollup tier (full-history fallback on a miss),
-  // exactly as the specialised cards do.
-  //
-  // SLEEP_DURATION is the one type stored ONE ROW PER STAGE per night
-  // (IN_BED / AWAKE / CORE / DEEP / REM, minutes each), so a raw per-row
-  // read would feed the status prose a single ~16 min stage as the
-  // "current sleep" instead of the night total. Route it through
-  // `reconstructSleepNights` (the same helper the dashboard / series /
-  // targets use) so every derived value here — `series`, `summary`,
-  // `latest` — is a per-night TIME-ASLEEP total in minutes (the registry
-  // unit + normalRange are already minutes). The night reconstruction
-  // clusters stages into sessions, dedups multi-source nights via the
-  // user's `sleep` priority ladder, and handles the midnight split. Gated
-  // to SLEEP_DURATION only so no other metric's status path changes.
-  const isSleep = meta.measurementType === "SLEEP_DURATION";
-
-  // v1.2.5 — the day bucketing below keys on the user's own
-  // calendar regardless of branch. `userTz` was already resolved above for
-  // the cache day-key.
-
-  const points: Array<{ measuredAt: Date; value: number }> = [];
-  let measurements: Array<{ measuredAt: Date }> = [];
-  if (isSleep) {
-    // The latest 365 nights, the sleep twin of the 365 latest readings the
-    // other types read (`readRecentReadings`). A cut on stage rows instead (2190 of them) reached
-    // back a few weeks on a stage-rich watch and began mid-night.
-    const nights = (
-      await readSleepNights(
-        args.userId,
-        userTz,
-        await loadUserSourcePriority(args.userId),
-        { maxNights: 365, newest: true },
-      )
-    ).filter((n) => n.asleepMinutes > 0);
-    for (const n of nights) {
-      points.push({ measuredAt: n.measuredAt, value: n.asleepMinutes });
-    }
-    measurements = nights.map((n) => ({ measuredAt: n.measuredAt }));
-  } else {
-    // The latest 365 readings, never less than the last 30 days.
-    const rows = await readRecentReadings(args.userId, meta.measurementType);
-    for (const m of rows) {
-      points.push({
-        measuredAt: m.measuredAt,
-        value: reading.toDisplay(m.value),
-      });
-    }
-    measurements = rows.map((m) => ({ measuredAt: m.measuredAt }));
-  }
+  const { points, measurements } = await readMetricPoints(
+    userId,
+    meta,
+    reading,
+    userTz,
+  );
   const series = applyPayloadBudget(points, { now, tz: userTz });
+  const isSleep = meta.measurementType === "SLEEP_DURATION";
   // SLEEP_DURATION must never go through `buildGradedSeriesWithRollups`: that
   // path reads RAW per-stage rows (and the stage-summed `measurement_rollups`
   // tier) and folds IN_BED + AWAKE + bare ASLEEP + CORE/DEEP/REM into one
@@ -331,7 +372,7 @@ export async function generateMetricStatus(args: {
     ? buildGradedSeriesFromPoints(points, now, userTz)
     : reading.convertGraded(
         await buildGradedSeriesWithRollups(
-          args.userId,
+          userId,
           meta.measurementType,
           now,
           userTz,
@@ -343,52 +384,23 @@ export async function generateMetricStatus(args: {
 
   const latest = series.daily[0] ?? null;
 
-  const oldest = measurements.length > 0 ? measurements[0].measuredAt : null;
-  const newest =
+  const { totalSpanDays, newestDaysAgo } = coverageSpan(
+    measurements.length > 0 ? measurements[0].measuredAt : null,
     measurements.length > 0
       ? measurements[measurements.length - 1].measuredAt
-      : null;
-  const totalSpanDays =
-    oldest && newest
-      ? Math.round(
-          (newest.getTime() - oldest.getTime()) / (24 * 60 * 60 * 1000),
-        )
-      : 0;
-  const newestDaysAgo = newest
-    ? Math.round((Date.now() - newest.getTime()) / (24 * 60 * 60 * 1000))
-    : null;
+      : null,
+  );
 
-  const ageYears = getAgeFromDateOfBirth(user?.dateOfBirth ?? null);
-  const sex = binaryReferenceSex(user?.gender);
-
-  // v1.10.0 — sharpen the coarse registry `normalRange` with the
-  // age/sex reference-range enabler when one is available for this
-  // metric + profile; otherwise keep the existing flat anchor (strictly
-  // additive, never a regression). Age + sex only — no ancestry/region.
-  const sharpenedRange = lookupNormalRange(meta.id, ageYears, sex);
-  const canonicalRange = sharpenedRange ?? meta.normalRange;
-  const normalRange = canonicalRange
-    ? {
-        ...canonicalRange,
-        low: reading.toDisplay(canonicalRange.low),
-        high: reading.toDisplay(canonicalRange.high),
-      }
-    : canonicalRange;
-
-  // v1.13.x — the SIGNAL block: the recent-vs-baseline comparison + the
-  // normal-swing verdict, computed server-side so the model states it rather
-  // than re-deriving it from the raw buckets (research-ai-quality.md §4/§5C).
-  // Built from the same graded series the snapshot already carries; null only
-  // when the recent window is empty, in which case it is omitted.
-  const signal = buildMetricSignal({
-    metric: meta.displayName,
-    unit: shownMeta.unit,
-    direction: meta.direction,
-    graded,
-    normalRange: normalRange ?? null,
-    normalRangeSource: sharpenedRange ? "age-sex-adjusted" : undefined,
-    newestDaysAgo,
-  });
+  const { ageYears, sex, sharpenedRange, normalRange, signal } =
+    metricRangeAndSignal({
+      meta,
+      shownUnit: shownMeta.unit,
+      reading,
+      graded,
+      newestDaysAgo,
+      dateOfBirth: user?.dateOfBirth ?? null,
+      gender: user?.gender ?? null,
+    });
 
   const snapshot = {
     locale,
@@ -425,198 +437,133 @@ export async function generateMetricStatus(args: {
     },
   };
 
-  const shed = degradeStatusSnapshotToBudget(
-    snapshot as unknown as Record<string, unknown>,
-    { maxChars: await statusSnapshotCharsForRecord(args.userId) },
-  );
-  const snapshotJson = JSON.stringify(snapshot);
-
-  annotate({
-    action: { name: cacheAction },
-    meta: {
-      payload_size_bytes: snapshotJson.length,
-      ...(shed.length > 0 ? { snapshot_shed: shed } : {}),
-    },
-  });
-
-  // Content-hash gate (v1.16.8): when the snapshot is unchanged since the
-  // last real assessment, refresh the cache timestamp and skip the LLM.
-  const snapshotHash = hashInsightSnapshot(snapshot);
-  const unchanged = await refreshUnchangedStatusInsight({
-    userId: args.userId,
-    cacheAction,
-    todayKey,
-    snapshotHash,
-  });
-  if (unchanged) {
-    return {
-      hasProvider: true,
-      text: unchanged.text,
-      cached: true,
-      updatedAt: unchanged.updatedAt,
-    };
-  }
-
-  const previousContext = await getPreviousInsightContext(
-    args.userId,
-    // memory.ts keys previous context by the `insights.<scope>.<locale>`
-    // action; the generic scope (`metric:<ID>-status`) carries the same
-    // `-status` suffix so the comparison row reads back correctly. The
-    // `getPreviousInsightContext` param is typed to accept this scope form
-    // (`PreviousContextScope`), so the argument type-checks honestly.
-    `${scope}-status`,
-    locale,
-    12,
-  );
-  const previousContextBlock = formatPreviousContextForPrompt(
-    previousContext,
-    locale,
-  );
-
-  // v1.12.1 — diversity / anti-repetition context, all from already-computed
-  // data (no new statistics, no new persistence). Grounding is untouched:
-  // these blocks add a rotating opening angle, an explicit data-strength
-  // line, a steady-run repetition signal, and the FDR-surviving cross-metric
-  // correlations that involve THIS metric. The correlation fetch is
-  // best-effort and decorative — a failure resolves to no block, never a
-  // generation failure.
-  const varietyLead = pickVarietyLead(args.userId, meta.id, todayKey);
-  const steadyRun = computeSteadyRun(graded.weekly, graded.monthly);
-  const relations = await getRelevantCorrelationsForMetric(
-    args.userId,
-    meta.measurementType,
-    locale,
-  );
-  const contextBlock = buildAssessmentContextBlock(
-    {
-      varietyLead,
-      dataStrength: {
-        points: summary?.points ?? series.daily.length,
-        newestDaysAgo,
-      },
-      repeatCount: steadyRun,
-      relations,
-    },
-    locale,
-  );
-
-  // v1.27.13 — the guideline interpretation block for metrics the
-  // knowledge base covers (visceral fat, resting HR, SpO₂, respiratory rate,
-  // body temperature, sleep duration, waist, PWV). The band position is
-  // computed from the signal's current value (or the latest day when no signal
-  // window exists); absent for uncovered metrics (fail-soft to personal-
-  // relative). Sex-split bands (waist) resolve only when the profile carries a
-  // sex.
-  // The guideline bands are canonical, so the band position is classified on
-  // the canonical value; the block then prints in the reader's unit.
-  const interpretationValue = signal?.current ?? latest?.value ?? null;
-  const interpretationBlock =
-    interpretationValue !== null
-      ? buildInterpretationBlock({
-          metricKey: meta.id,
-          value: reading.toCanonical(interpretationValue),
-          sex,
-          locale,
-          ...(reading.converts
-            ? {
-                display: {
-                  unit: reading.unit,
-                  convert: reading.toDisplay,
-                },
-              }
-            : {}),
-        })
-      : undefined;
-
-  // v1.28.40 — the rotating opener-archetype hint, keyed per (user, metric,
-  // day) exactly as `derived-assessment-ai.ts` does for the score cards. This
-  // activates the base prompt's dormant "Lead per the OPENER HINT … do NOT open
-  // with the number" branch so the per-metric card opens verdict-first and
-  // varies run-to-run. No new model call — one arg on the existing completion.
-  const openerHint = openerArchetypeHint(
-    `${args.userId}:${scope}:${todayKey}`,
-    locale as Locale,
-  );
-
-  const outcome = await runStatusCompletion({
-    userId: args.userId,
-    cacheAction,
-    capability: "statusText",
-    systemPrompt: getMetricArchetypeSystemPrompt(shownMeta, locale),
-    userPrompt: getMetricArchetypeUserPrompt(
-      shownMeta,
-      snapshotJson,
-      todayKey,
-      locale,
-      previousContextBlock,
-      contextBlock,
-      interpretationBlock,
-      openerHint,
-    ),
-    // v1.12.1 — the phrasing task benefits from a touch more sampling
-    // entropy while the FACTS stay pinned by the snapshot + the
-    // forbidden-phrase guards. 0.3 was conservative for a 2-4 sentence prose
-    // task; 0.45 varies cadence without loosening grounding. The pair used to
-    // sit inline here, bypassing the registry that documents every surface's
-    // ceiling; it now reads from `AI_BUDGETS.statusArchetype`.
-    temperature: AI_BUDGETS.statusArchetype.temperature,
-    maxTokens: AI_BUDGETS.statusArchetype.maxTokens,
-  });
-
-  if (outcome.kind === "none") {
-    return {
-      hasProvider: false,
-      text: getNoKeyMetricStatusText(locale, signal, reading.decimals),
-      cached: true,
-      updatedAt: null,
-    };
-  }
-  if (outcome.kind === "timeout" || outcome.kind === "error") {
-    return returnTimeoutFallback({
-      cacheAction,
-      reason: outcome.kind,
-      userId: args.userId,
-      todayKey,
-      stubText: getNoKeyMetricStatusText(locale, signal, reading.decimals),
-    });
-  }
-
-  // Outbound safety screen — WITHHOLD policy for a background-generated card.
-  const screened = finalizeStatusSummary(outcome.content, locale);
-  if (!screened.ok) {
-    annotate({
-      action: { name: "insights.status.outbound_blocked" },
-      meta: { cacheAction, reason: screened.reason },
-    });
-    return returnTimeoutFallback({
-      cacheAction,
-      reason: "screened",
-      userId: args.userId,
-      todayKey,
-      stubText: getNoKeyMetricStatusText(locale, signal, reading.decimals),
-    });
-  }
-  const text = screened.text;
-  if (!text) {
-    throw new Error(`Metric-status summary was empty for ${meta.id}`);
-  }
-
-  const updatedAt = await persistStatusInsight({
-    userId: args.userId,
-    cacheAction,
-    todayKey,
-    text,
-    snapshotHash,
-  });
-
-  return { hasProvider: true, text, cached: false, updatedAt };
+  return {
+    snapshot,
+    shownMeta,
+    reading,
+    graded,
+    summary,
+    series,
+    latest,
+    signal,
+    sex,
+    newestDaysAgo,
+  };
 }
 
-export function resolveMetricStatusLocale(
-  locale: string | null | undefined,
-): SupportedLocale {
-  return normalizeLocale(locale);
+/**
+ * The metric's points in the reader's units, and the readings they came
+ * from. SLEEP_DURATION reads per-night totals, every other type its latest
+ * readings.
+ */
+async function readMetricPoints(
+  userId: string,
+  meta: MetricStatusMeta,
+  reading: ReadingDisplay,
+  userTz: string,
+) {
+  // Bounded raw read for the derived recent stats; the monthly/yearly
+  // tail comes from the rollup tier (full-history fallback on a miss),
+  // exactly as the specialised cards do.
+  //
+  // SLEEP_DURATION is the one type stored ONE ROW PER STAGE per night
+  // (IN_BED / AWAKE / CORE / DEEP / REM, minutes each), so a raw per-row
+  // read would feed the status prose a single ~16 min stage as the
+  // "current sleep" instead of the night total. Route it through
+  // `reconstructSleepNights` (the same helper the dashboard / series /
+  // targets use) so every derived value here — `series`, `summary`,
+  // `latest` — is a per-night TIME-ASLEEP total in minutes (the registry
+  // unit + normalRange are already minutes). The night reconstruction
+  // clusters stages into sessions, dedups multi-source nights via the
+  // user's `sleep` priority ladder, and handles the midnight split. Gated
+  // to SLEEP_DURATION only so no other metric's status path changes.
+  const isSleep = meta.measurementType === "SLEEP_DURATION";
+
+  // v1.2.5 — the day bucketing below keys on the user's own
+  // calendar regardless of branch. `userTz` was already resolved above for
+  // the cache day-key.
+
+  const points: Array<{ measuredAt: Date; value: number }> = [];
+  let measurements: Array<{ measuredAt: Date }> = [];
+  if (isSleep) {
+    // The latest 365 nights, the sleep twin of the 365 latest readings the
+    // other types read (`readRecentReadings`). A cut on stage rows instead (2190 of them) reached
+    // back a few weeks on a stage-rich watch and began mid-night.
+    const nights = (
+      await readSleepNights(
+        userId,
+        userTz,
+        await loadUserSourcePriority(userId),
+        { maxNights: 365, newest: true },
+      )
+    ).filter((n) => n.asleepMinutes > 0);
+    for (const n of nights) {
+      points.push({ measuredAt: n.measuredAt, value: n.asleepMinutes });
+    }
+    measurements = nights.map((n) => ({ measuredAt: n.measuredAt }));
+  } else {
+    // The latest 365 readings, never less than the last 30 days.
+    const rows = await readRecentReadings(userId, meta.measurementType);
+    for (const m of rows) {
+      points.push({
+        measuredAt: m.measuredAt,
+        value: reading.toDisplay(m.value),
+      });
+    }
+    measurements = rows.map((m) => ({ measuredAt: m.measuredAt }));
+  }
+  return { points, measurements };
 }
+
+/**
+ * The reference band for this profile and the finished signal.
+ */
+function metricRangeAndSignal(args: {
+  meta: MetricStatusMeta;
+  shownUnit: string;
+  reading: ReadingDisplay;
+  graded: GradedSeries;
+  newestDaysAgo: number | null;
+  dateOfBirth: Date | null;
+  gender: string | null;
+}) {
+  const { meta, reading, graded, newestDaysAgo } = args;
+  const ageYears = getAgeFromDateOfBirth(args.dateOfBirth);
+  const sex = binaryReferenceSex(args.gender);
+
+  // v1.10.0 — sharpen the coarse registry `normalRange` with the
+  // age/sex reference-range enabler when one is available for this
+  // metric + profile; otherwise keep the existing flat anchor (strictly
+  // additive, never a regression). Age + sex only — no ancestry/region.
+  const sharpenedRange = lookupNormalRange(meta.id, ageYears, sex);
+  const canonicalRange = sharpenedRange ?? meta.normalRange;
+  const normalRange = canonicalRange
+    ? {
+        ...canonicalRange,
+        low: reading.toDisplay(canonicalRange.low),
+        high: reading.toDisplay(canonicalRange.high),
+      }
+    : canonicalRange;
+
+  // v1.13.x — the SIGNAL block: the recent-vs-baseline comparison + the
+  // normal-swing verdict, computed server-side so the model states it rather
+  // than re-deriving it from the raw buckets (research-ai-quality.md §4/§5C).
+  // Built from the same graded series the snapshot already carries; null only
+  // when the recent window is empty, in which case it is omitted.
+  const signal = buildMetricSignal({
+    metric: meta.displayName,
+    unit: args.shownUnit,
+    direction: meta.direction,
+    graded,
+    normalRange: normalRange ?? null,
+    normalRangeSource: sharpenedRange ? "age-sex-adjusted" : undefined,
+    newestDaysAgo,
+  });
+
+  return { ageYears, sex, sharpenedRange, normalRange, signal };
+}
+
+type ReadingDisplay = ReturnType<typeof readingDisplay>;
 
 /**
  * How one metric's numbers are written for this reader: the unit symbol, the

@@ -19,7 +19,15 @@
  *   3. a client is constructed outside `provider.ts`, where no resolver binds
  *      it (the offline evaluation harness is the one named exception);
  *   4. a surface opts out with `timeoutPolicy: "surface-ceiling"` without
- *      being named below with its reason.
+ *      being named below with its reason;
+ *   5. an outer bound waits on several model calls in a row but is sized as
+ *      one (#1274: the briefing warm gave a five-call generation one call
+ *      plus 30 s, so a local model answering in 300 s under a 600 s setting
+ *      lost its briefing on the first corrective retry). Every `withTimeout`
+ *      around model work is named below with what it must allow, and the
+ *      briefing generators' stages are held to the call counts the outer
+ *      waits multiply by. A status run waits for its call and the one
+ *      reasoning repeat (`STATUS_MODEL_CALLS`).
  *
  * Its limit: it reads source text. A provider object built by hand in
  * production code that dials the network itself would slip all four matchers,
@@ -29,36 +37,34 @@
  *
  * Mutation check: put `params.timeoutMs ?? 60_000` back into any client, drop
  * `bindResponseTimeout` from `resolveProviderChain`, construct a
- * `LocalOpenAICompatibleClient` in a route, or add
- * `timeoutPolicy: "surface-ceiling"` to the document summary: each one goes
- * red here.
+ * `LocalOpenAICompatibleClient` in a route, add
+ * `timeoutPolicy: "surface-ceiling"` to the document summary, wrap a model
+ * call in a new `withTimeout`, or add a sixth `runBriefingCompletion` stage to
+ * the comprehensive generator: each one goes red here.
  */
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 const AI_DIR = join(SRC, "lib", "ai");
-
-function stripComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
-}
 
 function code(rel: string): string {
   return stripComments(readFileSync(join(SRC, rel), "utf8"));
 }
 
-/** The wire clients: every `*-client.ts` that dials through `safeFetch`. */
+/**
+ * The wire clients: every `*-client.ts` that dials through `safeFetch`, or
+ * through the call's request budget (`hops.fetch`, `request-hops.ts`).
+ */
 function wireClients(): string[] {
   return readdirSync(AI_DIR)
     .filter((f) => f.endsWith("-client.ts"))
     .map((f) => `lib/ai/${f}`)
-    .filter((rel) => /\bsafeFetch\s*\(/.test(code(rel)))
+    .filter((rel) => /\b(?:safeFetch|hops\.fetch)\s*\(/.test(code(rel)))
     .sort();
 }
 
@@ -191,5 +197,116 @@ describe("surface ceilings are frozen", () => {
   it("names every surface that keeps its own ceiling", () => {
     expect(sites.length).toBeGreaterThan(0);
     expect(sites.sort()).toEqual(Object.keys(SURFACE_CEILING_SITES).sort());
+  });
+});
+
+/**
+ * Every `withTimeout` around model work. It cannot stop the calls it waits
+ * for, so it is a backstop against a wedged run and has to sit above the
+ * longest run those calls allow: the per-call timeout times the calls made
+ * one after another. `bound` is what each call site's budget must read.
+ */
+const OUTER_BOUND_SITES: Record<
+  string,
+  { sites: number; bound: RegExp; sizedBy?: RegExp; why: string }
+> = {
+  "lib/jobs/insight-pregenerate.ts": {
+    sites: 2,
+    bound: /\bwarmBudgetMs\b/,
+    sizedBy: /\bwarmBudgetMs\s*=\s*comprehensiveWarmBudgetMs\s*\(/g,
+    why: "The comprehensive warm, nightly and forced: the per-call timeout times COMPREHENSIVE_MODEL_CALLS, plus headroom.",
+  },
+  "lib/insights/status-provider.ts": {
+    sites: 1,
+    bound: /\bstatusRunBoundMs\(\s*effectiveTimeoutMs\s*\)/,
+    sizedBy: /\breturn\s+effectiveTimeoutMs\s*\*\s*STATUS_MODEL_CALLS\b/g,
+    why: "One status run in a background job: the per-call timeout times STATUS_MODEL_CALLS, the call and the one repeat a thinking model gets (#1274). The card keeps its fallback copy meanwhile.",
+  },
+  "lib/jobs/morning-digest-refresh.ts": {
+    sites: 1,
+    bound:
+      /\bcomprehensiveWarmBudgetMs\(\s*user\.aiResponseTimeoutSeconds\s*\)/,
+    why: "The morning refresh's one comprehensive generation: the same per-call timeout times COMPREHENSIVE_MODEL_CALLS the warms use, below the job's expiry (#1274).",
+  },
+};
+
+describe("outer bounds around model work allow every call they wait on", () => {
+  const files = walkSourceFiles(SRC, { floor: 3000 })
+    .filter((p) => !p.startsWith("generated/"))
+    .filter((p) => !p.includes("__tests__"))
+    .filter((p) => !p.endsWith(".test.ts") && !p.endsWith(".test.tsx"))
+    .filter((p) => p !== "lib/insights/with-timeout.ts");
+  const callsIn = (rel: string): string[] => {
+    const source = code(rel);
+    return [...source.matchAll(/\bwithTimeout\s*\(/g)].map((m) =>
+      source.slice(m.index, m.index + 900),
+    );
+  };
+  const sites = files.filter((rel) => callsIn(rel).length > 0);
+
+  it("names every file that bounds model work from outside", () => {
+    expect(sites.length).toBeGreaterThan(0);
+    expect(sites.sort()).toEqual(Object.keys(OUTER_BOUND_SITES).sort());
+  });
+
+  it.each(Object.entries(OUTER_BOUND_SITES))(
+    "%s sizes each bound from the setting",
+    (rel, { sites: count, bound, sizedBy }) => {
+      const calls = callsIn(rel);
+      expect(calls).toHaveLength(count);
+      for (const call of calls) expect(call).toMatch(bound);
+      if (sizedBy) {
+        expect(code(rel).match(sizedBy) ?? []).toHaveLength(count);
+      }
+    },
+  );
+
+  /** The `stage` of every briefing completion a file starts. */
+  function stagesIn(rel: string): string[] {
+    return [...code(rel).matchAll(/\bstage:\s*"([a-z-]+)",/g)].map((m) => m[1]);
+  }
+
+  it("the comprehensive generator makes no more calls in a row than the warm waits for", () => {
+    // `reroll` replaces `generate` on an unchanged snapshot; the other four
+    // run one after another, and the Local and gateway clients may ask the
+    // first again once. A new stage means a longer generation: recount
+    // COMPREHENSIVE_MODEL_CALLS before adding it here.
+    expect(stagesIn("lib/insights/comprehensive-generate.ts").sort()).toEqual([
+      "generate",
+      "grounding-retry",
+      "json-retry",
+      "reroll",
+      "screen-retry",
+    ]);
+    expect(code("lib/ai/ai-budgets.ts")).toMatch(
+      /\bCOMPREHENSIVE_MODEL_CALLS\s*=\s*5\b/,
+    );
+  });
+
+  it("the on-demand regenerate makes no more calls in a row than the browser waits for", () => {
+    // The route's own pipeline: the generation and its grounding retry, and
+    // the one repeat inside the client (FORCE_ADVISOR_MODEL_CALLS in the
+    // advisor hook). An unparseable reply or a screened payload is refused,
+    // not retried, and the background generator is never reached from here,
+    // which is why this is shorter than COMPREHENSIVE_MODEL_CALLS. A new
+    // stage anywhere on the route means recounting the browser's abort.
+    const pipeline = [
+      "app/api/insights/generate/route.ts",
+      ...walkSourceFiles(join(SRC, "lib/insights/briefing-request"), {
+        floor: 8,
+      })
+        .filter((f) => !f.includes("__tests__"))
+        .map((f) => `lib/insights/briefing-request/${f}`),
+    ];
+    expect(pipeline.flatMap(stagesIn).sort()).toEqual([
+      "generate",
+      "grounding-retry",
+    ]);
+    for (const rel of pipeline) {
+      expect(code(rel), rel).not.toMatch(/\bgenerateComprehensiveInsight\b/);
+    }
+    expect(code("components/insights/use-insights-advisor.ts")).toMatch(
+      /\bFORCE_ADVISOR_MODEL_CALLS\s*=\s*3\b/,
+    );
   });
 });

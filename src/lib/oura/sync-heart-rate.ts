@@ -21,12 +21,9 @@ import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit
 import { dropImplausibleMeasurements } from "@/lib/measurements/plausibility-gate";
 import { collapseToTypeDayKeys } from "@/lib/rollups/measurement-rollups";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
-import {
-  forEachHeartRatePage,
-  mapHeartRateSample,
-  type MappedMeasurement,
-  type OuraHeartRateSample,
-} from "./client";
+import { forEachHeartRatePage } from "./client";
+import { mapHeartRateSample, type MappedMeasurement } from "./map";
+import { type OuraHeartRateSample } from "./wire-types";
 
 /** Rows per `createMany`: bounded whatever size of page Oura sends. */
 export const OURA_HEART_RATE_WRITE_CHUNK = 500;

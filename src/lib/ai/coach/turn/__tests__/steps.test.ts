@@ -7,10 +7,10 @@
  * results (seeded, so a failure reproduces) and checks each step against the
  * full set of strings the catalog can render.
  */
-import { readFileSync } from "node:fs";
-import path from "node:path";
 
 import { describe, expect, it } from "vitest";
+
+import { readSource } from "@/__tests__/helpers/source-files";
 
 import { locales, type Locale } from "@/lib/i18n/config";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
@@ -32,9 +32,10 @@ import {
   SHOW_RESULT_TOOL_NAME,
   parseCoachToolArgs,
 } from "@/lib/ai/coach/tools/definitions";
-import type { CoachToolResult } from "@/lib/ai/coach/tools/executor";
+import type { CoachToolResult } from "@/lib/ai/coach/tools/run/types";
 
-import { MAX_TURN_STEPS, snapshotStep, toStep } from "../steps";
+import { MAX_TURN_STEPS } from "@/lib/ai/coach/activity/contract";
+import { snapshotStep, toStep } from "../steps";
 
 const SOURCES = coachScopeSourceSchema.options;
 const WINDOWS = coachScopeWindowSchema.options;
@@ -745,15 +746,16 @@ describe("snapshotStep", () => {
  * executor, and the executor turns every failure into a result.
  */
 describe("the tool loop settles every call it starts (structural)", () => {
-  const root = path.resolve(__dirname, "../../../../../..");
-  const loop = readFileSync(
-    path.join(root, "src/lib/ai/coach/tools/loop.ts"),
-    "utf8",
-  );
-  const executor = readFileSync(
-    path.join(root, "src/lib/ai/coach/tools/executor.ts"),
-    "utf8",
-  );
+  const loop = readSource("src/lib/ai/coach/tools/loop.ts", [
+    "onCallStart?.(",
+    "onCallSettled?.(",
+  ]);
+  // The entry point and its dispatch live in `executor.ts`; the per-tool
+  // executors it dispatches to are in `tools/run/`.
+  const executor = readSource("src/lib/ai/coach/tools/executor.ts", [
+    "export async function executeCoachTool(",
+    "async function dispatch(",
+  ]);
 
   it("fires onCallStart and onCallSettled exactly once each per call", () => {
     expect(loop.match(/onCallStart\?\.\(/g)).toHaveLength(1);

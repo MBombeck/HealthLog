@@ -12,7 +12,7 @@
  */
 import { prisma } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/crypto";
-import { getStravaCredentials, type StravaCredentials } from "./client";
+import { getStravaCredentials, type StravaCredentials } from "./oauth";
 
 /**
  * Resolve the user's Strava OAuth client id/secret, DB-first then env. A

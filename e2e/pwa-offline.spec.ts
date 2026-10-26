@@ -25,7 +25,7 @@ import { MOBILE_ROUTES_STORAGE_STATE_PATH } from "./setup/global-setup";
 test.describe("offline, with the service worker", () => {
   test.use({ storageState: MOBILE_ROUTES_STORAGE_STATE_PATH });
 
-  test("an open page says it is offline, a new one opens the offline page, and both recover", async ({
+  test("an open page says it is offline, a new one opens the offline page, and both recover @critical", async ({
     page,
     context,
   }) => {

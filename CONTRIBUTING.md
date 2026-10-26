@@ -151,18 +151,27 @@ What a reviewer checks on a translation pull request:
 - Medical terms are the ones the language's clinical guidelines use, and the register matches the rest of the locale (`du` in German, `você` in Brazilian Portuguese).
 - Words the app or the Telegram bot matches literally stay as they are: slash commands, `taken <name>`, and the unit symbols.
 - Machine translation is fine as a first draft, but someone who reads the language has gone through every string before the pull request is opened, and the description says so.
-- Validated questionnaire items (the PHQ-9, GAD-7, WHO-5 and SCI items, their answer options and their stems under `mentalHealth.items`, `mentalHealth.options`, `mentalHealth.gad7Options`, `mentalHealth.who5Options`, `mentalHealth.sciOptions`, `mentalHealth.stems`, `mentalHealth.functional*`) are never translated freely, not even as a draft. A language gets them only from a published, licensed validated version, copied verbatim and named in `src/lib/mental-health/instruments.ts`; until then the app shows the English original and the bundle carries none of those keys, which the i18n tests enforce.
+- No questionnaire text. The bundles hold the app's own copy around the questionnaires (titles, notes, buttons), never an item, an answer option or a stem; see the next section.
 
 To run the checks Fink shows on a local checkout: `npx @inlang/cli@3.4.4 check --project ./project.inlang`. It reads the files and changes nothing.
+
+### Questionnaire wording
+
+The PHQ-9, GAD-7, WHO-5 and SCI are not translated through the bundles, and Fink never shows them. Their text lives in code, one file per instrument and language under `src/lib/mental-health/wording/<instrument>/<locale>.ts`, because changing a word in a validated questionnaire changes what it measures. Each file declares what it is:
+
+- `validated: true` with a `source`: a published validated translation, reproduced word for word (stem, items, answer options and, for the PHQ-9, the follow-up question, in the form of address the source uses). The source names who made it, the document it was read from with its link, and the terms that allow reproducing it in software. The file's header comment names anything that differs from the printed form, such as a corrected misprint.
+- `validated: false`: no validated version exists that may be reproduced, so the file carries a translation written for HealthLog, faithful to the English and on the same scale. The app shows a note beside it that the result is orientation, offers the English original in one tap, and records on the result that it was answered in an unvalidated translation. The header comment names any validated version that was found and why it is not used (paywalled, terms that allow private study only).
+
+To propose a validated version for a language that has none, or a better source for one that does, open an issue or a pull request with the publication, a link to the PDF it can be read from, and its terms of use. A pull request replaces the language's file: the text copied exactly from the PDF, `validated: true`, and the `source` filled in. The tests in `src/lib/mental-health/__tests__/` check that every instrument has text in every language, that every validated entry names its source, and that each answer is bound to the score the instrument gives it; the spot checks in `instrument-wording.test.ts` are the place to pin a line that is easy to transcribe wrongly. A correction to HealthLog's own translation of an unvalidated entry is welcome too; it stays `validated: false`.
 
 ### Adding a new locale
 
 If you want to introduce a locale that isn't shipped (e.g. `sv`, `cs`):
 
 1. Open an issue first using the **Translation request** template. We'll confirm the locale is in scope and decide whether it joins the AI-initial-community-maintained tier or the maintained tier.
-2. Copy `messages/en.json` to `messages/<locale>.json`, then delete the questionnaire wording the new language has no validated version of (the test output lists the keys).
+2. Copy `messages/en.json` to `messages/<locale>.json`. Questionnaire text is not in it; the new language needs a wording file per instrument instead (see Questionnaire wording above), which step 4 makes impossible to forget.
 3. Translate. AI assistance is welcome as a starting point but the PR description should note whether it's an AI-initial pass or a fully human-reviewed one — that information drives the banner state.
-4. Add the locale to `locales` in `src/lib/i18n/config.ts` and to `locales` in `project.inlang/settings.json`, then run `pnpm typecheck`. Every per-locale table that still lacks the new locale fails to compile, and that list is the work: date and number formatting, the reply-language footers of the Coach and insights prompts, the outbound safety banks, the prose-grounding patterns and the no-key fallback copy. Include those in the same PR.
+4. Add the locale to `locales` in `src/lib/i18n/config.ts` and to `locales` in `project.inlang/settings.json`, then run `pnpm typecheck`. Every per-locale table that still lacks the new locale fails to compile, and that list is the work: date and number formatting, the reply-language footers of the Coach and insights prompts, the outbound safety banks, the prose-grounding patterns, the no-key fallback copy and the questionnaire wording registry. Include those in the same PR.
 5. Run `pnpm test` before submitting. The i18n guards hold the new bundle to the English keys and placeholders.
 
 ### Style guide for translators

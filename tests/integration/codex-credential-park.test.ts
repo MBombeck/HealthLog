@@ -262,6 +262,113 @@ describe("a refused Codex sign-in", () => {
   });
 });
 
+/**
+ * #1279 — a fresh sign-in also closes the status notes' negative windows,
+ * as a save of the person's provider settings and of the operator's admin AI
+ * settings do. A window grows with the failures in a row (up to two hours),
+ * so without it a fixed connection still had every note wait out the window
+ * the refused one earned.
+ */
+describe("a fresh Codex sign-in and the notes' windows", () => {
+  async function openWindow(userId: string) {
+    await prisma.insightStatusCache.create({
+      data: {
+        userId,
+        metric: "weight",
+        locale: "en",
+        dateKey: "2026-06-15",
+        retryAt: new Date(Date.now() + HOUR_MS),
+        negativeReason: "error",
+        failureStreak: 4,
+      },
+    });
+  }
+
+  async function windowOf(userId: string) {
+    return prisma.insightStatusCache.findFirstOrThrow({
+      where: { userId },
+      select: { retryAt: true, failureStreak: true },
+    });
+  }
+
+  function signedIn() {
+    vi.mocked(pollDeviceCode).mockResolvedValue({
+      status: "connected",
+      creds: creds("new", 10 * HOUR_MS),
+    } as Awaited<ReturnType<typeof pollDeviceCode>>);
+  }
+
+  it("closes the person's windows on their own sign-in", async () => {
+    const user = await seedCodexUser();
+    await openWindow(user.id);
+    signedIn();
+    cookieJar.set(
+      "codex_device",
+      encrypt(JSON.stringify({ deviceAuthId: "device", userCode: "CODE" })),
+    );
+    const { POST } = await import("@/app/api/auth/codex/device-poll/route");
+    const res = await POST(
+      new NextRequest("http://localhost/api/auth/codex/device-poll", {
+        method: "POST",
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(await windowOf(user.id)).toEqual({
+      retryAt: null,
+      failureStreak: 0,
+    });
+  });
+
+  it("closes every account's windows on the operator's central sign-in", async () => {
+    const admin = await prisma.user.create({
+      data: {
+        username: "central-admin",
+        email: "central-admin@example.test",
+        role: "ADMIN",
+      },
+    });
+    const session = await prisma.session.create({
+      data: { userId: admin.id, expiresAt: new Date(Date.now() + 60_000) },
+    });
+    cookieJar.set("healthlog_session", session.id);
+    const member = await prisma.user.create({
+      data: {
+        username: "central-member",
+        email: "central-member@example.test",
+        useCentralCodex: true,
+      },
+    });
+    await openWindow(member.id);
+    await postgresProviderHealthLedger.recordFailure(
+      member.id,
+      "admin-codex",
+      401,
+    );
+    signedIn();
+    cookieJar.set(
+      "central_codex_device",
+      encrypt(JSON.stringify({ deviceAuthId: "device", userCode: "CODE" })),
+    );
+    const { POST } =
+      await import("@/app/api/admin/central-codex/device-poll/route");
+    const res = await POST(
+      new NextRequest("http://localhost/api/admin/central-codex/device-poll", {
+        method: "POST",
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(await windowOf(member.id)).toEqual({
+      retryAt: null,
+      failureStreak: 0,
+    });
+    expect(
+      (await postgresProviderHealthLedger.getSkipHints(member.id)).has(
+        "admin-codex",
+      ),
+    ).toBe(false);
+  });
+});
+
 describe("two refreshes of one Codex token", () => {
   async function codexStatus(userId: string) {
     return (

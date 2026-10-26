@@ -22,10 +22,9 @@
  */
 import {
   GOOGLE_HEALTH_ACTIVITY_PAGE_SIZE,
-  GOOGLE_HEALTH_DATA_TYPES,
   fetchDataPoints,
-  mapSleepSessionDetailed,
-} from "./client";
+} from "./data-points";
+import { GOOGLE_HEALTH_DATA_TYPES, mapSleepSessionDetailed } from "./mappers";
 import {
   getValidToken,
   googleHealthTokenSource,

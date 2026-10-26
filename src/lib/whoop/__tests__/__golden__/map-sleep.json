@@ -1,0 +1,246 @@
+[
+  {
+    "id": "sleep-0001",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 30,
+        "unit": "minutes",
+        "measuredAt": "2026-03-01T23:00:00.000Z",
+        "fieldTag": "sleep_awake",
+        "externalId": "sleep-0001:seg:sleep_awake",
+        "sleepStage": "AWAKE",
+        "reconstructed": true
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 240,
+        "unit": "minutes",
+        "measuredAt": "2026-03-02T03:00:00.000Z",
+        "fieldTag": "sleep_core",
+        "externalId": "sleep-0001:seg:sleep_core",
+        "sleepStage": "CORE",
+        "reconstructed": true
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 90,
+        "unit": "minutes",
+        "measuredAt": "2026-03-02T04:30:00.000Z",
+        "fieldTag": "sleep_deep",
+        "externalId": "sleep-0001:seg:sleep_deep",
+        "sleepStage": "DEEP",
+        "reconstructed": true
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 120,
+        "unit": "minutes",
+        "measuredAt": "2026-03-02T06:30:00.000Z",
+        "fieldTag": "sleep_rem",
+        "externalId": "sleep-0001:seg:sleep_rem",
+        "sleepStage": "REM",
+        "reconstructed": true
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 480,
+        "unit": "minutes",
+        "measuredAt": "2026-03-02T06:30:00.000Z",
+        "fieldTag": "sleep_in_bed",
+        "sleepStage": "IN_BED"
+      },
+      {
+        "type": "SLEEP_NEED",
+        "value": 485,
+        "unit": "minutes",
+        "measuredAt": "2026-03-02T06:30:00.000Z",
+        "fieldTag": "sleep_need"
+      },
+      {
+        "type": "SLEEP_PERFORMANCE",
+        "value": 88,
+        "unit": "%",
+        "measuredAt": "2026-03-02T06:30:00.000Z",
+        "fieldTag": "sleep_perf"
+      },
+      {
+        "type": "SLEEP_EFFICIENCY",
+        "value": 93.75,
+        "unit": "%",
+        "measuredAt": "2026-03-02T06:30:00.000Z",
+        "fieldTag": "sleep_eff"
+      },
+      {
+        "type": "SLEEP_CONSISTENCY",
+        "value": 72,
+        "unit": "%",
+        "measuredAt": "2026-03-02T06:30:00.000Z",
+        "fieldTag": "sleep_consistency"
+      },
+      {
+        "type": "RESPIRATORY_RATE",
+        "value": 15.23,
+        "unit": "breaths/min",
+        "measuredAt": "2026-03-02T06:30:00.000Z",
+        "fieldTag": "resp_rate"
+      },
+      {
+        "type": "SLEEP_DISTURBANCE_COUNT",
+        "value": 7,
+        "unit": "count",
+        "measuredAt": "2026-03-02T06:30:00.000Z",
+        "fieldTag": "disturbances"
+      }
+    ]
+  },
+  {
+    "id": "sleep-0002",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 35,
+        "unit": "minutes",
+        "measuredAt": "2026-03-02T14:35:00.000Z",
+        "fieldTag": "sleep_core",
+        "externalId": "sleep-0002:seg:sleep_core",
+        "sleepStage": "CORE",
+        "reconstructed": true
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 10,
+        "unit": "minutes",
+        "measuredAt": "2026-03-02T14:45:00.000Z",
+        "fieldTag": "sleep_deep",
+        "externalId": "sleep-0002:seg:sleep_deep",
+        "sleepStage": "DEEP",
+        "reconstructed": true
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 45,
+        "unit": "minutes",
+        "measuredAt": "2026-03-02T14:45:00.000Z",
+        "fieldTag": "sleep_in_bed",
+        "sleepStage": "IN_BED"
+      },
+      {
+        "type": "SLEEP_NEED",
+        "value": 0,
+        "unit": "minutes",
+        "measuredAt": "2026-03-02T14:45:00.000Z",
+        "fieldTag": "sleep_need"
+      }
+    ]
+  },
+  { "id": "sleep-0003", "rows": [] },
+  {
+    "id": "sleep-0004",
+    "rows": [
+      {
+        "type": "SLEEP_DURATION",
+        "value": 39.09,
+        "unit": "minutes",
+        "measuredAt": "2026-03-04T23:19:05.678Z",
+        "fieldTag": "sleep_awake",
+        "externalId": "sleep-0004:seg:sleep_awake",
+        "sleepStage": "AWAKE",
+        "reconstructed": true
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 205.76,
+        "unit": "minutes",
+        "measuredAt": "2026-03-05T02:44:51.356Z",
+        "fieldTag": "sleep_core",
+        "externalId": "sleep-0004:seg:sleep_core",
+        "sleepStage": "CORE",
+        "reconstructed": true
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 76.13,
+        "unit": "minutes",
+        "measuredAt": "2026-03-05T04:00:59.246Z",
+        "fieldTag": "sleep_deep",
+        "externalId": "sleep-0004:seg:sleep_deep",
+        "sleepStage": "DEEP",
+        "reconstructed": true
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 109.05,
+        "unit": "minutes",
+        "measuredAt": "2026-03-05T05:50:02.456Z",
+        "fieldTag": "sleep_rem",
+        "externalId": "sleep-0004:seg:sleep_rem",
+        "sleepStage": "REM",
+        "reconstructed": true
+      },
+      {
+        "type": "SLEEP_DURATION",
+        "value": 445,
+        "unit": "minutes",
+        "measuredAt": "2026-03-05T06:05:00.000Z",
+        "fieldTag": "sleep_in_bed",
+        "sleepStage": "IN_BED"
+      },
+      {
+        "type": "SLEEP_NEED",
+        "value": 476.34,
+        "unit": "minutes",
+        "measuredAt": "2026-03-05T06:05:00.000Z",
+        "fieldTag": "sleep_need"
+      },
+      {
+        "type": "SLEEP_PERFORMANCE",
+        "value": 0,
+        "unit": "%",
+        "measuredAt": "2026-03-05T06:05:00.000Z",
+        "fieldTag": "sleep_perf"
+      },
+      {
+        "type": "SLEEP_EFFICIENCY",
+        "value": 100,
+        "unit": "%",
+        "measuredAt": "2026-03-05T06:05:00.000Z",
+        "fieldTag": "sleep_eff"
+      },
+      {
+        "type": "RESPIRATORY_RATE",
+        "value": 0,
+        "unit": "breaths/min",
+        "measuredAt": "2026-03-05T06:05:00.000Z",
+        "fieldTag": "resp_rate"
+      },
+      {
+        "type": "SLEEP_DISTURBANCE_COUNT",
+        "value": 0,
+        "unit": "count",
+        "measuredAt": "2026-03-05T06:05:00.000Z",
+        "fieldTag": "disturbances"
+      }
+    ]
+  },
+  {
+    "id": "sleep-0005",
+    "rows": [
+      {
+        "type": "SLEEP_NEED",
+        "value": 480,
+        "unit": "minutes",
+        "measuredAt": "2026-03-06T10:45:00.000Z",
+        "fieldTag": "sleep_need"
+      },
+      {
+        "type": "SLEEP_CONSISTENCY",
+        "value": 55,
+        "unit": "%",
+        "measuredAt": "2026-03-06T10:45:00.000Z",
+        "fieldTag": "sleep_consistency"
+      }
+    ]
+  },
+  { "id": "sleep-0006", "rows": [] }
+]

@@ -14,13 +14,8 @@
 import { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -60,16 +55,12 @@ export const PATCH = apiHandler(
       return apiError("Category not found", 404);
     }
 
-    const { data: raw, error: jsonError } = await safeJson(request, {
-      maxBytes: 16 * 1024,
-    });
-    if (jsonError) return jsonError;
-    const parsed = updateMedicationCategoryLabelSchema.safeParse(raw);
-    if (!parsed.success) {
-      return returnAllZodIssues(parsed.error, 422, {
-        errorCode: "medications.category.invalid",
-      });
-    }
+    const parsed = await parseJsonBody(
+      request,
+      updateMedicationCategoryLabelSchema,
+      { maxBytes: 16 * 1024, errorCode: "medications.category.invalid" },
+    );
+    if (!parsed.ok) return parsed.error;
 
     const owned = await prisma.medicationCategoryLabel.findFirst({
       where: { key, userId: user.id },

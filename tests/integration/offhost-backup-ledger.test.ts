@@ -267,9 +267,12 @@ describe("off-host backup ledger (real Postgres)", () => {
       `${day}/user-acct-c.json.enc`,
     ]);
 
-    // A new run (a later job) uploads everybody again.
+    // A new run (a later job) uploads everybody again. Its start is strictly
+    // after the retry's last write: an account counts as done for a run when
+    // it succeeded at or after that run's start, and `new Date()` alone can
+    // land in the same millisecond as that write.
     const next = await runOffhostBackup(prisma, bucket, new Date(), {
-      runStartedAt: new Date(),
+      runStartedAt: new Date(Date.now() + 1),
     });
     expect(next.alreadyUploaded).toBe(0);
     expect(next.uploaded).toBe(3);

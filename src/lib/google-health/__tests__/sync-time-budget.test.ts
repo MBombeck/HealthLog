@@ -46,7 +46,7 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
   collapseToTypeDayKeys: vi.fn(() => []),
   recomputeUserRollups: vi.fn(async () => {}),
 }));
-vi.mock("@/lib/insights/comprehensive-generate", () => ({
+vi.mock("@/lib/insights/status-invalidation", () => ({
   invalidateStatusInsightsForTypes: vi.fn(async () => {}),
 }));
 vi.mock("../sync-workout", () => ({ syncUserWorkout: resources.workout }));
@@ -54,7 +54,7 @@ vi.mock("../sync-sleep", () => ({ syncUserSleep: resources.sleep }));
 vi.mock("../sync-activity", () => ({ syncUserActivity: resources.activity }));
 vi.mock("../sync-metrics", () => ({ syncUserMetrics: resources.metrics }));
 
-import { googleHealthSliceExhausted } from "../client";
+import { googleHealthSliceExhausted } from "@/lib/google-health/budget";
 import { syncUserGoogleHealth } from "../sync";
 
 beforeEach(() => {

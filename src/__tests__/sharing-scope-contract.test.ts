@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { grantCoversDomain, normaliseScope } from "@/lib/sharing/grants";
+import { grantCoversDomain, normaliseScope } from "@/lib/sharing/grant-access";
 import { SHARE_DOMAINS } from "@/lib/sharing/scope";
 import { inviteGrantSchema } from "@/lib/validations/account-sharing";
 

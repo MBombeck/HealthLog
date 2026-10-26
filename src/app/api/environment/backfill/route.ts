@@ -15,12 +15,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import {
@@ -49,17 +45,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Too many requests. Please retry shortly.", 429);
   }
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, environmentBackfillSchema, {
     maxBytes: 4 * 1024,
+    errorCode: "environment.invalid",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = environmentBackfillSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "environment.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const profile = await prisma.user.findUnique({
     where: { id: user.id },

@@ -35,6 +35,7 @@
  * test asserts that property rather than trusting the author.
  */
 import { Prisma } from "@/generated/prisma/client";
+import { PRE_WIPE_BACKUP_TYPE_PREFIX } from "@/lib/account-deletion/pre-wipe-type";
 
 /**
  * Every user-scoped model this action deletes, children before parents.
@@ -353,6 +354,14 @@ export const INSTANCE_SCOPED: Readonly<Record<string, string>> = {
   HostMetric: "instance-wide host telemetry, not attributable to an account",
   OffhostBackupKeyUse:
     "per encryption key, when the nightly off-host run last wrote an object needing it; says nothing about any account",
+  RestoreDrillOutcome:
+    "the monthly restore drill's last verdict for the instance's off-host bucket; says nothing about any account",
+  RecoveryReadinessNotice:
+    "per backup signal, what the admins were last told; a fact about the instance's backups, not about any account",
+  RecoveryKitConfirmation:
+    "the instance's recovery kit confirmation (key ids and fingerprints); the confirming admin is a plain id, not a relation",
+  DatabaseBackupRun:
+    "the instance's ledger of nightly whole-database dumps; describes the server, not any account",
   OffhostPurgeRequest:
     "the deletions an account deletion or wipe asked of the off-host bucket; written by the wipe itself and removed once the bucket holds nothing of the account",
   CycleSymptomCategory:
@@ -516,8 +525,6 @@ export const USER_KEPT_FIELDS: Readonly<Record<string, string>> = {
   oidcIssuer: "a sign-in credential — the external identity binding",
   oidcSub: "a sign-in credential — the external identity binding",
   createdAt: "when the account was created; the account is preserved",
-  previewFeaturesJson:
-    "which preview features the person opted into — how the interface is shown, not record content",
   updatedAt: "row bookkeeping maintained by Prisma",
   managedProfileAt:
     "whether this record is one somebody else runs — account shape, not record content. Clearing it would strip the guardian's reach from a record that has no credentials of its own, leaving an account nobody can open, administer or delete. Emptying a record is not emancipating the person in it.",
@@ -542,6 +549,12 @@ export const USER_KEPT_FIELDS: Readonly<Record<string, string>> = {
     "a per-account storage quota set by the operator, not by the person",
   syncResetAt:
     "sync bookkeeping, not record content: the wipe sets it to its own time rather than clearing it, so a paired client's delta cursor from before the wipe is refused and the client starts over",
+  deletionRequestedAt:
+    "the account's deletion lifecycle, not record content; an account pending deletion is locked and cannot ask for a wipe, so this is null whenever one runs",
+  deletionPurgeAt:
+    "the account's deletion lifecycle, not record content; null whenever a wipe runs, for the same reason",
+  deletionRequestedById:
+    "the account's deletion lifecycle, not record content; null whenever a wipe runs, for the same reason",
 };
 
 /**
@@ -625,9 +638,30 @@ export function wipeDelegateKey(model: string): string {
  */
 export function wipeWhere(model: string, userId: string): object {
   const fields = WIPE_OWNER_FIELDS[model];
-  if (!fields) return { userId };
-  return { OR: fields.map((field) => ({ [field]: userId })) };
+  const owned = fields
+    ? { OR: fields.map((field) => ({ [field]: userId })) }
+    : { userId };
+  const kept = WIPE_KEPT_ROWS[model];
+  return kept ? { AND: [owned, kept.keep] } : owned;
 }
+
+/**
+ * Rows of a wiped model the per-account wipe leaves in place, each with the
+ * reason. Unlike {@link WIPE_EXEMPT}, which spares a whole model, this spares
+ * named rows of a model whose every other row goes.
+ *
+ * The admin wipe of every account ignores it: the operator clearing the host
+ * asked for nothing to stay.
+ */
+export const WIPE_KEPT_ROWS: Readonly<
+  Record<string, { keep: object; reason: string }>
+> = {
+  DataBackup: {
+    keep: { NOT: { type: { startsWith: PRE_WIPE_BACKUP_TYPE_PREFIX } } },
+    reason:
+      "the account copies taken before a wipe (`PRE_WIPE_<ms>`), the current one included: it is written immediately before this transaction so the wipe can be undone during the deletion grace window, and the account-deletion purge job deletes each one when its window ends",
+  },
+};
 
 /** The narrow slice of a Prisma delegate the wipe loop uses. */
 export interface UserScopedDeleteDelegate {
@@ -676,7 +710,7 @@ export function resolveWipeDelegate(
   model: string,
 ): UserScopedDeleteDelegate {
   const delegate = rawDelegate(client, model);
-  if (!WIPE_OWNER_FIELDS[model]) {
+  if (!WIPE_OWNER_FIELDS[model] && !WIPE_KEPT_ROWS[model]) {
     return delegate as UserScopedDeleteDelegate;
   }
   return {

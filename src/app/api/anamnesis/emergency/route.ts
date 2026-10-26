@@ -1,12 +1,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -31,13 +27,10 @@ export const GET = apiHandler(async () => {
 
 export const PATCH = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
-  const { data: rawBody, error } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, emergencyProfileUpdateSchema, {
     maxBytes: 16 * 1024,
   });
-  if (error) return error;
-
-  const parsed = emergencyProfileUpdateSchema.safeParse(rawBody);
-  if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+  if (!parsed.ok) return parsed.error;
 
   const payload = await writeEmergencyProfile(user.id, parsed.data);
   await auditLog("anamnesis.emergency.update", {

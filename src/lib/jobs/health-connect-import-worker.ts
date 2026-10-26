@@ -33,8 +33,6 @@ import { annotate } from "@/lib/logging/context";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
-export const HEALTH_CONNECT_IMPORT_QUEUE = "health-connect-import";
-
 /** `ImportJob.kind` of the rows this worker owns. */
 export const HEALTH_CONNECT_IMPORT_KIND = "health_connect";
 
@@ -44,9 +42,6 @@ export const HEALTH_CONNECT_IMPORT_KIND = "health_connect";
  * same bytes be imported again.
  */
 export const HEALTH_CONNECT_IMPORT_PARSER_REVISION = 1;
-
-/** One import at a time per worker: the SQLite read and the writes are heavy. */
-export const HEALTH_CONNECT_IMPORT_CONCURRENCY = 1;
 
 /** Same shape and reasoning as `APPLE_HEALTH_IMPORT_SEND_OPTIONS`. */
 export const HEALTH_CONNECT_IMPORT_SEND_OPTIONS = {

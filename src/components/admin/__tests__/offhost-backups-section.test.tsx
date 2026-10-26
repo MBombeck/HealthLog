@@ -26,7 +26,11 @@ import { OffhostBackupsSection } from "../offhost-backups-section";
 const QUIET = {
   activity: { runningSince: null, interrupted: [] },
   pendingDeletions: { count: 0, oldestRequestedAt: null, lastFailure: null },
-  lifecycle: { state: "configured" as const, expirationDays: 30 },
+  lifecycle: {
+    state: "configured" as const,
+    expirationDays: 30,
+    database: { state: "configured" as const, expirationDays: 30 },
+  },
 };
 
 function render(data: BackupsList["offhost"] | null): string {
@@ -36,7 +40,7 @@ function render(data: BackupsList["offhost"] | null): string {
         ? null
         : ({
             rows: [],
-            retentionDays: 90,
+            preWipeCopyDays: 14,
             schedule: null,
             offhost: data,
           } as unknown as BackupsList),
@@ -133,7 +137,11 @@ describe("<OffhostBackupsSection>", () => {
         oldestRequestedAt: "2026-09-20T10:00:00.000Z",
         lastFailure: "AccessDenied",
       },
-      lifecycle: { state: "missing", expirationDays: null },
+      lifecycle: {
+        state: "missing",
+        expirationDays: null,
+        database: { state: "missing", expirationDays: null },
+      },
     });
     expect(html).toContain('data-lifecycle-state="missing"');
     expect(html).toContain("no lifecycle rule");

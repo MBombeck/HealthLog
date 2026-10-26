@@ -32,7 +32,7 @@ import {
   googleHealthSliceBudget,
   runWithGoogleHealthClientOutcome,
   runWithGoogleHealthStop,
-} from "../client";
+} from "@/lib/google-health/budget";
 
 beforeEach(() => {
   vi.clearAllMocks();

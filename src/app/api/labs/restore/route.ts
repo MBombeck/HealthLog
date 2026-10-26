@@ -15,13 +15,8 @@ import { z } from "zod/v4";
 
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { auditLog } from "@/lib/auth/audit";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { prisma } from "@/lib/db";
 import { invalidateUserHealthScore } from "@/lib/cache/invalidate";
 import { withIdempotency } from "@/lib/idempotency";
@@ -59,17 +54,11 @@ async function postRestore(request: NextRequest): Promise<Response> {
     return apiError("Too many restore requests, try again later", 429);
   }
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, restoreSchema, {
     maxBytes: 64 * 1024,
+    errorCode: "labs.restore.invalid",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = restoreSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "labs.restore.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const { ids } = parsed.data;
 

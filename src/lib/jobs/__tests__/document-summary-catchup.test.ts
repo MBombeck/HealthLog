@@ -32,8 +32,8 @@ import {
   enqueueSummaryCatchUp,
   runSummaryCatchUpForUser,
   MAX_ENQUEUES_PER_RUN,
-  DOCUMENT_SUMMARY_CATCHUP_QUEUE,
 } from "../document-summary-catchup";
+import { DOCUMENT_SUMMARY_CATCHUP_QUEUE } from "../document-summary-catchup-queue";
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { documentAutoReadEnabled } from "@/lib/documents/document-settings";

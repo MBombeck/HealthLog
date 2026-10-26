@@ -42,7 +42,11 @@ import {
   quickActionExternalId,
   verifyActionToken,
 } from "@/lib/notifications/action-token";
-import { checkAuthSurfaceRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
+import {
+  checkAuthSurfaceRateLimit,
+  checkRateLimit,
+  rateLimitHeaders,
+} from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -64,12 +68,27 @@ export const POST = apiHandler(
   async (request: NextRequest, context: RouteContext) => {
     annotate({ action: { name: "notification.action.invoke" } });
 
-    const rl = await checkAuthSurfaceRateLimit(
-      request,
-      "notification-action",
-      RATE_LIMIT,
-      RATE_WINDOW_MS,
-    );
+    // The token is verified first: it is an HMAC, so checking it costs one
+    // hash and no database read. A forged or stale token is limited per
+    // address in a bucket of its own, and a genuine one per account. The one
+    // shared bucket this used to charge first, keyed on the address, became
+    // a single bucket for everyone whenever the address could not be read,
+    // and a couple of junk requests a minute switched off every person's
+    // quick answers.
+    const { token } = await context.params;
+    const verdict = verifyActionToken(token);
+    const rl = verdict.ok
+      ? await checkRateLimit(
+          `notification-action:user:${verdict.userId}`,
+          RATE_LIMIT,
+          RATE_WINDOW_MS,
+        )
+      : await checkAuthSurfaceRateLimit(
+          request,
+          "notification-action-invalid",
+          RATE_LIMIT,
+          RATE_WINDOW_MS,
+        );
     if (!rl.allowed) {
       annotate({
         action: { name: "notification.action.refused" },
@@ -82,8 +101,6 @@ export const POST = apiHandler(
       return response;
     }
 
-    const { token } = await context.params;
-    const verdict = verifyActionToken(token);
     if (!verdict.ok) {
       annotate({
         action: { name: "notification.action.refused" },
@@ -100,12 +117,14 @@ export const POST = apiHandler(
 
     const user = await prisma.user.findUnique({
       where: { id: verdict.userId },
-      select: { id: true, timezone: true },
+      select: { id: true, timezone: true, deletionRequestedAt: true },
     });
-    if (!user) {
+    // An account pending deletion is locked: a quick answer from a
+    // notification sent before the deletion records nothing.
+    if (!user || user.deletionRequestedAt != null) {
       annotate({
         action: { name: "notification.action.refused" },
-        meta: { reason: "unknown_user" },
+        meta: { reason: user ? "account_deletion_pending" : "unknown_user" },
       });
       return apiError("Invalid action", 401, {
         errorCode: "notification.action.invalid",

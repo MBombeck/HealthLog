@@ -15,8 +15,10 @@
  * application key it needs. Each account is reported on its own. It deliberately performs NO database restore — the
  * drill validates the artefact, not the import path. The result is
  * surfaced through the wide-event meta on success and through
- * `reportWorkerError` (stderr + GlitchTip) on any failure, so a broken
- * backup chain pages the operator eleven months before it matters.
+ * `reportWorkerError` (stderr + GlitchTip) on any failure, and the verdict is
+ * kept (`restore-drill-outcome.ts`) for the recovery readiness tile and its
+ * push to the admins, so a broken backup chain reaches the operator eleven
+ * months before it matters.
  *
  * Schedule: 04:11 on the 1st of each month (`11 4 1 * *`), after the
  * 02:30 nightly upload and the 03:xx cleanup window, on a minute slot
@@ -31,6 +33,7 @@
  */
 import type { Job } from "pg-boss";
 import { BackupJsonError, scanBackupJson } from "@/lib/export/backup-json-scan";
+import { BACKUP_STREAM_KEYS } from "@/lib/export/streamed-backup";
 import {
   assessBackupKeys,
   BackupKeyIdCollector,
@@ -45,27 +48,14 @@ import {
   type S3Like,
 } from "@/lib/jobs/offhost-backup";
 import { reportWorkerError } from "@/lib/jobs/report-worker-error";
+import {
+  recordRestoreDrillOutcome,
+  type RestoreDrillResult,
+} from "@/lib/jobs/restore-drill-outcome";
 import { jobBudget } from "@/lib/jobs/job-budget";
 import { jobDone, jobFailed, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { withBackgroundEvent } from "@/lib/logging/background";
-
-export const RESTORE_DRILL_QUEUE = "data-restore-drill";
-export const RESTORE_DRILL_CRON = "11 4 1 * *";
-
-/**
- * Four hours, the off-host upload's own window: the drill downloads and
- * stream-parses every object that upload wrote in one night.
- */
-export const RESTORE_DRILL_EXPIRE_SECONDS = 4 * 60 * 60;
-
-/**
- * What the monthly schedule sends with: the expiry above and no retry
- * (`retryLimit: 0`, the maintenance schedules' `cronIsTheRetry`).
- */
-export const RESTORE_DRILL_SEND_OPTIONS = {
-  expireInSeconds: RESTORE_DRILL_EXPIRE_SECONDS,
-  retryLimit: 0,
-} as const;
+import { RESTORE_DRILL_QUEUE } from "./restore-drill-queue";
 
 /**
  * A drill run that finds the newest backup older than this is reported
@@ -150,7 +140,7 @@ async function drillObject(
   let scanned;
   try {
     scanned = await scanBackupJson(counted(), {
-      streamKeys: new Set(["measurements", "intakeEvents", "moodEntries"]),
+      streamKeys: BACKUP_STREAM_KEYS,
       onElement: (key, element) => keys.visit(element, key),
     });
   } catch (err) {
@@ -272,6 +262,21 @@ export async function runRestoreDrill(
 }
 
 /**
+ * Keep the verdict for the readiness tile. A failed write is a warning on the
+ * run, never a failed drill: the drill's own reports already went out.
+ */
+async function keepOutcome(
+  evt: { addWarning: (message: string) => void },
+  result: RestoreDrillResult,
+): Promise<void> {
+  try {
+    await recordRestoreDrillOutcome(result);
+  } catch (err) {
+    evt.addWarning(`restore-drill outcome not recorded: ${err}`);
+  }
+}
+
+/**
  * pg-boss handler. Mirrors the off-host uploader's posture: a
  * not-configured deployment skips with a wide-event warning (most
  * self-hosters never set the S3 vars and must not see a monthly error
@@ -340,6 +345,19 @@ export async function handleRestoreDrill(
           { dateKey: report.dateKey, unchecked: report.unchecked },
         );
       }
+      await keepOutcome(evt, {
+        // A run that stopped before its first object read nothing back: it
+        // is no pass, and it records none.
+        ok: report.accounts.length === 0 ? null : report.failed.length === 0,
+        accountsChecked: report.accounts.length,
+        accountsFailed: report.failed.length,
+        reason:
+          report.failed.length === 0
+            ? null
+            : `${report.failed.length} of ${report.accounts.length} backup objects failed. ${
+                report.failed[0].error ?? report.failed[0].objectKey
+              }`,
+      });
       if (report.failed.length > 0) {
         // Already paged above, per account. The queue does not retry: a
         // retry reads the same objects and would page the same accounts again.
@@ -363,6 +381,12 @@ export async function handleRestoreDrill(
       }
       evt.addWarning(`restore-drill failed: ${err}`);
       await reportWorkerError(RESTORE_DRILL_QUEUE, err);
+      await keepOutcome(evt, {
+        ok: false,
+        accountsChecked: 0,
+        accountsFailed: 0,
+        reason: err instanceof Error ? err.message : String(err),
+      });
       return jobFailed("restore drill failed", err);
     }
   });

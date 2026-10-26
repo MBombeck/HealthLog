@@ -31,7 +31,7 @@ import {
   parseManagedRecordSettingsPatch,
   resolveGuardianRecordSettingsAccess,
 } from "@/lib/record-settings";
-import { isCycleEnabled } from "@/lib/cycle/gate";
+import { isCycleEnabled } from "@/lib/cycle/enabled";
 import {
   resolveInsightsLayout,
   serializeInsightsLayout,

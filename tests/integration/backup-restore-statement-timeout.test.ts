@@ -49,7 +49,7 @@ import { getPrismaClient, truncateAllTables } from "./setup";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
 import { storeBackupBlob } from "@/lib/export/store-backup-blob";
 import { RESTORE_FAILURE_CAUSE_MESSAGES } from "@/lib/export/restore-failure-cause";
-import { readBackupRestoreJob } from "@/lib/jobs/backup-restore";
+import { readBackupRestoreJob } from "@/lib/jobs/backup-restore-view";
 
 vi.mock("next/headers", async () => {
   const { cookieJar, headerJar } = await import("./mock-next-headers");

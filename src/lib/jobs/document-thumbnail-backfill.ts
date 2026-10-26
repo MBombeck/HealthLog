@@ -23,6 +23,7 @@
  * The queue MUST be registered in the maintenance registrar
  * (`src/lib/jobs/reminder/register-maintenance.ts`) so pg-boss provisions it.
  */
+import { activeAccountSql } from "@/lib/account-deletion/active-account";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { nativeCanvasSupported } from "@/lib/documents/native-canvas-support";
@@ -30,11 +31,7 @@ import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { enqueueDocumentThumbnail } from "@/lib/jobs/document-thumbnail";
 import { annotate } from "@/lib/logging/context";
 import { logCaught } from "@/lib/logging/signal";
-
-export const DOCUMENT_THUMBNAIL_BACKFILL_QUEUE = "document-thumbnail-backfill";
-
-/** Serial concurrency — cheap discovery + fan-out enqueues. */
-export const DOCUMENT_THUMBNAIL_BACKFILL_CONCURRENCY = 1;
+import { DOCUMENT_THUMBNAIL_BACKFILL_QUEUE } from "./document-thumbnail-backfill-queue";
 
 /** Discovery page size (id-only). */
 const PAGE_SIZE = 100;
@@ -53,13 +50,23 @@ const THUMBNAILABLE_MIMES = [
 
 /**
  * Render refusals that the same bytes will always get again: the first page
- * renders blank, the render comes out empty, the image is past the pixel cap.
- * One attempt settles them.
+ * renders blank, the render comes out empty, the image is past the pixel cap
+ * or its size cannot be read, the document crossed a bound the renderer
+ * measured (its memory ceiling, its time limit, its heap cap). One attempt
+ * settles them; queueing a document that exhausts the renderer again at
+ * every boot would only repeat the exhaustion.
+ *
+ * `interrupted` is deliberately not here: a renderer that ended without a
+ * measured cause may have been taken by the kernel because the whole
+ * container ran short, which says nothing about the document. It gets the
+ * ordinary bounded attempts.
  */
 const FINAL_THUMBNAIL_FAILURES = [
   "raster-failed",
   "empty-render",
   "pixel-cap",
+  "size-unreadable",
+  "resource-limit",
 ] as const;
 
 /** Attempts any other failure (a throw, a key that did not open) gets. */
@@ -192,7 +199,8 @@ export async function enqueueBootTimeThumbnailBackfill(): Promise<{
           f.reason NOT IN (${Prisma.join([...FINAL_THUMBNAIL_FAILURES])})
           AND f.attempts < ${MAX_THUMBNAIL_ATTEMPTS}
         )
-      )`;
+      )
+      AND ${activeAccountSql("d.user_id")}`;
 
   let enqueued = 0;
   for (const { user_id: userId } of rows) {

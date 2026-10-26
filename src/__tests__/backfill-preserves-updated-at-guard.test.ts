@@ -25,7 +25,7 @@
  * true, only that the set did not change without someone editing this file.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 import { walkSourceFiles } from "./helpers/source-files";
@@ -84,17 +84,25 @@ function backfillFiles(): string[] {
   const jobs = readdirSync(join(SRC, "lib/jobs"))
     .filter((f) => /-backfill\.ts$/.test(f))
     .map((f) => `src/lib/jobs/${f}`);
+  // A provider that carries its own jobs folder (`lib/<provider>/jobs/`).
+  const providerJobs = readdirSync(join(SRC, "lib")).flatMap((dir) => {
+    const jobsDir = join(SRC, "lib", dir, "jobs");
+    if (!existsSync(jobsDir)) return [];
+    return readdirSync(jobsDir)
+      .filter((f) => /(?:^|-)backfill\.ts$/.test(f))
+      .map((f) => `src/lib/${dir}/jobs/${f}`);
+  });
   const scripts = readdirSync(join(ROOT, "scripts"))
     .filter((f) => /^backfill-.*\.ts$/.test(f))
     .map((f) => `scripts/${f}`);
-  return [...jobs, ...scripts].sort();
+  return [...jobs, ...providerJobs, ...scripts].sort();
 }
 
 /**
  * Backfill writes that stamp `updatedAt` on purpose, keyed `file > model`.
  */
 const BACKFILL_STAMPS: Record<string, string> = {
-  "src/lib/jobs/fitbit-backfill.ts > fitbitConnection":
+  "src/lib/fitbit/jobs/backfill.ts > fitbitConnection":
     "the job's own progress on the connection row; not a listed record",
   "src/lib/jobs/google-health-backfill.ts > googleHealthConnection":
     "the job's own progress on the connection row; not a listed record",

@@ -20,13 +20,8 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { withIdempotency } from "@/lib/idempotency";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { invalidateUserMood } from "@/lib/cache/invalidate";
@@ -62,17 +57,11 @@ async function postBulkDelete(request: NextRequest): Promise<Response> {
     return apiError("Too many bulk deletions, try again later", 429);
   }
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, bulkDeleteSchema, {
     maxBytes: 256 * 1024,
+    errorCode: "mood.bulk-delete.invalid",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = bulkDeleteSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "mood.bulk-delete.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const { ids } = parsed.data;
   const now = new Date();

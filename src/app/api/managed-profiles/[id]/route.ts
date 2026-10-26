@@ -6,12 +6,8 @@ import {
   requireCookieAuth,
   requireFreshMfa,
 } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import {
   deleteManagedProfile,
   ManagedProfileLifecycleError,
@@ -132,13 +128,10 @@ export const PATCH = apiHandler(
     }
     const { id } = await params;
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, updateManagedProfileSchema, {
       maxBytes: 64 * 1024,
     });
-    if (jsonError) return jsonError;
-
-    const parsed = updateManagedProfileSchema.safeParse(body);
-    if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+    if (!parsed.ok) return parsed.error;
 
     // The parsed patch goes to the service, which assembles the Prisma payload
     // field by field. One assembly rather than one here and one there: two
@@ -169,8 +162,12 @@ export const DELETE = apiHandler(
     const { user } = await requireFreshMfa(MFA_STEP_UP_MAX_AGE_SECONDS);
     const { id } = await params;
 
+    let scheduledPurgeAt: Date | null;
     try {
-      await deleteManagedProfile({ profileId: id, guardianId: user.id });
+      ({ scheduledPurgeAt } = await deleteManagedProfile({
+        profileId: id,
+        guardianId: user.id,
+      }));
     } catch (error) {
       if (error instanceof ManagedProfileLifecycleError) return notFound();
       throw error;
@@ -178,8 +175,13 @@ export const DELETE = apiHandler(
 
     annotate({
       action: { name: "managed_profile.delete" },
-      meta: { profile_id: id },
+      meta: { profile_id: id, deletion_scheduled: scheduledPurgeAt !== null },
     });
-    return apiSuccess({ deleted: true });
+    // When the profile is erased; null when it already was. Until then it is
+    // locked and an admin can undo the deletion.
+    return apiSuccess({
+      deleted: true,
+      scheduledPurgeAt: scheduledPurgeAt?.toISOString() ?? null,
+    });
   },
 );

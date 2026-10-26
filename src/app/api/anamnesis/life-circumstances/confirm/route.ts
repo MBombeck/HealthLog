@@ -8,7 +8,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiSuccess, returnAllZodIssues, safeJson } from "@/lib/api-response";
+import { apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { confirmLifeSection } from "@/lib/profile/life-circumstances";
 import { lifeConfirmSchema } from "@/lib/validations/life-circumstances";
@@ -16,16 +17,11 @@ import { lifeConfirmSchema } from "@/lib/validations/life-circumstances";
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, lifeConfirmSchema, {
     maxBytes: 1024,
+    errorCode: "anamnesis.lifeConfirm.invalid",
   });
-  if (jsonError) return jsonError;
-  const parsed = lifeConfirmSchema.safeParse(body);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "anamnesis.lifeConfirm.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const lastConfirmedAt = await confirmLifeSection(
     user.id,

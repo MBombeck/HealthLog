@@ -1,0 +1,57 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "id": "<id:1>",
+      "sportType": "cycling",
+      "startedAt": "2026-10-12T16:00:00.000Z",
+      "endedAt": "2026-10-12T17:00:00.000Z",
+      "dayKey": "2026-10-12",
+      "durationSec": 3600,
+      "distanceM": 24000,
+      "activeEnergyKcal": null,
+      "avgHr": null,
+      "maxHr": null,
+      "minHr": null,
+      "storedAvgHr": null,
+      "storedMaxHr": null,
+      "stepCount": null,
+      "elevationM": null,
+      "pauseDurationSec": null,
+      "source": "APPLE_HEALTH",
+      "externalId": "hk-ride-1",
+      "metadata": null,
+      "route": null,
+      "samples": null,
+      "hrSeries": null,
+      "zones": null,
+      "splits": null,
+      "sportContext": null,
+      "aiInsight": null,
+      "ai": {
+        "available": false,
+        "reason": "no_provider",
+        "onDeviceAllowed": true
+      },
+      "canonicalId": "<id:1>",
+      "previousWorkoutId": null
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "workouts.detail.hr_series"
+      },
+      "meta": {
+        "workoutId": "<id:1>",
+        "source": "none",
+        "points": 0
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": []
+}

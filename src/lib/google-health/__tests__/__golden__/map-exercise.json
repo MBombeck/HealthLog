@@ -1,0 +1,314 @@
+[
+  {
+    "index": 0,
+    "tz": null,
+    "workout": {
+      "externalId": "users/me/dataTypes/exercise/dataPoints/exercise-0001",
+      "sportType": "running",
+      "sportTypeRaw": "RUNNING",
+      "startedAt": "2026-06-02T17:00:00.000Z",
+      "endedAt": "2026-06-02T17:42:30.000Z",
+      "durationSec": 2550,
+      "totalEnergyKcal": 413,
+      "totalDistanceM": 7012.35,
+      "avgHeartRate": 151,
+      "maxHeartRate": null,
+      "minHeartRate": null
+    }
+  },
+  {
+    "index": 0,
+    "tz": "Europe/Berlin",
+    "workout": {
+      "externalId": "users/me/dataTypes/exercise/dataPoints/exercise-0001",
+      "sportType": "running",
+      "sportTypeRaw": "RUNNING",
+      "startedAt": "2026-06-02T17:00:00.000Z",
+      "endedAt": "2026-06-02T17:42:30.000Z",
+      "durationSec": 2550,
+      "totalEnergyKcal": 413,
+      "totalDistanceM": 7012.35,
+      "avgHeartRate": 151,
+      "maxHeartRate": null,
+      "minHeartRate": null
+    }
+  },
+  {
+    "index": 0,
+    "tz": "America/New_York",
+    "workout": {
+      "externalId": "users/me/dataTypes/exercise/dataPoints/exercise-0001",
+      "sportType": "running",
+      "sportTypeRaw": "RUNNING",
+      "startedAt": "2026-06-02T17:00:00.000Z",
+      "endedAt": "2026-06-02T17:42:30.000Z",
+      "durationSec": 2550,
+      "totalEnergyKcal": 413,
+      "totalDistanceM": 7012.35,
+      "avgHeartRate": 151,
+      "maxHeartRate": null,
+      "minHeartRate": null
+    }
+  },
+  {
+    "index": 1,
+    "tz": null,
+    "workout": {
+      "externalId": "users/me/dataTypes/exercise/dataPoints/exercise-0002",
+      "sportType": "strength",
+      "sportTypeRaw": "strength training",
+      "startedAt": "2026-06-03T07:00:00.000Z",
+      "endedAt": "2026-06-03T08:00:00.000Z",
+      "durationSec": 3600,
+      "totalEnergyKcal": 250,
+      "totalDistanceM": null,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "minHeartRate": null
+    }
+  },
+  {
+    "index": 1,
+    "tz": "Europe/Berlin",
+    "workout": {
+      "externalId": "users/me/dataTypes/exercise/dataPoints/exercise-0002",
+      "sportType": "strength",
+      "sportTypeRaw": "strength training",
+      "startedAt": "2026-06-03T05:00:00.000Z",
+      "endedAt": "2026-06-03T06:00:00.000Z",
+      "durationSec": 3600,
+      "totalEnergyKcal": 250,
+      "totalDistanceM": null,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "minHeartRate": null
+    }
+  },
+  {
+    "index": 1,
+    "tz": "America/New_York",
+    "workout": {
+      "externalId": "users/me/dataTypes/exercise/dataPoints/exercise-0002",
+      "sportType": "strength",
+      "sportTypeRaw": "strength training",
+      "startedAt": "2026-06-03T11:00:00.000Z",
+      "endedAt": "2026-06-03T12:00:00.000Z",
+      "durationSec": 3600,
+      "totalEnergyKcal": 250,
+      "totalDistanceM": null,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "minHeartRate": null
+    }
+  },
+  {
+    "index": 2,
+    "tz": null,
+    "workout": {
+      "externalId": "exercise:2026-06-04T04:30:00.000Z",
+      "sportType": "other",
+      "sportTypeRaw": "KITESURFING",
+      "startedAt": "2026-06-04T04:30:00.000Z",
+      "endedAt": "2026-06-04T05:15:00.000Z",
+      "durationSec": 2700,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "avgHeartRate": 129,
+      "maxHeartRate": null,
+      "minHeartRate": null
+    }
+  },
+  {
+    "index": 2,
+    "tz": "Europe/Berlin",
+    "workout": {
+      "externalId": "exercise:2026-06-04T04:30:00.000Z",
+      "sportType": "other",
+      "sportTypeRaw": "KITESURFING",
+      "startedAt": "2026-06-04T04:30:00.000Z",
+      "endedAt": "2026-06-04T05:15:00.000Z",
+      "durationSec": 2700,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "avgHeartRate": 129,
+      "maxHeartRate": null,
+      "minHeartRate": null
+    }
+  },
+  {
+    "index": 2,
+    "tz": "America/New_York",
+    "workout": {
+      "externalId": "exercise:2026-06-04T04:30:00.000Z",
+      "sportType": "other",
+      "sportTypeRaw": "KITESURFING",
+      "startedAt": "2026-06-04T04:30:00.000Z",
+      "endedAt": "2026-06-04T05:15:00.000Z",
+      "durationSec": 2700,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "avgHeartRate": 129,
+      "maxHeartRate": null,
+      "minHeartRate": null
+    }
+  },
+  {
+    "index": 3,
+    "tz": null,
+    "workout": {
+      "externalId": "users/me/dataTypes/exercise/dataPoints/exercise-0004",
+      "sportType": "other",
+      "sportTypeRaw": null,
+      "startedAt": "2026-06-05T12:00:00.000Z",
+      "endedAt": "2026-06-05T12:30:00.000Z",
+      "durationSec": 1800,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "minHeartRate": null
+    }
+  },
+  {
+    "index": 3,
+    "tz": "Europe/Berlin",
+    "workout": {
+      "externalId": "users/me/dataTypes/exercise/dataPoints/exercise-0004",
+      "sportType": "other",
+      "sportTypeRaw": null,
+      "startedAt": "2026-06-05T12:00:00.000Z",
+      "endedAt": "2026-06-05T12:30:00.000Z",
+      "durationSec": 1800,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "minHeartRate": null
+    }
+  },
+  {
+    "index": 3,
+    "tz": "America/New_York",
+    "workout": {
+      "externalId": "users/me/dataTypes/exercise/dataPoints/exercise-0004",
+      "sportType": "other",
+      "sportTypeRaw": null,
+      "startedAt": "2026-06-05T12:00:00.000Z",
+      "endedAt": "2026-06-05T12:30:00.000Z",
+      "durationSec": 1800,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "minHeartRate": null
+    }
+  },
+  { "index": 4, "tz": null, "workout": null },
+  { "index": 4, "tz": "Europe/Berlin", "workout": null },
+  { "index": 4, "tz": "America/New_York", "workout": null },
+  { "index": 5, "tz": null, "workout": null },
+  { "index": 5, "tz": "Europe/Berlin", "workout": null },
+  { "index": 5, "tz": "America/New_York", "workout": null },
+  {
+    "index": 6,
+    "tz": null,
+    "workout": {
+      "externalId": "users/me/dataTypes/exercise/dataPoints/exercise-0007",
+      "sportType": "cycling",
+      "sportTypeRaw": "Mountain-Biking",
+      "startedAt": "2026-06-08T18:00:00.000Z",
+      "endedAt": "2026-06-08T19:05:00.000Z",
+      "durationSec": 3900,
+      "totalEnergyKcal": 0,
+      "totalDistanceM": 0,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "minHeartRate": null
+    }
+  },
+  {
+    "index": 6,
+    "tz": "Europe/Berlin",
+    "workout": {
+      "externalId": "users/me/dataTypes/exercise/dataPoints/exercise-0007",
+      "sportType": "cycling",
+      "sportTypeRaw": "Mountain-Biking",
+      "startedAt": "2026-06-08T18:00:00.000Z",
+      "endedAt": "2026-06-08T19:05:00.000Z",
+      "durationSec": 3900,
+      "totalEnergyKcal": 0,
+      "totalDistanceM": 0,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "minHeartRate": null
+    }
+  },
+  {
+    "index": 6,
+    "tz": "America/New_York",
+    "workout": {
+      "externalId": "users/me/dataTypes/exercise/dataPoints/exercise-0007",
+      "sportType": "cycling",
+      "sportTypeRaw": "Mountain-Biking",
+      "startedAt": "2026-06-08T18:00:00.000Z",
+      "endedAt": "2026-06-08T19:05:00.000Z",
+      "durationSec": 3900,
+      "totalEnergyKcal": 0,
+      "totalDistanceM": 0,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "minHeartRate": null
+    }
+  },
+  {
+    "index": 7,
+    "tz": null,
+    "workout": {
+      "externalId": "users/me/dataTypes/exercise/dataPoints/exercise-0008",
+      "sportType": "stairClimber",
+      "sportTypeRaw": "STAIR_CLIMBER",
+      "startedAt": "2026-06-09T20:00:00.000Z",
+      "endedAt": "2026-06-09T20:20:00.000Z",
+      "durationSec": 1200,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "minHeartRate": null
+    }
+  },
+  {
+    "index": 7,
+    "tz": "Europe/Berlin",
+    "workout": {
+      "externalId": "users/me/dataTypes/exercise/dataPoints/exercise-0008",
+      "sportType": "stairClimber",
+      "sportTypeRaw": "STAIR_CLIMBER",
+      "startedAt": "2026-06-09T20:00:00.000Z",
+      "endedAt": "2026-06-09T20:20:00.000Z",
+      "durationSec": 1200,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "minHeartRate": null
+    }
+  },
+  {
+    "index": 7,
+    "tz": "America/New_York",
+    "workout": {
+      "externalId": "users/me/dataTypes/exercise/dataPoints/exercise-0008",
+      "sportType": "stairClimber",
+      "sportTypeRaw": "STAIR_CLIMBER",
+      "startedAt": "2026-06-09T20:00:00.000Z",
+      "endedAt": "2026-06-09T20:20:00.000Z",
+      "durationSec": 1200,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "minHeartRate": null
+    }
+  }
+]

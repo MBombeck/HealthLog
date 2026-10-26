@@ -1,0 +1,237 @@
+{
+  "status": 201,
+  "body": {
+    "data": {
+      "id": "<id:1>",
+      "userId": "<id:2>",
+      "type": "PULSE",
+      "value": 71,
+      "valueMin": null,
+      "valueMax": null,
+      "unit": "bpm",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-15T07:00:00.000Z",
+      "notes": null,
+      "externalId": null,
+      "externalSourceVersion": null,
+      "aggregationProvenance": null,
+      "glucoseContext": null,
+      "sleepStage": null,
+      "rhythmClassification": null,
+      "deviceType": null,
+      "syncVersion": "<syncVersion>",
+      "deletedAt": null,
+      "createdAt": "<createdAt>",
+      "updatedAt": "<updatedAt>",
+      "appleHealthMirror": true
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 201,
+      "action": {
+        "name": "measurement.create",
+        "entity_type": "measurement",
+        "entity_id": "<id:1>"
+      },
+      "meta": null,
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "enqueueReminderSatisfy",
+      "args": [
+        "<id:2>"
+      ]
+    },
+    {
+      "effect": "emitInsertedMeasurementArrivals",
+      "args": [
+        "<id:2>",
+        [
+          {
+            "id": "<id:1>",
+            "userId": "<id:2>",
+            "type": "PULSE",
+            "value": 71,
+            "valueMin": null,
+            "valueMax": null,
+            "unit": "bpm",
+            "source": "MANUAL",
+            "measuredAt": "2026-10-15T07:00:00.000Z",
+            "notes": null,
+            "notesEncrypted": null,
+            "externalId": null,
+            "externalSourceVersion": null,
+            "aggregationProvenance": null,
+            "glucoseContext": null,
+            "sleepStage": null,
+            "rhythmClassification": null,
+            "deviceType": null,
+            "syncVersion": "<syncVersion>",
+            "deletedAt": null,
+            "createdAt": "<createdAt>",
+            "updatedAt": "<updatedAt>",
+            "ingestTokenId": null,
+            "ingestToken": null
+          }
+        ],
+        "manual"
+      ]
+    },
+    {
+      "effect": "runSafetyFloorCheck",
+      "args": [
+        {
+          "userId": "<id:2>",
+          "written": [
+            {
+              "type": "PULSE",
+              "value": 71,
+              "measuredAt": "2026-10-15T07:00:00.000Z",
+              "glucoseContext": null
+            }
+          ],
+          "timezone": "UTC"
+        }
+      ]
+    },
+    {
+      "effect": "invalidateStatusInsightsForTypes",
+      "args": [
+        "<id:2>",
+        [
+          "PULSE"
+        ],
+        {
+          "source": "manual"
+        }
+      ]
+    }
+  ],
+  "stored": [
+    {
+      "id": "<id:3>",
+      "type": "WEIGHT",
+      "value": 80.4,
+      "unit": "kg",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T06:30:00.000Z",
+      "notes": null,
+      "glucoseContext": null,
+      "deviceType": "scale",
+      "externalId": null,
+      "sleepStage": null,
+      "deletedAt": null,
+      "sealedNote": true
+    },
+    {
+      "id": "<id:4>",
+      "type": "WEIGHT",
+      "value": 80.1,
+      "unit": "kg",
+      "source": "EXTERNAL",
+      "measuredAt": "2026-10-15T06:30:00.000Z",
+      "notes": null,
+      "glucoseContext": null,
+      "deviceType": null,
+      "externalId": null,
+      "sleepStage": null,
+      "deletedAt": null,
+      "sealedNote": false
+    },
+    {
+      "id": "<id:5>",
+      "type": "BLOOD_PRESSURE_SYS",
+      "value": 128,
+      "unit": "mmHg",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T08:00:00.000Z",
+      "notes": null,
+      "glucoseContext": null,
+      "deviceType": null,
+      "externalId": null,
+      "sleepStage": null,
+      "deletedAt": null,
+      "sealedNote": false
+    },
+    {
+      "id": "<id:6>",
+      "type": "BLOOD_PRESSURE_DIA",
+      "value": 82,
+      "unit": "mmHg",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T08:00:00.000Z",
+      "notes": null,
+      "glucoseContext": null,
+      "deviceType": null,
+      "externalId": null,
+      "sleepStage": null,
+      "deletedAt": null,
+      "sealedNote": false
+    },
+    {
+      "id": "<id:7>",
+      "type": "PULSE",
+      "value": 66,
+      "unit": "bpm",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T08:00:00.000Z",
+      "notes": null,
+      "glucoseContext": null,
+      "deviceType": null,
+      "externalId": null,
+      "sleepStage": null,
+      "deletedAt": null,
+      "sealedNote": true
+    },
+    {
+      "id": "<id:1>",
+      "type": "PULSE",
+      "value": 71,
+      "unit": "bpm",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-15T07:00:00.000Z",
+      "notes": null,
+      "glucoseContext": null,
+      "deviceType": null,
+      "externalId": null,
+      "sleepStage": null,
+      "deletedAt": null,
+      "sealedNote": false
+    },
+    {
+      "id": "<id:8>",
+      "type": "SLEEP_DURATION",
+      "value": 90,
+      "unit": "minutes",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T02:30:00.000Z",
+      "notes": null,
+      "glucoseContext": null,
+      "deviceType": null,
+      "externalId": "bridge-sleep-1",
+      "sleepStage": "DEEP",
+      "deletedAt": null,
+      "sealedNote": false
+    },
+    {
+      "id": "<id:9>",
+      "type": "BLOOD_GLUCOSE",
+      "value": 104,
+      "unit": "mg/dL",
+      "source": "MANUAL",
+      "measuredAt": "2026-10-14T07:00:00.000Z",
+      "notes": null,
+      "glucoseContext": "FASTING",
+      "deviceType": null,
+      "externalId": null,
+      "sleepStage": null,
+      "deletedAt": null,
+      "sealedNote": false
+    }
+  ]
+}

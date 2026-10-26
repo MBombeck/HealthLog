@@ -24,18 +24,18 @@
  * A per-data-class 403 soft-skips THAT class (returns 0, leaves the connection
  * connected) — the Restricted bundles are granted independently.
  */
+import { fetchDailyRollUp } from "./client";
+import { mapVo2Max } from "./mappers";
+import { fetchDataPoints } from "./data-points";
 import {
   GOOGLE_HEALTH_DATA_TYPES,
   type GoogleHealthDataType,
   type GoogleHealthMappedMeasurement,
-  fetchDailyRollUp,
-  fetchDataPoints,
   mapActiveEnergy,
   mapDistance,
   mapFloors,
   mapSteps,
-  mapVo2Max,
-} from "./client";
+} from "./mappers";
 import {
   getValidToken,
   googleHealthTokenSource,

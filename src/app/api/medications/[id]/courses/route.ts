@@ -13,13 +13,8 @@
  */
 import { NextRequest } from "next/server";
 
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
@@ -71,16 +66,11 @@ async function postCourse(
   const { user } = await requireAuth();
   const { id } = await params;
 
-  const { data: raw, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, createMedicationCourseSchema, {
     maxBytes: 16 * 1024,
+    errorCode: "medications.course.invalid",
   });
-  if (jsonError) return jsonError;
-  const parsed = createMedicationCourseSchema.safeParse(raw);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "medications.course.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   try {
     const created = await createCourse({

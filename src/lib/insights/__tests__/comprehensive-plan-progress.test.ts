@@ -128,6 +128,7 @@ beforeEach(() => {
     },
     workingProvider: { providerType: "openai" },
     fallbackHops: [],
+    tokensSpent: 0,
   });
 });
 

@@ -18,11 +18,13 @@
  */
 import {
   GOOGLE_HEALTH_ACTIVITY_PAGE_SIZE,
-  GOOGLE_HEALTH_DATA_TYPES,
   fetchDataPoints,
+} from "./data-points";
+import {
+  GOOGLE_HEALTH_DATA_TYPES,
   mapWorkout,
   type GoogleHealthMappedWorkout,
-} from "./client";
+} from "./mappers";
 import {
   getValidToken,
   googleHealthTokenSource,

@@ -137,6 +137,24 @@ describe("OpenAI reasoning", () => {
     expect(body(mock, 2).reasoning_effort).toBe("low");
     expect(body(mock, 3)).not.toHaveProperty("reasoning_effort");
   });
+
+  it("controls reasoning on the gpt-6 line like the gpt-5.1+ line", async () => {
+    const mock = vi.fn().mockImplementation(plain("ok"));
+    vi.stubGlobal("fetch", mock);
+    await openai("gpt-6-sol").generateCompletion(
+      params({ reasoning: { effort: "off", summaries: false } }),
+    );
+    await openai("gpt-6.1-sol").generateCompletion(
+      params({
+        temperature: 0.3,
+        reasoning: { effort: "medium", summaries: false },
+      }),
+    );
+    expect(body(mock, 0).reasoning_effort).toBe("none");
+    expect(body(mock, 1).reasoning_effort).toBe("medium");
+    expect(body(mock, 1).max_completion_tokens).toBe(600 + 4096);
+    expect(body(mock, 1)).not.toHaveProperty("temperature");
+  });
 });
 
 describe("Gateway reasoning", () => {

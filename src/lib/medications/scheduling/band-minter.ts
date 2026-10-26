@@ -37,7 +37,7 @@
  */
 import { RRule } from "rrule";
 
-import { DOSE_WINDOW_DEFAULTS } from "@/lib/analytics/compliance";
+import { DOSE_WINDOW_DEFAULTS } from "@/lib/medications/scheduling/dose-window-defaults";
 import {
   buildSlotBands,
   type SlotBand,
@@ -476,18 +476,34 @@ function buildOneShotBands(
  * Mon/Thu `daysOfWeek` med as daily ±60min). Probe a window padded to ≥16
  * weeks so a sparse cadence yields ≥2 slots and a real gap is observable; the
  * minimum consecutive gap decides the scale.
+ *
+ * The probe reaches the same distance on both sides of the range's middle.
+ * It used to end at `range.to`, so the answer depended on where the range
+ * stopped: a Saturday + Sunday plan starting the weekend before the autumn
+ * DST change, read around its second Saturday dose, has its Sunday slot at
+ * 07:00 UTC while the ±24 h range ends at 06:00. With that slot cut off the
+ * closest two slots were six days apart (weekly); the wider re-mint saw the
+ * 25 h Saturday-to-Sunday gap (daily), the two passes disagreed, and the dose
+ * was filed as unscheduled. A cadence's family is a property of the plan, not
+ * of the window it is read through.
  */
 function realisedFamily(
   schedule: CanonicalSchedule,
   ctx: RecurrenceContext,
   range: { from: Date; to: Date },
 ): "daily" | "weekly" {
-  const probeDays = Math.max(
-    Math.ceil((range.to.getTime() - range.from.getTime()) / DAY_MS),
-    16 * 7,
+  const reach =
+    Math.max(
+      Math.ceil((range.to.getTime() - range.from.getTime()) / DAY_MS),
+      16 * 7,
+    ) * DAY_MS;
+  const middle = (range.from.getTime() + range.to.getTime()) / 2;
+  const slots = occurrencesBetween(
+    schedule,
+    new Date(middle - reach),
+    new Date(middle + reach),
+    ctx,
   );
-  const probeFrom = new Date(range.to.getTime() - probeDays * DAY_MS);
-  const slots = occurrencesBetween(schedule, probeFrom, range.to, ctx);
   if (slots.length < 2) {
     // Too few slots to measure a gap. Fall back to the field-shape signal:
     // an explicit rolling/weekly/monthly shape is day-scale, else daily.

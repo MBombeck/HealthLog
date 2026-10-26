@@ -284,6 +284,7 @@ export async function consumeForIntake(input: {
         orderBy: [
           { expiresAt: { sort: "asc", nulls: "last" } },
           { createdAt: "asc" },
+          { id: "asc" },
         ],
       });
       const active = await tx.medicationInventoryItem.findMany({
@@ -297,6 +298,7 @@ export async function consumeForIntake(input: {
           { printedExpiry: { sort: "asc", nulls: "last" } },
           { purchasedAt: { sort: "asc", nulls: "last" } },
           { createdAt: "asc" },
+          { id: "asc" },
         ],
       });
 
@@ -473,6 +475,7 @@ export async function consumeImportedIntakesBatch(input: {
         orderBy: [
           { expiresAt: { sort: "asc", nulls: "last" } },
           { createdAt: "asc" },
+          { id: "asc" },
         ],
       }),
       tx.medicationInventoryItem.findMany({
@@ -486,6 +489,7 @@ export async function consumeImportedIntakesBatch(input: {
           { printedExpiry: { sort: "asc", nulls: "last" } },
           { purchasedAt: { sort: "asc", nulls: "last" } },
           { createdAt: "asc" },
+          { id: "asc" },
         ],
       }),
     ]);

@@ -20,7 +20,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { walkSourceFiles } from "./helpers/source-files";
+import { stripComments, walkSourceFiles } from "./helpers/source-files";
 
 const SRC = join(process.cwd(), "src");
 
@@ -38,6 +38,9 @@ const SCOPES = [
   "app/api/insights/",
   "app/api/analytics/",
   "app/api/dashboard/",
+  // Request-handler logic moved out of its route into a service keeps the
+  // route's scope.
+  "lib/dashboard/widgets/",
 ];
 
 /** `model@file` → why this read includes deleted rows. */
@@ -50,11 +53,9 @@ const ALLOWED: Record<string, string> = {
     "Withholds medication texts from the recall trail; a deleted fact still withholds, which errs toward saying less.",
   "coachFact@lib/ai/coach/memory/remember.ts":
     "Answer-once check on the message that proposed the fact, inside its lock.",
+  "moodEntry@lib/mood/bulk-ingest.ts":
+    "Write path, not analysis: resolves the row that won a raced external-id upsert, which owns the key whether or not it is deleted.",
 };
-
-function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-}
 
 function tombstonedModels(): string[] {
   const schema = readFileSync(

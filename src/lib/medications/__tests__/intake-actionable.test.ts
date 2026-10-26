@@ -32,6 +32,7 @@ const base = {
   trackIntake: true,
   startsOn: day("2026-09-01"),
   endsOn: day("2026-09-20"),
+  endedAt: null,
 };
 
 describe.each(ZONES)("course window in %s", (tz) => {
@@ -42,13 +43,21 @@ describe.each(ZONES)("course window in %s", (tz) => {
       [23, 59],
     ] as const) {
       const r = resolveIntakeActionability(base, at(tz, 20, h, m), tz);
-      expect(r).toEqual({ courseStatus: "CURRENT", intakeActionable: true });
+      expect(r).toEqual({
+        courseStatus: "CURRENT",
+        intakeActionable: true,
+        canEndCourse: true,
+      });
     }
   });
 
   it("is ended from local midnight of the day after endsOn", () => {
     const r = resolveIntakeActionability(base, at(tz, 21, 0, 0), tz);
-    expect(r).toEqual({ courseStatus: "ENDED", intakeActionable: false });
+    expect(r).toEqual({
+      courseStatus: "ENDED",
+      intakeActionable: false,
+      canEndCourse: false,
+    });
   });
 
   it("is upcoming until local midnight of startsOn", () => {
@@ -56,10 +65,12 @@ describe.each(ZONES)("course window in %s", (tz) => {
     expect(resolveIntakeActionability(med, at(tz, 24, 23, 59), tz)).toEqual({
       courseStatus: "UPCOMING",
       intakeActionable: false,
+      canEndCourse: false,
     });
     expect(resolveIntakeActionability(med, at(tz, 25, 0, 0), tz)).toEqual({
       courseStatus: "CURRENT",
       intakeActionable: true,
+      canEndCourse: true,
     });
   });
 });
@@ -80,7 +91,11 @@ describe("resolveIntakeActionability", () => {
 
   it("refuses a paused or archived medication inside its course", () => {
     const r = resolveIntakeActionability({ ...base, active: false }, now, tz);
-    expect(r).toEqual({ courseStatus: "CURRENT", intakeActionable: false });
+    expect(r).toEqual({
+      courseStatus: "CURRENT",
+      intakeActionable: false,
+      canEndCourse: true,
+    });
   });
 
   it("refuses a record-only medication inside its course", () => {
@@ -89,7 +104,11 @@ describe("resolveIntakeActionability", () => {
       now,
       tz,
     );
-    expect(r).toEqual({ courseStatus: "CURRENT", intakeActionable: false });
+    expect(r).toEqual({
+      courseStatus: "CURRENT",
+      intakeActionable: false,
+      canEndCourse: true,
+    });
   });
 
   it("reports ENDED for a course that is also paused", () => {
@@ -99,5 +118,36 @@ describe("resolveIntakeActionability", () => {
       tz,
     );
     expect(r.courseStatus).toBe("ENDED");
+  });
+});
+
+describe("a course ended with End course (#1280)", () => {
+  const ended = {
+    ...base,
+    endsOn: day("2026-09-20"),
+    endedAt: new Date("2026-09-20T10:00:00.000Z"),
+  };
+
+  it("is running until the instant and ended from it, not from midnight", () => {
+    const before = resolveIntakeActionability(
+      ended,
+      new Date("2026-09-20T09:59:00.000Z"),
+      "UTC",
+    );
+    expect(before).toEqual({
+      courseStatus: "CURRENT",
+      intakeActionable: true,
+      canEndCourse: true,
+    });
+    const after = resolveIntakeActionability(
+      ended,
+      new Date("2026-09-20T10:00:00.000Z"),
+      "UTC",
+    );
+    expect(after).toEqual({
+      courseStatus: "ENDED",
+      intakeActionable: false,
+      canEndCourse: false,
+    });
   });
 });

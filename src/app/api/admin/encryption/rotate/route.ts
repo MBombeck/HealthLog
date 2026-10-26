@@ -31,10 +31,10 @@ import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import {
-  ENCRYPTION_KEY_ROTATE_QUEUE,
   ENCRYPTION_KEY_ROTATE_SINGLETON,
   ENCRYPTION_KEY_ROTATE_EXPIRE_SECONDS,
 } from "@/lib/jobs/encryption-key-rotate";
+import { ENCRYPTION_KEY_ROTATE_QUEUE } from "@/lib/jobs/encryption-key-rotate-queue";
 import { getActiveKeyId } from "@/lib/crypto";
 import { NextRequest } from "next/server";
 

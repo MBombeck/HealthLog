@@ -55,16 +55,12 @@ const SRC = join(process.cwd(), "src");
 const NO_FLOOR_NEEDED: Readonly<Record<string, string>> = {
   // Fixed file lists. Each file is read by name, so a missing one throws,
   // and each must positively match the shape it is supposed to keep.
-  "__tests__/backup-readers-stream-guard.test.ts":
-    "named readers, each must positively reference the streaming reader",
   "__tests__/proxy-relative-redirect-guard.test.ts":
     "named routes, each must positively call relativeRedirect(",
   "__tests__/rotation-walk-keyset-guard.test.ts":
     "named walks, each must positively match the keyset cursor",
   "components/charts/__tests__/touch-action-guard.test.ts":
     "named chart wrappers, each must positively declare touch-pan-y",
-  "__tests__/moodlog-removal-guard.test.ts":
-    "absence checks over named paths, columns and keys; no matcher to drift",
 
   // Unit tests of runtime code whose name ends in "guard". They read no
   // source and sweep nothing.

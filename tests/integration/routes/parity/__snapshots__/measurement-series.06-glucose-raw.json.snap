@@ -1,0 +1,171 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "kind": "glucose",
+      "unit": "mmol/L",
+      "points": [
+        {
+          "id": "<id:1>",
+          "at": "anchor-20d+08:00:00",
+          "value": 6.4,
+          "secondary": null
+        },
+        {
+          "id": "<id:2>",
+          "at": "anchor-19d+08:00:00",
+          "value": 6.3,
+          "secondary": null
+        },
+        {
+          "id": "<id:3>",
+          "at": "anchor-18d+08:00:00",
+          "value": 6.3,
+          "secondary": null
+        },
+        {
+          "id": "<id:4>",
+          "at": "anchor-17d+08:00:00",
+          "value": 6.2,
+          "secondary": null
+        },
+        {
+          "id": "<id:5>",
+          "at": "anchor-16d+08:00:00",
+          "value": 6.2,
+          "secondary": null
+        },
+        {
+          "id": "<id:6>",
+          "at": "anchor-15d+08:00:00",
+          "value": 6.1,
+          "secondary": null
+        },
+        {
+          "id": "<id:7>",
+          "at": "anchor-13d+08:00:00",
+          "value": 6,
+          "secondary": null
+        },
+        {
+          "id": "<id:8>",
+          "at": "anchor-12d+08:00:00",
+          "value": 5.9,
+          "secondary": null
+        },
+        {
+          "id": "<id:9>",
+          "at": "anchor-11d+08:00:00",
+          "value": 5.9,
+          "secondary": null
+        },
+        {
+          "id": "<id:10>",
+          "at": "anchor-10d+08:00:00",
+          "value": 5.8,
+          "secondary": null
+        },
+        {
+          "id": "<id:11>",
+          "at": "anchor-9d+08:00:00",
+          "value": 5.8,
+          "secondary": null
+        },
+        {
+          "id": "<id:12>",
+          "at": "anchor-8d+08:00:00",
+          "value": 5.7,
+          "secondary": null
+        },
+        {
+          "id": "<id:13>",
+          "at": "anchor-6d+08:00:00",
+          "value": 5.6,
+          "secondary": null
+        },
+        {
+          "id": "<id:14>",
+          "at": "anchor-5d+08:00:00",
+          "value": 5.5,
+          "secondary": null
+        },
+        {
+          "id": "<id:15>",
+          "at": "anchor-4d+08:00:00",
+          "value": 5.5,
+          "secondary": null
+        },
+        {
+          "id": "<id:16>",
+          "at": "anchor-3d+08:00:00",
+          "value": 5.4,
+          "secondary": null
+        },
+        {
+          "id": "<id:17>",
+          "at": "anchor-2d+08:00:00",
+          "value": 5.4,
+          "secondary": null
+        },
+        {
+          "id": "<id:18>",
+          "at": "anchor-1d+08:00:00",
+          "value": 5.3,
+          "secondary": null
+        }
+      ],
+      "direction": {
+        "direction": "up-bad",
+        "targetPosition": null,
+        "basis": "metric_default"
+      },
+      "change": {
+        "from": 6.4,
+        "to": 5.3,
+        "delta": -1.1,
+        "sentiment": "positive"
+      },
+      "referenceLines": [
+        {
+          "value": 3.9,
+          "kind": "lower",
+          "source": "clinical",
+          "appliesTo": "value",
+          "labelKey": "series.reference.clinicalLower",
+          "label": "Clinical lower limit"
+        },
+        {
+          "value": 10,
+          "kind": "upper",
+          "source": "clinical",
+          "appliesTo": "value",
+          "labelKey": "series.reference.clinicalUpper",
+          "label": "Clinical upper limit"
+        }
+      ],
+      "stats": {
+        "mean": 5.9,
+        "min": 5.3,
+        "max": 6.4,
+        "stdDev": 0.3,
+        "count": 18
+      }
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "measurements.series"
+      },
+      "meta": {
+        "kind": "glucose",
+        "days": 30,
+        "count": 18
+      },
+      "warnings": null,
+      "error": null
+    }
+  ]
+}

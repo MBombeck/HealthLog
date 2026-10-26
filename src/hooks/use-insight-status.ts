@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { useAiCapability } from "@/hooks/use-ai-capability";
+import { useAiCapability, useAiProviderState } from "@/hooks/use-ai-capability";
 import { useAuth } from "@/hooks/use-auth";
 import { pollAttemptCount } from "@/lib/queries/refetch-interval";
 import { useTranslations } from "@/lib/i18n/context";
@@ -10,6 +10,8 @@ import type { MetricStatusMetricId } from "@/lib/insights/metric-status-registry
 import type { AssessmentStatus } from "@/lib/insights/status-shared";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
+import { STATUS_MODEL_CALLS } from "@/lib/ai/ai-budgets";
+import { clientAbortMs } from "@/lib/ai/effective-timeout";
 
 /**
  * Shape returned by every `/api/insights/<metric>-status` endpoint.
@@ -68,24 +70,51 @@ const STATUS_TIMEOUT_MS = 8_000;
 const STATUS_POLL_MS = 4_000;
 
 /**
- * v1.8.4 — hard ceiling on the preparing poll. The route is read-only and
- * a worker warms the cache out of band; a healthy generation lands within
- * a couple of intervals. If a provider is configured but generation
- * persistently fails, `preparing` stays true forever and the open page
- * would otherwise poll indefinitely (battery / network waste). Cap the
- * poll at ~12 attempts (≈ 48 s at the 4 s cadence) and then fall back to
- * the static empty / "no analysis yet" state. `dataUpdateCount` counts
- * every settled fetch — initial load plus each poll round — so once it
- * crosses the cap we stop scheduling the next interval.
+ * v1.8.4 — the fast part of the preparing poll: ~12 attempts (≈ 48 s at the
+ * 4 s cadence), the window a healthy generation lands in. It is also the
+ * ceiling for a caller that does not know the response timeout.
+ * `dataUpdateCount` counts every settled fetch — initial load plus each poll
+ * round — so once it crosses the ceiling we stop scheduling the next one.
  */
 export const STATUS_POLL_MAX_ATTEMPTS = 12;
 
 /**
+ * The cadence once the fast part has passed: a slow model is still within
+ * its time, and a read every 15 s picks its note up without hammering the
+ * route for twenty minutes.
+ */
+export const STATUS_SLOW_POLL_MS = 15_000;
+
+/**
+ * #1274 — the attempt ceiling for a status card while its generation runs.
+ *
+ * The note is written by a background job whose run may wait the person's
+ * response timeout on each of `STATUS_MODEL_CALLS` calls (the call, and the
+ * one repeat a thinking model gets when it answered with reasoning alone).
+ * A fixed 12 attempts stopped watching after 48 s, so a slow local model
+ * delivered its note to a page that had stopped looking, and the card kept
+ * its fallback until a reload. The window is that run read off the
+ * published setting (`clientAbortMs`), covered by the fast polls and then
+ * the slow ones, plus the first read and one interval for the queue to pick
+ * the job up. It never falls below the fast ceiling, and it only matters
+ * while the server reports the generation in flight: a terminal payload
+ * stops the poll whatever the ceiling.
+ */
+export function statusPollMaxAttempts(
+  responseTimeoutMs: number | null | undefined,
+): number {
+  const runMs = clientAbortMs(responseTimeoutMs, STATUS_MODEL_CALLS);
+  const fastMs = STATUS_POLL_MAX_ATTEMPTS * STATUS_POLL_MS;
+  const slow = Math.max(0, Math.ceil((runMs - fastMs) / STATUS_SLOW_POLL_MS));
+  return STATUS_POLL_MAX_ATTEMPTS + slow + 2;
+}
+
+/**
  * Decide whether a card should schedule its next poll. Pure and shared
- * between the `useInsightStatus` hook and the inline medication-compliance
- * query so both sites enforce the identical ceiling. Returns the interval
- * in ms while polling is warranted, or `false` once the payload is terminal
- * OR the attempt cap is reached.
+ * between the `useInsightStatus` hooks and the inline medication-compliance
+ * query so every site enforces the same schedule. Returns the interval in ms
+ * while polling is warranted, or `false` once the payload is terminal OR the
+ * attempt ceiling (`statusPollMaxAttempts`) is reached.
  *
  * v1.9.0 — `revalidating` joins `preparing` as a "keep polling" signal: when
  * the route serves last-good (stale) text it would otherwise be terminal and
@@ -97,10 +126,13 @@ export function nextStatusPollInterval(
   preparing: boolean | undefined,
   dataUpdateCount: number,
   revalidating?: boolean | undefined,
+  maxAttempts: number = STATUS_POLL_MAX_ATTEMPTS,
 ): number | false {
   if (!preparing && !revalidating) return false;
-  if (dataUpdateCount >= STATUS_POLL_MAX_ATTEMPTS) return false;
-  return STATUS_POLL_MS;
+  if (dataUpdateCount >= maxAttempts) return false;
+  return dataUpdateCount < STATUS_POLL_MAX_ATTEMPTS
+    ? STATUS_POLL_MS
+    : STATUS_SLOW_POLL_MS;
 }
 
 /**
@@ -233,11 +265,12 @@ function useStatusPollAttemptCount(queryKey: readonly unknown[]): number {
 export function applyStatusPollExhaustion(
   data: InsightStatusData | undefined,
   dataUpdateCount: number,
+  maxAttempts: number = STATUS_POLL_MAX_ATTEMPTS,
 ): InsightStatusData | undefined {
   if (!data) return data;
   const status = data.assessment ?? assessmentStatusFromData(data);
   const pending = status.kind === "preparing" || status.kind === "revalidating";
-  const pollExhausted = pending && dataUpdateCount >= STATUS_POLL_MAX_ATTEMPTS;
+  const pollExhausted = pending && dataUpdateCount >= maxAttempts;
   if (!pollExhausted) return normalizeStatusData(data);
   return {
     ...data,
@@ -300,6 +333,7 @@ export function useInsightStatus(metric: InsightStatusMetric) {
   // capability is unavailable (the card is hidden then anyway). Unavailable
   // while `/me` loads, so the first paint fires nothing.
   const statusText = useAiCapability("statusText");
+  const { responseTimeoutMs } = useAiProviderState();
   const { locale } = useTranslations();
   const queryKey = QUERY_KEY_FACTORY[metric](locale);
 
@@ -326,12 +360,17 @@ export function useInsightStatus(metric: InsightStatusMetric) {
         query.state.data?.preparing,
         pollAttemptCount(query.state),
         query.state.data?.revalidating,
+        statusPollMaxAttempts(responseTimeoutMs),
       ),
   });
   const pollAttempts = useStatusPollAttemptCount(queryKey);
   return {
     ...query,
-    data: applyStatusPollExhaustion(query.data, pollAttempts),
+    data: applyStatusPollExhaustion(
+      query.data,
+      pollAttempts,
+      statusPollMaxAttempts(responseTimeoutMs),
+    ),
   };
 }
 
@@ -365,6 +404,7 @@ export function useInsightMetricStatus(
 ) {
   const { isAuthenticated } = useAuth();
   const statusText = useAiCapability("statusText");
+  const { responseTimeoutMs } = useAiProviderState();
   const { locale } = useTranslations();
   const queryKey = queryKeys.insightsMetricStatus(metric, locale);
 
@@ -385,12 +425,17 @@ export function useInsightMetricStatus(
         query.state.data?.preparing,
         pollAttemptCount(query.state),
         query.state.data?.revalidating,
+        statusPollMaxAttempts(responseTimeoutMs),
       ),
   });
   const pollAttempts = useStatusPollAttemptCount(queryKey);
   return {
     ...query,
-    data: applyStatusPollExhaustion(query.data, pollAttempts),
+    data: applyStatusPollExhaustion(
+      query.data,
+      pollAttempts,
+      statusPollMaxAttempts(responseTimeoutMs),
+    ),
   };
 }
 
@@ -416,6 +461,7 @@ export function useInsightBiomarkerAssessment(
 ) {
   const { isAuthenticated } = useAuth();
   const statusText = useAiCapability("statusText");
+  const { responseTimeoutMs } = useAiProviderState();
   const { locale } = useTranslations();
   const queryKey = queryKeys.insightsBiomarkerAssessment(biomarkerId, locale);
 
@@ -440,11 +486,16 @@ export function useInsightBiomarkerAssessment(
         query.state.data?.preparing,
         pollAttemptCount(query.state),
         query.state.data?.revalidating,
+        statusPollMaxAttempts(responseTimeoutMs),
       ),
   });
   const pollAttempts = useStatusPollAttemptCount(queryKey);
   return {
     ...query,
-    data: applyStatusPollExhaustion(query.data, pollAttempts),
+    data: applyStatusPollExhaustion(
+      query.data,
+      pollAttempts,
+      statusPollMaxAttempts(responseTimeoutMs),
+    ),
   };
 }

@@ -18,7 +18,8 @@ vi.mock("@/lib/safe-fetch", async (importOriginal) => {
   return { ...actual, safeFetch: safeFetchMock };
 });
 
-import { GOOGLE_HEALTH_DATA_TYPES, fetchDataPoints } from "../client";
+import { fetchDataPoints } from "@/lib/google-health/data-points";
+import { GOOGLE_HEALTH_DATA_TYPES } from "@/lib/google-health/mappers";
 import { WideEventBuilder } from "@/lib/logging/event-builder";
 import { eventStorage } from "@/lib/logging/context";
 import { GoogleHealthApiError } from "../response-classifier";

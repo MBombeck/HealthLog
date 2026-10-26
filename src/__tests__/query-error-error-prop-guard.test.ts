@@ -28,6 +28,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
+import { stripComments } from "./helpers/source-files";
 
 const SRC = join(__dirname, "..");
 
@@ -62,11 +63,6 @@ function openingTags(source: string): string[] {
     tags.push(source.slice(m.index, i + 1));
   }
   return tags;
-}
-
-/** Comments mention the primitives by name (`<QueryErrorCard>`); skip them. */
-function stripComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 }
 
 const sites = walk(SRC).flatMap((file) =>

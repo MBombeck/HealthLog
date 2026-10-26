@@ -83,7 +83,9 @@ vi.mock("@/lib/logging/context", () => ({
 }));
 vi.mock("@/lib/auth/audit", () => ({ auditLog: vi.fn(async () => {}) }));
 vi.mock("@/lib/crypto", () => ({ encrypt: (s: string) => `enc(${s})` }));
-vi.mock("@/lib/strava/client", () => ({ exchangeCode: exchangeCodeMock }));
+vi.mock("@/lib/strava/oauth", () => ({
+  stravaOAuth: { exchange: exchangeCodeMock },
+}));
 vi.mock("@/lib/strava/credentials", () => ({
   getStravaClientCredentials: getCredsMock,
 }));

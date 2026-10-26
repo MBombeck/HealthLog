@@ -1,0 +1,63 @@
+[
+  {
+    "date": "2026-03-02",
+    "sleep_start_time": "2026-03-01T23:10:00+01:00",
+    "sleep_end_time": "2026-03-02T07:05:00+01:00",
+    "light_sleep": 14400,
+    "deep_sleep": 5400,
+    "rem_sleep": 6300,
+    "total_interruption_duration": 2400,
+    "sleep_charge": 3,
+    "sleep_score": 82.5,
+    "heart_rate_samples": { "00:00": 58, "00:05": 56 }
+  },
+  {
+    "date": "2026-03-03",
+    "sleep_start_time": "2026-03-02T22:30:00-05:00",
+    "sleep_end_time": "2026-03-03T06:00:00-05:00",
+    "light_sleep": 16200,
+    "deep_sleep": 0,
+    "rem_sleep": 7200,
+    "total_interruption_duration": 0
+  },
+  {
+    "date": "2026-03-04",
+    "light_sleep": 15000,
+    "deep_sleep": 4800,
+    "rem_sleep": 6000,
+    "total_interruption_duration": 1234,
+    "sleep_score": 76
+  },
+  {
+    "date": "2026-03-05",
+    "sleep_start_time": "2026-03-05T06:00:00Z",
+    "sleep_end_time": "2026-03-05T06:00:00Z",
+    "light_sleep": 0,
+    "deep_sleep": null,
+    "rem_sleep": 3000,
+    "sleep_score": null
+  },
+  {
+    "date": "2026-03-06",
+    "sleep_start_time": "garbled",
+    "sleep_end_time": "2026-03-06T06:30:00Z",
+    "light_sleep": 13500,
+    "rem_sleep": 5400,
+    "total_interruption_duration": 900,
+    "sleep_score": 70
+  },
+  {
+    "date": "2026-03-07",
+    "sleep_start_time": "2026-03-06T23:00:00Z",
+    "sleep_end_time": "2026-03-07T06:45:00Z",
+    "light_sleep": 12345.6,
+    "deep_sleep": 4567,
+    "rem_sleep": 5678,
+    "total_interruption_duration": null,
+    "sleep_score": 0
+  },
+  {
+    "date": "not-a-date",
+    "light_sleep": 14000
+  }
+]

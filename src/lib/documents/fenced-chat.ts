@@ -42,6 +42,7 @@ import {
   AllProvidersFailedError,
   runStreamingRawCompletionWithFallback,
 } from "@/lib/ai/provider-runner";
+import { spentOnFailure } from "@/lib/ai/reasoning/answerless";
 import { singleUserTurn } from "@/lib/ai/types";
 import {
   buildDateKey,
@@ -285,9 +286,8 @@ export async function streamFencedReply(
     args;
 
   // ── Provider resolution: document order (local-first, codex last), SINGLE
-  // pick, NO cascade — so the exact egress equals the checked target. The pick
-  // re-checks `documentAi` for that provider, consent receipt included; a
-  // refusal is thrown (403) before any egress. ──
+  // pick, NO cascade, so the egress is the checked target. The pick re-checks
+  // `documentAi` for it, receipt included, and throws 403 before egress. ──
   const { pick, withheld } = await resolveDocumentTextProvider(userId);
   if (withheld) throw withheld;
   if (!pick) {
@@ -364,8 +364,7 @@ Reply now as the assistant, grounded ONLY in the documents above, in ${
     contractLocale === "de" ? "German" : "English"
   }.`;
 
-  // The authoritative grounding set: the LIVE attachments' texts only. Never
-  // history, never a snapshot (none exists) — recomputed from `docs` this turn.
+  // The grounding set: the LIVE attachments' texts only, recomputed this turn.
   const groundingSources = docs.map((d) => d.text);
 
   type Outcome =
@@ -397,7 +396,9 @@ Reply now as the assistant, grounded ONLY in the documents above, in ${
       });
       result = fallback.result;
     } catch (err) {
-      await reconcileSpend(userId, reservation.reserved, 0, dateKey, 0, {
+      // #1279 — what the failed call reported spending stays charged.
+      const spent = spentOnFailure(err);
+      await reconcileSpend(userId, reservation.reserved, spent, dateKey, 0, {
         servedBy: null,
         reservedOwner: reservation.owner,
       }).catch(() => {});

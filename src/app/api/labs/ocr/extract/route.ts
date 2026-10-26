@@ -48,6 +48,7 @@ import {
   apiValidationError,
   safeJson,
   sanitiseZodIssues,
+  isJsonContentType,
 } from "@/lib/api-response";
 import { requireAiCapability } from "@/lib/ai/capabilities/gate";
 import {
@@ -91,7 +92,7 @@ export const POST = apiHandler(async (request: Request) => {
   // Dispatch on the body shape: a JSON body is the local-OCR text mode; a
   // multipart body is the native-vision image/PDF mode.
   const contentType = request.headers.get("content-type") ?? "";
-  if (contentType.includes("application/json")) {
+  if (isJsonContentType(contentType)) {
     return handleTextExtract(request, user.id);
   }
   return handleVisionExtract(request, user.id);

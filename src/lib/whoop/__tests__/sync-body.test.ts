@@ -76,7 +76,7 @@ vi.mock("../sync-core", async (orig) => {
   };
 });
 
-import { mapBody } from "../client";
+import { mapBody } from "@/lib/whoop/map";
 import { syncUserBody, WHOOP_BODY_WEIGHT_EXTERNAL_ID } from "../sync-body";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
 

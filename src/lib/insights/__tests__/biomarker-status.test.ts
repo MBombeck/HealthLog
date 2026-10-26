@@ -1,4 +1,17 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, onTestFinished } from "vitest";
+
+// The labs module is on unless a test switches it off.
+const { labsModule } = vi.hoisted(() => ({ labsModule: { on: true } }));
+vi.mock("@/lib/modules/gate", async (importActual) => {
+  const actual = await importActual<typeof import("@/lib/modules/gate")>();
+  return {
+    ...actual,
+    isModuleEnabled: async (
+      userId: string,
+      key: Parameters<typeof actual.isModuleEnabled>[1],
+    ) => (key === "labs" ? labsModule.on : actual.isModuleEnabled(userId, key)),
+  };
+});
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -106,6 +119,25 @@ beforeEach(() => {
   // Default: no stored timezone → resolveUserTimezone falls to the
   // Europe/Berlin server default, matching every other fixture's assumption.
   vi.mocked(prisma.user.findUnique).mockResolvedValue(null as never);
+});
+
+describe("generateBiomarkerStatus — labs module", () => {
+  it("writes and serves nothing about a marker with the labs module off", async () => {
+    labsModule.on = false;
+    onTestFinished(() => {
+      labsModule.on = true;
+    });
+    const result = await generateBiomarkerStatus({
+      biomarkerId: MARKER.id,
+      userId: "u1",
+      locale: "en",
+      force: true,
+    });
+    expect(result.text).toBeNull();
+    expect(runStatusCompletion).not.toHaveBeenCalled();
+    expect(prisma.labResult.findMany).not.toHaveBeenCalled();
+    expect(prisma.insightStatusCache.findUnique).not.toHaveBeenCalled();
+  });
 });
 
 describe("generateBiomarkerStatus — empty-data guard", () => {

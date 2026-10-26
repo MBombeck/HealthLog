@@ -1,0 +1,79 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "summaries": {},
+      "bmi": null,
+      "bmiClassification": null,
+      "bpClassification": null,
+      "bpPctInTarget": null,
+      "bpTargets": null,
+      "weightBpCorrelation": null,
+      "scatterData": [],
+      "bpMedicationCorrelation": null,
+      "bpMedicationScatterData": [],
+      "moodSummary": null,
+      "moodBpCorrelation": null,
+      "moodBpScatterData": [],
+      "moodWeightCorrelation": null,
+      "moodWeightScatterData": [],
+      "moodPulseCorrelation": null,
+      "moodPulseScatterData": [],
+      "medications": [],
+      "alerts": [],
+      "hasProvider": false,
+      "dataSpanDays": 0,
+      "totalMeasurements": 0,
+      "revalidating": false,
+      "ai": {
+        "briefing": {
+          "available": false,
+          "reason": "no_provider",
+          "onDeviceAllowed": true
+        },
+        "statusText": {
+          "available": false,
+          "reason": "no_provider",
+          "onDeviceAllowed": true
+        }
+      }
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "insights.comprehensive"
+      },
+      "meta": {
+        "cache.analytics.key_hash": 461242359,
+        "cache.analytics.outcome": "miss",
+        "insights.sub_bpRaw_ms": "<insights.sub_bpRaw_ms>",
+        "insights.sub_buckets_ms": "<insights.sub_buckets_ms>",
+        "insights.sub_coverage_ms": "<insights.sub_coverage_ms>",
+        "insights.sub_heavy_ms": "<insights.sub_heavy_ms>",
+        "insights.sub_latests_ms": "<insights.sub_latests_ms>",
+        "medications": 0,
+        "moodEntries": 0,
+        "totalMeasurements": 0
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "ensureUserRollupsFresh",
+      "args": [
+        "<id:1>"
+      ]
+    },
+    {
+      "effect": "ensureUserMoodRollupsFresh",
+      "args": [
+        "<id:1>"
+      ]
+    }
+  ]
+}

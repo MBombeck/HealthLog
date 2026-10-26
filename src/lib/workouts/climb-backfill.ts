@@ -18,6 +18,7 @@
  *
  * Not an AI path: the number lands on the workout row, nothing else.
  */
+// account-deletion(file): a one-time column fill behind a cursor; it derives elevation from the route already stored and adds nothing the record did not hold, and a row skipped while its account is pending would stay empty after an undo.
 import type { PrismaClient } from "@/generated/prisma/client";
 import { readRouteGeometry } from "@/lib/workouts/route-geometry-cipher";
 import { routeClimbM } from "@/lib/workouts/route-climb";

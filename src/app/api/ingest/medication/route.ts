@@ -6,11 +6,11 @@ import {
   apiSuccess,
   apiError,
   getClientIp,
-  returnAllZodIssues,
-  safeJson,
   sanitiseZodIssues,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { hashToken } from "@/lib/auth/hmac";
+import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 import {
   checkAuthSurfaceRateLimit,
   checkRateLimit,
@@ -107,7 +107,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
     },
   });
 
-  if (!apiToken || apiToken.revoked) {
+  // A pending account's token is refused, as `resolveBearerToken` does.
+  const pending = apiToken && (await pendingDeletionOf(apiToken.userId));
+  if (!apiToken || apiToken.revoked || pending) {
     return refuseUnauthenticated(request, "Invalid or revoked token");
   }
 
@@ -115,17 +117,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return refuseUnauthenticated(request, "Token expired");
   }
 
-  // A bridge is identified by its TOKEN, not by the address it dials from.
-  // The bucket used to be `ingest:${ip}`, so every integration behind one
-  // NAT shared a single 60/min cell and one chatty bridge starved the rest —
-  // and a household running a chat bridge, a button and a home-automation
-  // rule is the normal deployment here, not an edge case.
-  //
-  // The identity is only known after the lookup, so the lookup now runs
-  // before the limiter: one indexed single-row read ahead of what was
-  // already an upsert against `rate_limits`. A caller whose token does not
-  // resolve is still capped on the per-IP bucket it was always capped on,
-  // one step earlier than it reaches anything expensive.
+  // A bridge is identified by its TOKEN, not by the address it dials from:
+  // keyed `ingest:${ip}`, every integration behind one NAT (a chat bridge, a
+  // button, a home-automation rule: the normal household) shared one 60/min
+  // cell and one chatty bridge starved the rest. So the lookup runs before
+  // the limiter, one indexed read ahead of the `rate_limits` upsert; a token
+  // that does not resolve is still capped on the per-IP bucket, earlier.
   const rl = await checkRateLimit(
     `ingest:token:${apiToken.id}`,
     RATE_LIMIT,
@@ -152,58 +149,40 @@ export const POST = apiHandler(async (request: NextRequest) => {
     data: { lastUsedAt: new Date() },
   });
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  // v1.4.43 — external native ingest is a bulk-source; surface
+  // every Zod issue so a Telegram-bridge or HomeAssistant
+  // integration sees the full validation shape at once. Audit
+  // breadcrumb keyed `ingest.medication.validation-failed`.
+  const parsed = await parseJsonBody(request, externalIntakeSchema, {
     maxBytes: 64 * 1024,
-  });
-
-  if (jsonError) return jsonError;
-  const parsed = externalIntakeSchema.safeParse(body);
-  if (!parsed.success) {
-    // v1.4.43 — external native ingest is a bulk-source; surface
-    // every Zod issue so a Telegram-bridge or HomeAssistant
-    // integration sees the full validation shape at once. Audit
-    // breadcrumb keyed `ingest.medication.validation-failed`.
-    const issues = sanitiseZodIssues(parsed.error.issues);
-    const shape = unstableExternalIdShape(body, "idempotencyKey");
-    annotate({
-      action: { name: "ingest.medication.validation-failed" },
-      meta: {
-        issue_count: issues.length,
-        ...(shape ? unstableExternalIdMeta("medication.ingest", [shape]) : {}),
-      },
-    });
-    // v1.4.49 — strip `message` from the audit-ledger row; external
-    // ingest carries free-text `medicationName` + opaque
-    // `idempotencyKey`.
-    const auditIssues = sanitiseZodIssues(parsed.error.issues, {
-      stripValuesFromMessage: true,
-    });
-    prisma.auditLog
-      .create({
-        data: {
-          userId: apiToken.userId,
-          action: "ingest.medication.validation-failed",
-          details: JSON.stringify({ issues: auditIssues }),
+    onInvalid: (error, body) => {
+      const shape = unstableExternalIdShape(body, "idempotencyKey");
+      annotate({
+        action: { name: "ingest.medication.validation-failed" },
+        meta: {
+          issue_count: error.issues.length,
+          ...(shape
+            ? unstableExternalIdMeta("medication.ingest", [shape])
+            : {}),
         },
-      })
-      .catch(() => {
+      });
+      // v1.4.49 — strip `message` from the audit-ledger row; external
+      // ingest carries free-text `medicationName` + opaque
+      // `idempotencyKey`.
+      const auditIssues = sanitiseZodIssues(error.issues, {
+        stripValuesFromMessage: true,
+      });
+      auditLog("ingest.medication.validation-failed", {
+        userId: apiToken.userId,
+        details: { issues: auditIssues },
+      }).catch(() => {
         /* swallow — 422 response is the contract */
       });
-    return returnAllZodIssues(parsed.error, 422);
-  }
-
-  const { medicationName, takenAt, idempotencyKey } = parsed.data;
-
-  // Idempotency check (scoped to token owner to prevent cross-user lookups)
-  const existing = await prisma.medicationIntakeEvent.findFirst({
-    where: {
-      idempotencyKey,
-      userId: apiToken.userId,
     },
   });
-  if (existing) {
-    return apiSuccess(existing);
-  }
+  if (!parsed.ok) return parsed.error;
+
+  const { medicationName, takenAt, idempotencyKey } = parsed.data;
 
   // Find medication by name for this user
   const medication = await prisma.medication.findFirst({
@@ -214,16 +193,27 @@ export const POST = apiHandler(async (request: NextRequest) => {
     },
   });
 
-  if (!medication) {
-    return apiError("Medication not found", 404);
+  // A scoped token gets one answer for unknown and out-of-scope names; only a
+  // full-access token, which can list them anyway, learns a name is unknown.
+  const fullAccess = apiToken.permissions.includes("*");
+  if (
+    !medication ||
+    (!fullAccess &&
+      !apiToken.permissions.includes(`medication:${medication.id}:ingest`))
+  ) {
+    return !medication && fullAccess
+      ? apiError("Medication not found", 404)
+      : apiError("API endpoint for this medication is disabled", 403);
   }
 
-  const medicationScope = `medication:${medication.id}:ingest`;
-  if (
-    !apiToken.permissions.includes("*") &&
-    !apiToken.permissions.includes(medicationScope)
-  ) {
-    return apiError("API endpoint for this medication is disabled", 403);
+  // Replay after the scope check, for this medication only (key is per user).
+  const existing = await prisma.medicationIntakeEvent.findFirst({
+    where: { idempotencyKey, userId: apiToken.userId },
+  });
+  if (existing) {
+    return existing.medicationId === medication.id
+      ? apiSuccess(existing)
+      : apiError("Idempotency key already used for another medication", 409);
   }
 
   // A record-only medication takes no new dose — the same refusal every

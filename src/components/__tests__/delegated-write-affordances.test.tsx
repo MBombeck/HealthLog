@@ -185,7 +185,7 @@ import { admittedQuickEntry } from "@/components/dashboard/quick-entry-sheets";
 import { TodayHero } from "@/components/daily/today-hero";
 import { VorsorgeDashboardCard } from "@/components/measurement-reminders/vorsorge-dashboard-card";
 import { EpisodeDocumentsCard } from "@/components/documents/episode-documents-card";
-import { LedgerRowItem } from "@/components/medications/dose-history-ledger";
+import { LedgerRowItem } from "@/components/medications/dose-history/ledger-row-item";
 import { VaccinationsView } from "@/components/vaccinations/vaccinations-view";
 import { VisitsSection } from "@/components/encounters/visits-section";
 import type { EncounterDTO } from "@/lib/encounters/dto";

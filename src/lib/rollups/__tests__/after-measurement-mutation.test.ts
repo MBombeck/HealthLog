@@ -41,6 +41,9 @@ vi.mock("@/lib/insights/status-invalidation", () => ({
 }));
 
 import { afterMeasurementMutation } from "../after-measurement-mutation";
+import { annotate, eventStorage } from "@/lib/logging/context";
+import { WideEventBuilder } from "@/lib/logging/event-builder";
+import { settleBackgroundTasks } from "@/lib/logging/background-tasks";
 import type { MeasurementType } from "@/generated/prisma/client";
 
 beforeEach(() => {
@@ -93,7 +96,9 @@ describe("afterMeasurementMutation", () => {
   });
 
   it("is a no-op for an empty row set", async () => {
-    await afterMeasurementMutation("user-1", [], { source: "manual" });
+    await expect(
+      afterMeasurementMutation("user-1", [], { source: "manual" }),
+    ).resolves.toEqual({ rollupFailed: false });
     expect(mocks.recompute).not.toHaveBeenCalled();
     expect(mocks.invalidate).not.toHaveBeenCalled();
   });
@@ -101,8 +106,9 @@ describe("afterMeasurementMutation", () => {
   it("still invalidates status insights when the rollup recompute fails", async () => {
     mocks.recompute.mockRejectedValue(new Error("populator down"));
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    let result: { rollupFailed: boolean } | undefined;
     try {
-      await afterMeasurementMutation(
+      result = await afterMeasurementMutation(
         "user-1",
         [
           {
@@ -115,8 +121,27 @@ describe("afterMeasurementMutation", () => {
     } finally {
       warn.mockRestore();
     }
-    // The rollup failure never bubbles AND never gates the second leg.
+    // The rollup failure never bubbles AND never gates the second leg; the
+    // caller learns of it from the result.
+    expect(result).toEqual({ rollupFailed: true });
     expect(mocks.invalidate).toHaveBeenCalledTimes(1);
+  });
+
+  it("leaves the status cards alone when the caller invalidates them itself", async () => {
+    await expect(
+      afterMeasurementMutation(
+        "user-1",
+        [
+          {
+            type: "WEIGHT" as MeasurementType,
+            measuredAt: day("2026-05-10T08:00:00Z"),
+          },
+        ],
+        { source: "sync", invalidateStatus: false },
+      ),
+    ).resolves.toEqual({ rollupFailed: false });
+    expect(mocks.recompute).toHaveBeenCalledTimes(1);
+    expect(mocks.invalidate).not.toHaveBeenCalled();
   });
 
   it("never rejects when the status-insight invalidation fails", async () => {
@@ -134,11 +159,42 @@ describe("afterMeasurementMutation", () => {
           ],
           { source: "manual" },
         ),
-      ).resolves.toBeUndefined();
+      ).resolves.toEqual({ rollupFailed: false });
       // Let the fire-and-forget rejection settle inside the helper's catch.
       await new Promise((resolve) => setImmediate(resolve));
     } finally {
       warn.mockRestore();
     }
+  });
+
+  it("keeps the request's action name while the detached re-warm annotates its own", async () => {
+    // The re-warm is detached from the request but starts inside its
+    // context. It annotates an action of its own when it skips; that must
+    // never rename the write the request is reporting.
+    mocks.invalidate.mockImplementation(async () => {
+      annotate({
+        action: { name: "insights.status.invalidate.skipped" },
+        meta: { reason: "no_provider" },
+      });
+    });
+    const event = new WideEventBuilder();
+    await eventStorage.run(event, async () => {
+      annotate({ action: { name: "measurement.create" } });
+      await afterMeasurementMutation(
+        "user-1",
+        [
+          {
+            type: "WEIGHT" as MeasurementType,
+            measuredAt: day("2026-05-10T08:00:00Z"),
+          },
+        ],
+        { source: "manual" },
+      );
+      await settleBackgroundTasks();
+    });
+    expect(mocks.invalidate).toHaveBeenCalledTimes(1);
+    expect(event.toJSON().action?.name).toBe("measurement.create");
+    // What the detached work says still reaches the request's event.
+    expect(event.toJSON().meta?.reason).toBe("no_provider");
   });
 });

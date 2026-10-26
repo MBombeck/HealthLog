@@ -1,0 +1,104 @@
+{
+  "status": 201,
+  "body": {
+    "data": {
+      "id": "<id:1>",
+      "kind": "LAB_RESULT",
+      "title": "Blood test",
+      "filename": "labs.pdf",
+      "mimeType": "application/pdf",
+      "byteSize": 42,
+      "status": "STORED",
+      "providerType": null,
+      "reportDate": null,
+      "documentDate": "2025-03-04",
+      "errorReason": null,
+      "factCount": 0,
+      "pendingCount": 0,
+      "conditionLinks": [],
+      "encounterLinks": [],
+      "servingClass": "inline",
+      "hasContentIndex": false,
+      "contentIndexSource": null,
+      "lastIndexAttemptAt": null,
+      "lastIndexOutcome": null,
+      "hasThumbnail": false,
+      "sourceSystem": null,
+      "sourceId": null,
+      "createdAt": "<createdAt>",
+      "updatedAt": "<updatedAt>"
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 201,
+      "action": {
+        "name": "documents.summary.enqueueSkipped"
+      },
+      "meta": {
+        "documentId": "<id:1>",
+        "byteSize": 42,
+        "servingClass": "inline",
+        "linked": 0,
+        "linkedVisits": 0,
+        "scoped": false,
+        "sourceSystem": null,
+        "aiDeferred": false,
+        "reason": "no_provider"
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "enqueueDocumentIndex",
+      "args": [
+        "<id:2>",
+        "<id:1>"
+      ]
+    },
+    {
+      "effect": "enqueueDocumentThumbnail",
+      "args": [
+        "<id:2>",
+        "<id:1>"
+      ]
+    }
+  ],
+  "stored": [
+    {
+      "id": "<id:3>",
+      "kind": "DISCHARGE_LETTER",
+      "title": "Discharge letter",
+      "filename": "discharge.pdf",
+      "mimeType": "application/pdf",
+      "byteSize": 47,
+      "status": "STORED",
+      "documentDate": "2026-10-02T12:00:00.000Z",
+      "sourceSystem": null,
+      "sourceId": null,
+      "deletedAt": null,
+      "conditionLinks": [
+        {
+          "episodeId": "<id:4>"
+        }
+      ]
+    },
+    {
+      "id": "<id:1>",
+      "kind": "LAB_RESULT",
+      "title": "Blood test",
+      "filename": "labs.pdf",
+      "mimeType": "application/pdf",
+      "byteSize": 42,
+      "status": "STORED",
+      "documentDate": "2025-03-04T12:00:00.000Z",
+      "sourceSystem": null,
+      "sourceId": null,
+      "deletedAt": null,
+      "conditionLinks": []
+    }
+  ]
+}

@@ -61,6 +61,7 @@
  * cached compliance / intake / summary payloads were built on the
  * pre-flip denominator and would otherwise serve it for up to their TTL.
  */
+import { OWNED_BY_ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";
 
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
@@ -72,15 +73,6 @@ import {
   liveEraStart,
 } from "@/lib/medications/scheduling/live-era";
 import { INTAKE_AUTO_TAKE_LOOKBACK_MS } from "@/lib/jobs/intake-auto-take";
-
-export const INTAKE_AUTO_SKIP_QUEUE = "intake-auto-skip";
-
-/**
- * Cron schedule. Hourly at :05 so the tick doesn't collide with the
- * top-of-the-hour reminder-check (:00) or the rollup fold (:30)
- * cadences. Europe/Berlin matches the rest of the worker's schedules.
- */
-export const INTAKE_AUTO_SKIP_CRON = "5 * * * *";
 
 /**
  * Grace floor before auto-skip kicks in. 24 h matches the spec and
@@ -260,7 +252,11 @@ export async function runIntakeAutoSkipPass(
   // users' server caches below.
   const candidates = await prisma.medicationIntakeEvent.groupBy({
     by: ["medicationId", "userId"],
-    where: { ...pendingWhere, scheduledFor: { lt: baseCutoff } },
+    where: {
+      ...pendingWhere,
+      scheduledFor: { lt: baseCutoff },
+      ...OWNED_BY_ACTIVE_ACCOUNT,
+    },
   });
   if (candidates.length === 0) {
     return { skippedCount: 0, cutoff: baseCutoff, invalidatedUserIds: [] };
@@ -322,6 +318,7 @@ export async function runIntakeAutoSkipPass(
   const invalidatedUserIds = new Set<string>();
   for (const [delayMs, group] of medsByDelay) {
     const medicationIds = group.map((m) => m.id);
+    // account-deletion: the medications of active accounts read above (`medicationIds`).
     const { count } = await prisma.medicationIntakeEvent.updateMany({
       where: {
         ...pendingWhere,

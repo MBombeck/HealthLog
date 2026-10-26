@@ -20,12 +20,8 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import {
-  apiSuccess,
-  apiError,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { encounterLinkSchema } from "@/lib/validations/encounters";
 import { linkTargets, unlinkTargets } from "@/lib/links";
 import { loadEncounterLinks } from "@/lib/encounters/service";
@@ -42,17 +38,11 @@ async function handle(
 
   const { id } = await params;
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, encounterLinkSchema, {
     maxBytes: 16 * 1024,
+    errorCode: "encounter.link.invalid",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = encounterLinkSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "encounter.link.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const apply = verb === "link" ? linkTargets : unlinkTargets;
   const result = await apply(prisma, {

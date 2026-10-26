@@ -1,13 +1,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
@@ -39,13 +34,10 @@ export const PATCH = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
     const { user } = await requireAuth();
     const { id } = await params;
-    const { data: rawBody, error } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, factCorrectionSchema, {
       maxBytes: 8 * 1024,
     });
-    if (error) return error;
-
-    const parsed = factCorrectionSchema.safeParse(rawBody);
-    if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+    if (!parsed.ok) return parsed.error;
 
     const current = await prisma.healthProfileFactRevision.findFirst({
       where: {

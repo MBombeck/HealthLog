@@ -22,13 +22,8 @@ import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { overwriteDetails } from "@/lib/sharing/audit-details";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { encounterUpdateSchema } from "@/lib/validations/encounters";
 import { encounterKindLabel } from "@/lib/encounters/kind-label";
@@ -107,17 +102,11 @@ export const PATCH = apiHandler(
       return apiError("Visit not found", 404);
     }
 
-    const { data: rawBody, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, encounterUpdateSchema, {
       maxBytes: 32 * 1024,
+      errorCode: "encounter.invalid",
     });
-    if (jsonError) return jsonError;
-
-    const parsed = encounterUpdateSchema.safeParse(rawBody);
-    if (!parsed.success) {
-      return returnAllZodIssues(parsed.error, 422, {
-        errorCode: "encounter.invalid",
-      });
-    }
+    if (!parsed.ok) return parsed.error;
 
     const entry = parsed.data;
     const { timezone, locale } = await resolveOwnerNotificationContext(user.id);

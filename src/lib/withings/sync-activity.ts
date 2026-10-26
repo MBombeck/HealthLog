@@ -46,11 +46,8 @@ import { getUnitForType } from "@/lib/validations/measurement";
 import { dropImplausibleMeasurements } from "@/lib/measurements/plausibility-gate";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
 
-import {
-  hasActivityScope,
-  WITHINGS_MAX_PAGES,
-  withingsNextOffset,
-} from "./client";
+import { WITHINGS_MAX_PAGES, withingsNextOffset } from "./client";
+import { hasActivityScope } from "./oauth";
 import {
   WithingsApiError,
   classifyWithingsResponse,

@@ -59,7 +59,9 @@ const UNROUNDED_IMPORTERS = ["lib/targets/target-unit-display.ts"];
  * screen unrounded.
  */
 const RAW_SCALE_SURFACES = [
-  "app/page-client.tsx",
+  // The dashboard's chart cards; the values the dashboard renders itself
+  // convert in the tile context (see `CONVERTS_IN`).
+  "components/dashboard/tiles/chart-tiles.tsx",
   // The insights trends row: a single transformed series hands its scale
   // and offset to the mini chart, which formats every value itself.
   "components/insights/trends-row.tsx",
@@ -67,6 +69,16 @@ const RAW_SCALE_SURFACES = [
   "components/insights/healthkit-metric-page.tsx",
   "components/insights/device-score-tile.tsx",
 ];
+
+/**
+ * A surface whose rendered values convert in a sibling module: the dashboard's
+ * chart cards read the preference through the tile context every dashboard
+ * tile is built from.
+ */
+const CONVERTS_IN: Readonly<Record<string, string>> = {
+  "components/dashboard/tiles/chart-tiles.tsx":
+    "components/dashboard/tiles/tile-context.ts",
+};
 
 /** Matches a `factor` / `offset` read off a display transform. */
 const RAW_SCALE_READ =
@@ -192,10 +204,11 @@ describe("display-transform rounding guard — the bypass freeze", () => {
     // The justification for holding the raw multiplier at all: the chart
     // takes it as a prop. A file that stops passing it has no reason to be
     // reading `.factor` any more and belongs back behind the helpers.
-    // The prop as it is actually passed — a bare substring would still
+    // The prop as it is actually passed (as a JSX attribute or as a key of
+    // the props a chart builder spreads) — a bare substring would still
     // match a renamed identifier that no longer reaches any chart.
     const offenders = RAW_SCALE_SURFACES.filter(
-      (rel) => !/\bvalueScale=/.test(read(rel)),
+      (rel) => !/\bvalueScale[=:]/.test(read(rel)),
     );
     expect(offenders).toEqual([]);
   });
@@ -207,7 +220,10 @@ describe("display-transform rounding guard — the bypass freeze", () => {
     // `useUnitDisplayOnceMounted()`, which is the same sugar with the
     // preference withheld from the hydration render.
     const offenders = RAW_SCALE_SURFACES.filter(
-      (rel) => !/\buseUnitDisplay(OnceMounted)?\(\)/.test(read(rel)),
+      (rel) =>
+        !/\buseUnitDisplay(OnceMounted)?\(\)/.test(
+          read(CONVERTS_IN[rel] ?? rel),
+        ),
     );
     expect(offenders).toEqual([]);
   });

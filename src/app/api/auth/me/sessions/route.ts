@@ -38,7 +38,7 @@ import {
 } from "@/lib/auth/session";
 import { lookupIpLocation } from "@/lib/geo";
 import { GRANT_PARTY_SELECT } from "@/lib/sharing/grant-view";
-import { isGrantActive } from "@/lib/sharing/grants";
+import { isGrantActive } from "@/lib/sharing/grant-access";
 import { coarseDeviceLabel, maskIp } from "@/lib/auth/device-fingerprint";
 
 export const dynamic = "force-dynamic";

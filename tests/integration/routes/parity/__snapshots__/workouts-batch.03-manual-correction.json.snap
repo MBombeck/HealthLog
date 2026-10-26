@@ -1,0 +1,232 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "processed": 2,
+      "inserted": 0,
+      "duplicates": 2,
+      "skipped": [],
+      "entries": [
+        {
+          "index": 0,
+          "status": "updated"
+        },
+        {
+          "index": 1,
+          "status": "duplicate"
+        }
+      ]
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "workout.batch.ingest"
+      },
+      "meta": {
+        "write_bucket": "own",
+        "pr_detection_enqueued": true,
+        "pr_detection_silent": false,
+        "processed": 2,
+        "inserted": 0,
+        "duplicates": 2,
+        "enriched": 0,
+        "updated": 1,
+        "skipped": 0,
+        "routes_dropped": 0
+      },
+      "warnings": null,
+      "error": null
+    }
+  ],
+  "effects": [
+    {
+      "effect": "enqueuePrDetection",
+      "args": [
+        "<id:1>",
+        {
+          "silent": false
+        }
+      ]
+    },
+    {
+      "effect": "emitDataArrival",
+      "args": [
+        {
+          "userId": "<id:1>",
+          "kind": "workout",
+          "newestSampleAt": "2026-10-13T16:00:00.000Z",
+          "insertedCount": 1,
+          "refId": "<id:2>",
+          "source": "batch"
+        }
+      ]
+    }
+  ],
+  "stored": [
+    {
+      "id": "<id:3>",
+      "sportType": "running",
+      "startedAt": "2026-10-08T07:00:00.000Z",
+      "endedAt": "2026-10-08T07:50:00.000Z",
+      "durationSec": 3000,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "minHeartRate": null,
+      "stepCount": null,
+      "elevationM": null,
+      "pauseDurationSec": null,
+      "source": "APPLE_HEALTH",
+      "externalId": "hk-run-2",
+      "externalSourceVersion": null,
+      "metadata": null,
+      "samples": {
+        "samples": [
+          {
+            "t": "2026-10-14T06:30:00.000Z",
+            "hr": 121
+          },
+          {
+            "t": "2026-10-14T06:30:05.000Z",
+            "hr": 128,
+            "cadence": 168
+          },
+          {
+            "t": "2026-10-14T06:30:10.000Z",
+            "hr": 133
+          }
+        ],
+        "sampleCount": 3
+      },
+      "route": null
+    },
+    {
+      "id": "<id:4>",
+      "sportType": "swimming",
+      "startedAt": "2026-10-11T07:00:00.000Z",
+      "endedAt": "2026-10-11T07:40:00.000Z",
+      "durationSec": 2400,
+      "totalEnergyKcal": null,
+      "totalDistanceM": 1500,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "minHeartRate": null,
+      "stepCount": null,
+      "elevationM": null,
+      "pauseDurationSec": null,
+      "source": "APPLE_HEALTH",
+      "externalId": "hk-swim-1",
+      "externalSourceVersion": null,
+      "metadata": null,
+      "samples": null,
+      "route": null
+    },
+    {
+      "id": "<id:5>",
+      "sportType": "walking",
+      "startedAt": "2026-10-12T18:00:00.000Z",
+      "endedAt": "2026-10-12T18:30:00.000Z",
+      "durationSec": 1800,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "minHeartRate": null,
+      "stepCount": null,
+      "elevationM": null,
+      "pauseDurationSec": null,
+      "source": "MANUAL",
+      "externalId": null,
+      "externalSourceVersion": null,
+      "metadata": null,
+      "samples": null,
+      "route": null
+    },
+    {
+      "id": "<id:6>",
+      "sportType": "walking",
+      "startedAt": "2026-10-12T18:00:00.000Z",
+      "endedAt": "2026-10-12T18:30:00.000Z",
+      "durationSec": 1800,
+      "totalEnergyKcal": null,
+      "totalDistanceM": null,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "minHeartRate": null,
+      "stepCount": null,
+      "elevationM": null,
+      "pauseDurationSec": null,
+      "source": "MANUAL",
+      "externalId": null,
+      "externalSourceVersion": null,
+      "metadata": null,
+      "samples": null,
+      "route": null
+    },
+    {
+      "id": "<id:2>",
+      "sportType": "cycling",
+      "startedAt": "2026-10-13T16:00:00.000Z",
+      "endedAt": "2026-10-13T17:05:00.000Z",
+      "durationSec": 3900,
+      "totalEnergyKcal": null,
+      "totalDistanceM": 2400,
+      "avgHeartRate": null,
+      "maxHeartRate": null,
+      "minHeartRate": null,
+      "stepCount": null,
+      "elevationM": null,
+      "pauseDurationSec": null,
+      "source": "MANUAL",
+      "externalId": "manual:ride-1",
+      "externalSourceVersion": null,
+      "metadata": null,
+      "samples": null,
+      "route": null
+    },
+    {
+      "id": "<id:7>",
+      "sportType": "running",
+      "startedAt": "2026-10-14T06:30:00.000Z",
+      "endedAt": "2026-10-14T07:15:00.000Z",
+      "durationSec": 2700,
+      "totalEnergyKcal": 610,
+      "totalDistanceM": 8200,
+      "avgHeartRate": 148,
+      "maxHeartRate": 171,
+      "minHeartRate": null,
+      "stepCount": null,
+      "elevationM": null,
+      "pauseDurationSec": null,
+      "source": "APPLE_HEALTH",
+      "externalId": "hk-run-1",
+      "externalSourceVersion": null,
+      "metadata": {
+        "HKIndoorWorkout": false
+      },
+      "samples": {
+        "samples": [
+          {
+            "t": "2026-10-14T06:30:00.000Z",
+            "hr": 121
+          },
+          {
+            "t": "2026-10-14T06:30:05.000Z",
+            "hr": 128,
+            "cadence": 168
+          },
+          {
+            "t": "2026-10-14T06:30:10.000Z",
+            "hr": 133
+          }
+        ],
+        "sampleCount": 3
+      },
+      "route": null
+    }
+  ]
+}

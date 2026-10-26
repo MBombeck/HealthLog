@@ -190,7 +190,9 @@ export async function seedEveryTwoEndedModel(
   });
 
   // Two courses with a gap, and the window the row projects from them (the
-  // latest). The earlier course exists nowhere else once it has ended.
+  // latest). The earlier course exists nowhere else once it has ended. The
+  // latest was ended with "End course" (#1280), so the instant has to come
+  // back with it.
   const medication = await prisma.medication.create({
     data: {
       userId: OWNER_ID,
@@ -198,6 +200,7 @@ export async function seedEveryTwoEndedModel(
       dose: "5 mg",
       startsOn: AT("2026-06-10T00:00:00.000Z"),
       endsOn: AT("2026-06-16T00:00:00.000Z"),
+      endedAt: AT("2026-06-16T09:30:00.000Z"),
       schedules: {
         create: { windowStart: "08:00", windowEnd: "09:00", label: "Morning" },
       },
@@ -213,6 +216,7 @@ export async function seedEveryTwoEndedModel(
             userId: OWNER_ID,
             startsOn: AT("2026-06-10T00:00:00.000Z"),
             endsOn: AT("2026-06-16T00:00:00.000Z"),
+            endedAt: AT("2026-06-16T09:30:00.000Z"),
           },
         ],
       },
@@ -843,6 +847,19 @@ export async function seedEveryTwoEndedModel(
     },
   });
 
+  // An imported page the person deleted and the purge then removed: only the
+  // ledger remembers it, and a restore that dropped the row would let the
+  // importer store it again.
+  await prisma.documentImportKey.create({
+    data: {
+      userId: OWNER_ID,
+      sourceSystem: "PAPRA",
+      sourceId: "doc_deleted",
+      sourceInstance: "https://papra.example",
+      createdAt: AT("2026-07-03T09:00:00.000Z"),
+    },
+  });
+
   // The page filed under the SECOND condition, not the first. A restore that
   // kept the count and lost the pairing would leave the vault sorted wrongly
   // rather than visibly unsorted, which is harder to notice and worse.
@@ -1401,6 +1418,8 @@ export const FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
   "Biomarker.contextEncrypted": () =>
     encryptContextToBytes("fasted, morning draw"),
   "MoodEntry.tags": JSON.stringify(["round-trip-tag"]),
+  // A closed set (ASSESSMENT_WORDINGS); the export carries nothing else.
+  "MentalHealthAssessment.wording": "unvalidated_translation",
   "CorrelationPattern.qValue": 0.04,
   "CorrelationPattern.dismissedEvidenceHash": "ab".repeat(32),
   // CHECK in migration 0408: the profile is built from samples or from hour buckets.

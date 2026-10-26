@@ -11,6 +11,8 @@
  * are read in the user's own calendar.
  */
 import { prisma } from "@/lib/db";
+import { runDetached } from "@/lib/logging/detached";
+import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { annotate } from "@/lib/logging/context";
 import {
   COURSES_COMPLIANCE_SELECT,
@@ -102,7 +104,7 @@ export async function buildTargetsResponse(user: AuthedUser) {
     queryNow.getTime() - 5 * 365 * 24 * 60 * 60 * 1000,
   );
 
-  void ensureUserMoodRollupsFresh(userId);
+  trackBackgroundTask(runDetached(() => ensureUserMoodRollupsFresh(userId)));
 
   // All independent reads stay in one bounded fan-out. The medication event
   // read is the sole dependent query and remains chained to its medication
@@ -175,12 +177,12 @@ export async function buildTargetsResponse(user: AuthedUser) {
         },
         include: {
           schedules: { select: SCHEDULE_COMPLIANCE_SELECT },
-          scheduleRevisions: { orderBy: { validFrom: "asc" } },
+          scheduleRevisions: { orderBy: [{ validFrom: "asc" }, { id: "asc" }] },
           pauseEras: { select: { pausedAt: true, resumedAt: true } },
           // v1.40 (#1024) — the courses, so a gap between two expects nothing.
           courses: COURSES_COMPLIANCE_SELECT,
         },
-        orderBy: { name: "asc" },
+        orderBy: [{ name: "asc" }, { id: "asc" }],
       });
       if (activeMedications.length === 0) {
         return { activeMedications, intakeEvents: [] };
@@ -194,7 +196,7 @@ export async function buildTargetsResponse(user: AuthedUser) {
           },
           scheduledFor: { gte: thirtyDaysAgo },
         },
-        orderBy: { scheduledFor: "desc" },
+        orderBy: [{ scheduledFor: "desc" }, { id: "desc" }],
         select: {
           medicationId: true,
           takenAt: true,

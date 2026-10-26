@@ -3,9 +3,9 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { GOOGLE_HEALTH_CORE_SCOPES } from "@/lib/google-health/client";
+import { GOOGLE_HEALTH_CORE_SCOPES } from "@/lib/google-health/oauth";
 
-import { FITBIT_OAUTH_SCOPE } from "../client";
+import { FITBIT_OAUTH_SCOPE } from "@/lib/fitbit/oauth";
 
 /**
  * Guard against the class of bug reported in #396: the setup docs drifting away

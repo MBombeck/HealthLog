@@ -16,17 +16,19 @@ tailnet with no extra container. See
 
 ## Pre-flight — env vars the proxy interacts with
 
-| Variable              | Required for                                   | Notes                                    |
-| --------------------- | ---------------------------------------------- | ---------------------------------------- |
-| `NEXT_PUBLIC_APP_URL` | Every public-facing absolute URL the UI emits  | Must match the hostname the proxy serves |
-| `APP_URL`             | Server-side absolute URLs from background jobs | Mirror of the above; both must match     |
-| `TRUST_PROXY_HOPS`    | `X-Forwarded-For` chain trust                  | Defaults to `1` — one trusted hop        |
+| Variable                 | Required for                                   | Notes                                    |
+| ------------------------ | ---------------------------------------------- | ---------------------------------------- |
+| `NEXT_PUBLIC_APP_URL`    | Every public-facing absolute URL the UI emits  | Must match the hostname the proxy serves |
+| `APP_URL`                | Server-side absolute URLs from background jobs | Mirror of the above; both must match     |
+| `TRUST_PROXY_HOPS`       | `X-Forwarded-For` chain trust                  | Defaults to `1` — one trusted hop        |
+| `TRUSTED_PROXY_CIDRS`    | Which connections may report a client address  | Unset: any private address; see below    |
+| `TRUST_CF_CONNECTING_IP` | Reading the visitor address Cloudflare sends   | Off unless `1`; see the warning below    |
 
 Set the URL pair to the public origin (`https://your-instance.example.com`)
 and restart the `app` container. The image reads both at startup; no
 rebuild needed.
 
-All three variables are on the shipped `docker-compose.yml`
+All five variables are on the shipped `docker-compose.yml`
 `environment:` whitelist, so a value in `.env` reaches the container
 without editing the compose file. (Before v1.37.33 the whitelist was
 missing `TRUST_PROXY_HOPS`; on those versions add
@@ -40,22 +42,105 @@ chain from the **right**, counting back `TRUST_PROXY_HOPS` entries.
 This guards against a client rotating `X-Forwarded-For` per request
 to defeat IP-based rate limits.
 
-| Topology                                                  | `TRUST_PROXY_HOPS`                    |
-| --------------------------------------------------------- | ------------------------------------- |
-| App is internet-facing with no proxy                      | `0` (no forwarding header is trusted) |
-| Single proxy in front (Caddy / Traefik / Nginx / Coolify) | `1` (default)                         |
-| Cloudflare → your proxy → app                             | `2`                                   |
-| Cloudflare → Coolify-Tunnel → Coolify → app               | `3`                                   |
+| Topology                                                  | `TRUST_PROXY_HOPS`                 |
+| --------------------------------------------------------- | ---------------------------------- |
+| App is internet-facing with no proxy                      | `0` (the connection's own address) |
+| Single proxy in front (Caddy / Traefik / Nginx / Coolify) | `1` (default)                      |
+| Cloudflare → your proxy → app                             | `2`                                |
+| Cloudflare → Coolify-Tunnel → Coolify → app               | `3`                                |
 
 A misconfigured count logs a one-shot warning to stderr and collapses
 every anonymous caller into one shared rate-limit bucket. Match the
 value to the actual hop count.
 
+Forwarding headers are believed only from a connection whose own address
+is not a public one, which is where a proxy you run connects from:
+
+- IPv4: loopback (`127.0.0.0/8`), `0.0.0.0/8`, the private ranges
+  (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), CGNAT
+  (`100.64.0.0/10`, Tailscale), link-local (`169.254.0.0/16`), the reserved
+  blocks `192.0.0.0/24` and `198.18.0.0/15`, and everything from
+  `224.0.0.0` up (multicast and reserved);
+- IPv6: `::` and `::1`, link-local (`fe80::/10`), site-local (`fec0::/10`),
+  unique-local (`fc00::/7`, Tailscale), multicast (`ff00::/8`), and an
+  IPv4-mapped or embedded address from one of the IPv4 ranges above.
+
+The reserved and multicast blocks are in the list because no host on the
+internet can open a connection from them, so a peer there sits on a network
+you run. A request that reaches HealthLog straight from a public
+address carries headers its sender wrote, so HealthLog ignores them and
+uses the connection's own address, and says so once in the log. The log
+line also shows up when the published port is open to the internet beside
+the proxy; bind it to the proxy's network or to `127.0.0.1` then.
+
+That list is the default when `TRUSTED_PROXY_CIDRS` is unset, and it is
+only as good as the network in front of the port. Read the next section
+before relying on it.
+
+### `TRUSTED_PROXY_CIDRS` — name the proxy
+
+Set `TRUSTED_PROXY_CIDRS` to the addresses your reverse proxy connects
+from, as comma-separated CIDRs (IPv4 or IPv6; a bare address counts as a
+single host). Once it is set, only a connection from inside those ranges
+may report the client's address. Every other connection is its own client,
+whatever its address, private ones included, and the log says so once.
+
+Why it matters: some setups make every caller look like a private address.
+Docker Desktop, OrbStack, and Docker's `docker-proxy` (the userland proxy
+behind a published port such as `3000:3000`) forward each connection from
+the gateway address of the Docker network, which is private. On those
+hosts, someone who can reach the published port directly, from the LAN or
+from the internet if the port is open, passes the private-address check
+and can again choose the address that every per-IP rate limit, the audit
+log and the sign-in notices see, a new one per request if they like.
+Naming your proxy closes that. The default port binding in
+`docker-compose.yml` stays as it is (LAN installs rely on it); this
+variable is the fix.
+
+What to set:
+
+| Where the proxy runs                                                      | `TRUSTED_PROXY_CIDRS`                                                                                  |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| On the same host, proxying to `127.0.0.1:3000` (bare Nginx, Caddy)        | `127.0.0.1/32,::1/128`                                                                                 |
+| In a container on a Docker network with HealthLog (Traefik, NPM, Coolify) | that network's subnet, e.g. `172.18.0.0/16` (`docker network inspect <network>` shows it under `IPAM`) |
+| On another machine that connects from a public address                    | that machine's address, e.g. `198.51.100.7/32`                                                         |
+| No proxy, or `tailscale serve` only                                       | leave it unset                                                                                         |
+
+At boot the app logs one `[proxy-trust]` line naming the rule in force:
+which connections it reads forwarding headers from and how many hops deep.
+A value that is not a CIDR is logged as an error, and until it is fixed no
+connection may report a client address.
+
+**A proxy that connects from a public address.** Without
+`TRUSTED_PROXY_CIDRS`, such a proxy is not believed: every request through
+it resolves to the proxy's own address, so all your users share one
+rate-limit bucket and one person mistyping a password can hold sign-in back
+for everyone. Releases before v1.46 believed any peer, so this shows up after
+the upgrade. Set `TRUSTED_PROXY_CIDRS` to the proxy's address (or put the proxy
+on a private network with HealthLog) and restart.
+
+### `TRUST_CF_CONNECTING_IP` — only when the origin takes Cloudflare only
+
+With `TRUST_CF_CONNECTING_IP=1` HealthLog takes the visitor's address from
+the `CF-Connecting-IP` header, before any of the checks above: from every
+connection, whatever its address, and whatever `TRUST_PROXY_HOPS` says.
+Cloudflare sets that header on every request through its edge, but any
+client can send it too. So the flag is safe only when nothing but
+Cloudflare can reach the origin: a Cloudflare Tunnel with no published
+port, or a firewall that admits only
+[Cloudflare's address ranges](https://www.cloudflare.com/ips/) to the port
+HealthLog or its proxy listens on (Authenticated Origin Pulls on top is
+better still). If the origin also answers on its own public address, a
+caller who finds it chooses the address every per-IP rate limit, the audit
+log and the sign-in locations record, and changes it on every request.
+Without Cloudflare in front, leave the flag unset.
+
 `X-Real-IP` gets the same trust as `X-Forwarded-For`. It is read only
 when `TRUST_PROXY_HOPS` is exactly `1` and the request carries no
 `X-Forwarded-For`, which covers a single proxy that sets only
 `X-Real-IP`. With `0` neither header is believed, because without a proxy
-in front both come from the caller. With `2` or more, the hop count
+in front both come from the caller; the address the connection came from
+is used instead. With `2` or more, the hop count
 describes an `X-Forwarded-For` chain, so have your proxies send one.
 
 If requests arrive with a forwarding header the setting does not let
@@ -241,6 +326,15 @@ than the actual proxy hop count, or the proxy is dropping the
 The one-shot stderr warning `[getClientIp] TRUST_PROXY_HOPS=N but
 X-Forwarded-For carried M entries` confirms a mismatch. Adjust the
 env var down to the actual chain length and restart.
+
+If every request logs the same client address, the proxy's own, the proxy
+is not one HealthLog believes: the `[getClientIp]` warning about a
+connection "from a public address" or "from outside TRUSTED_PROXY_CIDRS"
+names the case. Add the proxy's address to `TRUSTED_PROXY_CIDRS`.
+
+A `TRUST_PROXY_HOPS` value that is not a whole number resolves no client
+address at all (requests keep working) and is named in the `[proxy-trust]`
+boot line.
 
 ## Running over plain HTTP on a LAN (no reverse proxy)
 

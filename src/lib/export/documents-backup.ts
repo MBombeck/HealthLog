@@ -61,6 +61,8 @@ export interface DocumentBackupEntry {
   sourceInstance?: string | null;
   /** Canonical DR only: the import's hold on automatic AI reading. */
   aiReadDeferred?: boolean;
+  /** Canonical DR only: the staged facts may leave part of it out. */
+  extractionIncomplete?: boolean;
 }
 
 /** The document columns both purposes carry. */
@@ -96,6 +98,7 @@ const DOCUMENT_DR_METADATA_SELECT = {
   lastIndexAttemptAt: true,
   lastIndexOutcome: true,
   aiReadDeferred: true,
+  extractionIncomplete: true,
   updatedAt: true,
 } as const satisfies Prisma.InboundDocumentSelect;
 
@@ -166,6 +169,7 @@ function serialiseDocument(
       lastIndexAttemptAt: dr.lastIndexAttemptAt?.toISOString() ?? null,
       lastIndexOutcome: dr.lastIndexOutcome,
       aiReadDeferred: dr.aiReadDeferred,
+      extractionIncomplete: dr.extractionIncomplete,
     };
   }
 
@@ -404,6 +408,9 @@ export async function restoreDocuments(ctx: RestoreContext): Promise<void> {
         // An older file has no marker: those documents predate the hold and
         // restore as ordinary ones.
         aiReadDeferred: document.aiReadDeferred ?? false,
+        // An older file has no marker: its staged facts read as complete,
+        // as they were shown when it was written.
+        extractionIncomplete: document.extractionIncomplete ?? false,
         sourceSystem: document.sourceSystem ?? null,
         sourceId: document.sourceSystem ? (document.sourceId ?? null) : null,
         // A file written before v1.39.3 has no instance: the key then

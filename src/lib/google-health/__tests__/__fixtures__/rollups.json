@@ -1,0 +1,72 @@
+[
+  {
+    "civilStartTime": {
+      "date": { "year": 2026, "month": 6, "day": 1 },
+      "time": {}
+    },
+    "civilEndTime": {
+      "date": { "year": 2026, "month": 6, "day": 1 },
+      "time": { "hours": 23, "minutes": 59, "seconds": 59 }
+    },
+    "steps": { "countSum": "8432" }
+  },
+  {
+    "civilStartTime": {
+      "date": { "year": 2026, "month": 6, "day": 2 },
+      "time": {}
+    },
+    "steps": { "countSum": "0" }
+  },
+  {
+    "civilStartTime": "2026-06-03T00:00:00",
+    "steps": { "countSum": 10250 }
+  },
+  {
+    "civilEndTime": {
+      "date": { "year": 2026, "month": 6, "day": 4 }
+    },
+    "steps": { "countSum": "5000" }
+  },
+  {
+    "civilStartTime": {
+      "date": { "year": 2026, "month": 6, "day": 1 },
+      "time": {}
+    },
+    "distance": { "millimetersSum": "6240512" }
+  },
+  {
+    "civilStartTime": {
+      "date": { "year": 2026, "month": 6, "day": 2 },
+      "time": {}
+    },
+    "distance": { "millimetersSum": "-1" }
+  },
+  {
+    "civilStartTime": {
+      "date": { "year": 2026, "month": 6, "day": 1 },
+      "time": {}
+    },
+    "activeEnergyBurned": { "kcalSum": 512.75 }
+  },
+  {
+    "civilStartTime": {
+      "date": { "year": 2026, "month": 6, "day": 2 },
+      "time": {}
+    },
+    "activeEnergyBurned": {}
+  },
+  {
+    "civilStartTime": {
+      "date": { "year": 2026, "month": 12, "day": 31 },
+      "time": {}
+    },
+    "floors": { "countSum": "12" }
+  },
+  {
+    "civilStartTime": {
+      "date": { "year": 2026, "month": 1, "day": 1 },
+      "time": {}
+    },
+    "floors": { "countSum": "" }
+  }
+]

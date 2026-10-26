@@ -38,9 +38,13 @@ vi.mock("@/lib/logging/context", () => ({
 const deviceFindMany = vi.fn();
 const channelFindUnique = vi.fn();
 const deviceDeleteMany = vi.fn();
+const userFindUnique = vi.fn();
 
 vi.mock("@/lib/db", () => ({
   prisma: {
+    user: {
+      findUnique: (...a: unknown[]) => userFindUnique(...a),
+    },
     device: {
       findMany: (...a: unknown[]) => deviceFindMany(...a),
       deleteMany: (...a: unknown[]) => deviceDeleteMany(...a),
@@ -90,10 +94,38 @@ beforeEach(() => {
   channelFindUnique.mockResolvedValue({ enabled: true, preferences: [] });
   rawSendMock.mockResolvedValue({ ok: true, status: 200 });
   deviceDeleteMany.mockResolvedValue({ count: 0 });
+  userFindUnique.mockResolvedValue({
+    deletionRequestedAt: null,
+    deletionPurgeAt: null,
+  });
 });
 
 afterEach(() => {
   vi.useRealTimers();
+});
+
+describe("queueMedicationIntakeSync — an account pending deletion", () => {
+  // The push does not go through the dispatcher, whose chokepoint refuses a
+  // pending account; an import queued before the deletion reached it.
+  it("sends nothing to the devices of an account pending deletion", async () => {
+    deviceFindMany.mockResolvedValue([device()]);
+    userFindUnique.mockResolvedValue({
+      deletionRequestedAt: new Date("2026-10-20T00:00:00Z"),
+      deletionPurgeAt: new Date("2026-11-03T00:00:00Z"),
+    });
+    queueMedicationIntakeSync({
+      userId: nextUserId(),
+      originDeviceToken: null,
+    });
+    await drainFlush();
+    expect(rawSendMock).not.toHaveBeenCalled();
+    expect(recordPushAttemptMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        result: "skipped",
+        reason: "deletion_pending",
+      }),
+    );
+  });
 });
 
 describe("queueMedicationIntakeSync — origin skip + other-devices-only", () => {

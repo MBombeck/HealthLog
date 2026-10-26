@@ -1,4 +1,17 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, onTestFinished } from "vitest";
+
+// The labs module is on unless a test switches it off.
+const { labsModule } = vi.hoisted(() => ({ labsModule: { on: true } }));
+vi.mock("@/lib/modules/gate", async (importActual) => {
+  const actual = await importActual<typeof import("@/lib/modules/gate")>();
+  return {
+    ...actual,
+    isModuleEnabled: async (
+      userId: string,
+      key: Parameters<typeof actual.isModuleEnabled>[1],
+    ) => (key === "labs" ? labsModule.on : actual.isModuleEnabled(userId, key)),
+  };
+});
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -410,6 +423,25 @@ describe("extractFeatures — weight target direction (#1006)", () => {
 });
 
 describe("extractFeatures — v1.22 labs briefing block", () => {
+  it("leaves the labs out of the briefing with the labs module off", async () => {
+    labsModule.on = false;
+    onTestFinished(() => {
+      labsModule.on = true;
+    });
+    prismaMock.labResult.findMany.mockResolvedValue([
+      labRow({
+        analyte: "LDL",
+        value: 200,
+        referenceLow: 0,
+        referenceHigh: 130,
+        daysAgo: 5,
+      }),
+    ]);
+    const f = await extractFeatures("user-1", false);
+    expect(f.labs).toBeUndefined();
+    expect(prismaMock.labResult.findMany).not.toHaveBeenCalled();
+  });
+
   it("surfaces an abnormal (out-of-range) biomarker", async () => {
     prismaMock.labResult.findMany.mockResolvedValue([
       labRow({

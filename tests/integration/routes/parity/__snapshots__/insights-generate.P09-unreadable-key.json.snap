@@ -1,0 +1,32 @@
+{
+  "status": 422,
+  "body": {
+    "data": null,
+    "error": "No AI provider configured. Connect ChatGPT in settings or ask your admin to set up an API key.",
+    "meta": {
+      "errorCode": "ai.provider.none",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 422,
+      "action": null,
+      "meta": null,
+      "warnings": [
+        "ai: a stored provider key could not be opened",
+        "ai: a stored provider key could not be opened"
+      ],
+      "error": null
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "insightsCachedAt": null,
+    "insightsCachedLocale": null,
+    "cachedPayload": null,
+    "snapshotHash": null,
+    "audit": [],
+    "usage": []
+  }
+}

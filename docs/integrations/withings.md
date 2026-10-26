@@ -88,7 +88,7 @@ or right away after reconnecting Withings once.
    needed — `user.metrics` covers weight / BP / heart-list / sleep /
    SpO₂ / body comp / temperature / VO₂ max; `user.activity` is the
    workout-equivalent stream for steps / energy / distance / floors.
-   See `WITHINGS_OAUTH_SCOPE` in `src/lib/withings/client.ts`.
+   See `WITHINGS_OAUTH_SCOPE` in `src/lib/withings/oauth.ts`.
 4. Save the application. Withings will issue a **Client ID** and a
    **Client Secret** — keep the secret out of any chat log; it grants
    read access to every linked account's full health history.
@@ -145,7 +145,7 @@ callback. The portal only owns the OAuth callback URL.
 ## 4. Link from the Settings page
 
 With the credentials saved in Settings, open
-`/settings/integrations/withings` and click **Connect Withings**. The flow:
+`/settings/integrations#withings` and click **Connect Withings**. The flow:
 
 1. The Connect button redirects to Withings' `oauth2/authorize`.
 2. The user signs in on Withings and grants the requested scopes.
@@ -181,7 +181,7 @@ import:
   when Apple Health is also linked, so the Apple Health stream wins
   for the cumulative axis. The Withings rows stay in the DB.
 
-Override per-user via Settings → Sources (`/settings/sources`).
+Override per-user via Settings → Source priority (`/settings/sources`).
 
 ## Troubleshooting
 
@@ -199,7 +199,7 @@ Override per-user via Settings → Sources (`/settings/sources`).
 ### The webhook stops firing
 
 Webhook subscriptions can lapse after a token revoke or a portal-
-side cleanup. Re-subscribe by opening `/settings/integrations/withings`
+side cleanup. Re-subscribe by opening `/settings/integrations#withings`
 and clicking **Disconnect** then **Connect Withings** again — the
 callback exchange re-runs `Notify.subscribe()` with a fresh callback
 URL.

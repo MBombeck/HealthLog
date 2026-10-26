@@ -1,10 +1,10 @@
 /**
  * Runtime GeoLite2 fetch (issue #659) — queue-wiring guard + boot gating.
  *
- * The source-text-grep half mirrors the other dead-queue guards: assert the
- * queue is imported, in `allQueues`, scheduled, and bound to a `createAndWork`
- * handler that runs the fetch — without booting pg-boss. An unregistered queue
- * silently never drains (the recurring v1.4.37 dead-queue bug), which here
+ * The first half reads the worker registry: the queue is declared in the
+ * maintenance group, scheduled monthly, and bound to the handler that runs
+ * the fetch, and the maintenance boot discovery carries the fetch pass. An
+ * unregistered queue silently never drains (the dead-queue class), which here
  * would mean a keyed self-host never gets its databases fetched.
  *
  * The second half exercises the boot-discovery gate directly: it must send a
@@ -15,54 +15,46 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const REGISTRAR_PATH = join(
-  __dirname,
-  "..",
-  "reminder",
-  "register-maintenance.ts",
+import {
+  GEOLITE2_FETCH_CRON,
+  GEOLITE2_FETCH_QUEUE,
+} from "@/lib/jobs/geolite2-fetch";
+import { handleGeolite2Fetch } from "@/lib/jobs/reminder/ops-handlers";
+import {
+  discoveryOf,
+  groupOf,
+  jobOf,
+  loadedHandler,
+} from "@/lib/jobs/registry/__tests__/registry-helpers";
+
+const handlerSource = readFileSync(
+  join(__dirname, "..", "reminder", "ops-handlers.ts"),
+  "utf8",
 );
-const workerSource =
-  readFileSync(REGISTRAR_PATH, "utf8") +
-  readFileSync(join(__dirname, "..", "reminder", "ops-handlers.ts"), "utf8");
 
-describe("reminder-worker — geolite2-fetch wiring", () => {
-  it("imports the queue symbols from the geolite2-fetch module", () => {
-    expect(workerSource).toMatch(/from\s*["']@\/lib\/jobs\/geolite2-fetch["']/);
-    expect(workerSource).toMatch(/\bGEOLITE2_FETCH_QUEUE\b/);
-    expect(workerSource).toMatch(/\bGEOLITE2_FETCH_CRON\b/);
-    expect(workerSource).toMatch(/\benqueueGeolite2FetchBootDiscovery\b/);
+describe("geolite2-fetch registration", () => {
+  it("declares the queue in the maintenance group", () => {
+    expect(groupOf(GEOLITE2_FETCH_QUEUE).name).toBe("maintenance");
   });
 
-  it("registers the queue in the allQueues loop", () => {
-    const allQueuesMatch = workerSource.match(
-      /const allQueues\s*=\s*\[([\s\S]*?)\];/,
-    );
-    expect(allQueuesMatch).not.toBeNull();
-    expect(allQueuesMatch![1]).toMatch(/\bGEOLITE2_FETCH_QUEUE\b/);
+  it("schedules the monthly cron with the default retries", () => {
+    const job = jobOf(GEOLITE2_FETCH_QUEUE);
+    expect(job.cron).toBe(GEOLITE2_FETCH_CRON);
+    expect(job.scheduleOptions).toBeUndefined();
   });
 
-  it("schedules the monthly cron", () => {
-    expect(workerSource).toMatch(
-      /\[GEOLITE2_FETCH_QUEUE,\s*GEOLITE2_FETCH_CRON\]/,
-    );
-  });
-
-  it("registers a createAndWork handler for the queue", () => {
-    expect(workerSource).toMatch(
-      /createAndWork[\s\S]{0,200}GEOLITE2_FETCH_QUEUE[\s\S]{0,200}handleGeolite2Fetch/,
-    );
+  it("binds the fetch handler", async () => {
+    expect(await loadedHandler(GEOLITE2_FETCH_QUEUE)).toBe(handleGeolite2Fetch);
   });
 
   it("runs the fetch inside the handler", () => {
-    expect(workerSource).toMatch(
+    expect(handlerSource).toMatch(
       /handleGeolite2Fetch[\s\S]{0,500}fetchGeoLite2Databases/,
     );
   });
 
-  it("fires the boot discovery from enqueueMaintenanceBootDiscovery", () => {
-    expect(workerSource).toMatch(
-      /enqueueMaintenanceBootDiscovery[\s\S]*enqueueGeolite2FetchBootDiscovery/,
-    );
+  it("fires the boot discovery from the maintenance group", () => {
+    expect(discoveryOf("maintenance")).toContain("geolite2-fetch");
   });
 });
 

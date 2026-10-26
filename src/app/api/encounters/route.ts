@@ -23,8 +23,8 @@ import {
   apiError,
   getClientIp,
   returnAllZodIssues,
-  safeJson,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { apiListSuccess } from "@/lib/api/list-cap";
 import { combinedCap, listPage } from "@/lib/http/list-query";
 import { withIdempotency } from "@/lib/idempotency";
@@ -180,21 +180,13 @@ export const POST = apiHandler(withIdempotency<[NextRequest]>(postEncounter));
 async function postEncounter(request: NextRequest): Promise<Response> {
   const { user, grantId } = await requireRecordAuth("write", "profile");
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, encounterCreateSchema, {
     maxBytes: 32 * 1024,
+    action: "encounter.visit.validation-failed",
+    countIssues: true,
+    errorCode: "encounter.invalid",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = encounterCreateSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    annotate({
-      action: { name: "encounter.visit.validation-failed" },
-      meta: { issue_count: parsed.error.issues.length },
-    });
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "encounter.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const entry = parsed.data;
   const occurredAt = new Date(entry.occurredAt);

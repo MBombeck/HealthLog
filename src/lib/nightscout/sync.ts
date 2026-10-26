@@ -32,16 +32,9 @@ import {
 } from "@/lib/integrations/status";
 import type { IntegrationClassification } from "@/lib/integrations/http-status-classifier";
 import type { SyncWriteResult } from "@/lib/outcome/written-outcome";
-import {
-  collapseToTypeDayKeys,
-  recomputeBucketsForKeys,
-} from "@/lib/rollups/measurement-rollups";
-import {
-  emitInsertedMeasurementArrivals,
-  type InsertedMeasurementArrivalRow,
-} from "@/lib/arrivals/measurement-emit";
+import { afterProviderWrite } from "@/lib/integrations/sync-kit/after-write";
+import type { InsertedMeasurementArrivalRow } from "@/lib/arrivals/measurement-emit";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
-import { invalidateStatusInsightsForTypes } from "@/lib/insights/comprehensive-generate";
 import {
   fetchSgvEntries,
   mapSgvEntryToMeasurement,
@@ -319,29 +312,12 @@ export async function upsertNightscoutEntries(
   // inert for glucose today — it removes Nightscout as the spine's odd one out
   // and lights up automatically once a `glucose` arrival kind + its consuming
   // surface land in a later release.
-  void emitInsertedMeasurementArrivals(
+  await afterProviderWrite({
     userId,
-    insertedRows,
-    "nightscout",
-  ).catch(() => {});
-
-  try {
-    const keys = collapseToTypeDayKeys(touched);
-    await recomputeBucketsForKeys(userId, keys);
-    invalidateStatusInsightsForTypes(
-      userId,
-      keys.map((k) => k.type),
-      { source: "sync" },
-    ).catch((err) => {
-      getEvent()?.addWarning(
-        `nightscout: status-insight invalidate failed for ${userId}: ${err}`,
-      );
-    });
-  } catch (err) {
-    getEvent()?.addWarning(
-      `nightscout: rollup fold failed for ${userId}: ${err}`,
-    );
-  }
+    provider: "nightscout",
+    touched,
+    arrivals: { rows: insertedRows, source: "nightscout" },
+  });
 
   return { inserted: insertedRows.length, failedRows };
 }

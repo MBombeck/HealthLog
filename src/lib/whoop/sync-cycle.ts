@@ -5,7 +5,8 @@
  *
  * Cycle id is an int64 (not a UUID); externalId = `cycle:<id>:<fieldTag>`.
  */
-import { fetchCycles, mapCycle } from "./client";
+import { fetchCycles } from "./client";
+import { mapCycle } from "./map";
 import {
   getValidToken,
   incrementalStart,

@@ -1,0 +1,96 @@
+{
+  "status": 401,
+  "body": {
+    "data": null,
+    "error": "Not authenticated",
+    "meta": {
+      "errorCode": "auth.missing",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 401,
+      "action": null,
+      "meta": null,
+      "warnings": null,
+      "error": {
+        "type": "HttpError",
+        "message": "Not authenticated"
+      }
+    }
+  ],
+  "effects": [],
+  "stored": {
+    "medications": [
+      {
+        "id": "<id:1>",
+        "userId": "<id:2>",
+        "name": "Existing tablet",
+        "dose": "10mg",
+        "treatmentClass": "GENERIC",
+        "dosesPerUnit": null,
+        "unitsPerDose": "1",
+        "active": true,
+        "notificationsEnabled": true,
+        "pausedAt": null,
+        "snoozedUntil": null,
+        "startsOn": "2026-10-01T00:00:00.000Z",
+        "endsOn": null,
+        "endedAt": null,
+        "oneShot": false,
+        "asNeeded": false,
+        "trackIntake": true,
+        "autoMarkTaken": false,
+        "autoMarkTakenSince": null,
+        "deliveryForm": "ORAL",
+        "trackInjectionSites": false,
+        "allowedInjectionSites": [],
+        "liveActivityEnabled": false,
+        "criticalAlarmEnabled": false,
+        "atcCode": null,
+        "rxNormCode": null,
+        "lowStockNotifiedAt": null,
+        "lowStockNotifiedThresholdDays": null,
+        "reorderLeadDays": null,
+        "externalSource": null,
+        "externalId": null,
+        "createdAt": "<createdAt>",
+        "updatedAt": "<updatedAt>"
+      }
+    ],
+    "schedules": [
+      {
+        "id": "<id:3>",
+        "medicationId": "<id:1>",
+        "windowStart": "08:00",
+        "windowEnd": "10:00",
+        "label": null,
+        "dose": null,
+        "unitsPerDose": null,
+        "daysOfWeek": null,
+        "timesOfDay": [
+          "08:00"
+        ],
+        "reminderGraceMinutes": null,
+        "rrule": "FREQ=DAILY",
+        "rollingIntervalDays": null,
+        "scheduleType": "SCHEDULED",
+        "cyclicOnWeeks": null,
+        "cyclicOffWeeks": null,
+        "doseWindows": null
+      }
+    ],
+    "revisions": [],
+    "pauseEras": [],
+    "courses": [],
+    "intakes": [],
+    "doseChanges": [],
+    "inventoryItems": [],
+    "inventoryEvents": [],
+    "categories": [],
+    "ingredients": [],
+    "audit": [],
+    "idempotency": []
+  }
+}

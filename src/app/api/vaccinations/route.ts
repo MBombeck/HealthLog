@@ -27,8 +27,8 @@ import {
   apiError,
   getClientIp,
   returnAllZodIssues,
-  safeJson,
 } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { withIdempotency } from "@/lib/idempotency";
 import { apiListSuccess } from "@/lib/api/list-cap";
 import { listPage } from "@/lib/http/list-query";
@@ -151,21 +151,13 @@ export const POST = apiHandler(withIdempotency<[NextRequest]>(postVaccination));
 async function postVaccination(request: NextRequest): Promise<Response> {
   const { user } = await requireRecordAuth("write", "profile");
 
-  const { data: rawBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, vaccinationCreateSchema, {
     maxBytes: 32 * 1024,
+    action: "vaccination.record.validation-failed",
+    countIssues: true,
+    errorCode: "vaccination.invalid",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = vaccinationCreateSchema.safeParse(rawBody);
-  if (!parsed.success) {
-    annotate({
-      action: { name: "vaccination.record.validation-failed" },
-      meta: { issue_count: parsed.error.issues.length },
-    });
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "vaccination.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const entry = parsed.data;
   const occurredAt = new Date(entry.occurredAt);

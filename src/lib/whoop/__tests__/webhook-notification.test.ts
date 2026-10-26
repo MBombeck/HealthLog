@@ -62,9 +62,8 @@ import {
   mapRecovery,
   mapSleep,
   WHOOP_RECOVERY_FIELD_TAGS,
-  type WhoopRecovery,
-  type WhoopSleep,
-} from "../client";
+} from "@/lib/whoop/map";
+import { type WhoopRecovery, type WhoopSleep } from "@/lib/whoop/wire-types";
 import type { Prisma } from "@/generated/prisma/client";
 
 beforeEach(() => {

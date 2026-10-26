@@ -50,7 +50,7 @@ import {
 } from "@/lib/withings/plan-features";
 import { getPolarClientCredentials } from "@/lib/polar/credentials";
 import { getStravaClientCredentials } from "@/lib/strava/credentials";
-import { hasActivityScope } from "@/lib/withings/client";
+import { hasActivityScope } from "@/lib/withings/oauth";
 import { loadConnectionHealth } from "@/lib/integrations/connection-health-load";
 import {
   googleHealthBackfillEndedList,
@@ -502,8 +502,8 @@ export const GET = apiHandler(async () => {
       } satisfies IntegrationViewModel & NightscoutExtras,
       {
         ...publish(dawarichStatus),
-        // v1.43 — Dawarich, read by the card through `health`. The ledger core
-        // rides along like on every entry, and goes with the rest in v1.44.
+        // Dawarich, read by the card through `health`. The ledger core rides
+        // along like on every entry.
         connected: dawarichConfigured,
         configured: dawarichConfigured,
         health: health["dawarich"],
@@ -524,8 +524,9 @@ interface IntegrationViewModel {
    * health-shaped field on this entry (`state`, `lastError`,
    * `consecutiveFailuresByKind`, `syncHealth`, `tokenExpired`, `needsReauth`,
    * `hasActivityScope`, `planUnavailable`, `scopeReconnect`) is folded into
-   * it and goes once the settings cards render `health`; no other client
-   * reads this envelope.
+   * it. Those stay on the wire, deprecated in the published document; the
+   * cards render `health`, and only their copied diagnostics still read
+   * `consecutiveFailuresByKind`. No native client reads this envelope.
    */
   health: ConnectionHealth | null;
   state: string;

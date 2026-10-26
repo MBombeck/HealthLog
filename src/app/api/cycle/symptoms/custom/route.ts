@@ -17,13 +17,8 @@
 import { NextRequest } from "next/server";
 
 import { prisma } from "@/lib/db";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { withIdempotency } from "@/lib/idempotency";
@@ -107,16 +102,11 @@ async function postCustomSymptom(request: NextRequest): Promise<Response> {
     return apiError("Too many requests, try again later", 429);
   }
 
-  const { data: rawJsonBody, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, createCustomSymptomSchema, {
     maxBytes: 64 * 1024,
+    errorCode: "cycle.symptom.custom.invalid",
   });
-  if (jsonError) return jsonError;
-  const parsed = createCustomSymptomSchema.safeParse(rawJsonBody);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422, {
-      errorCode: "cycle.symptom.custom.invalid",
-    });
-  }
+  if (!parsed.ok) return parsed.error;
 
   const activeCount = await prisma.cycleSymptom.count({
     where: { userId: user.id, isActive: true },

@@ -1,0 +1,29 @@
+{
+  "status": 422,
+  "body": {
+    "data": null,
+    "error": "Invalid sync query",
+    "details": {
+      "issues": [
+        {
+          "path": "limit",
+          "code": "too_small",
+          "message": "Too small: expected number to be >=1"
+        }
+      ]
+    },
+    "meta": {
+      "errorCode": "http.invalid",
+      "requestId": "<requestId>"
+    }
+  },
+  "events": [
+    {
+      "status": 422,
+      "action": null,
+      "meta": null,
+      "warnings": null,
+      "error": null
+    }
+  ]
+}

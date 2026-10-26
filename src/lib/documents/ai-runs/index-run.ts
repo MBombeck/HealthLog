@@ -12,6 +12,7 @@
  * (status, message, `documents.inbound.*` code); the caller renders it as a
  * response or stores it on the run.
  */
+import type { OcrSchedule } from "@/lib/documents/ocr-plan";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import type { ProviderChainType } from "@/lib/ai/provider-chain";
 import { auditLog } from "@/lib/auth/audit";
@@ -31,6 +32,7 @@ import { recordIndexAttempt } from "@/lib/documents/index-document";
 import type { requireDocumentVisionProvider } from "@/lib/documents/provider-order";
 import { annotate } from "@/lib/logging/context";
 
+import { readerBusyFailure } from "./run-support";
 import { settleAiRunBudget } from "./store";
 import type {
   AiRunBudget,
@@ -56,6 +58,12 @@ export const DOCUMENT_INDEX_RESERVE_TOKENS =
 export interface IndexOrigin {
   ipAddress: string | null;
   worker: boolean;
+  /**
+   * A background run's deadline, which the lab staging after the index plans
+   * its reads against. A request has none: the staging then makes at most
+   * `SYNC_EXTRACT_MAX_READS` reads and reports what it left out.
+   */
+  schedule?: OcrSchedule;
 }
 
 export type DocumentIndexInput =
@@ -109,9 +117,9 @@ async function finishIndex(
   // modules on, still STORED with no facts, provider + consent, looks like a
   // lab report) — a non-lab document is a tagged no-op, and a staging failure
   // never fails the index that just succeeded.
-  const staging = await maybeAutoStageLabFacts(userId, documentId).catch(
-    () => null,
-  );
+  const staging = await maybeAutoStageLabFacts(userId, documentId, {
+    schedule: origin.schedule,
+  }).catch(() => null);
   const labFactsStaged = staging?.staged === true ? staging.facts : 0;
   return {
     ok: true,
@@ -150,6 +158,8 @@ export async function executeDocumentIndex(args: {
     // gone.
     await settleAiRunBudget(userId, budget, 0, null);
     await refundDocumentAiSlot(userId);
+    // A busy reader says nothing about the document: no attempt is recorded.
+    if (vision.reason === "readerBusy") return readerBusyFailure();
     if (vision.reason === "pdfNeedsAnthropic") {
       await recordIndexAttempt(userId, document.id, {
         indexed: false,

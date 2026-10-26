@@ -30,12 +30,8 @@
 import type { NextRequest } from "next/server";
 
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
@@ -73,12 +69,10 @@ export const PATCH = apiHandler(async (req: NextRequest, ctx: RouteCtx) => {
   }
 
   const { id } = await ctx.params;
-  const { data: body, error: jsonError } = await safeJson(req, {
+  const parsed = await parseJsonBody(req, coachFactPatchSchema, {
     maxBytes: 2 * 1024,
   });
-  if (jsonError) return jsonError;
-  const parsed = coachFactPatchSchema.safeParse(body);
-  if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+  if (!parsed.ok) return parsed.error;
 
   const text = parsed.data.fact.replace(/\s+/g, " ");
   const live = {

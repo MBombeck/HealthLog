@@ -2,13 +2,8 @@ import { prisma } from "@/lib/db";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { bulkDeleteIntakeEventsSchema } from "@/lib/validations/medication";
 import { restoreForIntake } from "@/lib/medications/inventory/consumption";
@@ -84,14 +79,10 @@ export const POST = apiHandler(
       });
     }
 
-    const { data: body, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, bulkDeleteIntakeEventsSchema, {
       maxBytes: 256 * 1024,
     });
-    if (jsonError) return jsonError;
-    const parsed = bulkDeleteIntakeEventsSchema.safeParse(body);
-    if (!parsed.success) {
-      return returnAllZodIssues(parsed.error, 422);
-    }
+    if (!parsed.ok) return parsed.error;
     const { eventIds } = parsed.data;
 
     // Tz the rollups are anchored on. The detail-page caller persists

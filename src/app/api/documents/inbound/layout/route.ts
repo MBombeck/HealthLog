@@ -14,7 +14,8 @@
 import { z } from "zod/v4";
 
 import { apiHandler, requireAuth, requireRecordAuth } from "@/lib/api-handler";
-import { apiSuccess, returnAllZodIssues, safeJson } from "@/lib/api-response";
+import { apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { prisma, toJson } from "@/lib/db";
 import {
   DOCUMENTS_LAYOUT_ARRANGEMENTS,
@@ -67,16 +68,11 @@ export const PUT = apiHandler(async (request: Request) => {
   const gate = await requireModuleEnabled(user.id, "inboundDocuments");
   if (!gate.enabled) return gate.response;
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, layoutPutSchema, {
     maxBytes: 1024,
+    action: "documents.layout.validation-failed",
   });
-  if (jsonError) return jsonError;
-
-  const parsed = layoutPutSchema.safeParse(body);
-  if (!parsed.success) {
-    annotate({ action: { name: "documents.layout.validation-failed" } });
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   // Preserve-when-absent: one stored read fills whichever field the body
   // left out. Only fields the user has chosen are written, so a field never

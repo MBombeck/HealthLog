@@ -139,7 +139,7 @@ const AI_REQUEST_SITES: Record<string, RequestSite> = {
   },
   "components/documents/use-document-assist.ts": {
     capability: "documentAi",
-    gate: "components/documents/document-detail-sheet.tsx",
+    gate: "components/documents/detail/use-document-detail-ai.ts",
   },
 };
 

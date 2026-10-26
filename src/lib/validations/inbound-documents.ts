@@ -15,9 +15,8 @@
  * STATED assertion about the patient, never as the app's conclusion.
  *
  * This module holds:
- *   - `inboundExtractionSchema` — the schema the provider's JSON is validated
- *     against (UNTRUSTED model output). Liberal on shape; the review screen is
- *     the safety boundary.
+ *   - the fact types and code systems a provider may name (its JSON is
+ *     validated in `inbound-extraction.ts`).
  *   - the staged-fact DTO shapes the routes return + the UI consumes.
  *   - `inboundFactEditSchema` — the per-fact correction the review screen sends
  *     before approval (fixes OCR / units / dates / codes).
@@ -36,6 +35,7 @@ import {
 } from "@/lib/documents/inbound-constants";
 
 import type { AiCapabilityState } from "@/lib/ai/capabilities/types";
+import { OCR_MAX_ROWS } from "@/lib/validations/labs-ocr";
 
 // The constants and label lists a client needs live in a zod-free module, so
 // a component that wants the list of document kinds does not pull the schema
@@ -48,8 +48,13 @@ export {
   type InboundDocumentKindValue,
 } from "@/lib/documents/inbound-constants";
 
-/** Max facts a single document may stage / confirm. A dense letter is ~40. */
-export const INBOUND_MAX_FACTS = 120;
+/**
+ * Max facts a single document may stage / confirm. A dense letter is ~40, but
+ * a multi-page lab report read through the document runs to the hundreds of
+ * readings the lab scan takes, so it is the lab scan's own cap: the same
+ * report keeps the same rows whichever way it is read.
+ */
+export const INBOUND_MAX_FACTS = OCR_MAX_ROWS;
 
 /**
  * Confidence floor. A fact scoring below this fails closed: it is staged with
@@ -102,14 +107,14 @@ export type DocumentSummaryStateValue =
 /**
  * Refs #776 — why a document's most recent content-index attempt produced no
  * index. Mirrors the free-String `lastIndexOutcome` column (closed here, not
- * in the schema, so a new reason needs no migration); the detail view renders
- * a plain-words line per value instead of a bare "not indexed" that cannot
- * tell "never tried" from "tried and failed".
+ * in the schema, so a new reason needs no migration); the detail view says
+ * each in plain words, so "never tried" and "tried and failed" differ.
  */
 export const DOCUMENT_INDEX_OUTCOMES = [
   "local-empty",
   "local-unsupported",
   "decrypt-error",
+  "resource-limit",
   "raster-failed",
   "provider-error",
   "pdf-needs-anthropic",
@@ -153,93 +158,6 @@ export const INBOUND_CODE_SYSTEMS = [
   "ATC",
 ] as const;
 export type InboundCodeSystem = (typeof INBOUND_CODE_SYSTEMS)[number];
-
-const confidenceScore = z.number().min(0).max(1).catch(0);
-const nullableText = (max: number) =>
-  z.string().trim().min(1).max(max).nullable().catch(null);
-
-/**
- * One fact as the PROVIDER returns it (untrusted). A single flat shape across
- * the three fact types so the wire stays simple; the route maps it to the
- * per-type staged payload. Everything is `.catch`-guarded so a malformed field
- * degrades to null + low confidence rather than 422-ing the whole extraction.
- */
-const extractedFactRawFields = z.object({
-  type: z.enum(INBOUND_FACT_TYPES),
-  /** Verbatim label / diagnosis text / medication name as written. */
-  label: z.string().trim().min(1).max(300).catch(""),
-  /** STATED code, present only when the document writes one. */
-  code: nullableText(64),
-  codeSystem: z.enum(INBOUND_CODE_SYSTEMS).nullable().catch(null),
-  /** Condition: stated clinical / verification status (verbatim). */
-  clinicalStatus: nullableText(64),
-  verificationStatus: nullableText(64),
-  /** Observation: numeric XOR qualitative value, unit, stated ref bounds. */
-  value: z.number().finite().nullable().catch(null),
-  valueText: nullableText(300),
-  unit: nullableText(80),
-  referenceLow: z.number().finite().nullable().catch(null),
-  referenceHigh: z.number().finite().nullable().catch(null),
-  /**
-   * Observation: the reference range EXACTLY as printed, verbatim. A report
-   * writes its window in prose ("3,5 - 5,0", "< 5", "bis 5,0", "negativ"), and
-   * `referenceLow` / `referenceHigh` above can only carry the cases that
-   * reduce to two numbers. This field is what stops every other case from
-   * being dropped on the floor — the string is kept whether or not the parser
-   * gets bounds out of it.
-   */
-  referenceText: nullableText(120),
-  /** MedicationStatement: dose + stated status (verbatim). */
-  dose: nullableText(120),
-  medicationStatus: nullableText(64),
-  /** A stated date for the fact (onset / effective / report), ISO or null. */
-  effectiveDate: z.string().nullable().catch(null),
-  /** Provenance: the verbatim source span this fact came from. */
-  sourceText: z.string().trim().max(2000).catch(""),
-  /** Optional 0-based page index the fact was read from. */
-  page: z.number().int().min(0).max(10000).nullable().catch(null),
-  /** The model's self-reported overall confidence for this fact (0..1). */
-  confidence: confidenceScore.default(0),
-});
-
-/**
- * A window whose floor sits above its ceiling cannot be true, so it is dropped
- * rather than repaired. Swapping the pair would invent a range the report never
- * printed, and this schema cannot reject the fact the way `labs.ts` does —
- * every field above is `.catch()`ed precisely so one bad value does not sink a
- * whole extraction. `referenceText` survives either way, so nothing the
- * document actually stated is lost: the verbatim string is still there for a
- * person to read on the review screen.
- *
- * `parseReferenceRange` already answers a transposed PRINTED window this way.
- * These are the numbers the model reported instead, and they travelled
- * unchecked: an integration run against a real Postgres wrote a 100/30 pair
- * onto the row AND onto the freshly minted catalog marker, which then handed
- * the impossible window to every later reading of that analyte.
- */
-export const extractedFactRawSchema = extractedFactRawFields.transform(
-  (fact) => {
-    if (
-      fact.referenceLow !== null &&
-      fact.referenceHigh !== null &&
-      fact.referenceLow > fact.referenceHigh
-    ) {
-      return { ...fact, referenceLow: null, referenceHigh: null };
-    }
-    return fact;
-  },
-);
-
-export type ExtractedFactRaw = z.infer<typeof extractedFactRawSchema>;
-
-/** The full JSON envelope the provider returns. */
-export const inboundExtractionSchema = z.object({
-  reportDate: z.string().nullable().catch(null),
-  kind: z.enum(INBOUND_DOCUMENT_KINDS).nullable().catch(null),
-  facts: z.array(extractedFactRawSchema).max(INBOUND_MAX_FACTS).catch([]),
-});
-
-export type InboundExtraction = z.infer<typeof inboundExtractionSchema>;
 
 // ─── Staged-fact payloads (FHIR-staged, stated status only) ────────────────
 
@@ -480,12 +398,12 @@ export interface InboundDocumentDetailDto extends InboundDocumentDto {
   /** When the background summary was generated (ISO 8601), or null. */
   summaryGeneratedAt: string | null;
   /**
-   * What became of the summary. A null `summary` is ambiguous on its own —
-   * never attempted, mid-flight, withheld by the safety screen and could-not-
-   * produce all look identical — so the view reads this instead of guessing
-   * "still generating".
+   * What became of the summary: a null `summary` alone cannot tell never
+   * attempted, mid-flight, withheld and could-not-produce apart.
    */
   summaryState: DocumentSummaryStateValue;
+  /** The staged facts may leave part of the document out (last extraction). */
+  extractionIncomplete: boolean;
 }
 
 // ─── Edit (correction before approval) ─────────────────────────────────────
@@ -960,44 +878,14 @@ export interface DocumentBulkResultDto {
   error: string | null;
 }
 
-/** The usage endpoint payload the UI reads before offering an upload. */
-export interface DocumentUsageDto {
-  usedBytes: number;
-  quotaBytes: number;
-  maxFileBytes: number;
-  acceptedExtensions: string[];
-  /**
-   * Episodes carrying at least one LIVE document link — the vault filter
-   * bar's condition chips. Sourced server-side so a chip exists even when
-   * every linked document sits pages deep in the timeline.
-   */
-  linkedEpisodes: DocumentConditionLinkDto[];
-  /**
-   * Procedures and surgeries (visits of kind PROCEDURE) carrying at least one
-   * LIVE document link — the filter bar's procedure choices, sourced
-   * server-side for the same reason as `linkedEpisodes`. Empty when the
-   * caller's grant does not cover the visits section, because the label is
-   * the visit's own text.
-   */
-  linkedProcedures: DocumentLinkedProcedureDto[];
-  /**
-   * Whether the AI "Suggest details" action can run for this caller — true when
-   * a provider (vision, or text + local OCR) is configured. The UI hides the
-   * action when false so it never offers what the endpoint would 422.
-   */
-  assistAvailable: boolean;
-  /**
-   * Content-search index state: whether indexing is available to the caller
-   * (`enabled`, same provider precondition as assist), how many live documents
-   * are indexed, and the live-document total — so the UI can gauge coverage and
-   * offer the "index all documents" backfill.
-   */
-  contentIndex: {
-    enabled: boolean;
-    indexedCount: number;
-    totalCount: number;
-  };
-}
+// The usage and Recently deleted payloads live in their own module; kept
+// importable from here like every other vault DTO.
+export type {
+  DeletedDocumentDto,
+  DeletedDocumentListDto,
+  DocumentPurgeDto,
+  DocumentUsageDto,
+} from "@/lib/documents/vault-read-dtos";
 
 /** Where a document read egresses, vendor-blind. */
 export type DocumentEgressClass = "local" | "external";

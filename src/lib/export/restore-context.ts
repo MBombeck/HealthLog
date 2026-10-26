@@ -72,6 +72,7 @@ export const RESTORE_CLEARED_KEYS = [
   "documents",
   "documentConditionLinks",
   "extractedFacts",
+  "documentImportKeys",
   "healthProfile",
   "healthProfileFactRevisions",
   "customMetrics",

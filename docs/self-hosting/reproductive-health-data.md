@@ -95,19 +95,31 @@ different things depending on which button you press.
   two actions below, the row stays. A start that was folded into a later
   cycle stays for as long as that cycle does, because deleting the later
   cycle gives it back.
-- **Settings → Delete All Data** removes the rows outright, tombstones
+- **Settings → Advanced → Delete all data** removes the rows, tombstones
   included. Everything the account owns goes except what you sign in
-  with; the confirmation dialog lists it.
-- **Deleting the account** removes the account row, and the database
-  cascades every record with it.
+  with; the confirmation dialog lists it. Before it does, it keeps a copy
+  of the account on the server for the deletion grace window (14 days by
+  default), so a mistaken wipe can be restored; the copy is erased when
+  the window ends.
+- **Deleting the account** locks it at once and erases it, with every
+  record, when the grace window ends. Until then an admin can undo it.
 
-Two consequences follow, and they matter for the seizure threat model
+`ACCOUNT_DELETION_GRACE_DAYS=0` makes both immediate again, without the
+copy and without an undo.
+
+Three consequences follow, and they matter for the seizure threat model
 above. A host imaged while a per-entry deletion is the only deletion you
-have performed still holds that entry. And a backup taken before any of
-these actions still holds whatever it captured, because a backup is a
-copy of a moment. If your reason for deleting is that the data must not
-be recoverable from the machine, use one of the two whole-record actions
-and rotate your backups.
+have performed still holds that entry; so does a host imaged inside the
+grace window. A backup taken before any of these actions still holds
+whatever it captured, because a backup is a copy of a moment: the nightly
+database dumps keep a deleted record until they age out (`DB_BACKUP_KEEP`
+nights on the server, and your bucket's lifecycle rule for `database/`).
+And after the move to Postgres 18 the old `pgdata` volume is a full copy
+of the database from that day until you remove it. If your reason for
+deleting is that the data must not be recoverable from the machine, set
+the grace window to 0 or wait it out, remove the old volume, and let the
+dumps age out or delete them
+([backup-restore.md](../ops/backup-restore.md)).
 
 ## Practical hardening
 

@@ -86,10 +86,11 @@ backfill button in settings fetches both for the range it is given.
 Since v1.42 the home, each dated location period and each stored day keep
 their coarse location sealed with the instance's encryption key (one value
 per row, `{ lat, lon, label }`, under the label
-`healthlog/environment-location/v1`). The boot-time encryption backfill seals
-rows written by older releases and clears their readable columns; the
-readable columns are dropped in a later release once the backfill reports
-zero rows everywhere. Key rotation (`scripts/rotate-encryption-key.ts`, or the
+`healthlog/environment-location/v1`). The boot-time encryption backfill sealed
+rows written by older releases and cleared their readable columns, and
+migration `0409` (v1.43) dropped those columns; it refuses to run while a row
+still holds a readable location
+([migration-0409-plaintext-location.md](../ops/migration-0409-plaintext-location.md)). Key rotation (`scripts/rotate-encryption-key.ts`, or the
 in-app rotation) covers all three.
 
 What the person sees is unchanged: the settings page and

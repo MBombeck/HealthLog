@@ -20,8 +20,8 @@
  *    https://developers.openai.com/cookbook/examples/responses_api/reasoning_items
  *  - OpenAI Chat Completions: `reasoning_effort`, no summaries and no
  *    reasoning items to hand back between tool rounds, so reasoning is only
- *    sent on rounds without tools. `none` exists from gpt-5.1 on; gpt-5 knows
- *    `minimal`; the o-series starts at `low`.
+ *    sent on rounds without tools. `none` exists from gpt-5.1 on (the gpt-6
+ *    line included); gpt-5 knows `minimal`; the o-series starts at `low`.
  *    https://platform.openai.com/docs/api-reference/chat/create
  *  - Anthropic: manual `thinking: { type: "enabled", budget_tokens }` up to
  *    the 4.5 generation; adaptive `thinking: { type: "adaptive" }` with
@@ -46,6 +46,10 @@
  *
  * Client-safe: no server import.
  */
+import {
+  openAIModelFamily,
+  type OpenAIReasoningFamily,
+} from "../openai-model-family";
 import type { ProviderType } from "../types";
 import type { ReasoningLevel } from "./levels";
 
@@ -147,19 +151,17 @@ export function anthropicThinksAlways(model: string): boolean {
 
 // ── OpenAI ──────────────────────────────────────────────────────────────────
 
+export type { OpenAIReasoningFamily };
+
 /**
  * The reasoning family of an OpenAI model id, or `null` for a model that does
- * not reason (`gpt-4o`, `gpt-4.1`). `gpt-5.1+` knows `none`, bare `gpt-5`
- * (and its mini / nano) stops at `minimal`, the o-series at `low`.
+ * not reason (`gpt-4o`, `gpt-4.1`) or is not recognised. `gpt-5.1+` (every
+ * generation from 5.1 on, the gpt-6 line included) knows `none`, bare `gpt-5`
+ * (and its mini / nano) stops at `minimal`, the o-series at `low`. The
+ * reading itself lives in `openai-model-family.ts`.
  */
-export type OpenAIReasoningFamily = "gpt-5.1+" | "gpt-5" | "o" | null;
-
 export function openAIReasoningFamily(model: string): OpenAIReasoningFamily {
-  const m = model.toLowerCase().replace(/^openai\//, "");
-  const gpt5 = /^gpt-5(?:\.(\d+))?(?:$|-)/.exec(m);
-  if (gpt5) return gpt5[1] && Number(gpt5[1]) >= 1 ? "gpt-5.1+" : "gpt-5";
-  if (/^o[134](?:$|-)/.test(m)) return "o";
-  return null;
+  return openAIModelFamily(model)?.reasoning ?? null;
 }
 
 /** The lowest `reasoning_effort` an OpenAI reasoning family accepts. */
@@ -266,19 +268,94 @@ export function reasoningTitleOf(text: string): string | null {
 
 /**
  * Split a reply that inlines its reasoning as a leading `<think>…</think>`
- * block (some local models do). Only a block at the very start counts; a
- * mention later in the prose stays prose. An unclosed block means the answer
- * budget ran out inside the reasoning: everything is reasoning, no answer.
+ * block (some local models do, and any server without a reasoning parser
+ * passes it through). Only a block at the very start counts; a mention later
+ * in the prose stays prose. An unclosed block means the answer budget ran out
+ * inside the reasoning: everything is reasoning, no answer.
+ *
+ * #1276 — a reply can also carry only the closing tag: GLM, Qwen3 and
+ * DeepSeek-R1 chat templates end the generation prompt with `<think>`, so the
+ * model's output starts inside the block. Everything before that `</think>`
+ * is reasoning when the tag opens a line (the templates close the block on a
+ * line of its own, or at the very start), or anywhere once the model is known
+ * to reason (`knownReasoner`). An ordinary answer that mentions the tag in a
+ * sentence is left whole.
  */
-export function splitThinkTags(content: string): {
+export function splitThinkTags(
+  content: string,
+  knownReasoner = false,
+): {
   content: string;
   reasoning: string | null;
 } {
-  const m = /^\s*<think>([\s\S]*?)(<\/think>|$)/.exec(content);
+  const m =
+    /^\s*<think>([\s\S]*?)(<\/think>|$)/.exec(content) ??
+    (knownReasoner
+      ? /^([\s\S]*?)(<\/think>)/
+      : /^((?:[\s\S]*?\n)?)[ \t]*(<\/think>)/
+    ).exec(content);
   if (!m) return { content, reasoning: null };
   const reasoning = m[1].trim();
   const rest = m[2] ? content.slice(m[0].length).replace(/^\s+/, "") : "";
   return { content: rest, reasoning: reasoning.length > 0 ? reasoning : null };
+}
+
+/**
+ * #1276 — what a Chat Completions reply's `content` holds, for a wire whose
+ * reasoning switch the client does not control (a gateway, a local server).
+ *
+ *  - Inline reasoning (`<think>…</think>`, or only the closing tag) is split
+ *    off by {@link splitThinkTags}.
+ *  - A reply that ran into a ceiling which held room for reasoning
+ *    (`finish_reason: "length"`, `reasoningRoom`), with no reasoning field
+ *    beside it, no tag and no tool call, from a model known to reason
+ *    (`knownReasoner`), is reasoning the server did not separate: the budget
+ *    was sized for thinking plus an answer, so text that fills all of it
+ *    unlabelled is the thought, cut off. From any other model it is the
+ *    answer, cut off, and the caller reads `finish_reason` (a model that
+ *    does not reason, asked with any level, still answers).
+ *
+ * `reasoning` is the text taken out of `content`, for the reasoning channel.
+ * `unseparated` marks the second case so the caller can say so in its log.
+ */
+export function answerOf(
+  content: string | null | undefined,
+  reply: {
+    /** The reply carried `reasoning` / `reasoning_content` beside `content`. */
+    fieldedReasoning: boolean;
+    finishReason: string | null | undefined;
+    hasToolCalls: boolean;
+    /** The request's ceiling held room for reasoning on top of the answer. */
+    reasoningRoom: boolean;
+    /** This endpoint and model have shown they reason (`knownReasoner`). */
+    knownReasoner: boolean;
+  },
+): { content: string; reasoning: string | null; unseparated: boolean } {
+  const text = content ?? "";
+  if (!text) return { content: "", reasoning: null, unseparated: false };
+  const split = splitThinkTags(text, reply.knownReasoner);
+  if (split.content !== text || split.reasoning !== null) {
+    return {
+      content: split.content,
+      reasoning: split.reasoning,
+      unseparated: false,
+    };
+  }
+  if (
+    reply.finishReason === "length" &&
+    reply.reasoningRoom &&
+    reply.knownReasoner &&
+    !reply.fieldedReasoning &&
+    !reply.hasToolCalls
+  ) {
+    const reasoning = text.trim();
+    return {
+      content: "",
+      reasoning: reasoning.length > 0 ? reasoning : null,
+      unseparated: true,
+    };
+  }
+  return { content: text, reasoning: null, unseparated: false };
 }
 
 /** The level a provider's wire effort corresponds to, for `downgradedTo`. */

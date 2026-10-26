@@ -34,6 +34,17 @@
  * (`job.heavy_lane.waiting_long`), once per holder, so a lane that is held
  * for hours shows in the alerts instead of only in `info` lines.
  *
+ * A hold ends when its handler settles, and a handler that never settles
+ * would hold the lane for the life of the process: pg-boss fails a job at its
+ * expiry and fires its abort signal, but does not stop the handler. Every
+ * heavy job would go back to the queue every minute from then on, a restore
+ * an operator started among them, with nothing but one `warn` line to show for
+ * it. So a hold carries the expiry of the jobs it runs. A job that finds the
+ * lane held past that expiry and a grace of one deferral takes the lane, and
+ * the overrun is reported at `error` (`job.heavy_lane.holder_expired`): the
+ * holder has already been failed by pg-boss, so the lane is the only thing it
+ * still holds.
+ *
  * The container memory guard (`observability/container-memory.ts`) closes
  * the lane for a while when the cgroup's working set reaches 85 % of its
  * limit: a heavy job that arrives then goes back to the queue the same way,
@@ -102,6 +113,12 @@ export const LANE_YIELD_DELAY_SECONDS = 2 * LANE_DEFER_SECONDS;
 /** How long a job may stand in line before the wait is reported at `warn`. */
 export const LANE_WAIT_WARN_MS = 2 * 60 * 60 * 1000;
 
+/**
+ * How long past its jobs' expiry a holder keeps the lane before it is taken:
+ * one deferral, so a job that went back just before the expiry finds it.
+ */
+const LANE_HOLD_GRACE_SECONDS = LANE_DEFER_SECONDS;
+
 /** What one trip back to the queue did. */
 export interface LaneDeferral {
   /** Rows that went back. */
@@ -151,6 +168,18 @@ interface LaneHold {
   wantedBy: string | null;
   /** Queues whose long wait has been reported during this hold. */
   warned: Set<string>;
+  /** When the hold has outlived its jobs' expiry and the grace after it. */
+  expiresAt: number;
+}
+
+/**
+ * When a hold of `jobs` entered at `at` has outlived them. A job without an
+ * expiry (only a test stand-in has none) never forfeits the lane.
+ */
+function holdExpiresAt(jobs: readonly Job<unknown>[], at: number): number {
+  const expiry = Math.max(...jobs.map((job) => job.expireInSeconds));
+  if (!Number.isFinite(expiry)) return Number.POSITIVE_INFINITY;
+  return at + (expiry + LANE_HOLD_GRACE_SECONDS) * 1000;
 }
 
 let hold: LaneHold | null = null;
@@ -209,7 +238,21 @@ export function heavyLane<J extends Job<unknown>>(
   }
   return async (jobs) => {
     if (!jobs.some(inLane)) return handler(jobs);
-    const current = hold;
+    let current = hold;
+    const at = now();
+    if (current && at > current.expiresAt) {
+      emitSignal({
+        action: "job.heavy_lane.holder_expired",
+        level: "error",
+        meta: {
+          holder: current.queue,
+          queue,
+          overran_minutes: Math.floor((at - current.expiresAt) / 60_000),
+        },
+      });
+      hold = null;
+      current = null;
+    }
     if (!current && memoryPressureActive()) {
       const deferral = await defer(queue, jobs);
       annotate({
@@ -235,16 +278,23 @@ export function heavyLane<J extends Job<unknown>>(
           deferred: deferral.deferred,
         },
       });
-      reportLongWait(current, queue, deferral, now());
+      reportLongWait(current, queue, deferral, at);
       return jobDone({ lane_deferred: deferral.deferred });
     }
-    const entered: LaneHold = { queue, wantedBy: null, warned: new Set() };
+    const entered: LaneHold = {
+      queue,
+      wantedBy: null,
+      warned: new Set(),
+      expiresAt: holdExpiresAt(jobs, at),
+    };
     hold = entered;
     annotate({ action: { name: "job.heavy_lane.entered" }, meta: { queue } });
     try {
       return await holdScope.run(entered, () => handler(jobs));
     } finally {
-      hold = null;
+      // Only its own hold: one taken over past its expiry belongs to the job
+      // that took it.
+      if (hold === entered) hold = null;
     }
   };
 }

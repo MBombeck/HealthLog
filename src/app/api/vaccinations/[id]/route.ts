@@ -20,13 +20,8 @@ import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { overwriteDetails } from "@/lib/sharing/audit-details";
-import {
-  apiSuccess,
-  apiError,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { vaccinationUpdateSchema } from "@/lib/validations/vaccinations";
 import { toVaccinationDTO } from "@/lib/vaccinations/dto";
@@ -98,17 +93,11 @@ export const PATCH = apiHandler(
       return apiError("Vaccination not found", 404);
     }
 
-    const { data: rawBody, error: jsonError } = await safeJson(request, {
+    const parsed = await parseJsonBody(request, vaccinationUpdateSchema, {
       maxBytes: 32 * 1024,
+      errorCode: "vaccination.invalid",
     });
-    if (jsonError) return jsonError;
-
-    const parsed = vaccinationUpdateSchema.safeParse(rawBody);
-    if (!parsed.success) {
-      return returnAllZodIssues(parsed.error, 422, {
-        errorCode: "vaccination.invalid",
-      });
-    }
+    if (!parsed.ok) return parsed.error;
 
     const entry = parsed.data;
 

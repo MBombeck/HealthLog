@@ -6,7 +6,7 @@
  * it, and it does not stop the handler, so a job that legitimately needs longer
  * ends up running twice beside itself. No queue policy prevents that: the
  * policies constrain job rows, and an expired row is no longer active. Every
- * queue bound with `createAndWork` is therefore declared here as one of:
+ * queue the worker registry declares is therefore declared here as one of:
  *
  *   - `short`: a job cannot come near fifteen minutes (one account's bounded
  *     window, one document, a forwarder, a bounded delete). It relies on the
@@ -14,6 +14,14 @@
  *   - `budgeted`: a pass over a long history that stops itself at three
  *     quarters of the default expiry (`jobBudget`) and hands the rest to its
  *     next run, so it ends before fifteen minutes by construction.
+ *   - `bounded`: one unit of model work (one account's note, refresh or
+ *     memory pass, a document summary) whose calls wait the person's
+ *     response timeout each, up to ten minutes, which can outlast fifteen
+ *     minutes. Every call carries its own abort and most sit behind an outer
+ *     bound, so the job's longest run is known (`modelSeconds`, from
+ *     `model-time.ts`); it carries an explicit
+ *     `expireInSeconds` above that on every send, and no retry can start
+ *     beside a run that is still going (#1274).
  *   - `long`: a job that may run for hours. It carries an explicit
  *     `expireInSeconds` on every send and schedule, stops itself before that
  *     expiry (`jobBudget` / `jobDeadline`), and holds something per identity
@@ -28,31 +36,57 @@
 import { INTEGRATION_BACKFILL_EXPIRE_SECONDS } from "@/lib/jobs/integration-backfill-admission";
 import { NIGHTLY_INSIGHT_PASS_EXPIRE_SECONDS } from "@/lib/jobs/reminder/registrar-shared";
 import { INSIGHT_PREGENERATE_EXPIRE_SECONDS } from "@/lib/jobs/insight-pregenerate-shared";
-import { PERIOD_NARRATIVE_EXPIRE_SECONDS } from "@/lib/jobs/period-narrative-shared";
+import { PERIOD_NARRATIVE_EXPIRE_SECONDS } from "@/lib/jobs/period-narrative-queue";
 import { PR_DETECTION_EXPIRE_SECONDS } from "@/lib/jobs/pr-detection";
 import { ENCRYPTION_KEY_ROTATE_EXPIRE_SECONDS } from "@/lib/jobs/encryption-key-rotate";
 import { CONTENT_INDEX_BACKFILL_EXPIRE_SECONDS } from "@/lib/jobs/document-content-index-backfill";
 import { DOCUMENT_AI_RUN_EXPIRE_SECONDS } from "@/lib/jobs/document-ai-run";
 import { DATA_BACKUP_SEND_OPTIONS } from "@/lib/jobs/data-backup-policy";
-import { OFFHOST_BACKUP_EXPIRE_SECONDS } from "@/lib/jobs/offhost-backup";
+import { DATABASE_BACKUP_EXPIRE_SECONDS } from "@/lib/jobs/database-backup-queue";
+import { OFFHOST_BACKUP_EXPIRE_SECONDS } from "@/lib/jobs/offhost-backup-queue";
 import { BACKUP_RESTORE_EXPIRE_SECONDS } from "@/lib/jobs/backup-restore";
-import { RESTORE_DRILL_EXPIRE_SECONDS } from "@/lib/jobs/restore-drill";
+import { RESTORE_DRILL_EXPIRE_SECONDS } from "@/lib/jobs/restore-drill-queue";
 import { APPLE_HEALTH_IMPORT_SEND_OPTIONS } from "@/lib/jobs/apple-health-import-worker";
 import { MEDICATION_INTAKE_IMPORT_SEND_OPTIONS } from "@/lib/jobs/medication-intake-import";
 import { HEALTH_CONNECT_IMPORT_SEND_OPTIONS } from "@/lib/jobs/health-connect-import-worker";
 import { MEASUREMENT_MAINTENANCE_SEND_OPTIONS } from "@/lib/jobs/measurement-maintenance";
 import { PULSE_DAY_MEAN_SEND_OPTIONS } from "@/lib/jobs/pulse-day-mean";
 import { ROLLUP_FULL_BACKFILL_EXPIRE_SECONDS } from "@/lib/rollups/measurement-rollups";
+import { MORNING_DIGEST_REFRESH_EXPIRE_SECONDS } from "@/lib/jobs/morning-digest-refresh-shared";
+import { INSIGHT_STATUS_GENERATE_EXPIRE_SECONDS } from "@/lib/jobs/insight-status-generate-queue";
+import { WORKOUT_INSIGHT_GENERATE_EXPIRE_SECONDS } from "@/lib/jobs/workout-insight-generate-shared";
+import {
+  COACH_MEMORY_MODEL_RUNS,
+  COACH_MEMORY_REFRESH_EXPIRE_SECONDS,
+} from "@/lib/ai/coach/coach-memory-shared";
+import {
+  COMPLETION_CEILING_MS,
+  COMPREHENSIVE_WARM_CEILING_MS,
+} from "@/lib/jobs/model-time";
+import { DOCUMENT_INDEX_EXPIRE_SECONDS } from "@/lib/jobs/document-index-queue";
+import { DOCUMENT_SUMMARY_EXPIRE_SECONDS } from "@/lib/jobs/document-summary-queue";
 
 /** pg-boss's default job expiry, in seconds. */
 export const DEFAULT_JOB_EXPIRE_SECONDS = 15 * 60;
 
-/** Where a check lives: `binding` is the `createAndWork` call itself. */
-export type SourceSite = "binding" | { file: string; fn: string };
+/** Where a check lives: a function (or const) in a file under `src/`. */
+export type SourceSite = { file: string; fn: string };
 
 export type QueueRuntime =
   | { runtime: "short"; why: string }
   | { runtime: "budgeted"; budget: SourceSite; why: string }
+  | {
+      runtime: "bounded";
+      /**
+       * The longest the job's model work runs at the largest response-timeout
+       * setting, in seconds: the outer bounds in the code, not an estimate.
+       */
+      modelSeconds: number;
+      expireInSeconds: number;
+      /** As for `long`: identifiers that carry the expiry into a send. */
+      expiryVia: readonly string[];
+      why: string;
+    }
   | {
       runtime: "long";
       expireInSeconds: number;
@@ -64,8 +98,9 @@ export type QueueRuntime =
       /** Where the handler stops on the job's budget, or `oneShot`. */
       stop: SourceSite | { oneShot: string };
       /**
-       * What keeps a second run from working beside this one: `lockedPass`
-       * at the binding, or a marker in the named function.
+       * What keeps a second run from working beside this one: the `lock`
+       * its registry definition declares (`lockedPass`), or a marker in the
+       * named function.
        */
       exclusive: "lockedPass" | { marker: string; at: SourceSite };
       why: string;
@@ -153,17 +188,31 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
       fn: "handleInsightPregenerateJob",
     },
     exclusive: "lockedPass",
-    why: "Up to 200 accounts, a comprehensive generation each (a provider call bounded by the account's timeout, up to ten minutes) plus the status warm.",
+    why: "Up to 200 accounts, a comprehensive generation each (up to five provider calls in a row, each bounded by the account's timeout of at most ten minutes) plus the status warm.",
   },
-  "morning-digest-refresh": short(
-    "One account, one comprehensive generation, bounded by the provider timeout.",
-  ),
-  "insight-status-generate": short(
-    "One account, one metric, one provider call.",
-  ),
+  "morning-digest-refresh": {
+    runtime: "bounded",
+    modelSeconds: COMPREHENSIVE_WARM_CEILING_MS / 1000,
+    expireInSeconds: MORNING_DIGEST_REFRESH_EXPIRE_SECONDS,
+    expiryVia: ["MORNING_DIGEST_REFRESH_EXPIRE_SECONDS"],
+    why: "One account, one forced comprehensive generation: up to five calls in a row at the account's timeout, behind the warm's own bound.",
+  },
+  "insight-status-generate": {
+    runtime: "bounded",
+    modelSeconds: COMPLETION_CEILING_MS / 1000,
+    expireInSeconds: INSIGHT_STATUS_GENERATE_EXPIRE_SECONDS,
+    expiryVia: ["INSIGHT_STATUS_GENERATE_EXPIRE_SECONDS"],
+    why: "One account, one note: one status run, the call and its one reasoning repeat at the account's timeout.",
+  },
   "data-arrival": short("One arrival's reactions."),
   "reaction-line-generate": short("One provider call for one reaction line."),
-  "workout-insight-generate": short("One workout's insight."),
+  "workout-insight-generate": {
+    runtime: "bounded",
+    modelSeconds: COMPLETION_CEILING_MS / 1000,
+    expireInSeconds: WORKOUT_INSIGHT_GENERATE_EXPIRE_SECONDS,
+    expiryVia: ["WORKOUT_INSIGHT_GENERATE_EXPIRE_SECONDS"],
+    why: "One workout's line: one status run at the account's timeout.",
+  },
   "recovery-score-compute": short(
     "Arithmetic over a recent window, capped at 500 accounts; no provider call.",
   ),
@@ -177,11 +226,20 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     runtime: "long",
     expireInSeconds: PERIOD_NARRATIVE_EXPIRE_SECONDS,
     expiryVia: ["PERIOD_NARRATIVE_EXPIRE_SECONDS"],
-    stop: "binding",
+    stop: {
+      file: "lib/jobs/reminder/status-handlers.ts",
+      fn: "handlePeriodNarrative",
+    },
     exclusive: "lockedPass",
     why: "On a boundary night up to 200 accounts with a provider call per period each; a single-account warm is short.",
   },
-  "coach-memory-refresh": short("One conversation's summary and facts."),
+  "coach-memory-refresh": {
+    runtime: "bounded",
+    modelSeconds: (COACH_MEMORY_MODEL_RUNS * COMPLETION_CEILING_MS) / 1000,
+    expireInSeconds: COACH_MEMORY_REFRESH_EXPIRE_SECONDS,
+    expiryVia: ["COACH_MEMORY_REFRESH_EXPIRE_SECONDS"],
+    why: "One conversation's summary, facts and plan proposals: three status runs in a row at the account's timeout.",
+  },
   "coach-nudge": short(
     "Light deterministic checks per account; the provider part is capped at 25 calls and 90 seconds a tick.",
   ),
@@ -198,7 +256,10 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     runtime: "long",
     expireInSeconds: ROLLUP_FULL_BACKFILL_EXPIRE_SECONDS,
     expiryVia: ["ROLLUP_FULL_BACKFILL_EXPIRE_SECONDS"],
-    stop: "binding",
+    stop: {
+      file: "lib/jobs/reminder/rollup-handlers.ts",
+      fn: "handleRollupFullBackfill",
+    },
     exclusive: "lockedPass",
     why: "One account's five-year fold: four aggregates under the statement timeout and four persist transactions of up to 120 s each, about thirteen minutes at worst under the defaults and unbounded when the operator lifts the statement timeout.",
   },
@@ -220,22 +281,34 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   ),
   "mean-consolidation": {
     runtime: "budgeted",
-    budget: "binding",
+    budget: {
+      file: "lib/jobs/reminder/rollup-handlers.ts",
+      fn: "handleMeanConsolidation",
+    },
     why: "One account's whole history, a day at a time; stops at three quarters of the default expiry and resumes.",
   },
   "dense-intraday-retention": {
     runtime: "budgeted",
-    budget: "binding",
+    budget: {
+      file: "lib/jobs/reminder/rollup-handlers.ts",
+      fn: "handleDenseIntradayRetention",
+    },
     why: "A dense account's history, a day at a time; stops at three quarters of the default expiry and resumes.",
   },
   "dense-intraday-hourly-rebuild": {
     runtime: "budgeted",
-    budget: "binding",
+    budget: {
+      file: "lib/jobs/reminder/rollup-handlers.ts",
+      fn: "handleDenseIntradayHourlyRebuild",
+    },
     why: "A dense account's hourly rows, a day at a time; stops at three quarters of the default expiry and resumes.",
   },
   "drain-per-sample-cumulative": {
     runtime: "budgeted",
-    budget: "binding",
+    budget: {
+      file: "lib/jobs/reminder/rollup-handlers.ts",
+      fn: "drainCumulativeHandler",
+    },
     why: "Every account's per-sample drains; stops at three quarters of the default expiry and hands the rest to a continuation job.",
   },
 
@@ -260,6 +333,17 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     exclusive: "lockedPass",
     why: "Serialises every account's whole record.",
   },
+  "database-backup": {
+    runtime: "long",
+    expireInSeconds: DATABASE_BACKUP_EXPIRE_SECONDS,
+    expiryVia: ["DATABASE_BACKUP_SEND_OPTIONS"],
+    stop: {
+      file: "lib/jobs/reminder/backup-handlers.ts",
+      fn: "handleDatabaseBackup",
+    },
+    exclusive: "lockedPass",
+    why: "Runs pg_dump over the whole database and uploads the dump off-host.",
+  },
   "data-backup-offhost": {
     runtime: "long",
     expireInSeconds: OFFHOST_BACKUP_EXPIRE_SECONDS,
@@ -280,6 +364,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     why: "Fetches and stream-parses every account's newest off-host object.",
   },
   "offhost-backup-purge": short("At most 200 delete requests per run."),
+  "account-deletion-purge": short(
+    "At most 50 account erasures per run, plus one DELETE of expired pre-wipe copies.",
+  ),
   "backup-restore": {
     runtime: "long",
     expireInSeconds: BACKUP_RESTORE_EXPIRE_SECONDS,
@@ -296,6 +383,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "geo-backfill": short("At most 500 audit rows per pass."),
   "geolite2-fetch": short("One database download."),
   "tls-pin-monitor": short("One TLS handshake."),
+  "recovery-readiness": short(
+    "A few indexed reads, one row per account from two backup ledgers, and at most one notice per signal.",
+  ),
   "integration-watchdog-hourly": short(
     "A few indexed reads per account with a connection and no provider call; a 14-day history count only for a silent source.",
   ),
@@ -471,11 +561,24 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     runtime: "long",
     expireInSeconds: CONTENT_INDEX_BACKFILL_EXPIRE_SECONDS,
     expiryVia: ["CONTENT_INDEX_BACKFILL_EXPIRE_SECONDS"],
-    stop: "binding",
+    stop: {
+      file: "lib/jobs/reminder/document-handlers.ts",
+      fn: "handleContentIndexBackfill",
+    },
     exclusive: "lockedPass",
     why: "Up to 200 documents of one account, a provider transcription each.",
   },
-  "document-index": short("One document."),
+  "document-index": {
+    runtime: "long",
+    expireInSeconds: DOCUMENT_INDEX_EXPIRE_SECONDS,
+    expiryVia: ["DOCUMENT_INDEX_EXPIRE_SECONDS"],
+    stop: {
+      file: "lib/jobs/reminder/document-handlers.ts",
+      fn: "handleDocumentIndex",
+    },
+    exclusive: "lockedPass",
+    why: "One document: the transcription, then a lab report's staging reads, as many as fit before the job's deadline at the person's timeout.",
+  },
   "document-ai-run": {
     runtime: "long",
     expireInSeconds: DOCUMENT_AI_RUN_EXPIRE_SECONDS,
@@ -491,7 +594,13 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     "Up to 500 conditional updates and one deleteMany.",
   ),
   "document-thumbnail": short("One document."),
-  "document-summary": short("One document."),
+  "document-summary": {
+    runtime: "bounded",
+    modelSeconds: COMPLETION_CEILING_MS / 1000,
+    expireInSeconds: DOCUMENT_SUMMARY_EXPIRE_SECONDS,
+    expiryVia: ["DOCUMENT_SUMMARY_EXPIRE_SECONDS"],
+    why: "One document's summary: one call and its reasoning repeat at the person's timeout.",
+  },
   "document-summary-catchup": short("Enqueues at most 200 documents."),
   "document-thumbnail-backfill": short("Enqueues at most 1 000 documents."),
   "environment-fetch": short(

@@ -15,13 +15,8 @@
 import { NextRequest } from "next/server";
 
 import { apiHandler, requireAdmin } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
@@ -99,12 +94,10 @@ export const GET = apiHandler(async () => {
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAdmin();
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, pulseDayMeanActionSchema, {
     maxBytes: 1024,
   });
-  if (jsonError) return jsonError;
-  const parsed = pulseDayMeanActionSchema.safeParse(body);
-  if (!parsed.success) return returnAllZodIssues(parsed.error, 422);
+  if (!parsed.ok) return parsed.error;
   const action = parsed.data.action;
   annotate({
     action: { name: "admin.pulse_day_mean.requested" },

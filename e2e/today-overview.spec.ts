@@ -255,7 +255,7 @@ test.describe("Today overview geometry", () => {
           const hero = await openDashboard(page, digest);
           const phone = viewport.width < 768;
 
-          // Late banners (the key-backup nudge) insert above the hero; let
+          // Late banners (the recovery kit nudge) insert above the hero; let
           // the page settle so the capture shows one stable layout.
           await page.waitForLoadState("networkidle");
           mkdirSync(SHOTS, { recursive: true });

@@ -325,6 +325,7 @@ async function runRawCompletionWithFallback(args: {
     },
     workingProvider: { providerType: "anthropic" },
     fallbackHops: [],
+    tokensSpent: 0,
   };
 }
 

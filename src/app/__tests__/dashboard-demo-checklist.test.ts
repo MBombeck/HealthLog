@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { dashboardSource } from "@/__tests__/helpers/dashboard-source";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -13,7 +14,6 @@ import { join } from "node:path";
  * client mounts the checklist only without it.
  */
 const PAGE_PATH = join(process.cwd(), "src/app/page.tsx");
-const CLIENT_PATH = join(process.cwd(), "src/app/page-client.tsx");
 
 describe("dashboard setup checklist on a demo instance", () => {
   it("threads DEMO_MODE into every render of the dashboard client", () => {
@@ -27,7 +27,7 @@ describe("dashboard setup checklist on a demo instance", () => {
   });
 
   it("mounts the checklist only outside demo mode", () => {
-    const src = readFileSync(CLIENT_PATH, "utf8");
+    const src = dashboardSource();
     const mounts = src.match(/<GettingStartedChecklist\b[^>]*\/>/g) ?? [];
     expect(mounts).toHaveLength(1);
     expect(src).toContain("{demoMode ? null : <GettingStartedChecklist />}");

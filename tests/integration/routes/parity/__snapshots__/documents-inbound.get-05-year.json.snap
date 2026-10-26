@@ -1,0 +1,54 @@
+{
+  "status": 200,
+  "body": {
+    "data": {
+      "documents": [
+        {
+          "id": "<id:1>",
+          "kind": "LAB_RESULT",
+          "title": "Blood test",
+          "filename": "labs.pdf",
+          "mimeType": "application/pdf",
+          "byteSize": 42,
+          "status": "STORED",
+          "providerType": null,
+          "reportDate": null,
+          "documentDate": "2025-03-04",
+          "errorReason": null,
+          "factCount": 0,
+          "pendingCount": 0,
+          "conditionLinks": [],
+          "encounterLinks": [],
+          "servingClass": "inline",
+          "hasContentIndex": false,
+          "contentIndexSource": null,
+          "lastIndexAttemptAt": null,
+          "lastIndexOutcome": null,
+          "hasThumbnail": false,
+          "sourceSystem": null,
+          "sourceId": null,
+          "createdAt": "<createdAt>",
+          "updatedAt": "<updatedAt>"
+        }
+      ],
+      "nextCursor": null
+    },
+    "error": null
+  },
+  "events": [
+    {
+      "status": 200,
+      "action": {
+        "name": "documents.inbound.list"
+      },
+      "meta": {
+        "count": 1,
+        "sort": "documentDate",
+        "order": "desc",
+        "filtered": true
+      },
+      "warnings": null,
+      "error": null
+    }
+  ]
+}

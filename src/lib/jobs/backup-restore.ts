@@ -48,10 +48,14 @@
  *     `DataBackup` row, which stays where it is whatever happens, so no retry
  *     ever needs the file again.
  */
+// account-deletion(file): restore-job bookkeeping; a restore is started by an admin, and the pending-deletion lock does not stop an admin.
 import { createHash } from "node:crypto";
 
 import type { Job, PgBoss } from "pg-boss";
-import { z } from "zod/v4";
+import {
+  isPreWipeBackupType,
+  PRE_WIPE_BACKUP_TYPE_PREFIX,
+} from "@/lib/account-deletion/pre-wipe-type";
 
 import { invalidateUserData } from "@/lib/cache/invalidate";
 import { prisma, toJson } from "@/lib/db";
@@ -78,8 +82,11 @@ import {
   type RestoreFailureCause,
 } from "@/lib/export/restore-failure-cause";
 import { logCaught } from "@/lib/logging/signal";
-
-export const BACKUP_RESTORE_QUEUE = "backup-restore";
+import { BACKUP_RESTORE_QUEUE } from "./backup-restore-queue";
+import type {
+  BackupRestoreJobView,
+  BackupRestoreResult,
+} from "./backup-restore-view";
 
 /** Stable code of the 409 a second restore of the same account gets. */
 export const BACKUP_RESTORE_ACTIVE_CODE = "backup.restore.active";
@@ -122,6 +129,49 @@ export const BACKUP_RESTORE_MAX_ATTEMPTS = 2;
 /** Finished jobs older than this are deleted when the account restores again. */
 export const BACKUP_RESTORE_RETENTION_DAYS = 30;
 
+/**
+ * A restore of the copy a data wipe took first undoes that wipe, so the
+ * off-host purge the wipe asked for — held back to the end of the grace
+ * window — no longer has anything to do: the copies from before the wipe hold
+ * the record the account has again. It is withdrawn; a request already due
+ * (no window, or one that has ended) is left to run.
+ */
+async function withdrawHeldWipePurge(
+  backupId: string,
+  userId: string,
+): Promise<void> {
+  const backup = await prisma.dataBackup.findUnique({
+    where: { id: backupId },
+    select: { type: true, createdAt: true },
+  });
+  if (!backup || !isPreWipeBackupType(backup.type)) return;
+  // Only the wipe this copy was taken for: its request was written after the
+  // copy and before the copy of any later wipe. A later wipe's request stays,
+  // because the restore does not bring back what that wipe removed (it
+  // replaces the record with this copy), and its off-host copies hold data
+  // the person wiped and did not get back.
+  const nextCopy = await prisma.dataBackup.findFirst({
+    where: {
+      userId,
+      type: { startsWith: PRE_WIPE_BACKUP_TYPE_PREFIX },
+      createdAt: { gt: backup.createdAt },
+    },
+    orderBy: { createdAt: "asc" },
+    select: { createdAt: true },
+  });
+  await prisma.offhostPurgeRequest.deleteMany({
+    where: {
+      subjectId: userId,
+      reason: "data_wiped",
+      notBefore: { gt: new Date() },
+      requestedAt: {
+        gte: backup.createdAt,
+        ...(nextCopy ? { lt: nextCopy.createdAt } : {}),
+      },
+    },
+  });
+}
+
 export type BackupRestorePayload = { restoreJobId: string } | { sweep: true };
 
 export type BackupRestoreStatus = "queued" | "running" | "succeeded" | "failed";
@@ -141,71 +191,6 @@ export interface BackupRestoreFailure {
   cause?: RestoreFailureCause;
 }
 
-const failureSchema = z.object({
-  code: z.string(),
-  message: z.string(),
-  sections: z.array(z.string()).optional(),
-  keyIds: z.array(z.string()).optional(),
-  cause: z.enum(RESTORE_FAILURE_CAUSES).optional(),
-});
-
-const progressSchema = z.object({
-  measurementsChecked: z.number().int().nonnegative(),
-  measurementsTotal: z.number().int().nonnegative().nullable(),
-  measurementsWritten: z.number().int().nonnegative(),
-  sectionsDone: z.number().int().nonnegative(),
-  sectionsTotal: z.number().int().nonnegative(),
-});
-
-const resultSchema = z.object({
-  summary: z.record(z.string(), z.unknown()),
-  skipped: z.object({
-    links: z.number().int(),
-    catalogueKeys: z.array(
-      z.object({
-        catalogue: z.string(),
-        key: z.string(),
-        links: z.number().int(),
-      }),
-    ),
-  }),
-  cleared: z.record(z.string(), z.number()),
-});
-
-export type BackupRestoreResult = z.infer<typeof resultSchema>;
-
-/** What the status routes answer with. Counts and codes, never content. */
-export interface BackupRestoreJobView {
-  id: string;
-  userId: string;
-  username: string | null;
-  backupId: string;
-  restoreInstanceSettings: boolean;
-  status: BackupRestoreStatus;
-  phase: RestorePhase | null;
-  progress: RestoreProgress | null;
-  result: BackupRestoreResult | null;
-  failure: BackupRestoreFailure | null;
-  attempts: number;
-  createdAt: string;
-  startedAt: string | null;
-  completedAt: string | null;
-}
-
-const PHASES: readonly RestorePhase[] = [
-  "validating",
-  "clearing",
-  "measurements",
-  "sections",
-  "rebuilding",
-];
-const STATUSES: readonly BackupRestoreStatus[] = [
-  "queued",
-  "running",
-  "succeeded",
-  "failed",
-];
-
 /**
  * A failure code as a job fact. Job facts are lower-case words joined by
  * underscores (`job-outcome.ts`), and two of the restore's codes are the
@@ -221,107 +206,6 @@ export function jobFactCode(code: BackupRestoreFailureCode): string {
  */
 export function backupDigest(identity: string): string {
   return createHash("sha256").update(identity).digest("hex");
-}
-
-const viewSelect = {
-  id: true,
-  userId: true,
-  backupId: true,
-  restoreInstanceSettings: true,
-  status: true,
-  phase: true,
-  progress: true,
-  result: true,
-  failure: true,
-  attempts: true,
-  createdAt: true,
-  startedAt: true,
-  completedAt: true,
-  user: { select: { username: true } },
-} as const;
-
-type ViewRow = {
-  id: string;
-  userId: string;
-  backupId: string;
-  restoreInstanceSettings: boolean;
-  status: string;
-  phase: string | null;
-  progress: unknown;
-  result: unknown;
-  failure: unknown;
-  attempts: number;
-  createdAt: Date;
-  startedAt: Date | null;
-  completedAt: Date | null;
-  user: { username: string } | null;
-};
-
-function toView(row: ViewRow): BackupRestoreJobView {
-  const status = (STATUSES as readonly string[]).includes(row.status)
-    ? (row.status as BackupRestoreStatus)
-    : "failed";
-  const phase =
-    row.phase && (PHASES as readonly string[]).includes(row.phase)
-      ? (row.phase as RestorePhase)
-      : null;
-  const progress = progressSchema.safeParse(row.progress);
-  const result = resultSchema.safeParse(row.result);
-  const failure = failureSchema.safeParse(row.failure);
-  return {
-    id: row.id,
-    userId: row.userId,
-    username: row.user?.username ?? null,
-    backupId: row.backupId,
-    restoreInstanceSettings: row.restoreInstanceSettings,
-    status,
-    phase: status === "running" ? phase : null,
-    progress: progress.success ? progress.data : null,
-    result: result.success ? result.data : null,
-    failure: failure.success
-      ? (failure.data as BackupRestoreFailure)
-      : status === "failed"
-        ? { code: "unexpected", message: "The restore failed." }
-        : null,
-    attempts: row.attempts,
-    createdAt: row.createdAt.toISOString(),
-    startedAt: row.startedAt?.toISOString() ?? null,
-    completedAt: row.completedAt?.toISOString() ?? null,
-  };
-}
-
-/** One job, for the status route. Null when the id is unknown. */
-export async function readBackupRestoreJob(
-  id: string,
-): Promise<BackupRestoreJobView | null> {
-  const row = await prisma.backupRestoreJob.findUnique({
-    where: { id },
-    select: viewSelect,
-  });
-  return row ? toView(row) : null;
-}
-
-/**
- * The jobs the console shows: every queued or running one, and the finished
- * ones of the last day, newest first. What a reload of the page needs to pick
- * up a restore it was watching, and to show how the last one ended.
- */
-export async function listRecentBackupRestoreJobs(
-  now: Date = new Date(),
-): Promise<BackupRestoreJobView[]> {
-  const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const rows = await prisma.backupRestoreJob.findMany({
-    where: {
-      OR: [
-        { status: { in: ["queued", "running"] } },
-        { createdAt: { gte: since } },
-      ],
-    },
-    orderBy: { createdAt: "desc" },
-    take: 20,
-    select: viewSelect,
-  });
-  return rows.map(toView);
 }
 
 function failureJson(failure: BackupRestoreFailure) {
@@ -640,6 +524,7 @@ export async function runBackupRestoreJob(
 
     if (outcome.ok) {
       const { summary, skipped, cleared } = outcome.response;
+      await withdrawHeldWipePurge(row.backupId, row.userId);
       await finish("succeeded", {
         result: {
           summary: { ...summary },

@@ -21,8 +21,8 @@
  * operate should not include making more credentials.
  *
  * No listing leg. `/api/tokens` already returns every token with its
- * `permissions`, so the settings card filters that one query rather than
- * duplicating it — the MCP module needs its own list only because it must hide
+ * `permissions` (and a measurement token's Apple Health setting), so the
+ * settings card filters that one query rather than duplicating it — the MCP module needs its own list only because it must hide
  * transient OAuth access rows, and there is no such row here. No revoke-all
  * either: `DELETE /api/tokens/[id]` is per-row and the card shows the rows. The
  * per-medication toggle's bulk revoke exists because that surface is a boolean
@@ -35,13 +35,8 @@ import {
   assertRecentCookieProof,
   requireCookieAuth,
 } from "@/lib/api-handler";
-import {
-  apiError,
-  apiSuccess,
-  getClientIp,
-  returnAllZodIssues,
-  safeJson,
-} from "@/lib/api-response";
+import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
@@ -49,6 +44,7 @@ import { issueApiToken } from "@/lib/auth/issue-token";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { MEASUREMENTS_WRITE_SCOPE } from "@/lib/measurements/scopes";
+import { EXTERNAL_SOURCE } from "@/lib/measurements/external-source";
 import { createMeasurementTokenSchema } from "@/lib/validations/tokens";
 
 /**
@@ -62,6 +58,28 @@ import { createMeasurementTokenSchema } from "@/lib/validations/tokens";
  * be a rotation.
  */
 const DEFAULT_EXPIRY_DAYS = 365;
+
+/**
+ * What the token list cannot say: how many of the account's EXTERNAL readings
+ * belong to no token (#1272). They were sent before readings were linked to
+ * the token that carried them, by an account holding more than one token, so
+ * no token's Apple Health setting reaches them and they stay out of Apple
+ * Health. The settings card shows a notice when the count is not zero.
+ */
+export const GET = apiHandler(async () => {
+  const { user } = await requireCookieAuth();
+  annotate({ action: { name: "tokens.measurements.summary" } });
+  const unattributedReadings = await prisma.measurement.count({
+    where: {
+      userId: user.id,
+      source: EXTERNAL_SOURCE,
+      ingestTokenId: null,
+      deletedAt: null,
+    },
+  });
+  annotate({ meta: { unattributed_readings: unattributedReadings } });
+  return apiSuccess({ unattributedReadings });
+});
 
 /** Mints per user per minute. A credential mint is worth its own bucket. */
 const MINT_RATE_LIMIT_MAX = 10;
@@ -118,15 +136,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiError("Too many token mints, try again later", 429);
   }
 
-  const { data: body, error: jsonError } = await safeJson(request, {
+  const parsed = await parseJsonBody(request, createMeasurementTokenSchema, {
     maxBytes: 16 * 1024,
   });
-  if (jsonError) return jsonError;
-
-  const parsed = createMeasurementTokenSchema.safeParse(body);
-  if (!parsed.success) {
-    return returnAllZodIssues(parsed.error, 422);
-  }
+  if (!parsed.ok) return parsed.error;
 
   // Counted LIVE, not minted-ever, so revoking frees a slot and an expired
   // token stops occupying one — the ceiling bounds what currently exists
@@ -187,12 +200,17 @@ export const POST = apiHandler(async (request: NextRequest) => {
     // which is why the unit suite asserts this array and not merely the 201.
     permissions: [MEASUREMENTS_WRITE_SCOPE],
     expiresInDays: parsed.data.expiresInDays ?? DEFAULT_EXPIRY_DAYS,
+    mirrorToAppleHealth: parsed.data.mirrorToAppleHealth === true,
   });
 
   await auditLog("tokens.measurements.create", {
     userId: user.id,
     ipAddress: getClientIp(request),
-    details: { tokenId: issued.tokenId, scope: MEASUREMENTS_WRITE_SCOPE },
+    details: {
+      tokenId: issued.tokenId,
+      scope: MEASUREMENTS_WRITE_SCOPE,
+      mirrorToAppleHealth: parsed.data.mirrorToAppleHealth === true,
+    },
   });
 
   // The raw token, once. It is stored as an HMAC and no path re-reveals it.
