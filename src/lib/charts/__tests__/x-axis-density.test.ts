@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   chooseTickInterval,
+  computeTickGrid,
   computeTickPositions,
   resolveTargetTickCount,
 } from "../x-axis-density";
@@ -194,6 +195,35 @@ describe("computeTickPositions — ticks on a calendar grid", () => {
       const off = Math.min(...quarter.map((q) => Math.abs(q - at))) / DAY;
       expect(off).toBeLessThanOrEqual(3.5);
     }
+  });
+
+  it("labels a long history on a phone by the year, one tick a year", () => {
+    // Four and a half years in monthly points on a 212 px plot: a full date
+    // fits only every other year, the year alone fits every year.
+    const months = Array.from({ length: 55 }, (_, i) => ({
+      timestamp: Date.UTC(2022, 3 + i, 1, 12),
+    }));
+    const layout = { plotWidth: 212, labelWidth: 66, yearLabelWidth: 32 };
+    const grid = computeTickGrid(months, 390, layout);
+    expect(grid.yearly).toBe(true);
+    expect(dates(months, grid.ticks)).toEqual([
+      "2023-01-01",
+      "2024-01-01",
+      "2025-01-01",
+      "2026-01-01",
+    ]);
+    // Without the narrow year label, the same plot holds a date every two
+    // years only.
+    const full = computeTickGrid(months, 390, {
+      plotWidth: 212,
+      labelWidth: 66,
+    });
+    expect(full.ticks.length).toBe(2);
+  });
+
+  it("does not call a month grid yearly", () => {
+    const year = daily("2025-10-23", 365);
+    expect(computeTickGrid(year, 1440).yearly).toBe(false);
   });
 
   it("keeps under the width's cap, with no duplicate or out-of-range index", () => {
