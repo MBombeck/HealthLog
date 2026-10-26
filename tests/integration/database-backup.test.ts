@@ -87,10 +87,13 @@ for (const name of ["PGUSER", "PGPASSWORD", "PGDATABASE"]) {
   if (process.env[name] !== undefined) env.push("-e", name + "=" + process.env[name]);
 }
 env.push("-e", "PGHOST=127.0.0.1", "-e", "PGPORT=5432");
-const child = spawn("docker", ["exec", "-i", ...env, ${JSON.stringify(container)}, ${JSON.stringify(tool)}, ...args], {
-  stdio: ["pipe", "inherit", "inherit"],
+// Standard input is attached only when a file is fed: with \`-i\` and an
+// input that is already at its end, the docker client can close the stream
+// before all of the tool's output has arrived.
+const child = spawn("docker", ["exec", ...(input ? ["-i"] : []), ...env, ${JSON.stringify(container)}, ${JSON.stringify(tool)}, ...args], {
+  stdio: [input ? "pipe" : "ignore", "inherit", "inherit"],
 });
-(input ? createReadStream(input) : process.stdin).pipe(child.stdin);
+if (input) createReadStream(input).pipe(child.stdin);
 child.on("exit", (code, signal) => process.exit(code ?? (signal ? 1 : 0)));
 `,
     );
@@ -253,7 +256,7 @@ describe("the nightly database dump", () => {
         now: new Date(`2026-10-${day}T01:30:00Z`),
         env: backupEnv({ DB_BACKUP_KEEP: "2" }),
       });
-      expect(report.status).toBe("succeeded");
+      expect(report.status, report.error ?? "").toBe("succeeded");
       expect(report.offhost).toBe("not_configured");
     }
     expect(readdirSync(backups).filter((n) => n.endsWith(".dump"))).toEqual([
