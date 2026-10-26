@@ -43,7 +43,8 @@ async function confirmDocument(
 
   const document = await prisma.inboundDocument.findFirst({
     where: { id, userId: user.id, deletedAt: null },
-    select: { id: true },
+    // The two dates date a value that states none of its own.
+    select: { id: true, reportDate: true, documentDate: true },
   });
   if (!document) {
     return apiError("Document not found", 404, {
@@ -94,10 +95,15 @@ async function confirmDocument(
     try {
       // v1.43 — an OBSERVATION may name the marker the person chose
       // on the review screen; the label is then remembered as its alias.
-      const ref = await commitApprovedFact(user.id, fact, {
-        biomarkerId: decision.biomarkerId,
-        rememberAlias: decision.rememberAlias,
-      });
+      const ref = await commitApprovedFact(
+        user.id,
+        fact,
+        {
+          biomarkerId: decision.biomarkerId,
+          rememberAlias: decision.rememberAlias,
+        },
+        document,
+      );
       await prisma.extractedFact.update({
         where: { id: fact.id },
         data: {
