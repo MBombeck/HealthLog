@@ -67,7 +67,9 @@ export async function knownSignInSource(
   userId: string,
   request: Request,
 ): Promise<KnownSource | null> {
-  const now = new Date();
+  // The same clock as the throttle's own wait (`Date.now()`), so one instant
+  // decides both.
+  const now = new Date(Date.now());
 
   let deviceToken: string | undefined;
   try {

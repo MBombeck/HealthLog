@@ -125,6 +125,15 @@ describe("waitAfter", () => {
   });
 });
 
+/** The owner's browser, remembered as a trusted device until `expiresAt`. */
+function rememberBrowser(expiresAt: Date) {
+  deviceCookie = "device-token";
+  vi.mocked(prisma.trustedDevice.findUnique).mockResolvedValue({
+    userId: "owner-1",
+    expiresAt,
+  } as never);
+}
+
 describe("somebody guessing from two addresses", () => {
   async function tenGuesses() {
     const answers: string[] = [];
@@ -159,16 +168,18 @@ describe("somebody guessing from two addresses", () => {
 
   it("the owner's remembered browser still gets through", async () => {
     await tenGuesses();
-    deviceCookie = "device-token";
-    // The device's expiry is compared against the wall clock, not the mocked
-    // rate-limit clock `now`, so it is anchored to the wall clock too: an
-    // expiry fixed relative to `now` expired for real once the calendar
-    // passed it.
-    vi.mocked(prisma.trustedDevice.findUnique).mockResolvedValue({
-      userId: "owner-1",
-      expiresAt: new Date(Date.now() + 30 * 86_400_000),
-    } as never);
+    // The device's expiry is read against the same clock as the wait, the
+    // mocked `now`. It used to be compared with `new Date()`, which the mock
+    // does not reach, so this expiry ran out for real on 2026-10-26 at noon
+    // UTC, 30 days after `now`, and the test failed from then on.
+    rememberBrowser(new Date(now + 30 * 86_400_000));
     expect(await guess("203.0.113.51", { right: true })).toBe("checked");
+  });
+
+  it("a remembered browser whose device has expired is throttled like anyone", async () => {
+    await tenGuesses();
+    rememberBrowser(new Date(now - 1));
+    expect(await guess("203.0.113.52", { right: true })).toBe("waiting");
   });
 
   it("an address the account signed in from is no exemption: a guesser can claim it", async () => {
