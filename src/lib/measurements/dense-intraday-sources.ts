@@ -84,16 +84,3 @@ export type DenseIntradayFoldSource =
 export const DENSE_INTRADAY_FOLD_SOURCES = Object.keys(
   DENSE_INTRADAY_FOLD_TYPES_BY_SOURCE,
 ) as readonly DenseIntradayFoldSource[];
-
-/** Whether the fold takes `type` from `source`. */
-export function isDenseFoldedSample(
-  source: MeasurementSource,
-  type: MeasurementType,
-): boolean {
-  const types = (
-    DENSE_INTRADAY_FOLD_TYPES_BY_SOURCE as Partial<
-      Record<MeasurementSource, ReadonlySet<MeasurementType>>
-    >
-  )[source];
-  return types?.has(type) ?? false;
-}
