@@ -8192,7 +8192,7 @@
         "downloadFailed": "다운로드하지 못했어요",
         "downloadStarted": "다운로드를 시작했어요",
         "uploadTitle": "백업 업로드",
-        "uploadDescription": "계정 사본을 확인하고 이 서버의 사본 옆에 저장해요. 사본의 계정이 이 서버에 있어야 해요. 복원은 별도 단계예요.",
+        "uploadDescription": "계정 사본을 확인하고 이 서버의 사본 옆에 저장해요. 계정이 이 서버에 더 이상 없는 사본은 다른 계정으로 보낼 수 있어요. 복원은 별도 단계예요.",
         "uploadButton": "파일 업로드",
         "uploadHelp": "HealthLog 백업 파일(.json 또는 .json.gz)이에요. 업로드 전에 압축되며, 압축된 크기는 최대 512 MB까지 가능해요.",
         "uploadSuccess": "백업을 업로드했어요 (기록 {count}개)",
@@ -8351,7 +8351,32 @@
           "offhostLastUpload": "버킷에 있는 최신 덤프는 {when}의 것입니다.",
           "offhostNeverUploaded": "아직 버킷에 도달한 데이터베이스 덤프가 없습니다."
         },
-        "restorePreWipeLimits": "이 사본은 계정의 데이터를 삭제하기 전에 만들어졌고, 복원하면 사본이 할 수 있는 만큼 그 삭제를 되돌려요: 그 후에 계정에 추가된 것은 대체되고, 연동 연결, 공유, 보호자 접근, 공유 링크는 돌아오지 않아요."
+        "restorePreWipeLimits": "이 사본은 계정의 데이터를 삭제하기 전에 만들어졌고, 복원하면 사본이 할 수 있는 만큼 그 삭제를 되돌려요: 그 후에 계정에 추가된 것은 대체되고, 연동 연결, 공유, 보호자 접근, 공유 링크는 돌아오지 않아요.",
+        "target": {
+          "title": "다른 계정으로 복원",
+          "description": "{file}은(는) 이 서버에 더 이상 없는 계정의 파일이에요. 기록을 넣을 계정을 골라 주세요. 복원은 계정의 기록을 바꿔 쓰기 때문에 기록이 없는 계정만 받을 수 있어요. 파일은 한 번 더 업로드돼요.",
+          "choiceLabel": "기록을 넣을 곳",
+          "newAccount": "새 계정",
+          "existingAccount": "기존 계정",
+          "usernameLabel": "새 계정의 사용자 이름",
+          "usernameInvalid": "영문자, 숫자, _ 또는 - 3~30자이고, \"managed-\"로 시작하면 안 돼요.",
+          "newAccountHint": "계정은 비밀번호와 이메일 없이 만들어져요. 넘겨주기 전에 사용자에서 비밀번호 재설정으로 첫 비밀번호를 정해 주세요.",
+          "accountLabel": "계정",
+          "accountPlaceholder": "계정을 골라 주세요",
+          "checking": "계정을 확인하는 중…",
+          "eligible": "이 계정에는 아직 기록이 없어서 사본을 받을 수 있어요.",
+          "confirmLabel": "확인하려면 {username}을(를) 입력해 주세요",
+          "submit": "이 계정으로 업로드",
+          "submitting": "업로드 중…",
+          "success": "{username}의 백업을 저장했어요 (기록 {count}개). 해당 행에서 복원해 주세요.",
+          "failureHoldsRecords": "이 계정에는 이미 기록이 있어요. 복원은 기록을 더하지 않고 바꿔 쓰기 때문에 기록이 없는 계정을 고르거나 새 계정을 만들어 주세요.",
+          "failureManagedProfile": "이 계정은 관리 프로필이에요. 보호자들이 운영하는 프로필이라 사본을 넣을 수 없어요.",
+          "failurePendingDeletion": "이 계정은 삭제 대기 중이에요. 먼저 삭제를 취소하거나 다른 계정을 골라 주세요.",
+          "failureNotFound": "이 계정은 더 이상 없어요.",
+          "failureUnconfirmed": "확인하려면 계정의 사용자 이름을 정확히 입력해 주세요.",
+          "failureUsernameTaken": "이미 사용 중인 사용자 이름이에요.",
+          "failureOwnerExists": "이 파일의 계정이 이 서버에 있어서 파일은 그 계정으로 복원돼요. 계정을 고르지 말고 다시 업로드해 주세요."
+        }
       },
       "danger-zone": {
         "title": "위험 구역",

@@ -8217,7 +8217,7 @@
         "downloadFailed": "Downloaden mislukt",
         "downloadStarted": "Download gestart",
         "uploadTitle": "Back-up uploaden",
-        "uploadDescription": "Controleert een accountkopie en bewaart die naast de kopieën van deze server. Het account waar ze bij hoort, moet op deze server bestaan. Terugzetten is een aparte stap.",
+        "uploadDescription": "Controleert een accountkopie en bewaart die naast de kopieën van deze server. Een kopie waarvan het account niet meer op deze server staat, kan naar een ander account. Terugzetten is een aparte stap.",
         "uploadButton": "Bestand uploaden",
         "uploadHelp": "Een HealthLog-back-up als .json of .json.gz. Het bestand wordt vóór het uploaden gecomprimeerd; gecomprimeerd mag het maximaal 512 MB zijn.",
         "uploadSuccess": "Back-up geüpload ({count} records)",
@@ -8376,7 +8376,32 @@
           "offhostLastUpload": "De nieuwste dump in de bucket is van {when}.",
           "offhostNeverUploaded": "Er is nog geen databasedump in de bucket aangekomen."
         },
-        "restorePreWipeLimits": "Deze kopie is gemaakt voordat de gegevens van het account werden verwijderd, en terugzetten maakt dat verwijderen ongedaan voor zover een kopie dat kan: wat het account sindsdien heeft toegevoegd, wordt vervangen, en koppelingen, delen, verzorgerstoegang en deellinks komen niet terug."
+        "restorePreWipeLimits": "Deze kopie is gemaakt voordat de gegevens van het account werden verwijderd, en terugzetten maakt dat verwijderen ongedaan voor zover een kopie dat kan: wat het account sindsdien heeft toegevoegd, wordt vervangen, en koppelingen, delen, verzorgerstoegang en deellinks komen niet terug.",
+        "target": {
+          "title": "In een ander account terugzetten",
+          "description": "{file} hoort bij een account dat niet meer op deze server staat. Kies het account waar de records naartoe gaan. Terugzetten vervangt de records van een account, dus alleen een account zonder records kan ze opnemen. Het bestand wordt nog een keer geüpload.",
+          "choiceLabel": "Waar de records naartoe gaan",
+          "newAccount": "Nieuw account",
+          "existingAccount": "Bestaand account",
+          "usernameLabel": "Gebruikersnaam voor het nieuwe account",
+          "usernameInvalid": "3 tot 30 letters, cijfers, _ of -, niet beginnend met ‘managed-’.",
+          "newAccountHint": "Het account wordt zonder wachtwoord en zonder e-mail aangemaakt. Stel het eerste wachtwoord in met Wachtwoord resetten onder Gebruikers voordat je het overdraagt.",
+          "accountLabel": "Account",
+          "accountPlaceholder": "Kies een account",
+          "checking": "Account wordt gecontroleerd…",
+          "eligible": "Dit account heeft nog geen records en kan de kopie opnemen.",
+          "confirmLabel": "Typ {username} om te bevestigen",
+          "submit": "Naar dit account uploaden",
+          "submitting": "Uploaden…",
+          "success": "Back-up opgeslagen voor {username} ({count} records). Zet hem terug vanuit zijn rij.",
+          "failureHoldsRecords": "Dit account heeft al records. Terugzetten vervangt records in plaats van ze aan te vullen, dus kies een account zonder records of maak een nieuw account aan.",
+          "failureManagedProfile": "Dit account is een beheerd profiel. De verzorgers beheren het, dus er kan geen kopie in.",
+          "failurePendingDeletion": "Dit account wordt verwijderd. Maak de verwijdering eerst ongedaan of kies een ander account.",
+          "failureNotFound": "Dit account bestaat niet meer.",
+          "failureUnconfirmed": "Typ de gebruikersnaam van het account precies over om te bevestigen.",
+          "failureUsernameTaken": "Deze gebruikersnaam is al in gebruik.",
+          "failureOwnerExists": "Het account waar dit bestand bij hoort, staat op deze server, en het bestand wordt in dat account teruggezet. Upload het opnieuw zonder een account te kiezen."
+        }
       },
       "danger-zone": {
         "title": "Gevarenzone",

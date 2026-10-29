@@ -8217,7 +8217,7 @@
         "downloadFailed": "Échec du téléchargement",
         "downloadStarted": "Téléchargement démarré",
         "uploadTitle": "Téléverser une sauvegarde",
-        "uploadDescription": "Vérifie une copie de compte et la stocke à côté des copies de ce serveur. Le compte auquel elle appartient doit exister sur ce serveur. La restauration est une étape distincte.",
+        "uploadDescription": "Vérifie une copie de compte et la stocke à côté des copies de ce serveur. Une copie dont le compte n'existe plus sur ce serveur peut aller dans un autre compte. La restauration est une étape distincte.",
         "uploadButton": "Téléverser un fichier",
         "uploadHelp": "Une sauvegarde HealthLog au format .json ou .json.gz. Le fichier est compressé avant l’envoi ; compressé, il peut atteindre 512 Mo.",
         "uploadSuccess": "Sauvegarde téléversée ({count} enregistrements)",
@@ -8376,7 +8376,32 @@
           "offhostLastUpload": "Le dump le plus récent du bucket date du {when}.",
           "offhostNeverUploaded": "Aucun dump de la base de données n'est encore arrivé dans le bucket."
         },
-        "restorePreWipeLimits": "Cette copie a été prise avant la suppression des données du compte, et la restaurer annule cette suppression autant qu’une copie le peut : ce que le compte a ajouté depuis est remplacé, et les connexions d’intégration, les partages, l’accès des personnes responsables et les liens de partage ne reviennent pas."
+        "restorePreWipeLimits": "Cette copie a été prise avant la suppression des données du compte, et la restaurer annule cette suppression autant qu’une copie le peut : ce que le compte a ajouté depuis est remplacé, et les connexions d’intégration, les partages, l’accès des personnes responsables et les liens de partage ne reviennent pas.",
+        "target": {
+          "title": "Restaurer dans un autre compte",
+          "description": "{file} appartient à un compte qui n'existe plus sur ce serveur. Choisissez le compte qui recevra ses enregistrements. Une restauration remplace les enregistrements d'un compte : seul un compte sans enregistrements peut donc les recevoir. Le fichier est téléversé une nouvelle fois.",
+          "choiceLabel": "Destination des enregistrements",
+          "newAccount": "Nouveau compte",
+          "existingAccount": "Compte existant",
+          "usernameLabel": "Nom d'utilisateur du nouveau compte",
+          "usernameInvalid": "De 3 à 30 lettres, chiffres, _ ou -, sans commencer par « managed- ».",
+          "newAccountHint": "Le compte est créé sans mot de passe ni e-mail. Avant de le remettre, définissez son premier mot de passe avec Réinitialiser le mot de passe, sous Utilisateurs.",
+          "accountLabel": "Compte",
+          "accountPlaceholder": "Choisissez un compte",
+          "checking": "Vérification du compte…",
+          "eligible": "Ce compte n'a encore aucun enregistrement et peut recevoir la copie.",
+          "confirmLabel": "Tapez {username} pour confirmer",
+          "submit": "Téléverser dans ce compte",
+          "submitting": "Téléversement…",
+          "success": "Sauvegarde enregistrée pour {username} ({count} enregistrements). Restaurez-la depuis sa ligne.",
+          "failureHoldsRecords": "Ce compte contient déjà des enregistrements. Une restauration remplace les enregistrements au lieu de les compléter : choisissez un compte sans enregistrements ou créez-en un nouveau.",
+          "failureManagedProfile": "Ce compte est un profil géré. Les personnes responsables le gèrent, une copie ne peut donc pas y aller.",
+          "failurePendingDeletion": "Ce compte est en cours de suppression. Annulez d'abord la suppression ou choisissez un autre compte.",
+          "failureNotFound": "Ce compte n'existe plus.",
+          "failureUnconfirmed": "Tapez exactement le nom d'utilisateur du compte pour confirmer.",
+          "failureUsernameTaken": "Ce nom d'utilisateur est déjà pris.",
+          "failureOwnerExists": "Le compte auquel appartient ce fichier est sur ce serveur, et le fichier se restaure dans ce compte. Téléversez-le à nouveau sans choisir de compte."
+        }
       },
       "danger-zone": {
         "title": "Zone de danger",

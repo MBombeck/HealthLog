@@ -8217,7 +8217,7 @@
         "downloadFailed": "La descarga falló",
         "downloadStarted": "Descarga iniciada",
         "uploadTitle": "Subir copia de seguridad",
-        "uploadDescription": "Comprueba una copia de cuenta y la guarda junto a las copias de este servidor. La cuenta a la que pertenece debe existir en este servidor. Restaurar es un paso aparte.",
+        "uploadDescription": "Comprueba una copia de cuenta y la guarda junto a las copias de este servidor. Una copia cuya cuenta ya no está en este servidor puede ir a otra cuenta. Restaurar es un paso aparte.",
         "uploadButton": "Subir archivo",
         "uploadHelp": "Una copia de seguridad de HealthLog en .json o .json.gz. El archivo se comprime antes de subirlo; comprimido puede ocupar hasta 512 MB.",
         "uploadSuccess": "Copia de seguridad subida ({count} registros)",
@@ -8376,7 +8376,32 @@
           "offhostLastUpload": "El volcado más reciente del bucket es del {when}.",
           "offhostNeverUploaded": "Todavía no ha llegado ningún volcado de la base de datos al bucket."
         },
-        "restorePreWipeLimits": "Esta copia se tomó antes de que se eliminaran los datos de la cuenta, y restaurarla deshace esa eliminación hasta donde una copia puede: lo que la cuenta añadió desde entonces se sustituye, y las conexiones de integración, lo compartido, el acceso de personas responsables y los enlaces compartidos no vuelven."
+        "restorePreWipeLimits": "Esta copia se tomó antes de que se eliminaran los datos de la cuenta, y restaurarla deshace esa eliminación hasta donde una copia puede: lo que la cuenta añadió desde entonces se sustituye, y las conexiones de integración, lo compartido, el acceso de personas responsables y los enlaces compartidos no vuelven.",
+        "target": {
+          "title": "Restaurar en otra cuenta",
+          "description": "{file} pertenece a una cuenta que ya no está en este servidor. Elige la cuenta a la que van sus registros. Una restauración reemplaza los registros de una cuenta, así que solo una cuenta sin registros puede recibirlos. El archivo se sube una vez más.",
+          "choiceLabel": "Adónde van los registros",
+          "newAccount": "Cuenta nueva",
+          "existingAccount": "Cuenta existente",
+          "usernameLabel": "Nombre de usuario de la cuenta nueva",
+          "usernameInvalid": "De 3 a 30 letras, números, _ o -, sin empezar por «managed-».",
+          "newAccountHint": "La cuenta se crea sin contraseña ni correo. Antes de entregarla, pon su primera contraseña con Restablecer contraseña en Usuarios.",
+          "accountLabel": "Cuenta",
+          "accountPlaceholder": "Elige una cuenta",
+          "checking": "Comprobando la cuenta…",
+          "eligible": "Esta cuenta aún no tiene registros y puede recibir la copia.",
+          "confirmLabel": "Escribe {username} para confirmar",
+          "submit": "Subir a esta cuenta",
+          "submitting": "Subiendo…",
+          "success": "Copia guardada para {username} ({count} registros). Restáurala desde su fila.",
+          "failureHoldsRecords": "Esta cuenta ya tiene registros. Una restauración reemplaza los registros en lugar de añadirlos, así que elige una cuenta sin registros o crea una nueva.",
+          "failureManagedProfile": "Esta cuenta es un perfil gestionado. La llevan las personas responsables, así que una copia no puede ir a ella.",
+          "failurePendingDeletion": "Esta cuenta está pendiente de eliminación. Deshaz primero la eliminación o elige otra cuenta.",
+          "failureNotFound": "Esta cuenta ya no existe.",
+          "failureUnconfirmed": "Escribe exactamente el nombre de usuario de la cuenta para confirmar.",
+          "failureUsernameTaken": "Este nombre de usuario ya está en uso.",
+          "failureOwnerExists": "La cuenta a la que pertenece este archivo está en este servidor, y el archivo se restaura en esa cuenta. Súbelo de nuevo sin elegir una cuenta."
+        }
       },
       "danger-zone": {
         "title": "Zona de peligro",

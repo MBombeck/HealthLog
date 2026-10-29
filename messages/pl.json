@@ -8217,7 +8217,7 @@
         "downloadFailed": "Pobieranie nie powiodło się",
         "downloadStarted": "Rozpoczęto pobieranie",
         "uploadTitle": "Prześlij kopię zapasową",
-        "uploadDescription": "Sprawdza kopię konta i zapisuje ją obok kopii tego serwera. Konto, do którego należy, musi istnieć na tym serwerze. Przywracanie to osobny krok.",
+        "uploadDescription": "Sprawdza kopię konta i zapisuje ją obok kopii tego serwera. Kopia, której konta nie ma już na tym serwerze, może trafić do innego konta. Przywracanie to osobny krok.",
         "uploadButton": "Prześlij plik",
         "uploadHelp": "Kopia zapasowa HealthLog w formacie .json lub .json.gz. Plik jest kompresowany przed wysłaniem; po kompresji może mieć do 512 MB.",
         "uploadSuccess": "Przesłano kopię zapasową ({count} rekordów)",
@@ -8376,7 +8376,32 @@
           "offhostLastUpload": "Najnowszy zrzut w buckecie pochodzi z {when}.",
           "offhostNeverUploaded": "Do bucketu nie trafił jeszcze żaden zrzut bazy danych."
         },
-        "restorePreWipeLimits": "Tę kopię wykonano przed usunięciem danych konta, a jej przywrócenie cofa to usunięcie na tyle, na ile pozwala kopia: to, co konto dodało od tego czasu, zostaje zastąpione, a połączenia integracji, udostępnienia, dostęp opiekunów i linki udostępniania nie wracają."
+        "restorePreWipeLimits": "Tę kopię wykonano przed usunięciem danych konta, a jej przywrócenie cofa to usunięcie na tyle, na ile pozwala kopia: to, co konto dodało od tego czasu, zostaje zastąpione, a połączenia integracji, udostępnienia, dostęp opiekunów i linki udostępniania nie wracają.",
+        "target": {
+          "title": "Przywróć do innego konta",
+          "description": "{file} należy do konta, którego nie ma już na tym serwerze. Wybierz konto, do którego trafią jego rekordy. Przywracanie zastępuje rekordy konta, więc przyjąć je może tylko konto bez rekordów. Plik zostanie przesłany jeszcze raz.",
+          "choiceLabel": "Dokąd trafią rekordy",
+          "newAccount": "Nowe konto",
+          "existingAccount": "Istniejące konto",
+          "usernameLabel": "Nazwa użytkownika nowego konta",
+          "usernameInvalid": "Od 3 do 30 liter, cyfr, _ lub -, bez „managed-” na początku.",
+          "newAccountHint": "Konto zostanie utworzone bez hasła i bez adresu e-mail. Zanim je przekażesz, ustaw jego pierwsze hasło przyciskiem Zresetuj hasło w sekcji Użytkownicy.",
+          "accountLabel": "Konto",
+          "accountPlaceholder": "Wybierz konto",
+          "checking": "Sprawdzanie konta…",
+          "eligible": "To konto nie ma jeszcze rekordów i może przyjąć kopię.",
+          "confirmLabel": "Wpisz {username}, aby potwierdzić",
+          "submit": "Prześlij do tego konta",
+          "submitting": "Przesyłanie…",
+          "success": "Kopia zapisana dla {username} ({count} rekordów). Przywróć ją z jej wiersza.",
+          "failureHoldsRecords": "To konto ma już rekordy. Przywracanie zastępuje rekordy zamiast je uzupełniać, więc wybierz konto bez rekordów albo utwórz nowe.",
+          "failureManagedProfile": "To konto jest profilem zarządzanym. Prowadzą je osoby opiekujące się nim, więc kopia nie może do niego trafić.",
+          "failurePendingDeletion": "To konto czeka na usunięcie. Najpierw cofnij usunięcie albo wybierz inne konto.",
+          "failureNotFound": "To konto już nie istnieje.",
+          "failureUnconfirmed": "Wpisz dokładnie nazwę użytkownika konta, aby potwierdzić.",
+          "failureUsernameTaken": "Ta nazwa użytkownika jest już zajęta.",
+          "failureOwnerExists": "Konto, do którego należy ten plik, jest na tym serwerze, a plik przywraca się do tego konta. Prześlij go ponownie bez wybierania konta."
+        }
       },
       "danger-zone": {
         "title": "Strefa zagrożenia",
