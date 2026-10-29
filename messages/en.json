@@ -9243,6 +9243,13 @@
       "titleFailing": "Backups are at risk",
       "titleReminder": "Backups are still at risk",
       "titleRecovered": "Backups are back to normal"
+    },
+    "systemJobAlert": {
+      "titleFailing": "Background job failing: {queue}",
+      "titleReminder": "Background job still failing: {queue}",
+      "titleRecovered": "Background job working again: {queue}",
+      "bodyFailing": "The background job {queue} has failed {failures} times in a row and is listed on the admin status page. Last error: {error}",
+      "bodyRecovered": "The background job {queue} has run successfully again."
     }
   },
   "i18n": {

@@ -9243,6 +9243,13 @@
       "titleFailing": "I backup sono a rischio",
       "titleReminder": "I backup sono ancora a rischio",
       "titleRecovered": "I backup sono tornati alla normalità"
+    },
+    "systemJobAlert": {
+      "titleFailing": "Attività in background non riuscita: {queue}",
+      "titleReminder": "Attività in background ancora non riuscita: {queue}",
+      "titleRecovered": "Attività in background di nuovo funzionante: {queue}",
+      "bodyFailing": "L'attività in background {queue} non è riuscita {failures} volte di seguito ed è elencata nella pagina di stato dell'amministrazione. Ultimo errore: {error}",
+      "bodyRecovered": "L'attività in background {queue} è stata di nuovo eseguita correttamente."
     }
   },
   "i18n": {

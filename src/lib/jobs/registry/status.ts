@@ -4,7 +4,8 @@
  * the morning digest refresh, the data-arrival spine with its reaction line
  * and workout insight, the nightly scores, the period-narrative warm, the
  * Coach memory refresh, nudge, reminder sweep and plan review, the low-stock
- * pass and the daily-briefing fallback.
+ * pass, the daily-briefing fallback, and the hourly alert to the admins
+ * about a system queue that keeps failing.
  *
  * Most queues here are keyless cron ticks, so they carry no policy. The
  * LLM-bound warm queues (pre-generate, period narrative, Coach memory) pass
@@ -76,6 +77,12 @@ import {
   WORKOUT_INSIGHT_GENERATE_CONCURRENCY,
   WORKOUT_INSIGHT_GENERATE_QUEUE,
 } from "@/lib/jobs/workout-insight-generate-shared";
+
+import { cronIsTheRetry } from "@/lib/jobs/reminder/registrar-shared";
+import {
+  SYSTEM_JOB_ALERT_CRON,
+  SYSTEM_JOB_ALERT_QUEUE,
+} from "@/lib/jobs/system-job-alert-queue";
 
 import { defineJob, type JobDefinition, type JobGroup } from "./define-job";
 
@@ -260,6 +267,18 @@ const jobs: readonly JobDefinition[] = [
     cron: DAILY_BRIEFING_CRON,
     work: { localConcurrency: 1 },
     load: async () => (await handlers()).handleDailyBriefing,
+  }),
+  // Hourly: tell the admins about a system queue that keeps failing, the way
+  // the recovery readiness evaluation tells them about a backup. Single-flight
+  // and no retries; the next tick is the retry, and the notice claim keeps
+  // two evaluations from sending the same notice.
+  defineJob({
+    queue: SYSTEM_JOB_ALERT_QUEUE,
+    cron: SYSTEM_JOB_ALERT_CRON,
+    scheduleOptions: cronIsTheRetry,
+    work: { localConcurrency: 1 },
+    load: async () =>
+      (await import("@/lib/jobs/system-job-alert")).handleSystemJobAlert,
   }),
 ];
 

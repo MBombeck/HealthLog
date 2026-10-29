@@ -9243,6 +9243,13 @@
       "titleFailing": "Kopie zapasowe są zagrożone",
       "titleReminder": "Kopie zapasowe są nadal zagrożone",
       "titleRecovered": "Kopie zapasowe znów działają normalnie"
+    },
+    "systemJobAlert": {
+      "titleFailing": "Zadanie w tle kończy się błędem: {queue}",
+      "titleReminder": "Zadanie w tle nadal kończy się błędem: {queue}",
+      "titleRecovered": "Zadanie w tle znów działa: {queue}",
+      "bodyFailing": "Zadanie w tle {queue} zakończyło się błędem {failures} razy z rzędu i jest widoczne na stronie stanu w panelu administratora. Ostatni błąd: {error}",
+      "bodyRecovered": "Zadanie w tle {queue} znów wykonało się poprawnie."
     }
   },
   "i18n": {

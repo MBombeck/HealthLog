@@ -9243,6 +9243,13 @@
       "titleFailing": "Les sauvegardes sont menacées",
       "titleReminder": "Les sauvegardes sont toujours menacées",
       "titleRecovered": "Les sauvegardes sont revenues à la normale"
+    },
+    "systemJobAlert": {
+      "titleFailing": "Tâche d'arrière-plan en échec : {queue}",
+      "titleReminder": "Tâche d'arrière-plan toujours en échec : {queue}",
+      "titleRecovered": "Tâche d'arrière-plan rétablie : {queue}",
+      "bodyFailing": "La tâche d'arrière-plan {queue} a échoué {failures} fois de suite ; vous la trouverez sur la page d'état de l'administration. Dernière erreur : {error}",
+      "bodyRecovered": "La tâche d'arrière-plan {queue} s'est de nouveau exécutée avec succès."
     }
   },
   "i18n": {

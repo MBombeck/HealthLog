@@ -163,6 +163,11 @@ const ALLOWED: Readonly<Record<string, { count: number; reason: string }>> = {
     count: 1,
     reason: "No /proc/diskstats outside Linux; see captureHostMetric.",
   },
+  "lib/jobs/system-job-alert.ts::readTerminalRuns": {
+    count: 1,
+    reason:
+      "No pgboss schema on a web-only deployment; null means no queue to ask, and the evaluation then judges nothing.",
+  },
   "lib/jobs/job-failures.ts::readActiveJobsStartedBefore": {
     count: 1,
     reason:

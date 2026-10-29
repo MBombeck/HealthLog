@@ -1,5 +1,5 @@
 {
-  "registeredQueueCount": 125,
+  "registeredQueueCount": 126,
   "registeredQueues": [
     "account-deletion-purge",
     "achievement-unlock-sweep",
@@ -112,6 +112,7 @@
     "strava-sync",
     "stress-score-compute",
     "supplement-nutrient-recompute",
+    "system-job-alert",
     "tls-pin-monitor",
     "whoop-backfill",
     "whoop-cycle-sync",
@@ -1798,6 +1799,21 @@
       "deletion_seconds": 604800,
       "expire_seconds": 900,
       "heartbeat_seconds": null,
+      "name": "system-job-alert",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
       "name": "tls-pin-monitor",
       "notify": false,
       "partition": false,
@@ -2826,6 +2842,18 @@
       "timezone": "Europe/Berlin"
     },
     {
+      "cron": "43 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "system-job-alert",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
       "cron": "7 */6 * * *",
       "data": {},
       "key": "",
@@ -3680,6 +3708,13 @@
       "queue": "supplement-nutrient-recompute",
       "options": {
         "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "system-job-alert",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
       }
     },
     {

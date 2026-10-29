@@ -386,6 +386,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "recovery-readiness": short(
     "A few indexed reads, one row per account from two backup ledgers, and at most one notice per signal.",
   ),
+  "system-job-alert": short(
+    "The newest fifty terminal runs of each system queue over pg-boss's completion index, and at most one notice per queue.",
+  ),
   "integration-watchdog-hourly": short(
     "A few indexed reads per account with a connection and no provider call; a 14-day history count only for a silent source.",
   ),
