@@ -7,6 +7,9 @@
  * rails beside the rows an episode or a course spans, and empty stretches
  * named rather than skipped. Built from `chronicle-model.ts`.
  *
+ * A lab day's row lists the chosen lab lines' readings of that day under its
+ * names, each as measured (#1299); its report is a step further, in the day.
+ *
  * A dated row opens its day (the same `?day=` layer the chart hands off to);
  * a life event opens its edit sheet instead, because the event is the
  * person's own entry and that is where it is changed.
@@ -42,6 +45,7 @@ import {
   type ChronicleRails,
 } from "./chronicle-model";
 import { useItemWords } from "./item-words";
+import { ChronicleLabReadings } from "./lab-lines";
 import { TIMELINE_CHRONICLE_NOTABLE_KEY } from "./label-keys";
 import {
   formatAtPrecision,
@@ -50,12 +54,8 @@ import {
   formatMonthYear,
 } from "./timeline-dates";
 import { LANE_COLOR } from "./timeline-geometry";
-import {
-  MEAN_PARTS_ROW,
-  MeanPartsLine,
-  bucketText,
-  laneDotStyle,
-} from "./timeline-chart";
+import { MEAN_PARTS_ROW, MeanPartsLine, laneDotStyle } from "./timeline-chart";
+import { bucketText } from "./timeline-tables";
 import {
   chronicleMeans,
   meanParts,
@@ -131,6 +131,52 @@ function Rails({ rails }: { rails: ChronicleRails }) {
   );
 }
 
+/** A chronicle row's title and the muted line under it. */
+function entryText(
+  entry: ChronicleEntry,
+  {
+    t,
+    tCount,
+    words,
+  }: {
+    t: ReturnType<typeof useTranslations>["t"];
+    tCount: ReturnType<typeof useTranslations>["tCount"];
+    words: ReturnType<typeof useItemWords>;
+  },
+): {
+  title: string;
+  meta: string | null;
+} {
+  if (entry.kind === "notable") {
+    return {
+      title: t(TIMELINE_CHRONICLE_NOTABLE_KEY[entry.notable]),
+      meta: t("timeline.chronicle.notableMeta"),
+    };
+  }
+  const { item, role } = entry;
+  const { label, sub, tag } = words(item);
+  if (role === "end") {
+    // A pause that ends is the medication taken up again, not ended.
+    return {
+      title:
+        item.kind === "pause"
+          ? t("day.event.resumed", { label: item.label })
+          : t("timeline.chronicle.ended", { label }),
+      meta: entry.days
+        ? tCount("timeline.chronicle.afterDays", entry.days)
+        : null,
+    };
+  }
+  // A life event's category sits on the muted line under its title.
+  const meta = [
+    sub ?? tag ?? null,
+    item.startKnown ? null : t("timeline.startUnknown"),
+  ]
+    .filter(Boolean)
+    .join(", ");
+  return { title: label, meta: meta || null };
+}
+
 export function TimelineChronicle({
   timeline,
   today,
@@ -184,40 +230,6 @@ export function TimelineChronicle({
       to: groupLabel(to),
     });
   };
-
-  function entryText(entry: ChronicleEntry): {
-    title: string;
-    meta: string | null;
-  } {
-    if (entry.kind === "notable") {
-      return {
-        title: t(TIMELINE_CHRONICLE_NOTABLE_KEY[entry.notable]),
-        meta: t("timeline.chronicle.notableMeta"),
-      };
-    }
-    const { item, role } = entry;
-    const { label, sub, tag } = words(item);
-    if (role === "end") {
-      // A pause that ends is the medication taken up again, not ended.
-      return {
-        title:
-          item.kind === "pause"
-            ? t("day.event.resumed", { label: item.label })
-            : t("timeline.chronicle.ended", { label }),
-        meta: entry.days
-          ? tCount("timeline.chronicle.afterDays", entry.days)
-          : null,
-      };
-    }
-    // A life event's category sits on the muted line under its title.
-    const meta = [
-      sub ?? tag ?? null,
-      item.startKnown ? null : t("timeline.startUnknown"),
-    ]
-      .filter(Boolean)
-      .join(", ");
-    return { title: label, meta: meta || null };
-  }
 
   return (
     <div className="space-y-4" data-slot="timeline-chronicle">
@@ -314,7 +326,7 @@ export function TimelineChronicle({
             );
           }
           const { entry } = row;
-          const { title, meta } = entryText(entry);
+          const { title, meta } = entryText(entry, { t, tCount, words });
           const Icon =
             entry.kind === "notable"
               ? Sparkles
@@ -367,6 +379,12 @@ export function TimelineChronicle({
                     {meta}
                   </span>
                 )}
+                <ChronicleLabReadings
+                  entry={entry}
+                  labSeries={timeline.labSeries}
+                  seriesColor={seriesColor}
+                  className={cn(MEAN_PARTS_ROW, "mt-1")}
+                />
               </span>
             </>
           );

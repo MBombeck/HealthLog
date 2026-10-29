@@ -13655,7 +13655,11 @@
       "start": "Beginn",
       "end": "Ende",
       "seriesCaption": "Mittelwerte nach Zeitraum",
-      "period": "Zeitraum"
+      "period": "Zeitraum",
+      "labsCaption": "Laborwerte nach Tag",
+      "marker": "Marker",
+      "date": "Datum",
+      "value": "Wert"
     },
     "selection": {
       "empty": "Keine Einträge in diesem Zeitraum",
@@ -13700,7 +13704,22 @@
       "labValuesOne": "1 Laborwert",
       "labValuesFew": "{count} Laborwerte",
       "labValuesOther": "{count} Laborwerte"
-    }
+    },
+    "labs": {
+      "menuTitle": "Laborwerte",
+      "otherPanel": "Weitere",
+      "above": "über dem Referenzbereich",
+      "below": "unter dem Referenzbereich",
+      "reference": "Referenz {range}",
+      "report": "Befund: {title}",
+      "reportUntitled": "Befund öffnen",
+      "excludedOne": "{name}: {count} Wert in einer anderen Einheit ist nicht eingezeichnet",
+      "excludedFew": "{name}: {count} Werte in einer anderen Einheit sind nicht eingezeichnet",
+      "excludedOther": "{name}: {count} Werte in einer anderen Einheit sind nicht eingezeichnet"
+    },
+    "legendLabValue": "Laborwert, wie gemessen",
+    "legendLabOutside": "Außerhalb des Referenzbereichs",
+    "legendLabRange": "Referenzbereich"
   },
   "lifeEvents": {
     "title": "Lebensereignis",

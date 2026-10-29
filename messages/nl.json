@@ -13655,7 +13655,11 @@
       "start": "Begin",
       "end": "Einde",
       "seriesCaption": "Gemiddelde waarden per periode",
-      "period": "Periode"
+      "period": "Periode",
+      "labsCaption": "Labwaarden per dag",
+      "marker": "Marker",
+      "date": "Datum",
+      "value": "Waarde"
     },
     "selection": {
       "empty": "Geen registraties in deze periode",
@@ -13700,7 +13704,22 @@
       "labValuesOne": "1 labwaarde",
       "labValuesFew": "{count} labwaarden",
       "labValuesOther": "{count} labwaarden"
-    }
+    },
+    "labs": {
+      "menuTitle": "Labwaarden",
+      "otherPanel": "Overig",
+      "above": "boven het bereik",
+      "below": "onder het bereik",
+      "reference": "referentie {range}",
+      "report": "Verslag: {title}",
+      "reportUntitled": "Verslag openen",
+      "excludedOne": "{name}: {count} waarde in een andere eenheid wordt niet getoond",
+      "excludedFew": "{name}: {count} waarden in een andere eenheid worden niet getoond",
+      "excludedOther": "{name}: {count} waarden in een andere eenheid worden niet getoond"
+    },
+    "legendLabValue": "Labwaarde, zoals gemeten",
+    "legendLabOutside": "Buiten het referentiebereik",
+    "legendLabRange": "Referentiebereik"
   },
   "lifeEvents": {
     "title": "Levensgebeurtenis",

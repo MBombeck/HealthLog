@@ -105,6 +105,8 @@ const day = () => `2026-09-${String(nextDay++).padStart(2, "0")}`;
 /** Every timeline item kind, with every code its second line can carry. */
 function everyKind(): TimelineResponse {
   nextDay = 1;
+  // Taken in its place among the days, so the other items keep theirs.
+  let labDay = "";
   const life: TimelineItem[] = [
     ...LIFE_EVENT_CATEGORIES.map((category, i) =>
       item({
@@ -235,7 +237,7 @@ function everyKind(): TimelineResponse {
           item({
             id: "lab-day",
             kind: "labDay",
-            start: day(),
+            start: (labDay = day()),
             label: "Kreatinin, Kalium, Natrium",
             sub: "5",
           }),
@@ -258,7 +260,31 @@ function everyKind(): TimelineResponse {
     standing: [],
     series: [],
     availableSeries: [],
-    labSeries: [],
+    // A lab line (#1299) with a reading of every range verdict on the lab
+    // day: each is worded, none reaches the screen as its code.
+    labSeries: [
+      {
+        key: "lab:bm-k",
+        biomarkerId: "bm-k",
+        name: "Kalium",
+        panel: null,
+        unit: "mmol/L",
+        band: { low: 3.5, high: 5.1 },
+        points: (["below", "in-range", "above", "unknown"] as const).map(
+          (rangeStatus, i) => ({
+            id: `k${i}`,
+            date: labDay,
+            value: 3 + i,
+            sourceValue: null,
+            rangeStatus,
+            referenceLow: 3.5,
+            referenceHigh: 5.1,
+            report: null,
+          }),
+        ),
+        excluded: 1,
+      },
+    ],
     availableLabs: [],
     notable: [],
   };
@@ -318,6 +344,10 @@ describe.each<Locale>(["de", "en"])("the timeline in %s", (locale) => {
       ),
     );
     expect(text).toContain(locale === "de" ? "5 Laborwerte" : "5 lab values");
+    expect(text).toContain(
+      locale === "de" ? "über dem Referenzbereich" : "above range",
+    );
+    expect(text).not.toMatch(/in-range|unknown/);
     expect(rawCodes(text)).toEqual([]);
     expect(text).not.toContain(MIDDLE_DOT);
   });

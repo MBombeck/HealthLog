@@ -54,6 +54,17 @@ export const TIMELINE_LEGEND_MEAN_KEY: Readonly<
   day: "timeline.legendMeanDay",
 };
 
+/**
+ * A lab reading outside its reference range, worded beside the value
+ * (#1299). In range and unknown read as the value alone.
+ */
+export const TIMELINE_LAB_RANGE_KEY: Readonly<
+  Record<"below" | "above", string>
+> = {
+  below: "timeline.labs.below",
+  above: "timeline.labs.above",
+};
+
 /** The two blood pressure lines read as their own names on the chart. */
 export const TIMELINE_BLOOD_PRESSURE_SERIES_KEY: Readonly<
   Record<"BLOOD_PRESSURE_SYS" | "BLOOD_PRESSURE_DIA", string>

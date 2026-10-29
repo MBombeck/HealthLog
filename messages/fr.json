@@ -13655,7 +13655,11 @@
       "start": "Début",
       "end": "Fin",
       "seriesCaption": "Moyennes par période",
-      "period": "Période"
+      "period": "Période",
+      "labsCaption": "Valeurs de laboratoire par jour",
+      "marker": "Marqueur",
+      "date": "Date",
+      "value": "Valeur"
     },
     "selection": {
       "empty": "Aucune entrée sur cette période",
@@ -13700,7 +13704,22 @@
       "labValuesOne": "1 valeur de laboratoire",
       "labValuesFew": "{count} valeurs de laboratoire",
       "labValuesOther": "{count} valeurs de laboratoire"
-    }
+    },
+    "labs": {
+      "menuTitle": "Valeurs de laboratoire",
+      "otherPanel": "Autres",
+      "above": "au-dessus de l’intervalle",
+      "below": "en dessous de l’intervalle",
+      "reference": "référence {range}",
+      "report": "Compte rendu : {title}",
+      "reportUntitled": "Ouvrir le compte rendu",
+      "excludedOne": "{name} : {count} valeur dans une autre unité n’est pas affichée",
+      "excludedFew": "{name} : {count} valeurs dans une autre unité ne sont pas affichées",
+      "excludedOther": "{name} : {count} valeurs dans une autre unité ne sont pas affichées"
+    },
+    "legendLabValue": "Valeur de laboratoire, telle que mesurée",
+    "legendLabOutside": "Hors de l’intervalle de référence",
+    "legendLabRange": "Intervalle de référence"
   },
   "lifeEvents": {
     "title": "Événement de vie",
