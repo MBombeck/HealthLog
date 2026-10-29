@@ -16,8 +16,9 @@
  *
  *   - `userId` — single user mode. Synchronously calls
  *     `foldUserRollupHistory(userId)` (the full fold, a calendar year per
- *     statement) and returns the row count when the fold completes. The call is awaited inside the request, so
- *     the operator sees the duration in the response.
+ *     statement, each statement under the boot job's budget) and returns the
+ *     row count when the fold completes. The call is awaited inside the
+ *     request, so the operator sees the duration in the response.
  *   - `userId` omitted — calls `enqueueBootTimeRollupBackfill()` to
  *     re-run the worker-boot discovery (`{ enqueued, skipped }` shape).
  *
@@ -38,6 +39,7 @@ import { annotate } from "@/lib/logging/context";
 import {
   enqueueBootTimeRollupBackfill,
   foldUserRollupHistory,
+  ROLLUP_FULL_BACKFILL_STATEMENT_BUDGET_MS,
 } from "@/lib/rollups/full-backfill";
 
 interface RecomputeBody {
@@ -70,7 +72,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
 
     let result: Awaited<ReturnType<typeof foldUserRollupHistory>>;
     try {
-      result = await foldUserRollupHistory(userId);
+      // The per-statement budget the boot job folds with: this mode is for
+      // the accounts the boot job could not finish, and under the database's
+      // ordinary limit their yearly statements time out here too.
+      result = await foldUserRollupHistory(userId, {
+        statementTimeoutMs: ROLLUP_FULL_BACKFILL_STATEMENT_BUDGET_MS,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return apiError(message, 500);

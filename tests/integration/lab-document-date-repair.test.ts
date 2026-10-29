@@ -8,12 +8,15 @@
  * at noon UTC, and leaves alone a value with a date of its own, a value that
  * really was taken on its confirmation day in the owner's zone, one the
  * person re-dated since, and one whose document has no date. A second run
- * changes nothing.
+ * changes nothing. A fact that does not decrypt is skipped and counted
+ * rather than stopping the run, and an account zone Postgres does not know
+ * is read the way the app reads it, so the candidate set still converges.
  */
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { encryptFactData, encryptFactProvenance } from "@/lib/documents/store";
 import { repairUndatedDocumentLabValues } from "@/lib/jobs/lab-document-date-repair";
+import { invalidateUserTimezone } from "@/lib/tz/resolver";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
 const USER = "user-lab-document-date-repair";
@@ -22,6 +25,7 @@ const noon = (day: string) => new Date(`${day}T12:00:00.000Z`);
 beforeEach(async () => {
   const prisma = getPrismaClient();
   await truncateAllTables(prisma);
+  invalidateUserTimezone(USER);
   await prisma.user.create({
     data: {
       id: USER,
@@ -228,5 +232,59 @@ describe("lab document date repair", () => {
 
     expect(result.updated).toBe(0);
     expect((await takenAt())["linked-twice"]).toBe(confirmed.toISOString());
+  });
+
+  it("skips and counts a fact that does not decrypt, and repairs the rest", async () => {
+    const confirmed = new Date("2026-10-20T08:00:00.000Z");
+    for (const id of ["damaged", "misdated"]) {
+      await confirmedValue({
+        id,
+        reportDate: "2021-03-01",
+        documentDate: null,
+        effectiveDate: null,
+        createdAt: confirmed,
+        takenAt: confirmed,
+      });
+    }
+    const prisma = getPrismaClient();
+    await prisma.extractedFact.updateMany({
+      where: { committedRecordId: "damaged" },
+      data: { dataEncrypted: Buffer.from("not a ciphertext at all") },
+    });
+
+    const result = await repairUndatedDocumentLabValues(prisma);
+
+    expect(result).toMatchObject({ updated: 1, undecryptable: 1 });
+    expect(await takenAt()).toEqual({
+      damaged: confirmed.toISOString(),
+      misdated: "2021-03-01T12:00:00.000Z",
+    });
+  });
+
+  it("reads a zone Postgres does not know the way the app does, so the candidates converge", async () => {
+    const prisma = getPrismaClient();
+    await prisma.user.update({
+      where: { id: USER },
+      data: { timezone: "Mars/Olympus_Mons" },
+    });
+    // 00:30 on the report day in the instance default (Europe/Berlin), the
+    // evening before in UTC: on its document's day for the app.
+    const justAfterMidnight = new Date("2026-10-19T22:30:00.000Z");
+    await confirmedValue({
+      id: "taken-on-confirm-day",
+      reportDate: "2026-10-20",
+      documentDate: null,
+      effectiveDate: null,
+      createdAt: justAfterMidnight,
+      takenAt: justAfterMidnight,
+    });
+
+    const result = await repairUndatedDocumentLabValues(prisma);
+
+    // Not even a candidate: the boot check finds nothing to enqueue.
+    expect(result).toMatchObject({ scanned: 0, updated: 0 });
+    expect((await takenAt())["taken-on-confirm-day"]).toBe(
+      justAfterMidnight.toISOString(),
+    );
   });
 });

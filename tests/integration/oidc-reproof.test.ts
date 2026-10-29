@@ -59,6 +59,7 @@ vi.mock("@/lib/auth/oidc", async (importOriginal) => {
 });
 
 const oidc = await import("@/lib/auth/oidc");
+const { hashToken } = await import("@/lib/auth/hmac");
 
 const USER_ID = "user-oidc-reproof";
 const SUB = "idp-sub-reproof";
@@ -312,5 +313,33 @@ describe("confirming at the identity provider", () => {
     expect(back.origin).toBe("http://localhost:3000");
     expect(back.searchParams.get("reproof")).toBe("failed");
     expect(oidc.discoverOidcMetadata).not.toHaveBeenCalled();
+  });
+
+  it("is listed on the status read for the browser, never for a token", async () => {
+    const { GET } = await import("@/app/api/auth/me/mfa/route");
+    const status = async () => {
+      const res = await (GET as unknown as RouteFn)(
+        new NextRequest("http://localhost:3000/api/auth/me/mfa"),
+      );
+      expect(res.status).toBe(200);
+      return ((await res.json()) as { data: { proofMethods: string[] } }).data
+        .proofMethods;
+    };
+
+    await startSession(HOUR);
+    expect(await status()).toEqual(["oidc"]);
+
+    cookieJar.clear();
+    const raw = `hlk_mfastatus${"0".repeat(64 - "mfastatus".length)}`;
+    await getPrismaClient().apiToken.create({
+      data: {
+        userId: USER_ID,
+        name: "device",
+        tokenHash: hashToken(raw),
+        permissions: ["*"],
+      },
+    });
+    headerJar.set("authorization", `Bearer ${raw}`);
+    expect(await status()).toEqual([]);
   });
 });

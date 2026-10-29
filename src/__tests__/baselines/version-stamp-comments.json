@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2896,
-  "total": 9229,
+  "total": 9228,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -2458,7 +2458,7 @@
     "lib/measurements/cumulative-day-sum.ts": 6,
     "lib/measurements/daily-series-read.ts": 2,
     "lib/measurements/dense-intraday-hourly-rebuild.ts": 1,
-    "lib/measurements/dense-intraday-retention.ts": 4,
+    "lib/measurements/dense-intraday-retention.ts": 3,
     "lib/measurements/display-transform.ts": 6,
     "lib/measurements/drain-per-sample-cumulative.ts": 8,
     "lib/measurements/import-apple-health-export.ts": 5,

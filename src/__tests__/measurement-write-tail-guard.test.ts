@@ -110,6 +110,8 @@ const WRITE_SITES: Record<string, string> = {
     "value-preserving hourly fold; refolds the touched spans",
   "lib/measurements/dense-intraday-retention.ts":
     "value-preserving retention fold; refolds the touched days",
+  "lib/measurements/dense-fold-removal.ts":
+    "removes the samples the retention fold has just taken into its hourly means, inside the fold's transaction; the fold refolds the touched days",
   "lib/jobs/sleep-timeline-backfill.ts":
     "one-shot re-stamp of stored sleep rows onto their timeline; refolds the touched days",
   "lib/jobs/step-consolidation-repair.ts":

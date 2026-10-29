@@ -140,9 +140,18 @@ export async function recordOidcReproof(args: {
     return { ok: false, reason: refusal };
   }
 
+  // The proof is as old as the authentication, not the callback: the gate's
+  // window then runs from the moment the person signed in at the provider,
+  // so a token near the end of its window buys no extra minutes. A provider
+  // clock a little ahead is clamped to now, never stamped into the future.
+  // (A token without `auth_time` was refused above.)
+  const authenticatedAtMs =
+    identity.authTime === null
+      ? nowMs
+      : Math.min(identity.authTime * 1000, nowMs);
   await prisma.session.update({
     where: { id: sessionId },
-    data: { reproofAt: new Date(nowMs) },
+    data: { reproofAt: new Date(authenticatedAtMs) },
   });
   await refundReproof(userId);
   await auditLog("auth.reproof.succeeded", {
