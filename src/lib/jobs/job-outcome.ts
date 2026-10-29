@@ -307,6 +307,10 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "summary_pending_healed",
   "suppressed_client_managed",
   "suppressed_discreet",
+  // The hourly system job alert: queues failing now, notices sent, admins.
+  "system_job_admins",
+  "system_job_notices",
+  "system_jobs_failing",
   "thumbnails_enqueued",
   "tls_pin_monitor_known_count",
   "tls_pin_monitor_outcome",
@@ -330,6 +334,8 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "users_synced",
   "users_useful",
   "wedge_skipped",
+  // The full rollup backfill: calendar-year windows one run folded.
+  "windows_folded",
 ]);
 
 export const MAX_JOB_FACTS = 32;

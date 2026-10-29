@@ -56,8 +56,14 @@ import {
   type CumulativePrRederivePayload,
 } from "@/lib/personal-records/cumulative-pr-rederivation";
 import {
-  recomputeUserRollups,
+  foldUserRollupHistory,
+  isRollupFullBackfillPending,
+  ROLLUP_FULL_BACKFILL_STATEMENT_BUDGET_MS,
+  sendRollupFullBackfillContinuation,
   type RollupFullBackfillPayload,
+} from "@/lib/rollups/full-backfill";
+import {
+  recomputeUserRollups,
   type RollupRecomputePayload,
 } from "@/lib/rollups/measurement-rollups";
 import {
@@ -91,35 +97,47 @@ export async function handleRollupRecompute(
 }
 
 /**
- * The full fold of one uncovered account across the default window and every
- * granularity. Each granularity commits on its own, so a run stopped on its
- * budget throws and the retry folds the rest.
+ * The full fold of one account across the five-year window, a calendar year
+ * at a time and every statement under the full backfill's own limit (#1298).
+ * A run that reaches its job budget hands the years it did not reach to a
+ * follow-up and completes; only a run that could not finish even one window
+ * fails, and its retry starts that window again.
  */
 export async function handleRollupFullBackfill(
   jobs: Job<RollupFullBackfillPayload>[],
 ): Promise<JobOutcome> {
   const shouldStop = jobBudget(jobs);
   let rowsUpsertedTotal = 0;
+  let windowsTotal = 0;
+  let continued = 0;
   for (const job of jobs) {
-    const { userId } = job.data;
-    const { rowsUpserted, durationMs, stopped } = await recomputeUserRollups(
-      userId,
-      { shouldStop },
-    );
-    if (stopped) {
-      throw new Error(
-        `rollup-full-backfill for user ${userId} stopped on its job budget; the retry folds the rest`,
-      );
+    const { userId, resumeBefore } = job.data;
+    const done = await foldUserRollupHistory(userId, {
+      before: resumeBefore ? new Date(resumeBefore) : undefined,
+      shouldStop,
+      statementTimeoutMs: ROLLUP_FULL_BACKFILL_STATEMENT_BUDGET_MS,
+    });
+    rowsUpsertedTotal += done.rowsUpserted;
+    windowsTotal += done.windowsFolded;
+    if (done.resumeBefore) {
+      if (done.windowsFolded === 0) {
+        throw new Error(
+          `rollup-full-backfill for user ${userId} stopped on its job budget before it folded a window; the retry starts that window again`,
+        );
+      }
+      await sendRollupFullBackfillContinuation(userId, done.resumeBefore);
+      continued += 1;
     }
-    rowsUpsertedTotal += rowsUpserted;
     workerLog(
       "info",
-      `[rollup-full-backfill] user=${userId} rows=${rowsUpserted} duration=${durationMs}ms`,
+      `[rollup-full-backfill] user=${userId} rows=${done.rowsUpserted} windows=${done.windowsFolded} duration=${done.durationMs}ms${done.resumeBefore ? ` continuesBefore=${done.resumeBefore.toISOString()}` : ""}`,
     );
   }
   return jobDone({
     users: jobs.length,
     rows_upserted: rowsUpsertedTotal,
+    windows_folded: windowsTotal,
+    continued,
   });
 }
 
@@ -510,6 +528,7 @@ export function drainCumulativeHandler(
             {
               dryRun: false,
               shouldStop,
+              deferUser: isRollupFullBackfillPending,
               log: (line) => workerLog("info", line),
             },
           );

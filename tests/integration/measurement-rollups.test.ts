@@ -29,6 +29,8 @@ import { getPrismaClient, truncateAllTables } from "./setup";
 import {
   ROLLUP_FULL_BACKFILL_QUEUE,
   enqueueBootTimeRollupBackfill,
+} from "@/lib/rollups/full-backfill";
+import {
   recomputeBucketsForKeys,
   recomputeBucketsForMeasurement,
   recomputeUserRollups,

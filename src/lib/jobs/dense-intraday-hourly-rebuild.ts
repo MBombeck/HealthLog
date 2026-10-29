@@ -30,10 +30,8 @@ import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { DENSE_INTRADAY_RETENTION_ENABLED } from "@/lib/jobs/dense-intraday-retention";
-import {
-  DENSE_INTRADAY_RETENTION_DAYS,
-  DENSE_INTRADAY_RETENTION_TYPES,
-} from "@/lib/measurements/dense-intraday-retention";
+import { DENSE_INTRADAY_RETENTION_DAYS } from "@/lib/measurements/dense-intraday-retention";
+import { DENSE_INTRADAY_RETENTION_TYPES } from "@/lib/measurements/dense-intraday-sources";
 import { runDenseIntradayHourlyRebuild } from "@/lib/measurements/dense-intraday-hourly-rebuild";
 import { DENSE_INTRADAY_HOURLY_REBUILD_QUEUE } from "./dense-intraday-hourly-rebuild-queue";
 

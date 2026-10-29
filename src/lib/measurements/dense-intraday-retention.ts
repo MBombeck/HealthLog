@@ -56,7 +56,6 @@ import {
   FOLD_TRANSACTION_OPTIONS,
 } from "@/lib/export/restore-lock";
 import type {
-  MeasurementSource,
   MeasurementType,
   Prisma,
   PrismaClient,
@@ -67,7 +66,11 @@ import {
   dailyStatsExternalId,
   hkIdentifierForType,
 } from "./apple-health-mapping";
-import { runConsolidation, type DayWriteOutcome } from "./consolidation-base";
+import {
+  runConsolidation,
+  type ConsolidationOptions,
+  type DayWriteOutcome,
+} from "./consolidation-base";
 import {
   canonicalHourlyTimestamp,
   hourOfDayForUserTz,
@@ -78,6 +81,11 @@ import { percentile } from "@/lib/insights/strain-score";
 import type { PerSampleRow } from "./drain-per-sample-cumulative";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { localDayWindow } from "@/lib/tz/local-day";
+import {
+  DENSE_INTRADAY_FOLD_SOURCES,
+  DENSE_INTRADAY_FOLD_TYPES_BY_SOURCE,
+  type DenseIntradayFoldSource,
+} from "./dense-intraday-sources";
 import {
   absorbIntoFold,
   foldConstituentHorizon,
@@ -122,40 +130,6 @@ import {
  */
 
 /**
- * The dense-tier types. These are the high-frequency intra-day signals that
- * accumulate raw per-sample rows the destructive daily-mean drain never
- * touches:
- *
- *   - `HEART_RATE_VARIABILITY` + `PULSE` — the daytime shape the Stress
- *     engine reads (v1.10.0 / v1.18.11).
- *   - `OXYGEN_SATURATION` — Apple Watch's Blood-Oxygen app samples SpO2
- *     periodically through the day and overnight; the readings map to
- *     `aggregation: "latest"` and sit in NEITHER `CUMULATIVE_HK_TYPES` nor
- *     `HIGH_FREQUENCY_MEAN_TYPES`, so every sample piled up raw forever.
- *     Folded here to hourly-mean rows with the daily min/max preserved on
- *     the rollup tier (the lowest sample is the overnight-desaturation
- *     nadir — clinically the meaningful figure, not the mean).
- *
- * Every member is deliberately EXEMPT from the destructive daily-mean drain
- * (`HIGH_FREQUENCY_MEAN_TYPES`); the disjointness from that set is the
- * load-bearing invariant a regression test pins — a type in both would be
- * folded by two drains at once and corrupt the value.
- *
- * `RESPIRATORY_RATE` is deliberately NOT here: it is already a member of
- * `HIGH_FREQUENCY_MEAN_TYPES`, so the nightly mean-consolidation already
- * collapses it to a daily-mean row. Adding it here would double-fold it.
- *
- * One fold grain per tier: every member folds HOURLY. A per-type grain
- * split would fork the write path and the rebuild for no reader benefit.
- */
-export const DENSE_INTRADAY_RETENTION_TYPES: ReadonlySet<MeasurementType> =
-  new Set<MeasurementType>([
-    "HEART_RATE_VARIABILITY",
-    "PULSE",
-    "OXYGEN_SATURATION",
-  ]);
-
-/**
  * Retention bound (days). Per-sample dense-tier rows older than this window
  * fold to hourly-mean rows and the raw rows are deleted; rows inside the
  * window stay raw so the Stress engine has its intra-day inputs.
@@ -172,23 +146,6 @@ export const DENSE_INTRADAY_RETENTION_TYPES: ReadonlySet<MeasurementType> =
  * renders an empty chart for an older day.
  */
 export const DENSE_INTRADAY_RETENTION_DAYS = 90;
-
-/**
- * The sources whose raw dense samples fold (v1.42). Apple Health from the
- * start; Health Connect because its importer writes the samples of the last
- * 90 days raw, exactly like an Apple Health sync, and without a fold every
- * new export would add another quarter of minute-by-minute heart rate that
- * never ages into hourly means. Each source folds into its OWN `stats:` rows,
- * so an hour two sources both covered keeps one mean per source, the same
- * way the raw samples kept their source.
- */
-export const DENSE_INTRADAY_FOLD_SOURCES = [
-  "APPLE_HEALTH",
-  "HEALTH_CONNECT",
-] as const satisfies readonly MeasurementSource[];
-
-export type DenseIntradayFoldSource =
-  (typeof DENSE_INTRADAY_FOLD_SOURCES)[number];
 
 /** The stats externalId prefix marks an already-collapsed row. */
 const DAILY_STATS_PREFIX = "stats:";
@@ -485,13 +442,8 @@ export interface DenseIntradayRetentionSummary {
   };
 }
 
-export interface DenseIntradayRetentionOptions {
-  /** Limit the pass to a single user. Default = every user. */
-  userId?: string;
-  /** Preview-only mode — no DB writes. */
-  dryRun?: boolean;
-  /** Logger sink — defaults to `console.log`. */
-  log?: (line: string) => void;
+/** The shared drain options (`ConsolidationOptions`) and the retention window. */
+export interface DenseIntradayRetentionOptions extends ConsolidationOptions {
   /**
    * Retention window in days. Per-sample rows OLDER than `now() -
    * retentionDays` are folded; rows inside the window stay raw. Defaults to
@@ -500,11 +452,6 @@ export interface DenseIntradayRetentionOptions {
    * full-collapse, never by the scheduled pass.
    */
   retentionDays?: number;
-  /**
-   * Ends the pass cleanly before the next day when it returns `true`; the
-   * summary then reports `stoppedEarly`. See `ConsolidationOptions`.
-   */
-  shouldStop?: () => boolean;
 }
 
 /**
@@ -590,7 +537,7 @@ export async function runDenseIntradayRetention(
     await runConsolidation<MeasurementType>({
       prismaClient,
       options: { ...options, cutoffHours },
-      types: DENSE_INTRADAY_RETENTION_TYPES,
+      types: DENSE_INTRADAY_FOLD_TYPES_BY_SOURCE[source],
       hkIdentifierForType,
       dailyStatsExternalId,
       statsPrefix: DAILY_STATS_PREFIX,
@@ -1034,8 +981,8 @@ export async function runDenseIntradayRetention(
       },
     });
 
-  // One walk per source, Apple Health first so its behaviour and its order
-  // are exactly what they were before Health Connect folded too. A walk that
+  // One walk per source, in the map's order (Apple Health first, so its
+  // behaviour is what it was before other sources folded too). A walk that
   // stopped early stops the pass: the next run resumes where it left off.
   for (const source of DENSE_INTRADAY_FOLD_SOURCES) {
     const walk = await walkSource(source);

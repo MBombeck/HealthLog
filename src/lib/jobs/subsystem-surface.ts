@@ -67,6 +67,7 @@ const subsystemSurface = {
   "coach-plan-review": { audience: "system" },
   "medication-low-stock": { audience: "system" },
   "daily-briefing": { audience: "system" },
+  "system-job-alert": { audience: "system" },
 
   // register-rollup.ts
   "rollup-recompute": { audience: "system" },

@@ -72,11 +72,11 @@ import { localDayWindow } from "@/lib/tz/local-day";
 import { meanBucketValue } from "./consolidate-daily-mean";
 import {
   DENSE_INTRADAY_RETENTION_DAYS,
-  DENSE_INTRADAY_RETENTION_TYPES,
   adoptOrMintHourlyRows,
   bucketRowsByLocalHour,
   hourlyStatsExternalId,
 } from "./dense-intraday-retention";
+import { DENSE_INTRADAY_RETENTION_TYPES } from "./dense-intraday-sources";
 import {
   bucketSpan,
   enqueueRollupRecompute,

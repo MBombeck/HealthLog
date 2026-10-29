@@ -26,7 +26,7 @@ import {
   CUMULATIVE_HK_TYPES,
   HIGH_FREQUENCY_MEAN_TYPES,
 } from "../apple-health-mapping";
-import { DENSE_INTRADAY_RETENTION_TYPES } from "../dense-intraday-retention";
+import { DENSE_INTRADAY_RETENTION_TYPES } from "../dense-intraday-sources";
 
 describe("dense intra-day retention — drain exemption (WX-E)", () => {
   it("EXEMPTS HEART_RATE_VARIABILITY from the destructive daily-mean drain", () => {

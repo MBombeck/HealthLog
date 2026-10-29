@@ -11,14 +11,16 @@
  * Writes are first-write-wins: a sample is final once it is in Oura's cloud,
  * and it is keyed on its own instant (`heartrate:<ISO>`), so a re-read of the
  * same range is an insert that `skipDuplicates` drops. A row the person
- * deleted keeps its tombstone; the re-read does not bring it back. Oura's
- * samples go raw, like Google Health's and Fitbit's minute stream: the dense
- * hourly fold covers only the export sources (`DENSE_INTRADAY_FOLD_SOURCES`).
+ * deleted keeps its tombstone; the re-read does not bring it back. Samples
+ * older than the retention window are folded into hourly means like Google
+ * Health's (`DENSE_INTRADAY_FOLD_TYPES_BY_SOURCE`), and a re-read of a folded
+ * hour writes nothing (`withoutFoldedSamples`).
  */
 import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { dropImplausibleMeasurements } from "@/lib/measurements/plausibility-gate";
+import { withoutFoldedSamples } from "@/lib/measurements/folded-window";
 import { collapseToTypeDayKeys } from "@/lib/rollups/measurement-rollups";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
 import { forEachHeartRatePage } from "./client";
@@ -76,10 +78,17 @@ export async function writeOuraHeartRatePage(
     const m = mapHeartRateSample(s);
     if (m) mapped.push(m);
   }
-  const kept = dropImplausibleMeasurements("oura", mapped, (m) => ({
-    type: m.type,
-    value: m.value,
-  }));
+  // A sample of an hour the dense fold already took is not written again: it
+  // was deleted with the fold, so `skipDuplicates` would not stop it.
+  const { kept } = await withoutFoldedSamples(
+    prisma,
+    userId,
+    "OURA",
+    dropImplausibleMeasurements("oura", mapped, (m) => ({
+      type: m.type,
+      value: m.value,
+    })),
+  );
   let inserted = 0;
   for (let i = 0; i < kept.length; i += OURA_HEART_RATE_WRITE_CHUNK) {
     const chunk = kept.slice(i, i + OURA_HEART_RATE_WRITE_CHUNK);

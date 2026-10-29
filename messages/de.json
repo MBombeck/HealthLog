@@ -9260,6 +9260,13 @@
       "titleFailing": "Sicherungen sind gefährdet",
       "titleReminder": "Sicherungen sind weiterhin gefährdet",
       "titleRecovered": "Sicherungen laufen wieder normal"
+    },
+    "systemJobAlert": {
+      "titleFailing": "Hintergrundjob schlägt fehl: {queue}",
+      "titleReminder": "Hintergrundjob schlägt weiter fehl: {queue}",
+      "titleRecovered": "Hintergrundjob läuft wieder: {queue}",
+      "bodyFailing": "Der Hintergrundjob {queue} ist {failures}-mal in Folge fehlgeschlagen und steht auf der Admin-Statusseite. Letzter Fehler: {error}",
+      "bodyRecovered": "Der Hintergrundjob {queue} ist wieder erfolgreich gelaufen."
     }
   },
   "i18n": {

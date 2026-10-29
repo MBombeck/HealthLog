@@ -217,7 +217,13 @@ async function readWindowMeans(
       1,
       Math.ceil((to.getTime() - from.getTime()) / MS_PER_DAY),
     );
-    const resolved = await readBestGranularityRollups(userId, type, windowDays);
+    const resolved = await readBestGranularityRollups(
+      userId,
+      type,
+      windowDays,
+      undefined,
+      now,
+    );
     if (
       resolved &&
       resolved.granularity === "DAY" &&

@@ -9260,6 +9260,13 @@
       "titleFailing": "Back-ups lopen gevaar",
       "titleReminder": "Back-ups lopen nog steeds gevaar",
       "titleRecovered": "Back-ups zijn weer in orde"
+    },
+    "systemJobAlert": {
+      "titleFailing": "Achtergrondtaak mislukt: {queue}",
+      "titleReminder": "Achtergrondtaak mislukt nog steeds: {queue}",
+      "titleRecovered": "Achtergrondtaak werkt weer: {queue}",
+      "bodyFailing": "De achtergrondtaak {queue} is {failures} keer achter elkaar mislukt en staat op de beheerstatuspagina. Laatste fout: {error}",
+      "bodyRecovered": "De achtergrondtaak {queue} is weer met succes uitgevoerd."
     }
   },
   "i18n": {

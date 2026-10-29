@@ -9260,6 +9260,13 @@
       "titleFailing": "Las copias de seguridad están en riesgo",
       "titleReminder": "Las copias de seguridad siguen en riesgo",
       "titleRecovered": "Las copias de seguridad vuelven a la normalidad"
+    },
+    "systemJobAlert": {
+      "titleFailing": "Tarea en segundo plano con fallos: {queue}",
+      "titleReminder": "La tarea en segundo plano sigue fallando: {queue}",
+      "titleRecovered": "La tarea en segundo plano vuelve a funcionar: {queue}",
+      "bodyFailing": "La tarea en segundo plano {queue} ha fallado {failures} veces seguidas y aparece en la página de estado de administración. Último error: {error}",
+      "bodyRecovered": "La tarea en segundo plano {queue} se ha vuelto a ejecutar correctamente."
     }
   },
   "i18n": {

@@ -9260,6 +9260,13 @@
       "titleFailing": "Os backups estão em risco",
       "titleReminder": "Os backups continuam em risco",
       "titleRecovered": "Os backups voltaram ao normal"
+    },
+    "systemJobAlert": {
+      "titleFailing": "Tarefa em segundo plano falhando: {queue}",
+      "titleReminder": "Tarefa em segundo plano ainda falhando: {queue}",
+      "titleRecovered": "Tarefa em segundo plano funcionando de novo: {queue}",
+      "bodyFailing": "A tarefa em segundo plano {queue} falhou {failures} vezes seguidas e aparece na página de status da administração. Último erro: {error}",
+      "bodyRecovered": "A tarefa em segundo plano {queue} voltou a ser executada com sucesso."
     }
   },
   "i18n": {
