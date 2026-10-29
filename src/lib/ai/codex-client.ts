@@ -21,15 +21,11 @@ import {
 } from "./codex-reasoning-wire";
 import {
   getCachedCodexSlug,
-  invalidateCachedCodexSlug,
+  rememberRejectedCodexSlug,
   setCachedCodexSlug,
+  type CodexCredential,
 } from "./codex-slug-cache";
-import {
-  DEFAULT_SLUG_FALLBACK_CHAIN,
-  loadFallbackChain,
-} from "./codex-slug-chain";
-
-export { resolveCodexVisionSlug } from "./codex-slug-chain";
+import { loadCodexAttemptChain } from "./codex-slug-chain";
 
 /**
  * Codex backend client — talks to `chatgpt.com/backend-api/codex/responses`
@@ -47,11 +43,10 @@ export { resolveCodexVisionSlug } from "./codex-slug-chain";
  *
  * Response is always SSE (server rejects `stream: false` with 400).
  *
- * v1.4.15 (Phase C1) adds a slug-drift defence — see
- * `docs/codex-protocol-spec.md` §7b. The client walks an ordered
- * fallback chain on every fresh request series (short-circuiting on
- * a cached working slug) so a single upstream allow-list rotation no
- * longer bricks the integration.
+ * Slug-drift defence (`docs/codex-protocol-spec.md` §7b): the client tries
+ * its sign-in's working slug first, then walks an order built from the
+ * models the account is offered (`codex-slug-chain.ts`), so an upstream
+ * retirement does not take the integration down.
  */
 
 /**
@@ -231,10 +226,13 @@ interface CodexClientConfig {
   accountId: string;
   onTokenRefresh: () => Promise<{ accessToken: string; accountId: string }>;
   /**
-   * Override the slug fallback chain (test-only). When unset, the
-   * chain is loaded from env + DEFAULT_SLUG_FALLBACK_CHAIN.
+   * The stored credential (`userCodexCredentialKey` or
+   * `CENTRAL_CODEX_CREDENTIAL_KEY`) its working slug, refused slugs and model
+   * list are kept under; and two test seams (see `loadCodexAttemptChain`).
    */
+  credentialKey: string;
   slugChain?: string[];
+  readModels?: Parameters<typeof loadCodexAttemptChain>[0]["readModels"];
 }
 
 /** Diagnostic shape returned to the route layer for Wide-Event logging. */
@@ -269,53 +267,59 @@ export class CodexClient implements AIProvider {
     accessToken: string;
     accountId: string;
   }>;
-  private readonly slugChain: string[];
+  private readonly selection: Pick<
+    CodexClientConfig,
+    "credentialKey" | "slugChain" | "readModels"
+  >;
   private lastDiagnostics: CodexAttemptDiagnostics | null = null;
 
   constructor(config: CodexClientConfig) {
     this.accessToken = config.accessToken;
     this.accountId = config.accountId;
     this.onTokenRefresh = config.onTokenRefresh;
-    this.slugChain = config.slugChain ?? loadFallbackChain();
-    if (this.slugChain.length === 0) {
-      // Hardcoded floor — even with a misconfigured env var we always
-      // try at least one slug.
-      this.slugChain = [...DEFAULT_SLUG_FALLBACK_CHAIN];
-    }
+    this.selection = config;
+  }
+
+  private get credential(): CodexCredential {
+    return { key: this.selection.credentialKey, accountId: this.accountId };
   }
 
   /**
-   * Diagnostics for the most recent generateCompletion() call, used by
-   * the route layer for Wide-Event annotations. Captures the order of
-   * attempted slugs, whether the cache was hit, and which slug
-   * eventually worked (or null on all-failed).
+   * The last generateCompletion(): slugs attempted in order, whether the
+   * working slug was cached, and which slug answered (null when none did).
    */
   getLastDiagnostics(): CodexAttemptDiagnostics | null {
     return this.lastDiagnostics;
   }
 
-  /**
-   * Build the slug-attempt order: cached slug first (if any and not
-   * expired), then the rest of the fallback chain in order, deduped
-   * against the cached slug.
-   */
-  private buildAttemptOrder(): { order: string[]; cacheState: "hit" | "miss" } {
-    const cached = getCachedCodexSlug();
-    if (cached === null) {
-      return { order: [...this.slugChain], cacheState: "miss" };
-    }
-    const order = [cached, ...this.slugChain.filter((s) => s !== cached)];
-    return { order, cacheState: "hit" };
-  }
-
   async generateCompletion(
     params: CompletionParams,
   ): Promise<CompletionResult> {
-    const { order, cacheState } = this.buildAttemptOrder();
+    // The working slug alone first: the account's list is read only when
+    // there is none, or when it stops working.
+    const cached = getCachedCodexSlug(this.selection.credentialKey);
+    const cacheState = cached === null ? "miss" : "hit";
+    const loadChain = () =>
+      loadCodexAttemptChain({
+        ...this.selection,
+        credential: this.credential,
+        accessToken: this.accessToken,
+      });
+    const queue = cached ? [cached] : await loadChain();
+    let chainLoaded = cached === null;
     const attempted: string[] = [];
     let lastSlugRejectionError: Error | null = null;
 
-    for (const slug of order) {
+    for (;;) {
+      if (queue.length === 0) {
+        if (chainLoaded) break;
+        chainLoaded = true;
+        queue.push(
+          ...(await loadChain()).filter((s) => !attempted.includes(s)),
+        );
+        continue;
+      }
+      const slug = queue.shift() as string;
       attempted.push(slug);
 
       let wire = planCodexReasoning(params.reasoning, slug);
@@ -334,7 +338,7 @@ export class CodexClient implements AIProvider {
             cacheState,
             workingSlug: slug,
           };
-          setCachedCodexSlug(slug);
+          setCachedCodexSlug(this.credential, slug);
           return this.parseResponse(retryAfterRefresh, slug, params, wire);
         }
         // Even after refresh — surface the auth failure verbatim, do
@@ -374,7 +378,7 @@ export class CodexClient implements AIProvider {
           cacheState,
           workingSlug: slug,
         };
-        setCachedCodexSlug(slug);
+        setCachedCodexSlug(this.credential, slug);
         return this.parseResponse(attempt, slug, params, wire);
       }
 
@@ -383,10 +387,9 @@ export class CodexClient implements AIProvider {
       const bodyExcerpt = redactBody(rawBody);
 
       if (isSlugRejection(attempt.status, bodyExcerpt)) {
-        // Slug rejected — drop the cache (in case it pointed here),
-        // record the failure for diagnostics, and walk to the next
-        // chain slot.
-        invalidateCachedCodexSlug();
+        // Refused for this sign-in: out of the working slot and to the back
+        // of its line, even while its list still offers it; walk on.
+        rememberRejectedCodexSlug(this.credential, slug);
         const slugErr = new Error(
           `Codex slug "${slug}" rejected (${attempt.status})`,
         );
@@ -898,10 +901,7 @@ function redactBody(rawBody: string): string {
     .replace(/Bearer\s+[A-Za-z0-9_.-]+/gi, "Bearer ***redacted***");
 }
 
-// Test-only re-exports — keeps the spec-driven defaults visible to unit
-// tests without exporting a settable mutable.
+// Test-only: the rejection matcher.
 export const __test = {
-  DEFAULT_SLUG_FALLBACK_CHAIN,
   isSlugRejection,
-  loadFallbackChain,
 };

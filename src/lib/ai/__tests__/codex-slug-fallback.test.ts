@@ -13,6 +13,18 @@ import {
   setCachedCodexSlug,
   CODEX_SLUG_CACHE_TTL_MS,
 } from "../codex-slug-cache";
+import {
+  DEFAULT_SLUG_FALLBACK_CHAIN,
+  buildCodexSlugChain,
+} from "../codex-slug-chain";
+
+/** The sign-in every client in this file runs on. */
+const KEY = "user:test";
+const CREDENTIAL = { key: KEY, accountId: "acct" };
+
+/** A model list that cannot be read: the client walks its static order. */
+const NO_MODEL_LIST = async () =>
+  ({ models: null, from: "live", failure: "network" }) as const;
 
 /**
  * Slug-drift defence.
@@ -110,6 +122,8 @@ describe("Codex slug fallback chain", () => {
       vi.stubGlobal("fetch", mockFetch);
 
       const client = new CodexClient({
+        credentialKey: "user:test",
+        readModels: NO_MODEL_LIST,
         accessToken: "test",
         accountId: "acct",
         onTokenRefresh,
@@ -123,7 +137,7 @@ describe("Codex slug fallback chain", () => {
         "gpt-6-sol",
       ]);
       expect(client.getLastDiagnostics()?.workingSlug).toBe("gpt-6-sol");
-      expect(getCachedCodexSlug()).toBe("gpt-6-sol");
+      expect(getCachedCodexSlug(KEY)).toBe("gpt-6-sol");
     } finally {
       if (origModel === undefined) delete process.env.CODEX_MODEL;
       else process.env.CODEX_MODEL = origModel;
@@ -138,6 +152,7 @@ describe("Codex slug fallback chain", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
       accessToken: "test",
       accountId: "acct",
       onTokenRefresh,
@@ -154,7 +169,7 @@ describe("Codex slug fallback chain", () => {
     expect(diagnostics?.cacheState).toBe("miss");
     expect(diagnostics?.workingSlug).toBe("gpt-5.3-codex");
 
-    expect(getCachedCodexSlug()).toBe("gpt-5.3-codex");
+    expect(getCachedCodexSlug(KEY)).toBe("gpt-5.3-codex");
   });
 
   it("walks past first slug on 'not supported when using Codex with a ChatGPT account' 400", async () => {
@@ -165,6 +180,7 @@ describe("Codex slug fallback chain", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
       accessToken: "test",
       accountId: "acct",
       onTokenRefresh,
@@ -183,7 +199,7 @@ describe("Codex slug fallback chain", () => {
     expect(diagnostics?.workingSlug).toBe("gpt-5.3-codex");
 
     // The working slug — not the rejected one — is now cached.
-    expect(getCachedCodexSlug()).toBe("gpt-5.3-codex");
+    expect(getCachedCodexSlug(KEY)).toBe("gpt-5.3-codex");
   });
 
   it("walks past first slug on 400 with model_not_found body", async () => {
@@ -199,6 +215,7 @@ describe("Codex slug fallback chain", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
       accessToken: "test",
       accountId: "acct",
       onTokenRefresh,
@@ -218,6 +235,7 @@ describe("Codex slug fallback chain", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
       accessToken: "test",
       accountId: "acct",
       onTokenRefresh,
@@ -235,6 +253,7 @@ describe("Codex slug fallback chain", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
       accessToken: "test",
       accountId: "acct",
       onTokenRefresh,
@@ -255,6 +274,7 @@ describe("Codex slug fallback chain", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
       accessToken: "test",
       accountId: "acct",
       onTokenRefresh,
@@ -276,6 +296,7 @@ describe("Codex slug fallback chain", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
       accessToken: "expired",
       accountId: "acct",
       onTokenRefresh: vi
@@ -304,6 +325,7 @@ describe("Codex slug fallback chain", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
       accessToken: "test",
       accountId: "acct",
       onTokenRefresh,
@@ -332,11 +354,12 @@ describe("Codex slug fallback chain", () => {
   });
 
   it("cache hit — second call goes straight to the cached slug", async () => {
-    setCachedCodexSlug("gpt-4o");
+    setCachedCodexSlug(CREDENTIAL, "gpt-4o");
     const mockFetch = vi.fn().mockResolvedValue(sseSuccessResponse());
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
       accessToken: "test",
       accountId: "acct",
       onTokenRefresh,
@@ -350,8 +373,8 @@ describe("Codex slug fallback chain", () => {
   });
 
   it("cache invalidated when cached slug starts rejecting", async () => {
-    setCachedCodexSlug("gpt-5-codex");
-    expect(getCachedCodexSlug()).toBe("gpt-5-codex");
+    setCachedCodexSlug(CREDENTIAL, "gpt-5-codex");
+    expect(getCachedCodexSlug(KEY)).toBe("gpt-5-codex");
 
     const mockFetch = vi
       .fn()
@@ -360,6 +383,7 @@ describe("Codex slug fallback chain", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
       accessToken: "test",
       accountId: "acct",
       onTokenRefresh,
@@ -369,7 +393,7 @@ describe("Codex slug fallback chain", () => {
 
     // After walking to "gpt-5.3-codex" (the next entry after the
     // cached one), the cache is updated to the new working slug.
-    expect(getCachedCodexSlug()).toBe("gpt-5.3-codex");
+    expect(getCachedCodexSlug(KEY)).toBe("gpt-5.3-codex");
   });
 
   it("isSlugRejection helper recognises canonical rejection bodies", () => {
@@ -401,7 +425,7 @@ describe("Codex slug fallback chain", () => {
     // served the gpt-5.6 and gpt-6 lines. Terra, verified live, leads; its
     // upstream successor and the rest of the gpt-6 line follow before terra's
     // own siblings, which a line rotation would retire together with it.
-    expect([...__test.DEFAULT_SLUG_FALLBACK_CHAIN]).toEqual([
+    expect([...DEFAULT_SLUG_FALLBACK_CHAIN]).toEqual([
       "gpt-5.6-terra",
       "gpt-6-sol",
       "gpt-6.1-sol",
@@ -419,7 +443,7 @@ describe("Codex slug fallback chain", () => {
       "gpt-5.3-codex",
       "gpt-5.2",
     ]) {
-      expect(__test.DEFAULT_SLUG_FALLBACK_CHAIN).not.toContain(retired);
+      expect(DEFAULT_SLUG_FALLBACK_CHAIN).not.toContain(retired);
     }
   });
 
@@ -430,8 +454,8 @@ describe("Codex slug fallback chain", () => {
     // "off" (the Codex client sends `effort: "none"` for it) that reads
     // images. Nothing is filtered out first: a new line joins the default
     // only together with its family support.
-    expect(__test.DEFAULT_SLUG_FALLBACK_CHAIN.length).toBeGreaterThan(0);
-    for (const slug of __test.DEFAULT_SLUG_FALLBACK_CHAIN) {
+    expect(DEFAULT_SLUG_FALLBACK_CHAIN.length).toBeGreaterThan(0);
+    for (const slug of DEFAULT_SLUG_FALLBACK_CHAIN) {
       const family = openAIModelFamily(slug);
       expect(family, slug).not.toBeNull();
       expect(family?.reasoning, slug).not.toBeNull();
@@ -445,13 +469,13 @@ describe("Codex slug fallback chain", () => {
     }
   });
 
-  it("loadFallbackChain falls back to the default ladder with no env override", () => {
+  it("without a model list or an env override, the walk is the default ladder", () => {
     const origModel = process.env.CODEX_MODEL;
     const origChain = process.env.CODEX_MODEL_FALLBACK_CHAIN;
     delete process.env.CODEX_MODEL;
     delete process.env.CODEX_MODEL_FALLBACK_CHAIN;
     try {
-      expect(__test.loadFallbackChain()).toEqual([
+      expect(buildCodexSlugChain({ offered: null }).chain).toEqual([
         "gpt-5.6-terra",
         "gpt-6-sol",
         "gpt-6.1-sol",
@@ -469,11 +493,11 @@ describe("Codex slug fallback chain", () => {
     }
   });
 
-  it("loadFallbackChain folds CODEX_MODEL into position 0", () => {
+  it("the static walk folds CODEX_MODEL into position 0", () => {
     const orig = process.env.CODEX_MODEL;
     process.env.CODEX_MODEL = "custom-pinned-slug";
     try {
-      const chain = __test.loadFallbackChain();
+      const { chain } = buildCodexSlugChain({ offered: null });
       expect(chain[0]).toBe("custom-pinned-slug");
       // Defaults still present after position 0.
       expect(chain).toContain("gpt-5.5");
