@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => ({
   findMany: vi.fn(),
   findFirstMeasurement: vi.fn(),
   txExecuteRawUnsafe: vi.fn(),
+  txExecuteRaw: vi.fn(),
   bossSend: vi.fn(),
   getGlobalBossMock: vi.fn(),
 }));
@@ -87,10 +88,12 @@ void queryRaw;
 
 import {
   ROLLUP_FULL_BACKFILL_QUEUE,
+  enqueueBootTimeRollupBackfill,
+} from "../full-backfill";
+import {
   ROLLUP_RECOMPUTE_QUEUE,
   _resetEnsureUserRollupsFreshInFlightForTests,
   collapseToTypeDayKeys,
-  enqueueBootTimeRollupBackfill,
   enqueueRollupRecompute,
   ensureUserRollupsFresh,
   recomputeBucketsForMeasurement,
@@ -127,6 +130,8 @@ beforeEach(() => {
           createMany: mocks.createMany,
         },
         $executeRawUnsafe: mocks.txExecuteRawUnsafe,
+        $executeRaw: mocks.txExecuteRaw,
+        $queryRaw: mocks.queryRaw,
       });
     }
     return Promise.all(arg as unknown[]);
@@ -996,10 +1001,10 @@ describe("enqueueBootTimeRollupBackfill", () => {
 
     const sqlParts = queryRaw.mock.calls[0][0] as TemplateStringsArray;
     const sqlText = Array.isArray(sqlParts) ? sqlParts.join("?") : "";
-    // Inner DISTINCT widens to `(user_id, type, bucket_start)`.
-    expect(sqlText).toContain("date_trunc('day', m.\"measured_at\")");
-    // LEFT JOIN now compares bucket_start on both sides.
-    expect(sqlText).toContain('r."bucket_start" = mt."bucket_start"');
+    // The day walk steps from each day's first reading to the next UTC day.
+    expect(sqlText).toContain("date_trunc('day', d.at) + interval '1 day'");
+    // The coverage check compares the walked day with the DAY bucket.
+    expect(sqlText).toContain(`r."bucket_start" = date_trunc('day', d.at)`);
   });
 
   // v1.16.10 — discovery and fold share one trailing window. Unbounded
@@ -1017,12 +1022,14 @@ describe("enqueueBootTimeRollupBackfill", () => {
     const after = Date.now();
     const sqlParts = queryRaw.mock.calls[0][0] as TemplateStringsArray;
     const sqlText = Array.isArray(sqlParts) ? sqlParts.join("?") : "";
-    // The inner scan filters on measured_at >= <fold window start>.
+    // The day walk starts at measured_at >= <fold window start>.
     expect(sqlText).toContain('m."measured_at" >=');
     // The bound parameter is now − ROLLUP_FOLD_WINDOW_MS (5 years),
     // matching the `recomputeUserRollups` default the backfill worker
     // runs with.
-    const boundArg = queryRaw.mock.calls[0][1] as Date;
+    const boundArg = queryRaw.mock.calls[0].find(
+      (arg: unknown) => arg instanceof Date,
+    ) as Date;
     expect(boundArg).toBeInstanceOf(Date);
     const fiveYearsMs = 5 * 365 * 24 * 60 * 60 * 1000;
     expect(boundArg.getTime()).toBeGreaterThanOrEqual(before - fiveYearsMs);

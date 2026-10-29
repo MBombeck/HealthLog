@@ -12,10 +12,8 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import type { Prisma } from "@/generated/prisma/client";
-import {
-  enqueueBootTimeRollupBackfill,
-  recomputeUserRollups,
-} from "@/lib/rollups/measurement-rollups";
+import { enqueueBootTimeRollupBackfill } from "@/lib/rollups/full-backfill";
+import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
 
 vi.mock("@/lib/db-compat", () => ({
   ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),

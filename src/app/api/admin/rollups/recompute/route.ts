@@ -15,8 +15,8 @@
  *   { userId?: string }
  *
  *   - `userId` — single user mode. Synchronously calls
- *     `recomputeUserRollups(userId)` and returns the row count when
- *     the fold completes. The call is awaited inside the request, so
+ *     `foldUserRollupHistory(userId)` (the full fold, a calendar year per
+ *     statement) and returns the row count when the fold completes. The call is awaited inside the request, so
  *     the operator sees the duration in the response.
  *   - `userId` omitted — calls `enqueueBootTimeRollupBackfill()` to
  *     re-run the worker-boot discovery (`{ enqueued, skipped }` shape).
@@ -37,8 +37,8 @@ import {
 import { annotate } from "@/lib/logging/context";
 import {
   enqueueBootTimeRollupBackfill,
-  recomputeUserRollups,
-} from "@/lib/rollups/measurement-rollups";
+  foldUserRollupHistory,
+} from "@/lib/rollups/full-backfill";
 
 interface RecomputeBody {
   userId?: string;
@@ -68,9 +68,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
       details: { targetUserId: userId, mode: "single" },
     });
 
-    let result: Awaited<ReturnType<typeof recomputeUserRollups>>;
+    let result: Awaited<ReturnType<typeof foldUserRollupHistory>>;
     try {
-      result = await recomputeUserRollups(userId);
+      result = await foldUserRollupHistory(userId);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       return apiError(message, 500);

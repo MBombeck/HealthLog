@@ -51,7 +51,7 @@ import { MEDICATION_INTAKE_IMPORT_SEND_OPTIONS } from "@/lib/jobs/medication-int
 import { HEALTH_CONNECT_IMPORT_SEND_OPTIONS } from "@/lib/jobs/health-connect-import-worker";
 import { MEASUREMENT_MAINTENANCE_SEND_OPTIONS } from "@/lib/jobs/measurement-maintenance";
 import { PULSE_DAY_MEAN_SEND_OPTIONS } from "@/lib/jobs/pulse-day-mean";
-import { ROLLUP_FULL_BACKFILL_EXPIRE_SECONDS } from "@/lib/rollups/measurement-rollups";
+import { ROLLUP_FULL_BACKFILL_EXPIRE_SECONDS } from "@/lib/rollups/full-backfill";
 import { MORNING_DIGEST_REFRESH_EXPIRE_SECONDS } from "@/lib/jobs/morning-digest-refresh-shared";
 import { INSIGHT_STATUS_GENERATE_EXPIRE_SECONDS } from "@/lib/jobs/insight-status-generate-queue";
 import { WORKOUT_INSIGHT_GENERATE_EXPIRE_SECONDS } from "@/lib/jobs/workout-insight-generate-shared";
@@ -261,7 +261,7 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
       fn: "handleRollupFullBackfill",
     },
     exclusive: "lockedPass",
-    why: "One account's five-year fold: four aggregates under the statement timeout and four persist transactions of up to 120 s each, about thirteen minutes at worst under the defaults and unbounded when the operator lifts the statement timeout.",
+    why: "One account's five-year fold, a calendar year at a time with every statement under its own five-minute limit; the run stops at its budget between windows and hands the remaining years to a follow-up.",
   },
   "mood-rollup-recompute": short("One bucket."),
   "mood-rollup-full-backfill": short(

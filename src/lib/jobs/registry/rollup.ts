@@ -56,9 +56,11 @@ import {
 import {
   ROLLUP_FULL_BACKFILL_CONCURRENCY,
   ROLLUP_FULL_BACKFILL_QUEUE,
+  type RollupFullBackfillPayload,
+} from "@/lib/rollups/full-backfill";
+import {
   ROLLUP_RECOMPUTE_CONCURRENCY,
   ROLLUP_RECOMPUTE_QUEUE,
-  type RollupFullBackfillPayload,
 } from "@/lib/rollups/measurement-rollups";
 import {
   MOOD_ROLLUP_FULL_BACKFILL_CONCURRENCY,
@@ -213,7 +215,7 @@ const discovery: readonly BootDiscovery[] = [
     name: "rollup-full-backfill",
     run: async () =>
       (
-        await import("@/lib/rollups/measurement-rollups")
+        await import("@/lib/rollups/full-backfill")
       ).enqueueBootTimeRollupBackfill(BOOT_BACKFILL_STAGGER_SECONDS * 0),
   },
   {

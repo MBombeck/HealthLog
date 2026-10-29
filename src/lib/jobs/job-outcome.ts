@@ -330,6 +330,8 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "users_synced",
   "users_useful",
   "wedge_skipped",
+  // The full rollup backfill: calendar-year windows one run folded.
+  "windows_folded",
 ]);
 
 export const MAX_JOB_FACTS = 32;

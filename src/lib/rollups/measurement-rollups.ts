@@ -34,9 +34,7 @@
  * took. Nothing here reads both tiers; the rollup replaces the legacy read and
  * falls back to live SQL only on a coverage miss.
  */
-import { activeAccountSql } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
-import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -109,39 +107,6 @@ export interface RollupRecomputePayload {
   from: string;
   /** ISO-8601 string — the worker parses through `new Date(value)`. */
   to: string;
-  /** Wall-clock kick-off for debugging only. */
-  enqueuedAt: string;
-}
-
-/**
- * v1.4.35.1 — boot-time full-fold queue. The write-path hooks keep
- * the DAY bucket current per measurement, and `ensureUserRollupsFresh`
- * warm-on-read covers the trailing 90-day DAY window on cold mount,
- * but neither path folds the deep WEEK / MONTH / YEAR history for an
- * account that has measurements pre-dating the v1.4.35 deploy. This
- * queue exists so the worker boot can enqueue one full
- * `recomputeUserRollups(userId)` per uncovered user — no operator
- * action needed on self-hosted instances.
- */
-export const ROLLUP_FULL_BACKFILL_QUEUE = "rollup-full-backfill";
-
-/** Boot-fold worker concurrency. Serial so we don't crowd the pool. */
-export const ROLLUP_FULL_BACKFILL_CONCURRENCY = 1;
-
-/**
- * The full fold's expiry: an hour. One fold is four granularities, each an
- * aggregate held to the connection's statement timeout (60 s by default) and
- * a persist transaction of up to 120 s, so the worst case under the defaults
- * is close to thirteen minutes, too near pg-boss's fifteen-minute default to
- * rely on, and an operator who raises `DATABASE_STATEMENT_TIMEOUT_MS` (or
- * sets it to 0) lifts that bound altogether. Past the expiry pg-boss retries
- * the job, and the retry folded the same account a second time.
- */
-export const ROLLUP_FULL_BACKFILL_EXPIRE_SECONDS = 60 * 60;
-
-/** Payload the boot-time backfill helper enqueues. */
-export interface RollupFullBackfillPayload {
-  userId: string;
   /** Wall-clock kick-off for debugging only. */
   enqueuedAt: string;
 }
@@ -639,7 +604,7 @@ export async function readRollupBuckets(
  * comprehensive-aggregator + summaries-slice convention.
  */
 /** Give the statements of a transaction their own limit (SET LOCAL). */
-async function applyStatementBudget(
+export async function applyStatementBudget(
   tx: Pick<typeof prisma, "$executeRaw">,
   ms: number,
 ): Promise<void> {
@@ -1313,165 +1278,6 @@ async function ensureUserRollupsFreshImpl(
     });
     console.error("[rollups] ensureUserRollupsFresh failed:", message);
     return { recomputed: false };
-  }
-}
-
-/**
- * v1.4.35.1 — boot-time enqueue helper. Finds users with measurements
- * but zero rollup coverage and enqueues one full-fold job per account
- * onto `ROLLUP_FULL_BACKFILL_QUEUE`. Designed to be called once at
- * worker boot so every self-hosted instance auto-converges on the
- * persistent rollup tier without operator intervention.
- *
- * Idempotent across reboots:
- *   - the discovery query matches accounts that either have zero
- *     rollup coverage at all OR have at least one measurement type
- *     whose DAY-rollup partition is empty. Once every type the user
- *     has logged has at least one DAY bucket, the user drops off the
- *     list and subsequent boots skip them. The v1.4.35.1 shape (zero-
- *     rollups only) silently stranded users who logged a brand-new
- *     type after the initial fold — their `isFullyCovered` probe stays
- *     `false`, every read fans out to the live SQL aggregator, and
- *     `/api/analytics` cold-mounts in tens of seconds instead of
- *     1.5-3 s. v1.4.38.5 widens discovery to per-type missing coverage.
- *   - pg-boss `singletonKey` coalesces duplicate sends within the
- *     queue, so a fast restart while a backfill is queued doesn't
- *     double up
- *
- * Best-effort: errors are swallowed and reported through the return
- * value so the worker boot never fails because of a backfill miss.
- */
-export async function enqueueBootTimeRollupBackfill(
-  // Optional boot-storm stagger. When > 0 the per-user sends carry a
-  // `startAfter` delay (seconds) so this full-history fold does not drain in
-  // parallel with the other boot backfills onto one heavy tenant. Default 0
-  // keeps immediate semantics for any non-boot caller.
-  startAfterSeconds: number = 0,
-): Promise<{
-  enqueued: number;
-  skipped: number;
-  error: string | null;
-}> {
-  const boss = getGlobalBoss();
-  if (!boss) {
-    return { enqueued: 0, skipped: 0, error: null };
-  }
-
-  try {
-    // Users where at least one (type, day) pair in `measurements`
-    // has no matching DAY rollup row.
-    //
-    // v1.4.39.1 — tightened from per-type to per-day. The legacy shape
-    // matched users where ANY type had zero rollup rows. That stranded
-    // accounts whose Withings sync / `/api/import` / admin restore
-    // wrote measurements without firing the rollup write hook: as soon
-    // as ONE rollup row existed for the type (even from a prior boot
-    // backfill), the LEFT JOIN found a match and the user dropped off
-    // the discovery list — leaving the dashboard chart's
-    // `source=rollup` fast-path under-counting the missing days.
-    // Switching the join to `(user, type, bucketStart)` surfaces every
-    // per-day gap. Cost: the inner DISTINCT widens from
-    // `(user_id, type)` (≈15 rows/user) to
-    // `(user_id, type, day)` (≈5 k rows/user on a 5-year power user),
-    // which is still bounded by the `(user_id, type, measured_at)`
-    // index path. The LEFT JOIN walks `measurement_rollups` against
-    // its composite primary key.
-    //
-    // v1.4.41 — the v1.4.39 W-SUM legacy-NULL `sum_value` UNION arm
-    // has been retired. The maintainer's tenant converged at v1.4.40, so the
-    // arm was a permanent no-op seq scan over `measurement_rollups`.
-    // Per-day missing coverage remains the sole discovery anchor.
-    //
-    // v1.16.10 — discovery is bounded to the same trailing window the
-    // fold writes (`ROLLUP_FOLD_WINDOW_MS`). Unbounded, any account
-    // with measurements older than the window was re-flagged on every
-    // boot: the fold can never produce buckets for those days, so the
-    // per-day gap re-surfaced forever and the full backfill re-ran on
-    // every restart. Days outside the window are not foldable by
-    // design and must not anchor discovery.
-    const foldWindowStart = new Date(Date.now() - ROLLUP_FOLD_WINDOW_MS);
-    // Two discovery arms, UNION-ed:
-    //
-    //   1. Per-day MISSING coverage — a (user, type, day) pair in
-    //      `measurements` with no matching DAY rollup row (v1.4.39.1).
-    //
-    //   2. v1.20.0 F6 NULL-accumulator arm — a user whose DAY rollup rows
-    //      predate migration 0190 (regression accumulators are NULL) needs a
-    //      one-time re-fold so the windowed slope / r² / sd readers compose
-    //      from the accumulators instead of falling back to the live REGR_*
-    //      scan. Anchored on `sum_xy IS NULL` (the column the read tier
-    //      treats as the coverage marker). New writes self-populate the
-    //      accumulators, so this arm drains to empty once the boot re-fold
-    //      catches up — mirrors the v1.4.39 sum_value rollout, which the
-    //      v1.4.41 note confirms converged via this same boot queue. Bounded
-    //      to the fold window so days outside it (un-foldable by design)
-    //      never re-flag a user on every boot. The same arm refills the
-    //      reading extremes of migration 0417 (`reading_min_value IS NULL`);
-    //      the extremes reader treats a NULL as uncovered until it lands.
-    const users = await prisma.$queryRaw<Array<{ id: string }>>`
-      SELECT DISTINCT id FROM (
-        SELECT DISTINCT mt."user_id" AS id
-        FROM (
-          SELECT DISTINCT
-            m."user_id",
-            m."type",
-            date_trunc('day', m."measured_at") AS bucket_start
-          FROM measurements m
-          WHERE m."deleted_at" IS NULL
-            AND m."measured_at" >= ${foldWindowStart}
-        ) mt
-        LEFT JOIN measurement_rollups r
-          ON  r."user_id"     = mt."user_id"
-          AND r."type"        = mt."type"
-          AND r."granularity" = 'DAY'
-          AND r."bucket_start" = mt."bucket_start"
-        WHERE r."bucket_start" IS NULL
-
-        UNION
-
-        SELECT DISTINCT r."user_id" AS id
-        FROM measurement_rollups r
-        WHERE r."granularity" = 'DAY'
-          AND r."bucket_start" >= ${foldWindowStart}
-          AND (r."sum_xy" IS NULL OR r."reading_min_value" IS NULL)
-      ) discovered
-      WHERE ${activeAccountSql('discovered."id"')}
-    `;
-
-    if (users.length === 0) {
-      return { enqueued: 0, skipped: 0, error: null };
-    }
-
-    let enqueued = 0;
-    let skipped = 0;
-    for (const { id } of users) {
-      const payload: RollupFullBackfillPayload = {
-        userId: id,
-        enqueuedAt: new Date().toISOString(),
-      };
-      const jobId = await boss.send(ROLLUP_FULL_BACKFILL_QUEUE, payload, {
-        expireInSeconds: ROLLUP_FULL_BACKFILL_EXPIRE_SECONDS,
-        retryLimit: 3,
-        retryDelay: 60,
-        retryBackoff: true,
-        // Coalesce: if a backfill for this user is already queued and
-        // we restart, pg-boss returns null instead of duplicating.
-        singletonKey: `boot-backfill|${id}`,
-        ...(startAfterSeconds > 0 ? { startAfter: startAfterSeconds } : {}),
-      });
-      if (jobId) {
-        enqueued += 1;
-      } else {
-        skipped += 1;
-      }
-    }
-    return { enqueued, skipped, error: null };
-  } catch (err) {
-    return {
-      enqueued: 0,
-      skipped: 0,
-      error: err instanceof Error ? err.message : String(err),
-    };
   }
 }
 
