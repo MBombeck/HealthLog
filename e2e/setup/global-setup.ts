@@ -325,6 +325,25 @@ export const SCORE_HISTORY_STORAGE_STATE_PATH = resolve(
   "e2e/setup/storageStateScoreHistory.json",
 );
 
+/**
+ * The header-height sweep's own account (`header-height-locales.spec.ts`).
+ *
+ * It moves the account's language through every shipped locale; the server
+ * honours `User.locale` wherever a request carries no locale cookie, so on a
+ * shared account a parallel spec could render in Korean halfway through.
+ */
+export const E2E_HEADER_LOCALES = {
+  email: "e2e-header-locales@healthlog.test",
+  username: "e2e-header-locales",
+  password: "Hl8!Tq2vNx6mWr4Z",
+  role: "USER",
+} as const;
+
+export const HEADER_LOCALES_STORAGE_STATE_PATH = resolve(
+  process.cwd(),
+  "e2e/setup/storageStateHeaderLocales.json",
+);
+
 export const AI_OPTIONAL_STORAGE_STATE_PATH = resolve(
   process.cwd(),
   "e2e/setup/storageStateAiOptional.json",
@@ -1102,6 +1121,33 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       ],
     );
 
+    // The header-height sweep's account. Default modules and layout, so the
+    // dashboard header carries what a fresh account's does; the language is
+    // put back to English because the sweep leaves it on its last locale.
+    await pool.query(
+      `INSERT INTO users
+        (id, username, email, password_hash, role, created_at, updated_at,
+         onboarding_completed_at, onboarding_tour_completed,
+         module_preferences_json, locale)
+       VALUES ($1, $2, $3, $4, 'USER', $5, $5, $5, true, NULL, 'en')
+       ON CONFLICT (username) DO UPDATE SET
+         email = EXCLUDED.email,
+         password_hash = EXCLUDED.password_hash,
+         updated_at = EXCLUDED.updated_at,
+         onboarding_completed_at = EXCLUDED.onboarding_completed_at,
+         onboarding_tour_completed = EXCLUDED.onboarding_tour_completed,
+         module_preferences_json = NULL,
+         dashboard_widgets_json = NULL,
+         locale = 'en'`,
+      [
+        cuid(),
+        E2E_HEADER_LOCALES.username,
+        E2E_HEADER_LOCALES.email,
+        await hashPassword(E2E_HEADER_LOCALES.password),
+        now,
+      ],
+    );
+
     // The notification-dispatch journey's account. Seeded like the others;
     // its channels, devices, ledger rows and preferences are reset by
     // `e2e/setup/notification-fixture.ts` before every test, because the
@@ -1783,6 +1829,9 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 
     // The score-history journey's jar — see `E2E_SCORE_HISTORY`.
     await capture(E2E_SCORE_HISTORY, SCORE_HISTORY_STORAGE_STATE_PATH);
+
+    // The header-height sweep's jar — see `E2E_HEADER_LOCALES`.
+    await capture(E2E_HEADER_LOCALES, HEADER_LOCALES_STORAGE_STATE_PATH);
 
     await capture(E2E_SCOPE_DELEGATE, SCOPE_DELEGATE_STORAGE_STATE_PATH);
     await capture(E2E_SCOPE_DELEGATE, SCOPE_A11Y_STORAGE_STATE_PATH);
