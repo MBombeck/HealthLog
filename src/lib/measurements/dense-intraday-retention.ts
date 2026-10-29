@@ -86,6 +86,8 @@ import {
   DENSE_INTRADAY_FOLD_TYPES_BY_SOURCE,
   type DenseIntradayFoldSource,
 } from "./dense-intraday-sources";
+import { foldRemovalFor, removeFoldedSamples } from "./dense-fold-removal";
+import { stampSyncReset } from "@/lib/sync/reset";
 import {
   absorbIntoFold,
   foldConstituentHorizon,
@@ -434,6 +436,12 @@ export interface DenseIntradayRetentionSummary {
      */
     derivedRestingRowsUpserted: number;
     /**
+     * Folded days of a server-pulled source whose samples were deleted
+     * outright, each of which expired the account's delta cursors
+     * (`dense-fold-removal.ts`).
+     */
+    syncResetsStamped: number;
+    /**
      * Hours that already had a live hourly row whose samples could not be
      * shown to be complete (`fold-constituents.ts`): the stored mean and the
      * hour's live rows were left as they are.
@@ -458,7 +466,9 @@ export interface DenseIntradayRetentionOptions extends ConsolidationOptions {
  * Run the dense intra-day retention drain. Folds per-sample dense-tier
  * rows older than the retention window into hourly-mean `stats:` rows
  * (user-local hours, anchored at local HH:30) and deletes the raw rows
- * (soft-deleted before v1.42); rows inside the window stay raw. Idempotent —
+ * (soft-deleted before v1.42; a server-pulled source's nightly increment is
+ * still tombstoned, see `dense-fold-removal.ts`); rows inside the window
+ * stay raw. Idempotent —
  * re-invocation after a successful pass converges to zero work because the
  * folded rows are gone from the live scan, and the minted hourly
  * rows are excluded by the `NOT startsWith('stats:')` predicate.
@@ -487,6 +497,7 @@ export async function runDenseIntradayRetention(
       hourlyRowsUpserted: 0,
       dailyRowsRetired: 0,
       derivedRestingRowsUpserted: 0,
+      syncResetsStamped: 0,
       hoursLeftAsStored: 0,
     },
   };
@@ -647,8 +658,10 @@ export async function runDenseIntradayRetention(
           hoursLeftAsStored: number;
           /** Every raw sample of the day, when that is provably all of it. */
           wholeDay: FoldConstituent[] | null;
+          resetFeed: boolean;
         }> => {
           let removed = 0;
+          let resetFeed = false;
           let retiredDaily = false;
           let slotsWritten = 0;
           let hoursLeftAsStored = 0;
@@ -806,24 +819,20 @@ export async function runDenseIntradayRetention(
             // anchor is the row just adopted as that hour's mean, so removing
             // it would erase the fold.
             //
-            // v1.42 — deleted outright, like the cumulative drain's rows,
-            // where they used to be tombstoned for the 75-day retention. No
-            // client ever pulled these rows, so the tombstone told nobody
-            // anything; it only held the re-upload of a folded sample off,
-            // and the `folded_window` ingest guard (`folded-window.ts`) does
-            // that now from the live hourly row. The tombstones made up most
-            // of the table and its indexes.
-            const del = await tx.measurement.deleteMany({
-              where: {
-                id: { in: deleteIds, notIn: canonicalRowIds },
-                deletedAt: null,
-              },
+            // How, and whether the change feed hears of it, depends on the
+            // source and the day's age: `dense-fold-removal.ts`.
+            const dropped = await removeFoldedSamples(tx, {
+              userId,
+              removal: foldRemovalFor(source, dayStart, retentionDays),
+              ids: deleteIds,
+              keep: canonicalRowIds,
             });
+            resetFeed = dropped.resetFeed;
             const absorbed = await absorbIntoFold(
               tx,
               absorbIds.filter((id) => !canonicalRowIds.includes(id)),
             );
-            removed = del.count + absorbed;
+            removed = dropped.removed + absorbed;
 
             // The day's raw samples, for the derived resting figure: the rows
             // in hand for a day folded here for the first time; for a day
@@ -844,12 +853,14 @@ export async function runDenseIntradayRetention(
               ];
             }
           }, FOLD_TRANSACTION_OPTIONS);
+          if (resetFeed) await stampSyncReset(pc, userId);
           return {
             removed,
             retiredDaily,
             slotsWritten,
             hoursLeftAsStored,
             wholeDay,
+            resetFeed,
           };
         };
 
@@ -868,6 +879,7 @@ export async function runDenseIntradayRetention(
         summary.totals.hourlyRowsUpserted += foldResult.slotsWritten;
         summary.totals.hoursLeftAsStored += foldResult.hoursLeftAsStored;
         if (foldResult.retiredDaily) summary.totals.dailyRowsRetired += 1;
+        if (foldResult.resetFeed) summary.totals.syncResetsStamped += 1;
 
         // iOS#34 — preserve the resting signal for PROXY users. For a user
         // with zero native `RESTING_HEART_RATE` rows, the read-path resolver
@@ -997,7 +1009,7 @@ export async function runDenseIntradayRetention(
   }
 
   log(
-    `[dense-intraday-retention] done — usersScanned=${summary.totals.usersScanned} daysConsolidated=${summary.totals.daysConsolidated} perSampleRowsSoftDeleted=${summary.totals.perSampleRowsSoftDeleted} hourlyRowsUpserted=${summary.totals.hourlyRowsUpserted} dailyRowsRetired=${summary.totals.dailyRowsRetired} derivedRestingRowsUpserted=${summary.totals.derivedRestingRowsUpserted} hoursLeftAsStored=${summary.totals.hoursLeftAsStored}${options.dryRun ? " (dry-run)" : ""}`,
+    `[dense-intraday-retention] done — usersScanned=${summary.totals.usersScanned} daysConsolidated=${summary.totals.daysConsolidated} perSampleRowsSoftDeleted=${summary.totals.perSampleRowsSoftDeleted} hourlyRowsUpserted=${summary.totals.hourlyRowsUpserted} dailyRowsRetired=${summary.totals.dailyRowsRetired} derivedRestingRowsUpserted=${summary.totals.derivedRestingRowsUpserted} syncResetsStamped=${summary.totals.syncResetsStamped} hoursLeftAsStored=${summary.totals.hoursLeftAsStored}${options.dryRun ? " (dry-run)" : ""}`,
   );
 
   return summary;

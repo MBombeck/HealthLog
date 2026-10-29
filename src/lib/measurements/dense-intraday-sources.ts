@@ -84,3 +84,18 @@ export type DenseIntradayFoldSource =
 export const DENSE_INTRADAY_FOLD_SOURCES = Object.keys(
   DENSE_INTRADAY_FOLD_TYPES_BY_SOURCE,
 ) as readonly DenseIntradayFoldSource[];
+
+/**
+ * The fold sources whose rows the server pulled from a provider itself. A
+ * client can hold one of these rows only because `/api/sync/changes` served
+ * it, so when the fold removes them the feed has to say so: the nightly fold
+ * leaves tombstones for them, and a fold of an older backlog expires the
+ * account's delta cursors instead (`dense-intraday-retention.ts`).
+ *
+ * Apple Health and Health Connect samples come from the person's own health
+ * store, uploaded by the device or imported from its export, and the fold has
+ * deleted them outright since v1.42. No client reads the feed for them: the
+ * iOS app reads its own HealthKit store and has no feed consumer.
+ */
+export const SERVER_PULLED_FOLD_SOURCES: ReadonlySet<MeasurementSource> =
+  new Set<DenseIntradayFoldSource>(["GOOGLE_HEALTH", "OURA"]);

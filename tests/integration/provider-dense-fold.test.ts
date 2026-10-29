@@ -11,11 +11,16 @@
  *     hour whose anchor a sample fell on (Google Health's natural-key rescue
  *     used to re-key that row back into the sample).
  *   - Samples inside the window still write as before.
+ *   - The change feed served these samples, so their removal reaches it: the
+ *     nightly increment leaves tombstones the feed reports, and a backlog
+ *     day, deleted outright, expires the account's delta cursors. An Apple
+ *     Health fold expires nothing.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { upsertGoogleHealthMeasurements } from "@/lib/google-health/sync-core";
 import { runDenseIntradayRetention } from "@/lib/measurements/dense-intraday-retention";
+import { pullSyncChanges } from "@/lib/sync/changes/pull";
 import {
   TouchedDays,
   writeOuraHeartRatePage,
@@ -181,5 +186,139 @@ describe("dense fold of provider heart rate (#1297)", () => {
     expect(await liveRows(user.id, "GOOGLE_HEALTH")).toHaveLength(
       recent.length,
     );
+  });
+
+  describe("and the change feed", () => {
+    /** Drain the feed from the start; the last page's cursor. */
+    async function caughtUpCursor(userId: string): Promise<string> {
+      let token: string | undefined;
+      for (;;) {
+        const page = await pullSyncChanges({
+          userId,
+          token,
+          limit: 500,
+          serverNow: new Date(),
+        });
+        expect(page.cursorExpired).toBe(false);
+        token = page.cursor!;
+        if (!page.hasMore) return token;
+      }
+    }
+
+    async function pullFrom(userId: string, token: string) {
+      return pullSyncChanges({
+        userId,
+        token,
+        limit: 500,
+        serverNow: new Date(),
+      });
+    }
+
+    async function syncResetAt(userId: string) {
+      const user = await prisma.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: { syncResetAt: true },
+      });
+      return user.syncResetAt;
+    }
+
+    it("reports the nightly increment as tombstones and keeps the cursor", async () => {
+      const user = await makeUser({ timezone: "UTC" });
+      // Three days past the window: the day the nightly fold reaches next.
+      const day = samples(dayStart(93)).map((s) => ({
+        bpm: s.bpm,
+        timestamp: s.at.toISOString(),
+        source: "awake",
+      }));
+      await writeOuraHeartRatePage(user.id, day, new TouchedDays(), {
+        emitArrivals: false,
+      });
+      const raw = await prisma.measurement.findMany({
+        where: { userId: user.id, source: "OURA" },
+        select: { id: true },
+      });
+      expect(raw).toHaveLength(day.length);
+      const cursor = await caughtUpCursor(user.id);
+
+      const summary = await runDenseIntradayRetention(prisma, {
+        userId: user.id,
+        log: () => {},
+      });
+      expect(summary.totals.syncResetsStamped).toBe(0);
+      expect(await syncResetAt(user.id)).toBeNull();
+      expect(
+        (await liveRows(user.id, "OURA")).every((r) =>
+          r.externalId?.startsWith("stats:"),
+        ),
+      ).toBe(true);
+
+      const page = await pullFrom(user.id, cursor);
+      expect(page.cursorExpired).toBe(false);
+      const { tombstones } = page.changes.measurements;
+      // The derived resting figure rides along under COMPUTED.
+      const upserts = page.changes.measurements.upserts.filter(
+        (u) => u.source === "OURA",
+      );
+      // The samples on 10:30 and 11:30 became the two hourly means; every
+      // other sample arrives as a tombstone, so the client's mirror ends up
+      // holding exactly the hourly means.
+      expect(upserts).toHaveLength(2);
+      expect(upserts.every((u) => u.externalId?.startsWith("stats:"))).toBe(
+        true,
+      );
+      expect(tombstones).toHaveLength(day.length - 2);
+      expect(
+        [...tombstones.map((t) => t.id), ...upserts.map((u) => u.id)].sort(),
+      ).toEqual(raw.map((r) => r.id).sort());
+    });
+
+    it("expires the cursor when a backlog day is deleted outright", async () => {
+      const user = await makeUser({ timezone: "UTC" });
+      await upsertGoogleHealthMeasurements(
+        user.id,
+        samples(dayStart(120)).map(gh),
+      );
+      const cursor = await caughtUpCursor(user.id);
+
+      const summary = await runDenseIntradayRetention(prisma, {
+        userId: user.id,
+        log: () => {},
+      });
+      expect(summary.totals.syncResetsStamped).toBe(1);
+      expect(await syncResetAt(user.id)).not.toBeNull();
+      // No tombstone is left behind for the backlog.
+      expect(
+        await prisma.measurement.count({
+          where: { userId: user.id, deletedAt: { not: null } },
+        }),
+      ).toBe(0);
+      expect((await pullFrom(user.id, cursor)).cursorExpired).toBe(true);
+      // A client that re-initialises catches up from a fresh cursor.
+      await caughtUpCursor(user.id);
+    });
+
+    it("expires nothing for an Apple Health fold", async () => {
+      const user = await makeUser({ timezone: "UTC" });
+      await prisma.measurement.createMany({
+        data: samples(dayStart(120)).map((s) => ({
+          userId: user.id,
+          type: "PULSE" as const,
+          value: s.bpm,
+          unit: "bpm",
+          source: "APPLE_HEALTH" as const,
+          measuredAt: s.at,
+          externalId: `uuid-${s.at.getTime()}`,
+        })),
+      });
+      const cursor = await caughtUpCursor(user.id);
+      const summary = await runDenseIntradayRetention(prisma, {
+        userId: user.id,
+        log: () => {},
+      });
+      expect(summary.totals.daysConsolidated).toBe(1);
+      expect(summary.totals.syncResetsStamped).toBe(0);
+      expect(await syncResetAt(user.id)).toBeNull();
+      expect((await pullFrom(user.id, cursor)).cursorExpired).toBe(false);
+    });
   });
 });

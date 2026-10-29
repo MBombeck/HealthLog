@@ -123,6 +123,9 @@ export async function runDenseIntradayRetentionForUser(
         // days for proxy users, preserving the resting signal post-fold.
         derived_resting_rows_upserted:
           summary.totals.derivedRestingRowsUpserted,
+        // Backlog days of a server-pulled source that expired the account's
+        // delta cursors rather than leave millions of tombstones.
+        sync_resets_stamped: summary.totals.syncResetsStamped,
         stopped_early: summary.stoppedEarly,
       },
     },

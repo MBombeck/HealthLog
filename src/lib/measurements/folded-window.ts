@@ -79,6 +79,7 @@ import {
 import {
   DENSE_INTRADAY_FOLD_SOURCES,
   DENSE_INTRADAY_FOLD_TYPES_BY_SOURCE,
+  SERVER_PULLED_FOLD_SOURCES,
   DENSE_INTRADAY_RETENTION_TYPES,
 } from "@/lib/measurements/dense-intraday-sources";
 
@@ -475,12 +476,17 @@ export interface TombstoneCandidateRow extends FoldedWindowCandidateRow {
  * enough: an older release folded a day in two runs, and a person who
  * deleted a sample of such a half-folded day deleted something the fold had
  * not taken. That deletion is class B.
+ *
+ * A server-pulled source (`SERVER_PULLED_FOLD_SOURCES`) has no class A. The
+ * fold tombstones its samples so the change feed reports them to a client
+ * that pulled them, which is exactly what this class is kept out of.
  */
 export function compactionTombstoneCoverId(
   row: TombstoneCandidateRow,
   tz: string,
 ): string | null {
   if (row.deletedAt === null) return null;
+  if (SERVER_PULLED_FOLD_SOURCES.has(row.source)) return null;
   if (!isFoldedWindowCandidate(row, row.deletedAt)) return null;
   if (!isWindowFoldedAt(row, row.deletedAt, tz)) return null;
   return coveringStatsExternalId(row, tz);
