@@ -1,7 +1,7 @@
 /**
  * v1.41 — what an endpoint answered when it was asked to reason, learned at
- * runtime and kept for an hour (`DIALECT_TTL_MS`), a refused reasoning field
- * for a day (`FIELD_REFUSED_TTL_MS`), so an endpoint that gains the
+ * runtime and kept for an hour (`DIALECT_TTL_MS`), a reasoning field a 400
+ * refused for a day (`FIELD_REFUSED_TTL_MS`), so an endpoint that gains the
  * parameter, or a downgrade learned from a misread error, heals without a
  * restart.
  *
@@ -78,14 +78,15 @@ export function refusesReasoningField(learned: string | undefined): boolean {
 export const DIALECT_TTL_MS = 60 * 60 * 1000;
 
 /**
- * #1279 — how long a refused reasoning field holds (`refusesReasoningField`).
- * A gateway that refuses the field does so by its configuration (LiteLLM
- * without `drop_params`), which changes when its operator changes it, not
- * between two calls, and only a 400 naming the field with refusal wording
- * can teach it. At the hour every expiry cost one refused request, a few a
- * day on a gateway that runs the briefings unattended. A day bounds that to
- * one per day, and a gateway that gains the field still gets it the next day.
- * The other lessons read a single reply and keep the hour.
+ * #1279 — how long a reasoning field refused by a 400 holds
+ * (`refusesReasoningField`). A gateway that refuses the field does so by its
+ * configuration (LiteLLM without `drop_params`), which changes when its
+ * operator changes it, not between two calls, and only a 400 naming the
+ * field with refusal wording can teach it. At the hour every expiry cost one
+ * refused request, a few a day on a gateway that runs the briefings
+ * unattended. A day bounds that to one per day, and a gateway that gains the
+ * field still gets it the next day. A lesson read from a single reply keeps
+ * the hour.
  */
 export const FIELD_REFUSED_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -122,18 +123,45 @@ export function learnedReasoningDialect(
 }
 
 /**
- * Record what `key` accepts after it refused a richer request. A refused
- * field holds for `FIELD_REFUSED_TTL_MS`, every other lesson for
+ * What taught a lesson: a 400 that refused a parameter the client sent, or a
+ * single reply (one that came back without an answer).
+ */
+export type ReasoningLessonSource = "refusal" | "reply";
+
+/**
+ * Record what `key` accepts, by default after a 400 refused a richer request;
+ * a lesson read from a reply says so (`"reply"`). A reasoning field a 400
+ * refused holds for `FIELD_REFUSED_TTL_MS`, every other lesson for
  * `DIALECT_TTL_MS`.
+ *
+ * `FIELD_REFUSED_REASONS_REGARDLESS` carries two facts, and a reply only ever
+ * adds the second ("reasons regardless") to a field refusal a 400 taught
+ * earlier. That upgrade keeps the refusal's remaining lifetime: a fresh day
+ * would let one reply extend what the 400 taught, and the hour would bring
+ * the refused request back after it. The "regardless" half rides along and
+ * is learned again from the next answerless reply if it lapses.
  */
 export function rememberReasoningDialect(
   key: ReasoningDialectKey,
   value: string,
+  source: ReasoningLessonSource = "refusal",
 ): void {
-  const ttl = refusesReasoningField(value)
-    ? FIELD_REFUSED_TTL_MS
-    : DIALECT_TTL_MS;
-  learned.set(cacheKey(key), { value, expiresAt: Date.now() + ttl });
+  const k = cacheKey(key);
+  const now = Date.now();
+  let expiresAt = now + DIALECT_TTL_MS;
+  if (refusesReasoningField(value)) {
+    const before = learned.get(k);
+    if (source === "refusal") {
+      expiresAt = now + FIELD_REFUSED_TTL_MS;
+    } else if (
+      before &&
+      before.expiresAt > now &&
+      refusesReasoningField(before.value)
+    ) {
+      expiresAt = before.expiresAt;
+    }
+  }
+  learned.set(k, { value, expiresAt });
 }
 
 /**
