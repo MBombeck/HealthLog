@@ -160,14 +160,15 @@ export async function repairUndatedDocumentLabValues(
   const touchedUsers = new Set<string>();
   let updated = 0;
   let unchanged = 0;
-  let undecryptable = 0;
+  // Reported as `undecryptable` in the outcome facts.
+  let decryptFailed = 0;
 
   for (const row of rows) {
     let data: ObservationFactData;
     try {
       data = decryptFactData(row.dataEncrypted) as ObservationFactData;
     } catch {
-      undecryptable += 1;
+      decryptFailed += 1;
       continue;
     }
     // A value with a date of its own is never touched, whatever its row says.
@@ -204,7 +205,12 @@ export async function repairUndatedDocumentLabValues(
   }
 
   for (const userId of touchedUsers) invalidateUserHealthScore(userId);
-  return { scanned: rows.length, updated, unchanged, undecryptable };
+  return {
+    scanned: rows.length,
+    updated,
+    unchanged,
+    undecryptable: decryptFailed,
+  };
 }
 
 /** The queue handler: one run over every account. */

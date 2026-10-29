@@ -317,6 +317,8 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "total",
   "trusted_devices_deleted",
   "unchanged",
+  // The lab date repair: staged facts that would not decrypt, skipped.
+  "undecryptable",
   "updated",
   "users",
   "users_clean_zero",
