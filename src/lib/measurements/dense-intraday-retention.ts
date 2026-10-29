@@ -66,7 +66,11 @@ import {
   dailyStatsExternalId,
   hkIdentifierForType,
 } from "./apple-health-mapping";
-import { runConsolidation, type DayWriteOutcome } from "./consolidation-base";
+import {
+  runConsolidation,
+  type ConsolidationOptions,
+  type DayWriteOutcome,
+} from "./consolidation-base";
 import {
   canonicalHourlyTimestamp,
   hourOfDayForUserTz,
@@ -438,13 +442,8 @@ export interface DenseIntradayRetentionSummary {
   };
 }
 
-export interface DenseIntradayRetentionOptions {
-  /** Limit the pass to a single user. Default = every user. */
-  userId?: string;
-  /** Preview-only mode — no DB writes. */
-  dryRun?: boolean;
-  /** Logger sink — defaults to `console.log`. */
-  log?: (line: string) => void;
+/** The shared drain options (`ConsolidationOptions`) and the retention window. */
+export interface DenseIntradayRetentionOptions extends ConsolidationOptions {
   /**
    * Retention window in days. Per-sample rows OLDER than `now() -
    * retentionDays` are folded; rows inside the window stay raw. Defaults to
@@ -453,11 +452,6 @@ export interface DenseIntradayRetentionOptions {
    * full-collapse, never by the scheduled pass.
    */
   retentionDays?: number;
-  /**
-   * Ends the pass cleanly before the next day when it returns `true`; the
-   * summary then reports `stoppedEarly`. See `ConsolidationOptions`.
-   */
-  shouldStop?: () => boolean;
 }
 
 /**

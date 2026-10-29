@@ -30,6 +30,7 @@ import {
   DENSE_INTRADAY_FOLD_SOURCES,
   DENSE_INTRADAY_FOLD_TYPES_BY_SOURCE,
 } from "@/lib/measurements/dense-intraday-sources";
+import { isRollupFullBackfillPending } from "@/lib/rollups/full-backfill";
 import { DENSE_INTRADAY_RETENTION_QUEUE } from "./dense-intraday-retention-queue";
 
 /**
@@ -105,6 +106,7 @@ export async function runDenseIntradayRetentionForUser(
   const summary = await runDenseIntradayRetention(prisma, {
     userId,
     shouldStop,
+    deferUser: isRollupFullBackfillPending,
     log: () => {
       // Silent inside the queue handler — the worker logs the totals.
     },

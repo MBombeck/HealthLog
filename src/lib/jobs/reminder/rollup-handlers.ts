@@ -57,6 +57,7 @@ import {
 } from "@/lib/personal-records/cumulative-pr-rederivation";
 import {
   foldUserRollupHistory,
+  isRollupFullBackfillPending,
   ROLLUP_FULL_BACKFILL_STATEMENT_BUDGET_MS,
   sendRollupFullBackfillContinuation,
   type RollupFullBackfillPayload,
@@ -527,6 +528,7 @@ export function drainCumulativeHandler(
             {
               dryRun: false,
               shouldStop,
+              deferUser: isRollupFullBackfillPending,
               log: (line) => workerLog("info", line),
             },
           );

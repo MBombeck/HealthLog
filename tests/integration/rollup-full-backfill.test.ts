@@ -11,13 +11,24 @@
  *     reading in the window, finds the same accounts as the statement it
  *     replaced, kept verbatim below as the reference.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { PgBoss } from "pg-boss";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import { Prisma, type MeasurementSource } from "@/generated/prisma/client";
 import { activeAccountSql } from "@/lib/account-deletion/active-account";
 import {
   enqueueBootTimeRollupBackfill,
   foldUserRollupHistory,
+  isRollupFullBackfillPending,
+  ROLLUP_FULL_BACKFILL_QUEUE,
   ROLLUP_FULL_BACKFILL_STATEMENT_BUDGET_MS,
 } from "@/lib/rollups/full-backfill";
 import {
@@ -302,5 +313,35 @@ describe("enqueueBootTimeRollupBackfill", () => {
 
     expect(found).toEqual([missingDay.id, nullExtremes.id].sort());
     expect(found).toEqual(await referenceDiscovery());
+  });
+});
+
+describe("isRollupFullBackfillPending", () => {
+  let boss: PgBoss;
+
+  beforeAll(async () => {
+    boss = new PgBoss({
+      connectionString: process.env.DATABASE_URL,
+      supervise: false,
+      schedule: false,
+    });
+    await boss.start();
+    await boss.createQueue(ROLLUP_FULL_BACKFILL_QUEUE);
+  }, 60_000);
+
+  afterAll(async () => {
+    await boss?.stop({ graceful: false, close: true });
+    await prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS pgboss CASCADE`);
+  });
+
+  it("is true while the account's full fold is queued or running, and only for that account", async () => {
+    expect(await isRollupFullBackfillPending("user-a")).toBe(false);
+    await boss.send(ROLLUP_FULL_BACKFILL_QUEUE, { userId: "user-a" });
+    expect(await isRollupFullBackfillPending("user-a")).toBe(true);
+    expect(await isRollupFullBackfillPending("user-b")).toBe(false);
+    const [job] = await boss.fetch(ROLLUP_FULL_BACKFILL_QUEUE);
+    expect(await isRollupFullBackfillPending("user-a")).toBe(true);
+    await boss.complete(ROLLUP_FULL_BACKFILL_QUEUE, job.id);
+    expect(await isRollupFullBackfillPending("user-a")).toBe(false);
   });
 });

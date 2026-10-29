@@ -161,6 +161,16 @@ describe("runDenseIntradayRetention — retention bound", () => {
     }
   });
 
+  it("leaves an account alone while its rollup tier is being rebuilt", async () => {
+    // A full rollup backfill of the account still has to read the raw
+    // samples; folding them first would leave it only hourly means (#1298).
+    const { mock, findManyMeasurement } = buildPrismaMock({});
+    const deferUser = vi.fn(async () => true);
+    await runDenseIntradayRetention(mock, { deferUser, log: () => {} });
+    expect(deferUser).toHaveBeenCalled();
+    expect(findManyMeasurement).not.toHaveBeenCalled();
+  });
+
   it("scans each fold source's dense types, once per source, Apple Health first", async () => {
     const { mock, findManyMeasurement } = buildPrismaMock({});
     await runDenseIntradayRetention(mock, { log: () => {} });

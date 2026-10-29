@@ -195,6 +195,31 @@ export async function sendRollupFullBackfillContinuation(
 }
 
 /**
+ * Whether a full fold of the account is queued or running. The dense fold
+ * leaves such an account alone (`ConsolidationOptions.deferUser`): it deletes
+ * the raw samples a fold still has to read, and a year the full backfill
+ * reached after the dense fold would take its day figures from hourly means.
+ * False when the queue schema cannot be read, as a web-only deployment has
+ * no full backfill either.
+ */
+export async function isRollupFullBackfillPending(
+  userId: string,
+): Promise<boolean> {
+  try {
+    const rows = await prisma.$queryRaw<Array<{ n: number }>>`
+      SELECT count(*)::int AS n
+      FROM pgboss.job
+      WHERE name = ${ROLLUP_FULL_BACKFILL_QUEUE}
+        AND state IN ('created', 'retry', 'active')
+        AND data->>'userId' = ${userId}
+    `;
+    return (rows[0]?.n ?? 0) > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Boot-time discovery. Finds the accounts whose rollup tier misses something
  * inside the fold window and enqueues one full fold per account.
  *
