@@ -93,7 +93,17 @@ env.push("-e", "PGHOST=127.0.0.1", "-e", "PGPORT=5432");
 const child = spawn("docker", ["exec", ...(input ? ["-i"] : []), ...env, ${JSON.stringify(container)}, ${JSON.stringify(tool)}, ...args], {
   stdio: [input ? "pipe" : "ignore", "inherit", "inherit"],
 });
-if (input) createReadStream(input).pipe(child.stdin);
+// A docker client that exits before it has read all of the input closes the
+// pipe under us; that is the tool's failure to report, not a crash of this
+// wrapper, so the exit code below carries it and the reason goes to stderr.
+child.on("error", (err) => {
+  process.stderr.write("shim: " + err.message + "\\n");
+  process.exit(127);
+});
+if (input) {
+  child.stdin.on("error", (err) => process.stderr.write("shim stdin: " + err.code + "\\n"));
+  createReadStream(input).pipe(child.stdin);
+}
 child.on("exit", (code, signal) => process.exit(code ?? (signal ? 1 : 0)));
 `,
     );
