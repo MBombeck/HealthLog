@@ -1,8 +1,9 @@
 /**
  * v1.41 — what an endpoint answered when it was asked to reason, learned at
- * runtime and kept for an hour (`DIALECT_TTL_MS`), so an endpoint that
- * gains the parameter, or a downgrade learned from a misread error, heals
- * without a restart.
+ * runtime and kept for an hour (`DIALECT_TTL_MS`), a refused reasoning field
+ * for a day (`FIELD_REFUSED_TTL_MS`), so an endpoint that gains the
+ * parameter, or a downgrade learned from a misread error, heals without a
+ * restart.
  *
  * Every client that sends reasoning parameters to a wire it does not control
  * (a gateway, a local server, a model name the client has never seen, a Codex
@@ -77,6 +78,18 @@ export function refusesReasoningField(learned: string | undefined): boolean {
 export const DIALECT_TTL_MS = 60 * 60 * 1000;
 
 /**
+ * #1279 — how long a refused reasoning field holds (`refusesReasoningField`).
+ * A gateway that refuses the field does so by its configuration (LiteLLM
+ * without `drop_params`), which changes when its operator changes it, not
+ * between two calls, and only a 400 naming the field with refusal wording
+ * can teach it. At the hour every expiry cost one refused request, a few a
+ * day on a gateway that runs the briefings unattended. A day bounds that to
+ * one per day, and a gateway that gains the field still gets it the next day.
+ * The other lessons read a single reply and keep the hour.
+ */
+export const FIELD_REFUSED_TTL_MS = 24 * 60 * 60 * 1000;
+
+/**
  * Pinned on `globalThis`: a module imported from more than one bundler layer
  * is instantiated once per layer (see `caches` in `server-cache.ts`), so the
  * Coach's route handlers and the worker's jobs each kept a copy and paid for
@@ -108,12 +121,19 @@ export function learnedReasoningDialect(
   return entry.value;
 }
 
-/** Record what `key` accepts after it refused a richer request. */
+/**
+ * Record what `key` accepts after it refused a richer request. A refused
+ * field holds for `FIELD_REFUSED_TTL_MS`, every other lesson for
+ * `DIALECT_TTL_MS`.
+ */
 export function rememberReasoningDialect(
   key: ReasoningDialectKey,
   value: string,
 ): void {
-  learned.set(cacheKey(key), { value, expiresAt: Date.now() + DIALECT_TTL_MS });
+  const ttl = refusesReasoningField(value)
+    ? FIELD_REFUSED_TTL_MS
+    : DIALECT_TTL_MS;
+  learned.set(cacheKey(key), { value, expiresAt: Date.now() + ttl });
 }
 
 /**
