@@ -30,6 +30,11 @@ scripts/bench/results
 # parity test itself (BACKUP_PARITY_WRITE=1), so a rewrite diffs cleanly.
 tests/integration/__golden__
 
+# A release's backup file exactly as its exporter wrote it; the golden-backup
+# test checks the bytes against the manifest's SHA-256, so it is never
+# reformatted. The manifests are written by the same test.
+tests/fixtures/golden-backups/*.json
+
 # inlang writes its working files (cache, metadata, README) next to the
 # project settings when its CLI or SDK runs; only settings.json is tracked.
 project.inlang/*
