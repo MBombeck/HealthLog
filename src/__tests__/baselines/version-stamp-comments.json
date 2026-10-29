@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
-  "count": 2897,
-  "total": 9236,
+  "count": 2896,
+  "total": 9235,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -2067,7 +2067,6 @@
     "lib/google-health/sync-metrics.ts": 1,
     "lib/i18n/__tests__/relative-time-updated.test.ts": 2,
     "lib/i18n/config.ts": 1,
-    "lib/i18n/context.tsx": 1,
     "lib/i18n/relative-time.ts": 4,
     "lib/i18n/shared-resolve.ts": 1,
     "lib/i18n/source-labels.ts": 1,
