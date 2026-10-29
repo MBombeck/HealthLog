@@ -16,6 +16,13 @@
   two accounts on different plans, or the shared central connection, no
   longer overwrite each other, and a sign-in reconnected to another
   account starts fresh. (#1287)
+- **A first Google Health sync no longer stalls on the sleep history.** Each
+  night's clean-up of re-scored sleep carried every segment id of the whole
+  fetch, so a backfill of a few years sent one query per night with tens of
+  thousands of values, over the database's limit, and kept the server busy
+  building them for many minutes before each one failed with a warning. Each
+  night now protects only the segments inside it, which is all the clean-up
+  can reach. (#1195)
 - **A gateway that refuses the reasoning field is asked without it for a
   day.** The lesson held for an hour, and every expiry cost one refused
   request, a few a day on a gateway that runs the briefings unattended.
