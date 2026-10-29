@@ -202,6 +202,7 @@ import {
 } from "@/lib/medications/intake-slot-dedup";
 
 import { MAINTENANCE_DISCOVERY } from "./maintenance-discovery";
+import { MAINTENANCE_REPAIR_JOBS } from "./maintenance-repairs";
 import {
   defineJob,
   type JobDefinition,
@@ -524,6 +525,7 @@ const jobs: readonly JobDefinition[] = [
       (await import("@/lib/jobs/measurement-fold-repair"))
         .handleMeasurementFoldRepair,
   }),
+  ...MAINTENANCE_REPAIR_JOBS,
   // The nightly check vacuums when dead rows pile up; the same singleton key
   // as the operator's run, so the two collapse.
   defineJob({

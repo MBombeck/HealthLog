@@ -12,6 +12,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/lib/db", () => ({
   prisma: {
     labResult: { create: vi.fn() },
+    illnessEpisode: { create: vi.fn() },
   },
 }));
 
@@ -27,8 +28,16 @@ import { commitApprovedFact, FactCommitError } from "@/lib/documents/commit";
 import { prisma } from "@/lib/db";
 import { resolveOrMintBiomarker } from "@/lib/labs/biomarker-store";
 import { decryptFactData } from "@/lib/documents/store";
-import type { ExtractedFact } from "@/generated/prisma/client";
+import type {
+  ExtractedFact,
+  IllnessEpisode,
+  LabResult,
+} from "@/generated/prisma/client";
 import { userDayKey } from "@/lib/tz/format";
+import type {
+  ConditionFactData,
+  ObservationFactData,
+} from "@/lib/validations/inbound-documents";
 
 function observationFact(): ExtractedFact {
   return {
@@ -211,5 +220,183 @@ describe("commitApprovedFact — OBSERVATION unit integrity", () => {
     await expect(
       commitApprovedFact("user-1", observationFact()),
     ).resolves.toEqual({ recordType: "labResult", recordId: "lr-2" });
+  });
+});
+
+describe("commitApprovedFact — OBSERVATION date when the value states none", () => {
+  // A lab report that prints the collection date once in its header carries
+  // no date beside each value. Mutation check: drop the document day from
+  // `takenAt` → the report-date, filing-date and impossible-date cases file
+  // the reading under today.
+  function undated(effectiveDate: string | null = null) {
+    const data: ObservationFactData = {
+      label: "Ferritin",
+      code: null,
+      codeSystem: null,
+      value: 80,
+      valueText: null,
+      unit: "ng/mL",
+      referenceLow: null,
+      referenceHigh: null,
+      effectiveDate,
+    };
+    vi.mocked(decryptFactData).mockReturnValue(data);
+    vi.mocked(resolveOrMintBiomarker).mockResolvedValue({
+      id: "bm-3",
+      name: "Ferritin",
+      unit: "ng/mL",
+      lowerBound: null,
+      upperBound: null,
+      panel: null,
+      analyteKey: null,
+    });
+    vi.mocked(prisma.labResult.create).mockResolvedValue({
+      id: "lr-3",
+    } as LabResult);
+  }
+
+  /** The dates as the confirm route reads them off the stored document. */
+  function dates(reportDate: string | null, documentDate: string | null) {
+    return {
+      // An older report date sits at UTC midnight, newer ones at noon UTC.
+      reportDate: reportDate ? new Date(`${reportDate}T00:00:00.000Z`) : null,
+      documentDate: documentDate
+        ? new Date(`${documentDate}T12:00:00.000Z`)
+        : null,
+    };
+  }
+
+  function storedTakenAt(): Date {
+    return vi.mocked(prisma.labResult.create).mock.calls[0]![0].data
+      .takenAt as Date;
+  }
+
+  it("keeps the value's own date", async () => {
+    undated("2021-03-04");
+
+    await commitApprovedFact(
+      "user-1",
+      observationFact(),
+      {},
+      dates("2021-03-01", "2026-10-20"),
+    );
+
+    expect(storedTakenAt().toISOString()).toBe("2021-03-04T12:00:00.000Z");
+  });
+
+  it("takes the report date the document states over its filing date", async () => {
+    undated();
+
+    await commitApprovedFact(
+      "user-1",
+      observationFact(),
+      {},
+      dates("2021-03-01", "2026-10-20"),
+    );
+
+    expect(storedTakenAt().toISOString()).toBe("2021-03-01T12:00:00.000Z");
+  });
+
+  it("takes the filing date when the document states no report date", async () => {
+    undated();
+
+    await commitApprovedFact(
+      "user-1",
+      observationFact(),
+      {},
+      dates(null, "2021-02-15"),
+    );
+
+    expect(storedTakenAt().toISOString()).toBe("2021-02-15T12:00:00.000Z");
+  });
+
+  it.each([
+    ["not a date", "March 2021"],
+    ["a day the month does not have", "2021-02-30"],
+    ["a month that does not exist", "2021-13-01"],
+  ])(
+    "reads a value whose own date is %s as undated",
+    async (_label, effectiveDate) => {
+      undated(effectiveDate);
+
+      await commitApprovedFact(
+        "user-1",
+        observationFact(),
+        {},
+        dates("2021-03-01", null),
+      );
+
+      // Not 2 March for 30 February, and no Invalid Date for month 13.
+      expect(storedTakenAt().toISOString()).toBe("2021-03-01T12:00:00.000Z");
+    },
+  );
+
+  it("files the reading under now when neither the value nor the document has a date", async () => {
+    undated();
+
+    const before = Date.now();
+    await commitApprovedFact(
+      "user-1",
+      observationFact(),
+      {},
+      dates(null, null),
+    );
+    const after = Date.now();
+
+    const takenAt = storedTakenAt().getTime();
+    expect(takenAt).toBeGreaterThanOrEqual(before);
+    expect(takenAt).toBeLessThanOrEqual(after);
+  });
+});
+
+describe("commitApprovedFact — CONDITION onset", () => {
+  // The onset goes through the same stated-day check as a lab value's date.
+  function condition(onsetDate: string | null) {
+    const data: ConditionFactData = {
+      label: "Iron deficiency",
+      code: null,
+      codeSystem: null,
+      clinicalStatus: null,
+      verificationStatus: null,
+      onsetDate,
+    };
+    vi.mocked(decryptFactData).mockReturnValue(data);
+    vi.mocked(prisma.illnessEpisode.create).mockResolvedValue({
+      id: "ep-1",
+    } as IllnessEpisode);
+  }
+
+  function conditionFact(): ExtractedFact {
+    return {
+      id: "fact-2",
+      factType: "CONDITION",
+      dataEncrypted: new Uint8Array(),
+    } as unknown as ExtractedFact;
+  }
+
+  function storedOnset(): Date {
+    return vi.mocked(prisma.illnessEpisode.create).mock.calls[0]![0].data
+      .onsetAt as Date;
+  }
+
+  it("keeps a stated onset day", async () => {
+    condition("2021-03-04");
+
+    await commitApprovedFact("user-1", conditionFact());
+
+    expect(storedOnset().toISOString()).toBe("2021-03-04T12:00:00.000Z");
+  });
+
+  it("files an onset that is not a real day under now, not an invalid date", async () => {
+    // 2021-13-01 used to become an invalid date that failed the whole confirm.
+    condition("2021-13-01");
+
+    const before = Date.now();
+    await commitApprovedFact("user-1", conditionFact());
+    const after = Date.now();
+
+    const onset = storedOnset().getTime();
+    expect(onset).toBeGreaterThanOrEqual(before);
+    expect(onset).toBeLessThanOrEqual(after);
   });
 });

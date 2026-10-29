@@ -91,6 +91,48 @@ describe("Codex slug fallback chain", () => {
     clearCodexSlugCache();
   });
 
+  it("an account without the head of the default list walks on to the next rung", async () => {
+    const origModel = process.env.CODEX_MODEL;
+    const origChain = process.env.CODEX_MODEL_FALLBACK_CHAIN;
+    delete process.env.CODEX_MODEL;
+    delete process.env.CODEX_MODEL_FALLBACK_CHAIN;
+    try {
+      // The exact refusal a ChatGPT sign-in gets for a retired model.
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce(
+          rejectionResponse(
+            400,
+            '{"detail":"The \'gpt-5.6-terra\' model is not supported when using Codex with a ChatGPT account.","error":{"type":"invalid_request_error","code":"model_not_found"}}',
+          ),
+        )
+        .mockResolvedValueOnce(sseSuccessResponse());
+      vi.stubGlobal("fetch", mockFetch);
+
+      const client = new CodexClient({
+        accessToken: "test",
+        accountId: "acct",
+        onTokenRefresh,
+      });
+      await client.generateCompletion(
+        singleUserTurn({ system: "s", user: "u" }),
+      );
+
+      expect(client.getLastDiagnostics()?.attempted).toEqual([
+        "gpt-5.6-terra",
+        "gpt-6-sol",
+      ]);
+      expect(client.getLastDiagnostics()?.workingSlug).toBe("gpt-6-sol");
+      expect(getCachedCodexSlug()).toBe("gpt-6-sol");
+    } finally {
+      if (origModel === undefined) delete process.env.CODEX_MODEL;
+      else process.env.CODEX_MODEL = origModel;
+      if (origChain === undefined)
+        delete process.env.CODEX_MODEL_FALLBACK_CHAIN;
+      else process.env.CODEX_MODEL_FALLBACK_CHAIN = origChain;
+    }
+  });
+
   it("first slug succeeds — uses head-of-chain and caches it", async () => {
     const mockFetch = vi.fn().mockResolvedValue(sseSuccessResponse());
     vi.stubGlobal("fetch", mockFetch);
@@ -340,6 +382,14 @@ describe("Codex slug fallback chain", () => {
     ).toBe(true);
     expect(helper(400, '{"error":{"code":"model_not_found"}}')).toBe(true);
     expect(helper(400, "model gpt-5 does not exist")).toBe(true);
+    // The refusal a ChatGPT sign-in got for gpt-5.5 after its retirement
+    // (seen 2026-10-24).
+    expect(
+      helper(
+        400,
+        '{"detail":"The \'gpt-5.5\' model is not supported when using Codex with a ChatGPT account.","error":{"type":"invalid_request_error","code":"model_not_found"}}',
+      ),
+    ).toBe(true);
     expect(helper(404, "anything")).toBe(true);
     expect(helper(500, "internal error")).toBe(false);
     expect(helper(429, "rate limited")).toBe(false);
@@ -360,6 +410,17 @@ describe("Codex slug fallback chain", () => {
       "gpt-5.6-sol",
       "gpt-5.5",
     ]);
+    // OpenAI retired these from Codex for ChatGPT sign-in: 5.2 and 5.3-Codex
+    // on 2026-05-26, 5.4 and 5.4 mini on 2026-08-31. A retired rung costs
+    // every account that reaches it a refused request.
+    for (const retired of [
+      "gpt-5.4",
+      "gpt-5.4-mini",
+      "gpt-5.3-codex",
+      "gpt-5.2",
+    ]) {
+      expect(__test.DEFAULT_SLUG_FALLBACK_CHAIN).not.toContain(retired);
+    }
   });
 
   it("DEFAULT_SLUG_FALLBACK_CHAIN holds only slugs every family gate recognises", () => {

@@ -485,6 +485,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
     },
     why: "One account's folded means, a day at a time; stops at three quarters of the default expiry and sends a follow-up that resumes at the next day.",
   },
+  "lab-document-date-repair": short(
+    "Reads the document lab values still filed at their confirmation moment, a handful per account, and moves each with one update.",
+  ),
   "measurement-maintenance": {
     runtime: "long",
     expireInSeconds: MEASUREMENT_MAINTENANCE_SEND_OPTIONS.expireInSeconds,

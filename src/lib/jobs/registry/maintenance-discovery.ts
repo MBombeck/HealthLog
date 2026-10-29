@@ -77,6 +77,15 @@ export const MAINTENANCE_DISCOVERY: readonly BootDiscovery[] = [
         await import("@/lib/jobs/measurement-fold-repair")
       ).enqueueBootTimeMeasurementFoldRepair(),
   },
+  // Converges to nothing once the misdated values are moved; a boot with
+  // none costs one query.
+  {
+    name: "lab-document-date-repair",
+    run: async () =>
+      (
+        await import("@/lib/jobs/lab-document-date-repair")
+      ).enqueueBootTimeLabDocumentDateRepair(),
+  },
   // Self-limiting and idempotent; a boot with no backlog costs one query.
   {
     name: "compaction-tombstone-purge",

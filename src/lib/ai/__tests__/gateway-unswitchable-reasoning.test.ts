@@ -45,16 +45,22 @@ interface SeenRequest {
  * `always`: the thought fills the ceiling whatever the effort (gpt-oss, GLM).
  * `answers-unreasoned`: the same, except asked with `none` it answers
  * (Gemma 4 on Ollama).
+ * `answers-with-room`: ignores the effort and answers once the ceiling leaves
+ * it the `high` thinking room (GLM 5.3 behind a gateway, #1276).
  */
-let mode: "always" | "answers-unreasoned" = "always";
+let mode: "always" | "answers-unreasoned" | "answers-with-room" = "always";
 let server: http.Server;
 let origin: string;
 let seen: SeenRequest[] = [];
 
 const ANSWER = JSON.stringify({ summary: "Steady." });
 
-function reply(effort: unknown) {
-  const answers = mode === "answers-unreasoned" && effort === "none";
+function reply(effort: unknown, maxTokens: unknown) {
+  const answers =
+    (mode === "answers-unreasoned" && effort === "none") ||
+    (mode === "answers-with-room" &&
+      typeof maxTokens === "number" &&
+      maxTokens >= 12_000);
   return {
     id: "chatcmpl-1279",
     object: "chat.completion",
@@ -87,7 +93,14 @@ beforeAll(async () => {
         maxTokens: body.max_tokens ?? body.max_completion_tokens,
       });
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(reply(body.reasoning_effort)));
+      res.end(
+        JSON.stringify(
+          reply(
+            body.reasoning_effort,
+            body.max_tokens ?? body.max_completion_tokens,
+          ),
+        ),
+      );
     });
   });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
@@ -207,6 +220,80 @@ describe.each([
       expect(result.content).toBe(ANSWER);
       expect(result.tokensUsed).toBe(5400);
       expect(seen.map((s) => s.reasoningEffort)).toEqual([undefined, "none"]);
+    });
+  },
+);
+
+/** A daily briefing call as the chain runner hands it to a client. */
+function briefingParams(unattended: boolean): CompletionParams {
+  return {
+    ...singleUserTurn({
+      system: "You write the daily briefing.",
+      user: "Snapshot: …",
+      maxTokens: 300,
+      timeoutMs: 30_000,
+      responseFormat: "json",
+    }),
+    reasoning: { effort: "medium", summaries: false },
+    ...(unattended ? { unattended: true } : {}),
+  };
+}
+
+describe.each([
+  ["the OpenAI-compatible gateway", gateway],
+  ["the Local client", local],
+] as const)(
+  "#1276 — %s, background work for a model that cannot be switched down",
+  (_, make) => {
+    it("gives the #1267 repeat the High room, and answers on the first call", async () => {
+      mode = "answers-with-room";
+      const result = await make().generateCompletion(briefingParams(true));
+
+      expect(result.content).toBe(ANSWER);
+      // Two requests, the call's budget: medium at its own room, then the
+      // repeat with `none` and the High room the reply showed it needs.
+      expect(seen).toEqual([
+        { reasoningEffort: "medium", maxTokens: 4396 },
+        { reasoningEffort: "none", maxTokens: 12_300 },
+      ]);
+      // Every later background call starts with the High room.
+      seen = [];
+      await make().generateCompletion(briefingParams(true));
+      expect(seen).toEqual([{ reasoningEffort: "none", maxTokens: 12_300 }]);
+    });
+
+    it("gives a status card, which asks no level, the same room", async () => {
+      mode = "answers-with-room";
+      const result = await make().generateCompletion({
+        ...statusParams(),
+        unattended: true,
+      });
+      expect(result.content).toBe(ANSWER);
+      expect(seen.map((s) => s.maxTokens)).toEqual([300, 12_300]);
+    });
+
+    it("keeps the High room once even `none` is learned useless, and stays at one request", async () => {
+      const err = (await make()
+        .generateCompletion(briefingParams(true))
+        .catch((e) => e)) as Record<string, unknown>;
+      expect(err.kind).toBe("reasoning_only");
+      expect(seen.map((s) => s.maxTokens)).toEqual([4396, 12_300]);
+      seen = [];
+      await make()
+        .generateCompletion(briefingParams(true))
+        .catch(() => {});
+      expect(seen).toEqual([{ reasoningEffort: "medium", maxTokens: 12_300 }]);
+    });
+
+    it("leaves a call a person is reading at the room of its level", async () => {
+      await make()
+        .generateCompletion(briefingParams(false))
+        .catch(() => {});
+      seen = [];
+      await make()
+        .generateCompletion(briefingParams(false))
+        .catch(() => {});
+      expect(seen).toEqual([{ reasoningEffort: "medium", maxTokens: 4396 }]);
     });
   },
 );

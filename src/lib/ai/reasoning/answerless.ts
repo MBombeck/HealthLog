@@ -36,6 +36,11 @@ import {
   rememberReasoningDialect,
   type ReasoningDialectKey,
 } from "./dialect-cache";
+import {
+  REASONING_THINKING_BUDGET,
+  uncontrolledThinkingRoom,
+  type ReasoningLevel,
+} from "./levels";
 
 /**
  * What the client does next with an answerless reply.
@@ -135,6 +140,49 @@ export function reasonsUnasked(key: ReasoningDialectKey): boolean {
     learned === REASONS_REGARDLESS ||
     learned === FIELD_REFUSED_REASONS_REGARDLESS
   );
+}
+
+/**
+ * #1276 — the thinking room of an unattended call (`CompletionParams.unattended`)
+ * to a model that has answered with reasoning alone (`reasonsUnasked`): at
+ * least the `high` room the Coach gets on High. Background work asks for
+ * `medium` at most, and a model that cannot be switched down (GLM behind
+ * vLLM) spends all of it thinking and answers nothing, the daily briefing's
+ * `reasoning_only`. The room applies from the #1267 repeat with `none` on:
+ * one call may send two requests (`request-hops.ts`), and a once-a-day job
+ * meets an expired lesson every morning, so the room has to ride on the
+ * repeat or the first job of the day never gets it. A ceiling, not a charge:
+ * a model that does stop at `none` never touches it, one that does not
+ * thinks as long as it does either way and reaches the answer. Every call a
+ * person is reading keeps `room`.
+ */
+export function unattendedThinkingRoom(
+  key: ReasoningDialectKey,
+  room: number,
+  unattended: boolean | undefined,
+): number {
+  return unattended && reasonsUnasked(key)
+    ? Math.max(room, REASONING_THINKING_BUDGET.high)
+    : room;
+}
+
+/**
+ * #1276 — the thinking room of one call on a wire whose reasoning switch the
+ * client cannot verify (a gateway, a local server): by the call's level, not
+ * by what the wire says, the `low` room for a call without a level once the
+ * model has shown it reasons unasked, and the `high` room for background work
+ * once it has answered with reasoning alone (`unattendedThinkingRoom`).
+ */
+export function uncontrolledCallThinkingRoom(
+  key: ReasoningDialectKey,
+  params: { reasoning?: { effort: ReasoningLevel }; unattended?: boolean },
+): number {
+  const room = params.reasoning
+    ? uncontrolledThinkingRoom(params.reasoning.effort)
+    : reasonsUnasked(key)
+      ? uncontrolledThinkingRoom("off")
+      : 0;
+  return unattendedThinkingRoom(key, room, params.unattended);
 }
 
 /**

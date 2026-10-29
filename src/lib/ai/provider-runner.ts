@@ -743,14 +743,17 @@ export async function runStreamingRawCompletionWithFallback(
     onDelta: (delta: string) => void;
   },
 ): Promise<RunRawWithFallbackResult> {
+  // #1276 — a job walk is background work; stamped here, not per call site.
+  const params: CompletionParams =
+    args.surface === "job" ? { ...args.params, unattended: true } : args.params;
   return runRawChain(
     args,
     // Prefer the provider's streaming wire; fall back to the buffered call for
     // providers (cloud clients today) that do not implement streaming.
     (candidate) =>
       candidate.instance.generateCompletionStream
-        ? candidate.instance.generateCompletionStream(args.params, args.onDelta)
-        : candidate.instance.generateCompletion(args.params),
+        ? candidate.instance.generateCompletionStream(params, args.onDelta)
+        : candidate.instance.generateCompletion(params),
     (candidate) => ({
       ai_chain_streamed: Boolean(candidate.instance.generateCompletionStream),
     }),
@@ -789,7 +792,9 @@ export interface RunRawWithFallbackResult {
 export async function runRawCompletionWithFallback(
   args: ChainWalkArgs,
 ): Promise<RunRawWithFallbackResult> {
+  const params: CompletionParams =
+    args.surface === "job" ? { ...args.params, unattended: true } : args.params;
   return runRawChain(args, (candidate) =>
-    candidate.instance.generateCompletion(args.params),
+    candidate.instance.generateCompletion(params),
   );
 }
