@@ -98,6 +98,8 @@ function failureText(
       });
     case "backup.foreign_reference":
       return t("admin.section.backups.restoreFailureForeignReference");
+    case "backup.restore.rows_exist_elsewhere":
+      return t("admin.section.backups.restoreFailureRowsElsewhere");
     case "time_budget":
       return t("admin.section.backups.restoreFailureTimeBudget");
     case "transaction_failed":

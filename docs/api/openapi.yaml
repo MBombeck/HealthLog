@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.46.2
+  version: 1.46.3
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -25090,10 +25090,52 @@ paths:
         same pass; a file that fails any check leaves nothing behind. It is refused when it is not valid JSON, fails the
         backup schema, was written by a newer schema version than this server reads, needs an encryption key this server
         does not hold (`meta.errorCode` = `backup.key.missing`, `meta.keyIds` naming them), or belongs to an account
-        that does not exist here. Three uploads a minute per administrator. Admin session cookie required; Bearer tokens
-        cannot reach admin endpoints. A browser session needs a fresh proof as well as a live one: a sign-in or `POST
-        /api/auth/reproof` within the last five minutes (with a second factor, on an account that has one). Without it
-        the answer is 401 `auth.reproof.required`, with `meta.methods` naming the proofs the account can give."
+        that does not exist here (`meta.errorCode` = `backup.owner.missing`). A file of an account that no longer exists
+        here (erased, say) can be sent again with a target in the query: `into=existing&userId=<id>&confirm=<username>`
+        for an account that holds no records yet, or `into=new&username=<name>` for a new account created for the copy,
+        with no password and no email (an admin sets its first password with the existing password reset). The file's
+        owner is rewritten to that account as it is read, so the stored copy is that account's copy and restores like
+        any other; the erased account's id is not stored. A target is refused before the file is read when the account
+        does not exist, is a managed profile, is pending deletion, or holds records (a restore replaces records, it does
+        not merge them); a file whose own account is still here is refused with a target (`backup.owner.exists`). Three
+        uploads a minute per administrator. Admin session cookie required; Bearer tokens cannot reach admin endpoints. A
+        browser session needs a fresh proof as well as a live one: a sign-in or `POST /api/auth/reproof` within the last
+        five minutes (with a second factor, on an account that has one). Without it the answer is 401
+        `auth.reproof.required`, with `meta.methods` naming the proofs the account can give."
+      parameters:
+        - in: query
+          name: into
+          schema:
+            description: "Where the copy goes when the account the file names does not exist here. Absent: the file's own account,
+              which has to exist."
+            type: string
+            enum:
+              - existing
+              - new
+          description: "Where the copy goes when the account the file names does not exist here. Absent: the file's own account,
+            which has to exist."
+        - in: query
+          name: userId
+          schema:
+            description: "With `into=existing`: the account's id."
+            type: string
+            maxLength: 64
+          description: "With `into=existing`: the account's id."
+        - in: query
+          name: confirm
+          schema:
+            description: "With `into=existing`: the account's username, typed by the operator."
+            type: string
+            maxLength: 64
+          description: "With `into=existing`: the account's username, typed by the operator."
+        - in: query
+          name: username
+          schema:
+            description: "With `into=new`: the new account's username (letters, digits, `_` and `-`)."
+            type: string
+            minLength: 3
+            maxLength: 30
+          description: "With `into=new`: the new account's username (letters, digits, `_` and `-`)."
       requestBody:
         required: true
         content:
@@ -25139,6 +25181,22 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "403": *a25
+        "404":
+          description: The account chosen with `into=existing` does not exist (`backup.target.not_found`). Nothing was stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: "The chosen target cannot take the copy, and nothing was stored: a managed profile
+            (`backup.target.managed_profile`), an account pending deletion (`backup.target.pending_deletion`), an admin
+            account (`backup.target.admin_account`), an account that already holds records
+            (`backup.target.holds_records`, `meta.models` naming them), a username already taken
+            (`backup.target.username_taken`), or a file whose own account is still here (`backup.owner.exists`)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "413":
           description: "Too large: over 512 MB as sent (10 MB in a form), a gzip file that expands past what any backup this
             server wrote does, or larger than the stored-copy limit once encrypted (`meta.errorCode` =
@@ -25150,8 +25208,9 @@ paths:
         "422":
           description: "The file was refused and nothing was stored: no file in the request, not valid JSON or not readable as
             gzip, failed the backup schema (`meta.issues`), an unsupported schema version, a key this server does not
-            hold (`meta.errorCode` = `backup.key.missing`, `meta.keyIds`), or an owner account that does not exist
-            here."
+            hold (`meta.errorCode` = `backup.key.missing`, `meta.keyIds`), an owner account that does not exist here
+            (`backup.owner.missing`), a target query that does not parse (`details.issues`), or an `into=existing` whose
+            `confirm` is not the account's username (`backup.target.unconfirmed`)."
           content:
             application/json:
               schema:
@@ -26131,11 +26190,19 @@ paths:
         - in: query
           name: values
           schema:
-            description: Comma-separated value series to include, as `MeasurementType` names or `MOOD`. A name given twice counts
-              once, so the list is bounded by the names that exist; an unknown name answers 422.
+            description: "Comma-separated value series to include, as `MeasurementType` names, `MOOD`, or a lab marker as
+              `lab:<biomarkerId>` (see `availableLabs`). A name given twice counts once, so the list is bounded by the
+              names that exist; an unknown measurement name or a malformed marker key answers 422. At most 24 lab
+              markers are drawn (ids, unlike names, are not a closed set): the first 24 are kept and any further ones
+              left out without an error. A lab marker that is not in the record (deleted, or another record's) is
+              likewise left out of `labSeries`, so a stored choice never breaks the page."
             type: string
-          description: Comma-separated value series to include, as `MeasurementType` names or `MOOD`. A name given twice counts
-            once, so the list is bounded by the names that exist; an unknown name answers 422.
+          description: "Comma-separated value series to include, as `MeasurementType` names, `MOOD`, or a lab marker as
+            `lab:<biomarkerId>` (see `availableLabs`). A name given twice counts once, so the list is bounded by the
+            names that exist; an unknown measurement name or a malformed marker key answers 422. At most 24 lab markers
+            are drawn (ids, unlike names, are not a closed set): the first 24 are kept and any further ones left out
+            without an error. A lab marker that is not in the record (deleted, or another record's) is likewise left out
+            of `labSeries`, so a stored choice never breaks the page."
       responses:
         "200":
           description: The timeline for the requested zoom and window.
@@ -38648,34 +38715,38 @@ components:
                 auth.refresh.reuse, auth.refresh.revoked, auth.reproof.failed, auth.reproof.required,
                 auth.reproof.too_weak, auth.scope.insufficient, auth.session.insecure_transport,
                 auth.session.unavailable, auth.stepup.required, auth.token.expired, auth.token.invalid; backup —
-                backup.foreign_reference, backup.key.missing, backup.payload.undecryptable, backup.restore.active,
-                backup.section.missing, backup.upload.too_large; biomarkers — biomarkers.unit.locked; body-site —
-                body-site.invalid; coach — coach.budget.exceeded, coach.conversation.invalidTitle,
-                coach.conversation.notFound, coach.fenced.attachmentConflict, coach.fenced.attachmentLimit,
-                coach.fenced.attachmentNotFound, coach.fenced.attachmentNotIndexed, coach.fenced.attachmentRequired,
-                coach.fenced.attachmentUnavailable, coach.fenced.invalid, coach.request.invalid; coach-prefs —
-                coach-prefs.body.invalid_json, coach-prefs.body.invalid_shape; consent — consent.ai.confirmRequired,
-                consent.ai.required; cycle — cycle.bulk.invalid, cycle.bulk.too_large, cycle.calendar.invalid,
-                cycle.calendar.range, cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid,
-                cycle.disabled, cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit;
-                cycle-prefs — cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach —
-                disable-coach.body.invalid_json; data_wipe — data_wipe.copy_failed; dawarich —
-                dawarich.credentials_rejected, dawarich.home_place_unknown, dawarich.invalid, dawarich.not_connected,
-                dawarich.rate_limited, dawarich.unreachable; day — day.invalid; demo — demo.readOnly; documents —
-                documents.chat.conversationNotFound, documents.chat.invalid, documents.inbound.alreadyConfirmed,
-                documents.inbound.alreadyPartlyConfirmed, documents.inbound.budgetExceeded,
-                documents.inbound.decryptFailed, documents.inbound.encounterNotFound, documents.inbound.episodeNotFound,
-                documents.inbound.extractFailed, documents.inbound.factNotFound, documents.inbound.factNotPending,
-                documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge, documents.inbound.fileType,
-                documents.inbound.invalidMetadata, documents.inbound.invalidQuery, documents.inbound.invalidUpdate,
-                documents.inbound.localOcrDisabled, documents.inbound.notDeleted, documents.inbound.notFound,
-                documents.inbound.notIndexed, documents.inbound.outputLimit, documents.inbound.pdfNeedsAnthropic,
-                documents.inbound.providerUnsupported, documents.inbound.quotaExceeded, documents.inbound.rateLimited,
-                documents.inbound.restoreDuplicate, documents.inbound.restoreGone, documents.inbound.sourceAliasLimit,
-                documents.inbound.uploadBusy, documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound,
-                documents.sources.authRefused, documents.sources.badResponse, documents.sources.browserOnly,
-                documents.sources.invalidAddress, documents.sources.linkTargetNotFound, documents.sources.notConnected,
-                documents.sources.notFound, documents.sources.organizationRequired, documents.sources.originNotAllowed,
+                backup.foreign_reference, backup.key.missing, backup.owner.exists, backup.owner.missing,
+                backup.payload.undecryptable, backup.restore.active, backup.restore.rows_exist_elsewhere,
+                backup.section.missing, backup.target.admin_account, backup.target.holds_records,
+                backup.target.managed_profile, backup.target.not_found, backup.target.pending_deletion,
+                backup.target.unconfirmed, backup.target.username_taken, backup.upload.too_large; biomarkers —
+                biomarkers.unit.locked; body-site — body-site.invalid; coach — coach.budget.exceeded,
+                coach.conversation.invalidTitle, coach.conversation.notFound, coach.fenced.attachmentConflict,
+                coach.fenced.attachmentLimit, coach.fenced.attachmentNotFound, coach.fenced.attachmentNotIndexed,
+                coach.fenced.attachmentRequired, coach.fenced.attachmentUnavailable, coach.fenced.invalid,
+                coach.request.invalid; coach-prefs — coach-prefs.body.invalid_json, coach-prefs.body.invalid_shape;
+                consent — consent.ai.confirmRequired, consent.ai.required; cycle — cycle.bulk.invalid,
+                cycle.bulk.too_large, cycle.calendar.invalid, cycle.calendar.range, cycle.cycles.invalid,
+                cycle.day-log.conflict, cycle.day-log.invalid, cycle.disabled, cycle.period.invalid,
+                cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs — cycle-prefs.body.invalid_json,
+                cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json; data_wipe — data_wipe.copy_failed;
+                dawarich — dawarich.credentials_rejected, dawarich.home_place_unknown, dawarich.invalid,
+                dawarich.not_connected, dawarich.rate_limited, dawarich.unreachable; day — day.invalid; demo —
+                demo.readOnly; documents — documents.chat.conversationNotFound, documents.chat.invalid,
+                documents.inbound.alreadyConfirmed, documents.inbound.alreadyPartlyConfirmed,
+                documents.inbound.budgetExceeded, documents.inbound.decryptFailed, documents.inbound.encounterNotFound,
+                documents.inbound.episodeNotFound, documents.inbound.extractFailed, documents.inbound.factNotFound,
+                documents.inbound.factNotPending, documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge,
+                documents.inbound.fileType, documents.inbound.invalidMetadata, documents.inbound.invalidQuery,
+                documents.inbound.invalidUpdate, documents.inbound.localOcrDisabled, documents.inbound.notDeleted,
+                documents.inbound.notFound, documents.inbound.notIndexed, documents.inbound.outputLimit,
+                documents.inbound.pdfNeedsAnthropic, documents.inbound.providerUnsupported,
+                documents.inbound.quotaExceeded, documents.inbound.rateLimited, documents.inbound.restoreDuplicate,
+                documents.inbound.restoreGone, documents.inbound.sourceAliasLimit, documents.inbound.uploadBusy,
+                documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound, documents.sources.authRefused,
+                documents.sources.badResponse, documents.sources.browserOnly, documents.sources.invalidAddress,
+                documents.sources.linkTargetNotFound, documents.sources.notConnected, documents.sources.notFound,
+                documents.sources.organizationRequired, documents.sources.originNotAllowed,
                 documents.sources.permissionMissing, documents.sources.rateLimited, documents.sources.redirected,
                 documents.sources.tokenRequired, documents.sources.unavailable, documents.sources.unreachable,
                 documents.sources.versionTooOld; encounter — encounter.invalid, encounter.link.invalid,
@@ -90542,9 +90613,11 @@ components:
           type: string
           description: "Stable reason: `backup_not_found`, `backup_changed`, `backup.payload.undecryptable`, `schema_invalid`,
             `incompatible_schema_version`, `owner_mismatch`, `owner_not_found`, `backup.section.missing`,
-            `document_ciphertext_missing`, `backup.key.missing`, `backup.foreign_reference`, `time_budget`,
-            `transaction_failed`, `interrupted`, `not_started`, `enqueue_failed`, `failed_after_commit`, `unexpected`.
-            Every code but `failed_after_commit` means the account was not changed."
+            `document_ciphertext_missing`, `backup.key.missing`, `backup.foreign_reference`,
+            `backup.restore.rows_exist_elsewhere` (a copy put into a chosen account whose records another account
+            already holds, because the same file was restored there before), `time_budget`, `transaction_failed`,
+            `interrupted`, `not_started`, `enqueue_failed`, `failed_after_commit`, `unexpected`. Every code but
+            `failed_after_commit` means the account was not changed."
         message:
           type: string
         sections:
@@ -92030,6 +92103,18 @@ components:
           description: "Every value series this record can show, whatever the window: the `MeasurementType` names with live
             readings that the caller may see (events excluded), and `MOOD` when the mood score is visible and has
             entries. Each may be named in `values`."
+        labSeries:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineLabSeries"
+          description: The lab markers named in `values`, in the order named, each with its single readings in the window. A
+            marker named but not found in the record is left out.
+        availableLabs:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineLabMarker"
+          description: Every lab marker this record has a numeric reading for, whatever the window, when the caller may see labs.
+            Each may be named in `values` by its `key`.
         notable:
           type: array
           items:
@@ -92057,6 +92142,8 @@ components:
         - bucket
         - series
         - availableSeries
+        - labSeries
+        - availableLabs
         - notable
       additionalProperties: false
     TimelineItem:
@@ -92208,6 +92295,155 @@ components:
         - key
         - unit
         - points
+      additionalProperties: false
+    TimelineLabSeries:
+      type: object
+      properties:
+        key:
+          type: string
+          description: "`lab:<biomarkerId>`, as named in `values`."
+        biomarkerId:
+          type: string
+        name:
+          type: string
+          description: The marker's name, as the labs list shows it.
+        panel:
+          type:
+            - string
+            - "null"
+        unit:
+          type: string
+          description: The marker's own unit; every point is in it.
+        band:
+          anyOf:
+            - type: object
+              properties:
+                low:
+                  type:
+                    - number
+                    - "null"
+                high:
+                  type:
+                    - number
+                    - "null"
+              required:
+                - low
+                - high
+              additionalProperties: false
+            - type: "null"
+          description: "The reference range to draw behind the points: the marker's own, else the window printed with its newest
+            reading in the window. Null when neither is known."
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineLabPoint"
+          description: "Every numeric reading in the window, oldest first, one point each: never averaged, never interpolated. A
+            day with two readings has two points."
+        excluded:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          description: Readings in the window stored in a unit that does not convert into `unit`. They are left out of `points`
+            rather than drawn on a scale they are not in.
+      required:
+        - key
+        - biomarkerId
+        - name
+        - panel
+        - unit
+        - band
+        - points
+        - excluded
+      additionalProperties: false
+    TimelineLabPoint:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The lab result's id.
+        date:
+          type: string
+          description: The record's local day of the draw, the day `GET /api/day/{date}` lists it under.
+        value:
+          type: number
+          description: In the series' `unit`.
+        sourceValue:
+          description: The figure the report printed, when `value` was converted into the series' unit; it sets the precision
+            `value` is shown with. Null for a reading stored as stated.
+          type:
+            - number
+            - "null"
+        rangeStatus:
+          type: string
+          enum:
+            - in-range
+            - below
+            - above
+            - unknown
+          description: The reading against `referenceLow` / `referenceHigh`, bounds inclusive; `unknown` when neither is known.
+        referenceLow:
+          description: "The window this reading is judged against, in the series' unit: the one its report printed, else the
+            marker's own."
+          type:
+            - number
+            - "null"
+        referenceHigh:
+          type:
+            - number
+            - "null"
+        report:
+          anyOf:
+            - type: object
+              properties:
+                id:
+                  type: string
+                title:
+                  description: The document's title, else its file name.
+                  type:
+                    - string
+                    - "null"
+                href:
+                  type: string
+              required:
+                - id
+                - title
+                - href
+              additionalProperties: false
+            - type: "null"
+          description: The document the reading was read from, when one is linked and the caller may see documents.
+      required:
+        - id
+        - date
+        - value
+        - sourceValue
+        - rangeStatus
+        - referenceLow
+        - referenceHigh
+        - report
+      additionalProperties: false
+    TimelineLabMarker:
+      type: object
+      properties:
+        key:
+          type: string
+          description: "`lab:<biomarkerId>`, to name in `values`."
+        biomarkerId:
+          type: string
+        name:
+          type: string
+        panel:
+          description: The marker's group, as the labs list shows it.
+          type:
+            - string
+            - "null"
+        unit:
+          type: string
+      required:
+        - key
+        - biomarkerId
+        - name
+        - panel
+        - unit
       additionalProperties: false
     TimelineReadinessEnvelope:
       type: object

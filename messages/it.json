@@ -8217,7 +8217,7 @@
         "downloadFailed": "Download non riuscito",
         "downloadStarted": "Download avviato",
         "uploadTitle": "Carica backup",
-        "uploadDescription": "Controlla una copia dell’account e la conserva accanto alle copie di questo server. L’account a cui appartiene deve esistere su questo server. Il ripristino è un passaggio a parte.",
+        "uploadDescription": "Controlla una copia dell’account e la conserva accanto alle copie di questo server. Una copia il cui account non è più su questo server può andare in un altro account. Il ripristino è un passaggio a parte.",
         "uploadButton": "Carica file",
         "uploadHelp": "Un backup di HealthLog in formato .json o .json.gz. Il file viene compresso prima del caricamento; compresso può arrivare a 512 MB.",
         "uploadSuccess": "Backup caricato ({count} record)",
@@ -8345,6 +8345,7 @@
         "restoreFailureUnexpected": "Il ripristino si è fermato per un errore imprevisto ed è stato annullato. Il log del server indica l'errore.",
         "restoreFailureKeyMissing": "Il backup richiede la chiave di cifratura {keys}, con cui questo server non riesce ad aprirlo. Aggiungi di nuovo la chiave a ENCRYPTION_KEYS, riavvia e avvia di nuovo il ripristino.",
         "restoreFailureForeignReference": "Il file rimanda a voci che appartengono a un altro account. Non è stato scritto nulla.",
+        "restoreFailureRowsElsewhere": "I record di questo file sono già in un altro account di questo server: lo stesso file è già stato ripristinato lì. Un file può essere ripristinato in un solo account. Non è stato scritto nulla.",
         "previewKeyMissing": "Questo backup non può essere ripristinato su questo server: richiede la chiave di cifratura {keys}. Aggiungi prima di nuovo la chiave a ENCRYPTION_KEYS e riavvia.",
         "restoreSkippedSymptomEpisodeReference": "Voce di sintomo collegata a una malattia assente dal file (mantenuta senza collegamento)",
         "restoreSkippedCycleCiphertext": "Nota o etichetta del ciclo cifrata con una chiave che questo server non possiede (giorno o sintomo mantenuto senza)",
@@ -8376,7 +8377,33 @@
           "offhostLastUpload": "Il dump più recente nel bucket è del {when}.",
           "offhostNeverUploaded": "Nessun dump del database è ancora arrivato nel bucket."
         },
-        "restorePreWipeLimits": "Questa copia è stata fatta prima che i dati dell’account venissero eliminati, e ripristinarla annulla l’eliminazione per quanto una copia può: ciò che l’account ha aggiunto nel frattempo viene sostituito, e le connessioni di integrazione, le condivisioni, l’accesso delle persone responsabili e i link di condivisione non tornano."
+        "restorePreWipeLimits": "Questa copia è stata fatta prima che i dati dell’account venissero eliminati, e ripristinarla annulla l’eliminazione per quanto una copia può: ciò che l’account ha aggiunto nel frattempo viene sostituito, e le connessioni di integrazione, le condivisioni, l’accesso delle persone responsabili e i link di condivisione non tornano.",
+        "target": {
+          "title": "Ripristina in un altro account",
+          "description": "{file} appartiene a un account che non è più su questo server. Scegli l’account in cui vanno i suoi record. Un ripristino sostituisce i record di un account, quindi solo un account senza record può accoglierli. Il file viene caricato un’altra volta.",
+          "choiceLabel": "Dove vanno i record",
+          "newAccount": "Nuovo account",
+          "existingAccount": "Account esistente",
+          "usernameLabel": "Nome utente del nuovo account",
+          "usernameInvalid": "Da 3 a 30 lettere, cifre, _ o -, senza iniziare con “managed-”.",
+          "newAccountHint": "L’account viene creato senza password né email. Prima di consegnarlo, imposta la sua prima password con Reimposta password in Utenti.",
+          "accountLabel": "Account",
+          "accountPlaceholder": "Scegli un account",
+          "checking": "Controllo dell’account…",
+          "eligible": "Questo account non ha ancora record e può accogliere la copia.",
+          "confirmLabel": "Digita {username} per confermare",
+          "submit": "Carica in questo account",
+          "submitting": "Caricamento…",
+          "success": "Backup salvato per {username} ({count} record). Ripristinalo dalla sua riga.",
+          "failureHoldsRecords": "Questo account ha già dei record. Un ripristino sostituisce i record invece di aggiungerli, quindi scegli un account senza record o creane uno nuovo.",
+          "failureManagedProfile": "Questo account è un profilo gestito. Lo gestiscono le persone responsabili, quindi una copia non può andarci.",
+          "failurePendingDeletion": "Questo account è in attesa di eliminazione. Annulla prima l’eliminazione o scegli un altro account.",
+          "failureAdminAccount": "Questo è un account amministratore. I record di un’altra persona non possono andarci, quindi scegli un account normale o creane uno nuovo.",
+          "failureNotFound": "Questo account non esiste più.",
+          "failureUnconfirmed": "Digita esattamente il nome utente dell’account per confermare.",
+          "failureUsernameTaken": "Questo nome utente è già in uso.",
+          "failureOwnerExists": "L’account a cui appartiene questo file è su questo server, e il file si ripristina in quell’account. Caricalo di nuovo senza scegliere un account."
+        }
       },
       "danger-zone": {
         "title": "Zona pericolosa",
@@ -13655,7 +13682,11 @@
       "start": "Inizio",
       "end": "Fine",
       "seriesCaption": "Medie per periodo",
-      "period": "Periodo"
+      "period": "Periodo",
+      "labsCaption": "Valori di laboratorio per giorno",
+      "marker": "Marcatore",
+      "date": "Data",
+      "value": "Valore"
     },
     "selection": {
       "empty": "Nessuna voce in questo periodo",
@@ -13700,7 +13731,23 @@
       "labValuesOne": "1 valore di laboratorio",
       "labValuesFew": "{count} valori di laboratorio",
       "labValuesOther": "{count} valori di laboratorio"
-    }
+    },
+    "labs": {
+      "menuTitle": "Valori di laboratorio",
+      "otherPanel": "Altri",
+      "full": "Fino a {max} valori di laboratorio alla volta. Rimuovine uno per aggiungerne un altro.",
+      "above": "sopra l’intervallo",
+      "below": "sotto l’intervallo",
+      "reference": "riferimento {range}",
+      "report": "Referto: {title}",
+      "reportUntitled": "Apri il referto",
+      "excludedOne": "{name}: {count} valore in un’altra unità non è riportato",
+      "excludedFew": "{name}: {count} valori in un’altra unità non sono riportati",
+      "excludedOther": "{name}: {count} valori in un’altra unità non sono riportati"
+    },
+    "legendLabValue": "Valore di laboratorio, così come misurato",
+    "legendLabOutside": "Fuori dall’intervallo di riferimento",
+    "legendLabRange": "Intervallo di riferimento"
   },
   "lifeEvents": {
     "title": "Evento di vita",

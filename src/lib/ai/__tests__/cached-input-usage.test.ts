@@ -122,6 +122,7 @@ function jsonResponse(body: unknown) {
 
 function codexClient() {
   return new CodexClient({
+    credentialKey: "user:test",
     accessToken: "t",
     accountId: "a",
     onTokenRefresh: vi

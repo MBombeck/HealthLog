@@ -8192,7 +8192,7 @@
         "downloadFailed": "다운로드하지 못했어요",
         "downloadStarted": "다운로드를 시작했어요",
         "uploadTitle": "백업 업로드",
-        "uploadDescription": "계정 사본을 확인하고 이 서버의 사본 옆에 저장해요. 사본의 계정이 이 서버에 있어야 해요. 복원은 별도 단계예요.",
+        "uploadDescription": "계정 사본을 확인하고 이 서버의 사본 옆에 저장해요. 계정이 이 서버에 더 이상 없는 사본은 다른 계정으로 보낼 수 있어요. 복원은 별도 단계예요.",
         "uploadButton": "파일 업로드",
         "uploadHelp": "HealthLog 백업 파일(.json 또는 .json.gz)이에요. 업로드 전에 압축되며, 압축된 크기는 최대 512 MB까지 가능해요.",
         "uploadSuccess": "백업을 업로드했어요 (기록 {count}개)",
@@ -8320,6 +8320,7 @@
         "restoreFailureUnexpected": "예상하지 못한 오류로 복원이 멈췄고 되돌려졌어요. 서버 로그에 오류가 나와 있어요.",
         "restoreFailureKeyMissing": "이 백업에는 암호화 키 {keys}가 필요하지만 이 서버는 그 키로 백업을 열 수 없습니다. 키를 ENCRYPTION_KEYS에 다시 추가하고 재시작한 뒤 복원을 다시 시작하세요.",
         "restoreFailureForeignReference": "파일이 다른 계정에 속한 기록을 가리키고 있습니다. 아무것도 기록되지 않았습니다.",
+        "restoreFailureRowsElsewhere": "이 파일의 기록은 이미 이 서버의 다른 계정에 있습니다. 같은 파일이 그 계정에 먼저 복원되었습니다. 파일은 한 계정에만 복원할 수 있습니다. 아무것도 기록되지 않았습니다.",
         "previewKeyMissing": "이 서버에서는 이 백업을 복원할 수 없습니다. 암호화 키 {keys}가 필요합니다. 먼저 키를 ENCRYPTION_KEYS에 다시 추가하고 재시작하세요.",
         "restoreSkippedSymptomEpisodeReference": "파일에 없는 질병과 연결된 증상 기록(연결 없이 유지됨)",
         "restoreSkippedCycleCiphertext": "이 서버에 없는 키로 암호화된 주기 메모 또는 이름(해당 날짜나 증상은 그 내용 없이 유지됨)",
@@ -8351,7 +8352,33 @@
           "offhostLastUpload": "버킷에 있는 최신 덤프는 {when}의 것입니다.",
           "offhostNeverUploaded": "아직 버킷에 도달한 데이터베이스 덤프가 없습니다."
         },
-        "restorePreWipeLimits": "이 사본은 계정의 데이터를 삭제하기 전에 만들어졌고, 복원하면 사본이 할 수 있는 만큼 그 삭제를 되돌려요: 그 후에 계정에 추가된 것은 대체되고, 연동 연결, 공유, 보호자 접근, 공유 링크는 돌아오지 않아요."
+        "restorePreWipeLimits": "이 사본은 계정의 데이터를 삭제하기 전에 만들어졌고, 복원하면 사본이 할 수 있는 만큼 그 삭제를 되돌려요: 그 후에 계정에 추가된 것은 대체되고, 연동 연결, 공유, 보호자 접근, 공유 링크는 돌아오지 않아요.",
+        "target": {
+          "title": "다른 계정으로 복원",
+          "description": "{file}은(는) 이 서버에 더 이상 없는 계정의 파일이에요. 기록을 넣을 계정을 골라 주세요. 복원은 계정의 기록을 바꿔 쓰기 때문에 기록이 없는 계정만 받을 수 있어요. 파일은 한 번 더 업로드돼요.",
+          "choiceLabel": "기록을 넣을 곳",
+          "newAccount": "새 계정",
+          "existingAccount": "기존 계정",
+          "usernameLabel": "새 계정의 사용자 이름",
+          "usernameInvalid": "영문자, 숫자, _ 또는 - 3~30자이고, \"managed-\"로 시작하면 안 돼요.",
+          "newAccountHint": "계정은 비밀번호와 이메일 없이 만들어져요. 넘겨주기 전에 사용자에서 비밀번호 재설정으로 첫 비밀번호를 정해 주세요.",
+          "accountLabel": "계정",
+          "accountPlaceholder": "계정을 골라 주세요",
+          "checking": "계정을 확인하는 중…",
+          "eligible": "이 계정에는 아직 기록이 없어서 사본을 받을 수 있어요.",
+          "confirmLabel": "확인하려면 {username}을(를) 입력해 주세요",
+          "submit": "이 계정으로 업로드",
+          "submitting": "업로드 중…",
+          "success": "{username}의 백업을 저장했어요 (기록 {count}개). 해당 행에서 복원해 주세요.",
+          "failureHoldsRecords": "이 계정에는 이미 기록이 있어요. 복원은 기록을 더하지 않고 바꿔 쓰기 때문에 기록이 없는 계정을 고르거나 새 계정을 만들어 주세요.",
+          "failureManagedProfile": "이 계정은 관리 프로필이에요. 보호자들이 운영하는 프로필이라 사본을 넣을 수 없어요.",
+          "failurePendingDeletion": "이 계정은 삭제 대기 중이에요. 먼저 삭제를 취소하거나 다른 계정을 골라 주세요.",
+          "failureAdminAccount": "관리자 계정이에요. 다른 사람의 기록은 이 계정에 넣을 수 없으니 일반 계정을 고르거나 새 계정을 만들어 주세요.",
+          "failureNotFound": "이 계정은 더 이상 없어요.",
+          "failureUnconfirmed": "확인하려면 계정의 사용자 이름을 정확히 입력해 주세요.",
+          "failureUsernameTaken": "이미 사용 중인 사용자 이름이에요.",
+          "failureOwnerExists": "이 파일의 계정이 이 서버에 있어서 파일은 그 계정으로 복원돼요. 계정을 고르지 말고 다시 업로드해 주세요."
+        }
       },
       "danger-zone": {
         "title": "위험 구역",
@@ -13655,7 +13682,11 @@
       "start": "시작",
       "end": "끝",
       "seriesCaption": "기간별 평균",
-      "period": "기간"
+      "period": "기간",
+      "labsCaption": "날짜별 검사 수치",
+      "marker": "항목",
+      "date": "날짜",
+      "value": "값"
     },
     "selection": {
       "empty": "이 기간에는 항목이 없습니다",
@@ -13700,7 +13731,23 @@
       "labValuesOne": "검사 수치 1개",
       "labValuesFew": "검사 수치 {count}개",
       "labValuesOther": "검사 수치 {count}개"
-    }
+    },
+    "labs": {
+      "menuTitle": "검사 수치",
+      "otherPanel": "기타",
+      "full": "검사 수치는 한 번에 최대 {max}개까지 표시할 수 있습니다. 다른 수치를 추가하려면 하나를 제거하세요.",
+      "above": "범위 초과",
+      "below": "범위 미만",
+      "reference": "참고 범위 {range}",
+      "report": "보고서: {title}",
+      "reportUntitled": "보고서 열기",
+      "excludedOne": "{name}: 다른 단위로 기록된 값 {count}개는 표시되지 않습니다",
+      "excludedFew": "{name}: 다른 단위로 기록된 값 {count}개는 표시되지 않습니다",
+      "excludedOther": "{name}: 다른 단위로 기록된 값 {count}개는 표시되지 않습니다"
+    },
+    "legendLabValue": "측정된 그대로의 검사 수치",
+    "legendLabOutside": "참고 범위 밖",
+    "legendLabRange": "참고 범위"
   },
   "lifeEvents": {
     "title": "삶의 사건",

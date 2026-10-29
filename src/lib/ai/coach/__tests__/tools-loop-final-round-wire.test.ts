@@ -308,6 +308,7 @@ describe("the forced final round on each provider wire", () => {
     });
     vi.stubGlobal("fetch", upstream);
     const client = new CodexClient({
+      credentialKey: "user:test",
       accessToken: "t",
       accountId: "a",
       onTokenRefresh: vi.fn(),

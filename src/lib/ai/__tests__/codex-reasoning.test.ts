@@ -46,6 +46,7 @@ function errorResponse(status: number, body: string): Response {
 
 function client() {
   return new CodexClient({
+    credentialKey: "user:test",
     accessToken: "test-token",
     accountId: "acct-test",
     onTokenRefresh: vi
@@ -158,6 +159,7 @@ describe("Codex reasoning request", () => {
       );
     vi.stubGlobal("fetch", mock);
     const c = new CodexClient({
+      credentialKey: "user:test",
       accessToken: "test-token",
       accountId: "acct-test",
       onTokenRefresh: vi

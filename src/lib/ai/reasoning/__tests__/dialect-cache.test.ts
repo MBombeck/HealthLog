@@ -9,13 +9,18 @@ vi.mock("@/lib/logging/context", () => ({
 }));
 
 import {
+  ANSWERS_ONLY_UNREASONED,
   annotateReasoningDowngrade,
   DIALECT_TTL_MS,
+  FIELD_REFUSED_REASONS_REGARDLESS,
+  FIELD_REFUSED_TTL_MS,
+  REASONS_REGARDLESS,
   isReasoningParameterRejection,
   learnedReasoningDialect,
   rememberReasoningDialect,
   resetReasoningDialectCache,
 } from "../dialect-cache";
+import { learnReasoningFieldRefused, nextAnswerlessStep } from "../answerless";
 
 beforeEach(() => {
   resetReasoningDialectCache();
@@ -25,7 +30,7 @@ beforeEach(() => {
 describe("reasoning dialect cache", () => {
   it("keys on provider, endpoint and model together", () => {
     const key = { provider: "local", endpoint: "http://a/v1", model: "m1" };
-    rememberReasoningDialect(key, "none");
+    rememberReasoningDialect(key, "none", "refusal");
     expect(learnedReasoningDialect(key)).toBe("none");
     expect(learnedReasoningDialect({ ...key, model: "m2" })).toBeUndefined();
     expect(
@@ -56,15 +61,87 @@ describe("reasoning dialect cache", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     try {
       const key = { provider: "openai", endpoint: "http://g/v1", model: "m" };
-      rememberReasoningDialect(key, "none");
+      rememberReasoningDialect(key, ANSWERS_ONLY_UNREASONED, "reply");
       vi.advanceTimersByTime(DIALECT_TTL_MS - 1);
-      expect(learnedReasoningDialect(key)).toBe("none");
+      expect(learnedReasoningDialect(key)).toBe(ANSWERS_ONLY_UNREASONED);
       vi.advanceTimersByTime(1);
       expect(learnedReasoningDialect(key)).toBeUndefined();
-      rememberReasoningDialect(key, "none");
+      rememberReasoningDialect(key, REASONS_REGARDLESS, "reply");
       vi.advanceTimersByTime(DIALECT_TTL_MS / 2);
-      expect(learnedReasoningDialect(key)).toBe("none");
+      expect(learnedReasoningDialect(key)).toBe(REASONS_REGARDLESS);
       expect(DIALECT_TTL_MS).toBe(60 * 60 * 1000);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  // #1279: at the hour, a gateway that refuses the field paid one refused
+  // request per expiry, a few a day. Only a 400 refusing the field teaches
+  // the day.
+  it.each([
+    ["none", false],
+    [FIELD_REFUSED_REASONS_REGARDLESS, true],
+  ] as const)(
+    "holds a refused field a 400 taught (%s) for a day, not an hour",
+    (value, reasonedUnasked) => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      try {
+        const key = { provider: "openai", endpoint: "http://g/v1", model: "m" };
+        if (reasonedUnasked) {
+          rememberReasoningDialect(key, REASONS_REGARDLESS, "reply");
+        }
+        learnReasoningFieldRefused(key, "openai", "low");
+        expect(learnedReasoningDialect(key)).toBe(value);
+        vi.advanceTimersByTime(DIALECT_TTL_MS * 2);
+        expect(learnedReasoningDialect(key)).toBe(value);
+        vi.advanceTimersByTime(FIELD_REFUSED_TTL_MS - DIALECT_TTL_MS * 2 - 1);
+        expect(learnedReasoningDialect(key)).toBe(value);
+        vi.advanceTimersByTime(1);
+        expect(learnedReasoningDialect(key)).toBeUndefined();
+        expect(FIELD_REFUSED_TTL_MS).toBe(24 * 60 * 60 * 1000);
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it("keeps a refused field's own day when one reply adds that the model reasons regardless", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const key = { provider: "local", endpoint: "http://l/v1", model: "m" };
+      learnReasoningFieldRefused(key, "local", "low");
+      // Late in the field's day, an answerless reply that reasoned.
+      const late = FIELD_REFUSED_TTL_MS - 2 * DIALECT_TTL_MS;
+      vi.advanceTimersByTime(late);
+      expect(nextAnswerlessStep(key, null, true)).toEqual({
+        kind: "final",
+        learnedRegardless: true,
+      });
+      expect(learnedReasoningDialect(key)).toBe(
+        FIELD_REFUSED_REASONS_REGARDLESS,
+      );
+      // Not cut to the hour: the field refusal would come back after it.
+      vi.advanceTimersByTime(DIALECT_TTL_MS + 1);
+      expect(learnedReasoningDialect(key)).toBe(
+        FIELD_REFUSED_REASONS_REGARDLESS,
+      );
+      // Not a fresh day either: one reply taught it, and the field's day
+      // ends where the 400 set it.
+      vi.advanceTimersByTime(DIALECT_TTL_MS - 1);
+      expect(learnedReasoningDialect(key)).toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("gives a behavioural lesson that replaces a refused field the hour", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const key = { provider: "local", endpoint: "http://l/v1", model: "m" };
+      rememberReasoningDialect(key, "none", "refusal");
+      rememberReasoningDialect(key, ANSWERS_ONLY_UNREASONED, "reply");
+      vi.advanceTimersByTime(DIALECT_TTL_MS);
+      expect(learnedReasoningDialect(key)).toBeUndefined();
     } finally {
       vi.useRealTimers();
     }

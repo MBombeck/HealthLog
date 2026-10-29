@@ -5,6 +5,10 @@ import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, getClientIp } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  codexCredentialKey,
+  forgetCodexSignIn,
+} from "@/lib/ai/codex-slug-cache";
 
 /**
  * Operator-shared central Codex (ChatGPT subscription) — status + disconnect.
@@ -54,6 +58,8 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
     },
     create: { id: "singleton", adminCodexConnectionStatus: "disconnected" },
   });
+
+  forgetCodexSignIn(codexCredentialKey.central);
 
   await auditLog("admin.central-codex.disconnected", {
     userId: user.id,

@@ -15,6 +15,15 @@ export interface AccountSettingsRestoreInput {
   accountSettings?: AccountSettingsBackupEntry | null;
 }
 
+/** Where the copy being restored came from. */
+export interface AccountSettingsRestoreSource {
+  /**
+   * The copy was uploaded into this account from a file another account
+   * wrote (`backup-upload-type.ts`), so its settings are that author's word.
+   */
+  retargeted: boolean;
+}
+
 export interface AccountSettingsRestoreResult {
   /** How many setting columns were written. */
   applied: number;
@@ -32,11 +41,16 @@ export interface AccountSettingsRestoreResult {
  * the row are never in the write, so they stay exactly as the receiving
  * account has them. A file without the section leaves the row untouched,
  * which is how every backup written before the section existed restores.
+ *
+ * An admin's own copy is the operator's configuration and is read under the
+ * operator's AI endpoint policy. A retargeted copy never is: the admin chose
+ * where it went, but the file's author wrote its settings.
  */
 export async function restoreAccountSettings(
   tx: Prisma.TransactionClient,
   ownerId: string,
   payload: AccountSettingsRestoreInput,
+  source: AccountSettingsRestoreSource,
 ): Promise<AccountSettingsRestoreResult> {
   const entry = payload.accountSettings;
   if (!entry) return { applied: 0, refused: [], unitsChanged: false };
@@ -52,7 +66,7 @@ export async function restoreAccountSettings(
   });
   const { data, refused } = admitAccountSettings(
     entry,
-    { operatorTrusted: current.role === "ADMIN" },
+    { operatorTrusted: !source.retargeted && current.role === "ADMIN" },
     current.aiProvider,
   );
 

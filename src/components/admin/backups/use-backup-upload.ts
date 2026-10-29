@@ -1,13 +1,18 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRef, type ChangeEvent } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import { toast } from "sonner";
 
 import type { useRecentProof } from "@/components/settings/security-section/use-recent-proof";
 import { ReproofCancelledError } from "@/components/settings/security-section/use-recent-proof";
-import { apiFetch, apiGet } from "@/lib/api/api-fetch";
+import { ApiError, apiFetch, apiGet } from "@/lib/api/api-fetch";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
+import {
+  BACKUP_OWNER_MISSING_CODE,
+  backupUploadTargetQuery,
+  type BackupUploadTarget,
+} from "@/lib/validations/backup-upload-target";
 
 /**
  * The upload body for a backup file: the file itself when it is already
@@ -28,9 +33,11 @@ async function uploadBody(file: File): Promise<Blob> {
  * and a large export (hundreds of MB of JSON) shrinks about tenfold. No request
  * timeout, because a file of that size takes longer to check and store than
  * the default allows. The body is built here, per call, so a retry after a
- * re-proof sends the file again rather than a spent stream.
+ * re-proof sends the file again rather than a spent stream. With a target, the
+ * copy goes into that account instead of the one the file names, which is
+ * how the copy of an account no longer on this server comes back.
  */
-async function uploadOnce(file: File) {
+async function uploadOnce(file: File, target?: BackupUploadTarget) {
   const body = await uploadBody(file);
   return apiFetch<{
     id: string;
@@ -65,12 +72,17 @@ async function uploadOnce(file: File) {
       customMetricEntries?: number;
       intradayProfiles?: number;
     };
-  }>("/api/admin/backups/upload", {
-    method: "POST",
-    body,
-    headers: { "Content-Type": "application/gzip" },
-    signal: null,
-  });
+  }>(
+    target
+      ? `/api/admin/backups/upload?${backupUploadTargetQuery(target)}`
+      : "/api/admin/backups/upload",
+    {
+      method: "POST",
+      body,
+      headers: { "Content-Type": "application/gzip" },
+      signal: null,
+    },
+  );
 }
 
 export type UploadSummary = Awaited<ReturnType<typeof uploadOnce>>["summary"];
@@ -106,9 +118,19 @@ export function uploadedRecordCount(summary: UploadSummary): number {
   );
 }
 
+/** Whether an upload was refused because the file's account is not here. */
+export function isOwnerMissing(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    error.meta?.errorCode === BACKUP_OWNER_MISSING_CODE
+  );
+}
+
 /**
  * The single-file upload flow: a fresh proof first, then the file, and the
- * file input reset after either outcome.
+ * file input reset after either outcome. A file whose account is not on this
+ * server is kept (`orphan`) for the target dialog, which sends it again into
+ * the account the admin picks (`uploadInto`).
  */
 export function useBackupUpload(
   recentProof: ReturnType<typeof useRecentProof>,
@@ -118,21 +140,32 @@ export function useBackupUpload(
 
   // Upload state — single-file flow, drives the file input + button.
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [orphan, setOrphan] = useState<File | null>(null);
+
+  /** A stored copy, said once: for its own account, or for the one chosen. */
+  function announceStored(summary: UploadSummary, username: string | null) {
+    const count = String(uploadedRecordCount(summary));
+    toast.success(
+      username === null
+        ? t("admin.section.backups.uploadSuccess", { count })
+        : t("admin.section.backups.target.success", { count, username }),
+    );
+    queryClient.invalidateQueries({ queryKey: queryKeys.adminBackups() });
+  }
   const upload = useMutation({
     mutationFn: async (file: File) => {
       // Ask first, so a large file is not sent once only to be refused.
       await recentProof.run(() => apiGet("/api/auth/reproof"));
       return uploadOnce(file);
     },
-    onSuccess: (data) => {
-      const total = uploadedRecordCount(data.summary);
-      toast.success(
-        t("admin.section.backups.uploadSuccess", { count: String(total) }),
-      );
-      queryClient.invalidateQueries({ queryKey: queryKeys.adminBackups() });
-    },
-    onError: (err) => {
+    onSuccess: (data) => announceStored(data.summary, null),
+    onError: (err, file) => {
       if (err instanceof ReproofCancelledError) return;
+      // Not a dead end: the dialog offers an account to restore it into.
+      if (isOwnerMissing(err)) {
+        setOrphan(file);
+        return;
+      }
       showErrorToast(
         err instanceof Error && err.message
           ? err.message
@@ -147,10 +180,39 @@ export function useBackupUpload(
     },
   });
 
+  const uploadInto = useMutation({
+    mutationFn: async (target: BackupUploadTarget) => {
+      if (!orphan) throw new Error("No file to upload");
+      await recentProof.run(() => apiGet("/api/auth/reproof"));
+      return { data: await uploadOnce(orphan, target), target };
+    },
+    onSuccess: ({ data, target }) => {
+      setOrphan(null);
+      announceStored(
+        data.summary,
+        target.into === "new" ? target.username : target.confirm,
+      );
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers() });
+    },
+    // A refusal stays in the dialog, beside the choice it refuses.
+  });
+
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) upload.mutate(file);
   }
 
-  return { upload, fileInputRef, handleFileChange };
+  function closeOrphan() {
+    setOrphan(null);
+    uploadInto.reset();
+  }
+
+  return {
+    upload,
+    fileInputRef,
+    handleFileChange,
+    orphan,
+    uploadInto,
+    closeOrphan,
+  };
 }

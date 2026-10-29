@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
-  "count": 2896,
-  "total": 9228,
+  "count": 2895,
+  "total": 9226,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1741,8 +1741,7 @@
     "lib/ai/coach/turn/types.ts": 17,
     "lib/ai/coach/types.ts": 58,
     "lib/ai/coach/visits-snapshot.ts": 1,
-    "lib/ai/codex-client.ts": 18,
-    "lib/ai/codex-slug-cache.ts": 1,
+    "lib/ai/codex-client.ts": 17,
     "lib/ai/consent-guard.ts": 1,
     "lib/ai/feedback-attribution.ts": 2,
     "lib/ai/insight-interpretation.ts": 1,

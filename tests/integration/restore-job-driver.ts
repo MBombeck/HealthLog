@@ -30,6 +30,7 @@ const LEGACY_STATUS: Record<string, number> = {
   owner_mismatch: 409,
   owner_not_found: 422,
   "backup.section.missing": 422,
+  "backup.restore.rows_exist_elsewhere": 409,
   document_ciphertext_missing: 422,
   time_budget: 503,
   transaction_failed: 500,

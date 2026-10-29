@@ -8217,7 +8217,7 @@
         "downloadFailed": "Falha no download",
         "downloadStarted": "Download iniciado",
         "uploadTitle": "Enviar backup",
-        "uploadDescription": "Verifica uma cópia de conta e a guarda junto às cópias deste servidor. A conta a que ela pertence precisa existir neste servidor. Restaurar é uma etapa separada.",
+        "uploadDescription": "Verifica uma cópia de conta e a guarda junto às cópias deste servidor. Uma cópia cuja conta não está mais neste servidor pode ir para outra conta. Restaurar é uma etapa separada.",
         "uploadButton": "Enviar arquivo",
         "uploadHelp": "Um backup do HealthLog como .json ou .json.gz. O arquivo é comprimido antes do envio; comprimido, pode ter até 512 MB.",
         "uploadSuccess": "Backup enviado ({count} registros)",
@@ -8345,6 +8345,7 @@
         "restoreFailureUnexpected": "A restauração parou em um erro inesperado e foi revertida. O log do servidor nomeia o erro.",
         "restoreFailureKeyMissing": "O backup precisa da chave de criptografia {keys}, que este servidor não consegue usar para abri-lo. Adicione a chave de volta a ENCRYPTION_KEYS, reinicie e inicie a restauração novamente.",
         "restoreFailureForeignReference": "O arquivo aponta para registros que pertencem a outra conta. Nada foi gravado.",
+        "restoreFailureRowsElsewhere": "Os registros deste arquivo já estão em outra conta deste servidor: o mesmo arquivo já foi restaurado nela. Um arquivo só pode ser restaurado em uma conta. Nada foi gravado.",
         "previewKeyMissing": "Este backup não pode ser restaurado neste servidor: ele precisa da chave de criptografia {keys}. Adicione a chave de volta a ENCRYPTION_KEYS e reinicie primeiro.",
         "restoreSkippedSymptomEpisodeReference": "Entrada de sintoma vinculada a uma doença que o arquivo não contém (mantida sem o link)",
         "restoreSkippedCycleCiphertext": "Nota ou rótulo do ciclo selado com uma chave que este servidor não possui (dia ou sintoma mantido sem ele)",
@@ -8376,7 +8377,33 @@
           "offhostLastUpload": "O dump mais recente no bucket é de {when}.",
           "offhostNeverUploaded": "Nenhum dump do banco de dados chegou ao bucket ainda."
         },
-        "restorePreWipeLimits": "Esta cópia foi feita antes de os dados da conta serem excluídos, e restaurá-la desfaz essa exclusão até onde uma cópia consegue: o que a conta adicionou desde então é substituído, e conexões de integração, compartilhamentos, acesso de guardiões e links de compartilhamento não voltam."
+        "restorePreWipeLimits": "Esta cópia foi feita antes de os dados da conta serem excluídos, e restaurá-la desfaz essa exclusão até onde uma cópia consegue: o que a conta adicionou desde então é substituído, e conexões de integração, compartilhamentos, acesso de guardiões e links de compartilhamento não voltam.",
+        "target": {
+          "title": "Restaurar em outra conta",
+          "description": "{file} pertence a uma conta que não está mais neste servidor. Escolha a conta para onde vão os registros. Uma restauração substitui os registros de uma conta, então só uma conta sem registros pode recebê-los. O arquivo é enviado mais uma vez.",
+          "choiceLabel": "Para onde vão os registros",
+          "newAccount": "Conta nova",
+          "existingAccount": "Conta existente",
+          "usernameLabel": "Nome de usuário da conta nova",
+          "usernameInvalid": "De 3 a 30 letras, números, _ ou -, sem começar com “managed-”.",
+          "newAccountHint": "A conta é criada sem senha e sem e-mail. Antes de entregá-la, defina a primeira senha com Redefinir senha em Usuários.",
+          "accountLabel": "Conta",
+          "accountPlaceholder": "Escolha uma conta",
+          "checking": "Verificando a conta…",
+          "eligible": "Esta conta ainda não tem registros e pode receber a cópia.",
+          "confirmLabel": "Digite {username} para confirmar",
+          "submit": "Enviar para esta conta",
+          "submitting": "Enviando…",
+          "success": "Backup guardado para {username} ({count} registros). Restaure-o pela linha dele.",
+          "failureHoldsRecords": "Esta conta já tem registros. Uma restauração substitui os registros em vez de somá-los, então escolha uma conta sem registros ou crie uma nova.",
+          "failureManagedProfile": "Esta conta é um perfil gerenciado. Os guardiões cuidam dela, então uma cópia não pode ir para ela.",
+          "failurePendingDeletion": "Esta conta está aguardando exclusão. Desfaça a exclusão primeiro ou escolha outra conta.",
+          "failureAdminAccount": "Esta é uma conta de administrador. Os registros de outra pessoa não podem ir para ela, então escolha uma conta comum ou crie uma nova.",
+          "failureNotFound": "Esta conta não existe mais.",
+          "failureUnconfirmed": "Digite exatamente o nome de usuário da conta para confirmar.",
+          "failureUsernameTaken": "Este nome de usuário já está em uso.",
+          "failureOwnerExists": "A conta a que este arquivo pertence está neste servidor, e o arquivo é restaurado nessa conta. Envie-o de novo sem escolher uma conta."
+        }
       },
       "danger-zone": {
         "title": "Zona de perigo",
@@ -13655,7 +13682,11 @@
       "start": "Início",
       "end": "Fim",
       "seriesCaption": "Médias de valores por período",
-      "period": "Período"
+      "period": "Período",
+      "labsCaption": "Valores de exames por dia",
+      "marker": "Marcador",
+      "date": "Data",
+      "value": "Valor"
     },
     "selection": {
       "empty": "Nenhuma entrada neste período",
@@ -13700,7 +13731,23 @@
       "labValuesOne": "1 valor laboratorial",
       "labValuesFew": "{count} valores laboratoriais",
       "labValuesOther": "{count} valores laboratoriais"
-    }
+    },
+    "labs": {
+      "menuTitle": "Valores de exames",
+      "otherPanel": "Outros",
+      "full": "Até {max} valores de exames ao mesmo tempo. Remova um para adicionar outro.",
+      "above": "acima da faixa",
+      "below": "abaixo da faixa",
+      "reference": "referência {range}",
+      "report": "Laudo: {title}",
+      "reportUntitled": "Abrir o laudo",
+      "excludedOne": "{name}: {count} valor em outra unidade não aparece no gráfico",
+      "excludedFew": "{name}: {count} valores em outra unidade não aparecem no gráfico",
+      "excludedOther": "{name}: {count} valores em outra unidade não aparecem no gráfico"
+    },
+    "legendLabValue": "Valor de exame, como foi medido",
+    "legendLabOutside": "Fora da faixa de referência",
+    "legendLabRange": "Faixa de referência"
   },
   "lifeEvents": {
     "title": "Evento de vida",

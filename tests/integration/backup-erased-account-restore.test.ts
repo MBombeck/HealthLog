@@ -9,24 +9,48 @@
  * session, and a server that no longer knows the account.
  *
  *   1. The purge leaves nothing in the database that names the account.
- *   2. The admin upload refuses the file, because its owner is gone, and
- *      stores nothing (the documented contract in `docs/ops/backup-restore.md`:
- *      a restore writes into an account that exists under the same id).
- *   3. With the account row put back under its original id, the one way that
- *      contract leaves, the upload and the restore bring every section back.
+ *   2. The admin upload without a target refuses the file, because its owner
+ *      is gone, says so with `backup.owner.missing`, stores nothing, and does
+ *      not write the erased id into the trail either.
+ *   3. With the account row put back under its original id, the upload and
+ *      the restore bring every section back: the same-id path, unchanged.
  *   4. Into a freshly created account, with the file's owner set to that
- *      account, the restore brings every section back and nothing in the
- *      database names the erased account afterwards.
+ *      account by hand, the restore brings every section back and nothing in
+ *      the database names the erased account afterwards. This is the
+ *      mechanism the upload's target generalises.
+ *   5. The upload with a target does it for the operator: into an existing
+ *      empty account (typed confirmation) and into a new account it creates,
+ *      every section comes back, the audit trail says what happened, and
+ *      nothing names the erased account, the refused first upload included.
+ *      An account that has just been through the setup routes counts as
+ *      empty, and the copy's setup state replaces its own; one whose setup
+ *      ended on a reading of its own does not.
+ *   6. A target that holds records, is a managed profile, is pending
+ *      deletion, is an admin or is not confirmed is refused before the file
+ *      is read; so is a target for a file whose own account is still here,
+ *      and a new account made for a refused file is removed again. A
+ *      non-admin session and a Bearer token are refused outright. A copy put
+ *      into a chosen account keeps that mark, and its restore takes no
+ *      setting on the operator's word, even after the account is promoted.
  *
  * Everything runs through production code: the deletion route, the purge job,
- * the admin upload and restore routes and the restore job
+ * the admin upload, target-check and restore routes and the restore job
  * (`restore-job-driver.ts` runs the queued job in-process).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { PrismaClient } from "@/generated/prisma/client";
+import { hashToken } from "@/lib/auth/hmac";
 import { buildFullBackupPayload } from "@/lib/export/full-backup-payload";
 import { streamFullBackupJson } from "@/lib/export/full-backup-stream";
+import {
+  openStoredBackup,
+  STORED_BACKUP_SELECT,
+} from "@/lib/export/stored-backup";
+import {
+  backupUploadTargetQuery,
+  type BackupUploadTarget,
+} from "@/lib/validations/backup-upload-target";
 
 import {
   OWNER_ID,
@@ -207,10 +231,10 @@ async function eraseAfterExport(prisma: PrismaClient) {
   return { admin, json, counts };
 }
 
-async function upload(body: string) {
+async function upload(body: string, query = "") {
   const { POST } = await import("@/app/api/admin/backups/upload/route");
   const res = await POST(
-    new Request("http://localhost/api/admin/backups/upload", {
+    new Request(`http://localhost/api/admin/backups/upload${query}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body,
@@ -221,7 +245,7 @@ async function upload(body: string) {
     body: (await res.json()) as {
       data: { id: string } | null;
       error: string | null;
-      meta?: { reason?: string; errorCode?: string };
+      meta?: { reason?: string; errorCode?: string; models?: string[] };
     },
   };
 }
@@ -245,6 +269,98 @@ async function restore(backupId: string) {
   };
 }
 
+/** The upload, with a target in the query as the backups console sends it. */
+function uploadInto(body: string, target: BackupUploadTarget) {
+  return upload(body, `?${backupUploadTargetQuery(target)}`);
+}
+
+async function checkTarget(userId: string) {
+  const { GET } =
+    await import("@/app/api/admin/backups/targets/[userId]/route");
+  const { NextRequest } = await import("next/server");
+  const res = await GET(
+    new NextRequest(`http://localhost/api/admin/backups/targets/${userId}`),
+    { params: Promise.resolve({ userId }) },
+  );
+  return {
+    status: res.status,
+    body: (await res.json()) as {
+      data: {
+        id: string;
+        eligible: boolean;
+        reason: string | null;
+        models: string[];
+      } | null;
+    },
+  };
+}
+
+function jsonRequest(path: string, method: string, body: unknown): Request {
+  return new Request(`http://localhost${path}`, {
+    method,
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+/**
+ * `userId` signs up again and goes through setup the way the flow does it:
+ * every question answered, the units written, cycle tracking asked for, and
+ * the confirm screen's profile fields. The session is left on `userId`.
+ */
+async function goThroughOnboarding(prisma: PrismaClient, userId: string) {
+  cookieJar.clear();
+  await signIn(prisma, userId);
+  const { PATCH } = await import("@/app/api/onboarding/answers/route");
+  const answer = async (body: unknown) => {
+    const res = await (PATCH as (r: Request) => Promise<Response>)(
+      jsonRequest("/api/onboarding/answers", "PATCH", body),
+    );
+    expect(res.status, await res.clone().text()).toBe(200);
+  };
+  await answer({ step: "who", recordTarget: "me" });
+  await answer({ step: "areas", areas: ["blood-pressure", "cycle", "labs"] });
+  await answer({ step: "medication", medication: "yes" });
+  await answer({ step: "sources", status: "skipped" });
+  await answer({ step: "visit", visit: "no" });
+  await answer({
+    step: "units",
+    units: { glucoseUnit: "mmol/L", unitPreference: "metric" },
+  });
+  const { POST } = await import("@/app/api/onboarding/complete/route");
+  const done = await (POST as (r: Request) => Promise<Response>)(
+    jsonRequest("/api/onboarding/complete", "POST", {
+      displayName: "Returning",
+      heightCm: 172,
+      dateOfBirth: "1980-05-04",
+      gender: "FEMALE",
+    }),
+  );
+  expect(done.status, await done.clone().text()).toBe(200);
+  await answer({ step: "first-result", status: "skipped" });
+  await answer({ step: "done" });
+}
+
+/** The stored copy as the restore will read it, as text. */
+async function storedCopyText(prisma: PrismaClient, backupId: string) {
+  const row = await prisma.dataBackup.findUniqueOrThrow({
+    where: { id: backupId },
+    select: STORED_BACKUP_SELECT,
+  });
+  const source = await openStoredBackup(prisma, row);
+  const parts: Buffer[] = [];
+  for await (const part of source()) parts.push(Buffer.from(part));
+  return { row, text: Buffer.concat(parts).toString("utf8") };
+}
+
+async function auditDetails(prisma: PrismaClient, action: string) {
+  const rows = await prisma.auditLog.findMany({
+    where: { action },
+    orderBy: { createdAt: "asc" },
+  });
+  return rows.map((row) => JSON.parse(row.details ?? "{}") as object);
+}
+
 async function countsOf(prisma: PrismaClient, userId: string) {
   const { counts } = await buildFullBackupPayload(prisma, userId, {
     purpose: "disaster-recovery",
@@ -266,14 +382,16 @@ describe("restoring the backup of an erased account", () => {
 
       const refused = await upload(json);
       expect(refused.status, JSON.stringify(refused.body)).toBe(422);
+      expect(refused.body.meta?.errorCode).toBe("backup.owner.missing");
       const denial = await prisma.auditLog.findFirstOrThrow({
         where: { action: "admin.backups.upload.denied" },
       });
-      expect(JSON.parse(denial.details ?? "{}")).toMatchObject({
+      expect(JSON.parse(denial.details ?? "{}")).toEqual({
         reason: "owner_not_found",
-        ownerId: OWNER_ID,
       });
       expect(await prisma.dataBackup.count()).toBe(0);
+      // The refusal wrote a row, and that row does not bring the id back.
+      expect(await cellsNaming(prisma, OWNER_ID)).toEqual([]);
     },
     SLOW,
   );
@@ -320,6 +438,591 @@ describe("restoring the backup of an erased account", () => {
 
       expect(await countsOf(prisma, fresh.id)).toEqual(counts);
       expect(await cellsNaming(prisma, OWNER_ID)).toEqual([]);
+    },
+    SLOW,
+  );
+});
+
+describe("restoring the backup of an erased account into a chosen account", () => {
+  it(
+    "into an existing empty account: every section, the trail, and nothing naming the erased one",
+    async () => {
+      const prisma = getPrismaClient();
+      const { json, counts } = await eraseAfterExport(prisma);
+      const fresh = await prisma.user.create({
+        data: {
+          username: "returning-person",
+          email: "returning-person@example.test",
+        },
+      });
+
+      // The operator's first try, which the console turns into the choice.
+      const first = await upload(json);
+      expect(first.body.meta?.errorCode).toBe("backup.owner.missing");
+
+      const check = await checkTarget(fresh.id);
+      expect(check.status).toBe(200);
+      expect(check.body.data).toMatchObject({
+        id: fresh.id,
+        eligible: true,
+        reason: null,
+        models: [],
+      });
+
+      const stored = await uploadInto(json, {
+        into: "existing",
+        userId: fresh.id,
+        confirm: "returning-person",
+      });
+      expect(stored.status, JSON.stringify(stored.body)).toBe(201);
+      const backupId = stored.body.data!.id;
+
+      // The stored copy is the chosen account's copy, inside as well.
+      const copy = await storedCopyText(prisma, backupId);
+      expect(copy.row.userId).toBe(fresh.id);
+      expect(JSON.parse(copy.text).userId).toBe(fresh.id);
+      expect(copy.text.includes(OWNER_ID)).toBe(false);
+
+      const restored = await restore(backupId);
+      expect(restored.status, JSON.stringify(restored.body)).toBe(200);
+      expect(restored.body.data!.skipped.links).toBe(0);
+      expect(await countsOf(prisma, fresh.id)).toEqual(counts);
+
+      expect(await auditDetails(prisma, "admin.backups.upload")).toEqual([
+        expect.objectContaining({
+          backupId,
+          ownerId: fresh.id,
+          ownerUsername: "returning-person",
+          into: "existing",
+        }),
+      ]);
+      expect(await auditDetails(prisma, "admin.backups.restore")).toEqual([
+        expect.objectContaining({ backupId, ownerId: fresh.id }),
+      ]);
+      expect(await cellsNaming(prisma, OWNER_ID)).toEqual([]);
+    },
+    SLOW,
+  );
+
+  it(
+    "into an account that has just been through setup: the setup state does not count, and the copy's replaces it",
+    async () => {
+      const prisma = getPrismaClient();
+      const { admin, json, counts } = await eraseAfterExport(prisma);
+      const person = await prisma.user.create({
+        data: {
+          username: "returning-person",
+          email: "returning-person@example.test",
+        },
+      });
+      await goThroughOnboarding(prisma, person.id);
+      // What setup left behind: its own row, and the cycle profile the cycle
+      // answer switched on.
+      expect(
+        await prisma.onboardingRecord.count({ where: { userId: person.id } }),
+      ).toBe(1);
+      expect(
+        await prisma.cycleProfile.findUniqueOrThrow({
+          where: { userId: person.id },
+          select: { cycleTrackingEnabled: true },
+        }),
+      ).toEqual({ cycleTrackingEnabled: true });
+
+      cookieJar.clear();
+      await signIn(prisma, admin.id);
+      const check = await checkTarget(person.id);
+      expect(check.body.data).toMatchObject({
+        eligible: true,
+        reason: null,
+        models: [],
+      });
+
+      const stored = await uploadInto(json, {
+        into: "existing",
+        userId: person.id,
+        confirm: "returning-person",
+      });
+      expect(stored.status, JSON.stringify(stored.body)).toBe(201);
+      const restored = await restore(stored.body.data!.id);
+      expect(restored.status, JSON.stringify(restored.body)).toBe(200);
+      // Replaced, not merged: the counts are the file's, setup rows included.
+      expect(await countsOf(prisma, person.id)).toEqual(counts);
+      expect(await cellsNaming(prisma, OWNER_ID)).toEqual([]);
+    },
+    SLOW,
+  );
+
+  it(
+    "restores a retargeted copy's settings on the file author's word, even into an account promoted to admin since",
+    async () => {
+      const prisma = getPrismaClient();
+      vi.stubEnv("AI_PRIVATE_ORIGINS", "");
+      vi.stubEnv("ALLOW_LOCAL_AI_PRIVATE_HOSTS", "true");
+      const { json } = await eraseAfterExport(prisma);
+      const payload = JSON.parse(json) as {
+        accountSettings: Record<string, unknown> | null;
+      };
+      payload.accountSettings = {
+        ...(payload.accountSettings ?? {}),
+        aiProvider: "LOCAL",
+        aiBaseUrl: "http://10.20.30.40:11434",
+      };
+      const person = await prisma.user.create({
+        data: { username: "returning-person" },
+      });
+
+      const stored = await uploadInto(JSON.stringify(payload), {
+        into: "existing",
+        userId: person.id,
+        confirm: "returning-person",
+      });
+      expect(stored.status, JSON.stringify(stored.body)).toBe(201);
+      const row = await prisma.dataBackup.findUniqueOrThrow({
+        where: { id: stored.body.data!.id },
+        select: { type: true },
+      });
+      expect(row.type).toMatch(/^RETARGETED_UPLOAD_\d+$/);
+
+      // Promoted between the upload and the restore.
+      await prisma.user.update({
+        where: { id: person.id },
+        data: { role: "ADMIN" },
+      });
+      const restored = await restore(stored.body.data!.id);
+      expect(restored.status, JSON.stringify(restored.body)).toBe(200);
+      expect(
+        await prisma.user.findUniqueOrThrow({
+          where: { id: person.id },
+          select: { aiProvider: true, aiBaseUrl: true },
+        }),
+      ).toEqual({ aiProvider: "LOCAL", aiBaseUrl: null });
+    },
+    SLOW,
+  );
+
+  it(
+    "refuses an account whose setup ended on a reading of its own, because the restore would delete it",
+    async () => {
+      const prisma = getPrismaClient();
+      const { admin } = await eraseAfterExport(prisma);
+      const person = await prisma.user.create({
+        data: { username: "logged-one", email: "logged-one@example.test" },
+      });
+      await goThroughOnboarding(prisma, person.id);
+      // The first-result step's reading goes through the ordinary write.
+      await prisma.measurement.create({
+        data: {
+          userId: person.id,
+          type: "BLOOD_PRESSURE_SYS",
+          value: 128,
+          unit: "mmHg",
+          measuredAt: new Date("2026-10-28T08:00:00.000Z"),
+        },
+      });
+
+      cookieJar.clear();
+      await signIn(prisma, admin.id);
+      expect((await checkTarget(person.id)).body.data).toMatchObject({
+        eligible: false,
+        reason: "holds_records",
+        models: ["Measurement"],
+      });
+    },
+    SLOW,
+  );
+
+  it(
+    "into a new account: created without a password, filled, and signed into through the admin reset",
+    async () => {
+      const prisma = getPrismaClient();
+      vi.stubEnv("PASSWORD_BREACH_CHECK_DISABLED", "1");
+      const { admin, json, counts } = await eraseAfterExport(prisma);
+      const usersBefore = await prisma.user.count();
+
+      const stored = await uploadInto(json, {
+        into: "new",
+        username: "returning-person",
+      });
+      expect(stored.status, JSON.stringify(stored.body)).toBe(201);
+      const backupId = stored.body.data!.id;
+      expect(await prisma.user.count()).toBe(usersBefore + 1);
+      const account = await prisma.user.findUniqueOrThrow({
+        where: { username: "returning-person" },
+      });
+      expect(account).toMatchObject({
+        role: "USER",
+        email: null,
+        passwordHash: null,
+        managedProfileAt: null,
+        deletionRequestedAt: null,
+      });
+      expect(
+        (await prisma.dataBackup.findUniqueOrThrow({ where: { id: backupId } }))
+          .userId,
+      ).toBe(account.id);
+
+      const restored = await restore(backupId);
+      expect(restored.status, JSON.stringify(restored.body)).toBe(200);
+      expect(restored.body.data!.skipped.links).toBe(0);
+      expect(await countsOf(prisma, account.id)).toEqual(counts);
+      // Identity is never in a restore: still the account the upload made.
+      expect(
+        await prisma.user.findUniqueOrThrow({
+          where: { id: account.id },
+          select: { username: true, role: true, passwordHash: true },
+        }),
+      ).toEqual({
+        username: "returning-person",
+        role: "USER",
+        passwordHash: null,
+      });
+
+      // Traced when it is made, before the file is read; the upload row
+      // links it to the copy.
+      expect(await auditDetails(prisma, "admin.user.create")).toEqual([
+        {
+          targetUserId: account.id,
+          username: "returning-person",
+          reason: "backup_restore",
+          outcome: "created",
+        },
+      ]);
+      expect(await auditDetails(prisma, "admin.backups.upload")).toEqual([
+        expect.objectContaining({ backupId, ownerId: account.id, into: "new" }),
+      ]);
+      expect(await auditDetails(prisma, "admin.user.delete")).toEqual([]);
+      expect(await cellsNaming(prisma, OWNER_ID)).toEqual([]);
+
+      // How the person gets in: the admin sets a first password with the
+      // existing reset, which is all the new account needs.
+      const { POST: resetPassword } =
+        await import("@/app/api/admin/users/[id]/reset-password/route");
+      const { NextRequest } = await import("next/server");
+      const reset = await resetPassword(
+        new NextRequest(
+          `http://localhost/api/admin/users/${account.id}/reset-password`,
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ password: "Harbour-lantern-47-quietly" }),
+          },
+        ),
+        { params: Promise.resolve({ id: account.id }) },
+      );
+      expect(reset.status, await reset.clone().text()).toBe(200);
+      expect(
+        (await prisma.user.findUniqueOrThrow({ where: { id: account.id } }))
+          .passwordHash,
+      ).not.toBeNull();
+      expect(admin.role).toBe("ADMIN");
+    },
+    SLOW,
+  );
+
+  it(
+    "refuses an account that holds records, a managed profile, an account pending deletion and a wrong confirmation, before reading the file",
+    async () => {
+      const prisma = getPrismaClient();
+      const { json } = await eraseAfterExport(prisma);
+      const used = await prisma.user.create({
+        data: { username: "in-use", email: "in-use@example.test" },
+      });
+      await prisma.measurement.create({
+        data: {
+          userId: used.id,
+          type: "WEIGHT",
+          value: 80,
+          unit: "kg",
+          measuredAt: new Date("2026-10-01T08:00:00.000Z"),
+        },
+      });
+      const managed = await prisma.user.create({
+        data: { username: "managed-cafe01", managedProfileAt: new Date() },
+      });
+      const leaving = await prisma.user.create({
+        data: {
+          username: "leaving",
+          deletionRequestedAt: new Date(),
+          deletionPurgeAt: new Date(Date.now() + 14 * DAY_MS),
+        },
+      });
+      const empty = await prisma.user.create({ data: { username: "empty" } });
+      const otherAdmin = await prisma.user.create({
+        data: { username: "second-admin", role: "ADMIN" },
+      });
+
+      expect((await checkTarget(otherAdmin.id)).body.data).toMatchObject({
+        eligible: false,
+        reason: "admin_account",
+        models: [],
+      });
+      expect((await checkTarget(used.id)).body.data).toMatchObject({
+        eligible: false,
+        reason: "holds_records",
+        models: ["Measurement"],
+      });
+      expect((await checkTarget("no-such-account")).status).toBe(404);
+
+      const cases: Array<[BackupUploadTarget, number, string]> = [
+        [
+          { into: "existing", userId: used.id, confirm: "in-use" },
+          409,
+          "backup.target.holds_records",
+        ],
+        [
+          { into: "existing", userId: managed.id, confirm: "managed-cafe01" },
+          409,
+          "backup.target.managed_profile",
+        ],
+        [
+          { into: "existing", userId: leaving.id, confirm: "leaving" },
+          409,
+          "backup.target.pending_deletion",
+        ],
+        [
+          { into: "existing", userId: otherAdmin.id, confirm: "second-admin" },
+          409,
+          "backup.target.admin_account",
+        ],
+        [
+          { into: "existing", userId: "no-such-account", confirm: "x" },
+          404,
+          "backup.target.not_found",
+        ],
+        [
+          { into: "existing", userId: empty.id, confirm: "Empty" },
+          422,
+          "backup.target.unconfirmed",
+        ],
+        [
+          { into: "new", username: "in-use" },
+          409,
+          "backup.target.username_taken",
+        ],
+      ];
+      for (const [target, status, code] of cases) {
+        await prisma.rateLimit.deleteMany();
+        const refused = await uploadInto(json, target);
+        expect(refused.status, JSON.stringify(refused.body)).toBe(status);
+        expect(refused.body.meta?.errorCode).toBe(code);
+      }
+
+      expect(await prisma.dataBackup.count()).toBe(0);
+      expect(
+        await prisma.measurement.count({ where: { userId: used.id } }),
+      ).toBe(1);
+      expect(
+        (await auditDetails(prisma, "admin.backups.upload.denied")).map(
+          (details) => (details as { reason: string }).reason,
+        ),
+      ).toEqual([
+        "target_holds_records",
+        "target_managed_profile",
+        "target_pending_deletion",
+        "target_admin_account",
+        "target_not_found",
+        "target_unconfirmed",
+        "target_username_taken",
+      ]);
+
+      // A query that does not parse is refused with every issue.
+      await prisma.rateLimit.deleteMany();
+      const malformed = await upload(json, "?into=new&username=no%20spaces");
+      expect(malformed.status).toBe(422);
+      expect(
+        await prisma.user.count({ where: { username: "no spaces" } }),
+      ).toBe(0);
+    },
+    SLOW,
+  );
+
+  it(
+    "refuses a target for a file whose own account is still here, and removes an account made for it",
+    async () => {
+      const prisma = getPrismaClient();
+      const { json } = await eraseAfterExport(prisma);
+      await createOwner(prisma);
+      const empty = await prisma.user.create({ data: { username: "empty" } });
+      const usersBefore = await prisma.user.count();
+
+      const existing = await uploadInto(json, {
+        into: "existing",
+        userId: empty.id,
+        confirm: "empty",
+      });
+      expect(existing.status, JSON.stringify(existing.body)).toBe(409);
+      expect(existing.body.meta?.errorCode).toBe("backup.owner.exists");
+
+      await prisma.rateLimit.deleteMany();
+      const fresh = await uploadInto(json, {
+        into: "new",
+        username: "would-be-copy",
+      });
+      expect(fresh.status, JSON.stringify(fresh.body)).toBe(409);
+      expect(fresh.body.meta?.errorCode).toBe("backup.owner.exists");
+      expect(await prisma.user.count()).toBe(usersBefore);
+      expect(
+        await prisma.user.count({ where: { username: "would-be-copy" } }),
+      ).toBe(0);
+      // The account was made, traced, and removed again, traced as well.
+      const made = await auditDetails(prisma, "admin.user.create");
+      expect(made).toEqual([
+        {
+          targetUserId: expect.any(String),
+          username: "would-be-copy",
+          reason: "backup_restore",
+          outcome: "created",
+        },
+      ]);
+      expect(await auditDetails(prisma, "admin.user.delete")).toEqual([
+        {
+          targetUserId: (made[0] as { targetUserId: string }).targetUserId,
+          username: "would-be-copy",
+          reason: "backup_upload_refused",
+          outcome: "deleted",
+        },
+      ]);
+      expect(await prisma.dataBackup.count()).toBe(0);
+
+      // Without a target, the same file goes to its own account as before.
+      await prisma.rateLimit.deleteMany();
+      const own = await upload(json);
+      expect(own.status, JSON.stringify(own.body)).toBe(201);
+      expect(
+        (
+          await prisma.dataBackup.findUniqueOrThrow({
+            where: { id: own.body.data!.id },
+          })
+        ).userId,
+      ).toBe(OWNER_ID);
+    },
+    SLOW,
+  );
+
+  it(
+    "refuses a second restore of the same file into another account, explained and with nothing changed",
+    async () => {
+      const prisma = getPrismaClient();
+      const { json, counts } = await eraseAfterExport(prisma);
+
+      const first = await uploadInto(json, {
+        into: "new",
+        username: "first-home",
+      });
+      expect(first.status, JSON.stringify(first.body)).toBe(201);
+      expect((await restore(first.body.data!.id)).status).toBe(200);
+      const home = await prisma.user.findUniqueOrThrow({
+        where: { username: "first-home" },
+      });
+
+      await prisma.rateLimit.deleteMany();
+      const second = await uploadInto(json, {
+        into: "new",
+        username: "second-home",
+      });
+      expect(second.status, JSON.stringify(second.body)).toBe(201);
+      const again = await restore(second.body.data!.id);
+      expect(again.status, JSON.stringify(again.body)).toBe(409);
+      expect(
+        (again.body as { meta?: { errorCode?: string } }).meta?.errorCode,
+      ).toBe("backup.restore.rows_exist_elsewhere");
+      expect(again.body.error).toMatch(/already restored into another account/);
+
+      // Rolled back: the second account holds nothing, the first all of it.
+      const twin = await prisma.user.findUniqueOrThrow({
+        where: { username: "second-home" },
+      });
+      expect(
+        Object.values(await countsOf(prisma, twin.id)).every((n) => n === 0),
+      ).toBe(true);
+      expect(await countsOf(prisma, home.id)).toEqual(counts);
+    },
+    SLOW,
+  );
+
+  it(
+    "leaves a trace of an account made for a refused file when it cannot be removed again",
+    async () => {
+      const prisma = getPrismaClient();
+      const { json } = await eraseAfterExport(prisma);
+      await createOwner(prisma);
+      const { prisma: appPrisma } = await import("@/lib/db");
+      const remove = vi
+        .spyOn(appPrisma.user, "delete")
+        .mockRejectedValueOnce(new Error("connection reset"));
+
+      const refused = await uploadInto(json, {
+        into: "new",
+        username: "left-behind",
+      });
+      remove.mockRestore();
+      // The operator still sees why the file was refused.
+      expect(refused.status, JSON.stringify(refused.body)).toBe(409);
+      expect(refused.body.meta?.errorCode).toBe("backup.owner.exists");
+
+      const account = await prisma.user.findUniqueOrThrow({
+        where: { username: "left-behind" },
+      });
+      expect(account).toMatchObject({ passwordHash: null, email: null });
+      expect(await auditDetails(prisma, "admin.user.create")).toEqual([
+        {
+          targetUserId: account.id,
+          username: "left-behind",
+          reason: "backup_restore",
+          outcome: "created",
+        },
+      ]);
+      expect(await auditDetails(prisma, "admin.user.delete")).toEqual([
+        {
+          targetUserId: account.id,
+          username: "left-behind",
+          reason: "backup_upload_refused",
+          outcome: "failed",
+        },
+      ]);
+    },
+    SLOW,
+  );
+
+  it(
+    "refuses a non-admin session and an admin's Bearer token, and creates nothing",
+    async () => {
+      const prisma = getPrismaClient();
+      const { admin, json } = await eraseAfterExport(prisma);
+      const member = await prisma.user.create({ data: { username: "member" } });
+      const empty = await prisma.user.create({ data: { username: "empty" } });
+      const usersBefore = await prisma.user.count();
+
+      cookieJar.clear();
+      await signIn(prisma, member.id);
+      const asMember = await uploadInto(json, {
+        into: "new",
+        username: "member-made",
+      });
+      expect(asMember.status).toBe(403);
+      expect((await checkTarget(empty.id)).status).toBe(403);
+
+      cookieJar.clear();
+      const raw = `hlk_erasedrestore_${"0".repeat(48)}`;
+      await prisma.apiToken.create({
+        data: {
+          userId: admin.id,
+          name: "wildcard",
+          tokenHash: hashToken(raw),
+          permissions: ["*"],
+        },
+      });
+      headerJar.set("authorization", `Bearer ${raw}`);
+      const asBearer = await uploadInto(json, {
+        into: "existing",
+        userId: empty.id,
+        confirm: "empty",
+      });
+      expect(asBearer.status).toBe(401);
+      expect((await checkTarget(empty.id)).status).toBe(401);
+
+      expect(await prisma.user.count()).toBe(usersBefore);
+      expect(await prisma.dataBackup.count()).toBe(0);
     },
     SLOW,
   );

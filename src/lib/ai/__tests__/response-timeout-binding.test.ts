@@ -81,6 +81,7 @@ const CLIENTS: Record<string, () => AIProvider> = {
     new AnthropicClient({ apiKey: "k", model: "claude-sonnet-4-6" }),
   codex: () =>
     new CodexClient({
+      credentialKey: "user:test",
       accessToken: "t",
       accountId: "a",
       onTokenRefresh: vi.fn(),

@@ -1,5 +1,53 @@
 # Changelog
 
+## [1.46.3] — 2026-10-29
+
+### Fixed
+
+- **Codex picks from what the account is offered.** OpenAI retires Codex
+  models for ChatGPT sign-in in steps, and every retirement left Codex
+  refusing every request until a release changed the built-in list. Each
+  sign-in now reads its account's model list, the way the Codex CLI does,
+  and chooses from it in HealthLog's order of preference. Whether a model
+  reads images comes from the same list. If the list can't be read, the
+  built-in order applies, and `CODEX_MODEL` and
+  `CODEX_MODEL_FALLBACK_CHAIN` keep their meaning. The working model is
+  remembered per sign-in instead of in one slot for the whole server, so
+  two accounts on different plans, or the shared central connection, no
+  longer overwrite each other, and a sign-in reconnected to another
+  account starts fresh. (#1287)
+- **A gateway that refuses the reasoning field is asked without it for a
+  day.** The lesson held for an hour, and every expiry cost one refused
+  request, a few a day on a gateway that runs the briefings unattended.
+  Lessons read from a single reply keep the hour. (#1279)
+
+### Added
+
+- **Lab values on the timeline.** The values menu lists the lab markers
+  the record has, and a chosen marker draws its readings as their own
+  points, never averaged, with the reference range behind them. A reading
+  outside the range is drawn as a triangle and named in words. A tap shows
+  the day, the value, the range and the report it came from. Readings in a
+  unit that cannot be converted are left out and the timeline says how
+  many. Up to 24 markers at once; the choice is remembered like the other
+  value lines. (#1299)
+- **Restoring the backup of an erased account.** An upload whose account
+  no longer exists used to be refused with nowhere to go. Admin, Backups
+  now offers to restore it into a new account created for it, or into an
+  existing account that holds no records beyond what sign-up and setup
+  leave, confirmed by typing its username. Admin accounts are not offered.
+  Nothing names the erased account afterwards. A new account has no
+  password until an admin sets one with Reset password. Restoring the same
+  file into a second account is refused with an explanation instead of a
+  generic failure. The runbook in `docs/ops/backup-restore.md` has the
+  details.
+
+### Thanks
+
+@haritowa for taking the Codex retirements apart in #1287 and proposing
+the live list. @mills1975 for the timeline idea in #1299. @Tio61 for three
+days of request counts that showed what the hour still cost (#1279).
+
 ## [1.46.2] — 2026-10-29
 
 ### Fixed

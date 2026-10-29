@@ -18,13 +18,12 @@ import {
 import { PICK_DECIDED_REASONS } from "@/lib/ai/capabilities/types";
 import type { ProviderChainResolved } from "@/lib/ai/provider-runner";
 import { resolveProvider, resolveProviderChain } from "@/lib/ai/provider";
-import { resolveCodexVisionSlug } from "@/lib/ai/codex-client";
+import { chainEntryReadsImages } from "@/lib/ai/codex-slug-chain";
 import { RASTERIZATION_AVAILABLE } from "@/lib/documents/rasterize-pdf";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import {
   supportsPdfForProvider,
-  supportsVisionForConfig,
   type VisionProviderType,
 } from "@/lib/ai/vision-capability";
 import type { OcrCapabilityDto } from "@/lib/validations/labs-ocr";
@@ -36,19 +35,19 @@ interface ModelContext {
   adminModel: string | null;
 }
 
-/** The model that drives a chain entry's vision allowlist. */
-function modelForEntry(
+/** Whether a chain entry's model can read an image. */
+function entryReadsImages(
   providerType: ProviderChainResolved["providerType"],
+  userId: string,
   ctx: ModelContext,
-): string | null {
-  // Codex resolves its working slug at request time from the OAuth slug
-  // fallback chain — NOT from the user's `aiModel`. Use the cached/chain-head
-  // slug so the codex vision gate tests the model that actually runs. The
-  // operator-shared central Codex (`admin-codex`) rides the same slug chain.
-  if (providerType === "codex" || providerType === "admin-codex") {
-    return resolveCodexVisionSlug();
-  }
-  return providerType === "admin-openai" ? ctx.adminModel : ctx.userModel;
+): boolean {
+  // Codex picks its model at request time from the sign-in's working slug
+  // and the models its account is offered, NOT from the user's `aiModel`.
+  // Each Codex path asks its own sign-in: the person's connection, or the
+  // operator-shared central one (`admin-codex`).
+  const model =
+    providerType === "admin-openai" ? ctx.adminModel : ctx.userModel;
+  return chainEntryReadsImages(providerType, userId, model);
 }
 
 /**
@@ -126,8 +125,7 @@ export async function resolveVisionProvider(
 
   for (const entry of chain) {
     const providerType = entry.providerType as VisionProviderType;
-    const model = modelForEntry(entry.providerType, ctx);
-    if (supportsVisionForConfig(providerType, model)) {
+    if (entryReadsImages(entry.providerType, userId, ctx)) {
       return {
         chain,
         localOcrEnabled,

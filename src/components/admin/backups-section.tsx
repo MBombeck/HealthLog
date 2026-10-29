@@ -29,7 +29,8 @@ import type { BackupRow, BackupsList } from "@/types/backups";
 import { RestoreJobStatus, visibleRestoreJobs } from "./backup-restore-status";
 import { BackupRowsCards, BackupRowsTable } from "./backups/backup-rows";
 import { DatabaseDumpRow } from "./backups/database-dump-row";
-import { BackupUploadCard } from "./backups/backup-upload-card";
+import { BackupUpload } from "./backups/backup-upload-card";
+import { useBackupUpload } from "./backups/use-backup-upload";
 import {
   RestoreRefusalNotice,
   RestoreSkipReport,
@@ -37,7 +38,6 @@ import {
 } from "./backups/restore-notices";
 import { useBackupDownload, useRunBackup } from "./backups/use-backup-actions";
 import { useBackupRestores } from "./backups/use-backup-restores";
-import { useBackupUpload } from "./backups/use-backup-upload";
 
 export function BackupsSection() {
   const { t } = useTranslations();
@@ -55,8 +55,7 @@ export function BackupsSection() {
   // a fresh proof unless this session signed in or re-proved within minutes.
   const recentProof = useRecentProof();
   const { downloadingId, handleDownload } = useBackupDownload(recentProof);
-  const { upload, fileInputRef, handleFileChange } =
-    useBackupUpload(recentProof);
+  const uploadFlow = useBackupUpload(recentProof);
   const {
     restoreJobs,
     dismissedRestores,
@@ -126,11 +125,7 @@ export function BackupsSection() {
         <BackupPassActivityNotice activity={data.scheduleActivity} />
       ) : null}
 
-      <BackupUploadCard
-        pending={upload.isPending}
-        fileInputRef={fileInputRef}
-        onFileChange={handleFileChange}
-      />
+      <BackupUpload flow={uploadFlow} />
 
       {visibleRestoreJobs(restoreJobs, dismissedRestores).map((job) => (
         <RestoreJobStatus

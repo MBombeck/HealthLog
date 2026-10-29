@@ -54,28 +54,29 @@ import type {
 import { resolveIntlLocale } from "@/lib/format-locale";
 import { useTranslations } from "@/lib/i18n/context";
 
-import { itemLine, useItemWords, type ItemWordsFn } from "./item-words";
-import { medicationListItems } from "./medication-rows";
+import { useItemWords, type ItemWordsFn } from "./item-words";
+import {
+  LabLines,
+  LabSeriesTable,
+  useLabValueText,
+  type LabValueText,
+} from "./lab-lines";
+import { SeriesTable, TimelineTable, bucketText } from "./timeline-tables";
 import { TIMELINE_LANE_LABEL_KEY } from "./label-keys";
 import {
-  bucketAfter,
   bucketStart,
   formatAtPrecision,
-  formatBucket,
   formatMonthShort,
   formatMonthYear,
-  dayNumber,
 } from "./timeline-dates";
 import {
   AXIS_HEIGHT,
   LANE_COLOR,
   dateAtPointer,
   estimateTextWidth,
-  SERIES_HEIGHT,
   fitText,
   seriesNameLines,
   gridTicks,
-  isSpan,
   todayLabelFits,
   wrapToWidth,
   layoutTimeline,
@@ -85,6 +86,7 @@ import {
   type PlacedSpan,
   type TimeWindow,
 } from "./timeline-geometry";
+import { SERIES_HEIGHT } from "./series-geometry";
 import {
   formatSeriesValue,
   type MeanPart,
@@ -157,6 +159,7 @@ export function TimelineChart({
   const { t, locale } = useTranslations();
   const words = useItemWords();
   const fmt = seriesFormat;
+  const labValueText = useLabValueText();
   const intl = resolveIntlLocale(locale);
   const { ref, width } = useElementWidth<HTMLDivElement>();
 
@@ -172,13 +175,24 @@ export function TimelineChart({
             window,
             lanes,
             series: timeline.series,
+            labSeries: timeline.labSeries,
             bucket: timeline.bucket,
             words,
             startMissing: t("timeline.startUnknown"),
             today,
           })
         : null,
-    [width, window, lanes, timeline.series, timeline.bucket, words, t, today],
+    [
+      width,
+      window,
+      lanes,
+      timeline.series,
+      timeline.labSeries,
+      timeline.bucket,
+      words,
+      t,
+      today,
+    ],
   );
 
   const floor = timeline.range.dataFrom ?? window.from;
@@ -266,6 +280,7 @@ export function TimelineChart({
               intl={intl}
               t={t}
               fmt={fmt}
+              labValueText={labValueText}
             />
           </svg>
         ) : (
@@ -301,6 +316,13 @@ export function TimelineChart({
         fmt={fmt}
         intl={intl}
       />
+      <LabSeriesTable
+        labSeries={timeline.labSeries}
+        window={window}
+        label={seriesLabel}
+        valueText={labValueText}
+        intl={intl}
+      />
     </div>
   );
 }
@@ -320,10 +342,23 @@ export function SeriesNameLinks({
   layout: NonNullable<ReturnType<typeof layoutTimeline>>;
   seriesLabel: (key: string) => string;
 }) {
+  // A lab line's name leads to its marker's page on the labs list.
+  const rows = [
+    ...layout.series.map((s) => ({
+      key: s.key,
+      top: s.top,
+      href: metricPageHref(s.key),
+    })),
+    ...layout.labSeries.map((s) => ({
+      key: s.key,
+      top: s.top,
+      href: `/labs/${encodeURIComponent(s.biomarkerId)}`,
+    })),
+  ];
   return (
     <>
-      {layout.series.map((series) => {
-        const href = metricPageHref(series.key);
+      {rows.map((series) => {
+        const href = series.href;
         if (!href) return null;
         return (
           <Link
@@ -360,6 +395,7 @@ interface ChartBodyProps {
   intl: string;
   t: ReturnType<typeof useTranslations>["t"];
   fmt: SeriesValueFormat;
+  labValueText: LabValueText;
 }
 
 function ChartBody({
@@ -375,6 +411,7 @@ function ChartBody({
   intl,
   t,
   fmt,
+  labValueText,
 }: ChartBodyProps) {
   const { scale, height, width } = layout;
   const todayInWindow = today >= window.from && today <= window.to;
@@ -409,30 +446,12 @@ function ChartBody({
       </defs>
 
       {noDataUntil !== null && (
-        <g data-slot="timeline-no-data">
-          <rect
-            x={scale.x0}
-            y={AXIS_HEIGHT}
-            width={Math.max(0, noDataUntil - scale.x0)}
-            height={height - AXIS_HEIGHT}
-            fill="var(--muted)"
-            opacity={0.4}
-          />
-          {wrapToWidth(
-            t("timeline.noDataYet"),
-            noDataUntil - scale.x0 - 12,
-          ).map((line, i, lines) => (
-            <text
-              key={line}
-              x={scale.x0 + 8}
-              y={height - 8 - (lines.length - 1 - i) * 13}
-              fontSize={11}
-              fill="var(--muted-foreground)"
-            >
-              {line}
-            </text>
-          ))}
-        </g>
+        <NoDataShade
+          x0={scale.x0}
+          until={noDataUntil}
+          height={height}
+          label={t("timeline.noDataYet")}
+        />
       )}
 
       {/* Grid and axis labels. */}
@@ -530,6 +549,16 @@ function ChartBody({
         fmt={fmt}
       />
 
+      {/* Lab lines (#1299): single readings, under the value lines. */}
+      <LabLines
+        layout={layout}
+        selectedBucket={selectedBucket}
+        bucket={bucket}
+        seriesLabel={seriesLabel}
+        seriesColor={seriesColor}
+        valueText={labValueText}
+      />
+
       {/* Today. */}
       {todayInWindow && (
         <g data-slot="timeline-today">
@@ -602,6 +631,46 @@ function ChartBody({
           )),
         )}
       </g>
+    </g>
+  );
+}
+
+/**
+ * The stretch before the record's first entry, shaded and named, so an empty
+ * start reads as "no data yet" and not as a quiet period.
+ */
+function NoDataShade({
+  x0,
+  until,
+  height,
+  label,
+}: {
+  x0: number;
+  until: number;
+  height: number;
+  label: string;
+}) {
+  return (
+    <g data-slot="timeline-no-data">
+      <rect
+        x={x0}
+        y={AXIS_HEIGHT}
+        width={Math.max(0, until - x0)}
+        height={height - AXIS_HEIGHT}
+        fill="var(--muted)"
+        opacity={0.4}
+      />
+      {wrapToWidth(label, until - x0 - 12).map((line, i, lines) => (
+        <text
+          key={line}
+          x={x0 + 8}
+          y={height - 8 - (lines.length - 1 - i) * 13}
+          fontSize={11}
+          fill="var(--muted-foreground)"
+        >
+          {line}
+        </text>
+      ))}
     </g>
   );
 }
@@ -961,156 +1030,6 @@ export function PointMark({
       <title>{title}</title>
       {glyph}
     </g>
-  );
-}
-
-/**
- * The chart as a table, for a screen reader: every entry with its lane and
- * dates. Visually hidden; the phone chronicle is the visible list form.
- */
-function TimelineTable({
-  timeline,
-  hiddenLanes,
-  intl,
-}: {
-  timeline: TimelineResponse;
-  hiddenLanes: ReadonlySet<TimelineLaneKey>;
-  intl: string;
-}) {
-  const { t } = useTranslations();
-  const words = useItemWords();
-  const rows = timeline.lanes
-    .filter((lane) => !hiddenLanes.has(lane.key))
-    .flatMap((lane) =>
-      (lane.key === "medications"
-        ? medicationListItems(lane.items)
-        : lane.items
-      ).map((item) => ({ lane: lane.key, item })),
-    )
-    .sort((a, b) => dayNumber(b.item.start) - dayNumber(a.item.start));
-  return (
-    // The table is hidden by a wrapper, never by `sr-only` on the table
-    // itself: `overflow: hidden` does not apply to a table box, so a
-    // visually hidden table still laid out its rows at full height under
-    // the page and made `<main>` scroll past its last card into nothing.
-    <div className="sr-only" data-slot="timeline-table-frame">
-      <table data-slot="timeline-table">
-        <caption>{t("timeline.table.caption")}</caption>
-        <thead>
-          <tr>
-            <th scope="col">{t("timeline.table.lane")}</th>
-            <th scope="col">{t("timeline.table.entry")}</th>
-            <th scope="col">{t("timeline.table.start")}</th>
-            <th scope="col">{t("timeline.table.end")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(({ lane, item }) => (
-            <tr key={`${lane}-${item.id}`}>
-              <td>{t(TIMELINE_LANE_LABEL_KEY[lane])}</td>
-              <td>{itemLine(item, words, t("timeline.startUnknown"))}</td>
-              <td>{formatAtPrecision(item.start, item.precision, intl)}</td>
-              <td>
-                {!item.open && isSpan(item) && item.end
-                  ? formatAtPrecision(item.end, item.precision, intl)
-                  : ""}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-/** "Januar 2026", "Jan bis März 2026", "5. Jan. bis 11. Jan. 2026". */
-export function bucketText(
-  start: string,
-  bucket: TimelineBucket,
-  intl: string,
-  t: ReturnType<typeof useTranslations>["t"],
-): string {
-  const label = formatBucket(start, bucket, intl);
-  return typeof label === "string"
-    ? label
-    : t("timeline.selection.range", label);
-}
-
-/**
- * The value lines as a table, for a screen reader: one row per bucket from
- * the first to the last with a reading in the window, one column per
- * series. A bucket without a reading says so; nothing is filled in.
- */
-function SeriesTable({
-  timeline,
-  window,
-  seriesLabel,
-  fmt,
-  intl,
-}: {
-  timeline: TimelineResponse;
-  window: { from: string; to: string };
-  seriesLabel: (key: string) => string;
-  fmt: SeriesValueFormat;
-  intl: string;
-}) {
-  const { t, tCount } = useTranslations();
-  const { bucket, series } = timeline;
-  const inWindow = (start: string) =>
-    start <= window.to && bucketAfter(start, bucket) > window.from;
-  const starts = series
-    .flatMap((s) => s.points.map((p) => p.t))
-    .filter(inWindow)
-    .sort();
-  if (starts.length === 0) return null;
-  const rows: string[] = [];
-  for (
-    let start = bucketStart(starts[0], bucket);
-    start <= starts[starts.length - 1];
-    start = bucketAfter(start, bucket)
-  ) {
-    rows.push(start);
-  }
-  const byKey = new Map(
-    series.map((s) => [s.key, new Map(s.points.map((p) => [p.t, p]))]),
-  );
-  return (
-    // The table is hidden by a wrapper, never by `sr-only` on the table
-    // itself: `overflow: hidden` does not apply to a table box, so a
-    // visually hidden table still laid out its rows at full height under
-    // the page and made `<main>` scroll past its last card into nothing.
-    <div className="sr-only" data-slot="timeline-series-table-frame">
-      <table data-slot="timeline-series-table">
-        <caption>{t("timeline.table.seriesCaption")}</caption>
-        <thead>
-          <tr>
-            <th scope="col">{t("timeline.table.period")}</th>
-            {series.map((s) => (
-              <th key={s.key} scope="col">
-                {seriesLabel(s.key)}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.reverse().map((start) => (
-            <tr key={start} data-bucket={start}>
-              <th scope="row">{bucketText(start, bucket, intl, t)}</th>
-              {series.map((s) => {
-                const point = byKey.get(s.key)?.get(start);
-                return (
-                  <td key={s.key}>
-                    {point
-                      ? `${formatSeriesValue(s.key, point.mean, s.unit, fmt)}, ${tCount("timeline.values.readings", point.count)}`
-                      : t("timeline.values.noValue")}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
   );
 }
 

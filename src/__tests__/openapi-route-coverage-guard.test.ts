@@ -225,6 +225,10 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
   // newer schema) an operator has to be able to look up the same way. See
   // `src/lib/openapi/routes/admin-backups.ts`.
   "/api/admin/backups/{id}/summary": { kind: "adminConsole", methods: ["GET"] },
+  "/api/admin/backups/targets/{userId}": {
+    kind: "adminConsole",
+    methods: ["GET"],
+  },
   "/api/admin/central-codex": {
     kind: "adminConsole",
     methods: ["DELETE", "GET"],

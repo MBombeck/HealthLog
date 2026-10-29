@@ -17,8 +17,10 @@ import { MeasurementType as MeasurementTypes } from "@/generated/prisma/enums";
 import type { MeasurementType } from "@/generated/prisma/enums";
 
 import {
+  capTimelineLabKeys,
   DAY_NOTABLE_MAX_SPAN_DAYS,
   TIMELINE_LANE_KEYS,
+  timelineLabMarkerId,
   type TimelineBucket,
   type TimelineItem,
   type TimelineQuery,
@@ -36,6 +38,10 @@ import {
   type StandingItem,
   type TimelineAccess,
 } from "@/lib/timeline/lanes";
+import {
+  loadAvailableLabMarkers,
+  loadLabSeries,
+} from "@/lib/timeline/lab-series";
 import { loadTimelineSeries, MOOD_SERIES_KEY } from "@/lib/timeline/series";
 import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { EVENT_MEASUREMENT_TYPES } from "@/lib/validations/measurement";
@@ -107,8 +113,15 @@ const MEASUREMENT_TYPE_SET: ReadonlySet<string> = new Set(
 /**
  * The series keys a `values` parameter names, or null when one is not a
  * series this API knows (the route answers 422). There is no cap on the
- * count: a name given twice counts once, so the list never grows past the
- * names that exist, and each series is its own row under the lanes.
+ * measurement names: a name given twice counts once, so the list never
+ * grows past the names that exist, and each series is its own row under the
+ * lanes. A lab marker (`lab:<biomarkerId>`, #1299) is checked for its shape
+ * only: whether the record has it is the loader's question, and the answer
+ * to a stale one is no line rather than an error. Marker ids are not a
+ * closed set, so their count is capped: the first
+ * `TIMELINE_LAB_SERIES_MAX` are kept and the rest left out. A refusal would
+ * be stored with the choice and fail the page on every visit, with the menu
+ * that could undo it never drawn.
  */
 export function parseSeriesKeys(raw: string | undefined): string[] | null {
   if (raw === undefined) return [...DEFAULT_TIMELINE_SERIES];
@@ -121,9 +134,10 @@ export function parseSeriesKeys(raw: string | undefined): string[] | null {
     ),
   ];
   for (const key of keys) {
+    if (timelineLabMarkerId(key) !== null) continue;
     if (key !== MOOD_SERIES_KEY && !MEASUREMENT_TYPE_SET.has(key)) return null;
   }
-  return keys;
+  return capTimelineLabKeys(keys);
 }
 
 /**
@@ -246,11 +260,16 @@ export async function loadTimeline(args: {
     standing.push(...reads[i].standing);
   });
 
+  const labIds = args.seriesKeys
+    .map(timelineLabMarkerId)
+    .filter((id): id is string => id !== null);
   const seriesKeys = args.seriesKeys.filter((key) =>
-    key === MOOD_SERIES_KEY
-      ? access.modules.mood !== false && access.domainVisible("mind")
-      : measurementsVisible &&
-        measurementTypeVisible(key as MeasurementType, access.modules),
+    timelineLabMarkerId(key) !== null
+      ? false
+      : key === MOOD_SERIES_KEY
+        ? access.modules.mood !== false && access.domainVisible("mind")
+        : measurementsVisible &&
+          measurementTypeVisible(key as MeasurementType, access.modules),
   );
   const priorityJson = measurementsVisible
     ? await loadUserSourcePriority(recordId)
@@ -260,30 +279,33 @@ export async function loadTimeline(args: {
       ? shiftDateKey(to, -(DAY_NOTABLE_MAX_SPAN_DAYS - 1))
       : from;
   const bucket = timelineBucket(query.zoom, from, to);
-  const [series, notable, availableSeries] = await Promise.all([
-    loadTimelineSeries({
-      userId: recordId,
-      keys: seriesKeys,
-      from,
-      to,
-      tz,
-      bucket,
-      priorityJson,
-      now,
-    }),
-    measurementsVisible
-      ? loadNotableRange({
-          userId: recordId,
-          from: notableFrom,
-          to,
-          tz,
-          priorityJson,
-          typeVisible: (t) => measurementTypeVisible(t, access.modules),
-          gaps: false,
-        })
-      : Promise.resolve([]),
-    loadAvailableSeries({ recordId, access }),
-  ]);
+  const [series, notable, availableSeries, labSeries, availableLabs] =
+    await Promise.all([
+      loadTimelineSeries({
+        userId: recordId,
+        keys: seriesKeys,
+        from,
+        to,
+        tz,
+        bucket,
+        priorityJson,
+        now,
+      }),
+      measurementsVisible
+        ? loadNotableRange({
+            userId: recordId,
+            from: notableFrom,
+            to,
+            tz,
+            priorityJson,
+            typeVisible: (t) => measurementTypeVisible(t, access.modules),
+            gaps: false,
+          })
+        : Promise.resolve([]),
+      loadAvailableSeries({ recordId, access }),
+      loadLabSeries({ recordId, ids: labIds, from, to, tz, access }),
+      loadAvailableLabMarkers({ recordId, access }),
+    ]);
 
   return {
     zoom: query.zoom,
@@ -293,6 +315,8 @@ export async function loadTimeline(args: {
     bucket,
     series,
     availableSeries,
+    labSeries,
+    availableLabs,
     notable: notable.map(({ date, kind }) => ({ date, kind })),
   };
 }

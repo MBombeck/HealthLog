@@ -20,7 +20,10 @@
  * above it, not in a box of its own. An entry's parts are joined by commas,
  * a period still open reads "since 3 Mar." (it needs no "ongoing"), and a
  * medication is one entry however many of its items touch the bucket
- * (`medicationPeriodItem`).
+ * (`medicationPeriodItem`). The chosen lab lines' readings in the bucket
+ * follow the means, each as measured, with its day where the bucket is
+ * longer than one, a word where it lies outside its range, and a link to the
+ * report it was read from (#1299).
  */
 import type { TimelineResponse } from "@/lib/day/contract";
 import { resolveIntlLocale } from "@/lib/format-locale";
@@ -38,6 +41,7 @@ import {
   formatMonthYear,
 } from "./timeline-dates";
 import { useItemWords } from "./item-words";
+import { LabReadingsLine, labReadingsIn, useLabValueText } from "./lab-lines";
 import { itemsInPeriod } from "./timeline-geometry";
 import { MEAN_PARTS_ROW, MeanPartsLine, laneDotStyle } from "./timeline-chart";
 import {
@@ -82,9 +86,12 @@ export function SelectionBar({
   const periodTo = dayKey(dayNumber(bucketAfter(periodFrom, bucket)) - 1);
   const entries = itemsInPeriod(timeline.lanes, periodFrom, periodTo, today);
   const means = bucketValues(timeline.series, timeline.bucket, selected);
+  const labReadings = labReadingsIn(timeline.labSeries, periodFrom, periodTo);
+  const labValueText = useLabValueText();
   // A bucket with a value but no entry is not empty: the means below say
   // what it holds, so "No entries" is kept for a stretch with nothing.
-  const hasValue = means.values.some((v) => v.mean !== null);
+  const hasValue =
+    means.values.some((v) => v.mean !== null) || labReadings.length > 0;
   // "Ø {values}": the words around the values, so the values can carry
   // their colour dots.
   const [meanBefore, meanAfter = ""] = t("timeline.selection.mean", {
@@ -216,6 +223,18 @@ export function SelectionBar({
             seriesColor={seriesColor}
           />
           {meanAfter ? <span>{meanAfter}</span> : null}
+        </span>
+      )}
+      {labReadings.length > 0 && (
+        <span className={MEAN_PARTS_ROW} data-slot="timeline-selection-labs">
+          <LabReadingsLine
+            readings={labReadings}
+            label={seriesLabel}
+            seriesColor={seriesColor}
+            valueText={labValueText}
+            showDate={bucket !== "day"}
+            intl={intl}
+          />
         </span>
       )}
     </div>

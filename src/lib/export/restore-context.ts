@@ -179,6 +179,11 @@ export interface RestoreContext {
   /** Declared inside the transaction, so a rollback takes the report with it. */
   readonly skips: RestoreSkipLog;
   readonly restoreInstanceSettings: boolean;
+  /**
+   * The copy was uploaded into this account from another account's file
+   * (`backup-upload-type.ts`); its settings are not the operator's word.
+   */
+  readonly retargeted: boolean;
   /** What the file's first read noted about its readings. */
   readonly measurementPrepass: MeasurementRestorePrepass;
   readonly links: RestoreLinks;

@@ -2,9 +2,10 @@
 
 HealthLog keeps copies of each account so that one account can be rolled back
 on this server. These copies are per account. They cannot rebuild a lost
-server: a restore writes into an account that already exists here under the
-same id, and refuses a copy whose account is gone. To recover a server, you
-need a database dump and the encryption keys. That procedure is in
+server: a restore writes into an account on this server, the one the copy
+belongs to, or, when that account has been erased, one you choose (see
+"Restoring an erased account"). To recover a server, you need a database dump
+and the encryption keys. That procedure is in
 [disaster-recovery.md](disaster-recovery.md).
 
 ## What exists
@@ -81,12 +82,74 @@ pnpm dlx tsx scripts/restore-backup.ts 2026-05-08/user-<id>.json.enc /tmp/restor
 ```
 
 Then upload `/tmp/restored.json` in Admin → Backups (up to 512 MB after
-compression) and restore it from its row. The account `<id>` must exist on this
-server.
+compression) and restore it from its row. When the account `<id>` no longer
+exists on this server, the upload offers to put the copy into another account
+(next section).
 
 Every restore, preview and upload checks first that this server holds every
 application key the copy's content was written under, and refuses with the key
 id named if not. Nothing is changed by a refused restore.
+
+### Restoring an erased account
+
+Once an account has been erased (its deletion window ended and the hourly purge
+ran), its copies on this server and in the bucket are gone, but a file you kept
+still holds the record: a disaster-recovery download, an off-host object you
+fetched before it expired, or the person's own full backup. Uploading it in
+Admin → Backups is refused at first, because the account it names no longer
+exists, and the console then asks where the records should go:
+
+- **A new account.** Type a username. The account is created without a
+  password or email, as an ordinary account with the user role, and nobody
+  can sign into it yet. Before handing it over, set its first password with
+  **Reset password** in Admin → Users; the person can change it, add an email
+  and enrol a passkey from their settings. The account is made before the
+  file is read, with an `admin.user.create` audit row (`outcome: "created"`),
+  and removed again when the file is refused, with an `admin.user.delete` row
+  (`reason: "backup_upload_refused"`). When that row says `outcome: "failed"`,
+  the removal did not happen and the account is left over, holding nothing:
+  delete it in Admin → Users.
+- **An existing account**, for someone who has signed up again. Pick the
+  account and type its username to confirm. The account must hold no records
+  yet: a restore replaces an account's records and does not merge them, so an
+  account with even one record of any kind a copy carries is refused, with the
+  kinds named. What signing up and the setup questions leave behind does not
+  count (the setup answers and the cycle settings): the restore replaces both
+  with the copy's. A reading or medication entered on setup's last screen is a
+  record, and the account is refused until it is deleted, because the restore
+  would delete it too. Managed profiles, accounts pending deletion and admin
+  accounts are not offered: an admin account is the operator's, its settings
+  are read under the operator's wider AI endpoint policy, and its role reaches
+  every account, so another person's record does not go into it.
+
+The file is then uploaded a second time, and its owner is changed to the chosen
+account as it is read. Nothing else in the file changes. The stored copy is
+then that account's copy in every respect but one: its preview, its download
+and its restore are the ordinary ones, and **Restore** on its row brings
+everything back under the chosen account. The one difference is that it is
+stored as `RETARGETED_UPLOAD_<time>` rather than `MANUAL_UPLOAD_<time>`, and its
+restore reads the file's settings as the file's author's, never as the
+operator's: an AI endpoint on a private address comes back only when this host
+grants it to ordinary accounts (`AI_PRIVATE_ORIGINS`), even if the account has
+been made an admin since. The erased account's id is not stored, not in
+the copy and not in the audit trail.
+
+A copy whose own account still exists on this server can only go back into
+that account; choosing a target for it is refused. The copy does not carry
+what a restore never touches (below), so a returning person signs in fresh,
+and the links of a managed profile to its guardians do not come back: a
+restored managed profile is an ordinary account.
+
+Once stored, the copy restores like any other: a restore run later, after the
+account has gained records, replaces those too.
+
+A file goes into one account only. Its records keep the ids they had in the
+erased account, so once it has been restored into one account, restoring the
+same file into a second account would write those ids twice. The upload still
+stores the second copy, but its restore is refused with
+`backup.restore.rows_exist_elsewhere` and rolled back, and nothing changes in
+either account. To move the record to another account, delete the first
+account (or its records) before restoring into the second.
 
 ### What a restore does not touch
 

@@ -190,6 +190,7 @@ export const RESTORE_STEPS: readonly RestoreStep[] = [
         ctx.tx,
         ctx.ownerId,
         ctx.payload,
+        { retargeted: ctx.retargeted },
       );
       for (const column of result.refused) {
         ctx.skips.push({ catalogue: "accountSetting", key: column, links: 1 });

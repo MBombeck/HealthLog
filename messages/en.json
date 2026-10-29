@@ -8217,7 +8217,7 @@
         "downloadFailed": "Download failed",
         "downloadStarted": "Download started",
         "uploadTitle": "Upload backup",
-        "uploadDescription": "Check an account copy and store it beside this server's copies. The account it belongs to must exist on this server. Restoring is a separate step.",
+        "uploadDescription": "Check an account copy and store it beside this server's copies. A copy whose account is no longer on this server can go into another account. Restoring is a separate step.",
         "uploadButton": "Upload file",
         "uploadHelp": "A HealthLog backup as .json or .json.gz. The file is compressed before upload; compressed, it may be up to 512 MB.",
         "uploadSuccess": "Backup uploaded ({count} records)",
@@ -8345,6 +8345,7 @@
         "restoreFailureUnexpected": "The restore stopped on an unexpected error and was rolled back. The server log names the error.",
         "restoreFailureKeyMissing": "The backup needs encryption key {keys}, which this server cannot open it with. Add the key back to ENCRYPTION_KEYS, restart, and start the restore again.",
         "restoreFailureForeignReference": "The file points at records that belong to another account. Nothing was written.",
+        "restoreFailureRowsElsewhere": "The records in this file are already in another account on this server: the same file was restored there before. A file can be restored into one account only. Nothing was written.",
         "previewKeyMissing": "This backup cannot be restored on this server: it needs encryption key {keys}. Add the key back to ENCRYPTION_KEYS and restart first.",
         "restoreSkippedSymptomEpisodeReference": "Symptom entry linked to an illness the file does not contain (kept without the link)",
         "restoreSkippedCycleCiphertext": "Cycle note or label sealed with a key this server does not hold (day or symptom kept without it)",
@@ -8376,7 +8377,33 @@
           "offhostLastUpload": "The newest dump in the bucket is from {when}.",
           "offhostNeverUploaded": "No database dump has reached the bucket yet."
         },
-        "restorePreWipeLimits": "This copy was taken before the account's data was deleted, and restoring it undoes that deletion as far as a copy can: whatever the account added since is replaced, and integration connections, sharing and Guardian access, and share links do not come back."
+        "restorePreWipeLimits": "This copy was taken before the account's data was deleted, and restoring it undoes that deletion as far as a copy can: whatever the account added since is replaced, and integration connections, sharing and Guardian access, and share links do not come back.",
+        "target": {
+          "title": "Restore into another account",
+          "description": "{file} belongs to an account that is no longer on this server. Choose the account its records go into. A restore replaces an account's records, so only an account without records can take them. The file is uploaded once more.",
+          "choiceLabel": "Where the records go",
+          "newAccount": "New account",
+          "existingAccount": "Existing account",
+          "usernameLabel": "Username for the new account",
+          "usernameInvalid": "3 to 30 letters, digits, _ or -, not starting with \"managed-\".",
+          "newAccountHint": "The account is created without a password or email. Before you hand it over, set its first password with Reset password under Users.",
+          "accountLabel": "Account",
+          "accountPlaceholder": "Choose an account",
+          "checking": "Checking the account…",
+          "eligible": "This account holds no records yet and can take the copy.",
+          "confirmLabel": "Type {username} to confirm",
+          "submit": "Upload into this account",
+          "submitting": "Uploading…",
+          "success": "Backup stored for {username} ({count} records). Restore it from its row.",
+          "failureHoldsRecords": "This account already holds records. A restore replaces records instead of adding to them, so choose an account without records or create a new one.",
+          "failureManagedProfile": "This account is a managed profile. The people who look after it run it, so a copy cannot go into it.",
+          "failurePendingDeletion": "This account is pending deletion. Undo the deletion first, or choose another account.",
+          "failureAdminAccount": "This is an admin account. Another person's records cannot go into it. Choose an ordinary account or create a new one.",
+          "failureNotFound": "This account no longer exists.",
+          "failureUnconfirmed": "Type the account's username exactly to confirm.",
+          "failureUsernameTaken": "This username is already taken.",
+          "failureOwnerExists": "The account this file belongs to is on this server, and the file restores into that account. Upload it again without choosing an account."
+        }
       },
       "danger-zone": {
         "title": "Danger zone",
@@ -13655,7 +13682,11 @@
       "start": "Start",
       "end": "End",
       "seriesCaption": "Value means by period",
-      "period": "Period"
+      "period": "Period",
+      "labsCaption": "Lab values by day",
+      "marker": "Marker",
+      "date": "Date",
+      "value": "Value"
     },
     "selection": {
       "empty": "No entries in this period",
@@ -13700,7 +13731,23 @@
       "labValuesOne": "1 lab value",
       "labValuesFew": "{count} lab values",
       "labValuesOther": "{count} lab values"
-    }
+    },
+    "labs": {
+      "menuTitle": "Lab values",
+      "otherPanel": "Other",
+      "full": "Up to {max} lab values at once. Remove one to add another.",
+      "above": "above range",
+      "below": "below range",
+      "reference": "reference {range}",
+      "report": "Report: {title}",
+      "reportUntitled": "Open the report",
+      "excludedOne": "{name}: {count} value in another unit is not drawn",
+      "excludedFew": "{name}: {count} values in another unit are not drawn",
+      "excludedOther": "{name}: {count} values in another unit are not drawn"
+    },
+    "legendLabValue": "Lab value, as measured",
+    "legendLabOutside": "Outside the reference range",
+    "legendLabRange": "Reference range"
   },
   "lifeEvents": {
     "title": "Life event",

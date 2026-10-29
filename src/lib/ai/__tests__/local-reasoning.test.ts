@@ -533,7 +533,7 @@ describe("local reasoning refusals the client must not learn from", () => {
     expect(body(mock, 1).reasoning_effort).toBe("low");
   });
 
-  it("sends the field again an hour after a refusal", async () => {
+  it("holds a refusal for a day, then sends the field again", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     try {
       const refusal = readFileSync(
@@ -550,9 +550,13 @@ describe("local reasoning refusals the client must not learn from", () => {
       const wanted = params({ reasoning: { effort: "low", summaries: true } });
       await client().generateCompletion(wanted);
       expect(body(mock, 1)).not.toHaveProperty("reasoning_effort");
+      // #1279: the hour cost one refused request per expiry.
       vi.advanceTimersByTime(60 * 60 * 1000);
       await client().generateCompletion(wanted);
-      expect(body(mock, 2).reasoning_effort).toBe("low");
+      expect(body(mock, 2)).not.toHaveProperty("reasoning_effort");
+      vi.advanceTimersByTime(23 * 60 * 60 * 1000);
+      await client().generateCompletion(wanted);
+      expect(body(mock, 3).reasoning_effort).toBe("low");
     } finally {
       vi.useRealTimers();
     }

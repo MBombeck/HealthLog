@@ -370,7 +370,7 @@ export const timelineQuerySchema = z
       .string()
       .optional()
       .describe(
-        "Comma-separated value series to include, as `MeasurementType` names or `MOOD`. A name given twice counts once, so the list is bounded by the names that exist; an unknown name answers 422.",
+        "Comma-separated value series to include, as `MeasurementType` names, `MOOD`, or a lab marker as `lab:<biomarkerId>` (see `availableLabs`). A name given twice counts once, so the list is bounded by the names that exist; an unknown measurement name or a malformed marker key answers 422. At most 24 lab markers are drawn (ids, unlike names, are not a closed set): the first 24 are kept and any further ones left out without an error. A lab marker that is not in the record (deleted, or another record's) is likewise left out of `labSeries`, so a stored choice never breaks the page.",
       ),
   })
   .refine((q) => q.zoom !== "range" || (q.from && q.to), {
@@ -466,6 +466,90 @@ const timelineSeries = z
   })
   .meta({ id: "TimelineSeries" });
 
+const labRangeStatus = z
+  .enum(["in-range", "below", "above", "unknown"])
+  .describe(
+    "The reading against `referenceLow` / `referenceHigh`, bounds inclusive; `unknown` when neither is known.",
+  );
+
+const timelineLabPoint = z
+  .object({
+    id: z.string().describe("The lab result's id."),
+    date: dateKeySchema.describe(
+      "The record's local day of the draw, the day `GET /api/day/{date}` lists it under.",
+    ),
+    value: z.number().describe("In the series' `unit`."),
+    sourceValue: z
+      .number()
+      .nullable()
+      .describe(
+        "The figure the report printed, when `value` was converted into the series' unit; it sets the precision `value` is shown with. Null for a reading stored as stated.",
+      ),
+    rangeStatus: labRangeStatus,
+    referenceLow: z
+      .number()
+      .nullable()
+      .describe(
+        "The window this reading is judged against, in the series' unit: the one its report printed, else the marker's own.",
+      ),
+    referenceHigh: z.number().nullable(),
+    report: z
+      .object({
+        id: z.string(),
+        title: z
+          .string()
+          .nullable()
+          .describe("The document's title, else its file name."),
+        href: z.string(),
+      })
+      .nullable()
+      .describe(
+        "The document the reading was read from, when one is linked and the caller may see documents.",
+      ),
+  })
+  .meta({ id: "TimelineLabPoint" });
+
+const timelineLabSeries = z
+  .object({
+    key: z.string().describe("`lab:<biomarkerId>`, as named in `values`."),
+    biomarkerId: z.string(),
+    name: z.string().describe("The marker's name, as the labs list shows it."),
+    panel: z.string().nullable(),
+    unit: z.string().describe("The marker's own unit; every point is in it."),
+    band: z
+      .object({ low: z.number().nullable(), high: z.number().nullable() })
+      .nullable()
+      .describe(
+        "The reference range to draw behind the points: the marker's own, else the window printed with its newest reading in the window. Null when neither is known.",
+      ),
+    points: z
+      .array(timelineLabPoint)
+      .describe(
+        "Every numeric reading in the window, oldest first, one point each: never averaged, never interpolated. A day with two readings has two points.",
+      ),
+    excluded: z
+      .number()
+      .int()
+      .min(0)
+      .describe(
+        "Readings in the window stored in a unit that does not convert into `unit`. They are left out of `points` rather than drawn on a scale they are not in.",
+      ),
+  })
+  .meta({ id: "TimelineLabSeries" });
+
+const timelineLabMarker = z
+  .object({
+    key: z.string().describe("`lab:<biomarkerId>`, to name in `values`."),
+    biomarkerId: z.string(),
+    name: z.string(),
+    panel: z
+      .string()
+      .nullable()
+      .describe("The marker's group, as the labs list shows it."),
+    unit: z.string(),
+  })
+  .meta({ id: "TimelineLabMarker" });
+
 export const timelineResponseSchema = z
   .object({
     zoom: z.enum(TIMELINE_ZOOMS),
@@ -495,6 +579,16 @@ export const timelineResponseSchema = z
       .array(z.string())
       .describe(
         "Every value series this record can show, whatever the window: the `MeasurementType` names with live readings that the caller may see (events excluded), and `MOOD` when the mood score is visible and has entries. Each may be named in `values`.",
+      ),
+    labSeries: z
+      .array(timelineLabSeries)
+      .describe(
+        "The lab markers named in `values`, in the order named, each with its single readings in the window. A marker named but not found in the record is left out.",
+      ),
+    availableLabs: z
+      .array(timelineLabMarker)
+      .describe(
+        "Every lab marker this record has a numeric reading for, whatever the window, when the caller may see labs. Each may be named in `values` by its `key`.",
       ),
     notable: z.array(
       z.object({ date: dateKeySchema, kind: z.enum(DAY_NOTABLE_KINDS) }),

@@ -19,7 +19,6 @@ import {
   itemsInPeriod,
   latestDataDate,
   layoutLane,
-  layoutSeries,
   layoutTimeline,
   stepSelection,
   todayLabelFits,
@@ -28,6 +27,7 @@ import {
   type LaneLayout,
   type TimelineLayout,
 } from "../timeline-geometry";
+import { layoutSeries } from "../series-geometry";
 import { itemLine } from "../item-words";
 import { dayNumber } from "../timeline-dates";
 import { TODAY, fullTimeline, item, wordsIn } from "./timeline-fixture";

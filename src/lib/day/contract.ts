@@ -425,6 +425,49 @@ export type TimelineResponse = z.infer<typeof timelineResponseSchema>;
 export type TimelineLane = TimelineResponse["lanes"][number];
 export type TimelineItem = TimelineLane["items"][number];
 export type TimelineSeries = TimelineResponse["series"][number];
+export type TimelineLabSeries = TimelineResponse["labSeries"][number];
+export type TimelineLabPoint = TimelineLabSeries["points"][number];
+export type TimelineLabMarker = TimelineResponse["availableLabs"][number];
+
+/**
+ * A lab marker's line is named in `values` as `lab:<biomarkerId>` (#1299),
+ * beside the measurement types and `MOOD`, so one choice, one request and
+ * one stored list carry every line under the lanes.
+ */
+export const TIMELINE_LAB_KEY_PREFIX = "lab:";
+
+/**
+ * The most lab markers one request draws. Measurement names are a closed
+ * set and bound themselves; marker ids are not.
+ */
+export const TIMELINE_LAB_SERIES_MAX = 24;
+
+/** The marker id a `values` entry names, or null when it names no marker. */
+export function timelineLabMarkerId(key: string): string | null {
+  if (!key.startsWith(TIMELINE_LAB_KEY_PREFIX)) return null;
+  const id = key.slice(TIMELINE_LAB_KEY_PREFIX.length);
+  return /^[A-Za-z0-9_-]{1,64}$/.test(id) ? id : null;
+}
+
+/**
+ * `keys` with every lab marker past the first `TIMELINE_LAB_SERIES_MAX` left
+ * out, everything else in its place. The server applies it to what it is
+ * asked for and the page to what it asks, so a stored list longer than the
+ * cap (another device, an older build) loads its first markers instead of
+ * failing the page.
+ */
+export function capTimelineLabKeys(keys: readonly string[]): string[] {
+  let labs = 0;
+  return keys.filter(
+    (key) =>
+      timelineLabMarkerId(key) === null || ++labs <= TIMELINE_LAB_SERIES_MAX,
+  );
+}
+
+/** The `values` entry for a lab marker. */
+export function timelineLabKey(biomarkerId: string): string {
+  return `${TIMELINE_LAB_KEY_PREFIX}${biomarkerId}`;
+}
 
 /** `GET /api/timeline/readiness` → `data`. */
 export type TimelineReadinessResponse = z.infer<

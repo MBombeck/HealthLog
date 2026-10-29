@@ -154,6 +154,7 @@ describe("Codex", () => {
   it("asks for no reasoning instead of the backend's default", async () => {
     const body = await sentBody(
       new CodexClient({
+        credentialKey: "user:test",
         accessToken: "t",
         accountId: "a",
         onTokenRefresh: vi.fn(),
@@ -175,6 +176,7 @@ describe("Codex", () => {
       ),
     );
     const err = await new CodexClient({
+      credentialKey: "user:test",
       accessToken: "t",
       accountId: "a",
       onTokenRefresh: vi.fn(),
@@ -202,6 +204,7 @@ describe("Codex", () => {
       ),
     );
     const err = await new CodexClient({
+      credentialKey: "user:test",
       accessToken: "t",
       accountId: "a",
       onTokenRefresh: vi.fn(),

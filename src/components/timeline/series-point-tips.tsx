@@ -23,6 +23,11 @@
  *
  * The card is placed above the point and kept inside the chart's width
  * (`tipLeft`), so it never adds a horizontal scroll of its own.
+ *
+ * A lab line's point (#1299) is one reading, not a mean: its card names the
+ * day of the draw, the value, whether it lies outside its reference range
+ * and the range itself, and the report it was read from. A tap pins the card
+ * with a link to that report beside "View the whole day".
  */
 import {
   useEffect,
@@ -30,13 +35,22 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type ReactNode,
 } from "react";
+import Link from "next/link";
 
-import { RichChartTooltip } from "@/components/charts/chart-tooltip";
+import {
+  RichChartTooltip,
+  type RichTooltipRow,
+} from "@/components/charts/chart-tooltip";
 import { TooltipDayAction } from "@/components/day/chart-day";
+import { InlineAction } from "@/components/ui/inline-action";
+import { resolveIntlLocale } from "@/lib/format-locale";
 import { useTranslations } from "@/lib/i18n/context";
 
+import { useLabReference, useLabValueText, useLabVerdict } from "./lab-lines";
 import { formatSeriesValue, type SeriesValueFormat } from "./series-format";
+import { formatDayMonthYear } from "./timeline-dates";
 import type { TimelineLayout } from "./timeline-geometry";
 
 /** Hit target across, in px: bigger than the dot, a comfortable aim. */
@@ -61,6 +75,21 @@ interface Active {
   pinned: boolean;
 }
 
+/** One point's target and card, a value line's or a lab line's alike. */
+interface TipPoint {
+  /** The point's id within its line: a bucket start, or a reading's id. */
+  t: string;
+  x: number;
+  y: number;
+  /** The day a second tap, Enter or a double click opens. */
+  day: string;
+  ariaLabel: string;
+  label: string;
+  row: RichTooltipRow;
+  /** Under the row: the report a reading came from. */
+  report: { href: string; text: string } | null;
+}
+
 export function SeriesPointTips({
   layout,
   today,
@@ -81,7 +110,6 @@ export function SeriesPointTips({
   onSelect: (date: string) => void;
   onOpenDay: (date: string) => void;
 }) {
-  const { tCount } = useTranslations();
   const [active, setActive] = useState<Active | null>(null);
   // Per line, the point that holds its one tab stop.
   const [stops, setStops] = useState<Record<string, string>>({});
@@ -115,21 +143,24 @@ export function SeriesPointTips({
     return () => document.removeEventListener("pointerdown", away);
   }, [pinned]);
 
-  // The first day of a point's stretch that has happened, the day it opens.
-  const dayOf = (t: string) => (t > today ? today : t);
+  const lines = useTipLines({
+    layout,
+    today,
+    seriesLabel,
+    seriesColor,
+    fmt,
+    bucketLabel,
+  });
 
-  const series = layout.series.find((s) => s.key === active?.key);
-  const point = series?.points.find((p) => p.t === active?.t);
-
-  const words = (key: string, t: string, mean: number, unit: string | null) =>
-    `${seriesLabel(key)}, ${bucketLabel(t)}: ${formatSeriesValue(key, mean, unit, fmt)}`;
+  const line = lines.find((l) => l.key === active?.key);
+  const point = line?.points.find((p) => p.t === active?.t);
 
   function move(
     event: KeyboardEvent<HTMLButtonElement>,
     key: string,
     index: number,
   ) {
-    const points = layout.series.find((s) => s.key === key)?.points ?? [];
+    const points = lines.find((l) => l.key === key)?.points ?? [];
     let next: number | null = null;
     if (event.key === "ArrowLeft") next = Math.max(0, index - 1);
     else if (event.key === "ArrowRight")
@@ -149,7 +180,7 @@ export function SeriesPointTips({
 
   return (
     <div data-slot="timeline-point-tips">
-      {layout.series.map((s) =>
+      {lines.map((s) =>
         s.points.map((p, i) => {
           const id = `${s.key}:${p.t}`;
           const stop = stops[s.key] ?? s.points.at(-1)?.t;
@@ -165,7 +196,7 @@ export function SeriesPointTips({
               data-series={s.key}
               data-t={p.t}
               tabIndex={p.t === stop ? 0 : -1}
-              aria-label={`${words(s.key, p.t, p.mean, s.unit)}, ${tCount("timeline.values.readings", p.count)}`}
+              aria-label={p.ariaLabel}
               onPointerDown={(event) => {
                 pointerType.current = event.pointerType;
                 event.stopPropagation();
@@ -189,7 +220,7 @@ export function SeriesPointTips({
                 event.stopPropagation();
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
-                  onOpenDay(dayOf(p.t));
+                  onOpenDay(p.day);
                   return;
                 }
                 move(event, s.key, i);
@@ -197,7 +228,7 @@ export function SeriesPointTips({
               onClick={(event) => {
                 event.stopPropagation();
                 if (pointerType.current === "mouse") {
-                  onSelect(dayOf(p.t));
+                  onSelect(p.day);
                   return;
                 }
                 // A tap shows the card; a second tap on the same point opens
@@ -207,14 +238,14 @@ export function SeriesPointTips({
                   active.key === s.key &&
                   active.t === p.t
                 ) {
-                  onOpenDay(dayOf(p.t));
+                  onOpenDay(p.day);
                   return;
                 }
                 setActive({ key: s.key, t: p.t, pinned: true });
               }}
               onDoubleClick={(event) => {
                 event.stopPropagation();
-                onOpenDay(dayOf(p.t));
+                onOpenDay(p.day);
               }}
               className="focus-visible:ring-ring/50 absolute rounded-full outline-none focus-visible:ring-2"
               style={{
@@ -227,11 +258,11 @@ export function SeriesPointTips({
           );
         }),
       )}
-      {series && point ? (
+      {line && point ? (
         <div
           ref={cardRef}
           data-slot="timeline-point-tip"
-          data-series={series.key}
+          data-series={line.key}
           data-t={point.t}
           className={
             active?.pinned
@@ -248,28 +279,141 @@ export function SeriesPointTips({
         >
           <RichChartTooltip
             active
-            label={bucketLabel(point.t)}
-            rows={[
-              {
-                name: seriesLabel(series.key),
-                value: formatSeriesValue(
-                  series.key,
-                  point.mean,
-                  series.unit,
-                  fmt,
-                ),
-                color: seriesColor(series.key),
-                delta: tCount("timeline.values.readings", point.count),
-              },
-            ]}
-            action={
-              active?.pinned ? (
-                <TooltipDayAction onOpen={() => onOpenDay(dayOf(point.t))} />
-              ) : undefined
-            }
+            label={point.label}
+            rows={[point.row]}
+            action={tipAction(point, active?.pinned ?? false, () =>
+              onOpenDay(point.day),
+            )}
           />
         </div>
       ) : null}
     </div>
   );
+}
+
+/**
+ * Under a card's row: a reading's report (a link once the card is pinned, its
+ * name while it only follows the pointer) and, pinned, the way into the day.
+ */
+function tipAction(
+  point: TipPoint,
+  pinned: boolean,
+  openDay: () => void,
+): ReactNode {
+  if (!point.report)
+    return pinned ? <TooltipDayAction onOpen={openDay} /> : undefined;
+  return (
+    <>
+      <div className="mt-1.5" data-slot="timeline-point-tip-report">
+        {pinned ? (
+          <InlineAction asChild tone="muted" size="xs">
+            <Link
+              href={point.report.href}
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              {point.report.text}
+            </Link>
+          </InlineAction>
+        ) : (
+          <span className="text-muted-foreground text-xs">
+            {point.report.text}
+          </span>
+        )}
+      </div>
+      {pinned ? <TooltipDayAction onOpen={openDay} /> : null}
+    </>
+  );
+}
+
+/**
+ * Every line's points as targets and cards, value lines first, then lab
+ * lines, in the order they are drawn: a value line's point names its bucket
+ * and the readings behind its mean, a lab line's point the day of its draw,
+ * its verdict, its range and its report.
+ */
+function useTipLines({
+  layout,
+  today,
+  seriesLabel,
+  seriesColor,
+  fmt,
+  bucketLabel,
+}: {
+  layout: TimelineLayout;
+  today: string;
+  seriesLabel: (key: string) => string;
+  seriesColor: (key: string) => string;
+  fmt: SeriesValueFormat;
+  bucketLabel: (t: string) => string;
+}): Array<{ key: string; points: TipPoint[] }> {
+  const { t: tr, tCount, locale } = useTranslations();
+  const intl = resolveIntlLocale(locale);
+  const verdict = useLabVerdict();
+  const labValueText = useLabValueText();
+  const reference = useLabReference();
+  // The first day of a point's stretch that has happened, the day it opens.
+  const dayOf = (t: string) => (t > today ? today : t);
+
+  const words = (key: string, t: string, mean: number, unit: string | null) =>
+    `${seriesLabel(key)}, ${bucketLabel(t)}: ${formatSeriesValue(key, mean, unit, fmt)}`;
+
+  return [
+    ...layout.series.map((s) => ({
+      key: s.key,
+      points: s.points.map((p) => ({
+        t: p.t,
+        x: p.x,
+        y: p.y,
+        day: dayOf(p.t),
+        ariaLabel: `${words(s.key, p.t, p.mean, s.unit)}, ${tCount("timeline.values.readings", p.count)}`,
+        label: bucketLabel(p.t),
+        row: {
+          name: seriesLabel(s.key),
+          value: formatSeriesValue(s.key, p.mean, s.unit, fmt),
+          color: seriesColor(s.key),
+          delta: tCount("timeline.values.readings", p.count),
+        },
+        report: null,
+      })),
+    })),
+    ...layout.labSeries.map((s) => ({
+      key: s.key,
+      points: s.points.map((p) => {
+        const value = labValueText(p.value, p.sourceValue, s.unit);
+        const detail = [verdict(p.rangeStatus), reference(p, s.unit)]
+          .filter(Boolean)
+          .join(", ");
+        const report = p.report
+          ? {
+              href: p.report.href,
+              text: p.report.title
+                ? tr("timeline.labs.report", { title: p.report.title })
+                : tr("timeline.labs.reportUntitled"),
+            }
+          : null;
+        const date = formatDayMonthYear(p.date, intl);
+        return {
+          t: p.id,
+          x: p.x,
+          y: p.y,
+          day: dayOf(p.date),
+          ariaLabel: [
+            `${seriesLabel(s.key)}, ${date}: ${value}`,
+            detail,
+            report?.text,
+          ]
+            .filter(Boolean)
+            .join(", "),
+          label: date,
+          row: {
+            name: seriesLabel(s.key),
+            value,
+            color: seriesColor(s.key),
+            ...(detail ? { delta: detail } : {}),
+          },
+          report,
+        };
+      }),
+    })),
+  ];
 }
