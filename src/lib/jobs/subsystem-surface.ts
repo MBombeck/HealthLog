@@ -120,6 +120,7 @@ const subsystemSurface = {
   "health-connect-import": { audience: "account" },
   "compaction-tombstone-purge": { audience: "system" },
   "measurement-fold-repair": { audience: "system" },
+  "lab-document-date-repair": { audience: "system" },
   "measurement-maintenance": { audience: "system" },
   "pulse-day-mean": { audience: "system" },
   "medication-intake-import": { audience: "system" },

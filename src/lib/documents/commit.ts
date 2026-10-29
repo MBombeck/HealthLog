@@ -66,7 +66,7 @@ export interface CommittedRecordRef {
 }
 
 /** A stated day, or null when it is not a real calendar date. */
-function statedDay(date: string | null): string | null {
+export function statedDay(date: string | null): string | null {
   return date && isCalendarDateKey(date) ? date : null;
 }
 
@@ -97,7 +97,7 @@ export interface FactDocumentDates {
  * no date beside each value, and every reading used to be filed under the day
  * it was confirmed.
  */
-function documentDay(dates: FactDocumentDates | null): string | null {
+export function documentDay(dates: FactDocumentDates | null): string | null {
   const day = dates?.reportDate ?? dates?.documentDate ?? null;
   return day ? dateOnlyKey(day) : null;
 }

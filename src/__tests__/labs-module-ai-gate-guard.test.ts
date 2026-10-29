@@ -65,6 +65,8 @@ const NOT_MODEL_INPUT: Record<string, string> = {
     "links stored rows to their biomarker; no model is involved",
   "src/lib/jobs/lab-biomarker-backfill.ts#enqueueBootTimeLabBiomarkerBackfill":
     "finds the accounts whose rows need linking; no model is involved",
+  "src/lib/jobs/lab-document-date-repair.ts#candidateQuery":
+    "finds document lab values filed at their confirmation moment to re-date them; no model is involved",
   "src/lib/jobs/soft-delete-retention.ts#SOFT_DELETE_RETENTION":
     "purges rows past the trash window; no model is involved",
   "src/lib/insights/correlation-channel-series.ts#fetchLabDraws":
