@@ -36,6 +36,7 @@ import {
   type MeasurementReconciliationVerdict,
 } from "@/lib/measurements/reconcile-external-measurement";
 import { dropImplausibleMeasurements } from "@/lib/measurements/plausibility-gate";
+import { withoutFoldedSamples } from "@/lib/measurements/folded-window";
 import { emitInsertedMeasurementArrivals } from "@/lib/arrivals/measurement-emit";
 import { recordSyncFailure, type FailureKind } from "@/lib/integrations/status";
 import { collapseToTypeDayKeys } from "@/lib/rollups/measurement-rollups";
@@ -1128,7 +1129,7 @@ export async function upsertGoogleHealthMeasurements(
   // before they can become rows. A refused reading is dropped and tallied on
   // the ambient event, never clamped and never written for a later reader to
   // discover.
-  const { kept: readings, dropped: naturalKeyTwins } = collapseNaturalKeyTwins(
+  const { kept: collapsed, dropped: naturalKeyTwins } = collapseNaturalKeyTwins(
     dropImplausibleMeasurements("googleHealth", incoming, (r) => ({
       type: r.type,
       value: r.value,
@@ -1137,14 +1138,18 @@ export async function upsertGoogleHealthMeasurements(
   if (naturalKeyTwins > 0) {
     annotate({ meta: { "googleHealth.naturalKeyTwins": naturalKeyTwins } });
   }
+  // A sample of an hour the dense fold already took is not written again.
+  const { kept: readings } = await withoutFoldedSamples(
+    prisma,
+    userId,
+    "GOOGLE_HEALTH",
+    collapsed,
+  );
   if (readings.length === 0) return { imported: 0, touched: [], inserted: [] };
 
   // Probe EVERY existing row (live AND tombstoned) for the batch's externalIds
-  // in a single query. The full unique index guarantees at most one row per
-  // `(type, externalId)` key, and a tombstoned match must take the UPDATE
-  // branch (which clears `deletedAt`) — treating it as absent would plan an
-  // insert that `skipDuplicates` silently drops against the tombstone's key,
-  // permanently wedging the key (see TOMBSTONES RESURRECT above).
+  // in one query: a tombstoned match must take the UPDATE branch, or the
+  // insert is silently dropped against its key (see TOMBSTONES RESURRECT).
   const externalIds = readings.map((r) => r.externalId);
   interface ProbedRow {
     id: string;
@@ -1162,10 +1167,8 @@ export async function upsertGoogleHealthMeasurements(
         source: "GOOGLE_HEALTH",
         externalId: { in: externalIds },
       },
-      // The payload fields ride along so the update branch can skip a no-op
-      // overwrite: the 24 h overlap re-fetches every recent row hourly, and an
-      // unconditional write would bump `syncVersion` (iOS delta churn) on rows
-      // whose values did not change.
+      // The payload rides along so the update branch can skip a no-op
+      // overwrite (the hourly 24 h overlap would bump `syncVersion` for nothing).
       select: {
         id: true,
         type: true,
@@ -1193,9 +1196,8 @@ export async function upsertGoogleHealthMeasurements(
         ]),
     );
   } catch (err) {
-    // A probe failure must not strand the whole batch; fall back to treating
-    // every row as fresh (`skipDuplicates` absorbs the collision on the full
-    // unique index — those rows simply retry on the next sync tick).
+    // A probe failure must not strand the batch: every row is treated as
+    // fresh, and `skipDuplicates` absorbs the collisions until the next tick.
     getEvent()?.addWarning(`google-health: row probe failed: ${err}`);
   }
 
@@ -1225,11 +1227,9 @@ export async function upsertGoogleHealthMeasurements(
     const key = `${type} ${r.externalId}`;
     const existingRow = rowByKey.get(key);
     if (existingRow) {
-      // Skip the no-op overwrite: a LIVE row whose payload matches the
-      // re-fetched reading exactly gains nothing from a write, and the
-      // unconditional `syncVersion` bump churned the DB + every iOS delta pull
-      // hourly for the whole 24 h overlap window. A TOMBSTONED row always
-      // updates — the write is what resurrects it (`deletedAt: null`).
+      // Skip the no-op overwrite of a LIVE row whose payload matches exactly
+      // (it would churn `syncVersion` and every iOS delta pull). A TOMBSTONED
+      // row always updates: the write is what resurrects it.
       const unchanged =
         existingRow.deletedAt === null &&
         existingRow.value === r.value &&

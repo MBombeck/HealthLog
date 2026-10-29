@@ -116,12 +116,11 @@ import {
   hourOfDayForUserTz,
 } from "@/lib/measurements/consolidation-tz";
 import {
-  DENSE_INTRADAY_FOLD_SOURCES,
   DENSE_INTRADAY_RETENTION_DAYS,
-  DENSE_INTRADAY_RETENTION_TYPES,
   deriveDailyRestingFromPulse,
   hourlyStatsExternalId,
 } from "@/lib/measurements/dense-intraday-retention";
+import { DENSE_INTRADAY_RETENTION_TYPES } from "@/lib/measurements/dense-intraday-sources";
 import {
   absorbIntoFold,
   foldConstituentHorizon,
@@ -160,6 +159,9 @@ interface RepairStep {
   foldedAfterMs: number;
 }
 
+/** Sources the dense fold took when this repair was written; later ones never split a window. */
+const REPAIRED_DENSE_SOURCES = ["APPLE_HEALTH", "HEALTH_CONNECT"] as const;
+
 /** Fixed order, so a resume position (`step`) means the same on every run. */
 export const FOLD_REPAIR_STEPS: readonly RepairStep[] = [
   ...[...HIGH_FREQUENCY_MEAN_TYPES].map((type): RepairStep => ({
@@ -168,7 +170,7 @@ export const FOLD_REPAIR_STEPS: readonly RepairStep[] = [
     grain: "day",
     foldedAfterMs: CONSOLIDATION_GRACE_CUTOFF_HOURS * HOUR_MS,
   })),
-  ...DENSE_INTRADAY_FOLD_SOURCES.flatMap((source) =>
+  ...REPAIRED_DENSE_SOURCES.flatMap((source) =>
     [...DENSE_INTRADAY_RETENTION_TYPES].map((type): RepairStep => ({
       type,
       source,

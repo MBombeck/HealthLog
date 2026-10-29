@@ -21,8 +21,8 @@ vi.mock("@/lib/rollups/measurement-rollups", () => ({
 import {
   runDenseIntradayRetention,
   DENSE_INTRADAY_RETENTION_DAYS,
-  DENSE_INTRADAY_RETENTION_TYPES,
 } from "../dense-intraday-retention";
+import { DENSE_INTRADAY_RETENTION_TYPES } from "../dense-intraday-sources";
 import type { PerSampleRow } from "../drain-per-sample-cumulative";
 import { foldBoundary } from "../consolidation-tz";
 import type { MeasurementType, PrismaClient } from "@/generated/prisma/client";
@@ -161,7 +161,7 @@ describe("runDenseIntradayRetention — retention bound", () => {
     }
   });
 
-  it("scans exactly the dense-tier types, once per fold source, Apple Health first", async () => {
+  it("scans each fold source's dense types, once per source, Apple Health first", async () => {
     const { mock, findManyMeasurement } = buildPrismaMock({});
     await runDenseIntradayRetention(mock, { log: () => {} });
 
@@ -172,9 +172,13 @@ describe("runDenseIntradayRetention — retention bound", () => {
     const types = Array.from(DENSE_INTRADAY_RETENTION_TYPES);
     // One walk per source, each scoped to its one source: two sources
     // never share a mean, and manual or Withings rows are never scanned.
+    // The provider syncs fold only what they store sample by sample: heart
+    // rate, never their daily SpO2 (#1297).
     expect(scans).toEqual([
       ...types.map((type) => `APPLE_HEALTH:${type}`),
       ...types.map((type) => `HEALTH_CONNECT:${type}`),
+      "GOOGLE_HEALTH:PULSE",
+      "OURA:PULSE",
     ]);
   });
 });
