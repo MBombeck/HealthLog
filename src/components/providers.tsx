@@ -21,6 +21,7 @@ import { VersionPoller } from "@/components/version-poller";
 import { ServiceWorkerRegistrar } from "@/components/service-worker-registrar";
 import { SharedRecordGrantLossBridge } from "@/components/layout/shared-record-grant-loss-bridge";
 import { RecordSessionFenceBridge } from "@/components/layout/record-session-fence-bridge";
+import { OidcReproofReturnBridge } from "@/components/auth/oidc-reproof-return";
 import { useAuth, type AccountAccessStatus } from "@/hooks/use-auth";
 import { useRecordSessionTransition } from "@/hooks/use-record-session-transition";
 import { isDashboardSnapshotEnabled } from "@/lib/dashboard/snapshot-flag";
@@ -432,6 +433,7 @@ export function Providers({
               in its own account, rather than asking every call site to. */}
           <SharedRecordGrantLossBridge />
           <RecordSessionFenceBridge />
+          <OidcReproofReturnBridge />
           {children}
           <AppToaster />
           <KeyboardInsetBridge />

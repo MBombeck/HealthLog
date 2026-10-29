@@ -6237,14 +6237,17 @@
         "password": "Senha",
         "totp": "Código do autenticador",
         "passkey": "Chave de acesso",
-        "webauthn": "Chave de segurança"
+        "webauthn": "Chave de segurança",
+        "oidc": "Provedor de identidade"
       },
       "currentPassword": "Senha atual",
       "authenticatorCode": "Código do autenticador",
       "authenticatorPlaceholder": "Código do autenticador de 6 dígitos",
       "verifyAndAdd": "Verificar e adicionar",
       "factorDescription": "Verifique um método de entrada existente antes de adicionar um segundo fator.",
-      "verifyAndContinue": "Verificar e continuar"
+      "verifyAndContinue": "Verificar e continuar",
+      "oidcHint": "Você entra mais uma vez no seu provedor de identidade e volta direto para esta página. Depois, repita o que ia fazer.",
+      "continueToProvider": "Continuar para o login"
     },
     "passkeyName": "Nome",
     "noPasskeys": "Nenhuma chave de acesso registrada.",
@@ -7517,7 +7520,9 @@
       "description": "Isto compartilha ou exporta os seus dados de saúde. Confirme que é você para continuar.",
       "descriptionChange": "Isto altera algo que só você deveria poder alterar. Confirme que é você para continuar.",
       "signInAgain": "Entre novamente e tente mais uma vez. Sua conta não tem senha nem chave de acesso para confirmar aqui.",
-      "failed": "Não deu certo. Confira o que você digitou e tente de novo."
+      "failed": "Não deu certo. Confira o que você digitou e tente de novo.",
+      "oidcDone": "Confirmado. Nos próximos cinco minutos você pode continuar sem que isso seja pedido de novo.",
+      "oidcFailed": "Seu provedor de identidade não conseguiu confirmar que é você. Tente novamente."
     },
     "passwordTitle": "Senha",
     "tokenNameLabel": "Nome do token",

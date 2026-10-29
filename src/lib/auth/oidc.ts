@@ -244,6 +244,13 @@ export function buildAuthorizationUrl(params: {
    * keyboard now, not a session someone else left open in this browser.
    */
   forceLogin?: boolean;
+  /**
+   * Ask the provider to authenticate afresh AND to say when it did: `prompt=login`
+   * plus `max_age=0` (OpenID Connect Core 3.1.2.1). With `max_age` in the
+   * request the ID token must carry `auth_time`, which is what the re-proof
+   * leg checks before it counts the round trip as a proof.
+   */
+  reauthenticate?: boolean;
 }): string {
   const url = new URL(params.metadata.authorization_endpoint);
   url.search = new URLSearchParams({
@@ -255,7 +262,8 @@ export function buildAuthorizationUrl(params: {
     nonce: params.nonce,
     code_challenge: params.codeChallenge,
     code_challenge_method: "S256",
-    ...(params.forceLogin ? { prompt: "login" } : {}),
+    ...(params.forceLogin || params.reauthenticate ? { prompt: "login" } : {}),
+    ...(params.reauthenticate ? { max_age: "0" } : {}),
   }).toString();
   return url.toString();
 }
@@ -304,6 +312,12 @@ export interface OidcIdentity {
   email: string | null;
   emailVerified: boolean | undefined;
   name: string | null;
+  /**
+   * When the provider last authenticated the person (`auth_time`, seconds
+   * since the epoch), or null when the token does not say. Only the re-proof
+   * leg reads it, and it refuses a null.
+   */
+  authTime: number | null;
 }
 
 /**
@@ -350,6 +364,11 @@ export async function verifyIdToken(params: {
         ? payload.email_verified
         : undefined,
     name: typeof payload.name === "string" ? payload.name : null,
+    authTime:
+      typeof payload.auth_time === "number" &&
+      Number.isFinite(payload.auth_time)
+        ? payload.auth_time
+        : null,
   };
 }
 

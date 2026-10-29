@@ -6237,14 +6237,17 @@
         "password": "Password",
         "totp": "Codice dell’app di autenticazione",
         "passkey": "Passkey",
-        "webauthn": "Chiave di sicurezza"
+        "webauthn": "Chiave di sicurezza",
+        "oidc": "Provider di identità"
       },
       "currentPassword": "Password attuale",
       "authenticatorCode": "Codice dell’app di autenticazione",
       "authenticatorPlaceholder": "Codice a 6 cifre dell’app di autenticazione",
       "verifyAndAdd": "Verifica e aggiungi",
       "factorDescription": "Verifica un metodo di accesso esistente prima di aggiungere un secondo fattore.",
-      "verifyAndContinue": "Verifica e continua"
+      "verifyAndContinue": "Verifica e continua",
+      "oidcHint": "Accedi di nuovo presso il tuo provider di identità e torni subito a questa pagina. Poi ripeti quello che stavi per fare.",
+      "continueToProvider": "Continua all'accesso"
     },
     "passkeyName": "Nome",
     "noPasskeys": "Nessuna passkey registrata.",
@@ -7517,7 +7520,9 @@
       "description": "Questa azione condivide o esporta i tuoi dati sanitari. Conferma che sei tu per continuare.",
       "descriptionChange": "Questo modifica qualcosa che solo tu dovresti poter modificare. Conferma che sei tu per continuare.",
       "signInAgain": "Accedi di nuovo, poi riprova. Il tuo account non ha una password o una passkey da confermare qui.",
-      "failed": "Non ha funzionato. Controlla quanto inserito e riprova."
+      "failed": "Non ha funzionato. Controlla quanto inserito e riprova.",
+      "oidcDone": "Confermato. Per i prossimi cinque minuti puoi procedere senza che ti venga chiesto di nuovo.",
+      "oidcFailed": "Il tuo provider di identità non ha potuto confermare che sei tu. Riprova."
     },
     "passwordTitle": "Password",
     "tokenNameLabel": "Nome del token",

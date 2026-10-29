@@ -20,6 +20,7 @@ interface MfaStatus {
   recoveryCodesRemaining: number;
   webauthn: WebauthnKeyInfo[];
   passkeyNudgeDismissed: boolean;
+  proofMethods: string[];
 }
 
 interface PasskeyInfo {
@@ -71,7 +72,10 @@ export function SecuritySection() {
             totpEnabled={status.totp.enabled}
           />
 
-          <PasskeyListSection isAuthenticated={isAuthenticated} />
+          <PasskeyListSection
+            isAuthenticated={isAuthenticated}
+            proofMethods={status.proofMethods}
+          />
         </>
       )}
 

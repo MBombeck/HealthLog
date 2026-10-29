@@ -6237,14 +6237,17 @@
         "password": "Mot de passe",
         "totp": "Code d’authentification",
         "passkey": "Clé d’accès",
-        "webauthn": "Clé de sécurité"
+        "webauthn": "Clé de sécurité",
+        "oidc": "Fournisseur d'identité"
       },
       "currentPassword": "Mot de passe actuel",
       "authenticatorCode": "Code d’authentification",
       "authenticatorPlaceholder": "Code d’authentification à 6 chiffres",
       "verifyAndAdd": "Vérifier et ajouter",
       "factorDescription": "Vérifiez une méthode de connexion existante avant d'ajouter un second facteur.",
-      "verifyAndContinue": "Vérifier et continuer"
+      "verifyAndContinue": "Vérifier et continuer",
+      "oidcHint": "Vous vous reconnectez auprès de votre fournisseur d'identité et revenez directement sur cette page. Refaites ensuite ce que vous étiez en train de faire.",
+      "continueToProvider": "Continuer vers la connexion"
     },
     "passkeyName": "Nom",
     "noPasskeys": "Aucune clé d’accès enregistrée.",
@@ -7517,7 +7520,9 @@
       "description": "Cette action partage ou exporte vos données de santé. Confirmez qu'il s'agit bien de vous pour continuer.",
       "descriptionChange": "Cela modifie quelque chose que vous seul devriez pouvoir modifier. Confirmez qu'il s'agit bien de vous pour continuer.",
       "signInAgain": "Reconnectez-vous, puis réessayez. Votre compte n'a ni mot de passe ni clé d'accès à confirmer ici.",
-      "failed": "Cela n'a pas fonctionné. Vérifiez votre saisie et réessayez."
+      "failed": "Cela n'a pas fonctionné. Vérifiez votre saisie et réessayez.",
+      "oidcDone": "C'est confirmé. Pendant les cinq prochaines minutes, vous pouvez continuer sans qu'on vous le redemande.",
+      "oidcFailed": "Votre fournisseur d'identité n'a pas pu confirmer que c'est bien vous. Réessayez."
     },
     "passwordTitle": "Mot de passe",
     "tokenNameLabel": "Nom du jeton",

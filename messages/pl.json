@@ -6237,14 +6237,17 @@
         "password": "Hasło",
         "totp": "Kod z aplikacji uwierzytelniającej",
         "passkey": "Klucz dostępu",
-        "webauthn": "Klucz bezpieczeństwa"
+        "webauthn": "Klucz bezpieczeństwa",
+        "oidc": "Dostawca tożsamości"
       },
       "currentPassword": "Aktualne hasło",
       "authenticatorCode": "Kod z aplikacji uwierzytelniającej",
       "authenticatorPlaceholder": "6-cyfrowy kod z aplikacji uwierzytelniającej",
       "verifyAndAdd": "Zweryfikuj i dodaj",
       "factorDescription": "Potwierdź istniejącą metodę logowania, zanim dodasz drugi składnik.",
-      "verifyAndContinue": "Potwierdź i kontynuuj"
+      "verifyAndContinue": "Potwierdź i kontynuuj",
+      "oidcHint": "Zalogujesz się jeszcze raz u swojego dostawcy tożsamości i wrócisz od razu na tę stronę. Potem powtórz to, co chcesz zrobić.",
+      "continueToProvider": "Przejdź do logowania"
     },
     "passkeyName": "Nazwa",
     "noPasskeys": "Brak zarejestrowanych kluczy dostępu.",
@@ -7517,7 +7520,9 @@
       "description": "Ta czynność udostępnia lub eksportuje Twoje dane zdrowotne. Potwierdź, że to Ty, aby kontynuować.",
       "descriptionChange": "To zmienia coś, co tylko Ty powinieneś móc zmienić. Potwierdź, że to Ty, aby kontynuować.",
       "signInAgain": "Zaloguj się ponownie, a potem spróbuj jeszcze raz. Twoje konto nie ma hasła ani klucza dostępu do potwierdzenia tutaj.",
-      "failed": "To się nie udało. Sprawdź wprowadzone dane i spróbuj ponownie."
+      "failed": "To się nie udało. Sprawdź wprowadzone dane i spróbuj ponownie.",
+      "oidcDone": "Potwierdzono. Przez następne pięć minut możesz kontynuować bez ponownego pytania.",
+      "oidcFailed": "Twój dostawca tożsamości nie mógł potwierdzić, że to Ty. Spróbuj ponownie."
     },
     "passwordTitle": "Hasło",
     "tokenNameLabel": "Nazwa tokena",

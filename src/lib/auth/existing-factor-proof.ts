@@ -29,6 +29,7 @@ import {
 import {
   hasSecondFactorEnrolled,
   recentProofMethods,
+  type RecentProofMethod,
 } from "@/lib/auth/second-factor";
 import { verifyPassword } from "@/lib/auth/password";
 import { verifyAuthentication } from "@/lib/auth/passkey";
@@ -171,7 +172,7 @@ export async function recordReproofFailure(
   userId: string,
   ipAddress: string | null,
   stage: string,
-  method: ExistingFactorProof["method"],
+  method: RecentProofMethod,
   reason: string,
 ): Promise<void> {
   await auditLog("auth.mfa.failed", {

@@ -6237,14 +6237,17 @@
         "password": "Password",
         "totp": "Authenticator code",
         "passkey": "Passkey",
-        "webauthn": "Security key"
+        "webauthn": "Security key",
+        "oidc": "Identity provider"
       },
       "currentPassword": "Current password",
       "authenticatorCode": "Authenticator code",
       "authenticatorPlaceholder": "6-digit authenticator code",
       "verifyAndAdd": "Verify and add",
       "factorDescription": "Verify an existing sign-in method before adding a second factor.",
-      "verifyAndContinue": "Verify and continue"
+      "verifyAndContinue": "Verify and continue",
+      "oidcHint": "You sign in once more at your identity provider and come straight back to this page. Then do what you were about to do again.",
+      "continueToProvider": "Continue to sign-in"
     },
     "passkeyName": "Name",
     "noPasskeys": "No passkeys registered.",
@@ -7517,7 +7520,9 @@
       "description": "This shares or exports your health data. Confirm it's you to continue.",
       "descriptionChange": "This changes something only you should be able to change. Confirm it's you to continue.",
       "signInAgain": "Sign in again, then try once more. Your account has no password or passkey to confirm here.",
-      "failed": "That did not work. Check what you entered and try again."
+      "failed": "That did not work. Check what you entered and try again.",
+      "oidcDone": "Confirmed. For the next five minutes you can go ahead without being asked again.",
+      "oidcFailed": "Your identity provider could not confirm it's you. Try again."
     },
     "passwordTitle": "Password",
     "tokenNameLabel": "Token name",

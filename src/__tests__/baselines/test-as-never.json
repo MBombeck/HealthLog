@@ -1,7 +1,7 @@
 {
   "$comment": "as never casts in tests, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
-  "count": 524,
-  "total": 5488,
+  "count": 523,
+  "total": 5483,
   "entries": {
     "__tests__/api/auth/login/mfa-branch.test.ts": 10,
     "__tests__/api/auth/mfa/verify.test.ts": 9,
@@ -337,7 +337,6 @@
     "lib/auth/__tests__/mfa-enrollment.test.ts": 8,
     "lib/auth/__tests__/native-handoff-flow.test.ts": 10,
     "lib/auth/__tests__/oidc-native-handoff.test.ts": 13,
-    "lib/auth/__tests__/oidc.test.ts": 5,
     "lib/auth/__tests__/passkey.test.ts": 7,
     "lib/auth/__tests__/profile-update-email-limit.test.ts": 5,
     "lib/auth/__tests__/profile-update.test.ts": 4,

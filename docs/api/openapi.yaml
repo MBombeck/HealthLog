@@ -2481,10 +2481,13 @@ paths:
 
         The body takes the same shapes as POST /api/auth/step-up. On an account with a second factor only `totp`,
         `webauthn` (a security key) or `passkey` are accepted, because a password has never stood in for the second
-        factor; on one without, `password` or `passkey`. A method the account cannot use here is refused with 422
-        `auth.reproof.too_weak` and `meta.methods`, before any guess is spent. A second-factor or passkey proof also
-        refreshes the session's second-factor stamp, exactly as signing in again would. Assertions begin at POST
-        /api/auth/passkey/register-options with `{ method: "passkey" | "webauthn" }`.
+        factor; on one without, `password` or `passkey`. An account without a second factor whose identity is linked to
+        the configured identity provider is also offered `oidc` in `meta.methods`; that proof is not posted here but
+        given by the browser round trip GET /api/auth/oidc/reproof, which stamps the session exactly as a password proof
+        does. A method the account cannot use here is refused with 422 `auth.reproof.too_weak` and `meta.methods`,
+        before any guess is spent. A second-factor or passkey proof also refreshes the session's second-factor stamp,
+        exactly as signing in again would. Assertions begin at POST /api/auth/passkey/register-options with `{ method:
+        "passkey" | "webauthn" }`.
 
 
         Proofs draw on the account's shared re-proof budget (five per fifteen minutes, 429 once spent). A proof that
@@ -4077,7 +4080,9 @@ paths:
 
         **Enrollment arm.** Any other body must be a full factor proof (the same shape POST /api/auth/step-up takes): a
         password, a TOTP code, or a completed passkey / security-key assertion. Only then are registration options
-        issued. On an account that already has a second factor a password is refused before it is checked, with 422
+        issued. An account confirmed at its identity provider (GET /api/auth/oidc/reproof, within five minutes) sends `{
+        method: "oidc" }` instead, which takes that re-proof as the proof and, like a password, clears the second-factor
+        stamp. On an account that already has a second factor a password is refused before it is checked, with 422
         `auth.reproof.too_weak` and `meta.methods` naming the proofs that work: a passkey added on the password alone
         would sign in without the second factor from then on.
 
@@ -4103,6 +4108,7 @@ paths:
             schema:
               anyOf:
                 - $ref: "#/components/schemas/PasskeyReauthRequest"
+                - $ref: "#/components/schemas/PasskeyProviderProofRequest"
                 - $ref: "#/components/schemas/StepUpMintRequest"
       responses:
         "200":
@@ -28611,6 +28617,17 @@ components:
       description: The re-proof arm of register-options. Recognised ONLY when `method` is the body's single key — adding any
         other property routes the request to the enrollment arm, where it will be read as a factor proof and almost
         certainly refused.
+    PasskeyProviderProofRequest:
+      type: object
+      properties:
+        method:
+          type: string
+          const: oidc
+      required:
+        - method
+      description: Take the session's recent identity-provider re-proof (GET /api/auth/oidc/reproof) as the proof. Accepted
+        only for an account whose `proofMethods` list `oidc` and only within five minutes of that re-proof; otherwise
+        401 `auth.reproof.required` with `meta.methods`. Web only.
     PasskeyRegisterVerifyRequest:
       type: object
       properties:
@@ -47232,11 +47249,25 @@ components:
             $ref: "#/components/schemas/WebauthnMfaCredentialInfo"
         passkeyNudgeDismissed:
           type: boolean
+        proofMethods:
+          type: array
+          items:
+            type: string
+            enum:
+              - password
+              - oidc
+              - totp
+              - webauthn
+              - passkey
+          description: The ways this account can confirm it is you, the same list a recent-proof refusal names in `meta.methods`.
+            `password` and `oidc` only on an account without a second factor; `oidc` is a browser round trip to the
+            identity provider (`GET /api/auth/oidc/reproof`) and is never offered to a token.
       required:
         - totp
         - recoveryCodesRemaining
         - webauthn
         - passkeyNudgeDismissed
+        - proofMethods
       additionalProperties: false
     WebauthnMfaCredentialInfo:
       type: object

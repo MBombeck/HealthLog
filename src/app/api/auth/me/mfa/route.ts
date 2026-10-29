@@ -22,19 +22,21 @@ import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { prisma } from "@/lib/db";
 import { countRemainingRecoveryCodes } from "@/lib/auth/mfa/recovery-codes";
+import { recentProofMethods } from "@/lib/auth/second-factor";
 
 export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(async () => {
   const { user } = await requireAuth();
 
-  const [recoveryCodesRemaining, webauthn] = await Promise.all([
+  const [recoveryCodesRemaining, webauthn, proofMethods] = await Promise.all([
     countRemainingRecoveryCodes(user.id),
     prisma.webauthnMfaCredential.findMany({
       where: { userId: user.id },
       select: { id: true, name: true, createdAt: true, lastUsedAt: true },
       orderBy: { createdAt: "desc" },
     }),
+    recentProofMethods(user),
   ]);
 
   annotate({ action: { name: "auth.mfa.status" } });
@@ -46,5 +48,9 @@ export const GET = apiHandler(async () => {
     // The security hub also drives the passkey-upgrade nudge from this one
     // status read, so it knows whether the user has already dismissed it.
     passkeyNudgeDismissed: Boolean(user.passkeyUpgradeNudgeDismissed),
+    // The ways this account can confirm it is you, the list the recent-proof
+    // refusal names. The passkey card offers exactly these before adding one,
+    // so an account without a password is not handed a password field.
+    proofMethods,
   });
 });

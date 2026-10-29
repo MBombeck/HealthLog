@@ -6237,14 +6237,17 @@
         "password": "비밀번호",
         "totp": "인증 앱 코드",
         "passkey": "패스키",
-        "webauthn": "보안 키"
+        "webauthn": "보안 키",
+        "oidc": "ID 공급자"
       },
       "currentPassword": "현재 비밀번호",
       "authenticatorCode": "인증 앱 코드",
       "authenticatorPlaceholder": "6자리 인증 앱 코드",
       "verifyAndAdd": "확인 후 추가",
       "factorDescription": "두 번째 인증 수단을 추가하기 전에 기존 로그인 방법을 확인하세요.",
-      "verifyAndContinue": "확인하고 계속"
+      "verifyAndContinue": "확인하고 계속",
+      "oidcHint": "ID 공급자에서 한 번 더 로그인하면 바로 이 페이지로 돌아옵니다. 그런 다음 하려던 작업을 다시 진행하세요.",
+      "continueToProvider": "로그인으로 계속"
     },
     "passkeyName": "이름",
     "noPasskeys": "등록된 패스키가 없어요.",
@@ -7517,7 +7520,9 @@
       "description": "건강 데이터를 공유하거나 내보내는 작업입니다. 계속하려면 본인임을 확인하세요.",
       "descriptionChange": "본인만 변경할 수 있어야 하는 항목을 변경합니다. 계속하려면 본인임을 확인하세요.",
       "signInAgain": "다시 로그인한 후 한 번 더 시도하세요. 이 계정에는 여기서 확인할 비밀번호나 패스키가 없습니다.",
-      "failed": "확인하지 못했습니다. 입력한 내용을 확인하고 다시 시도하세요."
+      "failed": "확인하지 못했습니다. 입력한 내용을 확인하고 다시 시도하세요.",
+      "oidcDone": "확인되었습니다. 앞으로 5분 동안은 다시 묻지 않고 계속할 수 있습니다.",
+      "oidcFailed": "ID 공급자가 본인임을 확인하지 못했습니다. 다시 시도하세요."
     },
     "passwordTitle": "비밀번호",
     "tokenNameLabel": "토큰 이름",

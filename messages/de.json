@@ -6237,14 +6237,17 @@
         "password": "Passwort",
         "totp": "Authenticator-Code",
         "passkey": "Passkey",
-        "webauthn": "Sicherheitsschlüssel"
+        "webauthn": "Sicherheitsschlüssel",
+        "oidc": "Identitätsanbieter"
       },
       "currentPassword": "Aktuelles Passwort",
       "authenticatorCode": "Authenticator-Code",
       "authenticatorPlaceholder": "Sechsstelliger Authenticator-Code",
       "verifyAndAdd": "Bestätigen und hinzufügen",
       "factorDescription": "Bestätige eine vorhandene Anmeldemethode, bevor du einen zweiten Faktor hinzufügst.",
-      "verifyAndContinue": "Bestätigen und fortfahren"
+      "verifyAndContinue": "Bestätigen und fortfahren",
+      "oidcHint": "Du meldest dich bei deinem Identitätsanbieter noch einmal an und kommst direkt auf diese Seite zurück. Dann wiederholst du, was du gerade tun wolltest.",
+      "continueToProvider": "Weiter zur Anmeldung"
     },
     "passkeyName": "Name",
     "noPasskeys": "Keine Passkeys registriert.",
@@ -7517,7 +7520,9 @@
       "description": "Damit werden deine Gesundheitsdaten weitergegeben oder exportiert. Bestätige, dass du es bist, um fortzufahren.",
       "descriptionChange": "Das ändert etwas, das nur du ändern können solltest. Bestätige, dass du es bist, um fortzufahren.",
       "signInAgain": "Melde dich neu an und versuche es dann noch einmal. Dein Konto hat kein Passwort und keinen Passkey, den du hier bestätigen könntest.",
-      "failed": "Das hat nicht geklappt. Prüfe deine Eingabe und versuche es noch einmal."
+      "failed": "Das hat nicht geklappt. Prüfe deine Eingabe und versuche es noch einmal.",
+      "oidcDone": "Bestätigt. In den nächsten fünf Minuten kannst du weitermachen, ohne erneut gefragt zu werden.",
+      "oidcFailed": "Dein Identitätsanbieter konnte nicht bestätigen, dass du es bist. Versuche es noch einmal."
     },
     "passwordTitle": "Passwort",
     "tokenNameLabel": "Token-Name",

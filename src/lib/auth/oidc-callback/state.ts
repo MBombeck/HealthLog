@@ -27,8 +27,17 @@ export interface StoredOidcState {
    * names instead of signing in, and only when the cookie still carries this
    * exact binding. Web only: never together with `native`.
    */
-  intent?: "claim";
+  intent?: "claim" | "reproof";
   claimBinding?: string;
+  /**
+   * Set only for `intent: "reproof"` (`GET /api/auth/oidc/reproof`): the
+   * signed-in account and the session row the round trip confirms. The
+   * callback stamps nothing unless the browser still carries exactly this
+   * session and the provider names exactly this account's linked identity.
+   * Web only, like the claim.
+   */
+  reproofUserId?: string;
+  reproofSessionId?: string;
 }
 
 function isStoredOidcState(value: unknown): value is StoredOidcState {
@@ -50,11 +59,24 @@ function isStoredOidcState(value: unknown): value is StoredOidcState {
     if (typeof v.appCodeChallenge !== "string") return false;
   }
   if (v.intent !== undefined) {
-    if (v.intent !== "claim") return false;
-    if (typeof v.claimBinding !== "string" || v.claimBinding.length === 0) {
+    if (v.native !== undefined) return false;
+    if (v.intent === "claim") {
+      if (typeof v.claimBinding !== "string" || v.claimBinding.length === 0) {
+        return false;
+      }
+    } else if (v.intent === "reproof") {
+      if (
+        typeof v.reproofUserId !== "string" ||
+        v.reproofUserId.length === 0 ||
+        typeof v.reproofSessionId !== "string" ||
+        v.reproofSessionId.length === 0 ||
+        v.claimBinding !== undefined
+      ) {
+        return false;
+      }
+    } else {
       return false;
     }
-    if (v.native !== undefined) return false;
   }
   return true;
 }
