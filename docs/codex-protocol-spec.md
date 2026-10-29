@@ -631,10 +631,10 @@ Confirmed-rejected slugs (despite the source-tree references in the table above)
 Confirmed-accepted slugs on a ChatGPT Plus subscription (per `available_in_plans` in `models.json`):
 
 - `gpt-5.6-terra` — HealthLog's default (first chain entry) as of 2026-10-24; the backend rejected `gpt-5.5` and everything below it that day. `gpt-5.6-luna` and `gpt-5.6-sol` are its siblings on the same line
-- `gpt-6-sol`, `gpt-6.1-sol`, `gpt-6-luna`, `gpt-6-astra` — the gpt-6 line, listed in `models.json` since 2026-09-22 (`gpt-6.1-sol` the catalog default since 2026-09-29). The catalog names `gpt-6-sol` as the upgrade of `gpt-5.6-terra` and `gpt-5.6-sol`, and `gpt-6-luna` as that of `gpt-5.6-luna`. Every gpt-6 slug lists `input_modalities: ["text", "image"]` and the same reasoning presets as the gpt-5.6 line (`low` to `max`, sol and astra also `ultra`). The presets omit `none`, as they do for `gpt-5.5`, which a live probe on 2026-10-06 showed accepts it; HealthLog sends `none` for "off" on the gpt-6 line too and learns a refusal per slug. The gpt-6 slugs were not probed against a live backend when they joined the chain
-- `gpt-5.5` — the default from 2026-06 until 2026-10-24
-- `gpt-5.4` / `gpt-5.4-mini` / `gpt-5.2` — accepted per plan
-- `gpt-5.3-codex` — was the default (verified 2026-05-09); the backend rotated off the `-codex` line on 2026-06-02 and this slug is now only accepted intermittently, so it sits on a late chain rung
+- `gpt-6-sol`, `gpt-6.1-sol`, `gpt-6-luna`, `gpt-6-astra` — the gpt-6 line, listed in `models.json` since 2026-09-22 (`gpt-6.1-sol` the catalog default since 2026-09-29). The catalog names `gpt-6-sol` as the upgrade of `gpt-5.6-terra` and `gpt-5.6-sol`, and `gpt-6-luna` as that of `gpt-5.6-luna`. Every gpt-6 slug lists `input_modalities: ["text", "image"]` and the same reasoning presets as the gpt-5.6 line (`low` to `max`, sol and astra also `ultra`). The presets omit `none`, as they do for `gpt-5.5`, which a live probe on 2026-10-06 showed accepts it; HealthLog sends `none` for "off" on the gpt-6 line too and learns a refusal per slug. A live check on 2026-10-24 found the account's own list (`GET /backend-api/codex/models?client_version=…`) offering `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`, `gpt-6-luna` and the `gpt-5.6` line, all with `input_modalities: ["text", "image"]`. From a HealthLog container with its stored sign-in, `gpt-6.1-sol`, `gpt-6-sol` and `gpt-6-luna` each answered text and read a lab-report image correctly. `gpt-6.1-sol` refuses `reasoning.effort: "none"` and names `low` as its lowest effort, which the client learns and steps up to on the same slug; the other two accept `none`
+- `gpt-5.5` — the default from 2026-06 until 2026-10-24, kept as the last chain rung while plans differ
+
+Retired for ChatGPT sign-in (OpenAI's Codex models page): `gpt-5.2` and `gpt-5.3-codex` on 2026-05-26, `gpt-5.4` and `gpt-5.4-mini` on 2026-08-31, `gpt-5.5` on 2026-10-14 at 19:00 UTC. The backend answers each of them with 400 `model_not_found`, "The '<slug>' model is not supported when using Codex with a ChatGPT account.", which the client reads as a reason to try the next slug.
 
 The `codex-rs/tui/src/model_migration.rs` references to `gpt-5-codex` etc. are _migration prompts_ shown to existing users — they are NOT the slugs sent on the wire after migration. The wire slugs come from `models.json`. Always cross-check `models.json` (`gh api repos/openai/codex/contents/codex-rs/models-manager/models.json`) before picking a default.
 
@@ -661,6 +661,8 @@ const DEFAULT_SLUG_FALLBACK_CHAIN = [
 Every default rung must be a model family the reasoning, sampling and vision gates recognise (`src/lib/ai/openai-model-family.ts`); `codex-slug-fallback.test.ts` holds the chain to that.
 
 The shipped constant in `src/lib/ai/codex-slug-chain.ts` is authoritative; when the upstream rotates again, that file moves first and this listing follows.
+
+A fixed chain goes stale. From 2026-10-14, when GPT-5.5 retired, every model on the chain HealthLog shipped then was retired, and every Codex request answered 503 "all configured Codex slugs were rejected" until the chain was updated or `CODEX_MODEL` was set by hand. Reading the account's live list (`GET /backend-api/codex/models`, as the Codex CLI does) would avoid this.
 
 The chain is overridable via the env var `CODEX_MODEL_FALLBACK_CHAIN` (comma-separated). The first env-var-named slug supersedes `CODEX_MODEL`; if both are set, `CODEX_MODEL` is folded into position 0 and de-duplicated.
 
