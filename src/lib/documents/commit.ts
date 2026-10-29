@@ -44,7 +44,11 @@ import type {
   MedicationStatementFactData,
   ObservationFactData,
 } from "@/lib/validations/inbound-documents";
-import { dateOnlyAtNoonUtc, isDateOnlyKey } from "@/lib/tz/date-only";
+import {
+  dateOnlyAtNoonUtc,
+  dateOnlyKey,
+  isCalendarDateKey,
+} from "@/lib/tz/date-only";
 
 /** A per-fact commit failure the caller maps to a per-fact 422 entry. */
 export class FactCommitError extends Error {
@@ -61,14 +65,41 @@ export interface CommittedRecordRef {
   recordId: string;
 }
 
+/** A stated day, or null when it is not a real calendar date. */
+function statedDay(date: string | null): string | null {
+  return date && isCalendarDateKey(date) ? date : null;
+}
+
 /**
  * A stated YYYY-MM-DD as the instant a date-only value is stored at (noon
- * UTC), or now when the document states none. UTC midnight read back as the
+ * UTC), else the fallback day, else now. UTC midnight read back as the
  * previous day anywhere west of UTC.
  */
-function statedDateOrNow(date: string | null): Date {
-  if (date && isDateOnlyKey(date)) return dateOnlyAtNoonUtc(date);
-  return new Date();
+function statedDateOrNow(
+  date: string | null,
+  fallback: string | null = null,
+): Date {
+  const day = statedDay(date) ?? fallback;
+  return day ? dateOnlyAtNoonUtc(day) : new Date();
+}
+
+/** The two dates a stored document carries, as the confirm route reads them. */
+export interface FactDocumentDates {
+  reportDate: Date | null;
+  documentDate: Date | null;
+}
+
+/**
+ * The day a value from this document took place when it states none of its
+ * own: the report date the model read off the document, else the document's
+ * filing date, the same order the day view and the timeline place a document
+ * by. A lab report that prints the collection date once in its header carries
+ * no date beside each value, and every reading used to be filed under the day
+ * it was confirmed.
+ */
+function documentDay(dates: FactDocumentDates | null): string | null {
+  const day = dates?.reportDate ?? dates?.documentDate ?? null;
+  return day ? dateOnlyKey(day) : null;
 }
 
 /**
@@ -84,6 +115,7 @@ async function commitObservation(
   userId: string,
   data: ObservationFactData,
   choice: ObservationChoice = {},
+  fallbackDay: string | null = null,
 ): Promise<CommittedRecordRef> {
   const isQualitative = typeof data.value !== "number";
   // A numeric reading needs a unit so the catalog has something to mint with —
@@ -228,7 +260,7 @@ async function commitObservation(
       sourceReferenceLow: storedSourceLow,
       sourceReferenceHigh: storedSourceHigh,
       sourceReferenceText: isQualitative ? null : sourceText,
-      takenAt: statedDateOrNow(data.effectiveDate),
+      takenAt: statedDateOrNow(data.effectiveDate, fallbackDay),
       source: "DOCUMENT",
       noteEncrypted: null,
     },
@@ -317,12 +349,18 @@ export async function commitApprovedFact(
   userId: string,
   fact: ExtractedFact,
   choice: ObservationChoice = {},
+  documentDates: FactDocumentDates | null = null,
 ): Promise<CommittedRecordRef> {
   // Decrypt the staged payload at confirm time to write it into the normal
   // structured store. Fail-closed: a bad key id throws and aborts the commit.
   const data = decryptFactData(fact.dataEncrypted);
   if (fact.factType === "OBSERVATION") {
-    return commitObservation(userId, data as ObservationFactData, choice);
+    return commitObservation(
+      userId,
+      data as ObservationFactData,
+      choice,
+      documentDay(documentDates),
+    );
   }
   if (fact.factType === "CONDITION") {
     return commitCondition(userId, data as ConditionFactData);
