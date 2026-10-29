@@ -789,7 +789,10 @@
       "title": "Zapisz zestaw odzyskiwania",
       "body": "Bez kopii kluczy, których używa ten serwer, jego danych nie da się odzyskać po ponownej instalacji. To zajmie kilka minut.",
       "action": "Otwórz zestaw"
-    }
+    },
+    "greetingOnly": "{greeting}.",
+    "welcomeNew": "Witaj.",
+    "welcomeNewWithName": "Witaj, {name}."
   },
   "measurements": {
     "title": "Pomiary",

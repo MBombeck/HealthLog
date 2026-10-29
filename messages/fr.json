@@ -789,7 +789,10 @@
       "title": "Sauvegardez votre kit de récupération",
       "body": "Sans copies des clés utilisées par ce serveur, ses données ne peuvent pas être récupérées après une réinstallation. Ça prend quelques minutes.",
       "action": "Ouvrir le kit"
-    }
+    },
+    "greetingOnly": "{greeting}.",
+    "welcomeNew": "Bienvenue.",
+    "welcomeNewWithName": "Bienvenue, {name}."
   },
   "measurements": {
     "title": "Mesures",

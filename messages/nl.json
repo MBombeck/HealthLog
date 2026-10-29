@@ -789,7 +789,10 @@
       "title": "Bewaar je herstelkit",
       "body": "Zonder kopieën van de sleutels die deze server gebruikt, kunnen de gegevens na een herinstallatie niet worden hersteld. Het kost een paar minuten.",
       "action": "Kit openen"
-    }
+    },
+    "greetingOnly": "{greeting}.",
+    "welcomeNew": "Welkom.",
+    "welcomeNewWithName": "Welkom, {name}."
   },
   "measurements": {
     "title": "Metingen",

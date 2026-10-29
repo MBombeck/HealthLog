@@ -65,6 +65,11 @@ export type AuthTourProgress = TourProgress;
 export interface AuthUser {
   id: string;
   username: string;
+  /**
+   * When the account was created (ISO). Absent from an older server image,
+   * which every reader treats as an established account.
+   */
+  createdAt?: string;
   email: string | null;
   role: string;
   heightCm: number | null;

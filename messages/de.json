@@ -789,7 +789,10 @@
       "title": "Wiederherstellungs-Kit sichern",
       "body": "Ohne Kopien der Schlüssel, die dieser Server nutzt, lassen sich seine Daten nach einer Neuinstallation nicht wiederherstellen. Das dauert nur ein paar Minuten.",
       "action": "Kit öffnen"
-    }
+    },
+    "greetingOnly": "{greeting}.",
+    "welcomeNew": "Willkommen.",
+    "welcomeNewWithName": "Willkommen, {name}."
   },
   "measurements": {
     "title": "Messungen",

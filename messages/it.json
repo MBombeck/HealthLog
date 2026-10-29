@@ -789,7 +789,10 @@
       "title": "Salva il tuo kit di recupero",
       "body": "Senza copie delle chiavi usate da questo server, i suoi dati non si possono recuperare dopo una reinstallazione. Ci vogliono pochi minuti.",
       "action": "Apri il kit"
-    }
+    },
+    "greetingOnly": "{greeting}.",
+    "welcomeNew": "Ti diamo il benvenuto.",
+    "welcomeNewWithName": "Ti diamo il benvenuto, {name}."
   },
   "measurements": {
     "title": "Misurazioni",

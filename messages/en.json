@@ -789,7 +789,10 @@
       "title": "Save your recovery kit",
       "body": "Without copies of the keys this server uses, its data cannot be recovered after a reinstall. It takes a few minutes.",
       "action": "Open the kit"
-    }
+    },
+    "greetingOnly": "{greeting}.",
+    "welcomeNew": "Welcome.",
+    "welcomeNewWithName": "Welcome, {name}."
   },
   "measurements": {
     "title": "Measurements",

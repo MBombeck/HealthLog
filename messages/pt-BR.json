@@ -789,7 +789,10 @@
       "title": "Guarde seu kit de recuperação",
       "body": "Sem cópias das chaves que este servidor usa, os dados dele não podem ser recuperados após uma reinstalação. Leva poucos minutos.",
       "action": "Abrir o kit"
-    }
+    },
+    "greetingOnly": "{greeting}.",
+    "welcomeNew": "Boas-vindas.",
+    "welcomeNewWithName": "Boas-vindas, {name}."
   },
   "measurements": {
     "title": "Medições",

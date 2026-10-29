@@ -789,7 +789,10 @@
       "title": "복구 키트를 보관하세요",
       "body": "이 서버가 사용하는 키의 사본이 없으면 다시 설치한 뒤 데이터를 복구할 수 없습니다. 몇 분이면 됩니다.",
       "action": "키트 열기"
-    }
+    },
+    "greetingOnly": "{greeting}.",
+    "welcomeNew": "환영합니다.",
+    "welcomeNewWithName": "{name}님, 환영합니다."
   },
   "measurements": {
     "title": "측정",

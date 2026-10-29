@@ -43,7 +43,7 @@ vi.mock("@/hooks/use-auth", () => ({
   }),
 }));
 
-import { DashboardHeader } from "../dashboard-header";
+import { DashboardHeader, greetingLine } from "../dashboard-header";
 import {
   CAPTURE_KIND_ORDER,
   visibleCaptureKinds,
@@ -58,12 +58,73 @@ function renderSSR(node: React.ReactElement, locale: "en" | "de" = "de") {
   );
 }
 
+describe("greetingLine", () => {
+  const now = Date.parse("2026-10-29T09:00:00Z");
+  const base = { greeting: "Hello", nowMs: now };
+
+  it("welcomes an account in its first day, without a 'back'", () => {
+    expect(
+      greetingLine({
+        ...base,
+        known: true,
+        name: "tester",
+        createdAt: "2026-10-29T08:50:00Z",
+      }),
+    ).toEqual({
+      key: "dashboard.welcomeNewWithName",
+      values: { name: "tester" },
+    });
+    expect(
+      greetingLine({
+        ...base,
+        known: true,
+        name: null,
+        createdAt: "2026-10-28T10:00:00Z",
+      }).key,
+    ).toBe("dashboard.welcomeNew");
+  });
+
+  it("welcomes back an account older than a day", () => {
+    expect(
+      greetingLine({
+        ...base,
+        known: true,
+        name: "tester",
+        createdAt: "2026-10-20T08:00:00Z",
+      }),
+    ).toEqual({
+      key: "dashboard.welcomeBackWithName",
+      values: { greeting: "Hello", name: "tester" },
+    });
+  });
+
+  it("welcomes back when an older server does not say when the account began", () => {
+    expect(
+      greetingLine({ ...base, known: true, name: null, createdAt: undefined })
+        .key,
+    ).toBe("dashboard.welcomeBack");
+  });
+
+  it("says only the greeting while the account is not known", () => {
+    expect(
+      greetingLine({
+        ...base,
+        known: false,
+        name: "tester",
+        createdAt: "2026-10-29T08:50:00Z",
+      }),
+    ).toEqual({ key: "dashboard.greetingOnly", values: { greeting: "Hello" } });
+  });
+});
+
 describe("<DashboardHeader> — greeting", () => {
   it("renders the greeting line under the title", () => {
     const html = renderSSR(<DashboardHeader onQuickEntry={() => undefined} />);
     expect(html).toContain('data-slot="dashboard-header-greeting"');
-    // SSR pass: name-less fallback (personalises post-hydration only).
-    expect(html).toContain("willkommen zurück.");
+    // SSR pass: the time-of-day greeting alone. Nothing says "welcome
+    // back" before the client knows the account is not new.
+    expect(html).toContain("Hallo.");
+    expect(html).not.toContain("willkommen zurück");
     // Reserved line box keeps the header height stable through the
     // post-hydration personalisation swap.
     expect(html).toMatch(/data-slot="dashboard-header-greeting"[^>]*>/);

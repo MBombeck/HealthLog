@@ -305,6 +305,9 @@ export const GET = apiHandler(async () => {
   return apiSuccess({
     id: user.id,
     username: user.username,
+    // When the caller's account was created. The dashboard greeting says
+    // "welcome", not "welcome back", during an account's first day.
+    createdAt: user.createdAt,
     email: user.email,
     role: user.role ?? "USER",
     heightCm: user.heightCm,
