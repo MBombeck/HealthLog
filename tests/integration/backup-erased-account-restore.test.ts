@@ -677,17 +677,20 @@ describe("restoring the backup of an erased account into a chosen account", () =
         passwordHash: null,
       });
 
+      // Traced when it is made, before the file is read; the upload row
+      // links it to the copy.
       expect(await auditDetails(prisma, "admin.user.create")).toEqual([
         {
           targetUserId: account.id,
           username: "returning-person",
           reason: "backup_restore",
-          backupId,
+          outcome: "created",
         },
       ]);
       expect(await auditDetails(prisma, "admin.backups.upload")).toEqual([
-        expect.objectContaining({ ownerId: account.id, into: "new" }),
+        expect.objectContaining({ backupId, ownerId: account.id, into: "new" }),
       ]);
+      expect(await auditDetails(prisma, "admin.user.delete")).toEqual([]);
       expect(await cellsNaming(prisma, OWNER_ID)).toEqual([]);
 
       // How the person gets in: the admin sets a first password with the
@@ -861,7 +864,24 @@ describe("restoring the backup of an erased account into a chosen account", () =
       expect(
         await prisma.user.count({ where: { username: "would-be-copy" } }),
       ).toBe(0);
-      expect(await auditDetails(prisma, "admin.user.create")).toEqual([]);
+      // The account was made, traced, and removed again, traced as well.
+      const made = await auditDetails(prisma, "admin.user.create");
+      expect(made).toEqual([
+        {
+          targetUserId: expect.any(String),
+          username: "would-be-copy",
+          reason: "backup_restore",
+          outcome: "created",
+        },
+      ]);
+      expect(await auditDetails(prisma, "admin.user.delete")).toEqual([
+        {
+          targetUserId: (made[0] as { targetUserId: string }).targetUserId,
+          username: "would-be-copy",
+          reason: "backup_upload_refused",
+          outcome: "deleted",
+        },
+      ]);
       expect(await prisma.dataBackup.count()).toBe(0);
 
       // Without a target, the same file goes to its own account as before.
@@ -875,6 +895,50 @@ describe("restoring the backup of an erased account into a chosen account", () =
           })
         ).userId,
       ).toBe(OWNER_ID);
+    },
+    SLOW,
+  );
+
+  it(
+    "leaves a trace of an account made for a refused file when it cannot be removed again",
+    async () => {
+      const prisma = getPrismaClient();
+      const { json } = await eraseAfterExport(prisma);
+      await createOwner(prisma);
+      const { prisma: appPrisma } = await import("@/lib/db");
+      const remove = vi
+        .spyOn(appPrisma.user, "delete")
+        .mockRejectedValueOnce(new Error("connection reset"));
+
+      const refused = await uploadInto(json, {
+        into: "new",
+        username: "left-behind",
+      });
+      remove.mockRestore();
+      // The operator still sees why the file was refused.
+      expect(refused.status, JSON.stringify(refused.body)).toBe(409);
+      expect(refused.body.meta?.errorCode).toBe("backup.owner.exists");
+
+      const account = await prisma.user.findUniqueOrThrow({
+        where: { username: "left-behind" },
+      });
+      expect(account).toMatchObject({ passwordHash: null, email: null });
+      expect(await auditDetails(prisma, "admin.user.create")).toEqual([
+        {
+          targetUserId: account.id,
+          username: "left-behind",
+          reason: "backup_restore",
+          outcome: "created",
+        },
+      ]);
+      expect(await auditDetails(prisma, "admin.user.delete")).toEqual([
+        {
+          targetUserId: account.id,
+          username: "left-behind",
+          reason: "backup_upload_refused",
+          outcome: "failed",
+        },
+      ]);
     },
     SLOW,
   );

@@ -103,7 +103,12 @@ exists, and the console then asks where the records should go:
   password or email, as an ordinary account with the user role, and nobody
   can sign into it yet. Before handing it over, set its first password with
   **Reset password** in Admin → Users; the person can change it, add an email
-  and enrol a passkey from their settings.
+  and enrol a passkey from their settings. The account is made before the
+  file is read, with an `admin.user.create` audit row (`outcome: "created"`),
+  and removed again when the file is refused, with an `admin.user.delete` row
+  (`reason: "backup_upload_refused"`). When that row says `outcome: "failed"`,
+  the removal did not happen and the account is left over, holding nothing:
+  delete it in Admin → Users.
 - **An existing account**, for someone who has signed up again. Pick the
   account and type its username to confirm. The account must hold no records
   yet: a restore replaces an account's records and does not merge them, so an
