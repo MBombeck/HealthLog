@@ -50,6 +50,55 @@ export async function syncUserSleep(
   );
 }
 
+/**
+ * Each window's keep-set: every fresh row of the fetch that lies inside the
+ * window, whichever session produced it. Google can report two sessions over
+ * the same stretch of a night (two sources, or a nap inside the main sleep),
+ * and a window that protected only its own session's rows tombstoned the
+ * other session's rows on every sync, for the upsert to bring them straight
+ * back.
+ *
+ * Only rows inside the window, not the whole fetch: the sweep can only reach
+ * rows whose `measuredAt` lies in the window, so a fresh id from another
+ * night protects nothing there. Handing every window the whole fetch's ids
+ * made a full backfill send one query per night, each carrying every segment
+ * id of the history, tens of thousands of bound values per query, over
+ * Postgres's limit and blocking the process while each one was built. A
+ * stored row whose fresh copy moved out of the window (a re-score shifted the
+ * segment) is tombstoned here and revived by the upsert that follows, which
+ * matches tombstoned rows by externalId.
+ */
+export function protectFreshRowsInWindows(
+  windows: GoogleHealthSleepReplaceWindow[],
+  readings: Array<{ externalId: string; measuredAt: Date }>,
+): GoogleHealthSleepReplaceWindow[] {
+  const byTime = readings
+    .map((r) => ({ id: r.externalId, at: r.measuredAt.getTime() }))
+    .sort((a, b) => a.at - b.at);
+  // First index whose time is at or after `t`.
+  const lowerBound = (t: number) => {
+    let lo = 0;
+    let hi = byTime.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (byTime[mid]!.at < t) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo;
+  };
+  return windows.map((w) => {
+    if (!w.windowStart || !w.windowEnd) return w;
+    const startMs = w.windowStart.getTime();
+    const endMs = w.windowEnd.getTime();
+    const keep = new Set(w.keepIds);
+    for (let i = lowerBound(startMs); i < byTime.length; i++) {
+      if (byTime[i]!.at > endMs) break;
+      keep.add(byTime[i]!.id);
+    }
+    return { ...w, keepIds: [...keep] };
+  });
+}
+
 async function syncSleepSessions(
   userId: string,
   opts: GoogleHealthResourceSyncOptions,
@@ -126,15 +175,9 @@ async function syncSleepSessions(
     });
   }
 
-  // Every session's fresh rows are protected in every window, not only in
-  // their own. Google can report two sessions over the same stretch of a
-  // night (two sources, or a nap inside the main sleep), and a window that
-  // protected only its own session's rows tombstoned the other session's rows
-  // on every sync, for the upsert to bring them straight back.
-  const allKeepIds = readings.map((r) => r.externalId);
   await replaceStaleGoogleHealthSleep(
     userId,
-    replaceWindows.map((w) => ({ ...w, keepIds: allKeepIds })),
+    protectFreshRowsInWindows(replaceWindows, readings),
   );
 
   const { imported, inserted } = await upsertGoogleHealthMeasurements(
