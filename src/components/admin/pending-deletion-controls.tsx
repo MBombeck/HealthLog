@@ -13,6 +13,13 @@ import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import type { AdminUser } from "./_shared";
 
+/** The undo dialog's sentence, by who asked for the deletion. */
+const UNDO_BODY_KEYS = {
+  self: "admin.section.users.undoDeletionBody",
+  guardian: "admin.section.users.undoDeletionBodyGuardian",
+  admin: "admin.section.users.undoDeletionBodyAdmin",
+} as const;
+
 /**
  * An account pending deletion, in the admin users list: the date the purge
  * job erases it, and the one action that stops it.
@@ -64,12 +71,9 @@ export function PendingDeletionControls({ user }: { user: AdminUser }) {
         title={t("admin.section.users.undoDeletionTitle", {
           name: user.username,
         })}
-        body={t(
-          user.deletion.requestedBy === "guardian"
-            ? "admin.section.users.undoDeletionBodyGuardian"
-            : "admin.section.users.undoDeletionBody",
-          { name: user.username },
-        )}
+        body={t(UNDO_BODY_KEYS[user.deletion.requestedBy], {
+          name: user.username,
+        })}
         confirmLabel={t("admin.section.users.undoDeletion")}
         pending={undo.isPending}
         onConfirm={() => undo.mutate()}

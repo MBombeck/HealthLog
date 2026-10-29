@@ -106,3 +106,11 @@ export const adminSettingsSchema = z
     assistantDocumentAiEnabled: z.boolean().optional(),
   })
   .strict();
+
+/**
+ * Body of DELETE /api/admin/users/{id}: the typed confirmation the account's
+ * own deletion asks for, so a stray request cannot lock an account.
+ */
+export const adminDeleteUserSchema = z
+  .object({ confirm: z.literal("DELETE_ACCOUNT") })
+  .strict();

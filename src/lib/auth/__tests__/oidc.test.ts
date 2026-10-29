@@ -37,6 +37,15 @@ const ENV_KEYS = [
 ] as const;
 const ORIGINAL_ENV: Record<string, string | undefined> = {};
 
+/**
+ * A verification result carrying only what `verifyIdToken` reads: the claims
+ * and the header `jose` returns beside them.
+ */
+type VerifyResult = Awaited<ReturnType<typeof mockJwtVerify>>;
+function verified(payload: Record<string, unknown>): VerifyResult {
+  return { payload, protectedHeader: { alg: "RS256" } } as VerifyResult;
+}
+
 function jsonResponse(body: unknown, ok = true, status = 200): Response {
   return {
     ok,
@@ -270,6 +279,25 @@ describe("buildAuthorizationUrl", () => {
       }),
     );
     expect(url.searchParams.get("prompt")).toBe("login");
+    expect(url.searchParams.has("max_age")).toBe(false);
+  });
+
+  it("asks for a fresh, timed authentication for a re-proof", () => {
+    configureEnv();
+    const url = new URL(
+      buildAuthorizationUrl({
+        metadata: METADATA_DOC,
+        config: getOidcConfig()!,
+        state: "state-1",
+        nonce: "nonce-1",
+        codeChallenge: "challenge-1",
+        redirectUri: "https://healthlog.example.com/api/auth/oidc/callback",
+        reauthenticate: true,
+      }),
+    );
+    expect(url.searchParams.get("prompt")).toBe("login");
+    expect(url.searchParams.get("max_age")).toBe("0");
+    expect(url.searchParams.get("code_challenge_method")).toBe("S256");
   });
 });
 
@@ -332,16 +360,15 @@ describe("verifyIdToken", () => {
   beforeEach(() => configureEnv());
 
   it("returns the identity claims on success", async () => {
-    // Test payloads deliberately omit the full JWTVerifyResult shape.
-    vi.mocked(mockJwtVerify).mockResolvedValue({
-      payload: {
+    vi.mocked(mockJwtVerify).mockResolvedValue(
+      verified({
         sub: "user-sub-1",
         email: "person@example.com",
         email_verified: true,
         name: "Person",
         nonce: "nonce-1",
-      },
-    } as never);
+      }),
+    );
     const config = getOidcConfig()!;
     const identity = await verifyIdToken({
       metadata: METADATA_DOC,
@@ -354,13 +381,43 @@ describe("verifyIdToken", () => {
       email: "person@example.com",
       emailVerified: true,
       name: "Person",
+      authTime: null,
     });
   });
 
+  it("returns auth_time when the provider states it, and null otherwise", async () => {
+    vi.mocked(mockJwtVerify).mockResolvedValue(
+      verified({
+        sub: "user-sub-1",
+        nonce: "nonce-1",
+        auth_time: 1_700_000_000,
+      }),
+    );
+    const config = getOidcConfig()!;
+    const stated = await verifyIdToken({
+      metadata: METADATA_DOC,
+      config,
+      idToken: "id-token",
+      nonce: "nonce-1",
+    });
+    expect(stated.authTime).toBe(1_700_000_000);
+
+    vi.mocked(mockJwtVerify).mockResolvedValue(
+      verified({ sub: "user-sub-1", nonce: "nonce-1", auth_time: "recent" }),
+    );
+    const unstated = await verifyIdToken({
+      metadata: METADATA_DOC,
+      config,
+      idToken: "id-token",
+      nonce: "nonce-1",
+    });
+    expect(unstated.authTime).toBeNull();
+  });
+
   it("rejects a nonce mismatch", async () => {
-    vi.mocked(mockJwtVerify).mockResolvedValue({
-      payload: { sub: "user-sub-1", nonce: "wrong-nonce" },
-    } as never);
+    vi.mocked(mockJwtVerify).mockResolvedValue(
+      verified({ sub: "user-sub-1", nonce: "wrong-nonce" }),
+    );
     const config = getOidcConfig()!;
     await expect(
       verifyIdToken({
@@ -373,9 +430,7 @@ describe("verifyIdToken", () => {
   });
 
   it("rejects a token missing sub", async () => {
-    vi.mocked(mockJwtVerify).mockResolvedValue({
-      payload: { nonce: "nonce-1" },
-    } as never);
+    vi.mocked(mockJwtVerify).mockResolvedValue(verified({ nonce: "nonce-1" }));
     const config = getOidcConfig()!;
     await expect(
       verifyIdToken({
@@ -388,9 +443,9 @@ describe("verifyIdToken", () => {
   });
 
   it("verifies with a closed asymmetric algorithm allowlist and bounded clock tolerance", async () => {
-    vi.mocked(mockJwtVerify).mockResolvedValue({
-      payload: { sub: "user-sub-1", nonce: "nonce-1" },
-    } as never);
+    vi.mocked(mockJwtVerify).mockResolvedValue(
+      verified({ sub: "user-sub-1", nonce: "nonce-1" }),
+    );
     const config = getOidcConfig()!;
     await verifyIdToken({
       metadata: METADATA_DOC,
@@ -411,9 +466,9 @@ describe("verifyIdToken", () => {
   });
 
   it("pins the JWKS fetch to the issuer's host with a bounded timeout", async () => {
-    vi.mocked(mockJwtVerify).mockResolvedValue({
-      payload: { sub: "user-sub-1", nonce: "nonce-1" },
-    } as never);
+    vi.mocked(mockJwtVerify).mockResolvedValue(
+      verified({ sub: "user-sub-1", nonce: "nonce-1" }),
+    );
     const config = getOidcConfig()!;
     await verifyIdToken({
       metadata: METADATA_DOC,

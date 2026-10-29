@@ -63,8 +63,11 @@ describe("first paint carries the resolved locale, not a default", () => {
       /prev\.locale === locale \? \{ locale, messages: loaded \} : prev/,
     );
 
-    // And the persistence effect keys on the locale alone, so one mount
-    // with one locale means one write.
-    expect(src).toMatch(/persistLocaleToServer\(locale\);\s*\}, \[locale\]\);/);
+    // And the provider writes nothing to the server itself: the mirror lives
+    // in `LocaleServerSyncBridge`, keyed on the locale and the signed-in
+    // account, so a signed-out mount sends nothing and one account with one
+    // locale means one write (its browser test pins both).
+    expect(src).toMatch(/export function persistLocaleToServer\(/);
+    expect(src).not.toMatch(/persistLocaleToServer\(locale/);
   });
 });

@@ -7,6 +7,7 @@
  * can pass messages through with minimal translation.
  */
 import { z } from "zod/v4";
+import { locales } from "@/lib/i18n/config";
 
 import { COACH_SCOPE_SOURCES } from "./scope-sources";
 
@@ -85,15 +86,14 @@ export const coachChatRequestSchema = z.object({
   conversationId: z.string().min(1).max(64).optional(),
   message: z.string().min(1).max(4000),
   prefill: z.string().max(2000).optional(),
-  locale: z.enum(["en", "de"]).optional(),
+  locale: z.enum(locales).optional(),
   scope: coachScopeSchema.optional(),
   /**
-   * v1.16.6 — guided clarifying-questions flow: the pending question
-   * this message answers. The question bubble is client-side only
-   * (never persisted), so without this context the model would see a
-   * bare answer ("since 2019, with medication") and could not react
-   * to it. Rides the prompt as delimited user-provided context; the
-   * persisted user turn stays the answer alone.
+   * v1.16.6 — guided clarifying-questions flow: the pending question this
+   * message answers. The question bubble is client-side only (never persisted),
+   * so without this context the model would see a bare answer ("since 2019,
+   * with medication") and could not react to it. Rides the prompt as delimited
+   * user-provided context; the persisted user turn stays the answer alone.
    */
   guidedQuestion: z.string().min(1).max(500).optional(),
   /**

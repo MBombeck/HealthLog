@@ -272,3 +272,29 @@ describe("#1279: background work and a benched provider", () => {
     expect((err as AllProvidersFailedError).tokensSpent).toBe(5400);
   });
 });
+
+describe("#1276 — the runner marks background calls", () => {
+  class Recorder implements AIProvider {
+    readonly type = "openai-compatible" as const;
+    seen: CompletionParams[] = [];
+    async generateCompletion(p: CompletionParams): Promise<CompletionResult> {
+      this.seen.push(p);
+      return { content: "{}", tokensUsed: 1 } as CompletionResult;
+    }
+  }
+
+  it.each([
+    ["job", true],
+    ["coach", undefined],
+  ] as const)("a %s walk carries unattended: %s", async (surface, expected) => {
+    const instance = new Recorder();
+    await walk(
+      surface,
+      `u-unattended-${surface}`,
+      "openai-compatible",
+      instance,
+      createInMemoryProviderHealthLedger(),
+    );
+    expect(instance.seen[0]?.unattended).toBe(expected);
+  });
+});

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.46.1
+  version: 1.46.2
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -2481,10 +2481,13 @@ paths:
 
         The body takes the same shapes as POST /api/auth/step-up. On an account with a second factor only `totp`,
         `webauthn` (a security key) or `passkey` are accepted, because a password has never stood in for the second
-        factor; on one without, `password` or `passkey`. A method the account cannot use here is refused with 422
-        `auth.reproof.too_weak` and `meta.methods`, before any guess is spent. A second-factor or passkey proof also
-        refreshes the session's second-factor stamp, exactly as signing in again would. Assertions begin at POST
-        /api/auth/passkey/register-options with `{ method: "passkey" | "webauthn" }`.
+        factor; on one without, `password` or `passkey`. An account without a second factor whose identity is linked to
+        the configured identity provider is also offered `oidc` in `meta.methods`; that proof is not posted here but
+        given by the browser round trip GET /api/auth/oidc/reproof, which stamps the session exactly as a password proof
+        does. A method the account cannot use here is refused with 422 `auth.reproof.too_weak` and `meta.methods`,
+        before any guess is spent. A second-factor or passkey proof also refreshes the session's second-factor stamp,
+        exactly as signing in again would. Assertions begin at POST /api/auth/passkey/register-options with `{ method:
+        "passkey" | "webauthn" }`.
 
 
         Proofs draw on the account's shared re-proof budget (five per fifteen minutes, 429 once spent). A proof that
@@ -4077,7 +4080,9 @@ paths:
 
         **Enrollment arm.** Any other body must be a full factor proof (the same shape POST /api/auth/step-up takes): a
         password, a TOTP code, or a completed passkey / security-key assertion. Only then are registration options
-        issued. On an account that already has a second factor a password is refused before it is checked, with 422
+        issued. An account confirmed at its identity provider (GET /api/auth/oidc/reproof, within five minutes) sends `{
+        method: "oidc" }` instead, which takes that re-proof as the proof and, like a password, clears the second-factor
+        stamp. On an account that already has a second factor a password is refused before it is checked, with 422
         `auth.reproof.too_weak` and `meta.methods` naming the proofs that work: a passkey added on the password alone
         would sign in without the second factor from then on.
 
@@ -4103,6 +4108,7 @@ paths:
             schema:
               anyOf:
                 - $ref: "#/components/schemas/PasskeyReauthRequest"
+                - $ref: "#/components/schemas/PasskeyProviderProofRequest"
                 - $ref: "#/components/schemas/StepUpMintRequest"
       responses:
         "200":
@@ -4825,7 +4831,10 @@ paths:
       tags:
         - Measurements
       summary: Delete a measurement
-      description: Soft-deletes the row (tombstone) so paired clients can reconcile the deletion.
+      description: "Soft-deletes the row (tombstone) so paired clients can reconcile the deletion. A blood-pressure systolic
+        or diastolic takes the rest of its reading with it: the other half and the pulse with the same source and the
+        identical `measuredAt`, tombstoned in the same transaction with the same `deletedAt`, each with its own
+        `syncVersion` bump. A pulse is deleted on its own."
       parameters:
         - in: path
           name: id
@@ -4936,7 +4945,8 @@ paths:
       description: Soft-deletes (tombstones) up to 200 of the caller's measurement rows in one call, mirroring the
         single-DELETE contract. Idempotent via the `Idempotency-Key` header; rate-limited
         `measurements:bulk-delete:<userId>`. Forged / foreign / already-deleted ids are silently skipped — `deleted` is
-        the count of rows actually tombstoned. The deletions surface in `/api/sync/changes` as tombstones.
+        the count of rows actually tombstoned, which includes the rest of any blood-pressure reading a selected systolic
+        or diastolic belongs to (as on the single DELETE). The deletions surface in `/api/sync/changes` as tombstones.
       parameters:
         - *a6
       requestBody:
@@ -4965,7 +4975,10 @@ paths:
       description: Un-tombstones up to 200 of the caller's soft-deleted measurement rows in one call — the delete-Undo
         counterpart to `/api/measurements/bulk-delete`. Idempotent via the `Idempotency-Key` header; rate-limited
         `measurements:restore:<userId>`. Forged / foreign / not-deleted ids are silently skipped — `restored` is the
-        count of rows actually un-tombstoned. The restored rows re-surface in `/api/sync/changes` as upserts.
+        count of rows actually un-tombstoned. A blood-pressure systolic or diastolic also restores the rows of its
+        reading that were deleted with it (same source, identical `measuredAt` and `deletedAt`), so naming one half
+        undoes the whole reading; a row deleted at another moment stays deleted. The restored rows re-surface in
+        `/api/sync/changes` as upserts.
       parameters:
         - *a6
       requestBody:
@@ -13210,12 +13223,19 @@ paths:
         - in: query
           name: locale
           schema:
-            description: Optional UI-locale override; defaults to the session locale.
+            description: Optional UI-locale override, any language the app ships; defaults to the session locale.
             type: string
             enum:
               - de
               - en
-          description: Optional UI-locale override; defaults to the session locale.
+              - fr
+              - es
+              - it
+              - pl
+              - ko
+              - nl
+              - pt-BR
+          description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
           description: Assessment envelope (fresh, cached, or preparing).
@@ -13242,12 +13262,19 @@ paths:
         - in: query
           name: locale
           schema:
-            description: Optional UI-locale override; defaults to the session locale.
+            description: Optional UI-locale override, any language the app ships; defaults to the session locale.
             type: string
             enum:
               - de
               - en
-          description: Optional UI-locale override; defaults to the session locale.
+              - fr
+              - es
+              - it
+              - pl
+              - ko
+              - nl
+              - pt-BR
+          description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
           description: Assessment envelope (fresh, cached, or preparing).
@@ -13274,12 +13301,19 @@ paths:
         - in: query
           name: locale
           schema:
-            description: Optional UI-locale override; defaults to the session locale.
+            description: Optional UI-locale override, any language the app ships; defaults to the session locale.
             type: string
             enum:
               - de
               - en
-          description: Optional UI-locale override; defaults to the session locale.
+              - fr
+              - es
+              - it
+              - pl
+              - ko
+              - nl
+              - pt-BR
+          description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
           description: Assessment envelope (fresh, cached, or preparing).
@@ -13306,12 +13340,19 @@ paths:
         - in: query
           name: locale
           schema:
-            description: Optional UI-locale override; defaults to the session locale.
+            description: Optional UI-locale override, any language the app ships; defaults to the session locale.
             type: string
             enum:
               - de
               - en
-          description: Optional UI-locale override; defaults to the session locale.
+              - fr
+              - es
+              - it
+              - pl
+              - ko
+              - nl
+              - pt-BR
+          description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
           description: Assessment envelope (fresh, cached, or preparing).
@@ -13338,12 +13379,19 @@ paths:
         - in: query
           name: locale
           schema:
-            description: Optional UI-locale override; defaults to the session locale.
+            description: Optional UI-locale override, any language the app ships; defaults to the session locale.
             type: string
             enum:
               - de
               - en
-          description: Optional UI-locale override; defaults to the session locale.
+              - fr
+              - es
+              - it
+              - pl
+              - ko
+              - nl
+              - pt-BR
+          description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
           description: Assessment envelope (fresh, cached, or preparing).
@@ -13371,12 +13419,19 @@ paths:
         - in: query
           name: locale
           schema:
-            description: Optional UI-locale override; defaults to the session locale.
+            description: Optional UI-locale override, any language the app ships; defaults to the session locale.
             type: string
             enum:
               - de
               - en
-          description: Optional UI-locale override; defaults to the session locale.
+              - fr
+              - es
+              - it
+              - pl
+              - ko
+              - nl
+              - pt-BR
+          description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
           description: Compliance assessment envelope (fresh, cached, or preparing).
@@ -13466,12 +13521,19 @@ paths:
         - in: query
           name: locale
           schema:
-            description: Optional UI-locale override; defaults to the session locale.
+            description: Optional UI-locale override, any language the app ships; defaults to the session locale.
             type: string
             enum:
               - de
               - en
-          description: Optional UI-locale override; defaults to the session locale.
+              - fr
+              - es
+              - it
+              - pl
+              - ko
+              - nl
+              - pt-BR
+          description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
           description: Assessment envelope (fresh, cached, or preparing).
@@ -13511,12 +13573,19 @@ paths:
         - in: query
           name: locale
           schema:
-            description: Optional UI-locale override; defaults to the session locale.
+            description: Optional UI-locale override, any language the app ships; defaults to the session locale.
             type: string
             enum:
               - de
               - en
-          description: Optional UI-locale override; defaults to the session locale.
+              - fr
+              - es
+              - it
+              - pl
+              - ko
+              - nl
+              - pt-BR
+          description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
           description: Assessment envelope (fresh, cached, or preparing).
@@ -28533,6 +28602,13 @@ components:
               enum:
                 - de
                 - en
+                - fr
+                - es
+                - it
+                - pl
+                - ko
+                - nl
+                - pt-BR
             - type: "null"
         timezone:
           type: string
@@ -28611,6 +28687,17 @@ components:
       description: The re-proof arm of register-options. Recognised ONLY when `method` is the body's single key — adding any
         other property routes the request to the enrollment arm, where it will be read as a factor proof and almost
         certainly refused.
+    PasskeyProviderProofRequest:
+      type: object
+      properties:
+        method:
+          type: string
+          const: oidc
+      required:
+        - method
+      description: Take the session's recent identity-provider re-proof (GET /api/auth/oidc/reproof) as the proof. Accepted
+        only for an account whose `proofMethods` list `oidc` and only within five minutes of that re-proof; otherwise
+        401 `auth.reproof.required` with `meta.methods`. Web only.
     PasskeyRegisterVerifyRequest:
       type: object
       properties:
@@ -31347,8 +31434,15 @@ components:
         locale:
           type: string
           enum:
-            - en
             - de
+            - en
+            - fr
+            - es
+            - it
+            - pl
+            - ko
+            - nl
+            - pt-BR
         scope:
           type: object
           properties:
@@ -31511,8 +31605,15 @@ components:
         locale:
           type: string
           enum:
-            - en
             - de
+            - en
+            - fr
+            - es
+            - it
+            - pl
+            - ko
+            - nl
+            - pt-BR
         attachmentIds:
           minItems: 1
           maxItems: 5
@@ -35502,8 +35603,15 @@ components:
         locale:
           type: string
           enum:
-            - en
             - de
+            - en
+            - fr
+            - es
+            - it
+            - pl
+            - ko
+            - nl
+            - pt-BR
       required:
         - message
     InboundFactEditRequest:
@@ -38526,8 +38634,9 @@ components:
                 `upstream_error`, `timeout`, `connection_failed` and the per-provider additions) are enumerated in each
                 `/test` operation instead, where the differences can be stated; and a 401 raised by a route checking a
                 credential of its own carries the generic `http.unauthenticated`. account —
-                account.deletion.no_guardian, account.deletion.not_pending; activity — activity.calendar.future_date,
-                activity.calendar.too_old; ai — ai.budget.exceeded, ai.provider.none, ai.record.notPermitted,
+                account.deletion.already_pending, account.deletion.no_guardian, account.deletion.not_pending; activity —
+                activity.calendar.future_date, activity.calendar.too_old; admin — admin.users.delete.managed_profile,
+                admin.users.delete.self; ai — ai.budget.exceeded, ai.provider.none, ai.record.notPermitted,
                 ai.unavailable, ai.usage.aboveCeiling, ai.usage.defaultAboveCeiling, ai.usage.invalid,
                 ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider — ai_provider.invalid, ai_provider.no_fields;
                 aiRuns — aiRuns.failed, aiRuns.notFound, aiRuns.readerBusy, aiRuns.timedOut, aiRuns.workerUnavailable;
@@ -47232,11 +47341,25 @@ components:
             $ref: "#/components/schemas/WebauthnMfaCredentialInfo"
         passkeyNudgeDismissed:
           type: boolean
+        proofMethods:
+          type: array
+          items:
+            type: string
+            enum:
+              - password
+              - oidc
+              - totp
+              - webauthn
+              - passkey
+          description: The ways this account can confirm it is you, the same list a recent-proof refusal names in `meta.methods`.
+            `password` and `oidc` only on an account without a second factor; `oidc` is a browser round trip to the
+            identity provider (`GET /api/auth/oidc/reproof`) and is never offered to a token.
       required:
         - totp
         - recoveryCodesRemaining
         - webauthn
         - passkeyNudgeDismissed
+        - proofMethods
       additionalProperties: false
     WebauthnMfaCredentialInfo:
       type: object
@@ -86330,6 +86453,12 @@ components:
           type: string
         username:
           type: string
+        createdAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: When the signed-in account was created. The web greets an account in its first day as new rather than
+            welcoming it back.
         timezone:
           type: string
           description: "The IANA zone the server cuts this account's days in: the stored zone, or the instance default when the
@@ -86405,6 +86534,7 @@ components:
       required:
         - id
         - username
+        - createdAt
         - timezone
         - glucoseUnit
         - features

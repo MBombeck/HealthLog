@@ -18,16 +18,19 @@
  * `src/lib/jobs/reminder-worker.ts` so pg-boss provisions it at boot; an
  * unregistered queue silently never drains.
  */
-import { dropPendingDeletion } from "@/lib/account-deletion/active-account";
+import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import {
   runDenseIntradayRetention,
-  DENSE_INTRADAY_RETENTION_TYPES,
   DENSE_INTRADAY_RETENTION_DAYS,
-  DENSE_INTRADAY_FOLD_SOURCES,
 } from "@/lib/measurements/dense-intraday-retention";
+import {
+  DENSE_INTRADAY_FOLD_SOURCES,
+  DENSE_INTRADAY_FOLD_TYPES_BY_SOURCE,
+} from "@/lib/measurements/dense-intraday-sources";
+import { isRollupFullBackfillPending } from "@/lib/rollups/full-backfill";
 import { DENSE_INTRADAY_RETENTION_QUEUE } from "./dense-intraday-retention-queue";
 
 /**
@@ -103,6 +106,7 @@ export async function runDenseIntradayRetentionForUser(
   const summary = await runDenseIntradayRetention(prisma, {
     userId,
     shouldStop,
+    deferUser: isRollupFullBackfillPending,
     log: () => {
       // Silent inside the queue handler — the worker logs the totals.
     },
@@ -119,6 +123,9 @@ export async function runDenseIntradayRetentionForUser(
         // days for proxy users, preserving the resting signal post-fold.
         derived_resting_rows_upserted:
           summary.totals.derivedRestingRowsUpserted,
+        // Backlog days of a server-pulled source that expired the account's
+        // delta cursors rather than leave millions of tombstones.
+        sync_resets_stamped: summary.totals.syncResetsStamped,
         stopped_early: summary.stoppedEarly,
       },
     },
@@ -133,8 +140,8 @@ export async function runDenseIntradayRetentionForUser(
 
 /**
  * Boot-time discovery. Finds every user holding at least one LIVE
- * per-sample dense-tier row (a row of a `DENSE_INTRADAY_FOLD_SOURCES` source
- * and a `DENSE_INTRADAY_RETENTION_TYPES` type whose externalId does NOT start
+ * per-sample dense-tier row (a row of a source and type the fold takes,
+ * `DENSE_INTRADAY_FOLD_TYPES_BY_SOURCE`, whose externalId does NOT start
  * with the daily-stats prefix, that is not tombstoned, AND whose
  * `measuredAt` is older than the retention window) and enqueues one
  * retention job per account.
@@ -161,36 +168,40 @@ export async function enqueueBootTimeDenseIntradayRetention(): Promise<{
   }
 
   try {
-    // The dense-tier type set is a closed compile-time list of enum
-    // members; splice-free — Prisma binds the `type IN (...)` array as
-    // parameters.
-    const types = Array.from(DENSE_INTRADAY_RETENTION_TYPES);
-    if (types.length === 0) {
-      return { enqueued: 0, skipped: 0, error: null };
-    }
-
     const windowStart = new Date(
       Date.now() - DENSE_INTRADAY_RETENTION_DAYS * 24 * 60 * 60 * 1000,
     );
 
-    // `groupBy` compiles to a server-side `GROUP BY` — Prisma's
-    // `distinct` dedups in the client AFTER pulling every matching row,
-    // an instance-wide scan of every out-of-window dense-tier row just
-    // to list user ids.
-    const users = await dropPendingDeletion(
-      prisma,
-      await prisma.measurement.groupBy({
-        by: ["userId"],
-        where: {
-          source: { in: [...DENSE_INTRADAY_FOLD_SOURCES] },
-          type: { in: types },
-          deletedAt: null,
-          NOT: { externalId: { startsWith: "stats:" } },
-          measuredAt: { lt: windowStart },
-        },
-      }),
-      (u) => u.userId,
-    );
+    // One probe per account and source for the first raw sample the fold
+    // would take, which stops at that row. A grouped count over every such
+    // row read the whole out-of-window history of every account to list
+    // their ids, and on an account with tens of millions of heart-rate rows
+    // that is most of the table (#1297).
+    const accounts = await prisma.user.findMany({
+      where: ACTIVE_ACCOUNT,
+      select: { id: true },
+      orderBy: { createdAt: "asc" },
+    });
+    const users: Array<{ userId: string }> = [];
+    for (const { id } of accounts) {
+      for (const source of DENSE_INTRADAY_FOLD_SOURCES) {
+        const raw = await prisma.measurement.findFirst({
+          where: {
+            userId: id,
+            source,
+            type: { in: [...DENSE_INTRADAY_FOLD_TYPES_BY_SOURCE[source]] },
+            deletedAt: null,
+            NOT: { externalId: { startsWith: "stats:" } },
+            measuredAt: { lt: windowStart },
+          },
+          select: { id: true },
+        });
+        if (raw) {
+          users.push({ userId: id });
+          break;
+        }
+      }
+    }
 
     if (users.length === 0) {
       return { enqueued: 0, skipped: 0, error: null };

@@ -5958,6 +5958,23 @@ model RecoveryReadinessNotice {
   @@map("recovery_readiness_notices")
 }
 
+/// Per background queue of the instance, the state the admins were last
+/// notified about. The hourly system job evaluation compares a queue's run
+/// history against it: three failed runs in a row notify once, a queue still
+/// failing is reminded at most once a day, and its first successful run after
+/// that is announced once. The update is a compare-and-set on both columns, so
+/// two workers never send the same notice. Written and read by
+/// `notifySystemJobFailures`.
+model SystemJobAlertNotice {
+  /// The pg-boss queue name (`rollup-full-backfill`, …).
+  queue         String    @id
+  /// `ok` or `failing`; null once a queue's history has aged out.
+  notifiedState String?   @map("notified_state")
+  notifiedAt    DateTime? @map("notified_at")
+
+  @@map("system_job_alert_notices")
+}
+
 /// The recovery kit an admin confirmed: every key a restore needs, by kind,
 /// id and fingerprint, never the key itself. The kit is due again as soon as
 /// a key it needs is not in this set (a rotation, a new backup key). Written

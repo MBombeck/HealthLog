@@ -116,12 +116,16 @@ export async function readBestGranularityRollups(
   type: MeasurementType,
   windowDays: number,
   userPriorityJson?: unknown,
+  now: Date = new Date(),
 ): Promise<{
   granularity: RollupGranularity;
   rows: RollupBucketRow[];
 } | null> {
   if (!Number.isFinite(windowDays) || windowDays <= 0) return null;
-  const since = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000);
+  // The window trails the caller's `now`, so a read anchored on another
+  // moment than the wall clock sees the same days through the rollups as
+  // through the live fallback.
+  const since = new Date(now.getTime() - windowDays * 24 * 60 * 60 * 1000);
   // v1.11.1 — load the source-priority blob once and thread it into every
   // granularity probe so the collapse never re-queries the user per floor.
   const priority =

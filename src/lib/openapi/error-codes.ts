@@ -40,8 +40,13 @@ import { DEFAULT_ERROR_CODES } from "@/lib/api/default-error-codes";
  */
 export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
   {
-    account: ["account.deletion.no_guardian", "account.deletion.not_pending"],
+    account: [
+      "account.deletion.already_pending",
+      "account.deletion.no_guardian",
+      "account.deletion.not_pending",
+    ],
     activity: ["activity.calendar.future_date", "activity.calendar.too_old"],
+    admin: ["admin.users.delete.managed_profile", "admin.users.delete.self"],
     ai: [
       "ai.budget.exceeded",
       "ai.provider.none",

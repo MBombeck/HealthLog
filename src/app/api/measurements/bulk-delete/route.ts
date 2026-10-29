@@ -7,6 +7,8 @@
  *
  * Soft-deletes (tombstones) every owned, not-already-deleted row in one
  * `updateMany` — matching the single-DELETE iOS tombstone contract. A
+ * selected blood-pressure half takes the rest of its reading with it, as the
+ * single DELETE does, and `deleted` counts every row tombstoned. A
  * forged / foreign id is a silent no-op (never a 404 existence leak): the
  * mutation `where` pins `userId` so it only ever touches the caller's rows.
  *
@@ -26,6 +28,7 @@ import { withIdempotency } from "@/lib/idempotency";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
+import { bloodPressureSiblings } from "@/lib/measurements/blood-pressure-reading";
 import type { MeasurementType } from "@/generated/prisma/client";
 
 const MAX_IDS_PER_BATCH = 200;
@@ -73,17 +76,27 @@ async function postBulkDelete(request: NextRequest): Promise<Response> {
   // a status-insight cache drop. Ownership-scoped + `deletedAt: null` so
   // a forged / foreign / already-tombstoned id is excluded here exactly
   // as it is from the mutation below — no existence leak.
-  const affected = await prisma.measurement.findMany({
-    where: { id: { in: ids }, userId: user.id, deletedAt: null },
-    select: { type: true, measuredAt: true },
-  });
+  //
+  // A selected systolic or diastolic brings the rest of its reading (the
+  // other half and the cuff's pulse, `bloodPressureSiblings`) into the same
+  // statement, so the shared `deletedAt` lets the restore route bring the
+  // reading back whole.
+  const { affected, count } = await prisma.$transaction(async (tx) => {
+    const selected = await tx.measurement.findMany({
+      where: { id: { in: ids }, userId: user.id, deletedAt: null },
+      select: { id: true, type: true, source: true, measuredAt: true },
+    });
+    const siblings = await bloodPressureSiblings(tx, user.id, selected, "live");
+    const rowIds = [...selected, ...siblings].map((row) => row.id);
 
-  // Soft-delete (tombstone) in one statement. The `where` pins `userId`
-  // so a forged id for another user is silently a no-op; `deletedAt: null`
-  // keeps the count honest (an already-tombstoned id doesn't re-count).
-  const { count } = await prisma.measurement.updateMany({
-    where: { id: { in: ids }, userId: user.id, deletedAt: null },
-    data: { deletedAt: now, syncVersion: { increment: 1 } },
+    // Soft-delete (tombstone) in one statement. The `where` pins `userId`
+    // so a forged id for another user is silently a no-op; `deletedAt: null`
+    // keeps the count honest (an already-tombstoned id doesn't re-count).
+    const { count } = await tx.measurement.updateMany({
+      where: { id: { in: rowIds }, userId: user.id, deletedAt: null },
+      data: { deletedAt: now, syncVersion: { increment: 1 } },
+    });
+    return { affected: [...selected, ...siblings], count };
   });
 
   await auditLog("measurement.delete.bulk", {

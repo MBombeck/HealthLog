@@ -235,7 +235,8 @@
           "Include a key ONLY if its snapshot block is present below (keys present: bp, pulse, weight, bmi, mood, compliance, general). Omit any metric whose block is absent — never fabricate one."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       },
       {
         "maxTokens": 250,
@@ -348,7 +349,8 @@
           "- One message: close with ONE doable, kind step ONLY when the finding implies one (e.g. on good days, briefly note what helped). When mood is steadily good, acknowledge that honestly and name one thing worth keeping an eye on instead of manufacturing a step."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -697,7 +699,8 @@
           "Nimm einen Key NUR auf, wenn sein Snapshot-Block unten vorhanden ist (vorhandene Keys: bp, pulse, weight, bmi, mood, compliance, general). Lass jede Metrik ohne Block weg — erfinde niemals eine."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       },
       {
         "maxTokens": 250,
@@ -820,7 +823,8 @@
           "- Eine Botschaft: Wenn die Werte über der Baseline liegen, schließe NUR DANN mit EINEM machbaren Schritt, wenn der Befund einen nahelegt (z.B. ein paar Tage zur selben Uhrzeit nachmessen, oder — bei lückenhafter Einnahmetreue — die Einnahme verlässlicher machen). Bei stabilen Werten im Ziel: das ehrlich anerkennen und stattdessen einen Punkt nennen, den man im Auge behalten kann, statt einen Schritt zu erzwingen."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       },
       {
         "maxTokens": 250,
@@ -934,7 +938,8 @@
           "- Eine Botschaft: Schließe NUR DANN mit EINEM machbaren Schritt, der zur Bandlage passt, wenn der Befund einen nahelegt — bei stabilem Wert im günstigen Band das ehrlich anerkennen und stattdessen einen Punkt nennen, den man im Auge behalten kann, statt einen Schritt zu erzwingen."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       },
       {
         "maxTokens": 250,
@@ -1047,7 +1052,8 @@
           "- Eine Botschaft: Auch über alle Metriken hinweg endet die Einschätzung NUR DANN mit GENAU EINER wichtigsten, machbaren Empfehlung (\"eine Sache\"), wenn das Gesamtbild eine nahelegt. Ist alles stabil und gibt es nichts Sinnvolles zu tun, sage das ehrlich und nenne stattdessen einen Punkt, den man im Auge behalten kann, statt eine Empfehlung zu erzwingen."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       },
       {
         "maxTokens": 250,
@@ -1170,7 +1176,8 @@
           "- Eine Botschaft: Schließe NUR DANN mit EINEM machbaren Schritt, wenn der Befund einen nahelegt (z.B. bei einem Plateau zur selben Tageszeit wiegen, um den echten Trend zu sehen, statt am Tagesrauschen zu hängen). Ist der Trend stabil und gibt es nichts Sinnvolles zu tun, erkenne das ehrlich an und nenne stattdessen einen Punkt, den man im Auge behalten kann, statt einen Schritt zu erzwingen."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       },
       {
         "maxTokens": 250,
@@ -1283,7 +1290,8 @@
           "- Eine Botschaft: Schließe NUR DANN mit EINEM machbaren Schritt, wenn der Befund einen nahelegt (z.B. Abenddosen werden häufiger vergessen — eine feste Routine oder ein Reminder zur kritischen Uhrzeit kann helfen). Bei durchgehend hoher Treue das ehrlich anerkennen, statt einen Schritt zu erzwingen. Keine Schuldzuweisung."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       },
       {
         "maxTokens": 250,
@@ -1395,7 +1403,8 @@
           "- Eine Botschaft: Liegt der Ruhepuls über der eigenen Baseline, schließe NUR DANN mit EINEM machbaren Schritt, wenn der Befund einen nahelegt (z.B. ein paar Tage morgens vor dem Aufstehen messen, um eine saubere Ruhe-Baseline zu bekommen). Verbessert er sich oder ist er stabil, erkenne das ehrlich an und nenne stattdessen einen Punkt, den man im Auge behalten kann, statt einen Schritt zu erzwingen."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       },
       {
         "maxTokens": 250,
@@ -1508,7 +1517,8 @@
           "- Eine Botschaft: Schließe NUR DANN mit EINEM machbaren, freundlichen Schritt, wenn der Befund einen nahelegt (z.B. an guten Tagen kurz festhalten, was geholfen hat). Bei stabil guter Stimmung das ehrlich anerkennen und stattdessen einen Punkt nennen, den man im Auge behalten kann, statt einen Schritt zu erzwingen."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],

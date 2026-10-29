@@ -274,7 +274,13 @@ export async function readDayMeanSeries(
     // band from WEEK/MONTH `sd`, and the center reads the DAY `mean`
     // which composes exactly. `readBestGranularityRollups` with a
     // window < 91 days resolves to DAY by construction.
-    const resolved = await readBestGranularityRollups(userId, type, windowDays);
+    const resolved = await readBestGranularityRollups(
+      userId,
+      type,
+      windowDays,
+      undefined,
+      now,
+    );
     if (
       resolved &&
       resolved.granularity === "DAY" &&

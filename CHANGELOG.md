@@ -1,5 +1,82 @@
 # Changelog
 
+## [1.46.2] — 2026-10-29
+
+### Fixed
+
+- **Large accounts get their summaries.** On an account with tens of
+  millions of heart-rate readings the job that rebuilds the summary tier
+  after an upgrade ran one aggregate over five years under the database's
+  60 second limit, never finished, and left the dashboard cards reading the
+  raw table until they timed out too. It now works through the history one
+  calendar year at a time, every step gets five minutes of its own, and a
+  run that is out of time hands the remaining years to a follow-up instead
+  of starting over. Finding the accounts that need the rebuild no longer
+  reads every reading. If you raised `DATABASE_STATEMENT_TIMEOUT_MS` as a
+  workaround, you can set it back. (#1298)
+- **Lab values from a document land on the day of the report.** A report
+  usually prints the collection date once, in its header, so confirming it
+  filed every undated value under the day you confirmed it. An undated
+  value now takes the report date, or the filing date when the report
+  names none, and an impossible date such as 30 February counts as no date.
+  Values filed under the wrong day before are moved once after the update:
+  only those that came from a confirmed document, had no date of their own,
+  still sit at the moment they were confirmed, and whose document names a
+  different day. The server log says how many moved. (#1293)
+- **Deleting a blood pressure reading deletes all of it.** Deleting the
+  systolic or the diastolic value used to leave the other half and the
+  pulse behind. It now removes the whole reading, Undo brings the whole
+  reading back, and deleting only the pulse still removes only the pulse.
+- **Daily briefings work with models that always reason.** Background work
+  asks for medium reasoning at most, and a model that cannot be told to
+  stop thinking used all of that room and returned nothing. Once HealthLog
+  has seen a model answer with nothing but its reasoning, background work
+  gives it the room the Coach gets on High. (#1276)
+- **Single sign-on accounts can confirm it's you.** Creating a token,
+  connecting an assistant or resetting a password asks for a fresh
+  confirmation, and an account with no password, passkey or second factor
+  had nothing to offer. It now confirms through its identity provider with
+  a fresh login, accepted only for the linked identity and a sign-in from
+  the last few minutes. The same confirmation can add a passkey. (#1296)
+- **A personal baseline no longer depends on the wall clock.** Reads that
+  ask for a baseline as of a given moment saw a different window through
+  the summary tier than through the raw readings.
+- Signed out, the language switch keeps your choice in the browser instead
+  of asking the server to store it.
+- A new account is greeted with a welcome instead of "welcome back".
+- The Coach chat, the document chat and the profile settings accept every
+  language the app ships.
+- The French translation says "vous" throughout.
+
+### Added
+
+- **Admins hear about a background job that keeps failing.** After three
+  failed runs in a row every admin gets a push on their system alert
+  channels, a reminder at most once a day while it keeps failing, and one
+  message when it works again. Retries of one run count once, and a job
+  that runs per account counts per account, so one account in trouble is
+  reported once and not every hour. (#1298)
+- **Heart rate from Google Health and Oura is folded like Apple Health's.**
+  Readings older than 90 days become one value per hour, and a later sync
+  does not bring the folded readings back. The first fold of a large
+  history works through the backlog over a few nights and waits until that
+  account's summaries are rebuilt; afterwards the index rebuild under
+  Admin, System status gives the space back. (#1297)
+- **Admins can delete another account** from the users list, through the
+  same grace window as deleting your own. Your own account, the last admin
+  and managed profiles are excluded.
+- Crisis lines for the Netherlands and Belgium on the support card.
+- A section on large accounts in the self-hosting guide.
+- Tests that restore every release's own backup file, restore the backup
+  of an erased account, and hold the header height in every app language.
+
+### Thanks
+
+@Cnote43 for #1297 and #1298, written up so precisely that the fix mostly
+followed the report. @haritowa for finding, fixing and live-testing the lab
+date bug (#1293) and for the Codex model checks and tests (#1288). @Tio61
+for testing every step of #1276. @sposschip for #1296.
+
 ## [1.46.1] — 2026-10-26
 
 ### Fixed

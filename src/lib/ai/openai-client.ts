@@ -21,15 +21,12 @@ import {
 import {
   askAgainUnreasoned,
   knownReasoner,
-  reasonsUnasked,
+  uncontrolledCallThinkingRoom,
   repeatUnreasoned,
 } from "./reasoning/answerless";
 import { RequestHops } from "./request-hops";
 import { learnFromRefusal } from "./wire-refusal";
-import {
-  REASONING_THINKING_BUDGET,
-  uncontrolledThinkingRoom,
-} from "./reasoning/levels";
+import { REASONING_THINKING_BUDGET } from "./reasoning/levels";
 import {
   answerOf,
   isOpenRouterEndpoint,
@@ -573,19 +570,15 @@ export class OpenAIClient implements AIProvider {
    * included, and a `none` sent for the person's Off or after the #1267
    * lesson must not leave it the bare answer budget to think in. Without a
    * level of its own, a call gets the `low` room once the model has shown it
-   * reasons unasked.
+   * reasons unasked, and background work the `high` room once the model has
+   * answered with reasoning alone (`unattendedThinkingRoom`).
    */
   private thinkingRoom(
     params: CompletionParams,
     wire: OpenAIReasoningWire,
   ): number {
     if (this.isGateway) {
-      if (params.reasoning) {
-        return uncontrolledThinkingRoom(params.reasoning.effort);
-      }
-      return reasonsUnasked(this.reasoningDialectKey())
-        ? uncontrolledThinkingRoom("off")
-        : 0;
+      return uncontrolledCallThinkingRoom(this.reasoningDialectKey(), params);
     }
     if (wire.kind === "none" || wire.effort === "none") return 0;
     const level = levelOfWireEffort(wire.effort);

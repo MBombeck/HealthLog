@@ -8,7 +8,7 @@
  * to the rounding precision, the chart-token scrub, or the cache-row
  * shape lands once rather than seven times.
  *
- * `SupportedLocale` is the full six-locale UI union. The status prompts
+ * `SupportedLocale` is the full UI locale union. The status prompts
  * compose one of two reviewed instruction bodies (de / en) but name the
  * reader's own language in an explicit output directive, so the reader's
  * locale must survive the whole pipeline rather than being collapsed to a
@@ -29,7 +29,7 @@ import {
 } from "@/lib/ai/safety/outbound-screen";
 
 /**
- * The locales the assessment pipeline carries end-to-end — all six the UI
+ * The locales the assessment pipeline carries end-to-end — every one the UI
  * ships. Aliased to the i18n `Locale` so adding a UI locale widens the
  * pipeline in one place rather than needing a second edit here.
  */
@@ -108,7 +108,7 @@ export function normalizeSummaryText(value: string): string {
 }
 
 /**
- * Validate an arbitrary locale string against the six the UI ships.
+ * Validate an arbitrary locale string against every locale the UI ships.
  *
  * A recognised locale passes through UNCHANGED — that is the whole point:
  * the former `value === "de" ? "de" : "en"` binary erased a French reader's

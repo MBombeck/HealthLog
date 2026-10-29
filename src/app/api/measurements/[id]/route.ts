@@ -23,6 +23,7 @@ import {
 } from "@/lib/measurements/apple-health-mirror";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
+import { bloodPressureSiblings } from "@/lib/measurements/blood-pressure-reading";
 import { Prisma, type MeasurementType } from "@/generated/prisma/client";
 import { NextRequest } from "next/server";
 import { z } from "zod";
@@ -237,18 +238,45 @@ export const DELETE = apiHandler(
     // (see `measurements/route.ts:100`), so the row is invisible to
     // normal reads from this point on. A row that is already tombstoned
     // re-bumps `syncVersion` harmlessly (idempotent re-delete).
-    await prisma.measurement.update({
-      where: { id },
-      data: {
-        deletedAt: new Date(),
-        syncVersion: { increment: 1 },
-      },
+    //
+    // A systolic or diastolic takes the rest of its reading with it (the
+    // other half and the cuff's pulse, `bloodPressureSiblings`), in the same
+    // transaction and with the same `deletedAt`, which is how the restore
+    // route knows to bring them back together. Each sibling bumps its own
+    // `syncVersion`, so a paired client sees every row's tombstone.
+    const deletedAt = new Date();
+    const siblings = await prisma.$transaction(async (tx) => {
+      const found = await bloodPressureSiblings(
+        tx,
+        user.id,
+        [existing],
+        "live",
+      );
+      await tx.measurement.update({
+        where: { id },
+        data: { deletedAt, syncVersion: { increment: 1 } },
+      });
+      if (found.length > 0) {
+        await tx.measurement.updateMany({
+          where: {
+            id: { in: found.map((s) => s.id) },
+            userId: user.id,
+            deletedAt: null,
+          },
+          data: { deletedAt, syncVersion: { increment: 1 } },
+        });
+      }
+      return found;
     });
 
     await auditLog("measurement.delete", {
       userId: user.id,
       ipAddress: getClientIp(request),
-      details: { measurementId: id, type: existing.type },
+      details: {
+        measurementId: id,
+        type: existing.type,
+        readingRows: siblings.length,
+      },
     });
 
     annotate({
@@ -269,7 +297,10 @@ export const DELETE = apiHandler(
     // the rollup row when the day's measurement count goes to zero).
     await afterMeasurementMutation(
       user.id,
-      [{ type: existing.type, measuredAt: existing.measuredAt }],
+      [
+        { type: existing.type, measuredAt: existing.measuredAt },
+        ...siblings.map((s) => ({ type: s.type, measuredAt: s.measuredAt })),
+      ],
       { source: "manual" },
     );
 

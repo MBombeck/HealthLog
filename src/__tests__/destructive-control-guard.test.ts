@@ -679,6 +679,17 @@ const REGISTRY: DestructiveEntry[] = [
     recovery: "permanent",
     confirm: ["AlertDialog"],
   },
+  {
+    file: "components/admin/delete-user-control.tsx",
+    destroys:
+      "another user's whole account, locked at once and erased when the deletion grace window ends (or at once when the window is 0)",
+    triggers: ["components/admin/user-management-section.tsx"],
+    // The undo route exists and the row offers it until the purge date
+    // (`pending-deletion-controls.tsx`); with the window at 0 there is
+    // nothing to undo, and the dialog says so.
+    recovery: "restorable",
+    confirm: ["ConfirmButton"],
+  },
 
   // ── Integrations ────────────────────────────────────────────────────────
   // Every connection renders the shared integration card, whose three-dot

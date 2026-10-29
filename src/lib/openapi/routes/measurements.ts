@@ -1055,7 +1055,7 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Measurements"],
       summary: "Delete a measurement",
       description:
-        "Soft-deletes the row (tombstone) so paired clients can reconcile the deletion.",
+        "Soft-deletes the row (tombstone) so paired clients can reconcile the deletion. A blood-pressure systolic or diastolic takes the rest of its reading with it: the other half and the pulse with the same source and the identical `measuredAt`, tombstoned in the same transaction with the same `deletedAt`, each with its own `syncVersion` bump. A pulse is deleted on its own.",
       requestParams: { path: z.object({ id: z.string() }) },
       responses: {
         ...recordRefusal(),
@@ -1145,7 +1145,7 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Measurements"],
       summary: "Bulk soft-delete measurements",
       description:
-        "Soft-deletes (tombstones) up to 200 of the caller's measurement rows in one call, mirroring the single-DELETE contract. Idempotent via the `Idempotency-Key` header; rate-limited `measurements:bulk-delete:<userId>`. Forged / foreign / already-deleted ids are silently skipped — `deleted` is the count of rows actually tombstoned. The deletions surface in `/api/sync/changes` as tombstones.",
+        "Soft-deletes (tombstones) up to 200 of the caller's measurement rows in one call, mirroring the single-DELETE contract. Idempotent via the `Idempotency-Key` header; rate-limited `measurements:bulk-delete:<userId>`. Forged / foreign / already-deleted ids are silently skipped — `deleted` is the count of rows actually tombstoned, which includes the rest of any blood-pressure reading a selected systolic or diastolic belongs to (as on the single DELETE). The deletions surface in `/api/sync/changes` as tombstones.",
       requestBody: {
         required: true,
         content: {
@@ -1176,7 +1176,7 @@ export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Measurements"],
       summary: "Restore soft-deleted measurements",
       description:
-        "Un-tombstones up to 200 of the caller's soft-deleted measurement rows in one call — the delete-Undo counterpart to `/api/measurements/bulk-delete`. Idempotent via the `Idempotency-Key` header; rate-limited `measurements:restore:<userId>`. Forged / foreign / not-deleted ids are silently skipped — `restored` is the count of rows actually un-tombstoned. The restored rows re-surface in `/api/sync/changes` as upserts.",
+        "Un-tombstones up to 200 of the caller's soft-deleted measurement rows in one call — the delete-Undo counterpart to `/api/measurements/bulk-delete`. Idempotent via the `Idempotency-Key` header; rate-limited `measurements:restore:<userId>`. Forged / foreign / not-deleted ids are silently skipped — `restored` is the count of rows actually un-tombstoned. A blood-pressure systolic or diastolic also restores the rows of its reading that were deleted with it (same source, identical `measuredAt` and `deletedAt`), so naming one half undoes the whole reading; a row deleted at another moment stays deleted. The restored rows re-surface in `/api/sync/changes` as upserts.",
       requestBody: {
         required: true,
         content: {

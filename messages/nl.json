@@ -789,7 +789,10 @@
       "title": "Bewaar je herstelkit",
       "body": "Zonder kopieën van de sleutels die deze server gebruikt, kunnen de gegevens na een herinstallatie niet worden hersteld. Het kost een paar minuten.",
       "action": "Kit openen"
-    }
+    },
+    "greetingOnly": "{greeting}.",
+    "welcomeNew": "Welkom.",
+    "welcomeNewWithName": "Welkom, {name}."
   },
   "measurements": {
     "title": "Metingen",
@@ -6237,14 +6240,17 @@
         "password": "Wachtwoord",
         "totp": "Authenticatorcode",
         "passkey": "Passkey",
-        "webauthn": "Beveiligingssleutel"
+        "webauthn": "Beveiligingssleutel",
+        "oidc": "Identiteitsprovider"
       },
       "currentPassword": "Huidig wachtwoord",
       "authenticatorCode": "Authenticatorcode",
       "authenticatorPlaceholder": "Authenticatorcode van 6 cijfers",
       "verifyAndAdd": "Verifiëren en toevoegen",
       "factorDescription": "Verifieer een bestaande inlogmethode voordat je een tweede factor toevoegt.",
-      "verifyAndContinue": "Verifiëren en doorgaan"
+      "verifyAndContinue": "Verifiëren en doorgaan",
+      "oidcHint": "Je logt nog een keer in bij je identiteitsprovider en komt meteen terug op deze pagina. Doe daarna opnieuw wat je wilde doen.",
+      "continueToProvider": "Verder naar inloggen"
     },
     "passkeyName": "Naam",
     "noPasskeys": "Geen passkeys geregistreerd.",
@@ -7517,7 +7523,9 @@
       "description": "Hiermee deel of exporteer je je gezondheidsgegevens. Bevestig dat jij het bent om door te gaan.",
       "descriptionChange": "Hiermee wijzig je iets wat alleen jij zou moeten kunnen wijzigen. Bevestig dat jij het bent om door te gaan.",
       "signInAgain": "Log opnieuw in en probeer het daarna nog een keer. Je account heeft geen wachtwoord of passkey waarmee je hier kunt bevestigen.",
-      "failed": "Dat is niet gelukt. Controleer wat je hebt ingevoerd en probeer het opnieuw."
+      "failed": "Dat is niet gelukt. Controleer wat je hebt ingevoerd en probeer het opnieuw.",
+      "oidcDone": "Bevestigd. De komende vijf minuten kun je verder zonder dat het opnieuw wordt gevraagd.",
+      "oidcFailed": "Je identiteitsprovider kon niet bevestigen dat jij het bent. Probeer het opnieuw."
     },
     "passwordTitle": "Wachtwoord",
     "tokenNameLabel": "Tokennaam",
@@ -8105,7 +8113,16 @@
         "undoDeletionBody": "{name} heeft gevraagd dit account te verwijderen; het wordt gewist als de bedenktijd afloopt. Ongedaan maken houdt het account en alles erin zoals het was. {name} kan weer inloggen, maar API-tokens, deellinks en vertrouwde apparaten blijven ingetrokken en moeten opnieuw worden ingesteld.",
         "undoDeletionBodyGuardian": "Een verzorger heeft het beheerde profiel {name} verwijderd; het wordt gewist als de bedenktijd afloopt. Ongedaan maken houdt het profiel en alles erin zoals het was, en de verzorgers kunnen het weer bereiken. De deellinks en tokens blijven ingetrokken en moeten opnieuw worden ingesteld.",
         "undoDeletionDone": "Verwijdering van {name} ongedaan gemaakt",
-        "undoDeletionFailed": "Verwijdering kon niet ongedaan worden gemaakt"
+        "undoDeletionFailed": "Verwijdering kon niet ongedaan worden gemaakt",
+        "undoDeletionBodyAdmin": "Een beheerder heeft het account {name} verwijderd; het wordt gewist als de bedenktijd afloopt. Ongedaan maken houdt het account en alles erin zoals het was. {name} kan weer inloggen, maar API-tokens, deellinks en vertrouwde apparaten blijven ingetrokken en moeten opnieuw worden ingesteld.",
+        "deleteUser": "Account verwijderen",
+        "deleteUserTitle": "Het account {name} verwijderen?",
+        "deleteUserBodyGrace": "{name} wordt meteen overal uitgelogd en kan niet meer inloggen. Het account en alles erin wordt op {date} gewist. Tot dan kun je de verwijdering hier ongedaan maken.",
+        "deleteUserBodyNow": "{name} en alles in het account wordt meteen gewist. Deze server heeft geen bedenktijd, dus de verwijdering kan niet ongedaan worden gemaakt.",
+        "deleteUserConfirm": "Account verwijderen",
+        "deleteUserScheduled": "Het account {name} is vergrendeld en wordt op {date} gewist",
+        "deleteUserDone": "Het account {name} is verwijderd",
+        "deleteUserFailed": "Het account kon niet worden verwijderd"
       },
       "invites": {
         "title": "Uitnodigingen",
@@ -9243,6 +9260,13 @@
       "titleFailing": "Back-ups lopen gevaar",
       "titleReminder": "Back-ups lopen nog steeds gevaar",
       "titleRecovered": "Back-ups zijn weer in orde"
+    },
+    "systemJobAlert": {
+      "titleFailing": "Achtergrondtaak mislukt: {queue}",
+      "titleReminder": "Achtergrondtaak mislukt nog steeds: {queue}",
+      "titleRecovered": "Achtergrondtaak werkt weer: {queue}",
+      "bodyFailing": "De achtergrondtaak {queue} is {failures} keer achter elkaar mislukt en staat op de beheerstatuspagina. Laatste fout: {error}",
+      "bodyRecovered": "De achtergrondtaak {queue} is weer met succes uitgevoerd."
     }
   },
   "i18n": {
@@ -11250,6 +11274,12 @@
       },
       "sosVozAmiga": {
         "name": "SOS Voz Amiga (Portugal, dagelijks van 15.30 tot 0.30 uur)"
+      },
+      "zelfmoordpreventie113": {
+        "name": "113 Zelfmoordpreventie (Nederland, dag en nacht, gratis, anoniem, ook via chat)"
+      },
+      "zelfmoordlijn1813": {
+        "name": "Zelfmoordlijn 1813 (België, dag en nacht, gratis, anoniem)"
       }
     },
     "instrumentDescription": {

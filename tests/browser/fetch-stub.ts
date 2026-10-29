@@ -14,10 +14,10 @@
  * state. A request no route matches fails with a 404 envelope and is recorded
  * too, so an unexpected call is visible rather than hanging.
  *
- * One request is ambient: `I18nProvider` mirrors the active locale to
- * `PUT /api/auth/me/locale` on every mount, as it does in the app. The stub
- * answers it and leaves it out of `requests`, so "nothing was sent" means
- * nothing the component under test sent.
+ * Nothing is ambient: the locale mirror (`PUT /api/auth/me/locale`) belongs
+ * to `LocaleServerSyncBridge` in the app's providers, which `renderWithApp`
+ * does not mount, so "nothing was sent" means nothing the component under
+ * test sent.
  *
  * `setup.ts` restores the real `fetch` after every test.
  */
@@ -72,9 +72,6 @@ export interface FetchStub {
 
 let realFetch: typeof fetch | null = null;
 
-/** Sent by the providers on every mount, not by the component under test. */
-const AMBIENT = [{ method: "PUT", path: "/api/auth/me/locale" }];
-
 function matches(route: Route, method: string, path: string): boolean {
   if (route.method !== method) return false;
   const bare = path.split("?")[0];
@@ -123,10 +120,6 @@ export function stubFetch(): FetchStub {
 
   window.fetch = async (input, init) => {
     const request = await record(input, init);
-    const ambient = AMBIENT.some(
-      (a) => a.method === request.method && a.path === request.path,
-    );
-    if (ambient) return envelope({ data: request.body ?? null });
     requests.push(request);
     // The newest route wins, so a test can override a default it set up.
     const route = [...routes]

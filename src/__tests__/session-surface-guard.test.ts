@@ -102,8 +102,11 @@ describe("S1 — the direct session-resolution set is frozen", () => {
     // replayed callback redirects instead of minting a second identity, and
     // (v1.43, #959) so a single-sign-on claim is refused over a live session,
     // as the claim routes refuse it.
+    // And the identity-provider re-proof (#1296), which stamps only
+    // the session the start bound into the sealed state, and only while the
+    // browser still carries it.
     "app/api/auth/oidc/callback/route.ts":
-      "duplicate-callback probe and the claim's live-session refusal on an otherwise anonymous route",
+      "duplicate-callback probe, the claim's live-session refusal and the re-proof's session binding on an otherwise anonymous route",
     // Public liveness probe. The session read only decides whether the body
     // carries operational detail; the status code is computed without it.
     "app/api/health/route.ts": "admin-only detail on a public probe",

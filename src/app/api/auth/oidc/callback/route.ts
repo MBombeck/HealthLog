@@ -47,6 +47,11 @@ import {
 } from "@/lib/managed-profiles/claim-sso";
 import { pendingDeletionOf } from "@/lib/account-deletion/pending";
 import { isHandoverUsable } from "@/lib/managed-profiles/handover";
+import {
+  isReproofSession,
+  recordOidcReproof,
+  reproofReturnUrl,
+} from "@/lib/auth/oidc-reproof";
 
 const LOGIN_ERROR_URL = "/auth/login";
 
@@ -104,6 +109,20 @@ function deletionPendingRedirect(purgeAt: Date | null): NextResponse {
 }
 
 /**
+ * #1296 — a re-proof returns to the page it left, never to the sign-in page:
+ * the person is still signed in, and the session they came from is the one
+ * thing that leg may touch. `reason` null is the success.
+ */
+function reproofRedirect(next: string, reason: string | null): NextResponse {
+  if (reason) annotate({ meta: { reason } });
+  const response = NextResponse.redirect(
+    reproofReturnUrl(next, reason ? "failed" : "done"),
+  );
+  deleteStateCookie(response);
+  return response;
+}
+
+/**
  * The state cookie is set with `path: "/api/auth/oidc"`; the delete must
  * repeat that path (RFC 6265 keys cookies by name+domain+path — a bare
  * delete would target `/` and never match, leaving the single-use blob
@@ -139,6 +158,10 @@ export const GET = apiHandler(async (req: NextRequest) => {
   const stored = readStoredOidcState(req.cookies.get(OIDC_STATE_COOKIE)?.value);
   const isNative = stored?.native === true;
   const isClaim = stored?.intent === "claim";
+  // #1296 — a re-proof returns to the page it left (`reproofRedirect`).
+  const isReproof = stored?.intent === "reproof";
+  const reproofBack = (reason: string | null) =>
+    reproofRedirect(stored?.next ?? "/", reason);
 
   // Native-aware error redirect: the custom scheme for a decrypted native flow,
   // the web login page otherwise. Deletes the single-use state cookie either
@@ -158,6 +181,7 @@ export const GET = apiHandler(async (req: NextRequest) => {
   };
 
   const failRedirect = (reason: string): NextResponse => {
+    if (isReproof) return reproofBack(reason);
     if (isClaim) return claimRedirect(reason);
     if (isNative) {
       const response = NextResponse.redirect(
@@ -199,42 +223,11 @@ export const GET = apiHandler(async (req: NextRequest) => {
   // resolve to the web `oidc_state` fallback: the flow is fundamentally broken
   // and there is nothing safe to hand the app (spec §1 web-fallback).
   if (!code || !state) {
+    if (isReproof) return reproofBack("oidc_state");
     return isClaim ? claimRedirect("oidc_state") : errorRedirect("oidc_state");
   }
 
-  if (!stored) {
-    // Defence-in-depth idempotency for a duplicated callback. The single-use
-    // state cookie is set with `path: "/api/auth/oidc"` and DELETED by the
-    // first callback the moment it succeeds. A second callback for the same
-    // sign-in (a client/proxy retry, a double navigation, or the
-    // service-worker double-request this release also fixes) therefore arrives
-    // with the state cookie already gone — `stored` is null — and, because the
-    // first callback set the session, it carries a live session cookie.
-    // Redeeming the now-consumed authorization code again fails at the IdP and
-    // surfaces `?error=oidc_failed` on a sign-in that actually succeeded. So
-    // when a VALIDATED session is present, treat this as a duplicate of a
-    // completed login and send the user into the app instead of erroring.
-    //
-    // Fail-closed is preserved for the real attack case: the code is NEVER
-    // exchanged on this branch, and the session is resolved against the
-    // database + its expiry (not merely "a cookie is present"). A forged,
-    // replayed, or expired state from a caller with no valid session gets the
-    // unchanged `oidc_state` error; a caller who already holds their own valid
-    // session gains nothing here but a redirect to a page they could already
-    // reach — no code redemption, no session mint, no identity change.
-    const existingSession = await validateSessionFromCookieValue(
-      readSessionCookie(req.cookies)?.value,
-    );
-    if (existingSession) {
-      annotate({ meta: { reason: "duplicate_callback_authenticated" } });
-      const response = NextResponse.redirect(oidcAppUrl("/"));
-      // The state cookie is already consumed; delete defensively so a stray
-      // blob can never outlive this response.
-      deleteStateCookie(response);
-      return response;
-    }
-    return errorRedirect("oidc_state");
-  }
+  if (!stored) return stateMissing(req);
 
   // CSRF check — timing-safe, byte-for-byte, mirroring the Withings callback.
   if (
@@ -242,8 +235,11 @@ export const GET = apiHandler(async (req: NextRequest) => {
     !timingSafeEqual(Buffer.from(state), Buffer.from(stored.state))
   ) {
     annotate({ meta: { reason: "csrf" } });
+    if (isReproof) return reproofBack("oidc_state");
     return isClaim ? claimRedirect("oidc_state") : errorRedirect("oidc_state");
   }
+
+  if (isReproof) return finishReproof(req, stored, config, ip, reproofBack);
 
   // v1.43 (#959) — a claim is never finished over a live session (the claim
   // routes' rule: a Guardian finishing their own link would otherwise be
@@ -408,3 +404,90 @@ export const GET = apiHandler(async (req: NextRequest) => {
     return failRedirect("oidc_failed");
   }
 });
+
+/**
+ * #1296 — the re-proof leg. The browser must still carry the session the
+ * start bound into the state, checked before the code is redeemed; then the
+ * provider's answer must name this account's linked identity and an
+ * authentication inside the gate's window. Only then is `reproofAt` stamped.
+ * No session is created, and every refusal lands back on the page it left.
+ */
+async function finishReproof(
+  req: NextRequest,
+  stored: NonNullable<ReturnType<typeof readStoredOidcState>>,
+  config: NonNullable<ReturnType<typeof getOidcConfig>>,
+  ip: string,
+  back: (reason: string | null) => NextResponse,
+): Promise<NextResponse> {
+  const live = await validateSessionFromCookieValue(
+    readSessionCookie(req.cookies)?.value,
+  );
+  if (!isReproofSession(stored, live)) return back("session_mismatch");
+
+  try {
+    const metadata = await discoverOidcMetadata(config);
+    const tokens = await exchangeCodeForTokens({
+      metadata,
+      config,
+      code: req.nextUrl.searchParams.get("code") as string,
+      codeVerifier: stored.codeVerifier,
+      redirectUri: getOidcRedirectUri(),
+    });
+    if (!tokens.id_token) return back("oidc_failed");
+    const identity = await verifyIdToken({
+      metadata,
+      config,
+      idToken: tokens.id_token,
+      nonce: stored.nonce,
+    });
+    const outcome = await recordOidcReproof({
+      userId: stored.reproofUserId as string,
+      sessionId: stored.reproofSessionId as string,
+      issuer: metadata.issuer,
+      identity,
+      ipAddress: ip,
+    });
+    return back(outcome.ok ? null : outcome.reason);
+  } catch (err) {
+    getEvent()?.setError(err);
+    return back("exchange_or_verify_failed");
+  }
+}
+
+/**
+ * A callback that arrives without its state blob: the duplicate of a sign-in
+ * that already completed, or a forged, replayed or expired one.
+ */
+async function stateMissing(req: NextRequest): Promise<NextResponse> {
+  // Defence-in-depth idempotency for a duplicated callback. The single-use
+  // state cookie is set with `path: "/api/auth/oidc"` and DELETED by the
+  // first callback the moment it succeeds. A second callback for the same
+  // sign-in (a client/proxy retry, a double navigation, or the
+  // service-worker double-request this release also fixes) therefore arrives
+  // with the state cookie already gone — `stored` is null — and, because the
+  // first callback set the session, it carries a live session cookie.
+  // Redeeming the now-consumed authorization code again fails at the IdP and
+  // surfaces `?error=oidc_failed` on a sign-in that actually succeeded. So
+  // when a VALIDATED session is present, treat this as a duplicate of a
+  // completed login and send the user into the app instead of erroring.
+  //
+  // Fail-closed is preserved for the real attack case: the code is NEVER
+  // exchanged on this branch, and the session is resolved against the
+  // database + its expiry (not merely "a cookie is present"). A forged,
+  // replayed, or expired state from a caller with no valid session gets the
+  // unchanged `oidc_state` error; a caller who already holds their own valid
+  // session gains nothing here but a redirect to a page they could already
+  // reach — no code redemption, no session mint, no identity change.
+  const existingSession = await validateSessionFromCookieValue(
+    readSessionCookie(req.cookies)?.value,
+  );
+  if (existingSession) {
+    annotate({ meta: { reason: "duplicate_callback_authenticated" } });
+    const response = NextResponse.redirect(oidcAppUrl("/"));
+    // The state cookie is already consumed; delete defensively so a stray
+    // blob can never outlive this response.
+    deleteStateCookie(response);
+    return response;
+  }
+  return errorRedirect("oidc_state");
+}

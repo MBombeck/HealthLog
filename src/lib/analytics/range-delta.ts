@@ -316,6 +316,8 @@ export async function computeRangeDelta(
     userId,
     type,
     windowDays * 2,
+    undefined,
+    new Date(now),
   );
   if (!resolved) {
     const empty: WindowAggregate = {

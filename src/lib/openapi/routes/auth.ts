@@ -342,6 +342,11 @@ const mfaStatusResponse = z
     recoveryCodesRemaining: z.number().int(),
     webauthn: z.array(webauthnCredentialInfo),
     passkeyNudgeDismissed: z.boolean(),
+    proofMethods: z
+      .array(z.enum(["password", "oidc", "totp", "webauthn", "passkey"]))
+      .describe(
+        "The ways this account can confirm it is you, the same list a recent-proof refusal names in `meta.methods`. `password` and `oidc` only on an account without a second factor; `oidc` is a browser round trip to the identity provider (`GET /api/auth/oidc/reproof`) and is never offered to a token.",
+      ),
   })
   .meta({ id: "MfaStatusResponse" });
 
@@ -598,6 +603,14 @@ const changePasswordRequest = changePasswordSchema.meta({
   description:
     "Password rotation. `newPassword` and `confirmPassword` must match, and `newPassword` must differ from the current one. The strength floor is 12 characters plus a scored check against the account's own username and email.",
 });
+
+const passkeyProviderProofRequest = z
+  .object({ method: z.literal("oidc") })
+  .meta({
+    id: "PasskeyProviderProofRequest",
+    description:
+      "Take the session's recent identity-provider re-proof (GET /api/auth/oidc/reproof) as the proof. Accepted only for an account whose `proofMethods` list `oidc` and only within five minutes of that re-proof; otherwise 401 `auth.reproof.required` with `meta.methods`. Web only.",
+  });
 
 const passkeyReauthRequest = z
   .object({
@@ -1130,7 +1143,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       summary: "Re-prove a credential on a browser session (cookie only)",
       description:
         "Stamps the calling browser session as recently re-proved, so for the next five minutes it may run the actions that ask for a fresh proof: GET /api/export/full-backup, POST /api/export/encrypted, POST /api/share-links, POST /api/mcp/tokens, POST /api/tokens/measurements, POST /api/tokens/workouts, POST /api/tokens/documents, and the admin backup download, upload and restore, the admin data wipe and the admin password reset. Those answer 401 `auth.reproof.required` with `meta.methods` (the proofs this account can give) when the session signed in or re-proved more than five minutes ago. A `totp`, `webauthn` or `passkey` proof here also clears the routes that ask for a fresh second factor (the managed-profile acts, the second-factor and passkey changes, the password change, account deletion, the data wipe and key rotation): on a browser session those answer 401 `auth.stepup.required` with `meta.methods` naming the possession proofs the account holds, and the web re-proves here and retries.\n\n" +
-        'The body takes the same shapes as POST /api/auth/step-up. On an account with a second factor only `totp`, `webauthn` (a security key) or `passkey` are accepted, because a password has never stood in for the second factor; on one without, `password` or `passkey`. A method the account cannot use here is refused with 422 `auth.reproof.too_weak` and `meta.methods`, before any guess is spent. A second-factor or passkey proof also refreshes the session\'s second-factor stamp, exactly as signing in again would. Assertions begin at POST /api/auth/passkey/register-options with `{ method: "passkey" | "webauthn" }`.\n\n' +
+        'The body takes the same shapes as POST /api/auth/step-up. On an account with a second factor only `totp`, `webauthn` (a security key) or `passkey` are accepted, because a password has never stood in for the second factor; on one without, `password` or `passkey`. An account without a second factor whose identity is linked to the configured identity provider is also offered `oidc` in `meta.methods`; that proof is not posted here but given by the browser round trip GET /api/auth/oidc/reproof, which stamps the session exactly as a password proof does. A method the account cannot use here is refused with 422 `auth.reproof.too_weak` and `meta.methods`, before any guess is spent. A second-factor or passkey proof also refreshes the session\'s second-factor stamp, exactly as signing in again would. Assertions begin at POST /api/auth/passkey/register-options with `{ method: "passkey" | "webauthn" }`.\n\n' +
         "Proofs draw on the account's shared re-proof budget (five per fifteen minutes, 429 once spent). A proof that does not verify is 401 `auth.reproof.failed` and is audited. Bearer callers use POST /api/auth/step-up instead.",
       requestBody: {
         required: true,
@@ -2454,7 +2467,7 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       description:
         "Cookie-only — a Bearer token cannot enroll a sign-in credential on this surface at any scope. The route has TWO arms and the body decides which.\n\n" +
         '**Re-proof arm.** A body of exactly `{ method: "passkey" }` or `{ method: "webauthn" }` begins an assertion ceremony WITHOUT beginning enrollment, and answers with `reauth: true` alongside the options. Use it to obtain the assertion the second arm needs.\n\n' +
-        "**Enrollment arm.** Any other body must be a full factor proof (the same shape POST /api/auth/step-up takes): a password, a TOTP code, or a completed passkey / security-key assertion. Only then are registration options issued. On an account that already has a second factor a password is refused before it is checked, with 422 `auth.reproof.too_weak` and `meta.methods` naming the proofs that work: a passkey added on the password alone would sign in without the second factor from then on.\n\n" +
+        '**Enrollment arm.** Any other body must be a full factor proof (the same shape POST /api/auth/step-up takes): a password, a TOTP code, or a completed passkey / security-key assertion. Only then are registration options issued. An account confirmed at its identity provider (GET /api/auth/oidc/reproof, within five minutes) sends `{ method: "oidc" }` instead, which takes that re-proof as the proof and, like a password, clears the second-factor stamp. On an account that already has a second factor a password is refused before it is checked, with 422 `auth.reproof.too_weak` and `meta.methods` naming the proofs that work: a passkey added on the password alone would sign in without the second factor from then on.\n\n' +
         "Which factor you prove changes the session, and the direction is not the obvious one: a strong proof stamps the session second-factor-verified, while a PASSWORD proof deliberately CLEARS that stamp. Registering with a password is authorised by the single-use, session-bound challenge alone and must not silently upgrade password-only authentication into something the rest of the app reads as a second factor.\n\n" +
         "Every refusal on the proof path is the same 401 with the same prose — a missing content type, an unparseable body, a body that is not a valid proof shape, and a wrong password are indistinguishable to the caller. A `totp` proof counts only from an authenticator whose enrollment was confirmed.\n\n" +
         "Each proof on the enrollment arm draws on the account's shared re-proof budget (five per fifteen minutes, the same budget as POST /api/auth/step-up), and every failed proof writes an `auth.mfa.failed` audit row. Once the budget is spent the answer is 429 until the window passes, even for a correct proof.",
@@ -2462,7 +2475,11 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         required: true,
         content: {
           "application/json": {
-            schema: z.union([passkeyReauthRequest, stepUpMintSchema]),
+            schema: z.union([
+              passkeyReauthRequest,
+              passkeyProviderProofRequest,
+              stepUpMintSchema,
+            ]),
           },
         },
       },

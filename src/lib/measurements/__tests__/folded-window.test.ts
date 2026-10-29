@@ -14,6 +14,7 @@ import {
   findCompactionTombstones,
   findFoldedWindowDuplicates,
   isFoldedWindowCandidate,
+  withoutFoldedSamples,
 } from "../folded-window";
 
 const DAY = 86_400_000;
@@ -330,5 +331,97 @@ describe("Health Connect", () => {
       "APPLE_HEALTH",
       "HEALTH_CONNECT",
     ]);
+  });
+});
+
+describe("provider syncs (#1297)", () => {
+  const old = new Date("2026-03-01T10:15:00.000Z");
+  const hour = "stats:HKQuantityTypeIdentifierHeartRate:2026-03-01T10";
+
+  it("takes the heart rate Google Health and Oura store per sample, and nothing else of theirs", () => {
+    for (const source of ["GOOGLE_HEALTH", "OURA"]) {
+      expect(isFoldedWindowCandidate(raw("PULSE", old, { source }), NOW)).toBe(
+        true,
+      );
+      // A nightly or daily SpO2 value is no intraday stream: never folded.
+      expect(
+        isFoldedWindowCandidate(raw("OXYGEN_SATURATION", old, { source }), NOW),
+      ).toBe(false);
+    }
+    // Neither stores intraday heart rate as samples.
+    for (const source of ["FITBIT", "WHOOP", "WITHINGS"]) {
+      expect(isFoldedWindowCandidate(raw("PULSE", old, { source }), NOW)).toBe(
+        false,
+      );
+    }
+  });
+
+  it("drops the samples of an hour the fold took, under the write's own source", async () => {
+    // The externalId read finds the hour's row; the reach read finds nothing.
+    const findMany = vi.fn(
+      async (args: {
+        where: { source: string; externalId: { in?: string[] } };
+      }) =>
+        args.where.source === "GOOGLE_HEALTH" &&
+        args.where.externalId.in?.includes(hour)
+          ? [{ type: "PULSE", externalId: hour }]
+          : [],
+    );
+    const findUnique = vi.fn(async () => ({ timezone: "UTC" }));
+    const rows = [
+      { type: "PULSE", externalId: "hr:a", measuredAt: old, value: 61 },
+      {
+        type: "PULSE",
+        externalId: "hr:b",
+        measuredAt: new Date("2026-03-01T12:15:00.000Z"),
+        value: 62,
+      },
+      {
+        type: "PULSE",
+        externalId: "hr:c",
+        measuredAt: new Date(NOW.getTime() - DAY),
+        value: 63,
+      },
+    ];
+    const { kept, dropped } = await withoutFoldedSamples(
+      {
+        measurement: { findMany },
+        user: { findUnique },
+      } as unknown as Parameters<typeof withoutFoldedSamples>[0],
+      "u1",
+      "GOOGLE_HEALTH",
+      rows,
+      { now: NOW },
+    );
+    expect(dropped).toBe(1);
+    expect(kept.map((row) => row.externalId)).toEqual(["hr:b", "hr:c"]);
+    for (const call of findMany.mock.calls) {
+      expect(call[0].where.source).toBe("GOOGLE_HEALTH");
+    }
+  });
+
+  it("asks nothing for a write of recent samples", async () => {
+    const findMany = vi.fn();
+    const findUnique = vi.fn();
+    const rows = [
+      {
+        type: "PULSE",
+        externalId: "heartrate:x",
+        measuredAt: new Date(NOW.getTime() - 2 * 3_600_000),
+      },
+    ];
+    const { kept } = await withoutFoldedSamples(
+      {
+        measurement: { findMany },
+        user: { findUnique },
+      } as unknown as Parameters<typeof withoutFoldedSamples>[0],
+      "u1",
+      "OURA",
+      rows,
+      { now: NOW },
+    );
+    expect(kept).toEqual(rows);
+    expect(findMany).not.toHaveBeenCalled();
+    expect(findUnique).not.toHaveBeenCalled();
   });
 });

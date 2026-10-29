@@ -384,6 +384,14 @@ export interface CompletionParams {
    */
   reasoning?: { effort: ReasoningLevel; summaries: boolean };
   /**
+   * #1276 — no person reads this reply as it streams: the call runs as
+   * background work. Set by the chain runner for every `"job"` walk, never by
+   * a call site. The gateway and local clients give such a call the `high`
+   * thinking room once its model has answered with reasoning alone
+   * (`unattendedThinkingRoom`); nothing else reads it.
+   */
+  unattended?: boolean;
+  /**
    * v1.41.2 — a stable key for calls that resend the same prompt prefix (the
    * rounds of one Coach turn, the turns of one conversation). Providers that
    * route a request to a prompt cache by key read it: Codex as

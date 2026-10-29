@@ -76,6 +76,14 @@ export interface ConsolidationOptions {
    * day this one did not reach.
    */
   shouldStop?: () => boolean;
+  /**
+   * Asked once per account before it is walked; `true` leaves the account
+   * for a later run, and nothing of it is read or written. The dense fold
+   * passes `isRollupFullBackfillPending`: while an account's rollup tier is
+   * rebuilt from its raw readings, folding those readings would leave the
+   * rebuild only hourly means to take the old days' figures from.
+   */
+  deferUser?: (userId: string) => Promise<boolean>;
 }
 
 /**
@@ -458,6 +466,10 @@ export async function runConsolidation<TType extends MeasurementType>(
   const users = await loadConsolidationUsers(prismaClient, options.userId);
 
   walk: for (const user of users) {
+    if (await options.deferUser?.(user.id)) {
+      annotate({ meta: { consolidation_deferred_user: true } });
+      continue;
+    }
     // The zone the server publishes for the account (`/api/auth/me`), which
     // is the zone the phone cuts its `stats:` days and hour buckets in and
     // the one the hour-bucket writer stores them under. A stored value the

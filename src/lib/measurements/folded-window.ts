@@ -47,12 +47,14 @@
  * of tombstones does not use that reach; a tombstone it misses stays class B,
  * which keeps a row longer, never loses one.
  *
- * Health Connect folds its raw heart-rate history the same way under its own
- * source (the importer writes samples of the last 90 days raw, and the
- * nightly pass folds them once they age out), so the hour rule covers both
- * sources and a covering row is always looked up under the sample's own
- * source. The day rule stays Apple Health only: the nightly mean
- * consolidation reads no other source.
+ * Every source the dense fold walks folds under its own source, for the
+ * types it stores sample by sample (`DENSE_INTRADAY_FOLD_TYPES_BY_SOURCE`):
+ * Health Connect from its importer, and Google Health and Oura from their
+ * syncs, whose backfills walk years of heart rate (#1297). So there is one
+ * hour rule per source, and a covering row is always looked up under the
+ * sample's own source. The provider syncs ask the same question before they
+ * write (`withoutFoldedSamples`). The day rule stays Apple Health only: the
+ * nightly mean consolidation reads no other source.
  */
 import type {
   MeasurementSource,
@@ -71,11 +73,15 @@ import {
   hourOfDayForUserTz,
 } from "@/lib/measurements/consolidation-tz";
 import {
-  DENSE_INTRADAY_FOLD_SOURCES,
   DENSE_INTRADAY_RETENTION_DAYS,
-  DENSE_INTRADAY_RETENTION_TYPES,
   hourlyStatsExternalId,
 } from "@/lib/measurements/dense-intraday-retention";
+import {
+  DENSE_INTRADAY_FOLD_SOURCES,
+  DENSE_INTRADAY_FOLD_TYPES_BY_SOURCE,
+  SERVER_PULLED_FOLD_SOURCES,
+  DENSE_INTRADAY_RETENTION_TYPES,
+} from "@/lib/measurements/dense-intraday-sources";
 
 /** The per-entry status reason the batch result carries for such a row. */
 export type FoldedWindowReason = "folded_window";
@@ -88,33 +94,38 @@ const HOUR_MS = 3_600_000;
  * `reachMs` is how far from a sample the anchor of its window can sit in any
  * zone (see the module comment), for the timezone-change check.
  */
-export const FOLDED_WINDOW_RULES = [
-  {
+export const FOLDED_WINDOW_RULES: readonly FoldedWindowRule[] = [
+  // One hour rule per source the dense fold walks, with that source's types.
+  ...DENSE_INTRADAY_FOLD_SOURCES.map((source): FoldedWindowRule => ({
     window: "hour",
-    sources: DENSE_INTRADAY_FOLD_SOURCES,
-    types: DENSE_INTRADAY_RETENTION_TYPES,
+    sources: [source],
+    types: DENSE_INTRADAY_FOLD_TYPES_BY_SOURCE[source],
     foldedAfterMs: DENSE_INTRADAY_RETENTION_DAYS * 24 * HOUR_MS,
     reachMs: HOUR_MS / 2,
-  },
+  })),
   {
     window: "day",
-    sources: ["APPLE_HEALTH"] as const,
+    sources: ["APPLE_HEALTH"],
     types: HIGH_FREQUENCY_MEAN_TYPES,
     foldedAfterMs: CONSOLIDATION_GRACE_CUTOFF_HOURS * HOUR_MS,
     reachMs: 14 * HOUR_MS,
   },
-] as const;
+];
 
-type FoldedWindowRule = (typeof FOLDED_WINDOW_RULES)[number];
+interface FoldedWindowRule {
+  window: "hour" | "day";
+  sources: readonly MeasurementSource[];
+  types: ReadonlySet<MeasurementType>;
+  foldedAfterMs: number;
+  reachMs: number;
+}
 
 function ruleFor(
   row: Pick<FoldedWindowCandidateRow, "type" | "source">,
 ): FoldedWindowRule | null {
   return (
     FOLDED_WINDOW_RULES.find(
-      (rule) =>
-        (rule.sources as readonly MeasurementSource[]).includes(row.source) &&
-        rule.types.has(row.type),
+      (rule) => rule.sources.includes(row.source) && rule.types.has(row.type),
     ) ?? null
   );
 }
@@ -409,6 +420,46 @@ export async function findFoldedWindowDuplicates(
   );
 }
 
+/**
+ * The rows of one provider write without the raw samples whose hour the
+ * dense fold has already taken from that source (#1297).
+ *
+ * The provider syncs write first-write-wins on `(user, type, source,
+ * externalId)`, and the fold deletes the samples it averages, so a backfill
+ * or a full sync that walks old history would find no row for a folded
+ * sample and insert it again beside the hourly mean that already accounts
+ * for it. Google Health would even re-key the hourly row: a sample that fell
+ * on the hour's anchor shares its instant, and the sync's natural-key rescue
+ * then overwrote the mean with the sample. Rows too young to have been folded
+ * cost no query, so the hourly syncs never ask.
+ */
+export async function withoutFoldedSamples<
+  T extends { type: string; externalId?: string | null; measuredAt: Date },
+>(
+  client: LookupClient,
+  userId: string,
+  source: MeasurementSource,
+  rows: readonly T[],
+  options: { now?: Date } = {},
+): Promise<{ kept: T[]; dropped: number }> {
+  const folded = await findFoldedWindowDuplicates(
+    client,
+    userId,
+    rows.map((row) => ({
+      type: row.type as MeasurementType,
+      source,
+      externalId: row.externalId ?? null,
+      measuredAt: row.measuredAt,
+    })),
+    options,
+  );
+  if (folded.size === 0) return { kept: [...rows], dropped: 0 };
+  return {
+    kept: rows.filter((_, index) => !folded.has(index)),
+    dropped: folded.size,
+  };
+}
+
 /** A tombstone as the classifier reads it. */
 export interface TombstoneCandidateRow extends FoldedWindowCandidateRow {
   deletedAt: Date | null;
@@ -425,12 +476,17 @@ export interface TombstoneCandidateRow extends FoldedWindowCandidateRow {
  * enough: an older release folded a day in two runs, and a person who
  * deleted a sample of such a half-folded day deleted something the fold had
  * not taken. That deletion is class B.
+ *
+ * A server-pulled source (`SERVER_PULLED_FOLD_SOURCES`) has no class A. The
+ * fold tombstones its samples so the change feed reports them to a client
+ * that pulled them, which is exactly what this class is kept out of.
  */
 export function compactionTombstoneCoverId(
   row: TombstoneCandidateRow,
   tz: string,
 ): string | null {
   if (row.deletedAt === null) return null;
+  if (SERVER_PULLED_FOLD_SOURCES.has(row.source)) return null;
   if (!isFoldedWindowCandidate(row, row.deletedAt)) return null;
   if (!isWindowFoldedAt(row, row.deletedAt, tz)) return null;
   return coveringStatsExternalId(row, tz);

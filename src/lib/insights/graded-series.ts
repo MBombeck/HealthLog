@@ -537,6 +537,7 @@ export async function buildGradedSeriesWithRollups(
     type,
     365,
     priority,
+    now,
   );
   // Yearly slice: route a multi-year window through the tier.
   const yearlyRouted = await readBestGranularityRollups(
@@ -544,6 +545,7 @@ export async function buildGradedSeriesWithRollups(
     type,
     1095,
     priority,
+    now,
   );
 
   const monthlyCovered =

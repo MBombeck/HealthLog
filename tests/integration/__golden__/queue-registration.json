@@ -1,5 +1,5 @@
 {
-  "registeredQueueCount": 125,
+  "registeredQueueCount": 127,
   "registeredQueues": [
     "account-deletion-purge",
     "achievement-unlock-sweep",
@@ -67,6 +67,7 @@
     "integration-watchdog-daily",
     "integration-watchdog-hourly",
     "lab-biomarker-backfill",
+    "lab-document-date-repair",
     "mcp-token-cleanup",
     "mean-consolidation",
     "measurement-fold-repair",
@@ -112,6 +113,7 @@
     "strava-sync",
     "stress-score-compute",
     "supplement-nutrient-recompute",
+    "system-job-alert",
     "tls-pin-monitor",
     "whoop-backfill",
     "whoop-cycle-sync",
@@ -1123,6 +1125,21 @@
       "deletion_seconds": 604800,
       "expire_seconds": 900,
       "heartbeat_seconds": null,
+      "name": "lab-document-date-repair",
+      "notify": false,
+      "partition": false,
+      "policy": "short",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
       "name": "mcp-token-cleanup",
       "notify": false,
       "partition": false,
@@ -1787,6 +1804,21 @@
       "notify": false,
       "partition": false,
       "policy": "short",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "system-job-alert",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
       "retention_seconds": 1209600,
       "retry_backoff": false,
       "retry_delay": 0,
@@ -2826,6 +2858,18 @@
       "timezone": "Europe/Berlin"
     },
     {
+      "cron": "43 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "system-job-alert",
+      "options": {
+        "retryLimit": 0,
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
       "cron": "7 */6 * * *",
       "data": {},
       "key": "",
@@ -3393,6 +3437,12 @@
       }
     },
     {
+      "queue": "lab-document-date-repair",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
       "queue": "mcp-token-cleanup",
       "options": {
         "localConcurrency": 1,
@@ -3680,6 +3730,13 @@
       "queue": "supplement-nutrient-recompute",
       "options": {
         "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "system-job-alert",
+      "options": {
+        "localConcurrency": 1,
+        "pollingIntervalSeconds": 30
       }
     },
     {

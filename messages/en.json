@@ -789,7 +789,10 @@
       "title": "Save your recovery kit",
       "body": "Without copies of the keys this server uses, its data cannot be recovered after a reinstall. It takes a few minutes.",
       "action": "Open the kit"
-    }
+    },
+    "greetingOnly": "{greeting}.",
+    "welcomeNew": "Welcome.",
+    "welcomeNewWithName": "Welcome, {name}."
   },
   "measurements": {
     "title": "Measurements",
@@ -6237,14 +6240,17 @@
         "password": "Password",
         "totp": "Authenticator code",
         "passkey": "Passkey",
-        "webauthn": "Security key"
+        "webauthn": "Security key",
+        "oidc": "Identity provider"
       },
       "currentPassword": "Current password",
       "authenticatorCode": "Authenticator code",
       "authenticatorPlaceholder": "6-digit authenticator code",
       "verifyAndAdd": "Verify and add",
       "factorDescription": "Verify an existing sign-in method before adding a second factor.",
-      "verifyAndContinue": "Verify and continue"
+      "verifyAndContinue": "Verify and continue",
+      "oidcHint": "You sign in once more at your identity provider and come straight back to this page. Then do what you were about to do again.",
+      "continueToProvider": "Continue to sign-in"
     },
     "passkeyName": "Name",
     "noPasskeys": "No passkeys registered.",
@@ -7517,7 +7523,9 @@
       "description": "This shares or exports your health data. Confirm it's you to continue.",
       "descriptionChange": "This changes something only you should be able to change. Confirm it's you to continue.",
       "signInAgain": "Sign in again, then try once more. Your account has no password or passkey to confirm here.",
-      "failed": "That did not work. Check what you entered and try again."
+      "failed": "That did not work. Check what you entered and try again.",
+      "oidcDone": "Confirmed. For the next five minutes you can go ahead without being asked again.",
+      "oidcFailed": "Your identity provider could not confirm it's you. Try again."
     },
     "passwordTitle": "Password",
     "tokenNameLabel": "Token name",
@@ -8105,7 +8113,16 @@
         "undoDeletionBody": "{name} asked to delete this account, and it is erased when the grace window ends. Undoing keeps the account and everything in it as it was. {name} can sign in again, but API tokens, share links and trusted devices stay revoked and have to be set up again.",
         "undoDeletionBodyGuardian": "A guardian deleted the managed profile {name}, and it is erased when the grace window ends. Undoing keeps the profile and everything in it as it was, and its guardians can reach it again. Its share links and tokens stay revoked and have to be set up again.",
         "undoDeletionDone": "Deletion undone for {name}",
-        "undoDeletionFailed": "Could not undo the deletion"
+        "undoDeletionFailed": "Could not undo the deletion",
+        "undoDeletionBodyAdmin": "An admin deleted the account {name}, and it is erased when the grace window ends. Undoing keeps the account and everything in it as it was. {name} can sign in again, but API tokens, share links and trusted devices stay revoked and have to be set up again.",
+        "deleteUser": "Delete account",
+        "deleteUserTitle": "Delete the account {name}?",
+        "deleteUserBodyGrace": "{name} is signed out everywhere at once and can no longer sign in. The account and everything in it is erased on {date}. Until then you can undo the deletion here.",
+        "deleteUserBodyNow": "{name} and everything in the account is erased right away. This server keeps no grace window, so the deletion cannot be undone.",
+        "deleteUserConfirm": "Delete account",
+        "deleteUserScheduled": "The account {name} is locked and will be erased on {date}",
+        "deleteUserDone": "The account {name} was deleted",
+        "deleteUserFailed": "Could not delete the account"
       },
       "invites": {
         "title": "Invites",
@@ -9243,6 +9260,13 @@
       "titleFailing": "Backups are at risk",
       "titleReminder": "Backups are still at risk",
       "titleRecovered": "Backups are back to normal"
+    },
+    "systemJobAlert": {
+      "titleFailing": "Background job failing: {queue}",
+      "titleReminder": "Background job still failing: {queue}",
+      "titleRecovered": "Background job working again: {queue}",
+      "bodyFailing": "The background job {queue} has failed {failures} times in a row and is listed on the admin status page. Last error: {error}",
+      "bodyRecovered": "The background job {queue} has run successfully again."
     }
   },
   "i18n": {
@@ -11250,6 +11274,12 @@
       },
       "sosVozAmiga": {
         "name": "SOS Voz Amiga (Portugal, daily 3.30 pm to 12.30 am)"
+      },
+      "zelfmoordpreventie113": {
+        "name": "113 Zelfmoordpreventie (Netherlands, 24/7, free, anonymous, also by chat)"
+      },
+      "zelfmoordlijn1813": {
+        "name": "Zelfmoordlijn 1813 (Belgium, 24/7, free, anonymous)"
       }
     },
     "instrumentDescription": {

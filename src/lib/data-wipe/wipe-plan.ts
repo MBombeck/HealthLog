@@ -358,6 +358,8 @@ export const INSTANCE_SCOPED: Readonly<Record<string, string>> = {
     "the monthly restore drill's last verdict for the instance's off-host bucket; says nothing about any account",
   RecoveryReadinessNotice:
     "per backup signal, what the admins were last told; a fact about the instance's backups, not about any account",
+  SystemJobAlertNotice:
+    "per background queue, what the admins were last told about its failures; a fact about the instance's jobs, not about any account",
   RecoveryKitConfirmation:
     "the instance's recovery kit confirmation (key ids and fingerprints); the confirming admin is a plain id, not a relation",
   DatabaseBackupRun:

@@ -27,11 +27,10 @@ import {
   noteReasoningSeen,
   refusesReasoningField,
 } from "./reasoning/dialect-cache";
-import { uncontrolledThinkingRoom } from "./reasoning/levels";
 import {
   askAgainUnreasoned,
   knownReasoner,
-  reasonsUnasked,
+  uncontrolledCallThinkingRoom,
   repeatUnreasoned,
 } from "./reasoning/answerless";
 import {
@@ -149,11 +148,10 @@ export class LocalOpenAICompatibleClient implements AIProvider {
     // `none` sent for Off or after the #1267 lesson must not leave it the
     // bare answer budget to think in. A call without a level gets the `low`
     // room once the model has shown it reasons unasked.
-    const thinkingTokens = params.reasoning
-      ? uncontrolledThinkingRoom(params.reasoning.effort)
-      : reasonsUnasked(this.reasoningDialectKey())
-        ? uncontrolledThinkingRoom("off")
-        : 0;
+    const thinkingTokens = uncontrolledCallThinkingRoom(
+      this.reasoningDialectKey(),
+      params,
+    );
     const body = JSON.stringify({
       model: this.config.model,
       messages,

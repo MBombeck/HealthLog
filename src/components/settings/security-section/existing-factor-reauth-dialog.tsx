@@ -19,7 +19,30 @@ import { useTranslations } from "@/lib/i18n/context";
 import { ApiError, apiPost } from "@/lib/api/api-fetch";
 import { describePasskeyError } from "@/lib/passkey-errors";
 
-export type ReauthMethod = "password" | "totp" | "passkey" | "webauthn";
+export type ReauthMethod =
+  "password" | "oidc" | "totp" | "passkey" | "webauthn";
+
+/**
+ * Where the browser goes to confirm at the identity provider: the re-proof
+ * start, told to come back to the page it is on now. A `reproof` outcome left
+ * on the current address from an earlier round trip is dropped, so the page
+ * does not come back announcing the old one.
+ */
+export function oidcReproofStartUrl(current: {
+  pathname: string;
+  search: string;
+}): string {
+  const params = new URLSearchParams(current.search);
+  params.delete("reproof");
+  const query = params.toString();
+  const next = `${current.pathname}${query ? `?${query}` : ""}`;
+  return `/api/auth/oidc/reproof?${new URLSearchParams({ next }).toString()}`;
+}
+
+/** Leave for the identity provider. The page unloads; nothing resolves. */
+export function startOidcReproof(): void {
+  window.location.assign(oidcReproofStartUrl(window.location));
+}
 
 /** The body the enrollment routes accept as a fresh existing-factor proof. */
 export type ExistingFactorProof =
@@ -46,23 +69,19 @@ export function isReproofRequired(err: unknown): boolean {
 
 const REAUTH_METHODS: readonly ReauthMethod[] = [
   "password",
+  "oidc",
   "totp",
   "passkey",
   "webauthn",
 ];
 
 /**
- * The proofs the refusal says this account can give, or null when it names
- * none. On an account with a second factor the server leaves the password out,
- * so the dialog does not offer a choice that can only be refused.
- */
-/**
- * The refusal says the account holds nothing it could re-prove here: an
- * account that signs in through an identity provider only, with no password,
- * passkey or second factor. A dialog would only offer it a password it does
- * not have, so the callers say "sign in again" instead — a fresh sign-in is
- * the proof such an account can give (`Session.createdAt` within five
- * minutes).
+ * The refusal says the account holds nothing it could re-prove here: no
+ * password, passkey or second factor, and no identity provider to confirm at
+ * (an account whose provider the operator has since switched off). A dialog
+ * would only offer it a password it does not have, so the callers say "sign
+ * in again" instead — a fresh sign-in is the proof such an account can give
+ * (`Session.createdAt` within five minutes).
  */
 export function nothingToReprove(err: unknown): boolean {
   return (
@@ -72,6 +91,11 @@ export function nothingToReprove(err: unknown): boolean {
   );
 }
 
+/**
+ * The proofs the refusal says this account can give, or null when it names
+ * none. On an account with a second factor the server leaves the password out,
+ * so the dialog does not offer a choice that can only be refused.
+ */
 export function offeredReauthMethods(err: unknown): ReauthMethod[] | null {
   if (!(err instanceof ApiError)) return null;
   const raw = err.meta?.methods;
@@ -87,7 +111,9 @@ export function offeredReauthMethods(err: unknown): ReauthMethod[] | null {
  * new factor is added. A passkey or security-key assertion begins at the
  * cookie-only `/api/auth/passkey/register-options` re-proof arm, which issues
  * an assertion challenge and nothing else; the resulting proof is handed to
- * `onProof`, which retries the enrollment call with it.
+ * `onProof`, which retries the enrollment call with it. The identity provider
+ * is not a proof in the body: choosing it leaves the page for the provider and
+ * comes back to it, and the action is then repeated by hand.
  */
 export function ExistingFactorReauthDialog({
   open,
@@ -117,6 +143,11 @@ export function ExistingFactorReauthDialog({
 
   async function submit() {
     setAssertionError(null);
+    if (method === "oidc") {
+      setAsserting(true);
+      startOidcReproof();
+      return;
+    }
     if (method === "password") {
       onProof({ method, password: secret });
       return;
@@ -152,6 +183,7 @@ export function ExistingFactorReauthDialog({
 
   const labels: Record<ReauthMethod, string> = {
     password: t("settings.passkeyReauth.methods.password"),
+    oidc: t("settings.passkeyReauth.methods.oidc"),
     totp: t("settings.passkeyReauth.methods.totp"),
     passkey: t("settings.passkeyReauth.methods.passkey"),
     webauthn: t("settings.passkeyReauth.methods.webauthn"),
@@ -223,6 +255,10 @@ export function ExistingFactorReauthDialog({
           />
         )}
 
+        {method === "oidc" && (
+          <p className="text-sm">{t("settings.passkeyReauth.oidcHint")}</p>
+        )}
+
         {shown && (
           <div
             role="alert"
@@ -253,7 +289,9 @@ export function ExistingFactorReauthDialog({
             {busy && (
               <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />
             )}
-            {t("settings.passkeyReauth.verifyAndContinue")}
+            {method === "oidc"
+              ? t("settings.passkeyReauth.continueToProvider")
+              : t("settings.passkeyReauth.verifyAndContinue")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

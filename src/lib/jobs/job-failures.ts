@@ -145,7 +145,7 @@ function explainTimeout(message: string, expireSeconds: number | null): string {
  * serialises to `{ message, stack, … }`; a thrown non-Error can be any JSON at
  * all, so the raw text is the fallback rather than an invented placeholder.
  */
-function presentError(
+export function presentError(
   raw: string | null,
   expireSeconds: number | null = null,
 ): string {

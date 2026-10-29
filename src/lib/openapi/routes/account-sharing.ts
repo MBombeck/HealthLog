@@ -508,6 +508,9 @@ const accountPayload = z
   .looseObject({
     id: z.string(),
     username: z.string(),
+    createdAt: isoDateTime().describe(
+      "When the signed-in account was created. The web greets an account in its first day as new rather than welcoming it back.",
+    ),
     // Enumerated because clients cut days and convert glucose by them: the
     // day key and the unit must be the server's, not the device's.
     timezone: z
