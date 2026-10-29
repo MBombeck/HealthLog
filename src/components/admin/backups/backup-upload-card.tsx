@@ -1,15 +1,12 @@
 import { Loader2, Upload } from "lucide-react";
 import type { ChangeEvent, RefObject } from "react";
 
-import {
-  ReproofCancelledError,
-  type useRecentProof,
-} from "@/components/settings/security-section/use-recent-proof";
+import { ReproofCancelledError } from "@/components/settings/security-section/use-recent-proof";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
 
 import { BackupTargetDialog } from "./backup-target-dialog";
-import { useBackupUpload } from "./use-backup-upload";
+import type { useBackupUpload } from "./use-backup-upload";
 
 /**
  * The upload card, and for a file whose account is not on this server, the
@@ -17,9 +14,9 @@ import { useBackupUpload } from "./use-backup-upload";
  * mounted per refused file, so every file starts from a clean form.
  */
 export function BackupUpload({
-  recentProof,
+  flow,
 }: {
-  recentProof: ReturnType<typeof useRecentProof>;
+  flow: ReturnType<typeof useBackupUpload>;
 }) {
   const {
     upload,
@@ -28,7 +25,7 @@ export function BackupUpload({
     orphan,
     uploadInto,
     closeOrphan,
-  } = useBackupUpload(recentProof);
+  } = flow;
   return (
     <>
       <BackupUploadCard

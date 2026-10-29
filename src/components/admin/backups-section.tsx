@@ -30,6 +30,7 @@ import { RestoreJobStatus, visibleRestoreJobs } from "./backup-restore-status";
 import { BackupRowsCards, BackupRowsTable } from "./backups/backup-rows";
 import { DatabaseDumpRow } from "./backups/database-dump-row";
 import { BackupUpload } from "./backups/backup-upload-card";
+import { useBackupUpload } from "./backups/use-backup-upload";
 import {
   RestoreRefusalNotice,
   RestoreSkipReport,
@@ -54,6 +55,7 @@ export function BackupsSection() {
   // a fresh proof unless this session signed in or re-proved within minutes.
   const recentProof = useRecentProof();
   const { downloadingId, handleDownload } = useBackupDownload(recentProof);
+  const uploadFlow = useBackupUpload(recentProof);
   const {
     restoreJobs,
     dismissedRestores,
@@ -123,7 +125,7 @@ export function BackupsSection() {
         <BackupPassActivityNotice activity={data.scheduleActivity} />
       ) : null}
 
-      <BackupUpload recentProof={recentProof} />
+      <BackupUpload flow={uploadFlow} />
 
       {visibleRestoreJobs(restoreJobs, dismissedRestores).map((job) => (
         <RestoreJobStatus
