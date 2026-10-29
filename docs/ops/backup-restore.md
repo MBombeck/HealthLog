@@ -2,9 +2,10 @@
 
 HealthLog keeps copies of each account so that one account can be rolled back
 on this server. These copies are per account. They cannot rebuild a lost
-server: a restore writes into an account that already exists here under the
-same id, and refuses a copy whose account is gone. To recover a server, you
-need a database dump and the encryption keys. That procedure is in
+server: a restore writes into an account on this server, the one the copy
+belongs to, or, when that account has been erased, one you choose (see
+"Restoring an erased account"). To recover a server, you need a database dump
+and the encryption keys. That procedure is in
 [disaster-recovery.md](disaster-recovery.md).
 
 ## What exists
@@ -81,12 +82,49 @@ pnpm dlx tsx scripts/restore-backup.ts 2026-05-08/user-<id>.json.enc /tmp/restor
 ```
 
 Then upload `/tmp/restored.json` in Admin → Backups (up to 512 MB after
-compression) and restore it from its row. The account `<id>` must exist on this
-server.
+compression) and restore it from its row. When the account `<id>` no longer
+exists on this server, the upload offers to put the copy into another account
+(next section).
 
 Every restore, preview and upload checks first that this server holds every
 application key the copy's content was written under, and refuses with the key
 id named if not. Nothing is changed by a refused restore.
+
+### Restoring an erased account
+
+Once an account has been erased (its deletion window ended and the hourly purge
+ran), its copies on this server and in the bucket are gone, but a file you kept
+still holds the record: a disaster-recovery download, an off-host object you
+fetched before it expired, or the person's own full backup. Uploading it in
+Admin → Backups is refused at first, because the account it names no longer
+exists, and the console then asks where the records should go:
+
+- **A new account.** Type a username. The account is created without a
+  password or email, as an ordinary account with the user role, and nobody
+  can sign into it yet. Before handing it over, set its first password with
+  **Reset password** in Admin → Users; the person can change it, add an email
+  and enrol a passkey from their settings.
+- **An existing account**, for someone who has signed up again. Pick the
+  account and type its username to confirm. The account must hold no records
+  yet: a restore replaces an account's records and does not merge them, so an
+  account with even one record of any kind a copy carries is refused, with the
+  kinds named. Managed profiles and accounts pending deletion are not offered.
+
+The file is then uploaded a second time, and its owner is changed to the chosen
+account as it is read. Nothing else in the file changes. The stored copy is
+then that account's copy in every respect: its preview, its download and its
+restore are the ordinary ones, and **Restore** on its row brings everything
+back under the chosen account. The erased account's id is not stored, not in
+the copy and not in the audit trail.
+
+A copy whose own account still exists on this server can only go back into
+that account; choosing a target for it is refused. The copy does not carry
+what a restore never touches (below), so a returning person signs in fresh,
+and the links of a managed profile to its guardians do not come back: a
+restored managed profile is an ordinary account.
+
+Once stored, the copy restores like any other: a restore run later, after the
+account has gained records, replaces those too.
 
 ### What a restore does not touch
 

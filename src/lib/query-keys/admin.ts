@@ -45,6 +45,12 @@ export const adminKeys = {
   adminBackupSummary: (id: string) =>
     ["admin", "backups", id, "summary"] as const,
   /**
+   * Whether an account can take the copy of an erased account. Under the
+   * backup list's prefix, so a new copy refetches it.
+   */
+  adminBackupTarget: (userId: string) =>
+    ["admin", "backups", "target", userId] as const,
+  /**
    * v1.39.1 — the restore jobs the backups console shows. Its own prefix, so
    * invalidating the backup list does not refetch the poll and vice versa.
    */

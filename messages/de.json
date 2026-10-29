@@ -8217,7 +8217,7 @@
         "downloadFailed": "Download fehlgeschlagen",
         "downloadStarted": "Download gestartet",
         "uploadTitle": "Backup hochladen",
-        "uploadDescription": "Prüft eine Kontokopie und speichert sie neben den Kopien dieses Servers. Das Konto, zu dem sie gehört, muss auf diesem Server existieren. Das Wiederherstellen ist ein eigener Schritt.",
+        "uploadDescription": "Prüft eine Kontokopie und speichert sie neben den Kopien dieses Servers. Eine Kopie, deren Konto es auf diesem Server nicht mehr gibt, kann in ein anderes Konto gehen. Das Wiederherstellen ist ein eigener Schritt.",
         "uploadButton": "Datei hochladen",
         "uploadHelp": "HealthLog-Backup als .json oder .json.gz. Die Datei wird vor dem Hochladen komprimiert; komprimiert darf sie bis zu 512 MB groß sein.",
         "uploadSuccess": "Backup hochgeladen ({count} Datensätze)",
@@ -8376,7 +8376,32 @@
           "offhostLastUpload": "Der neueste Dump im Bucket stammt vom {when}.",
           "offhostNeverUploaded": "Bisher ist kein Datenbank-Dump im Bucket angekommen."
         },
-        "restorePreWipeLimits": "Diese Kopie wurde vor dem Löschen der Daten des Kontos angelegt, und ihre Wiederherstellung macht das Löschen rückgängig, soweit eine Kopie das kann: Was das Konto seitdem hinzugefügt hat, wird ersetzt, und Integrationsverbindungen, Freigaben, Betreuungszugriffe und Freigabe-Links kommen nicht zurück."
+        "restorePreWipeLimits": "Diese Kopie wurde vor dem Löschen der Daten des Kontos angelegt, und ihre Wiederherstellung macht das Löschen rückgängig, soweit eine Kopie das kann: Was das Konto seitdem hinzugefügt hat, wird ersetzt, und Integrationsverbindungen, Freigaben, Betreuungszugriffe und Freigabe-Links kommen nicht zurück.",
+        "target": {
+          "title": "In ein anderes Konto wiederherstellen",
+          "description": "{file} gehört zu einem Konto, das es auf diesem Server nicht mehr gibt. Wähle das Konto, in das die Datensätze gehen. Eine Wiederherstellung ersetzt die Datensätze eines Kontos, deshalb kann sie nur ein Konto ohne Datensätze aufnehmen. Die Datei wird dafür noch einmal hochgeladen.",
+          "choiceLabel": "Wohin die Datensätze gehen",
+          "newAccount": "Neues Konto",
+          "existingAccount": "Bestehendes Konto",
+          "usernameLabel": "Benutzername für das neue Konto",
+          "usernameInvalid": "3 bis 30 Buchstaben, Ziffern, _ oder -, nicht mit „managed-“ am Anfang.",
+          "newAccountHint": "Das Konto wird ohne Passwort und ohne E-Mail angelegt. Bevor du es übergibst, setze sein erstes Passwort unter Nutzer mit „Passwort zurücksetzen“.",
+          "accountLabel": "Konto",
+          "accountPlaceholder": "Konto wählen",
+          "checking": "Konto wird geprüft …",
+          "eligible": "Dieses Konto hat noch keine Datensätze und kann die Kopie aufnehmen.",
+          "confirmLabel": "Tippe {username} zum Bestätigen",
+          "submit": "In dieses Konto hochladen",
+          "submitting": "Wird hochgeladen …",
+          "success": "Backup für {username} gespeichert ({count} Datensätze). Stelle es über seine Zeile wieder her.",
+          "failureHoldsRecords": "Dieses Konto hat schon Datensätze. Eine Wiederherstellung ersetzt Datensätze, statt sie zu ergänzen. Wähle ein Konto ohne Datensätze oder lege ein neues an.",
+          "failureManagedProfile": "Dieses Konto ist ein verwaltetes Profil. Die betreuenden Personen führen es, deshalb kann keine Kopie hinein.",
+          "failurePendingDeletion": "Dieses Konto wird gerade gelöscht. Mach die Löschung zuerst rückgängig oder wähle ein anderes Konto.",
+          "failureNotFound": "Dieses Konto gibt es nicht mehr.",
+          "failureUnconfirmed": "Tippe den Benutzernamen des Kontos genau ab, um zu bestätigen.",
+          "failureUsernameTaken": "Dieser Benutzername ist schon vergeben.",
+          "failureOwnerExists": "Das Konto, zu dem diese Datei gehört, ist auf diesem Server, und die Datei wird in dieses Konto wiederhergestellt. Lade sie noch einmal hoch, ohne ein Konto zu wählen."
+        }
       },
       "danger-zone": {
         "title": "Gefahrenzone",

@@ -1,8 +1,54 @@
 import { Loader2, Upload } from "lucide-react";
 import type { ChangeEvent, RefObject } from "react";
 
+import { ReproofCancelledError } from "@/components/settings/security-section/use-recent-proof";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
+
+import { BackupTargetDialog } from "./backup-target-dialog";
+import type { useBackupUpload } from "./use-backup-upload";
+
+/**
+ * The upload card, and for a file whose account is not on this server, the
+ * dialog that sends it again into an account the admin picks. The dialog is
+ * mounted per refused file, so every file starts from a clean form.
+ */
+export function BackupUpload({
+  flow,
+}: {
+  flow: ReturnType<typeof useBackupUpload>;
+}) {
+  const {
+    upload,
+    fileInputRef,
+    handleFileChange,
+    orphan,
+    uploadInto,
+    closeOrphan,
+  } = flow;
+  return (
+    <>
+      <BackupUploadCard
+        pending={upload.isPending || uploadInto.isPending}
+        fileInputRef={fileInputRef}
+        onFileChange={handleFileChange}
+      />
+      {orphan ? (
+        <BackupTargetDialog
+          file={orphan}
+          pending={uploadInto.isPending}
+          error={
+            uploadInto.error instanceof ReproofCancelledError
+              ? null
+              : uploadInto.error
+          }
+          onSubmit={(target) => uploadInto.mutate(target)}
+          onClose={closeOrphan}
+        />
+      ) : null}
+    </>
+  );
+}
 
 /**
  * The upload card: separate from the table so admins can ingest a backup file
