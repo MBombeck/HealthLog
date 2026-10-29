@@ -1,17 +1,34 @@
 /**
  * The Codex slug ladder: which ChatGPT-auth model slugs the client tries, in
  * order, and the slug the vision gate reasons about before a request runs.
- * The walk itself (which statuses move to the next rung, the positive cache)
- * lives in `codex-client.ts` and `codex-slug-cache.ts`; docs/codex-protocol-spec.md
- * §7b describes the whole defence.
+ * The walk itself (which statuses move to the next rung) lives in
+ * `codex-client.ts`; the per-sign-in memory in `codex-slug-cache.ts`; the
+ * account's own model list in `codex-model-catalog.ts`.
+ * docs/codex-protocol-spec.md §7b describes the whole defence.
  */
-import { getCachedCodexSlug } from "./codex-slug-cache";
+import { annotate } from "@/lib/logging/context";
+import {
+  cachedCodexModels,
+  readCodexModelCatalog,
+  type CodexCatalogRead,
+  type CodexOfferedModel,
+} from "./codex-model-catalog";
+import {
+  codexCredentialKey,
+  getCachedCodexSlug,
+  rejectedCodexSlugs,
+  type CodexCredential,
+} from "./codex-slug-cache";
+import {
+  supportsVisionForConfig,
+  type VisionProviderType,
+} from "./vision-capability";
 
 /**
- * Default fallback chain. Override via `CODEX_MODEL_FALLBACK_CHAIN`
- * (comma-separated); `CODEX_MODEL` is folded into position 0 when set,
- * duplicates dropped. The backend rotates its ChatGPT-auth slugs without
- * notice: by 2026-10-24 it rejected everything from `gpt-5.5` down.
+ * Our preference order. With the account's model list in hand it is filtered
+ * to what the account is offered; without it, it is the walk. Override via
+ * `CODEX_MODEL_FALLBACK_CHAIN` (comma-separated); `CODEX_MODEL` is folded
+ * into position 0 when set, duplicates dropped.
  *
  * `gpt-5.6-terra` stays first because it is the slug verified against the
  * backend. The upstream catalog (`codex-rs/models-manager/models.json`)
@@ -33,37 +50,218 @@ export const DEFAULT_SLUG_FALLBACK_CHAIN = [
 ] as const;
 
 /**
- * The slug the codex vision gate reasons about *before* a request runs: the
- * cached working slug if one is live, else the first chain entry. Lets the
- * Lab-OCR capability resolver decide whether codex can read images without
- * standing up a client or making a network call. Best-effort — the actual
- * routed slug may differ once the chain walk runs, which the runtime probe +
- * graceful fallback (text/local OCR) covers.
+ * The frontier tier (`gpt-6-astra` today, and any later `-astra`), skipped
+ * even when offered, for the reason on `DEFAULT_SLUG_FALLBACK_CHAIN`. An
+ * operator who wants it names it in `CODEX_MODEL`.
  */
-export function resolveCodexVisionSlug(): string | null {
-  const cached = getCachedCodexSlug();
-  if (cached) return cached;
-  return loadFallbackChain()[0] ?? null;
+const SKIPPED_TIER = /(?:^|-)astra(?:$|-)/;
+
+/** Where the order a client walks came from. A closed set: it is log meta. */
+export type CodexChainSource = "operator" | "live" | "static";
+
+function dedupe(slugs: readonly string[]): string[] {
+  return [...new Set(slugs)];
 }
 
-/** The chain a client walks: the env override or the default, `CODEX_MODEL` first. */
-export function loadFallbackChain(): string[] {
+/** The `CODEX_MODEL` pin and the `CODEX_MODEL_FALLBACK_CHAIN` replacement. */
+function operatorChoice(): { pinned: string | null; chain: string[] | null } {
   const envChain = process.env.CODEX_MODEL_FALLBACK_CHAIN?.trim();
-  const fromEnv = envChain
+  const chain = envChain
     ? envChain
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean)
-    : [...DEFAULT_SLUG_FALLBACK_CHAIN];
-  const pinned = process.env.CODEX_MODEL?.trim();
-  const merged = pinned ? [pinned, ...fromEnv] : fromEnv;
-  // Stable de-duplication.
-  const seen = new Set<string>();
-  const result: string[] = [];
-  for (const slug of merged) {
-    if (seen.has(slug)) continue;
-    seen.add(slug);
-    result.push(slug);
+    : null;
+  return {
+    pinned: process.env.CODEX_MODEL?.trim() || null,
+    chain: chain && chain.length > 0 ? chain : null,
+  };
+}
+
+/** Whether the operator replaced the chain, so the account's list is not read. */
+function operatorReplacedCodexChain(): boolean {
+  return operatorChoice().chain !== null;
+}
+
+/**
+ * The order a client walks for one sign-in.
+ *
+ *   1. The operator's choice, unchanged in meaning: `CODEX_MODEL` goes first;
+ *      `CODEX_MODEL_FALLBACK_CHAIN` replaces everything after it, and the
+ *      account's list is then not consulted at all.
+ *   2. Our preference order, kept to what the account is offered.
+ *   3. Every other offered model, in the list's own order (`priority`, as the
+ *      Codex CLI sorts it), leaving out what the list hides from its picker
+ *      (`visibility` other than `list`: review and specialist models), the
+ *      specialist lines (`model_specialty`), and the skipped frontier tier.
+ *      `supported_in_api` is not a filter: it describes API-key access, and
+ *      the Codex CLI ignores it for a ChatGPT sign-in (`filter_by_auth`).
+ *   4. The rest of our preference order, last. A list that offers a model the
+ *      backend then refuses must not be able to take Codex down, so the walk
+ *      never holds fewer models than it did before the list was read; these
+ *      only cost a refused request when everything ahead of them failed.
+ *
+ * Without a usable list (none read, a failed read, an empty one) the order is
+ * today's static walk. Models this sign-in was refused recently move to the
+ * very end, in their order, whatever step placed them.
+ */
+export function buildCodexSlugChain(input: {
+  offered: readonly CodexOfferedModel[] | null;
+  rejected?: ReadonlySet<string>;
+}): { chain: string[]; source: CodexChainSource } {
+  const { pinned, chain: operatorChain } = operatorChoice();
+  let ordered: string[];
+  let source: CodexChainSource;
+  if (operatorChain) {
+    ordered = operatorChain;
+    source = "operator";
+  } else if (!input.offered || input.offered.length === 0) {
+    ordered = [...DEFAULT_SLUG_FALLBACK_CHAIN];
+    source = "static";
+  } else {
+    const usable = input.offered.filter(
+      (m) => m.listed && m.specialty === null && !SKIPPED_TIER.test(m.slug),
+    );
+    const usableSlugs = new Set(usable.map((m) => m.slug));
+    const preferred = DEFAULT_SLUG_FALLBACK_CHAIN.filter((s) =>
+      usableSlugs.has(s),
+    );
+    const others = usable
+      .map((m, index) => ({ m, index }))
+      .sort(
+        (a, b) =>
+          (a.m.priority ?? Number.POSITIVE_INFINITY) -
+            (b.m.priority ?? Number.POSITIVE_INFINITY) || a.index - b.index,
+      )
+      .map(({ m }) => m.slug);
+    ordered = [...preferred, ...others, ...DEFAULT_SLUG_FALLBACK_CHAIN];
+    source = "live";
   }
-  return result;
+  const walk = dedupe(pinned ? [pinned, ...ordered] : ordered);
+  const rejected = input.rejected ?? new Set<string>();
+  return {
+    chain: [
+      ...walk.filter((s) => !rejected.has(s)),
+      ...walk.filter((s) => rejected.has(s)),
+    ],
+    source,
+  };
+}
+
+/** How a client reads its account's model list. */
+export type CodexModelReader = typeof readCodexModelCatalog;
+
+/**
+ * The walk a client runs after its working slug, for one sign-in, with the
+ * outcome on the request's wide event (pinned shape, closed values):
+ *
+ *   - `codex.models.chain`: where the order came from (`CodexChainSource`);
+ *   - `codex.models.read`: `live`, `cache`, or `skipped` when the operator
+ *     replaced the chain and the list was not asked;
+ *   - `codex.models.failure`: why the list was unusable (`CodexCatalogFailure`)
+ *     or null;
+ *   - `codex.models.offered`: how many models the list offered (0 without one).
+ *
+ * `slugChain` and `readModels` are test seams: `slugChain` replaces the walk
+ * the way `CODEX_MODEL_FALLBACK_CHAIN` does (the list is not read, refused
+ * slugs still go last); `readModels` stands in for the backend read.
+ */
+export async function loadCodexAttemptChain(input: {
+  credential: CodexCredential;
+  accessToken: string;
+  slugChain?: readonly string[];
+  readModels?: CodexModelReader;
+}): Promise<string[]> {
+  const rejected = rejectedCodexSlugs(input.credential.key);
+  if (input.slugChain && input.slugChain.length > 0) {
+    return [
+      ...input.slugChain.filter((s) => !rejected.has(s)),
+      ...input.slugChain.filter((s) => rejected.has(s)),
+    ];
+  }
+  let read: CodexCatalogRead | null = null;
+  if (!operatorReplacedCodexChain()) {
+    const reader = input.readModels ?? readCodexModelCatalog;
+    // The reader never rejects by contract; a bug in it must still leave
+    // the static walk rather than fail the request.
+    read = await reader(input.credential, {
+      accessToken: input.accessToken,
+      accountId: input.credential.accountId,
+    }).catch((): CodexCatalogRead => ({
+      models: null,
+      from: "live",
+      failure: "network",
+    }));
+  }
+  const { chain, source } = buildCodexSlugChain({
+    offered: read?.models ?? null,
+    rejected,
+  });
+  annotate({
+    meta: {
+      "codex.models.chain": source,
+      "codex.models.read": read?.from ?? "skipped",
+      "codex.models.failure": read?.failure ?? null,
+      "codex.models.offered": read?.models?.length ?? 0,
+    },
+  });
+  return chain;
+}
+
+/**
+ * The slug the codex vision gate reasons about *before* a request runs, for
+ * one sign-in: its working slug if one is live, else the head of the order
+ * built from its last model list (or the static walk). Lets the vision
+ * resolvers decide whether codex can read images without standing up a
+ * client or making a network call. Best-effort: the routed slug may differ
+ * once the walk runs, which the runtime probe and the text / local OCR
+ * fallback cover.
+ */
+export function resolveCodexVisionSlug(credentialKey: string): string | null {
+  const cached = getCachedCodexSlug(credentialKey);
+  if (cached) return cached;
+  const { chain } = buildCodexSlugChain({
+    offered: operatorReplacedCodexChain()
+      ? null
+      : cachedCodexModels(credentialKey),
+    rejected: rejectedCodexSlugs(credentialKey),
+  });
+  return chain[0] ?? null;
+}
+
+/**
+ * Whether this sign-in's Codex model reads images. When the account's list
+ * names the model's `input_modalities`, that answer wins; otherwise the model
+ * family decides (`supportsVisionForConfig`), as it did before the list.
+ */
+export function codexSignInReadsImages(credentialKey: string): boolean {
+  const slug = resolveCodexVisionSlug(credentialKey);
+  if (!slug) return false;
+  const offered = cachedCodexModels(credentialKey)?.find(
+    (m) => m.slug === slug,
+  );
+  if (offered?.inputModalities) {
+    return offered.inputModalities.includes("image");
+  }
+  return supportsVisionForConfig("codex", slug);
+}
+
+/**
+ * Whether a provider chain entry can read images, for the vision resolvers.
+ * A Codex entry asks its own sign-in (`codex` the person's connection,
+ * `admin-codex` the operator-shared one); every other entry is decided by
+ * `model`'s family, as before.
+ */
+export function chainEntryReadsImages(
+  providerType: string,
+  userId: string,
+  model: string | null,
+): boolean {
+  if (providerType === "codex") {
+    return codexSignInReadsImages(codexCredentialKey.user(userId));
+  }
+  if (providerType === "admin-codex") {
+    return codexSignInReadsImages(codexCredentialKey.central);
+  }
+  return supportsVisionForConfig(providerType as VisionProviderType, model);
 }

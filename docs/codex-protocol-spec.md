@@ -642,9 +642,23 @@ The `codex-rs/tui/src/model_migration.rs` references to `gpt-5-codex` etc. are _
 
 The ChatGPT-Codex allow-list is rotated by OpenAI without prior notice (`gpt-5-codex` → `gpt-5.3-codex` happened over 48 h in May 2026 and bricked HealthLog twice while the v1.4.7..v1.4.13 saga unrolled). The cause: a single hard-coded slug in `CODEX_MODEL` flips invalid the moment the upstream rotates it. Operator brief, verbatim 2026-05-09: "Die Integration des Slug Drift Risiko darf halt immer überhaupt nicht sein."
 
-To eliminate that risk class, HealthLog's `CodexClient` walks an ordered chain on every fresh request series.
+To eliminate that risk class, HealthLog's `CodexClient` tries its sign-in's working slug first and otherwise walks an ordered chain built from the models the account is offered.
 
-**Chain** (top = first try). `gpt-5.6-terra` leads because it is the slug verified against the backend. The gpt-6 rungs follow before terra's own siblings: the catalog names `gpt-6-sol` as terra's upgrade, and the 2026-10-24 rotation retired a whole line at once, so a rotation that takes terra most likely takes `gpt-5.6-luna` and `gpt-5.6-sol` with it. `gpt-6.1-sol` (the catalog default, also on plans `gpt-6-sol` is not offered on) and `gpt-6-luna` (the lighter one) come next. `gpt-6-astra`, the frontier tier, stays out of the default:
+**The account's model list.** Before it walks, the client reads the list the Codex CLI reads, on the same sign-in as the responses call:
+
+```http
+GET /backend-api/codex/models?client_version=0.165.0 HTTP/1.1
+Host: chatgpt.com
+Authorization: Bearer <oauth-access-token>
+ChatGPT-Account-ID: <chatgpt_account_id>
+originator: healthlog
+```
+
+The answer is `ModelsResponse` from `codex-rs/protocol/src/openai_models.rs`: `{ "models": [ModelInfo, ...] }`, where the client reads `slug`, `visibility` (`list` / `hide` / `none`), `priority` (lower first), `input_modalities` (`text`, `image`, `audio`) and `model_specialty`. `codex-rs/codex-api/src/endpoint/models.rs` appends `client_version`; the backend leaves out models whose `minimal_client_version` is above it, so the version sent tracks a current Codex CLI release (`CODEX_MODELS_CLIENT_VERSION` in `src/lib/ai/codex-model-catalog.ts`). The read is bounded like the CLI's (5 s, `codex-rs/model-provider/src/models_endpoint.rs`) and to 4 MiB, cached per sign-in for an hour, and a failed read waits ten minutes before the next attempt. The list is a hint, never a gate: a read that fails, times out, does not parse or comes back empty leaves the static chain below, and one `ai.codex.models_unreadable` warning per sign-in reports the stretch.
+
+**Order.** `CODEX_MODEL` first when set. `CODEX_MODEL_FALLBACK_CHAIN`, when set, replaces everything after it and the list is not read. Otherwise: the default chain below kept to what the account is offered; then every other offered model in the list's `priority` order, leaving out what the list hides (`visibility` other than `list`), the specialist lines (`model_specialty`) and the `-astra` frontier tier; then the rest of the default chain, so the walk never holds fewer models than before the list existed. `supported_in_api` is not a filter: it describes API-key access, and the CLI ignores it for a ChatGPT sign-in (`ModelPreset::filter_by_auth`). A slug this sign-in was refused in the last six hours goes to the very end, even while its list still offers it. With the list's `input_modalities` for the slug in hand, the Codex vision gate reads them; without, it falls back to the model family.
+
+**Default chain** (top = first try). `gpt-5.6-terra` leads because it is the slug verified against the backend. The gpt-6 rungs follow before terra's own siblings: the catalog names `gpt-6-sol` as terra's upgrade, and the 2026-10-24 rotation retired a whole line at once, so a rotation that takes terra most likely takes `gpt-5.6-luna` and `gpt-5.6-sol` with it. `gpt-6.1-sol` (the catalog default, also on plans `gpt-6-sol` is not offered on) and `gpt-6-luna` (the lighter one) come next. `gpt-6-astra`, the frontier tier, stays out of the default:
 
 ```ts
 const DEFAULT_SLUG_FALLBACK_CHAIN = [
@@ -662,9 +676,9 @@ Every default rung must be a model family the reasoning, sampling and vision gat
 
 The shipped constant in `src/lib/ai/codex-slug-chain.ts` is authoritative; when the upstream rotates again, that file moves first and this listing follows.
 
-A fixed chain goes stale. From 2026-10-14, when GPT-5.5 retired, every model on the chain HealthLog shipped then was retired, and every Codex request answered 503 "all configured Codex slugs were rejected" until the chain was updated or `CODEX_MODEL` was set by hand. Reading the account's live list (`GET /backend-api/codex/models`, as the Codex CLI does) would avoid this.
+A fixed chain goes stale. From 2026-10-14, when GPT-5.5 retired, every model on the chain HealthLog shipped then was retired, and every Codex request answered 503 "all configured Codex slugs were rejected" until the chain was updated or `CODEX_MODEL` was set by hand. That is why the account's live list now comes first and the default chain only orders and backs it up.
 
-The chain is overridable via the env var `CODEX_MODEL_FALLBACK_CHAIN` (comma-separated). The first env-var-named slug supersedes `CODEX_MODEL`; if both are set, `CODEX_MODEL` is folded into position 0 and de-duplicated.
+The chain is overridable via the env var `CODEX_MODEL_FALLBACK_CHAIN` (comma-separated), which replaces it outright; if `CODEX_MODEL` is also set, it is folded into position 0 and de-duplicated.
 
 **Trigger condition** (when to walk to the next slug):
 
@@ -678,15 +692,15 @@ The chain is overridable via the env var `CODEX_MODEL_FALLBACK_CHAIN` (comma-sep
 | `401` after refresh, `403`, `429`, `5xx`                                      | propagate (don't walk)                           |
 | `200` with SSE `response.failed.error.code === "invalid_prompt"`              | propagate (request shape is wrong, slug is fine) |
 
-**Positive cache** — when a slug is observed working (HTTP 200 with at least one `response.completed` event), record `(slug, timestamp)` in a process-local Map. On the next request, jump straight to the cached slug. TTL: 1 hour. Cache scope: per-process (no DB write).
+**Positive cache** — when a slug is observed working (HTTP 200 with at least one `response.completed` event), record `(slug, timestamp)` for that sign-in. On its next request, jump straight to the cached slug; the model list is read only when there is none or it stops working. TTL: 1 hour. Scope: per stored credential (`user:<id>` for a person's connection, `central` for the operator-shared one), process-local, no DB write, at most 1000 sign-ins held. Each entry carries a digest of the ChatGPT account id it was learned under, and a credential reconnected to another account starts empty. Two sign-ins on different plans no longer overwrite each other's working slug.
 
-**Cache invalidation**: on first 400/404 walk, the cached entry is dropped. The next-best slug is promoted into the cache only after it succeeds.
+**Cache invalidation**: on a 400/404 walk the refused slug leaves the working slot and goes to the back of that sign-in's line for six hours. The next-best slug is promoted into the cache only after it succeeds.
 
 **All-failed case**: if every slug in the chain rejects with the walk-trigger, the client throws a structured error with `httpStatus: 503` and message `"AI provider unreachable — all configured Codex slugs were rejected"`. The route layer surfaces this to the user with "AI provider unreachable — check Settings".
 
-**Observability**: each attempted slug is recorded in the Wide-Event annotation `codex.slug.attempts: ["gpt-5.3-codex","gpt-5-codex"]` so Loki can answer "which slug carried this request" and "how often did the cache hit". Cache hits emit `codex.slug.cache: "hit" | "miss" | "expired"`.
+**Observability**: a request that builds the chain annotates `codex.models.chain` (`operator` / `live` / `static`), `codex.models.read` (`live` / `cache` / `skipped`), `codex.models.failure` (`timeout`, `network`, `auth`, `http_error`, `too_large`, `unparsable`, `empty`, or null) and `codex.models.offered` (a count). `CodexClient.getLastDiagnostics()` holds the attempted slugs, the cache state and the working slug.
 
-The implementation lives in `src/lib/ai/codex-client.ts`; the contract is unit-tested in `src/lib/ai/__tests__/codex-client.test.ts`.
+The walk lives in `src/lib/ai/codex-client.ts`, the order in `src/lib/ai/codex-slug-chain.ts`, the list read in `src/lib/ai/codex-model-catalog.ts`, the per-sign-in memory in `src/lib/ai/codex-slug-cache.ts`; the contract is unit-tested in `src/lib/ai/__tests__/codex-live-models.test.ts`, `codex-slug-chain.test.ts`, `codex-model-catalog.test.ts` and `codex-slug-fallback.test.ts`.
 
 ---
 
@@ -781,7 +795,10 @@ All paths relative to `openai/codex` repo:
 - `codex-rs/codex-api/src/rate_limits.rs` — rate-limit headers
 - `codex-rs/codex-api/src/auth.rs` — `AuthProvider` trait
 - `codex-rs/protocol/src/models.rs` — `ResponseItem`, `ContentItem`, `MessagePhase`, `ImageDetail`, etc.
-- `codex-rs/protocol/src/openai_models.rs` — `ReasoningEffort` enum
+- `codex-rs/protocol/src/openai_models.rs` — `ReasoningEffort` enum; `ModelsResponse`, `ModelInfo`, `ModelVisibility`, `InputModality`, `ModelPreset::filter_by_auth` (the `/models` wire)
+- `codex-rs/codex-api/src/endpoint/models.rs` — `ModelsClient`: `GET models?client_version=…`
+- `codex-rs/model-provider/src/models_endpoint.rs` — the 5 s model-list bound; `models_identity.rs` — the per-account cache identity
+- `codex-rs/models-manager/src/manager.rs` — priority sort, picker visibility, cache TTL
 - `codex-rs/protocol/src/config_types.rs` — `ReasoningSummary`, `Verbosity` enums
 - `codex-rs/model-provider/src/bearer_auth_provider.rs` — `Authorization` + `ChatGPT-Account-ID` headers
 - `codex-rs/model-provider/src/auth.rs` — auth-provider selection

@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { CodexClient } from "../codex-client";
 import { singleUserTurn } from "../types";
 
+/** A model list that cannot be read: the client walks its static order. */
+const NO_MODEL_LIST = async () =>
+  ({ models: null, from: "live", failure: "network" }) as const;
+
 /**
  * Build a `Response` whose `.body` streams a list of SSE event strings.
  * Mirrors the wire format the Codex backend emits (each event terminated
@@ -51,6 +55,8 @@ describe("CodexClient", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
+      readModels: NO_MODEL_LIST,
       accessToken: "test-token",
       accountId: "acct-test",
       onTokenRefresh: vi
@@ -97,6 +103,8 @@ describe("CodexClient", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
+      readModels: NO_MODEL_LIST,
       accessToken: "test-token",
       accountId: "acct-test",
       onTokenRefresh: vi
@@ -126,6 +134,8 @@ describe("CodexClient", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
+      readModels: NO_MODEL_LIST,
       accessToken: "expired-token",
       accountId: "acct-test",
       onTokenRefresh: async () => {
@@ -156,6 +166,8 @@ describe("CodexClient", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
+      readModels: NO_MODEL_LIST,
       accessToken: "bad",
       accountId: "acct-test",
       onTokenRefresh: async () => {
@@ -183,6 +195,8 @@ describe("CodexClient", () => {
 
     const onRefresh = vi.fn();
     const client = new CodexClient({
+      credentialKey: "user:test",
+      readModels: NO_MODEL_LIST,
       accessToken: "test",
       accountId: "acct-test",
       onTokenRefresh: async () => {
@@ -208,6 +222,8 @@ describe("CodexClient", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
+      readModels: NO_MODEL_LIST,
       accessToken: "test-token",
       accountId: "acct-test",
       onTokenRefresh: vi
@@ -245,6 +261,8 @@ describe("CodexClient", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
+      readModels: NO_MODEL_LIST,
       accessToken: "test-token",
       accountId: "acct-test",
       onTokenRefresh: vi
@@ -292,6 +310,8 @@ describe("CodexClient", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
+      readModels: NO_MODEL_LIST,
       accessToken: "test-token",
       accountId: "acct-test",
       onTokenRefresh: vi
@@ -349,6 +369,8 @@ describe("CodexClient", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
+      readModels: NO_MODEL_LIST,
       accessToken: "test-token",
       accountId: "acct-test",
       onTokenRefresh: vi
@@ -393,6 +415,8 @@ describe("CodexClient", () => {
     vi.stubGlobal("fetch", mockFetch);
 
     const client = new CodexClient({
+      credentialKey: "user:test",
+      readModels: NO_MODEL_LIST,
       accessToken: "test-token",
       accountId: "acct-test",
       onTokenRefresh: vi

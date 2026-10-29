@@ -5,7 +5,9 @@ import { bindReasoningEffort } from "./reasoning-effort";
 import { prisma } from "@/lib/db";
 import { openStoredKey } from "./stored-key";
 import { isAnthropicBaseUrl } from "./anthropic-host";
-import { CodexClient, resolveCodexVisionSlug } from "./codex-client";
+import { CodexClient } from "./codex-client";
+import { codexCredentialKey } from "./codex-slug-cache";
+import { chainEntryReadsImages } from "./codex-slug-chain";
 import { OpenAIClient } from "./openai-client";
 import { AnthropicClient } from "./anthropic-client";
 import { LocalOpenAICompatibleClient } from "./local-client";
@@ -45,10 +47,6 @@ import type {
   ProviderEntryPresence,
   ProviderPresence,
 } from "@/lib/ai/capabilities/resolve";
-import {
-  supportsVisionForConfig,
-  type VisionProviderType,
-} from "./vision-capability";
 
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -602,6 +600,7 @@ async function resolveCodexProvider(
   return new CodexClient({
     accessToken: active.accessToken,
     accountId: active.accountId,
+    credentialKey: codexCredentialKey.user(userId),
     onTokenRefresh: async () => {
       const current = await prisma.user.findUnique({
         where: { id: userId },
@@ -690,6 +689,7 @@ async function resolveAdminCodexProvider(): Promise<AIProvider | null> {
   return new CodexClient({
     accessToken: active.accessToken,
     accountId: active.accountId,
+    credentialKey: codexCredentialKey.central,
     onTokenRefresh: async () => {
       const current = await prisma.appSettings.findUnique({
         where: { id: "singleton" },
@@ -1151,22 +1151,18 @@ const NO_PRESENCE: ProviderPresence = Object.freeze({
 
 /**
  * Whether one chain entry's model can read an image. Mirrors the model each
- * entry runs on (`src/lib/labs/ocr-capability.ts`): the Codex paths use the
- * working Codex slug, the operator's slot uses the operator's model, every
- * other entry the person's own.
+ * entry runs on (`src/lib/labs/ocr-capability.ts`): each Codex path asks its
+ * own sign-in, the operator's slot uses the operator's model, every other
+ * entry the person's own.
  */
 function entryVision(
   providerType: string,
+  recordId: string,
   userModel: string | null,
   adminModel: string | null,
 ): boolean {
-  const model =
-    providerType === "codex" || providerType === "admin-codex"
-      ? resolveCodexVisionSlug()
-      : providerType === "admin-openai"
-        ? adminModel
-        : userModel;
-  return supportsVisionForConfig(providerType as VisionProviderType, model);
+  const model = providerType === "admin-openai" ? adminModel : userModel;
+  return chainEntryReadsImages(providerType, recordId, model);
 }
 
 /**
@@ -1212,7 +1208,7 @@ export function probeProviderChain(
       const adminModel = settings?.adminAiModel ?? null;
       const vision = (providerType: string): ProviderEntryPresence => ({
         providerType,
-        vision: entryVision(providerType, row.aiModel, adminModel),
+        vision: entryVision(providerType, recordId, row.aiModel, adminModel),
       });
 
       if (policy === "deny") return NO_PRESENCE;

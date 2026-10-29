@@ -347,11 +347,11 @@ x-healthlog-env: &healthlog_env
   # you run a gateway this instance should trust; it widens only the admin
   # setting, never the per-user BYO-key posture.
   ADMIN_AI_BASE_URL_ALLOWLIST: "${ADMIN_AI_BASE_URL_ALLOWLIST:-}"
-  # Codex (ChatGPT sign-in) model slugs. Set CODEX_MODEL to pin one slug
-  # ahead of the built-in chain, or CODEX_MODEL_FALLBACK_CHAIN (comma-
-  # separated) to replace the chain outright. Reach for these when the
-  # provider rotates a slug and every request starts coming back 503 —
-  # without them a rotation needs a new release to fix.
+  # Codex (ChatGPT sign-in) model slugs. Unset, each sign-in picks from the
+  # models its account is offered, with a built-in order as the fallback.
+  # Set CODEX_MODEL to pin one slug ahead of that, or
+  # CODEX_MODEL_FALLBACK_CHAIN (comma-separated) to replace the order
+  # outright; the account's list is then not read.
   CODEX_MODEL: "${CODEX_MODEL:-}"
   CODEX_MODEL_FALLBACK_CHAIN: "${CODEX_MODEL_FALLBACK_CHAIN:-}"
   # Surfaces reviewed n-of-1 experiment outcomes in the Coach snapshot.

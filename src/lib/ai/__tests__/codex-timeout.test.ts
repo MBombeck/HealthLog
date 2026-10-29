@@ -45,6 +45,7 @@ function sseResponse(): Response {
 
 function makeClient() {
   return new CodexClient({
+    credentialKey: "user:test",
     accessToken: "t",
     accountId: "acct",
     onTokenRefresh: vi

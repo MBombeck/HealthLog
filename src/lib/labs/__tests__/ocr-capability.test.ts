@@ -18,9 +18,6 @@ vi.mock("@/lib/ai/provider", () => ({
   resolveProviderChain: vi.fn(),
   resolveProvider: vi.fn(),
 }));
-vi.mock("@/lib/ai/codex-client", () => ({
-  resolveCodexVisionSlug: vi.fn(() => "gpt-5"),
-}));
 vi.mock("@/lib/ai/capabilities/egress", () => ({
   aiEgressRefusal: vi.fn(),
 }));

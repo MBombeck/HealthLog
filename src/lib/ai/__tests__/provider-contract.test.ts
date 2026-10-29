@@ -10,6 +10,10 @@ import {
   type CompletionResult,
 } from "../types";
 
+/** A model list that cannot be read: the client walks its static order. */
+const NO_MODEL_LIST = async () =>
+  ({ models: null, from: "live", failure: "network" }) as const;
+
 // safeFetch's requirePublicHost path runs through undici's own `fetch`
 // (version-locked with its dispatcher). Delegate it to the global `fetch`
 // stub these tests install so the existing interception still applies.
@@ -215,6 +219,8 @@ describe("AIProvider contract", () => {
     );
 
     const provider: AIProvider = new CodexClient({
+      credentialKey: "user:test",
+      readModels: NO_MODEL_LIST,
       accessToken: "test-token",
       accountId: "acct-test",
       onTokenRefresh: vi
