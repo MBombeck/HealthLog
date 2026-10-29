@@ -141,19 +141,24 @@ export function useBackupUpload(
   // Upload state — single-file flow, drives the file input + button.
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [orphan, setOrphan] = useState<File | null>(null);
+
+  /** A stored copy, said once: for its own account, or for the one chosen. */
+  function announceStored(summary: UploadSummary, username: string | null) {
+    const count = String(uploadedRecordCount(summary));
+    toast.success(
+      username === null
+        ? t("admin.section.backups.uploadSuccess", { count })
+        : t("admin.section.backups.target.success", { count, username }),
+    );
+    queryClient.invalidateQueries({ queryKey: queryKeys.adminBackups() });
+  }
   const upload = useMutation({
     mutationFn: async (file: File) => {
       // Ask first, so a large file is not sent once only to be refused.
       await recentProof.run(() => apiGet("/api/auth/reproof"));
       return uploadOnce(file);
     },
-    onSuccess: (data) => {
-      const total = uploadedRecordCount(data.summary);
-      toast.success(
-        t("admin.section.backups.uploadSuccess", { count: String(total) }),
-      );
-      queryClient.invalidateQueries({ queryKey: queryKeys.adminBackups() });
-    },
+    onSuccess: (data) => announceStored(data.summary, null),
     onError: (err, file) => {
       if (err instanceof ReproofCancelledError) return;
       // Not a dead end: the dialog offers an account to restore it into.
@@ -182,15 +187,11 @@ export function useBackupUpload(
       return { data: await uploadOnce(orphan, target), target };
     },
     onSuccess: ({ data, target }) => {
-      const total = uploadedRecordCount(data.summary);
-      toast.success(
-        t("admin.section.backups.target.success", {
-          count: String(total),
-          username: target.into === "new" ? target.username : target.confirm,
-        }),
-      );
       setOrphan(null);
-      queryClient.invalidateQueries({ queryKey: queryKeys.adminBackups() });
+      announceStored(
+        data.summary,
+        target.into === "new" ? target.username : target.confirm,
+      );
       queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers() });
     },
     // A refusal stays in the dialog, beside the choice it refuses.

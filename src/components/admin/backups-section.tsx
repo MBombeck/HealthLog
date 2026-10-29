@@ -15,10 +15,7 @@ import { BookOpen, Database, Loader2, PlayCircle } from "lucide-react";
 import { BackupPassActivityNotice } from "@/components/admin/backup-pass-activity";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
-import {
-  ReproofCancelledError,
-  useRecentProof,
-} from "@/components/settings/security-section/use-recent-proof";
+import { useRecentProof } from "@/components/settings/security-section/use-recent-proof";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,8 +29,7 @@ import type { BackupRow, BackupsList } from "@/types/backups";
 import { RestoreJobStatus, visibleRestoreJobs } from "./backup-restore-status";
 import { BackupRowsCards, BackupRowsTable } from "./backups/backup-rows";
 import { DatabaseDumpRow } from "./backups/database-dump-row";
-import { BackupTargetDialog } from "./backups/backup-target-dialog";
-import { BackupUploadCard } from "./backups/backup-upload-card";
+import { BackupUpload } from "./backups/backup-upload-card";
 import {
   RestoreRefusalNotice,
   RestoreSkipReport,
@@ -41,7 +37,6 @@ import {
 } from "./backups/restore-notices";
 import { useBackupDownload, useRunBackup } from "./backups/use-backup-actions";
 import { useBackupRestores } from "./backups/use-backup-restores";
-import { useBackupUpload } from "./backups/use-backup-upload";
 
 export function BackupsSection() {
   const { t } = useTranslations();
@@ -59,14 +54,6 @@ export function BackupsSection() {
   // a fresh proof unless this session signed in or re-proved within minutes.
   const recentProof = useRecentProof();
   const { downloadingId, handleDownload } = useBackupDownload(recentProof);
-  const {
-    upload,
-    fileInputRef,
-    handleFileChange,
-    orphan,
-    uploadInto,
-    closeOrphan,
-  } = useBackupUpload(recentProof);
   const {
     restoreJobs,
     dismissedRestores,
@@ -136,25 +123,7 @@ export function BackupsSection() {
         <BackupPassActivityNotice activity={data.scheduleActivity} />
       ) : null}
 
-      <BackupUploadCard
-        pending={upload.isPending || uploadInto.isPending}
-        fileInputRef={fileInputRef}
-        onFileChange={handleFileChange}
-      />
-      {/* Mounted per refused file, so every file starts from a clean form. */}
-      {orphan ? (
-        <BackupTargetDialog
-          file={orphan}
-          pending={uploadInto.isPending}
-          error={
-            uploadInto.error instanceof ReproofCancelledError
-              ? null
-              : uploadInto.error
-          }
-          onSubmit={(target) => uploadInto.mutate(target)}
-          onClose={closeOrphan}
-        />
-      ) : null}
+      <BackupUpload recentProof={recentProof} />
 
       {visibleRestoreJobs(restoreJobs, dismissedRestores).map((job) => (
         <RestoreJobStatus
