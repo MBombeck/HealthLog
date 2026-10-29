@@ -8397,6 +8397,7 @@
           "failureHoldsRecords": "Esta conta já tem registros. Uma restauração substitui os registros em vez de somá-los, então escolha uma conta sem registros ou crie uma nova.",
           "failureManagedProfile": "Esta conta é um perfil gerenciado. Os guardiões cuidam dela, então uma cópia não pode ir para ela.",
           "failurePendingDeletion": "Esta conta está aguardando exclusão. Desfaça a exclusão primeiro ou escolha outra conta.",
+          "failureAdminAccount": "Esta é uma conta de administrador. Os registros de outra pessoa não podem ir para ela, então escolha uma conta comum ou crie uma nova.",
           "failureNotFound": "Esta conta não existe mais.",
           "failureUnconfirmed": "Digite exatamente o nome de usuário da conta para confirmar.",
           "failureUsernameTaken": "Este nome de usuário já está em uso.",

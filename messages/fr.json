@@ -8397,6 +8397,7 @@
           "failureHoldsRecords": "Ce compte contient déjà des enregistrements. Une restauration remplace les enregistrements au lieu de les compléter : choisissez un compte sans enregistrements ou créez-en un nouveau.",
           "failureManagedProfile": "Ce compte est un profil géré. Les personnes responsables le gèrent, une copie ne peut donc pas y aller.",
           "failurePendingDeletion": "Ce compte est en cours de suppression. Annulez d'abord la suppression ou choisissez un autre compte.",
+          "failureAdminAccount": "Il s’agit d’un compte administrateur. Les enregistrements d’une autre personne ne peuvent pas y être placés : choisissez un compte ordinaire ou créez-en un nouveau.",
           "failureNotFound": "Ce compte n'existe plus.",
           "failureUnconfirmed": "Tapez exactement le nom d'utilisateur du compte pour confirmer.",
           "failureUsernameTaken": "Ce nom d'utilisateur est déjà pris.",

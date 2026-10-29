@@ -25,11 +25,13 @@
  *      An account that has just been through the setup routes counts as
  *      empty, and the copy's setup state replaces its own; one whose setup
  *      ended on a reading of its own does not.
- *   6. A target that holds records, is a managed profile, is pending deletion
- *      or is not confirmed is refused before the file is read; so is a target
- *      for a file whose own account is still here, and a new account made for
- *      a refused file is removed again. A non-admin session and a Bearer
- *      token are refused outright.
+ *   6. A target that holds records, is a managed profile, is pending
+ *      deletion, is an admin or is not confirmed is refused before the file
+ *      is read; so is a target for a file whose own account is still here,
+ *      and a new account made for a refused file is removed again. A
+ *      non-admin session and a Bearer token are refused outright. A copy put
+ *      into a chosen account keeps that mark, and its restore takes no
+ *      setting on the operator's word, even after the account is promoted.
  *
  * Everything runs through production code: the deletion route, the purge job,
  * the admin upload, target-check and restore routes and the restore job
@@ -551,6 +553,54 @@ describe("restoring the backup of an erased account into a chosen account", () =
   );
 
   it(
+    "restores a retargeted copy's settings on the file author's word, even into an account promoted to admin since",
+    async () => {
+      const prisma = getPrismaClient();
+      vi.stubEnv("AI_PRIVATE_ORIGINS", "");
+      vi.stubEnv("ALLOW_LOCAL_AI_PRIVATE_HOSTS", "true");
+      const { json } = await eraseAfterExport(prisma);
+      const payload = JSON.parse(json) as {
+        accountSettings: Record<string, unknown> | null;
+      };
+      payload.accountSettings = {
+        ...(payload.accountSettings ?? {}),
+        aiProvider: "LOCAL",
+        aiBaseUrl: "http://10.20.30.40:11434",
+      };
+      const person = await prisma.user.create({
+        data: { username: "returning-person" },
+      });
+
+      const stored = await uploadInto(JSON.stringify(payload), {
+        into: "existing",
+        userId: person.id,
+        confirm: "returning-person",
+      });
+      expect(stored.status, JSON.stringify(stored.body)).toBe(201);
+      const row = await prisma.dataBackup.findUniqueOrThrow({
+        where: { id: stored.body.data!.id },
+        select: { type: true },
+      });
+      expect(row.type).toMatch(/^RETARGETED_UPLOAD_\d+$/);
+
+      // Promoted between the upload and the restore.
+      await prisma.user.update({
+        where: { id: person.id },
+        data: { role: "ADMIN" },
+      });
+      const restored = await restore(stored.body.data!.id);
+      expect(restored.status, JSON.stringify(restored.body)).toBe(200);
+      expect(
+        await prisma.user.findUniqueOrThrow({
+          where: { id: person.id },
+          select: { aiProvider: true, aiBaseUrl: true },
+        }),
+      ).toEqual({ aiProvider: "LOCAL", aiBaseUrl: null });
+    },
+    SLOW,
+  );
+
+  it(
     "refuses an account whose setup ended on a reading of its own, because the restore would delete it",
     async () => {
       const prisma = getPrismaClient();
@@ -694,7 +744,15 @@ describe("restoring the backup of an erased account into a chosen account", () =
         },
       });
       const empty = await prisma.user.create({ data: { username: "empty" } });
+      const otherAdmin = await prisma.user.create({
+        data: { username: "second-admin", role: "ADMIN" },
+      });
 
+      expect((await checkTarget(otherAdmin.id)).body.data).toMatchObject({
+        eligible: false,
+        reason: "admin_account",
+        models: [],
+      });
       expect((await checkTarget(used.id)).body.data).toMatchObject({
         eligible: false,
         reason: "holds_records",
@@ -717,6 +775,11 @@ describe("restoring the backup of an erased account into a chosen account", () =
           { into: "existing", userId: leaving.id, confirm: "leaving" },
           409,
           "backup.target.pending_deletion",
+        ],
+        [
+          { into: "existing", userId: otherAdmin.id, confirm: "second-admin" },
+          409,
+          "backup.target.admin_account",
         ],
         [
           { into: "existing", userId: "no-such-account", confirm: "x" },
@@ -753,6 +816,7 @@ describe("restoring the backup of an erased account into a chosen account", () =
         "target_holds_records",
         "target_managed_profile",
         "target_pending_deletion",
+        "target_admin_account",
         "target_not_found",
         "target_unconfirmed",
         "target_username_taken",

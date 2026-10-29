@@ -10,8 +10,10 @@
  *   3. Parses and validates the JSON against the canonical schema.
  *   4. Rejects files written by a future schema version (incompatible).
  *   5. Encrypts the file as it arrives and inserts a new `DataBackup` row
- *      of type `MANUAL_UPLOAD_<unix-ms>` so multiple uploads coexist with
- *      the rolling `WEEKLY_AUTO` snapshot AND with each other.
+ *      of type `MANUAL_UPLOAD_<unix-ms>` (`RETARGETED_UPLOAD_<unix-ms>` for
+ *      a copy put into a chosen account, `backup-upload-type.ts`) so
+ *      multiple uploads coexist with the rolling `WEEKLY_AUTO` snapshot AND
+ *      with each other.
  *
  * The file is read as a stream and never held whole (#1031): an export of an
  * account with 1.25 million measurements is a few hundred megabytes of JSON,
@@ -85,6 +87,7 @@ import {
   type RestoreTargetVerdict,
 } from "@/lib/export/restore-target";
 import { storeBackupBlob } from "@/lib/export/store-backup-blob";
+import { uploadedBackupType } from "@/lib/export/backup-upload-type";
 import {
   readStreamedBackup,
   StreamedBackupInvalidError,
@@ -476,10 +479,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     );
   }
 
-  // `MANUAL_UPLOAD_<unix-ms>` keeps the (userId, type) unique-constraint
-  // intact so multiple uploads can coexist for the same user without
-  // overwriting each other or the rolling WEEKLY_AUTO snapshot.
-  const uploadType = `MANUAL_UPLOAD_${Date.now()}`;
+  // The millisecond suffix keeps uploads and WEEKLY_AUTO apart under the
+  // (userId, type) unique constraint; a copy put into a chosen account is
+  // marked as such, for its restore (`backup-upload-type.ts`).
+  const uploadType = uploadedBackupType(Boolean(choice), Date.now());
   let payload: BackupPayload | undefined;
   let measurementCount = 0;
   let owner: { id: string; username: string } | null = null;

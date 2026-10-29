@@ -287,7 +287,7 @@ export const adminBackupPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "409": {
           description:
-            "The chosen target cannot take the copy, and nothing was stored: a managed profile (`backup.target.managed_profile`), an account pending deletion (`backup.target.pending_deletion`), an account that already holds records (`backup.target.holds_records`, `meta.models` naming them), a username already taken (`backup.target.username_taken`), or a file whose own account is still here (`backup.owner.exists`).",
+            "The chosen target cannot take the copy, and nothing was stored: a managed profile (`backup.target.managed_profile`), an account pending deletion (`backup.target.pending_deletion`), an admin account (`backup.target.admin_account`), an account that already holds records (`backup.target.holds_records`, `meta.models` naming them), a username already taken (`backup.target.username_taken`), or a file whose own account is still here (`backup.owner.exists`).",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "413": {

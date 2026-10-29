@@ -8372,6 +8372,7 @@
           "failureHoldsRecords": "이 계정에는 이미 기록이 있어요. 복원은 기록을 더하지 않고 바꿔 쓰기 때문에 기록이 없는 계정을 고르거나 새 계정을 만들어 주세요.",
           "failureManagedProfile": "이 계정은 관리 프로필이에요. 보호자들이 운영하는 프로필이라 사본을 넣을 수 없어요.",
           "failurePendingDeletion": "이 계정은 삭제 대기 중이에요. 먼저 삭제를 취소하거나 다른 계정을 골라 주세요.",
+          "failureAdminAccount": "관리자 계정이에요. 다른 사람의 기록은 이 계정에 넣을 수 없으니 일반 계정을 고르거나 새 계정을 만들어 주세요.",
           "failureNotFound": "이 계정은 더 이상 없어요.",
           "failureUnconfirmed": "확인하려면 계정의 사용자 이름을 정확히 입력해 주세요.",
           "failureUsernameTaken": "이미 사용 중인 사용자 이름이에요.",

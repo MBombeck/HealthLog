@@ -14,12 +14,16 @@
  * A reading or a medication entered during setup is a record like any other
  * and still refuses, because the restore would delete it.
  *
- * The other two refusals keep the account rules intact. A managed profile is
+ * The other refusals keep the account rules intact. A managed profile is
  * its Guardians' record, which an admin does not write into (the users list
  * offers no admin deletion on one for the same reason). An account pending
  * deletion is locked and will be erased, with whatever was restored into it.
- * Neither the restore nor this check touches the role, so the last-admin rule
- * is not in play.
+ * An admin account is the operator's: its settings are taken on the
+ * operator's word (a wider AI endpoint policy) and its role reaches every
+ * account, so another person's record does not go into it. Someone who has
+ * signed up again holds an ordinary account, and a new one can always be
+ * made. Neither the restore nor this check touches the role, so the
+ * last-admin rule is not in play.
  */
 import type { Prisma } from "@/generated/prisma/client";
 import { BACKED_UP_MODELS } from "@/lib/export/backup-plan";
@@ -112,7 +116,11 @@ export async function modelsHoldingRecords(
 }
 
 export type RestoreTargetRefusal =
-  "not_found" | "managed_profile" | "pending_deletion" | "holds_records";
+  | "not_found"
+  | "managed_profile"
+  | "pending_deletion"
+  | "admin_account"
+  | "holds_records";
 
 export type RestoreTargetVerdict =
   | { ok: true; target: { id: string; username: string } }
@@ -136,6 +144,7 @@ export async function checkRestoreTarget(
       username: true,
       managedProfileAt: true,
       deletionRequestedAt: true,
+      role: true,
     },
   });
   if (!row) {
@@ -147,6 +156,9 @@ export async function checkRestoreTarget(
   }
   if (row.deletionRequestedAt) {
     return { ok: false, reason: "pending_deletion", target, models: [] };
+  }
+  if (row.role === "ADMIN") {
+    return { ok: false, reason: "admin_account", target, models: [] };
   }
   const models = await modelsHoldingRecords(db, row.id);
   if (models.length > 0) {
@@ -160,6 +172,7 @@ export const BACKUP_TARGET_REFUSAL_CODES = {
   not_found: "backup.target.not_found",
   managed_profile: "backup.target.managed_profile",
   pending_deletion: "backup.target.pending_deletion",
+  admin_account: "backup.target.admin_account",
   holds_records: "backup.target.holds_records",
 } as const satisfies Record<RestoreTargetRefusal, string>;
 
@@ -186,6 +199,12 @@ export const RESTORE_TARGET_REFUSALS: Readonly<
     code: BACKUP_TARGET_REFUSAL_CODES.pending_deletion,
     message:
       "The chosen account is pending deletion. Undo the deletion first, or choose another account.",
+  },
+  admin_account: {
+    status: 409,
+    code: BACKUP_TARGET_REFUSAL_CODES.admin_account,
+    message:
+      "The chosen account is an admin account. A copy of another person's record cannot be restored into it; choose an ordinary account or create a new one.",
   },
   holds_records: {
     status: 409,

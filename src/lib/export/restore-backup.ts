@@ -31,6 +31,7 @@ import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserData } from "@/lib/cache/invalidate";
 import { prisma } from "@/lib/db";
 import type { AccountSettingsRestoreResult } from "@/lib/export/account-settings-restore";
+import { isRetargetedUploadType } from "@/lib/export/backup-upload-type";
 import {
   RESTORE_CLEAR_STEPS,
   RESTORE_STEPS,
@@ -259,6 +260,7 @@ async function replaceAccount(
   read: ReadBackup,
   ownerId: string,
   restoreInstanceSettings: boolean,
+  retargeted: boolean,
   transactionTimeoutMs: number,
   tracker: RestoreProgressTracker,
   prepass: MeasurementRestorePrepass,
@@ -285,6 +287,7 @@ async function replaceAccount(
         streamed: read.streamed,
         skips,
         restoreInstanceSettings,
+        retargeted,
         measurementPrepass: prepass,
         links: emptyRestoreLinks(),
         outputs: {
@@ -592,6 +595,12 @@ export async function restoreBackup(
   const checked = await checkBackupBeforeRestore(input, read);
   if (!checked.ok) return checked.outcome;
   const { owner, transactionTimeoutMs } = checked;
+  // Read from the row, not passed in, so no caller can leave it out.
+  const stored = await prisma.dataBackup.findUnique({
+    where: { id: backup.id },
+    select: { type: true },
+  });
+  const retargeted = isRetargetedUploadType(stored?.type ?? "");
 
   let result: TransactionResult;
   try {
@@ -599,6 +608,7 @@ export async function restoreBackup(
       read,
       owner.id,
       restoreInstanceSettings,
+      retargeted,
       transactionTimeoutMs,
       tracker,
       prepass,

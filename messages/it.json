@@ -8397,6 +8397,7 @@
           "failureHoldsRecords": "Questo account ha già dei record. Un ripristino sostituisce i record invece di aggiungerli, quindi scegli un account senza record o creane uno nuovo.",
           "failureManagedProfile": "Questo account è un profilo gestito. Lo gestiscono le persone responsabili, quindi una copia non può andarci.",
           "failurePendingDeletion": "Questo account è in attesa di eliminazione. Annulla prima l’eliminazione o scegli un altro account.",
+          "failureAdminAccount": "Questo è un account amministratore. I record di un’altra persona non possono andarci, quindi scegli un account normale o creane uno nuovo.",
           "failureNotFound": "Questo account non esiste più.",
           "failureUnconfirmed": "Digita esattamente il nome utente dell’account per confermare.",
           "failureUsernameTaken": "Questo nome utente è già in uso.",

@@ -25189,10 +25189,10 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "409":
           description: "The chosen target cannot take the copy, and nothing was stored: a managed profile
-            (`backup.target.managed_profile`), an account pending deletion (`backup.target.pending_deletion`), an
-            account that already holds records (`backup.target.holds_records`, `meta.models` naming them), a username
-            already taken (`backup.target.username_taken`), or a file whose own account is still here
-            (`backup.owner.exists`)."
+            (`backup.target.managed_profile`), an account pending deletion (`backup.target.pending_deletion`), an admin
+            account (`backup.target.admin_account`), an account that already holds records
+            (`backup.target.holds_records`, `meta.models` naming them), a username already taken
+            (`backup.target.username_taken`), or a file whose own account is still here (`backup.owner.exists`)."
           content:
             application/json:
               schema:
@@ -38717,21 +38717,21 @@ components:
                 auth.session.unavailable, auth.stepup.required, auth.token.expired, auth.token.invalid; backup —
                 backup.foreign_reference, backup.key.missing, backup.owner.exists, backup.owner.missing,
                 backup.payload.undecryptable, backup.restore.active, backup.section.missing,
-                backup.target.holds_records, backup.target.managed_profile, backup.target.not_found,
-                backup.target.pending_deletion, backup.target.unconfirmed, backup.target.username_taken,
-                backup.upload.too_large; biomarkers — biomarkers.unit.locked; body-site — body-site.invalid; coach —
-                coach.budget.exceeded, coach.conversation.invalidTitle, coach.conversation.notFound,
-                coach.fenced.attachmentConflict, coach.fenced.attachmentLimit, coach.fenced.attachmentNotFound,
-                coach.fenced.attachmentNotIndexed, coach.fenced.attachmentRequired, coach.fenced.attachmentUnavailable,
-                coach.fenced.invalid, coach.request.invalid; coach-prefs — coach-prefs.body.invalid_json,
-                coach-prefs.body.invalid_shape; consent — consent.ai.confirmRequired, consent.ai.required; cycle —
-                cycle.bulk.invalid, cycle.bulk.too_large, cycle.calendar.invalid, cycle.calendar.range,
-                cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid, cycle.disabled,
-                cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs —
-                cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json;
-                data_wipe — data_wipe.copy_failed; dawarich — dawarich.credentials_rejected,
-                dawarich.home_place_unknown, dawarich.invalid, dawarich.not_connected, dawarich.rate_limited,
-                dawarich.unreachable; day — day.invalid; demo — demo.readOnly; documents —
+                backup.target.admin_account, backup.target.holds_records, backup.target.managed_profile,
+                backup.target.not_found, backup.target.pending_deletion, backup.target.unconfirmed,
+                backup.target.username_taken, backup.upload.too_large; biomarkers — biomarkers.unit.locked; body-site —
+                body-site.invalid; coach — coach.budget.exceeded, coach.conversation.invalidTitle,
+                coach.conversation.notFound, coach.fenced.attachmentConflict, coach.fenced.attachmentLimit,
+                coach.fenced.attachmentNotFound, coach.fenced.attachmentNotIndexed, coach.fenced.attachmentRequired,
+                coach.fenced.attachmentUnavailable, coach.fenced.invalid, coach.request.invalid; coach-prefs —
+                coach-prefs.body.invalid_json, coach-prefs.body.invalid_shape; consent — consent.ai.confirmRequired,
+                consent.ai.required; cycle — cycle.bulk.invalid, cycle.bulk.too_large, cycle.calendar.invalid,
+                cycle.calendar.range, cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid,
+                cycle.disabled, cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit;
+                cycle-prefs — cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach —
+                disable-coach.body.invalid_json; data_wipe — data_wipe.copy_failed; dawarich —
+                dawarich.credentials_rejected, dawarich.home_place_unknown, dawarich.invalid, dawarich.not_connected,
+                dawarich.rate_limited, dawarich.unreachable; day — day.invalid; demo — demo.readOnly; documents —
                 documents.chat.conversationNotFound, documents.chat.invalid, documents.inbound.alreadyConfirmed,
                 documents.inbound.alreadyPartlyConfirmed, documents.inbound.budgetExceeded,
                 documents.inbound.decryptFailed, documents.inbound.encounterNotFound, documents.inbound.episodeNotFound,

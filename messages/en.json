@@ -8397,6 +8397,7 @@
           "failureHoldsRecords": "This account already holds records. A restore replaces records instead of adding to them, so choose an account without records or create a new one.",
           "failureManagedProfile": "This account is a managed profile. The people who look after it run it, so a copy cannot go into it.",
           "failurePendingDeletion": "This account is pending deletion. Undo the deletion first, or choose another account.",
+          "failureAdminAccount": "This is an admin account. Another person's records cannot go into it. Choose an ordinary account or create a new one.",
           "failureNotFound": "This account no longer exists.",
           "failureUnconfirmed": "Type the account's username exactly to confirm.",
           "failureUsernameTaken": "This username is already taken.",

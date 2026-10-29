@@ -112,14 +112,21 @@ exists, and the console then asks where the records should go:
   count (the setup answers and the cycle settings): the restore replaces both
   with the copy's. A reading or medication entered on setup's last screen is a
   record, and the account is refused until it is deleted, because the restore
-  would delete it too. Managed profiles and accounts pending deletion are not
-  offered.
+  would delete it too. Managed profiles, accounts pending deletion and admin
+  accounts are not offered: an admin account is the operator's, its settings
+  are read under the operator's wider AI endpoint policy, and its role reaches
+  every account, so another person's record does not go into it.
 
 The file is then uploaded a second time, and its owner is changed to the chosen
 account as it is read. Nothing else in the file changes. The stored copy is
-then that account's copy in every respect: its preview, its download and its
-restore are the ordinary ones, and **Restore** on its row brings everything
-back under the chosen account. The erased account's id is not stored, not in
+then that account's copy in every respect but one: its preview, its download
+and its restore are the ordinary ones, and **Restore** on its row brings
+everything back under the chosen account. The one difference is that it is
+stored as `RETARGETED_UPLOAD_<time>` rather than `MANUAL_UPLOAD_<time>`, and its
+restore reads the file's settings as the file's author's, never as the
+operator's: an AI endpoint on a private address comes back only when this host
+grants it to ordinary accounts (`AI_PRIVATE_ORIGINS`), even if the account has
+been made an admin since. The erased account's id is not stored, not in
 the copy and not in the audit trail.
 
 A copy whose own account still exists on this server can only go back into

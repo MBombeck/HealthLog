@@ -8397,6 +8397,7 @@
           "failureHoldsRecords": "To konto ma już rekordy. Przywracanie zastępuje rekordy zamiast je uzupełniać, więc wybierz konto bez rekordów albo utwórz nowe.",
           "failureManagedProfile": "To konto jest profilem zarządzanym. Prowadzą je osoby opiekujące się nim, więc kopia nie może do niego trafić.",
           "failurePendingDeletion": "To konto czeka na usunięcie. Najpierw cofnij usunięcie albo wybierz inne konto.",
+          "failureAdminAccount": "To jest konto administratora. Nie można w nim umieścić rekordów innej osoby, więc wybierz zwykłe konto albo utwórz nowe.",
           "failureNotFound": "To konto już nie istnieje.",
           "failureUnconfirmed": "Wpisz dokładnie nazwę użytkownika konta, aby potwierdzić.",
           "failureUsernameTaken": "Ta nazwa użytkownika jest już zajęta.",
