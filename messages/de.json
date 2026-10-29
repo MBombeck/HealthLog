@@ -13733,6 +13733,7 @@
     "labs": {
       "menuTitle": "Laborwerte",
       "otherPanel": "Weitere",
+      "full": "Bis zu {max} Laborwerte gleichzeitig. Entferne einen, um einen anderen hinzuzufügen.",
       "above": "über dem Referenzbereich",
       "below": "unter dem Referenzbereich",
       "reference": "Referenz {range}",

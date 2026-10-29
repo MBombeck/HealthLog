@@ -13733,6 +13733,7 @@
     "labs": {
       "menuTitle": "Lab values",
       "otherPanel": "Other",
+      "full": "Up to {max} lab values at once. Remove one to add another.",
       "above": "above range",
       "below": "below range",
       "reference": "reference {range}",

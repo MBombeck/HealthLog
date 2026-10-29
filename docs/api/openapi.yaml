@@ -26190,17 +26190,19 @@ paths:
         - in: query
           name: values
           schema:
-            description: Comma-separated value series to include, as `MeasurementType` names, `MOOD`, or a lab marker as
+            description: "Comma-separated value series to include, as `MeasurementType` names, `MOOD`, or a lab marker as
               `lab:<biomarkerId>` (see `availableLabs`). A name given twice counts once, so the list is bounded by the
-              names that exist; an unknown measurement name answers 422, and so do more than 24 lab markers (ids, unlike
-              names, are not a closed set). A lab marker that is not in the record (deleted, or another record's) is
-              left out of `labSeries` without an error, so a stored choice never breaks the page.
+              names that exist; an unknown measurement name or a malformed marker key answers 422. At most 24 lab
+              markers are drawn (ids, unlike names, are not a closed set): the first 24 are kept and any further ones
+              left out without an error. A lab marker that is not in the record (deleted, or another record's) is
+              likewise left out of `labSeries`, so a stored choice never breaks the page."
             type: string
-          description: Comma-separated value series to include, as `MeasurementType` names, `MOOD`, or a lab marker as
+          description: "Comma-separated value series to include, as `MeasurementType` names, `MOOD`, or a lab marker as
             `lab:<biomarkerId>` (see `availableLabs`). A name given twice counts once, so the list is bounded by the
-            names that exist; an unknown measurement name answers 422, and so do more than 24 lab markers (ids, unlike
-            names, are not a closed set). A lab marker that is not in the record (deleted, or another record's) is left
-            out of `labSeries` without an error, so a stored choice never breaks the page.
+            names that exist; an unknown measurement name or a malformed marker key answers 422. At most 24 lab markers
+            are drawn (ids, unlike names, are not a closed set): the first 24 are kept and any further ones left out
+            without an error. A lab marker that is not in the record (deleted, or another record's) is likewise left out
+            of `labSeries`, so a stored choice never breaks the page."
       responses:
         "200":
           description: The timeline for the requested zoom and window.

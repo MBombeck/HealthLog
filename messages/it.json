@@ -13733,6 +13733,7 @@
     "labs": {
       "menuTitle": "Valori di laboratorio",
       "otherPanel": "Altri",
+      "full": "Fino a {max} valori di laboratorio alla volta. Rimuovine uno per aggiungerne un altro.",
       "above": "sopra l’intervallo",
       "below": "sotto l’intervallo",
       "reference": "riferimento {range}",

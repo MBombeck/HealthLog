@@ -299,10 +299,29 @@ describe("lab lines on the timeline", () => {
     expect(timeline.labSeries).toEqual([]);
     expect(timeline.availableLabs).toEqual([]);
 
-    // A list of ids is capped, and a malformed one is refused.
-    const many = Array.from({ length: 25 }, (_, i) => `lab:m${i}`).join(",");
-    expect((await getTimeline(`values=${many}`)).status).toBe(422);
+    // A malformed id is refused.
     expect((await getTimeline(`values=lab:..%2Fx`)).status).toBe(422);
+  });
+
+  it("draws the first 24 markers of a longer list and leaves the rest out, rather than refusing", async () => {
+    const owner = await makeUser("owner");
+    const { marker } = await seedFerritin(owner.id);
+    await signIn(owner.id);
+
+    const filler = Array.from({ length: 24 }, (_, i) => `lab:m${i}`);
+    // Past the cap: the record's own marker is the 25th, so it is not drawn.
+    const past = await getTimeline(
+      `zoom=all&values=WEIGHT,${[...filler, `lab:${marker.id}`].join(",")}`,
+    );
+    expect(past.status).toBe(200);
+    expect((await data(past)).labSeries).toEqual([]);
+    // Within the cap it is.
+    const within = await data(
+      await getTimeline(
+        `zoom=all&values=${[...filler.slice(1), `lab:${marker.id}`].join(",")}`,
+      ),
+    );
+    expect(within.labSeries.map((s) => s.key)).toEqual([`lab:${marker.id}`]);
   });
 
   it("refuses a grant scoped to some sections, and shares the lines on a whole-record grant", async () => {

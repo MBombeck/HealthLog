@@ -13733,6 +13733,7 @@
     "labs": {
       "menuTitle": "Labwaarden",
       "otherPanel": "Overig",
+      "full": "Maximaal {max} labwaarden tegelijk. Verwijder er een om een andere toe te voegen.",
       "above": "boven het bereik",
       "below": "onder het bereik",
       "reference": "referentie {range}",

@@ -13733,6 +13733,7 @@
     "labs": {
       "menuTitle": "Valores de exames",
       "otherPanel": "Outros",
+      "full": "Até {max} valores de exames ao mesmo tempo. Remova um para adicionar outro.",
       "above": "acima da faixa",
       "below": "abaixo da faixa",
       "reference": "referência {range}",

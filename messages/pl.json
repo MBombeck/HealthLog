@@ -13733,6 +13733,7 @@
     "labs": {
       "menuTitle": "Wyniki badań",
       "otherPanel": "Inne",
+      "full": "Naraz można pokazać do {max} wyników badań. Usuń jeden, aby dodać inny.",
       "above": "powyżej zakresu",
       "below": "poniżej zakresu",
       "reference": "zakres {range}",

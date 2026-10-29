@@ -17,8 +17,8 @@ import { MeasurementType as MeasurementTypes } from "@/generated/prisma/enums";
 import type { MeasurementType } from "@/generated/prisma/enums";
 
 import {
+  capTimelineLabKeys,
   DAY_NOTABLE_MAX_SPAN_DAYS,
-  TIMELINE_LAB_SERIES_MAX,
   TIMELINE_LANE_KEYS,
   timelineLabMarkerId,
   type TimelineBucket,
@@ -118,7 +118,10 @@ const MEASUREMENT_TYPE_SET: ReadonlySet<string> = new Set(
  * lanes. A lab marker (`lab:<biomarkerId>`, #1299) is checked for its shape
  * only: whether the record has it is the loader's question, and the answer
  * to a stale one is no line rather than an error. Marker ids are not a
- * closed set, so their count is capped.
+ * closed set, so their count is capped: the first
+ * `TIMELINE_LAB_SERIES_MAX` are kept and the rest left out. A refusal would
+ * be stored with the choice and fail the page on every visit, with the menu
+ * that could undo it never drawn.
  */
 export function parseSeriesKeys(raw: string | undefined): string[] | null {
   if (raw === undefined) return [...DEFAULT_TIMELINE_SERIES];
@@ -130,15 +133,11 @@ export function parseSeriesKeys(raw: string | undefined): string[] | null {
         .filter((k) => k.length > 0),
     ),
   ];
-  let labs = 0;
   for (const key of keys) {
-    if (timelineLabMarkerId(key) !== null) {
-      labs += 1;
-      continue;
-    }
+    if (timelineLabMarkerId(key) !== null) continue;
     if (key !== MOOD_SERIES_KEY && !MEASUREMENT_TYPE_SET.has(key)) return null;
   }
-  return labs > TIMELINE_LAB_SERIES_MAX ? null : keys;
+  return capTimelineLabKeys(keys);
 }
 
 /**

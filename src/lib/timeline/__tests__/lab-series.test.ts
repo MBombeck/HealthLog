@@ -272,12 +272,23 @@ describe("a lab marker in `values`", () => {
     expect(parseSeriesKeys("lab:../etc")).toBeNull();
   });
 
-  it("is capped, because marker ids are not a closed set", () => {
+  it("keeps the first markers up to the cap and leaves the rest out, so a long stored list still loads", () => {
     const many = (n: number) =>
       Array.from({ length: n }, (_, i) => `lab:m${i}`).join(",");
     expect(parseSeriesKeys(many(TIMELINE_LAB_SERIES_MAX))).toHaveLength(
       TIMELINE_LAB_SERIES_MAX,
     );
-    expect(parseSeriesKeys(many(TIMELINE_LAB_SERIES_MAX + 1))).toBeNull();
+    const capped = parseSeriesKeys(
+      `WEIGHT,${many(TIMELINE_LAB_SERIES_MAX + 6)},MOOD`,
+    );
+    expect(capped).toEqual([
+      "WEIGHT",
+      ...Array.from({ length: TIMELINE_LAB_SERIES_MAX }, (_, i) => `lab:m${i}`),
+      "MOOD",
+    ]);
+    // A malformed key past the cap still refuses: the cap is not a filter.
+    expect(
+      parseSeriesKeys(`${many(TIMELINE_LAB_SERIES_MAX)},lab:../x`),
+    ).toBeNull();
   });
 });

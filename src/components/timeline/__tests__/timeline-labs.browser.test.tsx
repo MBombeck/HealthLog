@@ -295,3 +295,69 @@ describe("lab lines on the timeline page", () => {
     expect(mobile.scrollWidth).toBeLessThanOrEqual(mobile.clientWidth);
   });
 });
+
+describe("the lab-marker cap on the timeline page", () => {
+  const id = (i: number) => `m${String(i).padStart(2, "0")}`;
+  const marker = (i: number) => ({
+    key: `lab:${id(i)}`,
+    biomarkerId: id(i),
+    name: `Marker ${String(i).padStart(2, "0")}`,
+    panel: null,
+    unit: "U/L",
+  });
+
+  /** A record with 26 markers, a stored choice naming 30 (four deleted). */
+  async function mountMany() {
+    const stored = Array.from({ length: 30 }, (_, i) => `lab:${id(i)}`);
+    window.localStorage.setItem(VALUES_KEY, JSON.stringify(stored));
+    setSearch("?zoom=all");
+    const net = stubFetch()
+      .on("GET", "/api/timeline", () => ({
+        data: {
+          ...timeline([]),
+          availableLabs: Array.from({ length: 26 }, (_, i) => marker(i)),
+        },
+      }))
+      .on("GET", "/api/timeline/readiness", {
+        data: { verdict: "carries", since: "2024-01-01", lanes: [] },
+      })
+      .on("GET", "/api/life-events", { data: { events: [] } });
+    const { screen } = await renderWithApp(<TimelineView />, {
+      user: {
+        timezone: "Europe/Berlin",
+        modules: { timeline: true, labs: true },
+      },
+    });
+    return { net, screen };
+  }
+
+  it("asks for no more markers than the server takes, and holds further ones back until one is removed", async () => {
+    await page.viewport(1280, 900);
+    const { net, screen } = await mountMany();
+    const first24 = Array.from({ length: 24 }, (_, i) => `lab:${id(i)}`);
+    await expect.poll(() => lastTimelineValues(net)).toEqual(first24);
+
+    await screen.getByRole("button", { name: /Values \(24\)/ }).click();
+    const extra = screen.getByRole("menuitemcheckbox", { name: "Marker 24" });
+    await expect.element(extra).toHaveAttribute("aria-checked", "false");
+    await expect.element(extra).toHaveAttribute("aria-disabled", "true");
+    await expect
+      .element(
+        screen.getByText("Up to 24 lab values at once", { exact: false }),
+      )
+      .toBeVisible();
+    // A chosen marker can always be removed.
+    const chosen = screen.getByRole("menuitemcheckbox", { name: "Marker 00" });
+    expect(chosen.element().getAttribute("aria-disabled")).not.toBe("true");
+
+    await chosen.click();
+    await expect.element(chosen).toHaveAttribute("aria-checked", "false");
+    expect(JSON.parse(window.localStorage.getItem(VALUES_KEY)!)).toEqual(
+      first24.slice(1),
+    );
+    await expect.element(extra).not.toHaveAttribute("aria-disabled", "true");
+    expect(
+      document.querySelector('[data-slot="timeline-values-labs-full"]'),
+    ).toBeNull();
+  });
+});
