@@ -13655,7 +13655,11 @@
       "start": "시작",
       "end": "끝",
       "seriesCaption": "기간별 평균",
-      "period": "기간"
+      "period": "기간",
+      "labsCaption": "날짜별 검사 수치",
+      "marker": "항목",
+      "date": "날짜",
+      "value": "값"
     },
     "selection": {
       "empty": "이 기간에는 항목이 없습니다",
@@ -13700,7 +13704,22 @@
       "labValuesOne": "검사 수치 1개",
       "labValuesFew": "검사 수치 {count}개",
       "labValuesOther": "검사 수치 {count}개"
-    }
+    },
+    "labs": {
+      "menuTitle": "검사 수치",
+      "otherPanel": "기타",
+      "above": "범위 초과",
+      "below": "범위 미만",
+      "reference": "참고 범위 {range}",
+      "report": "보고서: {title}",
+      "reportUntitled": "보고서 열기",
+      "excludedOne": "{name}: 다른 단위로 기록된 값 {count}개는 표시되지 않습니다",
+      "excludedFew": "{name}: 다른 단위로 기록된 값 {count}개는 표시되지 않습니다",
+      "excludedOther": "{name}: 다른 단위로 기록된 값 {count}개는 표시되지 않습니다"
+    },
+    "legendLabValue": "측정된 그대로의 검사 수치",
+    "legendLabOutside": "참고 범위 밖",
+    "legendLabRange": "참고 범위"
   },
   "lifeEvents": {
     "title": "삶의 사건",

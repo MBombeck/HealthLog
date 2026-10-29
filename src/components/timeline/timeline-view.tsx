@@ -14,6 +14,10 @@
  * and Back closes it. An incoming `?day=` selects that day and zooms to
  * three months, so a day's "In the timeline" lands on itself.
  *
+ * Lab markers the record has values for are offered beside the measurements
+ * (#1299): a chosen marker is stored and requested like any other line, as
+ * `lab:<biomarkerId>`, and drawn as its single readings, never as means.
+ *
  * At 768 px and up the chart; below it the chronicle, which is also the
  * list form of the chart. The readiness card sits on top while a lane is
  * thin and the person has not closed it; empty lanes are never drawn.
@@ -35,8 +39,8 @@ import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import {
   DAY_QUERY_PARAM,
   TIMELINE_ZOOMS,
+  timelineLabMarkerId,
   type LifeEventDTO,
-  type TimelineBucket,
   type TimelineLaneKey,
   type TimelineResponse,
   type TimelineZoom,
@@ -49,9 +53,10 @@ import type { ModuleKey } from "@/lib/modules/registry";
 import type { ChronicleGrouping } from "./chronicle-model";
 import {
   TIMELINE_BLOOD_PRESSURE_SERIES_KEY,
-  TIMELINE_LEGEND_MEAN_KEY,
   TIMELINE_ZOOM_LABEL_KEY,
 } from "./label-keys";
+import { LabExcludedNote } from "./lab-lines";
+import { TimelineLegend } from "./timeline-legend";
 import { LifeEventSheet } from "./life-event-sheet";
 import { ReadinessCard } from "./readiness-card";
 import {
@@ -78,7 +83,11 @@ import {
   type TimelineRange,
 } from "./timeline-url";
 import { LANE_ORDER, latestDataDate, windowFor } from "./timeline-geometry";
-import { LayersMenu, ValueSeriesMenu } from "./timeline-menus";
+import {
+  LayersMenu,
+  TimelineValuesMenu,
+  labMarkerNames,
+} from "./timeline-menus";
 import {
   isBoolean,
   isStringArray,
@@ -140,12 +149,55 @@ function timelineIsEmpty(data: TimelineResponse): boolean {
   return (
     data.lanes.every((l) => l.items.length === 0) &&
     data.standing.length === 0 &&
-    data.series.every((s) => s.points.length === 0)
+    data.series.every((s) => s.points.length === 0) &&
+    data.labSeries.every((s) => s.points.length === 0)
   );
 }
 
 const VALUES_KEY = "healthlog.timeline.values";
 const HIDDEN_LANES_KEY = "healthlog.timeline.hiddenLanes";
+
+/**
+ * The value lines asked for: the stored choice, minus anything unknown and
+ * minus a line whose module is off, and one colour per chosen line.
+ */
+function useValueLines(
+  modules: Partial<Record<ModuleKey, boolean>> | undefined,
+) {
+  const [storedValues, setStoredValues] = useDevicePreference(
+    VALUES_KEY,
+    DEFAULT_VALUES,
+    isStringArray,
+  );
+  // What is asked for: the stored choice, minus anything unknown and minus
+  // a line whose module is off. The server narrows it further to what the
+  // caller may see.
+  const allowed = useCallback(
+    (key: string) => {
+      // A lab line belongs to the labs module; whether the record has the
+      // marker is the server's to say.
+      if (timelineLabMarkerId(key) !== null) return modules?.labs !== false;
+      if (!KNOWN_SERIES.has(key)) return false;
+      const owner: ModuleKey | null | undefined =
+        VALUE_OPTION_MODULE[key as keyof typeof VALUE_OPTION_MODULE];
+      return !owner || modules?.[owner] !== false;
+    },
+    [modules],
+  );
+  const values = useMemo(
+    () => storedValues.filter(allowed),
+    [storedValues, allowed],
+  );
+  // One colour per chosen line, shared by the chart, the selection bar, the
+  // menu and the phone chronicle; contested colours go by the menu's order.
+  const seriesColors = useMemo(
+    () => assignSeriesColors(values, SERIES_RANK),
+    [values],
+  );
+  const seriesColor = (key: string) =>
+    seriesColors.get(key) ?? SERIES_PALETTE[0];
+  return { values, allowed, setStoredValues, seriesColor };
+}
 
 export function TimelineView() {
   const { t } = useTranslations();
@@ -183,11 +235,6 @@ export function TimelineView() {
   const [lifeEventOpen, setLifeEventOpen] = useState(false);
   const [editing, setEditing] = useState<LifeEventDTO | null>(null);
 
-  const [storedValues, setStoredValues] = useDevicePreference(
-    VALUES_KEY,
-    DEFAULT_VALUES,
-    isStringArray,
-  );
   const [hiddenList, setHiddenList] = useDevicePreference<string[]>(
     HIDDEN_LANES_KEY,
     [],
@@ -200,31 +247,9 @@ export function TimelineView() {
   );
 
   const modules = user?.modules;
-  // What is asked for: the stored choice, minus anything unknown and minus
-  // a line whose module is off. The server narrows it further to what the
-  // caller may see.
-  const allowed = useCallback(
-    (key: string) => {
-      if (!KNOWN_SERIES.has(key)) return false;
-      const owner: ModuleKey | null | undefined =
-        VALUE_OPTION_MODULE[key as keyof typeof VALUE_OPTION_MODULE];
-      return !owner || modules?.[owner] !== false;
-    },
-    [modules],
-  );
-  const values = useMemo(
-    () => storedValues.filter(allowed),
-    [storedValues, allowed],
-  );
-  // One colour per chosen line, shared by the chart, the selection bar, the
-  // menu and the phone chronicle; contested colours go by the menu's order.
-  const seriesColors = useMemo(
-    () => assignSeriesColors(values, SERIES_RANK),
-    [values],
-  );
+  const { values, allowed, setStoredValues, seriesColor } =
+    useValueLines(modules);
   const seriesFormat = useSeriesValueFormat();
-  const seriesColor = (key: string) =>
-    seriesColors.get(key) ?? SERIES_PALETTE[0];
   const hidden = useMemo(
     () => new Set(hiddenList as TimelineLaneKey[]),
     [hiddenList],
@@ -334,14 +359,17 @@ export function TimelineView() {
     setLifeEventOpen(true);
   }
 
+  const labNames = labMarkerNames(data);
   // Blood pressure reads as its own name here; the list labels ("Sys",
-  // "Dia") lean on a column header the chart does not have.
+  // "Dia") lean on a column header the chart does not have. A lab marker
+  // reads by its own name, as on the labs list.
   const seriesLabel = (key: string) =>
     key === "BLOOD_PRESSURE_SYS" || key === "BLOOD_PRESSURE_DIA"
       ? t(TIMELINE_BLOOD_PRESSURE_SERIES_KEY[key])
       : key === "MOOD"
         ? t("timeline.readiness.lanes.mood")
-        : t(MEASUREMENT_TYPE_LABEL_KEYS[key as MeasurementType] ?? key);
+        : (labNames.get(key) ??
+          t(MEASUREMENT_TYPE_LABEL_KEYS[key as MeasurementType] ?? key));
 
   const shownWindow = data
     ? windowFor(
@@ -367,12 +395,19 @@ export function TimelineView() {
     today,
     data?.range.dataFrom ?? null,
   );
-  // The selector offers every series the record has, the chosen ones kept
-  // even when they have nothing yet, in the selector's order and then the
-  // record's.
-  const valueOptions = [
-    ...new Set([...(data?.availableSeries ?? []).filter(allowed), ...values]),
-  ].sort((a, b) => SERIES_RANK.indexOf(a) - SERIES_RANK.indexOf(b));
+  const valuesMenu = (iconOnly: boolean) => (
+    <TimelineValuesMenu
+      timeline={data}
+      values={values}
+      allowed={allowed}
+      rank={SERIES_RANK}
+      labsOn={modules?.labs !== false}
+      label={seriesLabel}
+      color={seriesColor}
+      onChange={setStoredValues}
+      iconOnly={iconOnly}
+    />
+  );
   const presentLanes = (data?.lanes ?? [])
     .filter((l) => l.items.length > 0)
     .map((l) => l.key)
@@ -532,13 +567,7 @@ export function TimelineView() {
                 onApply={(next) => navigate("range", next)}
               />
               <div className="flex min-w-0 flex-wrap items-center gap-2">
-                <ValueSeriesMenu
-                  options={valueOptions}
-                  selected={values}
-                  label={seriesLabel}
-                  color={seriesColor}
-                  onChange={setStoredValues}
-                />
+                {valuesMenu(false)}
                 {layers(false)}
               </div>
             </div>
@@ -571,6 +600,8 @@ export function TimelineView() {
                 <TimelineLegend
                   bucket={data.bucket}
                   hasSeries={data.series.length > 0}
+                  labSeries={data.labSeries}
+                  label={seriesLabel}
                 />
               </CardContent>
             </Card>
@@ -593,6 +624,7 @@ export function TimelineView() {
                 slot="timeline-grouping"
               />
               <div className="flex items-center gap-2">
+                {valuesMenu(true)}
                 <Button
                   variant={zoom === "range" ? "secondary" : "outline"}
                   size="icon"
@@ -615,6 +647,11 @@ export function TimelineView() {
               dataFrom={data.range.dataFrom}
               onApply={(next) => navigate("range", next)}
               onClear={zoom === "range" ? () => setZoom("all") : null}
+            />
+            <LabExcludedNote
+              labSeries={data.labSeries}
+              label={seriesLabel}
+              block
             />
             <TimelineChronicle
               timeline={{
@@ -644,105 +681,6 @@ export function TimelineView() {
           onOpenChange={setSheetOpen}
           event={editing}
         />
-      )}
-    </div>
-  );
-}
-
-/**
- * What the marks mean. Under the selection bar and set off from it by a
- * hairline. With value lines, the two marks a line can carry besides its
- * points are explained by an example of each: the dashed stroke over a short
- * gap without measurements, and the hollow point of a mean resting on fewer
- * than three.
- */
-export function TimelineLegend({
-  bucket,
-  hasSeries,
-}: {
-  bucket: TimelineBucket;
-  hasSeries: boolean;
-}) {
-  const { t } = useTranslations();
-  return (
-    <div
-      className="text-muted-foreground border-border flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t pt-3 text-xs"
-      data-slot="timeline-legend"
-    >
-      <span className="inline-flex items-center gap-1.5">
-        <span
-          className="bg-muted-foreground h-1.5 w-4 shrink-0 rounded-full"
-          aria-hidden="true"
-        />
-        {t("timeline.legendSpan")}
-      </span>
-      <span className="inline-flex items-center gap-1.5">
-        <span
-          className="bg-muted-foreground size-2 shrink-0 rounded-full"
-          aria-hidden="true"
-        />
-        {t("timeline.legendEvent")}
-      </span>
-      {hasSeries && (
-        <>
-          <span
-            className="inline-flex items-center gap-1.5"
-            data-slot="timeline-legend-mean"
-            data-bucket={bucket}
-          >
-            <span
-              className="bg-foreground h-0.5 w-4 shrink-0"
-              aria-hidden="true"
-            />
-            {t(TIMELINE_LEGEND_MEAN_KEY[bucket])}
-          </span>
-          <span
-            className="inline-flex items-center gap-1.5"
-            data-slot="timeline-legend-gap"
-          >
-            <svg
-              width="16"
-              height="8"
-              viewBox="0 0 16 8"
-              className="text-foreground"
-              aria-hidden="true"
-            >
-              <line
-                x1="1"
-                x2="15"
-                y1="4"
-                y2="4"
-                stroke="currentColor"
-                strokeWidth="1.2"
-                strokeDasharray="3 3"
-                strokeLinecap="round"
-              />
-            </svg>
-            {t("timeline.legendGap")}
-          </span>
-          <span
-            className="inline-flex items-center gap-1.5"
-            data-slot="timeline-legend-thin"
-          >
-            <svg
-              width="8"
-              height="8"
-              viewBox="0 0 8 8"
-              className="text-foreground"
-              aria-hidden="true"
-            >
-              <circle
-                cx="4"
-                cy="4"
-                r="2.75"
-                fill="var(--card)"
-                stroke="currentColor"
-                strokeWidth="1.4"
-              />
-            </svg>
-            {t("timeline.legendThin")}
-          </span>
-        </>
       )}
     </div>
   );

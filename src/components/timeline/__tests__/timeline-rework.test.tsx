@@ -24,13 +24,10 @@ import { SERIES_PALETTE, assignSeriesColors } from "../series-colors";
 import type { SeriesValueFormat } from "../series-format";
 import { SeriesLines } from "../timeline-chart";
 import { TimelineChronicle } from "../timeline-chronicle";
-import {
-  SERIES_GAP,
-  SERIES_HEIGHT,
-  layoutTimeline,
-} from "../timeline-geometry";
+import { SERIES_GAP, layoutTimeline } from "../timeline-geometry";
+import { SERIES_HEIGHT } from "../series-geometry";
 import { ValueSeriesMenu } from "../timeline-menus";
-import { TimelineLegend } from "../timeline-view";
+import { TimelineLegend } from "../timeline-legend";
 import { useSeriesValueFormat } from "../use-series-value-format";
 import { item, wordsIn } from "./timeline-fixture";
 
@@ -150,6 +147,8 @@ function twoMedications(): TimelineResponse {
     standing: [],
     series: [],
     availableSeries: [],
+    labSeries: [],
+    availableLabs: [],
     notable: [],
   };
 }

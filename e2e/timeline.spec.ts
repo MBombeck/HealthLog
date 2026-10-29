@@ -15,12 +15,16 @@
  *      to six lines.
  *   6. On a phone the chronicle replaces the chart, says its empty months
  *      out loud, names each quarter's means once, and a row opens its day.
+ *   7. A lab marker (#1299) is picked from the values menu, drawn as its
+ *      single readings with the range behind them, read on its own, kept
+ *      across a reload, and listed on its lab day on a phone.
  *
  * The timeline's server routes are mocked with the contract's shapes
  * (`utils/mock-timeline.ts`); the module switch is the real one. Every
  * assertion is addressed to a stable `data-*` attribute. The journey moves
  * its account's module switch, so it runs serially and in one project.
  */
+import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 
 import { TIMELINE_STORAGE_STATE_PATH } from "./setup/global-setup";
@@ -298,7 +302,9 @@ test("value lines: quarterly means, gaps kept, short ones bridged, as many as th
 
   // The picker is one button that counts the lines; the chosen ones are
   // not listed beside it.
-  const trigger = page.locator('[data-slot="timeline-values-trigger"]');
+  const trigger = page.locator(
+    '[data-slot="timeline-desktop"] [data-slot="timeline-values-trigger"]',
+  );
   await expect(trigger).toHaveAttribute("data-count", "3");
   await expect(trigger).toHaveText(/\(3\)/);
   const toolbarHeight = await trigger.evaluate(
@@ -809,6 +815,98 @@ test("a value point reads on its own, by pointer and by keyboard", async ({
   await page.keyboard.press("ArrowLeft");
   await expect(tip).not.toHaveAttribute("data-t", t!);
   await expect(tip).toHaveAttribute("data-series", series!);
+});
+
+test("a lab marker is picked, drawn as its readings, read on its own and kept", async ({
+  page,
+}) => {
+  await setTimelineModuleOn(page);
+  const log = await mockTimeline(page, "full", TODAY, { labs: true });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/timeline?zoom=all");
+  await expect(page.locator('[data-slot="timeline-chart"]')).toBeVisible({
+    timeout: 20_000,
+  });
+
+  await page
+    .locator(
+      '[data-slot="timeline-desktop"] [data-slot="timeline-values-trigger"]',
+    )
+    .click();
+  const menu = page.locator('[data-slot="timeline-values-menu"]');
+  await expect(
+    menu.locator('[data-slot="timeline-values-labs"]'),
+  ).toBeVisible();
+  await expect(menu.getByText("Eisen")).toBeVisible();
+  await menu
+    .locator('[data-slot="timeline-values-option"][data-key="lab:bm-ferritin"]')
+    .click();
+  await page.keyboard.press("Escape");
+  // The menu hands focus back to its trigger once its exit animation ends.
+  await expect(menu).toBeHidden();
+  await expect(
+    page.locator(
+      '[data-slot="timeline-desktop"] [data-slot="timeline-values-trigger"]',
+    ),
+  ).toBeFocused();
+
+  const row = page.locator('[data-lab-series="lab:bm-ferritin"]');
+  await expect(row.locator('[data-slot="timeline-lab-mark"]')).toHaveCount(4);
+  // Below its range: a triangle, never only a colour.
+  await expect(row.locator('path[data-status="below"]')).toHaveCount(1);
+  await expect(row.locator('[data-slot="timeline-lab-band-fill"]')).toHaveCount(
+    1,
+  );
+  expect(log.timelineQueries.at(-1)?.get("values")?.split(",")).toContain(
+    "lab:bm-ferritin",
+  );
+
+  // The reading below its range, by keyboard: day, value, verdict, report.
+  const target = page.locator(
+    '[data-slot="timeline-point-target"][data-series="lab:bm-ferritin"][data-t="fe-1"]',
+  );
+  await target.focus();
+  const tip = page.locator('[data-slot="timeline-point-tip"]');
+  await expect(tip).toHaveAttribute("data-t", "fe-1");
+  await expect(tip).toContainText("22 ng/mL");
+  await expect(tip).toContainText("Laborbefund März");
+
+  const axe = await new AxeBuilder({ page })
+    .include('[data-slot="timeline-page"]')
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  expect(axe.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+
+  // The choice is kept: a reload asks for the marker again.
+  await page.reload();
+  await expect(row.locator('[data-slot="timeline-lab-mark"]')).toHaveCount(4, {
+    timeout: 20_000,
+  });
+
+  // On a phone: the same line, listed on its lab days, no sideways scroll.
+  await page.setViewportSize({ width: 390, height: 844 });
+  const labs = page.locator('[data-slot="timeline-chronicle-labs"]');
+  await expect(labs.first()).toBeVisible();
+  await expect(labs).toHaveCount(4);
+  await expect(labs.last()).toContainText("22 ng/mL");
+  const overflow = await page.evaluate(
+    () =>
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+
+  // Unchosen, it is gone from the request and the page.
+  await page
+    .locator(
+      '[data-slot="timeline-mobile"] [data-slot="timeline-values-trigger"]',
+    )
+    .click();
+  await page
+    .locator('[data-slot="timeline-values-option"][data-key="lab:bm-ferritin"]')
+    .click();
+  await page.keyboard.press("Escape");
+  await expect(labs).toHaveCount(0);
 });
 
 test("the timeline page ends where its content does, at every desktop width", async ({

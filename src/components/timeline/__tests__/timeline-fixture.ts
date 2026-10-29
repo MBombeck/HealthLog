@@ -284,6 +284,8 @@ export function fullTimeline(): TimelineResponse {
       },
     ],
     availableSeries: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA", "WEIGHT"],
+    labSeries: [],
+    availableLabs: [],
     notable: [{ date: "2026-01-04", kind: "extremeHigh" }],
   };
 }

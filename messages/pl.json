@@ -13655,7 +13655,11 @@
       "start": "Początek",
       "end": "Koniec",
       "seriesCaption": "Średnie według okresu",
-      "period": "Okres"
+      "period": "Okres",
+      "labsCaption": "Wyniki badań według dni",
+      "marker": "Parametr",
+      "date": "Data",
+      "value": "Wartość"
     },
     "selection": {
       "empty": "Brak wpisów w tym okresie",
@@ -13700,7 +13704,22 @@
       "labValuesOne": "1 wynik badania",
       "labValuesFew": "{count} wyniki badań",
       "labValuesOther": "{count} wyników badań"
-    }
+    },
+    "labs": {
+      "menuTitle": "Wyniki badań",
+      "otherPanel": "Inne",
+      "above": "powyżej zakresu",
+      "below": "poniżej zakresu",
+      "reference": "zakres {range}",
+      "report": "Dokument: {title}",
+      "reportUntitled": "Otwórz dokument",
+      "excludedOne": "{name}: {count} wartość w innej jednostce nie jest pokazana",
+      "excludedFew": "{name}: {count} wartości w innej jednostce nie są pokazane",
+      "excludedOther": "{name}: {count} wartości w innej jednostce nie jest pokazanych"
+    },
+    "legendLabValue": "Wynik badania, tak jak zmierzono",
+    "legendLabOutside": "Poza zakresem referencyjnym",
+    "legendLabRange": "Zakres referencyjny"
   },
   "lifeEvents": {
     "title": "Wydarzenie życiowe",

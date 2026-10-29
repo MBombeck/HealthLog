@@ -13655,7 +13655,11 @@
       "start": "Start",
       "end": "End",
       "seriesCaption": "Value means by period",
-      "period": "Period"
+      "period": "Period",
+      "labsCaption": "Lab values by day",
+      "marker": "Marker",
+      "date": "Date",
+      "value": "Value"
     },
     "selection": {
       "empty": "No entries in this period",
@@ -13700,7 +13704,22 @@
       "labValuesOne": "1 lab value",
       "labValuesFew": "{count} lab values",
       "labValuesOther": "{count} lab values"
-    }
+    },
+    "labs": {
+      "menuTitle": "Lab values",
+      "otherPanel": "Other",
+      "above": "above range",
+      "below": "below range",
+      "reference": "reference {range}",
+      "report": "Report: {title}",
+      "reportUntitled": "Open the report",
+      "excludedOne": "{name}: {count} value in another unit is not drawn",
+      "excludedFew": "{name}: {count} values in another unit are not drawn",
+      "excludedOther": "{name}: {count} values in another unit are not drawn"
+    },
+    "legendLabValue": "Lab value, as measured",
+    "legendLabOutside": "Outside the reference range",
+    "legendLabRange": "Reference range"
   },
   "lifeEvents": {
     "title": "Life event",

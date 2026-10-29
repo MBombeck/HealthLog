@@ -26131,11 +26131,17 @@ paths:
         - in: query
           name: values
           schema:
-            description: Comma-separated value series to include, as `MeasurementType` names or `MOOD`. A name given twice counts
-              once, so the list is bounded by the names that exist; an unknown name answers 422.
+            description: Comma-separated value series to include, as `MeasurementType` names, `MOOD`, or a lab marker as
+              `lab:<biomarkerId>` (see `availableLabs`). A name given twice counts once, so the list is bounded by the
+              names that exist; an unknown measurement name answers 422, and so do more than 24 lab markers (ids, unlike
+              names, are not a closed set). A lab marker that is not in the record (deleted, or another record's) is
+              left out of `labSeries` without an error, so a stored choice never breaks the page.
             type: string
-          description: Comma-separated value series to include, as `MeasurementType` names or `MOOD`. A name given twice counts
-            once, so the list is bounded by the names that exist; an unknown name answers 422.
+          description: Comma-separated value series to include, as `MeasurementType` names, `MOOD`, or a lab marker as
+            `lab:<biomarkerId>` (see `availableLabs`). A name given twice counts once, so the list is bounded by the
+            names that exist; an unknown measurement name answers 422, and so do more than 24 lab markers (ids, unlike
+            names, are not a closed set). A lab marker that is not in the record (deleted, or another record's) is left
+            out of `labSeries` without an error, so a stored choice never breaks the page.
       responses:
         "200":
           description: The timeline for the requested zoom and window.
@@ -92030,6 +92036,18 @@ components:
           description: "Every value series this record can show, whatever the window: the `MeasurementType` names with live
             readings that the caller may see (events excluded), and `MOOD` when the mood score is visible and has
             entries. Each may be named in `values`."
+        labSeries:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineLabSeries"
+          description: The lab markers named in `values`, in the order named, each with its single readings in the window. A
+            marker named but not found in the record is left out.
+        availableLabs:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineLabMarker"
+          description: Every lab marker this record has a numeric reading for, whatever the window, when the caller may see labs.
+            Each may be named in `values` by its `key`.
         notable:
           type: array
           items:
@@ -92057,6 +92075,8 @@ components:
         - bucket
         - series
         - availableSeries
+        - labSeries
+        - availableLabs
         - notable
       additionalProperties: false
     TimelineItem:
@@ -92208,6 +92228,155 @@ components:
         - key
         - unit
         - points
+      additionalProperties: false
+    TimelineLabSeries:
+      type: object
+      properties:
+        key:
+          type: string
+          description: "`lab:<biomarkerId>`, as named in `values`."
+        biomarkerId:
+          type: string
+        name:
+          type: string
+          description: The marker's name, as the labs list shows it.
+        panel:
+          type:
+            - string
+            - "null"
+        unit:
+          type: string
+          description: The marker's own unit; every point is in it.
+        band:
+          anyOf:
+            - type: object
+              properties:
+                low:
+                  type:
+                    - number
+                    - "null"
+                high:
+                  type:
+                    - number
+                    - "null"
+              required:
+                - low
+                - high
+              additionalProperties: false
+            - type: "null"
+          description: "The reference range to draw behind the points: the marker's own, else the window printed with its newest
+            reading in the window. Null when neither is known."
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineLabPoint"
+          description: "Every numeric reading in the window, oldest first, one point each: never averaged, never interpolated. A
+            day with two readings has two points."
+        excluded:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          description: Readings in the window stored in a unit that does not convert into `unit`. They are left out of `points`
+            rather than drawn on a scale they are not in.
+      required:
+        - key
+        - biomarkerId
+        - name
+        - panel
+        - unit
+        - band
+        - points
+        - excluded
+      additionalProperties: false
+    TimelineLabPoint:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The lab result's id.
+        date:
+          type: string
+          description: The record's local day of the draw, the day `GET /api/day/{date}` lists it under.
+        value:
+          type: number
+          description: In the series' `unit`.
+        sourceValue:
+          description: The figure the report printed, when `value` was converted into the series' unit; it sets the precision
+            `value` is shown with. Null for a reading stored as stated.
+          type:
+            - number
+            - "null"
+        rangeStatus:
+          type: string
+          enum:
+            - in-range
+            - below
+            - above
+            - unknown
+          description: The reading against `referenceLow` / `referenceHigh`, bounds inclusive; `unknown` when neither is known.
+        referenceLow:
+          description: "The window this reading is judged against, in the series' unit: the one its report printed, else the
+            marker's own."
+          type:
+            - number
+            - "null"
+        referenceHigh:
+          type:
+            - number
+            - "null"
+        report:
+          anyOf:
+            - type: object
+              properties:
+                id:
+                  type: string
+                title:
+                  description: The document's title, else its file name.
+                  type:
+                    - string
+                    - "null"
+                href:
+                  type: string
+              required:
+                - id
+                - title
+                - href
+              additionalProperties: false
+            - type: "null"
+          description: The document the reading was read from, when one is linked and the caller may see documents.
+      required:
+        - id
+        - date
+        - value
+        - sourceValue
+        - rangeStatus
+        - referenceLow
+        - referenceHigh
+        - report
+      additionalProperties: false
+    TimelineLabMarker:
+      type: object
+      properties:
+        key:
+          type: string
+          description: "`lab:<biomarkerId>`, to name in `values`."
+        biomarkerId:
+          type: string
+        name:
+          type: string
+        panel:
+          description: The marker's group, as the labs list shows it.
+          type:
+            - string
+            - "null"
+        unit:
+          type: string
+      required:
+        - key
+        - biomarkerId
+        - name
+        - panel
+        - unit
       additionalProperties: false
     TimelineReadinessEnvelope:
       type: object

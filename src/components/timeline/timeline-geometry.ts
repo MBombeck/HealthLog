@@ -20,6 +20,7 @@ import type {
   TimelineBucket,
   TimelineItem,
   TimelineItemKind,
+  TimelineLabSeries,
   TimelineLane,
   TimelineLaneKey,
   TimelineSeries,
@@ -27,6 +28,13 @@ import type {
 } from "@/lib/day/contract";
 
 import { itemLine, type ItemWordsFn } from "./item-words";
+import {
+  SERIES_HEIGHT,
+  layoutLabSeries,
+  layoutSeries,
+  type LabSeriesLayout,
+  type SeriesLayout,
+} from "./series-geometry";
 import {
   doseSegments,
   medicationGroups,
@@ -36,8 +44,6 @@ import {
 } from "./medication-rows";
 import {
   addMonths,
-  bucketAfter,
-  bucketIndex,
   dayKey,
   dayNumber,
   endOfMonth,
@@ -57,8 +63,6 @@ export const ROW_HEIGHT = 22;
 export const LANE_PAD_BOTTOM = 18;
 /** Gap between the last lane and the first value line. */
 export const SERIES_GAP = 18;
-/** Height of one value line, label included. */
-export const SERIES_HEIGHT = 60;
 /** Label font size in the lanes, px. */
 export const LABEL_FONT_PX = 11;
 /** Estimated advance of one label character at 11 px, on the wide side. */
@@ -1051,143 +1055,6 @@ function placeLabels(
   return labels;
 }
 
-/* ─── Value lines ─────────────────────────────────────────────────────────── */
-
-export interface SeriesPointLayout {
-  /** The bucket's first day. */
-  t: string;
-  mean: number;
-  /** Readings behind the mean. */
-  count: number;
-  x: number;
-  y: number;
-  /** Fewer than {@link THIN_BUCKET_COUNT} readings: drawn hollow. */
-  thin: boolean;
-}
-
-export interface SeriesLayout {
-  key: string;
-  unit: string | null;
-  top: number;
-  height: number;
-  /** SVG path data of the solid runs; empty when no two points touch. */
-  path: string;
-  /** SVG path data of the dashed bridges over short gaps; may be empty. */
-  bridges: string;
-  /** The most recent mean inside the window, or null. */
-  latest: number | null;
-  points: SeriesPointLayout[];
-}
-
-/** A bucket mean from fewer readings than this is drawn hollow. */
-export const THIN_BUCKET_COUNT = 3;
-
-/**
- * The most missing buckets a dashed bridge spans. Beyond it the line stops
- * and starts again, so a long silence reads as one and not as a trend.
- *
- * The rule is one length, about six months between the two points a bridge
- * joins, never more, and never more than a third of what the zoom shows:
- * one missing quarter (the points are six months apart), two missing months
- * in a year (three months apart, a sixth of the window) and four missing
- * weeks in three months (five weeks apart, the window's third). A longer
- * bridge would draw a slope through a stretch where nothing was measured.
- */
-export const MAX_BRIDGED_GAP: Readonly<Record<TimelineBucket, number>> = {
-  quarter: 1,
-  month: 2,
-  week: 4,
-  // Days come only with a chosen range under six weeks. Three missing days
-  // (points four days apart) bridge a weekend away or a forgotten cuff;
-  // a longer silence in a window that short is a break worth seeing, and
-  // the bridge stays well under a third of even a two-week range.
-  day: 3,
-};
-
-/**
- * One neutral line per series, scaled to its own range inside the window.
- * A point sits in the middle of its bucket, and every bucket with a reading
- * gets its point, so one month with no neighbours stays visible. Missing
- * buckets stay missing: a short gap is bridged by a dashed stroke
- * ({@link MAX_BRIDGED_GAP}) that joins the two real points and invents none
- * between them, a longer one breaks the line.
- */
-export function layoutSeries(
-  series: readonly TimelineSeries[],
-  top: number,
-  window: TimeWindow,
-  scale: Scale,
-  bucket: TimelineBucket,
-): SeriesLayout[] {
-  return series.map((s, index) => {
-    const rowTop = top + index * SERIES_HEIGHT + 6;
-    const height = SERIES_HEIGHT - 16;
-    // A bucket that starts before the window still belongs to it while any
-    // of its days lie inside.
-    const inside = s.points
-      .filter((p) => p.t <= window.to && bucketAfter(p.t, bucket) > window.from)
-      .sort((a, b) => (a.t < b.t ? -1 : 1));
-    if (inside.length === 0) {
-      return {
-        key: s.key,
-        unit: s.unit,
-        top: rowTop,
-        height,
-        path: "",
-        bridges: "",
-        latest: null,
-        points: [],
-      };
-    }
-    let lo = Math.min(...inside.map((p) => p.mean));
-    let hi = Math.max(...inside.map((p) => p.mean));
-    const pad = Math.max((hi - lo) * 0.12, Math.abs(hi) * 0.01, 0.5);
-    lo -= pad;
-    hi += pad;
-    const y = (v: number) => rowTop + height * (1 - (v - lo) / (hi - lo));
-    const points = inside.map((p) => {
-      const mid = (dayNumber(p.t) + dayNumber(bucketAfter(p.t, bucket))) / 2;
-      const x = Math.min(scale.x1, Math.max(scale.x0, scale.x(mid)));
-      return {
-        t: p.t,
-        mean: p.mean,
-        count: p.count,
-        x,
-        y: y(p.mean),
-        thin: p.count < THIN_BUCKET_COUNT,
-      };
-    });
-    // eslint-disable-next-line healthlog/no-unlocalised-decimal -- SVG coordinates, read by the renderer, not a person
-    const xy = (p: SeriesPointLayout) => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`;
-    let path = "";
-    let bridges = "";
-    for (let i = 1; i < points.length; i++) {
-      const prev = points[i - 1];
-      const cur = points[i];
-      const missing =
-        bucketIndex(cur.t, bucket) - bucketIndex(prev.t, bucket) - 1;
-      if (missing === 0) {
-        // Continue the run, or open a new one at the previous point.
-        path += path.endsWith(xy(prev))
-          ? `L${xy(cur)}`
-          : `M${xy(prev)}L${xy(cur)}`;
-      } else if (missing <= MAX_BRIDGED_GAP[bucket]) {
-        bridges += `M${xy(prev)}L${xy(cur)}`;
-      }
-    }
-    return {
-      key: s.key,
-      unit: s.unit,
-      top: rowTop,
-      height,
-      path,
-      bridges,
-      latest: inside[inside.length - 1].mean,
-      points,
-    };
-  });
-}
-
 /* ─── Whole chart ─────────────────────────────────────────────────────────── */
 
 export interface TimelineLayout {
@@ -1197,6 +1064,8 @@ export interface TimelineLayout {
   lanes: LaneLayout[];
   seriesTop: number;
   series: SeriesLayout[];
+  /** The lab lines, below the value lines (#1299). */
+  labSeries: LabSeriesLayout[];
 }
 
 /** Width of the lane-name column at a given chart width. */
@@ -1209,6 +1078,8 @@ export function layoutTimeline(input: {
   window: TimeWindow;
   lanes: readonly TimelineLane[];
   series: readonly TimelineSeries[];
+  /** Lab lines, drawn under the value lines; none by default. */
+  labSeries?: readonly TimelineLabSeries[];
   bucket: TimelineBucket;
   words: ItemWordsFn;
   startMissing: string;
@@ -1231,7 +1102,9 @@ export function layoutTimeline(input: {
     lanes.push(layout);
     top += layout.height;
   }
-  const seriesTop = top + (input.series.length > 0 ? SERIES_GAP : 0);
+  const labInput = input.labSeries ?? [];
+  const seriesTop =
+    top + (input.series.length + labInput.length > 0 ? SERIES_GAP : 0);
   const series = layoutSeries(
     input.series,
     seriesTop,
@@ -1239,8 +1112,23 @@ export function layoutTimeline(input: {
     scale,
     input.bucket,
   );
-  const height = seriesTop + series.length * SERIES_HEIGHT + 4;
-  return { width: input.width, height, scale, lanes, seriesTop, series };
+  const labSeries = layoutLabSeries(
+    labInput,
+    seriesTop + series.length * SERIES_HEIGHT,
+    input.window,
+    scale,
+  );
+  const height =
+    seriesTop + (series.length + labSeries.length) * SERIES_HEIGHT + 4;
+  return {
+    width: input.width,
+    height,
+    scale,
+    lanes,
+    seriesTop,
+    series,
+    labSeries,
+  };
 }
 
 /* ─── Interaction ─────────────────────────────────────────────────────────── */
@@ -1364,6 +1252,7 @@ export function latestDataDate(
   timeline: {
     lanes: readonly TimelineLane[];
     series: readonly TimelineSeries[];
+    labSeries?: readonly TimelineLabSeries[];
   },
   today: string,
   window: TimeWindow,
@@ -1390,6 +1279,10 @@ export function latestDataDate(
   }
   for (const series of timeline.series) {
     for (const point of series.points) consider(point.t);
+  }
+  // A lab reading counts on its own day.
+  for (const series of timeline.labSeries ?? []) {
+    for (const point of series.points) consider(point.date);
   }
   return best;
 }
