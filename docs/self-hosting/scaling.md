@@ -268,8 +268,10 @@ turns the limit off).
   `canceling statement due to statement timeout`.
 - The admin status page lists `rollup-full-backfill` under failing
   background jobs, and every admin gets a push once a system job has
-  failed three times in a row, a reminder at most once a day while it keeps
-  failing, and a notice when it runs again.
+  failed three jobs in a row (retries of one job count once; a job that runs
+  per account counts per account), a reminder at most once a day while it
+  keeps failing, and a notice when the failing job runs again. A one-off job
+  that failed and does not run again is announced once.
 
 ### What the app does about it
 

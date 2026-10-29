@@ -4,7 +4,10 @@
  * A background job of the instance that keeps failing pushes every admin
  * once, a reminder at most once a day while it keeps failing, and once when it
  * runs successfully again. Fewer failures than the streak, and queues that
- * have an account-facing surface of their own, push nothing.
+ * have an account-facing surface of their own, push nothing. The streak
+ * counts jobs, not retries, and is kept per account: one account failing
+ * every hour beside accounts that succeed is one problem and one recovery,
+ * and a job that does not run again is announced once, not every day.
  *
  * pg-boss provisions its own schema here and the jobs are failed and completed
  * through its own API, as in `job-failures.test.ts`, so the reader is proven
@@ -54,19 +57,32 @@ const HOUR_MS = 3_600_000;
 
 let boss: PgBoss;
 
-async function runOnce(queue: string, outcome: "fail" | "complete") {
-  const id = await boss.send(queue, { userId: "u" }, { retryLimit: 0 });
+async function runOnce(
+  queue: string,
+  outcome: "fail" | "complete",
+  userId = "u",
+  retryLimit = 0,
+) {
+  const id = await boss.send(
+    queue,
+    { userId },
+    { retryLimit, retryDelay: 0, retryBackoff: false },
+  );
   if (!id) throw new Error("queue rejected the job");
-  const [job] = await boss.fetch(queue);
-  if (!job) throw new Error("nothing to fetch");
-  if (outcome === "fail") {
-    await boss.fail(
-      queue,
-      job.id,
-      new Error("canceling statement due to statement timeout"),
-    );
-  } else {
-    await boss.complete(queue, job.id, { ok: true });
+  // Every attempt, retries included, until pg-boss settles the job.
+  for (let attempt = 0; attempt <= retryLimit; attempt++) {
+    const [job] = await boss.fetch(queue);
+    if (!job) throw new Error("nothing to fetch");
+    if (outcome === "fail") {
+      await boss.fail(
+        queue,
+        job.id,
+        new Error(`canceling statement due to statement timeout (${userId})`),
+      );
+    } else {
+      await boss.complete(queue, job.id, { ok: true });
+      return;
+    }
   }
 }
 
@@ -127,7 +143,8 @@ describe("notifySystemJobFailures", () => {
     expect(again.sent).toEqual([]);
     expect(dispatched.calls).toEqual([]);
 
-    // A day later: one reminder.
+    // It fails once more; a day after the notice: one reminder.
+    await runOnce(SYSTEM_QUEUE, "fail");
     const reminder = await notifySystemJobFailures(
       new Date(now.getTime() + 25 * HOUR_MS),
     );
@@ -174,5 +191,59 @@ describe("notifySystemJobFailures", () => {
     const outcome = await notifySystemJobFailures();
     expect(outcome.failing).toBe(0);
     expect(outcome.sent).toEqual([]);
+  });
+
+  it("counts a job that used up its retries as one failure", async () => {
+    await makeUser({ role: "ADMIN" });
+    await runOnce(SYSTEM_QUEUE, "fail", "u", 2);
+    const outcome = await notifySystemJobFailures();
+    expect(outcome.failing).toBe(0);
+    expect(outcome.sent).toEqual([]);
+  });
+
+  it("tells once about one account failing every hour beside accounts that succeed", async () => {
+    await makeUser({ role: "ADMIN" });
+    const start = Date.now();
+    const sent: string[] = [];
+    // Ten hours: account `a` fails every hour, the others succeed after it,
+    // so the queue's newest job is always a success.
+    for (let hour = 0; hour < 10; hour++) {
+      await runOnce(SYSTEM_QUEUE, "fail", "a");
+      await runOnce(SYSTEM_QUEUE, "complete", "b");
+      await runOnce(SYSTEM_QUEUE, "complete", "c");
+      const outcome = await notifySystemJobFailures(
+        new Date(start + hour * HOUR_MS),
+      );
+      sent.push(...outcome.sent.map((n) => n.kind));
+    }
+    expect(sent).toEqual(["problem"]);
+    expect(String(dispatched.calls[0].params?.error)).toContain("(a)");
+
+    // `a` succeeds: one recovery.
+    await runOnce(SYSTEM_QUEUE, "complete", "a");
+    const recovered = await notifySystemJobFailures(
+      new Date(start + 10 * HOUR_MS),
+    );
+    expect(recovered.sent).toEqual([
+      { queue: SYSTEM_QUEUE, kind: "recovered" },
+    ]);
+  });
+
+  it("does not remind about a job that has not run again since the notice", async () => {
+    await makeUser({ role: "ADMIN" });
+    for (let i = 0; i < SYSTEM_JOB_FAILURE_STREAK; i++) {
+      await runOnce(SYSTEM_QUEUE, "fail");
+    }
+    const now = new Date(Date.now() + 1_000);
+    expect((await notifySystemJobFailures(now)).sent).toEqual([
+      { queue: SYSTEM_QUEUE, kind: "problem" },
+    ]);
+    for (const days of [1, 2, 5]) {
+      const later = await notifySystemJobFailures(
+        new Date(now.getTime() + days * 24 * HOUR_MS),
+      );
+      expect(later.failing).toBe(1);
+      expect(later.sent).toEqual([]);
+    }
   });
 });
