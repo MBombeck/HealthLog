@@ -287,6 +287,30 @@ describe("lab lines on the timeline", () => {
     expect(empty.labSeries[0]).toMatchObject({ points: [], excluded: 0 });
   });
 
+  it("does not offer a hidden marker, and keeps drawing one already chosen", async () => {
+    const owner = await makeUser("owner");
+    const { marker } = await seedFerritin(owner.id);
+    await getPrismaClient().biomarker.update({
+      where: { id: marker.id },
+      data: { hidden: true },
+    });
+    await signIn(owner.id);
+
+    // Hidden from the picker, as from the labs catalogue and entry pickers.
+    const offered = await data(await getTimeline(`zoom=all&values=WEIGHT`));
+    expect(offered.availableLabs).toEqual([]);
+    // A line chosen before it was hidden still draws, and still names
+    // itself, so the menu can untick it.
+    const chosen = await data(
+      await getTimeline(`zoom=all&values=lab:${marker.id}`),
+    );
+    expect(chosen.availableLabs).toEqual([]);
+    expect(chosen.labSeries.map((line) => [line.key, line.name])).toEqual([
+      [`lab:${marker.id}`, "Ferritin"],
+    ]);
+    expect(chosen.labSeries[0].points).toHaveLength(3);
+  });
+
   it("finds nothing under another record's marker id, and does not refuse", async () => {
     const owner = await makeUser("owner");
     const other = await makeUser("other");

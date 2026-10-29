@@ -232,6 +232,54 @@ describe("lab lines on the timeline page", () => {
     await expect.poll(() => lastTimelineValues(net)).toEqual(["WEIGHT"]);
   });
 
+  it("keeps a chosen marker that was hidden since, until it is unticked", async () => {
+    await page.viewport(1280, 900);
+    window.localStorage.setItem(
+      VALUES_KEY,
+      JSON.stringify(["lab:bm-ferritin"]),
+    );
+    setSearch("?zoom=all");
+    // Hidden: the server no longer offers it, and still draws the chosen line.
+    const net = stubFetch()
+      .on("GET", "/api/timeline", (request) => {
+        const body = timeline(valuesOf(request.path));
+        return {
+          data: {
+            ...body,
+            availableLabs: body.availableLabs.filter(
+              (m) => m.key !== "lab:bm-ferritin",
+            ),
+          },
+        };
+      })
+      .on("GET", "/api/timeline/readiness", {
+        data: { verdict: "carries", since: "2024-01-01", lanes: [] },
+      })
+      .on("GET", "/api/life-events", { data: { events: [] } });
+    const { screen } = await renderWithApp(<TimelineView />, {
+      user: {
+        timezone: "Europe/Berlin",
+        modules: { timeline: true, labs: true },
+      },
+    });
+    await screen.getByRole("button", { name: /Values \(1\)/ }).click();
+    const ferritin = screen.getByRole("menuitemcheckbox", { name: "Ferritin" });
+    await expect.element(ferritin).toHaveAttribute("aria-checked", "true");
+
+    await ferritin.click();
+    await expect.poll(() => lastTimelineValues(net)).toEqual([]);
+    // Unticked, it is offered no more.
+    await expect
+      .poll(
+        () =>
+          document.querySelectorAll(
+            '[data-slot="timeline-values-option"][data-key="lab:bm-ferritin"]',
+          ).length,
+      )
+      .toBe(0);
+    expect(JSON.parse(window.localStorage.getItem(VALUES_KEY)!)).toEqual([]);
+  });
+
   it("neither offers nor asks for a marker with the labs module off", async () => {
     await page.viewport(1280, 900);
     const { net, screen } = await mount(["WEIGHT", "lab:bm-ferritin"], {

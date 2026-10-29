@@ -280,7 +280,11 @@ export async function loadLabSeries(args: {
 /**
  * Every marker the record has a numeric reading for, whatever the window,
  * by name. A marker with only qualitative readings ("negative") has nothing
- * to draw and is not offered.
+ * to draw and is not offered, and neither is a hidden one: hiding a marker
+ * takes it out of the labs catalogue and the entry pickers, and this picker
+ * follows. A hidden marker already chosen keeps its line (`loadLabSeries`
+ * does not filter), and the menu names it from that line, so it can still
+ * be unticked, as the entry form keeps a hidden marker already selected.
  */
 export async function loadAvailableLabMarkers(args: {
   recordId: string;
@@ -302,7 +306,7 @@ export async function loadAvailableLabMarkers(args: {
     .filter((id): id is string => id !== null);
   if (ids.length === 0) return [];
   const markers = await prisma.biomarker.findMany({
-    where: { userId: recordId, id: { in: ids } },
+    where: { userId: recordId, id: { in: ids }, hidden: false },
     select: { id: true, name: true, panel: true, unit: true },
     orderBy: [{ name: "asc" }, { id: "asc" }],
   });
