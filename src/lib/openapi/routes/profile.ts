@@ -554,7 +554,7 @@ export const profileUpdateRequest = z
       .describe(
         "Trimmed before its bound is checked. Null, an empty string or only spaces clears it; an omitted field is left untouched.",
       ),
-    locale: z.enum(["de", "en"]).nullable().optional(),
+    locale: z.enum(locales).nullable().optional(),
     timezone: z.string().min(1).max(64).optional(),
     timeFormat: z
       .enum(["AUTO", "H12", "H24"])

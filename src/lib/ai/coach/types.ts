@@ -8,6 +8,8 @@
  */
 import { z } from "zod/v4";
 
+import { locales } from "@/lib/i18n/config";
+
 import { COACH_SCOPE_SOURCES } from "./scope-sources";
 
 import type { AiUnavailableReason } from "@/lib/ai/capabilities/types";
@@ -85,7 +87,11 @@ export const coachChatRequestSchema = z.object({
   conversationId: z.string().min(1).max(64).optional(),
   message: z.string().min(1).max(4000),
   prefill: z.string().max(2000).optional(),
-  locale: z.enum(["en", "de"]).optional(),
+  /**
+   * The reply language: any UI locale. Overrides the cookie and the account's
+   * stored language for this turn (`resolveServerLocale`).
+   */
+  locale: z.enum(locales).optional(),
   scope: coachScopeSchema.optional(),
   /**
    * v1.16.6 — guided clarifying-questions flow: the pending question

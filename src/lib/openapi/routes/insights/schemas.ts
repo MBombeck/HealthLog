@@ -8,6 +8,7 @@
 import { recoveryEmptySchema } from "../recovery-empty";
 import { trendSentiment, trendVerdict } from "../trend-verdict";
 import { z } from "zod/v4";
+import { locales } from "@/lib/i18n/config";
 import { measurementSourceEnum, measurementTypeEnum } from "../shared";
 import { METRIC_STATUS_IDS } from "@/lib/insights/metric-status-registry";
 import {
@@ -45,9 +46,11 @@ export const metricStatusQuery = z
         "HealthKit metric id to assess (e.g. RESTING_HEART_RATE, SLEEP_DURATION). Closed enum: an unknown id 422s. The seven specialised metrics are served by their own routes and are not accepted here.",
       ),
     locale: z
-      .enum(["de", "en"])
+      .enum(locales)
       .optional()
-      .describe("Optional UI-locale override; defaults to the session locale."),
+      .describe(
+        "Optional UI-locale override, any language the app ships; defaults to the session locale.",
+      ),
   })
   .meta({ id: "MetricStatusQuery" });
 
@@ -792,9 +795,11 @@ export const glp1PlateauResponse = z
 export const insightStatusQuery = z
   .object({
     locale: z
-      .enum(["de", "en"])
+      .enum(locales)
       .optional()
-      .describe("Optional UI-locale override; defaults to the session locale."),
+      .describe(
+        "Optional UI-locale override, any language the app ships; defaults to the session locale.",
+      ),
   })
   .meta({ id: "InsightStatusQuery" });
 
@@ -856,9 +861,11 @@ export const biomarkerAssessmentQuery = z
         "User-scoped biomarker id to assess. A cross-user or unknown id returns an `insufficient` envelope, not a 404 (existence sealed).",
       ),
     locale: z
-      .enum(["de", "en"])
+      .enum(locales)
       .optional()
-      .describe("Optional UI-locale override; defaults to the session locale."),
+      .describe(
+        "Optional UI-locale override, any language the app ships; defaults to the session locale.",
+      ),
   })
   .meta({ id: "BiomarkerAssessmentQuery" });
 

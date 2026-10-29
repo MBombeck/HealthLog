@@ -13216,12 +13216,19 @@ paths:
         - in: query
           name: locale
           schema:
-            description: Optional UI-locale override; defaults to the session locale.
+            description: Optional UI-locale override, any language the app ships; defaults to the session locale.
             type: string
             enum:
               - de
               - en
-          description: Optional UI-locale override; defaults to the session locale.
+              - fr
+              - es
+              - it
+              - pl
+              - ko
+              - nl
+              - pt-BR
+          description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
           description: Assessment envelope (fresh, cached, or preparing).
@@ -13248,12 +13255,19 @@ paths:
         - in: query
           name: locale
           schema:
-            description: Optional UI-locale override; defaults to the session locale.
+            description: Optional UI-locale override, any language the app ships; defaults to the session locale.
             type: string
             enum:
               - de
               - en
-          description: Optional UI-locale override; defaults to the session locale.
+              - fr
+              - es
+              - it
+              - pl
+              - ko
+              - nl
+              - pt-BR
+          description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
           description: Assessment envelope (fresh, cached, or preparing).
@@ -13280,12 +13294,19 @@ paths:
         - in: query
           name: locale
           schema:
-            description: Optional UI-locale override; defaults to the session locale.
+            description: Optional UI-locale override, any language the app ships; defaults to the session locale.
             type: string
             enum:
               - de
               - en
-          description: Optional UI-locale override; defaults to the session locale.
+              - fr
+              - es
+              - it
+              - pl
+              - ko
+              - nl
+              - pt-BR
+          description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
           description: Assessment envelope (fresh, cached, or preparing).
@@ -13312,12 +13333,19 @@ paths:
         - in: query
           name: locale
           schema:
-            description: Optional UI-locale override; defaults to the session locale.
+            description: Optional UI-locale override, any language the app ships; defaults to the session locale.
             type: string
             enum:
               - de
               - en
-          description: Optional UI-locale override; defaults to the session locale.
+              - fr
+              - es
+              - it
+              - pl
+              - ko
+              - nl
+              - pt-BR
+          description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
           description: Assessment envelope (fresh, cached, or preparing).
@@ -13344,12 +13372,19 @@ paths:
         - in: query
           name: locale
           schema:
-            description: Optional UI-locale override; defaults to the session locale.
+            description: Optional UI-locale override, any language the app ships; defaults to the session locale.
             type: string
             enum:
               - de
               - en
-          description: Optional UI-locale override; defaults to the session locale.
+              - fr
+              - es
+              - it
+              - pl
+              - ko
+              - nl
+              - pt-BR
+          description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
           description: Assessment envelope (fresh, cached, or preparing).
@@ -13377,12 +13412,19 @@ paths:
         - in: query
           name: locale
           schema:
-            description: Optional UI-locale override; defaults to the session locale.
+            description: Optional UI-locale override, any language the app ships; defaults to the session locale.
             type: string
             enum:
               - de
               - en
-          description: Optional UI-locale override; defaults to the session locale.
+              - fr
+              - es
+              - it
+              - pl
+              - ko
+              - nl
+              - pt-BR
+          description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
           description: Compliance assessment envelope (fresh, cached, or preparing).
@@ -13472,12 +13514,19 @@ paths:
         - in: query
           name: locale
           schema:
-            description: Optional UI-locale override; defaults to the session locale.
+            description: Optional UI-locale override, any language the app ships; defaults to the session locale.
             type: string
             enum:
               - de
               - en
-          description: Optional UI-locale override; defaults to the session locale.
+              - fr
+              - es
+              - it
+              - pl
+              - ko
+              - nl
+              - pt-BR
+          description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
           description: Assessment envelope (fresh, cached, or preparing).
@@ -13517,12 +13566,19 @@ paths:
         - in: query
           name: locale
           schema:
-            description: Optional UI-locale override; defaults to the session locale.
+            description: Optional UI-locale override, any language the app ships; defaults to the session locale.
             type: string
             enum:
               - de
               - en
-          description: Optional UI-locale override; defaults to the session locale.
+              - fr
+              - es
+              - it
+              - pl
+              - ko
+              - nl
+              - pt-BR
+          description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
           description: Assessment envelope (fresh, cached, or preparing).
@@ -28539,6 +28595,13 @@ components:
               enum:
                 - de
                 - en
+                - fr
+                - es
+                - it
+                - pl
+                - ko
+                - nl
+                - pt-BR
             - type: "null"
         timezone:
           type: string
@@ -31364,8 +31427,15 @@ components:
         locale:
           type: string
           enum:
-            - en
             - de
+            - en
+            - fr
+            - es
+            - it
+            - pl
+            - ko
+            - nl
+            - pt-BR
         scope:
           type: object
           properties:
@@ -31528,8 +31598,15 @@ components:
         locale:
           type: string
           enum:
-            - en
             - de
+            - en
+            - fr
+            - es
+            - it
+            - pl
+            - ko
+            - nl
+            - pt-BR
         attachmentIds:
           minItems: 1
           maxItems: 5
@@ -35519,8 +35596,15 @@ components:
         locale:
           type: string
           enum:
-            - en
             - de
+            - en
+            - fr
+            - es
+            - it
+            - pl
+            - ko
+            - nl
+            - pt-BR
       required:
         - message
     InboundFactEditRequest:

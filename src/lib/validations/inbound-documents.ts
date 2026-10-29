@@ -24,6 +24,7 @@
  *     it is always narrowed from the session.
  */
 import { z } from "zod/v4";
+import { locales } from "@/lib/i18n/config";
 import {
   DOCUMENT_BULK_MAX_IDS,
   DOCUMENT_CONTENT_INDEX_SOURCES,
@@ -944,14 +945,14 @@ export const DOCUMENT_CHAT_MESSAGE_MAX = 4000;
  * Request body for `POST /api/documents/inbound/{id}/chat`. No `userId` and no
  * `documentId` field — the user is narrowed from the session and the document id
  * comes from the path. `conversationId` continues an existing thread scoped to
- * this document; omitting it starts a new one. `locale` is the reply language
- * (the document chat, like the Coach, replies in de/en).
+ * this document; omitting it starts a new one. `locale` is the reply language,
+ * any UI locale, like the Coach's.
  */
 export const documentChatRequestSchema = z
   .object({
     conversationId: z.string().trim().min(1).max(64).optional(),
     message: z.string().trim().min(1).max(DOCUMENT_CHAT_MESSAGE_MAX),
-    locale: z.enum(["en", "de"]).optional(),
+    locale: z.enum(locales).optional(),
   })
   .meta({ id: "DocumentChatRequest" });
 
@@ -990,7 +991,7 @@ export const fencedChatRequestSchema = z
   .object({
     conversationId: z.string().trim().min(1).max(64).optional(),
     message: z.string().trim().min(1).max(DOCUMENT_CHAT_MESSAGE_MAX),
-    locale: z.enum(["en", "de"]).optional(),
+    locale: z.enum(locales).optional(),
     attachmentIds: z
       .array(z.string().trim().min(1).max(64))
       .min(1)
