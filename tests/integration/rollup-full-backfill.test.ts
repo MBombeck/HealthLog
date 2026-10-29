@@ -344,4 +344,25 @@ describe("isRollupFullBackfillPending", () => {
     await boss.complete(ROLLUP_FULL_BACKFILL_QUEUE, job.id);
     expect(await isRollupFullBackfillPending("user-a")).toBe(false);
   });
+
+  it("counts a queue it cannot read as pending, so the dense fold waits", async () => {
+    // The table is there but the read fails.
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE pgboss.job RENAME COLUMN data TO data_unreadable`,
+    );
+    try {
+      expect(await isRollupFullBackfillPending("user-a")).toBe(true);
+    } finally {
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE pgboss.job RENAME COLUMN data_unreadable TO data`,
+      );
+    }
+  });
+});
+
+describe("isRollupFullBackfillPending without a queue", () => {
+  it("is false where there is no queue table at all", async () => {
+    await prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS pgboss CASCADE`);
+    expect(await isRollupFullBackfillPending("user-a")).toBe(false);
+  });
 });

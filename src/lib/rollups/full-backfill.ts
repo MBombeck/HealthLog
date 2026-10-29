@@ -24,6 +24,7 @@
 import { activeAccountSql } from "@/lib/account-deletion/active-account";
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
+import { annotate } from "@/lib/logging/context";
 import {
   applyStatementBudget,
   recomputeUserRollups,
@@ -199,13 +200,24 @@ export async function sendRollupFullBackfillContinuation(
  * leaves such an account alone (`ConsolidationOptions.deferUser`): it deletes
  * the raw samples a fold still has to read, and a year the full backfill
  * reached after the dense fold would take its day figures from hourly means.
- * False when the queue schema cannot be read, as a web-only deployment has
- * no full backfill either.
+ *
+ * False when there is no queue table (a web-only deployment has no full
+ * backfill either). Any other failure to read the queue counts as pending:
+ * the dense fold's deletion cannot be undone, and deferring an account costs
+ * one night. The failure is annotated on the caller's event.
+ *
+ * A full fold that failed for good (retries spent) is not pending, and the
+ * dense fold goes ahead on that account; the system job alert reports the
+ * failed backfill, and the next boot's discovery enqueues it again.
  */
 export async function isRollupFullBackfillPending(
   userId: string,
 ): Promise<boolean> {
   try {
+    const [queue] = await prisma.$queryRaw<Array<{ present: boolean }>>`
+      SELECT to_regclass('pgboss.job') IS NOT NULL AS present
+    `;
+    if (!queue?.present) return false;
     const rows = await prisma.$queryRaw<Array<{ n: number }>>`
       SELECT count(*)::int AS n
       FROM pgboss.job
@@ -214,8 +226,15 @@ export async function isRollupFullBackfillPending(
         AND data->>'userId' = ${userId}
     `;
     return (rows[0]?.n ?? 0) > 0;
-  } catch {
-    return false;
+  } catch (err) {
+    annotate({
+      meta: {
+        rollup_backfill_pending_check_failed: true,
+        rollup_backfill_pending_check_error:
+          err instanceof Error ? err.message.slice(0, 200) : String(err),
+      },
+    });
+    return true;
   }
 }
 
