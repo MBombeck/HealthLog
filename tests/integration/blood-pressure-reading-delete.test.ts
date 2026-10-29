@@ -10,10 +10,15 @@
  * its own syncVersion (so the sync feed carries each tombstone), and the
  * undo, which names only the row the person tapped, brings the whole
  * reading back. A reading of another source at the same instant, a reading
- * a minute later, and a pulse deleted on its own are left alone.
+ * a minute later, and a pulse deleted on its own are left alone. So is the
+ * folded hour of heart rate the dense fold anchors at the local HH:30: a
+ * reading taken at half past shares its instant and its source, and is
+ * still not the same thing.
  */
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { canonicalHourlyTimestamp } from "@/lib/measurements/consolidation-tz";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
@@ -194,5 +199,57 @@ describe("deleting a blood-pressure reading", () => {
     expect(restored).toBe(5);
     // The pulse deleted at another moment stays deleted.
     expect(await deletedIds()).toEqual(["next-pulse"]);
+  });
+
+  it("BP at :30 beside a folded hour: leaves the hour of heart rate alone", async () => {
+    const prisma = getPrismaClient();
+    // 09:30 local (Europe/Berlin, the default zone) on a day the fold took:
+    // the anchor of that hour's mean.
+    const halfPast = canonicalHourlyTimestamp("2026-10-20", 9, "Europe/Berlin");
+    await prisma.measurement.createMany({
+      data: [
+        {
+          id: "ah-sys",
+          userId: USER,
+          type: "BLOOD_PRESSURE_SYS",
+          value: 134,
+          unit: "mmHg",
+          source: "APPLE_HEALTH",
+          measuredAt: halfPast,
+          externalId: "uuid-ah-sys",
+        },
+        {
+          id: "ah-dia",
+          userId: USER,
+          type: "BLOOD_PRESSURE_DIA",
+          value: 86,
+          unit: "mmHg",
+          source: "APPLE_HEALTH",
+          measuredAt: halfPast,
+          externalId: "uuid-ah-dia",
+        },
+        {
+          id: "folded-hour",
+          userId: USER,
+          type: "PULSE",
+          value: 71,
+          unit: "bpm",
+          source: "APPLE_HEALTH",
+          measuredAt: halfPast,
+          externalId: "stats:HKQuantityTypeIdentifierHeartRate:2026-10-20T09",
+        },
+      ],
+    });
+
+    await deleteOne("ah-sys");
+    expect(await deletedIds()).toEqual(["ah-dia", "ah-sys"]);
+    expect((await rows())["folded-hour"]!.syncVersion).toBe(1);
+
+    const { restored } = await post("restore", ["ah-sys"]);
+    expect(restored).toBe(2);
+
+    const { deleted } = await post("bulk-delete", ["ah-dia"]);
+    expect(deleted).toBe(2);
+    expect(await deletedIds()).toEqual(["ah-dia", "ah-sys"]);
   });
 });
