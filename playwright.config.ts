@@ -310,6 +310,11 @@ export default defineConfig({
         // other. It checks the phone width by resizing inside the desktop
         // project.
         "score-history.spec.ts",
+        // The header-height sweep moves its account's language through every
+        // locale; a second project would switch it under the first between
+        // the switch and the measurement. It sets the 390 px phone width
+        // itself inside the desktop project.
+        "header-height-locales.spec.ts",
       ],
       use: {
         // Pixel 5 — Chromium-based mobile profile so CI only needs
