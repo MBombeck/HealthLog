@@ -37,6 +37,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import {
+  capTimelineLabKeys,
   DAY_QUERY_PARAM,
   TIMELINE_ZOOMS,
   timelineLabMarkerId,
@@ -184,8 +185,10 @@ function useValueLines(
     },
     [modules],
   );
+  // Lab markers past the cap are not asked for (the server would leave
+  // them out); the menu holds further ones back.
   const values = useMemo(
-    () => storedValues.filter(allowed),
+    () => capTimelineLabKeys(storedValues.filter(allowed)),
     [storedValues, allowed],
   );
   // One colour per chosen line, shared by the chart, the selection bar, the

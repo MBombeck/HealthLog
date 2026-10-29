@@ -39,6 +39,7 @@ const CODE_TABLE: Record<BackupRestoreFailureCode, true> = {
   document_ciphertext_missing: true,
   "backup.key.missing": true,
   "backup.foreign_reference": true,
+  "backup.restore.rows_exist_elsewhere": true,
   time_budget: true,
   transaction_failed: true,
   interrupted: true,

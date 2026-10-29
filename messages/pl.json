@@ -8345,6 +8345,7 @@
         "restoreFailureUnexpected": "Przywracanie zatrzymało się na nieoczekiwanym błędzie i zostało wycofane. Dziennik serwera podaje błąd.",
         "restoreFailureKeyMissing": "Kopia wymaga klucza szyfrowania {keys}, którym ten serwer nie może jej otworzyć. Dodaj klucz z powrotem do ENCRYPTION_KEYS, uruchom ponownie i rozpocznij przywracanie jeszcze raz.",
         "restoreFailureForeignReference": "Plik wskazuje na wpisy należące do innego konta. Nic nie zostało zapisane.",
+        "restoreFailureRowsElsewhere": "Rekordy z tego pliku są już na innym koncie na tym serwerze: ten sam plik został tam wcześniej przywrócony. Plik można przywrócić tylko na jedno konto. Nic nie zostało zapisane.",
         "previewKeyMissing": "Tej kopii nie da się przywrócić na tym serwerze: wymaga klucza szyfrowania {keys}. Najpierw dodaj klucz z powrotem do ENCRYPTION_KEYS i uruchom ponownie.",
         "restoreSkippedSymptomEpisodeReference": "Wpis objawu powiązany z chorobą, której nie ma w pliku (zachowany bez powiązania)",
         "restoreSkippedCycleCiphertext": "Notatka lub etykieta cyklu zaszyfrowana kluczem, którego ten serwer nie ma (dzień lub objaw zachowany bez niej)",
@@ -8397,6 +8398,7 @@
           "failureHoldsRecords": "To konto ma już rekordy. Przywracanie zastępuje rekordy zamiast je uzupełniać, więc wybierz konto bez rekordów albo utwórz nowe.",
           "failureManagedProfile": "To konto jest profilem zarządzanym. Prowadzą je osoby opiekujące się nim, więc kopia nie może do niego trafić.",
           "failurePendingDeletion": "To konto czeka na usunięcie. Najpierw cofnij usunięcie albo wybierz inne konto.",
+          "failureAdminAccount": "To jest konto administratora. Nie można w nim umieścić rekordów innej osoby, więc wybierz zwykłe konto albo utwórz nowe.",
           "failureNotFound": "To konto już nie istnieje.",
           "failureUnconfirmed": "Wpisz dokładnie nazwę użytkownika konta, aby potwierdzić.",
           "failureUsernameTaken": "Ta nazwa użytkownika jest już zajęta.",
@@ -13733,6 +13735,7 @@
     "labs": {
       "menuTitle": "Wyniki badań",
       "otherPanel": "Inne",
+      "full": "Naraz można pokazać do {max} wyników badań. Usuń jeden, aby dodać inny.",
       "above": "powyżej zakresu",
       "below": "poniżej zakresu",
       "reference": "zakres {range}",

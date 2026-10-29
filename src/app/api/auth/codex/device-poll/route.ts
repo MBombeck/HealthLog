@@ -11,6 +11,10 @@ import { annotate } from "@/lib/logging/context";
 import { INSIGHTS_CACHE_CLEARED } from "@/lib/insights/cached-text-cipher";
 import { forgetProviderHealth } from "@/lib/ai/provider-health-ledger";
 import { clearStatusNegativeWindows } from "@/lib/insights/status-negative-window";
+import {
+  codexCredentialKey,
+  startCodexSignIn,
+} from "@/lib/ai/codex-slug-cache";
 
 /**
  * v1.4.7.1: Device-code flow polling endpoint.
@@ -90,6 +94,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
   });
 
   cookieStore.delete("codex_device");
+  // What this process learned about the old sign-in's models no longer
+  // describes a different account (`codex-slug-cache.ts`).
+  startCodexSignIn({
+    key: codexCredentialKey.user(user.id),
+    accountId: result.creds.accountId,
+  });
   // A new sign-in: whatever the ledger held against the old one no longer
   // describes this credential, and (#1279) the person's notes stop waiting
   // out windows it earned, as on a save of their provider settings.

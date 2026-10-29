@@ -31,6 +31,7 @@ import { auditLog } from "@/lib/auth/audit";
 import { invalidateUserData } from "@/lib/cache/invalidate";
 import { prisma } from "@/lib/db";
 import type { AccountSettingsRestoreResult } from "@/lib/export/account-settings-restore";
+import { isRetargetedUploadType } from "@/lib/export/backup-upload-type";
 import {
   RESTORE_CLEAR_STEPS,
   RESTORE_STEPS,
@@ -48,6 +49,7 @@ import {
 import {
   classifyRestoreFailure,
   RESTORE_FAILURE_CAUSE_MESSAGES,
+  isPrimaryKeyConflict,
 } from "@/lib/export/restore-failure-cause";
 import { takeRestoreLock } from "@/lib/export/restore-lock";
 import {
@@ -134,6 +136,9 @@ export type RestoreProgressSink = (
  * before the first delete or rolls the whole transaction back, so each means
  * the account is unchanged.
  */
+/** A retargeted copy whose rows another account already holds. */
+const ROWS_EXIST_ELSEWHERE_CODE = "backup.restore.rows_exist_elsewhere";
+
 export type RestoreFailureCode =
   | "backup_not_found"
   | "backup_changed"
@@ -146,6 +151,7 @@ export type RestoreFailureCode =
   | "document_ciphertext_missing"
   | "backup.key.missing"
   | "backup.foreign_reference"
+  | "backup.restore.rows_exist_elsewhere"
   | "time_budget"
   | "transaction_failed"
   | "interrupted"
@@ -259,6 +265,7 @@ async function replaceAccount(
   read: ReadBackup,
   ownerId: string,
   restoreInstanceSettings: boolean,
+  retargeted: boolean,
   transactionTimeoutMs: number,
   tracker: RestoreProgressTracker,
   prepass: MeasurementRestorePrepass,
@@ -285,6 +292,7 @@ async function replaceAccount(
         streamed: read.streamed,
         skips,
         restoreInstanceSettings,
+        retargeted,
         measurementPrepass: prepass,
         links: emptyRestoreLinks(),
         outputs: {
@@ -342,6 +350,7 @@ async function transactionRefusal(
   input: RestoreBackupInput,
   ownerId: string,
   transactionTimeoutMs: number,
+  retargeted: boolean,
   err: unknown,
 ): Promise<RestoreBackupOutcome> {
   const verbose = err instanceof Error ? err.message : String(err);
@@ -371,6 +380,16 @@ async function transactionRefusal(
       errorCode: "backup.foreign_reference",
       references: err.edges,
     });
+  }
+  if (retargeted && isPrimaryKeyConflict(err)) {
+    // Rows keep their ids from the file, so the copy of an erased account
+    // can live in one account only. Rolled back, so nothing was changed.
+    return refused(
+      409,
+      ROWS_EXIST_ELSEWHERE_CODE,
+      "Records in this copy are already in this database, so the file was most likely already restored into another account. A file can be restored into one account only. Nothing was changed.",
+      { errorCode: ROWS_EXIST_ELSEWHERE_CODE },
+    );
   }
   if (isStoredBackupReadError(err)) {
     // The second read, inside the transaction, found the copy replaced or
@@ -592,6 +611,12 @@ export async function restoreBackup(
   const checked = await checkBackupBeforeRestore(input, read);
   if (!checked.ok) return checked.outcome;
   const { owner, transactionTimeoutMs } = checked;
+  // Read from the row, not passed in, so no caller can leave it out.
+  const stored = await prisma.dataBackup.findUnique({
+    where: { id: backup.id },
+    select: { type: true },
+  });
+  const retargeted = isRetargetedUploadType(stored?.type ?? "");
 
   let result: TransactionResult;
   try {
@@ -599,12 +624,19 @@ export async function restoreBackup(
       read,
       owner.id,
       restoreInstanceSettings,
+      retargeted,
       transactionTimeoutMs,
       tracker,
       prepass,
     );
   } catch (err) {
-    return transactionRefusal(input, owner.id, transactionTimeoutMs, err);
+    return transactionRefusal(
+      input,
+      owner.id,
+      transactionTimeoutMs,
+      retargeted,
+      err,
+    );
   }
 
   const response = await afterCommit(input, read, owner, result, tracker);

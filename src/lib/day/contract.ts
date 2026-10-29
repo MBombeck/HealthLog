@@ -437,7 +437,7 @@ export type TimelineLabMarker = TimelineResponse["availableLabs"][number];
 export const TIMELINE_LAB_KEY_PREFIX = "lab:";
 
 /**
- * The most lab markers one request names. Measurement names are a closed
+ * The most lab markers one request draws. Measurement names are a closed
  * set and bound themselves; marker ids are not.
  */
 export const TIMELINE_LAB_SERIES_MAX = 24;
@@ -447,6 +447,21 @@ export function timelineLabMarkerId(key: string): string | null {
   if (!key.startsWith(TIMELINE_LAB_KEY_PREFIX)) return null;
   const id = key.slice(TIMELINE_LAB_KEY_PREFIX.length);
   return /^[A-Za-z0-9_-]{1,64}$/.test(id) ? id : null;
+}
+
+/**
+ * `keys` with every lab marker past the first `TIMELINE_LAB_SERIES_MAX` left
+ * out, everything else in its place. The server applies it to what it is
+ * asked for and the page to what it asks, so a stored list longer than the
+ * cap (another device, an older build) loads its first markers instead of
+ * failing the page.
+ */
+export function capTimelineLabKeys(keys: readonly string[]): string[] {
+  let labs = 0;
+  return keys.filter(
+    (key) =>
+      timelineLabMarkerId(key) === null || ++labs <= TIMELINE_LAB_SERIES_MAX,
+  );
 }
 
 /** The `values` entry for a lab marker. */

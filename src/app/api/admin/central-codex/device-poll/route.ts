@@ -10,6 +10,10 @@ import { getClientIp, apiSuccess, apiError } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { forgetProviderHealth } from "@/lib/ai/provider-health-ledger";
 import { clearStatusNegativeWindows } from "@/lib/insights/status-negative-window";
+import {
+  codexCredentialKey,
+  startCodexSignIn,
+} from "@/lib/ai/codex-slug-cache";
 
 /**
  * Operator-shared central Codex — device-code poll (admin only).
@@ -93,6 +97,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
   });
 
   cookieStore.delete("central_codex_device");
+  // What this process learned about the old sign-in's models no longer
+  // describes a different account (`codex-slug-cache.ts`).
+  startCodexSignIn({
+    key: codexCredentialKey.central,
+    accountId: result.creds.accountId,
+  });
   // A new central sign-in: every account's ledger rows describe the refused
   // one, and the central connection is one credential shared by all of them.
   // #1279 — and every record's note windows close, as on the admin AI

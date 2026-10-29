@@ -96,7 +96,7 @@ const restoreFailure = z
   .object({
     code: z.string().meta({
       description:
-        "Stable reason: `backup_not_found`, `backup_changed`, `backup.payload.undecryptable`, `schema_invalid`, `incompatible_schema_version`, `owner_mismatch`, `owner_not_found`, `backup.section.missing`, `document_ciphertext_missing`, `backup.key.missing`, `backup.foreign_reference`, `time_budget`, `transaction_failed`, `interrupted`, `not_started`, `enqueue_failed`, `failed_after_commit`, `unexpected`. Every code but `failed_after_commit` means the account was not changed.",
+        "Stable reason: `backup_not_found`, `backup_changed`, `backup.payload.undecryptable`, `schema_invalid`, `incompatible_schema_version`, `owner_mismatch`, `owner_not_found`, `backup.section.missing`, `document_ciphertext_missing`, `backup.key.missing`, `backup.foreign_reference`, `backup.restore.rows_exist_elsewhere` (a copy put into a chosen account whose records another account already holds, because the same file was restored there before), `time_budget`, `transaction_failed`, `interrupted`, `not_started`, `enqueue_failed`, `failed_after_commit`, `unexpected`. Every code but `failed_after_commit` means the account was not changed.",
     }),
     message: z.string(),
     sections: z.array(z.string()).optional(),
@@ -287,7 +287,7 @@ export const adminBackupPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "409": {
           description:
-            "The chosen target cannot take the copy, and nothing was stored: a managed profile (`backup.target.managed_profile`), an account pending deletion (`backup.target.pending_deletion`), an account that already holds records (`backup.target.holds_records`, `meta.models` naming them), a username already taken (`backup.target.username_taken`), or a file whose own account is still here (`backup.owner.exists`).",
+            "The chosen target cannot take the copy, and nothing was stored: a managed profile (`backup.target.managed_profile`), an account pending deletion (`backup.target.pending_deletion`), an admin account (`backup.target.admin_account`), an account that already holds records (`backup.target.holds_records`, `meta.models` naming them), a username already taken (`backup.target.username_taken`), or a file whose own account is still here (`backup.owner.exists`).",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "413": {

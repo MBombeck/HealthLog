@@ -80,10 +80,9 @@ function render(
 }
 
 describe("pickableAccounts", () => {
-  it("offers neither managed profiles nor accounts pending deletion", () => {
+  it("offers neither managed profiles, accounts pending deletion nor admin accounts", () => {
     expect(pickableAccounts(USERS).map((u) => u.username)).toEqual([
       "returning-person",
-      "operator",
     ]);
   });
 });
@@ -152,6 +151,9 @@ describe("targetUploadFailureKey", () => {
     expect(key("backup.target.pending_deletion")).toBe(
       "admin.section.backups.target.failurePendingDeletion",
     );
+    expect(key("backup.target.admin_account")).toBe(
+      "admin.section.backups.target.failureAdminAccount",
+    );
     expect(key("backup.target.not_found")).toBe(
       "admin.section.backups.target.failureNotFound",
     );
@@ -190,7 +192,7 @@ describe("<BackupTargetForm>", () => {
       { data: ELIGIBLE, loading: false, error: null },
     );
     expect(html).toContain("returning-person (r@example.test)");
-    expect(html).toContain(">operator<");
+    expect(html).not.toContain(">operator<");
     expect(html).not.toContain("managed-cafe01");
     expect(html).not.toContain(">leaving<");
     expect(html).toContain('data-slot="backup-target-eligible"');

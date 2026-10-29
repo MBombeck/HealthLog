@@ -245,13 +245,21 @@ describe("Codex keeps the working model per sign-in", () => {
     await ask(a);
     await ask(b);
 
-    expect(getCachedCodexSlug(codexCredentialKey.user("a"))).toBe(
-      "gpt-5.6-terra",
-    );
-    expect(getCachedCodexSlug(codexCredentialKey.user("b"))).toBe(
-      "gpt-6.1-sol",
-    );
-    expect(getCachedCodexSlug(codexCredentialKey.central)).toBe("gpt-6.1-sol");
+    expect(
+      getCachedCodexSlug({
+        key: codexCredentialKey.user("a"),
+        accountId: "pro",
+      }),
+    ).toBe("gpt-5.6-terra");
+    expect(
+      getCachedCodexSlug({
+        key: codexCredentialKey.user("b"),
+        accountId: "edu",
+      }),
+    ).toBe("gpt-6.1-sol");
+    expect(
+      getCachedCodexSlug({ key: codexCredentialKey.central, accountId: "edu" }),
+    ).toBe("gpt-6.1-sol");
     // Not one refused request: each sign-in only ever asked what it is offered.
     expect(log.filter((l) => l.includes("responses"))).toEqual([
       "pro responses:gpt-5.6-terra",
@@ -291,6 +299,28 @@ describe("Codex keeps the working model per sign-in", () => {
     expect(log).toEqual(["stale models", "stale responses:gpt-6-sol"]);
   });
 
+  it("a credential reconnected to another account tries nothing the old account learned", async () => {
+    const log = stubBackend({
+      pro: {
+        models: planList("gpt-5.6-terra", "gpt-6-sol"),
+        accepts: ["gpt-5.6-terra", "gpt-6-sol"],
+      },
+      // Another plan: terra is neither offered nor accepted.
+      edu: { models: planList("gpt-6.1-sol"), accepts: ["gpt-6.1-sol"] },
+    });
+    const key = codexCredentialKey.user("a");
+    await ask(client(key, "pro"));
+    expect(log).toEqual(["pro models", "pro responses:gpt-5.6-terra"]);
+
+    // The same stored credential, signed in again on the other account, in
+    // a process that has not seen the connect (no write has rebound it).
+    log.length = 0;
+    const again = client(key, "edu");
+    await ask(again);
+    expect(log).toEqual(["edu models", "edu responses:gpt-6.1-sol"]);
+    expect(again.getLastDiagnostics()).toMatchObject({ cacheState: "miss" });
+  });
+
   it("the working model that stops answering is dropped and the walk goes on", async () => {
     const accepts = ["gpt-5.6-terra", "gpt-6-sol"];
     const log = stubBackend({
@@ -298,9 +328,12 @@ describe("Codex keeps the working model per sign-in", () => {
     });
     const c = client(codexCredentialKey.user("u1"), "plus");
     await ask(c);
-    expect(getCachedCodexSlug(codexCredentialKey.user("u1"))).toBe(
-      "gpt-5.6-terra",
-    );
+    expect(
+      getCachedCodexSlug({
+        key: codexCredentialKey.user("u1"),
+        accountId: "plus",
+      }),
+    ).toBe("gpt-5.6-terra");
 
     // terra retires between two requests.
     accepts.splice(0, 1);

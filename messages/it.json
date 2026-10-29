@@ -8345,6 +8345,7 @@
         "restoreFailureUnexpected": "Il ripristino si è fermato per un errore imprevisto ed è stato annullato. Il log del server indica l'errore.",
         "restoreFailureKeyMissing": "Il backup richiede la chiave di cifratura {keys}, con cui questo server non riesce ad aprirlo. Aggiungi di nuovo la chiave a ENCRYPTION_KEYS, riavvia e avvia di nuovo il ripristino.",
         "restoreFailureForeignReference": "Il file rimanda a voci che appartengono a un altro account. Non è stato scritto nulla.",
+        "restoreFailureRowsElsewhere": "I record di questo file sono già in un altro account di questo server: lo stesso file è già stato ripristinato lì. Un file può essere ripristinato in un solo account. Non è stato scritto nulla.",
         "previewKeyMissing": "Questo backup non può essere ripristinato su questo server: richiede la chiave di cifratura {keys}. Aggiungi prima di nuovo la chiave a ENCRYPTION_KEYS e riavvia.",
         "restoreSkippedSymptomEpisodeReference": "Voce di sintomo collegata a una malattia assente dal file (mantenuta senza collegamento)",
         "restoreSkippedCycleCiphertext": "Nota o etichetta del ciclo cifrata con una chiave che questo server non possiede (giorno o sintomo mantenuto senza)",
@@ -8397,6 +8398,7 @@
           "failureHoldsRecords": "Questo account ha già dei record. Un ripristino sostituisce i record invece di aggiungerli, quindi scegli un account senza record o creane uno nuovo.",
           "failureManagedProfile": "Questo account è un profilo gestito. Lo gestiscono le persone responsabili, quindi una copia non può andarci.",
           "failurePendingDeletion": "Questo account è in attesa di eliminazione. Annulla prima l’eliminazione o scegli un altro account.",
+          "failureAdminAccount": "Questo è un account amministratore. I record di un’altra persona non possono andarci, quindi scegli un account normale o creane uno nuovo.",
           "failureNotFound": "Questo account non esiste più.",
           "failureUnconfirmed": "Digita esattamente il nome utente dell’account per confermare.",
           "failureUsernameTaken": "Questo nome utente è già in uso.",
@@ -13733,6 +13735,7 @@
     "labs": {
       "menuTitle": "Valori di laboratorio",
       "otherPanel": "Altri",
+      "full": "Fino a {max} valori di laboratorio alla volta. Rimuovine uno per aggiungerne un altro.",
       "above": "sopra l’intervallo",
       "below": "sotto l’intervallo",
       "reference": "riferimento {range}",

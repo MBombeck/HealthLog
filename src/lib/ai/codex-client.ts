@@ -297,7 +297,7 @@ export class CodexClient implements AIProvider {
   ): Promise<CompletionResult> {
     // The working slug alone first: the account's list is read only when
     // there is none, or when it stops working.
-    const cached = getCachedCodexSlug(this.selection.credentialKey);
+    const cached = getCachedCodexSlug(this.credential);
     const cacheState = cached === null ? "miss" : "hit";
     const loadChain = () =>
       loadCodexAttemptChain({

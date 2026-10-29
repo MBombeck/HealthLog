@@ -9,7 +9,9 @@
  * not listed again beside it: each one is a named row under the lanes, and
  * the menu marks it with its colour. Below the measurements it offers the
  * lab markers the record has values for (#1299), under the groups the labs
- * list sorts them into; a lab line is chosen and stored like any other.
+ * list sorts them into; a lab line is chosen and stored like any other, up
+ * to `TIMELINE_LAB_SERIES_MAX` at once: past it the unchosen markers are
+ * held back with a line that says why, and a chosen one can always go.
  */
 import { ChartLine, ChevronDown, Layers } from "lucide-react";
 
@@ -25,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  TIMELINE_LAB_SERIES_MAX,
   timelineLabMarkerId,
   type TimelineLaneKey,
   type TimelineResponse,
@@ -61,12 +64,16 @@ export function ValueSeriesMenu({
   iconOnly?: boolean;
 }) {
   const { t } = useTranslations();
+  const labsFull =
+    selected.filter((key) => timelineLabMarkerId(key) !== null).length >=
+    TIMELINE_LAB_SERIES_MAX;
   const option = (key: string) => {
     const checked = selected.includes(key);
     return (
       <DropdownMenuCheckboxItem
         key={key}
         checked={checked}
+        disabled={labsFull && !checked && timelineLabMarkerId(key) !== null}
         data-slot="timeline-values-option"
         data-key={key}
         onSelect={(event) => event.preventDefault()}
@@ -121,6 +128,14 @@ export function ValueSeriesMenu({
             <DropdownMenuLabel data-slot="timeline-values-labs">
               {t("timeline.labs.menuTitle")}
             </DropdownMenuLabel>
+            {labsFull && (
+              <p
+                data-slot="timeline-values-labs-full"
+                className="text-muted-foreground px-2 pb-1 text-xs"
+              >
+                {t("timeline.labs.full", { max: TIMELINE_LAB_SERIES_MAX })}
+              </p>
+            )}
             {labGroups.map((group) => (
               <DropdownMenuGroup
                 key={group.panel ?? ""}

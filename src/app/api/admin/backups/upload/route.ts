@@ -10,8 +10,10 @@
  *   3. Parses and validates the JSON against the canonical schema.
  *   4. Rejects files written by a future schema version (incompatible).
  *   5. Encrypts the file as it arrives and inserts a new `DataBackup` row
- *      of type `MANUAL_UPLOAD_<unix-ms>` so multiple uploads coexist with
- *      the rolling `WEEKLY_AUTO` snapshot AND with each other.
+ *      of type `MANUAL_UPLOAD_<unix-ms>` (`RETARGETED_UPLOAD_<unix-ms>` for
+ *      a copy put into a chosen account, `backup-upload-type.ts`) so
+ *      multiple uploads coexist with the rolling `WEEKLY_AUTO` snapshot AND
+ *      with each other.
  *
  * The file is read as a stream and never held whole (#1031): an export of an
  * account with 1.25 million measurements is a few hundred megabytes of JSON,
@@ -85,6 +87,7 @@ import {
   type RestoreTargetVerdict,
 } from "@/lib/export/restore-target";
 import { storeBackupBlob } from "@/lib/export/store-backup-blob";
+import { uploadedBackupType } from "@/lib/export/backup-upload-type";
 import {
   readStreamedBackup,
   StreamedBackupInvalidError,
@@ -292,17 +295,42 @@ async function checkTargetBeforeRead(
   return null;
 }
 
+/** Who made an account for a copy, for the trail. */
+interface UploadActor {
+  adminId: string;
+  ipAddress: string | null;
+}
+
 /**
  * The account made for a copy. Created before the file is read, because the
  * file is rewritten to its id on the way in, and deleted again when nothing
  * is stored. No password, no email: nobody can sign into it until an admin
- * sets its first password (Admin, Users, Reset password).
+ * sets its first password (Admin, Users, Reset password). Its audit row
+ * commits with it, so an account this route made always has a trace, even
+ * when the upload fails and removing it again fails too.
  */
-async function createTargetAccount(username: string): Promise<ChosenTarget> {
+async function createTargetAccount(
+  username: string,
+  actor: UploadActor,
+): Promise<ChosenTarget> {
   try {
-    const account = await prisma.user.create({
-      data: { username, role: "USER" },
-      select: { id: true, username: true },
+    const account = await prisma.$transaction(async (tx) => {
+      const row = await tx.user.create({
+        data: { username, role: "USER" },
+        select: { id: true, username: true },
+      });
+      await auditLog("admin.user.create", {
+        userId: actor.adminId,
+        ipAddress: actor.ipAddress,
+        client: tx,
+        details: {
+          targetUserId: row.id,
+          username: row.username,
+          reason: "backup_restore",
+          outcome: "created",
+        },
+      });
+      return row;
     });
     return { ...account, created: true };
   } catch (err) {
@@ -352,13 +380,20 @@ async function ownerOfRetargetedFile(
 /**
  * Delete the account an upload created for its copy, when nothing was stored.
  * It holds nothing and nobody can have signed into it (no password, no email),
- * so the row is all there is. A failure is noted, never thrown over the
+ * so the row is all there is. Either way the trail says what became of it: a
+ * removal that failed leaves an account to delete by hand
+ * (`docs/ops/backup-restore.md`). A failure is noted, never thrown over the
  * refusal the operator needs to see.
  */
-async function discardCreatedAccount(userId: string): Promise<void> {
+async function discardCreatedAccount(
+  account: ChosenTarget,
+  actor: UploadActor,
+): Promise<void> {
+  let outcome: "deleted" | "failed" = "deleted";
   try {
-    await prisma.user.delete({ where: { id: userId } });
+    await prisma.user.delete({ where: { id: account.id } });
   } catch (err) {
+    outcome = "failed";
     annotate({
       meta: {
         backup_upload_account_discard_failed: true,
@@ -366,6 +401,20 @@ async function discardCreatedAccount(userId: string): Promise<void> {
           err instanceof Error ? err.message : String(err),
       },
     });
+  }
+  try {
+    await auditLog("admin.user.delete", {
+      userId: actor.adminId,
+      ipAddress: actor.ipAddress,
+      details: {
+        targetUserId: account.id,
+        username: account.username,
+        reason: "backup_upload_refused",
+        outcome,
+      },
+    });
+  } catch {
+    annotate({ meta: { backup_upload_account_discard_unaudited: true } });
   }
 }
 
@@ -376,6 +425,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   await assertRecentCookieProof(admin, session.id);
   annotate({ action: { name: "admin.backups.upload" } });
   const ipAddress = getClientIp(request);
+  const actor: UploadActor = { adminId: admin.id, ipAddress };
 
   // Rate-limit identical to the manual-run endpoint. Three is plenty for a
   // deliberate restore-prep workflow.
@@ -476,10 +526,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
     );
   }
 
-  // `MANUAL_UPLOAD_<unix-ms>` keeps the (userId, type) unique-constraint
-  // intact so multiple uploads can coexist for the same user without
-  // overwriting each other or the rolling WEEKLY_AUTO snapshot.
-  const uploadType = `MANUAL_UPLOAD_${Date.now()}`;
+  // The millisecond suffix keeps uploads and WEEKLY_AUTO apart under the
+  // (userId, type) unique constraint; a copy put into a chosen account is
+  // marked as such, for its restore (`backup-upload-type.ts`).
+  const uploadType = uploadedBackupType(Boolean(choice), Date.now());
   let payload: BackupPayload | undefined;
   let measurementCount = 0;
   let owner: { id: string; username: string } | null = null;
@@ -491,7 +541,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   let rewrite: BackupOwnerRewrite | null = null;
   if (choice?.into === "new") {
     try {
-      target = await createTargetAccount(choice.username);
+      target = await createTargetAccount(choice.username, actor);
     } catch (err) {
       if (err instanceof UploadRefused) return refuse(err);
       throw err;
@@ -580,7 +630,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     );
   } catch (err) {
     // Nothing was stored, so the account made for the copy goes again.
-    if (chosen?.created) await discardCreatedAccount(chosen.id);
+    if (chosen?.created) await discardCreatedAccount(chosen, actor);
     if (err instanceof UploadRefused) return refuse(err);
     // The file was fine; its encrypted copy is larger than the stored-copy
     // limit (`BACKUP_MAX_STORED_MB`). That is the operator's to act on, with
@@ -606,18 +656,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
   };
   const storedOwner = owner as { id: string; username: string } | null;
 
-  if (chosen?.created) {
-    await auditLog("admin.user.create", {
-      userId: admin.id,
-      ipAddress,
-      details: {
-        targetUserId: chosen.id,
-        username: chosen.username,
-        reason: "backup_restore",
-        backupId: created.id,
-      },
-    });
-  }
   await auditLog("admin.backups.upload", {
     userId: admin.id,
     ipAddress,

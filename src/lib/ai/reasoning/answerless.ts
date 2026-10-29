@@ -71,18 +71,18 @@ export function nextAnswerlessStep(
   // The endpoint refuses the field: there is no `none` to ask with.
   if (learned === "none") {
     if (!hadReasoning) return { kind: "final", learnedRegardless: false };
-    rememberReasoningDialect(key, FIELD_REFUSED_REASONS_REGARDLESS);
+    rememberReasoningDialect(key, FIELD_REFUSED_REASONS_REGARDLESS, "reply");
     return { kind: "final", learnedRegardless: true };
   }
   if (sent === "none") {
     if (!hadReasoning) return { kind: "final", learnedRegardless: false };
-    rememberReasoningDialect(key, REASONS_REGARDLESS);
+    rememberReasoningDialect(key, REASONS_REGARDLESS, "reply");
     return { kind: "final", learnedRegardless: true };
   }
   if (!hadReasoning && sent === null) {
     return { kind: "final", learnedRegardless: false };
   }
-  rememberReasoningDialect(key, ANSWERS_ONLY_UNREASONED);
+  rememberReasoningDialect(key, ANSWERS_ONLY_UNREASONED, "reply");
   return { kind: "ask_unreasoned" };
 }
 
@@ -212,6 +212,7 @@ export function learnReasoningFieldRefused(
   rememberReasoningDialect(
     key,
     reasonsUnasked(key) ? FIELD_REFUSED_REASONS_REGARDLESS : "none",
+    "refusal",
   );
   annotateReasoningDowngrade(provider, sent, "none");
   // One line per lesson, not per call: the operator learns that the

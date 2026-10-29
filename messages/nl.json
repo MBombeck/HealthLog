@@ -8345,6 +8345,7 @@
         "restoreFailureUnexpected": "Het terugzetten stopte door een onverwachte fout en is teruggedraaid. In het serverlog staat de fout.",
         "restoreFailureKeyMissing": "De back-up heeft versleutelingssleutel {keys} nodig, waarmee deze server hem niet kan openen. Voeg de sleutel weer toe aan ENCRYPTION_KEYS, herstart en start het terugzetten opnieuw.",
         "restoreFailureForeignReference": "Het bestand verwijst naar records die bij een ander account horen. Er is niets geschreven.",
+        "restoreFailureRowsElsewhere": "De records in dit bestand staan al in een ander account op deze server: hetzelfde bestand is daar al teruggezet. Een bestand kan maar in één account worden teruggezet. Er is niets geschreven.",
         "previewKeyMissing": "Deze back-up kan niet op deze server worden teruggezet: er is versleutelingssleutel {keys} voor nodig. Voeg de sleutel eerst weer toe aan ENCRYPTION_KEYS en herstart.",
         "restoreSkippedSymptomEpisodeReference": "Symptoomregistratie gekoppeld aan een ziekte die niet in het bestand staat (behouden zonder de koppeling)",
         "restoreSkippedCycleCiphertext": "Cyclusnotitie of -label versleuteld met een sleutel die deze server niet heeft (dag of symptoom behouden zonder)",
@@ -8397,6 +8398,7 @@
           "failureHoldsRecords": "Dit account heeft al records. Terugzetten vervangt records in plaats van ze aan te vullen, dus kies een account zonder records of maak een nieuw account aan.",
           "failureManagedProfile": "Dit account is een beheerd profiel. De verzorgers beheren het, dus er kan geen kopie in.",
           "failurePendingDeletion": "Dit account wordt verwijderd. Maak de verwijdering eerst ongedaan of kies een ander account.",
+          "failureAdminAccount": "Dit is een beheerdersaccount. De records van iemand anders kunnen er niet in, dus kies een gewoon account of maak een nieuw account aan.",
           "failureNotFound": "Dit account bestaat niet meer.",
           "failureUnconfirmed": "Typ de gebruikersnaam van het account precies over om te bevestigen.",
           "failureUsernameTaken": "Deze gebruikersnaam is al in gebruik.",
@@ -13733,6 +13735,7 @@
     "labs": {
       "menuTitle": "Labwaarden",
       "otherPanel": "Overig",
+      "full": "Maximaal {max} labwaarden tegelijk. Verwijder er een om een andere toe te voegen.",
       "above": "boven het bereik",
       "below": "onder het bereik",
       "reference": "referentie {range}",

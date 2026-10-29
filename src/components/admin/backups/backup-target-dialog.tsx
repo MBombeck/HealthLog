@@ -49,11 +49,15 @@ export interface BackupTargetCheck {
 
 /**
  * The accounts the picker offers: not a managed profile (its Guardians run
- * it) and not pending deletion. Whether one holds records is the server's to
+ * it), not pending deletion and not an admin account (the server refuses all
+ * three, `restore-target.ts`). Whether one holds records is the server's to
  * say, per account, once it is picked.
  */
 export function pickableAccounts(users: readonly AdminUser[]): AdminUser[] {
-  return users.filter((user) => !user.managedProfile && user.deletion === null);
+  return users.filter(
+    (user) =>
+      !user.managedProfile && user.deletion === null && user.role !== "ADMIN",
+  );
 }
 
 /**
@@ -87,6 +91,8 @@ export function targetFailureKey(code: string): string {
       return "admin.section.backups.target.failureManagedProfile";
     case "backup.target.pending_deletion":
       return "admin.section.backups.target.failurePendingDeletion";
+    case "backup.target.admin_account":
+      return "admin.section.backups.target.failureAdminAccount";
     case "backup.target.not_found":
       return "admin.section.backups.target.failureNotFound";
     case "backup.target.unconfirmed":
