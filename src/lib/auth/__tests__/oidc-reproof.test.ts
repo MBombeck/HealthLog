@@ -47,6 +47,7 @@ import {
   reproofReturnUrl,
 } from "@/lib/auth/oidc-reproof";
 import { readStoredOidcState } from "@/lib/auth/oidc-callback/state";
+import { RECENT_PROOF_MAX_AGE_MS } from "@/lib/auth/existing-factor-proof";
 
 const ISSUER = "https://idp.example.test";
 const OIDC_ENV = {
@@ -195,15 +196,44 @@ describe("recordOidcReproof", () => {
       identity: { sub: "sub-1", authTime: Math.floor(now / 1000) - 5 },
     });
     expect(outcome).toEqual({ ok: true });
+    // Stamped at the authentication, not at the callback.
     expect(db.updateSession).toHaveBeenCalledWith({
       where: { id: "s1" },
-      data: { reproofAt: new Date(now) },
+      data: { reproofAt: new Date((Math.floor(now / 1000) - 5) * 1000) },
     });
     expect(refundRateLimit).toHaveBeenCalledWith("auth:step-up:u1");
     expect(auditLog).toHaveBeenCalledWith(
       "auth.reproof.succeeded",
       expect.objectContaining({ details: { method: "oidc" } }),
     );
+  });
+
+  it("runs the window from the authentication, so a token near its end buys no extra minutes", async () => {
+    db.findUser.mockResolvedValue(accountRow());
+    const authTime = Math.floor(now / 1000) - 4 * 60;
+    await recordOidcReproof({ ...args, identity: { sub: "sub-1", authTime } });
+    const [call] = db.updateSession.mock.calls[0] as [
+      { data: { reproofAt: Date } },
+    ];
+    const stamped = call.data.reproofAt;
+    expect(stamped.getTime()).toBe(authTime * 1000);
+    // Two minutes after the callback the proof is six minutes old: past the
+    // window every recent-proof gate applies.
+    expect(now + 2 * 60_000 - stamped.getTime()).toBeGreaterThan(
+      RECENT_PROOF_MAX_AGE_MS,
+    );
+  });
+
+  it("never stamps a proof in the future for a provider clock a little ahead", async () => {
+    db.findUser.mockResolvedValue(accountRow());
+    await recordOidcReproof({
+      ...args,
+      identity: { sub: "sub-1", authTime: Math.floor(now / 1000) + 30 },
+    });
+    expect(db.updateSession).toHaveBeenCalledWith({
+      where: { id: "s1" },
+      data: { reproofAt: new Date(now) },
+    });
   });
 
   it("refuses a stale auth_time without stamping", async () => {
