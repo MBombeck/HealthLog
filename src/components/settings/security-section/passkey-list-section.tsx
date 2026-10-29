@@ -45,6 +45,11 @@ import {
 } from "@/lib/api/api-fetch";
 import { describePasskeyError } from "@/lib/passkey-errors";
 import { describeStepUp } from "./security-keys-card";
+import {
+  isReproofRequired,
+  startOidcReproof,
+  type ReauthMethod,
+} from "./existing-factor-reauth-dialog";
 import { ReproofCancelledError, useRecentProof } from "./use-recent-proof";
 
 interface PasskeyInfo {
@@ -56,16 +61,101 @@ interface PasskeyInfo {
   lastUsedAt: string | null;
 }
 
-type ReauthMethod = "password" | "passkey" | "totp" | "webauthn";
-
 type ExistingFactorProof =
   | { method: "password"; password: string }
   | { method: "totp"; code: string }
+  | { method: "oidc" }
   | {
       method: "passkey" | "webauthn";
       challengeId: string;
       credential: unknown;
     };
+
+/** What the card offers while the account's own list has not arrived. */
+const FALLBACK_METHODS: readonly ReauthMethod[] = [
+  "password",
+  "totp",
+  "passkey",
+  "webauthn",
+];
+
+/**
+ * The proofs to offer before adding a passkey: the account's own list when the
+ * status read has it, so an account without a password is not handed a
+ * password field, and the four body proofs otherwise.
+ */
+export function passkeyProofChoices(
+  proofMethods: readonly string[] | undefined,
+): ReauthMethod[] {
+  if (!proofMethods) return [...FALLBACK_METHODS];
+  const known: readonly ReauthMethod[] = [
+    "password",
+    "oidc",
+    "totp",
+    "passkey",
+    "webauthn",
+  ];
+  return proofMethods.filter((m): m is ReauthMethod =>
+    known.includes(m as ReauthMethod),
+  );
+}
+
+/**
+ * Prove an existing factor, then run the registration ceremony. The proof
+ * finishes before the first registration challenge is requested, so a
+ * cancelled or failed proof leaves no enrollable challenge behind.
+ */
+async function addPasskey(method: ReauthMethod, secret: string): Promise<void> {
+  const webauthn = await import("@simplewebauthn/browser");
+  let freshFactor: ExistingFactorProof;
+
+  if (method === "oidc") {
+    // No secret: the proof is a provider re-proof already on the session.
+    freshFactor = { method };
+  } else if (method === "password") {
+    freshFactor = { method, password: secret };
+  } else if (method === "totp") {
+    freshFactor = { method, code: secret };
+  } else {
+    const assertionChallenge = await apiPost<{
+      options: Parameters<
+        typeof webauthn.startAuthentication
+      >[0]["optionsJSON"];
+      challengeId: string;
+    }>("/api/auth/passkey/register-options", { method });
+    const credential = await webauthn.startAuthentication({
+      optionsJSON: assertionChallenge.options,
+    });
+    freshFactor = {
+      method,
+      challengeId: assertionChallenge.challengeId,
+      credential,
+    };
+  }
+
+  let begun: {
+    options: Parameters<typeof webauthn.startRegistration>[0]["optionsJSON"];
+    challengeId: string;
+  };
+  try {
+    begun = await apiPost("/api/auth/passkey/register-options", freshFactor);
+  } catch (err) {
+    // No provider re-proof on the session yet: go and get one. The page
+    // unloads and comes back here, so the mutation stays pending rather
+    // than flashing an error on the way out.
+    if (method !== "oidc" || !isReproofRequired(err)) throw err;
+    startOidcReproof();
+    return new Promise<never>(() => {});
+  }
+  const { options, challengeId } = begun;
+  const credential = await webauthn.startRegistration({
+    optionsJSON: options,
+  });
+  await apiPost("/api/auth/passkey/register-verify", {
+    challengeId,
+    credential,
+  });
+}
 
 /**
  * Primary-passkey management: list (name, device, backup, created, last used),
@@ -74,8 +164,11 @@ type ExistingFactorProof =
  */
 export function PasskeyListSection({
   isAuthenticated,
+  proofMethods,
 }: {
   isAuthenticated: boolean;
+  /** `proofMethods` from `GET /api/auth/me/mfa`. */
+  proofMethods?: readonly string[];
 }) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
@@ -83,7 +176,10 @@ export function PasskeyListSection({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [reauthOpen, setReauthOpen] = useState(false);
-  const [reauthMethod, setReauthMethod] = useState<ReauthMethod>("password");
+  const choices = passkeyProofChoices(proofMethods);
+  const [reauthMethod, setReauthMethod] = useState<ReauthMethod>(
+    choices[0] ?? "password",
+  );
   const [reauthSecret, setReauthSecret] = useState("");
 
   const { data: passkeys } = useQuery({
@@ -93,56 +189,18 @@ export function PasskeyListSection({
   });
 
   const add = useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       method,
       secret,
     }: {
       method: ReauthMethod;
       secret: string;
-    }) => {
-      const webauthn = await import("@simplewebauthn/browser");
-      let freshFactor: ExistingFactorProof;
-
-      if (method === "password") {
-        freshFactor = { method, password: secret };
-      } else if (method === "totp") {
-        freshFactor = { method, code: secret };
-      } else {
-        const assertionChallenge = await apiPost<{
-          options: Parameters<
-            typeof webauthn.startAuthentication
-          >[0]["optionsJSON"];
-          challengeId: string;
-        }>("/api/auth/passkey/register-options", { method });
-        const credential = await webauthn.startAuthentication({
-          optionsJSON: assertionChallenge.options,
-        });
-        freshFactor = {
-          method,
-          challengeId: assertionChallenge.challengeId,
-          credential,
-        };
-      }
-
-      const { options, challengeId } = await apiPost<{
-        options: Parameters<
-          typeof webauthn.startRegistration
-        >[0]["optionsJSON"];
-        challengeId: string;
-      }>("/api/auth/passkey/register-options", freshFactor);
-      const credential = await webauthn.startRegistration({
-        optionsJSON: options,
-      });
-      await apiPost("/api/auth/passkey/register-verify", {
-        challengeId,
-        credential,
-      });
-    },
+    }) => addPasskey(method, secret),
     onSuccess: () => {
       setMsg(null);
       setReauthOpen(false);
       setReauthSecret("");
-      setReauthMethod("password");
+      setReauthMethod(choices[0] ?? "password");
       queryClient.invalidateQueries({ queryKey: queryKeys.passkeys() });
       toastWrittenOutcome("success", t("settings.passkeyAddedToast"));
     },
@@ -194,6 +252,14 @@ export function PasskeyListSection({
       );
     },
   });
+
+  const methodLabels: Record<ReauthMethod, string> = {
+    password: t("settings.passkeyReauth.methods.password"),
+    oidc: t("settings.passkeyReauth.methods.oidc"),
+    totp: t("settings.passkeyReauth.methods.totp"),
+    passkey: t("settings.passkeyReauth.methods.passkey"),
+    webauthn: t("settings.passkeyReauth.methods.webauthn"),
+  };
 
   const DEVICE_TYPE_LABELS: Record<string, string> = {
     singleDevice: t("settings.singleDevice"),
@@ -350,7 +416,14 @@ export function PasskeyListSection({
           onOpenChange={(open) => {
             if (add.isPending) return;
             setReauthOpen(open);
-            if (open) setMsg(null);
+            if (open) {
+              setMsg(null);
+              // The choice the account's list leads with, in case the list
+              // arrived after the card first rendered.
+              if (!choices.includes(reauthMethod)) {
+                setReauthMethod(choices[0] ?? "password");
+              }
+            }
           }}
         >
           <SettingsCardActions>
@@ -384,14 +457,7 @@ export function PasskeyListSection({
               role="group"
               aria-label={t("settings.passkeyReauth.methodLabel")}
             >
-              {(
-                [
-                  ["password", t("settings.passkeyReauth.methods.password")],
-                  ["totp", t("settings.passkeyReauth.methods.totp")],
-                  ["passkey", t("settings.passkeyReauth.methods.passkey")],
-                  ["webauthn", t("settings.passkeyReauth.methods.webauthn")],
-                ] satisfies Array<[ReauthMethod, string]>
-              ).map(([method, label]) => (
+              {choices.map((method) => (
                 <Button
                   key={method}
                   type="button"
@@ -407,10 +473,14 @@ export function PasskeyListSection({
                     setMsg(null);
                   }}
                 >
-                  {label}
+                  {methodLabels[method]}
                 </Button>
               ))}
             </div>
+
+            {reauthMethod === "oidc" && (
+              <p className="text-sm">{t("settings.passkeyReauth.oidcHint")}</p>
+            )}
 
             {reauthMethod === "password" && (
               <Input

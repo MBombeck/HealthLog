@@ -789,7 +789,10 @@
       "title": "복구 키트를 보관하세요",
       "body": "이 서버가 사용하는 키의 사본이 없으면 다시 설치한 뒤 데이터를 복구할 수 없습니다. 몇 분이면 됩니다.",
       "action": "키트 열기"
-    }
+    },
+    "greetingOnly": "{greeting}.",
+    "welcomeNew": "환영합니다.",
+    "welcomeNewWithName": "{name}님, 환영합니다."
   },
   "measurements": {
     "title": "측정",
@@ -6237,14 +6240,17 @@
         "password": "비밀번호",
         "totp": "인증 앱 코드",
         "passkey": "패스키",
-        "webauthn": "보안 키"
+        "webauthn": "보안 키",
+        "oidc": "ID 공급자"
       },
       "currentPassword": "현재 비밀번호",
       "authenticatorCode": "인증 앱 코드",
       "authenticatorPlaceholder": "6자리 인증 앱 코드",
       "verifyAndAdd": "확인 후 추가",
       "factorDescription": "두 번째 인증 수단을 추가하기 전에 기존 로그인 방법을 확인하세요.",
-      "verifyAndContinue": "확인하고 계속"
+      "verifyAndContinue": "확인하고 계속",
+      "oidcHint": "ID 공급자에서 한 번 더 로그인하면 바로 이 페이지로 돌아옵니다. 그런 다음 하려던 작업을 다시 진행하세요.",
+      "continueToProvider": "로그인으로 계속"
     },
     "passkeyName": "이름",
     "noPasskeys": "등록된 패스키가 없어요.",
@@ -7517,7 +7523,9 @@
       "description": "건강 데이터를 공유하거나 내보내는 작업입니다. 계속하려면 본인임을 확인하세요.",
       "descriptionChange": "본인만 변경할 수 있어야 하는 항목을 변경합니다. 계속하려면 본인임을 확인하세요.",
       "signInAgain": "다시 로그인한 후 한 번 더 시도하세요. 이 계정에는 여기서 확인할 비밀번호나 패스키가 없습니다.",
-      "failed": "확인하지 못했습니다. 입력한 내용을 확인하고 다시 시도하세요."
+      "failed": "확인하지 못했습니다. 입력한 내용을 확인하고 다시 시도하세요.",
+      "oidcDone": "확인되었습니다. 앞으로 5분 동안은 다시 묻지 않고 계속할 수 있습니다.",
+      "oidcFailed": "ID 공급자가 본인임을 확인하지 못했습니다. 다시 시도하세요."
     },
     "passwordTitle": "비밀번호",
     "tokenNameLabel": "토큰 이름",
@@ -8080,7 +8088,16 @@
         "undoDeletionBody": "{name} 님이 이 계정의 삭제를 요청했고, 유예 기간이 끝나면 지워져요. 취소하면 계정과 그 안의 모든 내용이 그대로 남아요. {name} 님은 다시 로그인할 수 있지만, API 토큰, 공유 링크, 신뢰하는 기기는 계속 취소된 상태라 다시 설정해야 해요.",
         "undoDeletionBodyGuardian": "보호자가 관리 프로필 {name}을(를) 삭제했고, 유예 기간이 끝나면 지워져요. 취소하면 프로필과 그 안의 모든 내용이 그대로 남고, 보호자들이 다시 접근할 수 있어요. 공유 링크와 토큰은 계속 취소된 상태라 다시 설정해야 해요.",
         "undoDeletionDone": "{name} 삭제를 취소했어요",
-        "undoDeletionFailed": "삭제를 취소하지 못했어요"
+        "undoDeletionFailed": "삭제를 취소하지 못했어요",
+        "undoDeletionBodyAdmin": "관리자가 {name} 계정을 삭제했고, 유예 기간이 끝나면 지워져요. 취소하면 계정과 그 안의 모든 내용이 그대로 남아요. {name} 님은 다시 로그인할 수 있지만, API 토큰, 공유 링크, 신뢰하는 기기는 계속 취소된 상태라 다시 설정해야 해요.",
+        "deleteUser": "계정 삭제",
+        "deleteUserTitle": "{name} 계정을 삭제할까요?",
+        "deleteUserBodyGrace": "{name} 님은 즉시 모든 곳에서 로그아웃되고 더 이상 로그인할 수 없어요. 계정과 그 안의 모든 내용은 {date}에 지워져요. 그때까지는 여기서 삭제를 취소할 수 있어요.",
+        "deleteUserBodyNow": "{name} 님과 계정 안의 모든 내용이 바로 지워져요. 이 서버에는 유예 기간이 없어서 삭제를 취소할 수 없어요.",
+        "deleteUserConfirm": "계정 삭제",
+        "deleteUserScheduled": "{name} 계정이 잠겼고 {date}에 지워져요",
+        "deleteUserDone": "{name} 계정을 삭제했어요",
+        "deleteUserFailed": "계정을 삭제하지 못했어요"
       },
       "invites": {
         "title": "초대",
@@ -11250,6 +11267,12 @@
       },
       "sosVozAmiga": {
         "name": "SOS Voz Amiga (포르투갈, 매일 15:30~00:30)"
+      },
+      "zelfmoordpreventie113": {
+        "name": "113 Zelfmoordpreventie (네덜란드, 24시간, 무료, 익명, 채팅 가능)"
+      },
+      "zelfmoordlijn1813": {
+        "name": "Zelfmoordlijn 1813 (벨기에, 24시간, 무료, 익명)"
       }
     },
     "instrumentDescription": {

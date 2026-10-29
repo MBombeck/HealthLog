@@ -42,6 +42,43 @@ import {
 } from "@/components/layout/capture-picker";
 import type { QuickEntryDialog } from "@/components/dashboard/quick-entry-sheets";
 
+const FIRST_DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * The greeting line, as an i18n key and its values.
+ *
+ * Until the account is known (the SSR pass and the hydration render) it is the
+ * time-of-day greeting alone, so nothing claims "welcome back" before the
+ * client knows it is true. An account in its first day (`createdAt` from
+ * `/api/auth/me`) is welcomed, not welcomed back: the setup flow lands a new
+ * account here minutes after it was created. Any other account, and one whose
+ * server does not say when it was created, is welcomed back.
+ */
+export function greetingLine(input: {
+  greeting: string;
+  known: boolean;
+  name: string | null;
+  createdAt: string | null | undefined;
+  /** The clock, for tests; the moment of the call otherwise. */
+  nowMs?: number;
+}): { key: string; values: Record<string, string> } {
+  const { greeting, name } = input;
+  const nowMs = input.nowMs ?? Date.now();
+  if (!input.known) {
+    return { key: "dashboard.greetingOnly", values: { greeting } };
+  }
+  const created = input.createdAt ? Date.parse(input.createdAt) : Number.NaN;
+  const isNew = Number.isFinite(created) && nowMs - created < FIRST_DAY_MS;
+  if (isNew) {
+    return name
+      ? { key: "dashboard.welcomeNewWithName", values: { name } }
+      : { key: "dashboard.welcomeNew", values: {} };
+  }
+  return name
+    ? { key: "dashboard.welcomeBackWithName", values: { greeting, name } }
+    : { key: "dashboard.welcomeBack", values: { greeting } };
+}
+
 export function DashboardHeader({
   onQuickEntry,
 }: {
@@ -103,22 +140,22 @@ export function DashboardHeader({
         : hour >= 12 && hour < 18
           ? t("dashboard.greeting.day")
           : t("dashboard.greeting.evening");
-  const welcomeText =
-    mounted && user?.username && user.username.trim().length > 0
-      ? t("dashboard.welcomeBackWithName", {
-          greeting: timeGreeting,
-          name: user.username,
-        })
-      : t("dashboard.welcomeBack", { greeting: timeGreeting });
+  const greeting = greetingLine({
+    greeting: timeGreeting,
+    known: mounted && user != null,
+    name: user?.username?.trim() ? user.username : null,
+    createdAt: user?.createdAt,
+  });
+  const welcomeText = t(greeting.key, greeting.values);
 
   return (
     <PageHeader
       title={t("dashboard.title")}
       description={
         /* `min-h-5` reserves the greeting's line box from the SSR
-           pass on: the text personalises (name appended) on the first
-           client re-render after hydration, and the reserved line
-           keeps the header from collapsing/growing around that swap. */
+           pass on: the text personalises (name and welcome appended) on
+           the first client re-render after hydration, and the reserved
+           line keeps the header from collapsing/growing around that swap. */
         <span
           data-slot="dashboard-header-greeting"
           className="block min-h-5 truncate"

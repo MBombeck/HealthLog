@@ -40,6 +40,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { type AdminUser, PasswordInput } from "./_shared";
 import { PendingDeletionControls } from "./pending-deletion-controls";
+import { DeleteUserControl } from "./delete-user-control";
 import { apiGet, apiPost, apiPut } from "@/lib/api/api-fetch";
 import {
   recentProofErrorMessage,
@@ -54,6 +55,13 @@ import {
  * shows the same set as `all`. Documented in the phase 4b report.
  */
 type UserFilter = "all" | "admin" | "user";
+
+/** The quota override as the edit form's gigabyte field shows it. */
+function quotaGbInput(bytes: number | null): string {
+  if (bytes === null) return "";
+  // eslint-disable-next-line healthlog/no-unlocalised-decimal -- value of a type="number" input, which only takes a full stop
+  return String(Math.round((bytes / 1_073_741_824) * 10) / 10);
+}
 
 export function UserManagementSection() {
   const { t } = useTranslations();
@@ -160,12 +168,7 @@ export function UserManagementSection() {
     setEditingUser(u);
     setEditUsername(u.username);
     setEditEmail(u.email ?? "");
-    setEditQuotaGb(
-      u.documentQuotaBytes === null
-        ? ""
-        : // eslint-disable-next-line healthlog/no-unlocalised-decimal -- value of a type="number" input, which only takes a full stop
-          String(Math.round((u.documentQuotaBytes / 1_073_741_824) * 10) / 10),
-    );
+    setEditQuotaGb(quotaGbInput(u.documentQuotaBytes));
   }
 
   function startReset(u: AdminUser) {
@@ -229,7 +232,7 @@ export function UserManagementSection() {
         {u.mfaEnforced ? t("admin.mfaEnforcedOn") : t("admin.mfaEnforcedOff")}
         <span className="sr-only">, {u.username}</span>
       </Button>
-      {/* The three icon tools travel as one group: on a phone the row wraps
+      {/* The icon tools travel as one group: on a phone the row wraps
           between the labelled toggles and the tools, never leaving the
           sign-out icon alone on a line. */}
       <span className="ml-auto flex items-center gap-1">
@@ -272,6 +275,7 @@ export function UserManagementSection() {
         >
           <LogOut className="h-3 w-3" aria-hidden="true" />
         </Button>
+        <DeleteUserControl user={u} currentUserId={currentUserId} />
       </span>
     </>
   );

@@ -56,6 +56,21 @@ beforeEach(() => {
   ] as never);
 });
 
+describe("applyProfileUpdate locale", () => {
+  it.each(["fr", "pt-BR", "ko"])(
+    "stores %s, a language the app ships",
+    async (locale) => {
+      const result = await applyProfileUpdate(USER_ID, { locale });
+      expect(result.ok).toBe(true);
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ locale }),
+        }),
+      );
+    },
+  );
+});
+
 describe("applyProfileUpdate timezone validation", () => {
   it("accepts a valid IANA zone", async () => {
     const result = await applyProfileUpdate(USER_ID, {
@@ -271,7 +286,7 @@ describe("applyProfileUpdate partial-field save", () => {
   it("writes nothing and reports every rejected field when the whole body is invalid", async () => {
     const result = await applyProfileUpdate(USER_ID, {
       gender: "male",
-      locale: "fr",
+      locale: "xx",
     });
     expect(result.ok).toBe(false);
     if (!result.ok) {
@@ -290,15 +305,15 @@ describe("applyProfileUpdate top-level error message", () => {
   // sharpest regression check available for "does the raw Zod default
   // ever reach the top-level string a person reads". Zod v4's default
   // enum message is shaped like:
-  //   Invalid option: expected one of "de"|"en"
+  //   Invalid option: expected one of "de"|"en"|"fr"|…
   const RAW_ZOD_ENUM_PATTERN = /expected one of/i;
 
   it("never lets the raw Zod enum message reach the top-level `message`", async () => {
-    const result = await applyProfileUpdate(USER_ID, { locale: "fr" });
+    const result = await applyProfileUpdate(USER_ID, { locale: "xx" });
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.message).not.toMatch(RAW_ZOD_ENUM_PATTERN);
-      expect(result.message).not.toContain('"de"|"en"');
+      expect(result.message).not.toContain('"de"|"en"|"fr"');
       // Relocated, not deleted: the same detail is still available for
       // whoever needs it (the iOS `details.issues` contract), just not
       // in the string a person reads first.
@@ -318,7 +333,7 @@ describe("applyProfileUpdate top-level error message", () => {
   });
 
   it("carries a stable errorCode so the web client can localize the sentence", async () => {
-    const result = await applyProfileUpdate(USER_ID, { locale: "fr" });
+    const result = await applyProfileUpdate(USER_ID, { locale: "xx" });
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.errorCode).toBe("profile.update.nothingSaved");

@@ -14,6 +14,7 @@ import {
 
 const KNOWN_METHODS: readonly ReauthMethod[] = [
   "password",
+  "oidc",
   "totp",
   "webauthn",
   "passkey",
@@ -93,7 +94,9 @@ export function createRecentProofFlow(deps: {
       if (!isProofRefusal(err)) throw err;
       const offered = methodsFrom(err as ApiError);
       // Nothing to re-prove in place: an account that signs in through an
-      // identity provider only. A fresh sign-in is the proof it can give.
+      // identity provider the instance no longer offers. A fresh sign-in is
+      // the proof it can give. One that can still reach its provider is
+      // offered `oidc` instead, which leaves the page and comes back to it.
       if (offered.length === 0) {
         throw new ApiError(deps.messages().signInAgain, 401, {
           errorCode: "auth.reproof.sign_in_again",

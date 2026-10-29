@@ -93,6 +93,21 @@ const SERVER_FEATURES = {
   lifeCircumstances: true,
 } as const;
 
+/**
+ * v1.7.0 — patient-identity fields for the health-record export. The KVNR is
+ * stored encrypted; decrypt fail-soft so a key-rotation gap on one row never
+ * 500s the whole profile fetch (the field just reads null and the user
+ * re-enters it).
+ */
+function readInsuranceNumber(encrypted: string | null | undefined) {
+  if (!encrypted) return null;
+  try {
+    return decrypt(encrypted);
+  } catch {
+    return null;
+  }
+}
+
 export const GET = apiHandler(async () => {
   const auth = await requireActorAuth();
   const { user } = auth;
@@ -289,22 +304,14 @@ export const GET = apiHandler(async () => {
     sectionsOpen(sections, "cycle") &&
     isCycleEnabled(record?.gender ?? null, cycleProfile);
 
-  // v1.7.0 — patient-identity fields for the health-record export. The
-  // KVNR is stored encrypted; decrypt fail-soft so a key-rotation gap on
-  // one row never 500s the whole profile fetch (the field just reads
-  // null and the user re-enters it).
-  let insuranceNumber: string | null = null;
-  if (identity?.insuranceNumberEncrypted) {
-    try {
-      insuranceNumber = decrypt(identity.insuranceNumberEncrypted);
-    } catch {
-      insuranceNumber = null;
-    }
-  }
+  const insuranceNumber = readInsuranceNumber(
+    identity?.insuranceNumberEncrypted,
+  );
 
   return apiSuccess({
     id: user.id,
     username: user.username,
+    createdAt: user.createdAt,
     email: user.email,
     role: user.role ?? "USER",
     heightCm: user.heightCm,

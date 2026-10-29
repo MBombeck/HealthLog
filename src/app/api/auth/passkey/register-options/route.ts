@@ -5,6 +5,8 @@ import {
 } from "@/lib/auth/passkey";
 import { createMfaAuthenticationOptions } from "@/lib/auth/mfa/webauthn";
 import {
+  RECENT_PROOF_MAX_AGE_MS,
+  REPROOF_REQUIRED_CODE,
   isSecondFactorProof,
   recordReproofFailure,
   refundReproof,
@@ -59,6 +61,30 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return apiSuccess({ ...result, reauth: true });
   }
 
+  // #1296 — an account whose only credential is its identity provider proves
+  // itself there (`GET /api/auth/oidc/reproof`), which stamps
+  // `Session.reproofAt`. `{ method: "oidc" }` asks this route to take that
+  // stamp as the proof: only where `oidc` is on the account's list (no second
+  // factor, a linked identity, a configured provider) and only inside the
+  // five-minute window. Like a password, it clears the MFA stamp rather than
+  // setting it.
+  if (Object.keys(body).length === 1 && body.method === "oidc") {
+    if (
+      !(await recentProofMethods(user)).includes("oidc") ||
+      !(await hasRecentReproof(session.id))
+    ) {
+      annotate({
+        action: { name: "auth.reproof.required" },
+        meta: { stage: "passkey_enroll", method: "oidc" },
+      });
+      return apiError("Confirm it is you before adding a passkey", 401, {
+        errorCode: REPROOF_REQUIRED_CODE,
+        methods: await recentProofMethods(user),
+      });
+    }
+    return issueRegistrationOptions(user, session.id, null);
+  }
+
   const parsed = stepUpMintSchema.safeParse(body);
   if (!parsed.success) return proofRequired();
 
@@ -101,23 +127,48 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
   await refundReproof(user.id);
 
-  // A strong existing factor refreshes the session's MFA stamp. Password proof
-  // deliberately clears it: registration is authorized by this single-use,
-  // session-bound challenge but cannot upgrade password-only authentication.
+  return issueRegistrationOptions(
+    user,
+    session.id,
+    parsed.data.method === "password" ? null : new Date(),
+  );
+});
+
+/** A password or provider re-proof on this session inside the window. */
+async function hasRecentReproof(sessionId: string): Promise<boolean> {
+  const row = await prisma.session.findUnique({
+    where: { id: sessionId },
+    select: { reproofAt: true },
+  });
+  return (
+    row?.reproofAt != null &&
+    Date.now() - row.reproofAt.getTime() <= RECENT_PROOF_MAX_AGE_MS
+  );
+}
+
+/**
+ * A strong existing factor refreshes the session's MFA stamp. A password or
+ * provider proof deliberately clears it (`mfaVerifiedAt: null`): registration
+ * is authorized by this single-use, session-bound challenge but cannot upgrade
+ * first-factor authentication.
+ */
+async function issueRegistrationOptions(
+  user: { id: string; email: string | null; username: string },
+  sessionId: string,
+  mfaVerifiedAt: Date | null,
+): Promise<Response> {
   await prisma.session.update({
-    where: { id: session.id },
-    data: {
-      mfaVerifiedAt: parsed.data.method === "password" ? null : new Date(),
-    },
+    where: { id: sessionId },
+    data: { mfaVerifiedAt },
   });
 
   const { options, challengeId } = await createRegistrationOptions(
     user.id,
     user.email ?? user.username,
-    session.id,
+    sessionId,
   );
 
   annotate({ action: { name: "auth.passkey.register-options" } });
 
   return apiSuccess({ options, challengeId });
-});
+}

@@ -895,7 +895,7 @@ export interface SendCoachMessageParams {
   conversationId?: string;
   message: string;
   prefill?: string;
-  locale?: "en" | "de";
+  locale?: import("@/lib/i18n/config").Locale;
   /**
    * v1.4.20.1 — optional snapshot scope (per-source toggles + window)
    * driven by the sources-rail picker. When omitted the server falls

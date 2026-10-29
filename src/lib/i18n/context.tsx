@@ -125,16 +125,23 @@ function persistLocale(newLocale: Locale) {
 // the server-set cookie the route emits in reply: Safari's ITP caps the
 // script-written copy at 7 days, and a Set-Cookie is exempt.
 //
-// Once per tab session and per locale, not on every mount: every page load
-// mounts the provider, and every authenticated write is charged to the
+// Once per tab session, account and locale, not on every mount: every page
+// load mounts the provider, and every authenticated write is charged to the
 // account's shared write bucket, so a mount-time PUT spent one write per page
 // view on a value that had not changed. A switch still writes at once (the
 // locale differs from the one recorded), and a new tab writes once.
+//
+// Only for a signed-in account. The route answers 401 to nobody, the marker
+// is then never set, and every signed-out page load used to repeat the
+// refused PUT. Signed out, the choice stays in localStorage and the cookie;
+// `LocaleServerSyncBridge` calls this once an account is known, so the
+// choice made before signing in reaches the column right after.
 const LOCALE_SYNCED_KEY = "healthlog-locale-synced";
 
-function persistLocaleToServer(newLocale: Locale) {
+export function persistLocaleToServer(newLocale: Locale, accountId: string) {
+  const marker = `${accountId}:${newLocale}`;
   try {
-    if (sessionStorage.getItem(LOCALE_SYNCED_KEY) === newLocale) return;
+    if (sessionStorage.getItem(LOCALE_SYNCED_KEY) === marker) return;
   } catch {
     // Storage unavailable: write as before.
   }
@@ -148,7 +155,7 @@ function persistLocaleToServer(newLocale: Locale) {
     .then((res) => {
       if (!res.ok) return;
       try {
-        sessionStorage.setItem(LOCALE_SYNCED_KEY, newLocale);
+        sessionStorage.setItem(LOCALE_SYNCED_KEY, marker);
       } catch {
         // Storage unavailable: the next mount writes again.
       }
@@ -236,15 +243,6 @@ export function I18nProvider({
     return () => {
       cancelled = true;
     };
-  }, [locale]);
-
-  // v1.25.0 — keep `User.locale` in step with the committed UI locale. Runs on
-  // the first mount of a tab session (backfilling the column for users who set
-  // their language before this landed) and on every switch, so the proactive
-  // Coach nudge and other cookie-blind background paths render in the language
-  // the user reads.
-  useEffect(() => {
-    persistLocaleToServer(locale);
   }, [locale]);
 
   const setLocale = useCallback((newLocale: Locale) => {

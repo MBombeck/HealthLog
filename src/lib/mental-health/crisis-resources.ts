@@ -150,14 +150,60 @@ const PT_BR_AMBIGUOUS: CrisisResourceSet = {
 };
 
 /**
+ * The Netherlands (explicit "nl-NL" / "nl_NL"). 112 is the emergency number.
+ * 113 Zelfmoordpreventie answers by phone on 113 or the free 0800-0113 and by
+ * chat on 113.nl, anonymously.
+ */
+const NL: CrisisResourceSet = {
+  emergencyNumber: "112",
+  resources: [
+    {
+      id: "zelfmoordpreventie113",
+      contacts: ["113", "0800-0113", "113.nl"],
+    },
+    { id: "findahelpline", contacts: ["findahelpline.com"] },
+  ],
+};
+
+/**
+ * Belgium (explicit "nl-BE" / "nl_BE", or the bare region "be"). 112 is the
+ * emergency number. The Zelfmoordlijn answers 1813 around the clock and runs
+ * a chat in the evenings (zelfmoord1813.be).
+ */
+const BE: CrisisResourceSet = {
+  emergencyNumber: "112",
+  resources: [
+    { id: "zelfmoordlijn1813", contacts: ["1813", "zelfmoord1813.be"] },
+    { id: "findahelpline", contacts: ["findahelpline.com"] },
+  ],
+};
+
+/**
+ * Dutch with no region signal. The app ships one Dutch bundle, `nl`, read in
+ * the Netherlands and in Flanders alike, and the account keeps no country to
+ * tell them apart. Following DE_AT_CH, the set leads with 112 (the emergency
+ * number in both countries) and names each country's line with the country
+ * in its label, so nothing reads as if it reached everyone.
+ */
+const NL_BE: CrisisResourceSet = {
+  emergencyNumber: "112",
+  resources: [
+    ...NL.resources.filter((r) => r.id !== "findahelpline"),
+    ...BE.resources.filter((r) => r.id !== "findahelpline"),
+    { id: "findahelpline", contacts: ["findahelpline.com"] },
+  ],
+};
+
+/**
  * Resolve a crisis-resource set from the user's locale. Region detection is
  * coarse (locale prefix) and defaults to the international set — the goal is to
  * always surface SOMETHING actionable, never to be exhaustive.
  *
  * A region-qualified tag ("de-AT", "de_CH", "pt-PT", …) resolves to the exact
  * country set when the caller has one to give us. The web stores the app
- * locale, which is a bare "de" or the folded "pt-BR", so it lands on the
- * combined sets: never assume Germany or Brazil when the region is unknown.
+ * locale, which is a bare "de", "nl" or the folded "pt-BR", so it lands on the
+ * combined sets: never assume Germany, the Netherlands or Brazil when the
+ * region is unknown.
  */
 export function crisisResourcesForLocale(
   locale: string | null | undefined,
@@ -173,5 +219,9 @@ export function crisisResourcesForLocale(
   // PT_BR_AMBIGUOUS. Any other Portuguese tag (pt, pt-AO, pt-MZ) lands here
   // too, and still gets 112 and the worldwide directory first.
   if (lc === "pt" || lc.startsWith("pt-")) return PT_BR_AMBIGUOUS;
+  if (lc === "nl-nl") return NL;
+  if (lc === "nl-be" || lc === "be") return BE;
+  // The bare "nl" the web stores, and any other Dutch tag: both countries.
+  if (lc === "nl" || lc.startsWith("nl-")) return NL_BE;
   return INTERNATIONAL;
 }

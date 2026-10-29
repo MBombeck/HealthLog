@@ -789,7 +789,10 @@
       "title": "Salva il tuo kit di recupero",
       "body": "Senza copie delle chiavi usate da questo server, i suoi dati non si possono recuperare dopo una reinstallazione. Ci vogliono pochi minuti.",
       "action": "Apri il kit"
-    }
+    },
+    "greetingOnly": "{greeting}.",
+    "welcomeNew": "Ti diamo il benvenuto.",
+    "welcomeNewWithName": "Ti diamo il benvenuto, {name}."
   },
   "measurements": {
     "title": "Misurazioni",
@@ -6237,14 +6240,17 @@
         "password": "Password",
         "totp": "Codice dell’app di autenticazione",
         "passkey": "Passkey",
-        "webauthn": "Chiave di sicurezza"
+        "webauthn": "Chiave di sicurezza",
+        "oidc": "Provider di identità"
       },
       "currentPassword": "Password attuale",
       "authenticatorCode": "Codice dell’app di autenticazione",
       "authenticatorPlaceholder": "Codice a 6 cifre dell’app di autenticazione",
       "verifyAndAdd": "Verifica e aggiungi",
       "factorDescription": "Verifica un metodo di accesso esistente prima di aggiungere un secondo fattore.",
-      "verifyAndContinue": "Verifica e continua"
+      "verifyAndContinue": "Verifica e continua",
+      "oidcHint": "Accedi di nuovo presso il tuo provider di identità e torni subito a questa pagina. Poi ripeti quello che stavi per fare.",
+      "continueToProvider": "Continua all'accesso"
     },
     "passkeyName": "Nome",
     "noPasskeys": "Nessuna passkey registrata.",
@@ -7517,7 +7523,9 @@
       "description": "Questa azione condivide o esporta i tuoi dati sanitari. Conferma che sei tu per continuare.",
       "descriptionChange": "Questo modifica qualcosa che solo tu dovresti poter modificare. Conferma che sei tu per continuare.",
       "signInAgain": "Accedi di nuovo, poi riprova. Il tuo account non ha una password o una passkey da confermare qui.",
-      "failed": "Non ha funzionato. Controlla quanto inserito e riprova."
+      "failed": "Non ha funzionato. Controlla quanto inserito e riprova.",
+      "oidcDone": "Confermato. Per i prossimi cinque minuti puoi procedere senza che ti venga chiesto di nuovo.",
+      "oidcFailed": "Il tuo provider di identità non ha potuto confermare che sei tu. Riprova."
     },
     "passwordTitle": "Password",
     "tokenNameLabel": "Nome del token",
@@ -8105,7 +8113,16 @@
         "undoDeletionBody": "{name} ha chiesto di eliminare questo account, che viene cancellato alla fine del periodo di tolleranza. Annullare mantiene l’account e tutto il suo contenuto com’era. {name} può accedere di nuovo, ma i token API, i link di condivisione e i dispositivi attendibili restano revocati e vanno configurati di nuovo.",
         "undoDeletionBodyGuardian": "Una persona responsabile ha eliminato il profilo gestito {name}, che viene cancellato alla fine del periodo di tolleranza. Annullare mantiene il profilo e tutto il suo contenuto com’era, e le persone responsabili possono di nuovo accedervi. I suoi link di condivisione e token restano revocati e vanno configurati di nuovo.",
         "undoDeletionDone": "Eliminazione di {name} annullata",
-        "undoDeletionFailed": "Impossibile annullare l’eliminazione"
+        "undoDeletionFailed": "Impossibile annullare l’eliminazione",
+        "undoDeletionBodyAdmin": "Un amministratore ha eliminato l’account {name}, che viene cancellato alla fine del periodo di tolleranza. Annullare mantiene l’account e tutto il suo contenuto com’era. {name} può accedere di nuovo, ma i token API, i link di condivisione e i dispositivi attendibili restano revocati e vanno configurati di nuovo.",
+        "deleteUser": "Elimina account",
+        "deleteUserTitle": "Eliminare l’account {name}?",
+        "deleteUserBodyGrace": "{name} viene disconnesso ovunque subito e non può più accedere. L’account e tutto il suo contenuto vengono cancellati il {date}. Fino ad allora puoi annullare l’eliminazione da qui.",
+        "deleteUserBodyNow": "{name} e tutto il contenuto dell’account vengono cancellati subito. Questo server non ha un periodo di tolleranza, quindi l’eliminazione non si può annullare.",
+        "deleteUserConfirm": "Elimina account",
+        "deleteUserScheduled": "L’account {name} è bloccato e verrà cancellato il {date}",
+        "deleteUserDone": "L’account {name} è stato eliminato",
+        "deleteUserFailed": "Impossibile eliminare l’account"
       },
       "invites": {
         "title": "Inviti",
@@ -11250,6 +11267,12 @@
       },
       "sosVozAmiga": {
         "name": "SOS Voz Amiga (Portogallo, tutti i giorni dalle 15:30 alle 0:30)"
+      },
+      "zelfmoordpreventie113": {
+        "name": "113 Zelfmoordpreventie (Paesi Bassi, 24 ore su 24, gratuito, anonimo, anche in chat)"
+      },
+      "zelfmoordlijn1813": {
+        "name": "Zelfmoordlijn 1813 (Belgio, 24 ore su 24, gratuito, anonimo)"
       }
     },
     "instrumentDescription": {

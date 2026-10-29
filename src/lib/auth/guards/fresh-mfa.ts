@@ -3,6 +3,7 @@ import { annotate, getEvent } from "@/lib/logging/context";
 import { getSession } from "@/lib/auth/session";
 import {
   hasSecondFactorEnrolled,
+  isFirstFactorOnlyProof,
   recentProofMethods,
 } from "@/lib/auth/second-factor";
 import { meterAccountWrite } from "@/lib/auth/write-meter";
@@ -80,9 +81,10 @@ export async function requireFreshMfa(
     // does, so the browser can open the re-proof dialog instead of printing a
     // sentence with nowhere to act on it. Only the possession proofs: a
     // `POST /api/auth/reproof` with one of them stamps `mfaVerifiedAt`, a
-    // password stamps `reproofAt` only and would leave this gate shut.
+    // password or a provider sign-in stamps `reproofAt` only and would leave
+    // this gate shut.
     const methods = (await recentProofMethods(sessionData.user)).filter(
-      (method) => method !== "password",
+      (method) => !isFirstFactorOnlyProof(method),
     );
     annotate({ meta: { step_up_methods: methods.join(",") } });
     throw new StepUpRequiredError(

@@ -17,6 +17,7 @@ import { sanitiseZodIssues, type SanitisedZodIssue } from "@/lib/api-response";
 import { checkProfileEmailRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { z } from "zod/v4";
+import { locales } from "@/lib/i18n/config";
 import {
   REPROOF_FAILED_CODE,
   REPROOF_REQUIRED_CODE,
@@ -26,9 +27,11 @@ import {
 const extendedProfileSchema = profileSchema.extend({
   // Trimmed first; "" (or only spaces) clears the name to null below.
   displayName: optionalDisplayNameSchema.nullable().optional(),
+  // Every language the app ships: the stored language is what background
+  // work (the Coach nudge, the notification texts) writes in.
   locale: z
-    .enum(["de", "en"], {
-      error: "Locale must be de or en.",
+    .enum(locales, {
+      error: "Locale must be one of the languages the app ships.",
     })
     .nullable()
     .optional(),

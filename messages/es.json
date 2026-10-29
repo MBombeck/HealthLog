@@ -789,7 +789,10 @@
       "title": "Guarda tu kit de recuperación",
       "body": "Sin copias de las claves que usa este servidor, sus datos no se pueden recuperar tras una reinstalación. Es cuestión de unos minutos.",
       "action": "Abrir el kit"
-    }
+    },
+    "greetingOnly": "{greeting}.",
+    "welcomeNew": "Te damos la bienvenida.",
+    "welcomeNewWithName": "Te damos la bienvenida, {name}."
   },
   "measurements": {
     "title": "Mediciones",
@@ -6237,14 +6240,17 @@
         "password": "Contraseña",
         "totp": "Código del autenticador",
         "passkey": "Clave de acceso",
-        "webauthn": "Llave de seguridad"
+        "webauthn": "Llave de seguridad",
+        "oidc": "Proveedor de identidad"
       },
       "currentPassword": "Contraseña actual",
       "authenticatorCode": "Código del autenticador",
       "authenticatorPlaceholder": "Código de seis dígitos del autenticador",
       "verifyAndAdd": "Verificar y añadir",
       "factorDescription": "Verifica un método de inicio de sesión existente antes de añadir un segundo factor.",
-      "verifyAndContinue": "Verificar y continuar"
+      "verifyAndContinue": "Verificar y continuar",
+      "oidcHint": "Vuelves a iniciar sesión en tu proveedor de identidad y regresas directamente a esta página. Después repite lo que ibas a hacer.",
+      "continueToProvider": "Continuar al inicio de sesión"
     },
     "passkeyName": "Nombre",
     "noPasskeys": "No hay claves de acceso registradas.",
@@ -7517,7 +7523,9 @@
       "description": "Esto comparte o exporta tus datos de salud. Confirma que eres tú para continuar.",
       "descriptionChange": "Esto cambia algo que solo tú deberías poder cambiar. Confirma que eres tú para continuar.",
       "signInAgain": "Vuelve a iniciar sesión y inténtalo de nuevo. Tu cuenta no tiene contraseña ni llave de acceso que confirmar aquí.",
-      "failed": "No ha funcionado. Revisa lo que has introducido e inténtalo de nuevo."
+      "failed": "No ha funcionado. Revisa lo que has introducido e inténtalo de nuevo.",
+      "oidcDone": "Confirmado. Durante los próximos cinco minutos puedes continuar sin que se te vuelva a preguntar.",
+      "oidcFailed": "Tu proveedor de identidad no pudo confirmar que eres tú. Inténtalo de nuevo."
     },
     "passwordTitle": "Contraseña",
     "tokenNameLabel": "Nombre del token",
@@ -8105,7 +8113,16 @@
         "undoDeletionBody": "{name} pidió eliminar esta cuenta, y se borra cuando termina el plazo de gracia. Deshacerlo conserva la cuenta y todo su contenido tal como estaba. {name} puede volver a iniciar sesión, pero los tokens de API, los enlaces compartidos y los dispositivos de confianza siguen revocados y hay que configurarlos de nuevo.",
         "undoDeletionBodyGuardian": "Una persona responsable eliminó el perfil gestionado {name}, y se borra cuando termina el plazo de gracia. Deshacerlo conserva el perfil y todo su contenido tal como estaba, y las personas responsables vuelven a tener acceso. Sus enlaces compartidos y tokens siguen revocados y hay que configurarlos de nuevo.",
         "undoDeletionDone": "Eliminación de {name} deshecha",
-        "undoDeletionFailed": "No se pudo deshacer la eliminación"
+        "undoDeletionFailed": "No se pudo deshacer la eliminación",
+        "undoDeletionBodyAdmin": "Un administrador eliminó la cuenta {name}, y se borra cuando termina el plazo de gracia. Deshacerlo conserva la cuenta y todo su contenido tal como estaba. {name} puede volver a iniciar sesión, pero los tokens de API, los enlaces compartidos y los dispositivos de confianza siguen revocados y hay que configurarlos de nuevo.",
+        "deleteUser": "Eliminar cuenta",
+        "deleteUserTitle": "¿Eliminar la cuenta {name}?",
+        "deleteUserBodyGrace": "{name} cierra sesión en todas partes al instante y ya no puede iniciar sesión. La cuenta y todo su contenido se borran el {date}. Hasta entonces puedes deshacer la eliminación aquí.",
+        "deleteUserBodyNow": "{name} y todo el contenido de la cuenta se borran de inmediato. Este servidor no tiene plazo de gracia, así que la eliminación no se puede deshacer.",
+        "deleteUserConfirm": "Eliminar cuenta",
+        "deleteUserScheduled": "La cuenta {name} está bloqueada y se borrará el {date}",
+        "deleteUserDone": "Se eliminó la cuenta {name}",
+        "deleteUserFailed": "No se pudo eliminar la cuenta"
       },
       "invites": {
         "title": "Invitaciones",
@@ -11250,6 +11267,12 @@
       },
       "sosVozAmiga": {
         "name": "SOS Voz Amiga (Portugal, todos los días de 15:30 a 0:30)"
+      },
+      "zelfmoordpreventie113": {
+        "name": "113 Zelfmoordpreventie (Países Bajos, 24 horas, gratuito, anónimo, también por chat)"
+      },
+      "zelfmoordlijn1813": {
+        "name": "Zelfmoordlijn 1813 (Bélgica, 24 horas, gratuito, anónimo)"
       }
     },
     "instrumentDescription": {

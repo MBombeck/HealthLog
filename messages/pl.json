@@ -789,7 +789,10 @@
       "title": "Zapisz zestaw odzyskiwania",
       "body": "Bez kopii kluczy, których używa ten serwer, jego danych nie da się odzyskać po ponownej instalacji. To zajmie kilka minut.",
       "action": "Otwórz zestaw"
-    }
+    },
+    "greetingOnly": "{greeting}.",
+    "welcomeNew": "Witaj.",
+    "welcomeNewWithName": "Witaj, {name}."
   },
   "measurements": {
     "title": "Pomiary",
@@ -6237,14 +6240,17 @@
         "password": "Hasło",
         "totp": "Kod z aplikacji uwierzytelniającej",
         "passkey": "Klucz dostępu",
-        "webauthn": "Klucz bezpieczeństwa"
+        "webauthn": "Klucz bezpieczeństwa",
+        "oidc": "Dostawca tożsamości"
       },
       "currentPassword": "Aktualne hasło",
       "authenticatorCode": "Kod z aplikacji uwierzytelniającej",
       "authenticatorPlaceholder": "6-cyfrowy kod z aplikacji uwierzytelniającej",
       "verifyAndAdd": "Zweryfikuj i dodaj",
       "factorDescription": "Potwierdź istniejącą metodę logowania, zanim dodasz drugi składnik.",
-      "verifyAndContinue": "Potwierdź i kontynuuj"
+      "verifyAndContinue": "Potwierdź i kontynuuj",
+      "oidcHint": "Zalogujesz się jeszcze raz u swojego dostawcy tożsamości i wrócisz od razu na tę stronę. Potem powtórz to, co chcesz zrobić.",
+      "continueToProvider": "Przejdź do logowania"
     },
     "passkeyName": "Nazwa",
     "noPasskeys": "Brak zarejestrowanych kluczy dostępu.",
@@ -7517,7 +7523,9 @@
       "description": "Ta czynność udostępnia lub eksportuje Twoje dane zdrowotne. Potwierdź, że to Ty, aby kontynuować.",
       "descriptionChange": "To zmienia coś, co tylko Ty powinieneś móc zmienić. Potwierdź, że to Ty, aby kontynuować.",
       "signInAgain": "Zaloguj się ponownie, a potem spróbuj jeszcze raz. Twoje konto nie ma hasła ani klucza dostępu do potwierdzenia tutaj.",
-      "failed": "To się nie udało. Sprawdź wprowadzone dane i spróbuj ponownie."
+      "failed": "To się nie udało. Sprawdź wprowadzone dane i spróbuj ponownie.",
+      "oidcDone": "Potwierdzono. Przez następne pięć minut możesz kontynuować bez ponownego pytania.",
+      "oidcFailed": "Twój dostawca tożsamości nie mógł potwierdzić, że to Ty. Spróbuj ponownie."
     },
     "passwordTitle": "Hasło",
     "tokenNameLabel": "Nazwa tokena",
@@ -8105,7 +8113,16 @@
         "undoDeletionBody": "{name} poprosił o usunięcie tego konta; zostanie ono usunięte po upływie okresu karencji. Cofnięcie zachowuje konto i całą jego zawartość bez zmian. {name} może znów się zalogować, ale tokeny API, linki udostępniania i zaufane urządzenia pozostają unieważnione i trzeba je skonfigurować od nowa.",
         "undoDeletionBodyGuardian": "Osoba opiekująca się profilem usunęła profil zarządzany {name}; zostanie on usunięty po upływie okresu karencji. Cofnięcie zachowuje profil i całą jego zawartość bez zmian, a osoby opiekujące się nim znów mają do niego dostęp. Jego linki udostępniania i tokeny pozostają unieważnione i trzeba je skonfigurować od nowa.",
         "undoDeletionDone": "Cofnięto usunięcie {name}",
-        "undoDeletionFailed": "Nie udało się cofnąć usunięcia"
+        "undoDeletionFailed": "Nie udało się cofnąć usunięcia",
+        "undoDeletionBodyAdmin": "Administrator usunął konto {name}; zostanie ono usunięte po upływie okresu karencji. Cofnięcie zachowuje konto i całą jego zawartość bez zmian. {name} może znów się zalogować, ale tokeny API, linki udostępniania i zaufane urządzenia pozostają unieważnione i trzeba je skonfigurować od nowa.",
+        "deleteUser": "Usuń konto",
+        "deleteUserTitle": "Usunąć konto {name}?",
+        "deleteUserBodyGrace": "{name} zostanie od razu wszędzie wylogowany i nie będzie mógł się już zalogować. Konto i cała jego zawartość zostaną usunięte {date}. Do tego czasu możesz tutaj cofnąć usunięcie.",
+        "deleteUserBodyNow": "{name} i cała zawartość konta zostaną usunięte od razu. Ten serwer nie ma okresu karencji, więc usunięcia nie da się cofnąć.",
+        "deleteUserConfirm": "Usuń konto",
+        "deleteUserScheduled": "Konto {name} jest zablokowane i zostanie usunięte {date}",
+        "deleteUserDone": "Konto {name} zostało usunięte",
+        "deleteUserFailed": "Nie udało się usunąć konta"
       },
       "invites": {
         "title": "Zaproszenia",
@@ -11250,6 +11267,12 @@
       },
       "sosVozAmiga": {
         "name": "SOS Voz Amiga (Portugalia, codziennie od 15:30 do 0:30)"
+      },
+      "zelfmoordpreventie113": {
+        "name": "113 Zelfmoordpreventie (Holandia, całą dobę, bezpłatnie, anonimowo, także przez czat)"
+      },
+      "zelfmoordlijn1813": {
+        "name": "Zelfmoordlijn 1813 (Belgia, całą dobę, bezpłatnie, anonimowo)"
       }
     },
     "instrumentDescription": {

@@ -295,7 +295,7 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
   "/api/admin/support-report": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/tokens": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/users": { kind: "adminConsole", methods: ["GET"] },
-  "/api/admin/users/{id}": { kind: "adminConsole", methods: ["PUT"] },
+  "/api/admin/users/{id}": { kind: "adminConsole", methods: ["DELETE", "PUT"] },
   "/api/admin/users/{id}/force-logout": {
     kind: "adminConsole",
     methods: ["POST"],
@@ -308,6 +308,10 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
     kind: "adminConsole",
     methods: ["POST"],
   },
+  // #1296 — the identity-provider re-proof start. A top-level navigation from
+  // the web's re-proof dialog that ends at the provider's sign-in page; the
+  // native client never re-proves this way (Bearer has its own step-up).
+  "/api/auth/oidc/reproof": { kind: "browserHandoff", methods: ["GET"] },
   "/api/fitbit/connect": { kind: "browserHandoff", methods: ["GET"] },
   "/api/google-health/connect": { kind: "browserHandoff", methods: ["GET"] },
   // `/api/nightscout/connect` sat here as a `browserHandoff` and is published

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { isOidcConfigured } from "@/lib/auth/oidc";
 
 /**
  * Does this account have a SECOND FACTOR at all?
@@ -40,11 +41,25 @@ export async function hasSecondFactorEnrolled(user: {
 }
 
 /**
- * A proof the recent-proof gate can ask for. `password` and `passkey` on an
- * account without a second factor; `totp`, `webauthn` and `passkey` on one
- * with a second factor, where a password alone has never been enough.
+ * A proof the recent-proof gate can ask for. `password`, `oidc` and `passkey`
+ * on an account without a second factor; `totp`, `webauthn` and `passkey` on
+ * one with a second factor, where a password alone has never been enough.
+ *
+ * `oidc` is a fresh sign-in at the account's linked identity provider
+ * (`GET /api/auth/oidc/reproof`), not a body proof: it stamps
+ * `Session.reproofAt` exactly as a password does, and like a password it never
+ * stands in for a second factor.
  */
-export type RecentProofMethod = "password" | "totp" | "webauthn" | "passkey";
+export type RecentProofMethod =
+  "password" | "oidc" | "totp" | "webauthn" | "passkey";
+
+/**
+ * The proofs that stamp only `Session.reproofAt` and so never clear a gate that
+ * asks for a second factor (`requireFreshMfa`).
+ */
+export function isFirstFactorOnlyProof(method: RecentProofMethod): boolean {
+  return method === "password" || method === "oidc";
+}
 
 /**
  * The proofs that would satisfy `assertRecentCookieProof` for this
@@ -63,15 +78,21 @@ export async function recentProofMethods(
     prisma.passkey.count({ where: { userId: user.id } }),
     prisma.user.findUnique({
       where: { id: user.id },
-      select: { passwordHash: true },
+      select: { passwordHash: true, oidcIssuer: true, oidcSub: true },
     }),
   ]);
   const methods: RecentProofMethod[] = [];
   if (hasSecond) {
     if (user.totpConfirmedAt) methods.push("totp");
     if (keys > 0) methods.push("webauthn");
-  } else if (credential?.passwordHash) {
-    methods.push("password");
+  } else {
+    if (credential?.passwordHash) methods.push("password");
+    // A linked identity is only a way to confirm while the instance still
+    // talks to a provider: with the provider group unset the round trip has
+    // nowhere to go.
+    if (credential?.oidcIssuer && credential.oidcSub && isOidcConfigured()) {
+      methods.push("oidc");
+    }
   }
   if (passkeys > 0) methods.push("passkey");
   return methods;
