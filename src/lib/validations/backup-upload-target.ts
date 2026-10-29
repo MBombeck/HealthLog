@@ -18,6 +18,10 @@ import { accountUsernameSchema } from "@/lib/validations/auth";
 export const BACKUP_OWNER_MISSING_CODE = "backup.owner.missing";
 /** The upload's refusal when a target was chosen for a file whose account exists. */
 export const BACKUP_OWNER_EXISTS_CODE = "backup.owner.exists";
+/** The typed username does not match the chosen account. */
+export const BACKUP_TARGET_UNCONFIRMED_CODE = "backup.target.unconfirmed";
+/** The username asked for a new account is taken. */
+export const BACKUP_TARGET_USERNAME_TAKEN_CODE = "backup.target.username_taken";
 
 export const backupUploadTargetSchema = z.discriminatedUnion("into", [
   z

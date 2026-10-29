@@ -125,6 +125,14 @@ export async function checkRestoreTarget(
   return { ok: true, target };
 }
 
+/** The wire code of each refusal. */
+export const BACKUP_TARGET_REFUSAL_CODES = {
+  not_found: "backup.target.not_found",
+  managed_profile: "backup.target.managed_profile",
+  pending_deletion: "backup.target.pending_deletion",
+  holds_records: "backup.target.holds_records",
+} as const satisfies Record<RestoreTargetRefusal, string>;
+
 /** The status and stable code each refusal answers with. */
 export const RESTORE_TARGET_REFUSALS: Readonly<
   Record<
@@ -134,24 +142,24 @@ export const RESTORE_TARGET_REFUSALS: Readonly<
 > = {
   not_found: {
     status: 404,
-    code: "backup.target.not_found",
+    code: BACKUP_TARGET_REFUSAL_CODES.not_found,
     message: "The chosen account does not exist.",
   },
   managed_profile: {
     status: 409,
-    code: "backup.target.managed_profile",
+    code: BACKUP_TARGET_REFUSAL_CODES.managed_profile,
     message:
       "The chosen account is a managed profile. Its Guardians run it, so a copy cannot be restored into it.",
   },
   pending_deletion: {
     status: 409,
-    code: "backup.target.pending_deletion",
+    code: BACKUP_TARGET_REFUSAL_CODES.pending_deletion,
     message:
       "The chosen account is pending deletion. Undo the deletion first, or choose another account.",
   },
   holds_records: {
     status: 409,
-    code: "backup.target.holds_records",
+    code: BACKUP_TARGET_REFUSAL_CODES.holds_records,
     message:
       "The chosen account already holds records, and a restore replaces them rather than adding to them. Choose an empty account or create a new one.",
   },

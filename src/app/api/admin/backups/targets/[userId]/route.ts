@@ -21,7 +21,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
-const paramsSchema = z.object({ userId: z.string().min(1).max(64) });
+const paramsSchema = z.object({ userId: z.string().min(1).max(64) }).strict();
 
 export const GET = apiHandler(
   async (

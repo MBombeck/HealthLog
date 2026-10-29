@@ -96,7 +96,10 @@ import type { BackupPayload } from "@/lib/validations/backup";
 import {
   BACKUP_OWNER_EXISTS_CODE,
   BACKUP_OWNER_MISSING_CODE,
+  BACKUP_TARGET_UNCONFIRMED_CODE,
+  BACKUP_TARGET_USERNAME_TAKEN_CODE,
   parseBackupUploadTarget,
+  type BackupUploadTarget,
 } from "@/lib/validations/backup-upload-target";
 import {
   isCompatibleSchemaVersion,
@@ -176,6 +179,176 @@ async function* decodedBytes(
   }
 }
 
+/** A file's read failure as the refusal the operator sees. */
+function schemaRefusal(issues: Array<{ path: string; message: string }>) {
+  return new UploadRefused(
+    422,
+    "Backup payload failed schema validation",
+    { reason: "schema_invalid", issues },
+    { issues },
+  );
+}
+
+/**
+ * Read the file through the one streamed reader every backup reader shares
+ * (`streamed-backup.ts`): the bulk sections an element at a time and the
+ * documents without their stored bytes, so a document vault of hundreds of
+ * megabytes is never in memory at once (#1239). It checks each measurement
+ * and the canonical v2 id rule as it goes, and gathers the key ids the file's
+ * inner ciphertext needs.
+ */
+async function readUploadedFile(
+  source: () => AsyncIterable<Uint8Array>,
+): Promise<StreamedBackup> {
+  try {
+    return await readStreamedBackup(source);
+  } catch (err) {
+    if (err instanceof BackupJsonError) {
+      throw new UploadRefused(422, "Uploaded file is not valid JSON", {
+        reason: "invalid_json",
+        message: err.message,
+      });
+    }
+    if (err instanceof BackupOwnerRewriteError) {
+      throw schemaRefusal([{ path: "userId", message: err.message }]);
+    }
+    if (err instanceof StreamedBackupInvalidError) {
+      throw schemaRefusal([{ path: err.path, message: err.message }]);
+    }
+    throw err;
+  }
+}
+
+/** The file against the backup schema, and its version against this server. */
+async function parseUploadedPayload(raw: unknown): Promise<BackupPayload> {
+  // Loaded on first use, not at import (see `backup-summary.ts`).
+  const { backupPayloadSchema } = await import("@/lib/validations/backup");
+  let payload: BackupPayload;
+  try {
+    payload = backupPayloadSchema.parse(raw);
+  } catch (err) {
+    throw schemaRefusal(
+      err instanceof ZodError
+        ? err.issues.slice(0, 10).map((i) => ({
+            path: i.path.join("."),
+            message: i.message,
+          }))
+        : [],
+    );
+  }
+  if (!isCompatibleSchemaVersion(payload.schemaVersion)) {
+    throw new UploadRefused(
+      422,
+      `Backup schema version '${payload.schemaVersion}' is not supported by this server`,
+      {
+        reason: "incompatible_schema_version",
+        schemaVersion: payload.schemaVersion,
+      },
+    );
+  }
+  return payload;
+}
+
+type ChosenTarget = { id: string; username: string; created: boolean };
+
+const usernameTaken = () =>
+  new UploadRefused(
+    409,
+    "That username is already taken.",
+    { reason: "target_username_taken" },
+    { errorCode: BACKUP_TARGET_USERNAME_TAKEN_CODE },
+  );
+
+/**
+ * The target the query names, checked before a byte of the file is read, so
+ * a target that will be refused costs no upload. An existing account is
+ * checked whole and confirmed by its username; a new one only for its
+ * username, since it is created once the request is otherwise admissible.
+ */
+async function checkTargetBeforeRead(
+  choice: BackupUploadTarget | null,
+): Promise<ChosenTarget | null> {
+  if (choice?.into === "existing") {
+    const verdict = await checkRestoreTarget(prisma, choice.userId);
+    if (!verdict.ok) throw targetRefused(verdict, choice.userId);
+    // The restore writes into this account, so the operator names it.
+    if (choice.confirm.trim() !== verdict.target.username) {
+      throw new UploadRefused(
+        422,
+        "Type the chosen account's username to confirm. Nothing was stored.",
+        { reason: "target_unconfirmed", targetUserId: choice.userId },
+        { errorCode: BACKUP_TARGET_UNCONFIRMED_CODE },
+      );
+    }
+    return { ...verdict.target, created: false };
+  }
+  if (choice?.into === "new") {
+    const taken = await prisma.user.findUnique({
+      where: { username: choice.username },
+      select: { id: true },
+    });
+    if (taken) throw usernameTaken();
+  }
+  return null;
+}
+
+/**
+ * The account made for a copy. Created before the file is read, because the
+ * file is rewritten to its id on the way in, and deleted again when nothing
+ * is stored. No password, no email: nobody can sign into it until an admin
+ * sets its first password (Admin, Users, Reset password).
+ */
+async function createTargetAccount(username: string): Promise<ChosenTarget> {
+  try {
+    const account = await prisma.user.create({
+      data: { username, role: "USER" },
+      select: { id: true, username: true },
+    });
+    return { ...account, created: true };
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2002"
+    ) {
+      throw usernameTaken();
+    }
+    throw err;
+  }
+}
+
+/**
+ * Whose copy a file sent with a target becomes, once it has been read. The
+ * file now names the chosen account; the account it named before has to be
+ * gone, because the copy of an account that is still here restores into that
+ * account and never into another one. An existing target is checked again:
+ * the file took a while to read, and the account may have changed meanwhile.
+ */
+async function ownerOfRetargetedFile(
+  chosen: ChosenTarget,
+  rewrite: BackupOwnerRewrite | null,
+): Promise<{ id: string; username: string }> {
+  const declared = rewrite?.declaredOwner() ?? null;
+  const declaredOwner = declared
+    ? await prisma.user.findUnique({
+        where: { id: declared },
+        select: { id: true },
+      })
+    : null;
+  if (!declared || declaredOwner) {
+    throw new UploadRefused(
+      409,
+      "This file belongs to an account on this server and restores into that account. Upload it without choosing an account.",
+      { reason: "owner_exists", ownerId: declared },
+      { errorCode: BACKUP_OWNER_EXISTS_CODE },
+    );
+  }
+  if (!chosen.created) {
+    const again = await checkRestoreTarget(prisma, chosen.id);
+    if (!again.ok) throw targetRefused(again, chosen.id);
+  }
+  return { id: chosen.id, username: chosen.username };
+}
+
 /**
  * Delete the account an upload created for its copy, when nothing was stored.
  * It holds nothing and nobody can have signed into it (no password, no email),
@@ -221,10 +394,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
       ipAddress,
       details: { reason, ...extra },
     });
+  const refuse = async (err: UploadRefused) => {
+    await denied(err.details.reason as string, err.details);
+    return apiError(err.answer, err.status, err.meta);
+  };
 
   // The account the copy goes into when the file's own account is gone.
-  // Decided before a byte of the file is read, so a target that will be
-  // refused costs no upload; checked again once the file has been read.
   const parsedTarget = parseBackupUploadTarget(
     new URL(request.url).searchParams,
   );
@@ -233,35 +408,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
     return returnAllZodIssues(parsedTarget.error);
   }
   const choice = parsedTarget.data;
-  let target: { id: string; username: string; created: boolean } | null = null;
-  if (choice?.into === "existing") {
-    const verdict = await checkRestoreTarget(prisma, choice.userId);
-    if (!verdict.ok) {
-      const refusal = targetRefused(verdict, choice.userId);
-      await denied(refusal.details.reason as string, refusal.details);
-      return apiError(refusal.answer, refusal.status, refusal.meta);
-    }
-    // The restore writes into this account, so the operator names it.
-    if (choice.confirm.trim() !== verdict.target.username) {
-      await denied("target_unconfirmed", { targetUserId: choice.userId });
-      return apiError(
-        "Type the chosen account's username to confirm. Nothing was stored.",
-        422,
-        { errorCode: "backup.target.unconfirmed" },
-      );
-    }
-    target = { ...verdict.target, created: false };
-  } else if (choice?.into === "new") {
-    const taken = await prisma.user.findUnique({
-      where: { username: choice.username },
-      select: { id: true },
-    });
-    if (taken) {
-      await denied("target_username_taken");
-      return apiError("That username is already taken.", 409, {
-        errorCode: "backup.target.username_taken",
-      });
-    }
+  let target: ChosenTarget | null;
+  try {
+    target = await checkTargetBeforeRead(choice);
+  } catch (err) {
+    if (err instanceof UploadRefused) return refuse(err);
+    throw err;
   }
   annotate({ meta: { backup_upload_into: choice?.into ?? "owner" } });
 
@@ -338,26 +490,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
   let created: { id: string };
   let rewrite: BackupOwnerRewrite | null = null;
   if (choice?.into === "new") {
-    // Created before the file is read, because the file is rewritten to the
-    // account's id on its way in; deleted again below when nothing is
-    // stored. No password, no email: the account cannot be signed into
-    // until an admin sets its first password (Admin, Users).
     try {
-      const account = await prisma.user.create({
-        data: { username: choice.username, role: "USER" },
-        select: { id: true, username: true },
-      });
-      target = { ...account, created: true };
+      target = await createTargetAccount(choice.username);
     } catch (err) {
-      if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        err.code === "P2002"
-      ) {
-        await denied("target_username_taken");
-        return apiError("That username is already taken.", 409, {
-          errorCode: "backup.target.username_taken",
-        });
-      }
+      if (err instanceof UploadRefused) return refuse(err);
       throw err;
     }
   }
@@ -391,75 +527,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
             yield chunk;
           }
         }
-        // Read through the one streamed reader every backup reader shares
-        // (`streamed-backup.ts`): the bulk sections an element at a time and
-        // the documents without their stored bytes, so a document vault of
-        // hundreds of megabytes is never in memory at once (#1239). It checks
-        // each measurement and the canonical v2 id rule as it goes, and
-        // gathers the key ids the file's inner ciphertext needs.
-        let streamed: StreamedBackup;
-        try {
-          streamed = await readStreamedBackup(storedAsRead);
-        } catch (err) {
-          if (err instanceof BackupJsonError) {
-            throw new UploadRefused(422, "Uploaded file is not valid JSON", {
-              reason: "invalid_json",
-              message: err.message,
-            });
-          }
-          if (err instanceof BackupOwnerRewriteError) {
-            const issues = [{ path: "userId", message: err.message }];
-            throw new UploadRefused(
-              422,
-              "Backup payload failed schema validation",
-              { reason: "schema_invalid", issues },
-              { issues },
-            );
-          }
-          if (err instanceof StreamedBackupInvalidError) {
-            const issues = [{ path: err.path, message: err.message }];
-            throw new UploadRefused(
-              422,
-              "Backup payload failed schema validation",
-              { reason: "schema_invalid", issues },
-              { issues },
-            );
-          }
-          throw err;
-        }
+        const streamed = await readUploadedFile(storedAsRead);
         measurementCount = streamed.measurementCount;
-
-        // Loaded on first use, not at import (see `backup-summary.ts`).
-        const { backupPayloadSchema } =
-          await import("@/lib/validations/backup");
-        try {
-          payload = backupPayloadSchema.parse(streamed.raw);
-        } catch (err) {
-          const issues =
-            err instanceof ZodError
-              ? err.issues.slice(0, 10).map((i) => ({
-                  path: i.path.join("."),
-                  message: i.message,
-                }))
-              : [];
-          throw new UploadRefused(
-            422,
-            "Backup payload failed schema validation",
-            { reason: "schema_invalid", issues },
-            { issues },
-          );
-        }
-
-        if (!isCompatibleSchemaVersion(payload.schemaVersion)) {
-          throw new UploadRefused(
-            422,
-            `Backup schema version '${payload.schemaVersion}' is not supported by this server`,
-            {
-              reason: "incompatible_schema_version",
-              schemaVersion: payload.schemaVersion,
-            },
-          );
-        }
+        payload = await parseUploadedPayload(streamed.raw);
 
         // A file whose inner ciphertext needs a key this host does not have
         // can be stored but never restored: the restore would refuse it, or
@@ -483,30 +553,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
         }
 
         if (chosen) {
-          // The file now names the chosen account. The account it named
-          // before has to be gone: a copy of an account that is still here
-          // restores into that account, never into another one.
-          const declared = rewrite?.declaredOwner() ?? null;
-          const declaredOwner = declared
-            ? await prisma.user.findUnique({
-                where: { id: declared },
-                select: { id: true },
-              })
-            : null;
-          if (!declared || declaredOwner) {
-            throw new UploadRefused(
-              409,
-              "This file belongs to an account on this server and restores into that account. Upload it without choosing an account.",
-              { reason: "owner_exists", ownerId: declared },
-              { errorCode: BACKUP_OWNER_EXISTS_CODE },
-            );
-          }
-          // The file took a while to read; the account may have changed.
-          if (!chosen.created) {
-            const again = await checkRestoreTarget(prisma, chosen.id);
-            if (!again.ok) throw targetRefused(again, chosen.id);
-          }
-          owner = { id: chosen.id, username: chosen.username };
+          owner = await ownerOfRetargetedFile(chosen, rewrite);
           return;
         }
 
@@ -534,10 +581,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   } catch (err) {
     // Nothing was stored, so the account made for the copy goes again.
     if (chosen?.created) await discardCreatedAccount(chosen.id);
-    if (err instanceof UploadRefused) {
-      await denied(err.details.reason as string, err.details);
-      return apiError(err.answer, err.status, err.meta);
-    }
+    if (err instanceof UploadRefused) return refuse(err);
     // The file was fine; its encrypted copy is larger than the stored-copy
     // limit (`BACKUP_MAX_STORED_MB`). That is the operator's to act on, with
     // the numbers and the setting in the message, and not a server fault for
@@ -581,8 +625,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       backupId: created.id,
       ownerId: storedOwner?.id,
       ownerUsername: storedOwner?.username,
-      // Set when the file's own account was gone and the copy was pointed at
-      // this one. The erased account's id is not recorded.
+      // Set when the copy went into a chosen account; the erased id is not.
       ...(chosen ? { into: chosen.created ? "new" : "existing" } : {}),
       type: uploadType,
       schemaVersion: summary.schemaVersion,
