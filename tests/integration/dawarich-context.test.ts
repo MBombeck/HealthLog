@@ -304,7 +304,12 @@ describe("Dawarich daily values", () => {
       UNION ALL
       SELECT row_to_json(s)::text FROM "integration_statuses" s
     `;
-    const dump = rows.map((r) => r.row).join("\n");
+    // Clock times go first: a timestamp written at :52.52x seconds holds the
+    // latitude's digits and failed the check without any coordinate stored.
+    const dump = rows
+      .map((r) => r.row)
+      .join("\n")
+      .replace(/\d{2}:\d{2}:\d{2}\.\d+/g, "<time>");
     for (const leak of [
       "Home Sweet",
       "Office Tower",

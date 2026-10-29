@@ -305,10 +305,21 @@ describe("buildComparisonSnapshotForUser — output-equivalence to the raw-avera
           ? { _avg: { value: args.where.measuredAt.lte ? 82 : 80 } }
           : { _avg: { value: null } },
     );
-    // Seven-hour nights, stored in minutes.
+    // Seven-hour nights, stored in minutes. Each at midday UTC of its own
+    // calendar day: `now - n * DAY` keeps the wall-clock hour only between
+    // two clock changes, and run late in the evening across one, two of the
+    // readings fell into the same night.
+    const today = new Date();
     measurementFindMany.mockResolvedValue(
       Array.from({ length: 5 }, (_, i) => ({
-        measuredAt: new Date(Date.now() - (i + 2) * DAY),
+        measuredAt: new Date(
+          Date.UTC(
+            today.getUTCFullYear(),
+            today.getUTCMonth(),
+            today.getUTCDate() - (i + 2),
+            12,
+          ),
+        ),
         value: 420,
         sleepStage: null,
         source: "APPLE_HEALTH",
