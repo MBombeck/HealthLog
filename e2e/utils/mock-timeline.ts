@@ -518,6 +518,98 @@ export function fullTimeline(today: string) {
   };
 }
 
+/**
+ * Two lab markers of the full record (#1299): ferritin read a few times over
+ * the years against a 30 to 400 range, one reading below it and one read
+ * from a report, and HbA1c read once. Only what `values` names is sent as a
+ * line; the menu offers both.
+ */
+export const LAB_MARKERS = [
+  {
+    key: "lab:bm-ferritin",
+    biomarkerId: "bm-ferritin",
+    name: "Ferritin",
+    panel: "Eisen",
+    unit: "ng/mL",
+  },
+  {
+    key: "lab:bm-hba1c",
+    biomarkerId: "bm-hba1c",
+    name: "HbA1c",
+    panel: "Zucker",
+    unit: "%",
+  },
+];
+
+function labPoint(
+  id: string,
+  date: string,
+  value: number,
+  rangeStatus: "below" | "in-range" | "above" | "unknown",
+  report: { id: string; title: string } | null = null,
+) {
+  const ranged = rangeStatus !== "unknown";
+  return {
+    id,
+    date,
+    value,
+    sourceValue: null,
+    rangeStatus,
+    referenceLow: ranged ? 30 : null,
+    referenceHigh: ranged ? 400 : null,
+    report: report ? { ...report, href: `/documents?doc=${report.id}` } : null,
+  };
+}
+
+export const LAB_LINES = [
+  {
+    ...LAB_MARKERS[0],
+    band: { low: 30, high: 400 },
+    points: [
+      labPoint("fe-1", "2021-03-15", 22, "below", {
+        id: "doc-lab-1",
+        title: "Laborbefund März",
+      }),
+      labPoint("fe-2", "2022-09-20", 64, "in-range"),
+      labPoint("fe-3", "2024-02-12", 118, "in-range"),
+      labPoint("fe-4", "2025-11-04", 96, "in-range"),
+    ],
+    excluded: 0,
+  },
+  {
+    ...LAB_MARKERS[1],
+    band: null,
+    points: [labPoint("a1c-1", "2025-11-04", 5.4, "unknown")],
+    excluded: 0,
+  },
+];
+
+/** The lab days behind the lab lines, as the labs lane names them. */
+function labsLane(keys: readonly string[]) {
+  const days = new Map<string, string[]>();
+  for (const line of LAB_LINES) {
+    if (!keys.includes(line.key)) continue;
+    for (const p of line.points) {
+      days.set(p.date, [...(days.get(p.date) ?? []), line.name]);
+    }
+  }
+  return {
+    key: "labs",
+    items: [...days]
+      .sort(([a], [b]) => (a < b ? -1 : 1))
+      .map(([date, names]) =>
+        item({
+          id: `lab-day:${date}`,
+          kind: "labDay",
+          start: date,
+          label: names.join(", "),
+          sub: String(names.length),
+          href: "/labs",
+        }),
+      ),
+  };
+}
+
 export function readyTimeline(today: string) {
   return {
     zoom: "all",
@@ -838,7 +930,12 @@ export async function mockTimeline(
   page: Page,
   state: "full" | "ready",
   today: string,
-  options: { onlyOld?: boolean; dataFrom?: string } = {},
+  options: {
+    onlyOld?: boolean;
+    dataFrom?: string;
+    /** The record has lab markers to offer and draw (#1299). */
+    labs?: boolean;
+  } = {},
 ): Promise<TimelineMockLog> {
   const log: TimelineMockLog = { timelineQueries: [], lifeEventPosts: [] };
   await page.route(/\/api\/timeline\/readiness(\?|$)/, (route) =>
@@ -848,9 +945,23 @@ export async function mockTimeline(
     const url = new URL(route.request().url());
     log.timelineQueries.push(url.searchParams);
     const body = state === "full" ? fullTimeline(today) : readyTimeline(today);
-    const values = (url.searchParams.get("values") ?? "")
+    const named = (url.searchParams.get("values") ?? "")
       .split(",")
       .filter(Boolean);
+    // A lab marker is a line of its own (`labSeries`), never a mean.
+    const labKeys = named.filter((key) => key.startsWith("lab:"));
+    const values = named.filter((key) => !key.startsWith("lab:"));
+    const labs =
+      state === "full" && options.labs
+        ? {
+            labSeries: LAB_LINES.filter((l) => labKeys.includes(l.key)),
+            availableLabs: LAB_MARKERS,
+            lanes:
+              labKeys.length > 0
+                ? [...body.lanes, labsLane(labKeys)]
+                : body.lanes,
+          }
+        : {};
     const zoom = url.searchParams.get("zoom") ?? "all";
     const from = url.searchParams.get("from");
     const to = url.searchParams.get("to");
@@ -876,6 +987,7 @@ export async function mockTimeline(
         : series(chosen ? from : dataFrom, chosen ? to : today, bucket);
     return json(route, 200, {
       ...body,
+      ...labs,
       zoom,
       bucket,
       ...(chosen
