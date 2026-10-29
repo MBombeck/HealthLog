@@ -150,6 +150,8 @@ function twoMedications(): TimelineResponse {
     standing: [],
     series: [],
     availableSeries: [],
+    labSeries: [],
+    availableLabs: [],
     notable: [],
   };
 }

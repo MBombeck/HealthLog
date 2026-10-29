@@ -512,6 +512,8 @@ export function fullTimeline(today: string) {
     bucket: "quarter" as Bucket,
     series: series("2019-01-01", today, "quarter"),
     availableSeries: FULL_AVAILABLE,
+    labSeries: [],
+    availableLabs: [],
     notable: [{ date: "2026-01-04", kind: "extremeHigh" }],
   };
 }
@@ -637,6 +639,8 @@ export function readyTimeline(today: string) {
       (s) => s.key !== "RESTING_HEART_RATE",
     ),
     availableSeries: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA", "WEIGHT"],
+    labSeries: [],
+    availableLabs: [],
     notable: [],
   };
 }

@@ -34,6 +34,8 @@ function timeline(): TimelineResponse {
     standing: [],
     series: [],
     availableSeries: [],
+    labSeries: [],
+    availableLabs: [],
     notable: [],
   } as unknown as TimelineResponse;
 }

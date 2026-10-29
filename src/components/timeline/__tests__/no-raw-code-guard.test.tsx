@@ -258,6 +258,8 @@ function everyKind(): TimelineResponse {
     standing: [],
     series: [],
     availableSeries: [],
+    labSeries: [],
+    availableLabs: [],
     notable: [],
   };
   // The fixture itself must reach every kind, or the guard proves less.
