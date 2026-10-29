@@ -44,7 +44,7 @@ import { annotate } from "@/lib/logging/context";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
 import { userDayKey } from "@/lib/tz/format";
-import { resolveUserTimezone } from "@/lib/tz/resolver";
+import { DEFAULT_TIMEZONE, resolveUserTimezone } from "@/lib/tz/resolver";
 import type { ObservationFactData } from "@/lib/validations/inbound-documents";
 
 import {
@@ -76,11 +76,25 @@ interface CandidateRow {
 function candidateQuery(limit: number | null): Prisma.Sql {
   // The day comparison runs here as well as in the repair, so a value that
   // really was taken on its confirmation day drops out of the boot check and
-  // the pass converges to an empty set. A zone Postgres does not know is read
-  // as UTC rather than failing the query; the repair re-checks every row in
-  // the zone the app resolves.
+  // the pass converges to an empty set. Both must read the same zone: a
+  // stored zone Postgres does not know falls back the way
+  // `resolveUserTimezone` falls back, to the instance default and then to
+  // `DEFAULT_TIMEZONE`. Reading it as UTC instead kept a value confirmed
+  // near midnight in the candidate set that the repair, in the app's zone,
+  // left alone, so every boot enqueued the job again. The repair still
+  // re-checks every row in the zone the app resolves.
   return Prisma.sql`
-    WITH "known_zones" AS (SELECT "name" FROM pg_timezone_names)
+    WITH "known_zones" AS (SELECT "name" FROM pg_timezone_names),
+    "instance_zone" AS (
+      SELECT COALESCE(
+        (
+          SELECT s."default_user_timezone" FROM "app_settings" s
+          WHERE s."id" = 'singleton'
+            AND s."default_user_timezone" IN (SELECT "name" FROM "known_zones")
+        ),
+        ${DEFAULT_TIMEZONE}
+      ) AS "name"
+    )
     SELECT r."id",
            r."user_id"       AS "userId",
            r."taken_at"      AS "takenAt",
@@ -106,7 +120,8 @@ function candidateQuery(limit: number | null): Prisma.Sql {
           <> to_char(
                (r."taken_at" AT TIME ZONE 'UTC') AT TIME ZONE (
                  CASE WHEN u."timezone" IN (SELECT "name" FROM "known_zones")
-                      THEN u."timezone" ELSE 'UTC' END
+                      THEN u."timezone"
+                      ELSE (SELECT "name" FROM "instance_zone") END
                ),
                'YYYY-MM-DD'
              )
@@ -128,6 +143,13 @@ export interface LabDocumentDateRepairResult {
   updated: number;
   /** Rows left alone: an own date, or already on the document's day. */
   unchanged: number;
+  /**
+   * Rows whose staged fact would not decrypt (a key retired too early, a
+   * damaged row). Skipped: without the fact there is no telling whether the
+   * value carries a date of its own, and one such row must not stop the
+   * repair of every other account.
+   */
+  undecryptable: number;
 }
 
 /** The repair itself, across every account. */
@@ -138,9 +160,16 @@ export async function repairUndatedDocumentLabValues(
   const touchedUsers = new Set<string>();
   let updated = 0;
   let unchanged = 0;
+  let undecryptable = 0;
 
   for (const row of rows) {
-    const data = decryptFactData(row.dataEncrypted) as ObservationFactData;
+    let data: ObservationFactData;
+    try {
+      data = decryptFactData(row.dataEncrypted) as ObservationFactData;
+    } catch {
+      undecryptable += 1;
+      continue;
+    }
     // A value with a date of its own is never touched, whatever its row says.
     if (statedDay(data.effectiveDate ?? null) !== null) {
       unchanged += 1;
@@ -175,7 +204,7 @@ export async function repairUndatedDocumentLabValues(
   }
 
   for (const userId of touchedUsers) invalidateUserHealthScore(userId);
-  return { scanned: rows.length, updated, unchanged };
+  return { scanned: rows.length, updated, unchanged, undecryptable };
 }
 
 /** The queue handler: one run over every account. */
@@ -193,7 +222,7 @@ export async function handleLabDocumentDateRepair(
     }
     workerLog(
       "info",
-      `[lab-document-date-repair] scanned=${result.scanned} updated=${result.updated} unchanged=${result.unchanged}`,
+      `[lab-document-date-repair] scanned=${result.scanned} updated=${result.updated} unchanged=${result.unchanged} undecryptable=${result.undecryptable}`,
     );
     annotate({
       action: { name: "labs.documentDate.repair" },
@@ -203,6 +232,7 @@ export async function handleLabDocumentDateRepair(
       candidates_scanned: result.scanned,
       updated: result.updated,
       unchanged: result.unchanged,
+      undecryptable: result.undecryptable,
     });
   });
 }
