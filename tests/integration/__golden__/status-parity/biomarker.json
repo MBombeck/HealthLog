@@ -237,7 +237,8 @@
           "OUTPUT LANGUAGE: Responda en español (registro peninsular formal — usted). Use un vocabulario sanitario en español natural."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -523,7 +524,8 @@
           "- The marker under assessment is \"LDL Cholesterol\"."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -937,7 +939,8 @@
           "- Der zu beurteilende Marker ist „LDL Cholesterol\"."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -1136,7 +1139,8 @@
           "OUTPUT LANGUAGE: Répondez en français. Utilisez le vouvoiement par défaut ; tutoyez si l'utilisateur tutoie en premier. Utilisez un vocabulaire de santé français naturel."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],

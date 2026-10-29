@@ -472,13 +472,14 @@ describe("a Guardian whose only second factor is the identity provider's", () =>
     advance(10 * MINUTE);
 
     // Nothing to re-prove in place: no password, no passkey, no factor. The
-    // empty list is what makes the web say "sign in again" instead of
-    // offering a password this account does not have.
+    // identity provider is the one way left, so `oidc` is all that is
+    // offered, and the web sends the person through a fresh provider login
+    // instead of asking for a password this account does not have.
     const refused = await totpSetup();
     expect(refused.status).toBe(401);
     expect(await meta(refused)).toMatchObject({
       errorCode: "auth.reproof.required",
-      methods: [],
+      methods: ["oidc"],
     });
 
     // And signing in again is a way through.

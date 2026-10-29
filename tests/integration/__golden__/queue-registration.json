@@ -1,5 +1,5 @@
 {
-  "registeredQueueCount": 126,
+  "registeredQueueCount": 127,
   "registeredQueues": [
     "account-deletion-purge",
     "achievement-unlock-sweep",
@@ -67,6 +67,7 @@
     "integration-watchdog-daily",
     "integration-watchdog-hourly",
     "lab-biomarker-backfill",
+    "lab-document-date-repair",
     "mcp-token-cleanup",
     "mean-consolidation",
     "measurement-fold-repair",
@@ -1113,6 +1114,21 @@
       "notify": false,
       "partition": false,
       "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "lab-document-date-repair",
+      "notify": false,
+      "partition": false,
+      "policy": "short",
       "retention_seconds": 1209600,
       "retry_backoff": false,
       "retry_delay": 0,
@@ -3416,6 +3432,12 @@
     },
     {
       "queue": "lab-biomarker-backfill",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "lab-document-date-repair",
       "options": {
         "localConcurrency": 1
       }

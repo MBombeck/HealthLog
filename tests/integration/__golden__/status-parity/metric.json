@@ -353,7 +353,8 @@
           "OUTPUT LANGUAGE: Responda en español (registro peninsular formal — usted). Use un vocabulario sanitario en español natural."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -742,7 +743,8 @@
           "Coarse population reference band: 3.9–7.8 mmol/L (a placement aid only — the user's OWN baseline leads)."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -1289,7 +1291,8 @@
           "Coarse population reference band: 3.9–7.8 mmol/L (a placement aid only — the user's OWN baseline leads)."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -1485,7 +1488,8 @@
           "Grobes Referenzband (Population): 3.9–7.8 mmol/L (nur Orientierung — die EIGENE Baseline führt)."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -1853,7 +1857,8 @@
           "OUTPUT LANGUAGE: Répondez en français. Utilisez le vouvoiement par défaut ; tutoyez si l'utilisateur tutoie en premier. Utilisez un vocabulaire de santé français naturel."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -2219,7 +2224,8 @@
           "OUTPUT LANGUAGE: Responda en español (registro peninsular formal — usted). Use un vocabulario sanitario en español natural."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -2464,7 +2470,8 @@
           "Coarse population reference band: 50–100 bpm (a placement aid only — the user's OWN baseline leads)."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -2815,7 +2822,8 @@
           "Coarse population reference band: 50–100 bpm (a placement aid only — the user's OWN baseline leads)."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -2971,7 +2979,8 @@
           "Grobes Referenzband (Population): 50–100 bpm (nur Orientierung — die EIGENE Baseline führt)."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -3194,7 +3203,8 @@
           "OUTPUT LANGUAGE: Répondez en français. Utilisez le vouvoiement par défaut ; tutoyez si l'utilisateur tutoie en premier. Utilisez un vocabulaire de santé français naturel."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -3716,7 +3726,8 @@
           "OUTPUT LANGUAGE: Responda en español (registro peninsular formal — usted). Use un vocabulario sanitario en español natural."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -4273,7 +4284,8 @@
           "Coarse population reference band: 420–540 min (a placement aid only — the user's OWN baseline leads)."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -5040,7 +5052,8 @@
           "Coarse population reference band: 420–540 min (a placement aid only — the user's OWN baseline leads)."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -5300,7 +5313,8 @@
           "Grobes Referenzband (Population): 420–540 min (nur Orientierung — die EIGENE Baseline führt)."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -5836,7 +5850,8 @@
           "OUTPUT LANGUAGE: Répondez en français. Utilisez le vouvoiement par défaut ; tutoyez si l'utilisateur tutoie en premier. Utilisez un vocabulaire de santé français naturel."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],

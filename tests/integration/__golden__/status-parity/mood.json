@@ -112,7 +112,8 @@
           "- Eine Botschaft: Schließe NUR DANN mit EINEM machbaren, freundlichen Schritt, wenn der Befund einen nahelegt (z.B. an guten Tagen kurz festhalten, was geholfen hat). Bei stabil guter Stimmung das ehrlich anerkennen und stattdessen einen Punkt nennen, den man im Auge behalten kann, statt einen Schritt zu erzwingen."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -316,7 +317,8 @@
           "- One message: close with ONE doable, kind step ONLY when the finding implies one (e.g. on good days, briefly note what helped). When mood is steadily good, acknowledge that honestly and name one thing worth keeping an eye on instead of manufacturing a step."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -509,7 +511,8 @@
           "OUTPUT LANGUAGE: Responda en español (registro peninsular formal — usted). Use un vocabulario sanitario en español natural."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -737,7 +740,8 @@
           "- One message: close with ONE doable, kind step ONLY when the finding implies one (e.g. on good days, briefly note what helped). When mood is steadily good, acknowledge that honestly and name one thing worth keeping an eye on instead of manufacturing a step."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -1149,7 +1153,8 @@
           "- One message: close with ONE doable, kind step ONLY when the finding implies one (e.g. on good days, briefly note what helped). When mood is steadily good, acknowledge that honestly and name one thing worth keeping an eye on instead of manufacturing a step."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -1288,7 +1293,8 @@
           "- Eine Botschaft: Schließe NUR DANN mit EINEM machbaren, freundlichen Schritt, wenn der Befund einen nahelegt (z.B. an guten Tagen kurz festhalten, was geholfen hat). Bei stabil guter Stimmung das ehrlich anerkennen und stattdessen einen Punkt nennen, den man im Auge behalten kann, statt einen Schritt zu erzwingen."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -1494,7 +1500,8 @@
           "OUTPUT LANGUAGE: Répondez en français. Utilisez le vouvoiement par défaut ; tutoyez si l'utilisateur tutoie en premier. Utilisez un vocabulaire de santé français naturel."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],

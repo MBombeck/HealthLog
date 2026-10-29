@@ -243,7 +243,8 @@
           "OUTPUT LANGUAGE: Responda en español (registro peninsular formal — usted). Use un vocabulario sanitario en español natural."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -472,7 +473,8 @@
           "- One message: close with ONE doable step that fits the band placement ONLY when the finding implies one — when the value is stable in the favourable band, acknowledge that honestly and name one thing worth keeping an eye on rather than forcing a finding or a step."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -829,7 +831,8 @@
           "- Eine Botschaft: Schließe NUR DANN mit EINEM machbaren Schritt, der zur Bandlage passt, wenn der Befund einen nahelegt — bei stabilem Wert im günstigen Band das ehrlich anerkennen und stattdessen einen Punkt nennen, den man im Auge behalten kann, statt einen Schritt zu erzwingen."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -1036,7 +1039,8 @@
           "OUTPUT LANGUAGE: Répondez en français. Utilisez le vouvoiement par défaut ; tutoyez si l'utilisateur tutoie en premier. Utilisez un vocabulaire de santé français naturel."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],

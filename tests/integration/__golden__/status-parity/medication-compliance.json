@@ -280,7 +280,8 @@
           "OUTPUT LANGUAGE: Responda en español (registro peninsular formal — usted). Use un vocabulario sanitario en español natural."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -574,7 +575,8 @@
           "- One message: close with ONE doable step that fits the gap ONLY when the finding implies one (e.g. evening doses are missed more often — a fixed routine or a reminder at the critical time can help). When adherence is consistently high, acknowledge that honestly rather than manufacturing a step. No blame."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -984,7 +986,8 @@
           "- One message: close with ONE doable step that fits the gap ONLY when the finding implies one (e.g. evening doses are missed more often — a fixed routine or a reminder at the critical time can help). When adherence is consistently high, acknowledge that honestly rather than manufacturing a step. No blame."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -1142,7 +1145,8 @@
           "- Eine Botschaft: Schließe NUR DANN mit EINEM machbaren Schritt, wenn der Befund einen nahelegt (z.B. Abenddosen werden häufiger vergessen — eine feste Routine oder ein Reminder zur kritischen Uhrzeit kann helfen). Bei durchgehend hoher Treue das ehrlich anerkennen, statt einen Schritt zu erzwingen. Keine Schuldzuweisung."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
@@ -1387,7 +1391,8 @@
           "OUTPUT LANGUAGE: Répondez en français. Utilisez le vouvoiement par défaut ; tutoyez si l'utilisateur tutoie en premier. Utilisez un vocabulaire de santé français naturel."
         ],
         "temperature": 0.45,
-        "timeoutMs": 60000
+        "timeoutMs": 60000,
+        "unattended": true
       }
     ],
     "enqueued": [],
