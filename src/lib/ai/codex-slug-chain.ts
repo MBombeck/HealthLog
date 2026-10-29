@@ -8,14 +8,14 @@
  */
 import { annotate } from "@/lib/logging/context";
 import {
-  cachedCodexModels,
+  offeredModels,
   readCodexModelCatalog,
   type CodexCatalogRead,
   type CodexOfferedModel,
 } from "./codex-model-catalog";
 import {
   codexCredentialKey,
-  getCachedCodexSlug,
+  codexGateMemory,
   rejectedCodexSlugs,
   type CodexCredential,
 } from "./codex-slug-cache";
@@ -172,7 +172,7 @@ export async function loadCodexAttemptChain(input: {
   slugChain?: readonly string[];
   readModels?: CodexModelReader;
 }): Promise<string[]> {
-  const rejected = rejectedCodexSlugs(input.credential.key);
+  const rejected = rejectedCodexSlugs(input.credential);
   if (input.slugChain && input.slugChain.length > 0) {
     return [
       ...input.slugChain.filter((s) => !rejected.has(s)),
@@ -218,13 +218,13 @@ export async function loadCodexAttemptChain(input: {
  * fallback cover.
  */
 export function resolveCodexVisionSlug(credentialKey: string): string | null {
-  const cached = getCachedCodexSlug(credentialKey);
-  if (cached) return cached;
+  const memory = codexGateMemory(credentialKey);
+  if (memory.working) return memory.working;
   const { chain } = buildCodexSlugChain({
     offered: operatorReplacedCodexChain()
       ? null
-      : cachedCodexModels(credentialKey),
-    rejected: rejectedCodexSlugs(credentialKey),
+      : offeredModels(memory.catalog),
+    rejected: memory.rejected,
   });
   return chain[0] ?? null;
 }
@@ -237,7 +237,7 @@ export function resolveCodexVisionSlug(credentialKey: string): string | null {
 export function codexSignInReadsImages(credentialKey: string): boolean {
   const slug = resolveCodexVisionSlug(credentialKey);
   if (!slug) return false;
-  const offered = cachedCodexModels(credentialKey)?.find(
+  const offered = offeredModels(codexGateMemory(credentialKey).catalog)?.find(
     (m) => m.slug === slug,
   );
   if (offered?.inputModalities) {

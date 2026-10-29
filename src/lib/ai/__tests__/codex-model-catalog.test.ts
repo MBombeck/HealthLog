@@ -251,7 +251,7 @@ describe("readCodexModelCatalog", () => {
     const second = await readCodexModelCatalog(PERSONAL, AUTH);
     expect(second.from).toBe("cache");
     expect(safeFetch).toHaveBeenCalledTimes(1);
-    expect(cachedCodexModels(PERSONAL.key)).toHaveLength(9);
+    expect(cachedCodexModels(PERSONAL)).toHaveLength(9);
 
     vi.advanceTimersByTime(CODEX_CATALOG_TTL_MS + 1);
     expect((await readCodexModelCatalog(PERSONAL, AUTH)).from).toBe("live");
@@ -363,8 +363,8 @@ describe("readCodexModelCatalog", () => {
     const second = { key: codexCredentialKey.user("u2"), accountId: "acct-b" };
     await readCodexModelCatalog(PERSONAL, AUTH);
     await readCodexModelCatalog(second, { ...AUTH, accountId: "acct-b" });
-    expect(cachedCodexModels(PERSONAL.key)).toHaveLength(9);
-    expect(cachedCodexModels(second.key)?.map((m) => m.slug)).toEqual([
+    expect(cachedCodexModels(PERSONAL)).toHaveLength(9);
+    expect(cachedCodexModels(second)?.map((m) => m.slug)).toEqual([
       "gpt-6-astra",
       "gpt-6.1-sol",
       "gpt-6-sol",

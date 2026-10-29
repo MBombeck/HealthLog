@@ -26,9 +26,11 @@ import {
 import {
   clearCodexSlugCache,
   codexCredentialKey,
+  forgetCodexSignIn,
   rememberRejectedCodexSlug,
   setCachedCodexSlug,
   setCodexCatalogState,
+  startCodexSignIn,
 } from "../codex-slug-cache";
 
 const OFFERED = parseCodexModelList(
@@ -275,6 +277,29 @@ describe("vision for a Codex sign-in", () => {
       models: offered("o3-mini"),
       at: Date.now(),
     });
+    expect(codexSignInReadsImages(B.key)).toBe(true);
+  });
+
+  it("answers from the new sign-in as soon as the credential is connected to another account", () => {
+    // The old account: its working model listed as text-only.
+    setCodexCatalogState(A, {
+      kind: "offered",
+      models: [{ ...offered("gpt-6-sol")[0], inputModalities: ["text"] }],
+      at: Date.now(),
+    });
+    setCachedCodexSlug(A, "gpt-6-sol");
+    expect(codexSignInReadsImages(A.key)).toBe(false);
+
+    // What the device-poll route records on a reconnect.
+    startCodexSignIn({ key: A.key, accountId: "acct-new" });
+    expect(resolveCodexVisionSlug(A.key)).toBe(DEFAULT_SLUG_FALLBACK_CHAIN[0]);
+    expect(codexSignInReadsImages(A.key)).toBe(true);
+    expect(chainEntryReadsImages("codex", "a", null)).toBe(true);
+
+    // And on a disconnect.
+    setCachedCodexSlug(B, "o3-mini");
+    expect(codexSignInReadsImages(B.key)).toBe(false);
+    forgetCodexSignIn(B.key);
     expect(codexSignInReadsImages(B.key)).toBe(true);
   });
 

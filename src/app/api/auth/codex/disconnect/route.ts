@@ -6,6 +6,10 @@ import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, getClientIp } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
 import { INSIGHTS_CACHE_CLEARED } from "@/lib/insights/cached-text-cipher";
+import {
+  codexCredentialKey,
+  forgetCodexSignIn,
+} from "@/lib/ai/codex-slug-cache";
 
 export const DELETE = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -26,6 +30,8 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
       insightsCachedLocale: null,
     },
   });
+
+  forgetCodexSignIn(codexCredentialKey.user(user.id));
 
   await auditLog("codex.oauth.disconnected", {
     userId: user.id,

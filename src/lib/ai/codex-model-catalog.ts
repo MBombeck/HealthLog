@@ -39,6 +39,7 @@ import {
   codexCredentialKey,
   getCodexCatalogState,
   setCodexCatalogState,
+  type CodexCatalogState,
   type CodexCredential,
 } from "./codex-slug-cache";
 
@@ -228,7 +229,7 @@ export function readCodexModelCatalog(
   credential: CodexCredential,
   auth: CodexCatalogAuth,
 ): Promise<CodexCatalogRead> {
-  const state = getCodexCatalogState(credential.key);
+  const state = getCodexCatalogState(credential);
   if (state?.kind === "offered") {
     return Promise.resolve({
       models: state.models,
@@ -289,9 +290,15 @@ export function readCodexModelCatalog(
 
 /** The offered models from an earlier read, without touching the network. */
 export function cachedCodexModels(
-  key: string,
+  credential: CodexCredential,
   now: number = Date.now(),
 ): readonly CodexOfferedModel[] | null {
-  const state = getCodexCatalogState(key, now);
+  return offeredModels(getCodexCatalogState(credential, now));
+}
+
+/** The models a list read offered, or null when it offered none. */
+export function offeredModels(
+  state: CodexCatalogState | null,
+): readonly CodexOfferedModel[] | null {
   return state?.kind === "offered" ? state.models : null;
 }

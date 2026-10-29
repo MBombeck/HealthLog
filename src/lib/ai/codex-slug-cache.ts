@@ -12,10 +12,21 @@
  *   - `central` for the operator-shared connection (`admin-codex`).
  *
  * An entry also remembers a digest of the ChatGPT account id it was learned
- * under. A credential reconnected to a different account (a different plan)
- * starts from an empty entry the first time a client runs on it, so nothing
- * learned on the old account carries over. No token, and no raw account id,
- * is ever a key or a value here.
+ * under, and a client reads it only under that account: a credential
+ * reconnected to a different account (a different plan) reads as empty from
+ * its first request, before anything is written under the new account, so no
+ * slug, refusal or list learned on the old account carries over. That holds
+ * in every process, including one that never saw the reconnect.
+ *
+ * The vision gate is the one reader without an account id (the provider
+ * presence probe decrypts nothing), so it reads the entry as this process last
+ * bound it ({@link codexGateMemory}). The routes that connect or disconnect a
+ * credential rebind or drop the entry ({@link startCodexSignIn},
+ * {@link forgetCodexSignIn}), so in the process that handled the change the
+ * gate answers from the new sign-in at once; elsewhere it catches up with that
+ * process's first request on the new sign-in, and a wrong guess in between is
+ * what the runtime probe and the OCR fallback already cover. No token, and no
+ * raw account id, is ever a key or a value here.
  *
  * Bounded both ways: every part of an entry expires on its own TTL, and the
  * map holds at most `CODEX_CREDENTIAL_CACHE_MAX` sign-ins, the least recently
@@ -76,7 +87,7 @@ function accountDigest(accountId: string): string {
     .slice(0, 32);
 }
 
-/** Read an entry without binding it to an account; LRU-touches a hit. */
+/** Read an entry whatever account it was learned under; LRU-touches a hit. */
 function peek(key: string): CredentialEntry | undefined {
   const entry = entries.get(key);
   if (!entry) return undefined;
@@ -109,18 +120,62 @@ function bind(credential: CodexCredential): CredentialEntry {
   return fresh;
 }
 
-/** The model that last worked for this sign-in, while it is fresh. */
-export function getCachedCodexSlug(
-  key: string,
-  now: number = Date.now(),
+/**
+ * The entry learned under this sign-in's account, or none: an entry left by
+ * another account on the same credential reads as empty.
+ */
+function read(credential: CodexCredential): CredentialEntry | undefined {
+  const entry = peek(credential.key);
+  if (!entry) return undefined;
+  return entry.accountDigest === accountDigest(credential.accountId)
+    ? entry
+    : undefined;
+}
+
+function liveWorking(
+  entry: CredentialEntry | undefined,
+  now: number,
 ): string | null {
-  const entry = peek(key);
   if (!entry?.working) return null;
   if (now - entry.working.at > CODEX_SLUG_CACHE_TTL_MS) {
     entry.working = null;
     return null;
   }
   return entry.working.slug;
+}
+
+function liveRejected(
+  entry: CredentialEntry | undefined,
+  now: number,
+): ReadonlySet<string> {
+  if (!entry) return new Set();
+  for (const [slug, at] of entry.rejected) {
+    if (now - at > CODEX_REJECTED_SLUG_TTL_MS) entry.rejected.delete(slug);
+  }
+  return new Set(entry.rejected.keys());
+}
+
+function liveCatalog(
+  entry: CredentialEntry | undefined,
+  now: number,
+): CodexCatalogState | null {
+  const state = entry?.catalog;
+  if (!entry || !state) return null;
+  const ttl =
+    state.kind === "offered" ? CODEX_CATALOG_TTL_MS : CODEX_CATALOG_RETRY_MS;
+  if (now - state.at > ttl) {
+    entry.catalog = null;
+    return null;
+  }
+  return state;
+}
+
+/** The model that last worked for this sign-in, while it is fresh. */
+export function getCachedCodexSlug(
+  credential: CodexCredential,
+  now: number = Date.now(),
+): string | null {
+  return liveWorking(read(credential), now);
 }
 
 export function setCachedCodexSlug(
@@ -151,32 +206,57 @@ export function rememberRejectedCodexSlug(
 
 /** The models this sign-in was refused recently. */
 export function rejectedCodexSlugs(
-  key: string,
+  credential: CodexCredential,
   now: number = Date.now(),
 ): ReadonlySet<string> {
-  const entry = peek(key);
-  if (!entry) return new Set();
-  for (const [slug, at] of entry.rejected) {
-    if (now - at > CODEX_REJECTED_SLUG_TTL_MS) entry.rejected.delete(slug);
-  }
-  return new Set(entry.rejected.keys());
+  return liveRejected(read(credential), now);
 }
 
 /** The last read of the account's model list, while it is still trusted. */
 export function getCodexCatalogState(
-  key: string,
+  credential: CodexCredential,
   now: number = Date.now(),
 ): CodexCatalogState | null {
+  return liveCatalog(read(credential), now);
+}
+
+/** What the vision gate reasons from for one stored credential. */
+export interface CodexGateMemory {
+  working: string | null;
+  rejected: ReadonlySet<string>;
+  catalog: CodexCatalogState | null;
+}
+
+/**
+ * The credential's memory as this process last bound it, for the vision gate
+ * alone, which holds no account id (see the module header). Every other
+ * reader goes through the account-checked reads above.
+ */
+export function codexGateMemory(
+  key: string,
+  now: number = Date.now(),
+): CodexGateMemory {
   const entry = peek(key);
-  const state = entry?.catalog;
-  if (!entry || !state) return null;
-  const ttl =
-    state.kind === "offered" ? CODEX_CATALOG_TTL_MS : CODEX_CATALOG_RETRY_MS;
-  if (now - state.at > ttl) {
-    entry.catalog = null;
-    return null;
-  }
-  return state;
+  return {
+    working: liveWorking(entry, now),
+    rejected: liveRejected(entry, now),
+    catalog: liveCatalog(entry, now),
+  };
+}
+
+/**
+ * A credential has just been connected to `accountId`: a reconnect to another
+ * account starts the entry afresh, so the vision gate in this process stops
+ * reading what the old account learned; a reconnect to the same account keeps
+ * it.
+ */
+export function startCodexSignIn(credential: CodexCredential): void {
+  bind(credential);
+}
+
+/** A credential has been disconnected: forget what it learned. */
+export function forgetCodexSignIn(key: string): void {
+  entries.delete(key);
 }
 
 /**
