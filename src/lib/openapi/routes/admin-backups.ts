@@ -218,7 +218,26 @@ export const adminBackupPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Admin"],
       summary: "Store an uploaded backup file as a new copy",
       description:
-        "Reads a backup file, checks it, and stores it encrypted as a new copy beside the weekly one; it does NOT restore anything. Restoring is the separate `POST /api/admin/backups/{id}/restore`, so an operator can review what was uploaded first. The file goes up as the raw request body, plain JSON or gzip-compressed JSON (sniffed from the bytes, not the content type), up to 512 MB as sent; or, for a file up to 10 MB, as `multipart/form-data` with one `file` field. It is read as a stream, checked as it arrives, and stored in the same pass; a file that fails any check leaves nothing behind. It is refused when it is not valid JSON, fails the backup schema, was written by a newer schema version than this server reads, needs an encryption key this server does not hold (`meta.errorCode` = `backup.key.missing`, `meta.keyIds` naming them), or belongs to an account that does not exist here. Three uploads a minute per administrator. Admin session cookie required; Bearer tokens cannot reach admin endpoints. A browser session needs a fresh proof as well as a live one: a sign-in or `POST /api/auth/reproof` within the last five minutes (with a second factor, on an account that has one). Without it the answer is 401 `auth.reproof.required`, with `meta.methods` naming the proofs the account can give.",
+        "Reads a backup file, checks it, and stores it encrypted as a new copy beside the weekly one; it does NOT restore anything. Restoring is the separate `POST /api/admin/backups/{id}/restore`, so an operator can review what was uploaded first. The file goes up as the raw request body, plain JSON or gzip-compressed JSON (sniffed from the bytes, not the content type), up to 512 MB as sent; or, for a file up to 10 MB, as `multipart/form-data` with one `file` field. It is read as a stream, checked as it arrives, and stored in the same pass; a file that fails any check leaves nothing behind. It is refused when it is not valid JSON, fails the backup schema, was written by a newer schema version than this server reads, needs an encryption key this server does not hold (`meta.errorCode` = `backup.key.missing`, `meta.keyIds` naming them), or belongs to an account that does not exist here (`meta.errorCode` = `backup.owner.missing`). A file of an account that no longer exists here (erased, say) can be sent again with a target in the query: `into=existing&userId=<id>&confirm=<username>` for an account that holds no records yet, or `into=new&username=<name>` for a new account created for the copy, with no password and no email (an admin sets its first password with the existing password reset). The file's owner is rewritten to that account as it is read, so the stored copy is that account's copy and restores like any other; the erased account's id is not stored. A target is refused before the file is read when the account does not exist, is a managed profile, is pending deletion, or holds records (a restore replaces records, it does not merge them); a file whose own account is still here is refused with a target (`backup.owner.exists`). Three uploads a minute per administrator. Admin session cookie required; Bearer tokens cannot reach admin endpoints. A browser session needs a fresh proof as well as a live one: a sign-in or `POST /api/auth/reproof` within the last five minutes (with a second factor, on an account that has one). Without it the answer is 401 `auth.reproof.required`, with `meta.methods` naming the proofs the account can give.",
+      requestParams: {
+        query: z.object({
+          into: z.enum(["existing", "new"]).optional().meta({
+            description:
+              "Where the copy goes when the account the file names does not exist here. Absent: the file's own account, which has to exist.",
+          }),
+          userId: z.string().max(64).optional().meta({
+            description: "With `into=existing`: the account's id.",
+          }),
+          confirm: z.string().max(64).optional().meta({
+            description:
+              "With `into=existing`: the account's username, typed by the operator.",
+          }),
+          username: z.string().min(3).max(30).optional().meta({
+            description:
+              "With `into=new`: the new account's username (letters, digits, `_` and `-`).",
+          }),
+        }),
+      },
       requestBody: {
         required: true,
         content: {
@@ -261,6 +280,16 @@ export const adminBackupPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             "No session (`auth.missing`), or a session without a recent proof (`auth.reproof.required`, with `meta.methods`). A Bearer token lands here too: the admin gate reads only the session cookie.",
           content: { "application/json": { schema: errorEnvelope } },
         },
+        "404": {
+          description:
+            "The account chosen with `into=existing` does not exist (`backup.target.not_found`). Nothing was stored.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "409": {
+          description:
+            "The chosen target cannot take the copy, and nothing was stored: a managed profile (`backup.target.managed_profile`), an account pending deletion (`backup.target.pending_deletion`), an account that already holds records (`backup.target.holds_records`, `meta.models` naming them), a username already taken (`backup.target.username_taken`), or a file whose own account is still here (`backup.owner.exists`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
         "413": {
           description:
             "Too large: over 512 MB as sent (10 MB in a form), a gzip file that expands past what any backup this server wrote does, or larger than the stored-copy limit once encrypted (`meta.errorCode` = `backup.upload.too_large`, the numbers and the setting in the message). Nothing was stored.",
@@ -268,7 +297,7 @@ export const adminBackupPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "422": {
           description:
-            "The file was refused and nothing was stored: no file in the request, not valid JSON or not readable as gzip, failed the backup schema (`meta.issues`), an unsupported schema version, a key this server does not hold (`meta.errorCode` = `backup.key.missing`, `meta.keyIds`), or an owner account that does not exist here.",
+            "The file was refused and nothing was stored: no file in the request, not valid JSON or not readable as gzip, failed the backup schema (`meta.issues`), an unsupported schema version, a key this server does not hold (`meta.errorCode` = `backup.key.missing`, `meta.keyIds`), an owner account that does not exist here (`backup.owner.missing`), a target query that does not parse (`details.issues`), or an `into=existing` whose `confirm` is not the account's username (`backup.target.unconfirmed`).",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "429": {

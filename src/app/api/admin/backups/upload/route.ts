@@ -20,6 +20,17 @@
  * checked as it goes and stored in the same pass; a file that fails any check
  * rolls the store back, so nothing of it remains.
  *
+ * The file names the account it belongs to, and that account has to exist
+ * here. When it does not (the account was erased, and the operator still has
+ * its disaster-recovery file), the upload answers 422 with
+ * `backup.owner.missing`, and the operator can send the file again with a
+ * target in the query (`backup-upload-target.ts`): an existing account that
+ * holds no records yet, confirmed by typing its username, or a new account
+ * created for the copy. The file's owner is then rewritten to that account as
+ * the bytes come in (`backup-owner-rewrite.ts`), so the copy stored is that
+ * account's copy, and the restore that follows is the ordinary one. The new
+ * account has no password; an admin sets its first one in Admin, Users.
+ *
  * Crucially, this route does NOT execute a restore. It only stores the
  * file. The separate `POST /api/admin/backups/[id]/restore` endpoint
  * (criterion 3) actually replaces user data — keeping the two phases
@@ -32,6 +43,7 @@ import { Readable } from "node:stream";
 
 import { BodyTooLargeError, readBoundedBody } from "@/lib/labs/ocr-upload";
 import { NextRequest } from "next/server";
+import { Prisma } from "@/generated/prisma/client";
 import { ZodError } from "zod/v4";
 import { prisma } from "@/lib/db";
 import {
@@ -40,9 +52,19 @@ import {
   requireAdmin,
   assertRecentCookieProof,
 } from "@/lib/api-handler";
-import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
+import {
+  apiError,
+  apiSuccess,
+  getClientIp,
+  returnAllZodIssues,
+} from "@/lib/api-response";
 import { auditLog } from "@/lib/auth/audit";
 import { BackupJsonError } from "@/lib/export/backup-json-scan";
+import {
+  BackupOwnerRewriteError,
+  rewriteBackupOwner,
+  type BackupOwnerRewrite,
+} from "@/lib/export/backup-owner-rewrite";
 import {
   BackupUploadDecodeError,
   decodeBackupUpload,
@@ -57,6 +79,11 @@ import {
   BACKUP_UPLOAD_TOO_LARGE_CODE,
   BackupBlobTooLargeError,
 } from "@/lib/export/backup-blob";
+import {
+  checkRestoreTarget,
+  RESTORE_TARGET_REFUSALS,
+  type RestoreTargetVerdict,
+} from "@/lib/export/restore-target";
 import { storeBackupBlob } from "@/lib/export/store-backup-blob";
 import {
   readStreamedBackup,
@@ -66,6 +93,11 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { checkRateLimit } from "@/lib/rate-limit";
 import type { BackupPayload } from "@/lib/validations/backup";
+import {
+  BACKUP_OWNER_EXISTS_CODE,
+  BACKUP_OWNER_MISSING_CODE,
+  parseBackupUploadTarget,
+} from "@/lib/validations/backup-upload-target";
 import {
   isCompatibleSchemaVersion,
   summarizeBackup,
@@ -111,6 +143,21 @@ class UploadRefused extends Error {
   }
 }
 
+/** The answer and audit details for a target the copy may not go into. */
+function targetRefused(
+  verdict: Extract<RestoreTargetVerdict, { ok: false }>,
+  userId: string,
+): UploadRefused {
+  const refusal = RESTORE_TARGET_REFUSALS[verdict.reason];
+  const models = verdict.models.length > 0 ? { models: verdict.models } : {};
+  return new UploadRefused(
+    refusal.status,
+    refusal.message,
+    { reason: `target_${verdict.reason}`, targetUserId: userId, ...models },
+    { errorCode: refusal.code, ...models },
+  );
+}
+
 /** The file's bytes, gunzipped and counted on both ends. */
 async function* decodedBytes(
   source: AsyncIterable<Uint8Array>,
@@ -126,6 +173,26 @@ async function* decodedBytes(
       });
     }
     throw err;
+  }
+}
+
+/**
+ * Delete the account an upload created for its copy, when nothing was stored.
+ * It holds nothing and nobody can have signed into it (no password, no email),
+ * so the row is all there is. A failure is noted, never thrown over the
+ * refusal the operator needs to see.
+ */
+async function discardCreatedAccount(userId: string): Promise<void> {
+  try {
+    await prisma.user.delete({ where: { id: userId } });
+  } catch (err) {
+    annotate({
+      meta: {
+        backup_upload_account_discard_failed: true,
+        backup_upload_account_discard_error:
+          err instanceof Error ? err.message : String(err),
+      },
+    });
   }
 }
 
@@ -154,6 +221,49 @@ export const POST = apiHandler(async (request: NextRequest) => {
       ipAddress,
       details: { reason, ...extra },
     });
+
+  // The account the copy goes into when the file's own account is gone.
+  // Decided before a byte of the file is read, so a target that will be
+  // refused costs no upload; checked again once the file has been read.
+  const parsedTarget = parseBackupUploadTarget(
+    new URL(request.url).searchParams,
+  );
+  if (!parsedTarget.success) {
+    await denied("target_invalid");
+    return returnAllZodIssues(parsedTarget.error);
+  }
+  const choice = parsedTarget.data;
+  let target: { id: string; username: string; created: boolean } | null = null;
+  if (choice?.into === "existing") {
+    const verdict = await checkRestoreTarget(prisma, choice.userId);
+    if (!verdict.ok) {
+      const refusal = targetRefused(verdict, choice.userId);
+      await denied(refusal.details.reason as string, refusal.details);
+      return apiError(refusal.answer, refusal.status, refusal.meta);
+    }
+    // The restore writes into this account, so the operator names it.
+    if (choice.confirm.trim() !== verdict.target.username) {
+      await denied("target_unconfirmed", { targetUserId: choice.userId });
+      return apiError(
+        "Type the chosen account's username to confirm. Nothing was stored.",
+        422,
+        { errorCode: "backup.target.unconfirmed" },
+      );
+    }
+    target = { ...verdict.target, created: false };
+  } else if (choice?.into === "new") {
+    const taken = await prisma.user.findUnique({
+      where: { username: choice.username },
+      select: { id: true },
+    });
+    if (taken) {
+      await denied("target_username_taken");
+      return apiError("That username is already taken.", 409, {
+        errorCode: "backup.target.username_taken",
+      });
+    }
+  }
+  annotate({ meta: { backup_upload_into: choice?.into ?? "owner" } });
 
   const contentType = request.headers.get("content-type") ?? "";
   const multipart = contentType.startsWith("multipart/form-data");
@@ -226,6 +336,32 @@ export const POST = apiHandler(async (request: NextRequest) => {
   // answers with and the key uses it already holds (`backup-preview.ts`).
   let keys: BackupKeyIdCollector | undefined;
   let created: { id: string };
+  let rewrite: BackupOwnerRewrite | null = null;
+  if (choice?.into === "new") {
+    // Created before the file is read, because the file is rewritten to the
+    // account's id on its way in; deleted again below when nothing is
+    // stored. No password, no email: the account cannot be signed into
+    // until an admin sets its first password (Admin, Users).
+    try {
+      const account = await prisma.user.create({
+        data: { username: choice.username, role: "USER" },
+        select: { id: true, username: true },
+      });
+      target = { ...account, created: true };
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002"
+      ) {
+        await denied("target_username_taken");
+        return apiError("That username is already taken.", 409, {
+          errorCode: "backup.target.username_taken",
+        });
+      }
+      throw err;
+    }
+  }
+  const chosen = target;
   try {
     created = await storeBackupBlob(
       prisma,
@@ -247,8 +383,10 @@ export const POST = apiHandler(async (request: NextRequest) => {
       async (write) => {
         // One pass: every chunk is stored as it is checked, and a check that
         // fails throws, which rolls the store back.
+        const decoded = decodedBytes(source, limit);
+        if (chosen) rewrite = rewriteBackupOwner(decoded, chosen.id);
         async function* storedAsRead() {
-          for await (const chunk of decodedBytes(source, limit)) {
+          for await (const chunk of rewrite ? rewrite.bytes : decoded) {
             await write(Buffer.from(chunk));
             yield chunk;
           }
@@ -268,6 +406,15 @@ export const POST = apiHandler(async (request: NextRequest) => {
               reason: "invalid_json",
               message: err.message,
             });
+          }
+          if (err instanceof BackupOwnerRewriteError) {
+            const issues = [{ path: "userId", message: err.message }];
+            throw new UploadRefused(
+              422,
+              "Backup payload failed schema validation",
+              { reason: "schema_invalid", issues },
+              { issues },
+            );
           }
           if (err instanceof StreamedBackupInvalidError) {
             const issues = [{ path: err.path, message: err.message }];
@@ -335,6 +482,34 @@ export const POST = apiHandler(async (request: NextRequest) => {
           );
         }
 
+        if (chosen) {
+          // The file now names the chosen account. The account it named
+          // before has to be gone: a copy of an account that is still here
+          // restores into that account, never into another one.
+          const declared = rewrite?.declaredOwner() ?? null;
+          const declaredOwner = declared
+            ? await prisma.user.findUnique({
+                where: { id: declared },
+                select: { id: true },
+              })
+            : null;
+          if (!declared || declaredOwner) {
+            throw new UploadRefused(
+              409,
+              "This file belongs to an account on this server and restores into that account. Upload it without choosing an account.",
+              { reason: "owner_exists", ownerId: declared },
+              { errorCode: BACKUP_OWNER_EXISTS_CODE },
+            );
+          }
+          // The file took a while to read; the account may have changed.
+          if (!chosen.created) {
+            const again = await checkRestoreTarget(prisma, chosen.id);
+            if (!again.ok) throw targetRefused(again, chosen.id);
+          }
+          owner = { id: chosen.id, username: chosen.username };
+          return;
+        }
+
         // Make sure the userId on the file points at a user that exists in
         // this DB. Restore would fail later anyway, but failing here gives
         // the admin a precise error before any side-effect.
@@ -343,15 +518,22 @@ export const POST = apiHandler(async (request: NextRequest) => {
           select: { id: true, username: true },
         });
         if (!owner) {
+          // Most often an account that was erased. Its id is not written
+          // into the trail: the erasure took every row that named it, and a
+          // refused upload is not a reason to bring it back. The answer says
+          // what the operator can do instead.
           throw new UploadRefused(
             422,
-            `Backup is for user '${payload.userId}' which does not exist in this DB`,
-            { reason: "owner_not_found", ownerId: payload.userId },
+            "This file belongs to an account that does not exist on this server. Choose an account to restore it into.",
+            { reason: "owner_not_found" },
+            { errorCode: BACKUP_OWNER_MISSING_CODE },
           );
         }
       },
     );
   } catch (err) {
+    // Nothing was stored, so the account made for the copy goes again.
+    if (chosen?.created) await discardCreatedAccount(chosen.id);
     if (err instanceof UploadRefused) {
       await denied(err.details.reason as string, err.details);
       return apiError(err.answer, err.status, err.meta);
@@ -380,6 +562,18 @@ export const POST = apiHandler(async (request: NextRequest) => {
   };
   const storedOwner = owner as { id: string; username: string } | null;
 
+  if (chosen?.created) {
+    await auditLog("admin.user.create", {
+      userId: admin.id,
+      ipAddress,
+      details: {
+        targetUserId: chosen.id,
+        username: chosen.username,
+        reason: "backup_restore",
+        backupId: created.id,
+      },
+    });
+  }
   await auditLog("admin.backups.upload", {
     userId: admin.id,
     ipAddress,
@@ -387,6 +581,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
       backupId: created.id,
       ownerId: storedOwner?.id,
       ownerUsername: storedOwner?.username,
+      // Set when the file's own account was gone and the copy was pointed at
+      // this one. The erased account's id is not recorded.
+      ...(chosen ? { into: chosen.created ? "new" : "existing" } : {}),
       type: uploadType,
       schemaVersion: summary.schemaVersion,
       counts: {
