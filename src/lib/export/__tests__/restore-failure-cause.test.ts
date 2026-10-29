@@ -15,6 +15,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   classifyRestoreFailure,
+  isPrimaryKeyConflict,
   RESTORE_FAILURE_CAUSE_MESSAGES,
   RESTORE_FAILURE_CAUSES,
 } from "@/lib/export/restore-failure-cause";
@@ -145,5 +146,45 @@ describe("classifyRestoreFailure", () => {
         /Nothing was changed/,
       );
     }
+  });
+});
+
+describe("isPrimaryKeyConflict", () => {
+  it("names a duplicate primary key, as the driver reports it", () => {
+    expect(
+      isPrimaryKeyConflict(
+        adapterError("P2010", "23505", {
+          kind: "UniqueConstraintViolation",
+          constraint: { index: "measurements_pkey" },
+        }),
+      ),
+    ).toBe(true);
+    // Without the structured name, read from the message.
+    expect(
+      isPrimaryKeyConflict(
+        adapterError("P2010", "23505", {
+          originalMessage:
+            'duplicate key value violates unique constraint "mood_entries_pkey"',
+        }),
+      ),
+    ).toBe(true);
+  });
+
+  it("does not name another unique rule, or another failure", () => {
+    expect(
+      isPrimaryKeyConflict(
+        adapterError("P2002", "23505", {
+          constraint: { index: "measurements_user_id_external_id_key" },
+        }),
+      ),
+    ).toBe(false);
+    expect(
+      isPrimaryKeyConflict(
+        adapterError("P2010", "23503", {
+          constraint: { index: "measurements_pkey" },
+        }),
+      ),
+    ).toBe(false);
+    expect(isPrimaryKeyConflict(new Error("measurements_pkey"))).toBe(false);
   });
 });

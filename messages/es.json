@@ -8345,6 +8345,7 @@
         "restoreFailureUnexpected": "La restauración se detuvo por un error inesperado y se deshizo. El registro del servidor indica el error.",
         "restoreFailureKeyMissing": "La copia necesita la clave de cifrado {keys}, con la que este servidor no puede abrirla. Vuelve a añadir la clave a ENCRYPTION_KEYS, reinicia e inicia de nuevo la restauración.",
         "restoreFailureForeignReference": "El archivo apunta a registros que pertenecen a otra cuenta. No se escribió nada.",
+        "restoreFailureRowsElsewhere": "Los registros de este archivo ya están en otra cuenta de este servidor: el mismo archivo ya se restauró allí. Un archivo solo puede restaurarse en una cuenta. No se escribió nada.",
         "previewKeyMissing": "Esta copia no se puede restaurar en este servidor: necesita la clave de cifrado {keys}. Vuelve a añadir la clave a ENCRYPTION_KEYS y reinicia primero.",
         "restoreSkippedSymptomEpisodeReference": "Entrada de síntoma vinculada a una enfermedad que el archivo no contiene (se conserva sin el vínculo)",
         "restoreSkippedCycleCiphertext": "Nota o etiqueta del ciclo cifrada con una clave que este servidor no tiene (el día o el síntoma se conserva sin ella)",

@@ -8345,6 +8345,7 @@
         "restoreFailureUnexpected": "A restauração parou em um erro inesperado e foi revertida. O log do servidor nomeia o erro.",
         "restoreFailureKeyMissing": "O backup precisa da chave de criptografia {keys}, que este servidor não consegue usar para abri-lo. Adicione a chave de volta a ENCRYPTION_KEYS, reinicie e inicie a restauração novamente.",
         "restoreFailureForeignReference": "O arquivo aponta para registros que pertencem a outra conta. Nada foi gravado.",
+        "restoreFailureRowsElsewhere": "Os registros deste arquivo já estão em outra conta deste servidor: o mesmo arquivo já foi restaurado nela. Um arquivo só pode ser restaurado em uma conta. Nada foi gravado.",
         "previewKeyMissing": "Este backup não pode ser restaurado neste servidor: ele precisa da chave de criptografia {keys}. Adicione a chave de volta a ENCRYPTION_KEYS e reinicie primeiro.",
         "restoreSkippedSymptomEpisodeReference": "Entrada de sintoma vinculada a uma doença que o arquivo não contém (mantida sem o link)",
         "restoreSkippedCycleCiphertext": "Nota ou rótulo do ciclo selado com uma chave que este servidor não possui (dia ou sintoma mantido sem ele)",

@@ -8345,6 +8345,7 @@
         "restoreFailureUnexpected": "Die Wiederherstellung ist an einem unerwarteten Fehler gescheitert und wurde zurückgerollt. Das Server-Log nennt den Fehler.",
         "restoreFailureKeyMissing": "Die Sicherung braucht den Verschlüsselungsschlüssel {keys}, mit dem dieser Server sie nicht öffnen kann. Nimm den Schlüssel wieder in ENCRYPTION_KEYS auf, starte neu und starte die Wiederherstellung erneut.",
         "restoreFailureForeignReference": "Die Datei verweist auf Einträge, die zu einem anderen Konto gehören. Es wurde nichts geschrieben.",
+        "restoreFailureRowsElsewhere": "Die Datensätze dieser Datei liegen schon in einem anderen Konto auf diesem Server: Dieselbe Datei wurde dort bereits wiederhergestellt. Eine Datei lässt sich nur in ein Konto wiederherstellen. Es wurde nichts geschrieben.",
         "previewKeyMissing": "Diese Sicherung lässt sich auf diesem Server nicht wiederherstellen: Sie braucht den Verschlüsselungsschlüssel {keys}. Nimm den Schlüssel zuerst wieder in ENCRYPTION_KEYS auf und starte neu.",
         "restoreSkippedSymptomEpisodeReference": "Symptom-Eintrag mit Verknüpfung zu einer Erkrankung, die die Datei nicht enthält (ohne Verknüpfung behalten)",
         "restoreSkippedCycleCiphertext": "Zyklus-Notiz oder -Bezeichnung mit einem Schlüssel verschlüsselt, den dieser Server nicht hat (Tag oder Symptom ohne sie behalten)",

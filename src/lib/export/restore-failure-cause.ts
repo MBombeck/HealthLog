@@ -108,6 +108,25 @@ export function classifyRestoreFailure(err: unknown): ClassifiedRestoreFailure {
   return { cause: "other", code: prisma };
 }
 
+/**
+ * Whether a restore failed because a row it inserted carries a primary key
+ * already taken. The restore deletes the receiving account's own rows first,
+ * so the key belongs to a row of another account: for a copy put into a
+ * chosen account, the same file restored into a different account before.
+ */
+export function isPrimaryKeyConflict(err: unknown): boolean {
+  if (sqlState(err) !== "23505") return false;
+  const cause = field(field(field(err, "meta"), "driverAdapterError"), "cause");
+  const index = field(field(cause, "constraint"), "index");
+  const name =
+    typeof index === "string"
+      ? index
+      : /unique constraint "([^"]+)"/.exec(
+          String(field(cause, "originalMessage") ?? field(err, "message")),
+        )?.[1];
+  return typeof name === "string" && name.endsWith("_pkey");
+}
+
 /** The sentence the job row and the audit trail carry for each cause. */
 export const RESTORE_FAILURE_CAUSE_MESSAGES: Record<
   RestoreFailureCause,

@@ -104,6 +104,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "backup.owner.missing",
       "backup.payload.undecryptable",
       "backup.restore.active",
+      "backup.restore.rows_exist_elsewhere",
       "backup.section.missing",
       "backup.target.admin_account",
       "backup.target.holds_records",

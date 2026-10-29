@@ -143,6 +143,14 @@ restored managed profile is an ordinary account.
 Once stored, the copy restores like any other: a restore run later, after the
 account has gained records, replaces those too.
 
+A file goes into one account only. Its records keep the ids they had in the
+erased account, so once it has been restored into one account, restoring the
+same file into a second account would write those ids twice. The upload still
+stores the second copy, but its restore is refused with
+`backup.restore.rows_exist_elsewhere` and rolled back, and nothing changes in
+either account. To move the record to another account, delete the first
+account (or its records) before restoring into the second.
+
 ### What a restore does not touch
 
 API tokens, trusted devices, step-up elevations, known devices, clinician share

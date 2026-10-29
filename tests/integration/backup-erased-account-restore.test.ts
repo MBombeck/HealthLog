@@ -900,6 +900,47 @@ describe("restoring the backup of an erased account into a chosen account", () =
   );
 
   it(
+    "refuses a second restore of the same file into another account, explained and with nothing changed",
+    async () => {
+      const prisma = getPrismaClient();
+      const { json, counts } = await eraseAfterExport(prisma);
+
+      const first = await uploadInto(json, {
+        into: "new",
+        username: "first-home",
+      });
+      expect(first.status, JSON.stringify(first.body)).toBe(201);
+      expect((await restore(first.body.data!.id)).status).toBe(200);
+      const home = await prisma.user.findUniqueOrThrow({
+        where: { username: "first-home" },
+      });
+
+      await prisma.rateLimit.deleteMany();
+      const second = await uploadInto(json, {
+        into: "new",
+        username: "second-home",
+      });
+      expect(second.status, JSON.stringify(second.body)).toBe(201);
+      const again = await restore(second.body.data!.id);
+      expect(again.status, JSON.stringify(again.body)).toBe(409);
+      expect(
+        (again.body as { meta?: { errorCode?: string } }).meta?.errorCode,
+      ).toBe("backup.restore.rows_exist_elsewhere");
+      expect(again.body.error).toMatch(/already restored into another account/);
+
+      // Rolled back: the second account holds nothing, the first all of it.
+      const twin = await prisma.user.findUniqueOrThrow({
+        where: { username: "second-home" },
+      });
+      expect(
+        Object.values(await countsOf(prisma, twin.id)).every((n) => n === 0),
+      ).toBe(true);
+      expect(await countsOf(prisma, home.id)).toEqual(counts);
+    },
+    SLOW,
+  );
+
+  it(
     "leaves a trace of an account made for a refused file when it cannot be removed again",
     async () => {
       const prisma = getPrismaClient();
