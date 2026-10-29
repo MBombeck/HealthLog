@@ -10,15 +10,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
+vi.mock("@/lib/db", () => {
+  const prisma = {
     measurement: {
       findMany: vi.fn(),
       updateMany: vi.fn(),
     },
     auditLog: { create: vi.fn() },
-  },
-}));
+    // The read and the write run in one transaction; the stub hands the
+    // callback the same mocked client.
+    $transaction: vi.fn(async (fn: (tx: unknown) => unknown) => fn(prisma)),
+  };
+  return { prisma };
+});
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/auth/audit", () => ({
@@ -110,8 +114,16 @@ describe("POST /api/measurements/restore", () => {
   it("un-tombstones only owned, tombstoned rows and returns that count", async () => {
     // Caller asked for 3 ids but only 2 are owned + tombstoned.
     vi.mocked(prisma.measurement.findMany).mockResolvedValue([
-      { type: "WEIGHT", measuredAt: new Date("2026-01-01T08:00:00Z") },
-      { type: "WEIGHT", measuredAt: new Date("2026-01-01T20:00:00Z") },
+      {
+        id: "m1",
+        type: "WEIGHT",
+        measuredAt: new Date("2026-01-01T08:00:00Z"),
+      },
+      {
+        id: "m2",
+        type: "WEIGHT",
+        measuredAt: new Date("2026-01-01T20:00:00Z"),
+      },
     ] as never);
     vi.mocked(prisma.measurement.updateMany).mockResolvedValue({
       count: 2,
@@ -126,7 +138,9 @@ describe("POST /api/measurements/restore", () => {
     // forged / live id never 404s, it's just excluded from the count.
     const call = vi.mocked(prisma.measurement.updateMany).mock.calls[0][0];
     expect(call.where).toMatchObject({
-      id: { in: ["m1", "m2", "foreign"] },
+      // The write names the rows the scoped read found, never the
+      // forged id the caller sent.
+      id: { in: ["m1", "m2"] },
       userId: "user-1",
       deletedAt: { not: null },
     });

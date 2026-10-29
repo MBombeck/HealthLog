@@ -28,6 +28,7 @@ import { withIdempotency } from "@/lib/idempotency";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
+import { bloodPressureSiblings } from "@/lib/measurements/blood-pressure-reading";
 import type { MeasurementType } from "@/generated/prisma/client";
 
 const MAX_IDS_PER_BATCH = 200;
@@ -73,17 +74,39 @@ async function postRestore(request: NextRequest): Promise<Response> {
   // a status-insight cache drop. Ownership-scoped + `deletedAt != null`
   // so a forged / foreign / never-deleted id is excluded here exactly as
   // it is from the mutation below — no existence leak.
-  const affected = await prisma.measurement.findMany({
-    where: { id: { in: ids }, userId: user.id, deletedAt: { not: null } },
-    select: { type: true, measuredAt: true },
-  });
+  //
+  // A blood-pressure half brings back the rows of its reading that were
+  // tombstoned in the same statement (identical `deletedAt`,
+  // `bloodPressureSiblings`), so an undo that names only the row the person
+  // tapped restores the reading the delete took. A row deleted on its own,
+  // at another moment, stays deleted.
+  const { affected, count } = await prisma.$transaction(async (tx) => {
+    const selected = await tx.measurement.findMany({
+      where: { id: { in: ids }, userId: user.id, deletedAt: { not: null } },
+      select: {
+        id: true,
+        type: true,
+        source: true,
+        measuredAt: true,
+        deletedAt: true,
+      },
+    });
+    const siblings = await bloodPressureSiblings(
+      tx,
+      user.id,
+      selected,
+      "deletedWith",
+    );
+    const rowIds = [...selected, ...siblings].map((row) => row.id);
 
-  // Un-tombstone in one statement. The `where` pins `userId` so a forged
-  // id for another user is silently a no-op; `deletedAt: { not: null }`
-  // keeps the count honest (a live row doesn't re-count).
-  const { count } = await prisma.measurement.updateMany({
-    where: { id: { in: ids }, userId: user.id, deletedAt: { not: null } },
-    data: { deletedAt: null, syncVersion: { increment: 1 } },
+    // Un-tombstone in one statement. The `where` pins `userId` so a forged
+    // id for another user is silently a no-op; `deletedAt: { not: null }`
+    // keeps the count honest (a live row doesn't re-count).
+    const { count } = await tx.measurement.updateMany({
+      where: { id: { in: rowIds }, userId: user.id, deletedAt: { not: null } },
+      data: { deletedAt: null, syncVersion: { increment: 1 } },
+    });
+    return { affected: [...selected, ...siblings], count };
   });
 
   await auditLog("measurement.restore", {
