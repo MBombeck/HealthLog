@@ -11267,6 +11267,12 @@
       },
       "sosVozAmiga": {
         "name": "SOS Voz Amiga (Portugal, daily 3.30 pm to 12.30 am)"
+      },
+      "zelfmoordpreventie113": {
+        "name": "113 Zelfmoordpreventie (Netherlands, 24/7, free, anonymous, also by chat)"
+      },
+      "zelfmoordlijn1813": {
+        "name": "Zelfmoordlijn 1813 (Belgium, 24/7, free, anonymous)"
       }
     },
     "instrumentDescription": {

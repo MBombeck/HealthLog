@@ -53,13 +53,54 @@ describe("crisisResourcesForLocale", () => {
     }
   });
 
+  it("gives a Dutch reader with no region 112, then the Dutch and Belgian lines by name", () => {
+    for (const locale of ["nl", "nl-SR"]) {
+      const set = crisisResourcesForLocale(locale);
+      expect(set.emergencyNumber, locale).toBe("112");
+      expect(set.resources).toEqual([
+        {
+          id: "zelfmoordpreventie113",
+          contacts: ["113", "0800-0113", "113.nl"],
+        },
+        { id: "zelfmoordlijn1813", contacts: ["1813", "zelfmoord1813.be"] },
+        { id: "findahelpline", contacts: ["findahelpline.com"] },
+      ]);
+    }
+    const { t } = getServerTranslator("nl");
+    expect(
+      t("mentalHealth.crisisResource.zelfmoordpreventie113.name"),
+    ).toContain("Nederland");
+    expect(t("mentalHealth.crisisResource.zelfmoordlijn1813.name")).toContain(
+      "België",
+    );
+  });
+
+  it("gives an explicit Dutch region 113 and an explicit Belgian one 1813", () => {
+    for (const locale of ["nl-NL", "nl_NL"]) {
+      const ids = crisisResourcesForLocale(locale).resources.map((r) => r.id);
+      expect(ids, locale).toEqual(["zelfmoordpreventie113", "findahelpline"]);
+    }
+    for (const locale of ["nl-BE", "nl_BE", "be"]) {
+      const ids = crisisResourcesForLocale(locale).resources.map((r) => r.id);
+      expect(ids, locale).toEqual(["zelfmoordlijn1813", "findahelpline"]);
+    }
+  });
+
   it("names every crisis resource in every language", () => {
     // History re-derives the set from the row's stored locale and renders it
     // in whatever language the reader uses now.
     const ids = new Set(
-      ["pt-BR", "pt-PT", "br", "de", "de-AT", "de-CH", "en-US", "fr"].flatMap(
-        (l) => crisisResourcesForLocale(l).resources.map((r) => r.id),
-      ),
+      [
+        "pt-BR",
+        "pt-PT",
+        "br",
+        "de",
+        "de-AT",
+        "de-CH",
+        "en-US",
+        "fr",
+        "nl",
+      ].flatMap((l) => crisisResourcesForLocale(l).resources.map((r) => r.id)),
     );
     for (const locale of locales) {
       const { t } = getServerTranslator(locale);
