@@ -27,7 +27,7 @@ import { recentProofMethods } from "@/lib/auth/second-factor";
 export const dynamic = "force-dynamic";
 
 export const GET = apiHandler(async () => {
-  const { user } = await requireAuth();
+  const { user, authMethod } = await requireAuth();
 
   const [recoveryCodesRemaining, webauthn, proofMethods] = await Promise.all([
     countRemainingRecoveryCodes(user.id),
@@ -50,7 +50,12 @@ export const GET = apiHandler(async () => {
     passkeyNudgeDismissed: Boolean(user.passkeyUpgradeNudgeDismissed),
     // The ways this account can confirm it is you, the list the recent-proof
     // refusal names. The passkey card offers exactly these before adding one,
-    // so an account without a password is not handed a password field.
-    proofMethods,
+    // so an account without a password is not handed a password field. The
+    // provider round trip stamps a browser session and nothing else, so a
+    // token is never offered it.
+    proofMethods:
+      authMethod === "cookie"
+        ? proofMethods
+        : proofMethods.filter((method) => method !== "oidc"),
   });
 });
