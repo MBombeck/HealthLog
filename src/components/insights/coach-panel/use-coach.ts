@@ -1,6 +1,5 @@
 "use client";
 
-import type { Locale } from "@/lib/i18n/config";
 import {
   useCallback,
   useEffect,
@@ -896,7 +895,7 @@ export interface SendCoachMessageParams {
   conversationId?: string;
   message: string;
   prefill?: string;
-  locale?: Locale;
+  locale?: import("@/lib/i18n/config").Locale;
   /**
    * v1.4.20.1 — optional snapshot scope (per-source toggles + window)
    * driven by the sources-rail picker. When omitted the server falls

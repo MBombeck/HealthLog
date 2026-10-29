@@ -945,8 +945,7 @@ export const DOCUMENT_CHAT_MESSAGE_MAX = 4000;
  * Request body for `POST /api/documents/inbound/{id}/chat`. No `userId` and no
  * `documentId` field — the user is narrowed from the session and the document id
  * comes from the path. `conversationId` continues an existing thread scoped to
- * this document; omitting it starts a new one. `locale` is the reply language,
- * any UI locale, like the Coach's.
+ * this document; omitting it starts a new one. `locale` is the reply language.
  */
 export const documentChatRequestSchema = z
   .object({
