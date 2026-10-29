@@ -8,7 +8,11 @@
  * that account holds none of those rows, and the check is exactly that: a row
  * of any model the backup carries ({@link BACKED_UP_MODELS}) under the
  * account refuses it. Everything a restore leaves alone (credentials,
- * sessions, devices, grants) does not count.
+ * sessions, devices, grants) does not count, and neither does the setup state
+ * signing up leaves behind ({@link RESTORE_TARGET_SETUP_MODELS}): the person
+ * did not enter it as a record, and the restore replaces it with the copy's.
+ * A reading or a medication entered during setup is a record like any other
+ * and still refuses, because the restore would delete it.
  *
  * The other two refusals keep the account rules intact. A managed profile is
  * its Guardians' record, which an admin does not write into (the users list
@@ -47,6 +51,29 @@ export const BACKED_UP_CHILD_MODELS: Readonly<Record<string, string>> = {
 export const RESTORE_TARGET_OWNED_MODELS: readonly string[] =
   BACKED_UP_MODELS.filter((model) => !(model in BACKED_UP_CHILD_MODELS));
 
+/**
+ * The backed-up models an account holds a row of after signing up and going
+ * through setup, before anything has been recorded, each with the writer.
+ * One row per account, settings-shaped, and deleted and re-created from the
+ * copy by every restore, so the copy's state replaces it and nothing the
+ * person entered is lost. Without this list the account of someone who has
+ * signed up again was always refused, which is the case the target exists
+ * for. `restore-target-models.test.ts` holds each to that shape.
+ */
+export const RESTORE_TARGET_SETUP_MODELS: Readonly<Record<string, string>> = {
+  // `PATCH /api/onboarding/answers` and `POST /api/onboarding/complete`.
+  OnboardingRecord: "the setup answers",
+  // Created by the setup confirm when the cycle area is chosen, and by the
+  // first read of the cycle settings.
+  CycleProfile: "the cycle settings",
+};
+
+/** The models whose rows make an account a refused restore target. */
+const RESTORE_TARGET_CHECKED_MODELS: readonly string[] =
+  RESTORE_TARGET_OWNED_MODELS.filter(
+    (model) => !(model in RESTORE_TARGET_SETUP_MODELS),
+  );
+
 interface OwnedDelegate {
   findFirst(args: {
     where: { userId: string };
@@ -65,13 +92,16 @@ function ownedDelegate(db: object, model: string): OwnedDelegate {
   return delegate;
 }
 
-/** The backed-up models under which `userId` holds at least one row. */
+/**
+ * The backed-up models under which `userId` holds at least one row, setup
+ * state left out.
+ */
 export async function modelsHoldingRecords(
   db: Prisma.TransactionClient,
   userId: string,
 ): Promise<string[]> {
   const held: string[] = [];
-  for (const model of RESTORE_TARGET_OWNED_MODELS) {
+  for (const model of RESTORE_TARGET_CHECKED_MODELS) {
     const row = await ownedDelegate(db, model).findFirst({
       where: { userId },
       select: { userId: true },

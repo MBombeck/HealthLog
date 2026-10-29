@@ -108,7 +108,12 @@ exists, and the console then asks where the records should go:
   account and type its username to confirm. The account must hold no records
   yet: a restore replaces an account's records and does not merge them, so an
   account with even one record of any kind a copy carries is refused, with the
-  kinds named. Managed profiles and accounts pending deletion are not offered.
+  kinds named. What signing up and the setup questions leave behind does not
+  count (the setup answers and the cycle settings): the restore replaces both
+  with the copy's. A reading or medication entered on setup's last screen is a
+  record, and the account is refused until it is deleted, because the restore
+  would delete it too. Managed profiles and accounts pending deletion are not
+  offered.
 
 The file is then uploaded a second time, and its owner is changed to the chosen
 account as it is read. Nothing else in the file changes. The stored copy is

@@ -22,6 +22,9 @@
  *      empty account (typed confirmation) and into a new account it creates,
  *      every section comes back, the audit trail says what happened, and
  *      nothing names the erased account, the refused first upload included.
+ *      An account that has just been through the setup routes counts as
+ *      empty, and the copy's setup state replaces its own; one whose setup
+ *      ended on a reading of its own does not.
  *   6. A target that holds records, is a managed profile, is pending deletion
  *      or is not confirmed is refused before the file is read; so is a target
  *      for a file whose own account is still here, and a new account made for
@@ -290,6 +293,52 @@ async function checkTarget(userId: string) {
   };
 }
 
+function jsonRequest(path: string, method: string, body: unknown): Request {
+  return new Request(`http://localhost${path}`, {
+    method,
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+/**
+ * `userId` signs up again and goes through setup the way the flow does it:
+ * every question answered, the units written, cycle tracking asked for, and
+ * the confirm screen's profile fields. The session is left on `userId`.
+ */
+async function goThroughOnboarding(prisma: PrismaClient, userId: string) {
+  cookieJar.clear();
+  await signIn(prisma, userId);
+  const { PATCH } = await import("@/app/api/onboarding/answers/route");
+  const answer = async (body: unknown) => {
+    const res = await (PATCH as (r: Request) => Promise<Response>)(
+      jsonRequest("/api/onboarding/answers", "PATCH", body),
+    );
+    expect(res.status, await res.clone().text()).toBe(200);
+  };
+  await answer({ step: "who", recordTarget: "me" });
+  await answer({ step: "areas", areas: ["blood-pressure", "cycle", "labs"] });
+  await answer({ step: "medication", medication: "yes" });
+  await answer({ step: "sources", status: "skipped" });
+  await answer({ step: "visit", visit: "no" });
+  await answer({
+    step: "units",
+    units: { glucoseUnit: "mmol/L", unitPreference: "metric" },
+  });
+  const { POST } = await import("@/app/api/onboarding/complete/route");
+  const done = await (POST as (r: Request) => Promise<Response>)(
+    jsonRequest("/api/onboarding/complete", "POST", {
+      displayName: "Returning",
+      heightCm: 172,
+      dateOfBirth: "1980-05-04",
+      gender: "FEMALE",
+    }),
+  );
+  expect(done.status, await done.clone().text()).toBe(200);
+  await answer({ step: "first-result", status: "skipped" });
+  await answer({ step: "done" });
+}
+
 /** The stored copy as the restore will read it, as text. */
 async function storedCopyText(prisma: PrismaClient, backupId: string) {
   const row = await prisma.dataBackup.findUniqueOrThrow({
@@ -449,6 +498,85 @@ describe("restoring the backup of an erased account into a chosen account", () =
         expect.objectContaining({ backupId, ownerId: fresh.id }),
       ]);
       expect(await cellsNaming(prisma, OWNER_ID)).toEqual([]);
+    },
+    SLOW,
+  );
+
+  it(
+    "into an account that has just been through setup: the setup state does not count, and the copy's replaces it",
+    async () => {
+      const prisma = getPrismaClient();
+      const { admin, json, counts } = await eraseAfterExport(prisma);
+      const person = await prisma.user.create({
+        data: {
+          username: "returning-person",
+          email: "returning-person@example.test",
+        },
+      });
+      await goThroughOnboarding(prisma, person.id);
+      // What setup left behind: its own row, and the cycle profile the cycle
+      // answer switched on.
+      expect(
+        await prisma.onboardingRecord.count({ where: { userId: person.id } }),
+      ).toBe(1);
+      expect(
+        await prisma.cycleProfile.findUniqueOrThrow({
+          where: { userId: person.id },
+          select: { cycleTrackingEnabled: true },
+        }),
+      ).toEqual({ cycleTrackingEnabled: true });
+
+      cookieJar.clear();
+      await signIn(prisma, admin.id);
+      const check = await checkTarget(person.id);
+      expect(check.body.data).toMatchObject({
+        eligible: true,
+        reason: null,
+        models: [],
+      });
+
+      const stored = await uploadInto(json, {
+        into: "existing",
+        userId: person.id,
+        confirm: "returning-person",
+      });
+      expect(stored.status, JSON.stringify(stored.body)).toBe(201);
+      const restored = await restore(stored.body.data!.id);
+      expect(restored.status, JSON.stringify(restored.body)).toBe(200);
+      // Replaced, not merged: the counts are the file's, setup rows included.
+      expect(await countsOf(prisma, person.id)).toEqual(counts);
+      expect(await cellsNaming(prisma, OWNER_ID)).toEqual([]);
+    },
+    SLOW,
+  );
+
+  it(
+    "refuses an account whose setup ended on a reading of its own, because the restore would delete it",
+    async () => {
+      const prisma = getPrismaClient();
+      const { admin } = await eraseAfterExport(prisma);
+      const person = await prisma.user.create({
+        data: { username: "logged-one", email: "logged-one@example.test" },
+      });
+      await goThroughOnboarding(prisma, person.id);
+      // The first-result step's reading goes through the ordinary write.
+      await prisma.measurement.create({
+        data: {
+          userId: person.id,
+          type: "BLOOD_PRESSURE_SYS",
+          value: 128,
+          unit: "mmHg",
+          measuredAt: new Date("2026-10-28T08:00:00.000Z"),
+        },
+      });
+
+      cookieJar.clear();
+      await signIn(prisma, admin.id);
+      expect((await checkTarget(person.id)).body.data).toMatchObject({
+        eligible: false,
+        reason: "holds_records",
+        models: ["Measurement"],
+      });
     },
     SLOW,
   );
