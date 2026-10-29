@@ -8110,7 +8110,16 @@
         "undoDeletionBody": "{name} asked to delete this account, and it is erased when the grace window ends. Undoing keeps the account and everything in it as it was. {name} can sign in again, but API tokens, share links and trusted devices stay revoked and have to be set up again.",
         "undoDeletionBodyGuardian": "A guardian deleted the managed profile {name}, and it is erased when the grace window ends. Undoing keeps the profile and everything in it as it was, and its guardians can reach it again. Its share links and tokens stay revoked and have to be set up again.",
         "undoDeletionDone": "Deletion undone for {name}",
-        "undoDeletionFailed": "Could not undo the deletion"
+        "undoDeletionFailed": "Could not undo the deletion",
+        "undoDeletionBodyAdmin": "An admin deleted the account {name}, and it is erased when the grace window ends. Undoing keeps the account and everything in it as it was. {name} can sign in again, but API tokens, share links and trusted devices stay revoked and have to be set up again.",
+        "deleteUser": "Delete account",
+        "deleteUserTitle": "Delete the account {name}?",
+        "deleteUserBodyGrace": "{name} is signed out everywhere at once and can no longer sign in. The account and everything in it is erased on {date}. Until then you can undo the deletion here.",
+        "deleteUserBodyNow": "{name} and everything in the account is erased right away. This server keeps no grace window, so the deletion cannot be undone.",
+        "deleteUserConfirm": "Delete account",
+        "deleteUserScheduled": "The account {name} is locked and will be erased on {date}",
+        "deleteUserDone": "The account {name} was deleted",
+        "deleteUserFailed": "Could not delete the account"
       },
       "invites": {
         "title": "Invites",

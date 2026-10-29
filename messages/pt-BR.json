@@ -8110,7 +8110,16 @@
         "undoDeletionBody": "{name} pediu para excluir esta conta, e ela é apagada quando o prazo de carência termina. Desfazer mantém a conta e tudo o que há nela como estava. {name} pode entrar de novo, mas os tokens de API, os links de compartilhamento e os dispositivos confiáveis continuam revogados e precisam ser configurados de novo.",
         "undoDeletionBodyGuardian": "Um guardião excluiu o perfil gerenciado {name}, e ele é apagado quando o prazo de carência termina. Desfazer mantém o perfil e tudo o que há nele como estava, e os guardiões voltam a ter acesso. Os links de compartilhamento e tokens continuam revogados e precisam ser configurados de novo.",
         "undoDeletionDone": "Exclusão de {name} desfeita",
-        "undoDeletionFailed": "Não foi possível desfazer a exclusão"
+        "undoDeletionFailed": "Não foi possível desfazer a exclusão",
+        "undoDeletionBodyAdmin": "Um administrador excluiu a conta {name}, e ela é apagada quando o prazo de carência termina. Desfazer mantém a conta e tudo o que há nela como estava. {name} pode entrar de novo, mas os tokens de API, os links de compartilhamento e os dispositivos confiáveis continuam revogados e precisam ser configurados de novo.",
+        "deleteUser": "Excluir conta",
+        "deleteUserTitle": "Excluir a conta {name}?",
+        "deleteUserBodyGrace": "{name} sai da conta em todos os lugares na hora e não consegue mais entrar. A conta e tudo o que há nela são apagados em {date}. Até lá, você pode desfazer a exclusão aqui.",
+        "deleteUserBodyNow": "{name} e tudo o que há na conta são apagados na hora. Este servidor não tem prazo de carência, então a exclusão não pode ser desfeita.",
+        "deleteUserConfirm": "Excluir conta",
+        "deleteUserScheduled": "A conta {name} está bloqueada e será apagada em {date}",
+        "deleteUserDone": "A conta {name} foi excluída",
+        "deleteUserFailed": "Não foi possível excluir a conta"
       },
       "invites": {
         "title": "Convites",

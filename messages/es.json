@@ -8110,7 +8110,16 @@
         "undoDeletionBody": "{name} pidió eliminar esta cuenta, y se borra cuando termina el plazo de gracia. Deshacerlo conserva la cuenta y todo su contenido tal como estaba. {name} puede volver a iniciar sesión, pero los tokens de API, los enlaces compartidos y los dispositivos de confianza siguen revocados y hay que configurarlos de nuevo.",
         "undoDeletionBodyGuardian": "Una persona responsable eliminó el perfil gestionado {name}, y se borra cuando termina el plazo de gracia. Deshacerlo conserva el perfil y todo su contenido tal como estaba, y las personas responsables vuelven a tener acceso. Sus enlaces compartidos y tokens siguen revocados y hay que configurarlos de nuevo.",
         "undoDeletionDone": "Eliminación de {name} deshecha",
-        "undoDeletionFailed": "No se pudo deshacer la eliminación"
+        "undoDeletionFailed": "No se pudo deshacer la eliminación",
+        "undoDeletionBodyAdmin": "Un administrador eliminó la cuenta {name}, y se borra cuando termina el plazo de gracia. Deshacerlo conserva la cuenta y todo su contenido tal como estaba. {name} puede volver a iniciar sesión, pero los tokens de API, los enlaces compartidos y los dispositivos de confianza siguen revocados y hay que configurarlos de nuevo.",
+        "deleteUser": "Eliminar cuenta",
+        "deleteUserTitle": "¿Eliminar la cuenta {name}?",
+        "deleteUserBodyGrace": "{name} cierra sesión en todas partes al instante y ya no puede iniciar sesión. La cuenta y todo su contenido se borran el {date}. Hasta entonces puedes deshacer la eliminación aquí.",
+        "deleteUserBodyNow": "{name} y todo el contenido de la cuenta se borran de inmediato. Este servidor no tiene plazo de gracia, así que la eliminación no se puede deshacer.",
+        "deleteUserConfirm": "Eliminar cuenta",
+        "deleteUserScheduled": "La cuenta {name} está bloqueada y se borrará el {date}",
+        "deleteUserDone": "Se eliminó la cuenta {name}",
+        "deleteUserFailed": "No se pudo eliminar la cuenta"
       },
       "invites": {
         "title": "Invitaciones",

@@ -295,7 +295,7 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
   "/api/admin/support-report": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/tokens": { kind: "adminConsole", methods: ["GET"] },
   "/api/admin/users": { kind: "adminConsole", methods: ["GET"] },
-  "/api/admin/users/{id}": { kind: "adminConsole", methods: ["PUT"] },
+  "/api/admin/users/{id}": { kind: "adminConsole", methods: ["DELETE", "PUT"] },
   "/api/admin/users/{id}/force-logout": {
     kind: "adminConsole",
     methods: ["POST"],

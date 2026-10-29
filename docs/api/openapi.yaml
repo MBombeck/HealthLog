@@ -38543,8 +38543,9 @@ components:
                 `upstream_error`, `timeout`, `connection_failed` and the per-provider additions) are enumerated in each
                 `/test` operation instead, where the differences can be stated; and a 401 raised by a route checking a
                 credential of its own carries the generic `http.unauthenticated`. account —
-                account.deletion.no_guardian, account.deletion.not_pending; activity — activity.calendar.future_date,
-                activity.calendar.too_old; ai — ai.budget.exceeded, ai.provider.none, ai.record.notPermitted,
+                account.deletion.already_pending, account.deletion.no_guardian, account.deletion.not_pending; activity —
+                activity.calendar.future_date, activity.calendar.too_old; admin — admin.users.delete.managed_profile,
+                admin.users.delete.self; ai — ai.budget.exceeded, ai.provider.none, ai.record.notPermitted,
                 ai.unavailable, ai.usage.aboveCeiling, ai.usage.defaultAboveCeiling, ai.usage.invalid,
                 ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider — ai_provider.invalid, ai_provider.no_fields;
                 aiRuns — aiRuns.failed, aiRuns.notFound, aiRuns.readerBusy, aiRuns.timedOut, aiRuns.workerUnavailable;

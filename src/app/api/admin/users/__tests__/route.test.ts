@@ -100,6 +100,7 @@ describe("GET /api/admin/users", () => {
       // BigInt in Prisma, plain number on the wire.
       documentQuotaBytes: 2_147_483_648,
       passkeyCount: 2,
+      managedProfile: false,
       // Not pending deletion.
       deletion: null,
     });
@@ -128,6 +129,7 @@ describe("GET /api/admin/users", () => {
       deletionRequestedAt: true,
       deletionPurgeAt: true,
       deletionRequestedById: true,
+      managedProfileAt: true,
       _count: { select: { passkeys: true } },
     });
     expect(args.select).not.toHaveProperty("passwordHash");

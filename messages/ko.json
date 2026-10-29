@@ -8085,7 +8085,16 @@
         "undoDeletionBody": "{name} 님이 이 계정의 삭제를 요청했고, 유예 기간이 끝나면 지워져요. 취소하면 계정과 그 안의 모든 내용이 그대로 남아요. {name} 님은 다시 로그인할 수 있지만, API 토큰, 공유 링크, 신뢰하는 기기는 계속 취소된 상태라 다시 설정해야 해요.",
         "undoDeletionBodyGuardian": "보호자가 관리 프로필 {name}을(를) 삭제했고, 유예 기간이 끝나면 지워져요. 취소하면 프로필과 그 안의 모든 내용이 그대로 남고, 보호자들이 다시 접근할 수 있어요. 공유 링크와 토큰은 계속 취소된 상태라 다시 설정해야 해요.",
         "undoDeletionDone": "{name} 삭제를 취소했어요",
-        "undoDeletionFailed": "삭제를 취소하지 못했어요"
+        "undoDeletionFailed": "삭제를 취소하지 못했어요",
+        "undoDeletionBodyAdmin": "관리자가 {name} 계정을 삭제했고, 유예 기간이 끝나면 지워져요. 취소하면 계정과 그 안의 모든 내용이 그대로 남아요. {name} 님은 다시 로그인할 수 있지만, API 토큰, 공유 링크, 신뢰하는 기기는 계속 취소된 상태라 다시 설정해야 해요.",
+        "deleteUser": "계정 삭제",
+        "deleteUserTitle": "{name} 계정을 삭제할까요?",
+        "deleteUserBodyGrace": "{name} 님은 즉시 모든 곳에서 로그아웃되고 더 이상 로그인할 수 없어요. 계정과 그 안의 모든 내용은 {date}에 지워져요. 그때까지는 여기서 삭제를 취소할 수 있어요.",
+        "deleteUserBodyNow": "{name} 님과 계정 안의 모든 내용이 바로 지워져요. 이 서버에는 유예 기간이 없어서 삭제를 취소할 수 없어요.",
+        "deleteUserConfirm": "계정 삭제",
+        "deleteUserScheduled": "{name} 계정이 잠겼고 {date}에 지워져요",
+        "deleteUserDone": "{name} 계정을 삭제했어요",
+        "deleteUserFailed": "계정을 삭제하지 못했어요"
       },
       "invites": {
         "title": "초대",

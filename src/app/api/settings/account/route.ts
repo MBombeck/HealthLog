@@ -8,24 +8,10 @@ import {
   MFA_STEP_UP_MAX_AGE_SECONDS,
 } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
-import { kickOffhostPurge } from "@/lib/jobs/offhost-purge";
-import {
-  deleteGuardianAccountWithLifecycle,
-  LastManagedGuardianError,
-} from "@/lib/managed-profiles/lifecycle";
-import {
-  accountDeletionGraceDays,
-  accountDeletionPurgeAt,
-} from "@/lib/account-deletion/grace";
-import {
-  eraseAccount,
-  lockAccountForDeletion,
-} from "@/lib/account-deletion/lifecycle";
+import { LastManagedGuardianError } from "@/lib/managed-profiles/lifecycle";
+import { requestAccountDeletion } from "@/lib/account-deletion/request";
 import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
-import {
-  assertAnotherAdminStays,
-  LastAdminError,
-} from "@/lib/auth/admin-roster";
+import { LastAdminError } from "@/lib/auth/admin-roster";
 
 export const dynamic = "force-dynamic";
 
@@ -104,53 +90,27 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
   // the elevation would stay redeemable while the erasure was already running.
   await auth.commitElevation();
 
-  const requestedAt = new Date();
-  const purgeAt = accountDeletionPurgeAt(
-    requestedAt,
-    accountDeletionGraceDays(),
-  );
-
+  let purgeAt: Date | null;
   try {
-    await deleteGuardianAccountWithLifecycle(
+    ({ purgeAt } = await requestAccountDeletion({
       userId,
-      async (tx) => {
-        // Checked again under the roster lock: two admins deleting at the
-        // same moment must not each count the other.
-        if (user.role === "ADMIN") await assertAnotherAdminStays(tx, userId);
-        // The invariant has now passed, so this success event cannot survive
-        // a refusal. On an immediate erasure it is purged with the rest of the
-        // account's audit history; during a grace window it is the account's
-        // own record of the request.
-        await auditLog("user.account.delete", {
+      targetIsAdmin: user.role === "ADMIN",
+      requestedById: userId,
+      // The invariants have passed by the time this runs, so this success
+      // event cannot survive a refusal. On an immediate erasure it is purged
+      // with the rest of the account's audit history; during a grace window
+      // it is the account's own record of the request.
+      inTransaction: (tx, scheduledPurgeAt) =>
+        auditLog("user.account.delete", {
           userId,
           ipAddress: getClientIp(request),
           details: {
             username,
-            scheduledPurgeAt: purgeAt?.toISOString() ?? null,
+            scheduledPurgeAt: scheduledPurgeAt?.toISOString() ?? null,
           },
           client: tx,
-        });
-
-        if (purgeAt) {
-          // Locked, not erased: credentials revoked in this transaction,
-          // the record untouched until the purge job reaches `purgeAt`.
-          await lockAccountForDeletion(tx, {
-            userId,
-            requestedById: userId,
-            requestedAt,
-            purgeAt,
-          });
-          return;
-        }
-
-        // No window: erase now, inside the same record lifecycle transaction
-        // so a refusal leaves every account state intact (sessions, the
-        // account's audit history — GDPR Art. 17 — the off-host purge
-        // request, then the row with everything cascading from it).
-        await eraseAccount(tx, userId, "account_deleted");
-      },
-      { erasing: purgeAt === null },
-    );
+        }),
+    }));
   } catch (error) {
     if (error instanceof LastAdminError) {
       return apiError("The last admin account cannot be deleted", 400);
@@ -164,8 +124,6 @@ export const DELETE = apiHandler(async (request: NextRequest) => {
     }
     throw error;
   }
-
-  if (!purgeAt) await kickOffhostPurge();
 
   annotate({
     action: { name: "settings.account.delete" },

@@ -112,6 +112,7 @@ function discoverGatedRoutes(): string[] {
  */
 const GATED_ROUTES: Record<string, string> = {
   "DELETE /api/admin/data": "web",
+  "DELETE /api/admin/users/[id]": "web",
   "DELETE /api/auth/me/mfa/webauthn/[id]": "web",
   "DELETE /api/auth/passkeys/[id]": "web",
   "DELETE /api/managed-profiles/[id]": "web",

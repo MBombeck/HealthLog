@@ -21,6 +21,7 @@ export const GET = apiHandler(async () => {
       deletionRequestedAt: true,
       deletionPurgeAt: true,
       deletionRequestedById: true,
+      managedProfileAt: true,
       _count: { select: { passkeys: true } },
     },
     orderBy: { createdAt: "asc" },
@@ -42,9 +43,12 @@ export const GET = apiHandler(async () => {
       documentQuotaBytes:
         u.documentQuotaBytes === null ? null : Number(u.documentQuotaBytes),
       passkeyCount: u._count.passkeys,
+      // A record somebody else runs. Its Guardians delete it, so the list
+      // offers no admin deletion on it.
+      managedProfile: u.managedProfileAt != null,
       // An account pending deletion: when it was asked for, when the
-      // purge job erases it, and whether the account asked itself or a
-      // Guardian deleted the managed profile. Null on every other account.
+      // purge job erases it, and who asked: the account itself, a Guardian
+      // (a managed profile), or an admin. Null on every other account.
       // The list offers "Undo deletion" on these rows until `purgeAt`.
       deletion: u.deletionRequestedAt
         ? {
@@ -53,7 +57,9 @@ export const GET = apiHandler(async () => {
             requestedBy:
               u.deletionRequestedById === u.id
                 ? ("self" as const)
-                : ("guardian" as const),
+                : u.managedProfileAt != null
+                  ? ("guardian" as const)
+                  : ("admin" as const),
           }
         : null,
     })),

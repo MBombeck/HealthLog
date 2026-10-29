@@ -30,6 +30,8 @@ const sampleUsers = [
     role: "ADMIN" as const,
     passkeyCount: 2,
     createdAt: "2026-04-01T08:00:00Z",
+    managedProfile: false,
+    deletion: null,
   },
   {
     id: "u2",
@@ -38,6 +40,8 @@ const sampleUsers = [
     role: "USER" as const,
     passkeyCount: 1,
     createdAt: "2026-04-15T08:00:00Z",
+    managedProfile: false,
+    deletion: null,
   },
 ];
 
@@ -51,6 +55,10 @@ vi.mock("@tanstack/react-query", () => ({
     isError: false,
     error: null,
   }),
+}));
+
+vi.mock("@/lib/queries/use-privacy-summary", () => ({
+  useAccountDeletionGrace: () => ({ days: 14, pending: false }),
 }));
 
 vi.mock("@/hooks/use-auth", () => ({
@@ -113,6 +121,15 @@ describe("UserManagementSection — mobile responsive", () => {
     expect(mobileSlice).toContain("Edit user");
     expect(mobileSlice).toContain("Reset password");
     expect(mobileSlice).toContain("Force logout");
+  });
+
+  it("offers deleting every account but the admin's own", () => {
+    const html = render();
+    // Two rows, each in the desktop table and the mobile list; only the
+    // other account carries the control.
+    const deletes = html.match(/data-slot="admin-user-delete"/g) ?? [];
+    expect(deletes).toHaveLength(2);
+    expect(html).toContain('aria-label="Delete account"');
   });
 
   it("uses smaller card padding on mobile (p-4 md:p-6)", () => {

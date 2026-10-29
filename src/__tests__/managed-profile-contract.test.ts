@@ -145,15 +145,27 @@ describe("managed-profile contract", () => {
       path.join(root, "src/lib/sharing/grants.ts"),
       "utf8",
     );
-    const accountDeletion = await readFile(
-      path.join(root, "src/app/api/settings/account/route.ts"),
+    // Both account deletions (the account's own and an admin's) take the one
+    // request path, and that path decides the Guardian invariant.
+    const deletionRequest = await readFile(
+      path.join(root, "src/lib/account-deletion/request.ts"),
       "utf8",
+    );
+    const deletionRoutes = await Promise.all(
+      [
+        "src/app/api/settings/account/route.ts",
+        "src/app/api/admin/users/[id]/route.ts",
+      ].map((rel) => readFile(path.join(root, rel), "utf8")),
     );
 
     expect(lifecycle).toContain("pg_advisory_xact_lock");
     expect(lifecycle).toContain("clearManagedProfileMarker");
     expect(lifecycle).toContain("deleteManagedProfile");
     expect(grants).toContain("reduceManagedProfileGuardian");
-    expect(accountDeletion).toContain("deleteGuardianAccountWithLifecycle");
+    expect(deletionRequest).toContain("deleteGuardianAccountWithLifecycle(");
+    for (const route of deletionRoutes) {
+      expect(route).toContain("requestAccountDeletion(");
+      expect(route).not.toContain("lockAccountForDeletion(");
+    }
   });
 });

@@ -8110,7 +8110,16 @@
         "undoDeletionBody": "{name} a demandé la suppression de ce compte, qui sera effacé à la fin du délai de grâce. Annuler conserve le compte et tout son contenu tels quels. {name} peut se reconnecter, mais les jetons d’API, les liens de partage et les appareils de confiance restent révoqués et doivent être configurés à nouveau.",
         "undoDeletionBodyGuardian": "Une personne responsable a supprimé le profil géré {name}, qui sera effacé à la fin du délai de grâce. Annuler conserve le profil et tout son contenu tels quels, et les personnes responsables y ont de nouveau accès. Ses liens de partage et jetons restent révoqués et doivent être configurés à nouveau.",
         "undoDeletionDone": "Suppression de {name} annulée",
-        "undoDeletionFailed": "Impossible d’annuler la suppression"
+        "undoDeletionFailed": "Impossible d’annuler la suppression",
+        "undoDeletionBodyAdmin": "Un administrateur a supprimé le compte {name}, qui sera effacé à la fin du délai de grâce. Annuler conserve le compte et tout son contenu tels quels. {name} peut se reconnecter, mais les jetons d’API, les liens de partage et les appareils de confiance restent révoqués et doivent être configurés à nouveau.",
+        "deleteUser": "Supprimer le compte",
+        "deleteUserTitle": "Supprimer le compte {name} ?",
+        "deleteUserBodyGrace": "{name} est déconnecté partout immédiatement et ne peut plus se connecter. Le compte et tout son contenu seront effacés le {date}. D’ici là, vous pouvez annuler la suppression ici.",
+        "deleteUserBodyNow": "{name} et tout le contenu du compte sont effacés immédiatement. Ce serveur n’a pas de délai de grâce, la suppression ne peut donc pas être annulée.",
+        "deleteUserConfirm": "Supprimer le compte",
+        "deleteUserScheduled": "Le compte {name} est verrouillé et sera effacé le {date}",
+        "deleteUserDone": "Le compte {name} a été supprimé",
+        "deleteUserFailed": "Impossible de supprimer le compte"
       },
       "invites": {
         "title": "Invitations",

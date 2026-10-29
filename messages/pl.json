@@ -8110,7 +8110,16 @@
         "undoDeletionBody": "{name} poprosił o usunięcie tego konta; zostanie ono usunięte po upływie okresu karencji. Cofnięcie zachowuje konto i całą jego zawartość bez zmian. {name} może znów się zalogować, ale tokeny API, linki udostępniania i zaufane urządzenia pozostają unieważnione i trzeba je skonfigurować od nowa.",
         "undoDeletionBodyGuardian": "Osoba opiekująca się profilem usunęła profil zarządzany {name}; zostanie on usunięty po upływie okresu karencji. Cofnięcie zachowuje profil i całą jego zawartość bez zmian, a osoby opiekujące się nim znów mają do niego dostęp. Jego linki udostępniania i tokeny pozostają unieważnione i trzeba je skonfigurować od nowa.",
         "undoDeletionDone": "Cofnięto usunięcie {name}",
-        "undoDeletionFailed": "Nie udało się cofnąć usunięcia"
+        "undoDeletionFailed": "Nie udało się cofnąć usunięcia",
+        "undoDeletionBodyAdmin": "Administrator usunął konto {name}; zostanie ono usunięte po upływie okresu karencji. Cofnięcie zachowuje konto i całą jego zawartość bez zmian. {name} może znów się zalogować, ale tokeny API, linki udostępniania i zaufane urządzenia pozostają unieważnione i trzeba je skonfigurować od nowa.",
+        "deleteUser": "Usuń konto",
+        "deleteUserTitle": "Usunąć konto {name}?",
+        "deleteUserBodyGrace": "{name} zostanie od razu wszędzie wylogowany i nie będzie mógł się już zalogować. Konto i cała jego zawartość zostaną usunięte {date}. Do tego czasu możesz tutaj cofnąć usunięcie.",
+        "deleteUserBodyNow": "{name} i cała zawartość konta zostaną usunięte od razu. Ten serwer nie ma okresu karencji, więc usunięcia nie da się cofnąć.",
+        "deleteUserConfirm": "Usuń konto",
+        "deleteUserScheduled": "Konto {name} jest zablokowane i zostanie usunięte {date}",
+        "deleteUserDone": "Konto {name} zostało usunięte",
+        "deleteUserFailed": "Nie udało się usunąć konta"
       },
       "invites": {
         "title": "Zaproszenia",

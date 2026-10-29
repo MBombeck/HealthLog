@@ -8110,7 +8110,16 @@
         "undoDeletionBody": "{name} heeft gevraagd dit account te verwijderen; het wordt gewist als de bedenktijd afloopt. Ongedaan maken houdt het account en alles erin zoals het was. {name} kan weer inloggen, maar API-tokens, deellinks en vertrouwde apparaten blijven ingetrokken en moeten opnieuw worden ingesteld.",
         "undoDeletionBodyGuardian": "Een verzorger heeft het beheerde profiel {name} verwijderd; het wordt gewist als de bedenktijd afloopt. Ongedaan maken houdt het profiel en alles erin zoals het was, en de verzorgers kunnen het weer bereiken. De deellinks en tokens blijven ingetrokken en moeten opnieuw worden ingesteld.",
         "undoDeletionDone": "Verwijdering van {name} ongedaan gemaakt",
-        "undoDeletionFailed": "Verwijdering kon niet ongedaan worden gemaakt"
+        "undoDeletionFailed": "Verwijdering kon niet ongedaan worden gemaakt",
+        "undoDeletionBodyAdmin": "Een beheerder heeft het account {name} verwijderd; het wordt gewist als de bedenktijd afloopt. Ongedaan maken houdt het account en alles erin zoals het was. {name} kan weer inloggen, maar API-tokens, deellinks en vertrouwde apparaten blijven ingetrokken en moeten opnieuw worden ingesteld.",
+        "deleteUser": "Account verwijderen",
+        "deleteUserTitle": "Het account {name} verwijderen?",
+        "deleteUserBodyGrace": "{name} wordt meteen overal uitgelogd en kan niet meer inloggen. Het account en alles erin wordt op {date} gewist. Tot dan kun je de verwijdering hier ongedaan maken.",
+        "deleteUserBodyNow": "{name} en alles in het account wordt meteen gewist. Deze server heeft geen bedenktijd, dus de verwijdering kan niet ongedaan worden gemaakt.",
+        "deleteUserConfirm": "Account verwijderen",
+        "deleteUserScheduled": "Het account {name} is vergrendeld en wordt op {date} gewist",
+        "deleteUserDone": "Het account {name} is verwijderd",
+        "deleteUserFailed": "Het account kon niet worden verwijderd"
       },
       "invites": {
         "title": "Uitnodigingen",

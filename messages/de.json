@@ -8110,7 +8110,16 @@
         "undoDeletionBody": "{name} hat die Löschung dieses Kontos verlangt; es wird gelöscht, wenn die Frist endet. Rückgängig machen behält das Konto und alles darin so, wie es war. {name} kann sich wieder anmelden, aber API-Tokens, Freigabe-Links und vertrauenswürdige Geräte bleiben widerrufen und müssen neu eingerichtet werden.",
         "undoDeletionBodyGuardian": "Eine betreuende Person hat das verwaltete Profil {name} gelöscht; es wird gelöscht, wenn die Frist endet. Rückgängig machen behält das Profil und alles darin so, wie es war, und die betreuenden Personen erreichen es wieder. Seine Freigabe-Links und Tokens bleiben widerrufen und müssen neu eingerichtet werden.",
         "undoDeletionDone": "Löschung von {name} rückgängig gemacht",
-        "undoDeletionFailed": "Löschung konnte nicht rückgängig gemacht werden"
+        "undoDeletionFailed": "Löschung konnte nicht rückgängig gemacht werden",
+        "undoDeletionBodyAdmin": "Ein Admin hat das Konto {name} gelöscht; es wird gelöscht, wenn die Frist endet. Rückgängig machen behält das Konto und alles darin so, wie es war. {name} kann sich wieder anmelden, aber API-Tokens, Freigabe-Links und vertrauenswürdige Geräte bleiben widerrufen und müssen neu eingerichtet werden.",
+        "deleteUser": "Konto löschen",
+        "deleteUserTitle": "Das Konto {name} löschen?",
+        "deleteUserBodyGrace": "{name} wird sofort überall abgemeldet und kann sich nicht mehr anmelden. Das Konto und alles darin wird am {date} gelöscht. Bis dahin kannst du die Löschung hier rückgängig machen.",
+        "deleteUserBodyNow": "{name} und alles im Konto wird sofort gelöscht. Dieser Server hat keine Frist eingestellt, die Löschung lässt sich also nicht rückgängig machen.",
+        "deleteUserConfirm": "Konto löschen",
+        "deleteUserScheduled": "Das Konto {name} ist gesperrt und wird am {date} gelöscht",
+        "deleteUserDone": "Das Konto {name} wurde gelöscht",
+        "deleteUserFailed": "Das Konto konnte nicht gelöscht werden"
       },
       "invites": {
         "title": "Einladungen",
