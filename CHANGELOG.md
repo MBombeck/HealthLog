@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.46.5] — 2026-10-30
+
+### Fixed
+
+- **Azure OpenAI reasoning deployments answer through the gateway.** An
+  OpenAI-compatible gateway pointed at an Azure OpenAI v1 endpoint sent
+  `max_tokens` and `temperature`, and a reasoning deployment (gpt-5 on,
+  the o-series) refused the request with a 400. A deployment named after
+  its model now gets `max_completion_tokens` and no sampling controls
+  from the first request, as on `api.openai.com`. A deployment with a
+  name of its own, or any other gateway that refuses `max_tokens` the
+  same way, is asked once more with `max_completion_tokens` and keeps
+  that for the endpoint and model. GPT-4 deployments and other gateways
+  keep the wire they had. Reported in #1304.
+
 ## [1.46.4] — 2026-10-30
 
 ### Fixed
