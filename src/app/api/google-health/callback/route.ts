@@ -9,10 +9,7 @@ import { verifyCallbackActor } from "@/lib/integrations/oauth-kit/connect-target
 import { annotate, getEvent } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
-import {
-  fetchProfile,
-  resolveGoogleHealthUserId,
-} from "@/lib/google-health/client";
+import { fetchProfile, accountIdFor } from "@/lib/google-health/client";
 import { googleHealthOAuth } from "@/lib/google-health/oauth";
 import { getGoogleHealthScopeString } from "@/lib/google-health/oauth";
 import { getUserGoogleHealthCredentials } from "@/lib/google-health/credentials";
@@ -179,7 +176,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
       }
 
       const profile = await fetchProfile(tokens.access_token);
-      const googleUserId = resolveGoogleHealthUserId(profile);
+      const googleUserId = await accountIdFor(profile, tokens.access_token);
       // One Google account, one record.
       if (
         await accountLinkedElsewhere(

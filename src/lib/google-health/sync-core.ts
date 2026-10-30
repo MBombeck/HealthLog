@@ -119,7 +119,7 @@ export interface GoogleHealthTokenInfo {
   accessToken: string;
   /** When `accessToken` stops being accepted. */
   expiresAt: Date;
-  connection: { id: string; googleUserId: string };
+  connection: { id: string; googleUserId: string | null };
 }
 
 /**

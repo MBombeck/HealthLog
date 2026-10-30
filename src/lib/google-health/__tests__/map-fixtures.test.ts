@@ -337,6 +337,9 @@ describe("Google Health mapper goldens", () => {
     ];
     const output = {
       resolveGoogleHealthUserId: [
+        { name: "users/1234567890/profile" },
+        { name: "users/me/profile" },
+        { name: "users/me/profile", id: "id-0001" },
         { name: "users/1234567890" },
         { name: "users/", id: "id-0002" },
         { name: "plain-0003" },
