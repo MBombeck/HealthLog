@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.46.4] — 2026-10-30
+
+### Fixed
+
+- **Google Health connects on every profile of an instance again.** The
+  connect stored the same placeholder as the Google account's id for every
+  account, so since 1.44.0 a second profile on the same instance was
+  turned away with "This Google account is already connected to another
+  HealthLog profile", also when it only reconnected. The connect now
+  stores the account's real id. An update clears the stored placeholder,
+  and a profile that was turned away connects with its next attempt.
+  Instances with one Google Health connection were not affected.
+
 ## [1.46.3] — 2026-10-29
 
 ### Fixed
