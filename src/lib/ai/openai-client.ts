@@ -498,7 +498,8 @@ export class OpenAIClient implements AIProvider {
    * structured field (with anything key-shaped stripped), so an upstream
    * incident is diagnosable from the log instead of an opaque status.
    *
-   * An endpoint or model that refuses the reasoning field, or (#470, gateway
+   * An endpoint or model that refuses the reasoning field, `max_tokens`
+   * (#1304, asked again with `max_completion_tokens`), or (#470, gateway
    * only) the JSON flag, is asked once more without it and remembers
    * (`wire-refusal.ts`), inside the call's request budget. A refusal the
    * budget leaves no repeat for is marked `reasoningRefused`.
@@ -533,6 +534,15 @@ export class OpenAIClient implements AIProvider {
       json:
         this.isGateway && sent.sendJsonFormat
           ? { endpoint: this.config.baseUrl, action: "ai.compat.jsonDialect" }
+          : null,
+      // The request that failed carried `max_tokens`: nothing is learned
+      // between sending it and reading its refusal, so the selection holds.
+      budget:
+        selectOpenAIChatCompletionsCapabilities(
+          this.config.baseUrl,
+          this.config.model,
+        ).tokenBudgetField === "max_tokens"
+          ? { endpoint: this.config.baseUrl }
           : null,
     });
     if (lesson && hops.canSend) return this.generateCompletion(params, hops);

@@ -57,8 +57,8 @@ export function resetJsonModeDialectCache(): void {
  * True when a 4xx error body reads as "this endpoint rejects the
  * `response_format` field" — either it names the field outright or it
  * complains about an unknown/unexpected parameter. A complaint that names
- * `reasoning_effort` and not `response_format` is about the reasoning field,
- * so it must not switch the endpoint's JSON mode off.
+ * `reasoning_effort` or `max_tokens` (#1304) and not `response_format` is
+ * about that field, so it must not switch the endpoint's JSON mode off.
  */
 export function isResponseFormatRejection(
   status: number,
@@ -66,7 +66,7 @@ export function isResponseFormatRejection(
 ): boolean {
   if (status < 400 || status >= 500) return false;
   if (
-    /reasoning[\s_-]*effort/i.test(bodyExcerpt) &&
+    /reasoning[\s_-]*effort|\bmax_tokens\b/i.test(bodyExcerpt) &&
     !/response_format/i.test(bodyExcerpt)
   ) {
     return false;

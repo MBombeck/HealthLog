@@ -334,6 +334,8 @@ export class LocalOpenAICompatibleClient implements AIProvider {
       json: sent.json
         ? { endpoint: this.config.baseUrl, action: "ai.local.jsonDialect" }
         : null,
+      // Local runtimes take `max_tokens`; this wire has no other field.
+      budget: null,
     });
     if ((lesson || sent.streamed) && hops.canSend) {
       return this.generateCompletion(params, hops);

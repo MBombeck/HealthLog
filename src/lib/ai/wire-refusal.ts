@@ -3,10 +3,12 @@
  * clients, in one place for both.
  *
  * Only an HTTP 400 that names a field the request carried teaches anything:
- * the reasoning field (`isReasoningParameterRejection`, learned per endpoint
- * and model) or the JSON flag (`isResponseFormatRejection`, learned per
- * endpoint). The reasoning field is checked first, so a body that names it
- * never switches JSON mode off. Whether the call then sends the lesser request
+ * `max_tokens` where the model takes `max_completion_tokens` (#1304,
+ * `isMaxTokensRejection`, learned per endpoint and model), the reasoning
+ * field (`isReasoningParameterRejection`, learned per endpoint and model) or
+ * the JSON flag (`isResponseFormatRejection`, learned per endpoint). The
+ * JSON flag is checked last, so a body that names another field never
+ * switches JSON mode off. Whether the call then sends the lesser request
  * is the client's, inside its request budget (`request-hops.ts`).
  *
  * Server-only.
@@ -17,13 +19,17 @@ import {
   isResponseFormatRejection,
   rememberJsonModeDialect,
 } from "./json-dialect";
+import {
+  isMaxTokensRejection,
+  rememberMaxTokensRefused,
+} from "./openai-capabilities";
 import { learnReasoningFieldRefused } from "./reasoning/answerless";
 import {
   isReasoningParameterRejection,
   type ReasoningDialectKey,
 } from "./reasoning/dialect-cache";
 
-export type RefusalLesson = "reasoning" | "json" | null;
+export type RefusalLesson = "budget" | "reasoning" | "json" | null;
 
 export function learnFromRefusal(args: {
   status: number;
@@ -39,8 +45,18 @@ export function learnFromRefusal(args: {
   } | null;
   /** The endpoint, when the request carried the JSON flag. */
   json: { endpoint: string; action: string } | null;
+  /** The endpoint, when the request carried `max_tokens` it could drop. */
+  budget: { endpoint: string } | null;
 }): RefusalLesson {
-  const { reasoning, json } = args;
+  const { reasoning, json, budget } = args;
+  if (budget && isMaxTokensRejection(args.status, args.body)) {
+    rememberMaxTokensRefused(budget.endpoint, args.model);
+    annotate({
+      action: { name: "ai.compat.tokenBudgetField" },
+      meta: { field: "max_completion_tokens", httpStatus: args.status },
+    });
+    return "budget";
+  }
   if (
     reasoning &&
     isReasoningParameterRejection(

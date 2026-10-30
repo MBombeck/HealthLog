@@ -216,6 +216,18 @@ JSON surfaces send the standard
 the field is detected on the first refusal and retried without it,
 so strict gateways and older local servers both work unmodified.
 
+**Azure OpenAI.** Point the gateway at the resource's v1 endpoint,
+`https://<resource>.openai.azure.com/openai/v1`, and put the
+deployment name in Model. A reasoning model (gpt-5 on, the o-series)
+takes `max_completion_tokens` and no `temperature`, the same as on
+`api.openai.com`. HealthLog sends that from the first request when the
+deployment is named after its model (`gpt-6-luna-eu`). A deployment
+with a name of its own (`prod-chat`) gets the usual `max_tokens`
+once; Azure refuses it, and the request goes out again with
+`max_completion_tokens`. HealthLog remembers that for the endpoint and
+deployment until the container restarts. Any other gateway that
+refuses `max_tokens` the same way is handled the same way.
+
 **When the gateway refuses.** OpenRouter answers a refused generation
 with HTTP 200 and the reason inside the body, so every refusal used to
 reach the provider health card as an empty reply with no status. It now
