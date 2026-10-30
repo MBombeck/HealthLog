@@ -1,10 +1,19 @@
 {
   "resolveGoogleHealthUserId": [
+    {
+      "profile": { "name": "users/1234567890/profile" },
+      "userId": "1234567890"
+    },
+    { "profile": { "name": "users/me/profile" }, "userId": null },
+    {
+      "profile": { "name": "users/me/profile", "id": "id-0001" },
+      "userId": "id-0001"
+    },
     { "profile": { "name": "users/1234567890" }, "userId": "1234567890" },
     { "profile": { "name": "users/", "id": "id-0002" }, "userId": "id-0002" },
-    { "profile": { "name": "plain-0003" }, "userId": "plain-0003" },
+    { "profile": { "name": "plain-0003" }, "userId": null },
     { "profile": { "id": "id-0004" }, "userId": "id-0004" },
-    { "profile": {}, "userId": "me" }
+    { "profile": {}, "userId": null }
   ],
   "formatCivilBound": [
     {

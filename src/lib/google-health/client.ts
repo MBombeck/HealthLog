@@ -34,20 +34,15 @@ import {
 import { GOOGLE_HEALTH_API_BASE } from "./request";
 
 /**
- * The Google Health profile carries the external user id used as the
- * connection's `externalUserId`. A single GET, not a paginated collection.
+ * The Google Health profile. Its resource `name` is `users/{user}/profile`,
+ * where `{user}` is the Google Health user id, or the literal `me` when the
+ * profile was read through the `users/me` alias.
+ * Docs: https://developers.google.com/health/reference/rest/v4/Profile
  */
 export interface GoogleHealthProfile {
-  /**
-   * External user identifier. Google returns `me`-relative profile data; the
-   * stable id is surfaced under `name` (a `users/{id}` resource name) or `id`
-   * depending on the API surface — both are captured here and resolved at the
-   * call site. Re-verify the exact field against a live account at build.
-   */
   name?: string;
   id?: string;
 }
-
 export async function fetchProfile(
   accessToken: string,
 ): Promise<GoogleHealthProfile> {
@@ -89,19 +84,68 @@ export async function fetchProfile(
 }
 
 /**
- * Resolve the stable external user id from a Google Health profile. The
- * `users/{id}` resource name is the canonical anchor; fall back to a bare `id`
- * or "me" so the connection always persists a non-empty `externalUserId`.
+ * The Google Health user id in a profile, or null when it carries none.
+ *
+ * The id is the `{user}` segment of `users/{user}/profile`. Until v1.46.4 the
+ * last path segment was taken, which is the constant `profile` for every
+ * account: every connection stored the same id, and since the one-account-
+ * per-record check (v1.44.0) a second profile on the same instance could not
+ * connect at all. `me` is the alias, not an id, so it resolves to null.
  */
 export function resolveGoogleHealthUserId(
   profile: GoogleHealthProfile,
-): string {
-  if (profile.name) {
-    const tail = profile.name.split("/").pop();
-    if (tail) return tail;
+): string | null {
+  const segment = profile.name?.match(/^users\/([^/]+)/)?.[1];
+  if (segment && segment !== "me") return segment;
+  if (profile.id && profile.id !== "me") return profile.id;
+  return null;
+}
+
+/**
+ * The Google Health user id from `users/me/identity` (`healthUserId`), or
+ * null when the read fails or carries none. Used when the profile names the
+ * account only through the `me` alias. Best-effort: an account whose id
+ * cannot be read still connects, with the id left unknown.
+ * Docs: https://developers.google.com/health/reference/rest/v4/users/getIdentity
+ */
+export async function fetchHealthUserId(
+  accessToken: string,
+): Promise<string | null> {
+  const start = performance.now();
+  try {
+    const res = await safeFetch(`${GOOGLE_HEALTH_API_BASE}/users/me/identity`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    getEvent()?.addExternalCall({
+      service: "google-health",
+      method: "fetchIdentity",
+      duration_ms: Math.round(performance.now() - start),
+      status: res.status,
+    });
+    if (!res.ok) return null;
+    const json = (await res.json().catch(() => null)) as {
+      healthUserId?: unknown;
+    } | null;
+    const id = json?.healthUserId;
+    return typeof id === "string" && id !== "" && id !== "me" ? id : null;
+  } catch {
+    return null;
   }
-  if (profile.id) return profile.id;
-  return "me";
+}
+
+/**
+ * The id a connection stores: the profile's, else the identity's, else null.
+ * An id neither read yields is stored as unknown rather than as a shared
+ * placeholder, so it never makes two records look like one Google account.
+ */
+export async function accountIdFor(
+  profile: GoogleHealthProfile,
+  accessToken: string,
+): Promise<string | null> {
+  return (
+    resolveGoogleHealthUserId(profile) ?? (await fetchHealthUserId(accessToken))
+  );
 }
 
 // ─── Daily roll-up reads (`POST …/dataPoints:dailyRollUp`) ─────────────────

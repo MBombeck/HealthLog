@@ -4614,7 +4614,7 @@ model FitbitOAuthState {
 model GoogleHealthConnection {
   id                  String    @id @default(cuid())
   userId              String    @unique @map("user_id")
-  googleUserId        String    @map("google_user_id") // Google external account id
+  googleUserId        String?   @map("google_user_id") // Google Health user id; null when the connect could not read it
   accessToken         String    @map("access_token") // encrypted at app level
   refreshToken        String    @map("refresh_token") // encrypted at app level
   tokenExpiresAt      DateTime  @map("token_expires_at")
