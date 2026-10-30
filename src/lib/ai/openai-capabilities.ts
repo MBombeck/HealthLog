@@ -99,14 +99,17 @@ export function resetMaxTokensRefusals(): void {
 
 /**
  * True when a 400 says the model takes `max_completion_tokens` and not
- * `max_tokens`. A complaint about the value ("max_tokens is too large") is
- * not a refusal of the field and does not match.
+ * `max_tokens`: it names the replacement, or it refuses `max_tokens` by
+ * name. A complaint about the value ("max_tokens is too large") or about
+ * another field that echoes the request is not a refusal of the field.
  */
 export function isMaxTokensRejection(status: number, body: string): boolean {
   if (status !== 400 || !/\bmax_tokens\b/.test(body)) return false;
   return (
     /max_completion_tokens/.test(body) ||
-    /unsupported[\s_-]*parameter|not supported/i.test(body)
+    /unsupported[\s_-]*parameter\W{0,4}max_tokens\b|\bmax_tokens\W{0,4}(is\s+)?(not\s+supported|unsupported)/i.test(
+      body,
+    )
   );
 }
 

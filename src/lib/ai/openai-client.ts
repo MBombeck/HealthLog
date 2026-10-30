@@ -206,11 +206,11 @@ export class OpenAIClient implements AIProvider {
       ? jsonModeDialectFor(this.config.baseUrl)
       : "response_format";
     const sendJsonFormat = useJsonFormat && jsonDialect === "response_format";
-    const capabilities = selectOpenAIChatCompletionsCapabilities(
+    const caps = selectOpenAIChatCompletionsCapabilities(
       this.config.baseUrl,
       this.config.model,
     );
-    const reasoningWire = this.planReasoning(params, hasTools, capabilities);
+    const reasoningWire = this.planReasoning(params, hasTools, caps);
     // #1126 — the gateway entry's own setting, for a call without a level,
     // unless the wire carries one or the endpoint refused the field (#1279).
     const entryEffort =
@@ -225,13 +225,13 @@ export class OpenAIClient implements AIProvider {
       reasoningWire.kind !== "none" ? reasoningWire.effort : entryEffort;
     const thinkingTokens = this.thinkingRoom(params, reasoningWire);
     const tokenBudget = (params.maxTokens ?? 1000) + thinkingTokens;
-    const capabilityParams = capabilities.supportsSamplingControls
+    const capabilityParams = caps.supportsSamplingControls
       ? {
-          [capabilities.tokenBudgetField]: tokenBudget,
+          [caps.tokenBudgetField]: tokenBudget,
           temperature: params.temperature ?? 0.3,
           ...(params.seed !== undefined ? { seed: params.seed } : {}),
         }
-      : { [capabilities.tokenBudgetField]: tokenBudget };
+      : { [caps.tokenBudgetField]: tokenBudget };
 
     // A gateway that needs no bearer (a LAN LiteLLM without a master key)
     // gets no `Authorization` header at all rather than an empty one — an
@@ -299,7 +299,7 @@ export class OpenAIClient implements AIProvider {
     );
 
     if (!res.ok) {
-      return this.failed(res, params, hops, { sent, sendJsonFormat });
+      return this.failed(res, params, hops, { sent, sendJsonFormat, caps });
     }
 
     // v1.33.1 (#470) — the standard `response_format` request succeeded: pin
@@ -512,7 +512,11 @@ export class OpenAIClient implements AIProvider {
     res: Response,
     params: CompletionParams,
     hops: RequestHops,
-    sent: { sent: string | null; sendJsonFormat: boolean },
+    sent: {
+      sent: string | null;
+      sendJsonFormat: boolean;
+      caps: OpenAIChatCompletionsCapabilities;
+    },
   ): Promise<CompletionResult> {
     const bodyExcerpt = sanitiseBodyExcerpt(await res.text().catch(() => ""));
     // The entry's own setting (#1126) included: a refused field is learned
@@ -535,13 +539,10 @@ export class OpenAIClient implements AIProvider {
         this.isGateway && sent.sendJsonFormat
           ? { endpoint: this.config.baseUrl, action: "ai.compat.jsonDialect" }
           : null,
-      // The request that failed carried `max_tokens`: nothing is learned
-      // between sending it and reading its refusal, so the selection holds.
+      // The field this request carried, not today's selection: a call
+      // running beside it may have learned the lesson meanwhile.
       budget:
-        selectOpenAIChatCompletionsCapabilities(
-          this.config.baseUrl,
-          this.config.model,
-        ).tokenBudgetField === "max_tokens"
+        sent.caps.tokenBudgetField === "max_tokens"
           ? { endpoint: this.config.baseUrl }
           : null,
     });

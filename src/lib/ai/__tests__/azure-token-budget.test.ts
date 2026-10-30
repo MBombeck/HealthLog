@@ -197,11 +197,40 @@ describe("an endpoint that refuses max_tokens", () => {
     expect(mock).toHaveBeenCalledTimes(1);
   });
 
+  it("asks again on every call that sent max_tokens, also beside one that learned it", async () => {
+    const mock = vi
+      .fn()
+      .mockResolvedValueOnce(refused(400, AZURE_REFUSAL))
+      .mockResolvedValueOnce(refused(400, AZURE_REFUSAL))
+      .mockResolvedValue(ok());
+    vi.stubGlobal("fetch", mock);
+    const client = gateway("prod-chat");
+    const results = await Promise.allSettled([
+      client.generateCompletion(turn()),
+      client.generateCompletion(turn()),
+    ]);
+    expect(results.map((r) => r.status)).toEqual(["fulfilled", "fulfilled"]);
+    expect(mock).toHaveBeenCalledTimes(4);
+  });
+
   it("reads only a 400 that names the field", () => {
     expect(isMaxTokensRejection(400, AZURE_REFUSAL)).toBe(true);
     expect(isMaxTokensRejection(422, AZURE_REFUSAL)).toBe(false);
     expect(
       isMaxTokensRejection(400, '{"error":"Unsupported parameter: top_k"}'),
     ).toBe(false);
+    // A refusal of another field that echoes the request.
+    expect(
+      isMaxTokensRejection(
+        400,
+        '{"error":"Unsupported parameter: reasoning_effort is not supported","request":{"max_tokens":1000}}',
+      ),
+    ).toBe(false);
+    expect(
+      isMaxTokensRejection(
+        400,
+        '{"error":"max_tokens is not supported with this model"}',
+      ),
+    ).toBe(true);
   });
 });
