@@ -261,10 +261,17 @@ test.describe("score histories", () => {
     await expect(
       page.locator(`${chart} [data-slot="chart-overlay-controls-trigger"]`),
     ).toHaveCount(0);
+    // The choice is saved by a PUT; reloading before it answers cancels it.
+    const saved = page.waitForResponse(
+      (res) =>
+        res.url().includes("/api/dashboard/chart-overlay-prefs") &&
+        res.request().method() === "PUT",
+    );
     await page
       .locator(`${chart} [data-slot="chart-range-tab"][data-value="7"]`)
       .click();
     await expectSharedTabs(page, chart, "7");
+    expect((await saved).status()).toBe(200);
     await page.reload();
     await expectSharedTabs(page, chart, "7");
     await resetRange(page, "scoreRecovery");
