@@ -866,8 +866,9 @@ test("a lab marker is picked, drawn as its readings, read on its own and kept", 
     '[data-slot="timeline-point-target"][data-series="lab:bm-ferritin"][data-t="fe-1"]',
   );
   const tip = page.locator('[data-slot="timeline-point-tip"]');
-  // The chart redraws its targets once the marker's readings arrive, and a
-  // target focused just before that is gone; focus the one that stays.
+  // A CI run focused the target and no tip opened. The cause is not pinned
+  // down (the tips layer unmounts while the chart has no layout, which is
+  // one candidate); focus again until the tip opens.
   await expect(async () => {
     await target.focus();
     await expect(tip).toHaveAttribute("data-t", "fe-1", { timeout: 1_000 });
