@@ -27,11 +27,11 @@
           "avg30LastYear": null
         },
         "BLOOD_PRESSURE_SYS": {
-          "count": 91,
+          "count": 120,
           "latest": 123,
           "min": 123,
           "max": 137,
-          "mean": 129.92,
+          "mean": 130,
           "median": 130,
           "avg7": 131.14,
           "avg30": 130,
@@ -49,11 +49,11 @@
           "avg30LastYear": null
         },
         "BLOOD_PRESSURE_DIA": {
-          "count": 91,
+          "count": 120,
           "latest": 78,
           "min": 78,
           "max": 86,
-          "mean": 81.96,
+          "mean": 81.95,
           "median": 82,
           "avg7": 81.43,
           "avg30": 81.8,
@@ -1425,7 +1425,7 @@
       "meta": {
         "analytics": {
           "slim_summaries": {
-            "row_count": 566,
+            "row_count": 624,
             "type_count": 11,
             "path": "rollup",
             "year_over_year_types": 0,
