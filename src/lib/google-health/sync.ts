@@ -15,6 +15,7 @@ import { syncUserMetrics } from "./sync-metrics";
 import { syncUserSleep } from "./sync-sleep";
 import { syncUserWorkout } from "./sync-workout";
 import { withGoogleHealthSyncLock } from "./sync-lock";
+import { healUnknownGoogleHealthAccountId } from "./account-id-heal";
 import {
   GOOGLE_HEALTH_INTEGRATION_KEY,
   getValidToken,
@@ -235,7 +236,7 @@ async function runGoogleHealthSyncCycle(
   const cycleStartedAt = new Date();
   const connection = await prisma.googleHealthConnection.findUnique({
     where: { userId },
-    select: { lastSyncedAt: true },
+    select: { lastSyncedAt: true, googleUserId: true },
   });
   if (!connection) {
     return { state: "failed", imported: 0, failed: true, resources: [] };
@@ -389,6 +390,7 @@ async function runGoogleHealthSyncCycle(
   if (!failed) {
     await markSynced(userId, cycleStartedAt);
     await recordSyncSuccess(userId, GOOGLE_HEALTH_INTEGRATION_KEY);
+    await healUnknownGoogleHealthAccountId(userId, connection.googleUserId);
   }
 
   // Background-sync posture (mirrors the Fitbit tail): mark the per-user

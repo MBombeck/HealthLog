@@ -865,9 +865,13 @@ test("a lab marker is picked, drawn as its readings, read on its own and kept", 
   const target = page.locator(
     '[data-slot="timeline-point-target"][data-series="lab:bm-ferritin"][data-t="fe-1"]',
   );
-  await target.focus();
   const tip = page.locator('[data-slot="timeline-point-tip"]');
-  await expect(tip).toHaveAttribute("data-t", "fe-1");
+  // The chart redraws its targets once the marker's readings arrive, and a
+  // target focused just before that is gone; focus the one that stays.
+  await expect(async () => {
+    await target.focus();
+    await expect(tip).toHaveAttribute("data-t", "fe-1", { timeout: 1_000 });
+  }).toPass({ timeout: 10_000 });
   await expect(tip).toContainText("22 ng/mL");
   await expect(tip).toContainText("Laborbefund März");
 

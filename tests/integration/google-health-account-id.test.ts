@@ -7,6 +7,10 @@
  * stored, the constant `profile`, so every connection looked like the same
  * Google account and the one-account-per-record check refused the second
  * record on the instance with `already_linked`, also on a reconnect.
+ *
+ * Migration 0491 cleared those placeholders to null. A connection left with
+ * no id syncs, but the check cannot see it; a clean sync cycle reads the id
+ * back with the connection's own token and stores it.
  */
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -46,6 +50,22 @@ vi.mock("@/lib/db-compat", () => ({
 
 vi.mock("@/lib/jobs/boss-ready", () => ({
   enqueueWhenBossReady: vi.fn().mockResolvedValue("skipped"),
+}));
+
+// The sync cycle's four resources stand in as one written row each, so a
+// cycle is clean and reaches the account-id read; their own wire is covered
+// elsewhere.
+vi.mock("@/lib/google-health/sync-workout", () => ({
+  syncUserWorkout: vi.fn(async () => 1),
+}));
+vi.mock("@/lib/google-health/sync-sleep", () => ({
+  syncUserSleep: vi.fn(async () => 1),
+}));
+vi.mock("@/lib/google-health/sync-activity", () => ({
+  syncUserActivity: vi.fn(async () => 1),
+}));
+vi.mock("@/lib/google-health/sync-metrics", () => ({
+  syncUserMetrics: vi.fn(async () => 1),
 }));
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -212,5 +232,108 @@ describe("Google Health account id", () => {
     googleAs("555", { profileName: "users/me/profile", identityStatus: 403 });
     expect(await connect(SECOND)).toContain("googleHealth=connected");
     expect(await storedId(SECOND)).toBeNull();
+  });
+});
+
+/** A connection as migration 0491 leaves it: synced, token valid, id unknown. */
+async function seedUnknownId(
+  userId: string,
+  googleUserId: string | null = null,
+) {
+  const { encrypt } = await import("@/lib/crypto");
+  await getPrismaClient().googleHealthConnection.create({
+    data: {
+      userId,
+      googleUserId,
+      accessToken: encrypt(`access-${userId}`),
+      refreshToken: encrypt(`refresh-${userId}`),
+      tokenExpiresAt: new Date(Date.now() + 3_600_000),
+      needsReauth: false,
+    },
+  });
+}
+
+function profileReads(): number {
+  return vi
+    .mocked(globalThis.fetch)
+    .mock.calls.filter(([input]) => urlOf(input) === PROFILE_URL).length;
+}
+
+describe("Google Health account id after the placeholder repair", () => {
+  it("reads the id back on a clean sync, so the same account is refused elsewhere", async () => {
+    await seedUnknownId(FIRST);
+    googleAs("111");
+    const { syncUserGoogleHealth } = await import("@/lib/google-health/sync");
+    const result = await syncUserGoogleHealth(FIRST);
+    expect(result.failed).toBe(false);
+    expect(await storedId(FIRST)).toBe("111");
+
+    expect(await connect(SECOND)).toContain("reason=already_linked");
+    expect(await storedId(SECOND)).toBeUndefined();
+  });
+
+  it("does not read the profile again once the id is known", async () => {
+    await seedUnknownId(FIRST, "111");
+    googleAs("111");
+    const { syncUserGoogleHealth } = await import("@/lib/google-health/sync");
+    await syncUserGoogleHealth(FIRST);
+    expect(profileReads()).toBe(0);
+    expect(await storedId(FIRST)).toBe("111");
+  });
+
+  it("leaves the id unknown when another record already holds the account", async () => {
+    await seedUnknownId(FIRST);
+    await seedUnknownId(SECOND, "111");
+    googleAs("111");
+    const { healGoogleHealthAccountId } =
+      await import("@/lib/google-health/account-id-heal");
+    expect(await healGoogleHealthAccountId(FIRST, "access-gh-first")).toBe(
+      "linked_elsewhere",
+    );
+    expect(await storedId(FIRST)).toBeNull();
+    expect(await storedId(SECOND)).toBe("111");
+  });
+
+  it("keeps an id a reconnect stored while the read was under way", async () => {
+    await seedUnknownId(FIRST);
+    vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
+      const url = urlOf(input);
+      if (url === PROFILE_URL) {
+        // The callback lands between the profile read and the write.
+        await getPrismaClient().googleHealthConnection.update({
+          where: { userId: FIRST },
+          data: { googleUserId: "999" },
+        });
+        return json({ name: "users/111/profile" });
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    const { healGoogleHealthAccountId } =
+      await import("@/lib/google-health/account-id-heal");
+    expect(await healGoogleHealthAccountId(FIRST, "access-gh-first")).toBe(
+      "healed",
+    );
+    expect(await storedId(FIRST)).toBe("999");
+  });
+
+  it("stays unknown, and the sync stays clean, when Google names no account", async () => {
+    await seedUnknownId(FIRST);
+    googleAs("444", { profileName: "users/me/profile", identityStatus: 403 });
+    const { syncUserGoogleHealth } = await import("@/lib/google-health/sync");
+    const result = await syncUserGoogleHealth(FIRST);
+    expect(result.failed).toBe(false);
+    expect(await storedId(FIRST)).toBeNull();
+  });
+
+  it("keeps the sync clean when the profile read fails", async () => {
+    await seedUnknownId(FIRST);
+    vi.mocked(globalThis.fetch).mockImplementation(async (input) => {
+      if (urlOf(input) === PROFILE_URL) return json({ error: {} }, 503);
+      throw new Error(`Unexpected fetch: ${urlOf(input)}`);
+    });
+    const { syncUserGoogleHealth } = await import("@/lib/google-health/sync");
+    const result = await syncUserGoogleHealth(FIRST);
+    expect(result.failed).toBe(false);
+    expect(await storedId(FIRST)).toBeNull();
   });
 });

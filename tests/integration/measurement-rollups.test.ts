@@ -25,6 +25,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { settleBackgroundTasks } from "@/lib/logging/background-tasks";
 import { getPrismaClient, truncateAllTables } from "./setup";
 import {
   ROLLUP_FULL_BACKFILL_QUEUE,
@@ -580,10 +581,14 @@ describe("measurement rollups — integration", () => {
       ],
     });
 
-    // Warm-up read populates the rollups via `ensureUserRollupsFresh`.
+    // Warm-up read populates the rollups via `ensureUserRollupsFresh`. The
+    // read starts it detached, so wait for it: otherwise the third row's
+    // bucket can land first and the next read takes the one WEIGHT bucket
+    // for the whole history.
     const before = await buildComprehensiveAggregate(user.id);
     expect(before.summaries.WEIGHT.count).toBe(2);
     expect(before.summaries.WEIGHT.mean).toBe(80.5);
+    await settleBackgroundTasks();
 
     // Insert a third row and synchronously refresh the DAY bucket the
     // way the write-path hooks do.

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { WhoopProfile } from "@/lib/whoop/wire-types";
 
 // Single-use claiming is covered against Postgres in
 // tests/integration/oauth-callback-single-use.test.ts. Here the state row is
@@ -172,6 +173,26 @@ describe("GET /api/whoop/callback custom-scheme redirect", () => {
       "https://app.example/settings/integrations?whoop=error&reason=already_linked",
     );
     expect(res.headers.get("location")).not.toContain("42");
+    expect(connUpsert).not.toHaveBeenCalled();
+  });
+
+  it("refuses a profile without a user id instead of storing a shared placeholder", async () => {
+    stateDelete.mockResolvedValue({
+      userId: "u1",
+      expiresAt: new Date(Date.now() + 60_000),
+      returnScheme: null,
+    });
+    const { fetchProfile } = await import("@/lib/whoop/client");
+    // An off-spec body: the wire type says user_id is always there.
+    const offSpec: Partial<WhoopProfile> = {};
+    vi.mocked(fetchProfile).mockResolvedValueOnce(offSpec as WhoopProfile);
+
+    const res = await GET(makeReq("nonce-noid"));
+
+    expect(res.headers.get("location")).toBe(
+      "https://app.example/settings/integrations?whoop=error&reason=token",
+    );
+    expect(connFindUnique).not.toHaveBeenCalled();
     expect(connUpsert).not.toHaveBeenCalled();
   });
 
