@@ -109,6 +109,11 @@ overrides:
   # under vitest, never in the image; vitest asks for ^8, so a floor on the
   # same major moves it and nothing else.
   "vite@>=8.0.0 <8.1.6": "^8.1.6"
+  # GHSA-86w9-cpqp-85rv, GHSA-7wch-p9px-956x, GHSA-jc66-7q78-782g,
+  # GHSA-8hrf-8g6f-7xwp, GHSA-hqq3-7jhf-c5jx, GHSA-5x38-2vff-x55p: signature,
+  # certificate-chain and TLS-record flaws in node-forge <= 1.4.0. It arrives
+  # only through @parse/node-apn; 1.4.2 is the release node-apn 8.1.1 pins.
+  "node-forge@<1.4.2": "^1.4.2"
 
 allowBuilds:
   "@prisma/engines": true
@@ -128,16 +133,6 @@ minimumReleaseAgeExclude:
   - "@next/bundle-analyzer@16.2.12"
   - lucide-react@1.27.0
   - undici@8.10.0
-
-auditConfig:
-  ignoreGhsas:
-    # node-forge <=1.4.0, RSA PKCS#1 v1.5 signature verification. It arrives
-    # only through @parse/node-apn, which uses it for certificate-based APNs
-    # credentials (p12 / PEM certificate). HealthLog authenticates to APNs
-    # with a token (.p8 key, APNS_KEY_ID / APNS_TEAM_ID), so that code path
-    # never runs. No patched release is published yet (latest is 1.4.0);
-    # remove this entry and raise the floor once 1.4.1 is out.
-    - GHSA-86w9-cpqp-85rv
 
 patchedDependencies:
   "@stryker-mutator/vitest-runner@10.0.0": patches/@stryker-mutator__vitest-runner@10.0.0.patch
