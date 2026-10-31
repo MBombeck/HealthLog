@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { WhoopProfile } from "@/lib/whoop/wire-types";
 
 // Single-use claiming is covered against Postgres in
 // tests/integration/oauth-callback-single-use.test.ts. Here the state row is
@@ -182,7 +183,9 @@ describe("GET /api/whoop/callback custom-scheme redirect", () => {
       returnScheme: null,
     });
     const { fetchProfile } = await import("@/lib/whoop/client");
-    vi.mocked(fetchProfile).mockResolvedValueOnce({} as never);
+    // An off-spec body: the wire type says user_id is always there.
+    const offSpec: Partial<WhoopProfile> = {};
+    vi.mocked(fetchProfile).mockResolvedValueOnce(offSpec as WhoopProfile);
 
     const res = await GET(makeReq("nonce-noid"));
 

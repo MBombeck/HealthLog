@@ -56,9 +56,9 @@ export async function healGoogleHealthAccountId(
 }
 
 /**
- * The sync cycle's hook: after a clean cycle, a connection from before
- * v1.46.4 (no account id since migration 0491) reads its id back. A
- * connection that has one is left alone, so the profile is read once.
+ * The sync cycle's hook: after a clean cycle, a connection that migration
+ * 0491 left without an account id reads it back. A connection that has one
+ * is left alone, so the profile is read once.
  */
 export async function healUnknownGoogleHealthAccountId(
   userId: string,
