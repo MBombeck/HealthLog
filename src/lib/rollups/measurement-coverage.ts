@@ -24,11 +24,14 @@ import { joinCoverageProbe } from "@/lib/rollups/coverage-inflight";
 import { ROLLUP_FOLD_WINDOW_MS } from "@/lib/rollups/measurement-rollups";
 
 /**
- * Per-type coverage map. `true` means at least one DAY rollup row
- * exists for this `(user, type)` pair; the caller can safely compose
- * `count / min / max / mean` from the bucket table for this type.
- * `false` means the bucket table is empty for this type and the caller
- * must fall back to the live aggregate.
+ * Per-type coverage map. `true` means the DAY buckets for this
+ * `(user, type)` pair reach back to its oldest live reading inside the
+ * fold window, so the caller can compose `count / min / max / mean` from
+ * the bucket table for this type. `false` means they do not (no bucket at
+ * all, or only the newest days: a write hook folded one day before the
+ * history was folded) and the caller must fall back to the live aggregate.
+ * A bucket set that merely exists is not coverage: with one fresh bucket
+ * and years of unfolded readings, the composed count was that one day.
  *
  * Types the user has never logged are absent from the map — callers
  * never need to ask about a type with zero measurements.
@@ -42,9 +45,12 @@ export type RollupCoverageMap = Map<string, boolean>;
  * The distinct-type set is read as a loose index scan: a recursive CTE
  * that hops from one type to the next along the partial
  * `(user_id, type, measured_at)` live index, one index descent per type
- * instead of a walk over every live row the user has. Coverage is an
- * `EXISTS` per type on the rollup index, which stops at the first DAY
- * bucket rather than counting them all.
+ * instead of a walk over every live row the user has. Coverage compares,
+ * per type, the oldest DAY bucket (one descent of the rollup index) with
+ * the oldest live reading inside the fold window (one descent of the live
+ * index): the bucket holding a reading starts at or before it, whatever
+ * the account's time zone, so the oldest bucket starting no later than
+ * the oldest reading means the fold reached the start of the history.
  *
  * The earlier shape, `SELECT DISTINCT type` joined to a `COUNT(r.*)`
  * over every DAY bucket, read all of a user's live rows and all of their
@@ -62,6 +68,7 @@ export function probeRollupCoverage(
 }
 
 async function readRollupCoverage(userId: string): Promise<RollupCoverageMap> {
+  const windowStart = new Date(Date.now() - ROLLUP_FOLD_WINDOW_MS);
   const rows = await prisma.$queryRaw<
     Array<{ type: string; has_buckets: boolean }>
   >`
@@ -89,12 +96,22 @@ async function readRollupCoverage(userId: string): Promise<RollupCoverageMap> {
     )
     SELECT
       t."type"::text AS type,
-      EXISTS (
-        SELECT 1
-        FROM measurement_rollups r
-        WHERE r.user_id     = ${userId}
-          AND r."type"      = t."type"
-          AND r.granularity = 'DAY'
+      COALESCE(
+        (
+          SELECT MIN(r.bucket_start)
+          FROM measurement_rollups r
+          WHERE r.user_id     = ${userId}
+            AND r."type"      = t."type"
+            AND r.granularity = 'DAY'
+        ) <= (
+          SELECT MIN(m.measured_at)
+          FROM measurements m
+          WHERE m.user_id = ${userId}
+            AND m."type" = t."type"
+            AND m."deleted_at" IS NULL
+            AND m.measured_at >= ${windowStart}
+        ),
+        false
       ) AS has_buckets
     FROM live_types t
     WHERE t."type" IS NOT NULL
