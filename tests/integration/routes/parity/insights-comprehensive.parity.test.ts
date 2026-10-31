@@ -362,6 +362,10 @@ beforeAll(async () => {
   const rollups = await vi.importActual<
     typeof import("@/lib/rollups/measurement-rollups")
   >("@/lib/rollups/measurement-rollups");
+  // The whole history, as the boot backfill folds it: the read refresh
+  // alone covers ninety days, and a type folded only that far is not
+  // covered, so the walk would take the live path for it.
+  await rollups.recomputeUserRollups(OWNER_ID);
   await rollups.ensureUserRollupsFresh(OWNER_ID);
   const moodRollups = await vi.importActual<
     typeof import("@/lib/rollups/mood-rollups")
@@ -378,6 +382,10 @@ beforeAll(async () => {
   });
   await seedSparseRecord(SPARSE_ID);
   // Measurement rollups only: the mood tier stays empty on purpose.
+  // The whole history, as the boot backfill folds it: the read refresh
+  // alone covers ninety days, and a type folded only that far is not
+  // covered, so the walk would take the live path for it.
+  await rollups.recomputeUserRollups(SPARSE_ID);
   await rollups.ensureUserRollupsFresh(SPARSE_ID);
   await settleBackgroundTasks();
   sparse = await makeSession(sparseRow);

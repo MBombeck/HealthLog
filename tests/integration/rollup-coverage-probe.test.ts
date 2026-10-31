@@ -1,10 +1,12 @@
 /**
  * The rollup coverage probe reads the distinct live types as a loose index
- * scan and coverage as a per-type `EXISTS`. The previous shape (a DISTINCT
- * over every live row joined to a COUNT over every DAY bucket) is kept here
- * as the oracle: both must return the same map on the same fixture, including
- * the edges that decide the read-swap — tombstoned types, types with only
- * coarser buckets, another account's buckets, and an account with nothing.
+ * scan. The previous shape (a DISTINCT over every live row joined to a COUNT
+ * over every DAY bucket) is kept here as the oracle for which types appear
+ * and for the edges that decide the read-swap: tombstoned types, types with
+ * only coarser buckets, another account's buckets, and an account with
+ * nothing. Coverage itself is stricter than the oracle's "any DAY bucket":
+ * the buckets must reach back to the type's oldest live reading, which the
+ * second case pins.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -124,5 +126,51 @@ describe("probeRollupCoverage", () => {
     const empty = await probeRollupCoverage(EMPTY);
     expect(empty.size).toBe(0);
     expect(empty).toEqual(await oracle(EMPTY));
+  });
+
+  it("does not count a type as covered by buckets for its newest days only", async () => {
+    const prisma = getPrismaClient();
+    const day = 86_400_000;
+    const base = Date.UTC(2026, 0, 10);
+    // Three weight readings, but only the newest day folded: what a write
+    // hook leaves when it runs before the history was folded.
+    await prisma.measurement.createMany({
+      data: [0, 1, 2].map((i) => ({
+        userId: USER,
+        type: "WEIGHT" as const,
+        value: 80 + i,
+        unit: "kg",
+        measuredAt: new Date(base + i * day + 9 * 3_600_000),
+      })),
+    });
+    const bucket = (i: number) => ({
+      userId: USER,
+      type: "WEIGHT" as const,
+      granularity: "DAY" as const,
+      bucketStart: new Date(base + i * day),
+      source: "MANUAL" as const,
+      count: 1,
+      mean: 80 + i,
+      minValue: 80 + i,
+      maxValue: 80 + i,
+    });
+    await prisma.measurementRollup.create({ data: bucket(2) });
+    expect((await probeRollupCoverage(USER)).get("WEIGHT")).toBe(false);
+
+    // Once the fold reaches the oldest reading's day, the type is covered.
+    await prisma.measurementRollup.createMany({ data: [bucket(0), bucket(1)] });
+    expect((await probeRollupCoverage(USER)).get("WEIGHT")).toBe(true);
+
+    // A reading older than the oldest bucket uncovers it again.
+    await prisma.measurement.create({
+      data: {
+        userId: USER,
+        type: "WEIGHT",
+        value: 79,
+        unit: "kg",
+        measuredAt: new Date(base - day),
+      },
+    });
+    expect((await probeRollupCoverage(USER)).get("WEIGHT")).toBe(false);
   });
 });

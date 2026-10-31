@@ -195,6 +195,10 @@ beforeAll(async () => {
   const rollups = await vi.importActual<
     typeof import("@/lib/rollups/measurement-rollups")
   >("@/lib/rollups/measurement-rollups");
+  // The whole history, as the boot backfill folds it: the read refresh
+  // alone covers ninety days, and a type folded only that far is not
+  // covered, so the walk would take the live path for it.
+  await rollups.recomputeUserRollups(OWNER_ID);
   await rollups.ensureUserRollupsFresh(OWNER_ID);
   await settleBackgroundTasks();
   owner = await makeSession(ownerRow);
