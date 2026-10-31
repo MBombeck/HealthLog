@@ -204,6 +204,15 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
       const tokens = await whoopOAuth.exchange(code, creds);
       const profile = await fetchProfile(tokens.access_token);
+      // An off-spec profile without `user_id` would store the string
+      // "undefined" as the account id: every such connection would then look
+      // like one WHOOP account, and the check below would refuse the second.
+      if (
+        typeof profile.user_id !== "number" ||
+        !Number.isFinite(profile.user_id)
+      ) {
+        return outcomeRedirect(returnScheme, "error", "token");
+      }
       const whoopUserId = String(profile.user_id);
       const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
       const owner = await prisma.whoopConnection.findUnique({

@@ -175,6 +175,24 @@ describe("GET /api/whoop/callback custom-scheme redirect", () => {
     expect(connUpsert).not.toHaveBeenCalled();
   });
 
+  it("refuses a profile without a user id instead of storing a shared placeholder", async () => {
+    stateDelete.mockResolvedValue({
+      userId: "u1",
+      expiresAt: new Date(Date.now() + 60_000),
+      returnScheme: null,
+    });
+    const { fetchProfile } = await import("@/lib/whoop/client");
+    vi.mocked(fetchProfile).mockResolvedValueOnce({} as never);
+
+    const res = await GET(makeReq("nonce-noid"));
+
+    expect(res.headers.get("location")).toBe(
+      "https://app.example/settings/integrations?whoop=error&reason=token",
+    );
+    expect(connFindUnique).not.toHaveBeenCalled();
+    expect(connUpsert).not.toHaveBeenCalled();
+  });
+
   it("maps a concurrent WHOOP identity P2002 to the safe owner-conflict redirect", async () => {
     stateDelete.mockResolvedValue({
       userId: "local-user",
