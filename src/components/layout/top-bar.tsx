@@ -26,6 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { useAuth, useLogout } from "@/hooks/use-auth";
+import { accountName } from "@/lib/account-name";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useTheme } from "@/components/providers";
 import { useTranslations } from "@/lib/i18n/context";
@@ -143,13 +144,13 @@ export function TopBar() {
               <span className="sr-only">{t("nav.userMenu")}</span>
               <Avatar className="size-7" aria-hidden="true">
                 {avatarUrl && (
-                  <AvatarImage src={avatarUrl} alt={user.username} />
+                  <AvatarImage src={avatarUrl} alt={accountName(user)} />
                 )}
                 <AvatarFallback className="bg-primary/15 text-primary text-xs font-medium">
-                  {getInitials(user.username)}
+                  {getInitials(accountName(user))}
                 </AvatarFallback>
               </Avatar>
-              <span className="hidden sm:inline">{user.username}</span>
+              <span className="hidden sm:inline">{accountName(user)}</span>
               <ChevronDown className="h-3 w-3 opacity-60" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-60">

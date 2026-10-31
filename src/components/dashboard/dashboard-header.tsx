@@ -32,6 +32,7 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { useTranslations } from "@/lib/i18n/context";
 import { useAuth } from "@/hooks/use-auth";
+import { accountName } from "@/lib/account-name";
 import { useMounted } from "@/hooks/use-mounted";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { hourInTz } from "@/lib/tz/format";
@@ -143,7 +144,7 @@ export function DashboardHeader({
   const greeting = greetingLine({
     greeting: timeGreeting,
     known: mounted && user != null,
-    name: user?.username?.trim() ? user.username : null,
+    name: user ? accountName(user).trim() || null : null,
     createdAt: user?.createdAt,
   });
   const welcomeText = t(greeting.key, greeting.values);

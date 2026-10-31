@@ -7,6 +7,7 @@ import Link from "next/link";
 import { SlidersHorizontal, TrendingUp } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
+import { accountName } from "@/lib/account-name";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
 // Bare number — its own React- and label-map-free module, so importing it here
@@ -419,10 +420,9 @@ export default function InsightsPageClient() {
   // boundary hydrates, and a greeting that personalises during the
   // hydration render disagrees with the name-less SSR text — React
   // #418. See `useMounted`.
+  const shownName = user ? accountName(user).trim() : "";
   const heroGreetingName =
-    mounted && user?.username?.trim() && user.username.trim().length > 0
-      ? user.username.split(/\s+/)[0]
-      : null;
+    mounted && shownName.length > 0 ? shownName.split(/\s+/)[0] : null;
   // The advisor read only fires while the briefing is available, so with it
   // unavailable these stay null: the hero keeps its fallback subtitle and the
   // trends row its built-in captions.

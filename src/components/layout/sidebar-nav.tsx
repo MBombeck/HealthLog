@@ -40,6 +40,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
 import { useAuth, useLogout } from "@/hooks/use-auth";
+import { accountName } from "@/lib/account-name";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useNavModules } from "@/hooks/use-nav-modules";
 import { useMounted } from "@/hooks/use-mounted";
@@ -153,6 +154,7 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
   const sharedRecord = user?.accountAccess?.active != null;
 
   if (!user) return null;
+  const name = accountName(user);
 
   const themeIcon =
     theme === "system" ? (
@@ -166,13 +168,13 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
   const identityBlock = (
     <>
       <Avatar className="h-9 w-9 shrink-0">
-        {avatarUrl && <AvatarImage src={avatarUrl} alt={user.username} />}
+        {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
         <AvatarFallback className="bg-primary/15 text-primary text-xs font-medium">
-          {getInitials(user.username)}
+          {getInitials(name)}
         </AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{user.username}</p>
+        <p className="truncate text-sm font-semibold">{name}</p>
         {user.email && (
           <p className="text-muted-foreground truncate text-xs">{user.email}</p>
         )}
@@ -282,11 +284,9 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
             <DropdownMenuTrigger className="hover:bg-accent focus-visible:ring-ring/50 shrink-0 rounded-md p-1.5 transition-colors focus:outline-none focus-visible:ring-[3px]">
               <span className="sr-only">{t("nav.userMenu")}</span>
               <Avatar className="h-8 w-8" aria-hidden="true">
-                {avatarUrl && (
-                  <AvatarImage src={avatarUrl} alt={user.username} />
-                )}
+                {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
                 <AvatarFallback className="bg-primary/15 text-primary text-xs font-medium">
-                  {getInitials(user.username)}
+                  {getInitials(name)}
                 </AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
@@ -311,13 +311,13 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
           label={t("nav.accountSettings")}
         >
           <Avatar className="h-8 w-8 shrink-0" aria-hidden="true">
-            {avatarUrl && <AvatarImage src={avatarUrl} alt={user.username} />}
+            {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
             <AvatarFallback className="bg-primary/15 text-primary text-xs font-medium">
-              {getInitials(user.username)}
+              {getInitials(name)}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{user.username}</p>
+            <p className="truncate text-sm font-medium">{name}</p>
             {user.email && (
               <p className="text-muted-foreground truncate text-xs">
                 {user.email}
