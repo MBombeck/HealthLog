@@ -24,6 +24,10 @@
 
 set -euo pipefail
 
+# Secret scan (gitleaks) before anything else
+if command -v gitleaks >/dev/null 2>&1; then gitleaks protect --staged --no-banner --redact || exit 1; else echo "gitleaks missing - commit aborted (brew/apt install gitleaks)"; exit 1; fi
+
+
 # Skip in non-interactive contexts (CI doesn't commit through this
 # path anyway — the security.yml workflow runs `pnpm openapi:check`
 # server-side). The check still fires under `git commit` from a
