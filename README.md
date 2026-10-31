@@ -155,3 +155,8 @@ HealthLog is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE):
   <a href="https://testflight.apple.com/join/bucuTBpa">iOS TestFlight</a> &middot;
   <a href="https://buymeacoffee.com/mbombeck">Buy Me a Coffee</a>
 </p>
+
+## Secret scanning
+
+Commits are checked for secrets with [gitleaks](https://github.com/gitleaks/gitleaks): locally via the pre-commit hook
+(enable once per clone: `git config core.hooksPath .githooks`) and in CI (`.github/workflows/gitleaks.yml`, new commits only).
