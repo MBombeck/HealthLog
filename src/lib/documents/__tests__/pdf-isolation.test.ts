@@ -4,12 +4,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createDeflate } from "node:zlib";
 
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 const { annotate } = vi.hoisted(() => ({ annotate: vi.fn() }));
 vi.mock("@/lib/logging/context", () => ({ annotate }));
 
 import { gif } from "../../__tests__/gif-fixture";
+import { __resetNativeCanvasSupportForTests } from "../native-canvas-support";
 import {
   MAX_QUEUED_PER_OWNER,
   READER_WAIT_MS,
@@ -217,6 +218,39 @@ describe("an image upload is decoded in the bounded child", () => {
     expect(result).toEqual({ ok: false, reason: "limit", limit: "memory" });
     expect(process.memoryUsage().rss - before).toBeLessThan(200 * 1024 ** 2);
   }, 90_000);
+});
+
+describe("behind a closed canvas gate", () => {
+  // A CPU the native canvas was not built for ends any process that loads it
+  // with SIGILL, and pdf.js loads it when it starts. The child must not.
+  beforeAll(() => {
+    process.env.NATIVE_CANVAS = "off";
+    __resetNativeCanvasSupportForTests();
+  });
+  afterAll(() => {
+    delete process.env.NATIVE_CANVAS;
+    __resetNativeCanvasSupportForTests();
+  });
+
+  it("still reads a document's text layer", async () => {
+    await expect(readPdfText(fixture)).resolves.toMatch(/\w{4}/);
+  }, 30_000);
+
+  it("never loads the canvas in the child", async () => {
+    const result = await runPdfChild(
+      {
+        op: "image-thumbnail",
+        data: gif({ width: 10, height: 10 }, [{ width: 10, height: 10 }]),
+        options: { longEdge: 320, quality: 70, maxPixels: 1e6 },
+      },
+      { timeoutMs: 30_000 },
+    );
+    expect(result).toMatchObject({
+      ok: false,
+      reason: "error",
+      message: expect.stringMatching(/not supported on this CPU/),
+    });
+  }, 30_000);
 });
 
 describe("a child that ends without an answer", () => {
