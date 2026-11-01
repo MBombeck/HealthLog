@@ -323,6 +323,45 @@ export const RANGE_PROSE: Record<Locale, RangeProse> = {
     lower: ["최소", "최저"],
     filler: ["참고치", "참고범위", "정상치", "정상범위", "기준치", "기준범위"],
   },
+  // Russian lab sheets print "3,5 - 5,0", "от 3,5 до 5,0", "до 5,6",
+  // "не более 5,6", "не менее 3,5" — "от"/"до" are both a bound prefix and a
+  // filler, which is why they appear in all three lists.
+  ru: {
+    twoSided: ["до", "по"],
+    upper: [
+      "до",
+      "не более",
+      "не выше",
+      "менее",
+      "меньше",
+      "ниже",
+      "макс.",
+      "макс",
+      "максимум",
+    ],
+    lower: [
+      "от",
+      "не менее",
+      "не ниже",
+      "более",
+      "больше",
+      "выше",
+      "мин.",
+      "мин",
+      "минимум",
+    ],
+    filler: [
+      "от",
+      "до",
+      "референс",
+      "референсные значения",
+      "референсный интервал",
+      "норма",
+      "показатели нормы",
+      "реф.",
+      "реф",
+    ],
+  },
 };
 
 /** Escape a literal for regex use and let any run of whitespace join its words. */
