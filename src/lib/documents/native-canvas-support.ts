@@ -15,19 +15,33 @@
  * the gate closed those features degrade cleanly (no thumbnails, PDFs read as
  * text/native only) while the rest of the app runs normally.
  *
- * Detection: Linux x64 reads `/proc/cpuinfo` once and requires the `avx2`
- * flag. Non-x64 (the arm64 image) and non-Linux (dev machines) are always
- * supported — AVX is an x86 concept. The optional `NATIVE_CANVAS` env var
- * overrides: `off` force-disables (e.g. to rule the renderer out while
- * debugging), `on` force-enables (only sensible if detection misfires; on a
- * CPU that truly lacks AVX2 this WILL crash the process). Unset or any other
- * value → auto-detection.
+ * The arm64 musl build (the one the published arm64 image runs) is compiled
+ * for ARMv8.2 and later: it uses LSE atomics (`ldaddal`, `casal`) and RCpc
+ * loads (`ldapr`) throughout, with no runtime fallback, and dies with SIGILL
+ * as soon as the module loads on an ARMv8.0 core such as the Raspberry Pi 4's
+ * Cortex-A72. The glibc arm64 build uses neither, so a glibc host is left
+ * alone.
+ *
+ * Detection reads `/proc/cpuinfo` once on Linux: x64 requires the `avx2`
+ * flag, arm64 under musl requires the `atomics` and `lrcpc` features. Every
+ * other host (glibc arm64, non-Linux dev machines) is supported. The optional
+ * `NATIVE_CANVAS` env var overrides: `off` force-disables (e.g. to rule the
+ * renderer out while debugging), `on` force-enables (only sensible if
+ * detection misfires; on a CPU that truly lacks the features this WILL crash
+ * the process). Unset or any other value → auto-detection.
  */
 import { readFileSync } from "node:fs";
 
 import { annotate } from "@/lib/logging/context";
 
-let cached: boolean | null = null;
+type Verdict =
+  | { supported: true }
+  | {
+      supported: false;
+      reason: "cpu_missing_avx2" | "cpu_missing_lse_rcpc" | "override_off";
+    };
+
+let cached: Verdict | null = null;
 let announced = false;
 
 /** Read the gate once per process; logs a single annotation when closed. */
@@ -35,41 +49,72 @@ export function nativeCanvasSupported(): boolean {
   if (cached === null) {
     cached = detect();
   }
-  if (!cached && !announced) {
+  if (!cached.supported && !announced) {
     announced = true;
     annotate({
       action: { name: "documents.nativeCanvas.unsupported" },
       meta: {
-        reason: "cpu_missing_avx2",
+        reason: cached.reason,
         arch: process.arch,
         platform: process.platform,
       },
     });
   }
-  return cached;
+  return cached.supported;
 }
 
-function detect(): boolean {
+const SUPPORTED: Verdict = { supported: true };
+
+function detect(): Verdict {
   const override = process.env.NATIVE_CANVAS?.trim().toLowerCase();
-  if (override === "off") return false;
-  if (override === "on") return true;
+  if (override === "off") return { supported: false, reason: "override_off" };
+  if (override === "on") return SUPPORTED;
 
-  // AVX is an x86 instruction-set concept; the arm64 image and non-Linux dev
-  // hosts never hit the SIGILL class.
-  if (process.platform !== "linux" || process.arch !== "x64") return true;
+  if (process.platform !== "linux") return SUPPORTED;
+  if (process.arch === "x64") {
+    return cpuFeatures("flags", ["avx2"])
+      ? SUPPORTED
+      : { supported: false, reason: "cpu_missing_avx2" };
+  }
+  if (process.arch === "arm64" && runsOnMusl()) {
+    return cpuFeatures("Features", ["atomics", "lrcpc"])
+      ? SUPPORTED
+      : { supported: false, reason: "cpu_missing_lse_rcpc" };
+  }
+  return SUPPORTED;
+}
 
+/**
+ * Whether the first `/proc/cpuinfo` line starting with `label` names every
+ * feature. An unreadable file or a missing line is an exotic kernel surface;
+ * it fails OPEN to today's behavior rather than silently disabling a working
+ * renderer.
+ */
+function cpuFeatures(label: string, required: string[]): boolean {
   try {
-    const cpuinfo = readFileSync("/proc/cpuinfo", "utf8");
-    const flagsLine = cpuinfo
+    const line = readFileSync("/proc/cpuinfo", "utf8")
       .split("\n")
-      .find((line) => line.startsWith("flags"));
-    // No flags line = exotic kernel surface; fail OPEN to today's behavior
-    // rather than silently disabling a working renderer.
-    if (!flagsLine) return true;
-    return /\bavx2\b/.test(flagsLine);
+      .find((l) => l.startsWith(label));
+    if (!line) return true;
+    const present = new Set(
+      line
+        .slice(line.indexOf(":") + 1)
+        .trim()
+        .split(/\s+/),
+    );
+    return required.every((feature) => present.has(feature));
   } catch {
     return true;
   }
+}
+
+/** A glibc Node reports the glibc it runs on; a musl one reports none. */
+function runsOnMusl(): boolean {
+  const header = (
+    process.report?.getReport() as
+      { header?: { glibcVersionRuntime?: string } } | undefined
+  )?.header;
+  return header !== undefined && header.glibcVersionRuntime === undefined;
 }
 
 /** Test hook — the gate is process-cached by design. */

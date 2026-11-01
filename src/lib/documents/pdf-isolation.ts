@@ -43,10 +43,13 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import { annotate } from "@/lib/logging/context";
+
 import type {
   ImageThumbnailOptions,
   ImageThumbnailOutcome,
 } from "./image-engine.mjs";
+import { nativeCanvasSupported } from "./native-canvas-support";
 import type { RenderOptions, RenderedDocument } from "./pdf-engine.mjs";
 import { createReaderQueue, type ReaderLane } from "./reader-queue";
 
@@ -329,7 +332,13 @@ export function runOnce<R extends PdfChildRequest>(
       child = fork(script, [], {
         cwd: /* turbopackIgnore: true */ process.cwd(),
         // Nothing the server holds: no keys, no database address, no tokens.
-        env: { NODE_ENV: process.env.NODE_ENV || "production" },
+        // A closed canvas gate travels along: pdf.js loads the native canvas
+        // when it starts, and on a CPU the build was not made for that load
+        // alone ends the child before it reads a word.
+        env: {
+          NODE_ENV: process.env.NODE_ENV || "production",
+          ...(nativeCanvasSupported() ? {} : { NATIVE_CANVAS: "off" }),
+        },
         execArgv: [`--max-old-space-size=${heapMb}`],
         serialization: "advanced",
         stdio: ["ignore", "ignore", "pipe", "ipc"],
@@ -396,7 +405,7 @@ export function runOnce<R extends PdfChildRequest>(
       finish({ ok: false, reason: "interrupted" });
     });
 
-    child.on("close", () => {
+    child.on("close", (code, signal) => {
       if (killedFor) {
         finish({ ok: false, reason: "limit", limit: killedFor });
         return;
@@ -410,6 +419,12 @@ export function runOnce<R extends PdfChildRequest>(
         finish({ ok: false, reason: "limit", limit: "memory" });
         return;
       }
+      // How it ended is the one lead an operator has: SIGKILL is mostly the
+      // out-of-memory killer, SIGILL a native module built for another CPU.
+      annotate({
+        action: { name: "documents.pdfChild.interrupted" },
+        meta: { exitCode: code, signal },
+      });
       finish({ ok: false, reason: "interrupted" });
     });
 

@@ -12,9 +12,28 @@
  * server.
  */
 import { writeFileSync } from "node:fs";
+import * as nodeModule from "node:module";
 
 import { renderImageThumbnail } from "./image-engine.mjs";
 import { readTextLayer, renderPdfPages } from "./pdf-engine.mjs";
+
+// The parent closed the canvas gate (`./native-canvas-support.ts`): this CPU
+// lacks instructions the native canvas was built with, and loading it ends
+// the process with SIGILL, which no try/catch sees. pdf.js asks for it the
+// moment it starts and gets on without it when the load throws, so the text
+// layer still reads; rendering and image thumbnails answer an error. Both
+// engines load pdf.js and the canvas lazily, so this runs before either.
+// `registerHooks` arrived in Node 22.15; the image ships a later one.
+if (process.env.NATIVE_CANVAS === "off") {
+  nodeModule.registerHooks?.({
+    resolve(specifier, context, nextResolve) {
+      if (specifier === "@napi-rs/canvas") {
+        throw new Error("@napi-rs/canvas is not supported on this CPU");
+      }
+      return nextResolve(specifier, context);
+    },
+  });
+}
 
 try {
   writeFileSync("/proc/self/oom_score_adj", "1000");
