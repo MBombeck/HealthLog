@@ -18,6 +18,7 @@ const mockUserRef = {
   value: {
     id: "u1",
     username: "testuser",
+    displayName: null as string | null,
     email: "user@example.com",
     role: "USER" as "USER" | "ADMIN",
     avatarUrl: null,
@@ -118,6 +119,25 @@ const GATED_HREFS = [
   "/coach",
   "/achievements",
 ] as const;
+
+describe("<SidebarNav> account identity", () => {
+  afterEach(() => {
+    mockUserRef.value = { ...mockUserRef.value, displayName: null };
+  });
+
+  it("names the account by its display name when one is set", () => {
+    mockUserRef.value = { ...mockUserRef.value, displayName: "Jane Doe" };
+    const html = render();
+    expect(html).toContain(">Jane Doe</p>");
+    expect(html).toContain(">JD</span>");
+    expect(html).not.toContain(">testuser</p>");
+  });
+
+  it("falls back to the username without a display name", () => {
+    const html = render();
+    expect(html).toContain(">testuser</p>");
+  });
+});
 
 describe("<SidebarNav> first-paint fail-closed module gate (v1.25.12)", () => {
   it("renders core destinations on first paint regardless of the module map", () => {
