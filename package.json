@@ -80,7 +80,7 @@
     "jspdf-autotable": "^5.0.9",
     "lucide-react": "^1.61.0",
     "mmdb-lib": "^3.0.3",
-    "next": "16.4.2",
+    "next": "16.4.3",
     "nodemailer": "10.2.1",
     "otpauth": "^9.5.2",
     "p-limit": "^7.3.3",
