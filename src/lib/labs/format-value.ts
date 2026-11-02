@@ -13,6 +13,7 @@
  * German reader sees "1,8 mIU/L" where an English one sees "1.8 mIU/L". This
  * module only decides the precision.
  */
+import { withLabUnit } from "@/lib/labs/dimensionless";
 import {
   formatRecordedNumber,
   type FractionDigitsFormat,
@@ -38,7 +39,7 @@ export function formatLabValue(
 /**
  * Render a reading's display value: a qualitative row (numeric `value` is
  * null) shows its `valueText` verbatim; a numeric row shows the formatted
- * number plus its unit. One helper so the list card, the history rows, and
+ * number plus its unit (none for a dimensionless reading). One helper so the list card, the history rows, and
  * the detail header stay consistent.
  */
 export function formatLabReading(
@@ -53,5 +54,8 @@ export function formatLabReading(
   if (reading.value === null) {
     return reading.valueText ?? "";
   }
-  return `${formatNumber(reading.value, reading.sourceValue)} ${reading.unit}`.trim();
+  return withLabUnit(
+    formatNumber(reading.value, reading.sourceValue),
+    reading.unit,
+  );
 }

@@ -10396,7 +10396,9 @@
       "pdfNeedsAnthropic": "PDF-Scannen benötigt einen Claude-Bildanbieter; lade stattdessen ein Foto hoch.",
       "refTextLabel": "Bereich wie gedruckt",
       "refTextPlaceholder": "z. B. 3,5 - 5,0",
-      "aiUnavailable": "Das Scannen eines Befunds mit KI ist hier gerade nicht verfügbar."
+      "aiUnavailable": "Das Scannen eines Befunds mit KI ist hier gerade nicht verfügbar.",
+      "errorUnitMismatchNoUnit": "Dieser Marker wird ohne Einheit geführt. Setz das Häkchen bei Keine Einheit, falls der Befund falsch gelesen wurde, oder wähle den Wert ab.",
+      "unitDiffersBadgeNoUnit": "Ohne Einheit geführt; dieser Befund nennt {unit}"
     },
     "loadMoreReadings": "Weitere Werte laden",
     "documentsLink": "Befund-Dokumente",
@@ -10474,6 +10476,10 @@
         "stale": "Der neueste Wert ist vom {date}, also älter als ein Jahr. Die Gerade gilt für diesen Stand, ohne Projektion."
       },
       "interval": "95-%-Intervall der jährlichen Veränderung: {lo} bis {hi} {unit}."
+    },
+    "unit": {
+      "none": "Keine Einheit",
+      "noneHint": "Für einen Quotienten oder Index wie INR oder Cholesterin/HDL."
     }
   },
   "modules": {
@@ -14093,6 +14099,7 @@
       "asNeeded": "Bei Bedarf",
       "startsOn": "Beginn",
       "endsOn": "Ende"
-    }
+    },
+    "unitlessHint": "Ein Quotient oder Index ohne Einheit (INR, Cholesterin/HDL): Trag in der Spalte für die Einheit eine 1 ein. Eine leere Einheit bleibt ein Fehler."
   }
 }

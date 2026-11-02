@@ -10396,7 +10396,9 @@
       "pdfNeedsAnthropic": "Skanowanie PDF wymaga dostawcy wizji Claude; prześlij zamiast tego zdjęcie.",
       "refTextLabel": "Zakres tak jak wydrukowano",
       "refTextPlaceholder": "np. 3,5 - 5,0",
-      "aiUnavailable": "Skanowanie wyniku przez AI jest tu teraz niedostępne."
+      "aiUnavailable": "Skanowanie wyniku przez AI jest tu teraz niedostępne.",
+      "errorUnitMismatchNoUnit": "Ten wskaźnik jest prowadzony bez jednostki. Zaznacz Bez jednostki, jeśli wynik został źle odczytany, albo odznacz tę wartość.",
+      "unitDiffersBadgeNoUnit": "Prowadzony bez jednostki; ten wynik podaje {unit}"
     },
     "loadMoreReadings": "Wczytaj więcej pomiarów",
     "documentsLink": "Dokumenty wyników badań",
@@ -10474,6 +10476,10 @@
         "stale": "Najnowszy wynik pochodzi z {date}, sprzed ponad roku. Prosta jest pokazana na ten dzień, bez projekcji."
       },
       "interval": "95% przedział rocznej zmiany: od {lo} do {hi} {unit}."
+    },
+    "unit": {
+      "none": "Bez jednostki",
+      "noneHint": "Dla ilorazu lub wskaźnika, np. INR albo cholesterol/HDL."
     }
   },
   "modules": {
@@ -14093,6 +14099,7 @@
       "asNeeded": "W razie potrzeby",
       "startsOn": "Początek",
       "endsOn": "Koniec"
-    }
+    },
+    "unitlessHint": "Iloraz lub wskaźnik bez jednostki (INR, cholesterol/HDL): wpisz 1 w kolumnie jednostki. Pusta jednostka nadal jest błędem."
   }
 }

@@ -10396,7 +10396,9 @@
       "pdfNeedsAnthropic": "Voor het scannen van PDF's is een Claude-provider met beeldherkenning nodig; upload in plaats daarvan een foto.",
       "refTextLabel": "Bereik zoals afgedrukt",
       "refTextPlaceholder": "bijv. 3,5 - 5,0",
-      "aiUnavailable": "Een rapport scannen met AI is hier op dit moment niet beschikbaar."
+      "aiUnavailable": "Een rapport scannen met AI is hier op dit moment niet beschikbaar.",
+      "errorUnitMismatchNoUnit": "Deze marker wordt zonder eenheid bijgehouden. Vink Geen eenheid aan als het rapport verkeerd is gelezen, of deselecteer deze meting.",
+      "unitDiffersBadgeNoUnit": "Zonder eenheid bijgehouden; dit rapport vermeldt {unit}"
     },
     "loadMoreReadings": "Meer metingen laden",
     "documentsLink": "Documenten met labrapporten",
@@ -10474,6 +10476,10 @@
         "stale": "De nieuwste waarde is van {date}, meer dan een jaar geleden. De lijn staat op die datum, zonder projectie."
       },
       "interval": "95%-interval van de jaarlijkse verandering: {lo} tot {hi} {unit}."
+    },
+    "unit": {
+      "none": "Geen eenheid",
+      "noneHint": "Voor een verhouding of index zoals INR of cholesterol/HDL."
     }
   },
   "modules": {
@@ -14093,6 +14099,7 @@
       "asNeeded": "Zo nodig",
       "startsOn": "Begin",
       "endsOn": "Einde"
-    }
+    },
+    "unitlessHint": "Een verhouding of index zonder eenheid (INR, cholesterol/HDL): vul 1 in de eenheidskolom in. Een lege eenheid blijft een fout."
   }
 }
