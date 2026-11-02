@@ -90,19 +90,31 @@ export function denseBucketsSql(hourWeighted: boolean, from: string): string {
           m."value",
           m."value_min",
           m."value_max",
-          date_trunc(
-            $2,
-            (m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE $3
-          ) AS local_day
+          -- An hour bucket starts at the reading's instant less its minutes
+          -- and seconds on the local clock. Truncating the local wall clock
+          -- instead merged the two hours a fall-back night repeats into one
+          -- bucket.
+          CASE
+            WHEN $2 = 'hour' THEN (
+              m."measured_at" - (
+                ((m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE $3)
+                - date_trunc('hour', (m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE $3)
+              )
+            ) AT TIME ZONE 'UTC'
+            ELSE date_trunc(
+              $2,
+              (m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE $3
+            ) AT TIME ZONE $3
+          END AS bucket_start
         FROM ${from}
       )
       SELECT
-        local_day AT TIME ZONE $3                                AS bucket_start,
+        bucket_start,
         AVG("value")::double precision                           AS mean,
         MIN(COALESCE("value_min", "value"))::double precision    AS min_value,
         MAX(COALESCE("value_max", "value"))::double precision    AS max_value
       FROM localized
-      GROUP BY local_day`;
+      GROUP BY bucket_start`;
 }
 
 /** The figures aggregate over the CTE `src`, in the original SQL. */
