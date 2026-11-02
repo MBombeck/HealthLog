@@ -276,6 +276,16 @@ describe("lab-result LOINC + canonical UCUM coding (v1.18.8)", () => {
     expect(o?.valueQuantity?.unit).toBe("mg/dL");
   });
 
+  it("codes a value without a unit as the UCUM unity", () => {
+    const o = labOf("Cholesterol/HDL ratio", "1", 3.6);
+    expect(o?.valueQuantity).toEqual({
+      value: 3.6,
+      unit: "1",
+      system: "http://unitsofmeasure.org",
+      code: "1",
+    });
+  });
+
   it("resolves analyte aliases to the same canonical LOINC", () => {
     // "LDL", "LDL-C", "LDL Cholesterol" all fold to 2089-1.
     for (const name of ["LDL-C", "LDL Cholesterol", "ldl_c"]) {

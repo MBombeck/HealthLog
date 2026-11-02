@@ -1,3 +1,4 @@
+import { PDF_FONT_FAMILY } from "./fonts";
 import type { jsPDF } from "jspdf";
 import { GLUCOSE_CONTEXT_BUCKETS } from "@/lib/glucose";
 import autoTable from "jspdf-autotable";
@@ -82,7 +83,7 @@ function drawSparkline(
   const axisLabelHeight = 4.5;
 
   doc.setFontSize(9);
-  doc.setFont("helvetica", "bold");
+  doc.setFont(PDF_FONT_FAMILY, "bold");
   doc.setTextColor(30, 30, 30);
   doc.text(label, x, y + labelHeight - 1.5);
 
@@ -141,7 +142,7 @@ function drawSparkline(
 
   // Min/max labels in the right gutter.
   doc.setFontSize(7);
-  doc.setFont("helvetica", "normal");
+  doc.setFont(PDF_FONT_FAMILY, "normal");
   doc.setTextColor(120, 120, 120);
   const unitSuffix = unit ? ` ${unit}` : "";
   doc.text(`${num(max, 1)}${unitSuffix}`, x + chartWidth + 2, chartTop + 2);
@@ -243,7 +244,7 @@ function drawScreenerTranslationNotes(
   if (notes.length === 0) return startY;
   let y = startY;
   doc.setFontSize(8);
-  doc.setFont("helvetica", "italic");
+  doc.setFont(PDF_FONT_FAMILY, "italic");
   doc.setTextColor(110, 110, 110);
   for (const note of notes) {
     for (const line of doc.splitTextToSize(
@@ -282,7 +283,7 @@ export function buildMeasurementsChartsSection(
   // Vitals heading — keep it with the start of its table.
   y = ensureSpace(y, 6 + 18);
   doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
+  doc.setFont(PDF_FONT_FAMILY, "bold");
   doc.setTextColor(30, 30, 30);
   doc.text(t("doctorReport.vitalsTitle"), margin, y);
   y += 6;
@@ -429,7 +430,7 @@ export function buildMeasurementsChartsSection(
     // Keep the heading with the start of its table.
     y = ensureSpace(y, 6 + 14);
     doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.setTextColor(30, 30, 30);
     doc.text(t("doctorReport.glucoseClinical.title"), margin, y);
     y += 6;
@@ -472,7 +473,7 @@ export function buildMeasurementsChartsSection(
     // clinician reads the panel as a direction-of-travel, not a CGM AGP.
     if (clinical.isSpotEstimate) {
       doc.setFontSize(8);
-      doc.setFont("helvetica", "italic");
+      doc.setFont(PDF_FONT_FAMILY, "italic");
       doc.setTextColor(110, 110, 110);
       const caveat = doc.splitTextToSize(
         t("doctorReport.glucoseClinical.spotCaveat"),
@@ -504,7 +505,7 @@ export function buildMeasurementsChartsSection(
       // Keep the heading with at least the first chart.
       y = ensureSpace(y, 6 + SPARKLINE_HEIGHT + 4);
       doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
+      doc.setFont(PDF_FONT_FAMILY, "bold");
       doc.setTextColor(30, 30, 30);
       doc.text(t("doctorReport.chartsTitle"), margin, y);
       y += 6;
@@ -561,12 +562,12 @@ export function buildMeasurementsChartsSection(
   if (sysStat && diaStat) {
     y = ensureSpace(y, 5 + 8);
     doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.text(t("doctorReport.bpClassificationTitle"), margin, y);
     y += 5;
 
     doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
+    doc.setFont(PDF_FONT_FAMILY, "normal");
     const bpClass = t(getBpClassificationKey(sysStat.avg, diaStat.avg));
     doc.text(
       `${t("doctorReport.avgBp")}: ${num(sysStat.avg, 0)}/${num(diaStat.avg, 0)} mmHg — ${t("doctorReport.classification")}: ${bpClass}`,
@@ -579,12 +580,12 @@ export function buildMeasurementsChartsSection(
   if (data.bmi) {
     y = ensureSpace(y, 5 + 8);
     doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.text(t("doctorReport.bmiTitle"), margin, y);
     y += 5;
 
     doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
+    doc.setFont(PDF_FONT_FAMILY, "normal");
     doc.text(
       t("doctorReport.bmiRow", {
         bmi: num(data.bmi, 1),
@@ -603,11 +604,11 @@ export function buildMeasurementsChartsSection(
   if (loggedGlucose.length > 0) {
     y = ensureSpace(y, 5 + 5 + 3);
     doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.text(t("doctorReport.glucoseClassificationTitle"), margin, y);
     y += 5;
     doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
+    doc.setFont(PDF_FONT_FAMILY, "normal");
     for (const ctx of loggedGlucose) {
       const s = data.glucoseStats[ctx];
       if (!s) continue;

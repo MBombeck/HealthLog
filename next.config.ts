@@ -309,6 +309,9 @@ const nextConfig: NextConfig = {
       "./src/lib/documents/pdf-child.mjs",
       "./src/lib/documents/pdf-engine.mjs",
       "./src/lib/documents/image-engine.mjs",
+      // The doctor-report PDF embeds its fonts, read from disk by a path the
+      // tracer cannot follow (`src/lib/doctor-report-pdf/fonts.ts`).
+      "./src/lib/doctor-report-pdf/fonts/**",
       // Document AI local text extraction and rasterization both run the
       // app's one pdfjs-dist (`src/lib/documents/pdfjs.ts`) server-side; the
       // text read is the provider-free fallback that keeps content search

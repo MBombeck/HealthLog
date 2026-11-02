@@ -5,6 +5,7 @@ import { useTranslations } from "@/lib/i18n/context";
 
 import type { LabResultDto } from "./types";
 import { useLabNumber } from "./use-lab-format";
+import { withLabUnit } from "@/lib/labs/dimensionless";
 
 /**
  * The reference window a reading's own report printed, shown wherever that
@@ -54,11 +55,14 @@ export function SourceRangeNote({
   // then stated from the converted bounds, in the marker's unit.
   const inForce =
     reading.sourceReferenceText ??
-    `${formatReferenceRange(
-      reading.referenceLow,
-      reading.referenceHigh,
-      labNumber,
-    )} ${reading.unit}`.trim();
+    withLabUnit(
+      formatReferenceRange(
+        reading.referenceLow,
+        reading.referenceHigh,
+        labNumber,
+      ),
+      reading.unit,
+    );
 
   const catalog = formatReferenceRange(
     reading.catalogReferenceLow,
@@ -77,7 +81,7 @@ export function SourceRangeNote({
         : null}
       {reading.referenceDivergesFromCatalog && catalog
         ? ` · ${t("labs.sourceRange.catalogDiffers", {
-            range: `${catalog} ${reading.unit}`.trim(),
+            range: withLabUnit(catalog, reading.unit),
           })}`
         : null}
     </span>

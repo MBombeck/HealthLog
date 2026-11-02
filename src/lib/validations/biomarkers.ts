@@ -15,6 +15,8 @@
  */
 import { z } from "zod/v4";
 
+import { LAB_UNIT_DESCRIPTION } from "@/lib/labs/dimensionless";
+
 const requiredText = (max: number) => z.string().trim().min(1).max(max);
 
 const lowerBound = z.number().finite().optional();
@@ -40,7 +42,7 @@ const optionalPanel = z
 export const createBiomarkerSchema = z
   .object({
     name: requiredText(120),
-    unit: requiredText(40),
+    unit: requiredText(40).describe(LAB_UNIT_DESCRIPTION),
     lowerBound,
     upperBound,
     context: optionalContext,
@@ -67,7 +69,7 @@ export type CreateBiomarkerInput = z.infer<typeof createBiomarkerSchema>;
 export const updateBiomarkerSchema = z
   .object({
     name: requiredText(120).optional(),
-    unit: requiredText(40).optional(),
+    unit: requiredText(40).optional().describe(LAB_UNIT_DESCRIPTION),
     lowerBound: lowerBound.or(z.null()),
     upperBound: upperBound.or(z.null()),
     context: optionalContext.or(z.null()),

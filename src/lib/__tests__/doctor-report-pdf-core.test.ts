@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import {
   buildDoctorReportPdfDocument,
   renderDoctorReportPdfBytes,
-  sanitiseForPdf,
   DOCTOR_REPORT_VITAL_GROUPS,
 } from "../doctor-report-pdf-core";
 import { measurementTypeEnum } from "../validations/measurement";
@@ -313,26 +312,10 @@ describe("buildDoctorReportPdfDocument", () => {
   });
 });
 
-// ── WinAnsi sanitiser ── the rendered Helvetica is WinAnsi-encoded; glyphs
-// outside it (trend arrows, superscripts) resolve to the .notdef box at a
-// fallback advance width and stretch the surrounding line. The sanitiser
-// maps every offender the report can emit onto a WinAnsi-safe equivalent.
-describe("sanitiseForPdf", () => {
-  it("maps trend arrows to ASCII equivalents", () => {
-    expect(sanitiseForPdf("↑")).toBe("^");
-    expect(sanitiseForPdf("↓")).toBe("v");
-    expect(sanitiseForPdf("→")).toBe("->");
-  });
-
-  it("maps the superscript-two in kg/m² to a plain 2", () => {
-    expect(sanitiseForPdf("kg/m²")).toBe("kg/m2");
-  });
-
-  it("leaves WinAnsi-safe glyphs (umlauts, ß, em-dash) untouched", () => {
-    expect(sanitiseForPdf("Müller — Größe")).toBe("Müller — Größe");
-  });
-
-  it("renders the GLP-1 weight summary without any non-WinAnsi glyph", async () => {
+// ── embedded font ── the report draws in an embedded Unicode font, so the
+// GLP-1 summary's arrow separator prints as the arrow and not as ASCII.
+describe("doctor-report arrows", () => {
+  it("renders the GLP-1 weight summary with its arrow separator", async () => {
     const data = makeData({
       glp1: {
         weightStartKg: 92,
@@ -350,10 +333,8 @@ describe("sanitiseForPdf", () => {
       now: FIXED_NOW,
     });
     const text = await extractText(bytes);
-    // The arrow separator must have been folded to ASCII; no raw arrow in
-    // the document text layer.
-    expect(text).not.toMatch(/[↑↓→²]/);
-    expect(text).toContain("->");
+    expect(text).toMatch(/92[.,]0 kg → 86[.,]0 kg/);
+    expect(text).not.toContain("->");
   });
 });
 
@@ -747,8 +728,7 @@ describe("doctor-report recorded precision", () => {
       }),
     );
     expect(text).toContain("201 mg/dL");
-    // The PDF spells "≤" as "<=" (WinAnsi).
-    expect(text).toContain("<= 193");
+    expect(text).toContain("≤ 193");
   });
 
   it("keeps the digits of a measurement read below one", async () => {
@@ -1197,5 +1177,79 @@ describe("doctor report — the user's date order", () => {
       }),
     );
     expect(text).toContain("05/03/2026");
+  });
+});
+
+// ── script coverage ── the report is read in every shipped locale and carries
+// free text the user typed in any script. Each string below has to come back
+// out of the PDF's text layer exactly as it went in: a glyph the font lacks
+// draws as a box and extracts as nothing, or as the wrong character.
+describe("doctor-report script coverage", () => {
+  const POLISH = "Łódź, źdźbło, ężą";
+  const KOREAN = "혈압 측정";
+  const RUSSIAN = "Давление крови";
+
+  function withMedicationNames(names: string[]): DoctorReportData {
+    const compliance: DoctorReportData["compliance"] = {};
+    names.forEach((name, i) => {
+      compliance[`med-${i}`] = {
+        name,
+        total: 30,
+        taken: 28,
+        skipped: 1,
+        missed: 1,
+      };
+    });
+    return makeData({ compliance });
+  }
+
+  async function render(
+    locale: "en" | "pl" | "ko",
+    data: DoctorReportData,
+  ): Promise<string> {
+    const { t } = getServerTranslator(locale);
+    return extractText(
+      renderDoctorReportPdfBytes(data, {
+        t,
+        locale,
+        now: FIXED_NOW,
+        timeFormat: "AUTO",
+        dateFormat: "AUTO",
+      }),
+    );
+  }
+
+  it("round-trips Polish, Russian and Korean free text in an English report", async () => {
+    const text = await render(
+      "en",
+      withMedicationNames([POLISH, RUSSIAN, KOREAN]),
+    );
+    expect(text).toContain(POLISH);
+    expect(text).toContain(RUSSIAN);
+    expect(text).toContain(KOREAN);
+  });
+
+  it("prints the Polish report's own wording with its diacritics", async () => {
+    const { t } = getServerTranslator("pl");
+    const text = await render("pl", withMedicationNames([POLISH]));
+    expect(text).toContain(t("doctorReport.title"));
+    expect(text).toContain(POLISH);
+  });
+
+  it("prints the Korean report's own wording", async () => {
+    const { t } = getServerTranslator("ko");
+    const text = await render("ko", withMedicationNames([KOREAN, RUSSIAN]));
+    expect(text).toContain(t("doctorReport.title"));
+    expect(text).toContain(KOREAN);
+    expect(text).toContain(RUSSIAN);
+  });
+
+  it("draws arrows and superscripts as themselves", async () => {
+    const text = await render(
+      "en",
+      withMedicationNames(["Dose ↑ 10 mg → 20 mg ↓", "kg/m² ≤ 25 × 2"]),
+    );
+    expect(text).toContain("Dose ↑ 10 mg → 20 mg ↓");
+    expect(text).toContain("kg/m² ≤ 25 × 2");
   });
 });

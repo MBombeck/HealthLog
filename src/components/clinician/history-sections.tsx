@@ -26,6 +26,7 @@ import {
   type LeafScope,
   type Translate,
 } from "./report-sections";
+import { withLabUnit } from "@/lib/labs/dimensionless";
 
 /** Join the parts of a composed value, dropping the ones with nothing in. */
 function compose(parts: Array<string | null | undefined>): string {
@@ -73,7 +74,7 @@ export function LabResultsSection({
         const qualitative = lab.value === null;
         const reading = qualitative
           ? lab.valueText
-          : `${fmtLab(lab.value as number, lab.sourceValue)} ${lab.unit}`.trim();
+          : withLabUnit(fmtLab(lab.value as number, lab.sourceValue), lab.unit);
         const range = (
           low: number | null,
           high: number | null,

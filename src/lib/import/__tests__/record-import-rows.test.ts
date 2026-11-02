@@ -65,6 +65,34 @@ describe("lab rows", () => {
     });
   });
 
+  it("reads 1 in the unit column as a value without a unit", () => {
+    expect(lab(["INR", "1.1", "1", "2025-03-01", "0.8-1.2"])).toMatchObject({
+      ok: true,
+      row: { value: 1.1, unit: "1", sourceReferenceHigh: 1.2 },
+    });
+  });
+
+  it("still refuses a number whose unit cell is empty", () => {
+    for (const unit of ["", "  "]) {
+      expect(lab(["INR", "1.1", unit, "2025-03-01", ""])).toEqual({
+        ok: false,
+        reason: "missing_unit",
+        field: "unit",
+      });
+    }
+  });
+
+  it("keeps any other spelling of no unit as the text it is", () => {
+    // Only the UCUM unity means "no unit"; a word or a dash stays the literal
+    // unit the file wrote, so a marker that already holds it keeps matching.
+    for (const unit of ["ratio", "-", "none"]) {
+      expect(lab(["A/G", "1.4", unit, "2025-03-01", ""])).toMatchObject({
+        ok: true,
+        row: { unit },
+      });
+    }
+  });
+
   it("keeps a non-numeric result as a qualitative reading", () => {
     expect(
       lab(["Urine protein", "negative", "", "2025-03-01", ""]),

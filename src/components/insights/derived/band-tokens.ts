@@ -44,20 +44,6 @@ export const BAND_BORDER_CLASS: Record<ScoreBand, string> = {
 };
 
 /**
- * The raw CSS variable per band — used where a Recharts `fill` needs an
- * actual colour string rather than a Tailwind class (the score ring's
- * `<RadialBar fill>`). Reads the semantic tokens so dark and Alucard light
- * modes track the AA-safe light overrides automatically (the
- * `--dracula-*` primitives carry no light override and would fail AA on
- * the white card).
- */
-export const BAND_VAR: Record<ScoreBand, string> = {
-  green: "var(--success)",
-  yellow: "var(--warning)",
-  red: "var(--destructive)",
-};
-
-/**
  * Map a 0..100 score to its band. Mirrors the thresholds the existing
  * health-score blend uses (≥ 70 green, ≥ 40 yellow, else red) so a
  * derived score and the composite health score never disagree on colour

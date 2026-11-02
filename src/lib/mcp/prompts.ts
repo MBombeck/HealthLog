@@ -34,6 +34,7 @@ import { detectDerivedBriefingSignals } from "@/lib/insights/derived-briefing";
 import { buildBriefingIllnessCycleContext } from "@/lib/insights/illness-cycle-briefing";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import type { McpAuthContext } from "./auth";
+import { labUnitText } from "@/lib/labs/dimensionless";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -254,7 +255,7 @@ async function collectLabTrajectories(
       const history = readings.slice(0, 12).map((r) => ({
         value: r.value,
         valueText: r.valueText,
-        unit: r.unit,
+        unit: labUnitText(r.unit),
         referenceLow: r.referenceLow,
         referenceHigh: r.referenceHigh,
         takenAt: r.takenAt.toISOString(),
@@ -263,7 +264,7 @@ async function collectLabTrajectories(
       return {
         analyte: latest.analyte,
         panel: latest.panel,
-        unit: latest.unit,
+        unit: labUnitText(latest.unit),
         readingsOnFile: readings.length,
         latest: history[0],
         history,

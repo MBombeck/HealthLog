@@ -100,6 +100,26 @@ export function RecordCsvImportCard() {
   );
 }
 
+/** What the sheet says about reading the file, below the format choices. */
+function ImportNotes({ kind }: { kind: RecordImportKind }) {
+  const { t } = useTranslations();
+  return (
+    <>
+      <p className="text-muted-foreground text-xs">
+        {t("recordImport.timezoneNote")}
+      </p>
+      {kind === "labs" ? (
+        <p
+          className="text-muted-foreground text-xs"
+          data-slot="record-import-unitless-hint"
+        >
+          {t("recordImport.unitlessHint")}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
 function RecordCsvImportSheet({
   kind,
   onOpenChange,
@@ -421,9 +441,7 @@ function RecordCsvImportSheet({
                 />
               </div>
             ) : null}
-            <p className="text-muted-foreground text-xs">
-              {t("recordImport.timezoneNote")}
-            </p>
+            <ImportNotes kind={kind} />
 
             <div
               className="max-h-48 overflow-auto overscroll-contain rounded-lg border"

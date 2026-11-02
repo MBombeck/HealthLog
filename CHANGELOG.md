@@ -1,5 +1,87 @@
 # Changelog
 
+## [1.46.6] — 2026-11-02
+
+### Added
+
+- **Lab values without a unit.** Ratios and indices such as INR,
+  cholesterol/HDL or albumin/globulin had nowhere to go: manual entry, the
+  CSV import and the document review all required a unit. Entry, the
+  scanned-report rows and the document review now offer an explicit "No
+  unit" choice, stored as the UCUM unity `"1"`, and the CSV import reads
+  `1` in the unit column the same way. An empty unit is still refused, so
+  a unit the reading lost is not mistaken for none, and a document read
+  that answers "no unit" by itself is held for review. Such a value shows
+  as the number alone, a marker kept in a real unit refuses it, and the
+  FHIR export codes it as UCUM `1`. (#1313)
+- **MCP reads follow their links.** Lab readings in `get_labs` and
+  `fetch lab:` list the documents and visits they are linked to, with the
+  linked records once per answer instead of on every reading of the same
+  report. `fetch med:` and `get_medication_schedule` list theirs, and
+  `fetch document:` now also names the lab results and medications filed
+  against it. Rows of `get_visits`, `get_medication_schedule` and
+  `get_illness_recovery` carry an id `fetch` takes. An imported document
+  names its source system and id, never the address of the instance it
+  came from. (#1323)
+
+### Fixed
+
+- **A refused lab value can be corrected in the review.** A value that
+  Finish review refused, such as a ratio printed without a unit or a unit
+  that disagrees with the marker, showed the reason but could only be
+  discarded. The row now offers the same Check control as a low-confidence
+  value. (#1313, #1327)
+- **The doctor report prints every language.** The PDF used a built-in
+  font that covers Western European letters only, so Polish letters such
+  as ą, ł or ś, the whole Korean report, and any medication name or note in
+  another script printed as empty boxes. The report now embeds an open
+  Unicode font family covering Latin, Greek, Cyrillic and, when the report
+  needs it, Korean, and arrows, ≤ and ² print as themselves instead of
+  ASCII stand-ins. The file is compressed, so a report stays around
+  65 KB. Chinese, Japanese and Arabic text are not covered yet.
+- **PDFs read on a Raspberry Pi 4.** The native canvas build for arm64
+  Alpine needs CPU features an ARMv8.0 core lacks, and loading it ended
+  every PDF read with an illegal instruction. The CPU check now covers that
+  case, and PDF reading carries on without the canvas, so the text layer
+  and the index work; thumbnails keep their existing fallback. (#1311)
+- **The display name greets you.** The dashboard and Insights greetings,
+  the top bar and the sidebar showed the username even when a display name
+  was set. They now use the display name and fall back to the username.
+  (#1309)
+- **Summaries count every reading right after an import.** A type whose
+  history was not folded yet counted as covered as soon as one day was, so
+  a summary could show one day of weight readings out of three. A type now
+  counts as covered only when its folded days reach back to its oldest
+  reading.
+- **The repeated hour of a clock change stays two hours.** On the night
+  the clocks go back, a dense pulse or glucose chart folded both runs of
+  the repeated hour into one point. Each hour is its own point now.
+- **Google Health heals a connection that lost its account id.** The
+  1.46.4 update cleared a placeholder id on existing connections. After a
+  clean sync such a connection now reads its real id back, so the
+  one-account-per-profile check covers it again.
+- **WHOOP refuses a sign-in without a user id** instead of storing the
+  text "undefined" as the account.
+
+### Changed
+
+- Next.js 16.4.3 and the weekly dependency updates. node-forge, reached
+  through the APNs client, is raised to 1.4.2, which closes five high
+  advisories.
+
+### Thanks
+
+- @johnnyrepo026 for the precise report on unitless lab ratios (#1313),
+  with the cause already traced to the right two files, and for the pull
+  request that fixed the review half of it (#1327).
+- @mbreitkreuz for the MCP linked-records request (#1323), a careful spec
+  with the real case that made date matching fail.
+- @Oguz3003 for tracking the Raspberry Pi 4 crash down to the CPU and
+  confirming the workaround (#1311).
+- @angusmaul for noticing the greeting ignored the display name (#1309).
+- @mills1975 for the heart-rate sync report and the diagnostics that
+  pinned it to the iPhone app (#1326); the fix follows in an app update.
+
 ## [1.46.5] — 2026-10-30
 
 ### Fixed

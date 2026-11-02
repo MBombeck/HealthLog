@@ -22,6 +22,12 @@ vi.mock("@/lib/ai/coach/tools/executor", () => ({
 vi.mock("@/lib/ai/coach/tools/inventory", () => ({
   buildCoachDataInventory: vi.fn(),
 }));
+// The labs read builds its block first and asks the Coach only on a miss;
+// a miss here keeps every read on the executor this sweep counts.
+vi.mock("@/lib/ai/coach/labs-snapshot", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/ai/coach/labs-snapshot")>()),
+  buildLabsSnapshotBlock: vi.fn(async () => null),
+}));
 vi.mock("@/lib/mcp/rich-reads", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/mcp/rich-reads")>()),
   getLabHistory: vi.fn(async () => ({ present: true, readings: [] })),

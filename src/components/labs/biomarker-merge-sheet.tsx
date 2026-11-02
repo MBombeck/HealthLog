@@ -28,6 +28,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
 import type { BiomarkerDto, BiomarkerMergeResultDto } from "./types";
+import { labUnitLabel } from "@/lib/labs/dimensionless";
 
 /** The most sources one merge takes, matching the server. */
 const MAX_SOURCES = 10;
@@ -166,7 +167,7 @@ export function BiomarkerMergeSheet({
           <p className="text-sm">
             {tCount("labs.merge.previewSummary", preview.movedReadings, {
               name: preview.target.name,
-              unit: preview.target.unit,
+              unit: labUnitLabel(preview.target.unit, t),
             })}
           </p>
           <ul className="space-y-2">
@@ -178,7 +179,7 @@ export function BiomarkerMergeSheet({
                 <p className="text-sm font-medium break-words">
                   {source.name}{" "}
                   <span className="text-muted-foreground text-xs font-normal">
-                    {source.unit}
+                    {labUnitLabel(source.unit, t)}
                   </span>
                 </p>
                 <p
@@ -190,8 +191,8 @@ export function BiomarkerMergeSheet({
                 >
                   {source.conversion === "refused"
                     ? t("labs.merge.refused", {
-                        unit: source.unit,
-                        targetUnit: preview.target.unit,
+                        unit: labUnitLabel(source.unit, t),
+                        targetUnit: labUnitLabel(preview.target.unit, t),
                       })
                     : source.conversion === "converted"
                       ? tCount("labs.merge.converted", source.readingCount, {
@@ -247,7 +248,7 @@ export function BiomarkerMergeSheet({
                       {marker.name}
                     </span>
                     <span className="text-muted-foreground shrink-0 text-xs">
-                      {marker.unit}
+                      {labUnitLabel(marker.unit, t)}
                     </span>
                   </label>
                 </li>

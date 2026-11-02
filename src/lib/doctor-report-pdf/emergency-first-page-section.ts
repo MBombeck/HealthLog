@@ -1,3 +1,4 @@
+import { PDF_FONT_FAMILY } from "./fonts";
 import {
   pdfCursorState,
   type DoctorReportPdfCursorState,
@@ -41,13 +42,13 @@ export function buildEmergencyFirstPageSection(
   doc.rect(margin, y, contentWidth, 12, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(15);
-  doc.setFont("helvetica", "bold");
+  doc.setFont(PDF_FONT_FAMILY, "bold");
   doc.text(t("doctorReport.emergency.title"), margin + 3, y + 8);
   y += 12;
 
   doc.setTextColor(120, 120, 120);
   doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
+  doc.setFont(PDF_FONT_FAMILY, "normal");
   y += 5;
   doc.text(t("doctorReport.emergency.subtitle"), margin, y);
   y += 6;
@@ -57,12 +58,12 @@ export function buildEmergencyFirstPageSection(
   const block = (label: string, body: string, emphasise = false) => {
     ensureRoom(5 + 4.8);
     doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.setTextColor(40, 40, 40);
     doc.text(label, margin, y);
     y += 5;
     doc.setFontSize(emphasise ? 11 : 9.5);
-    doc.setFont("helvetica", emphasise ? "bold" : "normal");
+    doc.setFont(PDF_FONT_FAMILY, emphasise ? "bold" : "normal");
     doc.setTextColor(
       emphasise ? 150 : 60,
       emphasise ? 20 : 60,

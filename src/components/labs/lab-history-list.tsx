@@ -46,6 +46,7 @@ import {
 } from "./lab-result-related-links";
 import type { LabResultDto } from "./types";
 import { useLabDate, useLabNumber } from "./use-lab-format";
+import { labUnitText } from "@/lib/labs/dimensionless";
 
 const NOTE_MAX_LENGTH = 2000;
 
@@ -103,7 +104,7 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
         reading.value === null
           ? (reading.valueText ?? "")
           : labNumber(reading.value, reading.sourceValue),
-      unit: reading.value === null ? undefined : reading.unit,
+      unit: reading.value === null ? undefined : labUnitText(reading.unit),
       compare: before
         ? {
             label: t("day.previousReading", { date: labDate(before.takenAt) }),

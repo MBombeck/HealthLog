@@ -11,6 +11,7 @@ import { queryKeys } from "@/lib/query-keys";
 import { SectionHeading } from "@/components/ui/section-heading";
 import type { LabChange } from "@/lib/insights/labs-changes";
 import { InsightSectionCard } from "./insight-section-card";
+import { withLabUnit } from "@/lib/labs/dimensionless";
 
 /**
  * v1.25 — "what changed since your last panel" card.
@@ -81,7 +82,7 @@ export function LabsChangesCard({
           const signedDelta =
             c.direction === "flat"
               ? t("insights.labsChanges.directionFlat")
-              : `${c.delta > 0 ? "+" : ""}${c.delta} ${c.unit}`.trim();
+              : withLabUnit(`${c.delta > 0 ? "+" : ""}${c.delta}`, c.unit);
           return (
             <div
               key={c.analyte}
@@ -93,7 +94,7 @@ export function LabsChangesCard({
                   {c.analyte}
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  {`${c.latest} ${c.unit}`.trim()}
+                  {withLabUnit(String(c.latest), c.unit)}
                   {labelKey ? ` · ${t(labelKey)}` : ""}
                 </p>
               </div>

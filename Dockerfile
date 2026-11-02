@@ -312,7 +312,7 @@ RUN mkdir -p /opt/prisma-cli && \
     npm pkg set 'overrides.mysql2=^3.22.0' && \
     npm pkg set 'overrides.@hono/node-server=^1.19.15' && \
     npm pkg set 'overrides.valibot=^1.4.2' && \
-    npm install --omit=dev prisma@7.10.1 @prisma/engines@7.10.1 tsx@4.23.1 dotenv@18.0.8 && \
+    npm install --omit=dev prisma@7.10.1 @prisma/engines@7.10.1 tsx@4.23.1 dotenv@18.0.9 && \
     ln -sfn /opt/prisma-cli/node_modules/.bin/tsx /usr/local/bin/healthlog-tsx && \
     ln -sfn /opt/prisma-cli/node_modules/dotenv /app/node_modules/dotenv && \
     ln -sfn /opt/prisma-cli/node_modules/prisma /app/node_modules/prisma && \

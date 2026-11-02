@@ -37,10 +37,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DateField } from "@/components/ui/date-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LabUnitInput } from "@/components/labs/lab-unit-input";
 import { MarkerMatchField } from "@/components/labs/marker-match-field";
 import type { BiomarkerListResponse } from "@/components/labs/types";
 import { apiGet } from "@/lib/api/api-fetch";
 import type { DocumentExtractRunResult } from "@/lib/documents/ai-runs/types";
+import { withLabUnit } from "@/lib/labs/dimensionless";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
@@ -81,7 +83,7 @@ function factHeadline(fact: ExtractedFactDto): string {
     const data = fact.data as ObservationFactData;
     const value =
       typeof data.value === "number"
-        ? `${data.value}${data.unit ? ` ${data.unit}` : ""}`
+        ? withLabUnit(String(data.value), data.unit)
         : (data.valueText ?? "");
     return value ? `${data.label}: ${value}` : data.label;
   }
@@ -204,8 +206,8 @@ function draftFor(fact: ExtractedFactDto): VerifyDraft {
   };
 }
 
-/** One pending fact: include-toggle, stated values, verify-first when low-confidence. */
-function FactRow({
+/** One pending fact: include-toggle, stated values, and the edit control when it is low-confidence or its last save was refused. */
+export function FactRow({
   documentId,
   fact,
   checked,
@@ -221,7 +223,7 @@ function FactRow({
   onCheckedChange: (checked: boolean) => void;
   /** A per-fact commit refusal from the last confirm attempt, or null. */
   failure: string | null;
-  /** v1.43 — the suggestion the person picked for a lab value, or null. */
+  /** The suggestion the person picked for a lab value, or null. */
   chosenBiomarkerId: string | null;
   onChooseBiomarker: (biomarkerId: string | null) => void;
   /** The account's marker name by id, for the matched marker. */
@@ -250,8 +252,7 @@ function FactRow({
       {
         onSuccess: () => {
           setVerifying(false);
-          // The refetched fact arrives with needsReview cleared; include it —
-          // the person just asserted these values.
+          // Include it: the refetched fact clears needsReview, as asserted.
           onCheckedChange(true);
         },
       },
@@ -319,9 +320,10 @@ function FactRow({
             </p>
           ) : null}
         </div>
-        {fact.needsReview && !verifying ? (
+        {(fact.needsReview || failure !== null) && !verifying ? (
           <Button
             type="button"
+            data-slot="document-fact-verify-open"
             variant="outline"
             size="sm"
             className="min-h-11 shrink-0 sm:min-h-8"
@@ -411,13 +413,12 @@ function FactRow({
                     ? t("documents.review.fieldUnit")
                     : t("documents.review.fieldDose")}
                 </Label>
-                <Input
+                <LabUnitInput
                   id={`fact-unit-${fact.id}`}
                   value={draft.unit}
-                  onChange={(e) =>
-                    setDraft((d) => ({ ...d, unit: e.target.value }))
-                  }
+                  onChange={(unit) => setDraft((d) => ({ ...d, unit }))}
                   maxLength={isObservation ? 80 : 120}
+                  allowNoUnit={isObservation}
                 />
               </div>
             ) : null}

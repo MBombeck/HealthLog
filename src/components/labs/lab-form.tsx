@@ -39,6 +39,11 @@ import type {
   BiomarkerListResponse,
   LabResultDto,
 } from "./types";
+import {
+  labUnitLabel,
+  labUnitText,
+  withLabUnit,
+} from "@/lib/labs/dimensionless";
 
 const NOTE_MAX_LENGTH = 2000;
 const DEFINE_NEW = "__define_new__";
@@ -330,9 +335,8 @@ export function LabForm({
     ? formatReferenceRange(selected.lowerBound, selected.upperBound, labNumber)
     : "";
 
-  // What the typed string resolved to, shown back so the user can see whether
-  // a window was read out of it before the reading is saved. When none was,
-  // the hint says the text is kept as written rather than staying silent.
+  // What the typed string resolved to, shown back before the save. When no
+  // window was read out of it, the hint says the text stays as written.
   const parsedSourceRange = parseReferenceRange(sourceRange, selected?.unit);
   const sourceRangeHint = parsedSourceRange
     ? isUnreadableRange(parsedSourceRange)
@@ -341,7 +345,7 @@ export function LabForm({
           parsedSourceRange.low,
           parsedSourceRange.high,
           labNumber,
-        )} ${selected?.unit ?? ""}`.trim()
+        )} ${labUnitText(selected?.unit)}`.trim()
     : "";
 
   const footerNode = (
@@ -406,7 +410,7 @@ export function LabForm({
             <SelectContent>
               {markers.map((m) => (
                 <SelectItem key={m.id} value={m.id}>
-                  {m.name} · {m.unit}
+                  {m.name} · {labUnitLabel(m.unit, t)}
                 </SelectItem>
               ))}
               {!lockedBiomarkerId ? (
@@ -457,7 +461,7 @@ export function LabForm({
                   {selected ? (
                     <span className="text-muted-foreground font-normal">
                       {" "}
-                      ({selected.unit})
+                      ({labUnitLabel(selected.unit, t)})
                     </span>
                   ) : null}
                 </Label>
@@ -515,7 +519,8 @@ export function LabForm({
 
         {resultType === "numeric" && selected && referenceText ? (
           <p className="text-muted-foreground text-xs">
-            {t("labs.referenceLabel")} {referenceText} {selected.unit}
+            {t("labs.referenceLabel")}{" "}
+            {withLabUnit(referenceText, selected.unit)}
           </p>
         ) : null}
 

@@ -1,16 +1,16 @@
 /**
- * Isomorphic PDF renderer for the doctor report.
+ * Server-side PDF renderer for the doctor report.
  *
- * Runs identically in the browser (settings page download) and in Node
- * (the clinician share link's `/c/[token]/report.pdf` route). The comment here
+ * Callers are the clinician share link's `/c/[token]/report.pdf` route and
+ * the health-record export. The comment here
  * named `/api/doctor-report/pdf` until 2026-08-23; that route was removed and
  * the sweep behind the retired-route registry found the reference still
  * standing. All locale-sensitive
  * strings and number/date formatting are driven by the injected
- * `{ t, locale }` so DE and EN output match the user's UI language.
+ * `{ t, locale }` so the output matches the user's UI language.
  *
- * jsPDF is fully isomorphic: `doc.output("arraybuffer")` returns a valid
- * `%PDF-` byte stream in both environments.
+ * The text is drawn in embedded Unicode fonts read from disk
+ * (`doctor-report-pdf/fonts.ts`), which ties the renderer to Node.
  */
 import { jsPDF } from "jspdf";
 import type { MeasurementType } from "@/generated/prisma/client";
@@ -43,97 +43,13 @@ import {
   pdfCursorState,
   type DoctorReportPdfRenderContext,
 } from "./doctor-report-pdf/render-context";
+import {
+  registerReportFonts,
+  reportNeedsHangul,
+} from "./doctor-report-pdf/fonts";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 type T = (key: string, params?: Record<string, string | number>) => string;
-
-/**
- * jsPDF's built-in Helvetica is WinAnsi-encoded. Latin-1 glyphs (umlauts,
- * ß, em-/en-dash, typographic quotes, °, µ) carry correct metrics, but any
- * code point outside WinAnsi resolves to the `.notdef` box at a single
- * fallback advance width. The widths then disagree with the drawn glyph and
- * the surrounding words stretch / shift — the visible "stretched line" bug.
- *
- * This sanitiser maps every glyph the report can emit that falls outside
- * WinAnsi onto a WinAnsi-safe equivalent, applied centrally to every string
- * just before it reaches `doc.text` / `doc.splitTextToSize` (see
- * `patchPdfTextSanitiser`). The offenders that actually occur in the report
- * are the trend arrows (↑ ↓ →) injected by `trendArrow()` + the `glp1WeightSummary`
- * separator, and the superscript-two in "kg/m²". The mapping is exhaustive
- * for those and degrades gracefully for any future stray symbol.
- *
- * Premium follow-up (documented, not a hotfix blocker): embed a Unicode TTF
- * (e.g. DejaVuSans) via `doc.addFileToVFS` / `addFont` so the arrows and
- * superscripts render as their true glyphs instead of ASCII equivalents.
- */
-const WINANSI_REPLACEMENTS: Record<string, string> = {
-  // Trend arrows → ASCII so the metrics match the drawn glyph.
-  "↑": "^", // ↑ up
-  "↓": "v", // ↓ down
-  "→": "->", // → right (also the glp1 weight separator)
-  "←": "<-", // ←
-  "↔": "<->", // ↔
-  // Super-/subscripts used in "kg/m²".
-  "²": "2", // ²
-  "³": "3", // ³
-  "¹": "1", // ¹
-  // Defensive: a few maths/symbol glyphs that are outside WinAnsi but read
-  // fine as ASCII, in case a future string introduces them.
-  "≈": "~", // ≈
-  "≤": "<=", // ≤
-  "≥": ">=", // ≥
-  "×": "x", // ×
-  "€": "EUR", // €
-};
-
-const WINANSI_REPLACE_RE = new RegExp(
-  `[${Object.keys(WINANSI_REPLACEMENTS).join("")}]`,
-  "g",
-);
-
-/** Map non-WinAnsi glyphs onto safe equivalents. Pure; exported for tests. */
-export function sanitiseForPdf(text: string): string {
-  return text.replace(
-    WINANSI_REPLACE_RE,
-    (ch) => WINANSI_REPLACEMENTS[ch] ?? ch,
-  );
-}
-
-/**
- * Patch `doc.text` + `doc.splitTextToSize` on a single jsPDF instance so
- * every drawn string (direct text, wrapped paragraphs, AND `jspdf-autotable`
- * cells — which route their content through `doc.text` too) passes through
- * `sanitiseForPdf` first. One choke point instead of a sanitiser call at
- * every site keeps the renderer readable and guarantees coverage.
- */
-function patchPdfTextSanitiser(doc: jsPDF): void {
-  const clean = (value: unknown): unknown =>
-    typeof value === "string"
-      ? sanitiseForPdf(value)
-      : Array.isArray(value)
-        ? value.map((v) => (typeof v === "string" ? sanitiseForPdf(v) : v))
-        : value;
-
-  const originalText = doc.text.bind(doc);
-  doc.text = function patchedText(
-    this: jsPDF,
-    ...args: Parameters<jsPDF["text"]>
-  ): jsPDF {
-    const next = [...args] as unknown[];
-    next[0] = clean(next[0]);
-    return originalText(...(next as Parameters<jsPDF["text"]>));
-  } as jsPDF["text"];
-
-  const originalSplit = doc.splitTextToSize.bind(doc);
-  doc.splitTextToSize = function patchedSplit(
-    this: jsPDF,
-    ...args: Parameters<jsPDF["splitTextToSize"]>
-  ): ReturnType<jsPDF["splitTextToSize"]> {
-    const next = [...args] as unknown[];
-    next[0] = clean(next[0]);
-    return originalSplit(...(next as Parameters<jsPDF["splitTextToSize"]>));
-  } as jsPDF["splitTextToSize"];
-}
 
 export interface DoctorReportRenderOptions {
   t: T;
@@ -209,9 +125,8 @@ export const DOCTOR_REPORT_VITAL_GROUPS = REPORT_GROUPS.map((group) => ({
 /**
  * Render the doctor report into a `jsPDF` instance.
  *
- * Used internally by both the client wrapper (which calls `.save()` on the
- * returned doc) and the server renderer (which calls `.output("arraybuffer")`
- * via `renderDoctorReportPdfBytes`).
+ * `renderDoctorReportPdfBytes` serialises the returned doc; tests inspect it
+ * directly.
  */
 export function buildDoctorReportPdfDocument(
   data: DoctorReportData,
@@ -238,8 +153,13 @@ export function buildDoctorReportPdfDocument(
   const unitFor = (type: string): string =>
     reportStatUnit(type, glucoseUnit, t);
 
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  patchPdfTextSanitiser(doc);
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+    compress: true,
+  });
+  registerReportFonts(doc, reportNeedsHangul(locale, data));
   doc.setProperties({
     title: t("doctorReport.title"),
     subject: t("doctorReport.subtitle"),
@@ -304,7 +224,6 @@ export function buildDoctorReportPdfDocument(
 
 /**
  * Render the doctor report and return the PDF as a `Uint8Array`.
- * Isomorphic — works in browser and Node.
  */
 export function renderDoctorReportPdfBytes(
   data: DoctorReportData,

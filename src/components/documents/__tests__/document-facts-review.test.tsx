@@ -8,7 +8,7 @@ import type {
   InboundDocumentDetailDto,
 } from "@/lib/validations/inbound-documents";
 
-import { DocumentFactsSection } from "../document-facts-review";
+import { DocumentFactsSection, FactRow } from "../document-facts-review";
 
 /**
  * The staged-facts block's honest states, pinned by static render:
@@ -171,5 +171,58 @@ describe("<DocumentFactsSection>", () => {
       />,
     );
     expect(html).toBe("");
+  });
+});
+
+describe("<FactRow>", () => {
+  // A confident lab value the last save refused (here a ratio printed without
+  // a unit) gets the same edit control as a low-confidence one: it is the only
+  // way to add the unit and finish the review.
+  const unitless = fact({
+    data: {
+      label: "Ratio",
+      code: null,
+      codeSystem: null,
+      value: 4.2,
+      valueText: null,
+      unit: null,
+      referenceLow: null,
+      referenceHigh: 5,
+      referenceText: "<5.0",
+      effectiveDate: "2026-08-01",
+    },
+    provenance: {
+      sourceText: "Ratio 4.2 <5.0",
+      anchored: true,
+      sourceOffset: 10,
+      page: 0,
+      confidence: 0.95,
+    },
+  });
+
+  const rowProps = {
+    documentId: "doc-1",
+    checked: true,
+    onCheckedChange: () => {},
+    chosenBiomarkerId: null,
+    onChooseBiomarker: () => {},
+    markerName: () => null,
+  };
+
+  it("offers the edit control on a confident row whose save was refused", () => {
+    const html = render(
+      <FactRow
+        {...rowProps}
+        fact={unitless}
+        failure="observation.unitRequired"
+      />,
+    );
+    expect(html).toContain('data-slot="document-fact-verify-open"');
+    expect(html).toContain("A numeric value needs a unit");
+  });
+
+  it("leaves a confident row without a refusal free of the edit control", () => {
+    const html = render(<FactRow {...rowProps} fact={fact()} failure={null} />);
+    expect(html).not.toContain('data-slot="document-fact-verify-open"');
   });
 });

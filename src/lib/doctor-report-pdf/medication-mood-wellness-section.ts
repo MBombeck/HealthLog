@@ -1,3 +1,4 @@
+import { PDF_FONT_FAMILY } from "./fonts";
 import type { jsPDF } from "jspdf";
 import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
 import autoTable from "jspdf-autotable";
@@ -66,7 +67,7 @@ export function buildMedicationMoodWellnessSection(
     );
 
     doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.text(t("doctorReport.complianceTitle"), margin, y);
     y += 6;
 
@@ -154,12 +155,12 @@ export function buildMedicationMoodWellnessSection(
     y = ensureSpace(y, 6 + 6 + 5);
 
     doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.text(t("doctorReport.glp1Title"), margin, y);
     y += 6;
 
     doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
+    doc.setFont(PDF_FONT_FAMILY, "normal");
     if (
       data.glp1.weightDeltaKg !== null &&
       data.glp1.weightStartKg !== null &&
@@ -181,11 +182,11 @@ export function buildMedicationMoodWellnessSection(
       // Keep the med name with at least its first detail line.
       y = ensureSpace(y, 5 + 5);
       doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
+      doc.setFont(PDF_FONT_FAMILY, "bold");
       doc.text(med.name, margin, y);
       y += 5;
       doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
+      doc.setFont(PDF_FONT_FAMILY, "normal");
       if (med.currentDose) {
         doc.text(
           t("doctorReport.glp1CurrentDose", {
@@ -272,7 +273,7 @@ export function buildMedicationMoodWellnessSection(
       // block.
       y = ensureSpace(y, 5 + estimateTableHeight(seRows.length));
       doc.setFontSize(11);
-      doc.setFont("helvetica", "bold");
+      doc.setFont(PDF_FONT_FAMILY, "bold");
       doc.text(t("doctorReport.glp1SideEffectsTitle"), margin, y);
       y += 5;
       autoTable(doc, {
@@ -316,12 +317,12 @@ export function buildMedicationMoodWellnessSection(
     y = ensureSpace(y, 6 + 6 + estimateTableHeight(Math.min(moodRowCount, 1)));
 
     doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.text(t("doctorReport.moodTitle"), margin, y);
     y += 6;
 
     doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
+    doc.setFont(PDF_FONT_FAMILY, "normal");
     doc.text(
       t("doctorReport.moodSummary", {
         avg: num(data.mood.avg, 1),
@@ -399,12 +400,12 @@ export function buildMedicationMoodWellnessSection(
     y = ensureSpace(y, 6 + 6 + 6 + estimateTableHeight(1));
 
     doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.text(t("doctorReport.wellnessTitle"), margin, y);
     y += 6;
 
     doc.setFontSize(8);
-    doc.setFont("helvetica", "italic");
+    doc.setFont(PDF_FONT_FAMILY, "italic");
     const wellnessDisclaimer = doc.splitTextToSize(
       t("doctorReport.wellnessDisclaimer"),
       pageWidth - margin * 2,
@@ -414,7 +415,7 @@ export function buildMedicationMoodWellnessSection(
       y += 4;
     }
     y += 2;
-    doc.setFont("helvetica", "normal");
+    doc.setFont(PDF_FONT_FAMILY, "normal");
 
     autoTable(doc, {
       startY: y,
@@ -463,13 +464,13 @@ export function buildMedicationMoodWellnessSection(
     y = ensureSpace(y, 6 + 6 + estimateTableHeight(1));
 
     doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.text(t("doctorReport.cycleTitle"), margin, y);
     y += 6;
 
     // Summary line: LMP, avg length ± variability, avg period, phase.
     doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
+    doc.setFont(PDF_FONT_FAMILY, "normal");
     const summaryBits: string[] = [];
     if (cyc.lastPeriodStart) {
       summaryBits.push(

@@ -10396,7 +10396,9 @@
       "pdfNeedsAnthropic": "El escaneo de PDF necesita un proveedor de visión de Claude; sube una foto en su lugar.",
       "refTextLabel": "Rango tal como aparece",
       "refTextPlaceholder": "p. ej. 3,5 - 5,0",
-      "aiUnavailable": "Escanear un informe con IA no está disponible aquí ahora mismo."
+      "aiUnavailable": "Escanear un informe con IA no está disponible aquí ahora mismo.",
+      "errorUnitMismatchNoUnit": "Este marcador se registra sin unidad. Marca Sin unidad si el informe se leyó mal o deselecciona este valor.",
+      "unitDiffersBadgeNoUnit": "Registrado sin unidad; este informe indica {unit}"
     },
     "loadMoreReadings": "Cargar más mediciones",
     "documentsLink": "Documentos de resultados",
@@ -10474,6 +10476,10 @@
         "stale": "El valor más reciente es del {date}, hace más de un año. La línea se muestra a esa fecha, sin proyección."
       },
       "interval": "Intervalo del 95 % del cambio anual: de {lo} a {hi} {unit}."
+    },
+    "unit": {
+      "none": "Sin unidad",
+      "noneHint": "Para un cociente o un índice como el INR o colesterol/HDL."
     }
   },
   "modules": {
@@ -14093,6 +14099,7 @@
       "asNeeded": "A demanda",
       "startsOn": "Inicio",
       "endsOn": "Fin"
-    }
+    },
+    "unitlessHint": "Un cociente o un índice sin unidad (INR, colesterol/HDL): escribe 1 en la columna de la unidad. Una unidad vacía sigue siendo un error."
   }
 }

@@ -4,6 +4,7 @@ import { RangeBar } from "@/components/targets/range-bar";
 import { cn } from "@/lib/utils";
 
 import { useLabNumber } from "./use-lab-format";
+import { labUnitText, withLabUnit } from "@/lib/labs/dimensionless";
 
 /**
  * v1.37.34 — compact reference-range visualization for saved lab readings.
@@ -43,11 +44,14 @@ export function LabReferenceRangeBar({
   const scale = Math.max(Math.abs(referenceLow ?? referenceHigh!), 1);
   const min = referenceLow ?? referenceHigh! - scale;
   const max = referenceHigh ?? referenceLow! + scale;
-  const rangeLabel = !hasLow
-    ? `≤${labNumber(referenceHigh!)} ${unit}`
-    : !hasHigh
-      ? `≥${labNumber(referenceLow!)} ${unit}`
-      : `${labNumber(referenceLow!)}–${labNumber(referenceHigh!)} ${unit}`;
+  const rangeLabel = withLabUnit(
+    !hasLow
+      ? `≤${labNumber(referenceHigh!)}`
+      : !hasHigh
+        ? `≥${labNumber(referenceLow!)}`
+        : `${labNumber(referenceLow!)}–${labNumber(referenceHigh!)}`,
+    unit,
+  );
 
   return (
     <div
@@ -59,7 +63,7 @@ export function LabReferenceRangeBar({
         value={value}
         min={min}
         max={max}
-        unit={unit}
+        unit={labUnitText(unit)}
         compact
         tone="lab"
         formatValue={labNumber}

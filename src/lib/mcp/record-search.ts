@@ -58,7 +58,13 @@ import { encounterKindLabel } from "@/lib/encounters/kind-label";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { defaultLocale, locales, type Locale } from "@/lib/i18n/config";
 import { listTargets } from "@/lib/links";
-import type { LinkedTarget } from "@/lib/links/link-service";
+import {
+  boundLinks,
+  linksBySource,
+  linksFor,
+  linksSentence,
+  type RecordLink,
+} from "./record-links";
 import { isModuleEnabled, type ModuleKey } from "@/lib/modules/gate";
 import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 import {
@@ -83,8 +89,6 @@ export const MAX_ROWS_PER_KIND = 500;
 export const EMPTY_QUERY_PER_KIND = 10;
 /** Characters of indexed document text one `fetch` returns. */
 export const MAX_DOCUMENT_EXCERPT_CHARS = 1500;
-/** One-hop links one `fetch` returns. */
-export const MAX_LINKS = 25;
 
 // ── Kinds and their modules ──────────────────────────────────────────
 
@@ -923,85 +927,12 @@ export async function loadRecordCandidates(
 
 // ── Fetch ────────────────────────────────────────────────────────────
 
-export interface RecordLink {
-  id: string | null;
-  kind: RecordKind | "lab";
-  label: string;
-  date: string | null;
-}
-
 export interface FetchResult {
   id: string;
   title: string;
   text: string;
   url: string;
   metadata: Record<string, unknown>;
-}
-
-function linkDate(iso: string | null): string | null {
-  return iso ? iso.slice(0, 10) : null;
-}
-
-function toLinks(
-  kind: RecordKind,
-  targets: readonly LinkedTarget[],
-  label: (target: LinkedTarget) => string = (t) => t.label,
-): RecordLink[] {
-  return targets.map((target) => ({
-    id: `${kind}:${target.id}`,
-    kind,
-    label: scrubFenceMarkers(label(target)),
-    date: linkDate(target.date),
-  }));
-}
-
-/** A linked visit is labelled by its kind, in English on this wire. */
-function visitLinkLabel(target: LinkedTarget): string {
-  return encounterKindLabel(target.label as EncounterKind, "en");
-}
-
-async function labLinks(
-  userId: string,
-  targets: readonly LinkedTarget[],
-): Promise<RecordLink[]> {
-  if (targets.length === 0) return [];
-  const rows = await prisma.labResult.findMany({
-    where: { userId, id: { in: targets.map((t) => t.id) }, deletedAt: null },
-    select: { id: true, analyte: true },
-  });
-  const analyte = new Map(rows.map((r) => [r.id, r.analyte]));
-  return targets.flatMap((target) => {
-    const name = analyte.get(target.id);
-    if (!name) return [];
-    return [
-      {
-        id: `lab:${name}`,
-        kind: "lab" as const,
-        label: scrubFenceMarkers(target.label),
-        date: linkDate(target.date),
-      },
-    ];
-  });
-}
-
-function linksSentence(links: readonly RecordLink[]): string {
-  if (links.length === 0) return "Linked records: none.";
-  return `Linked records: ${links
-    .map(
-      (l) =>
-        `${l.kind} ${fenceUserText(l.label)}${l.date ? ` (${l.date})` : ""}`,
-    )
-    .join("; ")}.`;
-}
-
-function boundLinks(links: RecordLink[]): {
-  links: RecordLink[];
-  linksTruncated: boolean;
-} {
-  return {
-    links: links.slice(0, MAX_LINKS),
-    linksTruncated: links.length > MAX_LINKS,
-  };
 }
 
 function moduleOff(
@@ -1075,9 +1006,9 @@ async function fetchVisit(
       : Promise.resolve([]),
   ]);
   const all: RecordLink[] = [
-    ...toLinks("condition", conditions),
-    ...toLinks("document", documents),
-    ...(await labLinks(userId, labs)),
+    ...(await linksFor(userId, "conditionEpisode", conditions)),
+    ...(await linksFor(userId, "document", documents)),
+    ...(await linksFor(userId, "labResult", labs)),
     ...doses.map((dose) => ({
       id: `vaccination:${dose.id}`,
       kind: "vaccination" as const,
@@ -1171,8 +1102,8 @@ async function fetchCondition(
       : Promise.resolve([]),
   ]);
   const { links, linksTruncated } = boundLinks([
-    ...toLinks("visit", visits, visitLinkLabel),
-    ...toLinks("document", documents),
+    ...(await linksFor(userId, "encounter", visits)),
+    ...(await linksFor(userId, "document", documents)),
   ]);
 
   const bodySite = decryptText(row.bodySiteEncrypted);
@@ -1246,12 +1177,20 @@ async function documentExcerpt(
   }
 }
 
+/** What a document lists as linked, in this order. */
+const DOCUMENT_LINK_TARGETS = [
+  "encounter",
+  "conditionEpisode",
+  "vaccination",
+  "labResult",
+  "medication",
+] as const;
+
 async function fetchDocument(
   userId: string,
   id: string,
   rid: string,
   origin: string,
-  kinds: ReadonlySet<RecordKind>,
 ): Promise<FetchResult> {
   // Metadata only. The stored bytes and the model-written summary are never
   // selected, so neither can reach this answer by accident.
@@ -1270,24 +1209,15 @@ async function fetchDocument(
   // and still are.
   const deferred = row.aiReadDeferred;
 
-  const source = { userId, sourceKind: "document" as const, sourceId: rid };
-  const [content, visits, conditions, doses] = await Promise.all([
+  // The lab results read from this document and the medications filed
+  // against it are listed too, each behind its own module like the rest.
+  const [content, linked] = await Promise.all([
     deferred
       ? Promise.resolve({ indexed: false, excerpt: null })
       : documentExcerpt(userId, rid),
-    listTargets(prisma, { ...source, targetKind: "encounter" }),
-    kinds.has("condition")
-      ? listTargets(prisma, { ...source, targetKind: "conditionEpisode" })
-      : Promise.resolve([]),
-    kinds.has("vaccination")
-      ? listTargets(prisma, { ...source, targetKind: "vaccination" })
-      : Promise.resolve([]),
+    linksBySource(userId, "document", [rid], DOCUMENT_LINK_TARGETS),
   ]);
-  const { links, linksTruncated } = boundLinks([
-    ...toLinks("visit", visits, visitLinkLabel),
-    ...toLinks("condition", conditions),
-    ...toLinks("vaccination", doses),
-  ]);
+  const { links, linksTruncated } = boundLinks(linked.get(rid) ?? []);
 
   const kindLabel = documentKindLabel(row.kind, "en");
   const name = row.title ?? row.filename ?? kindLabel;
@@ -1371,7 +1301,7 @@ async function fetchVaccination(
           },
         ]
       : []),
-    ...toLinks("document", documents),
+    ...(await linksFor(userId, "document", documents)),
   ]);
 
   const catalog = vaccineCatalogName(row.antigenSlug, "en");
@@ -1460,7 +1390,7 @@ export async function fetchRecord(
         await loadOwner(userId),
       );
     case "document":
-      return fetchDocument(userId, id, rid, origin, kinds);
+      return fetchDocument(userId, id, rid, origin);
     case "vaccination":
       return fetchVaccination(userId, id, rid, origin, kinds);
   }
