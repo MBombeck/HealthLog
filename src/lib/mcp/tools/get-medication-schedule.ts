@@ -15,7 +15,13 @@ import {
 } from "@/lib/medications/scheduling/next-due";
 import { dueSchedules } from "@/lib/medications/intake-tracking";
 import { liveEraStartsByMedication } from "@/lib/medications/scheduling/live-era";
+import {
+  boundLinks,
+  linksBySource,
+  MEDICATION_LINK_TARGETS,
+} from "@/lib/mcp/record-links";
 import { MODULE_DISABLED } from "./shared";
+import { recordLinkSchema } from "./output-shapes";
 import { READ_ONLY_ANNOTATIONS, type McpToolDefinition } from "./types";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
 
@@ -33,12 +39,16 @@ const getMedicationScheduleOutput: z.ZodRawShape = {
   medications: z
     .array(
       z.object({
+        // `med:<id>`, the id `fetch` accepts.
+        id: z.string(),
         name: z.string(),
         dose: z.string().nullable(),
         nextDueAt: z.string().nullable(),
         overdue: z.boolean(),
         asNeeded: z.boolean(),
         intakeTracked: z.boolean(),
+        links: z.array(recordLinkSchema),
+        linksTruncated: z.boolean(),
       }),
     )
     .optional(),
@@ -48,7 +58,7 @@ export const getMedicationScheduleTool: McpToolDefinition = {
   name: "get_medication_schedule",
   title: "Get the medication schedule",
   description:
-    'Fetch when the user\'s active medications are next due, and which are overdue right now. Reuses the same server-authoritative recurrence engine the medication cards render (open overdue slots win over future ones). Returns one row per active medication: name, dose, next-due instant, an overdue flag, an as-needed (PRN) flag, and an intakeTracked flag. As-needed medications and medications whose intake tracking is off (intakeTracked: false, kept as a record only) have no due time (nextDueAt: null). Returns { present: false } when no medications are tracked, and { present: false, reason: "module_disabled" } when the medications module is switched off.',
+    'Fetch when the user\'s active medications are next due, and which are overdue right now. Reuses the same server-authoritative recurrence engine the medication cards render (open overdue slots win over future ones). Returns one row per active medication: its id (med:<id>, which fetch accepts), name, dose, next-due instant, an overdue flag, an as-needed (PRN) flag, an intakeTracked flag, and its directly linked records (links: conditions, documents and visits, each with an id fetch accepts, a label, a date, and for a document imported from Paperless-ngx or Papra its sourceSystem and sourceId; [] when none; at most 25 with linksTruncated; documents only while the Documents module is on). As-needed medications and medications whose intake tracking is off (intakeTracked: false, kept as a record only) have no due time (nextDueAt: null). Returns { present: false } when no medications are tracked, and { present: false, reason: "module_disabled" } when the medications module is switched off.',
   inputShape: {},
   annotations: READ_ONLY_ANNOTATIONS,
   outputShape: getMedicationScheduleOutput,
@@ -140,15 +150,23 @@ export const getMedicationScheduleTool: McpToolDefinition = {
 
     // Under auto-take a rolling cadence stands where the job
     // will record next (see `auto-take.ts`).
-    const engineLastIntakeAt = await loadAutoTakeRollingAnchors(prisma, {
-      userId: ctx.userId,
-      medicationIds: medications
-        .filter((m) => m.autoMarkTaken)
-        .map((m) => m.id),
-      now,
-      userTz,
-      lastIntakeAt: (id) => lastTakenAtByMedId.get(id) ?? null,
-    });
+    const [engineLastIntakeAt, linksByMedId] = await Promise.all([
+      loadAutoTakeRollingAnchors(prisma, {
+        userId: ctx.userId,
+        medicationIds: medications
+          .filter((m) => m.autoMarkTaken)
+          .map((m) => m.id),
+        now,
+        userTz,
+        lastIntakeAt: (id) => lastTakenAtByMedId.get(id) ?? null,
+      }),
+      linksBySource(
+        ctx.userId,
+        "medication",
+        medications.map((m) => m.id),
+        MEDICATION_LINK_TARGETS,
+      ),
+    ]);
 
     const rows = medications.map((m) => {
       const display = computeDisplayDue({
@@ -168,6 +186,7 @@ export const getMedicationScheduleTool: McpToolDefinition = {
         eraStart: eraStartByMedId.get(m.id) ?? null,
       });
       return {
+        id: `med:${m.id}`,
         // The person's own words: fenced as data, as the server
         // instructions promise for medication names.
         name: fenceUserText(m.name),
@@ -176,6 +195,7 @@ export const getMedicationScheduleTool: McpToolDefinition = {
         overdue: display ? display.overdue : false,
         asNeeded: m.asNeeded,
         intakeTracked: m.trackIntake,
+        ...boundLinks(linksByMedId.get(m.id) ?? []),
       };
     });
 

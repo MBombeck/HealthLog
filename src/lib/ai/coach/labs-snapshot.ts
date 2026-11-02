@@ -67,6 +67,7 @@ import { resolveLabFields } from "@/lib/labs/serialise";
 import { sanitizeForPrompt } from "@/lib/insights/sanitize";
 import { prisma } from "@/lib/db";
 import { isModuleEnabled } from "@/lib/modules/gate";
+import { labUnitText } from "@/lib/labs/dimensionless";
 
 /** Cap on distinct biomarkers in the block (newest reading first). */
 const MAX_BIOMARKERS = 24;
@@ -120,7 +121,7 @@ export interface CoachLabReading {
   value: number | null;
   /** Qualitative result text ("negativ" / …); null for a numeric row. */
   valueText: string | null;
-  /** Resolved unit; empty for a qualitative marker. */
+  /** Resolved unit; empty for a qualitative marker and for a ratio. */
   unit: string;
   referenceLow: number | null;
   referenceHigh: number | null;
@@ -128,6 +129,8 @@ export interface CoachLabReading {
   rangeStatus: "in-range" | "below" | "above" | "unknown";
   /** Measured date (ISO). */
   takenAt: string;
+  /** The lab result's id; set only for a read that asks for it (`withIds`). */
+  id?: string;
 }
 
 /** One earlier numeric reading of a biomarker. */
@@ -136,6 +139,8 @@ export interface CoachLabHistoryPoint {
   /** in-range / below / above / unknown against that reading's own bounds. */
   rangeStatus: "in-range" | "below" | "above" | "unknown";
   takenAt: string;
+  /** The lab result's id; set only for a read that asks for it (`withIds`). */
+  id?: string;
 }
 
 /** The readings of one calendar year (UTC), folded. */
@@ -174,6 +179,7 @@ export interface LabHistoryInput {
   value: number;
   takenAt: Date;
   rangeStatus: CoachLabHistoryPoint["rangeStatus"];
+  id?: string;
 }
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
@@ -216,6 +222,7 @@ export function shapeLabHistory(
       value: reading.value,
       rangeStatus: reading.rangeStatus,
       takenAt: reading.takenAt.toISOString(),
+      ...(reading.id ? { id: reading.id } : {}),
     })),
     yearly,
     yearsOmitted: Math.max(0, years.length - LAB_HISTORY_MAX_YEARS),
@@ -239,6 +246,11 @@ export async function buildLabsSnapshotBlock(
      * With it, each entry carries its `history`.
      */
     analyte?: string;
+    /**
+     * Carry each reading's lab result id, so a caller can list what the
+     * reading is linked to. The Coach never asks: an id means nothing to it.
+     */
+    withIds?: boolean;
   } = {},
 ): Promise<CoachLabsBlock | null> {
   if (!(await isModuleEnabled(userId, "labs"))) return null;
@@ -272,6 +284,7 @@ export async function buildLabsSnapshotBlock(
     orderBy: { takenAt: "desc" },
     take: MAX_ROWS,
     select: {
+      id: true,
       analyte: true,
       panel: true,
       value: true,
@@ -318,6 +331,7 @@ export async function buildLabsSnapshotBlock(
     const resolved = resolveLabFields(row, row.biomarker);
     if (wanted && !resolved.analyte.toLowerCase().includes(wanted)) continue;
     const key = row.biomarkerId ?? `analyte:${resolved.analyte.toLowerCase()}`;
+    const id = options.withIds ? { id: row.id } : {};
     const existing = entries.get(key);
     if (existing) {
       // One unit written two ways ("mg/dl", "mg/dL") is one series.
@@ -333,6 +347,7 @@ export async function buildLabsSnapshotBlock(
             row.value,
             resolved.effectiveRange,
           ),
+          ...id,
         });
       }
       continue;
@@ -359,7 +374,9 @@ export async function buildLabsSnapshotBlock(
           : null,
         value: row.value,
         valueText: row.valueText ? sanitizeValueText(row.valueText) : null,
-        unit: sanitizeForPrompt(resolved.unit, MAX_UNIT_CHARS),
+        // A value without a unit is stored as "1"; the model is shown none,
+        // so it never writes "3.6 1".
+        unit: sanitizeForPrompt(labUnitText(resolved.unit), MAX_UNIT_CHARS),
         referenceLow: resolved.referenceLow,
         referenceHigh: resolved.referenceHigh,
         // A qualitative row has nothing to compare against the bounds →
@@ -372,6 +389,7 @@ export async function buildLabsSnapshotBlock(
           resolved.effectiveRange,
         ),
         takenAt: row.takenAt.toISOString(),
+        ...id,
       },
     });
   }

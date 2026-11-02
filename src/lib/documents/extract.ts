@@ -57,6 +57,7 @@ import {
   type OcrMeter,
   type OcrReadSurface,
 } from "@/lib/documents/ocr-read";
+import { isDimensionlessUnit } from "@/lib/labs/dimensionless";
 import { annotate } from "@/lib/logging/context";
 import {
   INBOUND_CONFIDENCE_FLOOR,
@@ -383,7 +384,12 @@ export async function runInboundExtraction(
     facts.push({
       factType: raw.type,
       confidence,
-      needsReview: confidence < INBOUND_CONFIDENCE_FLOOR,
+      // A unit of "1" is the user's explicit no-unit choice. A read that
+      // states it itself goes to review rather than straight to the record,
+      // so a dropped unit never passes as a dimensionless value.
+      needsReview:
+        confidence < INBOUND_CONFIDENCE_FLOOR ||
+        (raw.type === "OBSERVATION" && isDimensionlessUnit(raw.unit)),
       data,
       provenance: {
         sourceText: anchor.sourceText,

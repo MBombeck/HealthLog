@@ -28,6 +28,8 @@ const getVisitsOutput: z.ZodRawShape = {
   visits: z
     .array(
       z.object({
+        // `visit:<id>`, the id `fetch` accepts for the visit and its links.
+        id: z.string(),
         occurredAt: z.string(),
         status: z.string(),
         kind: z.string(),
@@ -58,7 +60,7 @@ export const getVisitsTool: McpToolDefinition = {
   name: "get_visits",
   title: "Get past doctor visits",
   description:
-    "Fetch the user's own past doctor visits over a bounded window (default: the last 12 months) so a question like 'when did I last see a cardiologist' is answerable from the record. Each visit carries its date, lifecycle status (DONE / CANCELLED / NO_SHOW — a no-show is not a visit that happened), kind, practitioner name + specialty, the visit's own free-text reason and outcome, the body site and side (set on procedures), and the labels of any conditions it was filed against. Optionally narrow to one practitioner by a name substring, or to one kind. kind PROCEDURE is the procedure and surgery history: without a months argument it reads the whole record, because a surgery years ago is still the answer to 'what surgeries have I had'. Newest first, bounded. Returns { present: false } when the user has never recorded a visit — distinct from a filtered read that simply matched none. With the illness module switched off the condition labels are withheld and conditionsReason is \"module_disabled\".",
+    "Fetch the user's own past doctor visits over a bounded window (default: the last 12 months) so a question like 'when did I last see a cardiologist' is answerable from the record. Each visit carries its id (visit:<id>, which fetch accepts and answers with the visit's linked records), its date, lifecycle status (DONE / CANCELLED / NO_SHOW — a no-show is not a visit that happened), kind, practitioner name + specialty, the visit's own free-text reason and outcome, the body site and side (set on procedures), and the labels of any conditions it was filed against. Optionally narrow to one practitioner by a name substring, or to one kind. kind PROCEDURE is the procedure and surgery history: without a months argument it reads the whole record, because a surgery years ago is still the answer to 'what surgeries have I had'. Newest first, bounded. Returns { present: false } when the user has never recorded a visit — distinct from a filtered read that simply matched none. With the illness module switched off the condition labels are withheld and conditionsReason is \"module_disabled\".",
   inputShape: {
     months: z
       .number()
@@ -167,6 +169,7 @@ export const getVisitsTool: McpToolDefinition = {
       // entry is deleted, as the web record does.
       const seenBy = r.practitioner;
       return {
+        id: `visit:${r.id}`,
         occurredAt: r.occurredAt.toISOString(),
         status: r.status,
         kind: r.kind,

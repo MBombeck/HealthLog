@@ -10396,7 +10396,9 @@
       "pdfNeedsAnthropic": "PDF 스캔에는 Claude 비전 제공자가 필요해요. 대신 사진을 올려 주세요.",
       "refTextLabel": "적힌 그대로의 범위",
       "refTextPlaceholder": "예: 3.5 - 5.0",
-      "aiUnavailable": "지금 여기에서는 AI로 결과지를 스캔할 수 없습니다."
+      "aiUnavailable": "지금 여기에서는 AI로 결과지를 스캔할 수 없습니다.",
+      "errorUnitMismatchNoUnit": "이 지표는 단위 없이 기록됩니다. 결과지를 잘못 읽었다면 단위 없음을 선택하거나 이 값의 선택을 해제하세요.",
+      "unitDiffersBadgeNoUnit": "단위 없이 기록 중; 이 결과지는 {unit}"
     },
     "loadMoreReadings": "측정값 더 보기",
     "documentsLink": "검사 결과지 문서",
@@ -10474,6 +10476,10 @@
         "stale": "가장 최근 값은 {date}로 1년이 넘었습니다. 직선은 그 시점 기준으로 표시하며 예측은 하지 않습니다."
       },
       "interval": "연간 변화의 95% 구간: {lo}~{hi} {unit}."
+    },
+    "unit": {
+      "none": "단위 없음",
+      "noneHint": "INR이나 콜레스테롤/HDL 같은 비율 또는 지수에 사용해요."
     }
   },
   "modules": {
@@ -14093,6 +14099,7 @@
       "asNeeded": "필요시",
       "startsOn": "시작",
       "endsOn": "종료"
-    }
+    },
+    "unitlessHint": "단위가 없는 비율이나 지수(INR, 콜레스테롤/HDL)는 단위 열에 1을 입력하세요. 단위 칸이 비어 있으면 여전히 오류예요."
   }
 }

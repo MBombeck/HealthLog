@@ -28,6 +28,19 @@ vi.mock("@/lib/mcp/record-search", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/mcp/record-search")>()),
   loadRecordCandidates: vi.fn(async () => []),
 }));
+// A medication or lab fetch lists its links through the link service; none
+// are filed here (the links themselves are covered against Postgres in
+// `tests/integration/mcp-record-links.test.ts`).
+vi.mock("@/lib/links", () => ({
+  listTargets: vi.fn(async () => []),
+  listTargetsBySource: vi.fn(async () => new Map()),
+}));
+// The lab fetch builds its block first and asks the Coach only on a miss;
+// a miss here keeps the lab prose on the executor result each test states.
+vi.mock("@/lib/ai/coach/labs-snapshot", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/ai/coach/labs-snapshot")>()),
+  buildLabsSnapshotBlock: vi.fn(async () => null),
+}));
 vi.mock("@/lib/db", () => ({
   prisma: {
     medication: { findMany: vi.fn(), findFirst: vi.fn() },
@@ -291,9 +304,12 @@ describe("free-text fencing", () => {
 
     // The block is fenced...
     expect(result.text.startsWith(USER_TEXT_FENCE_START)).toBe(true);
-    expect(result.text.endsWith(USER_TEXT_FENCE_END)).toBe(true);
-    // ...and the payload cannot close it early: exactly one end marker, at the
-    // very end, so the injected sentence stays inside the data region.
+    // ...and the payload cannot close it early: exactly one end marker, right
+    // before the server's own links sentence, so the injected sentence stays
+    // inside the data region.
+    expect(
+      result.text.endsWith(`${USER_TEXT_FENCE_END} Linked records: none.`),
+    ).toBe(true);
     expect(result.text.split(USER_TEXT_FENCE_END)).toHaveLength(2);
     expect(result.text.split(USER_TEXT_FENCE_START)).toHaveLength(2);
     // The data itself is still delivered — fencing marks it, never drops it.

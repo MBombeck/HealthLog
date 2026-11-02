@@ -10396,7 +10396,9 @@
       "pdfNeedsAnthropic": "A digitalização de PDF precisa de um provedor de visão Claude; envie uma foto em vez disso.",
       "refTextLabel": "Faixa como impressa",
       "refTextPlaceholder": "ex.: 3,5 - 5,0",
-      "aiUnavailable": "Digitalizar um laudo com IA não está disponível aqui agora."
+      "aiUnavailable": "Digitalizar um laudo com IA não está disponível aqui agora.",
+      "errorUnitMismatchNoUnit": "Este marcador é acompanhado sem unidade. Marque Sem unidade se o laudo foi lido errado, ou desmarque esta leitura.",
+      "unitDiffersBadgeNoUnit": "Acompanhado sem unidade; este laudo diz {unit}"
     },
     "loadMoreReadings": "Carregar mais leituras",
     "documentsLink": "Documentos de laudos laboratoriais",
@@ -10474,6 +10476,10 @@
         "stale": "O resultado mais recente é de {date}, há mais de um ano. A linha é mostrada até essa data, sem projeção."
       },
       "interval": "Intervalo de 95 % da mudança anual: {lo} a {hi} {unit}."
+    },
+    "unit": {
+      "none": "Sem unidade",
+      "noneHint": "Para uma razão ou um índice como INR ou colesterol/HDL."
     }
   },
   "modules": {
@@ -14093,6 +14099,7 @@
       "asNeeded": "Conforme necessário",
       "startsOn": "Início",
       "endsOn": "Fim"
-    }
+    },
+    "unitlessHint": "Uma razão ou um índice sem unidade (INR, colesterol/HDL): escreva 1 na coluna da unidade. Uma unidade vazia continua sendo um erro."
   }
 }

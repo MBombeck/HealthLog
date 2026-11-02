@@ -1,3 +1,4 @@
+import { PDF_FONT_FAMILY } from "./fonts";
 import { buildClinicalSummaryLines } from "./clinical-summary";
 import {
   pdfCursorState,
@@ -25,13 +26,13 @@ export function buildHeaderProfileSection(
   let y = state.y;
 
   doc.setFontSize(22);
-  doc.setFont("helvetica", "bold");
+  doc.setFont(PDF_FONT_FAMILY, "bold");
   doc.setTextColor(30, 30, 30);
   doc.text(t("doctorReport.title"), margin, y);
   y += 8;
 
   doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
+  doc.setFont(PDF_FONT_FAMILY, "normal");
   doc.setTextColor(100, 100, 100);
   doc.text(t("doctorReport.subtitle"), margin, y);
   y += 6;
@@ -42,7 +43,7 @@ export function buildHeaderProfileSection(
   // one — keeps the cover compact for self-archive use.
   if (data.practiceName) {
     doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.setTextColor(30, 30, 30);
     doc.text(
       `${t("doctorReport.practiceLabel")}: ${data.practiceName}`,
@@ -50,7 +51,7 @@ export function buildHeaderProfileSection(
       y,
     );
     y += 6;
-    doc.setFont("helvetica", "normal");
+    doc.setFont(PDF_FONT_FAMILY, "normal");
   }
 
   doc.setDrawColor(200, 200, 200);
@@ -131,12 +132,12 @@ export function buildHeaderProfileSection(
     // line 4.5 mm + trailing gap).
     y = ensureSpace(y, 5 + 4.5 + 4);
     doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.setTextColor(30, 30, 30);
     doc.text(t("doctorReport.summaryTitle"), margin, y);
     y += 5;
     doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
+    doc.setFont(PDF_FONT_FAMILY, "normal");
     doc.setTextColor(60, 60, 60);
     for (const line of summaryLines) {
       const wrapped = doc.splitTextToSize(line, pageWidth - 2 * margin);

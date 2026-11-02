@@ -22,14 +22,9 @@ import { useIsMobile } from "@/hooks/use-is-mobile";
 
 import { CoachConversation } from "./coach-conversation";
 
-// v1.12.0 — `useResettableValue` + `nextResettableValue` moved into
-// `./use-resettable-value` so the shared `<CoachConversation>` surface
-// can seed its composer without importing the drawer shell. Re-exported
-// here for the existing prefill-controller unit test import path.
-export {
-  useResettableValue,
-  nextResettableValue,
-} from "./use-resettable-value";
+// `nextResettableValue` lives in `./use-resettable-value` beside its hook;
+// it is re-exported here for the prefill-controller unit test's import path.
+export { nextResettableValue } from "./use-resettable-value";
 
 /**
  * v1.28.52 (Documents R3) — the full-page target the maximize control hands

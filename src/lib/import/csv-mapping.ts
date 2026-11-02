@@ -332,6 +332,7 @@ export const RECORD_IMPORT_TEMPLATES: Record<RecordImportKind, string> = {
     "analyte,value,unit,date,time,reference range,panel,note",
     "HbA1c,5.4,%,2025-03-01,08:15,4.0-5.6,Diabetes,",
     "Ferritin,85,ng/mL,2025-03-01,08:15,30-400,Iron,",
+    "INR,1.1,1,2025-03-01,08:15,0.8-1.2,Coagulation,",
     "Urine protein,negative,,2025-03-01,,,Urine,",
     "",
   ].join("\n"),

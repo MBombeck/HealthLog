@@ -10396,7 +10396,9 @@
       "pdfNeedsAnthropic": "Le scan PDF nécessite un fournisseur de vision Claude ; importez plutôt une photo.",
       "refTextLabel": "Plage telle qu'imprimée",
       "refTextPlaceholder": "p. ex. 3,5 - 5,0",
-      "aiUnavailable": "La numérisation d'un compte rendu par IA n'est pas disponible ici pour le moment."
+      "aiUnavailable": "La numérisation d'un compte rendu par IA n'est pas disponible ici pour le moment.",
+      "errorUnitMismatchNoUnit": "Ce marqueur est suivi sans unité. Cochez Sans unité si le compte rendu a été mal lu, ou désélectionnez cette valeur.",
+      "unitDiffersBadgeNoUnit": "Suivi sans unité ; ce compte rendu indique {unit}"
     },
     "loadMoreReadings": "Charger plus de mesures",
     "documentsLink": "Documents de résultats",
@@ -10474,6 +10476,10 @@
         "stale": "La valeur la plus récente date du {date}, il y a plus d’un an. La droite est montrée à cette date, sans projection."
       },
       "interval": "Intervalle à 95 % de la variation annuelle : de {lo} à {hi} {unit}."
+    },
+    "unit": {
+      "none": "Sans unité",
+      "noneHint": "Pour un rapport ou un indice comme l'INR ou cholestérol/HDL."
     }
   },
   "modules": {
@@ -14093,6 +14099,7 @@
       "asNeeded": "Si besoin",
       "startsOn": "Début",
       "endsOn": "Fin"
-    }
+    },
+    "unitlessHint": "Un rapport ou un indice sans unité (INR, cholestérol/HDL) : inscrivez 1 dans la colonne de l'unité. Une unité vide reste une erreur."
   }
 }

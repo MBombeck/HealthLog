@@ -1314,6 +1314,8 @@ export interface LabHistoryReading {
   rangeStatus: "in-range" | "below" | "above" | "unknown";
   /** Measured date (ISO). */
   takenAt: string;
+  /** The lab result's id; `get_labs` turns it into the reading's links. */
+  id: string;
 }
 
 export interface LabHistoryResult {
@@ -1331,14 +1333,10 @@ export interface LabHistoryResult {
 export const LAB_HISTORY_MAX_LIMIT = 50;
 
 /**
- * Return ONE analyte's reading trajectory (newest first) over the user's own
- * lab record. Re-uses the SAME resolver + range classifier the latest-only labs
- * snapshot and the Labs API use (`resolveLabFields` / `classifyReferenceRange`)
- * — no new analytics, no fabricated value. DB-paginated by `offset` so a long
- * history stays token-bounded: the page carries at most `limit` readings and a
- * `nextCursor` when more exist. The encrypted `noteEncrypted` column is never
- * selected, so a decrypted note can never reach the wire. `{ present: false }`
- * when no reading matches the analyte.
+ * ONE analyte's reading trajectory (newest first), through the resolver and
+ * range classifier the labs snapshot and the Labs API use. Paginated by
+ * `offset` (at most `limit` readings, `nextCursor` when more exist); never
+ * selects `noteEncrypted`. `{ present: false }` when nothing matches.
  */
 export async function getLabHistory(
   userId: string,
@@ -1393,6 +1391,7 @@ export async function getLabHistory(
     skip: offset,
     take: limit + 1,
     select: {
+      id: true,
       analyte: true,
       panel: true,
       value: true,
@@ -1443,6 +1442,7 @@ export async function getLabHistory(
         resolved.effectiveRange,
       ),
       takenAt: row.takenAt.toISOString(),
+      id: row.id,
     };
   });
 

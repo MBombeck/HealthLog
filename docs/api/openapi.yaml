@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.46.5
+  version: 1.46.6
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -15883,10 +15883,11 @@ paths:
         checks an hour, the import itself the shared 5-an-hour `import:` bucket. Owner only; refused with
         `module.disabled` when the module is switched off. An unknown query parameter is refused with 422, so a misspelt
         `dryRun` never writes. Each row's name resolves to the account's marker the way a scanned report's rows do
-        (name, alias, catalog name); a new analyte mints one marker from its first row. A numeric result needs a unit;
-        one in another unit is converted when the conversion is known and keeps the printed value beside it, otherwise
-        the row is refused with `unit_mismatch`. Any other text in the value column is a qualitative result. A date
-        without a time is stored as that calendar date. At most 20 000 data rows."
+        (name, alias, catalog name); a new analyte mints one marker from its first row. A numeric result needs a unit:
+        an empty unit cell is refused with `missing_unit`, and `1` (the UCUM unity) states a value without a unit, such
+        as a ratio or INR. A result in another unit is converted when the conversion is known and keeps the printed
+        value beside it, otherwise the row is refused with `unit_mismatch`. Any other text in the value column is a
+        qualitative result. A date without a time is stored as that calendar date. At most 20 000 data rows."
       parameters:
         - in: query
           name: dryRun
@@ -34160,6 +34161,11 @@ components:
           minLength: 1
           maxLength: 120
         unit:
+          description: 'The unit the value is in, free-form as the report prints it (e.g. `mg/dL`). `"1"`, the UCUM unity, means
+            the value has no unit: a ratio or an index such as INR or cholesterol/HDL. It is an explicit choice and a
+            unit of its own: it matches only `"1"`, so a reading without a unit is refused under a marker kept in a real
+            unit and the other way round. Clients show nothing beside such a value. An empty unit on a numeric value is
+            never read as `"1"` and stays refused.'
           type: string
           minLength: 1
           maxLength: 40
@@ -34229,6 +34235,11 @@ components:
           minLength: 1
           maxLength: 120
         unit:
+          description: 'The unit the value is in, free-form as the report prints it (e.g. `mg/dL`). `"1"`, the UCUM unity, means
+            the value has no unit: a ratio or an index such as INR or cholesterol/HDL. It is an explicit choice and a
+            unit of its own: it matches only `"1"`, so a reading without a unit is refused under a marker kept in a real
+            unit and the other way round. Clients show nothing beside such a value. An empty unit on a numeric value is
+            never read as `"1"` and stays refused.'
           type: string
           minLength: 1
           maxLength: 40
@@ -34323,6 +34334,11 @@ components:
                 minLength: 1
                 maxLength: 120
               unit:
+                description: 'The unit the value is in, free-form as the report prints it (e.g. `mg/dL`). `"1"`, the UCUM unity, means
+                  the value has no unit: a ratio or an index such as INR or cholesterol/HDL. It is an explicit choice
+                  and a unit of its own: it matches only `"1"`, so a reading without a unit is refused under a marker
+                  kept in a real unit and the other way round. Clients show nothing beside such a value. An empty unit
+                  on a numeric value is never read as `"1"` and stays refused.'
                 type: string
                 minLength: 1
                 maxLength: 40
@@ -34377,6 +34393,11 @@ components:
           type: string
           minLength: 1
           maxLength: 40
+          description: 'The unit the value is in, free-form as the report prints it (e.g. `mg/dL`). `"1"`, the UCUM unity, means
+            the value has no unit: a ratio or an index such as INR or cholesterol/HDL. It is an explicit choice and a
+            unit of its own: it matches only `"1"`, so a reading without a unit is refused under a marker kept in a real
+            unit and the other way round. Clients show nothing beside such a value. An empty unit on a numeric value is
+            never read as `"1"` and stays refused.'
         lowerBound:
           type: number
         upperBound:
@@ -34406,6 +34427,11 @@ components:
           minLength: 1
           maxLength: 120
         unit:
+          description: 'The unit the value is in, free-form as the report prints it (e.g. `mg/dL`). `"1"`, the UCUM unity, means
+            the value has no unit: a ratio or an index such as INR or cholesterol/HDL. It is an explicit choice and a
+            unit of its own: it matches only `"1"`, so a reading without a unit is refused under a marker kept in a real
+            unit and the other way round. Clients show nothing beside such a value. An empty unit on a numeric value is
+            never read as `"1"` and stays refused.'
           type: string
           minLength: 1
           maxLength: 40
@@ -35774,6 +35800,11 @@ components:
                   maxLength: 300
                 - type: "null"
             unit:
+              description: 'The unit the value is in, free-form as the report prints it (e.g. `mg/dL`). `"1"`, the UCUM unity, means
+                the value has no unit: a ratio or an index such as INR or cholesterol/HDL. It is an explicit choice and
+                a unit of its own: it matches only `"1"`, so a reading without a unit is refused under a marker kept in
+                a real unit and the other way round. Clients show nothing beside such a value. An empty unit on a
+                numeric value is never read as `"1"` and stays refused.'
               anyOf:
                 - type: string
                   maxLength: 80
@@ -75294,6 +75325,11 @@ components:
             - "null"
         unit:
           type: string
+          description: 'The unit the value is in, free-form as the report prints it (e.g. `mg/dL`). `"1"`, the UCUM unity, means
+            the value has no unit: a ratio or an index such as INR or cholesterol/HDL. It is an explicit choice and a
+            unit of its own: it matches only `"1"`, so a reading without a unit is refused under a marker kept in a real
+            unit and the other way round. Clients show nothing beside such a value. An empty unit on a numeric value is
+            never read as `"1"` and stays refused.'
         converted:
           type: boolean
         sourceValue:
@@ -75543,6 +75579,11 @@ components:
             - "null"
         unit:
           type: string
+          description: 'The unit the value is in, free-form as the report prints it (e.g. `mg/dL`). `"1"`, the UCUM unity, means
+            the value has no unit: a ratio or an index such as INR or cholesterol/HDL. It is an explicit choice and a
+            unit of its own: it matches only `"1"`, so a reading without a unit is refused under a marker kept in a real
+            unit and the other way round. Clients show nothing beside such a value. An empty unit on a numeric value is
+            never read as `"1"` and stays refused.'
         converted:
           type: boolean
         sourceValue:
@@ -76522,6 +76563,11 @@ components:
           type: string
         unit:
           type: string
+          description: 'The unit the value is in, free-form as the report prints it (e.g. `mg/dL`). `"1"`, the UCUM unity, means
+            the value has no unit: a ratio or an index such as INR or cholesterol/HDL. It is an explicit choice and a
+            unit of its own: it matches only `"1"`, so a reading without a unit is refused under a marker kept in a real
+            unit and the other way round. Clients show nothing beside such a value. An empty unit on a numeric value is
+            never read as `"1"` and stays refused.'
         lowerBound:
           type:
             - number
@@ -76621,6 +76667,11 @@ components:
           type: string
         unit:
           type: string
+          description: 'The unit the value is in, free-form as the report prints it (e.g. `mg/dL`). `"1"`, the UCUM unity, means
+            the value has no unit: a ratio or an index such as INR or cholesterol/HDL. It is an explicit choice and a
+            unit of its own: it matches only `"1"`, so a reading without a unit is refused under a marker kept in a real
+            unit and the other way round. Clients show nothing beside such a value. An empty unit on a numeric value is
+            never read as `"1"` and stays refused.'
         lowerBound:
           type:
             - number

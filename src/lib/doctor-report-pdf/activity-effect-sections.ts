@@ -9,6 +9,7 @@
  */
 import type { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { PDF_FONT_FAMILY } from "./fonts";
 import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { formatEstimate } from "@/lib/medications/efficacy/segmented-format";
@@ -54,7 +55,7 @@ function heading(
   const { doc, margin, ensureSpace } = context;
   const top = ensureSpace(y, 6 + keepWith);
   doc.setFontSize(12);
-  doc.setFont("helvetica", "bold");
+  doc.setFont(PDF_FONT_FAMILY, "bold");
   doc.setTextColor(30, 30, 30);
   doc.text(text, margin, top);
   return top + 5;
@@ -67,7 +68,7 @@ function note(
 ): number {
   const { doc, margin, pageWidth, ensureSpace } = context;
   doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
+  doc.setFont(PDF_FONT_FAMILY, "normal");
   doc.setTextColor(90, 90, 90);
   let cursor = y;
   for (const line of doc.splitTextToSize(text, pageWidth - 2 * margin)) {

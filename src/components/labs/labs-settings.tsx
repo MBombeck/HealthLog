@@ -46,6 +46,7 @@ import {
 import { BiomarkerManager } from "./biomarker-manager";
 import type { BiomarkerDto, BiomarkerListResponse } from "./types";
 import { useLabsLocalOcr, useUpdateLabsLocalOcr } from "./use-ocr-extract";
+import { labUnitLabel } from "@/lib/labs/dimensionless";
 
 export function LabsSettings() {
   const { t } = useTranslations();
@@ -61,7 +62,7 @@ export function LabsSettings() {
   const reorderItems: ReorderItem[] = ordered.map((m) => ({
     id: m.id,
     name: m.name,
-    secondary: m.panel ? `${m.unit} · ${m.panel}` : m.unit,
+    secondary: [labUnitLabel(m.unit, t), m.panel].filter(Boolean).join(" · "),
   }));
 
   const manual = prefs.sortDir === "manual";

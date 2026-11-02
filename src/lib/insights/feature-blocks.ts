@@ -29,6 +29,7 @@ import {
   canonicalWorkoutsInRange,
   readWorkoutsAroundRange,
 } from "@/lib/workouts/canonical-read";
+import { labUnitText } from "@/lib/labs/dimensionless";
 import { deriveBucketedTypes } from "@/lib/signals/adapters/correlation";
 import type {
   AggregatedFeatures,
@@ -434,7 +435,7 @@ export async function readLabsBriefingBlock(
       analyte: resolved.analyte,
       value: latest.value,
       valueText: latest.valueText ? sanitizeLabel(latest.valueText, 60) : null,
-      unit: resolved.unit,
+      unit: labUnitText(resolved.unit),
       rangeStatus,
       trend,
       takenAt: latest.takenAt.toISOString(),

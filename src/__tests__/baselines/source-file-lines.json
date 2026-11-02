@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 84,
-  "total": 94379,
+  "total": 94309,
   "entries": {
     "app/medications/page-client.tsx": 839,
     "components/charts/mood-chart.tsx": 1166,
@@ -69,7 +69,7 @@
     "lib/jobs/offhost-backup.ts": 1094,
     "lib/jobs/reaction-line.ts": 803,
     "lib/managed-profiles/handover.ts": 986,
-    "lib/mcp/record-search.ts": 1467,
+    "lib/mcp/record-search.ts": 1397,
     "lib/mcp/rich-reads.ts": 1467,
     "lib/measurements/dense-intraday-retention.ts": 1016,
     "lib/measurements/import-apple-health-export.ts": 1722,

@@ -24,12 +24,14 @@ import { DateField } from "@/components/ui/date-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslations } from "@/lib/i18n/context";
+import { isDimensionlessUnit, labUnitLabel } from "@/lib/labs/dimensionless";
 import {
   OCR_ANALYTE_MAX,
   OCR_UNIT_MAX,
   OCR_VALUE_TEXT_MAX,
 } from "@/lib/validations/labs-ocr";
 
+import { LabUnitInput } from "./lab-unit-input";
 import { MarkerMatchField } from "./marker-match-field";
 import { chooseMarker, type OcrReviewRow } from "./ocr-review-types";
 import {
@@ -49,6 +51,28 @@ function RequiredMark() {
       {" *"}
     </span>
   );
+}
+
+type Translate = (key: string, params?: Record<string, string>) => string;
+
+/** The badge naming a row whose unit differs from its marker's. */
+function unitDiffersText(row: OcrReviewRow, t: Translate): string {
+  const unit = labUnitLabel(row.unit, t);
+  return isDimensionlessUnit(row.markerUnit)
+    ? t("labs.ocr.unitDiffersBadgeNoUnit", { unit })
+    : t("labs.ocr.unitDiffersBadge", {
+        markerUnit: row.markerUnit ?? "",
+        unit,
+      });
+}
+
+/** The message key and params of a unit the marker cannot take. */
+function unitMismatchMessage(
+  row: OcrReviewRow,
+): [string, Record<string, string>?] {
+  return isDimensionlessUnit(row.markerUnit)
+    ? ["labs.ocr.errorUnitMismatchNoUnit"]
+    : ["labs.ocr.errorUnitMismatch", { markerUnit: row.markerUnit ?? "" }];
 }
 
 export function OcrRowEditor({
@@ -197,12 +221,7 @@ export function OcrRowEditor({
               {unitBlocked ? (
                 <Badge variant="secondary" className="max-w-full">
                   <Ruler aria-hidden />
-                  <span className="truncate">
-                    {t("labs.ocr.unitDiffersBadge", {
-                      markerUnit: row.markerUnit ?? "",
-                      unit: (row.unit ?? "").trim(),
-                    })}
-                  </span>
+                  <span className="truncate">{unitDiffersText(row, t)}</span>
                 </Badge>
               ) : null}
               {conversion ? (
@@ -294,10 +313,10 @@ export function OcrRowEditor({
                     {t("labs.ocr.unitLabel")}
                     <RequiredMark />
                   </Label>
-                  <Input
+                  <LabUnitInput
                     id={`${fieldId}-unit`}
                     value={row.unit ?? ""}
-                    onChange={(e) => onChange({ ...row, unit: e.target.value })}
+                    onChange={(unit) => onChange({ ...row, unit })}
                     {...invalidProps(
                       errors?.unitMismatch
                         ? "unitMismatch"
@@ -310,9 +329,7 @@ export function OcrRowEditor({
                   {fieldError("unitTooLong", "labs.ocr.errorTooLong", {
                     max: String(OCR_UNIT_MAX),
                   })}
-                  {fieldError("unitMismatch", "labs.ocr.errorUnitMismatch", {
-                    markerUnit: row.markerUnit ?? "",
-                  })}
+                  {fieldError("unitMismatch", ...unitMismatchMessage(row))}
                 </div>
               </>
             )}

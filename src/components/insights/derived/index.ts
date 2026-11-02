@@ -1,43 +1,8 @@
 /**
- * v1.10.0 — the derived-metrics design-system primitives barrel.
- *
- * Four reusable, presentational components that extend the existing token +
- * sentiment vocabulary; none introduce a new colour system. Reused across
- * the dashboard, Insights pages, the Coach / briefing and the doctor/FHIR
- * report. See `.planning/v1.10-build/design-sota-and-direction.md`.
+ * The derived-metrics surfaces the Insights page loads on demand. Their
+ * building blocks (score ring, coverage meter, band tokens and the rest) are
+ * imported from their own modules by whatever uses them.
  */
 
-export { ScoreRing, type ScoreRingProps } from "./score-ring";
-export { CoverageMeter, type CoverageMeterProps } from "./coverage-meter";
-export {
-  SparklineDeltaTile,
-  type SparklineDeltaTileProps,
-} from "./sparkline-delta-tile";
-export {
-  ProvenanceExplainer,
-  type ProvenanceExplainerProps,
-  type ProvenanceStandard,
-} from "./provenance-explainer";
-export {
-  ScoreAnatomyView,
-  type ScoreAnatomyViewProps,
-  type AnatomyContributor,
-} from "./score-anatomy-view";
-export {
-  bandForScore,
-  clampScore,
-  BAND_NUMBER_CLASS,
-  BAND_PROGRESS_CLASS,
-  BAND_BORDER_CLASS,
-  BAND_VAR,
-  type ScoreBand,
-} from "./band-tokens";
-
-// ── W2b vitals dashboard surface + query hook ────────────────────────
 export { VitalsDashboard } from "./vitals-dashboard";
 export { WellnessScores } from "./wellness-scores";
-export {
-  useDerivedMetric,
-  type DerivedMetricResponse,
-  type UseDerivedMetricOptions,
-} from "./use-derived-metric";
