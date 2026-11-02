@@ -1,3 +1,4 @@
+import { PDF_FONT_FAMILY } from "./fonts";
 import { lifeReportRows } from "@/lib/profile/life-report-rows";
 import type { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -43,7 +44,7 @@ export function buildClinicalRecordsNotesSection(
   if (data.labResults && data.labResults.length > 0) {
     y = ensureSpace(y, 6 + 18);
     doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.setTextColor(30, 30, 30);
     doc.text(t("doctorReport.labsTitle"), margin, y);
     y += 6;
@@ -161,7 +162,7 @@ export function buildClinicalRecordsNotesSection(
     if (diverging.length > 0) {
       y = ensureSpace(y, 4 + diverging.length * 4);
       doc.setFontSize(8);
-      doc.setFont("helvetica", "normal");
+      doc.setFont(PDF_FONT_FAMILY, "normal");
       doc.setTextColor(110, 110, 110);
       doc.text(t("doctorReport.labsSourceRangeNote"), margin, y);
       y += 4;
@@ -189,7 +190,7 @@ export function buildClinicalRecordsNotesSection(
   if (data.illnessEpisodes && data.illnessEpisodes.length > 0) {
     y = ensureSpace(y, 6 + 18);
     doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.setTextColor(30, 30, 30);
     doc.text(t("doctorReport.illnessTitle"), margin, y);
     y += 6;
@@ -264,7 +265,7 @@ export function buildClinicalRecordsNotesSection(
   if (data.visits && data.visits.length > 0) {
     y = ensureSpace(y, 6 + 18);
     doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.setTextColor(30, 30, 30);
     doc.text(t("doctorReport.visitsTitle"), margin, y);
     y += 6;
@@ -332,7 +333,7 @@ export function buildClinicalRecordsNotesSection(
   if (data.surgicalHistory && data.surgicalHistory.length > 0) {
     y = ensureSpace(y, 6 + 18);
     doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.setTextColor(30, 30, 30);
     doc.text(t("doctorReport.surgicalHistoryTitle"), margin, y);
     y += 6;
@@ -400,7 +401,7 @@ export function buildClinicalRecordsNotesSection(
   if (data.immunizations && data.immunizations.length > 0) {
     y = ensureSpace(y, 6 + 18);
     doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.setTextColor(30, 30, 30);
     doc.text(t("doctorReport.immunizationsTitle"), margin, y);
     y += 6;
@@ -474,7 +475,7 @@ export function buildClinicalRecordsNotesSection(
   if (data.allergies && data.allergies.length > 0) {
     y = ensureSpace(y, 6 + 18);
     doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.setTextColor(30, 30, 30);
     doc.text(t("doctorReport.allergiesTitle"), margin, y);
     y += 6;
@@ -538,7 +539,7 @@ export function buildClinicalRecordsNotesSection(
   if (data.familyHistory && data.familyHistory.length > 0) {
     y = ensureSpace(y, 6 + 18);
     doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.setTextColor(30, 30, 30);
     doc.text(t("doctorReport.familyHistoryTitle"), margin, y);
     y += 6;
@@ -588,7 +589,7 @@ export function buildClinicalRecordsNotesSection(
   if (data.anamnesis) {
     y = ensureSpace(y, 6 + 22);
     doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(PDF_FONT_FAMILY, "bold");
     doc.setTextColor(30, 30, 30);
     doc.text(t("doctorReport.anamnesisTitle"), margin, y);
     y += 6;

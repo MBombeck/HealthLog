@@ -31,6 +31,7 @@ typecheck.
 - **`bench/`** — `seed-large-account.ts` (a synthetic ten-year account of about 1.26 million measurement rows) and `run.ts` (latency and SQL statements per request against it); see `docs/contributing/benchmarks.md`. Results land in `bench/results/`.
 - **`test-notifications.ts`** — exercise the notification dispatcher + reminder check.
 - **`fetch-geolite2.sh`** — download the MaxMind GeoLite2 MMDBs (needs a licence key) before `docker build`.
+- **`build-pdf-fonts.py`** — rebuild the fonts the doctor-report PDF embeds (`src/lib/doctor-report-pdf/fonts/`) from the upstream Noto sources; needs `fonttools`. The source URLs are in its header.
 - **`install-hooks.sh`** — install the local git hooks.
 - **`generate-sw-version.mjs`**, **`print-bundle-report.mjs`** — service-worker version stamp and bundle-size report.
 - **`i18n/`** — locale tooling; **`__tests__/`** — tests for the scripts above.
