@@ -1,6 +1,6 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import { jsPDF } from "jspdf";
+
+import { readSource } from "@/__tests__/helpers/source-files";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -9,21 +9,22 @@ import {
   reportNeedsHangul,
 } from "../fonts";
 
-const ROOT = process.cwd();
 const FONT_DIR = "src/lib/doctor-report-pdf/fonts";
 
 describe("doctor-report fonts", () => {
   it("ships the OFL licence beside the font files", () => {
-    expect(existsSync(join(ROOT, FONT_DIR, "OFL.txt"))).toBe(true);
-    expect(readFileSync(join(ROOT, FONT_DIR, "OFL.txt"), "utf8")).toContain(
+    const licence = readSource(
+      `${FONT_DIR}/OFL.txt`,
       "SIL Open Font License, Version 1.1",
     );
+    expect(licence).toContain("The Noto Project Authors");
+    expect(licence).toContain("Adobe");
   });
 
   it("names the font directory in the standalone trace includes", () => {
     // The files are read by a path built at runtime; without the include the
     // production image ships the renderer and none of its fonts.
-    const config = readFileSync(join(ROOT, "next.config.ts"), "utf8");
+    const config = readSource("next.config.ts", "outputFileTracingIncludes");
     expect(config).toContain(`"./${FONT_DIR}/**"`);
   });
 
