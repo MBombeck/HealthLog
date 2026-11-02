@@ -26,6 +26,7 @@ import {
 } from "@/lib/labs/biomarker-catalog";
 import { useTranslations } from "@/lib/i18n/context";
 
+import { LabUnitInput } from "./lab-unit-input";
 import type { BiomarkerDto } from "./types";
 
 const CONTEXT_MAX_LENGTH = 2000;
@@ -219,10 +220,10 @@ export function BiomarkerForm({
           <Label htmlFor="biomarker-unit">
             {t("labs.biomarker.form.unit")}
           </Label>
-          <Input
+          <LabUnitInput
             id="biomarker-unit"
             value={unit}
-            onChange={(e) => setUnit(e.target.value)}
+            onChange={setUnit}
             placeholder={t("labs.biomarker.form.unitPlaceholder")}
             maxLength={40}
             required

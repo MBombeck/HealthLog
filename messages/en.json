@@ -10396,7 +10396,9 @@
       "pdfNeedsAnthropic": "PDF scanning needs a Claude vision provider; upload a photo instead.",
       "refTextLabel": "Range as printed",
       "refTextPlaceholder": "e.g. 3.5 - 5.0",
-      "aiUnavailable": "Scanning a report with AI is not available here right now."
+      "aiUnavailable": "Scanning a report with AI is not available here right now.",
+      "errorUnitMismatchNoUnit": "This marker is tracked without a unit. Tick No unit if the report was misread, or deselect this reading.",
+      "unitDiffersBadgeNoUnit": "Tracked without a unit; this report says {unit}"
     },
     "loadMoreReadings": "Load more readings",
     "documentsLink": "Lab report documents",
@@ -10474,6 +10476,10 @@
         "stale": "The newest reading is from {date}, more than a year ago. The line is shown as of then, without a projection."
       },
       "interval": "95 % interval of the yearly change: {lo} to {hi} {unit}."
+    },
+    "unit": {
+      "none": "No unit",
+      "noneHint": "For a ratio or an index such as INR or cholesterol/HDL."
     }
   },
   "modules": {
@@ -14093,6 +14099,7 @@
       "asNeeded": "As needed",
       "startsOn": "Start",
       "endsOn": "End"
-    }
+    },
+    "unitlessHint": "A ratio or an index without a unit (INR, cholesterol/HDL): write 1 in the unit column. An empty unit cell stays an error."
   }
 }

@@ -21,6 +21,10 @@ import type { DoctorReportData } from "@/lib/doctor-report-data";
 import { LOINC_SYSTEM, UCUM_SYSTEM } from "@/lib/fhir/loinc-map";
 import { resolveLabCoding } from "@/lib/fhir/lab-loinc";
 import { qualitativeValueConcept } from "@/lib/fhir/lab-qualitative";
+import {
+  DIMENSIONLESS_UNIT,
+  isDimensionlessUnit,
+} from "@/lib/labs/dimensionless";
 
 import type {
   FhirObservation,
@@ -84,10 +88,15 @@ export function labObservations(
     // the code system while withholding the code claims a coding the bundle
     // does not carry, and leaves a receiver unable to machine-compare the
     // value it is attached to.
+    // A value without a unit is the UCUM unity by definition, so it carries
+    // the code even for an analyte the map does not know.
+    const ucum = isDimensionlessUnit(lab.unit)
+      ? DIMENSIONLESS_UNIT
+      : coding?.ucum;
     const quantity = (value: number) => ({
       value,
       unit: lab.unit,
-      ...(coding?.ucum ? { system: UCUM_SYSTEM, code: coding.ucum } : {}),
+      ...(ucum ? { system: UCUM_SYSTEM, code: ucum } : {}),
     });
     // The bounds are stated in the SAME unit as the value, so they carry the
     // SAME coding — a bare unit beside a coded value leaves a receiver unable

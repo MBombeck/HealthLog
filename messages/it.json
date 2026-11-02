@@ -10396,7 +10396,9 @@
       "pdfNeedsAnthropic": "La scansione PDF richiede un provider di visione Claude; carica invece una foto.",
       "refTextLabel": "Intervallo come stampato",
       "refTextPlaceholder": "es. 3,5 - 5,0",
-      "aiUnavailable": "La scansione di un referto con IA non è disponibile qui al momento."
+      "aiUnavailable": "La scansione di un referto con IA non è disponibile qui al momento.",
+      "errorUnitMismatchNoUnit": "Questo marcatore è registrato senza unità. Spunta Nessuna unità se il referto è stato letto male, oppure deseleziona questo valore.",
+      "unitDiffersBadgeNoUnit": "Registrato senza unità; questo referto indica {unit}"
     },
     "loadMoreReadings": "Carica altre misurazioni",
     "documentsLink": "Documenti dei referti",
@@ -10474,6 +10476,10 @@
         "stale": "Il valore più recente è del {date}, più di un anno fa. La retta è mostrata a quella data, senza proiezione."
       },
       "interval": "Intervallo al 95 % della variazione annua: da {lo} a {hi} {unit}."
+    },
+    "unit": {
+      "none": "Nessuna unità",
+      "noneHint": "Per un rapporto o un indice come l'INR o colesterolo/HDL."
     }
   },
   "modules": {
@@ -14093,6 +14099,7 @@
       "asNeeded": "Al bisogno",
       "startsOn": "Inizio",
       "endsOn": "Fine"
-    }
+    },
+    "unitlessHint": "Un rapporto o un indice senza unità (INR, colesterolo/HDL): scrivi 1 nella colonna dell'unità. Un'unità vuota resta un errore."
   }
 }

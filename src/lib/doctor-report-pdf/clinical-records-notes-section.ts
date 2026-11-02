@@ -16,6 +16,7 @@ import {
   type DoctorReportPdfCursorState,
   type DoctorReportPdfRenderContext,
 } from "./render-context";
+import { withLabUnit } from "@/lib/labs/dimensionless";
 
 export function buildClinicalRecordsNotesSection(
   context: DoctorReportPdfRenderContext,
@@ -109,7 +110,7 @@ export function buildClinicalRecordsNotesSection(
         lr.panel ? `${lr.analyte} (${lr.panel})` : lr.analyte,
         isQualitative
           ? (lr.valueText ?? "")
-          : `${labNum(lr.value as number, lr.sourceValue)} ${lr.unit}`.trim(),
+          : withLabUnit(labNum(lr.value as number, lr.sourceValue), lr.unit),
         isQualitative ? "—" : referenceCell(lr),
         isQualitative
           ? ""
@@ -166,10 +167,10 @@ export function buildClinicalRecordsNotesSection(
       y += 4;
       for (const lr of diverging) {
         doc.text(
-          `* ${lr.analyte}: ${t("doctorReport.labsCatalogRangeLabel")} ${rangeText(
-            lr.catalogReferenceLow,
-            lr.catalogReferenceHigh,
-          )} ${lr.unit}`.trim(),
+          `* ${lr.analyte}: ${t("doctorReport.labsCatalogRangeLabel")} ${withLabUnit(
+            rangeText(lr.catalogReferenceLow, lr.catalogReferenceHigh),
+            lr.unit,
+          )}`.trim(),
           margin,
           y,
         );

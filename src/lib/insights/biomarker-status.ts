@@ -53,6 +53,7 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { userDayKey } from "@/lib/tz/resolver";
 import { sanitizeForPrompt } from "@/lib/insights/sanitize";
+import { labUnitText } from "@/lib/labs/dimensionless";
 
 export type BiomarkerStatusResult = {
   hasProvider: boolean;
@@ -321,7 +322,7 @@ function biomarkerSnapshot(args: {
   // position below, so both are scrubbed exactly like the coach
   // labs-snapshot scrubs the same fields.
   const safeMarkerName = sanitizeForPrompt(marker.name, 120);
-  const safeMarkerUnit = sanitizeForPrompt(marker.unit, 40);
+  const safeMarkerUnit = sanitizeForPrompt(labUnitText(marker.unit), 40);
 
   const snapshot = {
     locale,

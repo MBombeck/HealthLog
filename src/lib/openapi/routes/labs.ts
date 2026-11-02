@@ -11,6 +11,8 @@ import { withRelated } from "./relation-links";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
 
+import { LAB_UNIT_DESCRIPTION } from "@/lib/labs/dimensionless";
+
 import {
   createLabResultSchema,
   labOverviewQuerySchema,
@@ -71,7 +73,7 @@ const labResultRow = z
     // exactly one of the two is non-null per row.
     value: z.number().nullable(),
     valueText: z.string().nullable(),
-    unit: z.string(),
+    unit: z.string().describe(LAB_UNIT_DESCRIPTION),
     converted: z.boolean(),
     sourceValue: z.number().nullable(),
     sourceUnit: z.string().nullable(),

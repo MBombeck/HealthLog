@@ -25,6 +25,7 @@
  */
 import { z } from "zod/v4";
 import { locales } from "@/lib/i18n/config";
+import { LAB_UNIT_DESCRIPTION } from "@/lib/labs/dimensionless";
 import {
   DOCUMENT_BULK_MAX_IDS,
   DOCUMENT_CONTENT_INDEX_SOURCES,
@@ -34,7 +35,6 @@ import {
   type DocumentContentIndexSourceValue,
   type InboundDocumentKindValue,
 } from "@/lib/documents/inbound-constants";
-
 import type { AiCapabilityState } from "@/lib/ai/capabilities/types";
 import { OCR_MAX_ROWS } from "@/lib/validations/labs-ocr";
 
@@ -443,7 +443,7 @@ const observationEditSchema = z
     codeSystem: optCode,
     value: z.number().finite().nullable().optional(),
     valueText: optText(300),
-    unit: optText(80),
+    unit: optText(80).describe(LAB_UNIT_DESCRIPTION),
     referenceLow: z.number().finite().nullable().optional(),
     referenceHigh: z.number().finite().nullable().optional(),
     referenceText: optText(120),

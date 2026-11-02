@@ -7,6 +7,7 @@ import { TileHeader } from "@/components/insights/tile-header";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 
 import type { BiomarkerTrendDto } from "./types";
+import { labUnitText } from "@/lib/labs/dimensionless";
 
 /**
  * v1.44 — the marker's slope over all its readings, and where that straight
@@ -35,12 +36,19 @@ export function LabTrendCard({
       : trend.slopePerYear < 0
         ? "falling"
         : "flat";
-  const slopeLine = t(`labs.trend.slope.${direction}`, {
-    amount: per(trend.slopePerYear),
-    unit,
-    n: trend.n,
-    since: fmt.dateShortSmartCalendar(trend.firstAt),
-  });
+  const shownUnit = labUnitText(unit);
+  // A value without a unit leaves the {unit} slot empty; close the gap it
+  // leaves rather than print a space before the full stop.
+  const tidy = (text: string) =>
+    shownUnit ? text : text.replace(/ +([.,])/g, "$1").replace(/ {2,}/g, " ");
+  const slopeLine = tidy(
+    t(`labs.trend.slope.${direction}`, {
+      amount: per(trend.slopePerYear),
+      unit: shownUnit,
+      n: trend.n,
+      since: fmt.dateShortSmartCalendar(trend.firstAt),
+    }),
+  );
   const projectionLine =
     trend.projection === "exits" && trend.exitDate
       ? t(`labs.trend.projection.exits.${trend.exitBound ?? "high"}`, {
@@ -85,11 +93,13 @@ export function LabTrendCard({
           </p>
         ) : null}
         <p className="text-muted-foreground text-xs">
-          {t("labs.trend.interval", {
-            lo: fmt.number(trend.slopeCi95[0], 2),
-            hi: fmt.number(trend.slopeCi95[1], 2),
-            unit,
-          })}
+          {tidy(
+            t("labs.trend.interval", {
+              lo: fmt.number(trend.slopeCi95[0], 2),
+              hi: fmt.number(trend.slopeCi95[1], 2),
+              unit: shownUnit,
+            }),
+          )}
         </p>
       </CardContent>
     </Card>

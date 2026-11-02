@@ -31,6 +31,7 @@ import type {
   LabOverviewResponse,
   LabResultDto,
 } from "./types";
+import { labUnitLabel } from "@/lib/labs/dimensionless";
 
 interface MarkerGroup {
   /** Stable group key: `bm:<biomarkerId>`, or `analyte:<lower>` for legacy rows. */
@@ -39,6 +40,7 @@ interface MarkerGroup {
   biomarkerId: string | null;
   analyte: string;
   panel: string | null;
+  /** The marker's unit as the card names it ("No unit" for a ratio). */
   unit: string;
   /** Every live reading of the marker, counted by the server. */
   count: number;
@@ -53,13 +55,16 @@ interface MarkerGroup {
  * inert until the backfill links them. The server already orders by the
  * newest reading.
  */
-function toGroups(markers: LabOverviewMarkerDto[]): MarkerGroup[] {
+function toGroups(
+  markers: LabOverviewMarkerDto[],
+  t: (key: string) => string,
+): MarkerGroup[] {
   return markers.map((marker) => ({
     key: marker.key,
     biomarkerId: marker.latest.biomarkerId,
     analyte: marker.latest.analyte,
     panel: marker.latest.panel,
-    unit: marker.latest.unit,
+    unit: labUnitLabel(marker.latest.unit, t),
     count: marker.count,
     trend: marker.trend,
     latest: marker.latest,
@@ -152,7 +157,7 @@ export function LabList({
   });
 
   const groups = useMemo(() => {
-    const base = toGroups(data?.markers ?? []);
+    const base = toGroups(data?.markers ?? [], t);
     // v1.18.6 — honour the user's Labs sort choice. The server
     // order is most-recent-first; `recentAsc` reverses, the alpha
     // options sort by analyte name (#43), and `manual` applies the persisted
@@ -173,7 +178,7 @@ export function LabList({
       return applyOrder(base, prefs.order, (g) => g.biomarkerId ?? g.key);
     }
     return base;
-  }, [data?.markers, prefs.sortDir, prefs.order]);
+  }, [data?.markers, prefs.sortDir, prefs.order, t]);
 
   const listEmpty = !isLoading && !isError && groups.length === 0;
   useEffect(() => {

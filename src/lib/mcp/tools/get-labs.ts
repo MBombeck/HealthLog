@@ -2,7 +2,11 @@ import { z } from "zod/v4";
 
 import { fenceUserText } from "@/lib/ai/coach/data-fence";
 import { resolveMarkerForRead } from "@/lib/labs/biomarker-resolve";
-import { getLabHistory, LAB_HISTORY_MAX_LIMIT } from "@/lib/mcp/rich-reads";
+import {
+  getLabHistory,
+  LAB_HISTORY_MAX_LIMIT,
+  type LabHistoryResult,
+} from "@/lib/mcp/rich-reads";
 import { decodeOffsetCursor } from "@/lib/mcp/pagination";
 import { annotate } from "@/lib/logging/context";
 import { attachLabLinks, readLatestLabs } from "@/lib/mcp/lab-reads";
@@ -10,6 +14,7 @@ import type { McpAuthContext } from "../auth";
 import { coachReadOutput, recordLinkSchema } from "./output-shapes";
 import { runCoachTool, whenModuleOn } from "./shared";
 import { READ_ONLY_ANNOTATIONS, type McpToolDefinition } from "./types";
+import { labUnitText } from "@/lib/labs/dimensionless";
 
 /** Output schema for `get_labs` — latest-per-biomarker OR a paginated history. */
 const getLabsOutput: z.ZodRawShape = {
@@ -67,6 +72,19 @@ function fenceLabText(value: unknown): unknown {
   );
 }
 
+/**
+ * A value without a unit (a ratio, INR) is stored as the UCUM unity "1". The
+ * model is shown no unit for it, as the Coach's lab block does, so it never
+ * writes "3.6 1".
+ */
+function withShownUnits(result: LabHistoryResult): LabHistoryResult {
+  if (!result.readings) return result;
+  return {
+    ...result,
+    readings: result.readings.map((r) => ({ ...r, unit: labUnitText(r.unit) })),
+  };
+}
+
 /** `get_labs` behind its module gate: latest-per-biomarker or a history page. */
 function readLabs(
   ctx: McpAuthContext,
@@ -86,7 +104,7 @@ function readLabs(
       analyte,
       offset: decodeOffsetCursor(args.cursor),
       limit: LAB_HISTORY_MAX_LIMIT,
-    });
+    }).then(withShownUnits);
   }
   // Default: latest reading per biomarker via the Coach labs read. A name that
   // resolves to one of the user's markers (an alias or a catalog abbreviation

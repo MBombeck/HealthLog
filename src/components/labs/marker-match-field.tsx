@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { useTranslations } from "@/lib/i18n/context";
+import { labUnitLabel } from "@/lib/labs/dimensionless";
 
 export interface MarkerSuggestionDto {
   biomarkerId: string;
@@ -110,7 +111,7 @@ export function MarkerMatchField({
           <option key={suggestion.biomarkerId} value={suggestion.biomarkerId}>
             {t("labs.match.suggestionOption", {
               name: suggestion.name,
-              unit: suggestion.unit,
+              unit: labUnitLabel(suggestion.unit, t),
             })}
           </option>
         ))}

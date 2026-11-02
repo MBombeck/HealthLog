@@ -14,6 +14,8 @@
 import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
 
+import { LAB_UNIT_DESCRIPTION } from "@/lib/labs/dimensionless";
+
 import {
   createBiomarkerSchema,
   updateBiomarkerSchema,
@@ -54,7 +56,7 @@ const biomarkerRow = z
   .object({
     id: z.string(),
     name: z.string(),
-    unit: z.string(),
+    unit: z.string().describe(LAB_UNIT_DESCRIPTION),
     lowerBound: z.number().nullable(),
     upperBound: z.number().nullable(),
     panel: z.string().nullable(),

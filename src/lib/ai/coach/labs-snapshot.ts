@@ -67,6 +67,7 @@ import { resolveLabFields } from "@/lib/labs/serialise";
 import { sanitizeForPrompt } from "@/lib/insights/sanitize";
 import { prisma } from "@/lib/db";
 import { isModuleEnabled } from "@/lib/modules/gate";
+import { labUnitText } from "@/lib/labs/dimensionless";
 
 /** Cap on distinct biomarkers in the block (newest reading first). */
 const MAX_BIOMARKERS = 24;
@@ -120,7 +121,7 @@ export interface CoachLabReading {
   value: number | null;
   /** Qualitative result text ("negativ" / …); null for a numeric row. */
   valueText: string | null;
-  /** Resolved unit; empty for a qualitative marker. */
+  /** Resolved unit; empty for a qualitative marker and for a ratio. */
   unit: string;
   referenceLow: number | null;
   referenceHigh: number | null;
@@ -373,7 +374,9 @@ export async function buildLabsSnapshotBlock(
           : null,
         value: row.value,
         valueText: row.valueText ? sanitizeValueText(row.valueText) : null,
-        unit: sanitizeForPrompt(resolved.unit, MAX_UNIT_CHARS),
+        // A value without a unit is stored as "1"; the model is shown none,
+        // so it never writes "3.6 1".
+        unit: sanitizeForPrompt(labUnitText(resolved.unit), MAX_UNIT_CHARS),
         referenceLow: resolved.referenceLow,
         referenceHigh: resolved.referenceHigh,
         // A qualitative row has nothing to compare against the bounds →

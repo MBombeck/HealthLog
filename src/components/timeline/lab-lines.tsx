@@ -38,6 +38,7 @@ import {
   formatDayMonthYear,
 } from "./timeline-dates";
 import { seriesNameLines, type TimelineLayout } from "./timeline-geometry";
+import { withLabUnit } from "@/lib/labs/dimensionless";
 
 /** "18 ng/mL", every digit the reading holds, in the reader's locale. */
 export type LabValueText = (
@@ -50,7 +51,7 @@ export function useLabValueText(): LabValueText {
   const labNumber = useLabNumber();
   return useCallback(
     (value, sourceValue, unit) =>
-      `${labNumber(value, sourceValue)} ${unit}`.trim(),
+      withLabUnit(labNumber(value, sourceValue), unit),
     [labNumber],
   );
 }
@@ -84,7 +85,7 @@ export function useLabReference(): (
         (v) => labNumber(v),
       );
       return range
-        ? t("timeline.labs.reference", { range: `${range} ${unit}`.trim() })
+        ? t("timeline.labs.reference", { range: withLabUnit(range, unit) })
         : null;
     },
     [t, labNumber],
