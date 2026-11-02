@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
-  "count": 2895,
-  "total": 9225,
+  "count": 2894,
+  "total": 9223,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -917,7 +917,7 @@
     "components/insights/coach-panel/chat-bubble.tsx": 25,
     "components/insights/coach-panel/coach-conversation.tsx": 40,
     "components/insights/coach-panel/coach-drawer-body.tsx": 6,
-    "components/insights/coach-panel/coach-drawer.tsx": 14,
+    "components/insights/coach-panel/coach-drawer.tsx": 13,
     "components/insights/coach-panel/coach-hero.tsx": 2,
     "components/insights/coach-panel/coach-input.tsx": 12,
     "components/insights/coach-panel/coach-model-picker.tsx": 1,
@@ -958,7 +958,6 @@
     "components/insights/derived/coach-read-strip.tsx": 2,
     "components/insights/derived/composite-score-anatomy.tsx": 6,
     "components/insights/derived/coverage-meter.tsx": 1,
-    "components/insights/derived/index.ts": 1,
     "components/insights/derived/provenance-explainer.tsx": 2,
     "components/insights/derived/ring-hues.ts": 2,
     "components/insights/derived/score-anatomy-view.tsx": 3,
