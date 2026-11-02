@@ -19,6 +19,7 @@
 import type { DoctorReportData } from "@/lib/doctor-report-data";
 import { getMetricStatusMeta } from "@/lib/insights/metric-status-registry";
 import { fenceUserText } from "@/lib/ai/coach/data-fence";
+import { labUnitText } from "@/lib/labs/dimensionless";
 
 /**
  * Fallback units for the headline specialised metric types the generic
@@ -91,7 +92,7 @@ export function summariseForVisit(
     panel: l.panel,
     value: l.value,
     valueText: l.valueText,
-    unit: l.unit,
+    unit: labUnitText(l.unit),
     referenceLow: l.referenceLow,
     referenceHigh: l.referenceHigh,
     takenAt: l.takenAt,

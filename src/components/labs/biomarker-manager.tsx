@@ -24,6 +24,8 @@ import { BiomarkerForm } from "./biomarker-form";
 import { BiomarkerMergeSheet } from "./biomarker-merge-sheet";
 import type { BiomarkerDto, BiomarkerListResponse } from "./types";
 import { useLabNumber } from "./use-lab-format";
+import { withLabUnit } from "@/lib/labs/dimensionless";
+import { LabUnitName } from "./lab-unit-input";
 
 /**
  * v1.18.1 — the Biomarker catalog manager. v1.22 — compact editable rows.
@@ -124,11 +126,11 @@ export function BiomarkerManager() {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2">
             <span className="truncate text-sm font-medium">{marker.name}</span>
-            <span className="text-muted-foreground text-xs">{marker.unit}</span>
+            <LabUnitName unit={marker.unit} />
           </div>
           <p className="text-muted-foreground text-xs">
             {range
-              ? `${t("labs.referenceLabel")} ${range} ${marker.unit}`
+              ? `${t("labs.referenceLabel")} ${withLabUnit(range, marker.unit)}`
               : t("labs.biomarker.noRange")}
             {marker.panel ? ` · ${marker.panel}` : ""}
           </p>

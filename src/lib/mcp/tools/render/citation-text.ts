@@ -6,6 +6,7 @@
 import { fenceUserText } from "@/lib/ai/coach/data-fence";
 import type { NutrientsDailyResult } from "@/lib/mcp/nutrients-read";
 import type { NutrientUpperLimit } from "@/lib/nutrients/catalog";
+import { labUnitText } from "@/lib/labs/dimensionless";
 
 /** Finite-number guard for the citation summarisers. */
 function num(v: unknown): number | null {
@@ -66,7 +67,9 @@ export function plainLabText(rid: string, result: unknown): string {
       : typeof reading.valueText === "string"
         ? reading.valueText
         : "—";
-  const unit = typeof reading.unit === "string" ? reading.unit : "";
+  // A value without a unit (a ratio, INR) is stored as "1"; it reads as none.
+  const unit =
+    typeof reading.unit === "string" ? labUnitText(reading.unit) : "";
   const status =
     typeof reading.rangeStatus === "string" ? reading.rangeStatus : "";
   const taken =

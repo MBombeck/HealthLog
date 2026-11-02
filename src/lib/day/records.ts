@@ -47,6 +47,7 @@ import {
   readWorkoutsAroundRange,
   WORKOUT_PICK_SELECT,
 } from "@/lib/workouts/canonical-read";
+import { labUnitText } from "@/lib/labs/dimensionless";
 
 /** Everything a section reader needs about the day. */
 export interface DayFrame {
@@ -717,10 +718,9 @@ async function labsPart(frame: DayFrame): Promise<SectionPart> {
         title: row.analyte,
         meta:
           row.value !== null
-            ? // Every recorded digit, without the float noise a converted
-              // reading carries (the labs page prints the same figure).
+            ? // Every recorded digit, minus a converted reading's float noise.
               // eslint-disable-next-line healthlog/no-unlocalised-decimal -- the day contract's meta is wire text; the lab figure keeps the notation it was stored in
-              `${formatRecordedNumber(row.value, (v, digits) => v.toFixed(digits), row.sourceValue)} ${row.unit}`.trim()
+              `${formatRecordedNumber(row.value, (v, digits) => v.toFixed(digits), row.sourceValue)} ${labUnitText(row.unit)}`.trim()
             : (row.valueText ?? null),
         note: openText(row.noteEncrypted, "lab note"),
         href: row.biomarkerId ? `/labs/${row.biomarkerId}` : "/labs",

@@ -61,6 +61,7 @@ import type {
   LabResultDto,
   LabResultListResponse,
 } from "./types";
+import { labUnitLabel, labUnitText } from "@/lib/labs/dimensionless";
 
 // v1.18.11 — defer the recharts biomarker chart through
 // `next/dynamic` so recharts is off `/labs/[biomarkerId]`'s first-load JS.
@@ -426,7 +427,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
           one description line every page header carries. */}
       {marker?.unit ? (
         <p className="text-muted-foreground text-sm">
-          {marker.unit}
+          {labUnitLabel(marker.unit, t)}
           {marker.panel ? ` · ${marker.panel}` : ""}
         </p>
       ) : null}
@@ -492,7 +493,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
               numeric readings, mirroring the metric sub-pages. */}
           <MetricStatStrip
             summary={summary}
-            unit={marker?.unit ?? latest?.unit ?? ""}
+            unit={labUnitText(marker?.unit ?? latest?.unit)}
             seriesLabel={marker?.name}
             icon={FlaskConical}
           />
@@ -500,7 +501,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
             <CardContent>
               <LabBiomarkerChart
                 readings={readings}
-                unit={marker?.unit ?? latest?.unit ?? ""}
+                unit={labUnitText(marker?.unit ?? latest?.unit)}
                 lowerBound={marker?.lowerBound ?? null}
                 upperBound={marker?.upperBound ?? null}
               />
@@ -508,7 +509,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
           </Card>
           <LabTrendCard
             trend={marker?.trend}
-            unit={marker?.unit ?? latest?.unit ?? ""}
+            unit={labUnitText(marker?.unit ?? latest?.unit)}
           />
         </>
       )}

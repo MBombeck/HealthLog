@@ -8,6 +8,7 @@
 import { fenceUserText } from "@/lib/ai/coach/data-fence";
 import { prisma } from "@/lib/db";
 import { isModuleEnabled } from "@/lib/modules/gate";
+import { labUnitText } from "@/lib/labs/dimensionless";
 
 /** Up to eight results of the panel, fenced; null when there is nothing to say. */
 export async function labsPanelEvidence(
@@ -33,7 +34,8 @@ export async function labsPanelEvidence(
         lab.value === null
           ? fenceUserText(lab.valueText ?? "not reported")
           : String(lab.value);
-      const unit = lab.unit ? ` ${fenceUserText(lab.unit)}` : "";
+      const shown = labUnitText(lab.unit);
+      const unit = shown ? ` ${fenceUserText(shown)}` : "";
       return `- Newly arrived lab result: ${fenceUserText(lab.analyte)} ${value}${unit}.`;
     })
     .join("\n");
