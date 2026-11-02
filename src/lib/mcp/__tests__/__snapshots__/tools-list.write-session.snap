@@ -378,7 +378,7 @@
   {
     "name": "get_labs",
     "title": "Get lab results",
-    "description": "Fetch the user's lab results. By default returns the latest reading per biomarker over the whole record. Filtered to one named analyte, each matching marker also carries a summarised history (the newest earlier values in full, older ones as one mean / min / max / count per year). Pass history:true with an analyte to return that analyte's reading TRAJECTORY (newest first, paginated). Each reading carries its value, unit, reference range, and in-range/below/above status. Returns { present: false } when no labs match, and { present: false, reason: \"module_disabled\" } when the labs module is switched off.",
+    "description": "Fetch the user's lab results. By default returns the latest reading per biomarker over the whole record. Filtered to one named analyte, each matching marker also carries a summarised history (the newest earlier values in full, older ones as one mean / min / max / count per year). Pass history:true with an analyte to return that analyte's reading TRAJECTORY (newest first, paginated). Each reading carries its value, unit, reference range, and in-range/below/above status. Each reading (the latest, an earlier value in full, a trajectory reading; not a per-year summary) carries links: the ids of the records it is linked to (the report it was read from, the visits it is filed against), [] when none, at most 25 with linksTruncated; every linked record is described once in linkedRecords (id for fetch, kind, label, date, and for a document imported from Paperless-ngx or Papra its sourceSystem and sourceId). A document is listed only while the Documents module is on. Returns { present: false } when no labs match, and { present: false, reason: \"module_disabled\" } when the labs module is switched off.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -525,6 +525,15 @@
               },
               "takenAt": {
                 "type": "string"
+              },
+              "links": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "linksTruncated": {
+                "type": "boolean"
               }
             },
             "required": [
@@ -534,13 +543,67 @@
               "referenceLow",
               "referenceHigh",
               "rangeStatus",
-              "takenAt"
+              "takenAt",
+              "links",
+              "linksTruncated"
             ],
             "additionalProperties": false
           }
         },
         "nextCursor": {
           "type": "string"
+        },
+        "linkedRecords": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "visit",
+                  "condition",
+                  "document",
+                  "vaccination",
+                  "lab",
+                  "medication"
+                ]
+              },
+              "label": {
+                "type": "string"
+              },
+              "date": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sourceSystem": {
+                "type": "string",
+                "enum": [
+                  "PAPERLESS",
+                  "PAPRA",
+                  "OTHER"
+                ]
+              },
+              "sourceId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "label",
+              "date"
+            ],
+            "additionalProperties": false
+          }
         }
       },
       "required": [
@@ -1672,7 +1735,7 @@
   {
     "name": "get_illness_recovery",
     "title": "Get illness & recovery",
-    "description": "Fetch the user's illness + recovery context: rest mode, active and recently-resolved illnesses (with the body site and side when the user named one), the recovery / strain composites, and the illness retrospective (recovery-gap, nadir, red flags). Carries the rest-mode safety flag for framing. Returns { present: false } when there is nothing to report.",
+    "description": "Fetch the user's illness + recovery context: rest mode, active and recently-resolved illnesses (each with its id, condition:<id>, which fetch accepts and answers with the condition's linked visits and documents, and with the body site and side when the user named one), the recovery / strain composites, and the illness retrospective (recovery-gap, nadir, red flags). Carries the rest-mode safety flag for framing. Returns { present: false } when there is nothing to report.",
     "inputSchema": {
       "type": "object",
       "properties": {}
@@ -2917,7 +2980,7 @@
   {
     "name": "get_medication_schedule",
     "title": "Get the medication schedule",
-    "description": "Fetch when the user's active medications are next due, and which are overdue right now. Reuses the same server-authoritative recurrence engine the medication cards render (open overdue slots win over future ones). Returns one row per active medication: name, dose, next-due instant, an overdue flag, an as-needed (PRN) flag, and an intakeTracked flag. As-needed medications and medications whose intake tracking is off (intakeTracked: false, kept as a record only) have no due time (nextDueAt: null). Returns { present: false } when no medications are tracked, and { present: false, reason: \"module_disabled\" } when the medications module is switched off.",
+    "description": "Fetch when the user's active medications are next due, and which are overdue right now. Reuses the same server-authoritative recurrence engine the medication cards render (open overdue slots win over future ones). Returns one row per active medication: its id (med:<id>, which fetch accepts), name, dose, next-due instant, an overdue flag, an as-needed (PRN) flag, an intakeTracked flag, and its directly linked records (links: conditions, documents and visits, each with an id fetch accepts, a label, a date, and for a document imported from Paperless-ngx or Papra its sourceSystem and sourceId; [] when none; at most 25 with linksTruncated; documents only while the Documents module is on). As-needed medications and medications whose intake tracking is off (intakeTracked: false, kept as a record only) have no due time (nextDueAt: null). Returns { present: false } when no medications are tracked, and { present: false, reason: \"module_disabled\" } when the medications module is switched off.",
     "inputSchema": {
       "type": "object",
       "properties": {}
@@ -2936,6 +2999,9 @@
           "items": {
             "type": "object",
             "properties": {
+              "id": {
+                "type": "string"
+              },
               "name": {
                 "type": "string"
               },
@@ -2959,15 +3025,73 @@
               },
               "intakeTracked": {
                 "type": "boolean"
+              },
+              "links": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "visit",
+                        "condition",
+                        "document",
+                        "vaccination",
+                        "lab",
+                        "medication"
+                      ]
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "date": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "sourceSystem": {
+                      "type": "string",
+                      "enum": [
+                        "PAPERLESS",
+                        "PAPRA",
+                        "OTHER"
+                      ]
+                    },
+                    "sourceId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "kind",
+                    "label",
+                    "date"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "linksTruncated": {
+                "type": "boolean"
               }
             },
             "required": [
+              "id",
               "name",
               "dose",
               "nextDueAt",
               "overdue",
               "asNeeded",
-              "intakeTracked"
+              "intakeTracked",
+              "links",
+              "linksTruncated"
             ],
             "additionalProperties": false
           }
@@ -3623,7 +3747,7 @@
   {
     "name": "get_visits",
     "title": "Get past doctor visits",
-    "description": "Fetch the user's own past doctor visits over a bounded window (default: the last 12 months) so a question like 'when did I last see a cardiologist' is answerable from the record. Each visit carries its date, lifecycle status (DONE / CANCELLED / NO_SHOW — a no-show is not a visit that happened), kind, practitioner name + specialty, the visit's own free-text reason and outcome, the body site and side (set on procedures), and the labels of any conditions it was filed against. Optionally narrow to one practitioner by a name substring, or to one kind. kind PROCEDURE is the procedure and surgery history: without a months argument it reads the whole record, because a surgery years ago is still the answer to 'what surgeries have I had'. Newest first, bounded. Returns { present: false } when the user has never recorded a visit — distinct from a filtered read that simply matched none. With the illness module switched off the condition labels are withheld and conditionsReason is \"module_disabled\".",
+    "description": "Fetch the user's own past doctor visits over a bounded window (default: the last 12 months) so a question like 'when did I last see a cardiologist' is answerable from the record. Each visit carries its id (visit:<id>, which fetch accepts and answers with the visit's linked records), its date, lifecycle status (DONE / CANCELLED / NO_SHOW — a no-show is not a visit that happened), kind, practitioner name + specialty, the visit's own free-text reason and outcome, the body site and side (set on procedures), and the labels of any conditions it was filed against. Optionally narrow to one practitioner by a name substring, or to one kind. kind PROCEDURE is the procedure and surgery history: without a months argument it reads the whole record, because a surgery years ago is still the answer to 'what surgeries have I had'. Newest first, bounded. Returns { present: false } when the user has never recorded a visit — distinct from a filtered read that simply matched none. With the illness module switched off the condition labels are withheld and conditionsReason is \"module_disabled\".",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -3673,6 +3797,9 @@
           "items": {
             "type": "object",
             "properties": {
+              "id": {
+                "type": "string"
+              },
               "occurredAt": {
                 "type": "string"
               },
@@ -3735,6 +3862,7 @@
               }
             },
             "required": [
+              "id",
               "occurredAt",
               "status",
               "kind",
@@ -3858,7 +3986,7 @@
   {
     "name": "fetch",
     "title": "Fetch one health record",
-    "description": "Hydrate a single record returned by `search`, by its id (e.g. `metric:weight`, `med:<id>`, `lab:LDL`, `visit:<id>`, `condition:<id>`, `document:<id>`, `vaccination:<id>`). Returns { id, title, text, url, metadata } where `text` is a server-authoritative, plain-text prose summary suitable for citation and `url` deep-links to the specific record in HealthLog. A visit, condition, document or vaccination carries its key fields and its directly linked records (metadata.links, each with an id `fetch` accepts); a document returns its metadata and at most a bounded excerpt of its own indexed text (the words of the stored document), never the file; a document held back from AI reading returns no excerpt and metadata.reason \"ai_read_deferred\". Fields that were never recorded are null. Returns a not-found message when the id does not resolve, and metadata.reason \"module_disabled\" when the record's module is switched off.",
+    "description": "Hydrate a single record returned by `search`, by its id (e.g. `metric:weight`, `med:<id>`, `lab:LDL`, `visit:<id>`, `condition:<id>`, `document:<id>`, `vaccination:<id>`). Returns { id, title, text, url, metadata } where `text` is a server-authoritative, plain-text prose summary suitable for citation and `url` deep-links to the specific record in HealthLog. A visit, condition, document, vaccination, lab or medication carries its key fields and its directly linked records (metadata.links, each with an id `fetch` accepts, a label and a date, at most 25 with metadata.linksTruncated, and \"Linked records: none.\" in the text when there are none); a linked document imported from Paperless-ngx or Papra also names its sourceSystem and sourceId (never an address), and a document is listed only while the Documents module is on. A lab lists the links of its latest reading (the report it was read from, the visits it is filed against); a medication its conditions, documents and visits; a document also lists the lab results read from it and the medications filed against it; a document returns its metadata and at most a bounded excerpt of its own indexed text (the words of the stored document), never the file; a document held back from AI reading returns no excerpt and metadata.reason \"ai_read_deferred\". Fields that were never recorded are null. Returns a not-found message when the id does not resolve, and metadata.reason \"module_disabled\" when the record's module is switched off.",
     "inputSchema": {
       "type": "object",
       "properties": {

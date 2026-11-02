@@ -107,6 +107,8 @@ export interface CoachIllnessBlock {
     bodySite?: string;
     /** The side of `bodySite`, when one is stated. */
     laterality?: string;
+    /** The episode's id; set only for a read that asks for it (`withIds`). */
+    id?: string;
   }>;
   /** Recently-resolved episodes, newest first — light history context. */
   recentResolved: Array<{
@@ -116,6 +118,7 @@ export interface CoachIllnessBlock {
     resolvedAt: string;
     bodySite?: string;
     laterality?: string;
+    id?: string;
   }>;
   /**
    * v1.40 — the person's own symptoms over the last 14 days, most frequent
@@ -208,8 +211,14 @@ export async function buildIllnessSnapshotBlock(
    * symptoms are history and are read from inside the limit only.
    */
   reach: CoachHistoryReach = UNBOUNDED_REACH,
+  /**
+   * `withIds` carries each episode's id, so an MCP read can name the
+   * condition a client fetches next. The Coach never asks for it.
+   */
+  options: { withIds?: boolean } = {},
 ): Promise<CoachIllnessBlock | null> {
   if (!(await isIllnessEnabled(userId))) return null;
+  const idOf = (e: { id: string }) => (options.withIds ? { id: e.id } : {});
   const floor = reachFloor(reach, now);
 
   const [activeRows, resolvedRows, symptoms] = await Promise.all([
@@ -222,6 +231,7 @@ export async function buildIllnessSnapshotBlock(
       },
       orderBy: { onsetAt: "asc" },
       select: {
+        id: true,
         label: true,
         type: true,
         lifecycle: true,
@@ -240,6 +250,7 @@ export async function buildIllnessSnapshotBlock(
       orderBy: { resolvedAt: "desc" },
       take: RESOLVED_HISTORY_LIMIT,
       select: {
+        id: true,
         label: true,
         type: true,
         onsetAt: true,
@@ -267,6 +278,7 @@ export async function buildIllnessSnapshotBlock(
       lifecycle: e.lifecycle,
       onsetAt: e.onsetAt.toISOString(),
       ...siteFields(e),
+      ...idOf(e),
     })),
     recentResolved: resolvedRows.map((e) => ({
       label: sanitizeLabel(e.label),
@@ -275,6 +287,7 @@ export async function buildIllnessSnapshotBlock(
       // `resolvedAt` is non-null by the query filter above.
       resolvedAt: (e.resolvedAt as Date).toISOString(),
       ...siteFields(e),
+      ...idOf(e),
     })),
     ...(symptoms.length > 0 ? { symptoms } : {}),
   };

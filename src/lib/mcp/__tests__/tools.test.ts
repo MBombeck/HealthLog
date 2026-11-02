@@ -7,6 +7,17 @@ vi.mock("@/lib/ai/coach/tools/executor", () => ({
 vi.mock("@/lib/ai/coach/tools/inventory", () => ({
   buildCoachDataInventory: vi.fn(),
 }));
+// The labs read builds its block first and asks the Coach only on a miss; a
+// miss here keeps the labs tests on the executor result each one states.
+vi.mock("@/lib/ai/coach/labs-snapshot", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/ai/coach/labs-snapshot")>()),
+  buildLabsSnapshotBlock: vi.fn(async () => null),
+}));
+// get_illness_recovery reads the illness block again for the condition ids.
+vi.mock("@/lib/ai/coach/illness-snapshot", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/ai/coach/illness-snapshot")>()),
+  buildIllnessSnapshotBlock: vi.fn(async () => null),
+}));
 vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
 }));

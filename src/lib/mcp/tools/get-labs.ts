@@ -4,8 +4,10 @@ import { fenceUserText } from "@/lib/ai/coach/data-fence";
 import { resolveMarkerForRead } from "@/lib/labs/biomarker-resolve";
 import { getLabHistory, LAB_HISTORY_MAX_LIMIT } from "@/lib/mcp/rich-reads";
 import { decodeOffsetCursor } from "@/lib/mcp/pagination";
+import { annotate } from "@/lib/logging/context";
+import { attachLabLinks, readLatestLabs } from "@/lib/mcp/lab-reads";
 import type { McpAuthContext } from "../auth";
-import { coachReadOutput } from "./output-shapes";
+import { coachReadOutput, recordLinkSchema } from "./output-shapes";
 import { runCoachTool, whenModuleOn } from "./shared";
 import { READ_ONLY_ANNOTATIONS, type McpToolDefinition } from "./types";
 
@@ -25,10 +27,16 @@ const getLabsOutput: z.ZodRawShape = {
         referenceHigh: z.number().nullable(),
         rangeStatus: z.enum(["in-range", "below", "above", "unknown"]),
         takenAt: z.string(),
+        // The fetch ids of what this reading links to; each is described
+        // once in `linkedRecords`.
+        links: z.array(z.string()),
+        linksTruncated: z.boolean(),
       }),
     )
     .optional(),
   nextCursor: z.string().optional(),
+  // Both modes: every record a listed reading links to, named once.
+  linkedRecords: z.array(recordLinkSchema).optional(),
 };
 
 /** The free-text fields of a lab reading: a document's words, never instructions. */
@@ -83,14 +91,30 @@ function readLabs(
   // Default: latest reading per biomarker via the Coach labs read. A name that
   // resolves to one of the user's markers (an alias or a catalog abbreviation
   // such as "GPT" for "ALT") is read as that marker's own name (v1.43).
+  // A present read carries each reading's lab result id (see `lab-reads.ts`);
+  // a miss is the Coach read's grounded answer.
   return (async () => {
     const asked = typeof args.analyte === "string" ? args.analyte : null;
     const marker = asked?.trim()
       ? await resolveMarkerForRead(ctx.userId, asked)
       : null;
-    return runCoachTool(ctx, "get_labs", {
-      ...(asked !== null ? { analyte: marker?.name ?? asked } : {}),
+    const analyte = asked !== null ? (marker?.name ?? asked) : undefined;
+    let missed = false;
+    const result = await readLatestLabs(ctx.userId, analyte, () => {
+      missed = true;
+      return runCoachTool(
+        ctx,
+        "get_labs",
+        analyte !== undefined ? { analyte } : {},
+      );
     });
+    if (!missed) {
+      annotate({
+        action: { name: "mcp.tool.invoked" },
+        meta: { tool: "get_labs", present: true },
+      });
+    }
+    return result;
   })();
 }
 
@@ -98,7 +122,7 @@ export const getLabsTool: McpToolDefinition = {
   name: "get_labs",
   title: "Get lab results",
   description:
-    "Fetch the user's lab results. By default returns the latest reading per biomarker over the whole record. Filtered to one named analyte, each matching marker also carries a summarised history (the newest earlier values in full, older ones as one mean / min / max / count per year). Pass history:true with an analyte to return that analyte's reading TRAJECTORY (newest first, paginated). Each reading carries its value, unit, reference range, and in-range/below/above status. Returns { present: false } when no labs match, and { present: false, reason: \"module_disabled\" } when the labs module is switched off.",
+    "Fetch the user's lab results. By default returns the latest reading per biomarker over the whole record. Filtered to one named analyte, each matching marker also carries a summarised history (the newest earlier values in full, older ones as one mean / min / max / count per year). Pass history:true with an analyte to return that analyte's reading TRAJECTORY (newest first, paginated). Each reading carries its value, unit, reference range, and in-range/below/above status. Each reading (the latest, an earlier value in full, a trajectory reading; not a per-year summary) carries links: the ids of the records it is linked to (the report it was read from, the visits it is filed against), [] when none, at most 25 with linksTruncated; every linked record is described once in linkedRecords (id for fetch, kind, label, date, and for a document imported from Paperless-ngx or Papra its sourceSystem and sourceId). A document is listed only while the Documents module is on. Returns { present: false } when no labs match, and { present: false, reason: \"module_disabled\" } when the labs module is switched off.",
   inputShape: {
     analyte: z.string().min(1).max(80).optional(),
     history: z
@@ -119,7 +143,7 @@ export const getLabsTool: McpToolDefinition = {
   outputShape: getLabsOutput,
   run(ctx, args) {
     return whenModuleOn(ctx, "labs", "get_labs", async () =>
-      fenceLabText(await readLabs(ctx, args)),
+      attachLabLinks(ctx.userId, fenceLabText(await readLabs(ctx, args))),
     );
   },
 };

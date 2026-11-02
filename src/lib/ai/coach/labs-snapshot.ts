@@ -128,6 +128,8 @@ export interface CoachLabReading {
   rangeStatus: "in-range" | "below" | "above" | "unknown";
   /** Measured date (ISO). */
   takenAt: string;
+  /** The lab result's id; set only for a read that asks for it (`withIds`). */
+  id?: string;
 }
 
 /** One earlier numeric reading of a biomarker. */
@@ -136,6 +138,8 @@ export interface CoachLabHistoryPoint {
   /** in-range / below / above / unknown against that reading's own bounds. */
   rangeStatus: "in-range" | "below" | "above" | "unknown";
   takenAt: string;
+  /** The lab result's id; set only for a read that asks for it (`withIds`). */
+  id?: string;
 }
 
 /** The readings of one calendar year (UTC), folded. */
@@ -174,6 +178,7 @@ export interface LabHistoryInput {
   value: number;
   takenAt: Date;
   rangeStatus: CoachLabHistoryPoint["rangeStatus"];
+  id?: string;
 }
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
@@ -216,6 +221,7 @@ export function shapeLabHistory(
       value: reading.value,
       rangeStatus: reading.rangeStatus,
       takenAt: reading.takenAt.toISOString(),
+      ...(reading.id ? { id: reading.id } : {}),
     })),
     yearly,
     yearsOmitted: Math.max(0, years.length - LAB_HISTORY_MAX_YEARS),
@@ -239,6 +245,11 @@ export async function buildLabsSnapshotBlock(
      * With it, each entry carries its `history`.
      */
     analyte?: string;
+    /**
+     * Carry each reading's lab result id, so a caller can list what the
+     * reading is linked to. The Coach never asks: an id means nothing to it.
+     */
+    withIds?: boolean;
   } = {},
 ): Promise<CoachLabsBlock | null> {
   if (!(await isModuleEnabled(userId, "labs"))) return null;
@@ -272,6 +283,7 @@ export async function buildLabsSnapshotBlock(
     orderBy: { takenAt: "desc" },
     take: MAX_ROWS,
     select: {
+      id: true,
       analyte: true,
       panel: true,
       value: true,
@@ -318,6 +330,7 @@ export async function buildLabsSnapshotBlock(
     const resolved = resolveLabFields(row, row.biomarker);
     if (wanted && !resolved.analyte.toLowerCase().includes(wanted)) continue;
     const key = row.biomarkerId ?? `analyte:${resolved.analyte.toLowerCase()}`;
+    const id = options.withIds ? { id: row.id } : {};
     const existing = entries.get(key);
     if (existing) {
       // One unit written two ways ("mg/dl", "mg/dL") is one series.
@@ -333,6 +346,7 @@ export async function buildLabsSnapshotBlock(
             row.value,
             resolved.effectiveRange,
           ),
+          ...id,
         });
       }
       continue;
@@ -372,6 +386,7 @@ export async function buildLabsSnapshotBlock(
           resolved.effectiveRange,
         ),
         takenAt: row.takenAt.toISOString(),
+        ...id,
       },
     });
   }

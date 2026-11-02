@@ -52,6 +52,12 @@ vi.mock("@/lib/ai/coach/tools/executor", () => ({ executeCoachTool }));
 vi.mock("@/lib/ai/coach/tools/inventory", () => ({
   buildCoachDataInventory: vi.fn(),
 }));
+// `get_labs` builds its labs block first and asks the Coach only on a miss;
+// a miss keeps the health-reader case on the executor it asserts.
+vi.mock("@/lib/ai/coach/labs-snapshot", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/ai/coach/labs-snapshot")>()),
+  buildLabsSnapshotBlock: vi.fn(async () => null),
+}));
 vi.mock("@/lib/mcp/server", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/mcp/server")>();
   return {
