@@ -204,8 +204,8 @@ function draftFor(fact: ExtractedFactDto): VerifyDraft {
   };
 }
 
-/** One pending fact: include-toggle, stated values, verify-first when low-confidence. */
-function FactRow({
+/** One pending fact: include-toggle, stated values, and the edit control when it is low-confidence or its last save was refused. */
+export function FactRow({
   documentId,
   fact,
   checked,
@@ -319,9 +319,10 @@ function FactRow({
             </p>
           ) : null}
         </div>
-        {fact.needsReview && !verifying ? (
+        {(fact.needsReview || failure !== null) && !verifying ? (
           <Button
             type="button"
+            data-slot="document-fact-verify-open"
             variant="outline"
             size="sm"
             className="min-h-11 shrink-0 sm:min-h-8"
