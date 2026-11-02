@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef } from "react";
+import { useId, useRef, useState } from "react";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -48,8 +48,9 @@ interface LabUnitInputProps {
  * The unit of a lab value, with an explicit "no unit" choice for a ratio or an
  * index. Ticking it sets the unit to the UCUM unity `"1"`, which every write
  * path accepts as a real unit; leaving the field empty is still refused, so a
- * unit an extraction dropped is never taken for a value that has none. Typing
- * `1` by hand is the same choice and ticks the box.
+ * unit an extraction dropped is never taken for a value that has none. Only
+ * the box makes the choice: a unit typed key by key passes through "1" on its
+ * way to `10^9/L`, and that keystroke stays text.
  */
 export function LabUnitInput({
   id,
@@ -64,7 +65,9 @@ export function LabUnitInput({
   const { t } = useTranslations();
   const noneId = useId();
   const hintId = `${noneId}-hint`;
-  const none = allowNoUnit && isDimensionlessUnit(value);
+  // Set when a keystroke, not the box, left the field at "1".
+  const [typedOne, setTypedOne] = useState(false);
+  const none = allowNoUnit && isDimensionlessUnit(value) && !typedOne;
   // What was typed before the box was ticked, so unticking gives it back.
   const typed = useRef(none ? "" : value);
 
@@ -74,6 +77,7 @@ export function LabUnitInput({
       value={none ? "" : value}
       onChange={(e) => {
         typed.current = e.target.value;
+        setTypedOne(isDimensionlessUnit(e.target.value));
         onChange(e.target.value);
       }}
       placeholder={none ? t("labs.unit.none") : placeholder}
@@ -95,15 +99,16 @@ export function LabUnitInput({
         <Checkbox
           id={noneId}
           checked={none}
-          onCheckedChange={(state) =>
+          onCheckedChange={(state) => {
+            setTypedOne(false);
             onChange(
               state === true
                 ? DIMENSIONLESS_UNIT
                 : isDimensionlessUnit(typed.current)
                   ? ""
                   : typed.current,
-            )
-          }
+            );
+          }}
           aria-describedby={hintId}
           className="mt-0.5"
         />
