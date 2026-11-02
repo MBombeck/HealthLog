@@ -1,6 +1,7 @@
 import { z } from "zod/v4";
 
 import { isoDateTime } from "@/lib/validations/datetime";
+import { DOCUMENT_SOURCE_SYSTEMS } from "@/lib/validations/inbound-documents";
 
 // ── Output schemas ───────────────────────────────────────────────────
 // Every field except the presence anchor (`present`) is optional so a grounded
@@ -66,3 +67,24 @@ export const dateRangeShape = z
   .describe(
     "An explicit inclusive date range. Use INSTEAD OF `window` for an arbitrary span (e.g. before vs after a date). Both bounds are ISO-8601 instants.",
   );
+
+/**
+ * One linked record, as `fetch` lists it in `metadata.links` and the lab and
+ * medication reads list it (see `record-links.ts`). `id` is one `fetch`
+ * accepts; an imported document adds its source system and its id there.
+ */
+export const recordLinkSchema = z.object({
+  id: z.string().nullable(),
+  kind: z.enum([
+    "visit",
+    "condition",
+    "document",
+    "vaccination",
+    "lab",
+    "medication",
+  ]),
+  label: z.string(),
+  date: z.string().nullable(),
+  sourceSystem: z.enum(DOCUMENT_SOURCE_SYSTEMS).optional(),
+  sourceId: z.string().optional(),
+});

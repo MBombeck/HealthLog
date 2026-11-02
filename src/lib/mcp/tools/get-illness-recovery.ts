@@ -1,4 +1,6 @@
 import { fenceUserText } from "@/lib/ai/coach/data-fence";
+import { buildIllnessSnapshotBlock } from "@/lib/ai/coach/illness-snapshot";
+import { UNBOUNDED_REACH } from "@/lib/ai/coach/history-reach";
 import { coachReadOutput } from "./output-shapes";
 import { runCoachTool } from "./shared";
 import { READ_ONLY_ANNOTATIONS, type McpToolDefinition } from "./types";
@@ -48,17 +50,64 @@ function fenceIllnessSites(result: unknown): unknown {
   };
 }
 
+type IllnessEntry = Record<string, unknown> & { id?: string };
+
+/**
+ * Name each listed condition by the id `fetch` accepts (`condition:<id>`), so
+ * its linked visits and documents are one call away.
+ *
+ * The Coach's block carries no ids (an id means nothing to it), so the block
+ * is read again by the same builder, asking for them, and its two lists take
+ * the place of the Coach's. Should the second read find nothing (a condition
+ * deleted in between), the Coach's lists stay as they were.
+ */
+async function withConditionIds(
+  userId: string,
+  result: unknown,
+): Promise<unknown> {
+  const r = result as {
+    data?: { illness?: Record<string, unknown> } & Record<string, unknown>;
+  };
+  if (!r?.data?.illness) return result;
+  const fresh = await buildIllnessSnapshotBlock(
+    userId,
+    new Date(),
+    UNBOUNDED_REACH,
+    { withIds: true },
+  );
+  if (!fresh) return result;
+  const named = (list: IllnessEntry[]) =>
+    list.map(({ id, ...entry }) =>
+      id ? { id: `condition:${id}`, ...entry } : entry,
+    );
+  return {
+    ...r,
+    data: {
+      ...r.data,
+      illness: {
+        ...r.data.illness,
+        restMode: fresh.restMode,
+        active: named(fresh.active),
+        recentResolved: named(fresh.recentResolved),
+      },
+    },
+  };
+}
+
 export const getIllnessRecoveryTool: McpToolDefinition = {
   name: "get_illness_recovery",
   title: "Get illness & recovery",
   description:
-    "Fetch the user's illness + recovery context: rest mode, active and recently-resolved illnesses (with the body site and side when the user named one), the recovery / strain composites, and the illness retrospective (recovery-gap, nadir, red flags). Carries the rest-mode safety flag for framing. Returns { present: false } when there is nothing to report.",
+    "Fetch the user's illness + recovery context: rest mode, active and recently-resolved illnesses (each with its id, condition:<id>, which fetch accepts and answers with the condition's linked visits and documents, and with the body site and side when the user named one), the recovery / strain composites, and the illness retrospective (recovery-gap, nadir, red flags). Carries the rest-mode safety flag for framing. Returns { present: false } when there is nothing to report.",
   inputShape: {},
   annotations: READ_ONLY_ANNOTATIONS,
   outputShape: coachReadOutput,
   async run(ctx, args) {
     return fenceIllnessSites(
-      await runCoachTool(ctx, "get_illness_recovery", args),
+      await withConditionIds(
+        ctx.userId,
+        await runCoachTool(ctx, "get_illness_recovery", args),
+      ),
     );
   },
 };
