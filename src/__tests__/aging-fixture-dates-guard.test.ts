@@ -83,6 +83,11 @@ const ALLOWLIST: Record<string, { max: number; reason: string }> = {
     reason:
       "the discovery matrix reads from a fixed since forward; the fixture days stay inside it as now moves on",
   },
+  "tests/integration/dense-series-dst-hour.test.ts": {
+    max: 1,
+    reason:
+      "the read starts at a fixed fall-back night and runs forward to now; the readings are pinned to that night, so the case cannot age",
+  },
 };
 
 export interface AgingFinding {

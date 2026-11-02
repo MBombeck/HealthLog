@@ -131,7 +131,7 @@ function req(query: string): NextRequest {
  * `tests/integration/series-source-ladder.test.ts`.
  */
 function adaptSeriesSql(sql: string): Promise<unknown> {
-  if (/GROUP BY local_day|STDDEV_POP/.test(sql)) {
+  if (/GROUP BY (?:local_day|bucket_start)|STDDEV_POP/.test(sql)) {
     return (prisma.$queryRaw as unknown as () => Promise<unknown>)();
   }
   const type = /'([A-Z0-9_]+)'::"measurement_type"/.exec(sql)?.[1];
@@ -914,7 +914,7 @@ describe("GET /api/measurements/series — dense-kind day-bucketing (v1.28.25)",
     const bucketCall = vi
       .mocked(prisma.$queryRawUnsafe)
       .mock.calls.find(([sql]) =>
-        /GROUP BY local_day/.test(sql as string),
+        /GROUP BY (?:local_day|bucket_start)/.test(sql as string),
       ) as unknown[];
     expect(bucketCall.slice(1)).toContain("hour");
   });
@@ -981,7 +981,7 @@ describe("GET /api/measurements/series — dense-kind day-bucketing (v1.28.25)",
     const bucketCall = vi
       .mocked(prisma.$queryRawUnsafe)
       .mock.calls.find(([sql]) =>
-        /GROUP BY local_day/.test(sql as string),
+        /GROUP BY (?:local_day|bucket_start)/.test(sql as string),
       ) as unknown[];
     expect(bucketCall.slice(1)).toContain("hour");
   });
