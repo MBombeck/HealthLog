@@ -17,6 +17,7 @@ import { withIdempotency } from "@/lib/idempotency";
 import { enqueueReminderSatisfy } from "@/lib/jobs/reminder-satisfy";
 import { emitDataArrival } from "@/lib/arrivals/emit-shared";
 import { resolveOrMintBiomarker } from "@/lib/labs/biomarker-store";
+import { isDimensionlessUnit } from "@/lib/labs/dimensionless";
 import { readingInMarkerUnit } from "@/lib/labs/reading-conversion";
 import {
   type ResolvedBiomarker,
@@ -270,7 +271,7 @@ async function postLabResult(request: NextRequest) {
         meta: { biomarkerId: biomarker.id, reason: reading.reason },
       });
       return apiError(
-        `The reading is in ${unit}, but ${biomarker.name} is tracked in ${biomarker.unit}.`,
+        unitMismatchMessage(unit, biomarker.name, biomarker.unit),
         422,
         {
           errorCode: "labs.unit.mismatch",
@@ -391,4 +392,20 @@ async function postLabResult(request: NextRequest) {
   }).catch(() => {});
 
   return apiSuccess(dto, 201);
+}
+
+/** The refusal for a reading whose unit differs from its marker's. */
+function unitMismatchMessage(
+  readingUnit: string | undefined,
+  markerName: string,
+  markerUnit: string,
+): string {
+  const readingSide =
+    !readingUnit || isDimensionlessUnit(readingUnit)
+      ? "The reading has no unit"
+      : `The reading is in ${readingUnit}`;
+  const markerSide = isDimensionlessUnit(markerUnit)
+    ? "tracked without a unit"
+    : `tracked in ${markerUnit}`;
+  return `${readingSide}, but ${markerName} is ${markerSide}.`;
 }

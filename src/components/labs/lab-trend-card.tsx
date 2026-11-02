@@ -37,14 +37,16 @@ export function LabTrendCard({
         ? "falling"
         : "flat";
   const shownUnit = labUnitText(unit);
-  // A value without a unit leaves the {unit} slot empty; close the gap it
-  // leaves rather than print a space before the full stop.
+  // A value without a unit fills the {unit} slot with a marker and drops it
+  // together with the space before it, so no language keeps the gap ("0.3 .",
+  // "0.3 씩").
+  const SLOT = "\u0000";
   const tidy = (text: string) =>
-    shownUnit ? text : text.replace(/ +([.,])/g, "$1").replace(/ {2,}/g, " ");
+    shownUnit ? text : text.replace(new RegExp(` ?${SLOT}`, "g"), "");
   const slopeLine = tidy(
     t(`labs.trend.slope.${direction}`, {
       amount: per(trend.slopePerYear),
-      unit: shownUnit,
+      unit: shownUnit || SLOT,
       n: trend.n,
       since: fmt.dateShortSmartCalendar(trend.firstAt),
     }),
@@ -97,7 +99,7 @@ export function LabTrendCard({
             t("labs.trend.interval", {
               lo: fmt.number(trend.slopeCi95[0], 2),
               hi: fmt.number(trend.slopeCi95[1], 2),
-              unit: shownUnit,
+              unit: shownUnit || SLOT,
             }),
           )}
         </p>

@@ -7,7 +7,7 @@ import { primeLocales } from "@/__tests__/helpers/prime-locales";
 import { LabTrendCard } from "../lab-trend-card";
 import type { BiomarkerTrendDto } from "../types";
 
-primeLocales("de");
+primeLocales("de", "ko");
 
 const OK: BiomarkerTrendDto = {
   status: "ok",
@@ -29,11 +29,12 @@ const OK: BiomarkerTrendDto = {
 
 function render(
   trend: BiomarkerTrendDto | undefined,
-  locale: "en" | "de" = "en",
+  locale: "en" | "de" | "ko" = "en",
+  unit = "mg/dL",
 ) {
   return renderToStaticMarkup(
     <I18nProvider initialLocale={locale}>
-      <LabTrendCard trend={trend} unit="mg/dL" />
+      <LabTrendCard trend={trend} unit={unit} />
     </I18nProvider>,
   );
 }
@@ -46,6 +47,16 @@ describe("<LabTrendCard>", () => {
     expect(html).toContain("upper end of your reference range");
     expect(html).toContain("projection, not a forecast");
     expect(html).toContain("4.25 to 20.75 mg/dL");
+  });
+
+  it("leaves no gap where a value without a unit has none, in any language", () => {
+    const en = render(OK, "en", "1");
+    expect(en).toContain("Rising by about 13 a year across 4 readings");
+    expect(en).toContain("4.25 to 20.75.");
+    const ko = render(OK, "ko", "1");
+    expect(ko).toContain("약 13씩");
+    expect(ko).not.toMatch(/ 씩/);
+    expect(ko).not.toContain("\u0000");
   });
 
   it("speaks German with du", () => {

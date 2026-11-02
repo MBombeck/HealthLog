@@ -223,7 +223,7 @@ export function FactRow({
   onCheckedChange: (checked: boolean) => void;
   /** A per-fact commit refusal from the last confirm attempt, or null. */
   failure: string | null;
-  /** v1.43 — the suggestion the person picked for a lab value, or null. */
+  /** The suggestion the person picked for a lab value, or null. */
   chosenBiomarkerId: string | null;
   onChooseBiomarker: (biomarkerId: string | null) => void;
   /** The account's marker name by id, for the matched marker. */
@@ -252,8 +252,7 @@ export function FactRow({
       {
         onSuccess: () => {
           setVerifying(false);
-          // The refetched fact arrives with needsReview cleared; include it —
-          // the person just asserted these values.
+          // Include it: the refetched fact clears needsReview, as asserted.
           onCheckedChange(true);
         },
       },

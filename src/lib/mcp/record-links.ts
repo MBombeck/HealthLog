@@ -104,7 +104,7 @@ async function labLinks(
     const name = analyte.get(target.id);
     if (!name) continue;
     out.set(target.id, {
-      id: `lab:${name}`,
+      id: `lab:${scrubFenceMarkers(name)}`,
       kind: "lab",
       label: scrubFenceMarkers(target.label),
       date: linkDate(target.date),
