@@ -26,6 +26,7 @@ import { bank as pl } from "../outbound-screen/locales/pl";
 import { bank as nl } from "../outbound-screen/locales/nl";
 import { bank as ko } from "../outbound-screen/locales/ko";
 import { bank as ptBR } from "../outbound-screen/locales/pt-br";
+import { bank as ru } from "../outbound-screen/locales/ru";
 import type { LocaleBank } from "../outbound-screen/shared";
 
 const BANKS: Record<Locale, LocaleBank> = {
@@ -38,6 +39,7 @@ const BANKS: Record<Locale, LocaleBank> = {
   nl,
   ko,
   "pt-BR": ptBR,
+  ru: ru,
 };
 
 const SENTENCES: Record<Locale, readonly string[]> = {
@@ -375,6 +377,47 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "O sal é responsável pela alta.",
     "Isso é culpa do sal.",
     "Continue tomando sua metformina conforme prescrito.",
+  ],
+  ru: [
+    "2000 мг увеличьте.",
+    "Принимайте 2 таблетки метформина вечером.",
+    "Увеличьте дозу до 2,4 мг.",
+    "Принимайте 2000 мг в сутки.",
+    "Начните с 5 мг завтра.",
+    "Удвойте витамин D до 4000 МЕ.",
+    "Примите дополнительную дозу инсулина.",
+    "Дозу вдвое увеличьте.",
+    "Дозу пропустите сегодня.",
+    "Пропустите вечернюю дозу.",
+    "Дозу ещё одну примите.",
+    "Дозу снизьте.",
+    "Снизьте дозу.",
+    "2,4 мг до 5 мг — переходите.",
+    "Врач рекомендует 5 мг.",
+    "2,4 мг — так стоит начинать.",
+    "Следующая доза — 5 мг.",
+    "Дозу снизить вдвое на две недели.",
+    "Ваш риск около 12%.",
+    "12% — это ваш риск.",
+    "Ваш 10-летний сердечно-сосудистый риск — около 12%.",
+    "Около 12% — ваш 10-летний риск.",
+    "SCORE2 даёт 14%.",
+    "14% — это SCORE2.",
+    "SCORE2 относит вас к высокой группе.",
+    "SCORE2 попадает в высокий риск.",
+    "Ваш 10-летний риск — высокий.",
+    "Вес снизился, потому что вы больше спали.",
+    "Это из-за соли.",
+    "Сон — причина.",
+    "Это было вызвано стрессом.",
+    "Это приводит к просадке.",
+    "Это привело к просадке.",
+    "Это вследствие поездки.",
+    "Это обусловлено жарой.",
+    "Это следствие нагрузки.",
+    "Благодаря прогулкам это снизилось.",
+    "Это является результатом нагрузки.",
+    "Продолжайте принимать 7,5 мг как назначено.",
   ],
 };
 

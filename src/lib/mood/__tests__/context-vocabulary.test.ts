@@ -73,10 +73,10 @@ const VALUE_GROUPS: Array<{ group: string; keys: readonly string[] }> = [
 ];
 
 describe("mood context vocabulary labels", () => {
-  it("reads nine locales and a non-empty vocabulary", () => {
+  it("reads ten locales and a non-empty vocabulary", () => {
     // Both ends have to be there before anything below proves anything. A
     // guard that walks an empty list is a green light nobody earned.
-    expect(LOCALES.length).toBe(9);
+    expect(LOCALES.length).toBe(10);
     expect(VALUE_GROUPS.length).toBeGreaterThan(0);
     const total = VALUE_GROUPS.reduce((n, g) => n + g.keys.length, 0);
     expect(total).toBeGreaterThan(30);

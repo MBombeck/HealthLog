@@ -95,6 +95,10 @@ export const HOST_TLDS = [
   "dk",
   "no",
   "fi",
+  "ru",
+  "by",
+  "kz",
+  "ua",
   // Home-network and private suffixes.
   "local",
   "lan",

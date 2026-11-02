@@ -3,7 +3,7 @@
  * published validated one), faithful to the English original and on the same
  * 0-3 scale, so scores stay comparable across languages.
  *
- * Источник: Рабочий перевод HealthLog с английского оригинала PHQ-9 (Kroenke, Spitzer & Williams, J Gen Intern Med 2001;16:606-613). Валидированный русскоязычный вариант в открытом доступе отсутствует.
+ * Источник: рабочий перевод HealthLog с английского оригинала PHQ-9 (Kroenke, Spitzer & Williams, J Gen Intern Med 2001;16:606-613). Валидированные русскоязычные версии существуют (например, Золотарева, 2023; официальные переводы на сайте Pfizer), но их формулировки здесь не воспроизводятся, поэтому validated: false.
  */
 import type { InstrumentWording } from "../types";
 

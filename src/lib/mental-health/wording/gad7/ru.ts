@@ -3,7 +3,7 @@
  * published validated one), faithful to the English original and on the same
  * 0-3 scale.
  *
- * Источник: Рабочий перевод HealthLog с английского оригинала GAD-7 (Spitzer, Kroenke, Williams & Löwe, Arch Intern Med 2006;166:1092-1097). Валидированный русскоязычный вариант в открытом доступе отсутствует.
+ * Источник: рабочий перевод HealthLog с английского оригинала GAD-7 (Spitzer, Kroenke, Williams & Löwe, Arch Intern Med 2006;166:1092-1097). Валидированные русскоязычные версии существуют (например, Золотарева, 2023), но их формулировки здесь не воспроизводятся, поэтому validated: false.
  */
 import type { InstrumentWording } from "../types";
 

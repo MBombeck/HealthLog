@@ -1258,7 +1258,7 @@ const LOCALE_REPLY_FOOTER_FALLBACK: Record<
   pl: "\n\nREPLY LANGUAGE: respond in Polish. Mirror the user's register (formal Pan/Pani for medical-adjacent topics); use natural Polish health vocabulary.",
   nl: "\n\nREPLY LANGUAGE: respond in Dutch. Use the informal je/jij register throughout (never formal u); use natural Dutch health vocabulary.",
   ko: "\n\nREPLY LANGUAGE: respond in Korean. Use the 해요체 register throughout (never 합쇼체 or plain 한다체); use natural Korean health vocabulary.",
-  ru: "\n\nREPLY LANGUAGE — THIS OVERRIDES THE LANGUAGE RULE ABOVE. Any \"Respond in English\" instruction earlier in this prompt does NOT apply: respond in Russian (русский язык), address the user with «вы», use natural Russian health vocabulary and the standard Russian lab terminology. Never answer in English.",
+  ru: '\n\nREPLY LANGUAGE — THIS OVERRIDES THE LANGUAGE RULE ABOVE. Any "Respond in English" instruction earlier in this prompt does NOT apply: respond in Russian (русский язык), address the user with «вы», use natural Russian health vocabulary and the standard Russian lab terminology. Never answer in English.',
   "pt-BR":
     "\n\nREPLY LANGUAGE: respond in Brazilian Portuguese (pt-BR, never European Portuguese). Address the user as você throughout; use natural Brazilian health vocabulary.",
 };

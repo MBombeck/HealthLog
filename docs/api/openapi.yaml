@@ -13235,6 +13235,7 @@ paths:
               - ko
               - nl
               - pt-BR
+              - ru
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -13274,6 +13275,7 @@ paths:
               - ko
               - nl
               - pt-BR
+              - ru
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -13313,6 +13315,7 @@ paths:
               - ko
               - nl
               - pt-BR
+              - ru
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -13352,6 +13355,7 @@ paths:
               - ko
               - nl
               - pt-BR
+              - ru
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -13391,6 +13395,7 @@ paths:
               - ko
               - nl
               - pt-BR
+              - ru
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -13431,6 +13436,7 @@ paths:
               - ko
               - nl
               - pt-BR
+              - ru
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -13533,6 +13539,7 @@ paths:
               - ko
               - nl
               - pt-BR
+              - ru
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -13585,6 +13592,7 @@ paths:
               - ko
               - nl
               - pt-BR
+              - ru
           description: Optional UI-locale override, any language the app ships; defaults to the session locale.
       responses:
         "200":
@@ -27962,6 +27970,7 @@ components:
             - ko
             - nl
             - pt-BR
+            - ru
         practiceName:
           type: string
           maxLength: 120
@@ -28676,6 +28685,7 @@ components:
                 - ko
                 - nl
                 - pt-BR
+                - ru
             - type: "null"
         timezone:
           type: string
@@ -30499,6 +30509,7 @@ components:
             - ko
             - nl
             - pt-BR
+            - ru
         today:
           description: "Optional override of the reference date used to resolve relative phrases (\"tomorrow\", \"next Monday\").
             Format: `YYYY-MM-DD`. Defaults to the account's own day in its time zone."
@@ -31468,6 +31479,7 @@ components:
             - ko
             - nl
             - pt-BR
+            - ru
           description: One of the interface locales this build ships.
       required:
         - locale
@@ -31510,6 +31522,7 @@ components:
             - ko
             - nl
             - pt-BR
+            - ru
         scope:
           type: object
           properties:
@@ -31681,6 +31694,7 @@ components:
             - ko
             - nl
             - pt-BR
+            - ru
         attachmentIds:
           minItems: 1
           maxItems: 5
@@ -35679,6 +35693,7 @@ components:
             - ko
             - nl
             - pt-BR
+            - ru
       required:
         - message
     InboundFactEditRequest:
@@ -37178,6 +37193,7 @@ components:
             - ko
             - nl
             - pt-BR
+            - ru
         timezone:
           type: string
           minLength: 1
@@ -37234,6 +37250,7 @@ components:
             - ko
             - nl
             - pt-BR
+            - ru
         timezone:
           type: string
           minLength: 1
@@ -37454,6 +37471,7 @@ components:
                 - ko
                 - nl
                 - pt-BR
+                - ru
             - type: "null"
         timezone:
           type: string
@@ -60477,6 +60495,7 @@ components:
                 - ko
                 - nl
                 - pt-BR
+                - ru
           required:
             - locale
           additionalProperties: false
@@ -89017,6 +89036,7 @@ components:
                 - ko
                 - nl
                 - pt-BR
+                - ru
             - type: "null"
         timezone:
           type: string

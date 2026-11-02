@@ -30,6 +30,14 @@ const hasSeparator = (value: string) =>
 /** Key path -> why the separator is right there. Empty by intent. */
 const ALLOWED: Record<string, string> = {};
 
+/**
+ * Bundles where a spaced dash is punctuation the language requires rather than
+ * a fragment join. Russian uses the dash where English puts a comma or a full
+ * stop ("Сводка за неделю — всё спокойно"), so the ru bundle is exempt from
+ * the dash rule; the middle dot is still flagged there.
+ */
+const DASH_EXEMPT_BUNDLES = new Set(["ru.json"]);
+
 function flatten(
   obj: unknown,
   prefix: string,
@@ -66,7 +74,13 @@ describe("message bundles carry no ' · ', ' — ' or ' – ' separator", () => 
 
     it(`${file} has no dot or dash separator outside the allowlist`, () => {
       const offenders = [...values]
-        .filter(([key, value]) => hasSeparator(value) && !(key in ALLOWED))
+        .filter(([key, value]) => {
+          if (!hasSeparator(value) || key in ALLOWED) return false;
+          if (DASH_EXEMPT_BUNDLES.has(file) && !value.includes(" · ")) {
+            return false;
+          }
+          return true;
+        })
         .map(([key, value]) => `${key} = ${JSON.stringify(value)}`);
       expect(offenders).toEqual([]);
     });

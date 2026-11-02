@@ -18,7 +18,7 @@
  */
 import { readFileSync, writeFileSync } from "node:fs";
 
-const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko", "nl", "pt-BR"];
+const LOCALES = ["de", "en", "es", "fr", "it", "pl", "ko", "nl", "pt-BR", "ru"];
 const BOUNDARY = /(?<=[.!?])\s+(?=[A-ZÄÖÜÀÂÉÈÊÎÔÙÛÇŁŚŹŻĄĆĘŃÓ0-9„"„«])/u;
 
 /**
