@@ -14,6 +14,7 @@
  */
 import { z } from "zod/v4";
 
+import { LAB_UNIT_DESCRIPTION } from "@/lib/labs/dimensionless";
 import { SOURCE_REFERENCE_TEXT_MAX } from "@/lib/labs/parse-reference-range";
 import { validateEntryInstant } from "@/lib/validations/entry-instant";
 import { isoDateTime } from "@/lib/validations/datetime";
@@ -123,7 +124,7 @@ export const createLabResultSchema = z
     // (`value`) OR qualitative (`valueText`), never both, never neither.
     value: z.number().finite().optional(),
     valueText,
-    unit: requiredText(40).optional(),
+    unit: requiredText(40).optional().describe(LAB_UNIT_DESCRIPTION),
     referenceLow,
     referenceHigh,
     sourceReferenceLow,
@@ -208,7 +209,7 @@ export const updateLabResultSchema = z
     // row's type (numeric ↔ qualitative) is intentionally not supported here —
     // delete and re-add — so an omitted key leaves the row's existing type.
     valueText: requiredText(120).optional(),
-    unit: requiredText(40).optional(),
+    unit: requiredText(40).optional().describe(LAB_UNIT_DESCRIPTION),
     referenceLow: referenceLow.or(z.null()),
     referenceHigh: referenceHigh.or(z.null()),
     sourceReferenceLow: sourceReferenceLow.or(z.null()),

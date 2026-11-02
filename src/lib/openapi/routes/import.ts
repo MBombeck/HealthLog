@@ -553,7 +553,7 @@ export const importPaths: NonNullable<ZodOpenApiObject["paths"]> = {
     post: {
       tags: ["Import"],
       summary: "Import lab results from CSV",
-      description: `${RECORD_IMPORT_COMMON} Each row's name resolves to the account's marker the way a scanned report's rows do (name, alias, catalog name); a new analyte mints one marker from its first row. A numeric result needs a unit; one in another unit is converted when the conversion is known and keeps the printed value beside it, otherwise the row is refused with \`unit_mismatch\`. Any other text in the value column is a qualitative result. A date without a time is stored as that calendar date. At most 20 000 data rows.`,
+      description: `${RECORD_IMPORT_COMMON} Each row's name resolves to the account's marker the way a scanned report's rows do (name, alias, catalog name); a new analyte mints one marker from its first row. A numeric result needs a unit: an empty unit cell is refused with \`missing_unit\`, and \`1\` (the UCUM unity) states a value without a unit, such as a ratio or INR. A result in another unit is converted when the conversion is known and keeps the printed value beside it, otherwise the row is refused with \`unit_mismatch\`. Any other text in the value column is a qualitative result. A date without a time is stored as that calendar date. At most 20 000 data rows.`,
       requestParams: { query: labsCsvQuerySchema },
       requestBody: {
         required: true,

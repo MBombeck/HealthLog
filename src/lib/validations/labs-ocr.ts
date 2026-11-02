@@ -19,6 +19,7 @@
 import type { AiCapabilityState } from "@/lib/ai/capabilities/types";
 import { z } from "zod/v4";
 
+import { LAB_UNIT_DESCRIPTION } from "@/lib/labs/dimensionless";
 import type { WrittenOutcome } from "@/lib/outcome/written-outcome";
 
 import { validateEntryInstant } from "@/lib/validations/entry-instant";
@@ -257,7 +258,13 @@ export const ocrCommitRowSchema = z
       .or(z.literal("").transform(() => undefined)),
     value: z.number().finite().optional(),
     valueText: z.string().trim().min(1).max(OCR_VALUE_TEXT_MAX).optional(),
-    unit: z.string().trim().min(1).max(OCR_UNIT_MAX).optional(),
+    unit: z
+      .string()
+      .trim()
+      .min(1)
+      .max(OCR_UNIT_MAX)
+      .optional()
+      .describe(LAB_UNIT_DESCRIPTION),
     referenceLow,
     referenceHigh,
     /**
