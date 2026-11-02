@@ -1,3 +1,4 @@
+import { PDF_FONT_FAMILY } from "./fonts";
 import type { jsPDF } from "jspdf";
 import {
   pdfCursorState,
@@ -14,7 +15,7 @@ export function buildReportFooter(
   const addFooter = (pageDoc: jsPDF) => {
     const pageHeight = pageDoc.internal.pageSize.getHeight();
     pageDoc.setFontSize(7);
-    pageDoc.setFont("helvetica", "italic");
+    pageDoc.setFont(PDF_FONT_FAMILY, "italic");
     pageDoc.setTextColor(140, 140, 140);
     pageDoc.text(t("doctorReport.footerDisclaimer1"), margin, pageHeight - 14);
     pageDoc.text(t("doctorReport.footerDisclaimer2"), margin, pageHeight - 10);
