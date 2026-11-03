@@ -81,6 +81,11 @@ x-healthlog-env: &healthlog_env
   # 1 sends neither of the two settings above (they ride the libpq `options`
   # startup parameter, which PgBouncer refuses by default).
   DATABASE_SESSION_OPTIONS_DISABLED: "${DATABASE_SESSION_OPTIONS_DISABLED:-}"
+  # The app connects as `healthlog_app`, a role the entrypoint creates that
+  # reads and writes rows but cannot change the schema; the migrations keep
+  # the owner above. off keeps the app on the owner (for an operator who
+  # manages database roles). See docs/self-hosting/database-role.md.
+  DB_APP_ROLE: "${DB_APP_ROLE:-}"
   WITHINGS_WEBHOOK_SECRET: "${WITHINGS_WEBHOOK_SECRET:-}"
   # Overrides the derived `${NEXT_PUBLIC_APP_URL}/api/withings/callback`;
   # set it when the URL registered with Withings differs from the app's own
