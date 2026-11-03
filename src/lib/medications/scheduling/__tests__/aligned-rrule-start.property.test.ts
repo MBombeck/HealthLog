@@ -9,7 +9,10 @@ import { describe, expect, it } from "vitest";
 
 import { alignedRruleStart } from "@/lib/medications/scheduling/aligned-rrule-start";
 
-import { assertProperty } from "../../../../../tests/property/fast-check";
+import {
+  assertProperty,
+  propertyTimeout,
+} from "../../../../../tests/property/fast-check";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BYDAY = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"] as const;
@@ -33,8 +36,9 @@ const ruleArb = fc
     ),
     wkst: fc.option(fc.constantFrom("MO", "SU")),
     count: fc.option(fc.integer({ min: 1, max: 40 })),
+    bysetpos: fc.option(fc.constantFrom(1, 2, -1)),
   })
-  .map(({ freq, interval, byday, byhour, wkst, count }) =>
+  .map(({ freq, interval, byday, byhour, wkst, count, bysetpos }) =>
     [
       `FREQ=${freq}`,
       interval > 1 ? `INTERVAL=${interval}` : null,
@@ -42,6 +46,7 @@ const ruleArb = fc
       byhour ? `BYHOUR=${byhour.join(",")}` : null,
       wkst ? `WKST=${wkst}` : null,
       count ? `COUNT=${count}` : null,
+      bysetpos && byday && !byhour ? `BYSETPOS=${bysetpos}` : null,
     ]
       .filter(Boolean)
       .join(";"),
@@ -61,26 +66,32 @@ function occurrences(rule: string, start: Date, after: Date, before: Date) {
 }
 
 describe("alignedRruleStart", () => {
-  it("leaves every occurrence in the window where it was", () => {
-    assertProperty(
-      fc.property(
-        ruleArb,
-        dayArb,
-        fc.integer({ min: -30, max: 2 * 365 }),
-        fc.integer({ min: 1, max: 120 }),
-        (rule, anchor, offsetDays, spanDays) => {
-          const after = new Date(anchor.getTime() + offsetDays * DAY_MS);
-          const before = new Date(after.getTime() + spanDays * DAY_MS);
-          const aligned = alignedRruleStart(rule, anchor, after);
-          expect(aligned.getTime()).toBeGreaterThanOrEqual(anchor.getTime());
-          expect(occurrences(rule, aligned, after, before)).toEqual(
-            occurrences(rule, anchor, after, before),
-          );
-        },
-      ),
-      300,
-    );
-  });
+  it(
+    "leaves every occurrence in the window where it was",
+    () => {
+      assertProperty(
+        fc.property(
+          ruleArb,
+          dayArb,
+          fc.integer({ min: -30, max: 2 * 365 }),
+          fc.integer({ min: 1, max: 120 }),
+          (rule, anchor, offsetDays, spanDays) => {
+            const after = new Date(anchor.getTime() + offsetDays * DAY_MS);
+            const before = new Date(after.getTime() + spanDays * DAY_MS);
+            const aligned = alignedRruleStart(rule, anchor, after);
+            expect(aligned.getTime()).toBeGreaterThanOrEqual(anchor.getTime());
+            expect(occurrences(rule, aligned, after, before)).toEqual(
+              occurrences(rule, anchor, after, before),
+            );
+          },
+        ),
+        300,
+      );
+      // The reference walks from the real anchor, which is the cost this
+      // module removes from the engine.
+    },
+    propertyTimeout(30_000),
+  );
 
   it("moves a daily or weekly start close to the window", () => {
     const anchor = new Date(Date.UTC(2024, 5, 1));

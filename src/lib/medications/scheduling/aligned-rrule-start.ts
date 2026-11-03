@@ -14,7 +14,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * occurrence inside it where it was: the weekday, the week parity of an
  * every-other-week rule and the BYHOUR expansion all ride on the period.
  * A rule with COUNT keeps its anchor (the count runs from the first
- * occurrence), and so does any other frequency, whose period is not a fixed
+ * occurrence), as does one with BYSETPOS (see below), and so does any other
+ * frequency, whose period is not a fixed
  * number of days. The day before `after` is the latest safe start, because
  * a start the rule does not match is not an occurrence, and anything
  * between it and `after` is outside the window anyway.
@@ -31,6 +32,10 @@ export function alignedRruleStart(
     return anchor;
   }
   if (options.count != null) return anchor;
+  // BYSETPOS picks among a period's candidates, and the library drops the
+  // candidates before DTSTART in the first period before it picks, so a
+  // start moved into the middle of a week would choose a different day.
+  if (options.bysetpos != null) return anchor;
   const interval = options.interval ?? 1;
   if (!Number.isInteger(interval) || interval < 1) return anchor;
   const periodDays =
