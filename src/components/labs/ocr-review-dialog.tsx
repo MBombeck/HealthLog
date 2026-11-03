@@ -103,8 +103,8 @@ export function extractErrorMessage(
         return t("labs.ocr.fileTooLarge");
       case "labs.ocr.fileType":
         return t("labs.ocr.fileType");
-      case "labs.ocr.pdfNeedsAnthropic":
-        return t("labs.ocr.pdfNeedsAnthropic");
+      case "labs.ocr.pdfRendererUnavailable":
+        return t("labs.ocr.pdfRendererUnavailable");
       case "labs.ocr.outputLimit":
         return t("labs.ocr.outputLimit");
       case "labs.ocr.tooLarge":

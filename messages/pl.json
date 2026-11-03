@@ -10394,7 +10394,7 @@
       "fileTooLarge": "Plik jest za duży (maks. 12 MB).",
       "fileType": "Prześlij plik JPEG, PNG, WebP lub PDF.",
       "extractFailed": "Nie udało się odczytać wyniku. Spróbuj wyraźniejszego zdjęcia.",
-      "pdfNeedsAnthropic": "Skanowanie PDF wymaga dostawcy wizji Claude; prześlij zamiast tego zdjęcie.",
+      "pdfRendererUnavailable": "Procesor tego serwera nie potrafi renderować stron PDF, więc zeskanowany wynik odczyta tu tylko dostawca AI, który przyjmuje pliki PDF bezpośrednio. Prześlij zamiast tego zdjęcie.",
       "refTextLabel": "Zakres tak jak wydrukowano",
       "refTextPlaceholder": "np. 3,5 - 5,0",
       "aiUnavailable": "Skanowanie wyniku przez AI jest tu teraz niedostępne.",
@@ -11961,7 +11961,7 @@
           "decrypt-error": "Nie udało się otworzyć zapisanego pliku do odczytu.",
           "raster-failed": "Nie udało się przetworzyć stron PDF do odczytu. Znaną przyczyną są skany w faksowych formatach kompresji.",
           "provider-error": "Dostawca AI nie zdołał odczytać tego dokumentu przy ostatniej próbie.",
-          "pdf-needs-anthropic": "Skonfigurowany dostawca AI nie odczytuje plików PDF. Poradzi sobie z tym dostawca Claude lub lokalny OCR.",
+          "pdf-needs-anthropic": "Procesor tego serwera nie potrafi renderować stron PDF, a ten PDF nie ma warstwy tekstowej. Odczyta go dostawca AI, który przyjmuje pliki PDF bezpośrednio, albo prześlij zdjęcia stron.",
           "empty-transcription": "Dostawca AI nie zwrócił tekstu dla tego dokumentu.",
           "resource-limit": "Ten PDF jest zbyt duży lub zbyt złożony, żeby odczytać go tutaj. Sam plik jest w porządku i nadal się otwiera."
         }
@@ -12044,7 +12044,7 @@
       "errorRateLimitedWaitFew": "Godzinowy limit odczytów AI został osiągnięty. Spróbuj ponownie za około {count} minuty.",
       "errorRateLimitedWaitOther": "Godzinowy limit odczytów AI został osiągnięty. Spróbuj ponownie za około {count} minut.",
       "errorBudget": "Twój dzisiejszy budżet AI został wyczerpany.",
-      "errorPdfNeedsVision": "Skanowanie plików PDF wymaga dostawcy wizji Claude.",
+      "errorPdfRendererUnavailable": "Procesor tego serwera nie potrafi renderować stron PDF, więc zeskanowany PDF odczyta tu tylko dostawca AI, który przyjmuje pliki PDF bezpośrednio, albo prześlij zdjęcia stron.",
       "errorFileType": "Tego typu pliku nie można odczytać.",
       "errorNotIndexed": "Najpierw odczytaj dokument, potem wyodrębnij.",
       "errorOutputLimit": "Dostawca AI osiągnął limit odpowiedzi, zanim zwrócił choć jedną wartość. Spróbuj modelu, który pozwala na dłuższe odpowiedzi.",

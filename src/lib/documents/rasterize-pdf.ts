@@ -43,7 +43,8 @@ import { runPdfChild } from "./pdf-isolation";
  * vision provider can read a PDF (Anthropic natively, all others via raster).
  * The document capability DTO reads this so the UI offers a PDF read for a
  * non-Anthropic provider; a runtime render failure still degrades gracefully
- * (`prepareVisionInput` → `pdfNeedsAnthropic` → local text or un-indexed).
+ * (`prepareVisionInput` → `rasterFailed`, or on a server that cannot render at
+ * all the text layer and else `pdfRendererUnavailable`).
  */
 export const RASTERIZATION_AVAILABLE = true;
 

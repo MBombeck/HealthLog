@@ -10394,7 +10394,7 @@
       "fileTooLarge": "Il file è troppo grande (max 12 MB).",
       "fileType": "Carica un JPEG, PNG, WebP o PDF.",
       "extractFailed": "Impossibile leggere il referto. Prova con una foto più nitida.",
-      "pdfNeedsAnthropic": "La scansione PDF richiede un provider di visione Claude; carica invece una foto.",
+      "pdfRendererUnavailable": "Il processore di questo server non può eseguire il rendering delle pagine PDF, quindi un referto scansionato può essere letto solo da un provider IA che accetta direttamente i file PDF. Carica invece una foto.",
       "refTextLabel": "Intervallo come stampato",
       "refTextPlaceholder": "es. 3,5 - 5,0",
       "aiUnavailable": "La scansione di un referto con IA non è disponibile qui al momento.",
@@ -11961,7 +11961,7 @@
           "decrypt-error": "Il file archiviato non può essere aperto per la lettura.",
           "raster-failed": "Le pagine del PDF non possono essere elaborate per la lettura. I formati di compressione fax digitalizzati sono una causa nota.",
           "provider-error": "Il provider IA non è riuscito a leggere questo documento all’ultimo tentativo.",
-          "pdf-needs-anthropic": "Il provider IA configurato non può leggere i file PDF. Un provider Claude o l’OCR locale sì.",
+          "pdf-needs-anthropic": "Il processore di questo server non può eseguire il rendering delle pagine PDF e questo PDF non ha un livello di testo. Può leggerlo un provider IA che accetta direttamente i file PDF, oppure carica le foto delle pagine.",
           "empty-transcription": "Il provider IA non ha restituito testo per questo documento.",
           "resource-limit": "Questo PDF è troppo grande o complesso per essere letto qui. Il file in sé è a posto e si apre ancora."
         }
@@ -12044,7 +12044,7 @@
       "errorRateLimitedWaitFew": "Il limite orario di letture IA è stato raggiunto. Riprova tra circa {count} minuti.",
       "errorRateLimitedWaitOther": "Il limite orario di letture IA è stato raggiunto. Riprova tra circa {count} minuti.",
       "errorBudget": "Il tuo budget IA di oggi è esaurito.",
-      "errorPdfNeedsVision": "La scansione dei PDF richiede un provider di visione Claude.",
+      "errorPdfRendererUnavailable": "Il processore di questo server non può eseguire il rendering delle pagine PDF, quindi un PDF scansionato può essere letto solo da un provider IA che accetta direttamente i file PDF, oppure come foto delle pagine.",
       "errorFileType": "Questo tipo di file non può essere letto.",
       "errorNotIndexed": "Leggi prima il documento, poi estrai.",
       "errorOutputLimit": "Il fornitore di IA ha raggiunto il suo limite di output prima di restituire un solo valore. Prova con un modello che consente risposte più lunghe.",

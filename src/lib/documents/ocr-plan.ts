@@ -7,6 +7,10 @@
  */
 import type { Buffer } from "node:buffer";
 
+import {
+  readPdfTextLayer,
+  textLayerText,
+} from "@/lib/documents/pdf-text-layer";
 import { rasterizePdf } from "@/lib/documents/rasterize-pdf";
 
 import type { OcrChunk } from "./ocr-read";
@@ -164,6 +168,7 @@ export type OcrVisionMime =
 export type OcrVisionPlan =
   | {
       ok: true;
+      mode: "vision";
       chunks: OcrChunk[];
       /** The PDF's page count, when it was rendered. */
       totalPages?: number;
@@ -171,11 +176,82 @@ export type OcrVisionPlan =
       pageCoverage?: { read: number; total: number };
     }
   /**
-   * `busy`: the reader could not take the PDF now (busy past the wait a read
-   * gets, or its process ended for no measured reason). Not a verdict on the
-   * file; the person asks again.
+   * #1311 — a PDF this server cannot render, for a provider that cannot take
+   * it whole, read by its text layer: one text part per page group, as the
+   * rendered pages would have been. Pages without a text layer (scanned
+   * pages) are not read and are listed in `pagesWithoutText`.
    */
-  | { ok: false; busy?: true };
+  | {
+      ok: true;
+      mode: "text";
+      chunks: OcrChunk[];
+      /** The pages' text the chunks were cut from, for provenance. */
+      ocrText: string;
+      totalPages: number;
+      pageCoverage?: { read: number; total: number };
+      pagesWithoutText: number[];
+    }
+  | {
+      ok: false;
+      /**
+       * `busy`: the reader could not take the PDF now (busy past the wait a
+       * read gets, or its process ended for no measured reason). Not a
+       * verdict on the file; the person asks again. `renderFailed`: this PDF
+       * would not render on a server that renders PDFs. `rendererUnavailable`:
+       * this server cannot render PDF pages at all, and the PDF has no text
+       * layer to read instead (a scan).
+       */
+      reason: "busy" | "renderFailed" | "rendererUnavailable";
+    };
+
+/** The page-cap note for a PDF read from its first `read` of `total` pages. */
+function coverage(
+  read: number,
+  total: number,
+): { pageCoverage?: { read: number; total: number } } {
+  return total > read ? { pageCoverage: { read, total } } : {};
+}
+
+/**
+ * #1311 — read a PDF this server cannot render by its text layer, in page
+ * groups planned as the rendered pages would be.
+ */
+async function planTextLayerReads(
+  bytes: Buffer,
+  schedule: OcrSchedule,
+): Promise<OcrVisionPlan> {
+  const read = await readPdfTextLayer(bytes, OCR_MAX_PAGES, "documents.ocr");
+  if (!read.ok) {
+    return {
+      ok: false,
+      reason:
+        read.reason === "busy"
+          ? "busy"
+          : read.reason === "none"
+            ? "rendererUnavailable"
+            : "renderFailed",
+    };
+  }
+  const { layer } = read;
+  const chunks = planPageReads(layer.pages.length, maxReadsFor(schedule)).map(
+    (group) => {
+      const pages = group.map((i) => layer.pages[i - 1]);
+      return {
+        text: pages.map((p) => p.text).join("\n\n"),
+        pages: pages.map((p) => p.page),
+      };
+    },
+  );
+  return {
+    ok: true,
+    mode: "text",
+    chunks,
+    ocrText: textLayerText(layer),
+    totalPages: layer.pageCount,
+    ...coverage(layer.pagesRead, layer.pageCount),
+    pagesWithoutText: layer.pagesWithoutText,
+  };
+}
 
 /**
  * Plan the reads of an image or a PDF. Every PDF is rendered first: a report
@@ -184,7 +260,8 @@ export type OcrVisionPlan =
  * natively still gets the document itself when it is one page, or when it
  * cannot be rendered. With each page's text layer: a digitally produced
  * report states its digits exactly there, and the rendered page alone is a
- * picture at a capped resolution.
+ * picture at a capped resolution. On a server that cannot render at all, a
+ * provider that cannot take the PDF whole reads its text layer instead.
  */
 export async function planVisionReads(
   bytes: Buffer,
@@ -195,6 +272,7 @@ export async function planVisionReads(
   if (mime !== "application/pdf") {
     return {
       ok: true,
+      mode: "vision",
       chunks: [
         {
           images: [{ mediaType: mime, dataBase64: bytes.toString("base64") }],
@@ -217,28 +295,28 @@ export async function planVisionReads(
     }));
     return {
       ok: true,
+      mode: "vision",
       chunks,
       totalPages: raster.pageCount,
       // A PDF longer than the page cap is read from its first pages only,
       // and the person reviewing the rows is the one who needs to know.
-      ...(raster.pageCount > raster.images.length
-        ? {
-            pageCoverage: {
-              read: raster.images.length,
-              total: raster.pageCount,
-            },
-          }
-        : {}),
+      ...coverage(raster.images.length, raster.pageCount),
     };
   }
-  if (!pdfSupported) {
-    return !raster.ok &&
-      (raster.reason === "busy" || raster.reason === "interrupted")
-      ? { ok: false, busy: true }
-      : { ok: false };
+  if (!pdfSupported && !raster.ok) {
+    if (raster.reason === "busy" || raster.reason === "interrupted") {
+      return { ok: false, reason: "busy" };
+    }
+    // Refs #776 — a render failure on a server that renders is this
+    // document's; a server that cannot render at all is the server's.
+    if (raster.reason !== "unsupported") {
+      return { ok: false, reason: "renderFailed" };
+    }
+    return planTextLayerReads(bytes, schedule);
   }
   return {
     ok: true,
+    mode: "vision",
     chunks: [
       {
         images: [],

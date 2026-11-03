@@ -139,7 +139,7 @@ export const ocrExtractResponse = z
       .array(z.number().int().positive())
       .optional()
       .describe(
-        "Present only when part of a multi-part read produced nothing: the provider failed partway through, or a part's reply could not be read. The rows of the other parts are kept; these pages are not in `rows`. Empty when the parts were not pages (OCR'd text).",
+        "Present only when part of a multi-part read produced nothing: the provider failed partway through, or a part's reply could not be read; or, on a server that cannot render PDF pages, a PDF read by its text layer had pages without one (scanned pages). The rows of the other parts are kept; these pages are not in `rows`. Empty when the parts were not pages (OCR'd text).",
       ),
     stoppedBy: z
       .enum(["budget", "unavailable", "error"])

@@ -271,6 +271,42 @@ export async function readTextLayer(data, maxPages = Number.POSITIVE_INFINITY) {
 }
 
 /**
+ * The text layer page by page, without rendering: the first `maxPages` pages,
+ * each read the way `pageText` reads a rendered page (line by line, cut and
+ * marked past `RASTER_PAGE_TEXT_MAX`, empty for a page without one), and the
+ * document's page count. Throws what pdf.js throws when the document will not
+ * open; a page that will not parse reads as empty.
+ *
+ * @param {Uint8Array} data
+ * @param {number} maxPages
+ * @returns {Promise<{ pageCount: number; texts: string[] }>}
+ */
+export async function readPageTexts(data, maxPages) {
+  const task = await openPdfDocument(data);
+  try {
+    const doc = await task.promise;
+    const count = Math.min(doc.numPages, maxPages);
+    /** @type {string[]} */
+    const texts = [];
+    for (let n = 1; n <= count; n++) {
+      const page = await doc.getPage(n);
+      try {
+        texts.push(await pageText(page));
+      } finally {
+        page.cleanup();
+      }
+    }
+    return { pageCount: doc.numPages, texts };
+  } finally {
+    try {
+      await task.destroy();
+    } catch {
+      // Best-effort teardown; a destroy failure must not mask the result.
+    }
+  }
+}
+
+/**
  * The most text kept from one page's text layer when pages are rendered.
  * Collection stops here while the items are read, so a PDF whose content
  * streams inflate to megabytes of text cannot hold them in memory for the

@@ -58,20 +58,38 @@ export function readerBusyFailure(): AiRunOutcome<never> {
 }
 
 /**
+ * #1311 — this server cannot render PDF pages (its CPU lacks what the page
+ * renderer needs), the provider cannot take the PDF whole, and the PDF has no
+ * text layer to read instead: a scan. Only a provider that takes PDF files, or
+ * photos of the pages, can be read here.
+ */
+export function pdfRendererUnavailable(): AiRunOutcome<never> {
+  return runFailure({
+    status: 422,
+    message:
+      "This server can't render PDF pages, so a scanned PDF can only be read by an AI provider that takes PDF files directly, or as photos.",
+    errorCode: "documents.inbound.pdfRendererUnavailable",
+  });
+}
+
+/** Refs #776 — this PDF would not render on a server that renders PDFs. */
+export function pdfRenderFailed(): AiRunOutcome<never> {
+  return runFailure({
+    status: 422,
+    message: "The PDF pages couldn't be rendered for scanning.",
+    errorCode: "documents.inbound.extractFailed",
+  });
+}
+
+/**
  * A stored original that could not become a provider input, as the summary
  * and suggest routes have always answered it.
  */
 export function visionPreparationFailure(
   reason: Extract<VisionInput, { ok: false }>["reason"],
 ): AiRunOutcome<never> {
-  if (reason === "pdfNeedsAnthropic") {
-    return runFailure({
-      status: 422,
-      message:
-        "PDF scanning needs a Claude vision provider; use local OCR instead.",
-      errorCode: "documents.inbound.pdfNeedsAnthropic",
-    });
-  }
+  if (reason === "pdfRendererUnavailable") return pdfRendererUnavailable();
+  if (reason === "rasterFailed") return pdfRenderFailed();
   if (reason === "readerBusy") return readerBusyFailure();
   if (reason === "fileType") {
     return runFailure({

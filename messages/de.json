@@ -10394,7 +10394,7 @@
       "fileTooLarge": "Datei ist zu groß (max. 12 MB).",
       "fileType": "Lade ein JPEG, PNG, WebP oder PDF hoch.",
       "extractFailed": "Der Befund konnte nicht gelesen werden. Versuche ein schärferes Foto.",
-      "pdfNeedsAnthropic": "PDF-Scannen benötigt einen Claude-Bildanbieter; lade stattdessen ein Foto hoch.",
+      "pdfRendererUnavailable": "Der Prozessor dieses Servers kann keine PDF-Seiten darstellen. Einen gescannten Befund kann hier nur ein KI-Anbieter lesen, der PDF-Dateien direkt annimmt. Lade stattdessen ein Foto hoch.",
       "refTextLabel": "Bereich wie gedruckt",
       "refTextPlaceholder": "z. B. 3,5 - 5,0",
       "aiUnavailable": "Das Scannen eines Befunds mit KI ist hier gerade nicht verfügbar.",
@@ -11961,7 +11961,7 @@
           "decrypt-error": "Die gespeicherte Datei konnte zum Lesen nicht geöffnet werden.",
           "raster-failed": "Die PDF-Seiten konnten zum Lesen nicht gerendert werden. Gescannte Fax-Kompressionsformate sind eine bekannte Ursache.",
           "provider-error": "Der KI-Anbieter konnte dieses Dokument beim letzten Versuch nicht lesen.",
-          "pdf-needs-anthropic": "Der eingerichtete KI-Anbieter kann keine PDF-Dateien lesen. Ein Claude-Anbieter oder lokale OCR kann es.",
+          "pdf-needs-anthropic": "Der Prozessor dieses Servers kann keine PDF-Seiten darstellen, und dieses PDF hat keine Textebene. Lesen kann es ein KI-Anbieter, der PDF-Dateien direkt annimmt, oder du lädst Fotos der Seiten hoch.",
           "empty-transcription": "Der KI-Anbieter hat für dieses Dokument keinen Text geliefert.",
           "resource-limit": "Dieses PDF ist zu groß oder zu komplex, um es hier zu lesen. Die Datei selbst ist in Ordnung und lässt sich weiterhin öffnen."
         }
@@ -12044,7 +12044,7 @@
       "errorRateLimitedWaitFew": "Das stündliche KI-Leselimit ist erreicht. Bitte in etwa {count} Minuten erneut versuchen.",
       "errorRateLimitedWaitOther": "Das stündliche KI-Leselimit ist erreicht. Bitte in etwa {count} Minuten erneut versuchen.",
       "errorBudget": "Dein KI-Budget für heute ist aufgebraucht.",
-      "errorPdfNeedsVision": "Zum Scannen von PDFs wird ein Claude-Vision-Anbieter benötigt.",
+      "errorPdfRendererUnavailable": "Der Prozessor dieses Servers kann keine PDF-Seiten darstellen. Ein gescanntes PDF kann hier nur ein KI-Anbieter lesen, der PDF-Dateien direkt annimmt, oder du lädst Fotos der Seiten hoch.",
       "errorFileType": "Dieser Dateityp kann nicht gelesen werden.",
       "errorNotIndexed": "Lies das Dokument zuerst aus, dann extrahiere.",
       "errorOutputLimit": "Der KI-Anbieter hat sein Ausgabelimit erreicht, bevor er einen einzigen Wert geliefert hat. Versuche ein Modell, das längere Antworten erlaubt.",

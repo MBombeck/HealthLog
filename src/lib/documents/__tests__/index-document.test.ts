@@ -235,8 +235,23 @@ describe("indexDocumentContent — local fallback path", () => {
     vi.mocked(resolveDocumentVisionProvider).mockResolvedValue(PICK as never);
     vi.mocked(prepareVisionInput).mockReturnValue({
       ok: false,
-      reason: "pdfNeedsAnthropic",
+      reason: "pdfRendererUnavailable",
     } as never);
+
+    const outcome = await indexDocumentContent("user-1", "doc-1");
+    expect(outcome).toMatchObject({ indexed: true, source: "local-pdf" });
+    expect(reserveBudget).not.toHaveBeenCalled();
+    expect(transcribeDocument).not.toHaveBeenCalled();
+  });
+
+  it("leaves a text-layer read of an unrenderable PDF to the local path, with no provider call", async () => {
+    vi.mocked(resolveDocumentVisionProvider).mockResolvedValue(PICK as never);
+    vi.mocked(prepareVisionInput).mockResolvedValue({
+      ok: true,
+      mode: "text",
+      text: "Haemoglobin 14.2 g/dl",
+      partial: false,
+    });
 
     const outcome = await indexDocumentContent("user-1", "doc-1");
     expect(outcome).toMatchObject({ indexed: true, source: "local-pdf" });

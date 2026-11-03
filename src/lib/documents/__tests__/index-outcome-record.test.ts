@@ -230,10 +230,10 @@ describe("indexDocumentContent — the provider path's reason survives the local
     expect(outcome).toEqual({ indexed: false, reason: "raster-failed" });
   });
 
-  it("pdf-needs-anthropic: the provider cannot read PDFs and local had no text", async () => {
+  it("pdf-needs-anthropic: the server cannot render, the PDF has no text layer, and local had no text", async () => {
     vi.mocked(prepareVisionInput).mockResolvedValue({
       ok: false,
-      reason: "pdfNeedsAnthropic",
+      reason: "pdfRendererUnavailable",
     } as never);
     localEmpty();
 

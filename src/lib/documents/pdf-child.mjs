@@ -15,7 +15,7 @@ import { writeFileSync } from "node:fs";
 import * as nodeModule from "node:module";
 
 import { renderImageThumbnail } from "./image-engine.mjs";
-import { readTextLayer, renderPdfPages } from "./pdf-engine.mjs";
+import { readPageTexts, readTextLayer, renderPdfPages } from "./pdf-engine.mjs";
 
 // The parent closed the canvas gate (`./native-canvas-support.ts`): this CPU
 // lacks instructions the native canvas was built with, and loading it ends
@@ -43,6 +43,7 @@ try {
 
 /**
  * @typedef {{ op: "text"; data: Uint8Array; maxPages: number }
+ *   | { op: "page-texts"; data: Uint8Array; maxPages: number }
  *   | { op: "render"; data: Uint8Array; options: import("./pdf-engine.mjs").RenderOptions }
  *   | { op: "image-thumbnail"; data: Uint8Array; options: import("./image-engine.mjs").ImageThumbnailOptions }} PdfChildRequest
  */
@@ -67,6 +68,12 @@ async function handle(request) {
     const data = new Uint8Array(request.data);
     if (request.op === "text") {
       return { ok: true, text: await readTextLayer(data, request.maxPages) };
+    }
+    if (request.op === "page-texts") {
+      return {
+        ok: true,
+        pageTexts: await readPageTexts(data, request.maxPages),
+      };
     }
     if (request.op === "render") {
       return {

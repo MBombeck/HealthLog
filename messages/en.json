@@ -10394,7 +10394,7 @@
       "fileTooLarge": "File is too large (max 12 MB).",
       "fileType": "Upload a JPEG, PNG, WebP, or PDF.",
       "extractFailed": "Couldn't read the report. Try a clearer photo.",
-      "pdfNeedsAnthropic": "PDF scanning needs a Claude vision provider; upload a photo instead.",
+      "pdfRendererUnavailable": "This server's processor can't run the PDF page renderer, so a scanned report can only be read by an AI provider that takes PDF files directly. Upload a photo instead.",
       "refTextLabel": "Range as printed",
       "refTextPlaceholder": "e.g. 3.5 - 5.0",
       "aiUnavailable": "Scanning a report with AI is not available here right now.",
@@ -11961,7 +11961,7 @@
           "decrypt-error": "The stored file couldn't be opened for reading.",
           "raster-failed": "The PDF pages couldn't be rendered for reading. Scanned fax compression formats are a known cause.",
           "provider-error": "The AI provider couldn't read this document on the last try.",
-          "pdf-needs-anthropic": "The configured AI provider can't read PDF files. A Claude provider or local OCR can.",
+          "pdf-needs-anthropic": "This server's processor can't run the PDF page renderer, and this PDF has no text layer. An AI provider that takes PDF files directly can read it, or photos of the pages.",
           "empty-transcription": "The AI provider returned no text for this document.",
           "resource-limit": "This PDF is too large or complex to read here. The file itself is fine and still opens."
         }
@@ -12044,7 +12044,7 @@
       "errorRateLimitedWaitFew": "The hourly AI reading limit is reached. Try again in about {count} minutes.",
       "errorRateLimitedWaitOther": "The hourly AI reading limit is reached. Try again in about {count} minutes.",
       "errorBudget": "Your AI budget for today is used up.",
-      "errorPdfNeedsVision": "Scanning PDFs needs a Claude vision provider.",
+      "errorPdfRendererUnavailable": "This server's processor can't run the PDF page renderer, so a scanned PDF can only be read by an AI provider that takes PDF files directly, or as photos of the pages.",
       "errorFileType": "This file type can't be read.",
       "errorNotIndexed": "Read the document first, then extract.",
       "errorOutputLimit": "The AI provider reached its output limit before it returned a single value. Try a model that allows longer answers.",

@@ -222,20 +222,31 @@ export async function executeOcrExtraction(args: {
     input.pick.pdfSupported,
     schedule,
   );
-  if (!plan.ok && plan.busy) {
-    await settle(false);
-    return readerBusyFailure();
-  }
   if (!plan.ok) {
+    await settle(false);
+    if (plan.reason === "busy") return readerBusyFailure();
+    if (plan.reason === "rendererUnavailable") {
+      // #1311 — this server cannot render PDF pages and the PDF has no text
+      // layer to read instead: a scan, for a provider that cannot take PDFs.
+      annotate({
+        action: { name: "labs.ocr.fileRejected" },
+        meta: { reason: "pdf_renderer_unavailable" },
+      });
+      return failure({
+        status: 422,
+        message:
+          "This server can't render PDF pages, so a scanned PDF can only be read by an AI provider that takes PDF files directly, or as photos.",
+        errorCode: "labs.ocr.pdfRendererUnavailable",
+      });
+    }
     annotate({
       action: { name: "labs.ocr.fileRejected" },
       meta: { reason: "pdf_rasterize_failed" },
     });
-    await settle(false);
     return failure({
       status: 422,
       message: "Couldn't read this PDF; upload a photo instead.",
-      errorCode: "labs.ocr.pdfNeedsAnthropic",
+      errorCode: "labs.ocr.extractFailed",
     });
   }
   const { chunks, totalPages, pageCoverage } = plan;
@@ -247,8 +258,20 @@ export async function executeOcrExtraction(args: {
   }
 
   await schedule.arm(chunks.length * OCR_EXTRACT_MODEL_CALLS);
-  const outcome = await read({ mode: "vision", chunks, totalPages });
-  return outcome.ok && pageCoverage
-    ? { ok: true, data: { ...outcome.data, pageCoverage } }
-    : outcome;
+  const outcome = await read({ mode: plan.mode, chunks, totalPages });
+  if (!outcome.ok) return outcome;
+  // #1311 — a text-layer read leaves out the pages without a text layer;
+  // they are named as pages the scan did not read.
+  const unreadPages = [
+    ...(outcome.data.unreadPages ?? []),
+    ...(plan.mode === "text" ? plan.pagesWithoutText : []),
+  ].sort((a, b) => a - b);
+  return {
+    ok: true,
+    data: {
+      ...outcome.data,
+      ...(pageCoverage ? { pageCoverage } : {}),
+      ...(unreadPages.length > 0 ? { unreadPages } : {}),
+    },
+  };
 }

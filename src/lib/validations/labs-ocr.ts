@@ -215,9 +215,10 @@ export interface OcrExtractResponseDto {
    */
   truncated?: { pages: number[] };
   /**
-   * Present only when the provider failed partway through a multi-page read:
-   * the rows of the pages before the failure are kept, and these pages were
-   * not read.
+   * Present only when the provider failed partway through a multi-page read
+   * (the rows of the pages before the failure are kept), or when a PDF read
+   * by its text layer on a server that cannot render had pages without one:
+   * these pages were not read.
    */
   unreadPages?: number[];
   /**

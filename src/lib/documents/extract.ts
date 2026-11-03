@@ -484,13 +484,18 @@ export function planInboundTextReads(
 /**
  * Split a document into reads the way the lab scan splits a report: a PDF a
  * page at a time, a photo as one read, text in parts at line boundaries, as
- * many reads as the run's deadline allows. `ok: false` for a PDF that can be
- * neither rendered nor sent to this provider whole.
+ * many reads as the run's deadline allows. A PDF this server cannot render,
+ * for a provider that cannot take it whole, is read by its text layer, a page
+ * group at a time, and the pages without one leave the read partial.
+ * `ok: false` with the reason for a PDF that can be read none of these ways.
  */
 export async function planInboundReads(
   source: InboundReadSource,
   schedule: OcrSchedule,
-): Promise<({ ok: true } & InboundReads) | { ok: false; busy?: true }> {
+): Promise<
+  | ({ ok: true } & InboundReads)
+  | Extract<Awaited<ReturnType<typeof planVisionReads>>, { ok: false }>
+> {
   if (source.mode === "text") {
     return { ok: true, ...planInboundTextReads(source.text, schedule) };
   }
@@ -501,6 +506,19 @@ export async function planInboundReads(
     schedule,
   );
   if (!plan.ok) return plan;
+  if (plan.mode === "text") {
+    return {
+      ok: true,
+      args: {
+        mode: "text",
+        chunks: plan.chunks,
+        totalPages: plan.totalPages,
+        ocrText: plan.ocrText,
+      },
+      partial:
+        plan.pageCoverage !== undefined || plan.pagesWithoutText.length > 0,
+    };
+  }
   return {
     ok: true,
     args: { mode: "vision", chunks: plan.chunks, totalPages: plan.totalPages },

@@ -3,16 +3,23 @@
  * a stored document (suggest / summary / index). Each of those routes runs the
  * same gauntlet the extract route pioneered — module gate → provider resolve →
  * consent → rate-limit → budget — and the same vision-input preparation
- * (decrypt the stored original, re-derive its MIME from the bytes, gate PDF on
- * the Anthropic path). This module centralises the parts that would otherwise be
- * copy-pasted across the three routes; the per-route budget + prompt stay local.
+ * (decrypt the stored original, re-derive its MIME from the bytes, send a PDF
+ * whole, rendered, or by its text layer). This module centralises the parts
+ * that would otherwise be copy-pasted across the three routes; the per-route
+ * budget + prompt stay local.
  */
 import { Buffer } from "node:buffer";
 
 import { apiError } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
-import { rasterizePdf } from "@/lib/documents/rasterize-pdf";
+import {
+  isPartialTextLayer,
+  readPdfTextLayer,
+  textLayerText,
+} from "@/lib/documents/pdf-text-layer";
+import { RASTER_MAX_PAGES, rasterizePdf } from "@/lib/documents/rasterize-pdf";
 import { decryptDocumentContent } from "@/lib/documents/store";
+import type { VisionInput } from "@/lib/documents/vision-input";
 import { detectOcrMimeType } from "@/lib/labs/ocr-upload";
 import {
   checkRateLimit,
@@ -20,6 +27,8 @@ import {
   refundRateLimit,
   type RateLimitResult,
 } from "@/lib/rate-limit";
+
+export type { VisionInput } from "@/lib/documents/vision-input";
 
 /**
  * The document-AI actions (extract / suggest / summary / index) share one
@@ -139,31 +148,6 @@ export async function loadOwnedDocument(
   });
 }
 
-/** The provider-ready vision payload derived from a stored document. */
-export type VisionInput =
-  | {
-      ok: true;
-      images: {
-        mediaType: "image/jpeg" | "image/png" | "image/webp";
-        dataBase64: string;
-      }[];
-      documents: { mediaType: "application/pdf"; dataBase64: string }[];
-    }
-  | {
-      ok: false;
-      // Refs #776 — `rasterFailed` (this PDF would not render on a raster-
-      // capable build) is distinct from `pdfNeedsAnthropic` (this build /
-      // provider cannot take a PDF at all): they need different fixes, so
-      // they must not share a label. `readerBusy` is neither: the reader
-      // could not take the document now, and the work is tried again.
-      reason:
-        | "decryptFailed"
-        | "fileType"
-        | "pdfNeedsAnthropic"
-        | "rasterFailed"
-        | "readerBusy";
-    };
-
 /**
  * Decrypt the stored original, re-derive its MIME from the bytes (never trust
  * the stored label for a provider call), and split it into the images/documents
@@ -174,10 +158,12 @@ export type VisionInput =
  *   - otherwise (codex / any image-only-wire provider) → rasterize the pages to
  *     JPEG `input_image` parts so the provider can still read the PDF. Egress is
  *     already authorised upstream (the consent gate / the `documentsAutoAiRead`
- *     toggle) before this is reached. If rasterization fails (malformed /
- *     encrypted / unrenderable), fall back to the shipped `pdfNeedsAnthropic`
- *     outcome so the job degrades to the local text-layer path and an
- *     interactive route surfaces the same actionable error.
+ *     toggle) before this is reached. A PDF that will not render on a build
+ *     that renders is `rasterFailed`.
+ *   - #1311 — on a server that cannot render PDF pages at all, the PDF's text
+ *     layer is read instead (`mode: "text"`); a scanned PDF, which has none, is
+ *     `pdfRendererUnavailable`: only a provider that takes PDFs whole, or a
+ *     photo of the pages, can be read there.
  *
  * Images (jpg/png/webp) flow straight to `input_image`, unchanged.
  */
@@ -202,6 +188,7 @@ export async function prepareVisionInput(
     if (pdfSupported) {
       return {
         ok: true,
+        mode: "vision",
         images: [],
         documents: [
           {
@@ -214,23 +201,40 @@ export async function prepareVisionInput(
     // Non-Anthropic vision provider — render the PDF pages to images it can read.
     const raster = await rasterizePdf(buffer);
     if (raster.ok) {
-      return { ok: true, images: raster.images, documents: [] };
+      return { ok: true, mode: "vision", images: raster.images, documents: [] };
     }
     if (raster.reason === "busy" || raster.reason === "interrupted") {
       return { ok: false, reason: "readerBusy" };
     }
-    // Refs #776 — a build that cannot rasterize at all is a capability gap a
-    // PDF-native (Anthropic) provider would cover; a render failure on a
-    // capable build is a property of THIS document. Report them apart.
+    // Refs #776 — a render failure on a capable build is a property of THIS
+    // document; a build that cannot render at all is a property of the server.
+    if (raster.reason !== "unsupported") {
+      return { ok: false, reason: "rasterFailed" };
+    }
+    const read = await readPdfTextLayer(
+      buffer,
+      RASTER_MAX_PAGES,
+      "documents.vision",
+    );
+    if (read.ok) {
+      return {
+        ok: true,
+        mode: "text",
+        text: textLayerText(read.layer),
+        partial: isPartialTextLayer(read.layer),
+      };
+    }
+    if (read.reason === "busy") return { ok: false, reason: "readerBusy" };
     return {
       ok: false,
       reason:
-        raster.reason === "unsupported" ? "pdfNeedsAnthropic" : "rasterFailed",
+        read.reason === "none" ? "pdfRendererUnavailable" : "rasterFailed",
     };
   }
 
   return {
     ok: true,
+    mode: "vision",
     images: [{ mediaType: mime, dataBase64: buffer.toString("base64") }],
     documents: [],
   };
