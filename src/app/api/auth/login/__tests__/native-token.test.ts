@@ -61,10 +61,6 @@ vi.mock("@/lib/rate-limit", () => ({
   refundRateLimit: vi.fn(async () => undefined),
 }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("@/lib/auth/hmac", () => ({
   hashToken: vi.fn((raw: string) => `hashed:${raw}`),
 }));
@@ -90,7 +86,6 @@ import {
   checkAuthSurfaceRateLimit,
   rateLimitHeaders,
 } from "@/lib/rate-limit";
-import { ensureDbCompatibility } from "@/lib/db-compat";
 import { auditLog } from "@/lib/auth/audit";
 import { createSession } from "@/lib/auth/session";
 
@@ -136,7 +131,6 @@ beforeEach(() => {
     ip: "203.0.113.1",
   } as never);
   vi.mocked(rateLimitHeaders).mockReturnValue({} as never);
-  vi.mocked(ensureDbCompatibility).mockResolvedValue(undefined);
   vi.mocked(auditLog).mockResolvedValue(undefined as never);
   vi.mocked(createSession).mockResolvedValue("session-id");
 });

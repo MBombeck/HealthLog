@@ -137,10 +137,6 @@ vi.mock("@/lib/jobs/boss-instance", async (importOriginal) => ({
   }),
 }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const OTHER_COLLECTIONS = [
   "fetchSteps",
   "fetchDistance",

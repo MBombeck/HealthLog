@@ -9,7 +9,7 @@
  * Health, and a day between two sources that were on the ladder before
  * resolves exactly as it did.
  */
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import type {
@@ -21,10 +21,6 @@ import {
   canonicalMeasurementsFrom,
 } from "@/lib/analytics/source-rank-sql";
 import { boundInstantSql } from "@/lib/analytics/request-clock-sql";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const prisma = getPrismaClient();
 const USER = "ladder-new-sources";

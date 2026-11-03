@@ -55,10 +55,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const USER_ID = "user-dawarich";
 const API_KEY = "dawarich-test-key";
 const HOME = 7;

@@ -22,7 +22,7 @@
 import v8 from "node:v8";
 import vm from "node:vm";
 
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { buildGradedSeriesWithRollups } from "@/lib/insights/graded-series";
@@ -31,10 +31,6 @@ import { foldDayAggregates } from "@/lib/measurements/__tests__/fake-day-aggrega
 import { localHmAsUtc } from "@/lib/tz/local-day";
 import { dayValue } from "@/lib/measurements/day-mean";
 import { userDayKey } from "@/lib/tz/format";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const prisma = getPrismaClient();
 const DENSE_USER = "dense-pulse-owner";

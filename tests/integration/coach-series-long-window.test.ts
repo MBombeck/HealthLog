@@ -33,9 +33,6 @@ import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { pluralKey } from "@/lib/i18n/plural";
 import type { MeasurementType } from "@/generated/prisma/client";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => null),
 }));

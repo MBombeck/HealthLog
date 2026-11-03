@@ -40,9 +40,6 @@ vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/logging/context", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/logging/context")>();
   return { ...actual, annotate: vi.fn() };

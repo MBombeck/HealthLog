@@ -123,10 +123,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 /** What the restore asked of the world outside its transaction. */
 const effects = vi.hoisted(() => ({
   invalidated: [] as string[],

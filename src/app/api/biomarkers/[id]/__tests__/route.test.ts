@@ -32,10 +32,6 @@ vi.mock("@/lib/auth/audit", () => ({
 
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("@/lib/labs/biomarker-store", () => ({
   encryptContextToBytes: vi.fn(() => new Uint8Array([1])),
   decryptContextFromBytes: vi.fn(() => "ctx"),

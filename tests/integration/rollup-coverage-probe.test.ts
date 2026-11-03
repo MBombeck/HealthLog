@@ -14,9 +14,6 @@ import { getPrismaClient, truncateAllTables } from "./setup";
 import { probeRollupCoverage } from "@/lib/rollups/measurement-coverage";
 import type { MeasurementType } from "@/generated/prisma/client";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => null),
 }));

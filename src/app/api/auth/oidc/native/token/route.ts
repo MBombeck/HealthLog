@@ -29,7 +29,6 @@ import { apiHandler } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
-import { ensureDbCompatibility } from "@/lib/db-compat";
 import { checkAuthSurfaceRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { isCookielessNativeCaller } from "@/lib/auth/native-client";
 import { isNativeClientRequest } from "@/lib/auth/issue-token";
@@ -79,8 +78,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
     annotate({ action: { name: "auth.oidc.native.token.wrong_transport" } });
     return invalidCode();
   }
-
-  await ensureDbCompatibility();
 
   // (3) Body — bounded, then the exact wire contract.
   const parsed = await parseJsonBody(request, oidcNativeTokenSchema, {

@@ -64,9 +64,6 @@ vi.mock("@/lib/cycle/dto", async (importOriginal) => ({
   toMenstrualCycleDTO: vi.fn(() => ({ id: "cycle-1" })),
 }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: () => null })),
   cookies: vi.fn(async () => ({

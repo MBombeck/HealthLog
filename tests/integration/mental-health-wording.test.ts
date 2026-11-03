@@ -28,10 +28,6 @@ import { callRoute } from "../kit/call-route";
 import { makeSession, makeUser, type SessionFixture } from "../kit/factories";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // The reminder satisfy and the rollup tail hand work to pg-boss; the queue is
 // not what this file is about.
 vi.mock("@/lib/jobs/boss-instance", () => ({

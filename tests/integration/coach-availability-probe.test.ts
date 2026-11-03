@@ -11,14 +11,10 @@
  * The fixture is the reported case: a fortnight of glucose readings from April
  * 2024, deliberately outside every window the Coach can search.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { probeCoachAvailability } from "@/lib/ai/coach/tools/availability";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const NOW = new Date("2026-07-26T09:00:00Z");
 

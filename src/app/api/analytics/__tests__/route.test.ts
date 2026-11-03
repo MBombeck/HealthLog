@@ -75,10 +75,6 @@ vi.mock("@/lib/auth/audit", () => ({
 
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("@/lib/insights/correlation-patterns", () => ({
   PATTERN_FAMILIES: { fixed: "FIXED" },
   syncAcceptedPatterns: vi.fn().mockResolvedValue(new Map()),

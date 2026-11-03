@@ -49,10 +49,6 @@ vi.mock("@/lib/safe-fetch", async (importOriginal) => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 /** The night under test: 22:00 UTC two days ago to 06:00 UTC yesterday. */
 const NIGHT_START = (() => {
   const d = new Date();

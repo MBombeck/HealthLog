@@ -18,10 +18,6 @@ vi.mock("@/lib/notifications/senders/ntfy", () => ({
   sendViaNtfy: (...args: unknown[]) => ntfySendMock(...args),
 }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 import { getPrismaClient, truncateAllTables } from "./setup";
 
 const TEST_USER_ID = "user-global-channel-switch";

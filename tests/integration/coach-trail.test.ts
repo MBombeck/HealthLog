@@ -36,10 +36,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // Whether the record's Coach text may be shown is its own suite's question
 // (`ai-optional-*`); here it is a switch.
 vi.mock("@/lib/ai/capabilities/gate", async (importOriginal) => ({

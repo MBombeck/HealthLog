@@ -48,9 +48,6 @@ vi.mock("@/lib/ai/coach/bytes-codec", () => ({
   encryptToBytes: vi.fn((s: string) => new Uint8Array(Buffer.from(`enc:${s}`))),
 }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/logging/context", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/logging/context")>();
   return { ...actual, annotate: vi.fn() };

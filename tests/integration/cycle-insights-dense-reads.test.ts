@@ -39,10 +39,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 /** When set, the fold is replaced by every raw reading as a one-row group. */
 const mode = vi.hoisted(() => ({ raw: false }));
 

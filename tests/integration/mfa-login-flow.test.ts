@@ -6,7 +6,7 @@
  * that the recovery-code burn is durable and one-time, and that the challenge
  * ticket can be claimed exactly once. This exercises all three end to end.
  */
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import * as OTPAuth from "otpauth";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
@@ -14,10 +14,6 @@ import { getPrismaClient, truncateAllTables } from "./setup";
 // hashToken (challenge ticket hashing) is fail-closed on a weak/absent key.
 process.env.API_TOKEN_HMAC_KEY ??=
   "test-hmac-key-test-hmac-key-test-hmac-key-0123456789";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 function codeAt(secretBase32: string, atMs: number): string {
   const totp = new OTPAuth.TOTP({

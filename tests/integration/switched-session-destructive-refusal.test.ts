@@ -43,10 +43,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const OWNER_ID = "switch-destructive-owner";
 const DELEGATE_ID = "switch-destructive-delegate";
 

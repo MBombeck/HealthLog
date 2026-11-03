@@ -64,10 +64,6 @@ vi.mock("@/lib/rate-limit", () => ({
 
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("@/lib/insights/correlation-patterns", () => ({
   PATTERN_FAMILIES: {
     discoveryRetrospective: "DISCOVERY_RETROSPECTIVE",

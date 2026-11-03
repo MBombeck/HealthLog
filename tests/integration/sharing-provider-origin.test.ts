@@ -33,10 +33,6 @@ vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => ({ send })),
 }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 import {
   ACCOUNT_SELECTOR_HEADER,
   apiHandler,

@@ -42,10 +42,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const STRONG_NEW_PW = "Adm1nReset!P@ssw0rd789";
 
 async function seedCaller(role: "ADMIN" | "USER"): Promise<{

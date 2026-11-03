@@ -25,7 +25,6 @@ import {
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import { prisma } from "@/lib/db";
-import { ensureDbCompatibility } from "@/lib/db-compat";
 import { checkAuthSurfaceRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { finishLogin } from "@/lib/auth/login-response";
 import {
@@ -56,8 +55,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
       headers: rateLimitHeaders(rl),
     });
   }
-
-  await ensureDbCompatibility();
 
   const { data: body, error: jsonError } = await safeJson(request, {
     maxBytes: 64 * 1024,

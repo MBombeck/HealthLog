@@ -74,9 +74,11 @@ function entrypointScripts(): string[] {
   const entrypoint = readFileSync(join(ROOT, "docker-entrypoint.sh"), "utf8");
   return [
     ...new Set(
-      [...entrypoint.matchAll(/^\s*node\s+(scripts\/[\w.-]+)/gm)].map(
-        (m) => m[1],
-      ),
+      // A line that starts with the call, or a command substitution that
+      // makes it (`url="$(node scripts/db-app-role.mjs …)"`).
+      [
+        ...entrypoint.matchAll(/(?:^\s*|\$\(\s*)node\s+(scripts\/[\w.-]+)/gm),
+      ].map((m) => m[1]),
     ),
   ].sort();
 }
@@ -126,6 +128,7 @@ describe("scripts the entrypoint runs ship in the image", () => {
   it("finds the boot scripts it is meant to check", () => {
     // An empty match would agree with any Dockerfile.
     expect(entrypointScripts()).toContain("scripts/pending-migrations.mjs");
+    expect(entrypointScripts()).toContain("scripts/db-app-role.mjs");
   });
 
   it("copies every boot script and its local imports into the runner stage", () => {

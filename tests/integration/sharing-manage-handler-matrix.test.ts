@@ -66,10 +66,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // Import admissions have a durable database effect plus an asynchronous queue
 // hand-off. Keep the hand-off deterministic here so each route test can prove
 // the persisted job and actor audit without requiring a running worker.

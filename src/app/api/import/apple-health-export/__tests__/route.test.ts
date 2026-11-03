@@ -18,9 +18,6 @@ vi.mock("@/lib/logging/signal", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/logging/signal")>()),
   emitSignal: vi.fn(),
 }));
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: () => null })),
   cookies: vi.fn(async () => ({

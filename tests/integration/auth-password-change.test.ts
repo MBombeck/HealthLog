@@ -44,10 +44,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const STRONG_CURRENT = "OldStrongP@ssw0rd!123abc";
 const STRONG_NEW = "NewStrongP@ssw0rd!456xyz";
 

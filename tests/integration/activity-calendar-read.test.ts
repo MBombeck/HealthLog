@@ -8,16 +8,12 @@
  *   - a workout two devices recorded counts once, its minutes once;
  *   - the window is exact: nothing before `fromKey` or after `toKey`.
  */
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { readActivityDays } from "@/lib/activity/calendar-read";
 import { invalidateUserTimezone } from "@/lib/tz/resolver";
 import { userDayKey } from "@/lib/tz/format";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const prisma = getPrismaClient();
 const TZ = "Europe/Berlin";

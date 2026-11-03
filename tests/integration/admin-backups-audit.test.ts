@@ -48,10 +48,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // Stub `getGlobalBoss` so the run endpoint can audit-log its happy
 // path without booting an actual pg-boss worker against the test DB.
 // The fake boss returns a deterministic job id so the audit row can be

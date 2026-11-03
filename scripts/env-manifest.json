@@ -225,6 +225,11 @@
         {
           "name": "DATABASE_SESSION_OPTIONS_DISABLED",
           "purpose": "Set to 1, true or yes to send no session settings (statement timeout, work_mem) as the libpq options startup parameter. Needed behind PgBouncer, which refuses that parameter unless it is in ignore_startup_parameters."
+        },
+        {
+          "name": "DB_APP_ROLE",
+          "purpose": "auto (default) or off. Auto: after the migrations the entrypoint creates the role healthlog_app, which may read and write rows and run the queue but not change the schema, and starts the app with it in place of the DATABASE_URL user. Off keeps the app on the DATABASE_URL user, for an operator who manages database roles.",
+          "example": "off"
         }
       ]
     },

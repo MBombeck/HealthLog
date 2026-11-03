@@ -7,15 +7,11 @@
  * token without an expiry all stay. The delete is batched and says when it
  * stopped with rows left.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { cleanupAuthLedgers } from "@/lib/jobs/auth-ledger-cleanup";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const USER = "auth-ledger-user";
 const NOW = new Date("2026-10-20T03:35:00.000Z");

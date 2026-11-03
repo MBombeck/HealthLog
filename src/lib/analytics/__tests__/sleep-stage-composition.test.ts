@@ -28,10 +28,6 @@ vi.mock("@/lib/modules/gate", () => ({
   requireModuleEnabled: vi.fn(async () => ({ enabled: true })),
 }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("@/lib/logging/context", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/logging/context")>();
   return { ...actual, annotate: vi.fn() };

@@ -105,10 +105,6 @@ vi.mock("@/lib/safe-fetch", async (importOriginal) => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const forceGc = ((): (() => void) => {
   v8.setFlagsFromString("--expose-gc");
   const gc = vm.runInNewContext("gc") as () => void;

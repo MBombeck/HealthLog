@@ -50,10 +50,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // Read wide-events back out of the in-memory ring buffer the
 // `emitEvent` transport already populates — avoids coupling to the
 // Loki/stdout plumbing and works regardless of `LOG_SAMPLE_RATE`.

@@ -54,10 +54,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const USER_ID = "user-query-budget";
 const DAY_MS = 86_400_000;
 

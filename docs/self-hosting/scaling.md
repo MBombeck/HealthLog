@@ -129,6 +129,15 @@ looks healthy. Deploy both from the same image tag
 (`HEALTHLOG_IMAGE_REF` is shared by `app` and the `app-worker` block)
 and restart the worker together with the web containers.
 
+## Database role
+
+Both containers run the entrypoint, and both set up `healthlog_app`, the
+database role the app connects as
+([database-role.md](database-role.md)). They take turns on an advisory lock
+and derive the same password from `API_TOKEN_HMAC_KEY`, which the shared
+environment block gives both, so a worker that starts after the web container
+changes nothing the web container relies on.
+
 ## Healthchecks
 
 - `app` (web) healthcheck: `wget /api/health` every 30s.

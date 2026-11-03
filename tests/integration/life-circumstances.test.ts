@@ -35,10 +35,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 type Handler = (request: Request, ctx?: unknown) => Promise<Response>;
 
 let counter = 0;

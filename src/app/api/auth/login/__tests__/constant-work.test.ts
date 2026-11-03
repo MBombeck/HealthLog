@@ -58,10 +58,6 @@ vi.mock("@/lib/rate-limit", () => ({
   refundRateLimit: vi.fn(async () => undefined),
 }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("@/lib/auth/hmac", () => ({
   hashToken: vi.fn(() => "aa".repeat(32)),
 }));

@@ -11,6 +11,7 @@
  * Usage: Run as a standalone process or call startReminderWorker() from a
  * custom server setup. In dev, use: npx tsx src/lib/jobs/reminder-worker.ts
  */
+import { prisma } from "@/lib/db";
 import { markWorkerStarted, recordError } from "@/lib/jobs/worker-status";
 import { createWorkerBoss, setGlobalBoss } from "@/lib/jobs/boss-instance";
 import { reportJobsCutOffAtBoot } from "@/lib/jobs/job-observer";
@@ -47,7 +48,13 @@ export async function startReminderWorker() {
     return;
   }
 
-  const boss = createWorkerBoss(DATABASE_URL);
+  // The queue schema exists once a worker has started, and on every boot
+  // the restricted database role runs under (the entrypoint creates it for
+  // that role); only a fresh database without either needs pg-boss to
+  // create it.
+  const [{ present }] = await prisma.$queryRaw<{ present: boolean }[]>`
+    SELECT to_regnamespace('pgboss') IS NOT NULL AS present`;
+  const boss = createWorkerBoss(DATABASE_URL, { createSchema: !present });
 
   boss.on("error", (error: unknown) => {
     workerLog("error", "boss emitted error", error);

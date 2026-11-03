@@ -41,10 +41,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 /** Fixed clock: a ladder test that slides with the calendar is a date bomb. */
 const FIXED_NOW = new Date("2026-08-08T09:00:00.000Z");
 /**

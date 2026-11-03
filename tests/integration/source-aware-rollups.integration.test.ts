@@ -37,10 +37,6 @@ import {
   readRollupBuckets,
 } from "@/lib/rollups/measurement-rollups";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // `recomputeBucketsForMeasurement` enqueues WEEK/MONTH/YEAR jobs via pg-boss;
 // the DAY-only `recomputeUserRollups` calls here never touch the queue, but the
 // sibling rollups test mocks the boss instance and the integration suite runs

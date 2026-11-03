@@ -41,10 +41,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // `resolveProvider` reads `app_settings.default_locale` which trails the
 // production schema in this integration env. Mock the leaf: the route
 // only uses `provider.type !== "none"` to set the `hasProvider` flag.

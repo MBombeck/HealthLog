@@ -45,10 +45,6 @@ vi.mock("@/lib/rate-limit", () => ({
   checkAnalyticsReadRateLimit: vi.fn(),
 }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const localeCookie = vi.fn<() => string | undefined>(() => undefined);
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: () => null })),

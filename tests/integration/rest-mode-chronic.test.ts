@@ -10,7 +10,7 @@
  * digest's Day N, and the achievements streak freeze, which runs its own
  * episode query.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
@@ -20,10 +20,6 @@ import { REST_MODE_INACTIVE, resolveRestMode } from "@/lib/illness/rest-mode";
 import type { ModuleKey } from "@/lib/modules/registry";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const USER = "rest-mode-chronic";
 const DAY = 24 * 60 * 60 * 1000;

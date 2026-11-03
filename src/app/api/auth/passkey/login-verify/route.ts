@@ -9,7 +9,6 @@ import { recordSignInDevice } from "@/lib/auth/login-alert";
 import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, safeJson } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
-import { ensureDbCompatibility } from "@/lib/db-compat";
 import { checkAuthSurfaceRateLimit } from "@/lib/rate-limit";
 import { NextRequest } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
@@ -70,8 +69,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
       errorCode: "oidc_only",
     });
   }
-
-  await ensureDbCompatibility();
 
   // v1.4.43 — tighter shared bucket on trust-chain misconfig.
   const rl = await checkAuthSurfaceRateLimit(

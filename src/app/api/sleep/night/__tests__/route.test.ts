@@ -39,10 +39,6 @@ vi.mock("@/lib/measurements/list/sleep-nights", async (importOriginal) => {
   return { ...actual, latestMainSleepNight: vi.fn(async () => null) };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("@/lib/logging/context", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/logging/context")>();
   return { ...actual, annotate: vi.fn() };

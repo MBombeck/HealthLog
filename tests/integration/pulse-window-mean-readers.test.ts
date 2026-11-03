@@ -46,10 +46,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // The reads kick off a background rollup refresh; keep it off so the live
 // user stays on the live path for the whole file.
 vi.mock("@/lib/rollups/measurement-rollups", async (importOriginal) => {

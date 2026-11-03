@@ -44,10 +44,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { hashToken } from "@/lib/auth/hmac";
 import { prisma } from "@/lib/db";

@@ -12,7 +12,6 @@ import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { checkAuthSurfaceRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
-import { ensureDbCompatibility } from "@/lib/db-compat";
 import { NextRequest, NextResponse } from "next/server";
 import { apiHandler } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
@@ -78,8 +77,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
       { status: 429, headers: rateLimitHeaders(rl) },
     );
   }
-
-  await ensureDbCompatibility();
 
   const userCount = await prisma.user.count();
 

@@ -16,7 +16,7 @@
  *     day, deleted outright, expires the account's delta cursors. An Apple
  *     Health fold expires nothing.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { upsertGoogleHealthMeasurements } from "@/lib/google-health/sync-core";
 import { runDenseIntradayRetention } from "@/lib/measurements/dense-intraday-retention";
@@ -29,10 +29,6 @@ import {
 import { makeUser } from "../kit/factories";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const prisma = getPrismaClient();
 const DAY_MS = 86_400_000;

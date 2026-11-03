@@ -14,10 +14,6 @@ import { getPrismaClient, truncateAllTables } from "./setup";
 
 const USER = "user-notification-action";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 function call(token: string) {
   return import("@/app/api/notifications/action/[token]/route").then(
     ({ POST }) =>

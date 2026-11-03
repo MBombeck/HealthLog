@@ -30,16 +30,12 @@
  * either compare a bucket's `computedAt` against the type's in-window
  * MAX(`updatedAt`), or invalidate on the hard-delete path — and that is a
  * larger change than this honesty repair.
- */ import { beforeEach, describe, expect, it, vi } from "vitest";
+ */ import { beforeEach, describe, expect, it } from "vitest";
 
 process.env.ENCRYPTION_KEY ??=
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 import { buildCoachSnapshot } from "@/lib/ai/coach/snapshot";
 import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";

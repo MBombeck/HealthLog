@@ -16,7 +16,7 @@
  * the live instance has it, and asserts that the daily series (both the
  * rollup-backed read and the live aggregate) buckets by the user's day.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import {
@@ -27,10 +27,6 @@ import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
 import { invalidateUserTimezone } from "@/lib/tz/resolver";
 import { userDayKey } from "@/lib/tz/format";
 import { localHmAsUtc } from "@/lib/tz/local-day";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 beforeEach(async () => {
   await truncateAllTables(getPrismaClient());

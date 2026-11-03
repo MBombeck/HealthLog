@@ -22,9 +22,6 @@ import {
   medicationsCsvQuerySchema,
 } from "@/lib/validations/record-import";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => null),
 }));

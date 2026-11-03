@@ -59,10 +59,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // The provider read touches an `app_settings` column that trails the
 // production schema in this environment, and no surface under test needs
 // a provider: the digest lifts a cached briefing, it never generates one.

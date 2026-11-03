@@ -72,9 +72,6 @@ vi.mock("@/lib/tz/resolver", () => ({
   resolveServerDefaultTimezone: vi.fn().mockResolvedValue("Europe/Berlin"),
 }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: () => null })),

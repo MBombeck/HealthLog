@@ -40,10 +40,6 @@ import {
   recomputeUserRollups,
 } from "@/lib/rollups/measurement-rollups";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // No pg-boss in the integration harness — the WEEK/MONTH/YEAR enqueue
 // inside the write hook is a silent no-op when no boss is attached.
 vi.mock("@/lib/jobs/boss-instance", () => ({

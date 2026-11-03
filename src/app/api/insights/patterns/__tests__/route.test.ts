@@ -8,9 +8,6 @@ vi.mock("@/lib/db", () => ({
 }));
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/modules/gate", async (importOriginal) => ({
   ...(await importOriginal<typeof ModuleGateModule>()),
   requireModuleEnabled: vi.fn(),

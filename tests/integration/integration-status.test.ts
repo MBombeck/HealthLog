@@ -22,10 +22,6 @@ process.env.ENCRYPTION_KEY ??=
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // The dispatcher would otherwise try to read encrypted channel
 // configs and call sendViaTelegram. We're not testing that path —
 // B3 owns it. Stub returns void so the helper's await chain

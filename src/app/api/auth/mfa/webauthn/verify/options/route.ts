@@ -16,7 +16,6 @@ import { apiHandler } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { annotate } from "@/lib/logging/context";
-import { ensureDbCompatibility } from "@/lib/db-compat";
 import { checkAuthSurfaceRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { loadActiveChallenge } from "@/lib/auth/mfa/challenge";
 import { createMfaAuthenticationOptions } from "@/lib/auth/mfa/webauthn";
@@ -36,8 +35,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
       headers: rateLimitHeaders(rl),
     });
   }
-
-  await ensureDbCompatibility();
 
   const parsed = await parseJsonBody(request, mfaWebauthnLoginOptionsSchema, {
     maxBytes: 16 * 1024,

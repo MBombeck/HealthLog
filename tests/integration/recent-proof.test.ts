@@ -35,10 +35,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const USER_ID = "user-recent-proof";
 const PASSWORD = "Correct horse battery staple!42";
 const HOUR = 60 * 60 * 1000;

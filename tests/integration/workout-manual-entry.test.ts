@@ -53,10 +53,6 @@ vi.mock("next/headers", async () => {
 const emitDataArrival = vi.hoisted(() => vi.fn(async () => undefined));
 vi.mock("@/lib/arrivals/emit-shared", () => ({ emitDataArrival }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const { POST: postBatch } = await import("@/app/api/workouts/batch/route");
 const { GET: listWorkouts } = await import("@/app/api/workouts/route");
 const { DELETE: deleteWorkout } = await import("@/app/api/workouts/[id]/route");

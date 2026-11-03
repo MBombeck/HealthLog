@@ -19,10 +19,6 @@ vi.mock("@/lib/jobs/offhost-backup", async (importOriginal) => ({
   probeOffhostLifecycle: () => probe(),
 }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 import { getPrismaClient, truncateAllTables } from "./setup";
 
 const NOW = new Date();

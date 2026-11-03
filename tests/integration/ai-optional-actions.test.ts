@@ -47,10 +47,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // Provider spies: a refusal must never reach either.
 const runner = vi.hoisted(() => ({
   raw: vi.fn(),

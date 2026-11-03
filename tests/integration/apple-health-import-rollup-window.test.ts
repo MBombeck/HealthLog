@@ -24,9 +24,6 @@ import {
 } from "@/lib/jobs/apple-health-import-worker";
 import { ROLLUP_FOLD_WINDOW_MS } from "@/lib/rollups/measurement-rollups";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => null),
 }));

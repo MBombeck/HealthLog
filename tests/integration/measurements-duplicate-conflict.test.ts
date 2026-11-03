@@ -51,10 +51,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 let counter = 0;
 
 const MEASURED_AT = "2026-03-04T07:30:00.000Z";

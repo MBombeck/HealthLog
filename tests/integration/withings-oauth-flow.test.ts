@@ -52,10 +52,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const TEST_USER_ID = "user-withings-oauth-flow";
 
 const WITHINGS_OAUTH_URL =

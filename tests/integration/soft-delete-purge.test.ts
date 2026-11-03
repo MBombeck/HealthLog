@@ -9,7 +9,7 @@
  * it; a purged visit cascades its links; a start folded into a live cycle
  * stays; the coach facts keep their longer horizon.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { TOMBSTONE_RETENTION_DAYS } from "@/lib/auth/native-client";
 import {
@@ -19,10 +19,6 @@ import {
 } from "@/lib/jobs/soft-delete-retention";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const USER = "soft-delete-purge-user";
 const NOW = new Date("2026-10-20T03:42:00.000Z");
