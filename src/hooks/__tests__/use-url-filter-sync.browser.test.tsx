@@ -242,6 +242,11 @@ describe("useUrlFilterSync with FilterBar", () => {
     window.history.back();
     await expectSearch("?type=WEIGHT");
     await expect.element(pill("Type: Weight")).toBeInTheDocument();
+    // Back to the newest entry. Left one step behind, the page keeps a
+    // forward entry, and the next case's push replaces it instead of adding
+    // one: `history.length` stays put and its count of entries is off by one.
+    window.history.forward();
+    await expectSearch("?type=PULSE");
   });
 
   it("keeps the state in memory and the address untouched with syncToUrl off", async () => {

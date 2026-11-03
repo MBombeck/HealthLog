@@ -289,7 +289,10 @@ describe("<MeasurementForm> type", () => {
     await first.screen.getByLabelText("Value (kg)").fill("80");
     await first.save.click();
     await expect.poll(() => first.onSuccess.mock.calls.length).toBe(1);
-    first.screen.unmount();
+    // Awaited: the unmount runs inside `act`, and one left running overlaps
+    // the next render's `act`, after which React commits nothing for the
+    // rest of the file (every later case finds an empty container).
+    await first.screen.unmount();
 
     const { screen } = await mount();
     await expect
