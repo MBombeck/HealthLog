@@ -4999,6 +4999,12 @@
         "morning": "Blutdruck morgens",
         "midday": "Blutdruck mittags",
         "evening": "Blutdruck abends"
+      },
+      "statsLabel": "{series}, {part}",
+      "statsPart": {
+        "morning": "morgens",
+        "midday": "mittags",
+        "evening": "abends"
       }
     }
   },

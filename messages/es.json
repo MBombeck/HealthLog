@@ -4999,6 +4999,12 @@
         "morning": "Tensión arterial por la mañana",
         "midday": "Tensión arterial a mediodía",
         "evening": "Tensión arterial por la noche"
+      },
+      "statsLabel": "{series}, {part}",
+      "statsPart": {
+        "morning": "por la mañana",
+        "midday": "al mediodía",
+        "evening": "por la noche"
       }
     }
   },

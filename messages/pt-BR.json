@@ -4999,6 +4999,12 @@
         "morning": "Pressão arterial pela manhã",
         "midday": "Pressão arterial à tarde",
         "evening": "Pressão arterial à noite"
+      },
+      "statsLabel": "{series}, {part}",
+      "statsPart": {
+        "morning": "pela manhã",
+        "midday": "ao meio-dia",
+        "evening": "à noite"
       }
     }
   },

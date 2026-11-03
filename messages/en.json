@@ -4999,6 +4999,12 @@
         "morning": "Blood pressure in the morning",
         "midday": "Blood pressure at midday",
         "evening": "Blood pressure in the evening"
+      },
+      "statsLabel": "{series}, {part}",
+      "statsPart": {
+        "morning": "morning",
+        "midday": "midday",
+        "evening": "evening"
       }
     }
   },

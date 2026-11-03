@@ -4999,6 +4999,12 @@
         "morning": "Pressione arteriosa al mattino",
         "midday": "Pressione arteriosa a mezzogiorno",
         "evening": "Pressione arteriosa alla sera"
+      },
+      "statsLabel": "{series}, {part}",
+      "statsPart": {
+        "morning": "al mattino",
+        "midday": "a mezzogiorno",
+        "evening": "alla sera"
       }
     }
   },

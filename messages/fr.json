@@ -4999,6 +4999,12 @@
         "morning": "Tension artérielle le matin",
         "midday": "Tension artérielle à midi",
         "evening": "Tension artérielle le soir"
+      },
+      "statsLabel": "{series}, {part}",
+      "statsPart": {
+        "morning": "le matin",
+        "midday": "à midi",
+        "evening": "le soir"
       }
     }
   },

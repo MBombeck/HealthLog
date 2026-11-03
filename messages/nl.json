@@ -4999,6 +4999,12 @@
         "morning": "Bloeddruk 's ochtends",
         "midday": "Bloeddruk 's middags",
         "evening": "Bloeddruk 's avonds"
+      },
+      "statsLabel": "{series}, {part}",
+      "statsPart": {
+        "morning": "'s ochtends",
+        "midday": "'s middags",
+        "evening": "'s avonds"
       }
     }
   },

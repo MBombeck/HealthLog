@@ -4999,6 +4999,12 @@
         "morning": "아침 혈압",
         "midday": "낮 혈압",
         "evening": "저녁 혈압"
+      },
+      "statsLabel": "{series}, {part}",
+      "statsPart": {
+        "morning": "아침",
+        "midday": "낮",
+        "evening": "저녁"
       }
     }
   },

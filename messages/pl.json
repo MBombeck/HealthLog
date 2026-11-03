@@ -4999,6 +4999,12 @@
         "morning": "Ciśnienie tętnicze rano",
         "midday": "Ciśnienie tętnicze w południe",
         "evening": "Ciśnienie tętnicze wieczorem"
+      },
+      "statsLabel": "{series}, {part}",
+      "statsPart": {
+        "morning": "rano",
+        "midday": "w południe",
+        "evening": "wieczorem"
       }
     }
   },
