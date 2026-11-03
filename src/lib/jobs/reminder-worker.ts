@@ -48,13 +48,17 @@ export async function startReminderWorker() {
     return;
   }
 
-  // The queue schema exists once a worker has started, and on every boot
-  // the restricted database role runs under (the entrypoint creates it for
-  // that role); only a fresh database without either needs pg-boss to
-  // create it.
-  const [{ present }] = await prisma.$queryRaw<{ present: boolean }[]>`
-    SELECT to_regnamespace('pgboss') IS NOT NULL AS present`;
-  const boss = createWorkerBoss(DATABASE_URL, { createSchema: !present });
+  // Under the restricted database role the boot installed and migrated the
+  // queue schema as its owner, and the role owns nothing there; pg-boss then
+  // only reads and writes rows. A connection that owns the schema, or a fresh
+  // database without one, lets pg-boss install and migrate it itself.
+  const [{ owned }] = await prisma.$queryRaw<{ owned: boolean | null }[]>`
+    SELECT pg_has_role(current_user, n.nspowner, 'USAGE') AS owned
+      FROM (SELECT 1) one
+      LEFT JOIN pg_namespace n ON n.nspname = 'pgboss'`;
+  const boss = createWorkerBoss(DATABASE_URL, {
+    ownsQueueSchema: owned !== false,
+  });
 
   boss.on("error", (error: unknown) => {
     workerLog("error", "boss emitted error", error);
