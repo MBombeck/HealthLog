@@ -87,30 +87,34 @@ function visitLinkLabel(target: LinkedTarget): string {
   return encounterKindLabel(target.label as EncounterKind, "en");
 }
 
-/** A lab result is fetched by its analyte, so the link id names that. */
+/**
+ * The `fetch` id of one lab reading. A link names the reading itself, not its
+ * analyte: `lab:<analyte>` answers with the latest reading, which for a report
+ * holding an earlier draw is a different reading with different links.
+ */
+export function labResultFetchId(labResultId: string): string {
+  return `labresult:${labResultId}`;
+}
+
+/** A lab result links as the one reading the source holds. */
 async function labLinks(
   userId: string,
   targets: readonly LinkedTarget[],
 ): Promise<Map<string, RecordLink>> {
-  // Asked here as well as by every caller: an analyte name is lab data.
+  // Asked here as well as by every caller: an analyte name is lab data. The
+  // link service has already narrowed the targets to this account's live rows.
   if (!(await isModuleEnabled(userId, "labs"))) return new Map();
-  const rows = await prisma.labResult.findMany({
-    where: { userId, id: { in: targets.map((t) => t.id) }, deletedAt: null },
-    select: { id: true, analyte: true },
-  });
-  const analyte = new Map(rows.map((r) => [r.id, r.analyte]));
-  const out = new Map<string, RecordLink>();
-  for (const target of targets) {
-    const name = analyte.get(target.id);
-    if (!name) continue;
-    out.set(target.id, {
-      id: `lab:${scrubFenceMarkers(name)}`,
-      kind: "lab",
-      label: scrubFenceMarkers(target.label),
-      date: linkDate(target.date),
-    });
-  }
-  return out;
+  return new Map(
+    targets.map((target) => [
+      target.id,
+      {
+        id: labResultFetchId(target.id),
+        kind: "lab",
+        label: scrubFenceMarkers(target.label),
+        date: linkDate(target.date),
+      },
+    ]),
+  );
 }
 
 /** An imported document says where it came from: system and id, no address. */

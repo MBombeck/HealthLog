@@ -613,7 +613,8 @@ describe("fetch over records", () => {
     expect(linkIds).toEqual([
       "condition:c-knee",
       "document:d-letter",
-      "lab:CRP",
+      // The reading itself, not its analyte's latest reading.
+      "labresult:lab-1",
     ]);
     // Absence is explicit: never-recorded fields are null.
     expect(hit.metadata.outcome).toBeNull();

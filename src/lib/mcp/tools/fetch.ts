@@ -23,8 +23,10 @@ import {
   type FetchResult,
 } from "@/lib/mcp/record-search";
 import { labResultLinks, readLatestLabs } from "@/lib/mcp/lab-reads";
+import { readLabReading } from "@/lib/ai/coach/labs-snapshot";
 import {
   boundLinks,
+  labResultFetchId,
   linksBySource,
   linksSentence,
   MEDICATION_LINK_TARGETS,
@@ -70,7 +72,68 @@ async function fetchLab(
       (linked ? ` ${linksSentence(linked.links)}` : ""),
     // Deep-link to the labs surface filtered to this analyte.
     url: `${origin}/labs?analyte=${encodeURIComponent(rid)}`,
-    metadata: { type: "lab", analyte: rid, ...linked },
+    metadata: {
+      type: "lab",
+      analyte: rid,
+      ...(latestId ? { readingId: labResultFetchId(latestId) } : {}),
+      ...linked,
+    },
+  };
+}
+
+/** A reading's own free text, fenced; null stays null. */
+function fencedOrNull(value: string | null): string | null {
+  return value === null ? null : fenceUserText(value);
+}
+
+/**
+ * `fetch labresult:<id>`: that one reading, with what it is linked to. The
+ * reading is shaped and rendered exactly as `fetch lab:` renders the latest.
+ */
+async function fetchLabResult(
+  userId: string,
+  id: string,
+  rid: string,
+  origin: string,
+): Promise<FetchResult> {
+  const reading = await readLabReading(userId, rid);
+  if (!reading) {
+    return {
+      id,
+      title: "Not found",
+      text: "No lab result matches this id.",
+      url: `${origin}/labs`,
+      metadata: { type: "lab", present: false },
+    };
+  }
+  const { links, linksTruncated } = await labResultLinks(userId, rid);
+  const analyte = scrubFenceMarkers(reading.analyte);
+  return {
+    id,
+    title: analyte,
+    text: `${plainLabText(analyte, {
+      present: true,
+      data: { recent: [reading] },
+    })} ${linksSentence(links)}`,
+    url: `${origin}/labs?analyte=${encodeURIComponent(reading.analyte)}`,
+    metadata: {
+      type: "lab",
+      present: true,
+      // The analyte view of the same marker: its latest reading and history.
+      analyteId: `lab:${analyte}`,
+      // A document's words, fenced like every labs answer's free text.
+      analyte: fenceUserText(reading.analyte),
+      panel: fencedOrNull(reading.panel),
+      value: reading.value,
+      valueText: fencedOrNull(reading.valueText),
+      unit: reading.unit ? fenceUserText(reading.unit) : "",
+      referenceLow: reading.referenceLow,
+      referenceHigh: reading.referenceHigh,
+      rangeStatus: reading.rangeStatus,
+      takenAt: reading.takenAt,
+      links,
+      linksTruncated,
+    },
   };
 }
 
@@ -139,7 +202,7 @@ export const fetchTool: McpToolDefinition = {
   name: "fetch",
   title: "Fetch one health record",
   description:
-    'Hydrate a single record returned by `search`, by its id (e.g. `metric:weight`, `med:<id>`, `lab:LDL`, `visit:<id>`, `condition:<id>`, `document:<id>`, `vaccination:<id>`). Returns { id, title, text, url, metadata } where `text` is a server-authoritative, plain-text prose summary suitable for citation and `url` deep-links to the specific record in HealthLog. A visit, condition, document, vaccination, lab or medication carries its key fields and its directly linked records (metadata.links, each with an id `fetch` accepts, a label and a date, at most 25 with metadata.linksTruncated, and \"Linked records: none.\" in the text when there are none); a linked document imported from Paperless-ngx or Papra also names its sourceSystem and sourceId (never an address), and a document is listed only while the Documents module is on. A lab lists the links of its latest reading (the report it was read from, the visits it is filed against); a medication its conditions, documents and visits; a document also lists the lab results read from it and the medications filed against it; a document returns its metadata and at most a bounded excerpt of its own indexed text (the words of the stored document), never the file; a document held back from AI reading returns no excerpt and metadata.reason \"ai_read_deferred\". Fields that were never recorded are null. Returns a not-found message when the id does not resolve, and metadata.reason "module_disabled" when the record\'s module is switched off.',
+    'Hydrate a single record returned by `search`, by its id (e.g. `metric:weight`, `med:<id>`, `lab:LDL`, `labresult:<id>`, `visit:<id>`, `condition:<id>`, `document:<id>`, `vaccination:<id>`). Returns { id, title, text, url, metadata } where `text` is a server-authoritative, plain-text prose summary suitable for citation and `url` deep-links to the specific record in HealthLog. A visit, condition, document, vaccination, lab or medication carries its key fields and its directly linked records (metadata.links, each with an id `fetch` accepts, a label and a date, at most 25 with metadata.linksTruncated, and \"Linked records: none.\" in the text when there are none); a linked document imported from Paperless-ngx or Papra also names its sourceSystem and sourceId (never an address), and a document is listed only while the Documents module is on. A lab (`lab:<analyte>`) answers with its latest reading (metadata.readingId names it) and lists that reading\'s links (the report it was read from, the visits it is filed against); a lab result (`labresult:<id>`, the id a reading carries in get_labs and the id every link to a lab result uses) answers with that one reading, its value or text result, unit, reference range, in-range/below/above status and date, and that reading\'s own links; a medication its conditions, documents and visits; a document also lists the lab results read from it and the medications filed against it; a document returns its metadata and at most a bounded excerpt of its own indexed text (the words of the stored document), never the file; a document held back from AI reading returns no excerpt and metadata.reason \"ai_read_deferred\". Fields that were never recorded are null. Returns a not-found message when the id does not resolve, and metadata.reason "module_disabled" when the record\'s module is switched off.',
   inputShape: { id: z.string().min(1).max(200) },
   annotations: READ_ONLY_ANNOTATIONS,
   outputShape: {
@@ -225,7 +288,11 @@ export const fetchTool: McpToolDefinition = {
     // A switched-off module answers as switched off, before
     // any row is read, the way the record kinds below do.
     const gatedModule =
-      kind === "lab" ? "labs" : kind === "med" ? "medications" : null;
+      kind === "lab" || kind === "labresult"
+        ? "labs"
+        : kind === "med"
+          ? "medications"
+          : null;
     if (
       gatedModule &&
       rid &&
@@ -237,7 +304,7 @@ export const fetchTool: McpToolDefinition = {
         text: `This record kind is switched off in HealthLog (module "${gatedModule}"), so nothing of it is shared.`,
         url: `${origin}/insights`,
         metadata: {
-          type: kind === "lab" ? "lab" : "medication",
+          type: gatedModule === "labs" ? "lab" : "medication",
           present: false,
           reason: "module_disabled",
         },
@@ -245,6 +312,10 @@ export const fetchTool: McpToolDefinition = {
     }
 
     if (kind === "lab" && rid) return fetchLab(ctx.userId, id, rid, origin);
+
+    if (kind === "labresult" && rid) {
+      return fetchLabResult(ctx.userId, id, rid, origin);
+    }
 
     if (kind === "med" && rid) {
       return fetchMedication(ctx.userId, id, rid, origin);

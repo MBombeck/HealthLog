@@ -110,6 +110,14 @@ What `search` matches for the clinical records:
   reading deferred is matched on its title and details only.
 - `vaccination:<id>`: vaccine name, catalogue name, practitioner.
 
+A lab has two ids. `lab:<analyte>` is the analyte view and answers with that
+marker's latest reading. `labresult:<id>` is one reading: its value or text
+result, unit, reference range, status, date, and its own links (the report
+it was read from, the visits it is filed against). Every link to a lab result
+(from a document, a visit, a condition or a medication) uses the reading id,
+so following a report's link lands on the reading that report holds rather
+than on a later draw. Each reading in `get_labs` carries the same id.
+
 Condition and vaccination notes are never searched or returned, the same
 rule the Coach and the doctor report follow. A deleted practitioner is not
 named or matched. Query words shorter than four letters match whole words or
