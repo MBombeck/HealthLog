@@ -1,6 +1,9 @@
 /** Outbound-screen banks for English, composed by `../../outbound-screen.ts`. */
 import {
   DOSE_UNIT,
+  DRUG_UNIT,
+  LIQUID_UNIT,
+  SPELLED_COUNT,
   UNIT_END,
   objectSlot,
   TARGET,
@@ -10,8 +13,14 @@ import {
   type LocaleBank,
 } from "../shared";
 
+/**
+ * Words the English object slot may not cross. The other languages'
+ * negations are here because the English bank runs on every reader's text:
+ * the Dutch warning "Stop niet met ramipril zonder overleg" otherwise read as
+ * "stop" + two slot words + a generic name.
+ */
 const EN_STOP =
-  "not|never|and|or|but|if|whether|when|sodium|salt|caffeine|sugars?|fib(?:er|re)|protein|carbs?|carbohydrates?|cholesterol|water|fluids?|coffee|alcohol|steps";
+  "not|never|no|niet|nicht|nie|non|não|nao|nunca|nooit|jamais|and|or|but|if|whether|when|sodium|salt|caffeine|sugars?|fib(?:er|re)|protein|carbs?|carbohydrates?|cholesterol|water|fluids?|coffee|alcohol|steps";
 
 const EN_SLOT = objectSlot(EN_STOP);
 
@@ -19,6 +28,28 @@ const EN_SHORT = objectSlot(
   `${EN_STOP}|to|for|with|at|in|on|of|from|before|after|about|into|than|while|during|like`,
   2,
 );
+
+/**
+ * The object of a negated intake verb. A protective count or qualifier ends
+ * it, so "don't take a double dose", "do not take more than 4 tablets" and
+ * "don't take half a tablet" stay warnings.
+ */
+const EN_HOLD_SLOT = objectSlot(
+  `${EN_STOP}|to|for|with|at|in|on|of|from|into|than|while|during|like|half|double|more|extra|additional|another|second|two|both|multiple|any|other|same`,
+  3,
+);
+
+/**
+ * Where a negated intake ends to read as a hold: the clause closes, or a time
+ * word follows ("don't take your metoprolol tonight"). "Don't take your pills
+ * with grapefruit" meets neither and passes.
+ */
+const EN_HOLD_END =
+  "(?=\\s*(?:[.!;)]|$)|\\s+(?:today|tonight|tomorrow|this\\s+(?:morning|evening|afternoon|week|weekend)|for\\s+(?:now|a\\s+(?:few|couple|while|week|day)|the\\s+(?:next|rest)|\\d+|two|three|several)|any\\s*more|until|before|in\\s+the\\s+(?:morning|evening))\\b)";
+
+/** A liquid drug form a measured volume may be a dose of. */
+const EN_LIQUID =
+  "(?:syrups?|solutions?|suspensions?|elixirs?|tinctures?|linctus|mixtures?|liquid\\s+medicine)\\b";
 
 /**
  * Where an English imperative can start: the sentence head (or a list bullet),
@@ -145,6 +176,32 @@ export const bank: LocaleBank = {
         `${EN_LEAD}(?:increase|raise|up|boost|bump|reduce|lower|decrease|cut|drop)\\s+${EN_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:now|today|tonight|tomorrow|a\\s+(?:bit|little)|slightly|gradually|somewhat|this\\s+week|for|until|from\\s+now)\\b)`,
         "im",
       ),
+    ),
+    // A negated intake is a hold: "Don't take atorvastatin tonight", "Do not
+    // take your metoprolol." A description ("if you don't take", "you
+    // don't take") and the "why don't you take" nudge sit outside it.
+    new RegExp(
+      `(?<!\\b(?:why|if|you|they|we|i|when|that|who)\\s)\\b(?:(?:don['’]?t|do\\s+not|you\\s+should(?:n['’]t|\\s+not))\\s+(?:take|use|inject|give\\s+yourself)|avoid\\s+(?:taking|using|injecting))\\s+${EN_HOLD_SLOT}${med}${EN_HOLD_END}`,
+      "i",
+    ),
+    // A pause: "Take a break from enalapril", "give yourself a break from
+    // the metformin". A break from screens or sitting names no medication.
+    new RegExp(
+      `${EN_LEAD}(?:take|have|give\\s+(?:yourself|your\\s+body))\\s+(?:an?\\s+)?(?:[^\\s\\d.?!,;:]+\\s+){0,2}?(?:break|pause|holiday|rest|vacation)\\s+from\\s+(?:taking\\s+)?${EN_SHORT}${med}`,
+      "im",
+    ),
+    // An increment with no target: "Add 4 more units of insulin", "inject 3
+    // extra units". The amount has to carry a drug unit, so "add 2 more
+    // walks" and "take 10 more minutes" pass.
+    new RegExp(
+      `${EN_LEAD}(?:add|take|inject|use|give\\s+yourself|pop)\\s+(?:another\\s+|an?\\s+(?:extra|additional)\\s+)?(?:[\\d.,]+|${SPELLED_COUNT})\\s*(?:(?:more|extra|additional|further)\\s+)?${DRUG_UNIT}${UNIT_END}`,
+      "im",
+    ),
+    // A measured volume of a liquid drug form: "Take 10 ml of the syrup".
+    // "Drink 500 ml of water" names no drug form and passes.
+    new RegExp(
+      `${EN_LEAD}(?:take|use|give\\s+yourself|swallow|measure\\s+out)\\s+(?:[\\d.,]+|${SPELLED_COUNT}|half\\s+a)\\s*(?:${LIQUID_UNIT}|teaspoons?|tsp|tablespoons?|tbsp)${UNIT_END}\\s+(?:of\\s+)?${EN_SHORT}(?:${EN_LIQUID}|${med})`,
+      "im",
     ),
   ],
   dose: [

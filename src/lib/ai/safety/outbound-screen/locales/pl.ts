@@ -9,6 +9,9 @@ import {
   unlessDeferred,
   WORD_START,
   WORD_END,
+  LIQUID_UNIT,
+  DRUG_UNIT,
+  SPELLED_COUNT,
   type LocaleBank,
 } from "../shared";
 
@@ -21,6 +24,21 @@ const PL_SHORT = objectSlot(`${PL_STOP}|z|ze|do|na|po|przed|bez|dla`, 2);
 
 const PL_MED_NOUN =
   "(?:dawk[aęiy]|dawek|tabletk[aęiy]|tabletek|lek|leki|leku|leków|insulin[aęy]|zastrzyk[ia]?|zastrzyków|kapsułk[aęiy]|pigułk[aęiy])(?=[\\s.,;:!?]|$)";
+
+/**
+ * The object of a negated intake. A protective qualifier ends it, so "nie
+ * bierz podwójnej dawki" and "nie bierz więcej niż 4 tabletki" stay warnings.
+ */
+const PL_HOLD_SLOT = objectSlot(
+  `${PL_STOP}|z|ze|do|na|po|przed|bez|dla|więcej|niż|podwójn\\S*|pół|połow\\S*|dwie|dwa|dodatkow\\S*|kolejn\\S*|drug\\S*`,
+  3,
+);
+
+/** Where a negated intake reads as a hold: the clause closes or a time word follows. */
+const PL_HOLD_END = `(?=\\s*(?:[.!;)]|$)|\\s+(?:dziś|dzisiaj|jutro|wieczorem|rano|teraz|na\\s+razie|przez|przed|aż)${WORD_END})`;
+
+/** A liquid drug form a measured volume may be a dose of. */
+const PL_LIQUID = "(?:syrop|roztw[oó]r|zawiesin|kropl|eliksir)[a-ząćęłńóśźż]*";
 
 const SPELLED_PL =
   "(?:zero|jeden|dwa|trzy|cztery|pięć|sześć|siedem|osiem|dziewięć|dziesięć|jedenaście|dwanaście|trzynaście|czternaście|piętnaście|szesnaście|siedemnaście|osiemnaście|dziewiętnaście|dwadzieścia|trzydzieści|czterdzieści|pięćdziesiąt|sześćdziesiąt)";
@@ -90,6 +108,31 @@ export const bank: LocaleBank = {
         `(?<!\\bnie\\s)\\b(?:zwi[ęe]ksz|zmniejsz|obni[żz]|podnie[śs]|podwy[żz]sz|zredukuj)(?:cie)?\\s+${PL_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?!(?:kofein|cukr|cukier|ruch|sol|sól|alkohol|kalori|białk|wod|kaw|herbat|tłuszcz|węglowodan|aktywnoś|ćwicze|snu|sen|błonnik)[^\\s]*\\s*(?:[.!?;:)]|$))[^\\s\\d.?!,;:]+\\s*(?:[.!?;:)]|$)|\\s+(?:teraz|dziś|dzisiaj|jutro|trochę|nieco|stopniowo|od\\s+jutra|przez)(?=[\\s.,;:!?]|$))`,
         "i",
       ),
+    ),
+    // A negated intake is a hold: "Nie bierz dziś atorwastatyny", "proszę nie
+    // przyjmować metoprololu".
+    new RegExp(
+      `${WORD_START}(?:proszę\\s+|lepiej\\s+)?nie\\s+(?:bierz|bierzcie|brać|przyjmuj|przyjmujcie|przyjmować|zażywaj|zażywać|stosuj|stosować|wstrzykuj|wstrzykiwać)${WORD_END}\\s+${PL_HOLD_SLOT}${med}${PL_HOLD_END}`,
+      "i",
+    ),
+    // A pause: "Zrób przerwę w przyjmowaniu enalaprylu", "zrób sobie przerwę
+    // od ramiprylu". A break from screens names no medication.
+    new RegExp(
+      `${WORD_START}(?:zrób|zróbcie|zrobić|proszę\\s+zrobić)\\s+(?:sobie\\s+)?(?:[^\\s\\d.?!,;:]+\\s+)?przerw[ęe]${WORD_END}\\s+(?:od|w|z)\\s+(?:(?:przyjmowani|brani|zażywani|stosowani)[a-ząćęłńóśźż]*\\s+)?${PL_SHORT}${med}`,
+      "i",
+    ),
+    // A measured volume of a liquid drug form: "Weź 10 ml syropu". "Wypij
+    // 500 ml wody" passes.
+    new RegExp(
+      `${WORD_START}(?:weź|weźcie|przyjmij|przyjmuj|wypij|zażyj|proszę\\s+(?:przyjąć|wziąć|przyjmować|wypić))\\s+${PL_SHORT}(?:po\\s+)?[\\d.,]+\\s*${LIQUID_UNIT}${UNIT_END}\\s+${PL_SHORT}(?:${PL_LIQUID}|${med})`,
+      "i",
+    ),
+    // An increment: "Dodaj 2 jednostki do wieczornej dawki", "podaj sobie 2
+    // jednostki więcej". The amount carries a drug unit, so "dodaj 2 spacery"
+    // passes.
+    new RegExp(
+      `${WORD_START}(?:dodaj|dodajcie|podaj(?:\\s+sobie)?|proszę\\s+(?:dodać|podać))\\s+(?:jeszcze\\s+|dodatkowo\\s+)?(?:[\\d.,]+|${SPELLED_COUNT})\\s*${DRUG_UNIT}${UNIT_END}`,
+      "i",
     ),
   ],
   dose: [

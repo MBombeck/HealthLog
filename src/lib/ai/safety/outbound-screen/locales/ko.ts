@@ -6,6 +6,8 @@ import {
   ENGINE,
   medicationExtras,
   unlessDeferred,
+  LIQUID_UNIT,
+  INN_STEM_HANGUL,
   type LocaleBank,
 } from "../shared";
 
@@ -48,8 +50,17 @@ const RISK_LEVEL_KO = "(?:높|상승|증가|중등도|경계|우려)";
 
 const RISK_VERDICT_KO = `(?:은|는|이|가)\\s*[^.?!]{0,10}${RISK_LEVEL_KO}`;
 
-const KO_MED_CLASS =
-  "(?:혈액\\s*희석제|항응고제|항혈소판제|스타틴|베타\\s*차단제|이뇨제|항우울제)";
+const KO_MED_CLASS = `(?:혈액\\s*희석제|항응고제|항혈소판제|스타틴|베타\\s*차단제|이뇨제|항우울제|${INN_STEM_HANGUL})`;
+
+/**
+ * A liquid drug form a measured volume may be a dose of. "물을 500ml 드세요"
+ * (drink 500 ml of water) names none.
+ */
+const KO_LIQUID = "(?:시럽|물약|현탁액|내복액|액제|용액)";
+
+/** The polite intake imperative a liquid dose closes on. */
+const KO_INTAKE =
+  "(?:드세요|드십시오|복용하세요|복용하십시오|드시고|먹으세요|드셔\\s*보세요)";
 
 /** Signals that the number-free change shapes stand down for (`unlessDeferred`). */
 const KO_DEFERRAL = `\\?|의사|약사|전문의|주치의|상의|라고|지\\s*마`;
@@ -83,6 +94,32 @@ export const bank: LocaleBank = {
       new RegExp(
         `${med}[^.?!\\d]{0,8}?(?:(?:늘리|올리|높이|줄이|내리|낮추|증량하|감량하)(?:세요|십시오)|(?:늘려|올려|높여|줄여|내려|낮춰)\\s*(?:보세요|주세요|보십시오))`,
       ),
+    ),
+    // A negated intake is a hold: "아토르바스타틴을 복용하지 마세요", "오늘은
+    // 약을 먹지 마세요". A protective qualifier between the medication and the
+    // verb, or in front of it ("두 배로", "한꺼번에", "더", "공복에", "함께"),
+    // keeps it a warning ("자몽 주스와 함께 약을 드시지 마세요"), and no
+    // digit may sit between, so "약 2주" ("about two weeks") is not a medication.
+    new RegExp(
+      `(?<!(?:함께|같이|동시에|공복에|한꺼번에|두\\s*배로?)\\s*)${med}\\s*(?:(?!두\\s*배|한꺼번에|동시에|추가|더\\s|이상|많이|반\\s*알|절반|함께|같이|공복)[^.?!\\d]){0,12}?(?:복용하지|드시지|먹지|맞지|투여하지|주사하지|사용하지)\\s*(?:마세요|마십시오|말아\\s*주세요|마(?![가-힣]))`,
+    ),
+    // A pause: "에날라프릴 복용을 잠시 쉬세요", "라미프릴을 일주일 동안 쉬어
+    // 보세요". Resting the eyes from a screen names no medication.
+    new RegExp(
+      `${med}[^.?!\\d]{0,15}?(?:쉬세요|쉬십시오|쉬어\\s*(?:보세요|주세요)|휴약하세요|휴약해\\s*보세요)`,
+    ),
+    // A measured volume of a liquid drug form, in either order: "시럽 10ml를
+    // 드세요", "10ml의 시럽을 드세요".
+    new RegExp(
+      `(?:${KO_LIQUID}[^.?!]{0,8}?[\\d.,]+\\s*${LIQUID_UNIT}${UNIT_END}|[\\d.,]+\\s*${LIQUID_UNIT}${UNIT_END}\\s*(?:의\\s*)?${KO_LIQUID})[^.?!]{0,10}?${KO_INTAKE}`,
+      "i",
+    ),
+    // An increment closed by "add" or "put in": "저녁 인슐린에 2단위를
+    // 추가하세요", "2단위 더 놓으세요". "산책을 2번 더 하세요" carries no dose
+    // counter and passes.
+    new RegExp(
+      `${KO_TARGET}[^.?!]{0,12}?(?:(?:추가하|놓으|주입하)(?:세요|십시오)|(?:추가해|놓아)\\s*(?:보세요|주세요))`,
+      "i",
     ),
   ],
   // Korean is verb-final: the dose comes first and the change verb closes the

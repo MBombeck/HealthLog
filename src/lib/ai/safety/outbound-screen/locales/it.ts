@@ -10,6 +10,9 @@ import {
   medicationExtras,
   unlessDeferred,
   WORD_START,
+  LIQUID_UNIT,
+  DRUG_UNIT,
+  SPELLED_COUNT,
   type LocaleBank,
 } from "../shared";
 
@@ -22,6 +25,21 @@ const IT_SHORT = objectSlot(`${IT_STOP}|per|con|prima|dopo|senza|a|al`, 2);
 
 const IT_MED_NOUN =
   "(?:dos[ei]|compress[ae]|pastigli[ae]|farmac[oi]|medicinal[ei]|insulina|iniezion[ei]|capsul[ae]|terapia)";
+
+/**
+ * The object of a negated intake. A protective qualifier ends it, so "non
+ * prenda una dose doppia" and "non prenda più di 4 compresse" stay warnings.
+ */
+const IT_HOLD_SLOT = objectSlot(
+  `${IT_STOP}|per|con|prima|dopo|senza|a|al|più|doppi[aoe]|mezz[ao]|metà|due|altr[ao]|extra|aggiuntiv\\S*|seconda`,
+  3,
+);
+
+/** Where a negated intake reads as a hold: the clause closes or a time word follows. */
+const IT_HOLD_END = `(?=\\s*(?:[.!;)]|$)|\\s+(?:oggi|stasera|stamattina|domani|questa\\s+settimana|per\\s+ora|per\\s+il\\s+momento|per\\s+qualche|fino|prima)${WORD_END})`;
+
+/** A liquid drug form a measured volume may be a dose of. */
+const IT_LIQUID = `(?:sciropp[oi]|soluzion[ei]|sospension[ei]|gocce|elisir)${WORD_END}`;
 
 const SPELLED_IT =
   "(?:zero|uno|due|tre|quattro|cinque|sei|sette|otto|nove|dieci|undici|dodici|tredici|quattordici|quindici|sedici|diciassette|diciotto|diciannove|venti|trenta|quaranta|cinquanta|sessanta)";
@@ -90,6 +108,31 @@ export const bank: LocaleBank = {
         `(?<!\\b(?:non|mai)\\s)\\b(?:aumenti|incrementi|riduca|abbassi|diminuisca)\\s+${IT_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:ora|oggi|domani|stasera|un\\s+po|leggermente|gradualmente|per|da\\s+subito)(?![\\w\\u00C0-\\u024F]))`,
         "i",
       ),
+    ),
+    // A negated intake is a hold: "Non prenda l'atorvastatina stasera", "non
+    // prendere il tuo metoprololo".
+    new RegExp(
+      `${WORD_START}non\\s+(?:prend(?:a|ere|ete|ano|i)|assum(?:a|ere|ete|i)|inietti|iniettare|usi|usare|utilizzi)${WORD_END}\\s+${IT_HOLD_SLOT}${med}${IT_HOLD_END}`,
+      "i",
+    ),
+    // A pause: "Faccia una pausa dall'enalapril", "prenditi una pausa dal
+    // ramipril". A pause from screens names no medication.
+    new RegExp(
+      `${WORD_START}(?:faccia|fai|prenda|prendi|prenditi|si\\s+prenda)\\s+(?:una\\s+)?(?:[^\\s\\d.?!,;:]+\\s+)?pausa\\s+(?:(?:dal|dalla|dallo|da|con\\s+il|con\\s+la|con|col|nel|nella|sul|sulla)\\s+)?${IT_SHORT}${med}`,
+      "i",
+    ),
+    // A measured volume of a liquid drug form: "Prenda 10 ml di sciroppo".
+    // "Beva 500 ml d'acqua" passes.
+    new RegExp(
+      `${WORD_START}(?:prenda|prendi|assuma|assumi)\\s+${IT_SHORT}[\\d.,]+\\s*${LIQUID_UNIT}${UNIT_END}\\s+(?:di\\s+|del(?:la|lo)?\\s+|dell['’])?${IT_SHORT}(?:${IT_LIQUID}|${med})`,
+      "i",
+    ),
+    // An increment: "Aggiunga 2 unità alla dose della sera", "faccia 2 unità
+    // in più". The amount carries a drug unit, so "aggiunga 2 passeggiate"
+    // passes.
+    new RegExp(
+      `${WORD_START}(?:aggiunga|aggiungi|faccia|fai|si\\s+faccia|inietti|si\\s+inietti)\\s+(?:altr[ei]\\s+|ancora\\s+)?(?:[\\d.,]+|${SPELLED_COUNT})\\s*${DRUG_UNIT}${UNIT_END}`,
+      "i",
     ),
   ],
   dose: [
