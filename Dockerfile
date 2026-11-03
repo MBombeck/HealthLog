@@ -106,7 +106,19 @@ FROM cgr.dev/chainguard/wolfi-base:latest@sha256:629d9acaceda7746cd9293365eb0d8e
 #
 # busybox, part of the base, is the shell the entrypoint runs under and
 # carries `tar`/`gzip` for the GeoLite2 extraction and `addgroup`/`adduser`.
-RUN apk add --no-cache nodejs-22 tzdata postgresql-18-client && \
+#
+# The two packages the app runs on are pinned to an exact package version,
+# so a rebuild of the same commit runs the same Node and the same pg_dump;
+# `apk upgrade` cannot move a pinned package, and moves only the libraries
+# under them. No updater reads these pins. What moves them is the image
+# scan: Wolfi records the fixed package version for every advisory, so a
+# pinned package with a published fix turns the HIGH/CRITICAL gate red and
+# names the version to pin. To bump, take the newest from
+# `apk policy nodejs-22` / `apk policy postgresql-18-client` in the pinned
+# base. `src/__tests__/runtime-package-pins.test.ts` holds the pin format,
+# and the client's minor to the bundled database's in docker-compose.yml.
+# tzdata stays unpinned on purpose: a zone rule change is a fix to take.
+RUN apk add --no-cache nodejs-22=22.23.2-r1 tzdata postgresql-18-client=18.6-r7 && \
     apk upgrade --no-cache && \
     mkdir -p /usr/local/bin
 COPY --from=builder /app/.native-abi /tmp/.native-abi
