@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 345,
-  "total": 111918,
+  "total": 111894,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -156,7 +156,7 @@
     "components/medications/glp1-medication-card.tsx :: Glp1MedicationCard": 405,
     "components/medications/injection-site-picker.tsx :: InjectionSitePicker": 287,
     "components/medications/intake-history-editable.tsx :: IntakeHistoryEditable": 224,
-    "components/medications/intake-history-list-v2.tsx :: IntakeHistoryListV2": 427,
+    "components/medications/intake-history-list-v2.tsx :: IntakeHistoryListV2": 403,
     "components/medications/intake-import-dialog.tsx :: IntakeImportDialog": 208,
     "components/medications/log-intake-dialog.tsx :: LogIntakeDialog": 267,
     "components/medications/medication-card.tsx :: MedicationCard": 413,

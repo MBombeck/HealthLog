@@ -1895,6 +1895,7 @@
     "intakeHistoryColScheduled": "Geplant",
     "intakeHistoryColStatus": "Status",
     "intakeHistoryColSource": "Quelle",
+    "intakeHistoryInjectionSite": "Injektionsstelle: {site}",
     "intakeHistoryStatusTaken": "Eingenommen",
     "intakeHistoryStatusSkipped": "Übersprungen",
     "intakeHistorySortByTaken": "Nach Einnahme-Zeitpunkt sortieren",
