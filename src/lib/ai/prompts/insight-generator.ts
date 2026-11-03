@@ -994,7 +994,12 @@ export function getStrictInsightsSystemPrompt(locale: Locale): string {
   if (locale === "en") return SYSTEM_PROMPT_EN;
   // ko, nl and pt-BR ship no safety-contract matrix, so they are not a
   // NativeCoachLocale.
-  if (locale === "ko" || locale === "nl" || locale === "pt-BR") {
+  if (
+    locale === "ko" ||
+    locale === "nl" ||
+    locale === "pt-BR" ||
+    locale === "ru"
+  ) {
     return SYSTEM_PROMPT_EN + INSIGHTS_LOCALE_REPLY_FOOTER_FALLBACK[locale];
   }
   try {

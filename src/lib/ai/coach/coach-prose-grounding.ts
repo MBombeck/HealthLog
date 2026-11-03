@@ -635,12 +635,18 @@ const MONTHS = [
   "januari|februari|maart|mei|augustus",
   // pt-BR
   "janeiro|fevereiro|março|marco|maio|junho|julho|setembro|outubro|novembro|dezembro",
+  // ru — genitive, as a date spells it ("21 июля")
+  "января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря",
 ].join("|");
 
 /** Parse a raw number token honouring the reply language's separators. */
 function parseLocaleNumber(raw: string, locale: Locale): number | null {
   let normalised: string;
-  if (locale === "en") {
+  if (locale === "ru") {
+    // RU: a space (usually a no-break one) groups thousands, "," is the
+    // decimal point.
+    normalised = raw.replace(/[\s\u00A0]/g, "").replace(/,/g, ".");
+  } else if (locale === "en") {
     // EN: "," groups thousands, "." is the decimal point.
     normalised = raw.replace(/,/g, "");
   } else {
@@ -673,7 +679,11 @@ function tokenizeMagnitudes(prose: string, locale: Locale): ProseMagnitude[] {
   const numFrag =
     locale === "en"
       ? String.raw`[+-]?\d{1,3}(?:,\d{3})+(?:\.\d+)?|[+-]?\d+(?:\.\d+)?`
-      : String.raw`[+-]?\d{1,3}(?:\.\d{3})+(?:,\d+)?|[+-]?\d+(?:,\d+)?`;
+      : locale === "ru"
+        ? // ru groups thousands with a space (usually a no-break one) and
+          // writes the decimal point as a comma: "1 200,5".
+          String.raw`[+-]?\d{1,3}(?:[\s\u00A0]\d{3})+(?:,\d+)?|[+-]?\d+(?:,\d+)?`
+        : String.raw`[+-]?\d{1,3}(?:\.\d{3})+(?:,\d+)?|[+-]?\d+(?:,\d+)?`;
 
   const runPass = (re: RegExp, handle: (m: RegExpExecArray) => void): void => {
     re.lastIndex = 0;
@@ -704,7 +714,9 @@ function tokenizeMagnitudes(prose: string, locale: Locale): ProseMagnitude[] {
   //     perfectly correct sentence.
   runPass(
     new RegExp(
-      String.raw`\b(?:(?:${MONTHS})\s+\d{1,2}(?:st|nd|rd|th)?|\d{1,2}\.?\s+(?:de|di|del|dell'|d')?\s*(?:${MONTHS}))\b`,
+      // Cyrillic-safe edges: `\b` is ASCII-only, so «21 июля» has no
+      // boundary after the month name.
+      String.raw`(?<![\w\u0400-\u04FF])(?:(?:${MONTHS})\s+\d{1,2}(?:st|nd|rd|th)?|\d{1,2}\.?\s+(?:de|di|del|dell'|d')?\s*(?:${MONTHS}))(?![\w\u0400-\u04FF])`,
       "gi",
     ),
     (m) => {

@@ -28,7 +28,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(__dirname, "..");
 const outDir = join(repoRoot, "public", "i18n");
 
-const LOCALES = ["de", "en", "fr", "es", "it", "pl", "ko", "nl", "pt-BR"];
+const LOCALES = ["de", "en", "fr", "es", "it", "pl", "ko", "nl", "pt-BR", "ru"];
 
 mkdirSync(outDir, { recursive: true });
 

@@ -498,5 +498,6 @@ export const AUDIT_C_STANDARD_DRINK: Readonly<Record<string, string>> = {
   nl: "Eén drankje is een standaardglas met ongeveer 10 g pure alcohol, de WHO-definitie waarop deze vragen gebaseerd zijn.",
   "pt-BR":
     "Uma bebida corresponde a uma dose padrão de cerca de 10 g de álcool puro, a definição da OMS na qual estas perguntas se baseiam.",
+  ru: "Одна порция — это стандартная доза примерно 10 г чистого алкоголя, то есть 330 мл пива крепостью 5%, 140 мл вина крепостью 12% или 40 мл крепкого напитка 40%; это определение ВОЗ, на котором построены эти вопросы.",
   ko: "표준 1잔: 양주잔으로 양주 1잔, 와인잔으로 와인 1잔, 막걸리 1사발이 각각 표준 1잔이다. 맥주는 캔맥주 1캔 또는 작은 병맥주 1병이며 생맥주는 500 mL가 표준 1잔이다. 소주는 1/4병이 표준 1잔에 해당한다.",
 };

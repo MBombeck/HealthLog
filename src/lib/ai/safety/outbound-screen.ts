@@ -51,6 +51,7 @@ import { bank as pl } from "./outbound-screen/locales/pl";
 import { bank as nl } from "./outbound-screen/locales/nl";
 import { bank as ko } from "./outbound-screen/locales/ko";
 import { bank as ptBR } from "./outbound-screen/locales/pt-br";
+import { bank as ru } from "./outbound-screen/locales/ru";
 import {
   DOSE_UNIT,
   INN_STEM,
@@ -85,6 +86,7 @@ const LOCALE_BANKS: Readonly<Record<Locale, LocaleBank>> = {
   nl,
   ko,
   "pt-BR": ptBR,
+  ru,
 };
 
 /** One value per locale, read off its bank. */

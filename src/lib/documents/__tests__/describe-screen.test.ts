@@ -34,6 +34,7 @@ describe("runDocumentSummary — screened prose", () => {
     nl: "Dit rapport stelt voor om de dosis volgende week naar 2,4 mg te verhogen.",
     "pt-BR":
       "Este laudo sugere aumentar sua dose para 2,4 mg na próxima semana.",
+    ru: "В отчёте предлагается увеличить дозу до 2,4 мг на следующей неделе.",
   };
 
   for (const locale of locales) {

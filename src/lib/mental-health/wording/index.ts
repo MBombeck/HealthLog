@@ -35,6 +35,7 @@ import phq9Pl from "./phq9/pl";
 import phq9Ko from "./phq9/ko";
 import phq9Nl from "./phq9/nl";
 import phq9PtBr from "./phq9/pt-br";
+import phq9Ru from "./phq9/ru";
 import gad7En from "./gad7/en";
 import gad7De from "./gad7/de";
 import gad7Es from "./gad7/es";
@@ -44,6 +45,7 @@ import gad7Pl from "./gad7/pl";
 import gad7Ko from "./gad7/ko";
 import gad7Nl from "./gad7/nl";
 import gad7PtBr from "./gad7/pt-br";
+import gad7Ru from "./gad7/ru";
 import who5En from "./who5/en";
 import who5De from "./who5/de";
 import who5Es from "./who5/es";
@@ -53,6 +55,7 @@ import who5Pl from "./who5/pl";
 import who5Ko from "./who5/ko";
 import who5Nl from "./who5/nl";
 import who5PtBr from "./who5/pt-br";
+import who5Ru from "./who5/ru";
 import sciEn from "./sci/en";
 import sciDe from "./sci/de";
 import sciEs from "./sci/es";
@@ -62,6 +65,7 @@ import sciPl from "./sci/pl";
 import sciKo from "./sci/ko";
 import sciNl from "./sci/nl";
 import sciPtBr from "./sci/pt-br";
+import sciRu from "./sci/ru";
 
 export const WORDING: Readonly<
   Record<InstrumentId, Readonly<Record<Locale, InstrumentWording>>>
@@ -76,6 +80,7 @@ export const WORDING: Readonly<
     ko: phq9Ko,
     nl: phq9Nl,
     "pt-BR": phq9PtBr,
+    ru: phq9Ru,
   },
   GAD7: {
     en: gad7En,
@@ -87,6 +92,7 @@ export const WORDING: Readonly<
     ko: gad7Ko,
     nl: gad7Nl,
     "pt-BR": gad7PtBr,
+    ru: gad7Ru,
   },
   WHO5: {
     en: who5En,
@@ -98,6 +104,7 @@ export const WORDING: Readonly<
     ko: who5Ko,
     nl: who5Nl,
     "pt-BR": who5PtBr,
+    ru: who5Ru,
   },
   SCI: {
     en: sciEn,
@@ -109,5 +116,6 @@ export const WORDING: Readonly<
     ko: sciKo,
     nl: sciNl,
     "pt-BR": sciPtBr,
+    ru: sciRu,
   },
 };
