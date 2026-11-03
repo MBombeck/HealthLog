@@ -1,5 +1,15 @@
+# ── Base image ─────────────────────────────────────────────
+# Debian (glibc), not Alpine (musl), in every stage. The native modules the
+# runtime loads (the @napi-rs/canvas Skia renderer, @node-rs/argon2, the
+# Prisma schema engine) then run their glibc builds. The arm64 musl Skia
+# build needs ARMv8.2 (LSE atomics, RCpc loads) and dies with SIGILL on an
+# ARMv8.0 core such as the Raspberry Pi 4's Cortex-A72; the glibc arm64
+# build does not use those instructions (#1311). trixie over bookworm: on
+# the day of the switch the bookworm-slim base carried a CRITICAL finding
+# (zlib, marked will-not-fix) that trixie-slim does not.
+
 # ── Stage 1: Dependencies ──────────────────────────────────
-FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS deps
+FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f AS deps
 RUN corepack enable && corepack prepare pnpm@11.15.1 --activate
 WORKDIR /app
 
@@ -11,7 +21,7 @@ COPY scripts/prepare.mjs scripts/prepare.mjs
 RUN pnpm install --frozen-lockfile --prod=false
 
 # ── Stage 2: Build ─────────────────────────────────────────
-FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS builder
+FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f AS builder
 RUN corepack enable && corepack prepare pnpm@11.15.1 --activate
 WORKDIR /app
 
@@ -67,23 +77,62 @@ RUN node scripts/verify-message-catalogs.mjs --dir messages \
       --config src/lib/i18n/config.ts --write /app/.message-locales
 
 # ── Stage 3: Production runner ─────────────────────────────
-FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS runner
+FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f AS runner
 # `tzdata` is required so Europe/Berlin schedules (pg-boss cron, locale-aware
 # timestamp formatting) resolve to the actual offset instead of silently
-# falling back to UTC on Alpine images that ship without it.
+# falling back to UTC; the slim base ships without it.
 #
-# `apk upgrade` pulls in OS-package security fixes the pinned base digest
+# `apt-get upgrade` pulls in OS-package security fixes the pinned base digest
 # has not absorbed yet (the digest pin stays for build reproducibility;
-# security patches from the Alpine repo override it deliberately —
+# security patches from the Debian archive override it deliberately —
 # CVE-2026-14456 in openssl was the first instance the container scan
 # caught between base-image rebuilds).
 #
-# `postgresql18-client` carries `pg_dump` and `pg_restore` for the nightly
+# `postgresql-client-18` carries `pg_dump` and `pg_restore` for the nightly
 # database dump, the pre-migration dump in the entrypoint and the
 # `db-restore` service (docs/ops/disaster-recovery.md). Major 18 matches the
 # bundled database; a client dumps servers of its own major and older, so it
-# also serves an install still on its own Postgres 16.
-RUN apk add --no-cache tzdata postgresql18-client && apk upgrade --no-cache
+# also serves an install still on its own Postgres 16. Debian trixie itself
+# ships major 17, so the client comes from the PostgreSQL project's own apt
+# repository (PGDG). Its signing key is fetched over HTTPS and must match the
+# pinned SHA-256 before apt trusts it; the pin is the key with fingerprint
+# B97B 0AFC AA1A 47F0 44F2 44A0 7FCC 7D46 ACCC 4CF8. If PGDG ever republishes
+# the key file, check that fingerprint again before moving the pin. `node`
+# fetches it, so no curl or wget lands in the image for this one download.
+# `ca-certificates` is what apt needs for the HTTPS repository.
+RUN set -eux; \
+    export PGDG_ASC_SHA256=0144068502a1eddd2a0280ede10ef607d1ec592ce819940991203941564e8e76; \
+    export DEBIAN_FRONTEND=noninteractive; \
+    apt-get update; \
+    apt-get upgrade -y --no-install-recommends; \
+    apt-get install -y --no-install-recommends ca-certificates tzdata; \
+    node -e " \
+      const { createHash } = require('node:crypto'); \
+      const { writeFileSync } = require('node:fs'); \
+      fetch('https://www.postgresql.org/media/keys/ACCC4CF8.asc', { signal: AbortSignal.timeout(30000) }) \
+        .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); }) \
+        .then((b) => { \
+          const key = Buffer.from(b); \
+          const sum = createHash('sha256').update(key).digest('hex'); \
+          if (sum !== process.env.PGDG_ASC_SHA256) throw new Error('PGDG key sha256 ' + sum); \
+          writeFileSync('/usr/share/keyrings/pgdg.asc', key); \
+        }) \
+        .catch((e) => { console.error(e); process.exit(1); });"; \
+    printf '%s\n' \
+      'Types: deb' \
+      'URIs: https://apt.postgresql.org/pub/repos/apt' \
+      'Suites: trixie-pgdg' \
+      'Components: main' \
+      'Signed-By: /usr/share/keyrings/pgdg.asc' \
+      > /etc/apt/sources.list.d/pgdg.sources; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends postgresql-client-18; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+# Debian installs each major's client under its own directory and puts a
+# version-picking Perl wrapper on PATH. Name the directory, so `pg_dump`
+# is the major 18 binary by construction, not by what the wrapper picks.
+ENV PATH=/usr/lib/postgresql/18/bin:$PATH
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -114,8 +163,9 @@ ENV NEXT_PUBLIC_APP_VERSION=$NEXT_PUBLIC_APP_VERSION
 ARG NEXT_PUBLIC_APP_BUILD_SHA
 ENV NEXT_PUBLIC_APP_BUILD_SHA=$NEXT_PUBLIC_APP_BUILD_SHA
 
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 --gid nodejs --create-home --home-dir /home/nextjs \
+      --shell /usr/sbin/nologin nextjs
 
 # Where the database dumps go (`DB_BACKUP_DIR`). Owned by the app user, so a
 # fresh named volume mounted here starts with that owner: Docker fills an
@@ -163,8 +213,8 @@ RUN node -e "require.resolve('pg-boss'); require.resolve('pg')"
 # HOISTED to the top level there (verified: without it pdfjs logs "Cannot load
 # @napi-rs/canvas" → "Cannot polyfill DOMMatrix" → rasterize ReferenceError);
 # (2) @napi-rs/canvas's own loader then resolves its platform binary. Hoist BOTH
-# the canvas package and the musl binary package to /app/node_modules/@napi-rs
-# via symlink into the .pnpm store, and drop the prebuilt .node into the canvas
+# the canvas package and the glibc (`-gnu`) binary package to
+# /app/node_modules/@napi-rs via symlink into the .pnpm store, and drop the prebuilt .node into the canvas
 # dir: the loader tries that local file (`require('./skia.<triple>.node')`)
 # before the platform package, so it decides which binary runs.
 #
@@ -181,24 +231,24 @@ RUN set -e; \
     CANVAS_VERSION="$(cat /tmp/.canvas-version)"; \
     rm -f /tmp/.canvas-version; \
     CANVAS_DIR="/app/node_modules/.pnpm/@napi-rs+canvas@${CANVAS_VERSION}/node_modules/@napi-rs/canvas"; \
-    MUSL_DIR="$(find /app/node_modules/.pnpm -maxdepth 4 -type d -path "*@napi-rs+canvas-linux-*-musl@${CANVAS_VERSION}/node_modules/@napi-rs/canvas-linux-*-musl" 2>/dev/null | head -1)"; \
-    if [ ! -d "$CANVAS_DIR" ] || [ -z "$MUSL_DIR" ]; then \
-      echo "ERROR: pinned @napi-rs/canvas@${CANVAS_VERSION} or its musl binary did not reach the traced image."; \
+    GNU_DIR="$(find /app/node_modules/.pnpm -maxdepth 4 -type d -path "*@napi-rs+canvas-linux-*-gnu@${CANVAS_VERSION}/node_modules/@napi-rs/canvas-linux-*-gnu" 2>/dev/null | head -1)"; \
+    if [ ! -d "$CANVAS_DIR" ] || [ -z "$GNU_DIR" ]; then \
+      echo "ERROR: pinned @napi-rs/canvas@${CANVAS_VERSION} or its glibc binary did not reach the traced image."; \
       echo "Present instead:"; \
       find /app/node_modules/.pnpm -maxdepth 1 -name '@napi-rs+canvas*' 2>/dev/null; \
       exit 1; \
     fi; \
-    NODE_BIN="$(find "$MUSL_DIR" -maxdepth 1 -name 'skia.linux-*-musl.node' | head -1)"; \
-    [ -n "$NODE_BIN" ] || { echo "ERROR: no skia binary in $MUSL_DIR"; exit 1; }; \
+    NODE_BIN="$(find "$GNU_DIR" -maxdepth 1 -name 'skia.linux-*-gnu.node' | head -1)"; \
+    [ -n "$NODE_BIN" ] || { echo "ERROR: no skia binary in $GNU_DIR"; exit 1; }; \
     mkdir -p /app/node_modules/@napi-rs; \
     ln -sfn "$CANVAS_DIR" /app/node_modules/@napi-rs/canvas; \
-    ln -sfn "$MUSL_DIR" "/app/node_modules/@napi-rs/$(basename "$MUSL_DIR")"; \
+    ln -sfn "$GNU_DIR" "/app/node_modules/@napi-rs/$(basename "$GNU_DIR")"; \
     cp "$NODE_BIN" "$CANVAS_DIR/"; \
     chown -R nextjs:nodejs /app/node_modules/@napi-rs; \
-    BIN_VERSION="$(node -p "require('$MUSL_DIR/package.json').version")"; \
+    BIN_VERSION="$(node -p "require('$GNU_DIR/package.json').version")"; \
     [ "$BIN_VERSION" = "$CANVAS_VERSION" ] || { echo "ERROR: canvas binary is $BIN_VERSION, loader is $CANVAS_VERSION"; exit 1; }; \
     cmp -s "$NODE_BIN" "$CANVAS_DIR/$(basename "$NODE_BIN")" || { echo "ERROR: the canvas dir holds a different binary"; exit 1; }; \
-    echo "canvas hoisted for pdfjs: $CANVAS_DIR (binary $BIN_VERSION from $MUSL_DIR)"
+    echo "canvas hoisted for pdfjs: $CANVAS_DIR (binary $BIN_VERSION from $GNU_DIR)"
 
 # pdfjs-dist is `serverExternalPackages` (NOT bundled — the bundled copy's render
 # path breaks in the standalone image), so the server does a runtime bare
@@ -340,7 +390,7 @@ RUN env -u DATABASE_URL healthlog-tsx scripts/repair-intake-anomalies.ts 2>&1 | 
 # user so the runtime worker can WRITE it: a self-hoster who sets
 # MAXMIND_LICENSE_KEY on the published image has the databases fetched into
 # this directory at runtime (src/lib/geo/geolite2-fetch.ts) with no rebuild or
-# manual mount. `tar`/`gzip` for the extraction ship in the busybox base. A
+# manual mount. `tar`/`gzip` for the extraction are part of the Debian base. A
 # read-only bind mount at this path (the bring-your-own-database route) still
 # works — the runtime fetch just fails soft and the mounted files stand.
 RUN mkdir -p /opt/geolite2 && chown nextjs:nodejs /opt/geolite2

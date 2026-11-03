@@ -247,7 +247,7 @@ jobs:
 
       # Blocking since v1.15.20 — a HIGH/CRITICAL finding in the built
       # image fails the job. For a finding without an upstream fix
-      # (e.g. a base-image CVE Alpine has not patched yet), add the CVE
+      # (e.g. a base-image CVE Debian has not patched yet), add the CVE
       # id to a `.trivyignore` file at the repository root — Trivy reads
       # it automatically — one CVE per line, each with a comment naming
       # the tracking issue and the re-check condition. Never suppress a

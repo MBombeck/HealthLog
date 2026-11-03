@@ -227,7 +227,7 @@ describe("release container inputs", () => {
     expect(fromLines).toHaveLength(3);
     expect(new Set(fromLines.map((line) => line.split(" AS ")[0]))).toEqual(
       new Set([
-        "FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2",
+        "FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f",
       ]),
     );
   });

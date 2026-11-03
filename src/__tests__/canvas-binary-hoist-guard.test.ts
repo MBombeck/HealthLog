@@ -6,7 +6,7 @@
  *
  * The pnpm store held two canvas versions: the one in package.json and an
  * older one that a second, older pdfjs-dist pulled in (gone since #1277).
- * The runner stage picked the musl binary with `find | head -1`, got the
+ * The runner stage picked the platform binary with `find | head -1`, got the
  * old one, and copied it into the new loader's directory, where the loader
  * looks first. PDF rendering still worked, so nothing looked wrong;
  * `loadImage` called an `Image.decode` the old binary lacks, and every
@@ -43,7 +43,7 @@ describe("canvas binary hoist", () => {
     );
   });
 
-  it("hoists the loader and the musl binary of that version only", () => {
+  it("hoists the loader and the glibc binary of that version only", () => {
     const runner = stage("runner");
     expect(runner).toContain(
       "COPY --from=builder /app/.canvas-version /tmp/.canvas-version",
@@ -51,10 +51,22 @@ describe("canvas binary hoist", () => {
     expect(runner).toContain(
       'CANVAS_DIR="/app/node_modules/.pnpm/@napi-rs+canvas@${CANVAS_VERSION}/',
     );
-    expect(runner).toContain("canvas-linux-*-musl@${CANVAS_VERSION}/");
+    // The image is Debian: the glibc (`-gnu`) build is the one that runs,
+    // and the musl build, which needs ARMv8.2 on arm64 (#1311), is not.
+    expect(runner).toContain("canvas-linux-*-gnu@${CANVAS_VERSION}/");
+    expect(runner).toContain("-name 'skia.linux-*-gnu.node'");
+    expect(runner).not.toMatch(/-musl/);
     // A version-blind pick is the defect: any `canvas…@*` glob decides by
     // readdir order which of the store's copies wins.
     expect(runner).not.toMatch(/@napi-rs\+canvas[^"'\s]*@\*/);
+  });
+
+  it("builds every stage on the glibc Debian base", () => {
+    const froms = DOCKERFILE.match(/^FROM \S+/gm) ?? [];
+    expect(froms.length).toBeGreaterThanOrEqual(3);
+    for (const from of froms) {
+      expect(from).toMatch(/^FROM node:22-trixie-slim@sha256:[0-9a-f]{64}$/);
+    }
   });
 
   it("fails the build when the copied binary is another version", () => {
