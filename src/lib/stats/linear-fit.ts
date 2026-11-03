@@ -60,7 +60,9 @@ export function fitFromSums(sums: FitSums): LinearFit | null {
     intercept: meanY - slope * meanX,
     // r² is at most 1 by Cauchy–Schwarz. With y far from zero and little
     // spread (two weighings of about 1000, a tenth apart) the centred sums
-    // lose their last digits and the ratio came out at 1.00000004.
+    // lose their last digits and the ratio came out at 1.00000004. The clamp
+    // keeps it in range; inside the range the same lost digits remain, which
+    // the points and the stored-sums paths share by design.
     r2: syy === 0 ? null : Math.min(1, (sxy * sxy) / (sxx * syy)),
     n,
     meanX,
