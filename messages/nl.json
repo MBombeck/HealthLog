@@ -1895,6 +1895,7 @@
     "intakeHistoryColScheduled": "Gepland",
     "intakeHistoryColStatus": "Status",
     "intakeHistoryColSource": "Bron",
+    "intakeHistoryInjectionSite": "Injectieplaats: {site}",
     "intakeHistoryStatusTaken": "Ingenomen",
     "intakeHistoryStatusSkipped": "Overgeslagen",
     "intakeHistorySortByTaken": "Sorteren op innametijd",

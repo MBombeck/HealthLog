@@ -46,6 +46,7 @@ type IntakeRow = {
   takenAt: string | null;
   skipped: boolean;
   source: "WEB" | "API" | "REMINDER" | "IMPORT";
+  injectionSite?: string | null;
   createdAt: string;
 };
 
@@ -345,5 +346,52 @@ describe("<IntakeHistoryListV2> — sort indicators", () => {
     const html = render(<IntakeHistoryListV2 medicationId="med-3" />, client);
     expect(html).not.toContain(">Previous<");
     expect(html).not.toContain(">Next<");
+  });
+});
+
+describe("<IntakeHistoryListV2> — injection site", () => {
+  const rows: IntakeRow[] = [
+    {
+      id: "evt-site",
+      medicationId: "med-1",
+      scheduledFor: "2026-05-15T08:00:00.000Z",
+      takenAt: "2026-05-15T08:02:00.000Z",
+      skipped: false,
+      source: "WEB",
+      injectionSite: "THIGH_LEFT",
+      createdAt: "2026-05-15T08:02:00.000Z",
+    },
+    {
+      id: "evt-nosite",
+      medicationId: "med-1",
+      scheduledFor: "2026-05-14T08:00:00.000Z",
+      takenAt: "2026-05-14T08:02:00.000Z",
+      skipped: false,
+      source: "WEB",
+      injectionSite: null,
+      createdAt: "2026-05-14T08:02:00.000Z",
+    },
+  ];
+
+  it("renders the localised site next to the status of an injected dose", () => {
+    const client = makeClient();
+    seedIntake(client, "med-1", rows);
+    const html = render(<IntakeHistoryListV2 medicationId="med-1" />, client);
+    expect(html).toContain("Left thigh");
+    expect(html).toContain('aria-label="Injection site: Left thigh"');
+    // One chip for the injected dose, none for the dose without a site.
+    expect(html.match(/data-slot="intake-injection-site"/g)).toHaveLength(1);
+  });
+
+  it("speaks German when the locale is de", () => {
+    const client = makeClient();
+    seedIntake(client, "med-1", rows);
+    const html = render(
+      <IntakeHistoryListV2 medicationId="med-1" />,
+      client,
+      "de",
+    );
+    expect(html).toContain("Linker Oberschenkel");
+    expect(html).toContain("Injektionsstelle: Linker Oberschenkel");
   });
 });

@@ -1895,6 +1895,7 @@
     "intakeHistoryColScheduled": "예정",
     "intakeHistoryColStatus": "상태",
     "intakeHistoryColSource": "출처",
+    "intakeHistoryInjectionSite": "주사 부위: {site}",
     "intakeHistoryStatusTaken": "복용함",
     "intakeHistoryStatusSkipped": "건너뜀",
     "intakeHistorySortByTaken": "복용 시각순 정렬",

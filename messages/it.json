@@ -1895,6 +1895,7 @@
     "intakeHistoryColScheduled": "Programmata",
     "intakeHistoryColStatus": "Stato",
     "intakeHistoryColSource": "Sorgente",
+    "intakeHistoryInjectionSite": "Sito di iniezione: {site}",
     "intakeHistoryStatusTaken": "Assunta",
     "intakeHistoryStatusSkipped": "Saltata",
     "intakeHistorySortByTaken": "Ordina per ora di assunzione",
