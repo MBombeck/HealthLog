@@ -411,26 +411,10 @@ export function IntakeHistoryListV2({
                           {formatters.dateTime(event.scheduledFor)}
                         </TableCell>
                         <TableCell>
-                          {isTaken ? (
-                            <Badge
-                              variant="secondary"
-                              className="bg-success/15 text-success gap-1 text-xs"
-                            >
-                              <Check aria-hidden="true" className="h-3 w-3" />
-                              {t("medications.intakeHistoryStatusTaken")}
-                            </Badge>
-                          ) : isSkipped ? (
-                            <Badge
-                              variant="outline"
-                              className="text-muted-foreground gap-1 text-xs"
-                            >
-                              <SkipForward
-                                aria-hidden="true"
-                                className="h-3 w-3"
-                              />
-                              {t("medications.intakeHistoryStatusSkipped")}
-                            </Badge>
-                          ) : null}
+                          <IntakeStatusBadge
+                            taken={isTaken}
+                            skipped={isSkipped}
+                          />
                           {event.injectionSite ? (
                             <InjectionSiteBadge
                               site={event.injectionSite}
@@ -523,29 +507,10 @@ export function IntakeHistoryListV2({
                               {formatters.dateTime(event.scheduledFor)}
                             </p>
                             <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                              {isTaken ? (
-                                <Badge
-                                  variant="secondary"
-                                  className="bg-success/15 text-success gap-1 text-xs"
-                                >
-                                  <Check
-                                    aria-hidden="true"
-                                    className="h-3 w-3"
-                                  />
-                                  {t("medications.intakeHistoryStatusTaken")}
-                                </Badge>
-                              ) : isSkipped ? (
-                                <Badge
-                                  variant="outline"
-                                  className="text-muted-foreground gap-1 text-xs"
-                                >
-                                  <SkipForward
-                                    aria-hidden="true"
-                                    className="h-3 w-3"
-                                  />
-                                  {t("medications.intakeHistoryStatusSkipped")}
-                                </Badge>
-                              ) : null}
+                              <IntakeStatusBadge
+                                taken={isTaken}
+                                skipped={isSkipped}
+                              />
                               {event.injectionSite ? (
                                 <InjectionSiteBadge
                                   site={event.injectionSite}
@@ -737,4 +702,39 @@ function InjectionSiteBadge({
       {siteName}
     </Badge>
   );
+}
+
+/**
+ * Taken / skipped chip shared by the desktop table and the mobile cards.
+ * Renders nothing for a row that is neither (the `status:"completed"`
+ * query keeps those out, but the shape stays defensive).
+ */
+function IntakeStatusBadge({
+  taken,
+  skipped,
+}: {
+  taken: boolean;
+  skipped: boolean;
+}) {
+  const { t } = useTranslations();
+  if (taken) {
+    return (
+      <Badge
+        variant="secondary"
+        className="bg-success/15 text-success gap-1 text-xs"
+      >
+        <Check aria-hidden="true" className="h-3 w-3" />
+        {t("medications.intakeHistoryStatusTaken")}
+      </Badge>
+    );
+  }
+  if (skipped) {
+    return (
+      <Badge variant="outline" className="text-muted-foreground gap-1 text-xs">
+        <SkipForward aria-hidden="true" className="h-3 w-3" />
+        {t("medications.intakeHistoryStatusSkipped")}
+      </Badge>
+    );
+  }
+  return null;
 }
