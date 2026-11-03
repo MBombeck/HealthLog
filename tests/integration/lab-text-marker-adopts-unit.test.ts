@@ -166,6 +166,33 @@ describe("a marker whose readings are all text", () => {
     expect(stored.unit).toBe("");
   });
 
+  it("does not count a deleted number as holding the unit", async () => {
+    const marker = await textMarker();
+    await prisma.labResult.create({
+      data: {
+        userId: USER,
+        biomarkerId: marker.id,
+        analyte: marker.name,
+        value: 12,
+        unit: "",
+        takenAt: new Date("2026-08-01T08:00:00.000Z"),
+        source: "MANUAL",
+        deletedAt: new Date("2026-08-02T08:00:00.000Z"),
+      },
+    });
+    const res = await postReading({
+      biomarkerId: marker.id,
+      value: 18,
+      unit: "1",
+      takenAt: "2026-10-01T08:00:00.000Z",
+    });
+    expect(res.status).toBe(201);
+    const stored = await prisma.biomarker.findUniqueOrThrow({
+      where: { id: marker.id },
+    });
+    expect(stored.unit).toBe("1");
+  });
+
   it("leaves a marker with a unit of its own refusing a unitless number", async () => {
     const marker = await prisma.biomarker.create({
       data: { userId: USER, name: "Creatinine", unit: "mg/dL" },

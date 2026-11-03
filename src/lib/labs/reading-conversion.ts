@@ -123,8 +123,11 @@ export async function readingInMarkerUnit(
  * every reading the marker holds is text there is no number the unit could
  * contradict, so the first numeric reading gives the marker its unit, the
  * dimensionless "1" included. The update only matches a marker whose unit is
- * still empty, so two readings racing for it cannot both win. `marker.unit`
- * is set on the caller's object, which writes the reading under it.
+ * still empty, so two readings racing for it cannot both win; the loser reads
+ * the winner's unit and is compared against it. `marker.unit` is set on the
+ * caller's object, which writes the reading under it. The adoption is not in
+ * the reading's transaction: if the write fails after it, the marker keeps
+ * the unit the reading stated, which is the unit its next reading will state.
  */
 async function adoptFirstNumericUnit(
   client: Pick<PrismaClient, "biomarker" | "labResult">,
@@ -134,14 +137,23 @@ async function adoptFirstNumericUnit(
   const stated = unit.trim();
   if (marker.unit.trim() !== "" || stated === "") return false;
   const numeric = await client.labResult.count({
-    where: { biomarkerId: marker.id, value: { not: null } },
+    where: { biomarkerId: marker.id, value: { not: null }, deletedAt: null },
   });
   if (numeric > 0) return false;
   const { count } = await client.biomarker.updateMany({
     where: { id: marker.id, unit: "" },
     data: { unit: stated },
   });
-  if (count === 0) return false;
+  if (count === 0) {
+    // Another reading set the unit first: carry on with the one it chose,
+    // which the caller then compares as usual.
+    const current = await client.biomarker.findUnique({
+      where: { id: marker.id },
+      select: { unit: true },
+    });
+    if (current) marker.unit = current.unit;
+    return false;
+  }
   marker.unit = stated;
   return true;
 }
