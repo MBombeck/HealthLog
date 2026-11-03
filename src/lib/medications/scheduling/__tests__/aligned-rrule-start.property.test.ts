@@ -63,32 +63,26 @@ function occurrences(rule: string, start: Date, after: Date, before: Date) {
 }
 
 describe("alignedRruleStart", () => {
-  it(
-    "leaves every occurrence in the window where it was",
-    () => {
-      assertProperty(
-        fc.property(
-          ruleArb,
-          dayArb,
-          fc.integer({ min: -30, max: 2 * 365 }),
-          fc.integer({ min: 1, max: 120 }),
-          (rule, anchor, offsetDays, spanDays) => {
-            const after = new Date(anchor.getTime() + offsetDays * DAY_MS);
-            const before = new Date(after.getTime() + spanDays * DAY_MS);
-            const aligned = alignedRruleStart(rule, anchor, after);
-            expect(aligned.getTime()).toBeGreaterThanOrEqual(anchor.getTime());
-            expect(occurrences(rule, aligned, after, before)).toEqual(
-              occurrences(rule, anchor, after, before),
-            );
-          },
-        ),
-        300,
-      );
-      // The reference walks from the real anchor, which is the cost this
-      // module removes from the engine.
-    },
-    propertyTimeout(30_000),
-  );
+  it("leaves every occurrence in the window where it was", () => {
+    assertProperty(
+      fc.property(
+        ruleArb,
+        dayArb,
+        fc.integer({ min: -30, max: 2 * 365 }),
+        fc.integer({ min: 1, max: 120 }),
+        (rule, anchor, offsetDays, spanDays) => {
+          const after = new Date(anchor.getTime() + offsetDays * DAY_MS);
+          const before = new Date(after.getTime() + spanDays * DAY_MS);
+          const aligned = alignedRruleStart(rule, anchor, after);
+          expect(aligned.getTime()).toBeGreaterThanOrEqual(anchor.getTime());
+          expect(occurrences(rule, aligned, after, before)).toEqual(
+            occurrences(rule, anchor, after, before),
+          );
+        },
+      ),
+      300,
+    );
+  });
 
   it("keeps the anchor for BYSETPOS, which picks among a whole week", () => {
     // Moving the start to a Friday left Monday out of the first week, so
