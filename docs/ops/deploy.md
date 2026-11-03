@@ -140,6 +140,22 @@ An INVALID index whose migration is already recorded applied is not touched at
 boot. The boot names it on stderr with `WARNING — index … is INVALID`; rebuild
 it with `REINDEX INDEX CONCURRENTLY "<index>";` when the database is quiet.
 
+### The app's database role
+
+The steps above run as the owner `DATABASE_URL` names: the dump, the
+migrations and, after them, the setup of `healthlog_app`, the role the app
+then connects as ([database-role.md](../self-hosting/database-role.md)). The
+app never runs a migration. A migration that creates a table needs nothing
+more: the setup grants the role every table it lacks before the app starts.
+
+On the first start of the release that brings the role, the setup hands the
+existing `pgboss` tables to it, which takes each table's lock for a moment.
+Stop the old container (and a separate worker) before the new one starts, as
+for any update with migrations; a lock that does not come within 15 seconds
+leaves that start on the owner with a notice, and the next start tries again.
+A web container and a worker container that start together wait for each
+other on an advisory lock and derive the same password.
+
 ### v1.46.0 notes
 
 - **Postgres 18.** The compose file moves the bundled database from

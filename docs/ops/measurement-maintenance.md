@@ -214,7 +214,7 @@ So an index is retired in two halves (v1.43.8, migration 0416, for
    exactly as the schema does, and `prisma migrate dev` / `migrate diff` see
    no drift and generate nothing.
 2. The index name goes into `RETIRED_MEASUREMENT_INDEXES` in
-   `src/lib/jobs/measurement-maintenance.ts`. Every run of this job, the
+   `src/lib/jobs/retired-measurement-indexes.mjs`. Every run of this job, the
    nightly 03:40 check included, drops each name still present with
    `DROP INDEX CONCURRENTLY IF EXISTS`, waiting at most 60 seconds for its
    locks. A run that runs out of time leaves the index (possibly marked
@@ -241,6 +241,16 @@ admin card (any steps), or run the same statement yourself:
 SET lock_timeout = '60s';
 DROP INDEX CONCURRENTLY IF EXISTS "measurements_user_id_type_measured_at_idx";
 ```
+
+When the app connects as its restricted role
+([database-role.md](../self-hosting/database-role.md)), the job may vacuum and
+rebuild (`MAINTAIN`) but not drop: `DROP INDEX` belongs to the table's owner.
+A run then skips the drops, of retired indexes and of the invalid copy a
+failed rebuild leaves, names what it found under
+`maintenance_drops_left_for_boot` with a warning, and the next start drops
+each as the owner with `DROP INDEX CONCURRENTLY`, waiting at most five
+seconds. Until then a failed rebuild's copy holds its disk; restart the
+container, or drop it by hand as the owner with the statement above.
 
 For the next large index, follow the same two halves.
 `src/__tests__/migration-lock-timeout-guard.test.ts` refuses a
