@@ -80,12 +80,13 @@ function imageCheck(): Check {
 }
 
 /**
- * The probe is Node's fetch, aborted by `AbortSignal.timeout(ms)`. The
- * image carries no wget or curl, so a probe that names one would fail every
- * time and mark a healthy container unhealthy.
+ * The probe is Node's fetch, aborted by `AbortSignal.timeout(ms)`. The image
+ * carries no curl, and its `wget` is a shim kept for health checks written
+ * outside the repository (`wget-shim.test.ts`); the image's own check and the
+ * bundled compose file do not lean on it, so neither names one.
  */
 function probeTimeout(command: string): number {
-  expect(command, "the probe needs a binary the image has").not.toMatch(
+  expect(command, "the image's own probe is the Node fetch").not.toMatch(
     /\b(wget|curl)\b/,
   );
   const m =

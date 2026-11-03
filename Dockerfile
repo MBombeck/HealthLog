@@ -401,6 +401,20 @@ RUN env -u DATABASE_URL healthlog-tsx scripts/repair-intake-anomalies.ts 2>&1 | 
 RUN mkdir -p /opt/geolite2 && chown nextjs:nodejs /opt/geolite2
 COPY --chown=nextjs:nodejs assets/geolite2/ /opt/geolite2/
 
+# `wget` for health checks written outside the image. A compose file copied
+# from this repository up to v1.46.6 and the TrueNAS catalog app both call
+# `wget --spider` against /api/health, and their check replaces the
+# HEALTHCHECK below; the Wolfi base has no wget, so without this every such
+# container stayed unhealthy. `scripts/wget-shim.mjs` understands the flags
+# those checks use, exits like wget, and writes nowhere but stdout. The
+# image's own HEALTHCHECK and the bundled compose file use the Node probe.
+# Root-owned: the app user can run it but not replace it.
+COPY --from=builder /app/scripts/wget-shim.mjs /usr/local/lib/healthlog/wget-shim.mjs
+RUN printf '#!/bin/sh\nexec node /usr/local/lib/healthlog/wget-shim.mjs "$@"\n' > /usr/local/bin/wget && \
+    chmod 755 /usr/local/bin/wget && \
+    wget 2>&1 | grep -q "health check shim" && \
+    ! wget --no-verbose --tries=1 --spider http://127.0.0.1:9/api/health
+
 # ISO-8601 build timestamp — /api/version returns it as `builtAt`.
 # Declared this late in the stage on purpose: the value differs on
 # every CI run, and every instruction after an ARG shares its cache
