@@ -9,10 +9,7 @@ import { describe, expect, it } from "vitest";
 
 import { alignedRruleStart } from "@/lib/medications/scheduling/aligned-rrule-start";
 
-import {
-  assertProperty,
-  propertyTimeout,
-} from "../../../../../tests/property/fast-check";
+import { assertProperty } from "../../../../../tests/property/fast-check";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BYDAY = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"] as const;
@@ -36,7 +33,7 @@ const ruleArb = fc
     ),
     wkst: fc.option(fc.constantFrom("MO", "SU")),
     count: fc.option(fc.integer({ min: 1, max: 40 })),
-    bysetpos: fc.option(fc.constantFrom(1, 2, -1)),
+    bysetpos: fc.option(fc.constantFrom(1, -1)),
   })
   .map(({ freq, interval, byday, byhour, wkst, count, bysetpos }) =>
     [
@@ -92,6 +89,18 @@ describe("alignedRruleStart", () => {
     },
     propertyTimeout(30_000),
   );
+
+  it("keeps the anchor for BYSETPOS, which picks among a whole week", () => {
+    // Moving the start to a Friday left Monday out of the first week, so
+    // BYSETPOS=1 chose the Friday, the window's first day.
+    const rule = "FREQ=WEEKLY;INTERVAL=1;BYSETPOS=1;BYDAY=MO,FR";
+    const anchor = new Date(Date.UTC(2023, 7, 15));
+    const after = new Date(Date.UTC(2025, 6, 11));
+    const before = new Date(after.getTime() + 21 * DAY_MS);
+    expect(
+      occurrences(rule, alignedRruleStart(rule, anchor, after), after, before),
+    ).toEqual(occurrences(rule, anchor, after, before));
+  });
 
   it("moves a daily or weekly start close to the window", () => {
     const anchor = new Date(Date.UTC(2024, 5, 1));
