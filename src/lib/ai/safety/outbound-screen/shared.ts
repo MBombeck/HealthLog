@@ -94,6 +94,26 @@ export const LETTER = "a-zà-ÿąćęłńóśźż";
  */
 export const INN_STEM = `(?<![${LETTER}])[${LETTER}]{2,}(?:pril|pryl|sartan|olol|statin|statyn|dipin|dypin|formin|glutid|glutyd|gliflozin|gliptin|xaban|ksaban|prazol|semid)[${LETTER}]{0,4}(?![${LETTER}])|(?<![${LETTER}])(?:enoxa|dalte)?heparin[${LETTER}]{0,4}`;
 
+/**
+ * The generic-name stems of `INN_STEM` as Russian and Korean write them
+ * ("метопролол", "аторвастатин", "메토프롤롤", "아토르바스타틴"). JavaScript's
+ * `\b` and `\w` are ASCII-only, so the edges are spelled out per script.
+ * The Korean "-xaban" stems carry their first syllable ("픽사반", "록사반") so
+ * a word like "조사반" (an inspection team) is not read as a drug.
+ */
+export const INN_STEM_CYRILLIC =
+  "(?<![а-яё])[а-яё]{2,}(?:прил|сартан|олол|статин|дипин|формин|глутид|глифлозин|глиптин|ксабан|празол|семид)[а-яё]{0,4}(?![а-яё])";
+export const INN_STEM_HANGUL =
+  "[가-힣]*(?:프릴|사르탄|프롤롤|롤롤|스타틴|디핀|포르민|트포민|글루타이드|글루티드|플로진|글립틴|픽사반|록사반|독사반|프라졸|세미드)";
+
+/**
+ * A liquid volume. Kept apart from `DRUG_UNIT` because "drink 500 ml of
+ * water" is hydration advice: a pattern may use it only beside a liquid drug
+ * form ("syrup", "Hustensaft", "сироп") or a medication noun.
+ */
+export const LIQUID_UNIT =
+  "(?:ml|мл|millilit(?:er|re)s?|milliliters?|mililitros?|millilitri|mililitr[a-zó]*|миллилитр[а-яё]*|밀리리터|cc)";
+
 export const ENGINE = "(?:framingham|ascvd|score2|qrisk)";
 
 /*

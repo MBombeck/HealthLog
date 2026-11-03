@@ -10,6 +10,9 @@ import {
   medicationExtras,
   unlessDeferred,
   WORD_START,
+  DRUG_UNIT,
+  LIQUID_UNIT,
+  SPELLED_COUNT,
   type LocaleBank,
 } from "../shared";
 
@@ -25,6 +28,22 @@ const FR_SHORT = objectSlot(
 
 const FR_MED_NOUN =
   "(?:doses?|comprimés?|médicaments?|traitement|insuline|injections?|piqûres?|pilules?|gélules?|cachets?)";
+
+/**
+ * The object of a negated intake. A protective qualifier ends it, so "ne
+ * prenez pas de double dose" and "ne prenez pas plus de 4 comprimés" stay
+ * warnings.
+ */
+const FR_HOLD_SLOT = objectSlot(
+  `${FR_STOP}|pour|avec|avant|après|sans|à|au|aux|double|plus|moitié|demi\\S*|deux|autres?|suppl[ée]mentaires?|en`,
+  3,
+);
+
+/** Where a negated intake reads as a hold: the clause closes or a time word follows. */
+const FR_HOLD_END = `(?=\\s*(?:[.!;)]|$)|\\s+(?:ce\\s+soir|ce\\s+matin|aujourd|demain|cette\\s+semaine|pour\\s+l['’]instant|pour\\s+le\\s+moment|pendant|jusqu|avant)${WORD_END})`;
+
+/** A liquid drug form a measured volume may be a dose of. */
+const FR_LIQUID = `(?:sirops?|solutions?|suspensions?|gouttes|élixirs?|teintures?)${WORD_END}`;
 
 const SPELLED_FR =
   "(?:zéro|un|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze|quinze|seize|dix-sept|dix-huit|dix-neuf|vingt|trente|quarante|cinquante|soixante)";
@@ -98,6 +117,33 @@ export const bank: LocaleBank = {
         `(?<!\\b(?:vous|nous|je|tu|il|elle|on)\\s)(?<!n['’])\\b(?:augmentez|augmente|diminuez|diminue|r[ée]duisez|r[ée]duis|baissez|baisse)\\s+${FR_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:maintenant|aujourd|demain|ce\\s+soir|un\\s+peu|progressivement|pendant)(?![\\w\\u00C0-\\u024F]))`,
         "i",
       ),
+    ),
+    // A negated intake is a hold: "Ne prenez pas votre atorvastatine ce
+    // soir", "ne prends pas ton métoprolol", "ne prenez plus le ramipril".
+    new RegExp(
+      `${WORD_START}(?:ne\\s+|n['’])(?:prenez|prends|injectez|injecte|utilisez|utilise)\\s+(?:pas|plus)\\s+${FR_HOLD_SLOT}${med}${FR_HOLD_END}`,
+      "i",
+    ),
+    // A pause: "Faites une pause avec l'énalapril", "mettez le ramipril en
+    // pause". A pause from screens or after a meal names no medication.
+    new RegExp(
+      `${WORD_START}(?:faites|fais|prenez|prends|observez)\\s+(?:une\\s+)?(?:petite\\s+|courte\\s+)?(?:pause|interruption|fenêtre\\s+thérapeutique)\\s+(?:(?:avec|dans|de|du|des|sur)\\s+)?${FR_SHORT}${med}`,
+      "i",
+    ),
+    new RegExp(
+      `${WORD_START}(?:mettez|mets)\\s+${FR_SHORT}${med}\\s+en\\s+pause`,
+      "i",
+    ),
+    // An increment: "Ajoutez 2 unités à votre dose du soir".
+    new RegExp(
+      `${WORD_START}(?:ajoutez|ajoute|rajoutez|rajoute)\\s+${FR_SHORT}(?:encore\\s+)?(?:[\\d.,]+|${SPELLED_COUNT})\\s*${DRUG_UNIT}${UNIT_END}`,
+      "i",
+    ),
+    // A measured volume of a liquid drug form: "Prenez 10 ml de sirop".
+    // "Buvez 500 ml d'eau" passes.
+    new RegExp(
+      `${WORD_START}(?:prenez|prends|administrez)\\s+${FR_SHORT}[\\d.,]+\\s*${LIQUID_UNIT}${UNIT_END}\\s+(?:d[eu]s?\\s+|d['’])?${FR_SHORT}(?:${ELIDED}${FR_LIQUID}|${med})`,
+      "i",
     ),
   ],
   dose: [

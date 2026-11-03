@@ -11,6 +11,8 @@ import {
   unlessDeferred,
   WORD_START,
   WORD_END,
+  LIQUID_UNIT,
+  SPELLED_COUNT,
   type LocaleBank,
 } from "../shared";
 
@@ -26,6 +28,21 @@ const PT_SHORT = objectSlot(
 
 const PT_MED_NOUN =
   "(?:doses?|comprimidos?|pastilhas?|dr[áa]geas?|c[áa]psulas?|medicamentos?|rem[ée]dios?|medica[çc](?:[ãa]o|[õo]es)|insulina|inje[çc](?:[ãa]o|[õo]es)|tratamento)";
+
+/**
+ * The object of a negated intake. A protective qualifier ends it, so "não
+ * tome dose dobrada" and "não tome mais de 4 comprimidos" stay warnings.
+ */
+const PT_HOLD_SLOT = objectSlot(
+  `${PT_STOP}|para|pra|com|antes|depois|sem|a|ao|à|em|por|durante|sobre|mais|dobrad[ao]s?|dupl[ao]|mei[ao]|metade|dois|duas|outr[ao]s?|extras?|adiciona\\S*|segunda`,
+  3,
+);
+
+/** Where a negated intake reads as a hold: the clause closes or a time word follows. */
+const PT_HOLD_END = `(?=\\s*(?:[.!;)]|$)|\\s+(?:hoje|amanhã|esta\\s+noite|à\\s+noite|por\\s+(?:enquanto|agora|alguns\\s+dias)|durante|até|antes)${WORD_END})`;
+
+/** A liquid drug form a measured volume may be a dose of. */
+const PT_LIQUID = `(?:xaropes?|solu[çc][ãa]o|solu[çc][õo]es|suspens[ãa]o|gotas|elixir)${WORD_END}`;
 
 const SPELLED_PT =
   "(?:zero|um|uma|dois|duas|tr[êe]s|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|quatorze|catorze|quinze|dezesseis|dezessete|dezoito|dezenove|vinte|trinta|quarenta|cinquenta|sessenta)";
@@ -122,6 +139,29 @@ export const bank: LocaleBank = {
         `(?<!\\b(?:não|nao|nunca|jamais)\\s)\\b(?:aumente|suba|eleve|reduza|diminua|baixe|abaixe)\\s+(?:(?:a|o|as|os)\\s+)?${PT_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:agora|hoje|amanh[ãa]|um\\s+pouco|aos\\s+poucos|gradualmente|a\\s+partir)(?![\\w\\u00C0-\\u024F]))`,
         "i",
       ),
+    ),
+    // A negated intake is a hold: "Não tome atorvastatina hoje à noite",
+    // "não tome o seu metoprolol".
+    new RegExp(
+      `${WORD_START}n[ãa]o\\s+(?:tome|tomem|tomar|use|usem|aplique|apliquem|injete|injetem)${WORD_END}\\s+${PT_HOLD_SLOT}${med}${PT_HOLD_END}`,
+      "i",
+    ),
+    // A pause: "Faça uma pausa no enalapril", "dê um tempo do ramipril". A
+    // pause from screens names no medication.
+    new RegExp(
+      `${WORD_START}(?:faça|faz|dê|dá|tire|tira)\\s+(?:uma|um)\\s+(?:[^\\s\\d.?!,;:]+\\s+)?(?:pausa|tempo|intervalo|descanso)\\s+(?:(?:n[oa]s?|d[oa]s?|com\\s+o|com\\s+a|com|de|em)\\s+)?${PT_SHORT}${med}`,
+      "i",
+    ),
+    // An increment: "Adicione 4 unidades a mais de insulina".
+    new RegExp(
+      `${WORD_START}(?:adicione|acrescente|aplique|injete)\\s+(?:mais\\s+)?(?:[\\d.,]+|${SPELLED_COUNT})\\s*${DRUG_UNIT}${UNIT_END}`,
+      "i",
+    ),
+    // A measured volume of a liquid drug form: "Tome 10 ml do xarope". "Beba
+    // 500 ml de água" passes.
+    new RegExp(
+      `${WORD_START}(?:tome|toma|use|administre)\\s+${PT_SHORT}[\\d.,]+\\s*${LIQUID_UNIT}${UNIT_END}\\s+(?:(?:d[oa]s?|de)\\s+)?${PT_SHORT}(?:${PT_LIQUID}|${med})`,
+      "i",
     ),
   ],
   dose: [
