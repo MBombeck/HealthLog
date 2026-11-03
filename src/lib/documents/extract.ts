@@ -504,6 +504,7 @@ export async function planInboundReads(
     source.mime,
     source.pdfSupported,
     schedule,
+    INBOUND_TEXT_READ_CHARS,
   );
   if (!plan.ok) return plan;
   if (plan.mode === "text") {
@@ -515,8 +516,7 @@ export async function planInboundReads(
         totalPages: plan.totalPages,
         ocrText: plan.ocrText,
       },
-      partial:
-        plan.pageCoverage !== undefined || plan.pagesWithoutText.length > 0,
+      partial: plan.pageCoverage !== undefined || plan.unreadPages.length > 0,
     };
   }
   return {

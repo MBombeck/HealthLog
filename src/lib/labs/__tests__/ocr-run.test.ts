@@ -817,4 +817,37 @@ describe("a PDF on a server that cannot render PDF pages (#1311)", () => {
     expect(args.mode).toBe("vision");
     expect(args.chunks[0].documents).toHaveLength(1);
   }, 30_000);
+
+  it("keeps every text read of a dense report under the per-read bound", async () => {
+    // Twelve pages of about 3 000 characters each, and a request's three
+    // reads: grouping whole pages would send reads of 12 000 characters.
+    const doc = new jsPDF();
+    for (let page = 0; page < 12; page++) {
+      if (page > 0) doc.addPage();
+      for (let line = 0; line < 34; line++) {
+        doc.text(
+          `Analyte ${page}-${line} 12.${line} mg/dl 10.0 - 20.0 ref lab A`,
+          10,
+          8 + line * 8,
+        );
+      }
+    }
+    vi.mocked(runOcrExtraction).mockImplementation(extraction());
+    const out = await executeOcrExtraction({
+      userId: "u1",
+      input: { ...pdf(), bytes: Buffer.from(doc.output("arraybuffer")) },
+      budget,
+      schedule: schedule(6),
+    });
+    const args = vi.mocked(runOcrExtraction).mock.calls[0][0];
+    expect(args.chunks.length).toBeLessThanOrEqual(3);
+    for (const chunk of args.chunks) {
+      expect(chunk.text!.length).toBeLessThanOrEqual(OCR_TEXT_READ_MAX_CHARS);
+    }
+    // What the three reads could not take is named, not silently dropped.
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    expect(out.data.unreadPages?.length).toBeGreaterThan(0);
+    expect(out.data.unreadPages).toContain(12);
+  }, 30_000);
 });

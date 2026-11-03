@@ -17,7 +17,11 @@ import { decryptDocumentContent } from "@/lib/documents/store";
 
 import { prepareVisionInput } from "../ai-route-support";
 import { __resetNativeCanvasSupportForTests } from "../native-canvas-support";
-import { planVisionReads, SYNCHRONOUS_READ_SCHEDULE } from "../ocr-plan";
+import {
+  planTextLayerChunks,
+  planVisionReads,
+  SYNCHRONOUS_READ_SCHEDULE,
+} from "../ocr-plan";
 import { readPdfTextLayer } from "../pdf-text-layer";
 
 /** A 1×1 PNG: a page carrying only this is a scan with no text layer. */
@@ -173,7 +177,7 @@ describe("on a server that cannot render PDF pages", () => {
         ok: true,
         mode: "text",
         totalPages: 3,
-        pagesWithoutText: [2],
+        unreadPages: [2],
       });
       if (!plan.ok || plan.mode !== "text") return;
       expect(plan.chunks.map((c) => c.pages)).toEqual([[1], [3]]);
@@ -247,4 +251,52 @@ describe("on a server that renders PDF pages", () => {
       ),
     ).resolves.toEqual({ ok: false, reason: "renderFailed" });
   }, 60_000);
+});
+
+describe("planTextLayerChunks", () => {
+  const page = (n: number, lines: number) => ({
+    page: n,
+    text: Array.from(
+      { length: lines },
+      (_, i) => `Analyte ${n}-${i} 12.${i} mg/dl 10.0 - 20.0`,
+    ).join("\n"),
+  });
+
+  it("reads a page per read while the deadline allows it", () => {
+    const { chunks, unreadPages } = planTextLayerChunks(
+      [page(1, 3), page(2, 3)],
+      5,
+      4000,
+    );
+    expect(chunks.map((c) => c.pages)).toEqual([[1], [2]]);
+    expect(unreadPages).toEqual([]);
+  });
+
+  it("splits a page longer than one read at line boundaries", () => {
+    // ~200 lines of ~40 characters: about 8 000 characters on one page.
+    const { chunks } = planTextLayerChunks([page(1, 200)], 10, 4000);
+    expect(chunks.length).toBeGreaterThan(1);
+    expect(chunks.every((c) => c.pages[0] === 1)).toBe(true);
+    expect(chunks.every((c) => c.text!.length <= 4000)).toBe(true);
+    expect(chunks.map((c) => c.text).join("\n")).toBe(page(1, 200).text);
+  });
+
+  it("never sends a read past twice the target, and names the pages left over", () => {
+    const pages = Array.from({ length: 12 }, (_, i) => page(i + 1, 75));
+    const { chunks, unreadPages } = planTextLayerChunks(pages, 3, 4000);
+    expect(chunks).toHaveLength(3);
+    expect(chunks.every((c) => c.text!.length <= 8000)).toBe(true);
+    const read = new Set(chunks.flatMap((c) => c.pages));
+    expect(unreadPages.length).toBeGreaterThan(0);
+    expect(unreadPages).toContain(12);
+    expect(read.has(1)).toBe(true);
+  });
+
+  it("packs short pages into fewer reads when the deadline is tight", () => {
+    const pages = Array.from({ length: 6 }, (_, i) => page(i + 1, 3));
+    const { chunks, unreadPages } = planTextLayerChunks(pages, 2, 4000);
+    expect(chunks.length).toBeLessThanOrEqual(2);
+    expect(chunks.flatMap((c) => c.pages)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(unreadPages).toEqual([]);
+  });
 });
