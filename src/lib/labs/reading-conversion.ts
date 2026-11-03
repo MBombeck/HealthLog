@@ -52,7 +52,7 @@ export type ReadingInMarkerUnit =
   | { ok: false; reason: ConversionRefusal };
 
 export async function readingInMarkerUnit(
-  client: Pick<PrismaClient, "biomarker">,
+  client: Pick<PrismaClient, "biomarker" | "labResult">,
   input: {
     marker: ReadingMarker;
     value: number;
@@ -64,6 +64,18 @@ export async function readingInMarkerUnit(
 ): Promise<ReadingInMarkerUnit> {
   const { marker, value, unit, sourceReferenceLow, sourceReferenceHigh } =
     input;
+  if (
+    unit !== undefined &&
+    (await adoptFirstNumericUnit(client, marker, unit))
+  ) {
+    return {
+      ok: true,
+      converted: false,
+      value,
+      sourceReferenceLow,
+      sourceReferenceHigh,
+    };
+  }
   if (unit === undefined || sameLabUnit(unit, marker.unit)) {
     return {
       ok: true,
@@ -102,4 +114,34 @@ export async function readingInMarkerUnit(
     sourceValue: value,
     sourceUnit: unit.trim(),
   };
+}
+
+/**
+ * A marker minted from a text result ("SEE NOTE", "negative") has no unit,
+ * and once it holds a reading its unit is locked, so the first number to
+ * arrive was refused against an empty unit nothing had ever chosen. While
+ * every reading the marker holds is text there is no number the unit could
+ * contradict, so the first numeric reading gives the marker its unit, the
+ * dimensionless "1" included. The update only matches a marker whose unit is
+ * still empty, so two readings racing for it cannot both win. `marker.unit`
+ * is set on the caller's object, which writes the reading under it.
+ */
+async function adoptFirstNumericUnit(
+  client: Pick<PrismaClient, "biomarker" | "labResult">,
+  marker: ReadingMarker,
+  unit: string,
+): Promise<boolean> {
+  const stated = unit.trim();
+  if (marker.unit.trim() !== "" || stated === "") return false;
+  const numeric = await client.labResult.count({
+    where: { biomarkerId: marker.id, value: { not: null } },
+  });
+  if (numeric > 0) return false;
+  const { count } = await client.biomarker.updateMany({
+    where: { id: marker.id, unit: "" },
+    data: { unit: stated },
+  });
+  if (count === 0) return false;
+  marker.unit = stated;
+  return true;
 }
