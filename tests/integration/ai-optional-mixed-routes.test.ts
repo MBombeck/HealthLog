@@ -46,10 +46,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // The two enqueue seams a mixed read may reach. Spied, never run: the test
 // asserts they are not called while a capability is unavailable.
 const enqueueNarrativeWarm = vi.fn(async () => undefined);

@@ -15,10 +15,6 @@ vi.mock("@/lib/db-session", async (importOriginal) => {
   return { ...actual, TIME_ZONE_OPTION: "-c TimeZone=Pacific/Auckland" };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { prisma } from "@/lib/db";
 import {

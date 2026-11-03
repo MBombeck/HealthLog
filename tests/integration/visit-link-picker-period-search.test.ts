@@ -58,10 +58,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const OWNER_ID = "period-search-owner";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const TZ = "Europe/Berlin";

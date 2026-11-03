@@ -51,10 +51,6 @@ const fake = vi.hoisted(() => ({
   sends: [] as Array<{ queue: string; payload: unknown; options: unknown }>,
 }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: () => ({
     send: async (queue: string, payload: unknown, options: unknown) => {

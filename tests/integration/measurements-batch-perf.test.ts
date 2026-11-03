@@ -43,10 +43,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const rollupCalls = vi.hoisted(() => ({ count: 0 }));
 vi.mock("@/lib/rollups/after-measurement-mutation", async () => {
   const actual = await vi.importActual<

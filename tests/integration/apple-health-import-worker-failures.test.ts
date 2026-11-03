@@ -34,10 +34,6 @@ import {
   type AppleHealthImportPayload,
 } from "@/lib/jobs/apple-health-import-worker";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // No pg-boss attached — the end-of-import rollup fold's enqueue helpers
 // are silent no-ops without a boss.
 vi.mock("@/lib/jobs/boss-instance", () => ({

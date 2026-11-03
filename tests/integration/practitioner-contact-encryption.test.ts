@@ -44,10 +44,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const OWNER_ID = "practitioner-contact-owner";
 const PHONE = "+49 30 9876543";
 const ADDRESS = "Lindenweg 12, 10115 Berlin";

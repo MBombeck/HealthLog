@@ -3,7 +3,6 @@ import { prisma } from "@/lib/db";
 import { cookies } from "next/headers";
 import { hashToken } from "@/lib/auth/hmac";
 import { SESSION_USER_SELECT, type SessionUser } from "@/lib/auth/session-user";
-import { ensureDbCompatibility } from "@/lib/db-compat";
 import { getEvent } from "@/lib/logging/context";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 import { isInputRefusal, isP2025 } from "@/lib/prisma-errors";
@@ -311,16 +310,6 @@ export async function getSession(): Promise<{
   };
   user: SessionUser;
 } | null> {
-  try {
-    await ensureDbCompatibility();
-  } catch (error) {
-    getEvent()?.setError(
-      error instanceof Error
-        ? error
-        : new Error("DB compatibility check failed"),
-    );
-  }
-
   const cookieStore = await cookies();
   const carried = readSessionCookie(cookieStore);
   if (!carried) return null;
@@ -490,7 +479,7 @@ export async function getSession(): Promise<{
 /**
  * Lightweight read of the signed-in user's persisted locale for the root
  * layout's first-paint language resolution. Deliberately NOT
- * `getSession()`: no db-compat check, no sliding-expiry write, no cookie
+ * `getSession()`: no sliding-expiry write, no cookie
  * mutation — the root layout renders on every request in a context where
  * the cookie store is read-only, so the full session touch is both dead
  * weight and a throw hazard there. Returns null for missing/expired

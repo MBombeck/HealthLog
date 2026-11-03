@@ -42,10 +42,6 @@ import { STORED_BACKUP_SELECT } from "@/lib/export/stored-backup";
 import { parseBackupPayload } from "@/lib/validations/backup";
 import { summarizeBackup } from "@/lib/validations/backup-summary";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const prisma = getPrismaClient();
 const OWNER_ID = "backup-document-owner";
 

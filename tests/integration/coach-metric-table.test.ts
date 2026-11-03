@@ -26,9 +26,6 @@ import { executeCoachTool } from "@/lib/ai/coach/tools/executor";
 import { appendMessage, createConversation } from "@/lib/ai/coach/persistence";
 import type { CoachResultTable } from "@/lib/ai/coach/types";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => null),
 }));

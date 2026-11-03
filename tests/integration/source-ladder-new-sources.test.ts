@@ -22,10 +22,6 @@ import {
 } from "@/lib/analytics/source-rank-sql";
 import { boundInstantSql } from "@/lib/analytics/request-clock-sql";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const prisma = getPrismaClient();
 const USER = "ladder-new-sources";
 const DAY = 86_400_000;

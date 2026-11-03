@@ -50,10 +50,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const TEST_USER_ID = "user-whoop-connect-ticket";
 const RAW_BEARER = "hlk_whoopconnectticketintegrationrawtokenvalue00000001";
 const WHOOP_AUTH_URL = "https://api.prod.whoop.com/oauth/oauth2/auth";

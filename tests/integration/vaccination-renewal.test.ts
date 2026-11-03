@@ -32,10 +32,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const OWNER_ID = "renewal-owner";
 const DELEGATE_ID = "renewal-delegate";
 

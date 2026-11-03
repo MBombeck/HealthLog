@@ -14,10 +14,6 @@ import { metricDayMap } from "@/lib/insights/mood-crosstab";
 import { PHASE_CROSSTAB_METRIC_TYPES } from "@/lib/cycle/phase-crosstab";
 import type { CrossMetricMeasurement } from "@/lib/insights/mood-aggregates";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const prisma = getPrismaClient();
 const USER = "cycle-crosstab-agg";
 const SINCE = new Date("2026-06-01T00:00:00Z");

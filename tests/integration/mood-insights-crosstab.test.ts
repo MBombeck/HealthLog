@@ -13,10 +13,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { fetchMoodAggregates } from "@/lib/insights/mood-aggregates";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const TEST_USER_ID = "user-crosstab";
 const dayMs = 24 * 60 * 60 * 1000;
 const NOW = new Date("2026-06-01T12:00:00.000Z");

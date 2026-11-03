@@ -43,10 +43,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // The queue is not under test: record what the invalidator enqueues.
 const enqueued = vi.hoisted(() => [] as Array<{ metric: string }>);
 vi.mock("@/lib/jobs/insight-status-generate-shared", async (orig) => ({

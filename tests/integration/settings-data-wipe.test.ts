@@ -65,10 +65,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 async function managedProfileLockIsHeld(
   prisma: PrismaClient,
   profileId: string,

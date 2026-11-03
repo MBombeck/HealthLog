@@ -9,10 +9,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { buildExtendedChangepointSignals } from "@/lib/insights/derived/changepoint";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 function at(daysAgo: number): Date {

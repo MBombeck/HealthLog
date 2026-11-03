@@ -42,10 +42,6 @@ import {
   reconcileOrphanImportJobs,
 } from "@/lib/jobs/apple-health-import-worker";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const bossMock = vi.hoisted(() => ({
   handle: null as null | {
     getJobById: (queue: string, id: string) => Promise<unknown>;

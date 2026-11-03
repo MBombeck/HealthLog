@@ -16,10 +16,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const { detectPersonalRecordsForUser } =
   await import("@/lib/personal-records/pr-detection-worker");
 

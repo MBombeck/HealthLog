@@ -15,10 +15,6 @@ import { readActivityDays } from "@/lib/activity/calendar-read";
 import { invalidateUserTimezone } from "@/lib/tz/resolver";
 import { userDayKey } from "@/lib/tz/format";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const prisma = getPrismaClient();
 const TZ = "Europe/Berlin";
 const USER = "activity-reader";

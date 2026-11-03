@@ -9,9 +9,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/notifications/dispatcher", () => ({
   dispatchNotification: vi.fn().mockResolvedValue({
     dispatched: true,

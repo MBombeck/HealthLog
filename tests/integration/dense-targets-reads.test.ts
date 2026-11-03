@@ -27,10 +27,6 @@ import { buildVitalTargets } from "@/lib/targets/vitals-builder";
 import { userDayKey } from "@/lib/tz/format";
 import { invalidateUserTimezone } from "@/lib/tz/resolver";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const prisma = getPrismaClient();
 const TZ = "America/New_York";
 const DENSE = "dense-targets-owner";

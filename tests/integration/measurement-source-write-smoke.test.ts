@@ -52,10 +52,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const USER_ID = "measurement-source-write-smoke";
 const MEASURED_AT = new Date("2026-07-20T08:00:00.000Z");
 

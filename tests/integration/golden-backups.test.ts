@@ -60,10 +60,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const FIXTURE_DIR = resolve(__dirname, "../fixtures/golden-backups");
 const WRITE = process.env.GOLDEN_BACKUP_WRITE === "1";
 const SLOW = 240_000;

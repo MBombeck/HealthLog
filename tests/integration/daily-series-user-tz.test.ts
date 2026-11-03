@@ -28,10 +28,6 @@ import { invalidateUserTimezone } from "@/lib/tz/resolver";
 import { userDayKey } from "@/lib/tz/format";
 import { localHmAsUtc } from "@/lib/tz/local-day";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 beforeEach(async () => {
   await truncateAllTables(getPrismaClient());
 });

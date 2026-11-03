@@ -49,10 +49,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // ── The fake Paperless-ngx behind `safeFetch` ──────────────────────────────
 
 const ORIGIN = "http://paperless.lan:8000";

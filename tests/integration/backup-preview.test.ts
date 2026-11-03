@@ -45,10 +45,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const opened = vi.hoisted(() => ({ count: 0 }));
 vi.mock("@/lib/export/stored-backup", async (importOriginal) => {
   const actual =

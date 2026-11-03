@@ -1,9 +1,8 @@
 /**
  * Integration regression guard for `src/lib/auth/session.ts`.
  *
- * The session helpers couple Postgres (`Session` row), the `cookies()`
- * adapter from `next/headers`, and the `db-compat` schema-migration
- * fallback. A unit test with a mocked Prisma client cannot verify the
+ * The session helpers couple Postgres (`Session` row) and the `cookies()`
+ * adapter from `next/headers`. A unit test with a mocked Prisma client cannot verify the
  * end-to-end flow — particularly the expired-session purge behaviour,
  * which silently deletes the row before returning null.
  */
@@ -37,12 +36,6 @@ vi.mock("next/headers", async () => {
     })),
   };
 });
-
-// `db-compat` runs ALTER TABLE IF NOT EXISTS statements that are no-ops
-// against a freshly-migrated schema but slow tests down — short-circuit.
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 beforeEach(async () => {
   await truncateAllTables(getPrismaClient());

@@ -16,10 +16,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { probeCoachAvailability } from "@/lib/ai/coach/tools/availability";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const NOW = new Date("2026-07-26T09:00:00Z");
 
 beforeEach(async () => {

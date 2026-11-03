@@ -30,10 +30,6 @@ import { makeUser } from "../kit/factories";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const prisma = getPrismaClient();
 const DAY_MS = 86_400_000;
 const MIN_MS = 60_000;

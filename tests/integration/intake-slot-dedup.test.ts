@@ -34,10 +34,6 @@ import { localHmAsUtc } from "@/lib/tz/local-day";
 const TEST_USER_ID = "user-intake-slot-dedup";
 const OTHER_USER_ID = "user-intake-slot-dedup-clean";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 beforeEach(async () => {
   const prisma = getPrismaClient();
   await truncateAllTables(prisma);

@@ -41,10 +41,6 @@ import {
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { acceptingBoss } from "./restore-job-driver";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const OWNER = "restore-deadlock-owner";
 const DAY = "2026-01-10";
 const TOTAL_ID = "deadlock-total";

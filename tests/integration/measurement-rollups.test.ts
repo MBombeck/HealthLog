@@ -41,10 +41,6 @@ import { aggregateBuckets } from "@/lib/rollups/measurement-read";
 import { buildComprehensiveAggregate } from "@/lib/insights/comprehensive-aggregator";
 import { windowWeighting } from "@/lib/measurements/day-statistic";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // Stub boss-instance with a vi.fn so we can swap the return per test.
 // The integration suite runs with `isolate: false`, so the mock state
 // is shared with sibling files (e.g. admin-backups-audit.test.ts also

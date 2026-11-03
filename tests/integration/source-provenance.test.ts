@@ -22,10 +22,6 @@ import {
 } from "@/lib/provenance/source-provenance";
 import type { Prisma } from "@/generated/prisma/client";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const prisma = getPrismaClient();
 const USER = "provenance-user";
 const DAY = 86_400_000;

@@ -39,10 +39,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 /**
  * The start-up probe is bounded in time on purpose: ten seconds in all and
  * two per query, so a host with a huge table still starts. Those bounds are

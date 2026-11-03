@@ -29,10 +29,6 @@ import { applyCanonicalSlotWrite } from "@/lib/medications/scheduling/slot-upser
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 beforeEach(async () => {
   await truncateAllTables(getPrismaClient());
 });

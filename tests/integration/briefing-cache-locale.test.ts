@@ -36,10 +36,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const BRIEFING = {
   greeting: "Good morning",
   paragraph: "Your readings this week stayed inside their usual range.",

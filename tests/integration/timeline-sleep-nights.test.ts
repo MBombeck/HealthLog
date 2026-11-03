@@ -13,10 +13,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const TZ = "Europe/Berlin";
 const NOW = new Date("2026-10-09T12:00:00.000Z");
 

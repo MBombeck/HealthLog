@@ -22,10 +22,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const TEST_USER_ID = "user-pr-detection-e2e";
 
 const { detectPersonalRecordsForUser, PR_DETECTION_WARMUP_THRESHOLD } =

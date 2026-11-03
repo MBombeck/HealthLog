@@ -38,10 +38,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // A warm on the demo can only fail against the seeded placeholder key, so a
 // fresh seed must not ask for one.
 const enqueueForceWarm = vi.fn();

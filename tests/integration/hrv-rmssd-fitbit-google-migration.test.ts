@@ -15,9 +15,6 @@ import type { Prisma } from "@/generated/prisma/client";
 import { enqueueBootTimeRollupBackfill } from "@/lib/rollups/full-backfill";
 import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => null),
 }));

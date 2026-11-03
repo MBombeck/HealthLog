@@ -47,10 +47,6 @@ const ALLOWED: Record<string, { hits: number; why: string }> = {
     hits: 1,
     why: "pg-boss tables are timestamptz",
   },
-  "src/lib/db-compat.ts": {
-    hits: 1,
-    why: "DDL default on a timestamptz column",
-  },
 };
 
 const SQL_CLOCK =

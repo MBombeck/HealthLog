@@ -35,10 +35,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const USER_ID = "user-biomarker-merge";
 const OTHER_ID = "user-biomarker-merge-other";
 const DAY_MS = 86_400_000;

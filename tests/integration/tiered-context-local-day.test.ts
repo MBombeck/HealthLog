@@ -18,10 +18,6 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 import { buildTieredSeries } from "@/lib/rollups/tiered-context";
 
 const prisma = getPrismaClient();

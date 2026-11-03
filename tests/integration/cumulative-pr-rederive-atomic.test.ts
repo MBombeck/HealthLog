@@ -29,10 +29,6 @@ vi.mock("@/lib/personal-records/pr-detection-worker", async (importActual) => {
     },
   };
 });
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const { runCumulativePrRederivationForUser, CUMULATIVE_PR_FIX_CUTOFF } =
   await import("@/lib/personal-records/cumulative-pr-rederivation");
 

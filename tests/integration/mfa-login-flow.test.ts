@@ -15,10 +15,6 @@ import { getPrismaClient, truncateAllTables } from "./setup";
 process.env.API_TOKEN_HMAC_KEY ??=
   "test-hmac-key-test-hmac-key-test-hmac-key-0123456789";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 function codeAt(secretBase32: string, atMs: number): string {
   const totp = new OTPAuth.TOTP({
     issuer: "HealthLog",

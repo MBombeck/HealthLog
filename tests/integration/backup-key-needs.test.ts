@@ -41,10 +41,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const saved = {
   key: process.env.ENCRYPTION_KEY,
   keys: process.env.ENCRYPTION_KEYS,

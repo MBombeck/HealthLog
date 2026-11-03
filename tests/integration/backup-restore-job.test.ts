@@ -75,10 +75,6 @@ vi.mock("next/headers", async () => {
     })),
   };
 });
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 /** A queue that records what it is sent and what it is told is finished. */
 function recordingBoss() {
   const sent: Array<{ queue: string; data: unknown }> = [];

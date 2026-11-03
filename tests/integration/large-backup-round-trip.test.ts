@@ -49,10 +49,6 @@ vi.mock("next/headers", async () => {
     })),
   };
 });
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const COUNT = 7_300; // more than one read page and several write batches
 
 beforeEach(async () => {

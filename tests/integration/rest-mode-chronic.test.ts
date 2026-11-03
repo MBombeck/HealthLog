@@ -21,10 +21,6 @@ import type { ModuleKey } from "@/lib/modules/registry";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const USER = "rest-mode-chronic";
 const DAY = 24 * 60 * 60 * 1000;
 

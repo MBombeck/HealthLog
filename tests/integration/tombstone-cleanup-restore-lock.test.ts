@@ -21,10 +21,6 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const RESTORING = "tombstone-restoring";
 const OTHER = "tombstone-other";
 const HOLD_MS = 3_000;

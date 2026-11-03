@@ -49,10 +49,6 @@ vi.mock("next/headers", async () => {
     })),
   };
 });
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const WS_HK = "HKQuantityTypeIdentifierWalkingSpeed";
 const HRV_HK = "HKQuantityTypeIdentifierHeartRateVariabilitySDNN";
 const HR_HK = "HKQuantityTypeIdentifierHeartRate";

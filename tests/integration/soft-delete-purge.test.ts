@@ -20,10 +20,6 @@ import {
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const USER = "soft-delete-purge-user";
 const NOW = new Date("2026-10-20T03:42:00.000Z");
 const DAY = 86_400_000;

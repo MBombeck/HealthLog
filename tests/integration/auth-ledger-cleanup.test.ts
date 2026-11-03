@@ -13,10 +13,6 @@ import { cleanupAuthLedgers } from "@/lib/jobs/auth-ledger-cleanup";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const USER = "auth-ledger-user";
 const NOW = new Date("2026-10-20T03:35:00.000Z");
 const DAY = 86_400_000;

@@ -25,9 +25,6 @@ import { readAllTimeExtremes } from "@/lib/insights/feature-blocks";
 import { computeSummariesSlice } from "@/lib/analytics/summaries-slice";
 import type { MeasurementType } from "@/generated/prisma/client";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => null),
 }));

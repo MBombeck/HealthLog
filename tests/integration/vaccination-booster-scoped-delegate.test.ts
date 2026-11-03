@@ -44,10 +44,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const OWNER_ID = "booster-scope-owner";
 const DELEGATE_ID = "booster-scope-delegate";
 

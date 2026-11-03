@@ -78,10 +78,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // The breach corpus is a network call; the claim's own logic is the subject.
 vi.mock("@/lib/password-breach-check", () => ({
   checkPasswordBreachIfEnabled: vi.fn().mockResolvedValue(null),

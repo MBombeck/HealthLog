@@ -109,10 +109,6 @@ vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // Default to no Authorization header; the Bearer tests override this.
 const headerStore = { authorization: null as string | null };
 vi.mock("next/headers", () => ({

@@ -36,10 +36,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const HEADER = "type,value,unit,measuredAt,glucoseContext,notes,externalId";
 const ROWS = 9000;
 

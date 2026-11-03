@@ -29,10 +29,6 @@ import type { DispatchOutcome } from "@/lib/notifications/dispatcher";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const MIGRATION = readFileSync(
   path.join(
     process.cwd(),

@@ -55,10 +55,6 @@ vi.mock("@/lib/notifications/senders/telegram", () => ({
   sendViaTelegram: (...args: unknown[]) => telegramSendMock(...args),
 }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 import { getPrismaClient, truncateAllTables } from "./setup";
 
 const TEST_USER_ID = "user-apns-dispatch-test";

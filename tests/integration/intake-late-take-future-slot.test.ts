@@ -38,10 +38,6 @@ import { localHmAsUtc } from "@/lib/tz/local-day";
 const TEST_USER_ID = "user-late-take-future-slot";
 const TZ = "Europe/Berlin";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // Fixed non-DST-boundary weekday so the slot instants are deterministic.
 const DAY = new Date("2026-03-10T12:00:00.000Z");
 const slot0900 = () => localHmAsUtc(DAY, TZ, 9, 0);

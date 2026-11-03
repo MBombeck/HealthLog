@@ -48,10 +48,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 /**
  * Insertion order deliberately unrelated to id order: 04, 09, 01, 06, 00, …
  * A scan that ignores the secondary key returns this sequence; one that

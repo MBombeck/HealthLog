@@ -22,10 +22,6 @@ import {
   restoreProfileData,
 } from "@/lib/export/profile-backup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MARKER = new Date("2026-10-08T00:00:00.000Z");
 const BEFORE = new Date(MARKER.getTime() - 30 * DAY_MS);

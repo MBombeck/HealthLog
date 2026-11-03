@@ -27,10 +27,6 @@ vi.mock("@/lib/mood/create-from-telegram", () => ({
   logTelegramMood: vi.fn(),
 }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 import { POST } from "../route";
 import { prisma } from "@/lib/db";
 import { checkAuthSurfaceRateLimit, checkRateLimit } from "@/lib/rate-limit";

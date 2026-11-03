@@ -19,10 +19,6 @@ import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const TZ = "Europe/Berlin";
 const DAY = 24 * 60 * 60 * 1000;
 // 08:00 in Berlin on a Sunday morning.

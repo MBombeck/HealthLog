@@ -36,10 +36,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 import { ACCOUNT_SELECTOR_HEADER } from "@/lib/api-handler";
 import { hashToken } from "@/lib/auth/hmac";
 

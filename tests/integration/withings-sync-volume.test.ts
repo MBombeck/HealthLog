@@ -20,10 +20,6 @@ import { encrypt } from "@/lib/crypto";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("@/lib/withings/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/withings/client")>();
   return { ...actual, fetchMeasurements: vi.fn() };

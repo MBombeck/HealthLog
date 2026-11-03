@@ -52,10 +52,6 @@ vi.mock("next/headers", async () => {
     })),
   };
 });
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const COUNT = 12_000;
 /** Small pieces, so a test-sized record spans many of them. */
 const SMALL = { chunkBytes: 4 * 1024 };

@@ -37,10 +37,6 @@ process.env.ENCRYPTION_KEY ??=
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 import { buildCoachSnapshot } from "@/lib/ai/coach/snapshot";
 import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
 

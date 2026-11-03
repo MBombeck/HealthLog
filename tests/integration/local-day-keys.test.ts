@@ -14,10 +14,6 @@ import { getPrismaClient, truncateAllTables } from "./setup";
 import { readActivityDayKeys } from "@/lib/dashboard/summary-reads";
 import { userDayKey } from "@/lib/tz/format";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const prisma = getPrismaClient();
 const USER = "local-day-keys";
 const now = new Date();

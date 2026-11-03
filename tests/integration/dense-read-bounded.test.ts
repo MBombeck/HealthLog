@@ -32,10 +32,6 @@ import { localHmAsUtc } from "@/lib/tz/local-day";
 import { dayValue } from "@/lib/measurements/day-mean";
 import { userDayKey } from "@/lib/tz/format";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const prisma = getPrismaClient();
 const DENSE_USER = "dense-pulse-owner";
 const PARITY_USER = "dense-parity-owner";

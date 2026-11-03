@@ -12,10 +12,6 @@ vi.mock("@/lib/db-session", async (importOriginal) => {
   return { ...actual, TIME_ZONE_OPTION: "-c TimeZone=Pacific/Auckland" };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // The read path's fire-and-forget refresh would build the rollup tier behind
 // the live case; the cases build it themselves when they mean to.
 vi.mock("@/lib/rollups/measurement-rollups", async (importOriginal) => ({
