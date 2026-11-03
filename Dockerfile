@@ -369,9 +369,12 @@ ENV HOSTNAME="0.0.0.0"
 # migration waiting out a held lock retries for up to about eight minutes.
 # Five retries: a pool saturated for a minute during a boot storm makes the
 # probe's 2 s database check miss once or twice without marking the container
-# unhealthy (docker-compose.yml explains the numbers).
+# unhealthy (docker-compose.yml explains the numbers). The probe is Node's own
+# fetch: the Debian base carries neither wget nor curl, and installing one for
+# this line would add a TLS stack to the image's scan surface. A non-2xx
+# answer, a refused connection and the 4 s abort all exit 1.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10m --retries=5 \
-  CMD wget --no-verbose --tries=1 --timeout=4 --spider http://127.0.0.1:3000/api/health || exit 1
+  CMD ["node", "-e", "fetch('http://127.0.0.1:3000/api/health',{signal:AbortSignal.timeout(4000)}).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "server.js"]

@@ -79,10 +79,21 @@ function imageCheck(): Check {
   };
 }
 
-function wgetTimeout(command: string): number {
-  const m = /wget[^|]*--timeout=(\d+)/.exec(command);
-  if (!m) throw new Error(`no wget timeout in: ${command}`);
-  return Number(m[1]);
+/**
+ * The probe is Node's fetch, aborted by `AbortSignal.timeout(ms)`. The
+ * image carries no wget or curl, so a probe that names one would fail every
+ * time and mark a healthy container unhealthy.
+ */
+function probeTimeout(command: string): number {
+  expect(command, "the probe needs a binary the image has").not.toMatch(
+    /\b(wget|curl)\b/,
+  );
+  const m =
+    /fetch\('http:\/\/127\.0\.0\.1:3000\/api\/health',\{signal:AbortSignal\.timeout\((\d+)\)\}\)/.exec(
+      command,
+    );
+  if (!m) throw new Error(`no aborting /api/health fetch in: ${command}`);
+  return Number(m[1]) / 1000;
 }
 
 describe.each([
@@ -96,9 +107,9 @@ describe.each([
 
   it("ends the request inside Docker's timeout, after the database probe's", () => {
     const check = read();
-    const wget = wgetTimeout(check.command);
-    expect(wget).toBeGreaterThan(probeTimeoutSeconds);
-    expect(wget).toBeLessThan(check.timeout);
+    const abort = probeTimeout(check.command);
+    expect(abort).toBeGreaterThan(probeTimeoutSeconds);
+    expect(abort).toBeLessThan(check.timeout);
   });
 });
 
