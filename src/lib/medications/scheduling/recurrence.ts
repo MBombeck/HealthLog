@@ -788,14 +788,11 @@ function expandRrule(
   // to end — the anchor's day is read from its UTC fields and only then is
   // the HH:mm materialised in the user's zone. Reading the anchor in the
   // user's zone instead turned Monday 00:00Z into Sunday evening west of UTC.
-  // Walk a generously padded day-anchor window so a per-day timesOfDay
-  // expansion still hits the requested [from, to] after the time-of-day
-  // is applied: a calendar day spans instants up to 14 h either side of
-  // its UTC midnight, so widen the window by 2 days on each side.
+  // Pad the day-anchor window by 2 days each side: a calendar day spans
+  // instants up to 14 h either side of its UTC midnight.
   const padded = 2 * DAY_MS;
   const after = new Date(from.getTime() - padded);
   const before = new Date(to.getTime() + padded);
-
   const start = alignedRruleStart(rruleStr, anchorCivilDay(ctx), after);
   const dtstartLine = `DTSTART:${formatUtcBasic(start)}`;
   // Skip the engine-side UNTIL suffix when the user's RRULE already
