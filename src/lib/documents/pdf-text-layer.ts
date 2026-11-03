@@ -13,8 +13,7 @@
  *
  * A text read loses what only the picture carries (a table's ruling, a
  * stamp, a handwritten note), and the pages without a text layer are left
- * out. Callers that report a partial read report this one as partial
- * (`isPartialTextLayer`).
+ * out; the extraction and the lab scan report those pages.
  */
 import { annotate } from "@/lib/logging/context";
 
@@ -59,11 +58,6 @@ export type PdfTextLayerRead =
 /** Whether one page's text layer is enough to count the page as read. */
 export function isUsablePageText(text: string): boolean {
   return text.replace(/\s+/g, "").length >= TEXT_LAYER_PAGE_MIN_CHARS;
-}
-
-/** Pages were left out: past the cap, or without a text layer. */
-export function isPartialTextLayer(layer: PdfTextLayer): boolean {
-  return layer.pagesWithoutText.length > 0 || layer.pageCount > layer.pagesRead;
 }
 
 /** The usable pages' text, one page after another. */

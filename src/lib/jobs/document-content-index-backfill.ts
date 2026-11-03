@@ -55,6 +55,7 @@ import {
   upsertContentIndex,
 } from "@/lib/documents/content-index";
 import { transcribeDocument } from "@/lib/documents/describe";
+import { LOCAL_MAX_PAGES } from "@/lib/documents/local-extract";
 import { withPdfWork } from "@/lib/documents/pdf-isolation";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { resolveDocumentVisionProvider } from "@/lib/documents/provider-order";
@@ -323,7 +324,7 @@ export async function runContentIndexBackfillForUser(
       }
       const vision = await withPdfWork(
         { owner: userId, lane: "background" },
-        () => prepareVisionInput(document, pick.pdfSupported),
+        () => prepareForIndex(document, pick.pdfSupported),
       );
       if (!vision.ok) {
         // Not vision-indexable after all (undecryptable, unreadable bytes,
@@ -392,6 +393,19 @@ export async function runContentIndexBackfillForUser(
     reason,
     ...(stoppedEarly ? { stoppedEarly } : {}),
   };
+}
+
+/**
+ * The stored original as index input. A text-layer read is the index itself,
+ * so it takes every page the local text index reads, not the render cap.
+ */
+function prepareForIndex(
+  document: NonNullable<Awaited<ReturnType<typeof loadOwnedDocument>>>,
+  pdfSupported: boolean,
+) {
+  return prepareVisionInput(document, pdfSupported, {
+    textLayerPages: LOCAL_MAX_PAGES,
+  });
 }
 
 /**

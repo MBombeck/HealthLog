@@ -432,6 +432,12 @@ describe("runContentIndexBackfillForUser", () => {
         providerType: null,
       }),
     );
+    // The index reads every page the local index would, not the render cap.
+    expect(readPdfTextLayer).toHaveBeenCalledWith(
+      expect.anything(),
+      200,
+      expect.any(String),
+    );
     // The reservation went back: nothing was sent.
     expect(vi.mocked(reconcileSpend).mock.calls.at(-1)![2]).toBe(0);
     expect(result).toMatchObject({ indexed: 1, skipped: 0, failed: 0 });

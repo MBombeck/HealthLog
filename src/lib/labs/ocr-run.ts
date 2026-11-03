@@ -260,11 +260,13 @@ export async function executeOcrExtraction(args: {
   await schedule.arm(chunks.length * OCR_EXTRACT_MODEL_CALLS);
   const outcome = await read({ mode: plan.mode, chunks, totalPages });
   if (!outcome.ok) return outcome;
-  // #1311 — a text-layer read leaves out the pages without a text layer;
-  // they are named as pages the scan did not read.
+  // #1311 — a text-layer read leaves out the pages without a text layer, and
+  // any the reads could not take in full; they are named as pages not read.
   const unreadPages = [
-    ...(outcome.data.unreadPages ?? []),
-    ...(plan.mode === "text" ? plan.pagesWithoutText : []),
+    ...new Set([
+      ...(outcome.data.unreadPages ?? []),
+      ...(plan.mode === "text" ? plan.unreadPages : []),
+    ]),
   ].sort((a, b) => a - b);
   return {
     ok: true,

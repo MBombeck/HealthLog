@@ -255,7 +255,6 @@ describe("indexDocumentContent — local fallback path", () => {
       ok: true,
       mode: "text",
       text: "Haemoglobin 14.2 g/dl",
-      partial: false,
     });
 
     const outcome = await indexDocumentContent("user-1", "doc-1");

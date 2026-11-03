@@ -51,9 +51,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/jobs/boss-instance", () => ({ getGlobalBoss: () => null }));
 vi.mock("@/lib/documents/describe", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/documents/describe")>()),

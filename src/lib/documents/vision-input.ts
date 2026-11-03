@@ -19,9 +19,9 @@ export type VisionInput =
   /**
    * #1311 — a PDF this server cannot render, for a provider that cannot take
    * it whole, read by its text layer instead (`./pdf-text-layer.ts`).
-   * `partial` when pages were left out: scanned pages, or pages past the cap.
+   * The pages without a text layer (scanned pages) are not in `text`.
    */
-  | { ok: true; mode: "text"; text: string; partial: boolean }
+  | { ok: true; mode: "text"; text: string }
   | {
       ok: false;
       // Refs #776 — `rasterFailed` (this PDF would not render on a raster-

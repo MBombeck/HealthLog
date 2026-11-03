@@ -363,6 +363,22 @@ describe("on a server that cannot render PDF pages", () => {
     );
   }, 30_000);
 
+  it("Read with AI indexes every page, not only the pages a vision read is capped to", async () => {
+    stored(pdfWith(12, 0));
+    const outcome = await executeDocumentIndex({
+      userId: "u1",
+      document,
+      input: { mode: "vision", pick: pick(recording([], "x")), budget },
+      origin,
+    });
+    expect(outcome).toMatchObject({ ok: true });
+    const text = (
+      vi.mocked(upsertContentIndex).mock.calls[0][0] as { text: string }
+    ).text;
+    // Twelve pages, each carrying the lab line once.
+    expect(text.split(LAB_LINE)).toHaveLength(13);
+  }, 30_000);
+
   it("Read with AI answers a scan with pdfRendererUnavailable and records why", async () => {
     stored(pdfWith(0, 1));
     const outcome = await executeDocumentIndex({
