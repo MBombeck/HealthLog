@@ -174,16 +174,10 @@ beforeEach(() => {
   vi.mocked(isModuleEnabled).mockResolvedValue(true);
   vi.mocked(requireModuleEnabled).mockResolvedValue({ enabled: true } as never);
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-  // A session that signed in just now. Reset, not only cleared: a case below
-  // swaps in a stale session, and `clearAllMocks` keeps the implementation
-  // it left behind for whichever case runs next.
-  vi.mocked(prisma.session.findUnique)
-    .mockReset()
-    .mockImplementation((async () => ({
-      createdAt: new Date(),
-      mfaVerifiedAt: null,
-      reproofAt: null,
-    })) as never);
+  // A session that signed in just now, the factory's own answer. Reset, not
+  // only cleared: a case below swaps in a stale session, and `clearAllMocks`
+  // keeps the implementation it left behind for whichever case runs next.
+  vi.mocked(prisma.session.findUnique).mockReset();
   vi.mocked(checkRateLimit).mockResolvedValue({
     allowed: true,
     limit: 60,
