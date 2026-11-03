@@ -238,7 +238,7 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("POST /api/workouts/batch parity", () => {
+describe("POST /api/workouts/batch parity", { shuffle: false }, () => {
   it("01 a first batch", async () => {
     await step("01-first-batch", { workouts: FIRST_BATCH });
   });

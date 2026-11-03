@@ -996,182 +996,194 @@ describe("every setting a person can choose", () => {
     expect(new Set(listed).size).toBe(listed.length);
   });
 
-  describe("set, read back, backed up, restored, read back again", () => {
-    let owner: User;
-    let session: SessionFixture;
-    const before = new Map<number, unknown>();
-    const meBefore = new Map<number, unknown>();
-    let stored: Map<string, unknown>;
-    let defaults: Map<string, unknown>;
+  // One trip, in the order of its name: each leg reads what the leg before it
+  // wrote. The order holds under a shuffled run.
+  describe(
+    "set, read back, backed up, restored, read back again",
+    { shuffle: false },
+    () => {
+      let owner: User;
+      let session: SessionFixture;
+      const before = new Map<number, unknown>();
+      const meBefore = new Map<number, unknown>();
+      let stored: Map<string, unknown>;
+      let defaults: Map<string, unknown>;
 
-    beforeAll(async () => {
-      await truncateAllTables(prisma);
-      owner = await makeUser({ onboardingCompletedAt: null });
-      session = await makeSession(owner);
-      defaults = columnsOf(await makeUser({ onboardingCompletedAt: null }));
-    });
+      beforeAll(async () => {
+        await truncateAllTables(prisma);
+        owner = await makeUser({ onboardingCompletedAt: null });
+        session = await makeSession(owner);
+        defaults = columnsOf(await makeUser({ onboardingCompletedAt: null }));
+      });
 
-    it("stores each setting through its write route and answers it on its read route", async () => {
-      const failures: string[] = [];
-      for (const [index, entry] of entries(owner).entries()) {
-        const label = entry.columns.join(", ");
-        let written: RouteResult;
-        let read: RouteResult;
-        try {
-          written = await call(entry.write, session);
-          if (written.status >= 300) {
-            failures.push(
-              `${label}: write answered ${written.status} ${JSON.stringify(written.body).slice(0, 300)}`,
-            );
+      it("stores each setting through its write route and answers it on its read route", async () => {
+        const failures: string[] = [];
+        for (const [index, entry] of entries(owner).entries()) {
+          const label = entry.columns.join(", ");
+          let written: RouteResult;
+          let read: RouteResult;
+          try {
+            written = await call(entry.write, session);
+            if (written.status >= 300) {
+              failures.push(
+                `${label}: write answered ${written.status} ${JSON.stringify(written.body).slice(0, 300)}`,
+              );
+              continue;
+            }
+            read = await call(entry.read.call, session);
+          } catch (error) {
+            failures.push(`${label}: ${String(error).slice(0, 400)}`);
             continue;
           }
-          read = await call(entry.read.call, session);
-        } catch (error) {
-          failures.push(`${label}: ${String(error).slice(0, 400)}`);
-          continue;
+          if (read.status !== 200) {
+            failures.push(`${label}: read answered ${read.status}`);
+            continue;
+          }
+          const value = entry.read.pick(read);
+          before.set(index, value);
+          if (
+            "expected" in entry &&
+            !isDeepStrictEqual(value, entry.expected)
+          ) {
+            failures.push(
+              `${label}: read back ${JSON.stringify(value)}, wrote ${JSON.stringify(entry.expected)}`,
+            );
+          }
         }
-        if (read.status !== 200) {
-          failures.push(`${label}: read answered ${read.status}`);
-          continue;
+        expect(failures).toEqual([]);
+      });
+
+      it("publishes the settings the account payload carries", async () => {
+        const me = await callRoute(getMe, {
+          method: "GET",
+          route: "/api/auth/me",
+          auth: session,
+        });
+        expect(me.status).toBe(200);
+        const failures: string[] = [];
+        for (const [index, entry] of entries(owner).entries()) {
+          if (!entry.me) continue;
+          const value = entry.me.pick(me.data);
+          meBefore.set(index, value);
+          if (
+            "expected" in entry.me &&
+            !isDeepStrictEqual(value, entry.me.expected)
+          ) {
+            failures.push(
+              `${entry.columns.join(", ")}: /api/auth/me has ${JSON.stringify(value)}`,
+            );
+          }
         }
-        const value = entry.read.pick(read);
-        before.set(index, value);
-        if ("expected" in entry && !isDeepStrictEqual(value, entry.expected)) {
-          failures.push(
-            `${label}: read back ${JSON.stringify(value)}, wrote ${JSON.stringify(entry.expected)}`,
-          );
-        }
-      }
-      expect(failures).toEqual([]);
-    });
-
-    it("publishes the settings the account payload carries", async () => {
-      const me = await callRoute(getMe, {
-        method: "GET",
-        route: "/api/auth/me",
-        auth: session,
+        expect(failures).toEqual([]);
       });
-      expect(me.status).toBe(200);
-      const failures: string[] = [];
-      for (const [index, entry] of entries(owner).entries()) {
-        if (!entry.me) continue;
-        const value = entry.me.pick(me.data);
-        meBefore.set(index, value);
-        if (
-          "expected" in entry.me &&
-          !isDeepStrictEqual(value, entry.me.expected)
-        ) {
-          failures.push(
-            `${entry.columns.join(", ")}: /api/auth/me has ${JSON.stringify(value)}`,
-          );
-        }
-      }
-      expect(failures).toEqual([]);
-    });
 
-    it("moves every setting column off its default", async () => {
-      stored = columnsOf(
-        await prisma.user.findUniqueOrThrow({ where: { id: owner.id } }),
-      );
-      const untouched = SETTING_COLUMNS.filter(
-        (column) =>
-          comparable(stored.get(column)) === comparable(defaults.get(column)),
-      );
-      expect(
-        untouched,
-        "these columns still hold what a fresh account holds",
-      ).toEqual([]);
-    });
-
-    it("comes back from a backup restored into a recreated account", async () => {
-      const exported = await callRoute(exportFullBackup, {
-        method: "GET",
-        route: "/api/export/full-backup",
-        auth: session,
-      });
-      expect(exported.status).toBe(200);
-
-      // The account is recreated under the same id, the way an operator
-      // brings an account back on a new host, and nothing else of it remains.
-      await prisma.user.delete({ where: { id: owner.id } });
-      const fresh = await makeUser({
-        id: owner.id,
-        username: owner.username,
-        email: owner.email,
-        onboardingCompletedAt: null,
-      });
-      const admin = await makeAdmin();
-      const operator = await makeSession(admin);
-
-      const uploaded = await callRoute<{ id: string }>(uploadBackup, {
-        method: "POST",
-        route: "/api/admin/backups/upload",
-        body: exported.body,
-        auth: operator,
-      });
-      expect(
-        uploaded.status,
-        JSON.stringify(uploaded.body).slice(0, 400),
-      ).toBeLessThan(300);
-      const backupId = uploaded.data.id;
-
-      const restored = await callRoute(restoreBackup, {
-        method: "POST",
-        route: "/api/admin/backups/{id}/restore",
-        params: { id: backupId },
-        body: { confirm: "RESTORE" },
-        auth: operator,
-        contract: {
-          skip: "the restore driver answers 200 with the job's report in place of the route's queued 202",
-        },
-      });
-      expect(restored.status, JSON.stringify(restored.body).slice(0, 400)).toBe(
-        200,
-      );
-
-      const after = columnsOf(
-        await prisma.user.findUniqueOrThrow({ where: { id: fresh.id } }),
-      );
-      const lostInStorage = SETTING_COLUMNS.filter(
-        (column) =>
-          !SEALED.has(column) &&
-          comparable(after.get(column)) !== comparable(stored.get(column)),
-      );
-      expect(
-        lostInStorage.map(
+      it("moves every setting column off its default", async () => {
+        stored = columnsOf(
+          await prisma.user.findUniqueOrThrow({ where: { id: owner.id } }),
+        );
+        const untouched = SETTING_COLUMNS.filter(
           (column) =>
-            `${column}: ${comparable(stored.get(column))} -> ${comparable(after.get(column))}`,
-        ),
-        "these columns came back with a different stored value",
-      ).toEqual([]);
-
-      const restoredSession = await makeSession(fresh);
-      const failures: string[] = [];
-      for (const [index, entry] of entries(fresh).entries()) {
-        const read = await call(entry.read.call, restoredSession);
-        const value =
-          read.status === 200 ? entry.read.pick(read) : `status ${read.status}`;
-        if (!isDeepStrictEqual(value, before.get(index))) {
-          failures.push(
-            `${entry.columns.join(", ")}: read ${JSON.stringify(before.get(index))} before, ${JSON.stringify(value)} after`,
-          );
-        }
-      }
-      const me = await callRoute(getMe, {
-        method: "GET",
-        route: "/api/auth/me",
-        auth: restoredSession,
+            comparable(stored.get(column)) === comparable(defaults.get(column)),
+        );
+        expect(
+          untouched,
+          "these columns still hold what a fresh account holds",
+        ).toEqual([]);
       });
-      for (const [index, entry] of entries(fresh).entries()) {
-        if (!entry.me) continue;
-        const value = entry.me.pick(me.data);
-        if (!isDeepStrictEqual(value, meBefore.get(index))) {
-          failures.push(
-            `${entry.columns.join(", ")}: /api/auth/me had ${JSON.stringify(meBefore.get(index))}, now ${JSON.stringify(value)}`,
-          );
+
+      it("comes back from a backup restored into a recreated account", async () => {
+        const exported = await callRoute(exportFullBackup, {
+          method: "GET",
+          route: "/api/export/full-backup",
+          auth: session,
+        });
+        expect(exported.status).toBe(200);
+
+        // The account is recreated under the same id, the way an operator
+        // brings an account back on a new host, and nothing else of it remains.
+        await prisma.user.delete({ where: { id: owner.id } });
+        const fresh = await makeUser({
+          id: owner.id,
+          username: owner.username,
+          email: owner.email,
+          onboardingCompletedAt: null,
+        });
+        const admin = await makeAdmin();
+        const operator = await makeSession(admin);
+
+        const uploaded = await callRoute<{ id: string }>(uploadBackup, {
+          method: "POST",
+          route: "/api/admin/backups/upload",
+          body: exported.body,
+          auth: operator,
+        });
+        expect(
+          uploaded.status,
+          JSON.stringify(uploaded.body).slice(0, 400),
+        ).toBeLessThan(300);
+        const backupId = uploaded.data.id;
+
+        const restored = await callRoute(restoreBackup, {
+          method: "POST",
+          route: "/api/admin/backups/{id}/restore",
+          params: { id: backupId },
+          body: { confirm: "RESTORE" },
+          auth: operator,
+          contract: {
+            skip: "the restore driver answers 200 with the job's report in place of the route's queued 202",
+          },
+        });
+        expect(
+          restored.status,
+          JSON.stringify(restored.body).slice(0, 400),
+        ).toBe(200);
+
+        const after = columnsOf(
+          await prisma.user.findUniqueOrThrow({ where: { id: fresh.id } }),
+        );
+        const lostInStorage = SETTING_COLUMNS.filter(
+          (column) =>
+            !SEALED.has(column) &&
+            comparable(after.get(column)) !== comparable(stored.get(column)),
+        );
+        expect(
+          lostInStorage.map(
+            (column) =>
+              `${column}: ${comparable(stored.get(column))} -> ${comparable(after.get(column))}`,
+          ),
+          "these columns came back with a different stored value",
+        ).toEqual([]);
+
+        const restoredSession = await makeSession(fresh);
+        const failures: string[] = [];
+        for (const [index, entry] of entries(fresh).entries()) {
+          const read = await call(entry.read.call, restoredSession);
+          const value =
+            read.status === 200
+              ? entry.read.pick(read)
+              : `status ${read.status}`;
+          if (!isDeepStrictEqual(value, before.get(index))) {
+            failures.push(
+              `${entry.columns.join(", ")}: read ${JSON.stringify(before.get(index))} before, ${JSON.stringify(value)} after`,
+            );
+          }
         }
-      }
-      expect(failures).toEqual([]);
-    });
-  });
+        const me = await callRoute(getMe, {
+          method: "GET",
+          route: "/api/auth/me",
+          auth: restoredSession,
+        });
+        for (const [index, entry] of entries(fresh).entries()) {
+          if (!entry.me) continue;
+          const value = entry.me.pick(me.data);
+          if (!isDeepStrictEqual(value, meBefore.get(index))) {
+            failures.push(
+              `${entry.columns.join(", ")}: /api/auth/me had ${JSON.stringify(meBefore.get(index))}, now ${JSON.stringify(value)}`,
+            );
+          }
+        }
+        expect(failures).toEqual([]);
+      });
+    },
+  );
 });

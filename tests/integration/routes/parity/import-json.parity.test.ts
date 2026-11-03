@@ -263,7 +263,7 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("POST /api/import parity", () => {
+describe("POST /api/import parity", { shuffle: false }, () => {
   it("01 a first file", async () => {
     await step("01-first-file", FILE);
   });

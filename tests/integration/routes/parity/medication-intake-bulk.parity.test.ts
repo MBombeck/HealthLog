@@ -375,7 +375,7 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("POST /api/medications/intake/bulk parity", () => {
+describe("POST /api/medications/intake/bulk parity", { shuffle: false }, () => {
   it("01 a mixed first batch", async () => {
     await post("01-mixed", mixedBatch());
   });

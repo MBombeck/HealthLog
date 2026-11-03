@@ -210,7 +210,7 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("GET /api/analytics parity", () => {
+describe("GET /api/analytics parity", { shuffle: false }, () => {
   it("01 a slice outside the closed set", async () => {
     await step("01-invalid-slice", { query: { slice: "summary" } });
   });

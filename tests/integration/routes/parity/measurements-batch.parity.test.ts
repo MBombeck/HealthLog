@@ -327,7 +327,7 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("POST /api/measurements/batch parity", () => {
+describe("POST /api/measurements/batch parity", { shuffle: false }, () => {
   it("01 a first sync of mixed entries", async () => {
     await step("01-first-sync", {
       entries: FIRST_SYNC,

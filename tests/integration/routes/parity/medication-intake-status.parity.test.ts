@@ -317,138 +317,145 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("GET /api/medications/intake parity", () => {
-  it("01 today's list", async () => {
-    await get("01-today", { scope: "today" });
-  });
+// One walk: each request sees what the earlier ones stored, so the cases
+// keep their order even when a run shuffles (`shuffle: false`).
+describe("medication-intake-status parity walk", { shuffle: false }, () => {
+  describe("GET /api/medications/intake parity", () => {
+    it("01 today's list", async () => {
+      await get("01-today", { scope: "today" });
+    });
 
-  it("02 the compliance buckets, cold and from the cache", async () => {
-    await get("02a-compliance-cold", { scope: "compliance", days: "7" });
-    await get("02b-compliance-warm", { scope: "compliance", days: "7" });
-  });
+    it("02 the compliance buckets, cold and from the cache", async () => {
+      await get("02a-compliance-cold", { scope: "compliance", days: "7" });
+      await get("02b-compliance-warm", { scope: "compliance", days: "7" });
+    });
 
-  it("03 a query the schema refuses", async () => {
-    await get("03-invalid", { scope: "yesterday", days: "0" });
-  });
+    it("03 a query the schema refuses", async () => {
+      await get("03-invalid", { scope: "yesterday", days: "0" });
+    });
 
-  it("04 a reading delegate, and nobody", async () => {
-    await get("04a-reader", { scope: "today" }, reader);
-    await get("04b-anonymous", { scope: "today" }, { auth: anonymous });
-  });
-});
-
-describe("POST /api/medications/intake parity", () => {
-  it("11 a take in place", async () => {
-    await post("11-take-in-place", {
-      intakeId: ev.todayMorning,
-      status: "taken",
-      takenAt: "2026-10-15T08:30:00.000Z",
+    it("04 a reading delegate, and nobody", async () => {
+      await get("04a-reader", { scope: "today" }, reader);
+      await get("04b-anonymous", { scope: "today" }, { auth: anonymous });
     });
   });
 
-  it("12 a take that re-binds to another slot", async () => {
-    await post("12-take-slot-move", {
-      intakeId: ev.moveMe,
-      status: "taken",
-      takenAt: "2026-10-14T20:30:00.000Z",
+  describe("POST /api/medications/intake parity", () => {
+    it("11 a take in place", async () => {
+      await post("11-take-in-place", {
+        intakeId: ev.todayMorning,
+        status: "taken",
+        takenAt: "2026-10-15T08:30:00.000Z",
+      });
     });
-  });
 
-  it("13 a pinned take, and a pin that is no slot", async () => {
-    await post("13a-pin", {
-      intakeId: ev.pinMe,
-      status: "taken",
-      takenAt: "2026-10-13T11:00:00.000Z",
-      forceSlotInstant: "2026-10-13T08:00:00.000Z",
+    it("12 a take that re-binds to another slot", async () => {
+      await post("12-take-slot-move", {
+        intakeId: ev.moveMe,
+        status: "taken",
+        takenAt: "2026-10-14T20:30:00.000Z",
+      });
     });
-    await post("13b-pin-not-a-slot", {
-      intakeId: ev.snoozeMe,
-      status: "taken",
-      forceSlotInstant: "2026-10-11T15:00:00.000Z",
-    });
-  });
 
-  it("14 a skip over a recorded dose", async () => {
-    await post("14-skip", { intakeId: ev.skipMe, status: "skipped" });
-  });
+    it("13 a pinned take, and a pin that is no slot", async () => {
+      await post("13a-pin", {
+        intakeId: ev.pinMe,
+        status: "taken",
+        takenAt: "2026-10-13T11:00:00.000Z",
+        forceSlotInstant: "2026-10-13T08:00:00.000Z",
+      });
+      await post("13b-pin-not-a-slot", {
+        intakeId: ev.snoozeMe,
+        status: "taken",
+        forceSlotInstant: "2026-10-11T15:00:00.000Z",
+      });
+    });
 
-  it("15 a snooze with its end, and one without", async () => {
-    await post("15a-snooze-until", {
-      intakeId: ev.snoozeMe,
-      status: "snoozed",
-      snoozedUntil: "2026-10-15T13:00:00.000Z",
+    it("14 a skip over a recorded dose", async () => {
+      await post("14-skip", { intakeId: ev.skipMe, status: "skipped" });
     });
-    await post("15b-snooze-default", {
-      intakeId: ev.snoozeMe,
-      status: "snoozed",
-    });
-  });
 
-  it("16 the not-found answers", async () => {
-    await post("16a-unknown", {
-      intakeId: "cmv0000000000000000000000",
-      status: "taken",
+    it("15 a snooze with its end, and one without", async () => {
+      await post("15a-snooze-until", {
+        intakeId: ev.snoozeMe,
+        status: "snoozed",
+        snoozedUntil: "2026-10-15T13:00:00.000Z",
+      });
+      await post("15b-snooze-default", {
+        intakeId: ev.snoozeMe,
+        status: "snoozed",
+      });
     });
-    await post("16b-foreign", { intakeId: ev.foreign, status: "taken" });
-    await post("16c-tombstoned", { intakeId: ev.tombstoned, status: "taken" });
-  });
 
-  it("17 the record-only rule both ways", async () => {
-    await post("17a-record-only-open", {
-      intakeId: ev.recordOpen,
-      status: "taken",
+    it("16 the not-found answers", async () => {
+      await post("16a-unknown", {
+        intakeId: "cmv0000000000000000000000",
+        status: "taken",
+      });
+      await post("16b-foreign", { intakeId: ev.foreign, status: "taken" });
+      await post("16c-tombstoned", {
+        intakeId: ev.tombstoned,
+        status: "taken",
+      });
     });
-    await post("17b-record-only-correction", {
-      intakeId: ev.recordTaken,
-      status: "taken",
-      takenAt: "2026-10-13T07:20:00.000Z",
-    });
-  });
 
-  it("18 the injection-site refusal, and an allowed site", async () => {
-    await post("18a-site-not-allowed", {
-      intakeId: ev.penToday,
-      status: "taken",
-      takenAt: "2026-10-15T09:15:00.000Z",
-      injectionSite: "ABDOMEN_RIGHT",
+    it("17 the record-only rule both ways", async () => {
+      await post("17a-record-only-open", {
+        intakeId: ev.recordOpen,
+        status: "taken",
+      });
+      await post("17b-record-only-correction", {
+        intakeId: ev.recordTaken,
+        status: "taken",
+        takenAt: "2026-10-13T07:20:00.000Z",
+      });
     });
-    await post("18b-site", {
-      intakeId: ev.penToday,
-      status: "taken",
-      takenAt: "2026-10-15T09:15:00.000Z",
-      injectionSite: "ABDOMEN_LEFT",
+
+    it("18 the injection-site refusal, and an allowed site", async () => {
+      await post("18a-site-not-allowed", {
+        intakeId: ev.penToday,
+        status: "taken",
+        takenAt: "2026-10-15T09:15:00.000Z",
+        injectionSite: "ABDOMEN_RIGHT",
+      });
+      await post("18b-site", {
+        intakeId: ev.penToday,
+        status: "taken",
+        takenAt: "2026-10-15T09:15:00.000Z",
+        injectionSite: "ABDOMEN_LEFT",
+      });
     });
-  });
 
-  it("19 a body the schema refuses", async () => {
-    await post("19-invalid", { intakeId: "", status: "forgotten" });
-  });
+    it("19 a body the schema refuses", async () => {
+      await post("19-invalid", { intakeId: "", status: "forgotten" });
+    });
 
-  it("20 a delegate who marks an open dose, a snooze, a correction, a reader and nobody", async () => {
-    await post(
-      "20a-writer-take",
-      { intakeId: ev.todayEvening, status: "taken" },
-      { ...writer },
-    );
-    await post(
-      "20b-writer-snooze-refused",
-      { intakeId: ev.snoozeMe, status: "snoozed" },
-      writer,
-    );
-    await post(
-      "20c-writer-correction-refused",
-      { intakeId: ev.resolved, status: "skipped" },
-      writer,
-    );
-    await post(
-      "20d-reader",
-      { intakeId: ev.snoozeMe, status: "taken" },
-      reader,
-    );
-    await post(
-      "20e-anonymous",
-      { intakeId: ev.snoozeMe, status: "taken" },
-      { auth: anonymous },
-    );
+    it("20 a delegate who marks an open dose, a snooze, a correction, a reader and nobody", async () => {
+      await post(
+        "20a-writer-take",
+        { intakeId: ev.todayEvening, status: "taken" },
+        { ...writer },
+      );
+      await post(
+        "20b-writer-snooze-refused",
+        { intakeId: ev.snoozeMe, status: "snoozed" },
+        writer,
+      );
+      await post(
+        "20c-writer-correction-refused",
+        { intakeId: ev.resolved, status: "skipped" },
+        writer,
+      );
+      await post(
+        "20d-reader",
+        { intakeId: ev.snoozeMe, status: "taken" },
+        reader,
+      );
+      await post(
+        "20e-anonymous",
+        { intakeId: ev.snoozeMe, status: "taken" },
+        { auth: anonymous },
+      );
+    });
   });
 });

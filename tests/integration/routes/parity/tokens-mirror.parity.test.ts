@@ -176,63 +176,67 @@ beforeAll(async () => {
   });
 });
 
-describe("the Apple Health write-back of a measurement token", () => {
-  it("walks the cases in order", async () => {
-    await step("01-summary", { kind: "summary" });
-    await step("02-on", {
-      kind: "patch",
-      id: scale.tokenId,
-      body: { mirrorToAppleHealth: true },
+describe(
+  "the Apple Health write-back of a measurement token",
+  { shuffle: false },
+  () => {
+    it("walks the cases in order", async () => {
+      await step("01-summary", { kind: "summary" });
+      await step("02-on", {
+        kind: "patch",
+        id: scale.tokenId,
+        body: { mirrorToAppleHealth: true },
+      });
+      await step("03-on-again", {
+        kind: "patch",
+        id: scale.tokenId,
+        body: { mirrorToAppleHealth: true },
+      });
+      await step("04-list", { kind: "list" });
+      const revoked = await callRoute(revoke, {
+        method: "DELETE",
+        route: "/api/tokens/{id}",
+        params: { id: scale.tokenId },
+        auth: owner,
+      });
+      expect(revoked.status).toBe(200);
+      await step("05-off-revoked", {
+        kind: "patch",
+        id: scale.tokenId,
+        body: { mirrorToAppleHealth: false },
+      });
+      await step("06-wildcard", {
+        kind: "patch",
+        id: wildcard.tokenId,
+        body: { mirrorToAppleHealth: true },
+      });
+      await step("07-connector", {
+        kind: "patch",
+        id: connector.tokenId,
+        body: { mirrorToAppleHealth: true },
+      });
+      await step("08-another-account", {
+        kind: "patch",
+        id: theirs.tokenId,
+        body: { mirrorToAppleHealth: true },
+      });
+      await step("09-unknown", {
+        kind: "patch",
+        id: "missing-token",
+        body: { mirrorToAppleHealth: true },
+      });
+      await step("10-invalid-body", {
+        kind: "patch",
+        id: scale.tokenId,
+        body: { mirrorToAppleHealth: "yes", name: "Renamed" },
+      });
+      await step("11-bearer", {
+        kind: "patch",
+        id: scale.tokenId,
+        body: { mirrorToAppleHealth: true },
+        auth: wildcard,
+      });
+      await step("12-summary-bearer", { kind: "summary", auth: wildcard });
     });
-    await step("03-on-again", {
-      kind: "patch",
-      id: scale.tokenId,
-      body: { mirrorToAppleHealth: true },
-    });
-    await step("04-list", { kind: "list" });
-    const revoked = await callRoute(revoke, {
-      method: "DELETE",
-      route: "/api/tokens/{id}",
-      params: { id: scale.tokenId },
-      auth: owner,
-    });
-    expect(revoked.status).toBe(200);
-    await step("05-off-revoked", {
-      kind: "patch",
-      id: scale.tokenId,
-      body: { mirrorToAppleHealth: false },
-    });
-    await step("06-wildcard", {
-      kind: "patch",
-      id: wildcard.tokenId,
-      body: { mirrorToAppleHealth: true },
-    });
-    await step("07-connector", {
-      kind: "patch",
-      id: connector.tokenId,
-      body: { mirrorToAppleHealth: true },
-    });
-    await step("08-another-account", {
-      kind: "patch",
-      id: theirs.tokenId,
-      body: { mirrorToAppleHealth: true },
-    });
-    await step("09-unknown", {
-      kind: "patch",
-      id: "missing-token",
-      body: { mirrorToAppleHealth: true },
-    });
-    await step("10-invalid-body", {
-      kind: "patch",
-      id: scale.tokenId,
-      body: { mirrorToAppleHealth: "yes", name: "Renamed" },
-    });
-    await step("11-bearer", {
-      kind: "patch",
-      id: scale.tokenId,
-      body: { mirrorToAppleHealth: true },
-      auth: wildcard,
-    });
-    await step("12-summary-bearer", { kind: "summary", auth: wildcard });
-  });
-});
+  },
+);

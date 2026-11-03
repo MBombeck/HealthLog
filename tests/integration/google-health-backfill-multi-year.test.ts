@@ -58,7 +58,7 @@ import v8 from "node:v8";
 import vm from "node:vm";
 
 import type { Job } from "pg-boss";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 
 import type { WideEvent } from "@/lib/logging/types";
 import { getPrismaClient, truncateAllTables } from "./setup";
@@ -320,10 +320,6 @@ async function seed(points: number): Promise<void> {
   fake.upperBoundRequests = 0;
 }
 
-beforeAll(async () => {
-  await seed(POINTS);
-}, 120_000);
-
 afterAll(async () => {
   await truncateAllTables(getPrismaClient());
 });
@@ -353,6 +349,9 @@ function nextSlice(): AdmissionPayload | null {
 
 describe(`Google Health backfill over ${DAYS} days of heart rate (#1220)`, () => {
   it("completes slice by slice, imports every reading once, and keeps the hourly sync running", async () => {
+    // Its own history, as the case below seeds its own: neither reads what
+    // the other left behind, whichever runs first.
+    await seed(POINTS);
     const { drainIntegrationBackfillAdmission } =
       await import("@/lib/jobs/integration-backfill-drain");
     const { handleGoogleHealthSync } =

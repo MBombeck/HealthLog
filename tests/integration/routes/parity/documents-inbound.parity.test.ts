@@ -215,129 +215,133 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("POST /api/documents/inbound parity", () => {
-  it("a stored upload and the same bytes again", async () => {
-    const body = () =>
-      form(PDF("discharge"), "discharge.pdf", {
-        title: "Discharge letter",
-        kind: "DISCHARGE_LETTER",
-        documentDate: "2026-10-02",
-        episodeIds: [episodeId],
+// One walk: each request sees what the earlier ones stored, so the cases
+// keep their order even when a run shuffles (`shuffle: false`).
+describe("documents-inbound parity walk", { shuffle: false }, () => {
+  describe("POST /api/documents/inbound parity", () => {
+    it("a stored upload and the same bytes again", async () => {
+      const body = () =>
+        form(PDF("discharge"), "discharge.pdf", {
+          title: "Discharge letter",
+          kind: "DISCHARGE_LETTER",
+          documentDate: "2026-10-02",
+          episodeIds: [episodeId],
+        });
+      await upload("post-01-stored", body());
+      await upload("post-02-duplicate", body());
+      await upload(
+        "post-03-second",
+        form(PDF("labs"), "labs.pdf", {
+          title: "Blood test",
+          kind: "LAB_RESULT",
+          documentDate: "2025-03-04",
+        }),
+      );
+    });
+
+    it("the refusals", async () => {
+      await upload("post-04-no-file", form(null, "x", { title: "Nothing" }));
+      await upload(
+        "post-05-invalid-metadata",
+        form(PDF("bad-kind"), "bad.pdf", { kind: "SHOPPING_LIST" }),
+      );
+      await upload("post-06-empty", form(Buffer.alloc(0), "empty.pdf"));
+      await upload(
+        "post-07-unsupported",
+        form(
+          Buffer.from("<!doctype html><html><body>hi</body></html>\n"),
+          "page.html",
+        ),
+      );
+      await upload(
+        "post-08-unknown-episode",
+        form(PDF("orphan"), "orphan.pdf", {
+          episodeIds: ["cmissingepisode000000000"],
+        }),
+      );
+      await upload("post-09-half-key", form(PDF("half"), "half.pdf"), {
+        query: { sourceSystem: "PAPERLESS" },
       });
-    await upload("post-01-stored", body());
-    await upload("post-02-duplicate", body());
-    await upload(
-      "post-03-second",
-      form(PDF("labs"), "labs.pdf", {
-        title: "Blood test",
-        kind: "LAB_RESULT",
-        documentDate: "2025-03-04",
-      }),
-    );
-  });
+      await upload(
+        "post-10-keys-differ",
+        form(PDF("differ"), "differ.pdf", {
+          sourceSystem: "PAPERLESS",
+          sourceId: "77",
+        }),
+        { query: { sourceSystem: "PAPERLESS", sourceId: "78" } },
+      );
+    });
 
-  it("the refusals", async () => {
-    await upload("post-04-no-file", form(null, "x", { title: "Nothing" }));
-    await upload(
-      "post-05-invalid-metadata",
-      form(PDF("bad-kind"), "bad.pdf", { kind: "SHOPPING_LIST" }),
-    );
-    await upload("post-06-empty", form(Buffer.alloc(0), "empty.pdf"));
-    await upload(
-      "post-07-unsupported",
-      form(
-        Buffer.from("<!doctype html><html><body>hi</body></html>\n"),
-        "page.html",
-      ),
-    );
-    await upload(
-      "post-08-unknown-episode",
-      form(PDF("orphan"), "orphan.pdf", {
-        episodeIds: ["cmissingepisode000000000"],
-      }),
-    );
-    await upload("post-09-half-key", form(PDF("half"), "half.pdf"), {
-      query: { sourceSystem: "PAPERLESS" },
+    it("a narrow token storing under a source key", async () => {
+      const stored = await upload(
+        "post-11-token-stored",
+        form(PDF("imported"), "imported.pdf", {
+          sourceSystem: "PAPERLESS",
+          sourceId: "41",
+          aiRead: "defer",
+        }),
+        { auth: writer },
+      );
+      await upload("post-12-token-query-key", form(PDF("imported"), "x.pdf"), {
+        auth: writer,
+        query: { sourceSystem: "PAPERLESS", sourceId: "41" },
+      });
+      await prisma.inboundDocument.update({
+        where: { id: stored.id! },
+        data: { deletedAt: new Date("2026-10-14T09:00:00.000Z") },
+      });
+      await upload(
+        "post-13-token-deleted",
+        form(PDF("imported"), "imported.pdf", {
+          sourceSystem: "PAPERLESS",
+          sourceId: "41",
+        }),
+        { auth: writer },
+      );
     });
-    await upload(
-      "post-10-keys-differ",
-      form(PDF("differ"), "differ.pdf", {
-        sourceSystem: "PAPERLESS",
-        sourceId: "77",
-      }),
-      { query: { sourceSystem: "PAPERLESS", sourceId: "78" } },
-    );
-  });
 
-  it("a narrow token storing under a source key", async () => {
-    const stored = await upload(
-      "post-11-token-stored",
-      form(PDF("imported"), "imported.pdf", {
-        sourceSystem: "PAPERLESS",
-        sourceId: "41",
-        aiRead: "defer",
-      }),
-      { auth: writer },
-    );
-    await upload("post-12-token-query-key", form(PDF("imported"), "x.pdf"), {
-      auth: writer,
-      query: { sourceSystem: "PAPERLESS", sourceId: "41" },
-    });
-    await prisma.inboundDocument.update({
-      where: { id: stored.id! },
-      data: { deletedAt: new Date("2026-10-14T09:00:00.000Z") },
-    });
-    await upload(
-      "post-13-token-deleted",
-      form(PDF("imported"), "imported.pdf", {
-        sourceSystem: "PAPERLESS",
-        sourceId: "41",
-      }),
-      { auth: writer },
-    );
-  });
-
-  it("the module switched off", async () => {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { modulePreferencesJson: { inboundDocuments: false } },
-    });
-    await upload("post-14-module-off", form(PDF("dark"), "dark.pdf"));
-    await prisma.user.update({
-      where: { id: userId },
-      data: { modulePreferencesJson: { inboundDocuments: true } },
-    });
-  });
-});
-
-describe("GET /api/documents/inbound parity", () => {
-  it("the default page, a search and the filters", async () => {
-    await list("get-01-default", {});
-    await list("get-02-search", { q: "blood" });
-    await list("get-03-kind", { kind: "DISCHARGE_LETTER,LAB_RESULT" });
-    await list("get-04-episode", { episodeId });
-    await list("get-05-year", { year: 2025 });
-    await list("get-06-range", { from: "2026-10-01", to: "2026-10-02" });
-  });
-
-  it("a sorted page and the page after it", async () => {
-    const first = await list("get-07-sorted", {
-      sort: "title",
-      order: "asc",
-      limit: 1,
-    });
-    await list("get-08-next-page", {
-      sort: "title",
-      order: "asc",
-      limit: 1,
-      cursor: first.nextCursor!,
+    it("the module switched off", async () => {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { modulePreferencesJson: { inboundDocuments: false } },
+      });
+      await upload("post-14-module-off", form(PDF("dark"), "dark.pdf"));
+      await prisma.user.update({
+        where: { id: userId },
+        data: { modulePreferencesJson: { inboundDocuments: true } },
+      });
     });
   });
 
-  it("a refused query, and a delegate reading the record", async () => {
-    await list("get-09-invalid", { sort: "size" });
-    await switchSessionTo(delegate.sessionId, userId);
-    await list("get-10-delegated", {}, delegate);
-    await switchSessionTo(delegate.sessionId, null);
+  describe("GET /api/documents/inbound parity", () => {
+    it("the default page, a search and the filters", async () => {
+      await list("get-01-default", {});
+      await list("get-02-search", { q: "blood" });
+      await list("get-03-kind", { kind: "DISCHARGE_LETTER,LAB_RESULT" });
+      await list("get-04-episode", { episodeId });
+      await list("get-05-year", { year: 2025 });
+      await list("get-06-range", { from: "2026-10-01", to: "2026-10-02" });
+    });
+
+    it("a sorted page and the page after it", async () => {
+      const first = await list("get-07-sorted", {
+        sort: "title",
+        order: "asc",
+        limit: 1,
+      });
+      await list("get-08-next-page", {
+        sort: "title",
+        order: "asc",
+        limit: 1,
+        cursor: first.nextCursor!,
+      });
+    });
+
+    it("a refused query, and a delegate reading the record", async () => {
+      await list("get-09-invalid", { sort: "size" });
+      await switchSessionTo(delegate.sessionId, userId);
+      await list("get-10-delegated", {}, delegate);
+      await switchSessionTo(delegate.sessionId, null);
+    });
   });
 });

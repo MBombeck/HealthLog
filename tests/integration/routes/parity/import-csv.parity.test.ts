@@ -199,7 +199,7 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("POST /api/import/csv parity", () => {
+describe("POST /api/import/csv parity", { shuffle: false }, () => {
   it("01 a dry run", async () => {
     await step("01-dry-run", FILE, { dryRun: "1" });
   });

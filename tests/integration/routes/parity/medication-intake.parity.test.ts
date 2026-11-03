@@ -343,189 +343,193 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("POST /api/medications/{id}/intake parity", () => {
-  it("01 a take inside its band, onto the pending reminder row", async () => {
-    await post("01-take-in-band", { takenAt: "2026-10-15T08:30:00.000Z" });
-  });
-
-  it("02 an as-needed take recorded standalone, and its repeat inside the dedup window", async () => {
-    await post(
-      "02a-take-standalone",
-      { takenAt: "2026-10-15T11:00:00.000Z" },
-      { medicationId: med.asNeeded },
-    );
-    await post(
-      "02b-take-standalone-repeat",
-      { takenAt: "2026-10-15T11:00:00.000Z" },
-      { medicationId: med.asNeeded },
-    );
-  });
-
-  it("03 a skip on a named slot, a slot-less skip, and a skip onto a standalone dose", async () => {
-    await post("03a-skip-named-slot", {
-      skipped: true,
-      scheduledFor: "2026-10-15T20:00:00.000Z",
+// One walk: each request sees what the earlier ones stored, so the cases
+// keep their order even when a run shuffles (`shuffle: false`).
+describe("medication-intake parity walk", { shuffle: false }, () => {
+  describe("POST /api/medications/{id}/intake parity", () => {
+    it("01 a take inside its band, onto the pending reminder row", async () => {
+      await post("01-take-in-band", { takenAt: "2026-10-15T08:30:00.000Z" });
     });
-    await post("03b-skip-slotless", { skipped: true });
-    await post(
-      "03c-delegate-skip-standalone-refused",
-      { skipped: true, scheduledFor: "2026-10-15T11:00:00.000Z" },
-      { ...writer, medicationId: med.asNeeded, settle: () => refusalRows(1) },
-    );
-    await post(
-      "03d-owner-skip-standalone",
-      { skipped: true, scheduledFor: "2026-10-15T11:00:00.000Z" },
-      { medicationId: med.asNeeded },
-    );
-  });
 
-  it("04 a pinned take and the two pin refusals", async () => {
-    await post("04a-pin", {
-      takenAt: "2026-10-14T11:00:00.000Z",
-      forceSlotInstant: "2026-10-14T08:00:00.000Z",
+    it("02 an as-needed take recorded standalone, and its repeat inside the dedup window", async () => {
+      await post(
+        "02a-take-standalone",
+        { takenAt: "2026-10-15T11:00:00.000Z" },
+        { medicationId: med.asNeeded },
+      );
+      await post(
+        "02b-take-standalone-repeat",
+        { takenAt: "2026-10-15T11:00:00.000Z" },
+        { medicationId: med.asNeeded },
+      );
     });
-    await post("04b-pin-not-a-slot", {
-      takenAt: "2026-10-14T16:00:00.000Z",
-      forceSlotInstant: "2026-10-14T15:00:00.000Z",
+
+    it("03 a skip on a named slot, a slot-less skip, and a skip onto a standalone dose", async () => {
+      await post("03a-skip-named-slot", {
+        skipped: true,
+        scheduledFor: "2026-10-15T20:00:00.000Z",
+      });
+      await post("03b-skip-slotless", { skipped: true });
+      await post(
+        "03c-delegate-skip-standalone-refused",
+        { skipped: true, scheduledFor: "2026-10-15T11:00:00.000Z" },
+        { ...writer, medicationId: med.asNeeded, settle: () => refusalRows(1) },
+      );
+      await post(
+        "03d-owner-skip-standalone",
+        { skipped: true, scheduledFor: "2026-10-15T11:00:00.000Z" },
+        { medicationId: med.asNeeded },
+      );
     });
-    await post("04c-pin-occupied", {
-      takenAt: "2026-10-14T23:00:00.000Z",
-      forceSlotInstant: "2026-10-14T20:00:00.000Z",
+
+    it("04 a pinned take and the two pin refusals", async () => {
+      await post("04a-pin", {
+        takenAt: "2026-10-14T11:00:00.000Z",
+        forceSlotInstant: "2026-10-14T08:00:00.000Z",
+      });
+      await post("04b-pin-not-a-slot", {
+        takenAt: "2026-10-14T16:00:00.000Z",
+        forceSlotInstant: "2026-10-14T15:00:00.000Z",
+      });
+      await post("04c-pin-occupied", {
+        takenAt: "2026-10-14T23:00:00.000Z",
+        forceSlotInstant: "2026-10-14T20:00:00.000Z",
+      });
     });
-  });
 
-  it("05 a backfill onto a named earlier slot", async () => {
-    await post("05-named-backfill", {
-      takenAt: "2026-10-15T11:30:00.000Z",
-      scheduledFor: "2026-10-13T08:00:00.000Z",
+    it("05 a backfill onto a named earlier slot", async () => {
+      await post("05-named-backfill", {
+        takenAt: "2026-10-15T11:30:00.000Z",
+        scheduledFor: "2026-10-13T08:00:00.000Z",
+      });
     });
-  });
 
-  it("06 a body idempotency key and its replay", async () => {
-    const body = {
-      takenAt: "2026-10-13T20:30:00.000Z",
-      idempotencyKey: "dose-key-0001",
-    };
-    await post("06a-body-key", body);
-    await post("06b-body-key-replay", body);
-  });
-
-  it("07 an Idempotency-Key header and its replay", async () => {
-    const headers = {
-      "idempotency-key": "4b7e1c9a-2d3f-4a5b-8c6d-7e8f9a0b1c2d",
-    };
-    const body = { takenAt: "2026-10-12T08:15:00.000Z" };
-    await post("07a-header-key", body, { headers });
-    await post("07b-header-key-replay", body, { headers });
-  });
-
-  it("08 a native take", async () => {
-    await post(
-      "08-native",
-      { takenAt: "2026-10-11T20:10:00.000Z" },
-      { auth: ownerBearer },
-    );
-  });
-
-  it("09 a skip over a recorded dose, by the owner and by a delegate", async () => {
-    await post(
-      "09a-delegate-skip-refused",
-      { skipped: true, scheduledFor: "2026-10-14T20:00:00.000Z" },
-      { ...writer, settle: () => refusalRows(2) },
-    );
-    await post("09b-owner-skip-flip", {
-      skipped: true,
-      scheduledFor: "2026-10-14T20:00:00.000Z",
+    it("06 a body idempotency key and its replay", async () => {
+      const body = {
+        takenAt: "2026-10-13T20:30:00.000Z",
+        idempotencyKey: "dose-key-0001",
+      };
+      await post("06a-body-key", body);
+      await post("06b-body-key-replay", body);
     });
-  });
 
-  it("10 a delegate's take on an open slot, a reader, and nobody", async () => {
-    await post(
-      "10a-writer-take",
-      { takenAt: "2026-10-11T08:20:00.000Z" },
-      writer,
-    );
-    await post("10b-reader", { takenAt: "2026-10-10T08:20:00.000Z" }, reader);
-    await post(
-      "10c-anonymous",
-      { takenAt: "2026-10-10T08:20:00.000Z" },
-      { auth: anonymous },
-    );
-  });
-
-  it("11 the injection-site refusal, and a site with a dose override", async () => {
-    await post(
-      "11a-site-not-allowed",
-      { takenAt: "2026-10-15T09:10:00.000Z", injectionSite: "ABDOMEN_RIGHT" },
-      { medicationId: med.pen },
-    );
-    await post(
-      "11b-site-and-dose",
-      {
-        takenAt: "2026-10-15T09:10:00.000Z",
-        injectionSite: "ABDOMEN_LEFT",
-        doseTaken: "0.5 pen",
-      },
-      { medicationId: med.pen },
-    );
-  });
-
-  it("12 a one-shot dose", async () => {
-    await post(
-      "12-one-shot",
-      { takenAt: "2026-10-15T10:00:00.000Z" },
-      { medicationId: med.oneShot },
-    );
-  });
-
-  it("13 a body the schema refuses", async () => {
-    await post("13-invalid", {
-      takenAt: "yesterday",
-      idempotencyKey: "<HKDoseEvent: 0x600003a1c0c0>",
+    it("07 an Idempotency-Key header and its replay", async () => {
+      const headers = {
+        "idempotency-key": "4b7e1c9a-2d3f-4a5b-8c6d-7e8f9a0b1c2d",
+      };
+      const body = { takenAt: "2026-10-12T08:15:00.000Z" };
+      await post("07a-header-key", body, { headers });
+      await post("07b-header-key-replay", body, { headers });
     });
-  });
 
-  it("14 another account's medication, and a record-only one", async () => {
-    await post(
-      "14a-not-found",
-      { takenAt: "2026-10-15T08:30:00.000Z" },
-      { medicationId: med.foreign },
-    );
-    await post(
-      "14b-record-only",
-      { takenAt: "2026-10-15T07:10:00.000Z" },
-      { medicationId: med.recordOnly },
-    );
-  });
-});
+    it("08 a native take", async () => {
+      await post(
+        "08-native",
+        { takenAt: "2026-10-11T20:10:00.000Z" },
+        { auth: ownerBearer },
+      );
+    });
 
-describe("GET /api/medications/{id}/intake parity", () => {
-  it("21 the default list", async () => {
-    await list("21-default");
-  });
+    it("09 a skip over a recorded dose, by the owner and by a delegate", async () => {
+      await post(
+        "09a-delegate-skip-refused",
+        { skipped: true, scheduledFor: "2026-10-14T20:00:00.000Z" },
+        { ...writer, settle: () => refusalRows(2) },
+      );
+      await post("09b-owner-skip-flip", {
+        skipped: true,
+        scheduledFor: "2026-10-14T20:00:00.000Z",
+      });
+    });
 
-  it("22 a completed page sorted by take time", async () => {
-    await list("22-completed-page", {
-      status: "completed",
-      sortBy: "takenAt",
-      sortDir: "asc",
-      limit: "3",
-      offset: "1",
+    it("10 a delegate's take on an open slot, a reader, and nobody", async () => {
+      await post(
+        "10a-writer-take",
+        { takenAt: "2026-10-11T08:20:00.000Z" },
+        writer,
+      );
+      await post("10b-reader", { takenAt: "2026-10-10T08:20:00.000Z" }, reader);
+      await post(
+        "10c-anonymous",
+        { takenAt: "2026-10-10T08:20:00.000Z" },
+        { auth: anonymous },
+      );
+    });
+
+    it("11 the injection-site refusal, and a site with a dose override", async () => {
+      await post(
+        "11a-site-not-allowed",
+        { takenAt: "2026-10-15T09:10:00.000Z", injectionSite: "ABDOMEN_RIGHT" },
+        { medicationId: med.pen },
+      );
+      await post(
+        "11b-site-and-dose",
+        {
+          takenAt: "2026-10-15T09:10:00.000Z",
+          injectionSite: "ABDOMEN_LEFT",
+          doseTaken: "0.5 pen",
+        },
+        { medicationId: med.pen },
+      );
+    });
+
+    it("12 a one-shot dose", async () => {
+      await post(
+        "12-one-shot",
+        { takenAt: "2026-10-15T10:00:00.000Z" },
+        { medicationId: med.oneShot },
+      );
+    });
+
+    it("13 a body the schema refuses", async () => {
+      await post("13-invalid", {
+        takenAt: "yesterday",
+        idempotencyKey: "<HKDoseEvent: 0x600003a1c0c0>",
+      });
+    });
+
+    it("14 another account's medication, and a record-only one", async () => {
+      await post(
+        "14a-not-found",
+        { takenAt: "2026-10-15T08:30:00.000Z" },
+        { medicationId: med.foreign },
+      );
+      await post(
+        "14b-record-only",
+        { takenAt: "2026-10-15T07:10:00.000Z" },
+        { medicationId: med.recordOnly },
+      );
     });
   });
 
-  it("23 the skips, and the takes", async () => {
-    await list("23a-skipped", { status: "skipped" });
-    await list("23b-taken", { status: "taken", sortDir: "asc" });
-  });
+  describe("GET /api/medications/{id}/intake parity", () => {
+    it("21 the default list", async () => {
+      await list("21-default");
+    });
 
-  it("24 a query the schema refuses", async () => {
-    await list("24-invalid", { limit: "lots", status: "maybe" });
-  });
+    it("22 a completed page sorted by take time", async () => {
+      await list("22-completed-page", {
+        status: "completed",
+        sortBy: "takenAt",
+        sortDir: "asc",
+        limit: "3",
+        offset: "1",
+      });
+    });
 
-  it("25 another account's medication, a reading delegate, and nobody", async () => {
-    await list("25a-not-found", {}, { medicationId: med.foreign });
-    await list("25b-reader", {}, reader);
-    await list("25c-anonymous", {}, { auth: anonymous });
+    it("23 the skips, and the takes", async () => {
+      await list("23a-skipped", { status: "skipped" });
+      await list("23b-taken", { status: "taken", sortDir: "asc" });
+    });
+
+    it("24 a query the schema refuses", async () => {
+      await list("24-invalid", { limit: "lots", status: "maybe" });
+    });
+
+    it("25 another account's medication, a reading delegate, and nobody", async () => {
+      await list("25a-not-found", {}, { medicationId: med.foreign });
+      await list("25b-reader", {}, reader);
+      await list("25c-anonymous", {}, { auth: anonymous });
+    });
   });
 });

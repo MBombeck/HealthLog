@@ -211,8 +211,10 @@ describe("syncUserMeasurements — plausibility gate", () => {
   it("does not overwrite a stored reading with an out-of-band one", async () => {
     // The slot already holds a real pulse; the provider re-sends the same
     // instant carrying a decode slip. Ungated, the update branch rewrote the
-    // good value with the bad one.
-    vi.mocked(prisma.measurement.findMany).mockResolvedValueOnce([
+    // good value with the bad one. Not `mockResolvedValueOnce`: the gate
+    // drops the reading before the stored rows are read, so a once-value
+    // would sit unconsumed and answer the next test's read instead.
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue([
       {
         id: "existing-row",
         type: "PULSE",

@@ -248,6 +248,13 @@ describe("handleDataBackup on a large instance", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.store.mockResolvedValue(undefined);
+    // Stated here rather than inherited: without a payload the pass stores
+    // nothing, and these cases used to pass only when another block's setup
+    // had run first and left its payload behind.
+    mocks.buildFullBackupPayload.mockResolvedValue({
+      payload: { schemaVersion: "1", userId: "user-dr" },
+      counts: {},
+    });
   });
 
   it("backs up the accounts with the oldest copies first and stops on the budget", async () => {

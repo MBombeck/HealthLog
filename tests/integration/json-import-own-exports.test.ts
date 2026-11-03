@@ -138,11 +138,14 @@ function byInstant(at: string) {
     String(a.type ?? "").localeCompare(String(b.type ?? ""));
 }
 
-beforeAll(async () => {
+/** This server: the seeded catalogue and the owner whose files are read. */
+async function seedServer(): Promise<void> {
   await truncateAllTables(prisma);
   await seedJsonImportCatalogue(prisma);
   ({ ownerId } = await seedJsonImportOwner(prisma));
-});
+}
+
+beforeAll(seedServer);
 
 afterAll(async () => {
   await truncateAllTables(prisma);
@@ -350,6 +353,10 @@ describe("the JSON import takes the app's own files back", () => {
 });
 
 describe("a full backup moved to another server", () => {
+  // The case empties the database to stand in for another server. Put this
+  // server back for the cases that run after it.
+  afterAll(seedServer);
+
   it("comes back equal, the account's own tags, groups and rated factor included", async () => {
     const original = await fullBackupOf(ownerId);
     expect(original.customMoodTags.length).toBeGreaterThanOrEqual(2);

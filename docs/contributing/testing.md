@@ -284,3 +284,14 @@ earns its place; do not extend the date.
 Order dependence is looked for on purpose: the nightly workflow runs both
 suites with `--sequence.shuffle` and prints the seed. Replay a failure with
 `--sequence.shuffle --sequence.seed=<seed>`.
+
+A case resets or states what it reads: `vi.resetAllMocks()` (or
+`mockReset()`) where a case swaps in its own implementation, since
+`clearAllMocks` keeps it and a `mockResolvedValueOnce` the code never consumed
+answers the next case; a module cache dropped through its own invalidator; a
+row the case needs written by the case or its own `beforeAll`. A file that is
+one walk by design (a parity sequence, a migration's before and after, a
+dry run followed by the import and the same file again) says so in a comment
+and passes `{ shuffle: false }` to its `describe`, which keeps that block in
+order while the rest of the suite still shuffles. Wrap the whole file in one
+such block when its top-level blocks build on each other.

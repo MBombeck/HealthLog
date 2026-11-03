@@ -253,7 +253,20 @@ async function readAll(
   return out;
 }
 
-let baseline: Record<string, { status: number; body: unknown }> | null = null;
+type Reads = Record<string, { status: number; body: unknown }>;
+let baseline: Reads | null = null;
+
+/**
+ * The all-on reads, taken once in a world of their own and then cleared, so
+ * a state case compares against them whichever case runs first.
+ */
+async function readBaseline(): Promise<Reads> {
+  if (baseline === null) {
+    baseline = await readAll(await enterState("S0", seed), "S0");
+    await resetWorld();
+  }
+  return baseline;
+}
 
 beforeEach(async () => {
   await resetWorld();
@@ -261,8 +274,7 @@ beforeEach(async () => {
 
 describe("data routes under every AI state", () => {
   it("S0 (all on) is the baseline, and every read answers", async () => {
-    const world = await enterState("S0", seed);
-    baseline = await readAll(world, "S0");
+    const baseline = await readBaseline();
     for (const [name, { status }] of Object.entries(baseline)) {
       expect(status, name).toBe(200);
     }
@@ -284,12 +296,12 @@ describe("data routes under every AI state", () => {
   it.each(["S1", "S2", "S3", "S4", "S5", "S6", "S8"] as const)(
     "%s answers every read with the baseline's data",
     async (state) => {
-      expect(baseline, "the S0 baseline runs first").not.toBeNull();
+      const base = await readBaseline();
       const world = await enterState(state, seed);
       const reads = await readAll(world, state);
       for (const [name, { status, body }] of Object.entries(reads)) {
         expect(status, `${state} ${name}`).toBe(200);
-        expect(body, `${state} ${name}`).toEqual(baseline![name].body);
+        expect(body, `${state} ${name}`).toEqual(base[name].body);
       }
     },
   );

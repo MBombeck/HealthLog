@@ -33,7 +33,7 @@
  * the generation leg asserts both halves — nothing enqueued for the manager,
  * something enqueued for the owner doing the identical thing.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { NextRequest } from "next/server";
 
@@ -272,6 +272,8 @@ const STRICT_DRIVER_KEYS = new Set<string>();
  * It is the executable answer to "did this route actually do its work?".
  */
 const REAL_EFFECT_KEYS = new Set<string>();
+/** The drivers whose effect case started in this run, filtered or not. */
+const EFFECT_CASES_STARTED = new Set<string>();
 const ROUTE_IMPORTS = import.meta.glob<Record<string, unknown>>(
   "/src/app/api/**/route.ts",
 );
@@ -305,6 +307,7 @@ function manageContract<C>(name: string, c: ManageCase<C>) {
   STRICT_DRIVER_KEYS.add(matrixKey(c.contract));
   describe(name, () => {
     it("changes the owner's record and names the manager as actor", async () => {
+      EFFECT_CASES_STARTED.add(matrixKey(c.contract));
       const owner = await makeUser("owner");
       const manager = await makeUser("manager");
       const ctx = await c.prepare(owner.id);
@@ -381,6 +384,7 @@ function writeEffectContract<C>(name: string, c: ManageCase<C>) {
     });
 
     it("writes for the owner and audits the WRITE actor", async () => {
+      EFFECT_CASES_STARTED.add(matrixKey(c.contract));
       const owner = await makeUser("owner");
       const delegate = await makeUser("writer");
       const ctx = await c.prepare(owner.id);
@@ -3019,10 +3023,15 @@ describe("the complete MANAGE handler matrix", () => {
     expect(STRICT_DRIVER_KEYS.size).toBe(93);
     expect([...STRICT_DRIVER_KEYS].sort()).toEqual(expected);
   });
+});
 
-  it("executes every registered driver through its owned effect and actor audit", () => {
-    const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(REAL_EFFECT_KEYS.size).toBe(93);
-    expect([...REAL_EFFECT_KEYS].sort()).toEqual(expected);
-  });
+// Every registered driver went through its owned effect and actor audit.
+// After all cases, not as one of them: the set fills as the effect cases
+// run, and a case placed last in the file was read first whenever the order
+// was shuffled. A run filtered down to some cases has nothing to say here.
+afterAll(() => {
+  if (EFFECT_CASES_STARTED.size !== STRICT_DRIVER_KEYS.size) return;
+  const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
+  expect(REAL_EFFECT_KEYS.size).toBe(93);
+  expect([...REAL_EFFECT_KEYS].sort()).toEqual(expected);
 });
