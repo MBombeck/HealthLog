@@ -13,7 +13,6 @@ import { Buffer } from "node:buffer";
 import { apiError } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
 import {
-  isPartialTextLayer,
   readPdfTextLayer,
   textLayerText,
 } from "@/lib/documents/pdf-text-layer";
@@ -170,6 +169,12 @@ export async function loadOwnedDocument(
 export async function prepareVisionInput(
   document: LoadedDocument,
   pdfSupported: boolean,
+  /**
+   * The most pages a text-layer read takes. The default is the render cap, the
+   * pages a vision read would have seen; the index reads as many pages as the
+   * local text index does, so the index it writes is complete.
+   */
+  opts: { textLayerPages?: number } = {},
 ): Promise<VisionInput> {
   let buffer: Buffer;
   try {
@@ -213,7 +218,7 @@ export async function prepareVisionInput(
     }
     const read = await readPdfTextLayer(
       buffer,
-      RASTER_MAX_PAGES,
+      opts.textLayerPages ?? RASTER_MAX_PAGES,
       "documents.vision",
     );
     if (read.ok) {
@@ -221,7 +226,6 @@ export async function prepareVisionInput(
         ok: true,
         mode: "text",
         text: textLayerText(read.layer),
-        partial: isPartialTextLayer(read.layer),
       };
     }
     if (read.reason === "busy") return { ok: false, reason: "readerBusy" };

@@ -29,6 +29,7 @@ import {
   transcribeDocument,
 } from "@/lib/documents/describe";
 import { recordIndexAttempt } from "@/lib/documents/index-document";
+import { LOCAL_MAX_PAGES } from "@/lib/documents/local-extract";
 import type { requireDocumentVisionProvider } from "@/lib/documents/provider-order";
 import { annotate } from "@/lib/logging/context";
 
@@ -154,7 +155,11 @@ export async function executeDocumentIndex(args: {
   const { pick, budget } = input;
   const servedBy = pick.entry.providerType as ProviderChainType;
 
-  const vision = await prepareVisionInput(document, pick.pdfSupported);
+  // A text-layer read here IS the index, so it takes every page the local
+  // text index would, not only the pages a vision read is capped to.
+  const vision = await prepareVisionInput(document, pick.pdfSupported, {
+    textLayerPages: LOCAL_MAX_PAGES,
+  });
   if (!vision.ok) {
     // Preparation failed before any provider dispatch — the reservation and
     // the slot go back. Refs #776 — each failure is also recorded on the row

@@ -125,19 +125,26 @@ describe("on a server that cannot render PDF pages", () => {
     it("reads a text-layer PDF as text for a provider that only takes images", async () => {
       stored(buildPdf([LAB_PAGE, LETTER_PAGE]));
       const vision = await prepareVisionInput(DOC, false);
-      expect(vision).toMatchObject({ ok: true, mode: "text", partial: false });
+      expect(vision).toMatchObject({ ok: true, mode: "text" });
       if (!vision.ok || vision.mode !== "text") return;
       expect(vision.text).toContain("Creatinine 0.9 mg/dl");
       expect(vision.text).toContain("community-acquired pneumonia");
     }, 30_000);
 
-    it("marks the text read partial when a page is a scan", async () => {
-      stored(buildPdf([LAB_PAGE, SCAN]));
-      await expect(prepareVisionInput(DOC, false)).resolves.toMatchObject({
-        ok: true,
-        mode: "text",
-        partial: true,
+    it("reads the render cap's pages by default, and as many as asked for the index", async () => {
+      const pages = Array.from({ length: 12 }, (_, i) => ({
+        text: `Page ${i + 1} creatinine 0.9 mg/dl reference 0.7 - 1.2`,
+      }));
+      stored(buildPdf(pages));
+      const capped = await prepareVisionInput(DOC, false);
+      const whole = await prepareVisionInput(DOC, false, {
+        textLayerPages: 200,
       });
+      if (!capped.ok || capped.mode !== "text") throw new Error("no text");
+      if (!whole.ok || whole.mode !== "text") throw new Error("no text");
+      expect(capped.text).toContain("Page 10 ");
+      expect(capped.text).not.toContain("Page 11 ");
+      expect(whole.text).toContain("Page 12 ");
     }, 30_000);
 
     it("answers a scan with pdfRendererUnavailable, never as a read", async () => {
