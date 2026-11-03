@@ -178,6 +178,24 @@ const NORMATIVE_KEYWORDS: Record<Locale, readonly string[]> = {
     "superior a",
     "inferior a",
   ],
+  // Russian replies state a target or a reference interval; the stems carry
+  // the case endings (целевой/целевого, референсный/референсного), and "выше"/
+  // "ниже" are the comparatives a recommendation actually uses. ё folds to е.
+  ru: [
+    "целев",
+    "цель",
+    "должн",
+    "следует",
+    "рекоменд",
+    "нормальн",
+    "норма",
+    "референс",
+    "выше",
+    "ниже",
+    "больше",
+    "меньше",
+    "в пределах",
+  ],
 };
 
 /**

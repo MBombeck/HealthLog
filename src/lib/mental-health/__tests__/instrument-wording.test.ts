@@ -263,6 +263,8 @@ describe("validated entries carry the published wording", () => {
     );
     expect(unvalidated.sort()).toEqual(
       [
+        "GAD7.ru",
+        "PHQ9.ru",
         "SCI.de",
         "SCI.es",
         "SCI.fr",
@@ -270,7 +272,9 @@ describe("validated entries carry the published wording", () => {
         "SCI.ko",
         "SCI.nl",
         "SCI.pt-BR",
+        "SCI.ru",
         "WHO5.pt-BR",
+        "WHO5.ru",
       ].sort(),
     );
     expect(isValidatedWording("SCI", "de")).toBe(false);

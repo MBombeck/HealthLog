@@ -18,6 +18,7 @@ const LOADERS: Record<Locale, () => Promise<{ default: LocaleWording }>> = {
   ko: () => import("./locales/ko"),
   nl: () => import("./locales/nl"),
   "pt-BR": () => import("./locales/pt-br"),
+  ru: () => import("./locales/ru"),
 };
 
 export async function loadLocaleWording(

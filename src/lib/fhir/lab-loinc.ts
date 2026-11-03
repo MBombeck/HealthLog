@@ -65,7 +65,7 @@ export function normaliseLabKey(s: string): string {
   // Hangul syllables are kept alongside the ASCII range: stripping to
   // [a-z0-9] alone reduced every Korean analyte name to the empty string, so
   // `buildLocalisedAliases` indexed none of them and no Korean label resolved.
-  return stripDiacritics(s.toLowerCase()).replace(/[^a-z0-9가-힣]/g, "");
+  return stripDiacritics(s.toLowerCase()).replace(/[^a-z0-9а-яё가-힣]/g, "");
 }
 
 /**
