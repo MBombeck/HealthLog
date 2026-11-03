@@ -106,7 +106,19 @@ FROM cgr.dev/chainguard/wolfi-base:latest@sha256:629d9acaceda7746cd9293365eb0d8e
 #
 # busybox, part of the base, is the shell the entrypoint runs under and
 # carries `tar`/`gzip` for the GeoLite2 extraction and `addgroup`/`adduser`.
-RUN apk add --no-cache nodejs-22 tzdata postgresql-18-client && \
+#
+# The two packages the app runs on are pinned to an exact package version,
+# so a rebuild of the same commit runs the same Node and the same pg_dump;
+# `apk upgrade` cannot move a pinned package, and moves only the libraries
+# under them. No updater reads these pins. What moves them is the image
+# scan: Wolfi records the fixed package version for every advisory, so a
+# pinned package with a published fix turns the HIGH/CRITICAL gate red and
+# names the version to pin. To bump, take the newest from
+# `apk policy nodejs-22` / `apk policy postgresql-18-client` in the pinned
+# base. `src/__tests__/runtime-package-pins.test.ts` holds the pin format,
+# and the client's minor to the bundled database's in docker-compose.yml.
+# tzdata stays unpinned on purpose: a zone rule change is a fix to take.
+RUN apk add --no-cache nodejs-22=22.23.2-r1 tzdata postgresql-18-client=18.6-r7 && \
     apk upgrade --no-cache && \
     mkdir -p /usr/local/bin
 COPY --from=builder /app/.native-abi /tmp/.native-abi
@@ -400,6 +412,20 @@ RUN env -u DATABASE_URL healthlog-tsx scripts/repair-intake-anomalies.ts 2>&1 | 
 # works — the runtime fetch just fails soft and the mounted files stand.
 RUN mkdir -p /opt/geolite2 && chown nextjs:nodejs /opt/geolite2
 COPY --chown=nextjs:nodejs assets/geolite2/ /opt/geolite2/
+
+# `wget` for health checks written outside the image. A compose file copied
+# from this repository up to v1.46.6 and the TrueNAS catalog app both call
+# `wget --spider` against /api/health, and their check replaces the
+# HEALTHCHECK below; the Wolfi base has no wget, so without this every such
+# container stayed unhealthy. `scripts/wget-shim.mjs` understands the flags
+# those checks use, exits like wget, and writes nowhere but stdout. The
+# image's own HEALTHCHECK and the bundled compose file use the Node probe.
+# Root-owned: the app user can run it but not replace it.
+COPY --from=builder /app/scripts/wget-shim.mjs /usr/local/lib/healthlog/wget-shim.mjs
+RUN printf '#!/bin/sh\nexec node /usr/local/lib/healthlog/wget-shim.mjs "$@"\n' > /usr/local/bin/wget && \
+    chmod 755 /usr/local/bin/wget && \
+    wget 2>&1 | grep -q "health check shim" && \
+    ! wget --no-verbose --tries=1 --spider http://127.0.0.1:9/api/health
 
 # ISO-8601 build timestamp — /api/version returns it as `builtAt`.
 # Declared this late in the stage on purpose: the value differs on
