@@ -89,20 +89,25 @@ function databaseOptions(
 }
 
 /**
- * The worker's pg-boss. `createSchema` says whether pg-boss's first install
- * may run `CREATE SCHEMA IF NOT EXISTS pgboss`. Postgres checks the database's
- * CREATE privilege before it checks whether the schema exists, so under the
- * app's restricted role (`scripts/db-app-role.mjs`), which may not create
- * schemas, that statement fails even though the boot already created the
- * schema for it. The caller passes false when the schema is there.
+ * The worker's pg-boss. `ownsQueueSchema` is false when the connection does
+ * not own the `pgboss` schema, which is how the app's restricted role
+ * (`scripts/db-app-role.mjs`) runs: the boot installed and migrated the
+ * schema as the owner, so pg-boss neither installs, migrates nor runs the
+ * index builds a migration queues (`migrate: false`), and never sends
+ * `CREATE SCHEMA IF NOT EXISTS` (`createSchema: false`), which Postgres
+ * refuses without the database's CREATE privilege even when the schema is
+ * there. With `migrate: false`, pg-boss refuses to start on a schema that is
+ * not at its version, rather than run on it.
  */
 export function createWorkerBoss(
   connectionString: string,
-  options: { createSchema?: boolean } = {},
+  options: { ownsQueueSchema?: boolean } = {},
 ): PgBoss {
   return new PgBoss({
     ...databaseOptions(connectionString, "worker"),
-    ...(options.createSchema === false ? { createSchema: false } : {}),
+    ...(options.ownsQueueSchema === false
+      ? { createSchema: false, migrate: false }
+      : {}),
   });
 }
 
