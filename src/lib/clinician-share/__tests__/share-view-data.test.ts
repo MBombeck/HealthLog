@@ -80,6 +80,7 @@ function ctx(overrides: Partial<ShareContext> = {}): ShareContext {
 describe("loadShareViewData — KVNR default OFF", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    moduleMap.mockReset().mockResolvedValue(allModulesOn());
     collect.mockResolvedValue({
       patient: { displayName: "Shared record" },
     });
@@ -216,6 +217,7 @@ describe("loadShareViewData — KVNR default OFF", () => {
 describe("loadShareViewData — documents-only share exposes no health data", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    moduleMap.mockReset().mockResolvedValue(allModulesOn());
     collect.mockResolvedValue({ patient: { displayName: "Shared record" } });
     findDocs.mockResolvedValue([]);
   });
@@ -296,6 +298,7 @@ describe("loadShareViewData — documents-only share exposes no health data", ()
 describe("loadShareViewData — documentOnly column is authoritative", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    moduleMap.mockReset().mockResolvedValue(allModulesOn());
     collect.mockResolvedValue({ patient: { displayName: "Shared record" } });
     findDocs.mockResolvedValue([]);
   });
@@ -339,6 +342,7 @@ describe("loadShareViewData — documentOnly column is authoritative", () => {
 describe("loadShareViewData — the frozen scope reaches the aggregator intact", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    moduleMap.mockReset().mockResolvedValue(allModulesOn());
     collect.mockResolvedValue({ patient: { displayName: "Shared record" } });
     findDocs.mockResolvedValue([]);
   });
