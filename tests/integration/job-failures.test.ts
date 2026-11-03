@@ -13,7 +13,7 @@
  * are failed through its own API.
  */
 import { PgBoss } from "pg-boss";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import {
   readActiveJobsStartedBefore,
@@ -47,7 +47,7 @@ async function failOneJob(
   return jobId;
 }
 
-beforeAll(async () => {
+async function startBoss(): Promise<void> {
   boss = new PgBoss({
     connectionString: process.env.DATABASE_URL,
     // No maintenance or monitoring timers — the test drives every transition.
@@ -57,7 +57,15 @@ beforeAll(async () => {
   await boss.start();
   await boss.createQueue(QUEUE);
   await boss.createQueue(OTHER_QUEUE);
-}, 60_000);
+}
+
+beforeAll(startBoss, 60_000);
+
+// Every case reads the queue it filled itself: no job a case before it sent,
+// failed or left active is still there to be counted or fetched.
+beforeEach(async () => {
+  await getPrismaClient().$executeRawUnsafe(`DELETE FROM pgboss.job`);
+});
 
 afterAll(async () => {
   await boss?.stop({ graceful: false, close: true });
@@ -244,6 +252,8 @@ describe("no queue schema at all", () => {
       await prisma.$executeRawUnsafe(
         `ALTER SCHEMA pgboss_gone RENAME TO pgboss`,
       );
+      // Running again for whichever case comes next.
+      await startBoss();
     }
   });
 });

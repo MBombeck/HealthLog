@@ -55,18 +55,27 @@ describe("an update that changes nothing", () => {
     const row = await seedReading();
     await new Promise((r) => setTimeout(r, 20));
 
+    // Read as a difference within the transaction. Since Postgres 15 the
+    // `pg_stat_xact_*` views also carry counts an earlier transaction on the
+    // same connection has not flushed yet (stats flush at most once a
+    // second), so an update from the case before this one could show up.
     const hot = await prisma.$transaction(async (tx) => {
+      const read = async () => {
+        const [stats] = await tx.$queryRaw<Array<{ hot: bigint; upd: bigint }>>`
+          SELECT n_tup_hot_upd AS hot, n_tup_upd AS upd
+          FROM pg_stat_xact_user_tables WHERE relname = 'measurements'`;
+        return { hot: Number(stats?.hot ?? 0), upd: Number(stats?.upd ?? 0) };
+      };
+      const before = await read();
       await tx.measurement.update({
         where: { id: row.id },
         data: { value: 72.3, deletedAt: null, syncVersion: { increment: 1 } },
       });
-      const [stats] = await tx.$queryRaw<Array<{ hot: bigint; upd: bigint }>>`
-        SELECT n_tup_hot_upd AS hot, n_tup_upd AS upd
-        FROM pg_stat_xact_user_tables WHERE relname = 'measurements'`;
-      return stats;
+      const after = await read();
+      return { hot: after.hot - before.hot, upd: after.upd - before.upd };
     });
-    expect(Number(hot.upd)).toBe(1);
-    expect(Number(hot.hot)).toBe(1);
+    expect(hot.upd).toBe(1);
+    expect(hot.hot).toBe(1);
 
     const after = await prisma.measurement.findUniqueOrThrow({
       where: { id: row.id },
