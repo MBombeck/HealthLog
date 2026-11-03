@@ -288,7 +288,7 @@ const PINNED_AFFORDANCES: Record<
     "toast.success": 2,
   },
   "src/components/medications/intake-history-list-v2.tsx": {
-    "text-success": 2,
+    "text-success": 1,
   },
   "src/components/medications/scheduling/schedule-history-timeline.tsx": {
     "toast.success": 2,
