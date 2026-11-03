@@ -7,7 +7,7 @@
  * This module has no logging of its own, so the end-to-end suite can read
  * report text with it; the callers say what failed.
  */
-import { runPdfChild } from "./pdf-isolation";
+import { runPdfChild, type PdfPageTexts } from "./pdf-isolation";
 
 export { joinTextRuns } from "./pdf-engine.mjs";
 
@@ -56,6 +56,31 @@ export async function readPdfText(
   const result = await runPdfChild(
     // Infinity does not cross the channel as a page count.
     { op: "text", data, maxPages: Math.min(maxPages, Number.MAX_SAFE_INTEGER) },
+    { timeoutMs: PDF_TEXT_TIMEOUT_MS },
+  );
+  if (result.ok) return result.value;
+  if (result.reason === "limit") throw new PdfResourceLimitError(result.limit);
+  if (result.reason === "busy" || result.reason === "interrupted") {
+    throw new PdfReaderUnavailableError(result.reason);
+  }
+  const err = new Error(result.message);
+  err.name = result.name;
+  throw err;
+}
+
+/**
+ * The text layer of the first `maxPages` pages, page by page, with the
+ * document's page count. Each page is read as a rendered page's text layer is
+ * (`pageText`: cut and marked past `RASTER_PAGE_TEXT_MAX`, empty for a page
+ * without one), and nothing is rendered, so it works where the page renderer
+ * cannot run. Throws as `readPdfText` does.
+ */
+export async function readPdfPageTexts(
+  data: Uint8Array,
+  maxPages: number,
+): Promise<PdfPageTexts> {
+  const result = await runPdfChild(
+    { op: "page-texts", data, maxPages },
     { timeoutMs: PDF_TEXT_TIMEOUT_MS },
   );
   if (result.ok) return result.value;
