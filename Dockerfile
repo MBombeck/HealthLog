@@ -76,7 +76,23 @@ RUN node -p "require('/app/node_modules/@napi-rs/canvas/package.json').version" 
 RUN node scripts/verify-message-catalogs.mjs --dir messages \
       --config src/lib/i18n/config.ts --write /app/.message-locales
 
-# ── Stage 3: Production runner ─────────────────────────────
+# ── Stage 3: PostgreSQL client tools ───────────────────────
+# `pg_dump` and `pg_restore` of major 18, and the libpq they link, taken from
+# the official PostgreSQL image built on the same Debian release. Installing
+# `postgresql-client-18` instead pulls Perl and Debian's client wrapper
+# scripts into the runner for two binaries the app calls by name. Pinned to
+# the same minor as the bundled database in docker-compose.yml; move the two
+# together. The libpq file is found through the loader rather than by an
+# architecture path, so the step is the same on amd64 and arm64.
+FROM postgres:18.6-trixie@sha256:3a4264520e121176619f54ff867d12774bc81e95e7b84db58d63bccdb6144b81 AS pgclient
+RUN set -eu; \
+    mkdir -p /out/bin /out/lib; \
+    cp /usr/lib/postgresql/18/bin/pg_dump /usr/lib/postgresql/18/bin/pg_restore /out/bin/; \
+    LIBPQ="$(ldd /usr/lib/postgresql/18/bin/pg_dump | awk '$1 == "libpq.so.5" { print $3 }')"; \
+    [ -n "$LIBPQ" ] || { echo "ERROR: pg_dump links no libpq.so.5"; exit 1; }; \
+    cp -L "$LIBPQ" /out/lib/libpq.so.5
+
+# ── Stage 4: Production runner ─────────────────────────────
 FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f AS runner
 # `tzdata` is required so Europe/Berlin schedules (pg-boss cron, locale-aware
 # timestamp formatting) resolve to the actual offset instead of silently
@@ -88,50 +104,33 @@ FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab
 # CVE-2026-14456 in openssl was the first instance the container scan
 # caught between base-image rebuilds).
 #
-# `postgresql-client-18` carries `pg_dump` and `pg_restore` for the nightly
-# database dump, the pre-migration dump in the entrypoint and the
-# `db-restore` service (docs/ops/disaster-recovery.md). Major 18 matches the
-# bundled database; a client dumps servers of its own major and older, so it
-# also serves an install still on its own Postgres 16. Debian trixie itself
-# ships major 17, so the client comes from the PostgreSQL project's own apt
-# repository (PGDG). Its signing key is fetched over HTTPS and must match the
-# pinned SHA-256 before apt trusts it; the pin is the key with fingerprint
-# B97B 0AFC AA1A 47F0 44F2 44A0 7FCC 7D46 ACCC 4CF8. If PGDG ever republishes
-# the key file, check that fingerprint again before moving the pin. `node`
-# fetches it, so no curl or wget lands in the image for this one download.
-# `ca-certificates` is what apt needs for the HTTPS repository.
+# `pg_dump` and `pg_restore` serve the nightly database dump, the
+# pre-migration dump in the entrypoint and the `db-restore` service
+# (docs/ops/disaster-recovery.md). Major 18 matches the bundled database; a
+# client dumps servers of its own major and older, so it also serves an
+# install still on its own Postgres 16. Debian trixie ships major 17, so the
+# two binaries and their libpq come from the `pgclient` stage above; the
+# Debian libraries libpq links (Kerberos, LDAP, SASL) come from apt below, so
+# the build-time upgrade and the image scan see them. The copied binaries are
+# outside dpkg: the scan does not see them and `apt-get upgrade` does not
+# patch them, so a PostgreSQL client fix arrives by moving the `pgclient`
+# pin.
+#
+# `ca-certificates` is the system trust store the OpenSSL-linked tools use
+# (the Prisma schema engine, libpq) for a TLS connection to the database.
 RUN set -eux; \
-    export PGDG_ASC_SHA256=0144068502a1eddd2a0280ede10ef607d1ec592ce819940991203941564e8e76; \
     export DEBIAN_FRONTEND=noninteractive; \
     apt-get update; \
     apt-get upgrade -y --no-install-recommends; \
-    apt-get install -y --no-install-recommends ca-certificates tzdata; \
-    node -e " \
-      const { createHash } = require('node:crypto'); \
-      const { writeFileSync } = require('node:fs'); \
-      fetch('https://www.postgresql.org/media/keys/ACCC4CF8.asc', { signal: AbortSignal.timeout(30000) }) \
-        .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); }) \
-        .then((b) => { \
-          const key = Buffer.from(b); \
-          const sum = createHash('sha256').update(key).digest('hex'); \
-          if (sum !== process.env.PGDG_ASC_SHA256) throw new Error('PGDG key sha256 ' + sum); \
-          writeFileSync('/usr/share/keyrings/pgdg.asc', key); \
-        }) \
-        .catch((e) => { console.error(e); process.exit(1); });"; \
-    printf '%s\n' \
-      'Types: deb' \
-      'URIs: https://apt.postgresql.org/pub/repos/apt' \
-      'Suites: trixie-pgdg' \
-      'Components: main' \
-      'Signed-By: /usr/share/keyrings/pgdg.asc' \
-      > /etc/apt/sources.list.d/pgdg.sources; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends postgresql-client-18; \
+    apt-get install -y --no-install-recommends \
+      ca-certificates tzdata libgssapi-krb5-2 libldap2 libsasl2-2; \
     apt-get clean; \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
-# Debian installs each major's client under its own directory and puts a
-# version-picking Perl wrapper on PATH. Name the directory, so `pg_dump`
-# is the major 18 binary by construction, not by what the wrapper picks.
+COPY --from=pgclient /out/bin/ /usr/lib/postgresql/18/bin/
+COPY --from=pgclient /out/lib/libpq.so.5 /usr/lib/postgresql/18/lib/libpq.so.5
+RUN echo /usr/lib/postgresql/18/lib > /etc/ld.so.conf.d/postgresql-18.conf && \
+    ldconfig && \
+    ! ldd /usr/lib/postgresql/18/bin/pg_dump /usr/lib/postgresql/18/bin/pg_restore | grep -q "not found"
 ENV PATH=/usr/lib/postgresql/18/bin:$PATH
 WORKDIR /app
 

@@ -61,12 +61,20 @@ describe("canvas binary hoist", () => {
     expect(runner).not.toMatch(/@napi-rs\+canvas[^"'\s]*@\*/);
   });
 
-  it("builds every stage on the glibc Debian base", () => {
+  it("builds every Node stage on the glibc Debian base", () => {
     const froms = DOCKERFILE.match(/^FROM \S+/gm) ?? [];
-    expect(froms.length).toBeGreaterThanOrEqual(3);
-    for (const from of froms) {
+    const node = froms.filter((from) => from.startsWith("FROM node:"));
+    expect(node).toHaveLength(3);
+    for (const from of node) {
       expect(from).toMatch(/^FROM node:22-trixie-slim@sha256:[0-9a-f]{64}$/);
     }
+    // The only other stage supplies the PostgreSQL client tools, built on
+    // the same Debian release so its binaries find their libraries.
+    expect(froms.filter((from) => !from.startsWith("FROM node:"))).toEqual([
+      expect.stringMatching(
+        /^FROM postgres:18\.\d+-trixie@sha256:[0-9a-f]{64}$/,
+      ),
+    ]);
   });
 
   it("fails the build when the copied binary is another version", () => {

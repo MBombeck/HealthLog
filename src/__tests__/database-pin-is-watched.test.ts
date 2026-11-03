@@ -40,6 +40,32 @@ describe("the bundled database pin", () => {
     }
   });
 
+  it("ships pg_dump of the same minor the bundled database runs", () => {
+    const db = /^\s*image:\s*postgres:(\d+\.\d+)-alpine$/m.exec(
+      read("docker-compose.yml"),
+    );
+    const client =
+      /^FROM postgres:(\d+\.\d+)-trixie@sha256:[0-9a-f]{64} AS pgclient$/m.exec(
+        read("Dockerfile"),
+      );
+    expect(db, "the compose file pins the database").not.toBeNull();
+    expect(client, "the Dockerfile has a pinned pgclient stage").not.toBeNull();
+    // The two pins are one decision; a Dependabot PR moves them separately.
+    expect(client![1]).toBe(db![1]);
+  });
+
+  it("keeps a major bump of the client tools out of the Dockerfile watch too", () => {
+    const dependabot = read(".github/dependabot.yml");
+    const docker =
+      /package-ecosystem:\s*"docker"\n([\s\S]*?)(?=\n\s*- package-ecosystem:)/.exec(
+        dependabot,
+      );
+    expect(docker, "a docker ecosystem entry").not.toBeNull();
+    expect(docker![1]).toMatch(
+      /dependency-name:\s*"postgres"[\s\S]{0,200}version-update:semver-major/,
+    );
+  });
+
   it("lets a major version through only as a decision, never as an update PR", () => {
     const dependabot = read(".github/dependabot.yml");
     // The first run of the compose ecosystem proposed 16.15 -> 18.6. A

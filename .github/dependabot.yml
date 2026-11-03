@@ -64,6 +64,13 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 3
+    ignore:
+      # The Dockerfile's `pgclient` stage carries pg_dump and pg_restore of
+      # the bundled database's major. A major bump there is part of the same
+      # migration decision as the database itself, and the runner's paths and
+      # version checks name major 18, so it arrives by hand, not as a PR.
+      - dependency-name: "postgres"
+        update-types: ["version-update:semver-major"]
   # The `docker` ecosystem above reads the Dockerfile only. The bundled
   # database lives in `docker-compose.yml`, which GitHub treats as its own
   # ecosystem, so without this block a new PostgreSQL minor release never
