@@ -20,7 +20,7 @@ export const COUNT_UNIT =
  * units plus the count forms; `ml` is left out on purpose because
  * "increase your water intake to 2000 ml" is ordinary hydration advice.
  */
-export const DRUG_UNIT = `(?:mg|mcg|µg|iu|ui|i\\.u\\.|units?|unidades?|unità|unités?|jednostek|jednostki|eenheden|eenheid|ie|i\\.e\\.|einheiten|мкг|мг|мл|ед|ме|${COUNT_UNIT})`;
+export const DRUG_UNIT = `(?:mg|mcg|µg|iu|ui|i\\.u\\.|units?|unidades?|unità|unités?|jednostek|jednostki|eenheden|eenheid|ie|i\\.e\\.|einheiten|мкг|мг|ед|ме|${COUNT_UNIT})`;
 
 /**
  * Dose units, shared across every locale. The GLP-1 + general oral-dose
@@ -28,7 +28,7 @@ export const DRUG_UNIT = `(?:mg|mcg|µg|iu|ui|i\\.u\\.|units?|unidades?|unità|u
  * insulin-unit spellings the locales use (`eenheden` is the Dutch one, `ui`
  * the Portuguese abbreviation of "unidades internacionais").
  */
-export const DOSE_UNIT = `(?:ml|${DRUG_UNIT})`;
+export const DOSE_UNIT = `(?:ml|мл|${DRUG_UNIT})`;
 
 /**
  * What may follow a dose unit. A concentration is a lab value, not a dose:
@@ -36,9 +36,11 @@ export const DOSE_UNIT = `(?:ml|${DRUG_UNIT})`;
  * medication, and a bare `\b` let both trip the "try … N mg" pattern. A
  * per-day or per-kilogram rate ("2000 mg/day", "10 mg/kg") IS a dose and still
  * matches. The lookahead also ends a unit that closes on a non-word letter
- * ("unità", "i.e.") where `\b` cannot.
+ * ("unità", "i.e.") where `\b` cannot. Cyrillic counts as a letter here:
+ * `\w` is ASCII-only, so without it «3 месяца» read as "3 МЕ".
  */
-export const UNIT_END = "(?!\\w|\\s*\\/\\s*(?:dl|l|min|mmol)\\b)";
+export const UNIT_END =
+  "(?![\\w\\u0400-\\u04FF]|\\s*\\/\\s*(?:dl|l|min|mmol)\\b)";
 
 /**
  * One to four words of object between a change verb and its target — "your
