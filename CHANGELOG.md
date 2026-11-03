@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- **The intake history shows where an injection went.** A dose logged
+  with an injection site already stored it, but the per-medication
+  history only showed when it was taken and where the entry came from.
+  Each injected dose now carries a chip with the site next to its status,
+  in the table and on the mobile cards, so the rotation can be read back
+  from the history. Doses without a site look as before.
+
 ## [1.46.6] — 2026-11-02
 
 ### Added
