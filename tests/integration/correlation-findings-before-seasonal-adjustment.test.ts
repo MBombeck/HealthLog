@@ -7,7 +7,7 @@
  * (`AppSettings.correlationSeasonalEngineSince`), which the first discovery
  * sync of the new engine stamps before it writes, not by a calendar date.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import {

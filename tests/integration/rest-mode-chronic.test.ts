@@ -10,7 +10,7 @@
  * digest's Day N, and the achievements streak freeze, which runs its own
  * episode query.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { __resetAllCachesForTests } from "@/lib/cache/server-cache";

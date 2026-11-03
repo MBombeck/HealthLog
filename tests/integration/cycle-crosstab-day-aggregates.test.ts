@@ -6,7 +6,7 @@
  * with two sources on the same days, two device types within one source,
  * dense CGM glucose, summed steps and readings next to Berlin midnight.
  */
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { readSourceDayAggregates } from "@/lib/measurements/day-aggregates";

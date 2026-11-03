@@ -9,7 +9,7 @@
  * it; a purged visit cascades its links; a start folded into a live cycle
  * stays; the coach facts keep their longer horizon.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { TOMBSTONE_RETENTION_DAYS } from "@/lib/auth/native-client";
 import {

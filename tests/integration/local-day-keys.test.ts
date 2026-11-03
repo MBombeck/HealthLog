@@ -8,7 +8,7 @@
  * 23:30 UTC is the next day in Berlin and still the same day in Los Angeles,
  * a reading at 03:00 UTC is the previous day in Los Angeles.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { readActivityDayKeys } from "@/lib/dashboard/summary-reads";

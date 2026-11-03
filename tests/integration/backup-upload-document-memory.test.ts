@@ -42,7 +42,7 @@ import { once } from "node:events";
 import v8 from "node:v8";
 import vm from "node:vm";
 
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";

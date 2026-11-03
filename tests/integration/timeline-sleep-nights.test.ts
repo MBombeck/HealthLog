@@ -9,7 +9,7 @@
  * call one: CORE + DEEP + REM of the night's winning writer, IN_BED and
  * AWAKE left out, keyed by its wake day.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 

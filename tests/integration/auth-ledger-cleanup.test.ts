@@ -7,7 +7,7 @@
  * token without an expiry all stay. The delete is batched and says when it
  * stopped with rows left.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { cleanupAuthLedgers } from "@/lib/jobs/auth-ledger-cleanup";
 

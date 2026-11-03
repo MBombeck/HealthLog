@@ -14,7 +14,7 @@
  * readings on that local day, 08:00 PDT (15:00Z) and 23:30 PDT (06:30Z on
  * the 9th), must form one bucket for the 8th.
  */
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 

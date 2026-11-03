@@ -11,7 +11,7 @@
  * The fixture is the reported case: a fortnight of glucose readings from April
  * 2024, deliberately outside every window the Coach can search.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { probeCoachAvailability } from "@/lib/ai/coach/tools/availability";

@@ -19,7 +19,7 @@
  * dashboard composes (`computeDisplayDue` + the taken/scheduled tally) reflects
  * the correct state.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 

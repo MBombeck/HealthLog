@@ -16,7 +16,7 @@
  *     day, deleted outright, expires the account's delta cursors. An Apple
  *     Health fold expires nothing.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { upsertGoogleHealthMeasurements } from "@/lib/google-health/sync-core";
 import { runDenseIntradayRetention } from "@/lib/measurements/dense-intraday-retention";

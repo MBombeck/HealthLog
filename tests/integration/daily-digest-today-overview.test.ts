@@ -9,7 +9,7 @@
  * AI provider is the subject on purpose: the overview has to be whole
  * without one.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { loadDailyDigest } from "@/lib/daily/load-digest";

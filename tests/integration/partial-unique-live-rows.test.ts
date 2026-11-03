@@ -20,7 +20,7 @@
  * Postgres cannot arbiter against a partial unique). See migration 0121's
  * header for the full rationale.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 process.env.ENCRYPTION_KEY ??=
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";

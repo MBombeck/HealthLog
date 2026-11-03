@@ -9,7 +9,7 @@
  * Health, and a day between two sources that were on the ladder before
  * resolves exactly as it did.
  */
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import type {

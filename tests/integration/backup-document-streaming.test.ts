@@ -23,7 +23,7 @@ import { createHash, randomBytes } from "node:crypto";
 import v8 from "node:v8";
 import vm from "node:vm";
 
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 process.env.ENCRYPTION_KEY ??=
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";

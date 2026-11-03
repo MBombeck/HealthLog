@@ -16,7 +16,7 @@
  *   2. Marking the morning dose does NOT mark the evening dose (the evening
  *      slot stays pending) and vice-versa.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 

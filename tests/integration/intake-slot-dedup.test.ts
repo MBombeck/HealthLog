@@ -17,7 +17,7 @@
  *   4. taken > skipped tie-break keeps the taken row.
  *   5. Boot discovery only matches users that actually hold duplicates.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 

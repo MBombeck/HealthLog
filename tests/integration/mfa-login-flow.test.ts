@@ -6,7 +6,7 @@
  * that the recovery-code burn is durable and one-time, and that the challenge
  * ticket can be claimed exactly once. This exercises all three end to end.
  */
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import * as OTPAuth from "otpauth";
 
 import { getPrismaClient, truncateAllTables } from "./setup";

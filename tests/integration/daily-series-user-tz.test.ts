@@ -16,7 +16,7 @@
  * the live instance has it, and asserts that the daily series (both the
  * rollup-backed read and the live aggregate) buckets by the user's day.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import {

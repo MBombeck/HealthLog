@@ -4,7 +4,7 @@
  * (`readDayAggregates`); this proves that path finds a step, reports its
  * segment sizes, and leaves a switched-off module's metric unread.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { buildExtendedChangepointSignals } from "@/lib/insights/derived/changepoint";
