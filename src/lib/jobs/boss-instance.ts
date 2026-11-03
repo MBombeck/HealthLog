@@ -88,8 +88,22 @@ function databaseOptions(
   } as const;
 }
 
-export function createWorkerBoss(connectionString: string): PgBoss {
-  return new PgBoss(databaseOptions(connectionString, "worker"));
+/**
+ * The worker's pg-boss. `createSchema` says whether pg-boss's first install
+ * may run `CREATE SCHEMA IF NOT EXISTS pgboss`. Postgres checks the database's
+ * CREATE privilege before it checks whether the schema exists, so under the
+ * app's restricted role (`scripts/db-app-role.mjs`), which may not create
+ * schemas, that statement fails even though the boot already created the
+ * schema for it. The caller passes false when the schema is there.
+ */
+export function createWorkerBoss(
+  connectionString: string,
+  options: { createSchema?: boolean } = {},
+): PgBoss {
+  return new PgBoss({
+    ...databaseOptions(connectionString, "worker"),
+    ...(options.createSchema === false ? { createSchema: false } : {}),
+  });
 }
 
 function producerOptions(connectionString: string) {
