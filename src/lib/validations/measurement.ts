@@ -247,6 +247,7 @@ export { getUnitForType } from "@/lib/measurements/unit-map";
 // the client's value-domain reads (the chart floor, the integer set) do not
 // pull Zod into every metric page.
 import { validateMeasurementRange } from "@/lib/measurements/value-ranges";
+import { BP_PARTS_OF_DAY } from "@/lib/analytics/bp-time-of-day";
 export {
   VALUE_RANGES,
   validateMeasurementRange,
@@ -352,6 +353,13 @@ export const listPersonalRecordsSchema = z.object({
   limit: z.coerce.number().int().min(1).max(500).optional().default(100),
 });
 
+/** The series `partOfDay` narrows: blood pressure and the pulse taken with it. */
+const PART_OF_DAY_TYPES: ReadonlySet<string> = new Set([
+  "BLOOD_PRESSURE_SYS",
+  "BLOOD_PRESSURE_DIA",
+  "PULSE",
+]);
+
 export const listMeasurementsSchema = z
   .object({
     type: measurementTypeEnum.optional(),
@@ -440,6 +448,15 @@ export const listMeasurementsSchema = z
         "dayKey must be a real calendar date (YYYY-MM-DD)",
       )
       .optional(),
+    // #1331 — narrow the chart's series to one part of the day (the
+    // blood-pressure hours in `bp-time-of-day.ts`). A series read only: each
+    // local day folds just the readings taken in that part.
+    partOfDay: z
+      .enum(BP_PARTS_OF_DAY)
+      .optional()
+      .describe(
+        "Narrow the series to one part of the day in the record's zone: morning 04:00 to 11:59, midday 12:00 to 17:59, evening 18:00 to 03:59. A day runs from 04:00, so an evening reading after midnight counts on the evening before. Only for `BLOOD_PRESSURE_SYS`, `BLOOD_PRESSURE_DIA` or `PULSE` with `aggregate=daily`, `source=rollup`, `from` and `to`; anything else is refused with 422.",
+      ),
   })
   .refine(({ offset, dayKey }) => !(offset > 0 && dayKey != null), {
     message:
@@ -498,6 +515,25 @@ export const listMeasurementsSchema = z
       message:
         "appleHealthMirror filters the plain row list only; combine it with type, from, to, sourceEq and paging",
       path: ["appleHealthMirror"],
+    },
+  )
+  // The part-of-day hours are the blood-pressure reading windows, so the
+  // filter is served for the blood-pressure series and the pulse taken with
+  // it, on the chart's series read, and refused anywhere it would mean
+  // something else.
+  .refine(
+    ({ partOfDay, type, source, aggregate, from, to }) =>
+      partOfDay === undefined ||
+      (type !== undefined &&
+        PART_OF_DAY_TYPES.has(type) &&
+        source === "rollup" &&
+        aggregate === "daily" &&
+        from !== undefined &&
+        to !== undefined),
+    {
+      message:
+        "partOfDay narrows the blood-pressure or pulse series; combine it with type, from, to, aggregate=daily and source=rollup",
+      path: ["partOfDay"],
     },
   );
 

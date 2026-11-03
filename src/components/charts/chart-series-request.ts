@@ -8,11 +8,14 @@
  * chart folds rows into days either way, so the daily answer draws the same
  * points while its size depends only on the number of days.
  *
+ * `partOfDay` narrows each day to the readings of one part of it (#1331).
+ *
  * Pure so the request the chart makes can be tested against the real route.
  */
 export function chartSeriesParams(
   type: string,
   window: { from: string; to: string },
+  partOfDay?: string,
 ): URLSearchParams {
   const params = new URLSearchParams();
   params.set("type", type);
@@ -23,5 +26,6 @@ export function chartSeriesParams(
   params.set("limit", "5000");
   params.set("aggregate", "daily");
   params.set("source", "rollup");
+  if (partOfDay) params.set("partOfDay", partOfDay);
   return params;
 }

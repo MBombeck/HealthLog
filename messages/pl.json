@@ -4972,6 +4972,34 @@
       "emptyDescription": "W tym okresie nie zapisano jeszcze żadnego wyniku.",
       "usualRange": "Zacieniowane: twój zwykły zakres, od {lo} do {hi}.",
       "seam": "Linia przerywa się tam, gdzie zmieniło się to, co liczy się do wyniku."
+    },
+    "bpTimeOfDay": {
+      "title": "Według pory dnia",
+      "description": "Twoje średnie ciśnienie w każdej porze dnia, w zakresie wykresu.",
+      "part": {
+        "morning": "Rano",
+        "midday": "W południe",
+        "evening": "Wieczorem"
+      },
+      "filterAll": "Cały dzień",
+      "filterLabel": "Pokaż na wykresie",
+      "readingsOne": "{count} pomiar",
+      "readingsFew": "{count} pomiary",
+      "readingsOther": "{count} pomiarów",
+      "notEnough": "Za mało pomiarów",
+      "pulse": "Tętno {value} bpm",
+      "difference": "Rano minus wieczór: {systolic}/{diastolic} mmHg.",
+      "differencePending": "Rano i wieczór zostaną porównane, gdy każda z tych pór będzie mieć co najmniej {min} pomiary.",
+      "hours": "Rano {morning}, w południe {midday}, wieczorem {evening}, w Twojej strefie czasowej.",
+      "hourRange": "{start}–{end}",
+      "emptyTitle": "Brak pełnych pomiarów w tym zakresie",
+      "emptyDescription": "Tutaj pojawią się pomiary z wartością skurczową i rozkurczową.",
+      "error": "Nie udało się wczytać średnich według pory dnia.",
+      "chartTitle": {
+        "morning": "Ciśnienie tętnicze rano",
+        "midday": "Ciśnienie tętnicze w południe",
+        "evening": "Ciśnienie tętnicze wieczorem"
+      }
     }
   },
   "thresholds": {

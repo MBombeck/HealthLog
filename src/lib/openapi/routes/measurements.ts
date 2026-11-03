@@ -14,6 +14,7 @@ import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 import { updateMeasurementSchema } from "@/lib/validations/measurement";
 import { seriesBatchQuerySchema } from "@/lib/validations/series-batch";
+import { bpTimeOfDayQuerySchema } from "@/lib/validations/bp-time-of-day";
 import { deviceTypeEnum } from "@/lib/validations/source-priority";
 import { sleepStageEntrySchema } from "@/lib/validations/sleep-stage-entry";
 import {
@@ -464,6 +465,10 @@ const listMeasurementsMeta = z
       .string()
       .optional()
       .describe("Set on the aggregate modes — the requested grain."),
+    partOfDay: z
+      .enum(["morning", "midday", "evening"])
+      .optional()
+      .describe("Echoed when the series was narrowed with `partOfDay`."),
     droppedDuplicates: z
       .number()
       .int()
@@ -829,7 +834,113 @@ const seriesBatchResponse = z
       "Batched daily series — one rollup-backed series per requested type.",
   });
 
+const bpPartSummary = z
+  .object({
+    part: z
+      .enum(["morning", "midday", "evening"])
+      .describe("The part of the day."),
+    startHour: z
+      .number()
+      .int()
+      .describe("First local hour of the part (inclusive)."),
+    endHour: z
+      .number()
+      .int()
+      .describe(
+        "Local hour the part ends at (exclusive). Smaller than `startHour` when the part runs past midnight (evening: 18 to 4).",
+      ),
+    readingCount: z
+      .number()
+      .int()
+      .describe("Paired systolic/diastolic readings in this part."),
+    systolic: z
+      .number()
+      .int()
+      .nullable()
+      .describe(
+        "Mean systolic in whole mmHg; null while `readingCount` is below `minReadings`.",
+      ),
+    diastolic: z
+      .number()
+      .int()
+      .nullable()
+      .describe("Mean diastolic in whole mmHg; null on the same floor."),
+    pulseReadingCount: z
+      .number()
+      .int()
+      .describe(
+        "Readings in this part that carried a pulse (same source, within five minutes).",
+      ),
+    pulse: z
+      .number()
+      .int()
+      .nullable()
+      .describe(
+        "Mean pulse in whole bpm; null while `pulseReadingCount` is below `minReadings`.",
+      ),
+  })
+  .meta({ id: "BloodPressurePartOfDay" });
+
+const bpTimeOfDayResponse = z
+  .object({
+    days: z.number().int().describe("The window asked for, in local days."),
+    from: isoDateTime().describe("Window start (ISO-8601)."),
+    to: isoDateTime().describe(
+      "Window end: the last instant of today in the record's time zone.",
+    ),
+    timeZone: z
+      .string()
+      .describe("IANA zone the hours were read in (the record's own)."),
+    minReadings: z
+      .number()
+      .int()
+      .describe("Readings a part needs before its mean is given."),
+    readingCount: z
+      .number()
+      .int()
+      .describe("Paired readings in the window, across the three parts."),
+    parts: z
+      .array(bpPartSummary)
+      .describe("Always three entries: morning, midday, evening, in order."),
+    morningEveningDifference: z
+      .object({
+        systolic: z.number().int(),
+        diastolic: z.number().int(),
+      })
+      .nullable()
+      .describe(
+        "Morning mean minus evening mean, from the two whole-mmHg means given above (so it equals their difference exactly). Null unless both parts reach `minReadings`.",
+      ),
+  })
+  .meta({ id: "BloodPressureTimeOfDay" });
+
 export const measurementPaths: NonNullable<ZodOpenApiObject["paths"]> = {
+  "/api/measurements/blood-pressure/time-of-day": {
+    get: {
+      tags: ["Measurements"],
+      summary: "Blood pressure by part of the day",
+      description:
+        "Morning (04:00 to 11:59), midday (12:00 to 17:59) and evening (18:00 to 03:59) means of the paired blood-pressure readings in the window, read in the record's own time zone, with a count per part and the morning-minus-evening difference. Home monitoring guidance reads morning and evening readings as separate sets; the windows are wide so a waking reading and a late bedtime reading land in the right one. A pair is a systolic with the diastolic of the same source within five minutes, from the source the person's ladder picks for the day (the `bloodPressure` series' rule). Every figure is resolved here; a client renders it as given. Auth via cookie or Bearer.",
+      requestParams: {
+        query: bpTimeOfDayQuerySchema,
+      },
+      responses: {
+        ...recordRefusal(),
+        "200": {
+          description: "Resolved summary.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                bpTimeOfDayResponse,
+                "GetBloodPressureTimeOfDayResponse",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
   "/api/measurements/series-batch": {
     get: {
       tags: ["Measurements"],

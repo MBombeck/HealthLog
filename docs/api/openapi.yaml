@@ -4340,6 +4340,41 @@ paths:
         "403": *a9
         "422": *a4
         "429": *a5
+  /api/measurements/blood-pressure/time-of-day:
+    get:
+      tags:
+        - Measurements
+      summary: Blood pressure by part of the day
+      description: Morning (04:00 to 11:59), midday (12:00 to 17:59) and evening (18:00 to 03:59) means of the paired
+        blood-pressure readings in the window, read in the record's own time zone, with a count per part and the
+        morning-minus-evening difference. Home monitoring guidance reads morning and evening readings as separate sets;
+        the windows are wide so a waking reading and a late bedtime reading land in the right one. A pair is a systolic
+        with the diastolic of the same source within five minutes, from the source the person's ladder picks for the day
+        (the `bloodPressure` series' rule). Every figure is resolved here; a client renders it as given. Auth via cookie
+        or Bearer.
+      parameters:
+        - in: query
+          name: days
+          schema:
+            default: 30
+            description: "Window in local days, ending with today in the record's time zone (1..3650, default 30): the window the
+              chart draws for the same range."
+            type: integer
+            minimum: 1
+            maximum: 3650
+          description: "Window in local days, ending with today in the record's time zone (1..3650, default 30): the window the
+            chart draws for the same range."
+      responses:
+        "200":
+          description: Resolved summary.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetBloodPressureTimeOfDayResponse"
+        "401": *a1
+        "403": *a15
+        "422": *a4
+        "429": *a5
   /api/measurements/series-batch:
     get:
       tags:
@@ -4661,6 +4696,22 @@ paths:
           schema:
             type: string
             pattern: ^\d{4}-\d{2}-\d{2}$
+        - in: query
+          name: partOfDay
+          schema:
+            description: "Narrow the series to one part of the day in the record's zone: morning 04:00 to 11:59, midday 12:00 to
+              17:59, evening 18:00 to 03:59. A day runs from 04:00, so an evening reading after midnight counts on the
+              evening before. Only for `BLOOD_PRESSURE_SYS`, `BLOOD_PRESSURE_DIA` or `PULSE` with `aggregate=daily`,
+              `source=rollup`, `from` and `to`; anything else is refused with 422."
+            type: string
+            enum:
+              - morning
+              - midday
+              - evening
+          description: "Narrow the series to one part of the day in the record's zone: morning 04:00 to 11:59, midday 12:00 to
+            17:59, evening 18:00 to 03:59. A day runs from 04:00, so an evening reading after midnight counts on the
+            evening before. Only for `BLOOD_PRESSURE_SYS`, `BLOOD_PRESSURE_DIA` or `PULSE` with `aggregate=daily`,
+            `source=rollup`, `from` and `to`; anything else is refused with 422."
       responses:
         "200":
           description: Measurement page.
@@ -49576,6 +49627,150 @@ components:
       additionalProperties: false
       description: A reading whose `appleHealthMirror` changed because the account switched the Apple Health setting of the
         token that sent it. The reading itself did not change and is not re-sent in `measurements`.
+    GetBloodPressureTimeOfDayResponse:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/BloodPressureTimeOfDay"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    BloodPressureTimeOfDay:
+      type: object
+      properties:
+        days:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: The window asked for, in local days.
+        from:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: Window start (ISO-8601).
+        to:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: "Window end: the last instant of today in the record's time zone."
+        timeZone:
+          type: string
+          description: IANA zone the hours were read in (the record's own).
+        minReadings:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Readings a part needs before its mean is given.
+        readingCount:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Paired readings in the window, across the three parts.
+        parts:
+          type: array
+          items:
+            $ref: "#/components/schemas/BloodPressurePartOfDay"
+          description: "Always three entries: morning, midday, evening, in order."
+        morningEveningDifference:
+          anyOf:
+            - type: object
+              properties:
+                systolic:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+                diastolic:
+                  type: integer
+                  minimum: -9007199254740991
+                  maximum: 9007199254740991
+              required:
+                - systolic
+                - diastolic
+              additionalProperties: false
+            - type: "null"
+          description: Morning mean minus evening mean, from the two whole-mmHg means given above (so it equals their difference
+            exactly). Null unless both parts reach `minReadings`.
+      required:
+        - days
+        - from
+        - to
+        - timeZone
+        - minReadings
+        - readingCount
+        - parts
+        - morningEveningDifference
+      additionalProperties: false
+    BloodPressurePartOfDay:
+      type: object
+      properties:
+        part:
+          type: string
+          enum:
+            - morning
+            - midday
+            - evening
+          description: The part of the day.
+        startHour:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: First local hour of the part (inclusive).
+        endHour:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: "Local hour the part ends at (exclusive). Smaller than `startHour` when the part runs past midnight
+            (evening: 18 to 4)."
+        readingCount:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Paired systolic/diastolic readings in this part.
+        systolic:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+          description: Mean systolic in whole mmHg; null while `readingCount` is below `minReadings`.
+        diastolic:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+          description: Mean diastolic in whole mmHg; null on the same floor.
+        pulseReadingCount:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Readings in this part that carried a pulse (same source, within five minutes).
+        pulse:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+          description: Mean pulse in whole bpm; null while `pulseReadingCount` is below `minReadings`.
+      required:
+        - part
+        - startHour
+        - endHour
+        - readingCount
+        - systolic
+        - diastolic
+        - pulseReadingCount
+        - pulse
+      additionalProperties: false
     GetMeasurementsSeriesBatchResponse:
       type: object
       properties:
@@ -50138,6 +50333,13 @@ components:
         aggregate:
           description: Set on the aggregate modes — the requested grain.
           type: string
+        partOfDay:
+          description: Echoed when the series was narrowed with `partOfDay`.
+          type: string
+          enum:
+            - morning
+            - midday
+            - evening
         droppedDuplicates:
           description: Rows discarded by the cross-source canonical picker on the day-collapse mode.
           type: integer

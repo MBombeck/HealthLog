@@ -34,6 +34,7 @@ import { dayGroupedListResponse } from "@/lib/measurements/list/day-grouped";
 import { sleepListResponse } from "@/lib/measurements/list/sleep-list";
 import { resolveStoredTimezone, resolveUserTimezone } from "@/lib/tz/resolver";
 import type { MeasurementType, Prisma } from "@/generated/prisma/client";
+import type { BpPartOfDay } from "@/lib/analytics/bp-time-of-day";
 
 /**
  * The columns a measurement row answers with (`MeasurementResource`), plus
@@ -84,7 +85,7 @@ export async function measurementListResponse(
   query: ListQuery,
 ): Promise<Response> {
   const { type, from, to, limit, offset, sortDir, groupBy, dayKey } = query;
-  const { aggregate, source, sourceEq } = query;
+  const { aggregate, source, sourceEq, partOfDay } = query;
 
   // Sleep is read row-per-STAGE (≈5 rows/night × source-count), not a spot
   // sample and not a cumulative day-sum. A plain list query for
@@ -159,12 +160,14 @@ export async function measurementListResponse(
     const series = await rollupSeriesResponse(
       user.id,
       type as MeasurementType,
-      { from, to, limit },
+      { from, to, limit, partOfDay },
     );
     if (series) return series;
     // An empty result means the window genuinely holds no rows. Fall
     // through to the shared live aggregate branch below to keep the
-    // response shape identical for the truly-empty case.
+    // response shape identical for the truly-empty case. A narrowed read
+    // never falls through: the live branch knows no part of the day, and
+    // would answer an empty morning with the whole day.
   }
 
   if (aggregate && aggregate !== "raw" && from && to) {
@@ -222,13 +225,16 @@ async function drillDownResponse(
   });
 }
 
-/** The chart's daily series, or null when the window holds no rows. */
+/**
+ * The chart's daily series, or null when the window holds no rows. A series
+ * narrowed to a part of the day answers even when empty.
+ */
 async function rollupSeriesResponse(
   userId: string,
   type: MeasurementType,
-  window: { from: Date; to: Date; limit: number },
+  window: { from: Date; to: Date; limit: number; partOfDay?: BpPartOfDay },
 ): Promise<Response | null> {
-  const { from, to, limit } = window;
+  const { from, to, limit, partOfDay } = window;
   // Shared with the batched series endpoint, so both read the same rows.
   const cap = Math.min(limit, BUCKET_CAP.daily);
   const priorityJson = await loadUserSourcePriority(userId);
@@ -239,8 +245,9 @@ async function rollupSeriesResponse(
     to,
     limit,
     priorityJson,
+    partOfDay,
   });
-  if (measurements.length === 0) return null;
+  if (measurements.length === 0 && !partOfDay) return null;
   return apiSuccess({
     measurements,
     meta: {
@@ -248,6 +255,7 @@ async function rollupSeriesResponse(
       limit: cap,
       offset: 0,
       aggregate: "daily",
+      ...(partOfDay && { partOfDay }),
     },
   });
 }

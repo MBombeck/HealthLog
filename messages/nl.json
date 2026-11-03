@@ -4972,6 +4972,34 @@
       "emptyDescription": "In deze periode is nog geen score vastgelegd.",
       "usualRange": "Gearceerd: je gebruikelijke bereik, {lo} tot {hi}.",
       "seam": "De lijn wordt onderbroken op het moment dat veranderde wat meetelt voor de score."
+    },
+    "bpTimeOfDay": {
+      "title": "Per moment van de dag",
+      "description": "Je gemiddelde bloeddruk per moment van de dag, over de periode van de grafiek.",
+      "part": {
+        "morning": "Ochtend",
+        "midday": "Middag",
+        "evening": "Avond"
+      },
+      "filterAll": "Hele dag",
+      "filterLabel": "Tonen in de grafiek",
+      "readingsOne": "{count} meting",
+      "readingsFew": "{count} metingen",
+      "readingsOther": "{count} metingen",
+      "notEnough": "Te weinig metingen",
+      "pulse": "Hartslag {value} bpm",
+      "difference": "Ochtend min avond: {systolic}/{diastolic} mmHg.",
+      "differencePending": "Ochtend en avond worden vergeleken zodra elk minstens {min} metingen heeft.",
+      "hours": "Ochtend {morning}, middag {midday}, avond {evening}, in je eigen tijdzone.",
+      "hourRange": "{start}–{end}",
+      "emptyTitle": "Geen volledige metingen in deze periode",
+      "emptyDescription": "Metingen met zowel een systolische als een diastolische waarde verschijnen hier.",
+      "error": "De gemiddelden per moment van de dag konden niet worden geladen.",
+      "chartTitle": {
+        "morning": "Bloeddruk 's ochtends",
+        "midday": "Bloeddruk 's middags",
+        "evening": "Bloeddruk 's avonds"
+      }
     }
   },
   "thresholds": {

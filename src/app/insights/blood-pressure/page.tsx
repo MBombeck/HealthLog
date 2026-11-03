@@ -20,6 +20,8 @@ import { CoachReadStrip } from "@/components/insights/derived/coach-read-strip";
 import { MetricTargetSummary } from "@/components/insights/metric-target-summary";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 import { useBpTargetBand } from "@/lib/queries/use-bp-target-band";
+import { BpTimeOfDayCard } from "@/components/insights/blood-pressure/bp-time-of-day-card";
+import { useBpTimeOfDayState } from "@/components/insights/blood-pressure/use-bp-time-of-day-state";
 
 /**
  * v1.4.25 — `/insights/blood-pressure`.
@@ -63,6 +65,9 @@ export default function InsightsBlutdruckPage() {
   // each strip column reads its own half.
   const { statsByType, statsSettled, onVisibleStats } = useChartDomainStats();
   const bpTargets = useBpTargetBand();
+
+  // #1331 — the chart narrowed to one part of the day (URL state).
+  const timeOfDay = useBpTimeOfDayState();
 
   if (isEmpty) {
     return (
@@ -171,7 +176,7 @@ export default function InsightsBlutdruckPage() {
       <HealthChartDynamic
         chartKey="bp"
         types={["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"]}
-        title={t("charts.bloodPressure")}
+        title={t(timeOfDay.chartTitleKey ?? "charts.bloodPressure")}
         titleIcon={HeartPulse}
         colors={["var(--chart-3)", "var(--chart-4)"]}
         unit="mmHg"
@@ -182,6 +187,13 @@ export default function InsightsBlutdruckPage() {
         onVisibleStats={onVisibleStats}
         showDataTable
         dayLinks
+        partOfDay={timeOfDay.partOfDay}
+      />
+
+      <BpTimeOfDayCard
+        days={timeOfDay.days}
+        chartPart={timeOfDay.partOfDay ?? "all"}
+        onChartPartChange={timeOfDay.setChartPart}
       />
 
       {/* v1.12.4 — target card sits between the chart and the assessment on

@@ -27,6 +27,11 @@ import { annotate } from "@/lib/logging/context";
 import { isValidTimezone } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import type { MeasurementType } from "@/generated/prisma/client";
+import {
+  BP_DAY_START_HOUR,
+  BP_PART_HOURS,
+  type BpPartOfDay,
+} from "@/lib/analytics/bp-time-of-day";
 import { Prisma } from "@/generated/prisma/client";
 
 /** Wire row the chart-data client consumes — mirrors the route's shape. */
@@ -57,8 +62,10 @@ export async function readDailySeries(opts: {
   priorityJson: unknown;
   /** IANA zone the days are cut in; defaults to the user's own zone. */
   timeZone?: string;
+  /** Only the readings of this part of the day (#1331). */
+  partOfDay?: BpPartOfDay;
 }): Promise<DailySeriesRow[]> {
-  const { userId, type, from, to, priorityJson } = opts;
+  const { userId, type, from, to, priorityJson, partOfDay } = opts;
   const cap = Math.min(opts.limit ?? BUCKET_CAP.daily, BUCKET_CAP.daily);
 
   // v1.19.2 — whole-history step-up for very long ranges. When the
@@ -76,6 +83,11 @@ export async function readDailySeries(opts: {
   const windowDaysFull = Math.ceil(
     (to.getTime() - from.getTime()) / 86_400_000,
   );
+  // A part of the day is folded live at every length: the rollups hold whole
+  // days and cannot say which hour a reading was taken in.
+  if (partOfDay) {
+    return readPartOfDaySeries({ ...opts, partOfDay, windowDaysFull, cap });
+  }
   if (windowDaysFull > cap) {
     // A rollup-table throw here (statement_timeout, deadlock, connection reset)
     // must not 500 the whole read — treat it as a coverage miss and fall
@@ -144,6 +156,72 @@ export async function readDailySeries(opts: {
     meta: { total: rows.length, type, aggregate: "daily", source: "live" },
   });
   return rows;
+}
+
+/**
+ * The series of one part of the day: daily up to the day cap, weekly past it,
+ * with room for every week of the window (blood pressure is a few readings a
+ * day, so even ten years is one short fold).
+ */
+async function readPartOfDaySeries(opts: {
+  userId: string;
+  type: MeasurementType;
+  from: Date;
+  to: Date;
+  priorityJson: unknown;
+  timeZone?: string;
+  partOfDay: BpPartOfDay;
+  windowDaysFull: number;
+  cap: number;
+}): Promise<DailySeriesRow[]> {
+  const weekly = opts.windowDaysFull > opts.cap;
+  const rows = await readLiveBuckets({
+    userId: opts.userId,
+    type: opts.type,
+    from: opts.from,
+    to: opts.to,
+    cap: weekly ? Math.ceil(opts.windowDaysFull / 7) + 2 : opts.cap,
+    priorityJson: opts.priorityJson,
+    grain: weekly ? "weekly" : "daily",
+    timeZone: opts.timeZone ?? (await resolveUserTimezone(opts.userId)),
+    partOfDay: opts.partOfDay,
+  });
+  annotate({
+    action: { name: "measurement.list" },
+    meta: {
+      total: rows.length,
+      type: opts.type,
+      aggregate: weekly ? "weekly" : "daily",
+      part_of_day: opts.partOfDay,
+    },
+  });
+  return rows;
+}
+
+/**
+ * The local wall clock a fold cuts its hours and days on, and the filter for
+ * a part of the day. Without a part, the wall clock in the zone. With one,
+ * only the readings whose local hour is inside the part, and the wall clock
+ * moved back by the day's start hour, so a day runs from 04:00 and an
+ * evening reading after midnight joins the evening before. Hours come from
+ * the closed `BP_PART_HOURS` table and are bound as parameters.
+ */
+function localClockSql(
+  timeZone: string,
+  partOfDay: BpPartOfDay | undefined,
+): { local: Prisma.Sql; filter: Prisma.Sql } {
+  const wall = Prisma.sql`((m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone})`;
+  if (!partOfDay) return { local: wall, filter: Prisma.empty };
+  const { startHour, endHour } = BP_PART_HOURS[partOfDay];
+  const hour = Prisma.sql`EXTRACT(HOUR FROM ${wall})`;
+  const filter =
+    startHour < endHour
+      ? Prisma.sql`AND ${hour} >= ${startHour} AND ${hour} < ${endHour}`
+      : Prisma.sql`AND (${hour} >= ${startHour} OR ${hour} < ${endHour})`;
+  return {
+    local: Prisma.sql`(${wall} - make_interval(hours => ${BP_DAY_START_HOUR}::int))`,
+    filter,
+  };
 }
 
 /** The shortest bucket of a live grain, in days (a month is at least 28). */
@@ -264,6 +342,8 @@ export async function readLiveBuckets(opts: {
   priorityJson: unknown;
   grain: Exclude<AggregateGrain, "raw">;
   timeZone: string;
+  /** Only the readings of this part of the day (`localClockSql`). */
+  partOfDay?: BpPartOfDay;
 }): Promise<DailySeriesRow[]> {
   const { userId, type, from, to, cap, priorityJson, grain } = opts;
   // A zone Postgres does not know would 500 the read; the resolver already
@@ -295,6 +375,7 @@ export async function readLiveBuckets(opts: {
   const typeFilter = type
     ? Prisma.sql`AND m."type" = ${type}::measurement_type`
     : Prisma.empty;
+  const clock = localClockSql(timeZone, opts.partOfDay);
   // measured_at is a UTC wall-clock timestamp: pin it to UTC, re-read it in
   // the user's zone and truncate there.
   //
@@ -334,8 +415,8 @@ export async function readLiveBuckets(opts: {
       SELECT
         m."type",
         m."source",
-        date_trunc('day', (m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}) AS day,
-        date_trunc('hour', (m."measured_at" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}) AS hr,
+        date_trunc('day', ${clock.local}) AS day,
+        date_trunc('hour', ${clock.local}) AS hr,
         SUM(m."value")::double precision AS total,
         COUNT(*) AS n,
         AVG(m."value") AS hour_mean,
@@ -347,6 +428,7 @@ export async function readLiveBuckets(opts: {
         AND m."measured_at" <= ${to}
         AND m."deleted_at" IS NULL
         ${typeFilter}
+        ${clock.filter}
       GROUP BY m."type", m."source", 3, 4
     ),
     per_source AS (
