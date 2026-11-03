@@ -109,8 +109,8 @@ echo "HealthLog: Migrations complete."
 
 # ── The app's database role ──────────────────────────────────
 # Everything above ran as the owner DATABASE_URL names. The app itself
-# connects as `healthlog_app`, which reads and writes rows and runs the queue
-# but cannot change the schema (scripts/db-app-role.mjs says what it may and
+# connects as `healthlog_app_<database>_<hash>`, this database's own role,
+# which reads and writes rows and runs the queue but cannot change the schema (scripts/db-app-role.mjs says what it may and
 # may not do, and docs/self-hosting/database-role.md how to opt out). The
 # script hands the role's URL over on descriptor 3 only, never on stdout or
 # stderr; nothing handed over means it said why and the app stays on the
