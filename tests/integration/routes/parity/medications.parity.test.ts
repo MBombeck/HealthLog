@@ -138,197 +138,204 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("GET /api/medications parity", () => {
-  it("01 the owner's list", async () => {
-    await list("01-list");
-  });
+// One walk: each request sees what the earlier ones stored, so the cases
+// keep their order even when a run shuffles (`shuffle: false`).
+describe("medications parity walk", { shuffle: false }, () => {
+  describe("GET /api/medications parity", () => {
+    it("01 the owner's list", async () => {
+      await list("01-list");
+    });
 
-  it("02 a reading delegate's view of it, and nobody's", async () => {
-    await list("02a-list-reader", reader);
-    await list("02b-list-anonymous", { auth: anonymous });
-  });
-});
-
-describe("POST /api/medications parity", () => {
-  it("11 a plain create", async () => {
-    await create("11-plain", {
-      name: "Plain tablet",
-      dose: "5mg",
-      schedules: [schedule("07:00", "09:00")],
+    it("02 a reading delegate's view of it, and nobody's", async () => {
+      await list("02a-list-reader", reader);
+      await list("02b-list-anonymous", { auth: anonymous });
     });
   });
 
-  it("12 a full create with a custom category, a course and auto-take", async () => {
-    await create("12-full", {
-      name: "Full injection",
-      dose: "1 pen",
-      category: CUSTOM_KEY,
-      treatmentClass: "GLP1",
-      dosesPerUnit: 4,
-      unitsPerDose: 0.5,
-      reorderLeadDays: 7,
-      deliveryForm: "INJECTION",
-      trackInjectionSites: true,
-      allowedInjectionSites: ["ABDOMEN_LEFT", "THIGH_RIGHT"],
-      notificationsEnabled: false,
-      liveActivityEnabled: true,
-      criticalAlarmEnabled: true,
-      atcCode: "A10BJ06",
-      rxNormCode: "1991302",
-      startsOn: "2026-10-10",
-      endsOn: "2026-12-31",
-      autoMarkTaken: true,
-      schedules: [
-        schedule("18:00", "20:00", {
-          label: "Evening",
-          dose: "0.5 pen",
-          unitsPerDose: 1,
-          timesOfDay: ["18:30"],
-          reminderGraceMinutes: 45,
-          rrule: "FREQ=WEEKLY;BYDAY=MO",
-          doseWindows: [{ timeOfDay: "18:30", start: "18:00", end: "20:00" }],
-        }),
-      ],
+  describe("POST /api/medications parity", () => {
+    it("11 a plain create", async () => {
+      await create("11-plain", {
+        name: "Plain tablet",
+        dose: "5mg",
+        schedules: [schedule("07:00", "09:00")],
+      });
     });
-  });
 
-  it("13 an as-needed create, a one-shot one and a PRN schedule", async () => {
-    await create("13a-as-needed", {
-      name: "As needed",
-      dose: "400mg",
-      category: "PAIN_RELIEF",
-      asNeeded: true,
+    it("12 a full create with a custom category, a course and auto-take", async () => {
+      await create("12-full", {
+        name: "Full injection",
+        dose: "1 pen",
+        category: CUSTOM_KEY,
+        treatmentClass: "GLP1",
+        dosesPerUnit: 4,
+        unitsPerDose: 0.5,
+        reorderLeadDays: 7,
+        deliveryForm: "INJECTION",
+        trackInjectionSites: true,
+        allowedInjectionSites: ["ABDOMEN_LEFT", "THIGH_RIGHT"],
+        notificationsEnabled: false,
+        liveActivityEnabled: true,
+        criticalAlarmEnabled: true,
+        atcCode: "A10BJ06",
+        rxNormCode: "1991302",
+        startsOn: "2026-10-10",
+        endsOn: "2026-12-31",
+        autoMarkTaken: true,
+        schedules: [
+          schedule("18:00", "20:00", {
+            label: "Evening",
+            dose: "0.5 pen",
+            unitsPerDose: 1,
+            timesOfDay: ["18:30"],
+            reminderGraceMinutes: 45,
+            rrule: "FREQ=WEEKLY;BYDAY=MO",
+            doseWindows: [{ timeOfDay: "18:30", start: "18:00", end: "20:00" }],
+          }),
+        ],
+      });
     });
-    await create("13b-one-shot", {
-      name: "One shot",
-      dose: "1 dose",
-      oneShot: true,
-      startsOn: "2026-10-20",
-      endsOn: "2026-11-20",
-      schedules: [schedule("09:00", "11:00")],
-    });
-    await create("13c-prn-and-legacy-days", {
-      name: "Mixed schedules",
-      dose: "2mg",
-      trackIntake: false,
-      schedules: [
-        schedule("06:00", "07:00", { scheduleType: "PRN" }),
-        schedule("21:00", "22:00", { daysOfWeek: [1, 3, 5], intervalWeeks: 2 }),
-        schedule("12:00", "13:00", { rollingIntervalDays: 3 }),
-      ],
-    });
-    await create("13d-ended-window", {
-      name: "Ended window",
-      dose: "3mg",
-      endsOn: "2026-10-05",
-      schedules: [schedule("08:00", "09:00")],
-    });
-  });
 
-  it("14 the refusals", async () => {
-    await create("14a-unknown-category", {
-      name: "Unknown category",
-      dose: "1mg",
-      category: "custom:0a6c2d4e-1111-4222-8333-944455556666",
-      schedules: [schedule("08:00", "09:00")],
+    it("13 an as-needed create, a one-shot one and a PRN schedule", async () => {
+      await create("13a-as-needed", {
+        name: "As needed",
+        dose: "400mg",
+        category: "PAIN_RELIEF",
+        asNeeded: true,
+      });
+      await create("13b-one-shot", {
+        name: "One shot",
+        dose: "1 dose",
+        oneShot: true,
+        startsOn: "2026-10-20",
+        endsOn: "2026-11-20",
+        schedules: [schedule("09:00", "11:00")],
+      });
+      await create("13c-prn-and-legacy-days", {
+        name: "Mixed schedules",
+        dose: "2mg",
+        trackIntake: false,
+        schedules: [
+          schedule("06:00", "07:00", { scheduleType: "PRN" }),
+          schedule("21:00", "22:00", {
+            daysOfWeek: [1, 3, 5],
+            intervalWeeks: 2,
+          }),
+          schedule("12:00", "13:00", { rollingIntervalDays: 3 }),
+        ],
+      });
+      await create("13d-ended-window", {
+        name: "Ended window",
+        dose: "3mg",
+        endsOn: "2026-10-05",
+        schedules: [schedule("08:00", "09:00")],
+      });
     });
-    await create("14b-course-ends-before-start", {
-      name: "Backwards course",
-      dose: "1mg",
-      startsOn: "2026-10-20",
-      endsOn: "2026-10-10",
-      schedules: [schedule("08:00", "09:00")],
-    });
-    await create("14c-one-shot-two-schedules", {
-      name: "One shot twice",
-      dose: "1mg",
-      oneShot: true,
-      startsOn: "2026-10-20",
-      schedules: [schedule("08:00", "09:00"), schedule("20:00", "21:00")],
-    });
-    await create("14d-one-shot-recurrence", {
-      name: "One shot recurring",
-      dose: "1mg",
-      oneShot: true,
-      startsOn: "2026-10-20",
-      schedules: [schedule("08:00", "09:00", { rrule: "FREQ=DAILY" })],
-    });
-    await create("14e-unstable-concept-id", {
-      name: "Phantom",
-      dose: "1mg",
-      externalSource: "APPLE_HEALTH",
-      externalId: "<HKMedicationConcept: 0x600003a1c0c0>",
-      schedules: [schedule("08:00", "09:00")],
-    });
-    await create("14f-invalid", { name: "", dose: 5, schedules: "daily" });
-  });
 
-  it("15 a mirrored create and its replay", async () => {
-    const mirrored = {
-      name: "Mirrored",
-      dose: "50mg",
-      externalSource: "APPLE_HEALTH",
-      externalId: "hk-concept-0001",
-      schedules: [schedule("08:00", "09:00")],
-    };
-    await create("15a-mirror", mirrored);
-    await create("15b-mirror-replay", { ...mirrored, name: "Renamed" });
-  });
-
-  it("16 the mirror cap", async () => {
-    const capped = await makeUser({ timezone: "UTC" });
-    await prisma.medication.createMany({
-      data: Array.from({ length: 30 }, (_, i) => ({
-        userId: capped.id,
-        name: `Mirror ${String(i).padStart(2, "0")}`,
+    it("14 the refusals", async () => {
+      await create("14a-unknown-category", {
+        name: "Unknown category",
         dose: "1mg",
-        externalSource: "APPLE_HEALTH" as const,
-        externalId: `hk-cap-${String(i).padStart(2, "0")}`,
-      })),
-    });
-    await create(
-      "16-mirror-cap",
-      {
-        name: "One too many",
+        category: "custom:0a6c2d4e-1111-4222-8333-944455556666",
+        schedules: [schedule("08:00", "09:00")],
+      });
+      await create("14b-course-ends-before-start", {
+        name: "Backwards course",
+        dose: "1mg",
+        startsOn: "2026-10-20",
+        endsOn: "2026-10-10",
+        schedules: [schedule("08:00", "09:00")],
+      });
+      await create("14c-one-shot-two-schedules", {
+        name: "One shot twice",
+        dose: "1mg",
+        oneShot: true,
+        startsOn: "2026-10-20",
+        schedules: [schedule("08:00", "09:00"), schedule("20:00", "21:00")],
+      });
+      await create("14d-one-shot-recurrence", {
+        name: "One shot recurring",
+        dose: "1mg",
+        oneShot: true,
+        startsOn: "2026-10-20",
+        schedules: [schedule("08:00", "09:00", { rrule: "FREQ=DAILY" })],
+      });
+      await create("14e-unstable-concept-id", {
+        name: "Phantom",
         dose: "1mg",
         externalSource: "APPLE_HEALTH",
-        externalId: "hk-cap-30",
+        externalId: "<HKMedicationConcept: 0x600003a1c0c0>",
         schedules: [schedule("08:00", "09:00")],
-      },
-      { auth: await makeSession(capped), userIds: [capped.id] },
-    );
-  });
+      });
+      await create("14f-invalid", { name: "", dose: 5, schedules: "daily" });
+    });
 
-  it("17 a retried create under one idempotency key", async () => {
-    const body = {
-      name: "Retried",
-      dose: "10mg",
-      schedules: [schedule("08:00", "09:00")],
-    };
-    const headers = {
-      "idempotency-key": "6f9d2c4a-8b1e-4f3a-9d7c-5e2b1a0c9d8e",
-    };
-    await create("17a-idempotent-first", body, { headers });
-    await create("17b-idempotent-replay", body, { headers });
-  });
+    it("15 a mirrored create and its replay", async () => {
+      const mirrored = {
+        name: "Mirrored",
+        dose: "50mg",
+        externalSource: "APPLE_HEALTH",
+        externalId: "hk-concept-0001",
+        schedules: [schedule("08:00", "09:00")],
+      };
+      await create("15a-mirror", mirrored);
+      await create("15b-mirror-replay", { ...mirrored, name: "Renamed" });
+    });
 
-  it("18 a delegate who may write, and one who may only read", async () => {
-    const body = {
-      name: "Brought by a delegate",
-      dose: "20mg",
-      schedules: [schedule("08:00", "09:00")],
-    };
-    await create("18a-writer", body, writer);
-    await create("18b-reader", body, reader);
-  });
+    it("16 the mirror cap", async () => {
+      const capped = await makeUser({ timezone: "UTC" });
+      await prisma.medication.createMany({
+        data: Array.from({ length: 30 }, (_, i) => ({
+          userId: capped.id,
+          name: `Mirror ${String(i).padStart(2, "0")}`,
+          dose: "1mg",
+          externalSource: "APPLE_HEALTH" as const,
+          externalId: `hk-cap-${String(i).padStart(2, "0")}`,
+        })),
+      });
+      await create(
+        "16-mirror-cap",
+        {
+          name: "One too many",
+          dose: "1mg",
+          externalSource: "APPLE_HEALTH",
+          externalId: "hk-cap-30",
+          schedules: [schedule("08:00", "09:00")],
+        },
+        { auth: await makeSession(capped), userIds: [capped.id] },
+      );
+    });
 
-  it("19 no credentials", async () => {
-    await create(
-      "19-anonymous",
-      { name: "Nobody", dose: "1mg" },
-      {
-        auth: anonymous,
-      },
-    );
+    it("17 a retried create under one idempotency key", async () => {
+      const body = {
+        name: "Retried",
+        dose: "10mg",
+        schedules: [schedule("08:00", "09:00")],
+      };
+      const headers = {
+        "idempotency-key": "6f9d2c4a-8b1e-4f3a-9d7c-5e2b1a0c9d8e",
+      };
+      await create("17a-idempotent-first", body, { headers });
+      await create("17b-idempotent-replay", body, { headers });
+    });
+
+    it("18 a delegate who may write, and one who may only read", async () => {
+      const body = {
+        name: "Brought by a delegate",
+        dose: "20mg",
+        schedules: [schedule("08:00", "09:00")],
+      };
+      await create("18a-writer", body, writer);
+      await create("18b-reader", body, reader);
+    });
+
+    it("19 no credentials", async () => {
+      await create(
+        "19-anonymous",
+        { name: "Nobody", dose: "1mg" },
+        {
+          auth: anonymous,
+        },
+      );
+    });
   });
 });

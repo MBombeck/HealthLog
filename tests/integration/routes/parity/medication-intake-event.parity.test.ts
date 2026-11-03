@@ -229,131 +229,135 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("PUT /api/medications/{id}/intake/{eventId} parity", () => {
-  it("01 a pending dose taken inside its own window", async () => {
-    await put("01-take-in-place", events.pending, {
-      takenAt: "2026-10-13T08:40:00.000Z",
+// One walk: each request sees what the earlier ones stored, so the cases
+// keep their order even when a run shuffles (`shuffle: false`).
+describe("medication-intake-event parity walk", { shuffle: false }, () => {
+  describe("PUT /api/medications/{id}/intake/{eventId} parity", () => {
+    it("01 a pending dose taken inside its own window", async () => {
+      await put("01-take-in-place", events.pending, {
+        takenAt: "2026-10-13T08:40:00.000Z",
+      });
+    });
+
+    it("02 the same dose flipped to a skip", async () => {
+      await put("02-skip-flip", events.pending, { skipped: true });
+    });
+
+    it("03 a take corrected into the other window, onto a skipped slot", async () => {
+      const res = await put("03-move-by-band", events.morningTaken, {
+        takenAt: "2026-10-14T20:30:00.000Z",
+      });
+      events.moved = (res.data as { id: string }).id;
+    });
+
+    it("04 a legacy take pinned onto a free slot", async () => {
+      const res = await put("04-pin-free-slot", events.legacyTaken, {
+        forceSlotInstant: "2026-10-12T20:00:00.000Z",
+      });
+      events.pinned = (res.data as { id: string }).id;
+    });
+
+    it("05 a pin onto an instant that is no slot", async () => {
+      await put("05-pin-not-a-slot", events.moved, {
+        forceSlotInstant: "2026-10-12T15:00:00.000Z",
+      });
+    });
+
+    it("06 a pin onto a slot another dose holds", async () => {
+      await put("06-pin-occupied", events.moved, {
+        forceSlotInstant: "2026-10-12T20:00:00.000Z",
+      });
+    });
+
+    it("07 an unpin", async () => {
+      const res = await put("07-unpin", events.pinned, {
+        forceSlotInstant: null,
+      });
+      events.pinned = (res.data as { id: string }).id;
+    });
+
+    it("08 an explicit slot in the body", async () => {
+      const res = await put("08-explicit-slot", events.moved, {
+        scheduledFor: "2026-10-14T08:00:00.000Z",
+        takenAt: "2026-10-14T08:45:00.000Z",
+      });
+      events.moved = (res.data as { id: string }).id;
+    });
+
+    it("09 a take before the start day", async () => {
+      await put("09-before-start", events.pinned, {
+        takenAt: "2026-09-20T08:00:00.000Z",
+      });
+    });
+
+    it("10 a body the schema refuses", async () => {
+      await put("10-invalid", events.pinned, {
+        takenAt: "yesterday",
+        skipped: "no",
+      });
+    });
+
+    it("11 a tombstoned dose, and a dose under another medication", async () => {
+      await put("11a-tombstoned", events.tombstoned, { skipped: true });
+      await put(
+        "11b-other-medication",
+        events.pinned,
+        { skipped: true },
+        { medicationId: oneShotId },
+      );
+    });
+
+    it("12 a delegate who may write, and one who may manage", async () => {
+      await put(
+        "12a-writer",
+        events.pinned,
+        { takenAt: "2026-10-13T20:50:00.000Z" },
+        writer,
+      );
+      await put(
+        "12b-manager",
+        events.pinned,
+        { takenAt: "2026-10-13T20:50:00.000Z" },
+        manager,
+      );
+    });
+
+    it("13 no credentials", async () => {
+      await put(
+        "13-anonymous",
+        events.pinned,
+        { skipped: true },
+        {
+          auth: anonymous,
+        },
+      );
     });
   });
 
-  it("02 the same dose flipped to a skip", async () => {
-    await put("02-skip-flip", events.pending, { skipped: true });
-  });
-
-  it("03 a take corrected into the other window, onto a skipped slot", async () => {
-    const res = await put("03-move-by-band", events.morningTaken, {
-      takenAt: "2026-10-14T20:30:00.000Z",
+  describe("DELETE /api/medications/{id}/intake/{eventId} parity", () => {
+    it("21 the owner undoes a dose", async () => {
+      await del("21-delete", events.forDelete);
     });
-    events.moved = (res.data as { id: string }).id;
-  });
 
-  it("04 a legacy take pinned onto a free slot", async () => {
-    const res = await put("04-pin-free-slot", events.legacyTaken, {
-      forceSlotInstant: "2026-10-12T20:00:00.000Z",
+    it("22 undoing the only dose of a one-shot medication", async () => {
+      await del("22-delete-one-shot", events.oneShotDose, {
+        medicationId: oneShotId,
+      });
     });
-    events.pinned = (res.data as { id: string }).id;
-  });
 
-  it("05 a pin onto an instant that is no slot", async () => {
-    await put("05-pin-not-a-slot", events.moved, {
-      forceSlotInstant: "2026-10-12T15:00:00.000Z",
+    it("23 a dose under another medication", async () => {
+      await del("23-other-medication", events.forManagerDelete, {
+        medicationId: oneShotId,
+      });
     });
-  });
 
-  it("06 a pin onto a slot another dose holds", async () => {
-    await put("06-pin-occupied", events.moved, {
-      forceSlotInstant: "2026-10-12T20:00:00.000Z",
+    it("24 a delegate who may write, and one who may manage", async () => {
+      await del("24a-writer", events.forManagerDelete, writer);
+      await del("24b-manager", events.forManagerDelete, manager);
     });
-  });
 
-  it("07 an unpin", async () => {
-    const res = await put("07-unpin", events.pinned, {
-      forceSlotInstant: null,
+    it("25 no credentials", async () => {
+      await del("25-anonymous", events.forDelete, { auth: anonymous });
     });
-    events.pinned = (res.data as { id: string }).id;
-  });
-
-  it("08 an explicit slot in the body", async () => {
-    const res = await put("08-explicit-slot", events.moved, {
-      scheduledFor: "2026-10-14T08:00:00.000Z",
-      takenAt: "2026-10-14T08:45:00.000Z",
-    });
-    events.moved = (res.data as { id: string }).id;
-  });
-
-  it("09 a take before the start day", async () => {
-    await put("09-before-start", events.pinned, {
-      takenAt: "2026-09-20T08:00:00.000Z",
-    });
-  });
-
-  it("10 a body the schema refuses", async () => {
-    await put("10-invalid", events.pinned, {
-      takenAt: "yesterday",
-      skipped: "no",
-    });
-  });
-
-  it("11 a tombstoned dose, and a dose under another medication", async () => {
-    await put("11a-tombstoned", events.tombstoned, { skipped: true });
-    await put(
-      "11b-other-medication",
-      events.pinned,
-      { skipped: true },
-      { medicationId: oneShotId },
-    );
-  });
-
-  it("12 a delegate who may write, and one who may manage", async () => {
-    await put(
-      "12a-writer",
-      events.pinned,
-      { takenAt: "2026-10-13T20:50:00.000Z" },
-      writer,
-    );
-    await put(
-      "12b-manager",
-      events.pinned,
-      { takenAt: "2026-10-13T20:50:00.000Z" },
-      manager,
-    );
-  });
-
-  it("13 no credentials", async () => {
-    await put(
-      "13-anonymous",
-      events.pinned,
-      { skipped: true },
-      {
-        auth: anonymous,
-      },
-    );
-  });
-});
-
-describe("DELETE /api/medications/{id}/intake/{eventId} parity", () => {
-  it("21 the owner undoes a dose", async () => {
-    await del("21-delete", events.forDelete);
-  });
-
-  it("22 undoing the only dose of a one-shot medication", async () => {
-    await del("22-delete-one-shot", events.oneShotDose, {
-      medicationId: oneShotId,
-    });
-  });
-
-  it("23 a dose under another medication", async () => {
-    await del("23-other-medication", events.forManagerDelete, {
-      medicationId: oneShotId,
-    });
-  });
-
-  it("24 a delegate who may write, and one who may manage", async () => {
-    await del("24a-writer", events.forManagerDelete, writer);
-    await del("24b-manager", events.forManagerDelete, manager);
-  });
-
-  it("25 no credentials", async () => {
-    await del("25-anonymous", events.forDelete, { auth: anonymous });
   });
 });

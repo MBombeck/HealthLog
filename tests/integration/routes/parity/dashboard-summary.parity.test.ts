@@ -159,7 +159,7 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("GET /api/dashboard/summary parity", () => {
+describe("GET /api/dashboard/summary parity", { shuffle: false }, () => {
   it("01 cold, then warm", async () => {
     await step("01-cold");
     await step("02-warm");

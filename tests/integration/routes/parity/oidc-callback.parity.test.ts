@@ -270,7 +270,7 @@ afterAll(() => {
   }
 });
 
-describe("GET /api/auth/oidc/callback parity", () => {
+describe("GET /api/auth/oidc/callback parity", { shuffle: false }, () => {
   it("01 SSO switched off", async () => {
     await step("01-disabled", { state: {} });
     process.env.OIDC_ISSUER_URL = ISSUER;
