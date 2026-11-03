@@ -337,9 +337,7 @@ describe("runContentIndexBackfillForUser", () => {
     vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue([
       { id: "pdf-1" },
     ] as never);
-    vi.mocked(detectOcrMimeType).mockReturnValueOnce(
-      "application/pdf" as never,
-    );
+    vi.mocked(detectOcrMimeType).mockReturnValueOnce("application/pdf");
     vi.mocked(rasterizePdf).mockResolvedValue({
       ok: true,
       images: [{ mediaType: "image/png", dataBase64: "cGFnZQ==" }],
@@ -380,9 +378,7 @@ describe("runContentIndexBackfillForUser", () => {
     vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue([
       { id: "pdf-1" },
     ] as never);
-    vi.mocked(detectOcrMimeType).mockReturnValueOnce(
-      "application/pdf" as never,
-    );
+    vi.mocked(detectOcrMimeType).mockReturnValueOnce("application/pdf");
     vi.mocked(rasterizePdf).mockResolvedValue({ ok: false } as never);
 
     const result = await runContentIndexBackfillForUser("user-1");
@@ -411,9 +407,7 @@ describe("runContentIndexBackfillForUser", () => {
     vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue([
       { id: "pdf-1" },
     ] as never);
-    vi.mocked(detectOcrMimeType).mockReturnValueOnce(
-      "application/pdf" as never,
-    );
+    vi.mocked(detectOcrMimeType).mockReturnValueOnce("application/pdf");
     vi.mocked(rasterizePdf).mockResolvedValue({
       ok: false,
       reason: "unsupported",

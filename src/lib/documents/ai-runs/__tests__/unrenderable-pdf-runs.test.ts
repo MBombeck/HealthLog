@@ -197,7 +197,7 @@ const FACTS = JSON.stringify({
 const wire = (params: CompletionParams) => JSON.stringify(params);
 
 function stored(bytes: Buffer) {
-  vi.mocked(decryptDocumentContent).mockReturnValue(bytes as never);
+  vi.mocked(decryptDocumentContent).mockReturnValue(bytes);
 }
 
 beforeEach(() => {

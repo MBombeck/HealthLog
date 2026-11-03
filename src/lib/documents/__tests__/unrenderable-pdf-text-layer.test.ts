@@ -63,7 +63,7 @@ const DOC = {
 };
 
 function stored(bytes: Buffer): void {
-  vi.mocked(decryptDocumentContent).mockReturnValue(bytes as never);
+  vi.mocked(decryptDocumentContent).mockReturnValue(bytes);
 }
 
 describe("on a server that cannot render PDF pages", () => {
