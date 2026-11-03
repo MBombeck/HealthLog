@@ -131,7 +131,10 @@ function putReq(
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  // Reset, not clear: cases replace the profile reads and the question store
+  // with their own implementations, and a cleared mock keeps them. A reset
+  // mock returns to the implementation it was created with.
+  vi.resetAllMocks();
   requireModuleEnabled.mockResolvedValue({ enabled: true });
 });
 

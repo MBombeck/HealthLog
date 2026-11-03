@@ -5,7 +5,7 @@
  * off the illness page, its settings and every picker once a record held more
  * than that, and they could then be found only through search.
  */
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const calls = vi.hoisted(() => [] as string[]);
 
@@ -41,6 +41,12 @@ vi.mock("@/lib/api/api-fetch", () => ({
 import { useIllnessEpisodes } from "../use-illness";
 
 describe("useIllnessEpisodes", () => {
+  // Each case states its own journal and counts only its own requests.
+  beforeEach(() => {
+    calls.length = 0;
+    journal.total = 230;
+  });
+
   it("reads page after page until the whole journal is in", async () => {
     const options = useIllnessEpisodes(true) as unknown as {
       queryFn: () => Promise<{ id: string }[]>;
@@ -55,7 +61,6 @@ describe("useIllnessEpisodes", () => {
   });
 
   it("stops on a full last page the route says is the end", async () => {
-    calls.length = 0;
     journal.total = 200;
     const options = useIllnessEpisodes(true) as unknown as {
       queryFn: () => Promise<{ id: string }[]>;
@@ -63,6 +68,5 @@ describe("useIllnessEpisodes", () => {
     expect(await options.queryFn()).toHaveLength(200);
     // Two full pages of 100, no third request for an empty one.
     expect(calls).toHaveLength(2);
-    journal.total = 230;
   });
 });

@@ -87,6 +87,15 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
   vi.mocked(validateAttachmentCandidate).mockResolvedValue({ ok: true });
+  // Open again for every case: the detach case closes every capability, and
+  // `clearAllMocks` would carry that refusal into whichever case runs next.
+  vi.mocked(requireAiCapability)
+    .mockReset()
+    .mockResolvedValue({
+      available: true,
+      reason: null,
+      onDeviceAllowed: true,
+    } as never);
 });
 
 describe("POST attach", () => {

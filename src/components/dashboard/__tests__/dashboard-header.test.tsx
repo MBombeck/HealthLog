@@ -52,6 +52,12 @@ import { primeLocales } from "@/__tests__/helpers/prime-locales";
 
 primeLocales("de");
 
+// Every case starts on an account that never set a module, whichever case
+// ran before it and left its own modules behind.
+beforeEach(() => {
+  modulesRef.value = undefined;
+});
+
 function renderSSR(node: React.ReactElement, locale: "en" | "de" = "de") {
   return renderToStaticMarkup(
     <I18nProvider initialLocale={locale}>{node}</I18nProvider>,
@@ -162,10 +168,6 @@ describe("<DashboardHeader> — quick-add menu", () => {
 });
 
 describe("<DashboardHeader> — Log workout", () => {
-  beforeEach(() => {
-    modulesRef.value = undefined;
-  });
-
   it("offers it beside the other capture entries", () => {
     modulesRef.value = { workouts: true };
     const html = renderSSR(
@@ -187,10 +189,6 @@ describe("<DashboardHeader> — Log workout", () => {
 });
 
 describe("<DashboardHeader> — every entry follows its module, as the capture picker does", () => {
-  beforeEach(() => {
-    modulesRef.value = undefined;
-  });
-
   it("withholds Log mood when the mood module is off", () => {
     modulesRef.value = { mood: false };
     const html = renderSSR(

@@ -60,6 +60,14 @@ import { GET } from "../route";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/api-handler";
 
+// Reset, not clear, before every case: cases replace the paused rows, the
+// settings row and the account groups, and a cleared mock would hand the
+// next case whatever the last one left there. A reset mock goes back to the
+// empty answer it was created with.
+beforeEach(() => {
+  vi.resetAllMocks();
+});
+
 const groupBy = vi.mocked(prisma.providerHealth.groupBy);
 const usageRows = vi.mocked(prisma.coachUsage.findMany);
 
@@ -101,7 +109,6 @@ function group(
 
 describe("GET /api/admin/provider-health", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     vi.mocked(requireAdmin).mockResolvedValue({
       user: { id: "admin1" },
     } as never);
@@ -302,7 +309,6 @@ describe("GET /api/admin/provider-health — pause and model check (v1.42)", () 
   const settings = vi.mocked(prisma.appSettings.findUnique);
 
   beforeEach(() => {
-    vi.clearAllMocks();
     vi.mocked(requireAdmin).mockResolvedValue({
       user: { id: "admin" },
     } as never);
