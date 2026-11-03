@@ -14,13 +14,15 @@
  * written anywhere.
  */
 import { spawn } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+
+import { readSource } from "./helpers/source-files";
 
 const ROOT = process.cwd();
 const SHIM = join(ROOT, "scripts", "wget-shim.mjs");
@@ -174,7 +176,7 @@ describe("wget shim", () => {
   });
 
   it("is what the image installs as wget", () => {
-    const dockerfile = readFileSync(join(ROOT, "Dockerfile"), "utf8");
+    const dockerfile = readSource("Dockerfile", "AS runner");
     const runner = dockerfile.slice(dockerfile.search(/^FROM .* AS runner$/m));
     expect(runner).toContain(
       "COPY --from=builder /app/scripts/wget-shim.mjs /usr/local/lib/healthlog/wget-shim.mjs",
