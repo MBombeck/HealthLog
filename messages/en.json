@@ -4972,6 +4972,34 @@
       "emptyDescription": "No score was recorded in this range yet.",
       "usualRange": "Shaded: your usual range, {lo} to {hi}.",
       "seam": "The line breaks where what counts toward the score changed."
+    },
+    "bpTimeOfDay": {
+      "title": "By time of day",
+      "description": "Your average blood pressure in each part of the day, over the chart's range.",
+      "part": {
+        "morning": "Morning",
+        "midday": "Midday",
+        "evening": "Evening"
+      },
+      "filterAll": "All day",
+      "filterLabel": "Show in the chart",
+      "readingsOne": "{count} reading",
+      "readingsFew": "{count} readings",
+      "readingsOther": "{count} readings",
+      "notEnough": "Too few readings",
+      "pulse": "Pulse {value} bpm",
+      "difference": "Morning minus evening: {systolic}/{diastolic} mmHg.",
+      "differencePending": "Morning and evening are compared once each has at least {min} readings.",
+      "hours": "Morning {morning}, midday {midday}, evening {evening}, in your time zone.",
+      "hourRange": "{start}–{end}",
+      "emptyTitle": "No complete readings in this range",
+      "emptyDescription": "Readings with both a systolic and a diastolic value show up here.",
+      "error": "The time-of-day averages could not be loaded.",
+      "chartTitle": {
+        "morning": "Blood pressure in the morning",
+        "midday": "Blood pressure at midday",
+        "evening": "Blood pressure in the evening"
+      }
     }
   },
   "thresholds": {

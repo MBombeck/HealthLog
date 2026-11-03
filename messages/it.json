@@ -4972,6 +4972,34 @@
       "emptyDescription": "In questo periodo non è ancora stato registrato alcun punteggio.",
       "usualRange": "In ombra: il tuo intervallo abituale, da {lo} a {hi}.",
       "seam": "La linea si interrompe dove è cambiato ciò che conta per il punteggio."
+    },
+    "bpTimeOfDay": {
+      "title": "Per momento della giornata",
+      "description": "La tua pressione arteriosa media in ogni momento della giornata, nel periodo del grafico.",
+      "part": {
+        "morning": "Mattina",
+        "midday": "Mezzogiorno",
+        "evening": "Sera"
+      },
+      "filterAll": "Tutto il giorno",
+      "filterLabel": "Mostra nel grafico",
+      "readingsOne": "{count} misurazione",
+      "readingsFew": "{count} misurazioni",
+      "readingsOther": "{count} misurazioni",
+      "notEnough": "Troppe poche misurazioni",
+      "pulse": "Pulsazioni {value} bpm",
+      "difference": "Mattina meno sera: {systolic}/{diastolic} mmHg.",
+      "differencePending": "Mattina e sera vengono confrontate quando ciascuna ha almeno {min} misurazioni.",
+      "hours": "Mattina {morning}, mezzogiorno {midday}, sera {evening}, nel tuo fuso orario.",
+      "hourRange": "{start}–{end}",
+      "emptyTitle": "Nessuna misurazione completa in questo periodo",
+      "emptyDescription": "Qui compaiono le misurazioni con valore sistolico e diastolico.",
+      "error": "Impossibile caricare le medie per momento della giornata.",
+      "chartTitle": {
+        "morning": "Pressione arteriosa al mattino",
+        "midday": "Pressione arteriosa a mezzogiorno",
+        "evening": "Pressione arteriosa alla sera"
+      }
     }
   },
   "thresholds": {

@@ -4972,6 +4972,34 @@
       "emptyDescription": "In diesem Zeitraum wurde noch kein Score erfasst.",
       "usualRange": "Schattiert: dein üblicher Bereich, {lo} bis {hi}.",
       "seam": "Die Linie bricht dort ab, wo sich geändert hat, was in den Score einfließt."
+    },
+    "bpTimeOfDay": {
+      "title": "Nach Tageszeit",
+      "description": "Dein durchschnittlicher Blutdruck je Tageszeit im Zeitraum des Diagramms.",
+      "part": {
+        "morning": "Morgens",
+        "midday": "Mittags",
+        "evening": "Abends"
+      },
+      "filterAll": "Ganzer Tag",
+      "filterLabel": "Im Diagramm zeigen",
+      "readingsOne": "{count} Messung",
+      "readingsFew": "{count} Messungen",
+      "readingsOther": "{count} Messungen",
+      "notEnough": "Zu wenige Messungen",
+      "pulse": "Puls {value} bpm",
+      "difference": "Morgens minus abends: {systolic}/{diastolic} mmHg.",
+      "differencePending": "Morgen und Abend werden verglichen, sobald beide mindestens {min} Messungen haben.",
+      "hours": "Morgens {morning}, mittags {midday}, abends {evening}, in deiner Zeitzone.",
+      "hourRange": "{start} bis {end} Uhr",
+      "emptyTitle": "Keine vollständigen Messungen in diesem Zeitraum",
+      "emptyDescription": "Hier erscheinen Messungen mit systolischem und diastolischem Wert.",
+      "error": "Die Werte nach Tageszeit konnten nicht geladen werden.",
+      "chartTitle": {
+        "morning": "Blutdruck morgens",
+        "midday": "Blutdruck mittags",
+        "evening": "Blutdruck abends"
+      }
     }
   },
   "thresholds": {

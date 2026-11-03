@@ -4972,6 +4972,34 @@
       "emptyDescription": "Todavía no hay ninguna puntuación registrada en este periodo.",
       "usualRange": "Sombreado: tu rango habitual, de {lo} a {hi}.",
       "seam": "La línea se interrumpe donde cambió lo que cuenta para la puntuación."
+    },
+    "bpTimeOfDay": {
+      "title": "Por momento del día",
+      "description": "Tu tensión arterial media en cada momento del día, en el periodo del gráfico.",
+      "part": {
+        "morning": "Mañana",
+        "midday": "Mediodía",
+        "evening": "Noche"
+      },
+      "filterAll": "Todo el día",
+      "filterLabel": "Mostrar en el gráfico",
+      "readingsOne": "{count} medición",
+      "readingsFew": "{count} mediciones",
+      "readingsOther": "{count} mediciones",
+      "notEnough": "Muy pocas mediciones",
+      "pulse": "Pulso {value} lpm",
+      "difference": "Mañana menos noche: {systolic}/{diastolic} mmHg.",
+      "differencePending": "La mañana y la noche se comparan cuando cada una tiene al menos {min} mediciones.",
+      "hours": "Mañana {morning}, mediodía {midday}, noche {evening}, en tu zona horaria.",
+      "hourRange": "{start}–{end}",
+      "emptyTitle": "No hay mediciones completas en este periodo",
+      "emptyDescription": "Aquí aparecen las mediciones con valor sistólico y diastólico.",
+      "error": "No se pudieron cargar los promedios por momento del día.",
+      "chartTitle": {
+        "morning": "Tensión arterial por la mañana",
+        "midday": "Tensión arterial a mediodía",
+        "evening": "Tensión arterial por la noche"
+      }
     }
   },
   "thresholds": {

@@ -4972,6 +4972,34 @@
       "emptyDescription": "Nenhuma pontuação foi registrada nesta faixa ainda.",
       "usualRange": "Sombreado: sua faixa habitual, {lo} a {hi}.",
       "seam": "A linha quebra onde o que conta para a pontuação mudou."
+    },
+    "bpTimeOfDay": {
+      "title": "Por período do dia",
+      "description": "Sua pressão arterial média em cada período do dia, no intervalo do gráfico.",
+      "part": {
+        "morning": "Manhã",
+        "midday": "Tarde",
+        "evening": "Noite"
+      },
+      "filterAll": "Dia todo",
+      "filterLabel": "Mostrar no gráfico",
+      "readingsOne": "{count} medição",
+      "readingsFew": "{count} medições",
+      "readingsOther": "{count} medições",
+      "notEnough": "Poucas medições",
+      "pulse": "Pulso {value} bpm",
+      "difference": "Manhã menos noite: {systolic}/{diastolic} mmHg.",
+      "differencePending": "Manhã e noite são comparadas quando cada uma tiver pelo menos {min} medições.",
+      "hours": "Manhã {morning}, tarde {midday}, noite {evening}, no seu fuso horário.",
+      "hourRange": "{start}–{end}",
+      "emptyTitle": "Nenhuma medição completa neste intervalo",
+      "emptyDescription": "Medições com valor sistólico e diastólico aparecem aqui.",
+      "error": "Não foi possível carregar as médias por período do dia.",
+      "chartTitle": {
+        "morning": "Pressão arterial pela manhã",
+        "midday": "Pressão arterial à tarde",
+        "evening": "Pressão arterial à noite"
+      }
     }
   },
   "thresholds": {

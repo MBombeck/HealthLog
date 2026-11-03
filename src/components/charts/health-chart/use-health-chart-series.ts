@@ -48,6 +48,7 @@ async function readDailySeries({
   valueOffset,
   dayKeyFormatter,
   tzFmt,
+  partOfDay,
 }: {
   types: string[];
   fetchWindow: ReturnType<typeof openEndedFetchWindow>;
@@ -57,6 +58,7 @@ async function readDailySeries({
   valueOffset: number;
   dayKeyFormatter: Intl.DateTimeFormat;
   tzFmt: ReturnType<typeof makeBucketLabelFormatters>;
+  partOfDay?: string;
 }): Promise<ChartDataPoint[]> {
   const dailyAggregates = new Map<
     string,
@@ -109,7 +111,7 @@ async function readDailySeries({
       await fetchSleepNights();
       return;
     }
-    const typeParams = chartSeriesParams(type, fetchWindow);
+    const typeParams = chartSeriesParams(type, fetchWindow, partOfDay);
 
     // The batched slice reads through the same rollup path as the
     // per-type read, so the bucketed result is identical. A covered type
@@ -210,6 +212,8 @@ async function readDailySeries({
  * On the dashboard the batched slice stands in for the per-type reads, but
  * only for windows over 7 days that fit the batch's coverage and only when
  * every non-sleep type is in it; sleep always reads its own per-night series.
+ * A series narrowed to a part of the day (`partOfDay`) always reads its own:
+ * the batched slice is whole days.
  */
 export function useHealthChartSeries({
   types,
@@ -226,6 +230,7 @@ export function useHealthChartSeries({
   preloadedCoverageDays,
   enabled,
   onDataReady,
+  partOfDay,
 }: {
   types: string[];
   valueMode: "raw" | "bmi";
@@ -241,6 +246,7 @@ export function useHealthChartSeries({
   preloadedCoverageDays?: number;
   enabled: boolean;
   onDataReady?: () => void;
+  partOfDay?: string;
 }) {
   const todayKey = localDayKeyFor(new Date(), userTimezone);
   const fetchWindow = useMemo(() => {
@@ -261,14 +267,20 @@ export function useHealthChartSeries({
   // Without an explicit coverage (a legacy mount) the slice is bypassed
   // rather than trusted blindly.
   const usePreloaded = useMemo(() => {
-    if (!preloadedSeries) return false;
+    if (!preloadedSeries || partOfDay) return false;
     if (fetchWindow.windowDays <= 7) return false;
     const coverage = preloadedCoverageDays ?? 0;
     if (fetchWindow.windowDays > coverage) return false;
     return types.every(
       (type) => type === "SLEEP_DURATION" || preloadedSeries[type] != null,
     );
-  }, [preloadedSeries, preloadedCoverageDays, fetchWindow.windowDays, types]);
+  }, [
+    preloadedSeries,
+    preloadedCoverageDays,
+    fetchWindow.windowDays,
+    types,
+    partOfDay,
+  ]);
 
   const chartQuery = useQuery({
     // A range-tab change re-keys the query; without placeholder data every
@@ -291,6 +303,7 @@ export function useHealthChartSeries({
       fetchWindow.to,
       valueScale,
       preloadedSeries ? (usePreloaded ? "preloaded" : "fetch") : "",
+      partOfDay ?? "",
     ),
     // A minute of freshness so moving between metric pages does not refire
     // every chart; five minutes of cache for a quick back-and-forth.
@@ -306,6 +319,7 @@ export function useHealthChartSeries({
         valueOffset,
         dayKeyFormatter,
         tzFmt,
+        partOfDay,
       }),
     // The BMI view: the cached raw WEIGHT series divided at read time, so the
     // entry is shared with the weight chart. No height → no series. The range

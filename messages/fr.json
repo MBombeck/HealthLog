@@ -4972,6 +4972,34 @@
       "emptyDescription": "Aucun score n’a encore été enregistré sur cette période.",
       "usualRange": "En grisé : votre plage habituelle, de {lo} à {hi}.",
       "seam": "La ligne s’interrompt là où ce qui compte pour le score a changé."
+    },
+    "bpTimeOfDay": {
+      "title": "Selon le moment de la journée",
+      "description": "Votre tension artérielle moyenne à chaque moment de la journée, sur la période du graphique.",
+      "part": {
+        "morning": "Matin",
+        "midday": "Midi",
+        "evening": "Soir"
+      },
+      "filterAll": "Toute la journée",
+      "filterLabel": "Afficher dans le graphique",
+      "readingsOne": "{count} mesure",
+      "readingsFew": "{count} mesures",
+      "readingsOther": "{count} mesures",
+      "notEnough": "Trop peu de mesures",
+      "pulse": "Pouls {value} bpm",
+      "difference": "Matin moins soir : {systolic}/{diastolic} mmHg.",
+      "differencePending": "Le matin et le soir sont comparés dès que chacun compte au moins {min} mesures.",
+      "hours": "Matin {morning}, midi {midday}, soir {evening}, dans votre fuseau horaire.",
+      "hourRange": "{start}–{end}",
+      "emptyTitle": "Aucune mesure complète sur cette période",
+      "emptyDescription": "Les mesures avec une valeur systolique et diastolique apparaissent ici.",
+      "error": "Impossible de charger les moyennes selon le moment de la journée.",
+      "chartTitle": {
+        "morning": "Tension artérielle le matin",
+        "midday": "Tension artérielle à midi",
+        "evening": "Tension artérielle le soir"
+      }
     }
   },
   "thresholds": {

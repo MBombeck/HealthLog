@@ -4972,6 +4972,34 @@
       "emptyDescription": "이 기간에는 아직 기록된 점수가 없습니다.",
       "usualRange": "음영: 평소 범위 {lo}에서 {hi}까지.",
       "seam": "점수에 반영되는 항목이 바뀐 지점에서 선이 끊깁니다."
+    },
+    "bpTimeOfDay": {
+      "title": "시간대별",
+      "description": "차트 기간 동안 하루 중 시간대별 평균 혈압입니다.",
+      "part": {
+        "morning": "아침",
+        "midday": "낮",
+        "evening": "저녁"
+      },
+      "filterAll": "하루 전체",
+      "filterLabel": "차트에 표시",
+      "readingsOne": "측정 {count}회",
+      "readingsFew": "측정 {count}회",
+      "readingsOther": "측정 {count}회",
+      "notEnough": "측정 횟수 부족",
+      "pulse": "맥박 {value} bpm",
+      "difference": "아침 빼기 저녁: {systolic}/{diastolic} mmHg.",
+      "differencePending": "아침과 저녁에 각각 측정이 {min}회 이상 있으면 비교합니다.",
+      "hours": "아침 {morning}, 낮 {midday}, 저녁 {evening}, 내 시간대 기준.",
+      "hourRange": "{start}–{end}",
+      "emptyTitle": "이 기간에 완전한 측정이 없습니다",
+      "emptyDescription": "수축기와 이완기 값이 모두 있는 측정이 여기에 표시됩니다.",
+      "error": "시간대별 평균을 불러오지 못했습니다.",
+      "chartTitle": {
+        "morning": "아침 혈압",
+        "midday": "낮 혈압",
+        "evening": "저녁 혈압"
+      }
     }
   },
   "thresholds": {

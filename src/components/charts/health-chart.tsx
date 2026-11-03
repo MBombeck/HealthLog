@@ -101,10 +101,10 @@ export function HealthChart({
   preloadedCoverageDays,
   showDataTable = false,
   dayLinks = false,
+  partOfDay,
 }: HealthChartProps) {
   const { isAuthenticated, user } = useAuth();
-  // A mount without the prop used to pin Europe/Berlin, so those charts cut
-  // days in Berlin for every user whatever their profile said.
+  // Never a fixed Berlin: a mount without the prop cuts the profile's days.
   const userTimezone = userTimezoneProp || user?.timezone || DEFAULT_TIMEZONE;
   const { t, locale } = useTranslations();
   const fmt = useFormatters();
@@ -128,9 +128,8 @@ export function HealthChart({
     : DEFAULT_CHART_RANGE;
   const [rangePoints, setRangePoints] = useState(initialRangePoints);
 
-  // The overlay toggles and the comparison persist per chart; an unbound
-  // chart (mini mode, ad-hoc use) gets the clean-line default and skips the
-  // layout read.
+  // Overlays and comparison persist per chart; an unbound chart (mini mode,
+  // ad-hoc use) gets the clean-line default and skips the layout read.
   const overlayPrefs = useChartOverlayPrefs(chartKey);
   const showMA = overlayPrefs.prefs.showTrendIndicator;
   const showTrend = overlayPrefs.prefs.showTrendArrow;
@@ -184,6 +183,7 @@ export function HealthChart({
       preloadedCoverageDays,
       enabled: isAuthenticated,
       onDataReady,
+      partOfDay,
     });
 
   const {

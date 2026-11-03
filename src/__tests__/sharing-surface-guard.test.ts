@@ -908,6 +908,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "measurements",
     why: "The multi-type form of the same series read, delegating to `readSeriesBatch(user.id, …)`. Nothing but the resolved id reaches the query.",
   },
+  "app/api/measurements/blood-pressure/time-of-day/route.ts": {
+    domain: "measurements",
+    why: "The record's blood-pressure readings averaged by part of the day. The series read and the pulse lookup both bind the resolved user id, the hours are read in the record's own zone, and the route holds no write arm.",
+  },
   "app/api/measurement-reminders/route.ts": {
     domain: "measurements",
     why: "The record's own reminder schedule — what the owner asked to be reminded of, not a notification channel or a device. The GET reads `userId: user.id`; creating a reminder stays on `requireAuth()`.",
@@ -2288,7 +2292,7 @@ const ACTOR_ROUTES: Record<string, string> = {
  * manage literal: it was refused under a switch while the medication's PUT,
  * which used to carry the end, admitted a manager. 272 -> 274.
  */
-const FROZEN_ENTRY_COUNT = 274;
+const FROZEN_ENTRY_COUNT = 275;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
