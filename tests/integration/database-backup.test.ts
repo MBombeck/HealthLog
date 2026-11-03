@@ -147,7 +147,10 @@ afterAll(() => {
   rmSync(work, { recursive: true, force: true });
 });
 
-describe("the nightly database dump", () => {
+// One backup directory through the cases in order: the first dump is the one
+// the retention, failure and restore cases count and restore. The order holds
+// under a shuffled run.
+describe("the nightly database dump", { shuffle: false }, () => {
   let dumpFile = "";
 
   it("writes a checked dump and manifest, records the run and copies both off-host", async () => {

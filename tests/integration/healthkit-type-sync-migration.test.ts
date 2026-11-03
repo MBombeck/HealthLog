@@ -106,84 +106,93 @@ afterAll(async () => {
   if (column.udt_name === "measurement_type") await runMigration();
 });
 
-describe("migration 0401 over enum-typed ledger rows", () => {
-  it("starts from the enum column", async () => {
-    expect((await typeColumn()).udt_name).toBe("measurement_type");
-  });
+// Before the migration, the migration, after it: the cases are its steps,
+// in order, under a shuffled run too.
+describe(
+  "migration 0401 over enum-typed ledger rows",
+  { shuffle: false },
+  () => {
+    it("starts from the enum column", async () => {
+      expect((await typeColumn()).udt_name).toBe("measurement_type");
+    });
 
-  it("keeps every row, its key and its dates, and seeds the background date", async () => {
-    await runMigration();
+    it("keeps every row, its key and its dates, and seeds the background date", async () => {
+      await runMigration();
 
-    expect(await typeColumn()).toEqual({ data_type: "text", udt_name: "text" });
-    const rows = await readRows();
-    expect(rows.map((r) => r.type)).toEqual([
-      "PULSE",
-      "RESPIRATORY_RATE",
-      "WEIGHT",
-    ]);
-    const byType = Object.fromEntries(rows.map((r) => [r.type, r]));
-    for (const [type, at] of Object.entries(RECEIVED)) {
-      expect(byType[type].last_received_at.toISOString()).toBe(
-        `${at.replace(" ", "T")}.000Z`,
+      expect(await typeColumn()).toEqual({
+        data_type: "text",
+        udt_name: "text",
+      });
+      const rows = await readRows();
+      expect(rows.map((r) => r.type)).toEqual([
+        "PULSE",
+        "RESPIRATORY_RATE",
+        "WEIGHT",
+      ]);
+      const byType = Object.fromEntries(rows.map((r) => [r.type, r]));
+      for (const [type, at] of Object.entries(RECEIVED)) {
+        expect(byType[type].last_received_at.toISOString()).toBe(
+          `${at.replace(" ", "T")}.000Z`,
+        );
+      }
+      expect(byType.WEIGHT.last_trigger).toBe("background");
+      expect(byType.WEIGHT.last_new_sample_at?.toISOString()).toBe(
+        "2026-09-01T06:00:00.000Z",
       );
-    }
-    expect(byType.WEIGHT.last_trigger).toBe("background");
-    expect(byType.WEIGHT.last_new_sample_at?.toISOString()).toBe(
-      "2026-09-01T06:00:00.000Z",
-    );
-    expect(byType.PULSE.last_new_sample_at).toBeNull();
-    // Only a row whose latest arrival was a background one knows a date.
-    expect(byType.WEIGHT.last_background_at?.toISOString()).toBe(
-      "2026-09-01T06:00:00.000Z",
-    );
-    expect(byType.PULSE.last_background_at).toBeNull();
-    expect(byType.RESPIRATORY_RATE.last_background_at).toBeNull();
-  });
+      expect(byType.PULSE.last_new_sample_at).toBeNull();
+      // Only a row whose latest arrival was a background one knows a date.
+      expect(byType.WEIGHT.last_background_at?.toISOString()).toBe(
+        "2026-09-01T06:00:00.000Z",
+      );
+      expect(byType.PULSE.last_background_at).toBeNull();
+      expect(byType.RESPIRATORY_RATE.last_background_at).toBeNull();
+    });
 
-  it("keeps the primary key on (user, type)", async () => {
-    const pkey = await prisma.$queryRaw<Array<{ indexdef: string }>>`
+    it("keeps the primary key on (user, type)", async () => {
+      const pkey = await prisma.$queryRaw<Array<{ indexdef: string }>>`
       SELECT indexdef FROM pg_indexes
       WHERE tablename = 'healthkit_type_syncs'
         AND indexname = 'healthkit_type_syncs_pkey'
     `;
-    expect(pkey[0]?.indexdef).toContain("(user_id, type)");
-    await expect(
-      prisma.$executeRawUnsafe(
-        `INSERT INTO "healthkit_type_syncs" ("user_id", "type", "last_received_at") VALUES ('${USER}', 'WEIGHT', now())`,
-      ),
-    ).rejects.toThrow();
-  });
+      expect(pkey[0]?.indexdef).toContain("(user_id, type)");
+      await expect(
+        prisma.$executeRawUnsafe(
+          `INSERT INTO "healthkit_type_syncs" ("user_id", "type", "last_received_at") VALUES ('${USER}', 'WEIGHT', now())`,
+        ),
+      ).rejects.toThrow();
+    });
 
-  it("lets the writer upsert a measurement type and record a dose", async () => {
-    const at = new Date("2026-10-01T09:00:00.000Z");
-    await recordHealthKitTypeArrivals(prisma, {
-      userId: USER,
-      counts: new Map([
-        ["WEIGHT", { accepted: 1, newSamples: 1 }],
-        ["MEDICATION_DOSE", { accepted: 2, newSamples: 2 }],
-      ]),
-      trigger: "foreground",
-      at,
+    it("lets the writer upsert a measurement type and record a dose", async () => {
+      const at = new Date("2026-10-01T09:00:00.000Z");
+      await recordHealthKitTypeArrivals(prisma, {
+        userId: USER,
+        counts: new Map([
+          ["WEIGHT", { accepted: 1, newSamples: 1 }],
+          ["MEDICATION_DOSE", { accepted: 2, newSamples: 2 }],
+        ]),
+        trigger: "foreground",
+        at,
+      });
+      const rows = await prisma.healthKitTypeSync.findMany({
+        where: { userId: USER },
+        orderBy: { type: "asc" },
+      });
+      expect(rows.map((r) => r.type)).toEqual([
+        "MEDICATION_DOSE",
+        "PULSE",
+        "RESPIRATORY_RATE",
+        "WEIGHT",
+      ]);
+      const weight = rows.find((r) => r.type === "WEIGHT")!;
+      expect(weight.lastReceivedAt.toISOString()).toBe(at.toISOString());
+      expect(weight.lastTrigger).toBe("foreground");
+      // The foreground arrival leaves the seeded background date standing.
+      expect(weight.lastBackgroundAt?.toISOString()).toBe(
+        "2026-09-01T06:00:00.000Z",
+      );
+      const dose = rows.find((r) => r.type === "MEDICATION_DOSE")!;
+      expect(dose.lastNewSampleAt?.toISOString()).toBe(at.toISOString());
+      expect(dose.lastBackgroundAt).toBeNull();
     });
-    const rows = await prisma.healthKitTypeSync.findMany({
-      where: { userId: USER },
-      orderBy: { type: "asc" },
-    });
-    expect(rows.map((r) => r.type)).toEqual([
-      "MEDICATION_DOSE",
-      "PULSE",
-      "RESPIRATORY_RATE",
-      "WEIGHT",
-    ]);
-    const weight = rows.find((r) => r.type === "WEIGHT")!;
-    expect(weight.lastReceivedAt.toISOString()).toBe(at.toISOString());
-    expect(weight.lastTrigger).toBe("foreground");
-    // The foreground arrival leaves the seeded background date standing.
-    expect(weight.lastBackgroundAt?.toISOString()).toBe(
-      "2026-09-01T06:00:00.000Z",
-    );
-    const dose = rows.find((r) => r.type === "MEDICATION_DOSE")!;
-    expect(dose.lastNewSampleAt?.toISOString()).toBe(at.toISOString());
-    expect(dose.lastBackgroundAt).toBeNull();
-  });
-});
+  },
+);

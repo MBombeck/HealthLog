@@ -71,7 +71,10 @@ beforeAll(async () => {
   await prisma.$executeRawUnsafe("ANALYZE audit_logs");
 }, 120_000);
 
-describe("runGeoBackfill", () => {
+// Three passes in order: the second must find what the first marked, the
+// third runs past the wait the first one set. The order holds under a
+// shuffled run.
+describe("runGeoBackfill", { shuffle: false }, () => {
   it("reads its candidates through the partial index", async () => {
     const before = await indexScans();
     const summary = await runGeoBackfill(prisma, NOW);

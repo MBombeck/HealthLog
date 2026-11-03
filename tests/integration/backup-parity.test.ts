@@ -1113,7 +1113,10 @@ async function recreateOwner(prisma: PrismaClient) {
 
 // ── The cases ────────────────────────────────────────────────────────────────
 
-describe("backup parity", () => {
+// One account through the numbered steps above, in order: each restore and
+// export reads what the step before it left. The order holds under a
+// shuffled run.
+describe("backup parity", { shuffle: false }, () => {
   const prisma = getPrismaClient();
   let adminId = "";
   let drJson = "";

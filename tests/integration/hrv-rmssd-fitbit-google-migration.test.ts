@@ -180,7 +180,9 @@ beforeAll(async () => {
   await runMigration();
 }, 120_000);
 
-describe("migration 0420", () => {
+// The migration's effects, then the refold and the rerun that change them:
+// the cases read in order, under a shuffled run too.
+describe("migration 0420", { shuffle: false }, () => {
   it("moves every Fitbit and Google Health SDNN row to HRV_RMSSD, tombstones included", async () => {
     const moved = await prisma.measurement.findMany({
       where: { userId: USER, source: { in: ["FITBIT", "GOOGLE_HEALTH"] } },
