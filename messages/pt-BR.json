@@ -10393,7 +10393,7 @@
       "fileTooLarge": "O arquivo é grande demais (máx. 12 MB).",
       "fileType": "Envie um JPEG, PNG, WebP ou PDF.",
       "extractFailed": "Não foi possível ler o laudo. Tente uma foto mais nítida.",
-      "pdfNeedsAnthropic": "A digitalização de PDF precisa de um provedor de visão Claude; envie uma foto em vez disso.",
+      "pdfRendererUnavailable": "O processador deste servidor não consegue renderizar páginas de PDF, então um laudo digitalizado só pode ser lido por um provedor de IA que aceite arquivos PDF diretamente. Envie uma foto em vez disso.",
       "refTextLabel": "Faixa como impressa",
       "refTextPlaceholder": "ex.: 3,5 - 5,0",
       "aiUnavailable": "Digitalizar um laudo com IA não está disponível aqui agora.",
@@ -11960,7 +11960,7 @@
           "decrypt-error": "O arquivo armazenado não pôde ser aberto para leitura.",
           "raster-failed": "As páginas do PDF não puderam ser renderizadas para leitura. Formatos de compressão de fax digitalizado são uma causa conhecida.",
           "provider-error": "O provedor de IA não conseguiu ler este documento na última tentativa.",
-          "pdf-needs-anthropic": "O provedor de IA configurado não consegue ler arquivos PDF. Um provedor Claude ou OCR local consegue.",
+          "pdf-needs-anthropic": "O processador deste servidor não consegue renderizar páginas de PDF e este PDF não tem camada de texto. Um provedor de IA que aceite arquivos PDF diretamente consegue ler, ou envie fotos das páginas.",
           "empty-transcription": "O provedor de IA não retornou texto para este documento.",
           "resource-limit": "Este PDF é grande ou complexo demais para ser lido aqui. O arquivo em si está bem e continua abrindo."
         }
@@ -12043,7 +12043,7 @@
       "errorRateLimitedWaitFew": "O limite horário de leitura por IA foi atingido. Tente novamente em cerca de {count} minutos.",
       "errorRateLimitedWaitOther": "O limite horário de leitura por IA foi atingido. Tente novamente em cerca de {count} minutos.",
       "errorBudget": "Seu orçamento de IA para hoje foi esgotado.",
-      "errorPdfNeedsVision": "Digitalizar PDFs precisa de um provedor de visão Claude.",
+      "errorPdfRendererUnavailable": "O processador deste servidor não consegue renderizar páginas de PDF, então um PDF digitalizado só pode ser lido por um provedor de IA que aceite arquivos PDF diretamente, ou como fotos das páginas.",
       "errorFileType": "Este tipo de arquivo não pode ser lido.",
       "errorNotIndexed": "Leia o documento primeiro, depois extraia.",
       "errorOutputLimit": "O provedor de IA atingiu o limite de saída antes de devolver um único valor. Tente um modelo que permita respostas mais longas.",

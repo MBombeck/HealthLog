@@ -13,7 +13,12 @@ vi.mock("@/lib/documents/ai-runs/store", () => ({
 }));
 vi.mock("@/lib/documents/rasterize-pdf", () => ({
   rasterizePdf: vi.fn(async () => ({ ok: false })),
+  RASTER_MAX_PAGES: 10,
 }));
+
+import { jsPDF } from "jspdf";
+
+import { rasterizePdf } from "@/lib/documents/rasterize-pdf";
 
 import {
   executeSupplementLabelExtraction,
@@ -279,4 +284,62 @@ describe("executeSupplementLabelExtraction", () => {
     expect(generateCompletion).not.toHaveBeenCalled();
     expect(settle).toHaveBeenCalledWith("user-1", budget, 0, null);
   });
+
+  it("reads the label's text layer when this server cannot render the PDF (#1311)", async () => {
+    vi.mocked(rasterizePdf).mockResolvedValueOnce({
+      ok: false,
+      reason: "unsupported",
+    });
+    const label = new jsPDF();
+    label.text("Magnesium (as citrate) 300 mg per 2 capsules", 10, 15);
+    label.text("Vitamin B6 1.4 mg", 10, 23);
+    const { generateCompletion, pick: p } = pick([
+      JSON.stringify({ servingUnits: 2, servingNote: null, lines: [] }),
+    ]);
+    (p as unknown as { pdfSupported: boolean }).pdfSupported = false;
+    const outcome = await executeSupplementLabelExtraction({
+      userId: "user-1",
+      bytes: Buffer.from(label.output("arraybuffer")),
+      mime: "application/pdf",
+      pick: p,
+      budget,
+    });
+    expect(outcome.ok, JSON.stringify(outcome)).toBe(true);
+    const sent = JSON.stringify(generateCompletion.mock.calls[0]);
+    expect(sent).toContain("Magnesium (as citrate) 300 mg");
+    expect(sent).not.toContain("application/pdf");
+    expect(sent).not.toContain("image/");
+  }, 30_000);
+
+  it("says why when this server cannot render a scanned label PDF (#1311)", async () => {
+    vi.mocked(rasterizePdf).mockResolvedValueOnce({
+      ok: false,
+      reason: "unsupported",
+    });
+    const scan = new jsPDF();
+    scan.addImage(
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+      "PNG",
+      10,
+      10,
+      100,
+      100,
+    );
+    const { generateCompletion, pick: p } = pick([]);
+    (p as unknown as { pdfSupported: boolean }).pdfSupported = false;
+    const outcome = await executeSupplementLabelExtraction({
+      userId: "user-1",
+      bytes: Buffer.from(scan.output("arraybuffer")),
+      mime: "application/pdf",
+      pick: p,
+      budget,
+    });
+    expect(outcome).toMatchObject({
+      ok: false,
+      errorCode: "medications.ingredients.extract.fileType",
+      message:
+        "This server can't render PDF pages; upload a photo of the label instead.",
+    });
+    expect(generateCompletion).not.toHaveBeenCalled();
+  }, 30_000);
 });

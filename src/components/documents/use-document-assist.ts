@@ -212,8 +212,8 @@ export function documentAiErrorKey(err: unknown): string {
         return "documents.assist.errorRateLimited";
       case "documents.inbound.budgetExceeded":
         return "documents.assist.errorBudget";
-      case "documents.inbound.pdfNeedsAnthropic":
-        return "documents.assist.errorPdfNeedsVision";
+      case "documents.inbound.pdfRendererUnavailable":
+        return "documents.assist.errorPdfRendererUnavailable";
       case "documents.inbound.fileType":
         return "documents.assist.errorFileType";
       case "documents.inbound.localOcrDisabled":

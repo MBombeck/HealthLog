@@ -245,11 +245,15 @@ async function tryProviderIndex(
       // runs again instead.
       throw new PdfReaderUnavailableError("busy");
     }
-    if (vision.reason === "pdfNeedsAnthropic") {
+    if (vision.reason === "pdfRendererUnavailable") {
       return { outcome: null, note: "pdf-needs-anthropic" };
     }
     return { outcome: null, note: null };
   }
+  // #1311 — this server cannot render the PDF and read its text layer instead.
+  // That is the local path's own reading, so it is left to the local path: a
+  // provider call would only transcribe the text back.
+  if (vision.mode === "text") return { outcome: null, note: null };
 
   const dateKey = await buildDateKey(userId);
   const reservation = await reserveBudget(

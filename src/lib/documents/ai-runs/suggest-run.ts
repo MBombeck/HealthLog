@@ -19,6 +19,7 @@ import {
   runDocumentAssist,
   type DocumentSuggestion,
 } from "@/lib/documents/assist";
+import { providerInputOf } from "@/lib/documents/vision-input";
 import { annotate } from "@/lib/logging/context";
 
 import {
@@ -76,8 +77,7 @@ export async function executeDocumentSuggest(args: {
       suggestion = await runDocumentAssist({
         provider: pick.entry.instance,
         providerType: pick.providerType,
-        images: vision.images,
-        documents: vision.documents,
+        ...providerInputOf(vision),
       });
     }
   } catch (err) {

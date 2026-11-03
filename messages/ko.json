@@ -10393,7 +10393,7 @@
       "fileTooLarge": "파일이 너무 커요 (최대 12MB).",
       "fileType": "JPEG, PNG, WebP 또는 PDF를 올려 주세요.",
       "extractFailed": "결과지를 읽지 못했어요. 더 선명한 사진으로 시도해 주세요.",
-      "pdfNeedsAnthropic": "PDF 스캔에는 Claude 비전 제공자가 필요해요. 대신 사진을 올려 주세요.",
+      "pdfRendererUnavailable": "이 서버의 프로세서로는 PDF 페이지를 렌더링할 수 없어요. 스캔한 검사지는 PDF 파일을 직접 받는 AI 제공자만 읽을 수 있어요. 대신 사진을 올려 주세요.",
       "refTextLabel": "적힌 그대로의 범위",
       "refTextPlaceholder": "예: 3.5 - 5.0",
       "aiUnavailable": "지금 여기에서는 AI로 결과지를 스캔할 수 없습니다.",
@@ -11960,7 +11960,7 @@
           "decrypt-error": "저장된 파일을 열어 읽지 못했어요.",
           "raster-failed": "PDF 페이지를 읽기용으로 렌더링하지 못했어요. 스캔 팩스 압축 형식이 흔한 원인이에요.",
           "provider-error": "지난번에 AI 제공자가 이 문서를 읽지 못했어요.",
-          "pdf-needs-anthropic": "설정된 AI 제공자는 PDF 파일을 읽을 수 없어요. Claude 제공자나 로컬 OCR로는 읽을 수 있어요.",
+          "pdf-needs-anthropic": "이 서버의 프로세서로는 PDF 페이지를 렌더링할 수 없고, 이 PDF에는 텍스트 레이어가 없어요. PDF 파일을 직접 받는 AI 제공자는 읽을 수 있고, 페이지 사진을 올려도 돼요.",
           "empty-transcription": "AI 제공자가 이 문서에서 텍스트를 찾지 못했어요.",
           "resource-limit": "이 PDF는 너무 크거나 복잡해서 여기서 읽을 수 없습니다. 파일 자체는 정상이며 계속 열 수 있습니다."
         }
@@ -12043,7 +12043,7 @@
       "errorRateLimitedWaitFew": "시간당 AI 읽기 한도에 도달했어요. {count}분쯤 뒤에 다시 시도해 주세요.",
       "errorRateLimitedWaitOther": "시간당 AI 읽기 한도에 도달했어요. {count}분쯤 뒤에 다시 시도해 주세요.",
       "errorBudget": "오늘 쓸 수 있는 AI 예산을 다 썼어요.",
-      "errorPdfNeedsVision": "PDF를 읽으려면 Claude 비전 제공자가 필요해요.",
+      "errorPdfRendererUnavailable": "이 서버의 프로세서로는 PDF 페이지를 렌더링할 수 없어요. 스캔한 PDF는 PDF 파일을 직접 받는 AI 제공자만 읽을 수 있고, 페이지를 사진으로 올려도 돼요.",
       "errorFileType": "이 파일 형식은 읽을 수 없어요.",
       "errorNotIndexed": "문서를 먼저 읽은 뒤에 추출해 주세요.",
       "errorOutputLimit": "AI 제공자가 값을 하나도 돌려주기 전에 출력 한도에 도달했어요. 더 긴 답변을 허용하는 모델로 다시 시도해 주세요.",

@@ -10393,7 +10393,7 @@
       "fileTooLarge": "Het bestand is te groot (max. 12 MB).",
       "fileType": "Upload een JPEG, PNG, WebP of PDF.",
       "extractFailed": "Het rapport kon niet worden gelezen. Probeer een scherpere foto.",
-      "pdfNeedsAnthropic": "Voor het scannen van PDF's is een Claude-provider met beeldherkenning nodig; upload in plaats daarvan een foto.",
+      "pdfRendererUnavailable": "De processor van deze server kan geen PDF-pagina's weergeven, dus een gescand rapport kan hier alleen worden gelezen door een AI-provider die PDF-bestanden rechtstreeks aanneemt. Upload in plaats daarvan een foto.",
       "refTextLabel": "Bereik zoals afgedrukt",
       "refTextPlaceholder": "bijv. 3,5 - 5,0",
       "aiUnavailable": "Een rapport scannen met AI is hier op dit moment niet beschikbaar.",
@@ -11960,7 +11960,7 @@
           "decrypt-error": "Het opgeslagen bestand kon niet worden geopend om te lezen.",
           "raster-failed": "De PDF-pagina's konden niet worden weergegeven om te lezen. Compressieformaten van gescande faxen zijn een bekende oorzaak.",
           "provider-error": "De AI-provider kon dit document bij de laatste poging niet lezen.",
-          "pdf-needs-anthropic": "De ingestelde AI-provider kan geen PDF-bestanden lezen. Een Claude-provider of lokale OCR kan dat wel.",
+          "pdf-needs-anthropic": "De processor van deze server kan geen PDF-pagina's weergeven en deze PDF heeft geen tekstlaag. Een AI-provider die PDF-bestanden rechtstreeks aanneemt kan hem lezen, of upload foto's van de pagina's.",
           "empty-transcription": "De AI-provider gaf geen tekst terug voor dit document.",
           "resource-limit": "Deze pdf is te groot of te complex om hier te lezen. Het bestand zelf is in orde en opent nog steeds."
         }
@@ -12043,7 +12043,7 @@
       "errorRateLimitedWaitFew": "De limiet voor lezen met AI per uur is bereikt. Probeer het over ongeveer {count} minuten opnieuw.",
       "errorRateLimitedWaitOther": "De limiet voor lezen met AI per uur is bereikt. Probeer het over ongeveer {count} minuten opnieuw.",
       "errorBudget": "Je AI-budget voor vandaag is op.",
-      "errorPdfNeedsVision": "Voor het scannen van PDF's is een Claude-provider met beeldherkenning nodig.",
+      "errorPdfRendererUnavailable": "De processor van deze server kan geen PDF-pagina's weergeven, dus een gescande PDF kan hier alleen worden gelezen door een AI-provider die PDF-bestanden rechtstreeks aanneemt, of als foto's van de pagina's.",
       "errorFileType": "Dit bestandstype kan niet worden gelezen.",
       "errorNotIndexed": "Laat het document eerst lezen en extraheer daarna.",
       "errorOutputLimit": "De AI-provider bereikte zijn uitvoerlimiet voordat hij één waarde teruggaf. Probeer een model dat langere antwoorden toestaat.",

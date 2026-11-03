@@ -10393,7 +10393,7 @@
       "fileTooLarge": "El archivo es demasiado grande (máx. 12 MB).",
       "fileType": "Sube un JPEG, PNG, WebP o PDF.",
       "extractFailed": "No se pudo leer el informe. Prueba con una foto más nítida.",
-      "pdfNeedsAnthropic": "El escaneo de PDF necesita un proveedor de visión de Claude; sube una foto en su lugar.",
+      "pdfRendererUnavailable": "El procesador de este servidor no puede renderizar páginas PDF, así que un informe escaneado solo lo puede leer un proveedor de IA que acepte archivos PDF directamente. Sube una foto en su lugar.",
       "refTextLabel": "Rango tal como aparece",
       "refTextPlaceholder": "p. ej. 3,5 - 5,0",
       "aiUnavailable": "Escanear un informe con IA no está disponible aquí ahora mismo.",
@@ -11960,7 +11960,7 @@
           "decrypt-error": "El archivo guardado no se pudo abrir para su lectura.",
           "raster-failed": "Las páginas del PDF no se pudieron procesar para su lectura. Los formatos de compresión de fax escaneados son una causa conocida.",
           "provider-error": "El proveedor de IA no pudo leer este documento en el último intento.",
-          "pdf-needs-anthropic": "El proveedor de IA configurado no puede leer archivos PDF. Un proveedor Claude o el OCR local sí pueden.",
+          "pdf-needs-anthropic": "El procesador de este servidor no puede renderizar páginas PDF y este PDF no tiene capa de texto. Puede leerlo un proveedor de IA que acepte archivos PDF directamente, o sube fotos de las páginas.",
           "empty-transcription": "El proveedor de IA no devolvió texto para este documento.",
           "resource-limit": "Este PDF es demasiado grande o complejo para leerlo aquí. El archivo en sí está bien y se sigue pudiendo abrir."
         }
@@ -12043,7 +12043,7 @@
       "errorRateLimitedWaitFew": "Se alcanzó el límite de lecturas de IA por hora. Inténtalo en aproximadamente {count} minutos.",
       "errorRateLimitedWaitOther": "Se alcanzó el límite de lecturas de IA por hora. Inténtalo en aproximadamente {count} minutos.",
       "errorBudget": "Tu presupuesto de IA de hoy se ha agotado.",
-      "errorPdfNeedsVision": "Escanear PDF requiere un proveedor de visión Claude.",
+      "errorPdfRendererUnavailable": "El procesador de este servidor no puede renderizar páginas PDF, así que un PDF escaneado solo lo puede leer un proveedor de IA que acepte archivos PDF directamente, o como fotos de las páginas.",
       "errorFileType": "Este tipo de archivo no se puede leer.",
       "errorNotIndexed": "Primero lee el documento y luego extrae.",
       "errorOutputLimit": "El proveedor de IA alcanzó su límite de salida antes de devolver un solo valor. Prueba con un modelo que permita respuestas más largas.",
