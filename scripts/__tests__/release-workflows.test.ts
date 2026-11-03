@@ -224,7 +224,8 @@ describe("release container inputs", () => {
     const dockerfile = readRepoFile("Dockerfile");
     const fromLines = dockerfile.match(/^FROM node:[^\n]+$/gm) ?? [];
 
-    expect(fromLines).toHaveLength(3);
+    // deps and builder; the runner is Wolfi (canvas-binary-hoist-guard).
+    expect(fromLines).toHaveLength(2);
     expect(new Set(fromLines.map((line) => line.split(" AS ")[0]))).toEqual(
       new Set([
         "FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f",
@@ -243,8 +244,11 @@ describe("release container inputs", () => {
     expect(
       dockerfile.match(/corepack prepare pnpm@11\.15\.1 --activate/g),
     ).toHaveLength(2);
+    // The runner installs npm for the Prisma CLI step only, removes it in the
+    // same layer, and fails the build if any package manager is left.
+    expect(dockerfile).toContain("apk del --no-cache npm");
     expect(dockerfile).toContain(
-      "rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /root/.cache/node/corepack",
+      "sh -c '! command -v npm && ! command -v npx && ! command -v corepack && ! command -v pnpm'",
     );
     expect(dockerfile).toContain("tsx@4.23.1");
     expect(dockerfile).toContain(

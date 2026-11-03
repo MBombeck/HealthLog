@@ -1,12 +1,17 @@
-# ── Base image ─────────────────────────────────────────────
-# Debian (glibc), not Alpine (musl), in every stage. The native modules the
-# runtime loads (the @napi-rs/canvas Skia renderer, @node-rs/argon2, the
-# Prisma schema engine) then run their glibc builds. The arm64 musl Skia
-# build needs ARMv8.2 (LSE atomics, RCpc loads) and dies with SIGILL on an
-# ARMv8.0 core such as the Raspberry Pi 4's Cortex-A72; the glibc arm64
-# build does not use those instructions (#1311). trixie over bookworm: on
-# the day of the switch the bookworm-slim base carried a CRITICAL finding
-# (zlib, marked will-not-fix) that trixie-slim does not.
+# ── Base images ────────────────────────────────────────────
+# glibc, not musl, in every stage. The native modules the runtime loads (the
+# @napi-rs/canvas Skia renderer, @node-rs/argon2, the Prisma schema engine)
+# then run their glibc builds. The arm64 musl Skia build needs ARMv8.2 (LSE
+# atomics, RCpc loads) and dies with SIGILL on an ARMv8.0 core such as the
+# Raspberry Pi 4's Cortex-A72; the glibc arm64 build does not use those
+# instructions (#1311).
+#
+# The dependency and build stages run on Debian (node:22-trixie-slim), where
+# pnpm installs the `-gnu` native packages. The runner is Wolfi: glibc, and
+# a package set small enough that the image scan reports what the app ships
+# rather than a general-purpose distribution's base system. A glibc binary
+# runs on the glibc it was linked against or a newer one; the runner checks
+# both that and the Node module ABI against the builder at build time.
 
 # ── Stage 1: Dependencies ──────────────────────────────────
 FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f AS deps
@@ -67,6 +72,10 @@ RUN NODE_OPTIONS=--max-old-space-size=8192 pnpm build
 # name; see the note there for why guessing was wrong.
 RUN node -p "require('/app/node_modules/pdfjs-dist/package.json').version" \
       > /app/.pdfjs-version
+# The Node module ABI and the glibc the native packages were installed for;
+# the runner refuses to build on an older glibc or another module ABI.
+RUN node -p "process.versions.modules + ' ' + process.report.getReport().header.glibcVersionRuntime + ' ' + process.version" \
+      > /app/.native-abi
 # The same for @napi-rs/canvas, whose native binary must match its JS loader.
 RUN node -p "require('/app/node_modules/@napi-rs/canvas/package.json').version" \
       > /app/.canvas-version
@@ -76,62 +85,40 @@ RUN node -p "require('/app/node_modules/@napi-rs/canvas/package.json').version" 
 RUN node scripts/verify-message-catalogs.mjs --dir messages \
       --config src/lib/i18n/config.ts --write /app/.message-locales
 
-# ── Stage 3: PostgreSQL client tools ───────────────────────
-# `pg_dump` and `pg_restore` of major 18, and the libpq they link, taken from
-# the official PostgreSQL image built on the same Debian release. Installing
-# `postgresql-client-18` instead pulls Perl and Debian's client wrapper
-# scripts into the runner for two binaries the app calls by name. Pinned to
-# the same minor as the bundled database in docker-compose.yml; move the two
-# together. The libpq file is found through the loader rather than by an
-# architecture path, so the step is the same on amd64 and arm64.
-FROM postgres:18.6-trixie@sha256:3a4264520e121176619f54ff867d12774bc81e95e7b84db58d63bccdb6144b81 AS pgclient
-RUN set -eu; \
-    mkdir -p /out/bin /out/lib; \
-    cp /usr/lib/postgresql/18/bin/pg_dump /usr/lib/postgresql/18/bin/pg_restore /out/bin/; \
-    LIBPQ="$(ldd /usr/lib/postgresql/18/bin/pg_dump | awk '$1 == "libpq.so.5" { print $3 }')"; \
-    [ -n "$LIBPQ" ] || { echo "ERROR: pg_dump links no libpq.so.5"; exit 1; }; \
-    cp -L "$LIBPQ" /out/lib/libpq.so.5
-
-# ── Stage 4: Production runner ─────────────────────────────
-FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f AS runner
-# `tzdata` is required so Europe/Berlin schedules (pg-boss cron, locale-aware
-# timestamp formatting) resolve to the actual offset instead of silently
-# falling back to UTC; the slim base ships without it.
+# ── Stage 3: Production runner ─────────────────────────────
+FROM cgr.dev/chainguard/wolfi-base:latest@sha256:629d9acaceda7746cd9293365eb0d8e8fabf74e91830b05470cfbee20b53f447 AS runner
+# `nodejs-22` is the runtime; the builder's Node 22 and this one share the
+# module ABI, which the check below holds. `tzdata` is required so
+# Europe/Berlin schedules (pg-boss cron, locale-aware timestamp formatting)
+# resolve to the actual offset instead of silently falling back to UTC.
 #
-# `apt-get upgrade` pulls in OS-package security fixes the pinned base digest
-# has not absorbed yet (the digest pin stays for build reproducibility;
-# security patches from the Debian archive override it deliberately —
-# CVE-2026-14456 in openssl was the first instance the container scan
-# caught between base-image rebuilds).
+# `apk upgrade` pulls in package security fixes the pinned base digest has
+# not absorbed yet (the digest pin stays for build reproducibility; fixes
+# from the Wolfi repository override it deliberately — CVE-2026-14456 in
+# openssl was the first instance the container scan caught between
+# base-image rebuilds).
 #
-# `pg_dump` and `pg_restore` serve the nightly database dump, the
-# pre-migration dump in the entrypoint and the `db-restore` service
-# (docs/ops/disaster-recovery.md). Major 18 matches the bundled database; a
-# client dumps servers of its own major and older, so it also serves an
-# install still on its own Postgres 16. Debian trixie ships major 17, so the
-# two binaries and their libpq come from the `pgclient` stage above; the
-# Debian libraries libpq links (Kerberos, LDAP, SASL) come from apt below, so
-# the build-time upgrade and the image scan see them. The copied binaries are
-# outside dpkg: the scan does not see them and `apt-get upgrade` does not
-# patch them, so a PostgreSQL client fix arrives by moving the `pgclient`
-# pin.
+# `postgresql-18-client` carries `pg_dump` and `pg_restore` for the nightly
+# database dump, the pre-migration dump in the entrypoint and the
+# `db-restore` service (docs/ops/disaster-recovery.md). Major 18 matches the
+# bundled database; a client dumps servers of its own major and older, so it
+# also serves an install still on its own Postgres 16.
 #
-# `ca-certificates` is the system trust store the OpenSSL-linked tools use
-# (the Prisma schema engine, libpq) for a TLS connection to the database.
-RUN set -eux; \
-    export DEBIAN_FRONTEND=noninteractive; \
-    apt-get update; \
-    apt-get upgrade -y --no-install-recommends; \
-    apt-get install -y --no-install-recommends \
-      ca-certificates tzdata libgssapi-krb5-2 libldap2 libsasl2-2; \
-    apt-get clean; \
-    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
-COPY --from=pgclient /out/bin/ /usr/lib/postgresql/18/bin/
-COPY --from=pgclient /out/lib/libpq.so.5 /usr/lib/postgresql/18/lib/libpq.so.5
-RUN echo /usr/lib/postgresql/18/lib > /etc/ld.so.conf.d/postgresql-18.conf && \
-    ldconfig && \
-    ! ldd /usr/lib/postgresql/18/bin/pg_dump /usr/lib/postgresql/18/bin/pg_restore | grep -q "not found"
-ENV PATH=/usr/lib/postgresql/18/bin:$PATH
+# busybox, part of the base, is the shell the entrypoint runs under and
+# carries `tar`/`gzip` for the GeoLite2 extraction and `addgroup`/`adduser`.
+RUN apk add --no-cache nodejs-22 tzdata postgresql-18-client && \
+    apk upgrade --no-cache && \
+    mkdir -p /usr/local/bin
+COPY --from=builder /app/.native-abi /tmp/.native-abi
+RUN set -e; \
+    read -r BUILD_ABI BUILD_GLIBC BUILD_NODE < /tmp/.native-abi; \
+    rm -f /tmp/.native-abi; \
+    RUN_ABI="$(node -p process.versions.modules)"; \
+    RUN_GLIBC="$(node -p 'process.report.getReport().header.glibcVersionRuntime')"; \
+    [ "$RUN_ABI" = "$BUILD_ABI" ] || { echo "ERROR: runner Node module ABI $RUN_ABI, builder $BUILD_ABI"; exit 1; }; \
+    [ "$(printf '%s\n%s\n' "$BUILD_GLIBC" "$RUN_GLIBC" | sort -V | head -1)" = "$BUILD_GLIBC" ] || \
+      { echo "ERROR: runner glibc $RUN_GLIBC is older than the builder's $BUILD_GLIBC"; exit 1; }; \
+    echo "native ABI $RUN_ABI (builder $BUILD_NODE, runner $(node -v)); glibc $BUILD_GLIBC -> $RUN_GLIBC"
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -162,9 +149,8 @@ ENV NEXT_PUBLIC_APP_VERSION=$NEXT_PUBLIC_APP_VERSION
 ARG NEXT_PUBLIC_APP_BUILD_SHA
 ENV NEXT_PUBLIC_APP_BUILD_SHA=$NEXT_PUBLIC_APP_BUILD_SHA
 
-RUN groupadd --system --gid 1001 nodejs && \
-    useradd --system --uid 1001 --gid nodejs --create-home --home-dir /home/nextjs \
-      --shell /usr/sbin/nologin nextjs
+RUN addgroup -S -g 1001 nodejs && \
+    adduser -S -u 1001 -G nodejs -h /home/nextjs -s /sbin/nologin nextjs
 
 # Where the database dumps go (`DB_BACKUP_DIR`). Owned by the app user, so a
 # fresh named volume mounted here starts with that owner: Docker fills an
@@ -327,8 +313,16 @@ RUN node scripts/db-dump.mjs 2>&1 | grep -q "db-dump: usage:" && \
 
 # Install the migration CLI, its config dependency, and a pinned launcher for
 # the maintenance scripts already shipped in the standalone tree. The Prisma
-# config loads dotenv from /app, so expose the isolated copy there before
-# stripping npm/Corepack and their caches from the runtime surface.
+# config loads dotenv from /app, so expose the isolated copy there. npm is
+# installed for this one step and removed in the same layer, with its cache,
+# so no package manager is left in the runtime surface.
+#
+# Wolfi's npm is major 12, which runs no dependency install scripts unless
+# package.json lists the package under `allowScripts`. Three packages here
+# have one: `@prisma/engines` downloads the schema engine `migrate deploy`
+# runs, `prisma` checks its environment, and `esbuild` (under tsx) checks
+# its binary. Without the field the install succeeds and ships no schema
+# engine, so the check after this step asks the CLI for it.
 #
 # This install belongs to npm, not pnpm, so the `overrides` block in
 # `pnpm-workspace.yaml` does not reach it: a package pinned there for the app
@@ -354,19 +348,29 @@ RUN node scripts/db-dump.mjs 2>&1 | grep -q "db-dump: usage:" && \
 # npm install never reads. Rebuilding this install both ways confirms it:
 # without the two fields below npm resolves 1.19.11 and 1.2.0, with them it
 # resolves 1.19.17 and 1.4.2, and `prisma --version` still reports 7.8.0.
-RUN mkdir -p /opt/prisma-cli && \
+RUN apk add --no-cache npm && \
+    mkdir -p /opt/prisma-cli && \
     cd /opt/prisma-cli && \
     npm init -y && \
     npm pkg set 'overrides.deepmerge-ts=^8.0.0' && \
     npm pkg set 'overrides.mysql2=^3.22.0' && \
     npm pkg set 'overrides.@hono/node-server=^1.19.15' && \
     npm pkg set 'overrides.valibot=^1.4.2' && \
+    npm pkg set 'allowScripts.@prisma/engines=true' 'allowScripts.prisma=true' 'allowScripts.esbuild=true' --json && \
     npm install --omit=dev prisma@7.10.1 @prisma/engines@7.10.1 tsx@4.23.1 dotenv@18.0.9 && \
     ln -sfn /opt/prisma-cli/node_modules/.bin/tsx /usr/local/bin/healthlog-tsx && \
     ln -sfn /opt/prisma-cli/node_modules/dotenv /app/node_modules/dotenv && \
     ln -sfn /opt/prisma-cli/node_modules/prisma /app/node_modules/prisma && \
-    rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /root/.cache/node/corepack /root/.npm && \
-    rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/pnpm /usr/local/bin/pnpx
+    apk del --no-cache npm && \
+    rm -rf /root/.npm /root/.cache && \
+    sh -c '! command -v npm && ! command -v npx && ! command -v corepack && ! command -v pnpm'
+
+# The schema engine the entrypoint's `migrate deploy` runs is in place.
+# Look for the file before asking the CLI: a CLI that finds none downloads
+# one, which would hide the missing install script here and fail offline.
+RUN ls /opt/prisma-cli/node_modules/@prisma/engines/schema-engine-* >/dev/null && \
+    node /opt/prisma-cli/node_modules/prisma/build/index.js --version 2>&1 | \
+      grep -q "Schema Engine *: schema-engine-cli [0-9a-f]* (at "
 
 # Same proof for the intake-repair script under the launcher it is documented
 # with: its `pg` import resolves, so it reaches its own DATABASE_URL check.
@@ -389,7 +393,7 @@ RUN env -u DATABASE_URL healthlog-tsx scripts/repair-intake-anomalies.ts 2>&1 | 
 # user so the runtime worker can WRITE it: a self-hoster who sets
 # MAXMIND_LICENSE_KEY on the published image has the databases fetched into
 # this directory at runtime (src/lib/geo/geolite2-fetch.ts) with no rebuild or
-# manual mount. `tar`/`gzip` for the extraction are part of the Debian base. A
+# manual mount. `tar`/`gzip` for the extraction come with busybox. A
 # read-only bind mount at this path (the bring-your-own-database route) still
 # works — the runtime fetch just fails soft and the mounted files stand.
 RUN mkdir -p /opt/geolite2 && chown nextjs:nodejs /opt/geolite2
@@ -419,8 +423,8 @@ ENV HOSTNAME="0.0.0.0"
 # Five retries: a pool saturated for a minute during a boot storm makes the
 # probe's 2 s database check miss once or twice without marking the container
 # unhealthy (docker-compose.yml explains the numbers). The probe is Node's own
-# fetch: the Debian base carries neither wget nor curl, and installing one for
-# this line would add a TLS stack to the image's scan surface. A non-2xx
+# fetch: it needs nothing beyond the runtime, the same probe works on any
+# base, and no HTTP client has to be installed for one line. A non-2xx
 # answer, a refused connection and the 4 s abort all exit 1.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10m --retries=5 \
   CMD ["node", "-e", "fetch('http://127.0.0.1:3000/api/health',{signal:AbortSignal.timeout(4000)}).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]

@@ -9,7 +9,7 @@
  * restart loop (live incident: a Synology DS1520+ self-host, exit code 132
  * ~18 s after every boot once the thumbnail backfill touched Skia).
  *
- * The published image is Debian (glibc) and runs the glibc build. Under an
+ * The published image runs on glibc (Wolfi) and loads the glibc build. Under an
  * emulated AVX2-less Atom core that build drew a canvas and rendered
  * a PDF page to JPEG where the musl build died, but it still carries AVX2 code
  * and not every path it can take was exercised, so the x64 gate stays closed
@@ -26,7 +26,7 @@
  * fallback, and dies with SIGILL as soon as the module loads on an ARMv8.0
  * core such as the Raspberry Pi 4's Cortex-A72 (#1311). The glibc arm64 build
  * uses neither and runs there, which is why the published image moved off
- * Alpine. The musl branch stays for a host that runs the app on musl itself,
+ * musl. The musl branch stays for a host that runs the app on musl itself,
  * from source on Alpine or from an image built on it.
  *
  * Detection reads `/proc/cpuinfo` once on Linux: x64 requires the `avx2`
