@@ -7,7 +7,7 @@ import fc from "fast-check";
 import { RRule } from "rrule";
 import { describe, expect, it } from "vitest";
 
-import { alignedRruleStart } from "@/lib/medications/scheduling/recurrence";
+import { alignedRruleStart } from "@/lib/medications/scheduling/aligned-rrule-start";
 
 import { assertProperty } from "../../../../../tests/property/fast-check";
 

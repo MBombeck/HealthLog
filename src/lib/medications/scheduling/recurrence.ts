@@ -56,6 +56,7 @@
 import { RRule } from "rrule";
 
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
+import { alignedRruleStart } from "@/lib/medications/scheduling/aligned-rrule-start";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { startOfLocalDayInTz } from "@/lib/tz/local-day";
 import { tzOffsetMinutes } from "@/lib/tz/format";
@@ -795,9 +796,8 @@ function expandRrule(
   const after = new Date(from.getTime() - padded);
   const before = new Date(to.getTime() + padded);
 
-  const dtstartLine = `DTSTART:${formatUtcBasic(
-    alignedRruleStart(rruleStr, anchorCivilDay(ctx), after),
-  )}`;
+  const start = alignedRruleStart(rruleStr, anchorCivilDay(ctx), after);
+  const dtstartLine = `DTSTART:${formatUtcBasic(start)}`;
   // Skip the engine-side UNTIL suffix when the user's RRULE already
   // bounds the recurrence with COUNT or UNTIL — RFC 5545 forbids both
   // (and any two-UNTIL collision), and RRule.fromString throws on the
@@ -838,52 +838,6 @@ function expandRrule(
     }
   }
   return slots.sort((a, b) => a.at.getTime() - b.at.getTime());
-}
-
-/**
- * The DTSTART to hand the rrule library for a window that opens at `after`.
- *
- * `between()` iterates from DTSTART, not from the window, so a schedule
- * anchored at a medication created two years ago walked some 700 days on
- * every call, and the compliance read calls it many times over: about 4 ms
- * per rate, growing with the age of the medication. A DAILY or WEEKLY rule
- * repeats with a fixed period of `INTERVAL` days or weeks, so moving the
- * start forward by whole periods to just before the window leaves every
- * occurrence inside it where it was: the weekday, the week parity of an
- * every-other-week rule and the BYHOUR expansion all ride on the period.
- * A rule with COUNT keeps its anchor (the count runs from the first
- * occurrence), and so does any other frequency, whose period is not a fixed
- * number of days. The day before `after` is the latest safe start, because
- * a start the rule does not match is not an occurrence, and anything
- * between it and `after` is outside the window anyway.
- */
-export function alignedRruleStart(
-  rruleStr: string,
-  anchor: Date,
-  after: Date,
-): Date {
-  let options: ReturnType<typeof RRule.parseString>;
-  try {
-    options = RRule.parseString(rruleStr);
-  } catch {
-    return anchor;
-  }
-  if (options.count != null) return anchor;
-  const interval = options.interval ?? 1;
-  if (!Number.isInteger(interval) || interval < 1) return anchor;
-  const periodDays =
-    options.freq === RRule.DAILY
-      ? interval
-      : options.freq === RRule.WEEKLY
-        ? 7 * interval
-        : null;
-  if (periodDays === null) return anchor;
-  const periodMs = periodDays * DAY_MS;
-  const periods = Math.floor(
-    (after.getTime() - DAY_MS - anchor.getTime()) / periodMs,
-  );
-  if (periods <= 0) return anchor;
-  return new Date(anchor.getTime() + periods * periodMs);
 }
 
 // ────────────────────────────────────────────────────────────────────
