@@ -562,8 +562,10 @@ services:
     healthcheck:
       test:
         [
-          "CMD-SHELL",
-          "wget --no-verbose --tries=1 --timeout=4 --spider http://127.0.0.1:3000/api/health || exit 1",
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health',{signal:AbortSignal.timeout(4000)}).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))",
         ]
       interval: 30s
       timeout: 5s
@@ -572,7 +574,7 @@ services:
       # past that, so a boot storm that saturates the pool for a minute after
       # the start period (backfills, a restore, another tenant's import) costs
       # a probe or two, not the container's health and the proxy's routing.
-      # wget's own 4 s timeout ends the request inside Docker's 5 s, so a
+      # The probe's own 4 s abort ends the request inside Docker's 5 s, so a
       # stalled connection reads as one clean miss rather than a killed probe.
       # A database that stays away for 2.5 minutes is a real outage and shows.
       retries: 5

@@ -140,7 +140,7 @@ changes nothing the web container relies on.
 
 ## Healthchecks
 
-- `app` (web) healthcheck: `wget /api/health` every 30s.
+- `app` (web) healthcheck: a `node -e` fetch of `/api/health` every 30s.
 - `app-worker` does not expose a port; its liveness is tracked
   in-memory inside the process (`src/lib/jobs/worker-status.ts`) and
   read back by `/api/admin/status`. In a web/worker split this means

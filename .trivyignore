@@ -3,25 +3,6 @@
 # can apply; never suppress one with a fixed version available — bump instead.
 # Each entry names what it covers and the condition to re-check / remove it.
 
-# CVE-2026-33671 (picomatch ReDoS, HIGH) — flagged only in the npm CLI's
-# OWN bundled copy that ships inside the Node base image
-# (usr/local/lib/node_modules/npm/node_modules/picomatch, v4.0.3), used at
-# image-build time by npm, not by our runtime. Our application dependency
-# tree pins picomatch >= 4.0.4 via a pnpm override, so the running app is
-# not affected and the path is not reachable at runtime. Re-check when the
-# Node base image ships an npm build whose bundled picomatch is >= 4.0.4,
-# then drop this entry.
-CVE-2026-33671
-
-# CVE-2026-48815 (sigstore certificate-OID verification, HIGH) — flagged only
-# in the npm CLI's OWN bundled copy inside the Node base image
-# (usr/local/lib/node_modules/npm/node_modules/sigstore, v3.1.0). npm uses
-# sigstore for publish provenance at image-build time only; it is not in our
-# application dependency tree at all (`pnpm why sigstore` is empty) and is
-# never reachable at runtime. Re-check when the Node base image ships an npm
-# build whose bundled sigstore is >= 4.1.1, then drop this entry.
-CVE-2026-48815
-
 # CVE-2026-85393 (node-forge RSA PKCS#1 v1.5 signature forgery, HIGH; GitHub
 # advisory GHSA-86w9-cpqp-85rv) — node-forge <= 1.4.0 arrives only through
 # @parse/node-apn, which uses it in its certificate-based credential path

@@ -1,5 +1,20 @@
+# ── Base images ────────────────────────────────────────────
+# glibc, not musl, in every stage. The native modules the runtime loads (the
+# @napi-rs/canvas Skia renderer, @node-rs/argon2, the Prisma schema engine)
+# then run their glibc builds. The arm64 musl Skia build needs ARMv8.2 (LSE
+# atomics, RCpc loads) and dies with SIGILL on an ARMv8.0 core such as the
+# Raspberry Pi 4's Cortex-A72; the glibc arm64 build does not use those
+# instructions (#1311).
+#
+# The dependency and build stages run on Debian (node:22-trixie-slim), where
+# pnpm installs the `-gnu` native packages. The runner is Wolfi: glibc, and
+# a package set small enough that the image scan reports what the app ships
+# rather than a general-purpose distribution's base system. A glibc binary
+# runs on the glibc it was linked against or a newer one; the runner checks
+# both that and the Node module ABI against the builder at build time.
+
 # ── Stage 1: Dependencies ──────────────────────────────────
-FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS deps
+FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f AS deps
 RUN corepack enable && corepack prepare pnpm@11.15.1 --activate
 WORKDIR /app
 
@@ -11,7 +26,7 @@ COPY scripts/prepare.mjs scripts/prepare.mjs
 RUN pnpm install --frozen-lockfile --prod=false
 
 # ── Stage 2: Build ─────────────────────────────────────────
-FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS builder
+FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f AS builder
 RUN corepack enable && corepack prepare pnpm@11.15.1 --activate
 WORKDIR /app
 
@@ -57,6 +72,10 @@ RUN NODE_OPTIONS=--max-old-space-size=8192 pnpm build
 # name; see the note there for why guessing was wrong.
 RUN node -p "require('/app/node_modules/pdfjs-dist/package.json').version" \
       > /app/.pdfjs-version
+# The Node module ABI and the glibc the native packages were installed for;
+# the runner refuses to build on an older glibc or another module ABI.
+RUN node -p "process.versions.modules + ' ' + process.report.getReport().header.glibcVersionRuntime + ' ' + process.version" \
+      > /app/.native-abi
 # The same for @napi-rs/canvas, whose native binary must match its JS loader.
 RUN node -p "require('/app/node_modules/@napi-rs/canvas/package.json').version" \
       > /app/.canvas-version
@@ -67,23 +86,39 @@ RUN node scripts/verify-message-catalogs.mjs --dir messages \
       --config src/lib/i18n/config.ts --write /app/.message-locales
 
 # ── Stage 3: Production runner ─────────────────────────────
-FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2 AS runner
-# `tzdata` is required so Europe/Berlin schedules (pg-boss cron, locale-aware
-# timestamp formatting) resolve to the actual offset instead of silently
-# falling back to UTC on Alpine images that ship without it.
+FROM cgr.dev/chainguard/wolfi-base:latest@sha256:629d9acaceda7746cd9293365eb0d8e8fabf74e91830b05470cfbee20b53f447 AS runner
+# `nodejs-22` is the runtime; the builder's Node 22 and this one share the
+# module ABI, which the check below holds. `tzdata` is required so
+# Europe/Berlin schedules (pg-boss cron, locale-aware timestamp formatting)
+# resolve to the actual offset instead of silently falling back to UTC.
 #
-# `apk upgrade` pulls in OS-package security fixes the pinned base digest
-# has not absorbed yet (the digest pin stays for build reproducibility;
-# security patches from the Alpine repo override it deliberately —
-# CVE-2026-14456 in openssl was the first instance the container scan
-# caught between base-image rebuilds).
+# `apk upgrade` pulls in package security fixes the pinned base digest has
+# not absorbed yet (the digest pin stays for build reproducibility; fixes
+# from the Wolfi repository override it deliberately — CVE-2026-14456 in
+# openssl was the first instance the container scan caught between
+# base-image rebuilds).
 #
-# `postgresql18-client` carries `pg_dump` and `pg_restore` for the nightly
+# `postgresql-18-client` carries `pg_dump` and `pg_restore` for the nightly
 # database dump, the pre-migration dump in the entrypoint and the
 # `db-restore` service (docs/ops/disaster-recovery.md). Major 18 matches the
 # bundled database; a client dumps servers of its own major and older, so it
 # also serves an install still on its own Postgres 16.
-RUN apk add --no-cache tzdata postgresql18-client && apk upgrade --no-cache
+#
+# busybox, part of the base, is the shell the entrypoint runs under and
+# carries `tar`/`gzip` for the GeoLite2 extraction and `addgroup`/`adduser`.
+RUN apk add --no-cache nodejs-22 tzdata postgresql-18-client && \
+    apk upgrade --no-cache && \
+    mkdir -p /usr/local/bin
+COPY --from=builder /app/.native-abi /tmp/.native-abi
+RUN set -e; \
+    read -r BUILD_ABI BUILD_GLIBC BUILD_NODE < /tmp/.native-abi; \
+    rm -f /tmp/.native-abi; \
+    RUN_ABI="$(node -p process.versions.modules)"; \
+    RUN_GLIBC="$(node -p 'process.report.getReport().header.glibcVersionRuntime')"; \
+    [ "$RUN_ABI" = "$BUILD_ABI" ] || { echo "ERROR: runner Node module ABI $RUN_ABI, builder $BUILD_ABI"; exit 1; }; \
+    [ "$(printf '%s\n%s\n' "$BUILD_GLIBC" "$RUN_GLIBC" | sort -V | head -1)" = "$BUILD_GLIBC" ] || \
+      { echo "ERROR: runner glibc $RUN_GLIBC is older than the builder's $BUILD_GLIBC"; exit 1; }; \
+    echo "native ABI $RUN_ABI (builder $BUILD_NODE, runner $(node -v)); glibc $BUILD_GLIBC -> $RUN_GLIBC"
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -114,8 +149,8 @@ ENV NEXT_PUBLIC_APP_VERSION=$NEXT_PUBLIC_APP_VERSION
 ARG NEXT_PUBLIC_APP_BUILD_SHA
 ENV NEXT_PUBLIC_APP_BUILD_SHA=$NEXT_PUBLIC_APP_BUILD_SHA
 
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+RUN addgroup -S -g 1001 nodejs && \
+    adduser -S -u 1001 -G nodejs -h /home/nextjs -s /sbin/nologin nextjs
 
 # Where the database dumps go (`DB_BACKUP_DIR`). Owned by the app user, so a
 # fresh named volume mounted here starts with that owner: Docker fills an
@@ -163,8 +198,8 @@ RUN node -e "require.resolve('pg-boss'); require.resolve('pg')"
 # HOISTED to the top level there (verified: without it pdfjs logs "Cannot load
 # @napi-rs/canvas" → "Cannot polyfill DOMMatrix" → rasterize ReferenceError);
 # (2) @napi-rs/canvas's own loader then resolves its platform binary. Hoist BOTH
-# the canvas package and the musl binary package to /app/node_modules/@napi-rs
-# via symlink into the .pnpm store, and drop the prebuilt .node into the canvas
+# the canvas package and the glibc (`-gnu`) binary package to
+# /app/node_modules/@napi-rs via symlink into the .pnpm store, and drop the prebuilt .node into the canvas
 # dir: the loader tries that local file (`require('./skia.<triple>.node')`)
 # before the platform package, so it decides which binary runs.
 #
@@ -181,24 +216,24 @@ RUN set -e; \
     CANVAS_VERSION="$(cat /tmp/.canvas-version)"; \
     rm -f /tmp/.canvas-version; \
     CANVAS_DIR="/app/node_modules/.pnpm/@napi-rs+canvas@${CANVAS_VERSION}/node_modules/@napi-rs/canvas"; \
-    MUSL_DIR="$(find /app/node_modules/.pnpm -maxdepth 4 -type d -path "*@napi-rs+canvas-linux-*-musl@${CANVAS_VERSION}/node_modules/@napi-rs/canvas-linux-*-musl" 2>/dev/null | head -1)"; \
-    if [ ! -d "$CANVAS_DIR" ] || [ -z "$MUSL_DIR" ]; then \
-      echo "ERROR: pinned @napi-rs/canvas@${CANVAS_VERSION} or its musl binary did not reach the traced image."; \
+    GNU_DIR="$(find /app/node_modules/.pnpm -maxdepth 4 -type d -path "*@napi-rs+canvas-linux-*-gnu@${CANVAS_VERSION}/node_modules/@napi-rs/canvas-linux-*-gnu" 2>/dev/null | head -1)"; \
+    if [ ! -d "$CANVAS_DIR" ] || [ -z "$GNU_DIR" ]; then \
+      echo "ERROR: pinned @napi-rs/canvas@${CANVAS_VERSION} or its glibc binary did not reach the traced image."; \
       echo "Present instead:"; \
       find /app/node_modules/.pnpm -maxdepth 1 -name '@napi-rs+canvas*' 2>/dev/null; \
       exit 1; \
     fi; \
-    NODE_BIN="$(find "$MUSL_DIR" -maxdepth 1 -name 'skia.linux-*-musl.node' | head -1)"; \
-    [ -n "$NODE_BIN" ] || { echo "ERROR: no skia binary in $MUSL_DIR"; exit 1; }; \
+    NODE_BIN="$(find "$GNU_DIR" -maxdepth 1 -name 'skia.linux-*-gnu.node' | head -1)"; \
+    [ -n "$NODE_BIN" ] || { echo "ERROR: no skia binary in $GNU_DIR"; exit 1; }; \
     mkdir -p /app/node_modules/@napi-rs; \
     ln -sfn "$CANVAS_DIR" /app/node_modules/@napi-rs/canvas; \
-    ln -sfn "$MUSL_DIR" "/app/node_modules/@napi-rs/$(basename "$MUSL_DIR")"; \
+    ln -sfn "$GNU_DIR" "/app/node_modules/@napi-rs/$(basename "$GNU_DIR")"; \
     cp "$NODE_BIN" "$CANVAS_DIR/"; \
     chown -R nextjs:nodejs /app/node_modules/@napi-rs; \
-    BIN_VERSION="$(node -p "require('$MUSL_DIR/package.json').version")"; \
+    BIN_VERSION="$(node -p "require('$GNU_DIR/package.json').version")"; \
     [ "$BIN_VERSION" = "$CANVAS_VERSION" ] || { echo "ERROR: canvas binary is $BIN_VERSION, loader is $CANVAS_VERSION"; exit 1; }; \
     cmp -s "$NODE_BIN" "$CANVAS_DIR/$(basename "$NODE_BIN")" || { echo "ERROR: the canvas dir holds a different binary"; exit 1; }; \
-    echo "canvas hoisted for pdfjs: $CANVAS_DIR (binary $BIN_VERSION from $MUSL_DIR)"
+    echo "canvas hoisted for pdfjs: $CANVAS_DIR (binary $BIN_VERSION from $GNU_DIR)"
 
 # pdfjs-dist is `serverExternalPackages` (NOT bundled — the bundled copy's render
 # path breaks in the standalone image), so the server does a runtime bare
@@ -280,8 +315,16 @@ RUN node scripts/db-dump.mjs 2>&1 | grep -q "db-dump: usage:" && \
 
 # Install the migration CLI, its config dependency, and a pinned launcher for
 # the maintenance scripts already shipped in the standalone tree. The Prisma
-# config loads dotenv from /app, so expose the isolated copy there before
-# stripping npm/Corepack and their caches from the runtime surface.
+# config loads dotenv from /app, so expose the isolated copy there. npm is
+# installed for this one step and removed in the same layer, with its cache,
+# so no package manager is left in the runtime surface.
+#
+# Wolfi's npm is major 12, which runs no dependency install scripts unless
+# package.json lists the package under `allowScripts`. Three packages here
+# have one: `@prisma/engines` downloads the schema engine `migrate deploy`
+# runs, `prisma` checks its environment, and `esbuild` (under tsx) checks
+# its binary. Without the field the install succeeds and ships no schema
+# engine, so the check after this step asks the CLI for it.
 #
 # This install belongs to npm, not pnpm, so the `overrides` block in
 # `pnpm-workspace.yaml` does not reach it: a package pinned there for the app
@@ -307,19 +350,29 @@ RUN node scripts/db-dump.mjs 2>&1 | grep -q "db-dump: usage:" && \
 # npm install never reads. Rebuilding this install both ways confirms it:
 # without the two fields below npm resolves 1.19.11 and 1.2.0, with them it
 # resolves 1.19.17 and 1.4.2, and `prisma --version` still reports 7.8.0.
-RUN mkdir -p /opt/prisma-cli && \
+RUN apk add --no-cache npm && \
+    mkdir -p /opt/prisma-cli && \
     cd /opt/prisma-cli && \
     npm init -y && \
     npm pkg set 'overrides.deepmerge-ts=^8.0.0' && \
     npm pkg set 'overrides.mysql2=^3.22.0' && \
     npm pkg set 'overrides.@hono/node-server=^1.19.15' && \
     npm pkg set 'overrides.valibot=^1.4.2' && \
+    npm pkg set 'allowScripts.@prisma/engines=true' 'allowScripts.prisma=true' 'allowScripts.esbuild=true' --json && \
     npm install --omit=dev prisma@7.10.1 @prisma/engines@7.10.1 tsx@4.23.1 dotenv@18.0.9 && \
     ln -sfn /opt/prisma-cli/node_modules/.bin/tsx /usr/local/bin/healthlog-tsx && \
     ln -sfn /opt/prisma-cli/node_modules/dotenv /app/node_modules/dotenv && \
     ln -sfn /opt/prisma-cli/node_modules/prisma /app/node_modules/prisma && \
-    rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /root/.cache/node/corepack /root/.npm && \
-    rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/pnpm /usr/local/bin/pnpx
+    apk del --no-cache npm && \
+    rm -rf /root/.npm /root/.cache && \
+    sh -c '! command -v npm && ! command -v npx && ! command -v corepack && ! command -v pnpm'
+
+# The schema engine the entrypoint's `migrate deploy` runs is in place.
+# Look for the file before asking the CLI: a CLI that finds none downloads
+# one, which would hide the missing install script here and fail offline.
+RUN ls /opt/prisma-cli/node_modules/@prisma/engines/schema-engine-* >/dev/null && \
+    node /opt/prisma-cli/node_modules/prisma/build/index.js --version 2>&1 | \
+      grep -q "Schema Engine *: schema-engine-cli [0-9a-f]* (at "
 
 # Same proof for the intake-repair script under the launcher it is documented
 # with: its `pg` import resolves, so it reaches its own DATABASE_URL check.
@@ -342,7 +395,7 @@ RUN env -u DATABASE_URL healthlog-tsx scripts/repair-intake-anomalies.ts 2>&1 | 
 # user so the runtime worker can WRITE it: a self-hoster who sets
 # MAXMIND_LICENSE_KEY on the published image has the databases fetched into
 # this directory at runtime (src/lib/geo/geolite2-fetch.ts) with no rebuild or
-# manual mount. `tar`/`gzip` for the extraction ship in the busybox base. A
+# manual mount. `tar`/`gzip` for the extraction come with busybox. A
 # read-only bind mount at this path (the bring-your-own-database route) still
 # works — the runtime fetch just fails soft and the mounted files stand.
 RUN mkdir -p /opt/geolite2 && chown nextjs:nodejs /opt/geolite2
@@ -371,9 +424,12 @@ ENV HOSTNAME="0.0.0.0"
 # migration waiting out a held lock retries for up to about eight minutes.
 # Five retries: a pool saturated for a minute during a boot storm makes the
 # probe's 2 s database check miss once or twice without marking the container
-# unhealthy (docker-compose.yml explains the numbers).
+# unhealthy (docker-compose.yml explains the numbers). The probe is Node's own
+# fetch: it needs nothing beyond the runtime, the same probe works on any
+# base, and no HTTP client has to be installed for one line. A non-2xx
+# answer, a refused connection and the 4 s abort all exit 1.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10m --retries=5 \
-  CMD wget --no-verbose --tries=1 --timeout=4 --spider http://127.0.0.1:3000/api/health || exit 1
+  CMD ["node", "-e", "fetch('http://127.0.0.1:3000/api/health',{signal:AbortSignal.timeout(4000)}).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["node", "server.js"]
