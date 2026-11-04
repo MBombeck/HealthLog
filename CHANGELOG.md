@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.47.0] — 2026-11-04
+
 ### Added
 
 - **Blood pressure by time of day.** The blood pressure page has a card
