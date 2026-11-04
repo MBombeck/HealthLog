@@ -51,16 +51,20 @@
 
 ### Changed
 
-- **The image runs on Wolfi instead of Alpine.** The runtime is glibc now,
-  so the native page renderer, password hashing and the Prisma engine run
-  their glibc builds. The published arm64 image renders PDF pages on a
-  Raspberry Pi 4 again, where the Alpine build of the renderer needs CPU
-  features an ARMv8.0 core lacks. The compressed image is a little smaller
-  than before. A health check that still calls `wget`, from a compose
-  file copied before this release or a platform template, keeps working:
-  the image carries a small `wget` that answers health checks and nothing
-  else. The current `docker-compose.yml` probes with Node directly, and
-  that is the one to switch to. (#1311)
+- **The image runs on the official Node 22 image (Debian slim) instead of
+  Alpine.** The runtime is glibc now, so the native page renderer,
+  password hashing and the Prisma engine run their glibc builds. The
+  published arm64 image renders PDF pages on a Raspberry Pi 4 again, where
+  the Alpine build of the renderer needs CPU features an ARMv8.0 core
+  lacks. Node security releases now reach the image with the official
+  Node image, usually within days. The image carries no package manager:
+  npm, npx, corepack and yarn are removed. `pg_dump` and `pg_restore` are
+  PostgreSQL 18.6, the bundled database's version; `psql` is no longer in
+  the app image, so run it in the `db` container. A health check that
+  still calls `wget`, from a compose file copied before this release or a
+  platform template, keeps working: the image carries a small `wget` that
+  answers health checks and nothing else. The current `docker-compose.yml`
+  probes with Node directly, and that is the one to switch to. (#1311)
 - **The app connects to the database with less power.** On Postgres 17 or
   later, with a database user that may create roles (the bundled compose
   file's user may), the app and the worker now connect as a role of their

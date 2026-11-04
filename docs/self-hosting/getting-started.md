@@ -10,7 +10,8 @@ already installed, longer if a TLS-fronted public hostname is in scope
 - **Docker 24+ with Compose v2.** The bundled `docker-compose.yml`
   pulls a multi-arch image from GitHub Container Registry (linux/amd64
   and linux/arm64), so a Raspberry Pi 4 or 5 or an x86 VPS all work
-  unchanged. The image runs on glibc (a Wolfi base). Document thumbnails and
+  unchanged. The image is built on the official Node 22 image (Debian
+  slim, glibc). Document thumbnails and
   scanned-PDF rendering use a native renderer that runs on every arm64
   board, the Pi 4 included, and on x86-64 CPUs with AVX2; on an older x86
   CPU (Celeron/Atom-class NAS chips) it switches itself off and those two
