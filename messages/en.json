@@ -6904,7 +6904,9 @@
       "summary": "{count} data types, newest {relative}",
       "quiet": "{count} quiet",
       "workouts": "Workouts",
-      "medicationDoses": "Medication doses"
+      "medicationDoses": "Medication doses",
+      "cycleDays": "Cycle days",
+      "cycleDaysCount": "Cycle days ({count})"
     },
     "integrationFallback": {
       "description": "Configured on this account without a settings card of its own."

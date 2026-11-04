@@ -6904,7 +6904,9 @@
       "summary": "{count} types de données, plus récent {relative}",
       "quiet": "{count} silencieux",
       "workouts": "Séances",
-      "medicationDoses": "Prises de médicaments"
+      "medicationDoses": "Prises de médicaments",
+      "cycleDays": "Jours du cycle",
+      "cycleDaysCount": "Jours du cycle ({count})"
     },
     "integrationFallback": {
       "description": "Configuré sur ce compte sans carte de réglages dédiée."

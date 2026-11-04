@@ -19,6 +19,7 @@ vi.mock("@/lib/db", () => ({
     measurement: { findFirst: vi.fn(async () => null) },
     $queryRaw: vi.fn(async () => []),
     workout: { groupBy: vi.fn(async () => []) },
+    cycleDayLog: { groupBy: vi.fn(async () => []) },
   },
 }));
 

@@ -72,6 +72,25 @@ function connected(keyExpiry: GarminKeyExpiry | null) {
 }
 
 describe("GarminCard on the shared card", () => {
+  it("lists the imported cycle days in the details", () => {
+    const html = render({
+      connected: true,
+      configured: true,
+      health: healthFixture(),
+      keyExpiry: null,
+      metricFreshness: [
+        {
+          type: "CYCLE_DAYS",
+          lastSeenAt: "2026-10-20T12:00:00.000Z",
+          count: 42,
+          stale: false,
+        },
+      ],
+    });
+    expect(html).toContain('data-metric="CYCLE_DAYS"');
+    expect(html).toContain("Cycle days (42)");
+  });
+
   it("shows the key form inside the shared card while not connected", () => {
     const html = render({ connected: false, configured: false, health: null });
     expect(html).toContain('data-slot="integration-card"');

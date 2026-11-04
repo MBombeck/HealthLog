@@ -6904,7 +6904,9 @@
       "summary": "Типов данных: {count}, новейшие {relative}",
       "quiet": "Без новых данных: {count}",
       "workouts": "Тренировки",
-      "medicationDoses": "Дозы лекарств"
+      "medicationDoses": "Дозы лекарств",
+      "cycleDays": "Дни цикла",
+      "cycleDaysCount": "Дни цикла ({count})"
     },
     "integrationFallback": {
       "description": "Настроено в этом аккаунте без собственной карточки настроек."

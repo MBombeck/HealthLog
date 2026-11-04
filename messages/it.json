@@ -6904,7 +6904,9 @@
       "summary": "{count} tipi di dati, più recente {relative}",
       "quiet": "{count} in silenzio",
       "workouts": "Allenamenti",
-      "medicationDoses": "Assunzioni di farmaci"
+      "medicationDoses": "Assunzioni di farmaci",
+      "cycleDays": "Giorni del ciclo",
+      "cycleDaysCount": "Giorni del ciclo ({count})"
     },
     "integrationFallback": {
       "description": "Configurato su questo account ma senza una scheda di impostazioni propria."

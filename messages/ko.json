@@ -6904,7 +6904,9 @@
       "summary": "데이터 유형 {count}개, 최신 {relative}",
       "quiet": "{count}개 잠잠",
       "workouts": "운동",
-      "medicationDoses": "약 복용"
+      "medicationDoses": "약 복용",
+      "cycleDays": "주기 기록일",
+      "cycleDaysCount": "주기 기록일 ({count})"
     },
     "integrationFallback": {
       "description": "이 계정에 설정돼 있지만 전용 설정 카드는 없어요."

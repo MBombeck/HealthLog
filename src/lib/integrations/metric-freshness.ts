@@ -19,7 +19,8 @@
  * Two sources write no `Measurement` rows for part of what they deliver:
  * Strava writes only `Workout` rows, and Polar's workout leg is one of its two
  * cron legs. A second grouped read over `Workout` appends a `WORKOUTS`
- * pseudo-entry so those pipes are visible too.
+ * pseudo-entry so those pipes are visible too, and a third over `CycleDayLog`
+ * a `CYCLE_DAYS` entry for the wearables that import period days.
  */
 import { prisma } from "@/lib/db";
 import type {
@@ -29,6 +30,7 @@ import type {
 import { listLiveMeasurementTypes } from "@/lib/measurements/live-types";
 import type { IntegrationKey } from "./status";
 import {
+  CYCLE_DAY_FRESHNESS_TYPE,
   MEDICATION_DOSE_FRESHNESS_TYPE,
   WORKOUT_FRESHNESS_TYPE,
   type MetricFreshnessSample,
@@ -74,6 +76,14 @@ export const INTEGRATION_WORKOUT_SOURCE: Partial<
   fitbit: "FITBIT",
   "google-health": "GOOGLE_HEALTH",
   garmin: "GARMIN",
+};
+
+/** The `CycleDayLog` source of each integration that imports period days. */
+export const INTEGRATION_CYCLE_SOURCE: Partial<
+  Record<IntegrationKey, MeasurementSource>
+> = {
+  garmin: "GARMIN",
+  oura: "OURA",
 };
 
 /**
@@ -160,6 +170,33 @@ export async function getWorkoutFreshnessBySource(
     const lastSeen = row._max.startedAt;
     if (!lastSeen) continue;
     out.set(row.source, lastSeen.toISOString());
+  }
+  return out;
+}
+
+/**
+ * Newest live cycle day per source, with the count, as a `CYCLE_DAYS` sample.
+ * A cycle day is a calendar day, dated at noon UTC like every date-only value.
+ */
+export async function getCycleDayFreshnessBySource(
+  userId: string,
+  sources: readonly MeasurementSource[],
+): Promise<Map<MeasurementSource, MetricFreshnessSample>> {
+  const out = new Map<MeasurementSource, MetricFreshnessSample>();
+  if (sources.length === 0) return out;
+  const grouped = await prisma.cycleDayLog.groupBy({
+    by: ["source"],
+    where: { userId, deletedAt: null, source: { in: [...sources] } },
+    _max: { date: true },
+    _count: { _all: true },
+  });
+  for (const row of grouped) {
+    if (!row._max.date) continue;
+    out.set(row.source, {
+      type: CYCLE_DAY_FRESHNESS_TYPE,
+      lastSeenAt: `${row._max.date}T12:00:00.000Z`,
+      count: row._count._all,
+    });
   }
   return out;
 }
@@ -256,13 +293,13 @@ export async function getEnteredHereAt(
 
 /**
  * Compute per-`(integration, type)` last-value timestamps for the sync
- * integrations, keyed by `IntegrationKey`. Two grouped queries (measurements +
- * workouts); a source with no rows simply has no entry.
+ * integrations, keyed by `IntegrationKey`. Three grouped reads (measurements,
+ * workouts, cycle days); a source with no rows simply has no entry.
  */
 export async function getSourceMetricFreshness(
   userId: string,
 ): Promise<Partial<Record<IntegrationKey, MetricFreshnessSample[]>>> {
-  const [measurements, workouts] = await Promise.all([
+  const [measurements, workouts, cycleDays] = await Promise.all([
     getMeasurementFreshnessBySource(
       userId,
       Object.values(INTEGRATION_MEASUREMENT_SOURCE),
@@ -270,6 +307,10 @@ export async function getSourceMetricFreshness(
     getWorkoutFreshnessBySource(
       userId,
       Object.values(INTEGRATION_WORKOUT_SOURCE),
+    ),
+    getCycleDayFreshnessBySource(
+      userId,
+      Object.values(INTEGRATION_CYCLE_SOURCE),
     ),
   ]);
 
@@ -291,6 +332,13 @@ export async function getSourceMetricFreshness(
       type: WORKOUT_FRESHNESS_TYPE,
       lastSeenAt,
     });
+  }
+
+  for (const [key, source] of Object.entries(INTEGRATION_CYCLE_SOURCE) as Array<
+    [IntegrationKey, MeasurementSource]
+  >) {
+    const sample = cycleDays.get(source);
+    if (sample) (out[key] ??= []).push(sample);
   }
 
   for (const key of Object.keys(out) as IntegrationKey[]) {

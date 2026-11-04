@@ -243,11 +243,19 @@ const metricFreshnessEntry = z
     type: z
       .string()
       .describe(
-        "The measurement type (e.g. `RESPIRATORY_RATE`), `WORKOUTS` for the workout leg, or (Apple Health only, since v1.42.4) `MEDICATION_DOSE` for medication doses imported from Apple Health. Clients should show or skip a type they do not know rather than fail.",
+        "The measurement type (e.g. `RESPIRATORY_RATE`), `WORKOUTS` for the workout leg, `CYCLE_DAYS` for the period days a wearable imported (Garmin, Oura), or (Apple Health only, since v1.42.4) `MEDICATION_DOSE` for medication doses imported from Apple Health. Clients should show or skip a type they do not know rather than fail.",
       ),
     lastSeenAt: isoDateTime().describe(
-      "Newest recorded reading for this type from this source.",
+      "Newest recorded reading for this type from this source. On `CYCLE_DAYS`, the newest cycle day at noon UTC.",
     ),
+    count: z
+      .number()
+      .int()
+      .nonnegative()
+      .optional()
+      .describe(
+        "How many live cycle days the source holds. Present on `CYCLE_DAYS` only.",
+      ),
     stale: z
       .boolean()
       .describe(

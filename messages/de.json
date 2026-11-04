@@ -6904,7 +6904,9 @@
       "summary": "{count} Datentypen, neuestes {relative}",
       "quiet": "{count} still",
       "workouts": "Workouts",
-      "medicationDoses": "Medikamenteneinnahmen"
+      "medicationDoses": "Medikamenteneinnahmen",
+      "cycleDays": "Zyklustage",
+      "cycleDaysCount": "Zyklustage ({count})"
     },
     "integrationFallback": {
       "description": "Für dieses Konto eingerichtet, hat aber keine eigene Einstellungskarte."

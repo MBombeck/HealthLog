@@ -27,6 +27,9 @@
 - **Garmin in the setup questions.** The onboarding question about where
   your readings come from now offers Garmin, and can end on connecting it.
   (#1333)
+- **Cycle days in the integration details.** The Garmin and Oura cards list
+  the newest imported cycle day and how many there are under "Data
+  received", next to the other data types. (#1333)
 - **Typing into the smoking history.** "When you stopped" only took text
   that was already a whole YYYY-MM month, so every keystroke was dropped
   and only a paste got in. The start year clamped each keystroke into its

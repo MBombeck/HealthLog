@@ -6904,7 +6904,9 @@
       "summary": "{count} tipos de dados, mais recente {relative}",
       "quiet": "{count} sem atividade",
       "workouts": "Treinos",
-      "medicationDoses": "Doses de medicamentos"
+      "medicationDoses": "Doses de medicamentos",
+      "cycleDays": "Dias do ciclo",
+      "cycleDaysCount": "Dias do ciclo ({count})"
     },
     "integrationFallback": {
       "description": "Configurado nesta conta sem um cartão de configurações próprio."

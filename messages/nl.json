@@ -6904,7 +6904,9 @@
       "summary": "{count} gegevenstypen, nieuwste {relative}",
       "quiet": "{count} stil",
       "workouts": "Trainingen",
-      "medicationDoses": "Medicatiedoses"
+      "medicationDoses": "Medicatiedoses",
+      "cycleDays": "Cyclusdagen",
+      "cycleDaysCount": "Cyclusdagen ({count})"
     },
     "integrationFallback": {
       "description": "Ingesteld op dit account zonder eigen instellingenkaart."
