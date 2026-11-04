@@ -62,7 +62,7 @@ export const INCIDENT_AFTER_MS = DAY_MS;
  *
  *   - 24 h for wearables and CGMs whose cloud receives data on its own
  *     (Fitbit, Google Health, Polar, Nightscout).
- *   - 48 h for Oura and WHOOP. Their rings and straps upload only when the
+ *   - 48 h for Oura, WHOOP and Garmin. Their rings and straps upload only when the
  *     phone app is opened, so a day without opening it is ordinary and must
  *     not page anyone.
  *   - 48 h for Apple Health. iOS defers background delivery when the phone is
@@ -86,6 +86,9 @@ export const SOURCE_PROFILES: Record<ConnectionKey, SourceProfile> = {
   polar: { kind: "continuous", silenceWindowMs: DAY_MS },
   nightscout: { kind: "continuous", silenceWindowMs: DAY_MS },
   dawarich: { kind: "on_demand", silenceWindowMs: DAY_MS },
+  // A Garmin watch uploads through the phone app like the rings and straps,
+  // so a day without opening it is ordinary.
+  garmin: { kind: "continuous", silenceWindowMs: 2 * DAY_MS },
   "apple-health": { kind: "continuous", silenceWindowMs: 2 * DAY_MS },
 };
 

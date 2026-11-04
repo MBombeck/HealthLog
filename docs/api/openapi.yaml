@@ -4591,6 +4591,10 @@ paths:
               - INDOOR_CO2
               - INDOOR_TEMPERATURE
               - INDOOR_HUMIDITY
+              - BODY_BATTERY
+              - STRESS_LEVEL
+              - TRAINING_READINESS
+              - ACUTE_TRAINING_LOAD
         - in: query
           name: from
           schema:
@@ -4671,6 +4675,7 @@ paths:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         - in: query
           name: appleHealthMirror
           schema:
@@ -5507,6 +5512,10 @@ paths:
               - INDOOR_CO2
               - INDOOR_TEMPERATURE
               - INDOOR_HUMIDITY
+              - BODY_BATTERY
+              - STRESS_LEVEL
+              - TRAINING_READINESS
+              - ACUTE_TRAINING_LOAD
             description: The metric.
           required: true
           description: The metric.
@@ -5632,6 +5641,10 @@ paths:
               - INDOOR_CO2
               - INDOOR_TEMPERATURE
               - INDOOR_HUMIDITY
+              - BODY_BATTERY
+              - STRESS_LEVEL
+              - TRAINING_READINESS
+              - ACUTE_TRAINING_LOAD
             description: The metric.
           required: true
           description: The metric.
@@ -5675,6 +5688,7 @@ paths:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
           description: First source. Defaults to the source covering the most days.
         - in: query
           name: b
@@ -5698,6 +5712,7 @@ paths:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
           description: Second source. Defaults to the next one.
       responses:
         "200":
@@ -8606,7 +8621,7 @@ paths:
               type: object
               properties:
                 steps:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -8627,8 +8642,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 activeEnergy:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -8649,8 +8665,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 walkingRunningDistance:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -8671,8 +8688,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 flightsClimbed:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -8693,8 +8711,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 sleep:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -8715,8 +8734,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 weight:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -8737,8 +8757,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 bloodPressure:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -8759,8 +8780,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 pulse:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -8781,8 +8803,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 bodyFat:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -8803,8 +8826,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 bodyTemperature:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -8825,8 +8849,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 spo2:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -8847,8 +8872,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 hrv:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -8869,8 +8895,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 restingHeartRate:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -8891,8 +8918,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 vo2Max:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -8913,8 +8941,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 skinTemperature:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -8935,8 +8964,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 respiratoryRate:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -8957,8 +8987,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 recovery:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -8979,8 +9010,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 stress:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -9001,8 +9033,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 sleepDebt:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -9023,8 +9056,9 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                 hrvRmssd:
-                  maxItems: 16
+                  maxItems: 17
                   type: array
                   items:
                     type: string
@@ -9045,11 +9079,104 @@ paths:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
+                bodyBattery:
+                  maxItems: 17
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                      - COMPUTED
+                      - WHOOP
+                      - FITBIT
+                      - NIGHTSCOUT
+                      - POLAR
+                      - OURA
+                      - TELEGRAM
+                      - MCP
+                      - GOOGLE_HEALTH
+                      - STRAVA
+                      - EXTERNAL
+                      - HEALTH_CONNECT
+                      - GARMIN
+                stressLevel:
+                  maxItems: 17
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                      - COMPUTED
+                      - WHOOP
+                      - FITBIT
+                      - NIGHTSCOUT
+                      - POLAR
+                      - OURA
+                      - TELEGRAM
+                      - MCP
+                      - GOOGLE_HEALTH
+                      - STRAVA
+                      - EXTERNAL
+                      - HEALTH_CONNECT
+                      - GARMIN
+                trainingReadiness:
+                  maxItems: 17
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                      - COMPUTED
+                      - WHOOP
+                      - FITBIT
+                      - NIGHTSCOUT
+                      - POLAR
+                      - OURA
+                      - TELEGRAM
+                      - MCP
+                      - GOOGLE_HEALTH
+                      - STRAVA
+                      - EXTERNAL
+                      - HEALTH_CONNECT
+                      - GARMIN
+                acuteTrainingLoad:
+                  maxItems: 17
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                      - COMPUTED
+                      - WHOOP
+                      - FITBIT
+                      - NIGHTSCOUT
+                      - POLAR
+                      - OURA
+                      - TELEGRAM
+                      - MCP
+                      - GOOGLE_HEALTH
+                      - STRAVA
+                      - EXTERNAL
+                      - HEALTH_CONNECT
+                      - GARMIN
                 metricPriority:
                   type: object
                   properties:
                     steps:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9070,8 +9197,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     activeEnergy:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9092,8 +9220,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     walkingRunningDistance:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9114,8 +9243,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     flightsClimbed:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9136,8 +9266,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     sleep:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9158,8 +9289,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     weight:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9180,8 +9312,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     bloodPressure:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9202,8 +9335,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     pulse:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9224,8 +9358,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     bodyFat:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9246,8 +9381,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     bodyTemperature:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9268,8 +9404,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     spo2:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9290,8 +9427,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     hrv:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9312,8 +9450,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     restingHeartRate:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9334,8 +9473,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     vo2Max:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9356,8 +9496,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     skinTemperature:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9378,8 +9519,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     respiratoryRate:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9400,8 +9542,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     recovery:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9422,8 +9565,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     stress:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9444,8 +9588,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     sleepDebt:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9466,8 +9611,9 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
                     hrvRmssd:
-                      maxItems: 16
+                      maxItems: 17
                       type: array
                       items:
                         type: string
@@ -9488,6 +9634,99 @@ paths:
                           - STRAVA
                           - EXTERNAL
                           - HEALTH_CONNECT
+                          - GARMIN
+                    bodyBattery:
+                      maxItems: 17
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                          - COMPUTED
+                          - WHOOP
+                          - FITBIT
+                          - NIGHTSCOUT
+                          - POLAR
+                          - OURA
+                          - TELEGRAM
+                          - MCP
+                          - GOOGLE_HEALTH
+                          - STRAVA
+                          - EXTERNAL
+                          - HEALTH_CONNECT
+                          - GARMIN
+                    stressLevel:
+                      maxItems: 17
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                          - COMPUTED
+                          - WHOOP
+                          - FITBIT
+                          - NIGHTSCOUT
+                          - POLAR
+                          - OURA
+                          - TELEGRAM
+                          - MCP
+                          - GOOGLE_HEALTH
+                          - STRAVA
+                          - EXTERNAL
+                          - HEALTH_CONNECT
+                          - GARMIN
+                    trainingReadiness:
+                      maxItems: 17
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                          - COMPUTED
+                          - WHOOP
+                          - FITBIT
+                          - NIGHTSCOUT
+                          - POLAR
+                          - OURA
+                          - TELEGRAM
+                          - MCP
+                          - GOOGLE_HEALTH
+                          - STRAVA
+                          - EXTERNAL
+                          - HEALTH_CONNECT
+                          - GARMIN
+                    acuteTrainingLoad:
+                      maxItems: 17
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                          - COMPUTED
+                          - WHOOP
+                          - FITBIT
+                          - NIGHTSCOUT
+                          - POLAR
+                          - OURA
+                          - TELEGRAM
+                          - MCP
+                          - GOOGLE_HEALTH
+                          - STRAVA
+                          - EXTERNAL
+                          - HEALTH_CONNECT
+                          - GARMIN
                 deviceTypePriority:
                   type: object
                   properties:
@@ -13562,6 +13801,10 @@ paths:
               - ANS_CHARGE
               - DAY_STRAIN
               - WORKOUT_STRAIN
+              - BODY_BATTERY
+              - STRESS_LEVEL
+              - TRAINING_READINESS
+              - ACUTE_TRAINING_LOAD
               - CARDIO_LOAD
               - AVERAGE_HEART_RATE
               - MAX_HEART_RATE
@@ -21465,6 +21708,197 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+  /api/garmin/connect:
+    post:
+      tags:
+        - Integrations
+      summary: Connect (or replace) the caller's Garmin Personal API key
+      description: Validates the key by buying a token with it BEFORE storing anything, at the one Garmin service `region`
+        names; the key is never sent to the other. On success the key is encrypted at rest, the region that accepted it
+        and the key's expiry are noted, the history backfill is reopened, the `garmin` ledger is reset to connected, and
+        a first sync plus the backfill are enqueued best-effort. Re-sending replaces the key. The key is never logged or
+        echoed. Body capped at 16 KiB, rate-limited 10 requests / 60 s per user. Auth via cookie or Bearer.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GarminConnectRequest"
+      responses:
+        "200":
+          description: Garmin accepted the key and it was stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GarminConnectEnvelope"
+        "400":
+          description: Body is not parseable JSON.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401": *a1
+        "403": *a9
+        "413":
+          description: Body exceeds 16 KiB.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: The body failed validation, or Garmin did not accept the key (`meta.errorCode` = `garmin.key_refused`), is
+            limiting requests (`garmin.rate_limited`), or could not be reached (`garmin.unreachable`). Nothing was
+            written.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: More than 10 connection attempts in 60 s from this user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/garmin/status:
+    get:
+      tags:
+        - Integrations
+      summary: Read the caller's Garmin connection status
+      description: Returns the connect marker, the key's expiry, the backfill progress, the shared `garmin` ledger snapshot
+        and the unified connection state. The key is never returned. Auth via cookie or Bearer.
+      responses:
+        "200":
+          description: Connection status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GarminStatusEnvelope"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
+  /api/garmin/sync:
+    post:
+      tags:
+        - Integrations
+      summary: Trigger an on-demand Garmin sync
+      description: Reads the recent window of daily summaries, sleep, HRV, weigh-ins and activities (and today's
+        menstrual-cycle summary) with the stored key. History beyond the window is the backfill's. No body. Rate-limited
+        5 requests / 60 s per user.
+      responses:
+        "200":
+          description: Sync run complete.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GarminSyncEnvelope"
+        "401": *a1
+        "403": *a9
+        "422":
+          description: "Garmin no longer accepts the stored key (`meta.errorCode` = `garmin.key_refused`): it expired or was
+            revoked. A new key is the only fix."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429": *a5
+        "502":
+          description: The sync failed upstream. The classified failure is already recorded on the `garmin` ledger.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/garmin/test:
+    post:
+      tags:
+        - Integrations
+      summary: Probe the stored Garmin key
+      description: Buys one token with the stored key through the same exchange the sync uses. Nothing is written.
+        Rate-limited 5 requests / 60 s per user. Auth via cookie or Bearer.
+      responses:
+        "200":
+          description: The key bought a token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GarminTestEnvelope"
+        "401": *a1
+        "403": *a9
+        "422":
+          description: No Garmin key is stored. `meta.errorCode` = `not_configured`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: More than 5 probes in 60 s from this user. `meta.errorCode` = `rate_limited_self`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "502":
+          description: "The probe did not complete. `meta.errorCode` names the class: `credentials_rejected` (the key was
+            refused), `rate_limited` (Garmin's 429), `upstream_error` (5xx), `timeout`, `connection_failed`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/garmin/key-expiry:
+    patch:
+      tags:
+        - Integrations
+      summary: Correct when the stored Garmin key expires
+      description: Sets the stored key's expiry from the validity picked when it was created, counted from `createdOn` or else
+        from the day it was connected, without pasting the key again. Nothing is sent to Garmin. Rate-limited 20
+        requests / 60 s per user. Auth via cookie or Bearer.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GarminKeyExpiryRequest"
+      responses:
+        "200":
+          description: The expiry was stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GarminKeyExpiryEnvelope"
+        "401": *a1
+        "403": *a9
+        "404":
+          description: No Garmin key is stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
+  /api/garmin/disconnect:
+    post:
+      tags:
+        - Integrations
+      summary: Disconnect the caller's Garmin key
+      description: Clears the stored key, its region, expiry and backfill progress, and parks the `garmin` ledger at
+        `disconnected`. Rows already imported stay. The key keeps working at Garmin until revoked there. No body.
+        Rate-limited 20 requests / 60 s per user. Auth via cookie or Bearer.
+      responses:
+        "200":
+          description: The connection was cleared.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GarminDisconnectEnvelope"
+        "401": *a1
+        "403": *a9
+        "404":
+          description: No Garmin key to clear.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
   /api/nightscout/disconnect:
     post:
       tags:
@@ -28003,7 +28437,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 106
+              maxItems: 110
               type: array
               items:
                 type: string
@@ -28065,7 +28499,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 106
+              maxItems: 110
               type: array
               items:
                 type: string
@@ -28940,6 +29374,10 @@ components:
             - INDOOR_CO2
             - INDOOR_TEMPERATURE
             - INDOOR_HUMIDITY
+            - BODY_BATTERY
+            - STRESS_LEVEL
+            - TRAINING_READINESS
+            - ACUTE_TRAINING_LOAD
         value:
           type: number
         measuredAt:
@@ -30669,6 +31107,10 @@ components:
             - INDOOR_CO2
             - INDOOR_TEMPERATURE
             - INDOOR_HUMIDITY
+            - BODY_BATTERY
+            - STRESS_LEVEL
+            - TRAINING_READINESS
+            - ACUTE_TRAINING_LOAD
         biomarkerId:
           type: string
           minLength: 1
@@ -31168,7 +31610,7 @@ components:
           type: number
           const: 2
         leaves:
-          maxItems: 106
+          maxItems: 110
           type: array
           items:
             type: string
@@ -32366,6 +32808,10 @@ components:
         - INDOOR_CO2
         - INDOOR_TEMPERATURE
         - INDOOR_HUMIDITY
+        - BODY_BATTERY
+        - STRESS_LEVEL
+        - TRAINING_READINESS
+        - ACUTE_TRAINING_LOAD
       description: DB-stored measurement category. v1.4.23 added 7 Apple Health values (HRV, resting HR, active energy,
         flights, walking/running distance, VO2 max, body temperature).
     InsightsSettingsPutRequest:
@@ -36629,6 +37075,58 @@ components:
         button reaches the instance verbatim and answers as an opaque DNS failure. `token` may be omitted or empty for a
         fully public instance (`AUTH_DEFAULT_ROLES=readable`). `allowPrivateHost` is accepted for older clients and
         ignored: only the server-side `NIGHTSCOUT_PRIVATE_ORIGINS` allowlist can authorise a private origin."
+    GarminConnectRequest:
+      type: object
+      properties:
+        apiKey:
+          type: string
+          minLength: 16
+          maxLength: 1024
+          pattern: ^\S+$
+        region:
+          default: global
+          type: string
+          enum:
+            - global
+            - china
+        validityDays:
+          anyOf:
+            - anyOf:
+                - type: number
+                  const: 30
+                - type: number
+                  const: 90
+                - type: number
+                  const: 180
+                - type: number
+                  const: 365
+            - type: "null"
+      required:
+        - apiKey
+      description: The Personal API key from Garmin Connect (Settings, Personal API), trimmed before use; `region`, the one
+        Garmin service the key is sent to (`global` by default, `china` for Garmin's service in China); and optionally
+        the validity picked when it was created. Garmin does not report a key's expiry, so the validity is what lets the
+        card warn a week ahead until the key's last day reveals the real end.
+    GarminKeyExpiryRequest:
+      type: object
+      properties:
+        validityDays:
+          anyOf:
+            - anyOf:
+                - type: number
+                  const: 30
+                - type: number
+                  const: 90
+                - type: number
+                  const: 180
+                - type: number
+                  const: 365
+            - type: "null"
+        createdOn:
+          type: string
+      description: The validity picked when the key was created (30, 90, 180 or 365 days; null forgets the estimate) and,
+        optionally, the day it was created in Garmin Connect. Without `createdOn` the validity counts from the day the
+        key was connected.
     WhoopCredentialsRequest:
       type: object
       properties:
@@ -36827,6 +37325,10 @@ components:
             - averageHeartRate
             - maxHeartRate
             - energyExpenditureKj
+            - bodyBattery
+            - stressLevel
+            - trainingReadiness
+            - acuteTrainingLoad
             - gripStrength
             - painNrs
             - waistCircumference
@@ -37012,6 +37514,10 @@ components:
               - averageHeartRate
               - maxHeartRate
               - energyExpenditureKj
+              - bodyBattery
+              - stressLevel
+              - trainingReadiness
+              - acuteTrainingLoad
               - gripStrength
               - painNrs
               - waistCircumference
@@ -38858,88 +39364,88 @@ components:
                 environment.backfill_rate_limited, environment.invalid, environment.no_home,
                 environment.range_too_large, environment.travel.not_found, environment.travel_suggestion.not_found;
                 export — export.selection.empty, export.selection.unknown_leaf; familyHistory — familyHistory.invalid;
-                feedback — feedback.body.invalid; health_score_config — health_score_config.invalid,
-                health_score_config.too_narrow; http — http.bad_gateway, http.bad_request, http.client_error,
-                http.conflict, http.forbidden, http.gateway_timeout, http.gone, http.internal, http.invalid,
-                http.method_not_allowed, http.not_found, http.payload_too_large, http.rate_limited, http.server_error,
-                http.unauthenticated, http.unavailable, http.unsupported_media_type; illness — illness.day-log.invalid,
-                illness.disabled, illness.episode.chronic-no-resolve, illness.episode.invalid,
-                illness.episode.invalid-window, illness.episode.parent-not-found, illness.insights.invalid; import —
-                import.apple_health.busy, import.csv.content_type, import.csv.empty, import.csv.too_large,
-                import.rate_limited, import.write_failed; ingest — ingest.rate_limited; insights —
-                insights.generate.budgetExceeded, insights.generate.outboundScreened,
-                insights.generate.profileScopeChanged, insights.generate.scopeChanged; labs —
-                labs.biomarker.alias.taken, labs.biomarker.create.invalid, labs.biomarker.duplicate,
-                labs.biomarker.merge.invalid, labs.biomarker.merge.unitMismatch, labs.biomarker.notFound,
-                labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid, labs.create.invalid,
-                labs.link.invalid, labs.ocr.budgetExceeded, labs.ocr.extractFailed, labs.ocr.fileTooLarge,
-                labs.ocr.fileType, labs.ocr.localOcrDisabled, labs.ocr.outputLimit, labs.ocr.pdfRendererUnavailable,
-                labs.ocr.providerUnsupported, labs.ocr.rateLimited, labs.ocr.tooLarge, labs.restore.invalid,
-                labs.result.notFound, labs.unit.mismatch, labs.update.invalid, labs.update.linkedFieldsImmutable,
-                labs.update.numericExpected, labs.update.qualitativeExpected, labs.update.referenceRangeInvalid,
-                labs.update.sourceReferenceRangeInvalid; life_event — life_event.invalid, life_event.not_found;
-                managed_profile — managed_profile.guardian.duplicate, managed_profile.guardian.managed_invitee,
-                managed_profile.guardian.required, managed_profile.handover.no_pending,
-                managed_profile.handover.unknown_guardian, managed_profile.not_found; maintenance —
-                maintenance.pulseDayMean.busy, maintenance.pulseDayMean.dryRunRequired; measurement —
-                measurement.batch.invalid, measurement.batch.source_not_permitted, measurement.batch.too_large,
-                measurement.bulk-delete.invalid, measurement.create.invalid, measurement.create.source_not_permitted,
-                measurement.delete.too_large, measurement.duplicate_timestamp, measurement.restore.invalid,
-                measurement.update.server_owned_source; medication — medication.intake.import.invalid_format,
-                medication.intake.notTracked, medication.link.invalid; medications — medications.category.invalid,
-                medications.category.limitReached, medications.category.unknown, medications.course.currentOpen,
-                medications.course.invalid, medications.course.invalidRange, medications.course.notFound,
-                medications.course.notRunning, medications.course.oneShot, medications.course.overlap,
-                medications.course.windowRequired, medications.ingredients.extract.budgetExceeded,
-                medications.ingredients.extract.failed, medications.ingredients.extract.fileTooLarge,
-                medications.ingredients.extract.fileType, medications.ingredients.extract.rateLimited,
-                medications.ingredients.invalid, medications.ingredients.unitMismatch,
-                medications.intake.bulk.apple_health_not_mirrored, medications.intake.bulk.invalid,
-                medications.intake.bulk.too_large, medications.intake.force_slot.invalid,
-                medications.intake.force_slot.occupied, medications.intake.injection_site.disallowed,
-                medications.intake.taken_at.before_start, medications.mirror.limit_exceeded, medications.notFound;
-                mentalHealth — mentalHealth.rateLimited; module — module.disabled; modules — modules.body.invalid_json,
-                modules.invalid; mood — mood.bulk-delete.invalid, mood.bulk.invalid, mood.bulk.too_large,
-                mood.create.external_id_not_delegable, mood.create.invalid, mood.duplicate_timestamp,
-                mood.linkedContext.invalid, mood.list.invalid, mood.not_found, mood.ratedFactor.out_of_range,
-                mood.restore.invalid, mood.update.invalid; notification-prefs — notification-prefs.body.invalid_json;
-                notification — notification.action.already_used, notification.action.expired,
-                notification.action.invalid, notification.action.module_disabled; nutrient — nutrient.batch.invalid,
-                nutrient.batch.too_large, nutrient.daily.invalid, nutrient.read.invalid, nutrient.water.invalid,
-                nutrient.water.invalid_day; onboarding — onboarding.answers.invalid, onboarding.answers.rateLimited,
-                onboarding.complete.invalid, onboarding.complete.recordNotFound,
-                onboarding.complete.recordTargetMismatch, onboarding.disclaimer.invalid, onboarding.restart.invalid,
-                onboarding.restart.rateLimited, onboarding.tour.invalid; passkey — passkey.challenge.expired,
-                passkey.response.invalid, passkey.unknown, passkey.verification.failed; personal_records —
-                personal_records.invalid_query; practitioner — practitioner.invalid; profile —
-                profile.update.emailInUse, profile.update.emailRateLimited, profile.update.emailSecondFactorRequired,
-                profile.update.invalidBody, profile.update.nothingSaved; profile_claim — profile_claim.invalid,
-                profile_claim.oidc_only_unsupported, profile_claim.sso_unavailable, profile_claim.taken; record_write —
-                record_write.rate_limited; recovery — recovery.kit.stale; report-selection —
-                report-selection.body.invalid_json, report-selection.body.invalid_shape,
-                report-selection.leaves.unknown; request — request.cross_site; route — route.retired; search —
-                search.invalid; security_activity — security_activity.invalid; share-link —
-                share-link.document.decryptFailed, share-link.document.notFound, share-link.document.rateLimited,
-                share-link.documents.invalid, share-link.report.notFound, share-link.report.rateLimited,
-                share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf; sharing —
-                sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending, sharing.accept.revoked,
-                sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid, sharing.invite.invalid_scope,
-                sharing.invite.manage_browser_only, sharing.invite.no_account, sharing.invite.refused,
-                sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended, sharing.renounce.not_found,
-                sharing.revoke.already_ended, sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
-                sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
-                source-priority.body.invalid_shape; symptoms — symptoms.definition.limitReached,
-                symptoms.definition.notFound, symptoms.episode.notOpen, symptoms.event.notFound, symptoms.invalid;
-                timeline — timeline.invalid; tokens — tokens.documents.ceiling_reached,
-                tokens.measurements.ceiling_reached, tokens.mirror.not_measurement_token,
-                tokens.workouts.ceiling_reached; vaccination — vaccination.booster-invalid,
-                vaccination.booster-no-antigen, vaccination.booster-out-of-scope, vaccination.custom-vaccine-not-found,
-                vaccination.custom.invalid, vaccination.custom.name-taken, vaccination.custom.not-found,
-                vaccination.encounter-not-found, vaccination.identity-required, vaccination.invalid,
-                vaccination.link.invalid, vaccination.not-found, vaccination.practitioner-not-found; workout —
-                workout.batch.invalid, workout.batch.payload_too_large, workout.batch.source_not_permitted,
-                workout.batch.too_large, workout.delete.synced_source; (unprefixed) — about_me_conflict,
-                ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
+                feedback — feedback.body.invalid; garmin — garmin.key_refused, garmin.rate_limited, garmin.unreachable;
+                health_score_config — health_score_config.invalid, health_score_config.too_narrow; http —
+                http.bad_gateway, http.bad_request, http.client_error, http.conflict, http.forbidden,
+                http.gateway_timeout, http.gone, http.internal, http.invalid, http.method_not_allowed, http.not_found,
+                http.payload_too_large, http.rate_limited, http.server_error, http.unauthenticated, http.unavailable,
+                http.unsupported_media_type; illness — illness.day-log.invalid, illness.disabled,
+                illness.episode.chronic-no-resolve, illness.episode.invalid, illness.episode.invalid-window,
+                illness.episode.parent-not-found, illness.insights.invalid; import — import.apple_health.busy,
+                import.csv.content_type, import.csv.empty, import.csv.too_large, import.rate_limited,
+                import.write_failed; ingest — ingest.rate_limited; insights — insights.generate.budgetExceeded,
+                insights.generate.outboundScreened, insights.generate.profileScopeChanged,
+                insights.generate.scopeChanged; labs — labs.biomarker.alias.taken, labs.biomarker.create.invalid,
+                labs.biomarker.duplicate, labs.biomarker.merge.invalid, labs.biomarker.merge.unitMismatch,
+                labs.biomarker.notFound, labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid,
+                labs.create.invalid, labs.link.invalid, labs.ocr.budgetExceeded, labs.ocr.extractFailed,
+                labs.ocr.fileTooLarge, labs.ocr.fileType, labs.ocr.localOcrDisabled, labs.ocr.outputLimit,
+                labs.ocr.pdfRendererUnavailable, labs.ocr.providerUnsupported, labs.ocr.rateLimited, labs.ocr.tooLarge,
+                labs.restore.invalid, labs.result.notFound, labs.unit.mismatch, labs.update.invalid,
+                labs.update.linkedFieldsImmutable, labs.update.numericExpected, labs.update.qualitativeExpected,
+                labs.update.referenceRangeInvalid, labs.update.sourceReferenceRangeInvalid; life_event —
+                life_event.invalid, life_event.not_found; managed_profile — managed_profile.guardian.duplicate,
+                managed_profile.guardian.managed_invitee, managed_profile.guardian.required,
+                managed_profile.handover.no_pending, managed_profile.handover.unknown_guardian,
+                managed_profile.not_found; maintenance — maintenance.pulseDayMean.busy,
+                maintenance.pulseDayMean.dryRunRequired; measurement — measurement.batch.invalid,
+                measurement.batch.source_not_permitted, measurement.batch.too_large, measurement.bulk-delete.invalid,
+                measurement.create.invalid, measurement.create.source_not_permitted, measurement.delete.too_large,
+                measurement.duplicate_timestamp, measurement.restore.invalid, measurement.update.server_owned_source;
+                medication — medication.intake.import.invalid_format, medication.intake.notTracked,
+                medication.link.invalid; medications — medications.category.invalid, medications.category.limitReached,
+                medications.category.unknown, medications.course.currentOpen, medications.course.invalid,
+                medications.course.invalidRange, medications.course.notFound, medications.course.notRunning,
+                medications.course.oneShot, medications.course.overlap, medications.course.windowRequired,
+                medications.ingredients.extract.budgetExceeded, medications.ingredients.extract.failed,
+                medications.ingredients.extract.fileTooLarge, medications.ingredients.extract.fileType,
+                medications.ingredients.extract.rateLimited, medications.ingredients.invalid,
+                medications.ingredients.unitMismatch, medications.intake.bulk.apple_health_not_mirrored,
+                medications.intake.bulk.invalid, medications.intake.bulk.too_large,
+                medications.intake.force_slot.invalid, medications.intake.force_slot.occupied,
+                medications.intake.injection_site.disallowed, medications.intake.taken_at.before_start,
+                medications.mirror.limit_exceeded, medications.notFound; mentalHealth — mentalHealth.rateLimited; module
+                — module.disabled; modules — modules.body.invalid_json, modules.invalid; mood —
+                mood.bulk-delete.invalid, mood.bulk.invalid, mood.bulk.too_large, mood.create.external_id_not_delegable,
+                mood.create.invalid, mood.duplicate_timestamp, mood.linkedContext.invalid, mood.list.invalid,
+                mood.not_found, mood.ratedFactor.out_of_range, mood.restore.invalid, mood.update.invalid;
+                notification-prefs — notification-prefs.body.invalid_json; notification —
+                notification.action.already_used, notification.action.expired, notification.action.invalid,
+                notification.action.module_disabled; nutrient — nutrient.batch.invalid, nutrient.batch.too_large,
+                nutrient.daily.invalid, nutrient.read.invalid, nutrient.water.invalid, nutrient.water.invalid_day;
+                onboarding — onboarding.answers.invalid, onboarding.answers.rateLimited, onboarding.complete.invalid,
+                onboarding.complete.recordNotFound, onboarding.complete.recordTargetMismatch,
+                onboarding.disclaimer.invalid, onboarding.restart.invalid, onboarding.restart.rateLimited,
+                onboarding.tour.invalid; passkey — passkey.challenge.expired, passkey.response.invalid, passkey.unknown,
+                passkey.verification.failed; personal_records — personal_records.invalid_query; practitioner —
+                practitioner.invalid; profile — profile.update.emailInUse, profile.update.emailRateLimited,
+                profile.update.emailSecondFactorRequired, profile.update.invalidBody, profile.update.nothingSaved;
+                profile_claim — profile_claim.invalid, profile_claim.oidc_only_unsupported,
+                profile_claim.sso_unavailable, profile_claim.taken; record_write — record_write.rate_limited; recovery —
+                recovery.kit.stale; report-selection — report-selection.body.invalid_json,
+                report-selection.body.invalid_shape, report-selection.leaves.unknown; request — request.cross_site;
+                route — route.retired; search — search.invalid; security_activity — security_activity.invalid;
+                share-link — share-link.document.decryptFailed, share-link.document.notFound,
+                share-link.document.rateLimited, share-link.documents.invalid, share-link.report.notFound,
+                share-link.report.rateLimited, share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf;
+                sharing — sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending,
+                sharing.accept.revoked, sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid,
+                sharing.invite.invalid_scope, sharing.invite.manage_browser_only, sharing.invite.no_account,
+                sharing.invite.refused, sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended,
+                sharing.renounce.not_found, sharing.revoke.already_ended, sharing.revoke.not_found,
+                sharing.session.changed, sharing.switch.invalid, sharing.switch.wrong_transport; source-priority —
+                source-priority.body.invalid_json, source-priority.body.invalid_shape; symptoms —
+                symptoms.definition.limitReached, symptoms.definition.notFound, symptoms.episode.notOpen,
+                symptoms.event.notFound, symptoms.invalid; timeline — timeline.invalid; tokens —
+                tokens.documents.ceiling_reached, tokens.measurements.ceiling_reached,
+                tokens.mirror.not_measurement_token, tokens.workouts.ceiling_reached; vaccination —
+                vaccination.booster-invalid, vaccination.booster-no-antigen, vaccination.booster-out-of-scope,
+                vaccination.custom-vaccine-not-found, vaccination.custom.invalid, vaccination.custom.name-taken,
+                vaccination.custom.not-found, vaccination.encounter-not-found, vaccination.identity-required,
+                vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
+                vaccination.practitioner-not-found; workout — workout.batch.invalid, workout.batch.payload_too_large,
+                workout.batch.source_not_permitted, workout.batch.too_large, workout.delete.synced_source; (unprefixed)
+                — about_me_conflict, ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
                 health_score_config_conflict, insights_layout_conflict, invalid_base_updated_at,
                 json_carries_no_intake_time, json_not_an_array, medication_layout_conflict, missing_required_columns,
                 modules_conflict, mood_tag_layout_conflict, not_configured, notification_prefs_conflict, oidc_only,
@@ -41605,6 +42111,10 @@ components:
                   - INDOOR_TEMPERATURE
                   - INDOOR_HUMIDITY
                   - AFIB_BURDEN
+                  - BODY_BATTERY
+                  - STRESS_LEVEL
+                  - TRAINING_READINESS
+                  - ACUTE_TRAINING_LOAD
               value:
                 type: number
               valueMin:
@@ -41640,6 +42150,7 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
               notes:
                 type:
                   - string
@@ -42367,6 +42878,10 @@ components:
                             - INDOOR_TEMPERATURE
                             - INDOOR_HUMIDITY
                             - AFIB_BURDEN
+                            - BODY_BATTERY
+                            - STRESS_LEVEL
+                            - TRAINING_READINESS
+                            - ACUTE_TRAINING_LOAD
                         - type: "null"
                     biomarkerName:
                       anyOf:
@@ -43152,6 +43667,7 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
               externalId:
                 type:
                   - string
@@ -44119,6 +44635,7 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
               externalId:
                 type:
                   - string
@@ -44958,6 +45475,10 @@ components:
                   - INDOOR_TEMPERATURE
                   - INDOOR_HUMIDITY
                   - AFIB_BURDEN
+                  - BODY_BATTERY
+                  - STRESS_LEVEL
+                  - TRAINING_READINESS
+                  - ACUTE_TRAINING_LOAD
               dateKey:
                 type: string
                 pattern: ^\d{4}-\d{2}-\d{2}$
@@ -46153,6 +46674,10 @@ components:
                       - INDOOR_TEMPERATURE
                       - INDOOR_HUMIDITY
                       - AFIB_BURDEN
+                      - BODY_BATTERY
+                      - STRESS_LEVEL
+                      - TRAINING_READINESS
+                      - ACUTE_TRAINING_LOAD
                   - type: "null"
               intervalDays:
                 anyOf:
@@ -46374,6 +46899,10 @@ components:
                   - INDOOR_TEMPERATURE
                   - INDOOR_HUMIDITY
                   - AFIB_BURDEN
+                  - BODY_BATTERY
+                  - STRESS_LEVEL
+                  - TRAINING_READINESS
+                  - ACUTE_TRAINING_LOAD
               metricSlot:
                 type:
                   - string
@@ -46414,6 +46943,7 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
               externalId:
                 type:
                   - string
@@ -46775,6 +47305,7 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
               externalRecordingId:
                 type: string
                 minLength: 1
@@ -49348,6 +49879,7 @@ components:
         - STRAVA
         - EXTERNAL
         - HEALTH_CONNECT
+        - GARMIN
       description: Origin of the measurement. v1.4.23 added APPLE_HEALTH for the iOS HealthKit batch ingest path. v1.38.x
         added EXTERNAL for rows pushed in under a narrow `measurements:write` Bearer — a scale, a watch bridge, a
         home-automation rule — and workouts pushed in under a narrow `workouts:write` Bearer carry it too. No client may
@@ -52678,6 +53210,10 @@ components:
             - INDOOR_CO2
             - INDOOR_TEMPERATURE
             - INDOOR_HUMIDITY
+            - BODY_BATTERY
+            - STRESS_LEVEL
+            - TRAINING_READINESS
+            - ACUTE_TRAINING_LOAD
         date:
           type: string
           format: date
@@ -52714,6 +53250,7 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         picked:
           anyOf:
             - type: string
@@ -52734,6 +53271,7 @@ components:
                 - STRAVA
                 - EXTERNAL
                 - HEALTH_CONNECT
+                - GARMIN
             - type: "null"
         pickReason:
           anyOf:
@@ -52771,6 +53309,7 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
               rank:
                 type: integer
                 minimum: -9007199254740991
@@ -52950,6 +53489,10 @@ components:
             - INDOOR_CO2
             - INDOOR_TEMPERATURE
             - INDOOR_HUMIDITY
+            - BODY_BATTERY
+            - STRESS_LEVEL
+            - TRAINING_READINESS
+            - ACUTE_TRAINING_LOAD
         from:
           type: string
           format: date
@@ -52986,6 +53529,7 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         unit:
           type:
             - string
@@ -53014,6 +53558,7 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
               days:
                 type: integer
                 minimum: -9007199254740991
@@ -53042,6 +53587,7 @@ components:
                 - STRAVA
                 - EXTERNAL
                 - HEALTH_CONNECT
+                - GARMIN
             - type: "null"
         b:
           anyOf:
@@ -53063,6 +53609,7 @@ components:
                 - STRAVA
                 - EXTERNAL
                 - HEALTH_CONNECT
+                - GARMIN
             - type: "null"
         days:
           type: array
@@ -53101,6 +53648,7 @@ components:
                       - STRAVA
                       - EXTERNAL
                       - HEALTH_CONNECT
+                      - GARMIN
                   - type: "null"
             required:
               - date
@@ -58678,7 +59226,7 @@ components:
       type: object
       properties:
         steps:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -58699,8 +59247,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         activeEnergy:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -58721,8 +59270,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         walkingRunningDistance:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -58743,8 +59293,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         flightsClimbed:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -58765,8 +59316,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         sleep:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -58787,8 +59339,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         weight:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -58809,8 +59362,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         bloodPressure:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -58831,8 +59385,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         pulse:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -58853,8 +59408,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         bodyFat:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -58875,8 +59431,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         bodyTemperature:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -58897,8 +59454,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         spo2:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -58919,8 +59477,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         hrv:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -58941,8 +59500,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         restingHeartRate:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -58963,8 +59523,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         vo2Max:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -58985,8 +59546,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         skinTemperature:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -59007,8 +59569,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         respiratoryRate:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -59029,8 +59592,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         recovery:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -59051,8 +59615,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         stress:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -59073,8 +59638,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         sleepDebt:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -59095,8 +59661,9 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
         hrvRmssd:
-          maxItems: 16
+          maxItems: 17
           type: array
           items:
             type: string
@@ -59117,11 +59684,104 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
+        bodyBattery:
+          maxItems: 17
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+              - GARMIN
+        stressLevel:
+          maxItems: 17
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+              - GARMIN
+        trainingReadiness:
+          maxItems: 17
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+              - GARMIN
+        acuteTrainingLoad:
+          maxItems: 17
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+              - GARMIN
         metricPriority:
           type: object
           properties:
             steps:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59142,8 +59802,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             activeEnergy:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59164,8 +59825,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             walkingRunningDistance:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59186,8 +59848,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             flightsClimbed:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59208,8 +59871,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             sleep:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59230,8 +59894,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             weight:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59252,8 +59917,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             bloodPressure:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59274,8 +59940,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             pulse:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59296,8 +59963,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             bodyFat:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59318,8 +59986,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             bodyTemperature:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59340,8 +60009,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             spo2:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59362,8 +60032,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             hrv:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59384,8 +60055,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             restingHeartRate:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59406,8 +60078,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             vo2Max:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59428,8 +60101,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             skinTemperature:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59450,8 +60124,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             respiratoryRate:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59472,8 +60147,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             recovery:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59494,8 +60170,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             stress:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59516,8 +60193,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             sleepDebt:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59538,8 +60216,9 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
             hrvRmssd:
-              maxItems: 16
+              maxItems: 17
               type: array
               items:
                 type: string
@@ -59560,6 +60239,99 @@ components:
                   - STRAVA
                   - EXTERNAL
                   - HEALTH_CONNECT
+                  - GARMIN
+            bodyBattery:
+              maxItems: 17
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                  - COMPUTED
+                  - WHOOP
+                  - FITBIT
+                  - NIGHTSCOUT
+                  - POLAR
+                  - OURA
+                  - TELEGRAM
+                  - MCP
+                  - GOOGLE_HEALTH
+                  - STRAVA
+                  - EXTERNAL
+                  - HEALTH_CONNECT
+                  - GARMIN
+            stressLevel:
+              maxItems: 17
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                  - COMPUTED
+                  - WHOOP
+                  - FITBIT
+                  - NIGHTSCOUT
+                  - POLAR
+                  - OURA
+                  - TELEGRAM
+                  - MCP
+                  - GOOGLE_HEALTH
+                  - STRAVA
+                  - EXTERNAL
+                  - HEALTH_CONNECT
+                  - GARMIN
+            trainingReadiness:
+              maxItems: 17
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                  - COMPUTED
+                  - WHOOP
+                  - FITBIT
+                  - NIGHTSCOUT
+                  - POLAR
+                  - OURA
+                  - TELEGRAM
+                  - MCP
+                  - GOOGLE_HEALTH
+                  - STRAVA
+                  - EXTERNAL
+                  - HEALTH_CONNECT
+                  - GARMIN
+            acuteTrainingLoad:
+              maxItems: 17
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                  - COMPUTED
+                  - WHOOP
+                  - FITBIT
+                  - NIGHTSCOUT
+                  - POLAR
+                  - OURA
+                  - TELEGRAM
+                  - MCP
+                  - GOOGLE_HEALTH
+                  - STRAVA
+                  - EXTERNAL
+                  - HEALTH_CONNECT
+                  - GARMIN
           additionalProperties: false
         deviceTypePriority:
           type: object
@@ -59611,6 +60383,7 @@ components:
               - STRAVA
               - EXTERNAL
               - HEALTH_CONNECT
+              - GARMIN
           description: Ranked sources this account has connected or holds at least one measurement from, in ladder-catalogue
             order. Read-only; an editor may list only these while the ladders keep every source.
       required:
@@ -68324,11 +69097,11 @@ components:
                 - oura_no_resilience
             - type: "null"
           description: "Why the recovery page has nothing to chart, resolved on the server; null when any recovery type
-            (ANS_CHARGE, DAY_STRAIN, WORKOUT_STRAIN, CARDIO_LOAD, AVERAGE_HEART_RATE, MAX_HEART_RATE,
-            ENERGY_EXPENDITURE_KJ, RESILIENCE) has a reading. `oura_permission`: Oura is connected and its grant leaves
-            out the scope the resilience level needs, one reconnect fixes it. `oura_no_resilience`: Oura is connected
-            and no level has arrived yet. `general`: anyone else. Clients render the empty note from this value and
-            never work it out from the connection status."
+            (ANS_CHARGE, DAY_STRAIN, WORKOUT_STRAIN, CARDIO_LOAD, BODY_BATTERY, STRESS_LEVEL, TRAINING_READINESS,
+            ACUTE_TRAINING_LOAD, AVERAGE_HEART_RATE, MAX_HEART_RATE, ENERGY_EXPENDITURE_KJ, RESILIENCE) has a reading.
+            `oura_permission`: Oura is connected and its grant leaves out the scope the resilience level needs, one
+            reconnect fixes it. `oura_no_resilience`: Oura is connected and no level has arrived yet. `general`: anyone
+            else. Clients render the empty note from this value and never work it out from the connection status."
       required:
         - summaries
         - bmi
@@ -83445,6 +84218,277 @@ components:
       additionalProperties: false
       description: "A live probe that reached the configured instance and read one SGV entry. Only ever returned on success —
         a failed probe is an error status, never `ok: false`."
+    GarminConnectEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/GarminConnectResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    GarminConnectResponse:
+      type: object
+      properties:
+        connected:
+          type: boolean
+          const: true
+        region:
+          type: string
+          enum:
+            - global
+            - china
+        keyExpiry:
+          $ref: "#/components/schemas/GarminKeyExpiry"
+      required:
+        - connected
+        - region
+        - keyExpiry
+      additionalProperties: false
+    GarminKeyExpiry:
+      type: object
+      properties:
+        state:
+          type: string
+          enum:
+            - ok
+            - expiring
+            - expired
+            - unknown
+          description: "`expiring` from seven days before the end, `expired` after it, `unknown` when neither Garmin nor the
+            person said when the key ends."
+        expiresAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+          description: "When the key stops working: Garmin's own figure once a token revealed it (a token is capped at the key's
+            end in its last day), else the validity picked at connect counted from the connect. Null when unknown."
+        daysLeft:
+          anyOf:
+            - type: integer
+              minimum: 0
+              maximum: 9007199254740991
+            - type: "null"
+          description: Whole days left, 0 on the last day. Null when unknown or expired.
+      required:
+        - state
+        - expiresAt
+        - daysLeft
+      additionalProperties: false
+      description: When the stored Garmin Personal API key expires, resolved on the server so every client warns alike. Garmin
+        keys are valid for 30, 90, 180 or 365 days from creation and cannot be extended; a new key replaces the old.
+    GarminStatusEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/GarminStatusResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    GarminStatusResponse:
+      type: object
+      properties:
+        connected:
+          type: boolean
+          description: A key is stored. Not a liveness claim; read `health` for that.
+        configured:
+          type: boolean
+          description: A key is stored. The connect marker.
+        region:
+          type: string
+          enum:
+            - global
+            - china
+        keyExpiry:
+          $ref: "#/components/schemas/GarminKeyExpiry"
+        backfill:
+          description: How far the history backfill has got.
+          type: object
+          properties:
+            complete:
+              type: boolean
+            share:
+              type: number
+              minimum: 0
+              maximum: 1
+          required:
+            - complete
+            - share
+          additionalProperties: false
+        unavailableResources:
+          type: array
+          items:
+            type: string
+            enum:
+              - daily
+              - activities
+              - sleep
+              - hrv
+              - weight
+              - cycle
+          description: Resources Garmin refuses for this account with a lasting 4xx (a menstrual-cycle summary for someone who
+            tracks no cycle, say). Each is skipped by the sync and counts as done for the backfill; none turns the
+            connection red. A new key clears the list.
+        state:
+          deprecated: true
+          description: "Deprecated, still served: read `health`."
+          type: string
+          enum:
+            - connected
+            - error_transient
+            - error_reauth
+            - disconnected
+            - parked
+            - unknown
+        lastSuccessAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+        lastAttemptAt:
+          anyOf:
+            - type: string
+              format: date-time
+              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+            - type: "null"
+        lastError:
+          deprecated: true
+          description: "Deprecated, still served: read `health`."
+          type:
+            - string
+            - "null"
+        syncHealth:
+          deprecated: true
+          description: "Deprecated, still served: read `health`."
+          $ref: "#/components/schemas/SyncHealth"
+        health:
+          description: The unified connection state. Absent on the not-connected body.
+          anyOf:
+            - $ref: "#/components/schemas/ConnectionHealth"
+            - type: "null"
+      required:
+        - connected
+        - configured
+      additionalProperties: false
+      description: "Garmin connection status. When no key is stored the body is exactly `{ connected: false, configured: false
+        }`. The key is never returned."
+    GarminSyncEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/ProviderSyncOutcome"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    GarminTestEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/GarminTestResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    GarminTestResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          const: true
+        latencyMs:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+          description: Round-trip time of the key exchange, in milliseconds.
+      required:
+        - ok
+        - latencyMs
+      additionalProperties: false
+      description: The stored key bought a token. Only ever returned on success; a failed probe is an error status.
+    GarminKeyExpiryEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            keyExpiry:
+              $ref: "#/components/schemas/GarminKeyExpiry"
+          required:
+            - keyExpiry
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    GarminDisconnectEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            disconnected:
+              type: boolean
+              const: true
+          required:
+            - disconnected
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
     NightscoutDisconnectEnvelope:
       type: object
       properties:
@@ -84819,8 +85863,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/IntegrationStatusEntry"
-          description: "All nine providers, always, in the fixed order withings, whoop, fitbit, google-health, polar, oura,
-            strava, nightscout, dawarich. A provider the user has never touched still appears, with `connected: false`
+          description: "All ten providers, always, in the fixed order withings, whoop, fitbit, google-health, polar, oura, strava,
+            nightscout, dawarich, garmin. A provider the user has never touched still appears, with `connected: false`
             and the ledger state `unknown` — absence from this list never means anything, because nothing is ever absent
             from it."
       required:
@@ -84846,6 +85890,7 @@ components:
             - strava
             - nightscout
             - dawarich
+            - garmin
           description: Which provider this entry describes.
         state:
           type: string
@@ -85050,6 +86095,43 @@ components:
         allowPrivateHost:
           description: Nightscout only.
           type: boolean
+        region:
+          description: Garmin only. Which Garmin service accepted the stored key; null when no key is stored.
+          anyOf:
+            - type: string
+              enum:
+                - global
+                - china
+            - type: "null"
+        keyExpiry:
+          description: Garmin only. Null when no key is stored.
+          anyOf:
+            - $ref: "#/components/schemas/GarminKeyExpiry"
+            - type: "null"
+        backfillShare:
+          description: Garmin only. Share of the history walk done, 0 to 1; 1 once `backfillCompleted`. Null when no key is stored.
+          anyOf:
+            - type: number
+              minimum: 0
+              maximum: 1
+            - type: "null"
+        unavailableResources:
+          description: Garmin only. Null when no key is stored.
+          anyOf:
+            - type: array
+              items:
+                type: string
+                enum:
+                  - daily
+                  - activities
+                  - sleep
+                  - hrv
+                  - weight
+                  - cycle
+              description: Resources Garmin refuses for this account with a lasting 4xx (a menstrual-cycle summary for someone who
+                tracks no cycle, say). Each is skipped by the sync and counts as done for the backfill; none turns the
+                connection red. A new key clears the list.
+            - type: "null"
         retirement:
           description: Fitbit only. The end of the legacy Fitbit Web API.
           type: object
@@ -86175,6 +87257,10 @@ components:
               - averageHeartRate
               - maxHeartRate
               - energyExpenditureKj
+              - bodyBattery
+              - stressLevel
+              - trainingReadiness
+              - acuteTrainingLoad
               - gripStrength
               - painNrs
               - waistCircumference
@@ -86437,6 +87523,10 @@ components:
               - averageHeartRate
               - maxHeartRate
               - energyExpenditureKj
+              - bodyBattery
+              - stressLevel
+              - trainingReadiness
+              - acuteTrainingLoad
               - gripStrength
               - painNrs
               - waistCircumference

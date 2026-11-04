@@ -18,6 +18,7 @@ import {
   Scale,
   Heart,
   Activity,
+  Battery,
   Droplets,
   Droplet,
   Moon,
@@ -142,6 +143,10 @@ export const MEASUREMENT_TYPE_LABEL_KEYS: Record<string, string> = {
   INDOOR_CO2: "measurements.typeIndoorCo2",
   INDOOR_TEMPERATURE: "measurements.typeIndoorTemperature",
   INDOOR_HUMIDITY: "measurements.typeIndoorHumidity",
+  BODY_BATTERY: "measurements.typeBodyBattery",
+  STRESS_LEVEL: "measurements.typeStressLevel",
+  TRAINING_READINESS: "measurements.typeTrainingReadiness",
+  ACUTE_TRAINING_LOAD: "measurements.typeAcuteTrainingLoad",
 };
 
 export const MEASUREMENT_TYPE_ICONS: Record<string, LucideIcon> = {
@@ -289,6 +294,11 @@ export const MEASUREMENT_TYPE_ICONS: Record<string, LucideIcon> = {
   INDOOR_CO2: Wind,
   INDOOR_TEMPERATURE: Thermometer,
   INDOOR_HUMIDITY: Droplets,
+  // Garmin scores, read beside the other device-native scores.
+  BODY_BATTERY: Battery,
+  STRESS_LEVEL: Gauge,
+  TRAINING_READINESS: HeartPulse,
+  ACUTE_TRAINING_LOAD: TrendingUp,
 };
 
 // The colour map lives in its own icon-free module so a surface that only

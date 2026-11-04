@@ -23,6 +23,7 @@ import { runGoogleHealthSleepRepairForUser } from "@/lib/jobs/google-health-slee
 import { runFitbitSleepRepairForUser } from "@/lib/fitbit/jobs/sleep-repair";
 import { runStravaBackfillForUser } from "@/lib/jobs/strava-backfill";
 import { runOuraBackfillForUser } from "@/lib/jobs/oura-backfill";
+import { runGarminBackfillForUser } from "@/lib/jobs/garmin-backfill";
 import { runSleepTimelineBackfillForUser } from "@/lib/jobs/sleep-timeline-backfill";
 import { runLabBiomarkerBackfillForUser } from "@/lib/jobs/lab-biomarker-backfill";
 import {
@@ -156,6 +157,20 @@ async function runAdmitted(
       workerLog(
         "info",
         `[oura-backfill] user=${userId} imported=${imported}${continued ? " continued" : ""}`,
+      );
+      return;
+    }
+    case "garmin-backfill": {
+      const { imported, continued } = await runGarminBackfillForUser(
+        userId,
+        shouldStop,
+        data.slice ?? 0,
+      );
+      totals.imported += imported;
+      if (continued) totals.continued += 1;
+      workerLog(
+        "info",
+        `[garmin-backfill] user=${userId} imported=${imported}${continued ? " continued" : ""}`,
       );
       return;
     }

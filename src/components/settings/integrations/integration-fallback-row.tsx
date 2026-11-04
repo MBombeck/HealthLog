@@ -40,6 +40,7 @@ export const INTEGRATION_DISPLAY_NAMES: Record<IntegrationKey, string> = {
   "google-health": "Google Health",
   strava: "Strava",
   dawarich: "Dawarich",
+  garmin: "Garmin",
 };
 
 /**

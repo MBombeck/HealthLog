@@ -315,7 +315,7 @@ Previously synced measurements stay in the database.
 
 ## Garmin owners
 
-Garmin has no direct connector for a self-hosted instance. Since Garmin Connect
-5.14.1 (July 2025) the app writes to Google Health Connect, so this integration
-is how Garmin data reaches HealthLog on Android. See [garmin.md](./garmin.md) for
-what comes through and what Garmin withholds.
+Since Garmin Connect 5.14.1 (July 2025) the app writes to Google Health Connect,
+so this path brings Garmin data in on Android. The direct [Garmin](./garmin.md)
+integration reads more (Body Battery, stress, Garmin's sleep score) with a key
+from your own Garmin account.

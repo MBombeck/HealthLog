@@ -50,7 +50,7 @@ notes, and machine-readable specs that ship alongside the source:
   <https://docs.healthlog.dev>.
 - [`integrations/`](./integrations/) — per-integration reference:
   Withings, WHOOP, Fitbit, Google Health, Strava, Nightscout, Dawarich and
-  the Garmin route; the Apple Health, Health Connect, document and data
+  Garmin; the Apple Health, Health Connect, document and data
   imports; AI providers; and Home Assistant with its blueprint. Oura and
   Polar are covered on the docs site only.
 - [`adr/`](./adr/) — architecture decision records.

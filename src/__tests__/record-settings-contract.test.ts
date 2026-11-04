@@ -158,6 +158,7 @@ describe("record settings contract", () => {
       "google-health": false,
       strava: false,
       dawarich: false,
+      garmin: false,
     } as const;
 
     expect(
@@ -189,6 +190,7 @@ describe("record settings contract", () => {
       "google-health": false,
       strava: false,
       dawarich: false,
+      garmin: false,
     } as const;
 
     expect(

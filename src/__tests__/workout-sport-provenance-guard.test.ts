@@ -116,6 +116,15 @@ const PROVIDER_INGESTS: ProviderIngest[] = [
     metadataKey: "healthConnectExerciseType",
   },
   {
+    provider: "Garmin",
+    mapper: "mapGarminSportType",
+    mapperFile: "lib/garmin/sport-map.ts",
+    captureFile: "lib/garmin/sync-workouts.ts",
+    captureField: "a.activityType?.typeKey",
+    writeFile: "lib/garmin/sync-workouts.ts",
+    metadataKey: "garminActivity",
+  },
+  {
     provider: "Oura",
     mapper: "mapOuraSportType",
     mapperFile: "lib/oura/sport-map.ts",

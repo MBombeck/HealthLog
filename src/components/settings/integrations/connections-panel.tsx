@@ -2,7 +2,7 @@
 
 /**
  * `<ConnectionsPanel>` — the connected-services half of Settings →
- * Integrations: Withings / WHOOP / Fitbit / Polar / Oura / Nightscout.
+ * Integrations: Withings / WHOOP / Fitbit / Polar / Oura / Garmin / Nightscout.
  *
  * v1.18.0 — extracted out of `integrations-section.tsx` so the section
  * file can host the Connections / Channels / Sources sub-tabs without growing
@@ -20,7 +20,7 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 import { AppleHealthCard } from "@/components/settings/integrations/apple-health-card";
 import { DawarichCard } from "@/components/settings/integrations/dawarich-card";
 import { FitbitRetirementNotice } from "@/components/settings/integrations/fitbit-retirement-notice";
-import { GarminInfoNote } from "@/components/settings/integrations/garmin-info-note";
+import { GarminCard } from "@/components/settings/integrations/garmin-card";
 import { GoogleHealthCard } from "@/components/settings/integrations/google-health-card";
 import { IntegrationFallbackRow } from "@/components/settings/integrations/integration-fallback-row";
 import { NightscoutCard } from "@/components/settings/integrations/nightscout-card";
@@ -203,6 +203,7 @@ const CARD_BACKED_INTEGRATIONS: ReadonlySet<IntegrationKey> = new Set([
   "strava",
   "nightscout",
   "dawarich",
+  "garmin",
 ]);
 
 export function ConnectionsPanel({
@@ -403,6 +404,9 @@ export function ConnectionsPanel({
           callbackUrl={callbackUrls.strava}
         />
       </div>
+      <div id="garmin" className="scroll-mt-28">
+        <GarminCard viewModel={pickStatus(integrationStatus, "garmin")} />
+      </div>
       <div id="nightscout" className="scroll-mt-28">
         <NightscoutCard
           viewModel={pickStatus(integrationStatus, "nightscout")}
@@ -426,12 +430,6 @@ export function ConnectionsPanel({
           <IntegrationFallbackRow status={entry} />
         </div>
       ))}
-      {/* Garmin: no direct connector (business-partner-only). A quiet
-          non-connector note pointing to the Apple Health / Health Connect
-          path — not an OAuthProviderCard (nothing to connect). */}
-      <div id="garmin" className="scroll-mt-28">
-        <GarminInfoNote />
-      </div>
     </div>
   );
 }

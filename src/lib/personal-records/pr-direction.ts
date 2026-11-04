@@ -260,6 +260,12 @@ export function getPRDirection(
     // other device-derived scores (HRV_RMSSD / DAY_STRAIN).
     case "ANS_CHARGE":
     case "CARDIO_LOAD":
+    // Garmin's day scores and the bridged training figures are
+    // device composites without a goal axis, like the ones above.
+    case "BODY_BATTERY":
+    case "STRESS_LEVEL":
+    case "TRAINING_READINESS":
+    case "ACUTE_TRAINING_LOAD":
     // v1.17.1 — Oura coverage. The Sleep Score is a nightly derived composite
     // (like the other sleep-quality indices), and the body-temperature
     // deviation is a homeostatic signed offset centred on 0 — neither has a

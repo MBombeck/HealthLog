@@ -54,6 +54,7 @@ export const INTEGRATION_MEASUREMENT_SOURCE: Partial<
   polar: "POLAR",
   oura: "OURA",
   "google-health": "GOOGLE_HEALTH",
+  garmin: "GARMIN",
 };
 
 /**
@@ -72,6 +73,7 @@ export const INTEGRATION_WORKOUT_SOURCE: Partial<
   whoop: "WHOOP",
   fitbit: "FITBIT",
   "google-health": "GOOGLE_HEALTH",
+  garmin: "GARMIN",
 };
 
 /**

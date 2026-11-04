@@ -417,6 +417,10 @@ const PINNED_AFFORDANCES: Record<
   "src/components/settings/integrations/nightscout-card.tsx": {
     "text-success": 1,
   },
+  // The connect form's "connected" line, the Nightscout form's twin.
+  "src/components/settings/integrations/garmin-card.tsx": {
+    "text-success": 1,
+  },
   // A paused connection resumed.
   "src/components/settings/integrations/oauth-integration-card.tsx": {
     "text-success": 1,

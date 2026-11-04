@@ -969,7 +969,12 @@
     "durationMinutesOnly": "{minutes} Min.",
     "durationInvalid": "Gib eine Dauer ein, zum Beispiel 7,5, 7:30 oder 7h 30m.",
     "durationTooLong": "Ein Eintrag kann nicht länger als 24 Stunden sein.",
-    "sourceHealthConnect": "Health Connect"
+    "sourceHealthConnect": "Health Connect",
+    "typeBodyBattery": "Body Battery",
+    "typeStressLevel": "Stresslevel",
+    "typeTrainingReadiness": "Trainingsbereitschaft",
+    "typeAcuteTrainingLoad": "Akute Trainingsbelastung",
+    "sourceGarmin": "Garmin"
   },
   "metricCatalog": {
     "title": "Was HealthLog erfassen kann",
@@ -4759,7 +4764,8 @@
       "unitScore": "Punkte",
       "unitMinutes": "Min.",
       "unitBpm": "bpm",
-      "unitKj": "kJ"
+      "unitKj": "kJ",
+      "unitLoad": "Belastung"
     },
     "sleepQuality": {
       "title": "Schlafqualität",
@@ -4781,7 +4787,11 @@
         "cardioLoadExplainer": "Ein Trainingslast-Näherungswert, der die akut aufgebaute kardiovaskuläre Belastung abbildet. Vergleiche ihn mit deinen eigenen letzten Tagen.",
         "averageHeartRateExplainer": "Deine durchschnittliche Herzfrequenz über den ganzen Tag bzw. Zyklus, wie dein Wearable sie meldet.",
         "maxHeartRateExplainer": "Deine höchste Herzfrequenz über den ganzen Tag bzw. Zyklus, wie dein Wearable sie meldet.",
-        "energyExpenditureKjExplainer": "Die Energie, die dein Körper über den Tag verbraucht hat, in Kilojoule, wie dein Gerät sie nativ meldet."
+        "energyExpenditureKjExplainer": "Die Energie, die dein Körper über den Tag verbraucht hat, in Kilojoule, wie dein Gerät sie nativ meldet.",
+        "bodyBatteryExplainer": "Deine Energiereserve auf Garmins Skala von 0 bis 100, der höchste Stand des Tages. Ruhe und Schlaf laden sie auf, Stress und Bewegung zehren davon.",
+        "trainingReadinessExplainer": "Wie bereit dein Körper für eine harte Einheit ist, auf Garmins Skala von 0 bis 100. Der Wert kommt über eine von dir eingerichtete Brücke, weil Garmin ihn nicht direkt teilt.",
+        "stressLevelExplainer": "Garmins durchschnittliches Stresslevel des Tages auf einer Skala von 0 bis 100, abgeleitet aus deiner Herzfrequenzvariabilität. Niedriger heißt ruhiger.",
+        "acuteTrainingLoadExplainer": "Garmins akute Trainingsbelastung: die gewichtete Belastung deiner Aktivitäten der letzten sieben Tage. Der Wert kommt über eine von dir eingerichtete Brücke. Vergleiche ihn mit deinen eigenen letzten Wochen."
       },
       "loadError": "Deine Erholungswerte konnten nicht geladen werden."
     },
@@ -5688,7 +5698,11 @@
           "recovery": "Erholung",
           "stress": "Stress",
           "sleepDebt": "Schlafdefizit",
-          "hrvRmssd": "HRV (RMSSD)"
+          "hrvRmssd": "HRV (RMSSD)",
+          "bodyBattery": "Body Battery",
+          "stressLevel": "Stresslevel",
+          "trainingReadiness": "Trainingsbereitschaft",
+          "acuteTrainingLoad": "Akute Trainingsbelastung"
         },
         "sourceLabels": {
           "WITHINGS": "Withings",
@@ -5706,7 +5720,8 @@
           "GOOGLE_HEALTH": "Google Health",
           "STRAVA": "Strava",
           "EXTERNAL": "Externes Gerät",
-          "HEALTH_CONNECT": "Health Connect"
+          "HEALTH_CONNECT": "Health Connect",
+          "GARMIN": "Garmin"
         },
         "deviceLabels": {
           "watch": "Uhr",
@@ -7500,11 +7515,6 @@
         "lastEnteredHere": "Zuletzt hier eingetragen {relative}"
       }
     },
-    "garminInfo": {
-      "title": "Garmin",
-      "body": "Garmin hat hier keine direkte Verbindung. Verbinde über Apple Health (iOS) oder Google Health Connect (Android). Garmins proprietäre Werte (Body Battery, Training Load, HRV-Status, VO₂max) werden von Garmin an keine der beiden Plattformen weitergegeben.",
-      "docsLink": "Zur Anleitung"
-    },
     "glucoseReference": {
       "title": "Glukose-Referenzband",
       "description": "Gegen welches Band deine Blutzuckerwerte bewertet werden.",
@@ -7704,7 +7714,58 @@
     "deleteAccountConfirmDescriptionGrace": "Du wirst abgemeldet und dein Konto wird sofort gesperrt. Nach {days} Tagen wird es endgültig gelöscht, mit allen Gesundheitsdaten, Passkeys, Sessions und Audit-Einträgen. Bis dahin kann ein Admin dieses Servers die Löschung rückgängig machen. Kopien in den Sicherungen dieses Servers verfallen nach ihrer Aufbewahrungsfrist.",
     "deleteAccountScheduled": "Dein Konto ist gesperrt und wird am {date} endgültig gelöscht. Du wirst abgemeldet.",
     "dangerZoneSuccessGrace": "Deine Gesundheitsakte wurde gelöscht. Ein Admin dieses Servers kann sie bis zum {date} wiederherstellen.",
-    "dangerZoneRestoreLimits": "Auch Zugriffe enden: was du mit anderen teilst, was andere mit dir teilen, und jede Rolle als betreuende Person. Eine Wiederherstellung bringt die Akte so zurück, wie sie jetzt ist. Was nach dem Löschen hinzukommt, wird dabei ersetzt, und Integrationsverbindungen, Freigaben, Betreuungsrollen und Freigabe-Links kommen nicht zurück; sie müssen neu eingerichtet werden."
+    "dangerZoneRestoreLimits": "Auch Zugriffe enden: was du mit anderen teilst, was andere mit dir teilen, und jede Rolle als betreuende Person. Eine Wiederherstellung bringt die Akte so zurück, wie sie jetzt ist. Was nach dem Löschen hinzukommt, wird dabei ersetzt, und Integrationsverbindungen, Freigaben, Betreuungsrollen und Freigabe-Links kommen nicht zurück; sie müssen neu eingerichtet werden.",
+    "garmin": "Garmin",
+    "garminTag": "Personal API",
+    "garminDescription": "Füge einen Garmin-Personal-API-Schlüssel ein, um Schlaf, HRV, Body Battery, Stress, Schritte, Gewicht und Aktivitäten aus Garmin Connect zu synchronisieren.",
+    "garminSync": "Jetzt synchronisieren",
+    "garminSyncResult": "{count} Einträge synchronisiert",
+    "garminSyncFailed": "Synchronisierung fehlgeschlagen",
+    "garminViewData": "Erholung ansehen",
+    "garminReplaceKey": "Schlüssel ersetzen",
+    "garminDisconnect": "Trennen",
+    "garminDisconnectTitle": "Garmin trennen?",
+    "garminDisconnectDescription": "Künftige Synchronisierungen enden, und der Schlüssel wird von diesem Server entfernt. Bereits importierte Daten bleiben in deinem Verlauf. Bei Garmin bleibt der Schlüssel gültig, bis du ihn dort widerrufst.",
+    "garminKeyValidUntil": "Schlüssel gültig bis {date}",
+    "garminKeyExpired": "Dein Garmin-Schlüssel ist am {date} abgelaufen. Erstelle in Garmin Connect einen neuen Schlüssel und füge ihn hier ein, damit die Synchronisierung weiterläuft.",
+    "garminKeyExpiresToday": "Dein Garmin-Schlüssel läuft heute ab. Erstelle in Garmin Connect einen neuen Schlüssel und füge ihn hier ein, damit die Synchronisierung nicht stoppt.",
+    "garminKeyExpiring": "Dein Garmin-Schlüssel läuft am {date} ab. Erstelle vorher in Garmin Connect einen neuen Schlüssel und füge ihn hier ein.",
+    "garminKeyExpiryUnknown": "Garmin verrät nicht, wann dieser Schlüssel abläuft. Ersetze den Schlüssel und wähle die Gültigkeit, die du in Garmin Connect eingestellt hast, dann warnt dich diese Karte eine Woche vorher.",
+    "garminConnected": "Garmin verbunden. Die erste Synchronisierung läuft an.",
+    "garminKeyHowTo": "Öffne in Garmin Connect die Einstellungen, dann Personal API, und erstelle einen Schlüssel. Garmin zeigt ihn nur einmal an, kopiere ihn also sofort.",
+    "garminKeySettingsLink": "Garmin Connect öffnen",
+    "garminApiKey": "Personal-API-Schlüssel",
+    "garminApiKeyPlaceholder": "Schlüssel einfügen",
+    "garminApiKeySavedPlaceholder": "Gespeichert. Füge einen neuen Schlüssel ein, um ihn zu ersetzen",
+    "garminKeyValidity": "Gewählte Gültigkeit",
+    "garminKeyValidityUnknown": "Weiß ich nicht",
+    "garminKeyValidityDays": "{count} Tage",
+    "garminKeyValidityHelp": "Garmin meldet nicht, wann ein Schlüssel abläuft. Mit der Gültigkeit warnt dich diese Karte eine Woche, bevor der Schlüssel nicht mehr funktioniert.",
+    "garminConnect": "Verbinden",
+    "garminUpdate": "Änderungen speichern",
+    "garminRegion": "Garmin-Dienst",
+    "garminRegionGlobal": "Garmin Connect (global)",
+    "garminRegionChina": "Garmin Connect China",
+    "garminErrors": {
+      "keyRefused": "Garmin hat diesen Schlüssel nicht angenommen. Prüfe, ob er vollständig kopiert ist, zum gewählten Dienst gehört und weder abgelaufen noch widerrufen ist.",
+      "rateLimited": "Garmin begrenzt gerade die Anfragen. Versuche es in ein paar Minuten noch einmal.",
+      "unreachable": "Garmin ist nicht erreichbar. Versuche es in ein paar Minuten noch einmal.",
+      "invalid": "Dieser Schlüssel sieht nicht richtig aus. Füge ihn noch einmal ohne Leerzeichen ein.",
+      "generic": "Das hat nicht geklappt. Versuche es noch einmal."
+    },
+    "garminKeyValidityMenu": "Gültigkeit des Schlüssels",
+    "garminValiditySaved": "Gültigkeit gespeichert.",
+    "garminKeyCreatedOn": "Erstellt am",
+    "garminKeyCreatedOnHelp": "Der Tag, an dem du den Schlüssel in Garmin Connect erstellt hast. Leer gelassen zählt die Gültigkeit ab dem Tag, an dem du ihn hier verbunden hast.",
+    "garminUnavailable": "Garmin stellt für dein Konto diese Daten nicht bereit: {list}.",
+    "garminResource": {
+      "daily": "Tagesübersichten",
+      "activities": "Aktivitäten",
+      "sleep": "Schlaf",
+      "hrv": "HRV",
+      "weight": "Wiegungen",
+      "cycle": "Menstruationszyklus"
+    }
   },
   "admin": {
     "title": "Administration",

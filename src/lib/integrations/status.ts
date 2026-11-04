@@ -63,7 +63,9 @@ export type IntegrationKey =
   // v1.28.x — Strava OAuth workout source.
   | "strava"
   // v1.43 — Dawarich movement context (daily values, nightly).
-  | "dawarich";
+  | "dawarich"
+  // Garmin Personal API (a pasted key, hourly poll).
+  | "garmin";
 
 /**
  * Failure kinds carried into `recordSyncFailure`.
@@ -1281,6 +1283,7 @@ const INTEGRATION_LABELS: Record<IntegrationKey, string> = {
   "google-health": "Google Health",
   strava: "Strava",
   dawarich: "Dawarich",
+  garmin: "Garmin",
 };
 
 const FAILURE_KIND_COPY: Record<

@@ -149,6 +149,38 @@ Units are derived server-side from the type, so send the number in the unit
 above and do not send a `unit` field. The full enum is in
 `docs/api/openapi.yaml` under `MeasurementType`.
 
+## Garmin training figures
+
+The Garmin Personal API does not carry Training Readiness or the acute
+training load (see [Garmin](./garmin.md)). If Home Assistant reads them, for
+example through a Garmin Connect integration, send them through the same
+ingest token. They have types of their own and appear on the recovery page:
+
+| What the sensor reports    | `type`                | Unit expected |
+| -------------------------- | --------------------- | ------------- |
+| Garmin Training Readiness  | `TRAINING_READINESS`  | score 0–100   |
+| Garmin acute training load | `ACUTE_TRAINING_LOAD` | load, no unit |
+
+Both change about once a day. This automation pushes Training Readiness
+whenever the sensor changes, through the `healthlog_measurement` command
+above; the acute load is the same with its own sensor and type:
+
+```yaml
+automation:
+  - alias: "HealthLog: Garmin training readiness"
+    triggers:
+      - trigger: state
+        entity_id: sensor.garmin_training_readiness
+    conditions:
+      - condition: template
+        value_template: "{{ trigger.to_state.state | is_number }}"
+    actions:
+      - action: rest_command.healthlog_measurement
+        data:
+          type: TRAINING_READINESS
+          value: "{{ trigger.to_state.state | float }}"
+```
+
 ## Room climate
 
 Indoor CO₂, temperature and humidity are their own types, kept apart from the

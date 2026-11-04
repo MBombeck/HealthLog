@@ -322,6 +322,11 @@ export const CHART_OVERLAY_KEYS = [
   "averageHeartRate",
   "maxHeartRate",
   "energyExpenditureKj",
+  // The Garmin scores and the bridged training figures.
+  "bodyBattery",
+  "stressLevel",
+  "trainingReadiness",
+  "acuteTrainingLoad",
   // v1.25 — chart-overlay slots for the physical / clinical signal sub-pages.
   // One per chart surface; camel-case keys mirror the existing convention.
   "gripStrength",

@@ -1,6 +1,6 @@
 /**
  * The third-party provider sync queues: Withings, WHOOP, Fitbit, Google
- * Health, Nightscout, Polar, Oura, Strava, the full-history backfills and
+ * Health, Nightscout, Polar, Oura, Strava, Garmin, the full-history backfills and
  * repairs that run through the shared admission lane, the integration
  * watchdog, and the OAuth-state and handoff prunes.
  *
@@ -27,6 +27,8 @@ import {
   type IntegrationBackfillKind,
 } from "@/lib/jobs/integration-backfill-admission";
 import {
+  GARMIN_SYNC_CRON,
+  GARMIN_SYNC_QUEUE,
   GOOGLE_HEALTH_OAUTH_STATE_CLEANUP_CRON,
   GOOGLE_HEALTH_OAUTH_STATE_CLEANUP_QUEUE,
   GOOGLE_HEALTH_SYNC_CRON,
@@ -83,6 +85,10 @@ import {
   OURA_BACKFILL_CONCURRENCY,
   OURA_BACKFILL_QUEUE,
 } from "@/lib/jobs/oura-backfill-queue";
+import {
+  GARMIN_BACKFILL_CONCURRENCY,
+  GARMIN_BACKFILL_QUEUE,
+} from "@/lib/jobs/garmin-backfill-queue";
 import { cronIsTheRetry } from "@/lib/jobs/reminder/registrar-shared";
 import {
   SLEEP_TIMELINE_BACKFILL_CONCURRENCY,
@@ -296,6 +302,18 @@ const jobs: readonly JobDefinition[] = [
     "oura-backfill",
   ),
   defineJob({
+    queue: GARMIN_SYNC_QUEUE,
+    cron: GARMIN_SYNC_CRON,
+    work: { localConcurrency: 1 },
+    load: async () =>
+      (await import("@/lib/jobs/reminder/garmin-sync")).handleGarminSync,
+  }),
+  backfillSource(
+    GARMIN_BACKFILL_QUEUE,
+    GARMIN_BACKFILL_CONCURRENCY,
+    "garmin-backfill",
+  ),
+  defineJob({
     queue: STRAVA_SYNC_QUEUE,
     cron: STRAVA_SYNC_CRON,
     work: { localConcurrency: 1 },
@@ -373,6 +391,11 @@ const discovery: readonly BootDiscovery[] = [
   ),
   backfillDiscovery("oura-backfill", async (stagger) =>
     (await import("@/lib/jobs/oura-backfill")).enqueueBootTimeOuraBackfill(
+      stagger,
+    ),
+  ),
+  backfillDiscovery("garmin-backfill", async (stagger) =>
+    (await import("@/lib/jobs/garmin-backfill")).enqueueBootTimeGarminBackfill(
       stagger,
     ),
   ),

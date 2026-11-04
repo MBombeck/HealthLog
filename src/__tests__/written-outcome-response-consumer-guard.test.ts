@@ -664,6 +664,13 @@ const SYNC_ROUTES: readonly SyncRouteSpec[] = [
     },
   },
   {
+    id: "garmin",
+    path: join(ROOT, "src/app/api/garmin/sync/route.ts"),
+    responseClass: "resolved",
+    card: join(SYNC_CARD_ROOT, "integration-actions.tsx"),
+    exceptions: {},
+  },
+  {
     id: "nightscout",
     path: join(ROOT, "src/app/api/nightscout/sync/route.ts"),
     responseClass: "resolved",

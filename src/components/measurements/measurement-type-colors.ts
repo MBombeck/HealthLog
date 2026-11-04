@@ -142,4 +142,10 @@ export const MEASUREMENT_TYPE_COLORS: Record<string, string> = {
   INDOOR_CO2: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
   INDOOR_TEMPERATURE: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
   INDOOR_HUMIDITY: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
+  // Garmin scores take the device-native score family (chart-1),
+  // like ANS charge and cardio load.
+  BODY_BATTERY: "bg-chart-1/10 text-chart-1 dark:bg-chart-1/20",
+  STRESS_LEVEL: "bg-chart-1/10 text-chart-1 dark:bg-chart-1/20",
+  TRAINING_READINESS: "bg-chart-1/10 text-chart-1 dark:bg-chart-1/20",
+  ACUTE_TRAINING_LOAD: "bg-chart-1/10 text-chart-1 dark:bg-chart-1/20",
 };

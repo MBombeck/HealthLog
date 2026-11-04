@@ -234,6 +234,11 @@ export const MEASUREMENT_CATEGORIES: ReadonlyMap<
   ["INDOOR_CO2", "environment"],
   ["INDOOR_TEMPERATURE", "environment"],
   ["INDOOR_HUMIDITY", "environment"],
+  // ── Garmin scores join the device-native scores ──
+  ["BODY_BATTERY", "scores"],
+  ["STRESS_LEVEL", "scores"],
+  ["TRAINING_READINESS", "scores"],
+  ["ACUTE_TRAINING_LOAD", "scores"],
 ]);
 
 /**

@@ -113,6 +113,12 @@ export const USER_COLUMNS_OUTSIDE_SETTINGS = {
   dawarichApiKeyEncrypted: "CREDENTIAL",
   dawarichPrefsEncrypted: "CREDENTIAL",
   dawarichAllowPrivateHost: "CREDENTIAL",
+  // The Garmin key, and the facts that only mean something beside it: the
+  // service that accepted it, when it was connected and when it ends.
+  garminApiKeyEncrypted: "CREDENTIAL",
+  garminRegion: "CREDENTIAL",
+  garminConnectedAt: "CREDENTIAL",
+  garminKeyExpiresAt: "CREDENTIAL",
   polarAccessTokenEncrypted: "CREDENTIAL",
   polarUserIdEncrypted: "CREDENTIAL",
   polarClientIdEncrypted: "CREDENTIAL",
@@ -150,6 +156,9 @@ export const USER_COLUMNS_OUTSIDE_SETTINGS = {
   // provider; a carried note would claim history this host never imported.
   ouraBackfillProgress: "OPERATIONAL",
   ouraBackfillCompletedAt: "OPERATIONAL",
+  // Same for Garmin: a restored account reads its Garmin history again.
+  garminBackfillProgress: "OPERATIONAL",
+  garminBackfillCompletedAt: "OPERATIONAL",
   healthKitLastSyncedAt: "OPERATIONAL",
   healthKitLastSyncTrigger: "OPERATIONAL",
   healthKitLastBackgroundSyncAt: "OPERATIONAL",
