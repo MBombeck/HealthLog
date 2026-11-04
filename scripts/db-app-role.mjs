@@ -110,7 +110,13 @@
  * Plain ESM with no imports beyond Node, `pg`, `pg-boss` and the shared dump
  * module, so it runs from the runtime image like the other entrypoint scripts.
  */
-import { createHash, createHmac, pbkdf2Sync, randomBytes } from "node:crypto";
+import {
+  createHash,
+  createHmac,
+  pbkdf2Sync,
+  randomBytes,
+  scryptSync,
+} from "node:crypto";
 import { writeSync } from "node:fs";
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
@@ -214,12 +220,17 @@ export function roleComment(database) {
   return `${MANAGED_MARK} for database ${JSON.stringify(String(database))}: the app's least-privilege login (scripts/db-app-role.mjs). Re-granted on every start.`;
 }
 
-/** The role's password for a database: 64 hex characters, the same in every container. */
+/**
+ * The role's password for a database: 64 hex characters, the same in every
+ * container. Derived with scrypt rather than a plain HMAC, because the key is
+ * one the operator chose and a fast hash over a weak one would be cheap to
+ * walk back from a leaked verifier.
+ */
 export function appRolePassword(hmacKey, database) {
   if (!hmacKey) throw new Error("API_TOKEN_HMAC_KEY is not set");
-  return createHmac("sha256", hmacKey)
-    .update(`${PASSWORD_LABEL}:${database}`)
-    .digest("hex");
+  return scryptSync(hmacKey, `${PASSWORD_LABEL}:${database}`, 32).toString(
+    "hex",
+  );
 }
 
 /**
