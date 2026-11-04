@@ -40,8 +40,9 @@
   arrive as types of their own (`BODY_BATTERY`, `STRESS_LEVEL`), never mixed
   into the computed scores. Garmin keys expire after 30 to 365 days; the
   card warns a week ahead and asks for a new key when Garmin stops
-  accepting the old one. Accounts on Garmin's China service work too. The
-  key is stored encrypted and only ever sent to Garmin. (#1333)
+  accepting the old one. Accounts on Garmin's China service work too; the
+  key goes only to the service you pick. The key is stored encrypted and
+  only ever sent to Garmin. (#1333)
 - **Training Readiness and acute training load.** The Personal API does
   not carry them, so they are new types (`TRAINING_READINESS`,
   `ACUTE_TRAINING_LOAD`) a Home Assistant bridge can push through an ingest

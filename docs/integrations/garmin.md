@@ -24,9 +24,9 @@ before storing anything, so a mistyped or revoked key is refused on the spot.
 The key is stored encrypted at rest and is never shown again, logged or sent
 anywhere but Garmin.
 
-Accounts registered with Garmin's China service work too: a key the global
-service does not know is tried there once, and the service that accepts it is
-remembered.
+Accounts registered with Garmin's China service work too: pick **Garmin
+Connect China** as the service. The key is only ever sent to the service you
+pick.
 
 After connecting, the last 30 days arrive within a minute and the rest of your
 history follows in the background. The card says "Older history is still
@@ -43,7 +43,10 @@ From seven days before the end the card says when the key expires. When it
 has expired, or you revoked it in Garmin Connect, syncing stops and the card
 asks for a new key: create one, open **Replace key** in the card's menu and
 paste it. Nothing imported is lost. If you did not pick a validity, the card
-says that it cannot warn ahead.
+says that it cannot warn ahead; **Key validity** in the card's menu sets it
+afterwards, together with the day you created the key, without pasting the
+key again. A key Garmin turned down is asked about again once a day, so a
+refusal that passes on its own clears without you doing anything.
 
 ## What comes through
 
@@ -74,6 +77,13 @@ Notes:
 - Days you did not wear the watch import nothing, not zeros.
 - Period days are only added on days you have not logged yourself; your own
   entries are never changed. Cycles Garmin only predicts are not imported.
+- Weigh-ins are read back to the start of Garmin Connect, also from before
+  your first watch, so a scale-only account gets its whole history.
+- A night you delete in Garmin Connect, or that Garmin turns into a nap, is
+  removed here on the next sync.
+- Data Garmin does not provide for your account (a menstrual-cycle summary
+  when you track none, for example) is skipped, does not count as an error,
+  and is listed under **Details for a bug report** on the card.
 - When the same data also arrives through Apple Health or Health Connect, the
   source order in **Settings → Sources** decides which one a chart shows.
   Garmin ranks with the other watches.
