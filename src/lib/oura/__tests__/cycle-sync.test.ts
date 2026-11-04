@@ -6,19 +6,35 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { fetchCyclePhasesMock, isCycleAvailableMock, findUserMock, createMock } =
-  vi.hoisted(() => ({
-    fetchCyclePhasesMock: vi.fn(),
-    isCycleAvailableMock: vi.fn(),
-    findUserMock: vi.fn(),
-    createMock: vi.fn(),
-  }));
+const {
+  fetchCyclePhasesMock,
+  isCycleAvailableMock,
+  findUserMock,
+  createMock,
+  ensureCycleMock,
+  owningCycleMock,
+} = vi.hoisted(() => ({
+  fetchCyclePhasesMock: vi.fn(),
+  isCycleAvailableMock: vi.fn(),
+  findUserMock: vi.fn(),
+  createMock: vi.fn(),
+  ensureCycleMock: vi.fn(),
+  owningCycleMock: vi.fn(),
+}));
 
 vi.mock("@/lib/db", () => ({
   prisma: {
     user: { findUnique: findUserMock },
     cycleDayLog: { create: createMock },
   },
+}));
+
+vi.mock("@/lib/cycle/cycle-boundaries", () => ({
+  ensureCycleForBleedingDay: ensureCycleMock,
+}));
+
+vi.mock("@/lib/cycle/cycle-attribution", () => ({
+  findOwningCycleId: owningCycleMock,
 }));
 
 vi.mock("@/lib/cycle/gate", () => ({
@@ -50,6 +66,8 @@ beforeEach(() => {
   isCycleAvailableMock.mockReset().mockResolvedValue(true);
   findUserMock.mockReset().mockResolvedValue({ timezone: "Europe/Berlin" });
   createMock.mockReset().mockResolvedValue({ id: "cdl-1" });
+  ensureCycleMock.mockReset().mockResolvedValue(null);
+  owningCycleMock.mockReset().mockResolvedValue(null);
 });
 
 describe("syncUserOuraCyclePhases", () => {
@@ -93,8 +111,39 @@ describe("syncUserOuraCyclePhases", () => {
         tz: "Europe/Berlin",
         source: "OURA",
         flow: "LIGHT",
+        cycleId: null,
       },
     });
+  });
+
+  it("attributes a created day to its cycle and lets a first bleeding day open one", async () => {
+    fetchCyclePhasesMock.mockResolvedValue([
+      { day: "2026-06-05", phase: "menstrual" },
+    ]);
+    owningCycleMock.mockResolvedValue("cycle-before");
+    await syncUserOuraCyclePhases("u1", "tok", WINDOW);
+    expect(createMock).toHaveBeenCalledWith({
+      data: expect.objectContaining({ cycleId: "cycle-before" }),
+    });
+    expect(ensureCycleMock).toHaveBeenCalledWith(
+      "u1",
+      "2026-06-05",
+      "Europe/Berlin",
+      { flow: "LIGHT", intermenstrualBleeding: false },
+    );
+    // The inference runs after the create, so the opened cycle claims it.
+    expect(createMock.mock.invocationCallOrder[0]).toBeLessThan(
+      ensureCycleMock.mock.invocationCallOrder[0]!,
+    );
+  });
+
+  it("infers no cycle from a day it did not create", async () => {
+    fetchCyclePhasesMock.mockResolvedValue([
+      { day: "2026-06-05", phase: "menstrual" },
+    ]);
+    createMock.mockRejectedValue(uniqueViolation());
+    await syncUserOuraCyclePhases("u1", "tok", WINDOW);
+    expect(ensureCycleMock).not.toHaveBeenCalled();
   });
 
   it("skips a day that already has ANY existing row (manual wins) — unique-violation swallowed silently", async () => {

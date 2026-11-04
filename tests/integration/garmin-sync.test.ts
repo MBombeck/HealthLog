@@ -77,6 +77,8 @@ const fake = vi.hoisted(() => ({
   rateLimitHit: -1,
   /** First day of the one logged cycle, relative to today. */
   cycleStart: "",
+  /** Several logged cycles instead of the one; when set, `cycleStart` is unused. */
+  cycles: [] as Array<{ start: string; periodLength: number }>,
   /**
    * The weigh-in shape: `spec` is Garmin's document (kilograms, no
    * `samplePk`, a string instant), `live` the shape seen on the live
@@ -260,6 +262,18 @@ function answer(path: string, q: URLSearchParams): unknown {
   if (path.startsWith("/periodichealth-service/menstrualcycle/summary/")) {
     if (fake.cycleStatus !== 200) return { status: fake.cycleStatus };
     const day = path.split("/").pop()!;
+    if (fake.cycles.length > 0) {
+      const at = [...fake.cycles]
+        .sort((a, b) => b.start.localeCompare(a.start))
+        .find((c) => c.start <= day);
+      return at
+        ? {
+            startDate: { localDate: at.start },
+            periodLength: at.periodLength,
+            predictedCycle: false,
+          }
+        : {};
+    }
     const cycleStart = fake.cycleStart;
     return day >= cycleStart
       ? { startDate: cycleStart, periodLength: 4, predictedCycle: false }
@@ -362,6 +376,7 @@ beforeEach(async () => {
   fake.today = new Date().toISOString().slice(0, 10);
   fake.historyFrom = addDays(fake.today, -20);
   fake.cycleStart = addDays(fake.today, -15);
+  fake.cycles = [];
   fake.weightShape = "spec";
   fake.extraWeighDays = [];
   fake.cycleStatus = 200;
@@ -593,6 +608,122 @@ describe("Garmin history backfill", () => {
     expect(dailyReads.length - new Set(dailyReads).size).toBe(1);
     const repeated = dailyReads.find((r, i) => dailyReads.indexOf(r) !== i);
     expect(dailyReads.indexOf(repeated!)).toBe(fake.rateLimitHit);
+  });
+});
+
+describe("Garmin cycle history", () => {
+  async function backfillToEnd() {
+    const { runGarminBackfillForUser } =
+      await import("@/lib/jobs/garmin-backfill");
+    for (let slice = 0; slice < 20; slice++) {
+      const user = await getPrismaClient().user.findUnique({
+        where: { id: USER_ID },
+        select: { garminBackfillCompletedAt: true },
+      });
+      if (user?.garminBackfillCompletedAt) return;
+      await runGarminBackfillForUser(USER_ID, () => false, slice);
+    }
+    throw new Error("backfill did not finish");
+  }
+
+  async function liveCycles() {
+    return getPrismaClient().menstrualCycle.findMany({
+      where: { userId: USER_ID, deletedAt: null },
+      orderBy: { startDate: "asc" },
+      select: {
+        id: true,
+        startDate: true,
+        endDate: true,
+        lengthDays: true,
+        periodEndDate: true,
+      },
+    });
+  }
+
+  it("opens a cycle per back-filled period, newest first, with lengths and a forecast", async () => {
+    await connectUser();
+    fake.historyFrom = addDays(fake.today, -100);
+    const starts = [-80, -52, -24].map((n) => addDays(fake.today, n));
+    fake.cycles = starts.map((start) => ({ start, periodLength: 5 }));
+    // A day the person logged inside the middle period.
+    const ownDay = addDays(starts[1]!, 2);
+    const prisma = getPrismaClient();
+    await prisma.cycleDayLog.create({
+      data: { userId: USER_ID, date: ownDay, flow: "HEAVY" },
+    });
+
+    await backfillToEnd();
+
+    const cycles = await liveCycles();
+    expect(
+      cycles.map((c) => [
+        c.startDate,
+        c.endDate,
+        c.lengthDays,
+        c.periodEndDate,
+      ]),
+    ).toEqual([
+      [starts[0], addDays(starts[1]!, -1), 28, addDays(starts[0]!, 4)],
+      [starts[1], addDays(starts[2]!, -1), 28, addDays(starts[1]!, 4)],
+      [starts[2], null, null, addDays(starts[2]!, 4)],
+    ]);
+    // Every Garmin day belongs to the period it is part of.
+    const days = await prisma.cycleDayLog.findMany({
+      where: { userId: USER_ID },
+      orderBy: { date: "asc" },
+      select: { date: true, source: true, flow: true, cycleId: true },
+    });
+    expect(days).toHaveLength(15);
+    for (const day of days) {
+      const owner = [...cycles].reverse().find((c) => c.startDate <= day.date);
+      expect(day.cycleId).toBe(owner?.id);
+    }
+    // The person's own day is theirs, as they logged it.
+    expect(days.find((d) => d.date === ownDay)).toMatchObject({
+      source: "MANUAL",
+      flow: "HEAVY",
+    });
+
+    const { getOrCreateCycleProfile } = await import("@/lib/cycle/profile");
+    await getOrCreateCycleProfile(USER_ID);
+    const { refreshPredictionCacheForUser } =
+      await import("@/lib/cycle/prediction-refresh");
+    expect(await refreshPredictionCacheForUser(USER_ID)).toBe("persisted");
+    const forecast = await prisma.cyclePrediction.findUnique({
+      where: { userId: USER_ID },
+    });
+    expect(forecast).not.toBeNull();
+
+    // A second full backfill changes nothing.
+    await prisma.user.update({
+      where: { id: USER_ID },
+      data: {
+        garminBackfillProgress: Prisma.DbNull,
+        garminBackfillCompletedAt: null,
+      },
+    });
+    await backfillToEnd();
+    expect(await liveCycles()).toEqual(cycles);
+    expect(await prisma.cycleDayLog.count({ where: { userId: USER_ID } })).toBe(
+      15,
+    );
+  });
+
+  it("opens the current cycle from the hourly sync and leaves its end open while bleeding", async () => {
+    await connectUser();
+    const start = addDays(fake.today, -1);
+    fake.cycles = [{ start, periodLength: 5 }];
+    const { syncUserGarmin } = await import("@/lib/garmin/sync");
+    await syncUserGarmin(USER_ID, { lookbackDays: 2 });
+    const cycles = await liveCycles();
+    expect(cycles).toHaveLength(1);
+    expect(cycles[0]).toMatchObject({ startDate: start, periodEndDate: null });
+    const days = await getPrismaClient().cycleDayLog.findMany({
+      where: { userId: USER_ID },
+      select: { cycleId: true },
+    });
+    expect(days).toHaveLength(2);
+    expect(days.every((d) => d.cycleId === cycles[0]!.id)).toBe(true);
   });
 });
 

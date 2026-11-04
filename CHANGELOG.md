@@ -18,6 +18,12 @@
 
 ### Fixed
 
+- **Periods from Garmin and Oura open their cycles.** Period days imported
+  from a watch or a ring were stored as days only, so the cycle tracker saw
+  no cycle start, no lengths and no forecast. They now open and fill their
+  cycles like a period logged by hand, a finished Garmin period also marks
+  its last day, and periods imported earlier are repaired once on the next
+  start. A day you logged yourself is never changed. (#1333)
 - **Typing into the smoking history.** "When you stopped" only took text
   that was already a whole YYYY-MM month, so every keystroke was dropped
   and only a paste got in. The start year clamped each keystroke into its

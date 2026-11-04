@@ -1,5 +1,5 @@
 {
-  "registeredQueueCount": 129,
+  "registeredQueueCount": 130,
   "registeredQueues": [
     "account-deletion-purge",
     "achievement-unlock-sweep",
@@ -117,6 +117,7 @@
     "supplement-nutrient-recompute",
     "system-job-alert",
     "tls-pin-monitor",
+    "wearable-cycle-repair",
     "whoop-backfill",
     "whoop-cycle-sync",
     "whoop-oauth-state-cleanup",
@@ -1866,6 +1867,21 @@
       "notify": false,
       "partition": false,
       "policy": "standard",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "wearable-cycle-repair",
+      "notify": false,
+      "partition": false,
+      "policy": "short",
       "retention_seconds": 1209600,
       "retry_backoff": false,
       "retry_delay": 0,
@@ -3799,6 +3815,12 @@
       "options": {
         "localConcurrency": 1,
         "pollingIntervalSeconds": 30
+      }
+    },
+    {
+      "queue": "wearable-cycle-repair",
+      "options": {
+        "localConcurrency": 1
       }
     },
     {

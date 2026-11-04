@@ -114,12 +114,12 @@ describe("maintenance group queue policies", () => {
 
   // One-shot repairs on a fixed singleton key: a boot during a run must be
   // able to queue the next pass, so only queued duplicates collapse.
-  it.each([["lab-document-date-repair", "short"]])(
-    "%s is %s",
-    (queue, policy) => {
-      expectPolicy("maintenance", queue, policy);
-    },
-  );
+  it.each([
+    ["lab-document-date-repair", "short"],
+    ["wearable-cycle-repair", "short"],
+  ])("%s is %s", (queue, policy) => {
+    expectPolicy("maintenance", queue, policy);
+  });
 
   it("environment-fetch is deliberately left on standard", () => {
     // Its explicit-range backfill sends with no key at all, on purpose, so any

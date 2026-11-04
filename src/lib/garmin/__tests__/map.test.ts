@@ -370,13 +370,24 @@ describe("cycle summary", () => {
         "2026-10-13",
         "2026-10-14",
       ],
+      ended: true,
     });
-    expect(
-      periodFromGarminCycleSummary(
-        { startDate: "2026-11-03", periodLength: 5 },
-        "2026-11-04",
-      )?.days,
-    ).toEqual(["2026-11-03", "2026-11-04"]);
+    const ongoing = periodFromGarminCycleSummary(
+      { startDate: "2026-11-03", periodLength: 5 },
+      "2026-11-04",
+    );
+    expect(ongoing?.days).toEqual(["2026-11-03", "2026-11-04"]);
+    expect(ongoing?.ended).toBe(false);
+  });
+
+  it("calls a period ended only once its last day is past", () => {
+    const summary = { startDate: "2026-11-01", periodLength: 4 };
+    expect(periodFromGarminCycleSummary(summary, "2026-11-04")?.ended).toBe(
+      false,
+    );
+    expect(periodFromGarminCycleSummary(summary, "2026-11-05")?.ended).toBe(
+      true,
+    );
   });
 
   it("imports nothing from a predicted cycle or a pregnancy", () => {
