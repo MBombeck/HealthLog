@@ -106,6 +106,30 @@ const ZOOM_DAYS: Readonly<
   quarter: 91,
 };
 
+/**
+ * The `[from, to]` a zoom reads, as local day keys. `to` defaults to today;
+ * `all` (and a `range`, which names both ends) starts at `dataFrom`, the
+ * earliest day there is anything to show, or a year back when there is
+ * nothing; `year` and `quarter` reach back their fixed span from `to`. The
+ * timeline and one marker's lab line (`/api/biomarkers/{id}/series`, #1342)
+ * both cut their window here.
+ */
+export function resolveTimelineWindow(
+  query: { zoom: TimelineZoom; from?: string; to?: string },
+  today: string,
+  dataFrom: string | null,
+): { from: string; to: string } {
+  const to = query.to ?? today;
+  const from =
+    query.from ??
+    (query.zoom === "all" || query.zoom === "range"
+      ? dataFrom !== null && dataFrom < to
+        ? dataFrom
+        : shiftDateKey(to, -364)
+      : shiftDateKey(to, -(ZOOM_DAYS[query.zoom] - 1)));
+  return { from, to };
+}
+
 const MEASUREMENT_TYPE_SET: ReadonlySet<string> = new Set(
   Object.values(MeasurementTypes),
 );
@@ -241,14 +265,7 @@ export async function loadTimeline(args: {
   if (firstReading) starts.push(userDayKey(firstReading.measuredAt, tz));
   const dataFrom = starts.length > 0 ? starts.sort()[0] : null;
 
-  const to = query.to ?? today;
-  const from =
-    query.from ??
-    (query.zoom === "all" || query.zoom === "range"
-      ? dataFrom !== null && dataFrom < to
-        ? dataFrom
-        : shiftDateKey(to, -364)
-      : shiftDateKey(to, -(ZOOM_DAYS[query.zoom] - 1)));
+  const { from, to } = resolveTimelineWindow(query, today, dataFrom);
 
   const lanes: TimelineResponse["lanes"] = [];
   const standing: StandingItem[] = [];

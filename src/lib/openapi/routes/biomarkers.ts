@@ -15,6 +15,12 @@ import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
 
 import { LAB_UNIT_DESCRIPTION } from "@/lib/labs/dimensionless";
+import {
+  dateKeySchema,
+  labSeriesQuerySchema,
+  timelineLabSeries,
+} from "@/lib/day/wire-schemas";
+import { TIMELINE_ZOOMS } from "@/lib/day/contract";
 
 import {
   createBiomarkerSchema,
@@ -173,6 +179,22 @@ const notFound = {
   },
 };
 
+const biomarkerSeries = z
+  .object({
+    zoom: z.enum(TIMELINE_ZOOMS),
+    range: z.object({
+      from: dateKeySchema,
+      to: dateKeySchema,
+      dataFrom: dateKeySchema
+        .nullable()
+        .describe(
+          "The local day of the marker's first numeric reading; null when it has none. `all` starts here.",
+        ),
+    }),
+    series: timelineLabSeries,
+  })
+  .meta({ id: "BiomarkerSeries" });
+
 const biomarkerMergeRequest = biomarkerMergeSchema.meta({
   id: "BiomarkerMergeRequest",
   description:
@@ -322,6 +344,38 @@ export const biomarkerPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...notFound,
         ...stdResponses,
+      },
+    },
+  },
+  "/api/biomarkers/{id}/series": {
+    get: {
+      tags: ["Labs"],
+      summary: "One marker's lab line",
+      description:
+        "The line `labSeries` on `GET /api/timeline` draws for this marker, cut by the same `zoom`, `from` and `to` rules: every numeric reading in the window, oldest first, one point each (never averaged), readings in a unit that does not convert counted in `excluded`, and the band to draw behind them. `all` starts at the marker's first reading. Gated on the `labs` module, not on `timeline`. A point names the report it was read from only when the caller may see documents. Cross-user ids answer 404; a merged marker answers 404 with `meta.mergedInto`.",
+      requestParams: {
+        path: z.object({ id: z.string() }),
+        query: labSeriesQuerySchema,
+      },
+      responses: {
+        ...recordRefusal(
+          "`module.disabled` with `meta.module = labs`: the record has the labs module switched off, or the operator turned it off server-wide.",
+        ),
+        "200": {
+          description: "The marker's line over the window.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(biomarkerSeries, "BiomarkerSeriesEnvelope"),
+            },
+          },
+        },
+        ...notFound,
+        ...stdResponses,
+        "422": {
+          description:
+            "`labs.series.invalid`: an unknown `zoom`, a malformed date, a `range` without both ends or longer than 15 years, or `from` after `to`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },

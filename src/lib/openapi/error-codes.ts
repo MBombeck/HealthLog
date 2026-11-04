@@ -273,6 +273,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "labs.biomarker.update.invalid",
       "labs.biomarker.update.referenceRangeInvalid",
       "labs.create.invalid",
+      "labs.series.invalid",
       "labs.link.invalid",
       "labs.ocr.budgetExceeded",
       "labs.ocr.extractFailed",

@@ -17617,6 +17617,87 @@ paths:
         "404": *a35
         "422": *a4
         "429": *a5
+  /api/biomarkers/{id}/series:
+    get:
+      tags:
+        - Labs
+      summary: One marker's lab line
+      description: "The line `labSeries` on `GET /api/timeline` draws for this marker, cut by the same `zoom`, `from` and `to`
+        rules: every numeric reading in the window, oldest first, one point each (never averaged), readings in a unit
+        that does not convert counted in `excluded`, and the band to draw behind them. `all` starts at the marker's
+        first reading. Gated on the `labs` module, not on `timeline`. A point names the report it was read from only
+        when the caller may see documents. Cross-user ids answer 404; a merged marker answers 404 with
+        `meta.mergedInto`."
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: zoom
+          schema:
+            default: all
+            description: "The window, as on the timeline: `all` from the marker's first reading, `year` and `quarter` back from `to`
+              (today by default), `range` a chosen stretch that requires `from` and `to`, at most 15 years apart. Points
+              are never averaged, whatever the zoom."
+            type: string
+            enum:
+              - all
+              - year
+              - quarter
+              - range
+          description: "The window, as on the timeline: `all` from the marker's first reading, `year` and `quarter` back from `to`
+            (today by default), `range` a chosen stretch that requires `from` and `to`, at most 15 years apart. Points
+            are never averaged, whatever the zoom."
+        - in: query
+          name: from
+          schema:
+            type: string
+            description: A local calendar date, `YYYY-MM-DD`.
+        - in: query
+          name: to
+          schema:
+            type: string
+            description: A local calendar date, `YYYY-MM-DD`.
+      responses:
+        "200":
+          description: The marker's line over the window.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BiomarkerSeriesEnvelope"
+        "401": *a1
+        "403":
+          description: >-
+            `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
+            generic auth gate answers it before the route's own checks run. Otherwise: `module.disabled` with
+            `meta.module = labs`: the record has the labs module switched off, or the operator turned it off
+            server-wide.
+
+
+            Refused: this request named a record the caller may not act on (`meta.errorCode` = `sharing.access.denied`).
+            Byte-identical for an account that does not exist, an account that granted nothing, a grant whose sections
+            do not reach this surface, and a read grant on a request that writes — the response carries no reason, so it
+            is not an account-enumeration oracle. The reason reaches the record owner's activity feed and the operator's
+            audit trail instead. On the cookie transport the same code answers one further case: a session that has
+            entered a shared record and sends a request without its record-context assertion, which is a client older
+            than the fence — leave the record and reload. A request that names no record but the caller's own never
+            reaches this response, so a client that never switches and never sends the per-request account selector will
+            not see it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404": *a35
+        "422":
+          description: "`labs.series.invalid`: an unknown `zoom`, a malformed date, a `range` without both ends or longer than 15
+            years, or `from` after `to`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429": *a5
   /api/biomarkers/{id}/merge:
     post:
       tags:
@@ -39393,74 +39474,75 @@ components:
                 insights.generate.scopeChanged; labs — labs.biomarker.alias.taken, labs.biomarker.create.invalid,
                 labs.biomarker.duplicate, labs.biomarker.merge.invalid, labs.biomarker.merge.unitMismatch,
                 labs.biomarker.notFound, labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid,
-                labs.create.invalid, labs.link.invalid, labs.ocr.budgetExceeded, labs.ocr.extractFailed,
-                labs.ocr.fileTooLarge, labs.ocr.fileType, labs.ocr.localOcrDisabled, labs.ocr.outputLimit,
-                labs.ocr.pdfRendererUnavailable, labs.ocr.providerUnsupported, labs.ocr.rateLimited, labs.ocr.tooLarge,
-                labs.restore.invalid, labs.result.notFound, labs.unit.mismatch, labs.update.invalid,
-                labs.update.linkedFieldsImmutable, labs.update.numericExpected, labs.update.qualitativeExpected,
-                labs.update.referenceRangeInvalid, labs.update.sourceReferenceRangeInvalid; life_event —
-                life_event.invalid, life_event.not_found; managed_profile — managed_profile.guardian.duplicate,
-                managed_profile.guardian.managed_invitee, managed_profile.guardian.required,
-                managed_profile.handover.no_pending, managed_profile.handover.unknown_guardian,
-                managed_profile.not_found; maintenance — maintenance.pulseDayMean.busy,
-                maintenance.pulseDayMean.dryRunRequired; measurement — measurement.batch.invalid,
-                measurement.batch.source_not_permitted, measurement.batch.too_large, measurement.bulk-delete.invalid,
-                measurement.create.invalid, measurement.create.source_not_permitted, measurement.delete.too_large,
-                measurement.duplicate_timestamp, measurement.restore.invalid, measurement.update.server_owned_source;
-                medication — medication.intake.import.invalid_format, medication.intake.notTracked,
-                medication.link.invalid; medications — medications.category.invalid, medications.category.limitReached,
-                medications.category.unknown, medications.course.currentOpen, medications.course.invalid,
-                medications.course.invalidRange, medications.course.notFound, medications.course.notRunning,
-                medications.course.oneShot, medications.course.overlap, medications.course.windowRequired,
-                medications.ingredients.extract.budgetExceeded, medications.ingredients.extract.failed,
-                medications.ingredients.extract.fileTooLarge, medications.ingredients.extract.fileType,
-                medications.ingredients.extract.rateLimited, medications.ingredients.invalid,
-                medications.ingredients.unitMismatch, medications.intake.bulk.apple_health_not_mirrored,
-                medications.intake.bulk.invalid, medications.intake.bulk.too_large,
-                medications.intake.force_slot.invalid, medications.intake.force_slot.occupied,
-                medications.intake.injection_site.disallowed, medications.intake.taken_at.before_start,
-                medications.mirror.limit_exceeded, medications.notFound; mentalHealth — mentalHealth.rateLimited; module
-                — module.disabled; modules — modules.body.invalid_json, modules.invalid; mood —
-                mood.bulk-delete.invalid, mood.bulk.invalid, mood.bulk.too_large, mood.create.external_id_not_delegable,
-                mood.create.invalid, mood.duplicate_timestamp, mood.linkedContext.invalid, mood.list.invalid,
-                mood.not_found, mood.ratedFactor.out_of_range, mood.restore.invalid, mood.update.invalid;
-                notification-prefs — notification-prefs.body.invalid_json; notification —
-                notification.action.already_used, notification.action.expired, notification.action.invalid,
-                notification.action.module_disabled; nutrient — nutrient.batch.invalid, nutrient.batch.too_large,
-                nutrient.daily.invalid, nutrient.read.invalid, nutrient.water.invalid, nutrient.water.invalid_day;
-                onboarding — onboarding.answers.invalid, onboarding.answers.rateLimited, onboarding.complete.invalid,
-                onboarding.complete.recordNotFound, onboarding.complete.recordTargetMismatch,
-                onboarding.disclaimer.invalid, onboarding.restart.invalid, onboarding.restart.rateLimited,
-                onboarding.tour.invalid; passkey — passkey.challenge.expired, passkey.response.invalid, passkey.unknown,
-                passkey.verification.failed; personal_records — personal_records.invalid_query; practitioner —
-                practitioner.invalid; profile — profile.update.emailInUse, profile.update.emailRateLimited,
-                profile.update.emailSecondFactorRequired, profile.update.invalidBody, profile.update.nothingSaved;
-                profile_claim — profile_claim.invalid, profile_claim.oidc_only_unsupported,
-                profile_claim.sso_unavailable, profile_claim.taken; record_write — record_write.rate_limited; recovery —
-                recovery.kit.stale; report-selection — report-selection.body.invalid_json,
-                report-selection.body.invalid_shape, report-selection.leaves.unknown; request — request.cross_site;
-                route — route.retired; search — search.invalid; security_activity — security_activity.invalid;
-                share-link — share-link.document.decryptFailed, share-link.document.notFound,
-                share-link.document.rateLimited, share-link.documents.invalid, share-link.report.notFound,
-                share-link.report.rateLimited, share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf;
-                sharing — sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending,
-                sharing.accept.revoked, sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid,
-                sharing.invite.invalid_scope, sharing.invite.manage_browser_only, sharing.invite.no_account,
-                sharing.invite.refused, sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended,
-                sharing.renounce.not_found, sharing.revoke.already_ended, sharing.revoke.not_found,
-                sharing.session.changed, sharing.switch.invalid, sharing.switch.wrong_transport; source-priority —
-                source-priority.body.invalid_json, source-priority.body.invalid_shape; symptoms —
-                symptoms.definition.limitReached, symptoms.definition.notFound, symptoms.episode.notOpen,
-                symptoms.event.notFound, symptoms.invalid; timeline — timeline.invalid; tokens —
-                tokens.documents.ceiling_reached, tokens.measurements.ceiling_reached,
-                tokens.mirror.not_measurement_token, tokens.workouts.ceiling_reached; vaccination —
-                vaccination.booster-invalid, vaccination.booster-no-antigen, vaccination.booster-out-of-scope,
-                vaccination.custom-vaccine-not-found, vaccination.custom.invalid, vaccination.custom.name-taken,
-                vaccination.custom.not-found, vaccination.encounter-not-found, vaccination.identity-required,
-                vaccination.invalid, vaccination.link.invalid, vaccination.not-found,
-                vaccination.practitioner-not-found; workout — workout.batch.invalid, workout.batch.payload_too_large,
-                workout.batch.source_not_permitted, workout.batch.too_large, workout.delete.synced_source; (unprefixed)
-                — about_me_conflict, ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
+                labs.create.invalid, labs.series.invalid, labs.link.invalid, labs.ocr.budgetExceeded,
+                labs.ocr.extractFailed, labs.ocr.fileTooLarge, labs.ocr.fileType, labs.ocr.localOcrDisabled,
+                labs.ocr.outputLimit, labs.ocr.pdfRendererUnavailable, labs.ocr.providerUnsupported,
+                labs.ocr.rateLimited, labs.ocr.tooLarge, labs.restore.invalid, labs.result.notFound, labs.unit.mismatch,
+                labs.update.invalid, labs.update.linkedFieldsImmutable, labs.update.numericExpected,
+                labs.update.qualitativeExpected, labs.update.referenceRangeInvalid,
+                labs.update.sourceReferenceRangeInvalid; life_event — life_event.invalid, life_event.not_found;
+                managed_profile — managed_profile.guardian.duplicate, managed_profile.guardian.managed_invitee,
+                managed_profile.guardian.required, managed_profile.handover.no_pending,
+                managed_profile.handover.unknown_guardian, managed_profile.not_found; maintenance —
+                maintenance.pulseDayMean.busy, maintenance.pulseDayMean.dryRunRequired; measurement —
+                measurement.batch.invalid, measurement.batch.source_not_permitted, measurement.batch.too_large,
+                measurement.bulk-delete.invalid, measurement.create.invalid, measurement.create.source_not_permitted,
+                measurement.delete.too_large, measurement.duplicate_timestamp, measurement.restore.invalid,
+                measurement.update.server_owned_source; medication — medication.intake.import.invalid_format,
+                medication.intake.notTracked, medication.link.invalid; medications — medications.category.invalid,
+                medications.category.limitReached, medications.category.unknown, medications.course.currentOpen,
+                medications.course.invalid, medications.course.invalidRange, medications.course.notFound,
+                medications.course.notRunning, medications.course.oneShot, medications.course.overlap,
+                medications.course.windowRequired, medications.ingredients.extract.budgetExceeded,
+                medications.ingredients.extract.failed, medications.ingredients.extract.fileTooLarge,
+                medications.ingredients.extract.fileType, medications.ingredients.extract.rateLimited,
+                medications.ingredients.invalid, medications.ingredients.unitMismatch,
+                medications.intake.bulk.apple_health_not_mirrored, medications.intake.bulk.invalid,
+                medications.intake.bulk.too_large, medications.intake.force_slot.invalid,
+                medications.intake.force_slot.occupied, medications.intake.injection_site.disallowed,
+                medications.intake.taken_at.before_start, medications.mirror.limit_exceeded, medications.notFound;
+                mentalHealth — mentalHealth.rateLimited; module — module.disabled; modules — modules.body.invalid_json,
+                modules.invalid; mood — mood.bulk-delete.invalid, mood.bulk.invalid, mood.bulk.too_large,
+                mood.create.external_id_not_delegable, mood.create.invalid, mood.duplicate_timestamp,
+                mood.linkedContext.invalid, mood.list.invalid, mood.not_found, mood.ratedFactor.out_of_range,
+                mood.restore.invalid, mood.update.invalid; notification-prefs — notification-prefs.body.invalid_json;
+                notification — notification.action.already_used, notification.action.expired,
+                notification.action.invalid, notification.action.module_disabled; nutrient — nutrient.batch.invalid,
+                nutrient.batch.too_large, nutrient.daily.invalid, nutrient.read.invalid, nutrient.water.invalid,
+                nutrient.water.invalid_day; onboarding — onboarding.answers.invalid, onboarding.answers.rateLimited,
+                onboarding.complete.invalid, onboarding.complete.recordNotFound,
+                onboarding.complete.recordTargetMismatch, onboarding.disclaimer.invalid, onboarding.restart.invalid,
+                onboarding.restart.rateLimited, onboarding.tour.invalid; passkey — passkey.challenge.expired,
+                passkey.response.invalid, passkey.unknown, passkey.verification.failed; personal_records —
+                personal_records.invalid_query; practitioner — practitioner.invalid; profile —
+                profile.update.emailInUse, profile.update.emailRateLimited, profile.update.emailSecondFactorRequired,
+                profile.update.invalidBody, profile.update.nothingSaved; profile_claim — profile_claim.invalid,
+                profile_claim.oidc_only_unsupported, profile_claim.sso_unavailable, profile_claim.taken; record_write —
+                record_write.rate_limited; recovery — recovery.kit.stale; report-selection —
+                report-selection.body.invalid_json, report-selection.body.invalid_shape,
+                report-selection.leaves.unknown; request — request.cross_site; route — route.retired; search —
+                search.invalid; security_activity — security_activity.invalid; share-link —
+                share-link.document.decryptFailed, share-link.document.notFound, share-link.document.rateLimited,
+                share-link.documents.invalid, share-link.report.notFound, share-link.report.rateLimited,
+                share-link.selection.forbidden_leaf, share-link.selection.unknown_leaf; sharing —
+                sharing.accept.expired, sharing.accept.not_found, sharing.accept.not_pending, sharing.accept.revoked,
+                sharing.access.denied, sharing.invite.duplicate, sharing.invite.invalid, sharing.invite.invalid_scope,
+                sharing.invite.manage_browser_only, sharing.invite.no_account, sharing.invite.refused,
+                sharing.invite.self, sharing.not_permitted, sharing.renounce.already_ended, sharing.renounce.not_found,
+                sharing.revoke.already_ended, sharing.revoke.not_found, sharing.session.changed, sharing.switch.invalid,
+                sharing.switch.wrong_transport; source-priority — source-priority.body.invalid_json,
+                source-priority.body.invalid_shape; symptoms — symptoms.definition.limitReached,
+                symptoms.definition.notFound, symptoms.episode.notOpen, symptoms.event.notFound, symptoms.invalid;
+                timeline — timeline.invalid; tokens — tokens.documents.ceiling_reached,
+                tokens.measurements.ceiling_reached, tokens.mirror.not_measurement_token,
+                tokens.workouts.ceiling_reached; vaccination — vaccination.booster-invalid,
+                vaccination.booster-no-antigen, vaccination.booster-out-of-scope, vaccination.custom-vaccine-not-found,
+                vaccination.custom.invalid, vaccination.custom.name-taken, vaccination.custom.not-found,
+                vaccination.encounter-not-found, vaccination.identity-required, vaccination.invalid,
+                vaccination.link.invalid, vaccination.not-found, vaccination.practitioner-not-found; workout —
+                workout.batch.invalid, workout.batch.payload_too_large, workout.batch.source_not_permitted,
+                workout.batch.too_large, workout.delete.synced_source; (unprefixed) — about_me_conflict,
+                ai_response_truncated, coach_prefs_conflict, dashboard_layout_conflict, empty_file,
                 health_score_config_conflict, insights_layout_conflict, invalid_base_updated_at,
                 json_carries_no_intake_time, json_not_an_array, medication_layout_conflict, missing_required_columns,
                 modules_conflict, mood_tag_layout_conflict, not_configured, notification_prefs_conflict, oidc_only,
@@ -77874,6 +77956,185 @@ components:
         - data
         - error
       additionalProperties: false
+    BiomarkerSeriesEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/BiomarkerSeries"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    BiomarkerSeries:
+      type: object
+      properties:
+        zoom:
+          type: string
+          enum:
+            - all
+            - year
+            - quarter
+            - range
+        range:
+          type: object
+          properties:
+            from:
+              type: string
+              description: A local calendar date, `YYYY-MM-DD`.
+            to:
+              type: string
+              description: A local calendar date, `YYYY-MM-DD`.
+            dataFrom:
+              anyOf:
+                - type: string
+                  description: A local calendar date, `YYYY-MM-DD`.
+                - type: "null"
+              description: The local day of the marker's first numeric reading; null when it has none. `all` starts here.
+          required:
+            - from
+            - to
+            - dataFrom
+          additionalProperties: false
+        series:
+          $ref: "#/components/schemas/TimelineLabSeries"
+      required:
+        - zoom
+        - range
+        - series
+      additionalProperties: false
+    TimelineLabSeries:
+      type: object
+      properties:
+        key:
+          type: string
+          description: "`lab:<biomarkerId>`, as named in `values`."
+        biomarkerId:
+          type: string
+        name:
+          type: string
+          description: The marker's name, as the labs list shows it.
+        panel:
+          type:
+            - string
+            - "null"
+        unit:
+          type: string
+          description: The marker's own unit; every point is in it.
+        band:
+          anyOf:
+            - type: object
+              properties:
+                low:
+                  type:
+                    - number
+                    - "null"
+                high:
+                  type:
+                    - number
+                    - "null"
+              required:
+                - low
+                - high
+              additionalProperties: false
+            - type: "null"
+          description: "The reference range to draw behind the points: the marker's own, else the window printed with its newest
+            reading in the window. Null when neither is known."
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineLabPoint"
+          description: "Every numeric reading in the window, oldest first, one point each: never averaged, never interpolated. A
+            day with two readings has two points."
+        excluded:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+          description: Readings in the window stored in a unit that does not convert into `unit`. They are left out of `points`
+            rather than drawn on a scale they are not in.
+      required:
+        - key
+        - biomarkerId
+        - name
+        - panel
+        - unit
+        - band
+        - points
+        - excluded
+      additionalProperties: false
+    TimelineLabPoint:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The lab result's id.
+        date:
+          type: string
+          description: The record's local day of the draw, the day `GET /api/day/{date}` lists it under.
+        value:
+          type: number
+          description: In the series' `unit`.
+        sourceValue:
+          description: The figure the report printed, when `value` was converted into the series' unit; it sets the precision
+            `value` is shown with. Null for a reading stored as stated.
+          type:
+            - number
+            - "null"
+        rangeStatus:
+          type: string
+          enum:
+            - in-range
+            - below
+            - above
+            - unknown
+          description: The reading against `referenceLow` / `referenceHigh`, bounds inclusive; `unknown` when neither is known.
+        referenceLow:
+          description: "The window this reading is judged against, in the series' unit: the one its report printed, else the
+            marker's own."
+          type:
+            - number
+            - "null"
+        referenceHigh:
+          type:
+            - number
+            - "null"
+        report:
+          anyOf:
+            - type: object
+              properties:
+                id:
+                  type: string
+                title:
+                  description: The document's title, else its file name.
+                  type:
+                    - string
+                    - "null"
+                href:
+                  type: string
+              required:
+                - id
+                - title
+                - href
+              additionalProperties: false
+            - type: "null"
+          description: The document the reading was read from, when one is linked and the caller may see documents.
+      required:
+        - id
+        - date
+        - value
+        - sourceValue
+        - rangeStatus
+        - referenceLow
+        - referenceHigh
+        - report
+      additionalProperties: false
     MergeBiomarkersResponse:
       type: object
       properties:
@@ -93686,131 +93947,6 @@ components:
         - key
         - unit
         - points
-      additionalProperties: false
-    TimelineLabSeries:
-      type: object
-      properties:
-        key:
-          type: string
-          description: "`lab:<biomarkerId>`, as named in `values`."
-        biomarkerId:
-          type: string
-        name:
-          type: string
-          description: The marker's name, as the labs list shows it.
-        panel:
-          type:
-            - string
-            - "null"
-        unit:
-          type: string
-          description: The marker's own unit; every point is in it.
-        band:
-          anyOf:
-            - type: object
-              properties:
-                low:
-                  type:
-                    - number
-                    - "null"
-                high:
-                  type:
-                    - number
-                    - "null"
-              required:
-                - low
-                - high
-              additionalProperties: false
-            - type: "null"
-          description: "The reference range to draw behind the points: the marker's own, else the window printed with its newest
-            reading in the window. Null when neither is known."
-        points:
-          type: array
-          items:
-            $ref: "#/components/schemas/TimelineLabPoint"
-          description: "Every numeric reading in the window, oldest first, one point each: never averaged, never interpolated. A
-            day with two readings has two points."
-        excluded:
-          type: integer
-          minimum: 0
-          maximum: 9007199254740991
-          description: Readings in the window stored in a unit that does not convert into `unit`. They are left out of `points`
-            rather than drawn on a scale they are not in.
-      required:
-        - key
-        - biomarkerId
-        - name
-        - panel
-        - unit
-        - band
-        - points
-        - excluded
-      additionalProperties: false
-    TimelineLabPoint:
-      type: object
-      properties:
-        id:
-          type: string
-          description: The lab result's id.
-        date:
-          type: string
-          description: The record's local day of the draw, the day `GET /api/day/{date}` lists it under.
-        value:
-          type: number
-          description: In the series' `unit`.
-        sourceValue:
-          description: The figure the report printed, when `value` was converted into the series' unit; it sets the precision
-            `value` is shown with. Null for a reading stored as stated.
-          type:
-            - number
-            - "null"
-        rangeStatus:
-          type: string
-          enum:
-            - in-range
-            - below
-            - above
-            - unknown
-          description: The reading against `referenceLow` / `referenceHigh`, bounds inclusive; `unknown` when neither is known.
-        referenceLow:
-          description: "The window this reading is judged against, in the series' unit: the one its report printed, else the
-            marker's own."
-          type:
-            - number
-            - "null"
-        referenceHigh:
-          type:
-            - number
-            - "null"
-        report:
-          anyOf:
-            - type: object
-              properties:
-                id:
-                  type: string
-                title:
-                  description: The document's title, else its file name.
-                  type:
-                    - string
-                    - "null"
-                href:
-                  type: string
-              required:
-                - id
-                - title
-                - href
-              additionalProperties: false
-            - type: "null"
-          description: The document the reading was read from, when one is linked and the caller may see documents.
-      required:
-        - id
-        - date
-        - value
-        - sourceValue
-        - rangeStatus
-        - referenceLow
-        - referenceHigh
-        - report
       additionalProperties: false
     TimelineLabMarker:
       type: object

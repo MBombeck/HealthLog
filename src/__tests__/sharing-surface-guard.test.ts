@@ -940,6 +940,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "labs",
     why: "One biomarker of the record, fetch-then-guard against the resolved user.",
   },
+  "app/api/biomarkers/[id]/series/route.ts": {
+    domain: "labs",
+    why: "One marker's lab line (#1342), the timeline's `labSeries` for that marker: the marker is looked up under the resolved user, and the report behind a point is named only when the grant also covers documents. Read only.",
+  },
   "app/api/biomarkers/[id]/merge/route.ts": {
     domain: "labs",
     why: "Merging markers of the record into one (v1.43): every read and write is narrowed to the resolved user, and the sources must be that record's markers.",
@@ -2292,7 +2296,7 @@ const ACTOR_ROUTES: Record<string, string> = {
  * manage literal: it was refused under a switch while the medication's PUT,
  * which used to carry the end, admitted a manager. 272 -> 274.
  */
-const FROZEN_ENTRY_COUNT = 275;
+const FROZEN_ENTRY_COUNT = 276;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

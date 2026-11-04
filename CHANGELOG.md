@@ -12,6 +12,9 @@
   that starts at the present. The iOS app can page forward from it to
   write readings to Apple Health in the background, without first walking
   years of history. (#1339)
+- `GET /api/biomarkers/{id}/series` returns one lab marker's line, the same
+  points and window the timeline draws for it, under the Labs module. The
+  iOS app can show a marker's chart with the timeline switched off. (#1342)
 
 ### Fixed
 
