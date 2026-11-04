@@ -8,6 +8,10 @@
   server accepts as `acceptedTypes`, taken from the same mapping the batch
   upload uses. The iOS app can then ask for and send only types the server
   stores, instead of reading a type the server would skip. (#1340)
+- `GET /api/sync/changes?start=now` answers an empty page with a cursor
+  that starts at the present. The iOS app can page forward from it to
+  write readings to Apple Health in the background, without first walking
+  years of history. (#1339)
 
 ### Fixed
 

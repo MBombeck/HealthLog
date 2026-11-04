@@ -252,6 +252,12 @@ const syncChangesQuery = z
       .describe(
         "Opaque multi-domain keyset cursor from the previous page. Treat as fully opaque — echo, never parse. Omit for the initial sync.",
       ),
+    start: z
+      .literal("now")
+      .optional()
+      .describe(
+        "`now` answers an empty page (every domain empty, `hasMore: false`) whose `cursor` sits at `serverNow` in every domain, in the same opaque format as any other page. Paging forward from it yields only what changes from then on, including `measurementMirror`, without walking the history first. Mutually exclusive with `cursor` (422). A server without it ignores the parameter and starts from the oldest row.",
+      ),
     limit: z.coerce
       .number()
       .int()

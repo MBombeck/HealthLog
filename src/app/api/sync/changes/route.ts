@@ -43,6 +43,11 @@
  *     cycle tracking off gets both blocks empty (never a 403 — see the
  *     gate note in the handler) and their cursor watermarks untouched.
  *
+ * `start=now` (#1339) answers an empty page whose cursor sits at
+ * `serverNow` in every domain, in the same opaque format, so a client that
+ * only wants what changes from now on (the Apple Health write-back) pages
+ * forward from there instead of draining the whole history first.
+ *
  * `apiHandler` + `requireAuth` (cookie OR Bearer; iOS uses Bearer).
  * Read-only — no idempotency, no write side-effect (unlike the legacy
  * `/api/sync/state` checkpoint bump). The cursor is owned by the client.
@@ -59,15 +64,23 @@ import {
   sanitiseZodIssues,
 } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { pullSyncChanges } from "@/lib/sync/changes/pull";
+import { pullSyncChanges, syncChangesFromNow } from "@/lib/sync/changes/pull";
 
 const DEFAULT_LIMIT = 200;
 const MAX_LIMIT = 500;
 
-const querySchema = z.object({
-  cursor: z.string().min(1).max(2048).optional(),
-  limit: z.coerce.number().int().min(1).max(MAX_LIMIT).optional(),
-});
+// `start=now` (#1339) asks for a cursor at the present instead of a page;
+// it contradicts an echoed cursor, so the two together are refused.
+const querySchema = z
+  .object({
+    cursor: z.string().min(1).max(2048).optional(),
+    limit: z.coerce.number().int().min(1).max(MAX_LIMIT).optional(),
+    start: z.literal("now").optional(),
+  })
+  .refine((q) => !(q.start && q.cursor), {
+    message: "start and cursor are mutually exclusive",
+    path: ["start"],
+  });
 
 export const GET = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
@@ -83,6 +96,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
   const parsed = querySchema.safeParse({
     cursor: url.searchParams.get("cursor") ?? undefined,
     limit: url.searchParams.get("limit") ?? undefined,
+    start: url.searchParams.get("start") ?? undefined,
   });
   if (!parsed.success) {
     return apiValidationError(
@@ -90,6 +104,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
       sanitiseZodIssues(parsed.error.issues),
       422,
     );
+  }
+
+  if (parsed.data.start === "now") {
+    return apiSuccess(syncChangesFromNow(new Date()));
   }
 
   return apiSuccess(

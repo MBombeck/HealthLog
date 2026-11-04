@@ -102,6 +102,22 @@ export function encodeCursor(cursor: SyncCursor, issuedAtMs?: number): string {
   return Buffer.from(json, "utf-8").toString("base64url");
 }
 
+/**
+ * A token positioned at `nowMs` in every domain (#1339), the same opaque
+ * format a drained page hands out: paging forward from it yields only what
+ * changes from now on, with no walk through the history first. The id `"0"`
+ * sorts before every cuid, so a row stamped in the very millisecond is
+ * delivered rather than skipped; the client's upserts are idempotent, so an
+ * overlap costs nothing and a gap would.
+ */
+export function encodeCursorAtNow(nowMs: number): string {
+  const cursor: SyncCursor = {};
+  for (const domain of SYNC_DOMAINS) {
+    cursor[domain] = { updatedAtMs: nowMs, id: "0" };
+  }
+  return encodeCursor(cursor, nowMs);
+}
+
 function parseWatermark(raw: unknown): DomainWatermark | null {
   if (typeof raw !== "object" || raw === null) return null;
   const u = (raw as { u?: unknown }).u;
