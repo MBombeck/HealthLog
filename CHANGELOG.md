@@ -23,6 +23,11 @@
 
 ### Fixed
 
+- **PDF previews show in Safari.** On macOS and iOS the preview of an
+  uploaded PDF stayed an empty box. The page's security policy told the
+  browser that nothing may frame it, and Safari applied that to the
+  preview the page itself opens. The policy now allows framing by the app
+  itself and still refuses every other site. (#1311)
 - **Periods from Garmin and Oura open their cycles.** Period days imported
   from a watch or a ring were stored as days only, so the cycle tracker saw
   no cycle start, no lengths and no forecast. They now open and fill their

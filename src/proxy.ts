@@ -637,7 +637,7 @@ export function proxy(request: NextRequest) {
 
   // The document vault's decrypt-and-serve route is framed SAME-ORIGIN by
   // the document detail preview (an <iframe> for inline-class PDFs). The
-  // blanket `X-Frame-Options: DENY` + `frame-ancestors 'none'` below would
+  // blanket `X-Frame-Options: DENY` below would
   // refuse that embed, and the blanket page CSP would clobber the route's
   // own `Content-Security-Policy: sandbox` (middleware headers win over
   // route headers). Scope: exactly the `/original` path — list/detail API
@@ -652,8 +652,8 @@ export function proxy(request: NextRequest) {
   // it decrypts and serves a user-uploaded document that the clinician view
   // (`/c/<token>`) frames same-origin (an <iframe> for inline-class PDFs). It
   // needs the SAME narrow posture — SAMEORIGIN framing + a document CSP — and
-  // NOT the `/c/` page CSP, which pins `frame-ancestors 'none'` and would
-  // refuse the preview embed. Anchored to EXACTLY two dynamic segments so a
+  // NOT the `/c/` page posture, whose `X-Frame-Options: DENY` would refuse
+  // the preview embed. Anchored to EXACTLY two dynamic segments so a
   // `/c/<token>` page, a `/c/<token>/d/<id>/extra`, or a `/c/<token>/dx/<id>`
   // lookalike never inherits the carve-out.
   const isShareDocumentServeRoute = /^\/c\/[^/]+\/d\/[^/]+$/.test(pathname);
@@ -719,7 +719,7 @@ export function proxy(request: NextRequest) {
   // closing the Spectre-class side-channel surface a stray
   // `window.opener` reference would otherwise carry. CORP narrows the
   // page's resources to same-origin loaders, complementing the
-  // `frame-ancestors 'none'` CSP rule for non-document subresources.
+  // same-origin-only `frame-ancestors` CSP rule for non-document subresources.
   // The legacy `X-Permitted-Cross-Domain-Policies` line shuts the
   // Flash/PDF crossdomain.xml channel that some scanners still flag.
   response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
@@ -810,21 +810,16 @@ export function proxy(request: NextRequest) {
       // HTML/SVG denied entirely, and attachment-only posture for every
       // non-passive format.
       `default-src 'none'; frame-ancestors 'self';`
-    : // v1.37.15 — `frame-src 'self' blob:` + `blob:` in `img-src` (both dev
-      // and prod). Since the record fence (v1.37.0) every vault preview loads
-      // through `useFencedObjectUrl`, i.e. a `blob:` object URL: without a
-      // `frame-src` the PDF preview iframe fell through to `default-src
-      // 'self'` and was blocked loudly, and `img-src 'self' data:` degraded
-      // every blob thumbnail to its fallback icon silently. Admitting `blob:`
-      // is same-origin-tight: a blob: URL can only be minted by script running
-      // on this origin (`URL.createObjectURL`), script execution stays
-      // nonce-bound (prod), and `object-src 'none'` / `frame-ancestors
-      // 'none'` / `default-src 'self'` are unchanged — no foreign origin
-      // gains anything. Reverting the previews to direct `/api` src instead
-      // is barred by the record-fence guard.
+    : // v1.37.15 — `frame-src 'self' blob:` + `blob:` in `img-src`: every
+      // vault preview loads through `useFencedObjectUrl` as a `blob:` URL,
+      // which only script on this origin can mint; script stays nonce-bound
+      // and `object-src 'none'` / `default-src 'self'` hold. A blob: document
+      // inherits this policy and WebKit applies its `frame-ancestors` to the
+      // blob frame's own parent, so 'none' blanked every PDF preview in
+      // Safari (macOS and iOS); 'self' still refuses every foreign origin.
       isDev
       ? `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src 'self' blob:; connect-src 'self'; font-src 'self';`
-      : `default-src 'self'; script-src 'self' 'nonce-${nonce}'${wasmScriptSrc}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src 'self' blob:; connect-src 'self'${aiConnectSrc}${withingsConnectSrc}${whoopConnectSrc}${stravaConnectSrc}; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self'; report-uri ${cspReportEndpoint}; report-to csp-endpoint;`;
+      : `default-src 'self'; script-src 'self' 'nonce-${nonce}'${wasmScriptSrc}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src 'self' blob:; connect-src 'self'${aiConnectSrc}${withingsConnectSrc}${whoopConnectSrc}${stravaConnectSrc}; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; worker-src 'self'; report-uri ${cspReportEndpoint}; report-to csp-endpoint;`;
   // The MCP OAuth authorization endpoint sets its own CSP. Its consent form
   // posts to this origin and the server then redirects to the connecting
   // client's `redirect_uri`; Chromium applies `form-action` to that redirect,
