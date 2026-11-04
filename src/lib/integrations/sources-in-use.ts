@@ -49,6 +49,7 @@ export async function getSourcesInUse(
           polarAccessTokenEncrypted: true,
           ouraAccessTokenEncrypted: true,
           stravaAccessTokenEncrypted: true,
+          garminApiKeyEncrypted: true,
         },
       }),
       prisma.withingsConnection.findUnique({
@@ -79,6 +80,7 @@ export async function getSourcesInUse(
   if (user?.polarAccessTokenEncrypted) inUse.add("POLAR");
   if (user?.ouraAccessTokenEncrypted) inUse.add("OURA");
   if (user?.stravaAccessTokenEncrypted) inUse.add("STRAVA");
+  if (user?.garminApiKeyEncrypted) inUse.add("GARMIN");
 
   return RANKABLE_SOURCES.filter((s) => inUse.has(s));
 }

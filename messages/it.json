@@ -969,7 +969,12 @@
     "durationMinutesOnly": "{minutes} min",
     "durationInvalid": "Inserisci una durata come 7,5, 7:30 o 7h 30m.",
     "durationTooLong": "Una voce non può superare le 24 ore.",
-    "sourceHealthConnect": "Health Connect"
+    "sourceHealthConnect": "Health Connect",
+    "typeBodyBattery": "Body Battery",
+    "typeStressLevel": "Livello di stress",
+    "typeTrainingReadiness": "Prontezza all'allenamento",
+    "typeAcuteTrainingLoad": "Carico di allenamento acuto",
+    "sourceGarmin": "Garmin"
   },
   "metricCatalog": {
     "title": "Cosa può monitorare HealthLog",
@@ -4759,7 +4764,8 @@
       "unitScore": "punti",
       "unitMinutes": "min",
       "unitBpm": "bpm",
-      "unitKj": "kJ"
+      "unitKj": "kJ",
+      "unitLoad": "carico"
     },
     "sleepQuality": {
       "title": "Qualità del sonno",
@@ -4781,7 +4787,11 @@
         "cardioLoadExplainer": "Una stima del carico di allenamento che traccia il carico cardiovascolare accumulato. Confrontala con i tuoi giorni recenti.",
         "averageHeartRateExplainer": "La tua frequenza cardiaca media nell'arco dell'intera giornata o ciclo, come riportata dal tuo wearable.",
         "maxHeartRateExplainer": "La tua frequenza cardiaca massima nell'arco dell'intera giornata o ciclo, come riportata dal tuo wearable.",
-        "energyExpenditureKjExplainer": "L'energia che il tuo corpo ha consumato nella giornata, in kilojoule, come la riporta nativamente il tuo dispositivo."
+        "energyExpenditureKjExplainer": "L'energia che il tuo corpo ha consumato nella giornata, in kilojoule, come la riporta nativamente il tuo dispositivo.",
+        "bodyBatteryExplainer": "La tua riserva di energia sulla scala da 0 a 100 di Garmin, il livello più alto della giornata. Riposo e sonno la ricaricano, stress e attività la consumano.",
+        "trainingReadinessExplainer": "Quanto il tuo corpo è pronto per una sessione impegnativa, sulla scala da 0 a 100 di Garmin. Arriva tramite un ponte che hai configurato, perché Garmin non la condivide direttamente.",
+        "stressLevelExplainer": "Il livello di stress medio della giornata secondo Garmin, su una scala da 0 a 100, ricavato dalla variabilità della frequenza cardiaca. Più basso significa più calmo.",
+        "acuteTrainingLoadExplainer": "Il carico di allenamento acuto di Garmin: il carico ponderato delle tue attività degli ultimi sette giorni. Arriva tramite un ponte che hai configurato. Confrontalo con le tue settimane recenti."
       },
       "loadError": "Non è stato possibile caricare i tuoi valori di recupero."
     },
@@ -5706,7 +5716,8 @@
           "GOOGLE_HEALTH": "Google Health",
           "STRAVA": "Strava",
           "EXTERNAL": "Dispositivo esterno",
-          "HEALTH_CONNECT": "Health Connect"
+          "HEALTH_CONNECT": "Health Connect",
+          "GARMIN": "Garmin"
         },
         "deviceLabels": {
           "watch": "Orologio",
@@ -7500,11 +7511,6 @@
         "lastEnteredHere": "Ultimo inserimento qui {relative}"
       }
     },
-    "garminInfo": {
-      "title": "Garmin",
-      "body": "Garmin non ha una connessione diretta qui. Collegalo tramite Apple Health (iOS) o Google Health Connect (Android). I punteggi proprietari di Garmin (Body Battery, Training Load, stato HRV, VO₂ max) non vengono condivisi da Garmin con nessuna delle due piattaforme.",
-      "docsLink": "Leggi la guida"
-    },
     "glucoseReference": {
       "title": "Banda di riferimento della glicemia",
       "description": "La banda con cui vengono valutati i tuoi valori glicemici.",
@@ -7704,7 +7710,36 @@
     "deleteAccountConfirmDescriptionGrace": "Vieni disconnesso e il tuo account viene bloccato subito. Dopo {days} giorni viene cancellato definitivamente, con tutti i dati sanitari, le passkey, le sessioni e le voci di audit. Fino ad allora un amministratore di questo server può annullare l’eliminazione. Le copie nei backup di questo server scadono al termine del loro periodo di conservazione.",
     "deleteAccountScheduled": "Il tuo account è bloccato e verrà cancellato il {date}. Disconnessione in corso.",
     "dangerZoneSuccessGrace": "La tua cartella sanitaria è stata eliminata. Un amministratore di questo server può ripristinarla fino al {date}.",
-    "dangerZoneRestoreLimits": "Finisce anche l’accesso: ciò che condividi con altri, ciò che altri condividono con te e ogni ruolo di persona responsabile. Un ripristino riporta la cartella com’è adesso. Ciò che si aggiunge dopo l’eliminazione viene sostituito, e le connessioni di integrazione, le condivisioni, i ruoli di persona responsabile e i link di condivisione non tornano; vanno configurati di nuovo."
+    "dangerZoneRestoreLimits": "Finisce anche l’accesso: ciò che condividi con altri, ciò che altri condividono con te e ogni ruolo di persona responsabile. Un ripristino riporta la cartella com’è adesso. Ciò che si aggiunge dopo l’eliminazione viene sostituito, e le connessioni di integrazione, le condivisioni, i ruoli di persona responsabile e i link di condivisione non tornano; vanno configurati di nuovo.",
+    "garmin": "Garmin",
+    "garminTag": "Personal API",
+    "garminDescription": "Incolla una chiave Garmin Personal API per sincronizzare sonno, HRV, Body Battery, stress, passi, peso e attività da Garmin Connect.",
+    "garminSync": "Sincronizza ora",
+    "garminSyncResult": "{count} voci sincronizzate",
+    "garminSyncFailed": "Sincronizzazione non riuscita",
+    "garminViewData": "Vedi il tuo recupero",
+    "garminReplaceKey": "Sostituisci la chiave",
+    "garminDisconnect": "Disconnetti",
+    "garminDisconnectTitle": "Disconnettere Garmin?",
+    "garminDisconnectDescription": "Le sincronizzazioni future si fermano e la chiave viene rimossa da questo server. I dati già importati restano nella tua cronologia. La chiave resta valida su Garmin finché non la revochi lì.",
+    "garminKeyValidUntil": "Chiave valida fino al {date}",
+    "garminKeyExpired": "La tua chiave Garmin è scaduta il {date}. Crea una nuova chiave in Garmin Connect e incollala qui per riprendere la sincronizzazione.",
+    "garminKeyExpiresToday": "La tua chiave Garmin scade oggi. Crea una nuova chiave in Garmin Connect e incollala qui perché la sincronizzazione non si fermi.",
+    "garminKeyExpiring": "La tua chiave Garmin scade il {date}. Crea prima una nuova chiave in Garmin Connect e incollala qui.",
+    "garminKeyExpiryUnknown": "Garmin non dice quando scade questa chiave. Sostituisci la chiave e scegli la validità impostata in Garmin Connect: questa scheda ti avviserà una settimana prima.",
+    "garminConnected": "Garmin collegato. La prima sincronizzazione è in arrivo.",
+    "garminConnectFailed": "Impossibile collegarsi a Garmin.",
+    "garminKeyHowTo": "In Garmin Connect apri Impostazioni, poi Personal API, e crea una chiave. Garmin la mostra una sola volta, quindi copiala subito.",
+    "garminKeySettingsLink": "Apri Garmin Connect",
+    "garminApiKey": "Chiave Personal API",
+    "garminApiKeyPlaceholder": "Incolla la chiave",
+    "garminApiKeySavedPlaceholder": "Salvata. Incolla una nuova chiave per sostituirla",
+    "garminKeyValidity": "Validità scelta",
+    "garminKeyValidityUnknown": "Non lo so",
+    "garminKeyValidityDays": "{count} giorni",
+    "garminKeyValidityHelp": "Garmin non segnala quando una chiave scade. Con la validità, questa scheda ti avvisa una settimana prima che la chiave smetta di funzionare.",
+    "garminConnect": "Collega",
+    "garminUpdate": "Salva modifiche"
   },
   "admin": {
     "title": "Administration",

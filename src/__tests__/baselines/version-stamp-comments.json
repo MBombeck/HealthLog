@@ -1378,7 +1378,6 @@
     "components/settings/integrations/__tests__/apple-health-card.test.tsx": 2,
     "components/settings/integrations/apple-health-card.tsx": 1,
     "components/settings/integrations/connections-panel.tsx": 5,
-    "components/settings/integrations/garmin-info-note.tsx": 1,
     "components/settings/integrations/notification-channels-panel.tsx": 1,
     "components/settings/integrations/setup-guide-link.tsx": 2,
     "components/settings/integrations/shared.tsx": 3,

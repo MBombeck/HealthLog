@@ -141,6 +141,11 @@ export type MetricStatusMetricId =
   | "AVERAGE_HEART_RATE"
   | "MAX_HEART_RATE"
   | "ENERGY_EXPENDITURE_KJ"
+  // Garmin's day scores and the bridged training figures.
+  | "BODY_BATTERY"
+  | "STRESS_LEVEL"
+  | "TRAINING_READINESS"
+  | "ACUTE_TRAINING_LOAD"
   // v1.25 — physical / clinical signals promoted to detail pages. Grip
   // strength + waist carry a sex-aware band via the `norms.ts` tables the
   // generic generator already threads through `lookupNormalRange`.
@@ -599,6 +604,44 @@ const REGISTRY: Record<MetricStatusMetricId, MetricStatusMeta> = {
     measurementType: "WORKOUT_STRAIN",
     displayName: "Workout strain",
     unit: "score",
+    direction: "target-band",
+    archetype: "activity-fitness",
+  },
+  // ── Garmin ──
+  // Body Battery — Garmin's 0–100 energy reserve; the day's highest charge.
+  BODY_BATTERY: {
+    id: "BODY_BATTERY",
+    measurementType: "BODY_BATTERY",
+    displayName: "Body Battery",
+    unit: "score",
+    direction: "higher-better",
+    archetype: "physiological-vital",
+  },
+  // Stress level — Garmin's 0–100 all-day average; lower is calmer.
+  STRESS_LEVEL: {
+    id: "STRESS_LEVEL",
+    measurementType: "STRESS_LEVEL",
+    displayName: "Stress level",
+    unit: "score",
+    direction: "lower-better",
+    archetype: "physiological-vital",
+  },
+  // Training readiness — Garmin's 0–100 morning readiness, bridged in.
+  TRAINING_READINESS: {
+    id: "TRAINING_READINESS",
+    measurementType: "TRAINING_READINESS",
+    displayName: "Training readiness",
+    unit: "score",
+    direction: "higher-better",
+    archetype: "physiological-vital",
+  },
+  // Acute training load — Garmin's seven-day load, bridged in. Descriptive
+  // against the personal baseline like cardio load.
+  ACUTE_TRAINING_LOAD: {
+    id: "ACUTE_TRAINING_LOAD",
+    measurementType: "ACUTE_TRAINING_LOAD",
+    displayName: "Acute training load",
+    unit: "load",
     direction: "target-band",
     archetype: "activity-fitness",
   },

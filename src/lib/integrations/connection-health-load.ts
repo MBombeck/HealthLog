@@ -184,6 +184,7 @@ export async function loadConnectionFacts(
         stravaAccessTokenEncrypted: true,
         nightscoutUrlEncrypted: true,
         dawarichUrlEncrypted: true,
+        garminApiKeyEncrypted: true,
         healthKitLastSyncedAt: true,
       },
     }),
@@ -245,6 +246,7 @@ export async function loadConnectionFacts(
     strava: !!dbUser?.stravaAccessTokenEncrypted,
     nightscout: !!dbUser?.nightscoutUrlEncrypted,
     dawarich: !!dbUser?.dawarichUrlEncrypted,
+    garmin: !!dbUser?.garminApiKeyEncrypted,
     // Apple Health has nothing to connect; it is "connected" once the phone
     // has delivered anything (a live batch, or rows from the export import).
     "apple-health": false,

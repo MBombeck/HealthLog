@@ -320,6 +320,23 @@ model User {
   /// account another record already holds is refused
   /// (`src/lib/integrations/oauth-kit/account-link.ts`). Cleared on disconnect.
   ouraUserId                String?   @map("oura_user_id")
+
+  // v1.47 — Garmin Personal API (#1333, per-user, encrypted at app level). The
+  // person creates a key in Garmin Connect and pastes it once; the sync
+  // exchanges it for a short-lived token on every run, so the key is the only
+  // credential at rest. The token itself is never stored.
+  /// Sealed Garmin Personal API key.
+  garminApiKeyEncrypted       String?   @map("garmin_api_key_encrypted")
+  /// v1.47 — when the Garmin key stops working: learned from the token's own expiry once it is capped by the key's, else the validity the person picked at connect counted from then. Null when neither is known. Drives the card's expiry warning.
+  garminKeyExpiresAt          DateTime? @map("garmin_key_expires_at")
+  /// v1.47 — when the current Garmin key was connected; the anchor the picked validity counts from.
+  garminConnectedAt           DateTime? @map("garmin_connected_at")
+  /// v1.47 — which Garmin service accepted the key at connect: `global` (personal.connectapi.garmin.com) or `china` (…garmin.cn). Not a secret; the sync reads it to pick the host.
+  garminRegion                String?   @map("garmin_region")
+  /// v1.47 — how far the Garmin history backfill has got, per resource (see `src/lib/garmin/backfill-progress.ts`). Cleared on connect and disconnect.
+  garminBackfillProgress      Json?     @map("garmin_backfill_progress")
+  /// v1.47 — the Garmin history backfill finished (discovery predicate `garmin_backfill_completed_at IS NULL`). Cleared on connect.
+  garminBackfillCompletedAt   DateTime? @map("garmin_backfill_completed_at")
   /// v1.44 — which provider apps on this record were copied from a
   /// guardian at connect, and from whom: `{ "<provider>": "<guardianUserId>" }`.
   /// A managed profile has no settings page for its own app, so a guardian's is
@@ -1783,6 +1800,13 @@ enum MeasurementType {
   INDOOR_TEMPERATURE // celsius — indoor air temperature. Distinct from every body temperature type.
   INDOOR_HUMIDITY // percent (0–100) — indoor relative humidity.
   AFIB_BURDEN // percent (0–100, scaled ×100 from Apple's 0..1 fraction) — HealthKit `atrialFibrillationBurden` (iOS 16+, AFib History). The share of time the watch estimated in AFib over a week. AWARENESS ONLY — never a HealthLog diagnosis.
+  // v1.47 — Garmin Personal API (#1333). Garmin's own scores keep types of
+  // their own, so a device-native figure never shares a bucket with the
+  // COMPUTED proxies or another vendor's score of a different scale.
+  BODY_BATTERY // score (0–100) — Garmin Body Battery, the day's highest charge. Source GARMIN.
+  STRESS_LEVEL // score (0–100) — Garmin's all-day average stress level. Device-native and kept apart from the COMPUTED STRESS_SCORE, whose readers are single-source.
+  TRAINING_READINESS // score (0–100) — Garmin Training Readiness. Not in the Personal API; written by a bridge through the ingest token (source EXTERNAL).
+  ACUTE_TRAINING_LOAD // load (unit-less) — Garmin acute training load. Not in the Personal API; written by a bridge through the ingest token (source EXTERNAL).
 
   @@map("measurement_type")
 }
@@ -2018,6 +2042,11 @@ enum MeasurementSource {
   // iOS DTO must mirror this spelling so the /api/sync/changes delta feed
   // decodes the rows.
   HEALTH_CONNECT
+  // v1.47 — Garmin Personal API (#1333). Server-owned: only the Garmin sync
+  // writes these rows, from the key the user pasted, so the batch +
+  // single-POST surfaces reject it like the other providers. iOS DTO must
+  // mirror this spelling so the /api/sync/changes delta feed decodes the rows.
+  GARMIN
 
   @@map("measurement_source")
 }

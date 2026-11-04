@@ -969,7 +969,12 @@
     "durationMinutesOnly": "{minutes}분",
     "durationInvalid": "7.5, 7:30, 7h 30m처럼 시간을 입력해 주세요.",
     "durationTooLong": "한 번에 24시간보다 길게 입력할 수 없어요.",
-    "sourceHealthConnect": "Health Connect"
+    "sourceHealthConnect": "Health Connect",
+    "typeBodyBattery": "바디 배터리",
+    "typeStressLevel": "스트레스 수준",
+    "typeTrainingReadiness": "트레이닝 준비도",
+    "typeAcuteTrainingLoad": "급성 훈련 부하",
+    "sourceGarmin": "Garmin"
   },
   "metricCatalog": {
     "title": "HealthLog가 기록할 수 있는 것",
@@ -4759,7 +4764,8 @@
       "unitScore": "점",
       "unitMinutes": "min",
       "unitBpm": "bpm",
-      "unitKj": "kJ"
+      "unitKj": "kJ",
+      "unitLoad": "부하"
     },
     "sleepQuality": {
       "title": "수면 품질",
@@ -4781,7 +4787,11 @@
         "cardioLoadExplainer": "쌓인 급성 심혈관 부하를 따라가는 훈련 부하 지표예요. 내 최근 며칠과 비교해 보세요.",
         "averageHeartRateExplainer": "웨어러블이 보고한 하루 또는 주기 전체의 평균 심박수예요.",
         "maxHeartRateExplainer": "웨어러블이 보고한 하루 또는 주기 전체의 최고 심박수예요.",
-        "energyExpenditureKjExplainer": "기기가 자체 단위로 보고한, 하루 동안 몸이 쓴 에너지예요(킬로줄)."
+        "energyExpenditureKjExplainer": "기기가 자체 단위로 보고한, 하루 동안 몸이 쓴 에너지예요(킬로줄).",
+        "bodyBatteryExplainer": "Garmin의 0~100 척도로 본 에너지 비축량으로, 하루 중 가장 높았던 값입니다. 휴식과 수면은 채우고, 스트레스와 활동은 소모합니다.",
+        "trainingReadinessExplainer": "Garmin의 0~100 척도로 본 고강도 운동에 대한 준비 정도입니다. Garmin이 직접 공유하지 않으므로 직접 설정한 브리지를 통해 들어옵니다.",
+        "stressLevelExplainer": "심박변이도에서 읽어낸 Garmin의 하루 평균 스트레스 수준(0~100)입니다. 낮을수록 차분한 상태입니다.",
+        "acuteTrainingLoadExplainer": "Garmin의 급성 훈련 부하로, 최근 7일 동안의 활동 부하를 가중 합산한 값입니다. 직접 설정한 브리지를 통해 들어옵니다. 최근 몇 주의 내 기록과 비교해 보세요."
       },
       "loadError": "회복 값을 불러오지 못했어요."
     },
@@ -5706,7 +5716,8 @@
           "GOOGLE_HEALTH": "Google Health",
           "STRAVA": "Strava",
           "EXTERNAL": "외부 기기",
-          "HEALTH_CONNECT": "Health Connect"
+          "HEALTH_CONNECT": "Health Connect",
+          "GARMIN": "Garmin"
         },
         "deviceLabels": {
           "watch": "워치",
@@ -7500,11 +7511,6 @@
         "lastEnteredHere": "여기에서 마지막 입력 {relative}"
       }
     },
-    "garminInfo": {
-      "title": "Garmin",
-      "body": "여기서는 Garmin에 직접 연결할 수 없어요. Apple Health(iOS)나 Google Health Connect(Android)를 거쳐 연결하세요. Body Battery, Training Load, HRV Status, VO₂ max 같은 Garmin 고유 점수는 Garmin이 두 플랫폼 어디에도 공유하지 않아요.",
-      "docsLink": "가이드 보기"
-    },
     "glucoseReference": {
       "title": "혈당 참고 구간",
       "description": "혈당 측정값을 어떤 구간에 견줘 판단할지 정해요.",
@@ -7704,7 +7710,36 @@
     "deleteAccountConfirmDescriptionGrace": "바로 로그아웃되고 계정이 잠겨요. {days}일 뒤에는 모든 건강 데이터, 패스키, 세션, 감사 기록과 함께 완전히 지워져요. 그때까지는 이 서버의 관리자가 삭제를 취소할 수 있어요. 이 서버 백업에 남은 사본은 보관 기간이 지나면 사라져요.",
     "deleteAccountScheduled": "계정이 잠겼고 {date}에 완전히 지워져요. 로그아웃하는 중이에요.",
     "dangerZoneSuccessGrace": "건강 기록이 삭제됐어요. {date}까지는 이 서버의 관리자가 복원할 수 있어요.",
-    "dangerZoneRestoreLimits": "접근 권한도 끝나요: 다른 사람과 공유한 것, 다른 사람이 나와 공유한 것, 보호자 역할 모두요. 복원하면 기록이 지금 상태로 돌아와요. 삭제 후에 추가된 것은 대체되고, 연동 연결, 공유, 보호자 역할, 공유 링크는 돌아오지 않아서 다시 설정해야 해요."
+    "dangerZoneRestoreLimits": "접근 권한도 끝나요: 다른 사람과 공유한 것, 다른 사람이 나와 공유한 것, 보호자 역할 모두요. 복원하면 기록이 지금 상태로 돌아와요. 삭제 후에 추가된 것은 대체되고, 연동 연결, 공유, 보호자 역할, 공유 링크는 돌아오지 않아서 다시 설정해야 해요.",
+    "garmin": "Garmin",
+    "garminTag": "Personal API",
+    "garminDescription": "Garmin Personal API 키를 붙여 넣으면 Garmin Connect의 수면, HRV, 바디 배터리, 스트레스, 걸음 수, 체중, 활동이 동기화됩니다.",
+    "garminSync": "지금 동기화",
+    "garminSyncResult": "{count}개 항목 동기화됨",
+    "garminSyncFailed": "동기화 실패",
+    "garminViewData": "회복 보기",
+    "garminReplaceKey": "키 교체",
+    "garminDisconnect": "연결 해제",
+    "garminDisconnectTitle": "Garmin 연결을 해제할까요?",
+    "garminDisconnectDescription": "앞으로의 동기화가 중지되고 키가 이 서버에서 삭제됩니다. 이미 가져온 데이터는 기록에 남습니다. 키는 Garmin에서 취소할 때까지 계속 유효합니다.",
+    "garminKeyValidUntil": "키 유효 기간: {date}까지",
+    "garminKeyExpired": "Garmin 키가 {date}에 만료되었습니다. Garmin Connect에서 새 키를 만들어 여기에 붙여 넣으면 동기화가 다시 시작됩니다.",
+    "garminKeyExpiresToday": "Garmin 키가 오늘 만료됩니다. 동기화가 멈추지 않도록 Garmin Connect에서 새 키를 만들어 여기에 붙여 넣으세요.",
+    "garminKeyExpiring": "Garmin 키가 {date}에 만료됩니다. 그 전에 Garmin Connect에서 새 키를 만들어 여기에 붙여 넣으세요.",
+    "garminKeyExpiryUnknown": "Garmin은 이 키의 만료일을 알려 주지 않습니다. 키를 교체하면서 Garmin Connect에서 고른 유효 기간을 선택하면 이 카드가 일주일 전에 알려 드립니다.",
+    "garminConnected": "Garmin이 연결되었습니다. 첫 동기화가 시작됩니다.",
+    "garminConnectFailed": "Garmin에 연결하지 못했습니다.",
+    "garminKeyHowTo": "Garmin Connect에서 설정, Personal API 순으로 열고 키를 만드세요. Garmin은 키를 한 번만 보여 주므로 바로 복사해 두세요.",
+    "garminKeySettingsLink": "Garmin Connect 열기",
+    "garminApiKey": "Personal API 키",
+    "garminApiKeyPlaceholder": "키 붙여 넣기",
+    "garminApiKeySavedPlaceholder": "저장됨. 교체하려면 새 키를 붙여 넣으세요",
+    "garminKeyValidity": "선택한 유효 기간",
+    "garminKeyValidityUnknown": "모르겠음",
+    "garminKeyValidityDays": "{count}일",
+    "garminKeyValidityHelp": "Garmin은 키 만료일을 알려 주지 않습니다. 유효 기간을 알려 주면 키가 작동을 멈추기 일주일 전에 이 카드가 알려 드립니다.",
+    "garminConnect": "연결",
+    "garminUpdate": "변경 사항 저장"
   },
   "admin": {
     "title": "관리자",

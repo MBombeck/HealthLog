@@ -3,6 +3,12 @@ import { describe, expect, it } from "vitest";
 import { redactSecrets, redactOptional, PATH_SECRET_PATHS } from "../redact";
 
 describe("redactSecrets", () => {
+  it("redacts a Garmin Personal API key header", () => {
+    expect(redactSecrets("Authorization: ApiKey made-up-key-0001")).toBe(
+      "Authorization: ApiKey [REDACTED]",
+    );
+  });
+
   it("redacts Bearer tokens", () => {
     expect(redactSecrets("Authorization: Bearer hlk_abc123def456")).toBe(
       "Authorization: Bearer [REDACTED]",

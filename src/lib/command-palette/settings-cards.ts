@@ -149,7 +149,7 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
   {
     section: "integrations",
     anchor: "garmin",
-    titleKey: "settings.garminInfo.title",
+    titleKey: "settings.garmin",
   },
   {
     section: "integrations",

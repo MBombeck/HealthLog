@@ -58,46 +58,17 @@ const EMPTY_COPY = {
 } as const satisfies Record<RecoveryEmptyReason, string>;
 
 /**
- * v1.17.1 → rebuilt v1.18.1 (B1–B3) — body of the `/insights/recovery`
- * sub-page.
- *
- * The page now reads exactly like every other metric page: each present
- * device-native signal (WHOOP / Polar / Oura recharge, strain, load, and
- * whole-day cardiac / energy figures) renders as a canonical block — a
- * short explanatory line, the max / median / mean stat strip, the same
- * `<HealthChartDynamic>` chart with the identical 7 / 30 / 90 / All toggle,
- * and a per-chart AI assessment (`<MetricStatusCard>`). The composite
- * RECOVERY_SCORE keeps its anatomy view at `/insights/scores/recovery`.
- *
- * B3 — the redundant "Recovery score" link block that used to lead the
- * page is gone: this surface is reached from the overview already, so the
- * cross-link was duplicate ("doppelt gemoppelt").
- *
- * Each block is data-gated (a signal with zero readings is dropped) and a
- * group with no present block hides entirely, so a non-wearable account
- * sees only the calm empty note. Reads the shared analytics summaries slice
- * (no extra round-trip); server-authoritative throughout.
+ * The page's chart blocks, grouped: recharge, strain, cardio. A block only
+ * renders when its summary has data, so a provider-specific type costs
+ * nothing on an account without that provider.
  */
-export function RecoverySection() {
-  const { t } = useTranslations();
-  const { data, isLoading, error, refetch } =
-    useInsightsAnalytics("SLEEP_DURATION");
-  // v1.18.1 — Rest Mode parity. The annotation rides the thick analytics
-  // payload's `healthScore` block (server-authoritative; iOS mirrors it). We
-  // read it off the same `["analytics"]` cache the insights mother page
-  // primes, so navigating in is a free hit and a direct URL load pays one
-  // thick fetch. Read-only — the score itself stays untouched.
-  const analyticsQuery = useAnalyticsQuery();
-  const restMode = ((
-    analyticsQuery.data?.healthScore as { restMode?: RestModeAnnotation } | null
-  )?.restMode ?? null) as RestModeAnnotation | null;
-
-  const summaries = data?.summaries;
+function recoveryBlockGroups(
+  t: ReturnType<typeof useTranslations>["t"],
+): BlockGroup[] {
   const unitScore = t("insights.deviceScore.unitScore");
   const unitBpm = t("insights.deviceScore.unitBpm");
   const unitKj = t("insights.deviceScore.unitKj");
-
-  const groups: BlockGroup[] = [
+  return [
     {
       key: "recharge",
       blocks: [
@@ -111,6 +82,36 @@ export function RecoverySection() {
           color: "var(--chart-2)",
           unit: unitScore,
           fractionDigits: 1,
+        },
+        {
+          type: "BODY_BATTERY",
+          chartKey: "bodyBattery",
+          statusMetric: "BODY_BATTERY",
+          title: t("measurements.typeBodyBattery"),
+          explainer: t("insights.recovery.block.bodyBatteryExplainer"),
+          icon: Battery,
+          color: "var(--chart-2)",
+          unit: unitScore,
+        },
+        {
+          type: "TRAINING_READINESS",
+          chartKey: "trainingReadiness",
+          statusMetric: "TRAINING_READINESS",
+          title: t("measurements.typeTrainingReadiness"),
+          explainer: t("insights.recovery.block.trainingReadinessExplainer"),
+          icon: HeartPulse,
+          color: "var(--chart-4)",
+          unit: unitScore,
+        },
+        {
+          type: "STRESS_LEVEL",
+          chartKey: "stressLevel",
+          statusMetric: "STRESS_LEVEL",
+          title: t("measurements.typeStressLevel"),
+          explainer: t("insights.recovery.block.stressLevelExplainer"),
+          icon: Gauge,
+          color: "var(--chart-3)",
+          unit: unitScore,
         },
       ],
     },
@@ -148,6 +149,16 @@ export function RecoverySection() {
           icon: TrendingUp,
           color: "var(--chart-1)",
           unit: unitScore,
+        },
+        {
+          type: "ACUTE_TRAINING_LOAD",
+          chartKey: "acuteTrainingLoad",
+          statusMetric: "ACUTE_TRAINING_LOAD",
+          title: t("measurements.typeAcuteTrainingLoad"),
+          explainer: t("insights.recovery.block.acuteTrainingLoadExplainer"),
+          icon: TrendingUp,
+          color: "var(--chart-5)",
+          unit: t("insights.deviceScore.unitLoad"),
         },
       ],
     },
@@ -187,6 +198,45 @@ export function RecoverySection() {
       ],
     },
   ];
+}
+
+/**
+ * v1.17.1 → rebuilt v1.18.1 (B1–B3) — body of the `/insights/recovery`
+ * sub-page.
+ *
+ * The page now reads exactly like every other metric page: each present
+ * device-native signal (WHOOP / Polar / Oura recharge, strain, load, and
+ * whole-day cardiac / energy figures) renders as a canonical block — a
+ * short explanatory line, the max / median / mean stat strip, the same
+ * `<HealthChartDynamic>` chart with the identical 7 / 30 / 90 / All toggle,
+ * and a per-chart AI assessment (`<MetricStatusCard>`). The composite
+ * RECOVERY_SCORE keeps its anatomy view at `/insights/scores/recovery`.
+ *
+ * B3 — the redundant "Recovery score" link block that used to lead the
+ * page is gone: this surface is reached from the overview already, so the
+ * cross-link was duplicate ("doppelt gemoppelt").
+ *
+ * Each block is data-gated (a signal with zero readings is dropped) and a
+ * group with no present block hides entirely, so a non-wearable account
+ * sees only the calm empty note. Reads the shared analytics summaries slice
+ * (no extra round-trip); server-authoritative throughout.
+ */
+export function RecoverySection() {
+  const { t } = useTranslations();
+  const { data, isLoading, error, refetch } =
+    useInsightsAnalytics("SLEEP_DURATION");
+  // v1.18.1 — Rest Mode parity. The annotation rides the thick analytics
+  // payload's `healthScore` block (server-authoritative; iOS mirrors it). We
+  // read it off the same `["analytics"]` cache the insights mother page
+  // primes, so navigating in is a free hit and a direct URL load pays one
+  // thick fetch. Read-only — the score itself stays untouched.
+  const analyticsQuery = useAnalyticsQuery();
+  const restMode = ((
+    analyticsQuery.data?.healthScore as { restMode?: RestModeAnnotation } | null
+  )?.restMode ?? null) as RestModeAnnotation | null;
+
+  const summaries = data?.summaries;
+  const groups = recoveryBlockGroups(t);
 
   // Whether the page has anything to show, and why not, is the server's
   // answer (`recoveryEmpty`), so web and iOS read one decision.

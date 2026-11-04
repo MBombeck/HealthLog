@@ -720,6 +720,14 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["ConfirmDialog"],
   },
   {
+    file: "components/settings/integrations/garmin-card.tsx",
+    destroys:
+      "the stored Garmin Personal API key — reconnecting means pasting a key again, and a key Garmin showed only once may mean creating a new one",
+    triggers: ["components/settings/integrations/integration-card.tsx"],
+    recovery: "permanent",
+    confirm: ["ConfirmDialog"],
+  },
+  {
     file: "components/settings/integrations/dawarich-card.tsx",
     destroys:
       "the stored Dawarich address, key and home settings, and with the second entry every stored movement day — reconnecting means typing them again; deleted days come back only as far as the instance still holds them",

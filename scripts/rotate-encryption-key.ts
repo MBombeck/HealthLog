@@ -308,6 +308,7 @@ async function main() {
     "nightscoutTokenEncrypted",
     "dawarichUrlEncrypted",
     "dawarichApiKeyEncrypted",
+    "garminApiKeyEncrypted",
     "polarAccessTokenEncrypted",
     "polarUserIdEncrypted",
     "polarClientIdEncrypted",

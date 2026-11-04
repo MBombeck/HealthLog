@@ -47,6 +47,7 @@ import { polarCredentialsSchema } from "@/lib/validations/polar";
 import { stravaCredentialsSchema } from "@/lib/validations/strava";
 import { whoopCredentialsSchema } from "@/lib/validations/whoop";
 import { nightscoutConnectSchema } from "@/lib/validations/nightscout";
+import { garminConnectSchema } from "@/lib/validations/garmin";
 import { withingsCredentialsSchema } from "@/lib/validations/withings";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 import { isoDateTime } from "@/lib/validations/datetime";
@@ -596,6 +597,98 @@ const nightscoutTestResponse = z
       "A live probe that reached the configured instance and read one SGV entry. Only ever returned on success — a failed probe is an error status, never `ok: false`.",
   });
 
+// ── Garmin Personal API ──────────────────────────────────────
+
+const garminKeyExpiry = z
+  .object({
+    state: z
+      .enum(["ok", "expiring", "expired", "unknown"])
+      .describe(
+        "`expiring` from seven days before the end, `expired` after it, `unknown` when neither Garmin nor the person said when the key ends.",
+      ),
+    expiresAt: isoDateTime()
+      .nullable()
+      .describe(
+        "When the key stops working: Garmin's own figure once a token revealed it (a token is capped at the key's end in its last day), else the validity picked at connect counted from the connect. Null when unknown.",
+      ),
+    daysLeft: z
+      .number()
+      .int()
+      .min(0)
+      .nullable()
+      .describe(
+        "Whole days left, 0 on the last day. Null when unknown or expired.",
+      ),
+  })
+  .meta({
+    id: "GarminKeyExpiry",
+    description:
+      "When the stored Garmin Personal API key expires, resolved on the server so every client warns alike. Garmin keys are valid for 30, 90, 180 or 365 days from creation and cannot be extended; a new key replaces the old.",
+  });
+
+const garminConnectRequest = garminConnectSchema.meta({
+  id: "GarminConnectRequest",
+  description:
+    "The Personal API key from Garmin Connect (Settings, Personal API), trimmed before use, and optionally the validity picked when it was created. Garmin does not report a key's expiry, so the validity is what lets the card warn a week ahead until the key's last day reveals the real end.",
+});
+
+const garminStatusResponse = z
+  .object({
+    connected: z
+      .boolean()
+      .describe(
+        "A key is stored. Not a liveness claim; read `health` for that.",
+      ),
+    configured: z.boolean().describe("A key is stored. The connect marker."),
+    region: z.enum(["global", "china"]).optional(),
+    keyExpiry: garminKeyExpiry.optional(),
+    backfill: z
+      .object({
+        complete: z.boolean(),
+        share: z.number().min(0).max(1),
+      })
+      .optional()
+      .describe("How far the history backfill has got."),
+    state: integrationLedgerState.optional().meta(legacy()),
+    lastSuccessAt: isoDateTime().nullable().optional(),
+    lastAttemptAt: isoDateTime().nullable().optional(),
+    lastError: z.string().nullable().optional().meta(legacy()),
+    syncHealth: syncHealth.optional().meta(legacy()),
+    health: connectionHealth
+      .nullable()
+      .optional()
+      .describe(
+        "The unified connection state. Absent on the not-connected body.",
+      ),
+  })
+  .meta({
+    id: "GarminStatusResponse",
+    description:
+      "Garmin connection status. When no key is stored the body is exactly `{ connected: false, configured: false }`. The key is never returned.",
+  });
+
+const garminConnectResponse = z
+  .object({
+    connected: z.literal(true),
+    region: z.enum(["global", "china"]),
+    keyExpiry: garminKeyExpiry,
+  })
+  .meta({ id: "GarminConnectResponse" });
+
+const garminTestResponse = z
+  .object({
+    ok: z.literal(true),
+    latencyMs: z
+      .number()
+      .int()
+      .describe("Round-trip time of the key exchange, in milliseconds."),
+  })
+  .meta({
+    id: "GarminTestResponse",
+    description:
+      "The stored key bought a token. Only ever returned on success; a failed probe is an error status.",
+  });
+
 const whoopCredentialsStatusResponse = z
   .object({
     hasCredentials: z
@@ -1099,6 +1192,7 @@ const integrationEnvelopeEntry = z
         "strava",
         "nightscout",
         "dawarich",
+        "garmin",
       ])
       .describe("Which provider this entry describes."),
     state: integrationLedgerState.meta(legacy()),
@@ -1159,6 +1253,26 @@ const integrationEnvelopeEntry = z
       ),
     hasToken: z.boolean().optional().describe("Nightscout only."),
     allowPrivateHost: z.boolean().optional().describe("Nightscout only."),
+    region: z
+      .enum(["global", "china"])
+      .nullable()
+      .optional()
+      .describe(
+        "Garmin only. Which Garmin service accepted the stored key; null when no key is stored.",
+      ),
+    keyExpiry: garminKeyExpiry
+      .nullable()
+      .optional()
+      .describe("Garmin only. Null when no key is stored."),
+    backfillShare: z
+      .number()
+      .min(0)
+      .max(1)
+      .nullable()
+      .optional()
+      .describe(
+        "Garmin only. Share of the history walk done, 0 to 1; 1 once `backfillCompleted`. Null when no key is stored.",
+      ),
     retirement: z
       .object({
         endsOn: z
@@ -1211,7 +1325,7 @@ const integrationStatusEnvelope = z
     integrations: z
       .array(integrationEnvelopeEntry)
       .describe(
-        "All nine providers, always, in the fixed order withings, whoop, fitbit, google-health, polar, oura, strava, nightscout, dawarich. A provider the user has never touched still appears, with `connected: false` and the ledger state `unknown` — absence from this list never means anything, because nothing is ever absent from it.",
+        "All ten providers, always, in the fixed order withings, whoop, fitbit, google-health, polar, oura, strava, nightscout, dawarich, garmin. A provider the user has never touched still appears, with `connected: false` and the ledger state `unknown` — absence from this list never means anything, because nothing is ever absent from it.",
       ),
   })
   .meta({
@@ -1498,6 +1612,161 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             "More than 5 probes in 60 s from this user. `meta.errorCode` = `rate_limited_self` — this is the local limiter, not Nightscout's.",
           content: { "application/json": { schema: errorEnvelope } },
         },
+      },
+    },
+  },
+  "/api/garmin/connect": {
+    post: {
+      tags: ["Integrations"],
+      summary: "Connect (or replace) the caller's Garmin Personal API key",
+      description:
+        "Validates the key by buying a token with it BEFORE storing anything, first at Garmin's global service and, when that refuses the key, at the China service. On success the key is encrypted at rest, the region that accepted it and the key's expiry are noted, the history backfill is reopened, the `garmin` ledger is reset to connected, and a first sync plus the backfill are enqueued best-effort. Re-sending replaces the key. The key is never logged or echoed. Body capped at 16 KiB, rate-limited 10 requests / 60 s per user. Auth via cookie or Bearer.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: garminConnectRequest } },
+      },
+      responses: {
+        "200": {
+          description: "Garmin accepted the key and it was stored.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                garminConnectResponse,
+                "GarminConnectEnvelope",
+              ),
+            },
+          },
+        },
+        "400": {
+          description: "Body is not parseable JSON.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "413": {
+          description: "Body exceeds 16 KiB.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        "422": {
+          description:
+            "The body failed validation, or Garmin did not accept the key (`meta.errorCode` = `garmin.key_refused`), is limiting requests (`garmin.rate_limited`), or could not be reached (`garmin.unreachable`). Nothing was written.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "429": {
+          description:
+            "More than 10 connection attempts in 60 s from this user.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+  },
+  "/api/garmin/status": {
+    get: {
+      tags: ["Integrations"],
+      summary: "Read the caller's Garmin connection status",
+      description:
+        "Returns the connect marker, the key's expiry, the backfill progress, the shared `garmin` ledger snapshot and the unified connection state. The key is never returned. Auth via cookie or Bearer.",
+      responses: {
+        "200": {
+          description: "Connection status.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                garminStatusResponse,
+                "GarminStatusEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/garmin/sync": {
+    post: {
+      tags: ["Integrations"],
+      summary: "Trigger an on-demand Garmin sync",
+      description:
+        "Reads the recent window of daily summaries, sleep, HRV, weigh-ins and activities (and today's menstrual-cycle summary) with the stored key. History beyond the window is the backfill's. No body. Rate-limited 5 requests / 60 s per user.",
+      responses: {
+        "200": {
+          description: "Sync run complete.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(providerSyncOutcome, "GarminSyncEnvelope"),
+            },
+          },
+        },
+        "502": {
+          description:
+            "The sync failed upstream. The classified failure is already recorded on the `garmin` ledger.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        "422": {
+          description:
+            "Garmin no longer accepts the stored key (`meta.errorCode` = `garmin.key_refused`): it expired or was revoked. A new key is the only fix.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+  },
+  "/api/garmin/test": {
+    post: {
+      tags: ["Integrations"],
+      summary: "Probe the stored Garmin key",
+      description:
+        "Buys one token with the stored key through the same exchange the sync uses. Nothing is written. Rate-limited 5 requests / 60 s per user. Auth via cookie or Bearer.",
+      responses: {
+        "200": {
+          description: "The key bought a token.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(garminTestResponse, "GarminTestEnvelope"),
+            },
+          },
+        },
+        "502": {
+          description:
+            "The probe did not complete. `meta.errorCode` names the class: `credentials_rejected` (the key was refused), `rate_limited` (Garmin's 429), `upstream_error` (5xx), `timeout`, `connection_failed`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
+        "422": {
+          description:
+            "No Garmin key is stored. `meta.errorCode` = `not_configured`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "429": {
+          description:
+            "More than 5 probes in 60 s from this user. `meta.errorCode` = `rate_limited_self`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+      },
+    },
+  },
+  "/api/garmin/disconnect": {
+    post: {
+      tags: ["Integrations"],
+      summary: "Disconnect the caller's Garmin key",
+      description:
+        "Clears the stored key, its region, expiry and backfill progress, and parks the `garmin` ledger at `disconnected`. Rows already imported stay. The key keeps working at Garmin until revoked there. No body. Rate-limited 20 requests / 60 s per user. Auth via cookie or Bearer.",
+      responses: {
+        "200": {
+          description: "The connection was cleared.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ disconnected: z.literal(true) }),
+                "GarminDisconnectEnvelope",
+              ),
+            },
+          },
+        },
+        "404": {
+          description: "No Garmin key to clear.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
       },
     },
   },

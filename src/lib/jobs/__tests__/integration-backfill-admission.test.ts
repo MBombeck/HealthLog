@@ -68,6 +68,11 @@ vi.mock("@/lib/jobs/oura-backfill", async (importOriginal) => ({
   enqueueBootTimeOuraBackfill: async (stagger: number) =>
     recordStagger("oura-backfill", stagger),
 }));
+vi.mock("@/lib/jobs/garmin-backfill", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/jobs/garmin-backfill")>()),
+  enqueueBootTimeGarminBackfill: async (stagger: number) =>
+    recordStagger("garmin-backfill", stagger),
+}));
 
 import {
   INTEGRATION_BACKFILL_ADMISSION_GROUP,
@@ -94,6 +99,7 @@ import {
 } from "../integration-poll-queues";
 import { LAB_BIOMARKER_BACKFILL_QUEUE } from "../lab-biomarker-backfill";
 import { OURA_BACKFILL_QUEUE } from "../oura-backfill-queue";
+import { GARMIN_BACKFILL_QUEUE } from "../garmin-backfill-queue";
 import {
   groupNamed,
   jobOf,
@@ -113,6 +119,7 @@ const providerSources = [
   "strava-backfill.ts",
   "../fitbit/jobs/sleep-repair.ts",
   "oura-backfill.ts",
+  "garmin-backfill.ts",
 ].map((file) => readFileSync(join(__dirname, "..", file), "utf8"));
 
 describe("shared full-history backfill admission", () => {
@@ -127,9 +134,10 @@ describe("shared full-history backfill admission", () => {
       "strava-backfill",
       "fitbit-sleep-repair",
       "oura-backfill",
+      "garmin-backfill",
     ]);
     expect(INTEGRATION_BACKFILL_BOOT_ORDER.map(bootStaggerSecondsFor)).toEqual([
-      30, 60, 90, 120, 150, 180, 210, 240, 270,
+      30, 60, 90, 120, 150, 180, 210, 240, 270, 300,
     ]);
     expect(INTEGRATION_BACKFILL_STAGGER_SECONDS).toBe(30);
 
@@ -232,6 +240,7 @@ describe("shared full-history backfill admission", () => {
       [STRAVA_BACKFILL_QUEUE, "strava-backfill"],
       [FITBIT_SLEEP_REPAIR_QUEUE, "fitbit-sleep-repair"],
       [OURA_BACKFILL_QUEUE, "oura-backfill"],
+      [GARMIN_BACKFILL_QUEUE, "garmin-backfill"],
     ];
     for (const [queue, kind] of sources) {
       const { boss, sends } = recordingBoss();

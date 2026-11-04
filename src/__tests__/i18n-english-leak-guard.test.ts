@@ -110,6 +110,10 @@ const LEGIT_IDENTICAL = new Set<string>([
   "settings.integrations.oura.scope.items.vo2max",
   // Brand / product / proper nouns.
   "settings.googleHealth",
+  // Garmin's own names: the Body Battery score and the Personal API product,
+  // which Garmin Connect shows under the same English name in every locale.
+  "measurements.typeBodyBattery",
+  "settings.garminTag",
   "admin.glitchtipDsn",
   "admin.integrationWebPush",
   "admin.offlineGeoEnabled",

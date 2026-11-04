@@ -80,4 +80,10 @@ export const MEASUREMENT_SOURCES = [
   // batch allowlist, like IMPORT. Part of this enum so the read/response
   // shapes (and the iOS decoder) can decode the rows it surfaces.
   "HEALTH_CONNECT",
+  // Garmin Personal API (#1333). Server-owned: only the Garmin sync
+  // writes these rows, so the value is absent from
+  // `WRITABLE_MEASUREMENT_SOURCES` and the batch allowlist like every other
+  // provider. Part of this enum so the read/response shapes (and the iOS
+  // decoder) can decode the rows it surfaces.
+  "GARMIN",
 ] as const;

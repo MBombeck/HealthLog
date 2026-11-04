@@ -969,7 +969,12 @@
     "durationMinutesOnly": "{minutes} min",
     "durationInvalid": "Enter a duration like 7.5, 7:30 or 7h 30m.",
     "durationTooLong": "One entry can't be longer than 24 hours.",
-    "sourceHealthConnect": "Health Connect"
+    "sourceHealthConnect": "Health Connect",
+    "typeBodyBattery": "Body Battery",
+    "typeStressLevel": "Stress level",
+    "typeTrainingReadiness": "Training readiness",
+    "typeAcuteTrainingLoad": "Acute training load",
+    "sourceGarmin": "Garmin"
   },
   "metricCatalog": {
     "title": "What HealthLog can track",
@@ -4759,7 +4764,8 @@
       "unitScore": "score",
       "unitMinutes": "min",
       "unitBpm": "bpm",
-      "unitKj": "kJ"
+      "unitKj": "kJ",
+      "unitLoad": "load"
     },
     "sleepQuality": {
       "title": "Sleep quality",
@@ -4781,7 +4787,11 @@
         "cardioLoadExplainer": "A training-load proxy that tracks the acute cardiovascular load you have built up. Compare it with your own recent days.",
         "averageHeartRateExplainer": "Your average heart rate across the whole day or cycle, as reported by your wearable.",
         "maxHeartRateExplainer": "Your peak heart rate across the whole day or cycle, as reported by your wearable.",
-        "energyExpenditureKjExplainer": "The energy your body expended over the day, in kilojoules, as your device reports it natively."
+        "energyExpenditureKjExplainer": "The energy your body expended over the day, in kilojoules, as your device reports it natively.",
+        "bodyBatteryExplainer": "Your energy reserve on Garmin's 0 to 100 scale, the day's highest charge. Rest and sleep fill it, stress and activity drain it.",
+        "trainingReadinessExplainer": "How ready your body is for a hard session, on Garmin's 0 to 100 scale. It arrives from a bridge you set up, since Garmin does not share it directly.",
+        "stressLevelExplainer": "Garmin's all-day average stress level on a 0 to 100 scale, read from your heart rate variability. Lower is calmer.",
+        "acuteTrainingLoadExplainer": "Garmin's acute training load: the weighted load of your last seven days of activity. It arrives from a bridge you set up. Compare it with your own recent weeks."
       },
       "loadError": "Your recovery readings could not be loaded."
     },
@@ -5706,7 +5716,8 @@
           "GOOGLE_HEALTH": "Google Health",
           "STRAVA": "Strava",
           "EXTERNAL": "External device",
-          "HEALTH_CONNECT": "Health Connect"
+          "HEALTH_CONNECT": "Health Connect",
+          "GARMIN": "Garmin"
         },
         "deviceLabels": {
           "watch": "Watch",
@@ -7500,11 +7511,6 @@
         "lastEnteredHere": "Last entered here {relative}"
       }
     },
-    "garminInfo": {
-      "title": "Garmin",
-      "body": "Garmin has no direct connection here. Connect via Apple Health (iOS) or Google Health Connect (Android). Garmin's proprietary scores (Body Battery, Training Load, HRV Status, VO₂ max) are not shared by Garmin to either platform.",
-      "docsLink": "Read the guide"
-    },
     "glucoseReference": {
       "title": "Glucose reference band",
       "description": "Which band your blood-glucose readings are judged against.",
@@ -7704,7 +7710,36 @@
     "deleteAccountConfirmDescriptionGrace": "You are signed out and your account is locked right away. After {days} days it is erased for good, with all health data, passkeys, sessions and audit entries. Until then, an admin of this server can undo the deletion. Copies in this server's backups age out after their retention period.",
     "deleteAccountScheduled": "Your account is locked and will be erased on {date}. Signing you out.",
     "dangerZoneSuccessGrace": "Your health record has been deleted. An admin of this server can restore it until {date}.",
-    "dangerZoneRestoreLimits": "Access ends too: what you share with others, what they share with you, and any Guardian role. A restore puts the record back as it is now. Anything added after the deletion is replaced, and integration connections, sharing, Guardian roles and share links do not come back; they have to be set up again."
+    "dangerZoneRestoreLimits": "Access ends too: what you share with others, what they share with you, and any Guardian role. A restore puts the record back as it is now. Anything added after the deletion is replaced, and integration connections, sharing, Guardian roles and share links do not come back; they have to be set up again.",
+    "garmin": "Garmin",
+    "garminTag": "Personal API",
+    "garminDescription": "Paste a Garmin Personal API key to sync sleep, HRV, Body Battery, stress, steps, weight and activities from Garmin Connect.",
+    "garminSync": "Sync now",
+    "garminSyncResult": "{count} entries synchronized",
+    "garminSyncFailed": "Sync failed",
+    "garminViewData": "View your recovery",
+    "garminReplaceKey": "Replace key",
+    "garminDisconnect": "Disconnect",
+    "garminDisconnectTitle": "Disconnect Garmin?",
+    "garminDisconnectDescription": "Future syncs stop and the key is removed from this server. Data already imported stays in your history. The key keeps working at Garmin until you revoke it there.",
+    "garminKeyValidUntil": "Key valid until {date}",
+    "garminKeyExpired": "Your Garmin key expired on {date}. Create a new key in Garmin Connect and paste it here to resume syncing.",
+    "garminKeyExpiresToday": "Your Garmin key expires today. Create a new key in Garmin Connect and paste it here so syncing does not stop.",
+    "garminKeyExpiring": "Your Garmin key expires on {date}. Create a new key in Garmin Connect and paste it here before then.",
+    "garminKeyExpiryUnknown": "Garmin does not say when this key expires. Replace the key and choose the validity you picked in Garmin Connect, and this card will warn you a week ahead.",
+    "garminConnected": "Garmin connected. The first sync is on its way.",
+    "garminConnectFailed": "Could not connect to Garmin.",
+    "garminKeyHowTo": "In Garmin Connect, open Settings, then Personal API, and create a key. Garmin shows it only once, so copy it straight away.",
+    "garminKeySettingsLink": "Open Garmin Connect",
+    "garminApiKey": "Personal API key",
+    "garminApiKeyPlaceholder": "Paste the key",
+    "garminApiKeySavedPlaceholder": "Saved. Paste a new key to replace it",
+    "garminKeyValidity": "Validity you picked",
+    "garminKeyValidityUnknown": "I don't know",
+    "garminKeyValidityDays": "{count} days",
+    "garminKeyValidityHelp": "Garmin does not report when a key expires. With the validity, this card warns you a week before the key stops working.",
+    "garminConnect": "Connect",
+    "garminUpdate": "Save changes"
   },
   "admin": {
     "title": "Administration",

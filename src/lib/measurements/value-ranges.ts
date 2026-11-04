@@ -235,6 +235,13 @@ export const VALUE_RANGES: Record<string, { min: number; max: number }> = {
   INDOOR_TEMPERATURE: { min: -20, max: 60 },
   // Relative humidity, percent.
   INDOOR_HUMIDITY: { min: 0, max: 100 },
+  // Garmin's 0–100 scores. Acute load is an EWMA of activity load;
+  // a heavy training block reaches the high hundreds, so 3000 leaves room
+  // without admitting a unit slip.
+  BODY_BATTERY: { min: 0, max: 100 },
+  STRESS_LEVEL: { min: 0, max: 100 },
+  TRAINING_READINESS: { min: 0, max: 100 },
+  ACUTE_TRAINING_LOAD: { min: 0, max: 3000 },
   // Grip strength kg — a child can read in the single digits, an elite athlete
   // tops ~90 kg; 120 is a generous ceiling that still rejects sensor noise.
   GRIP_STRENGTH: { min: 0, max: 120 },

@@ -381,14 +381,15 @@
         "GOOGLE_HEALTH",
         "STRAVA",
         "EXTERNAL",
-        "HEALTH_CONNECT"
+        "HEALTH_CONNECT",
+        "GARMIN"
       ],
       "path": [
         "ecgRecordings",
         0,
         "source"
       ],
-      "message": "Invalid option: expected one of \"MANUAL\"|\"WITHINGS\"|\"IMPORT\"|\"APPLE_HEALTH\"|\"COMPUTED\"|\"WHOOP\"|\"FITBIT\"|\"NIGHTSCOUT\"|\"POLAR\"|\"OURA\"|\"TELEGRAM\"|\"MCP\"|\"GOOGLE_HEALTH\"|\"STRAVA\"|\"EXTERNAL\"|\"HEALTH_CONNECT\""
+      "message": "Invalid option: expected one of \"MANUAL\"|\"WITHINGS\"|\"IMPORT\"|\"APPLE_HEALTH\"|\"COMPUTED\"|\"WHOOP\"|\"FITBIT\"|\"NIGHTSCOUT\"|\"POLAR\"|\"OURA\"|\"TELEGRAM\"|\"MCP\"|\"GOOGLE_HEALTH\"|\"STRAVA\"|\"EXTERNAL\"|\"HEALTH_CONNECT\"|\"GARMIN\""
     },
     {
       "expected": "string",

@@ -157,6 +157,18 @@ export const measurementTypeEnum = z.enum([
   "INDOOR_CO2",
   "INDOOR_TEMPERATURE",
   "INDOOR_HUMIDITY",
+  // ── Garmin Personal API (#1333) ──
+  // BODY_BATTERY and STRESS_LEVEL ingest server-side as `source = GARMIN`.
+  // STRESS_LEVEL is Garmin's own all-day stress average and is kept apart
+  // from the COMPUTED STRESS_SCORE proxy: the score readers collapse only the
+  // recovery set across sources, so a second STRESS_SCORE producer would be
+  // averaged with the proxy instead of ranked above it.
+  "BODY_BATTERY",
+  "STRESS_LEVEL",
+  // The Personal API does not carry these two; a home-automation bridge pushes
+  // them through the ingest token (`measurements:write`, source EXTERNAL).
+  "TRAINING_READINESS",
+  "ACUTE_TRAINING_LOAD",
 ]);
 
 /**

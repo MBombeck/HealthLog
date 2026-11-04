@@ -126,6 +126,7 @@ export const INTEGRATION_CADENCE: Record<IntegrationKey, SyncCadence> = {
   "google-health": POLLED_CADENCE,
   strava: POLLED_CADENCE,
   dawarich: NIGHTLY_CADENCE,
+  garmin: POLLED_CADENCE,
 };
 
 export interface SyncVerdictInput {

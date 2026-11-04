@@ -261,12 +261,20 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
   // device-native wearables and above MANUAL so an Apple-Watch + Strava twin of
   // the same run collapses onto the richer device row, while a Strava-only run
   // still survives.
+  // Garmin (Personal API) is a worn watch in the same class as the
+  // Fitbit / Google Health wearables and ranks right after them on every
+  // ladder it writes to, above the rings and straps that follow. On weight
+  // and body fat it sits with the scale-fed sources, since a Garmin Index
+  // scale reports there; below WITHINGS and the HealthKit relay. It writes
+  // no SDNN, so the `hrv` ladder does not name it; its overnight HRV is
+  // RMSSD and ranks on `hrvRmssd`.
   steps: [
     "APPLE_HEALTH",
     "HEALTH_CONNECT",
     "WITHINGS",
     "FITBIT",
     "GOOGLE_HEALTH",
+    "GARMIN",
     "OURA",
     "POLAR",
     "STRAVA",
@@ -281,6 +289,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WITHINGS",
     "FITBIT",
     "GOOGLE_HEALTH",
+    "GARMIN",
     "OURA",
     "POLAR",
     "MANUAL",
@@ -294,6 +303,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WITHINGS",
     "FITBIT",
     "GOOGLE_HEALTH",
+    "GARMIN",
     "OURA",
     "POLAR",
     "MANUAL",
@@ -306,6 +316,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WITHINGS",
     "FITBIT",
     "GOOGLE_HEALTH",
+    "GARMIN",
     "MANUAL",
     "EXTERNAL",
     "MCP",
@@ -323,6 +334,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WHOOP",
     "FITBIT",
     "GOOGLE_HEALTH",
+    "GARMIN",
     "OURA",
     "POLAR",
     "APPLE_HEALTH",
@@ -341,6 +353,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WHOOP",
     "FITBIT",
     "GOOGLE_HEALTH",
+    "GARMIN",
     "OURA",
     "POLAR",
     "APPLE_HEALTH",
@@ -352,6 +365,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WITHINGS",
     "APPLE_HEALTH",
     "HEALTH_CONNECT",
+    "GARMIN",
     "MANUAL",
     "EXTERNAL",
     "MCP",
@@ -389,6 +403,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WITHINGS",
     "APPLE_HEALTH",
     "HEALTH_CONNECT",
+    "GARMIN",
     "MANUAL",
     "EXTERNAL",
     "MCP",
@@ -415,6 +430,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WHOOP",
     "FITBIT",
     "GOOGLE_HEALTH",
+    "GARMIN",
     "OURA",
     "POLAR",
     "APPLE_HEALTH",
@@ -446,6 +462,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WHOOP",
     "FITBIT",
     "GOOGLE_HEALTH",
+    "GARMIN",
     "OURA",
     "POLAR",
     "APPLE_HEALTH",
@@ -475,6 +492,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WHOOP",
     "FITBIT",
     "GOOGLE_HEALTH",
+    "GARMIN",
     "OURA",
     "POLAR",
     "APPLE_HEALTH",

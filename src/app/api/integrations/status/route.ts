@@ -15,6 +15,15 @@
  * callers; the web cards no longer hit them.
  */
 import { prisma } from "@/lib/db";
+import { isGarminRegion, type GarminRegion } from "@/lib/garmin/client";
+import {
+  resolveGarminKeyExpiry,
+  type GarminKeyExpiry,
+} from "@/lib/garmin/key-expiry";
+import {
+  garminBackfillShare,
+  readGarminBackfillProgress,
+} from "@/lib/garmin/backfill-progress";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
 import { annotate } from "@/lib/logging/context";
@@ -83,6 +92,7 @@ export const GET = apiHandler(async () => {
       stravaStatus,
       nightscoutStatus,
       dawarichStatus,
+      garminStatus,
       dbUser,
       withingsConn,
       whoopConn,
@@ -108,6 +118,7 @@ export const GET = apiHandler(async () => {
       getIntegrationStatus(user.id, "strava"),
       getIntegrationStatus(user.id, "nightscout"),
       getIntegrationStatus(user.id, "dawarich"),
+      getIntegrationStatus(user.id, "garmin"),
       prisma.user.findUnique({
         where: { id: user.id },
         select: {
@@ -135,6 +146,12 @@ export const GET = apiHandler(async () => {
           nightscoutTokenEncrypted: true,
           nightscoutAllowPrivateHost: true,
           dawarichUrlEncrypted: true,
+          // Garmin: the connect marker and the facts its card warns from.
+          garminApiKeyEncrypted: true,
+          garminRegion: true,
+          garminKeyExpiresAt: true,
+          garminBackfillProgress: true,
+          garminBackfillCompletedAt: true,
         },
       }),
       prisma.withingsConnection.findUnique({
@@ -194,6 +211,7 @@ export const GET = apiHandler(async () => {
       "strava",
       "nightscout",
       "dawarich",
+      "garmin",
     ]),
     // See `metricFreshnessDegraded` below.
     getSourceMetricFreshness(user.id).catch(() => {
@@ -319,6 +337,7 @@ export const GET = apiHandler(async () => {
   const stravaConnected = !!dbUser?.stravaAccessTokenEncrypted;
   const nightscoutConfigured = !!dbUser?.nightscoutUrlEncrypted;
   const dawarichConfigured = !!dbUser?.dawarichUrlEncrypted;
+  const garmin = garminExtras(dbUser);
 
   if (metricFreshnessDegraded) {
     annotate({ meta: { integrations_metric_freshness_degraded: true } });
@@ -512,6 +531,20 @@ export const GET = apiHandler(async () => {
           configured: dawarichConfigured,
         }),
       } satisfies IntegrationViewModel & DawarichExtras,
+      {
+        ...publish(garminStatus),
+        connected: garmin.connected,
+        configured: garmin.configured,
+        region: garmin.region,
+        keyExpiry: garmin.keyExpiry,
+        backfillCompleted: garmin.backfillCompleted,
+        backfillShare: garmin.backfillShare,
+        health: health["garmin"],
+        ...resolve("garmin", garminStatus, {
+          connected: garmin.connected,
+          configured: garmin.configured,
+        }),
+      } satisfies IntegrationViewModel & GarminExtras,
     ],
   });
 });
@@ -615,6 +648,59 @@ interface NightscoutExtras {
   configured: boolean;
   hasToken: boolean;
   allowPrivateHost: boolean;
+}
+
+// Garmin: the connect marker plus the key's expiry, the region its
+// key was accepted on, and how far the history backfill has got.
+interface GarminExtras {
+  connected: boolean;
+  configured: boolean;
+  region: GarminRegion | null;
+  keyExpiry: GarminKeyExpiry | null;
+  backfillCompleted: boolean | null;
+  backfillShare: number | null;
+}
+
+/**
+ * The Garmin entry's own facts. A Personal API key the person pastes once is
+ * the connect marker; the key is never on the wire, only when it expires,
+ * resolved here so every client warns alike.
+ */
+function garminExtras(
+  dbUser: {
+    garminApiKeyEncrypted: string | null;
+    garminRegion: string | null;
+    garminKeyExpiresAt: Date | null;
+    garminBackfillProgress: unknown;
+    garminBackfillCompletedAt: Date | null;
+  } | null,
+): GarminExtras {
+  const configured = !!dbUser?.garminApiKeyEncrypted;
+  if (!dbUser || !configured) {
+    return {
+      connected: false,
+      configured: false,
+      region: null,
+      keyExpiry: null,
+      backfillCompleted: null,
+      backfillShare: null,
+    };
+  }
+  const complete = dbUser.garminBackfillCompletedAt !== null;
+  return {
+    connected: true,
+    configured: true,
+    region: isGarminRegion(dbUser.garminRegion)
+      ? dbUser.garminRegion
+      : "global",
+    keyExpiry: resolveGarminKeyExpiry(dbUser.garminKeyExpiresAt),
+    backfillCompleted: complete,
+    backfillShare: complete
+      ? 1
+      : garminBackfillShare(
+          readGarminBackfillProgress(dbUser.garminBackfillProgress),
+        ),
+  };
 }
 
 // v1.43 — Dawarich: the connect marker only; the card reads `health` and its

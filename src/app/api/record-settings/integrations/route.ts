@@ -87,6 +87,9 @@ export const GET = apiHandler(async () => {
     // Not offered on a managed profile (no managed integrations before
     // v1.44); listed so the map stays total.
     dawarich: false,
+    // Garmin is a key the record's owner pastes on their own settings page;
+    // a managed profile has none to offer.
+    garmin: false,
   };
   // The one server-resolved state per connection, from the same loader the
   // owner's own envelope uses, so a guardian reads the record's connections in

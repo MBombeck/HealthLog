@@ -170,6 +170,11 @@ const unitMap: Record<string, string> = {
   INDOOR_CO2: "ppm",
   INDOOR_TEMPERATURE: "celsius",
   INDOOR_HUMIDITY: "%",
+  // ── Garmin scores (0–100) and the unit-less acute load ──
+  BODY_BATTERY: "score",
+  STRESS_LEVEL: "score",
+  TRAINING_READINESS: "score",
+  ACUTE_TRAINING_LOAD: "load",
 };
 
 export function getUnitForType(type: string): string {

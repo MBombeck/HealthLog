@@ -231,6 +231,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
     export: ["export.selection.empty", "export.selection.unknown_leaf"],
     familyHistory: ["familyHistory.invalid"],
     feedback: ["feedback.body.invalid"],
+    garmin: ["garmin.key_refused", "garmin.rate_limited", "garmin.unreachable"],
     health_score_config: [
       "health_score_config.invalid",
       "health_score_config.too_narrow",

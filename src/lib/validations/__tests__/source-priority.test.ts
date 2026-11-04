@@ -103,7 +103,7 @@ describe("sourcePrioritySchema", () => {
 
   it("rejects an unknown source string", () => {
     const result = sourcePrioritySchema.safeParse({
-      weight: ["GARMIN", "WITHINGS"],
+      weight: ["SAMSUNG_HEALTH", "WITHINGS"],
     });
     expect(result.success).toBe(false);
   });
@@ -578,7 +578,12 @@ describe("DEFAULT_SOURCE_PRIORITY — the sources that had no place (v1.43.11)",
   });
 
   it("leaves the order of the sources the ladders already named alone", () => {
-    const added = new Set<string>([...HAND_ENTERED, "HEALTH_CONNECT"]);
+    const added = new Set<string>([
+      ...HAND_ENTERED,
+      "HEALTH_CONNECT",
+      // Garmin joined the ladders later; without it the rest kept its order.
+      "GARMIN",
+    ]);
     const without = (key: keyof typeof DEFAULT_SOURCE_PRIORITY) =>
       DEFAULT_SOURCE_PRIORITY[key].filter((s) => !added.has(s));
     expect(without("weight")).toEqual([

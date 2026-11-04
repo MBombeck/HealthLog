@@ -15,6 +15,7 @@ import type { ConnectionHealth } from "@/lib/integrations/connection-health";
 import type { MetricFreshnessEntry } from "@/lib/integrations/sync-verdict";
 import { queryKeys } from "@/lib/query-keys";
 import type { PublishedFitbitRetirement } from "@/lib/fitbit/retirement";
+import type { GarminKeyExpiry } from "@/lib/garmin/key-expiry";
 
 export type IntegrationKey =
   | "withings"
@@ -30,7 +31,9 @@ export type IntegrationKey =
   // status and inherits the shared verdict.
   | "nightscout"
   // v1.43 — Dawarich movement context; publishes `health` only.
-  | "dawarich";
+  | "dawarich"
+  // Garmin Personal API; a pasted key, like Nightscout.
+  | "garmin";
 /**
  * One envelope entry as the cards read it. Since v1.42.4 the cards render
  * `health` alone; the older health-shaped fields (ledger `state`, `lastError`,
@@ -54,7 +57,7 @@ export interface IntegrationStatusViewModel {
   failureThreshold?: number;
   configured?: boolean;
   connected?: boolean;
-  /** WHOOP / Fitbit / Google Health: older history still loading. */
+  /** WHOOP / Fitbit / Google Health / Garmin: older history still loading. */
   backfillCompleted?: boolean | null;
   /**
    * Google Health: data types whose history backfill ended before the start
@@ -70,6 +73,8 @@ export interface IntegrationStatusViewModel {
   hasOwnCredentials?: boolean;
   /** Nightscout: a stored token. */
   hasToken?: boolean;
+  /** Garmin: when the stored key stops working, resolved on the server. */
+  keyExpiry?: GarminKeyExpiry | null;
   /** Per-metric last-seen timestamps with the server-computed stale flag. */
   metricFreshness?: MetricFreshnessEntry[];
   /** Fitbit: the end of the legacy Web API, resolved on the server. */
