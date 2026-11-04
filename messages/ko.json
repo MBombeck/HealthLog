@@ -819,6 +819,7 @@
     "typeHeartRateVariability": "심박변이도",
     "typeRestingHeartRate": "안정 시 심박수",
     "typeActiveEnergyBurned": "활동 에너지",
+    "typeBasalEnergyBurned": "휴식 에너지",
     "typeFlightsClimbed": "오른 층수",
     "typeWalkingRunningDistance": "걷기 + 달리기 거리",
     "typeVo2Max": "VO₂ max",

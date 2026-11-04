@@ -1807,6 +1807,9 @@ enum MeasurementType {
   STRESS_LEVEL // score (0–100) — Garmin's all-day average stress level. Device-native and kept apart from the COMPUTED STRESS_SCORE, whose readers are single-source.
   TRAINING_READINESS // score (0–100) — Garmin Training Readiness. Not in the Personal API; written by a bridge through the ingest token (source EXTERNAL).
   ACUTE_TRAINING_LOAD // load (unit-less) — Garmin acute training load. Not in the Personal API; written by a bridge through the ingest token (source EXTERNAL).
+  // v1.47.1 — resting energy (#1340). Its own type beside ACTIVE_ENERGY_BURNED,
+  // never folded into it and never summed with it into a total.
+  BASAL_ENERGY_BURNED // kcal — HealthKit `basalEnergyBurned`, the energy the body uses at rest; cumulative, daily SUM.
 
   @@map("measurement_type")
 }

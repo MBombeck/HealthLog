@@ -4610,6 +4610,7 @@ paths:
               - STRESS_LEVEL
               - TRAINING_READINESS
               - ACUTE_TRAINING_LOAD
+              - BASAL_ENERGY_BURNED
         - in: query
           name: from
           schema:
@@ -5531,6 +5532,7 @@ paths:
               - STRESS_LEVEL
               - TRAINING_READINESS
               - ACUTE_TRAINING_LOAD
+              - BASAL_ENERGY_BURNED
             description: The metric.
           required: true
           description: The metric.
@@ -5660,6 +5662,7 @@ paths:
               - STRESS_LEVEL
               - TRAINING_READINESS
               - ACUTE_TRAINING_LOAD
+              - BASAL_ENERGY_BURNED
             description: The metric.
           required: true
           description: The metric.
@@ -28533,7 +28536,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 110
+              maxItems: 111
               type: array
               items:
                 type: string
@@ -28595,7 +28598,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 110
+              maxItems: 111
               type: array
               items:
                 type: string
@@ -29474,6 +29477,7 @@ components:
             - STRESS_LEVEL
             - TRAINING_READINESS
             - ACUTE_TRAINING_LOAD
+            - BASAL_ENERGY_BURNED
         value:
           type: number
         measuredAt:
@@ -31207,6 +31211,7 @@ components:
             - STRESS_LEVEL
             - TRAINING_READINESS
             - ACUTE_TRAINING_LOAD
+            - BASAL_ENERGY_BURNED
         biomarkerId:
           type: string
           minLength: 1
@@ -31706,7 +31711,7 @@ components:
           type: number
           const: 2
         leaves:
-          maxItems: 110
+          maxItems: 111
           type: array
           items:
             type: string
@@ -32908,6 +32913,7 @@ components:
         - STRESS_LEVEL
         - TRAINING_READINESS
         - ACUTE_TRAINING_LOAD
+        - BASAL_ENERGY_BURNED
       description: DB-stored measurement category. v1.4.23 added 7 Apple Health values (HRV, resting HR, active energy,
         flights, walking/running distance, VO2 max, body temperature).
     InsightsSettingsPutRequest:
@@ -42213,6 +42219,7 @@ components:
                   - STRESS_LEVEL
                   - TRAINING_READINESS
                   - ACUTE_TRAINING_LOAD
+                  - BASAL_ENERGY_BURNED
               value:
                 type: number
               valueMin:
@@ -42980,6 +42987,7 @@ components:
                             - STRESS_LEVEL
                             - TRAINING_READINESS
                             - ACUTE_TRAINING_LOAD
+                            - BASAL_ENERGY_BURNED
                         - type: "null"
                     biomarkerName:
                       anyOf:
@@ -45577,6 +45585,7 @@ components:
                   - STRESS_LEVEL
                   - TRAINING_READINESS
                   - ACUTE_TRAINING_LOAD
+                  - BASAL_ENERGY_BURNED
               dateKey:
                 type: string
                 pattern: ^\d{4}-\d{2}-\d{2}$
@@ -46776,6 +46785,7 @@ components:
                       - STRESS_LEVEL
                       - TRAINING_READINESS
                       - ACUTE_TRAINING_LOAD
+                      - BASAL_ENERGY_BURNED
                   - type: "null"
               intervalDays:
                 anyOf:
@@ -47001,6 +47011,7 @@ components:
                   - STRESS_LEVEL
                   - TRAINING_READINESS
                   - ACUTE_TRAINING_LOAD
+                  - BASAL_ENERGY_BURNED
               metricSlot:
                 type:
                   - string
@@ -53312,6 +53323,7 @@ components:
             - STRESS_LEVEL
             - TRAINING_READINESS
             - ACUTE_TRAINING_LOAD
+            - BASAL_ENERGY_BURNED
         date:
           type: string
           format: date
@@ -53591,6 +53603,7 @@ components:
             - STRESS_LEVEL
             - TRAINING_READINESS
             - ACUTE_TRAINING_LOAD
+            - BASAL_ENERGY_BURNED
         from:
           type: string
           format: date

@@ -819,6 +819,7 @@
     "typeHeartRateVariability": "Zmienność rytmu serca",
     "typeRestingHeartRate": "Tętno spoczynkowe",
     "typeActiveEnergyBurned": "Aktywna energia",
+    "typeBasalEnergyBurned": "Energia spoczynkowa",
     "typeFlightsClimbed": "Pokonane piętra",
     "typeWalkingRunningDistance": "Dystans marszu i biegu",
     "typeVo2Max": "VO₂ max",

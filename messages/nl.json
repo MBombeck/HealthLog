@@ -819,6 +819,7 @@
     "typeHeartRateVariability": "Hartslagvariabiliteit",
     "typeRestingHeartRate": "Rusthartslag",
     "typeActiveEnergyBurned": "Actieve energie",
+    "typeBasalEnergyBurned": "Rustenergie",
     "typeFlightsClimbed": "Beklommen verdiepingen",
     "typeWalkingRunningDistance": "Afstand wandelen + hardlopen",
     "typeVo2Max": "VO₂max",

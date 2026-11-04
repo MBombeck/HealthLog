@@ -819,6 +819,7 @@
     "typeHeartRateVariability": "Heart-rate variability",
     "typeRestingHeartRate": "Resting heart rate",
     "typeActiveEnergyBurned": "Active energy",
+    "typeBasalEnergyBurned": "Resting energy",
     "typeFlightsClimbed": "Flights climbed",
     "typeWalkingRunningDistance": "Walking + running distance",
     "typeVo2Max": "VO₂ max",

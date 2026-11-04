@@ -20,6 +20,7 @@ export const MEASUREMENT_TYPE_COLORS: Record<string, string> = {
   HEART_RATE_VARIABILITY: "bg-chart-5/10 text-chart-5 dark:bg-chart-5/20",
   RESTING_HEART_RATE: "bg-chart-3/10 text-chart-3 dark:bg-chart-3/20",
   ACTIVE_ENERGY_BURNED: "bg-chart-4/10 text-chart-4 dark:bg-chart-4/20",
+  BASAL_ENERGY_BURNED: "bg-chart-4/10 text-chart-4 dark:bg-chart-4/20",
   FLIGHTS_CLIMBED: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
   WALKING_RUNNING_DISTANCE: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
   VO2_MAX: "bg-chart-1/10 text-chart-1 dark:bg-chart-1/20",

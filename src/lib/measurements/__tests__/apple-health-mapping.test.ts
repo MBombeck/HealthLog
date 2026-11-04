@@ -783,6 +783,8 @@ describe("dailyStatsExternalId (v1.4.30 — R-A Option A handoff lock)", () => {
       [
         "HKQuantityTypeIdentifierStepCount",
         "HKQuantityTypeIdentifierActiveEnergyBurned",
+        // Resting energy (#1340).
+        "HKQuantityTypeIdentifierBasalEnergyBurned",
         "HKQuantityTypeIdentifierFlightsClimbed",
         "HKQuantityTypeIdentifierDistanceWalkingRunning",
         "HKQuantityTypeIdentifierTimeInDaylight",

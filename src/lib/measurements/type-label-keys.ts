@@ -29,6 +29,7 @@ export const MEASUREMENT_TYPE_LABEL_KEYS: Record<MeasurementType, string> = {
   HEART_RATE_VARIABILITY: "measurements.typeHeartRateVariability",
   RESTING_HEART_RATE: "measurements.typeRestingHeartRate",
   ACTIVE_ENERGY_BURNED: "measurements.typeActiveEnergyBurned",
+  BASAL_ENERGY_BURNED: "measurements.typeBasalEnergyBurned",
   FLIGHTS_CLIMBED: "measurements.typeFlightsClimbed",
   WALKING_RUNNING_DISTANCE: "measurements.typeWalkingRunningDistance",
   VO2_MAX: "measurements.typeVo2Max",

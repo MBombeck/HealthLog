@@ -819,6 +819,7 @@
     "typeHeartRateVariability": "Herzfrequenzvariabilität",
     "typeRestingHeartRate": "Ruheherzfrequenz",
     "typeActiveEnergyBurned": "Aktive Energie",
+    "typeBasalEnergyBurned": "Ruheenergie",
     "typeFlightsClimbed": "Treppen",
     "typeWalkingRunningDistance": "Geh- und Laufstrecke",
     "typeVo2Max": "VO₂max",

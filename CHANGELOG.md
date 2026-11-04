@@ -15,6 +15,11 @@
 - `GET /api/biomarkers/{id}/series` returns one lab marker's line, the same
   points and window the timeline draws for it, under the Labs module. The
   iOS app can show a marker's chart with the timeline switched off. (#1342)
+- Resting energy from Apple Health is stored as a metric of its own,
+  `BASAL_ENERGY_BURNED` in kcal, next to active energy and never added to
+  it. It used to be skipped. It is summed per day, charted, listed with your
+  measurements, included in backups and exports, and readable over MCP. It
+  feeds no score and no insight. (#1340)
 
 ### Fixed
 

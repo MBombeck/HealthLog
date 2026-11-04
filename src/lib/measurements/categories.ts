@@ -89,6 +89,7 @@ export const MEASUREMENT_CATEGORIES: ReadonlyMap<
   // ── Activity (cumulative + fitness + mobility) ──
   ["ACTIVITY_STEPS", "activity"],
   ["ACTIVE_ENERGY_BURNED", "activity"],
+  ["BASAL_ENERGY_BURNED", "activity"],
   ["FLIGHTS_CLIMBED", "activity"],
   ["WALKING_RUNNING_DISTANCE", "activity"],
   ["VO2_MAX", "activity"],

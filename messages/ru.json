@@ -819,6 +819,7 @@
     "typeHeartRateVariability": "Вариабельность сердечного ритма",
     "typeRestingHeartRate": "ЧСС в покое",
     "typeActiveEnergyBurned": "Активная энергия",
+    "typeBasalEnergyBurned": "Энергия в покое",
     "typeFlightsClimbed": "Этажи",
     "typeWalkingRunningDistance": "Расстояние ходьбы + бега",
     "typeVo2Max": "VO₂ max",

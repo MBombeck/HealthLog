@@ -254,6 +254,14 @@ export interface DailySumSpec {
   factor: number;
 }
 
+/*
+ * `basal_metabolic_rate_record_table` is deliberately not summed here. A
+ * BasalMetabolicRateRecord is a rate (power) at one instant, written when an
+ * app recomputes it, not an interval of energy spent; summing it per day would
+ * count every recomputation as another day of resting energy, and spreading
+ * one rate over 24 hours would invent a figure the record does not hold.
+ * BASAL_ENERGY_BURNED stays an Apple Health day total.
+ */
 export const DAILY_SUM_SPECS: readonly DailySumSpec[] = [
   {
     table: "steps_record_table",

@@ -166,6 +166,7 @@ export const UNSCOPED_REVIEWED_TYPES: ReadonlySet<MeasurementType> =
     "WALKING_RUNNING_DISTANCE",
     "FLIGHTS_CLIMBED",
     "ACTIVE_ENERGY_BURNED",
+    "BASAL_ENERGY_BURNED",
     "ENERGY_EXPENDITURE_KJ",
     // v1.44 — the exercise and stand rings are ambient movement like steps,
     // not workout sessions.

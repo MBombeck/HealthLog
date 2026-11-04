@@ -819,6 +819,7 @@
     "typeHeartRateVariability": "Variabilité de la fréquence cardiaque",
     "typeRestingHeartRate": "Fréquence cardiaque au repos",
     "typeActiveEnergyBurned": "Énergie active",
+    "typeBasalEnergyBurned": "Énergie au repos",
     "typeFlightsClimbed": "Étages",
     "typeWalkingRunningDistance": "Distance à pied et en course",
     "typeVo2Max": "VO₂ max",

@@ -22,7 +22,9 @@ describe("acceptedHealthKitTypes", () => {
       expect(HK_QUANTITY_TYPE_DEFERRED.has(id), id).toBe(false);
     }
     expect(accepted).not.toContain("HKQuantityTypeIdentifierHeight");
-    expect(accepted).not.toContain("HKQuantityTypeIdentifierBasalEnergyBurned");
+    // Resting energy (#1340) left the deferred set for a type of
+    // its own, so the client is told the server takes it.
+    expect(accepted).toContain("HKQuantityTypeIdentifierBasalEnergyBurned");
   });
 
   it("lists only identifiers the batch mapper turns into a row", () => {

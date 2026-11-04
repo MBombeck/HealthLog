@@ -334,6 +334,7 @@ const INTEGER_DISPLAY_TYPES: ReadonlySet<string> = new Set([
   // kcal + daylight minutes — whole units are the meaningful display
   // grain for these day-cumulative counts.
   "ACTIVE_ENERGY_BURNED",
+  "BASAL_ENERGY_BURNED",
   "TIME_IN_DAYLIGHT",
   // v1.44 — the minute rings, mindful minutes and stood hours.
   "EXERCISE_MINUTES",
