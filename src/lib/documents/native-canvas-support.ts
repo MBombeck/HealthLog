@@ -9,7 +9,7 @@
  * restart loop (live incident: a Synology DS1520+ self-host, exit code 132
  * ~18 s after every boot once the thumbnail backfill touched Skia).
  *
- * The published image runs on glibc (Wolfi) and loads the glibc build. Under an
+ * The published image runs on glibc (Debian) and loads the glibc build. Under an
  * emulated AVX2-less Atom core that build drew a canvas and rendered
  * a PDF page to JPEG where the musl build died, but it still carries AVX2 code
  * and not every path it can take was exercised, so the x64 gate stays closed

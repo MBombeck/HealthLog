@@ -61,7 +61,7 @@ describe("canvas binary hoist", () => {
     expect(runner).not.toMatch(/@napi-rs\+canvas[^"'\s]*@\*/);
   });
 
-  it("installs on Debian and runs on Wolfi, both glibc", () => {
+  it("installs and runs on the same Debian glibc image", () => {
     const froms = DOCKERFILE.match(/^FROM \S+ AS \S+$/gm) ?? [];
     expect(froms).toEqual([
       expect.stringMatching(
@@ -71,7 +71,13 @@ describe("canvas binary hoist", () => {
         /^FROM node:22-trixie-slim@sha256:[0-9a-f]{64} AS builder$/,
       ),
       expect.stringMatching(
-        /^FROM cgr\.dev\/chainguard\/wolfi-base:latest@sha256:[0-9a-f]{64} AS runner$/,
+        /^FROM node:22-trixie-slim@sha256:[0-9a-f]{64} AS prisma-cli$/,
+      ),
+      expect.stringMatching(
+        /^FROM postgres:18\.\d+-trixie@sha256:[0-9a-f]{64} AS pgclient$/,
+      ),
+      expect.stringMatching(
+        /^FROM node:22-trixie-slim@sha256:[0-9a-f]{64} AS runner$/,
       ),
     ]);
     // The native packages pnpm picked in the builder must load in the
