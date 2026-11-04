@@ -17,9 +17,7 @@ import { enqueueWhenBossReady } from "@/lib/jobs/boss-ready";
 import {
   clearGarminTokenCache,
   exchangeGarminKey,
-  GARMIN_REGIONS,
   GarminApiError,
-  type GarminRegion,
   type GarminToken,
 } from "@/lib/garmin/client";
 import {
@@ -33,9 +31,9 @@ import { garminConnectSchema } from "@/lib/validations/garmin";
  *
  * The key is validated by buying a token with it before anything is stored:
  * a mistyped, revoked or expired key answers here, not on the first cron
- * tick. Garmin runs a separate service for accounts in China; a key the
- * global service refuses is tried there once, and the region that accepted it
- * is kept so the sync talks to the right host.
+ * tick. Garmin runs a separate service for accounts in China; the person
+ * picks one, only that host is contacted, and the choice is kept so the
+ * sync talks to the same host.
  *
  * On success the key is sealed at rest, the expiry is noted (Garmin's own
  * when the token reveals it, else the validity the person picked), the
@@ -62,25 +60,19 @@ export const POST = apiHandler(async (request: NextRequest) => {
   });
   if (!parsed.ok) return parsed.error;
 
-  const { apiKey, validityDays } = parsed.data;
+  const { apiKey, region, validityDays } = parsed.data;
 
+  // Only the service the person chose is asked: the key is theirs to send,
+  // and a key for one service means nothing to the other.
   let token: GarminToken | null = null;
-  let region: GarminRegion | null = null;
   let lastError: unknown = null;
-  for (const candidate of GARMIN_REGIONS) {
-    try {
-      token = await exchangeGarminKey(apiKey, candidate);
-      region = candidate;
-      break;
-    } catch (err) {
-      lastError = err;
-      // Only a refused key is worth asking the other service about; an
-      // outage or a rate limit would answer the same there.
-      if (!(err instanceof GarminApiError && err.keyRefused)) break;
-    }
+  try {
+    token = await exchangeGarminKey(apiKey, region);
+  } catch (err) {
+    lastError = err;
   }
 
-  if (!token || !region) {
+  if (!token) {
     annotate({
       meta: {
         "garmin.connect.refused":

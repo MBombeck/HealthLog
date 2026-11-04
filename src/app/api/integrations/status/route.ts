@@ -22,7 +22,9 @@ import {
 } from "@/lib/garmin/key-expiry";
 import {
   garminBackfillShare,
+  garminUnavailableResources,
   readGarminBackfillProgress,
+  type GarminBackfillStep,
 } from "@/lib/garmin/backfill-progress";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiSuccess } from "@/lib/api-response";
@@ -539,6 +541,7 @@ export const GET = apiHandler(async () => {
         keyExpiry: garmin.keyExpiry,
         backfillCompleted: garmin.backfillCompleted,
         backfillShare: garmin.backfillShare,
+        unavailableResources: garmin.unavailableResources,
         health: health["garmin"],
         ...resolve("garmin", garminStatus, {
           connected: garmin.connected,
@@ -659,6 +662,7 @@ interface GarminExtras {
   keyExpiry: GarminKeyExpiry | null;
   backfillCompleted: boolean | null;
   backfillShare: number | null;
+  unavailableResources: GarminBackfillStep[] | null;
 }
 
 /**
@@ -684,9 +688,11 @@ function garminExtras(
       keyExpiry: null,
       backfillCompleted: null,
       backfillShare: null,
+      unavailableResources: null,
     };
   }
   const complete = dbUser.garminBackfillCompletedAt !== null;
+  const progress = readGarminBackfillProgress(dbUser.garminBackfillProgress);
   return {
     connected: true,
     configured: true,
@@ -695,11 +701,8 @@ function garminExtras(
       : "global",
     keyExpiry: resolveGarminKeyExpiry(dbUser.garminKeyExpiresAt),
     backfillCompleted: complete,
-    backfillShare: complete
-      ? 1
-      : garminBackfillShare(
-          readGarminBackfillProgress(dbUser.garminBackfillProgress),
-        ),
+    backfillShare: complete ? 1 : garminBackfillShare(progress),
+    unavailableResources: garminUnavailableResources(progress),
   };
 }
 

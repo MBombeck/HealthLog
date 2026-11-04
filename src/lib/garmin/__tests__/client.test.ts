@@ -16,11 +16,15 @@ import {
 const NOW = Date.parse("2026-11-04T08:00:00Z");
 const HOUR = 60 * 60 * 1000;
 
-/** A made-up unsigned JWT with the given `exp` (epoch seconds). */
-function jwt(expSeconds: number, nonce = "a"): string {
+/** A made-up unsigned JWT with the given `exp` (and `iat`), epoch seconds. */
+function jwt(expSeconds: number, nonce = "a", iatSeconds?: number): string {
   const enc = (o: object) =>
     Buffer.from(JSON.stringify(o)).toString("base64url");
-  return `${enc({ alg: "none" })}.${enc({ exp: expSeconds, n: nonce })}.sig`;
+  const claims =
+    iatSeconds === undefined
+      ? { exp: expSeconds, n: nonce }
+      : { exp: expSeconds, iat: iatSeconds, n: nonce };
+  return `${enc({ alg: "none" })}.${enc(claims)}.sig`;
 }
 
 interface Call {
@@ -104,6 +108,29 @@ describe("exchangeGarminKey", () => {
       now: () => NOW,
     });
     expect(token.keyExpiresAt).toBe(exp * 1000);
+  });
+
+  it("reads the token's lifetime from its own claims, not the local clock", async () => {
+    // A regular day-long token, read by a clock 20 hours ahead of Garmin's:
+    // exp minus now says four hours, exp minus iat says a full day.
+    const iat = Math.floor((NOW - 20 * HOUR) / 1000);
+    const exp = iat + 24 * 3600;
+    const g = fakeGarmin({ token: [tokenResponse(jwt(exp, "a", iat))] });
+    const token = await exchangeGarminKey("k".repeat(20), "global", {
+      fetch: g.fetch,
+      now: () => NOW,
+    });
+    expect(token.keyExpiresAt).toBeNull();
+    // A token Garmin cut short at the key's end, with its own iat.
+    const iat2 = Math.floor(NOW / 1000);
+    const g2 = fakeGarmin({
+      token: [tokenResponse(jwt(iat2 + 3 * 3600, "b", iat2))],
+    });
+    const capped = await exchangeGarminKey("k".repeat(20), "global", {
+      fetch: g2.fetch,
+      now: () => NOW,
+    });
+    expect(capped.keyExpiresAt).toBe((iat2 + 3 * 3600) * 1000);
   });
 
   it.each([401, 403, 404])(
@@ -215,6 +242,7 @@ describe("GarminSession", () => {
     const s = session(g.fetch);
     expect(await s.get("x", "/p")).toEqual({ ok: true });
     expect(s.exchanges).toBe(2);
+    expect(s.proven).toBe(true);
     expect(g.calls.at(-1)!.auth).toBe(`Bearer ${jwt(exp, "b")}`);
   });
 

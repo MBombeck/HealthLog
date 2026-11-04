@@ -11,6 +11,7 @@ import {
 import { resolveGarminKeyExpiry } from "@/lib/garmin/key-expiry";
 import {
   garminBackfillShare,
+  garminUnavailableResources,
   readGarminBackfillProgress,
 } from "@/lib/garmin/backfill-progress";
 import { isGarminRegion } from "@/lib/garmin/client";
@@ -43,6 +44,7 @@ export const GET = apiHandler(async () => {
   }
 
   const status = await getIntegrationStatus(user.id, "garmin");
+  const progress = readGarminBackfillProgress(dbUser.garminBackfillProgress);
   return apiSuccess({
     connected: true,
     configured: true,
@@ -54,10 +56,9 @@ export const GET = apiHandler(async () => {
       complete: dbUser.garminBackfillCompletedAt !== null,
       share: dbUser.garminBackfillCompletedAt
         ? 1
-        : garminBackfillShare(
-            readGarminBackfillProgress(dbUser.garminBackfillProgress),
-          ),
+        : garminBackfillShare(progress),
     },
+    unavailableResources: garminUnavailableResources(progress),
     state: status.state,
     lastSuccessAt: status.lastSuccessAt,
     lastAttemptAt: status.lastAttemptAt,

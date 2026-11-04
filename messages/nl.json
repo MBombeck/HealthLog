@@ -5698,7 +5698,11 @@
           "recovery": "Herstel",
           "stress": "Stress",
           "sleepDebt": "Slaaptekort",
-          "hrvRmssd": "HRV (RMSSD)"
+          "hrvRmssd": "HRV (RMSSD)",
+          "bodyBattery": "Body Battery",
+          "stressLevel": "Stressniveau",
+          "trainingReadiness": "Trainingsgereedheid",
+          "acuteTrainingLoad": "Acute trainingsbelasting"
         },
         "sourceLabels": {
           "WITHINGS": "Withings",
@@ -7728,7 +7732,6 @@
     "garminKeyExpiring": "Je Garmin-sleutel verloopt op {date}. Maak vóór die datum in Garmin Connect een nieuwe sleutel en plak die hier.",
     "garminKeyExpiryUnknown": "Garmin vertelt niet wanneer deze sleutel verloopt. Vervang de sleutel en kies de geldigheid die je in Garmin Connect hebt gekozen, dan waarschuwt deze kaart je een week van tevoren.",
     "garminConnected": "Garmin gekoppeld. De eerste synchronisatie is onderweg.",
-    "garminConnectFailed": "Kan geen verbinding maken met Garmin.",
     "garminKeyHowTo": "Open in Garmin Connect de instellingen, dan Personal API, en maak een sleutel. Garmin toont hem maar één keer, dus kopieer hem meteen.",
     "garminKeySettingsLink": "Garmin Connect openen",
     "garminApiKey": "Personal API-sleutel",
@@ -7739,7 +7742,30 @@
     "garminKeyValidityDays": "{count} dagen",
     "garminKeyValidityHelp": "Garmin meldt niet wanneer een sleutel verloopt. Met de geldigheid waarschuwt deze kaart je een week voordat de sleutel stopt met werken.",
     "garminConnect": "Koppelen",
-    "garminUpdate": "Wijzigingen opslaan"
+    "garminUpdate": "Wijzigingen opslaan",
+    "garminRegion": "Garmin-dienst",
+    "garminRegionGlobal": "Garmin Connect (wereldwijd)",
+    "garminRegionChina": "Garmin Connect China",
+    "garminErrors": {
+      "keyRefused": "Garmin heeft deze sleutel niet geaccepteerd. Controleer of hij volledig is gekopieerd, bij de gekozen dienst hoort en niet verlopen of ingetrokken is.",
+      "rateLimited": "Garmin beperkt op dit moment het aantal verzoeken. Probeer het over een paar minuten opnieuw.",
+      "unreachable": "Garmin is niet bereikbaar. Probeer het over een paar minuten opnieuw.",
+      "invalid": "Die sleutel ziet er niet goed uit. Plak hem opnieuw, zonder spaties.",
+      "generic": "Dat is niet gelukt. Probeer het opnieuw."
+    },
+    "garminKeyValidityMenu": "Geldigheid van de sleutel",
+    "garminValiditySaved": "Geldigheid opgeslagen.",
+    "garminKeyCreatedOn": "Aangemaakt op",
+    "garminKeyCreatedOnHelp": "De dag waarop je de sleutel in Garmin Connect hebt gemaakt. Leeg gelaten telt de geldigheid vanaf de dag dat je hem hier hebt gekoppeld.",
+    "garminUnavailable": "Garmin levert deze gegevens niet voor je account: {list}.",
+    "garminResource": {
+      "daily": "dagoverzichten",
+      "activities": "activiteiten",
+      "sleep": "slaap",
+      "hrv": "HRV",
+      "weight": "wegingen",
+      "cycle": "menstruatiecyclus"
+    }
   },
   "admin": {
     "title": "Beheer",

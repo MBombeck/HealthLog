@@ -114,6 +114,10 @@ const LEGIT_IDENTICAL = new Set<string>([
   // which Garmin Connect shows under the same English name in every locale.
   "measurements.typeBodyBattery",
   "settings.garminTag",
+  "settings.sections.sources.metrics.bodyBattery",
+  // Garmin's own service names.
+  "settings.garminRegionGlobal",
+  "settings.garminRegionChina",
   "admin.glitchtipDsn",
   "admin.integrationWebPush",
   "admin.offlineGeoEnabled",

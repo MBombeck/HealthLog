@@ -16,6 +16,7 @@ import type { MetricFreshnessEntry } from "@/lib/integrations/sync-verdict";
 import { queryKeys } from "@/lib/query-keys";
 import type { PublishedFitbitRetirement } from "@/lib/fitbit/retirement";
 import type { GarminKeyExpiry } from "@/lib/garmin/key-expiry";
+import type { GarminBackfillStep } from "@/lib/garmin/backfill-progress";
 
 export type IntegrationKey =
   | "withings"
@@ -75,6 +76,8 @@ export interface IntegrationStatusViewModel {
   hasToken?: boolean;
   /** Garmin: when the stored key stops working, resolved on the server. */
   keyExpiry?: GarminKeyExpiry | null;
+  /** Garmin: resources Garmin refuses for this account, for the details. */
+  unavailableResources?: GarminBackfillStep[] | null;
   /** Per-metric last-seen timestamps with the server-computed stale flag. */
   metricFreshness?: MetricFreshnessEntry[];
   /** Fitbit: the end of the legacy Web API, resolved on the server. */

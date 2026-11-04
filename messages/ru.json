@@ -5698,7 +5698,11 @@
           "recovery": "Восстановление",
           "stress": "Стресс",
           "sleepDebt": "Дефицит сна",
-          "hrvRmssd": "HRV (RMSSD)"
+          "hrvRmssd": "HRV (RMSSD)",
+          "bodyBattery": "Body Battery",
+          "stressLevel": "Уровень стресса",
+          "trainingReadiness": "Готовность к тренировке",
+          "acuteTrainingLoad": "Острая тренировочная нагрузка"
         },
         "sourceLabels": {
           "WITHINGS": "Withings",
@@ -7728,7 +7732,6 @@
     "garminKeyExpiring": "Срок действия вашего ключа Garmin истекает {date}. До этого создайте новый ключ в Garmin Connect и вставьте его сюда.",
     "garminKeyExpiryUnknown": "Garmin не сообщает, когда истекает срок действия ключа. Замените ключ и выберите срок, указанный в Garmin Connect, и эта карточка предупредит вас за неделю.",
     "garminConnected": "Garmin подключён. Первая синхронизация уже началась.",
-    "garminConnectFailed": "Не удалось подключиться к Garmin.",
     "garminKeyHowTo": "В Garmin Connect откройте «Настройки», затем Personal API, и создайте ключ. Garmin показывает его только один раз, поэтому сразу скопируйте его.",
     "garminKeySettingsLink": "Открыть Garmin Connect",
     "garminApiKey": "Ключ Personal API",
@@ -7739,7 +7742,30 @@
     "garminKeyValidityDays": "{count} дней",
     "garminKeyValidityHelp": "Garmin не сообщает, когда истекает срок действия ключа. Зная срок, эта карточка предупредит вас за неделю до того, как ключ перестанет работать.",
     "garminConnect": "Подключить",
-    "garminUpdate": "Сохранить изменения"
+    "garminUpdate": "Сохранить изменения",
+    "garminRegion": "Сервис Garmin",
+    "garminRegionGlobal": "Garmin Connect (глобальный)",
+    "garminRegionChina": "Garmin Connect Китай",
+    "garminErrors": {
+      "keyRefused": "Garmin не принял этот ключ. Проверьте, что он скопирован целиком, относится к выбранному сервису и не истёк и не отозван.",
+      "rateLimited": "Garmin сейчас ограничивает запросы. Попробуйте снова через несколько минут.",
+      "unreachable": "Garmin недоступен. Попробуйте снова через несколько минут.",
+      "invalid": "Ключ выглядит неправильно. Вставьте его ещё раз без пробелов.",
+      "generic": "Не получилось. Попробуйте ещё раз."
+    },
+    "garminKeyValidityMenu": "Срок действия ключа",
+    "garminValiditySaved": "Срок действия сохранён.",
+    "garminKeyCreatedOn": "Дата создания",
+    "garminKeyCreatedOnHelp": "День, когда вы создали ключ в Garmin Connect. Если оставить пустым, срок считается со дня подключения здесь.",
+    "garminUnavailable": "Garmin не предоставляет эти данные для вашего аккаунта: {list}.",
+    "garminResource": {
+      "daily": "дневные сводки",
+      "activities": "тренировки",
+      "sleep": "сон",
+      "hrv": "ВСР",
+      "weight": "взвешивания",
+      "cycle": "менструальный цикл"
+    }
   },
   "admin": {
     "title": "Администрирование",

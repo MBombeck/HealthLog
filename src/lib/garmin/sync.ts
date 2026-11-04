@@ -28,7 +28,9 @@ import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { annotate, getEvent } from "@/lib/logging/context";
 import {
+  getIntegrationStatus,
   isReauthRequired,
+  markReconnected,
   markSyncFailureRecorded,
   recordSyncFailure,
   recordSyncSuccess,
@@ -39,6 +41,7 @@ import { classifyIntegrationError } from "@/lib/integrations/http-status-classif
 import type { InsertedMeasurementArrivalRow } from "@/lib/arrivals/measurement-emit";
 import { invalidateUserMeasurements } from "@/lib/cache/invalidate";
 import { afterProviderWrite } from "@/lib/integrations/sync-kit/after-write";
+import { afterMeasurementMutation } from "@/lib/rollups/after-measurement-mutation";
 import type { SyncWriteResult } from "@/lib/outcome/written-outcome";
 import { maybeEnqueueMorningRefresh } from "@/lib/daily/morning-refresh-trigger";
 import { walkPages } from "@/lib/integrations/page-walk";
@@ -51,6 +54,8 @@ import { resolveUserTimezone } from "@/lib/tz/resolver";
 
 import {
   chunkGarminRange,
+  exchangeGarminKey,
+  shiftGarminDay,
   GARMIN_ACTIVITY_PAGE,
   GARMIN_PATHS,
   GARMIN_RANGE_DAYS,
@@ -58,10 +63,16 @@ import {
   GarminSession,
   isGarminKeyRefusal,
   isGarminRateLimit,
+  type GarminRegion,
   type GarminTransport,
 } from "./client";
 import { getGarminCredentials, rememberGarminKeyExpiry } from "./credentials";
 import { syncGarminCycle } from "./cycle-sync";
+import {
+  garminUnavailableCode,
+  markGarminResourceUnavailable,
+  readGarminUnavailable,
+} from "./unavailable";
 import {
   mapGarminDailySummary,
   mapGarminHrv,
@@ -154,6 +165,11 @@ export interface GarminWindowRead {
   workouts: GarminWorkoutRow[];
   /** Oldest day the window returned real data for. */
   oldestDay?: string;
+  /**
+   * Sleep only: days of the window Garmin answered for without a night (the
+   * night was deleted, or reduced to a nap). Their earlier rows are retired.
+   */
+  sleepEmptyDays: string[];
 }
 
 function minDay(
@@ -162,6 +178,59 @@ function minDay(
 ): string | undefined {
   if (b === undefined) return a;
   return a === undefined || b < a ? b : a;
+}
+
+/** Every calendar day from `start` to `end`, both included. */
+export function garminDaysBetween(start: string, end: string): string[] {
+  const days: string[] = [];
+  for (let d = start; d <= end; d = shiftGarminDay(d, 1)) days.push(d);
+  return days;
+}
+
+/**
+ * Retire what earlier syncs imported for nights Garmin no longer reports (a
+ * night deleted in Garmin Connect, or reduced to a nap): every live GARMIN
+ * row keyed under `sleep:<day>:`, whatever its type, because the stages and
+ * the night's scalars all came from that night. Soft delete, then the shared
+ * tail refolds the touched days. Best-effort: the day stays inside the
+ * window, so the next run retries it.
+ */
+export async function retireGarminSleepDays(
+  userId: string,
+  days: readonly string[],
+): Promise<number> {
+  const prefixes = days
+    .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))
+    .map((d) => `sleep:${d}:`);
+  if (prefixes.length === 0) return 0;
+  try {
+    const rows = await prisma.measurement.findMany({
+      where: {
+        userId,
+        source: "GARMIN",
+        deletedAt: null,
+        OR: prefixes.map((prefix) => ({ externalId: { startsWith: prefix } })),
+      },
+      select: { id: true, type: true, measuredAt: true },
+    });
+    if (rows.length === 0) return 0;
+    const res = await prisma.measurement.updateMany({
+      where: { userId, id: { in: rows.map((r) => r.id) }, deletedAt: null },
+      data: { deletedAt: new Date() },
+    });
+    await afterMeasurementMutation(userId, rows, {
+      source: "sync",
+      label: "garmin",
+    });
+    invalidateUserMeasurements(userId);
+    annotate({ meta: { garmin_sleep_retired_rows: res.count } });
+    return res.count;
+  } catch (err) {
+    getEvent()?.addWarning(
+      `garmin: retiring removed nights failed for ${userId}: ${err}`,
+    );
+    return 0;
+  }
 }
 
 async function readActivities(
@@ -211,7 +280,11 @@ export async function readGarminWindow(
   window: { startDate: string; endDate: string },
   tz: string,
 ): Promise<GarminWindowRead> {
-  const out: GarminWindowRead = { measurements: [], workouts: [] };
+  const out: GarminWindowRead = {
+    measurements: [],
+    workouts: [],
+    sleepEmptyDays: [],
+  };
   const chunks = chunkGarminRange(
     window.startDate,
     window.endDate,
@@ -239,14 +312,23 @@ export async function readGarminWindow(
           GarminSleepSummary[] | GarminSleepSummary
         >("sleepSummaries", GARMIN_PATHS.sleepSummaries, chunk);
         const list = Array.isArray(nights) ? nights : nights ? [nights] : [];
+        const nightDays = new Set<string>();
         for (const night of list) {
           const rows = mapGarminSleep(night, tz);
           if (rows.length > 0) {
             out.measurements.push(...rows);
+            nightDays.add(night.calendarDate!);
             out.oldestDay = minDay(
               out.oldestDay,
               night.calendarDate ?? undefined,
             );
+          }
+        }
+        // Garmin answers one entry per day, a night or an empty placeholder.
+        // An answer with no entries at all is not trusted to say anything.
+        if (list.length > 0) {
+          for (const day of garminDaysBetween(chunk.startDate, chunk.endDate)) {
+            if (!nightDays.has(day)) out.sleepEmptyDays.push(day);
           }
         }
         break;
@@ -355,28 +437,49 @@ export async function upsertGarminMeasurements(
   return imported;
 }
 
+/** Ceiling of a catch-up after an outage, from the last successful sync. */
+export const GARMIN_SYNC_CATCHUP_MAX_DAYS = 365;
+
 /**
- * How far back this tick reaches: from the newest Garmin row held, plus a
- * day of overlap, never under the re-score floor nor over the ceiling. No
- * row at all (a fresh connection) takes the ceiling; the backfill takes the
- * rest.
+ * How far back this tick reaches. Three bounds, the widest wins:
+ *
+ *   - the re-score floor (`GARMIN_SYNC_LOOKBACK_DAYS`);
+ *   - the newest Garmin row held, plus a day of overlap, up to the 30-day
+ *     ceiling, for data a watch uploads days late while syncs still succeed;
+ *   - the last successful sync, plus a day, up to a year, so an outage of
+ *     any length short of that closes without a gap once the key works
+ *     again.
+ *
+ * A connection that never succeeded takes the 30-day ceiling; the backfill
+ * reads the rest.
  */
 export async function resolveGarminLookbackDays(
   userId: string,
+  now: number = Date.now(),
 ): Promise<number> {
-  const newest = await prisma.measurement.findFirst({
-    where: { userId, source: "GARMIN", deletedAt: null },
-    orderBy: { measuredAt: "desc" },
-    select: { measuredAt: true },
-  });
-  if (!newest) return GARMIN_SYNC_MAX_LOOKBACK_DAYS;
-  const daysSince = Math.floor(
-    (Date.now() - newest.measuredAt.getTime()) / DAY_MS,
-  );
-  return Math.min(
-    GARMIN_SYNC_MAX_LOOKBACK_DAYS,
-    Math.max(GARMIN_SYNC_LOOKBACK_DAYS, daysSince + 1),
-  );
+  const [newest, status] = await Promise.all([
+    prisma.measurement.findFirst({
+      where: { userId, source: "GARMIN", deletedAt: null },
+      orderBy: { measuredAt: "desc" },
+      select: { measuredAt: true },
+    }),
+    getIntegrationStatus(userId, "garmin"),
+  ]);
+  const since = (at: number) => Math.floor((now - at) / DAY_MS) + 1;
+  if (!newest && !status.lastSuccessAt) return GARMIN_SYNC_MAX_LOOKBACK_DAYS;
+  const fromData = newest
+    ? Math.min(
+        GARMIN_SYNC_MAX_LOOKBACK_DAYS,
+        since(newest.measuredAt.getTime()),
+      )
+    : GARMIN_SYNC_MAX_LOOKBACK_DAYS;
+  const fromSuccess = status.lastSuccessAt
+    ? Math.min(
+        GARMIN_SYNC_CATCHUP_MAX_DAYS,
+        since(Date.parse(status.lastSuccessAt)),
+      )
+    : GARMIN_SYNC_MAX_LOOKBACK_DAYS;
+  return Math.max(GARMIN_SYNC_LOOKBACK_DAYS, fromData, fromSuccess);
 }
 
 export interface GarminSyncOptions {
@@ -399,8 +502,8 @@ export async function syncUserGarmin(
   const creds = await getGarminCredentials(userId);
   if (!creds) return { imported: 0, failed: false };
   if (opts.skipWhenParked && (await isReauthRequired(userId, "garmin"))) {
-    annotate({ action: { name: "garmin.sync.skipped_reauth" } });
-    return { imported: 0, failed: false };
+    const probed = await reprobeParkedGarminKey(userId, creds, opts.transport);
+    if (!probed) return { imported: 0, failed: false };
   }
 
   const tz = await resolveUserTimezone(userId);
@@ -417,14 +520,19 @@ export async function syncUserGarmin(
     region: creds.region,
     transport: opts.transport,
   });
+  const unavailable = await readGarminUnavailable(userId);
 
   let imported = 0;
   const failures: Array<{ resource: GarminResource; err: unknown }> = [];
   let insertedSleep: Date[] = [];
 
   for (const resource of GARMIN_RESOURCES) {
+    if (unavailable.has(resource)) continue;
     try {
       const read = await readGarminWindow(session, resource, window, tz);
+      if (resource === "sleep") {
+        await retireGarminSleepDays(userId, read.sleepEmptyDays);
+      }
       imported += await upsertGarminMeasurements(userId, read.measurements, {
         onInserted: (rows) => {
           if (resource !== "sleep") return;
@@ -440,6 +548,13 @@ export async function syncUserGarmin(
         await recordGarminSyncFailure(userId, err);
         throw markSyncFailureRecorded(err);
       }
+      const code = garminUnavailableCode(resource, err);
+      if (code) {
+        // Garmin will not serve this resource to this account: noted once,
+        // skipped from now on, and not a failure of the connection.
+        await markGarminResourceUnavailable(userId, resource, code, today);
+        continue;
+      }
       failures.push({ resource, err });
       getEvent()?.addWarning(
         `garmin: ${resource} failed for ${userId}: ${err instanceof Error ? err.message : String(err)}`,
@@ -449,14 +564,18 @@ export async function syncUserGarmin(
     }
   }
 
-  // Best-effort, off the ledger: most accounts track no cycle in Garmin.
-  if (!failures.some((f) => isGarminRateLimit(f.err))) {
+  // Best-effort and off the ledger, whatever happens: most accounts track no
+  // cycle in Garmin, and a refusal here never parks the connection.
+  if (
+    !unavailable.has("cycle") &&
+    !failures.some((f) => isGarminRateLimit(f.err))
+  ) {
     try {
       await syncGarminCycle(userId, session, today);
     } catch (err) {
-      if (isGarminKeyRefusal(err)) {
-        await recordGarminSyncFailure(userId, err);
-        throw markSyncFailureRecorded(err);
+      const code = garminUnavailableCode("cycle", err);
+      if (code) {
+        await markGarminResourceUnavailable(userId, "cycle", code, today);
       }
       getEvent()?.addWarning(
         `garmin: cycle import skipped for ${userId}: ${err instanceof Error ? err.message : String(err)}`,
@@ -469,6 +588,7 @@ export async function syncUserGarmin(
       userId,
       session.learnedKeyExpiresAt,
       creds.keyExpiresAt,
+      { exchanged: session.proven },
     );
   } catch (err) {
     getEvent()?.addWarning(`garmin: key expiry note failed: ${err}`);
@@ -483,6 +603,7 @@ export async function syncUserGarmin(
         imported,
         exchanges: session.exchanges,
         failures: failures.map((f) => f.resource),
+        skipped: [...unavailable],
       },
     },
   });
@@ -506,4 +627,39 @@ export async function syncUserGarmin(
 
   await recordSyncSuccess(userId, "garmin");
   return { imported, failed: false };
+}
+
+/** How long a parked key waits between two probes. */
+export const GARMIN_REPROBE_INTERVAL_MS = DAY_MS;
+
+/**
+ * A key parked on a refusal is asked about again once a day: one token
+ * exchange, nothing else. A refusal can be a passing one (a firewall's 403,
+ * a 401 while Garmin rotates something), and without a probe such a key
+ * stayed parked until the person pasted it again. Accepted, the connection
+ * is reconnected and the run goes on; refused, the refusal is recorded,
+ * which also dates the next probe. Returns whether the run should go on.
+ */
+export async function reprobeParkedGarminKey(
+  userId: string,
+  creds: { apiKey: string; region: GarminRegion },
+  transport?: GarminTransport,
+  now: number = Date.now(),
+): Promise<boolean> {
+  const status = await getIntegrationStatus(userId, "garmin");
+  const last = status.lastAttemptAt ? Date.parse(status.lastAttemptAt) : 0;
+  if (now - last < GARMIN_REPROBE_INTERVAL_MS) {
+    annotate({ action: { name: "garmin.sync.skipped_reauth" } });
+    return false;
+  }
+  try {
+    await exchangeGarminKey(creds.apiKey, creds.region, transport);
+  } catch (err) {
+    await recordGarminSyncFailure(userId, err);
+    annotate({ action: { name: "garmin.reprobe.refused" } });
+    return false;
+  }
+  await markReconnected(userId, "garmin");
+  annotate({ action: { name: "garmin.reprobe.accepted" } });
+  return true;
 }

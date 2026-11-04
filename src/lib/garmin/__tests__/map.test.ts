@@ -175,7 +175,43 @@ describe("mapGarminHrv", () => {
 });
 
 describe("mapGarminWeightRange", () => {
-  it("converts grams to kilograms and body water from percent", () => {
+  it("reads the documented shape: kilograms, no samplePk, a string instant", () => {
+    const rows = mapGarminWeightRange({
+      dailyWeightSummaries: [
+        {
+          summaryDate: "2026-10-20",
+          allWeightMetrics: [
+            {
+              calendarDate: "2026-10-20",
+              timestampGMT: "2026-10-20T06:10:00.000Z",
+              weight: 80,
+              bmi: 24.7,
+              bodyFat: 18.5,
+              bodyWater: 55,
+              muscleMass: 36,
+              boneMass: 3,
+              visceralFat: 7,
+            },
+          ],
+        },
+      ],
+    });
+    expect(byType(rows)).toEqual({
+      WEIGHT: 80,
+      BODY_MASS_INDEX: 24.7,
+      BODY_FAT: 18.5,
+      TOTAL_BODY_WATER: 44,
+      MUSCLE_MASS: 36,
+      BONE_MASS: 3,
+      VISCERAL_FAT: 7,
+    });
+    const at = Date.parse("2026-10-20T06:10:00.000Z");
+    expect(rows.every((r) => r.externalId.startsWith(`weight:t${at}:`))).toBe(
+      true,
+    );
+  });
+
+  it("reads the live shape: grams and a samplePk", () => {
     const rows = mapGarminWeightRange({
       dailyWeightSummaries: [
         {
@@ -185,48 +221,61 @@ describe("mapGarminWeightRange", () => {
               samplePk: 11,
               timestampGMT: 1_792_474_200_000,
               weight: 80_000,
-              bmi: 24.7,
-              bodyFat: 18.5,
-              bodyWater: 55,
               muscleMass: 36_400,
               boneMass: 3_200,
-              visceralFat: 7,
               sourceType: "INDEX_SCALE",
             },
           ],
         },
-        {
-          summaryDate: "2026-10-21",
-          latestWeight: {
-            samplePk: 12,
-            date: 1_792_560_000_000,
-            weight: 79_600,
-          },
-        },
       ],
     });
-    const first = rows.filter((r) => r.externalId.startsWith("weight:11:"));
-    expect(byType(first)).toEqual({
+    expect(byType(rows)).toEqual({
       WEIGHT: 80,
-      BODY_MASS_INDEX: 24.7,
-      BODY_FAT: 18.5,
-      TOTAL_BODY_WATER: 44,
       MUSCLE_MASS: 36.4,
       BONE_MASS: 3.2,
-      VISCERAL_FAT: 7,
     });
-    expect(first.every((r) => r.deviceType === "scale")).toBe(true);
-    const second = rows.filter((r) => r.externalId.startsWith("weight:12:"));
-    expect(byType(second)).toEqual({ WEIGHT: 79.6 });
-    expect(second[0]!.deviceType).toBeUndefined();
+    expect(rows.every((r) => r.externalId.startsWith("weight:11:"))).toBe(true);
+    expect(rows.every((r) => r.deviceType === "scale")).toBe(true);
   });
 
-  it("does not write a weigh-in twice when it is both latest and listed", () => {
+  it("writes a weigh-in whole or not at all", () => {
+    const base = { timestampGMT: "2026-10-20T06:10:00.000Z" };
+    // No weight: nothing, not a BMI on its own.
+    expect(
+      mapGarminWeightRange({
+        dailyWeightSummaries: [{ allWeightMetrics: [{ ...base, bmi: 24 }] }],
+      }),
+    ).toEqual([]);
+    // One implausible value takes the whole weigh-in with it.
+    expect(
+      mapGarminWeightRange({
+        dailyWeightSummaries: [
+          { allWeightMetrics: [{ ...base, weight: 80, bodyFat: 95 }] },
+        ],
+      }),
+    ).toEqual([]);
+    // No instant: nothing.
+    expect(
+      mapGarminWeightRange({
+        dailyWeightSummaries: [{ allWeightMetrics: [{ weight: 80 }] }],
+      }),
+    ).toEqual([]);
+  });
+
+  it("falls back to the day's latest weigh-in and writes it once", () => {
     const w = { samplePk: 5, date: 1_792_560_000_000, weight: 70_000 };
-    const rows = mapGarminWeightRange({
-      dailyWeightSummaries: [{ latestWeight: w, allWeightMetrics: [w] }],
-    });
-    expect(rows).toHaveLength(1);
+    expect(
+      mapGarminWeightRange({
+        dailyWeightSummaries: [{ latestWeight: w, allWeightMetrics: [w] }],
+      }),
+    ).toHaveLength(1);
+    expect(
+      byType(
+        mapGarminWeightRange({
+          dailyWeightSummaries: [{ latestWeight: { ...w, samplePk: 6 } }],
+        }),
+      ),
+    ).toEqual({ WEIGHT: 70 });
   });
 });
 

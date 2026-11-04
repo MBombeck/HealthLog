@@ -47,7 +47,10 @@ import { polarCredentialsSchema } from "@/lib/validations/polar";
 import { stravaCredentialsSchema } from "@/lib/validations/strava";
 import { whoopCredentialsSchema } from "@/lib/validations/whoop";
 import { nightscoutConnectSchema } from "@/lib/validations/nightscout";
-import { garminConnectSchema } from "@/lib/validations/garmin";
+import {
+  garminConnectSchema,
+  garminKeyExpirySchema,
+} from "@/lib/validations/garmin";
 import { withingsCredentialsSchema } from "@/lib/validations/withings";
 import { dataEnvelope, errorEnvelope, stdResponses } from "./shared";
 import { isoDateTime } from "@/lib/validations/datetime";
@@ -626,10 +629,22 @@ const garminKeyExpiry = z
       "When the stored Garmin Personal API key expires, resolved on the server so every client warns alike. Garmin keys are valid for 30, 90, 180 or 365 days from creation and cannot be extended; a new key replaces the old.",
   });
 
+const garminUnavailableResources = z
+  .array(z.enum(["daily", "activities", "sleep", "hrv", "weight", "cycle"]))
+  .describe(
+    "Resources Garmin refuses for this account with a lasting 4xx (a menstrual-cycle summary for someone who tracks no cycle, say). Each is skipped by the sync and counts as done for the backfill; none turns the connection red. A new key clears the list.",
+  );
+
+const garminKeyExpiryRequest = garminKeyExpirySchema.meta({
+  id: "GarminKeyExpiryRequest",
+  description:
+    "The validity picked when the key was created (30, 90, 180 or 365 days; null forgets the estimate) and, optionally, the day it was created in Garmin Connect. Without `createdOn` the validity counts from the day the key was connected.",
+});
+
 const garminConnectRequest = garminConnectSchema.meta({
   id: "GarminConnectRequest",
   description:
-    "The Personal API key from Garmin Connect (Settings, Personal API), trimmed before use, and optionally the validity picked when it was created. Garmin does not report a key's expiry, so the validity is what lets the card warn a week ahead until the key's last day reveals the real end.",
+    "The Personal API key from Garmin Connect (Settings, Personal API), trimmed before use; `region`, the one Garmin service the key is sent to (`global` by default, `china` for Garmin's service in China); and optionally the validity picked when it was created. Garmin does not report a key's expiry, so the validity is what lets the card warn a week ahead until the key's last day reveals the real end.",
 });
 
 const garminStatusResponse = z
@@ -649,6 +664,7 @@ const garminStatusResponse = z
       })
       .optional()
       .describe("How far the history backfill has got."),
+    unavailableResources: garminUnavailableResources.optional(),
     state: integrationLedgerState.optional().meta(legacy()),
     lastSuccessAt: isoDateTime().nullable().optional(),
     lastAttemptAt: isoDateTime().nullable().optional(),
@@ -1273,6 +1289,10 @@ const integrationEnvelopeEntry = z
       .describe(
         "Garmin only. Share of the history walk done, 0 to 1; 1 once `backfillCompleted`. Null when no key is stored.",
       ),
+    unavailableResources: garminUnavailableResources
+      .nullable()
+      .optional()
+      .describe("Garmin only. Null when no key is stored."),
     retirement: z
       .object({
         endsOn: z
@@ -1620,7 +1640,7 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Integrations"],
       summary: "Connect (or replace) the caller's Garmin Personal API key",
       description:
-        "Validates the key by buying a token with it BEFORE storing anything, first at Garmin's global service and, when that refuses the key, at the China service. On success the key is encrypted at rest, the region that accepted it and the key's expiry are noted, the history backfill is reopened, the `garmin` ledger is reset to connected, and a first sync plus the backfill are enqueued best-effort. Re-sending replaces the key. The key is never logged or echoed. Body capped at 16 KiB, rate-limited 10 requests / 60 s per user. Auth via cookie or Bearer.",
+        "Validates the key by buying a token with it BEFORE storing anything, at the one Garmin service `region` names; the key is never sent to the other. On success the key is encrypted at rest, the region that accepted it and the key's expiry are noted, the history backfill is reopened, the `garmin` ledger is reset to connected, and a first sync plus the backfill are enqueued best-effort. Re-sending replaces the key. The key is never logged or echoed. Body capped at 16 KiB, rate-limited 10 requests / 60 s per user. Auth via cookie or Bearer.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: garminConnectRequest } },
@@ -1741,6 +1761,36 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             "More than 5 probes in 60 s from this user. `meta.errorCode` = `rate_limited_self`.",
           content: { "application/json": { schema: errorEnvelope } },
         },
+      },
+    },
+  },
+  "/api/garmin/key-expiry": {
+    patch: {
+      tags: ["Integrations"],
+      summary: "Correct when the stored Garmin key expires",
+      description:
+        "Sets the stored key's expiry from the validity picked when it was created, counted from `createdOn` or else from the day it was connected, without pasting the key again. Nothing is sent to Garmin. Rate-limited 20 requests / 60 s per user. Auth via cookie or Bearer.",
+      requestBody: {
+        required: true,
+        content: { "application/json": { schema: garminKeyExpiryRequest } },
+      },
+      responses: {
+        "200": {
+          description: "The expiry was stored.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ keyExpiry: garminKeyExpiry }),
+                "GarminKeyExpiryEnvelope",
+              ),
+            },
+          },
+        },
+        "404": {
+          description: "No Garmin key is stored.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        ...stdResponses,
       },
     },
   },

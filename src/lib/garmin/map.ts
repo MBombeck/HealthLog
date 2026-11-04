@@ -17,11 +17,14 @@
  *   HRV            `lastNightAvg` (RMSSD) → HRV_RMSSD; Garmin reports no SDNN
  *   weigh-ins      weight, BMI, body fat, body water, muscle, bone, visceral
  *
- * Masses are grams on the live service; body water is a percentage of the
- * weigh-in's weight and is converted to the kilograms the type stores.
+ * Masses are kilograms in Garmin's document and grams on the live service,
+ * so each is read by magnitude; body water is a percentage of the weigh-in's
+ * weight and is converted to the kilograms the type stores.
  */
 import { canonicalDailyTimestamp } from "@/lib/measurements/consolidation-tz";
 import { importValue } from "@/lib/integrations/import-value";
+import { annotate } from "@/lib/logging/context";
+import { validateMeasurementRange } from "@/lib/measurements/value-ranges";
 
 import type {
   GarminDailySummary,
@@ -261,28 +264,63 @@ export function mapGarminHrv(
   return out;
 }
 
-const GRAMS_PER_KG = 1000;
+/**
+ * Above this a mass is grams, at or below it kilograms. Garmin's document
+ * says kilograms; the live service has been seen sending grams. No human
+ * weighs a tonne, and no muscle or bone mass reaches 1000 kg, so one bound
+ * decides each field on its own.
+ */
+const GRAMS_ABOVE = 1000;
 
-/** One weigh-in → its body-composition rows. */
-export function mapGarminWeighIn(w: GarminWeighIn): GarminMappedMeasurement[] {
-  const id =
-    typeof w.samplePk === "number" || typeof w.samplePk === "string"
-      ? String(w.samplePk)
-      : null;
-  if (!id) return [];
+function kilograms(value: number | null): number | null {
+  if (value === null || value <= 0) return null;
+  return value > GRAMS_ABOVE ? value / 1000 : value;
+}
+
+/**
+ * The weigh-in's stable id: Garmin's `samplePk` when it sends one (the live
+ * service does, the document does not), else the reading's own GMT instant,
+ * which a re-read reports unchanged.
+ */
+function weighInId(w: GarminWeighIn, measuredAt: Date): string {
+  if (typeof w.samplePk === "number" || typeof w.samplePk === "string") {
+    const id = String(w.samplePk).trim();
+    if (id !== "") return id;
+  }
+  return `t${measuredAt.getTime()}`;
+}
+
+/** Why a weigh-in mapped to nothing. */
+export type GarminWeighInDrop = "no_instant" | "no_weight" | "implausible";
+
+export interface GarminWeighInMapping {
+  rows: GarminMappedMeasurement[];
+  dropped: GarminWeighInDrop | null;
+}
+
+/**
+ * One weigh-in → its body-composition rows, all or nothing. A weigh-in whose
+ * weight is missing, or any of whose values falls outside its type's band,
+ * maps to no row at all: half a record (a BMI without the weight it was
+ * computed from) reads as a complete one.
+ */
+export function mapGarminWeighIn(w: GarminWeighIn): GarminWeighInMapping {
   const measuredAt =
     parseGarminInstant(w.timestampGMT) ?? parseGarminInstant(w.date);
-  if (!measuredAt) return [];
+  if (!measuredAt) return { rows: [], dropped: "no_instant" };
+  const kg = kilograms(num(w.weight));
+  if (kg === null) return { rows: [], dropped: "no_weight" };
+  const id = weighInId(w, measuredAt);
   // An Index scale reports through Garmin Connect; a typed entry is MANUAL.
   const deviceType =
     typeof w.sourceType === "string" &&
     w.sourceType.toUpperCase().includes("SCALE")
       ? ("scale" as const)
       : undefined;
-  const out: GarminMappedMeasurement[] = [];
+  const rows: GarminMappedMeasurement[] = [];
   const push = (type: string, value: number | null, unit: string) => {
     if (value === null) return;
-    out.push({
+    rows.push({
       type,
       value,
       unit,
@@ -291,9 +329,7 @@ export function mapGarminWeighIn(w: GarminWeighIn): GarminMappedMeasurement[] {
       ...(deviceType ? { deviceType } : {}),
     });
   };
-  const grams = num(w.weight);
-  const kg = grams !== null && grams > 0 ? grams / GRAMS_PER_KG : null;
-  push("WEIGHT", kg === null ? null : importValue(kg), "kg");
+  push("WEIGHT", importValue(kg), "kg");
   const bmi = num(w.bmi);
   push(
     "BODY_MASS_INDEX",
@@ -305,38 +341,35 @@ export function mapGarminWeighIn(w: GarminWeighIn): GarminMappedMeasurement[] {
   const water = num(w.bodyWater);
   push(
     "TOTAL_BODY_WATER",
-    water !== null && water > 0 && kg !== null
-      ? importValue((kg * water) / 100)
-      : null,
+    water !== null && water > 0 ? importValue((kg * water) / 100) : null,
     "kg",
   );
-  const muscle = num(w.muscleMass);
-  push(
-    "MUSCLE_MASS",
-    muscle !== null && muscle > 0 ? importValue(muscle / GRAMS_PER_KG) : null,
-    "kg",
-  );
-  const bone = num(w.boneMass);
-  push(
-    "BONE_MASS",
-    bone !== null && bone > 0 ? importValue(bone / GRAMS_PER_KG) : null,
-    "kg",
-  );
+  const muscle = kilograms(num(w.muscleMass));
+  push("MUSCLE_MASS", muscle === null ? null : importValue(muscle), "kg");
+  const bone = kilograms(num(w.boneMass));
+  push("BONE_MASS", bone === null ? null : importValue(bone), "kg");
   const visceral = num(w.visceralFat);
   push(
     "VISCERAL_FAT",
     visceral !== null && visceral >= 0 ? importValue(visceral) : null,
     "rating",
   );
-  return out;
+  if (rows.some((r) => validateMeasurementRange(r.type, r.value) !== null)) {
+    return { rows: [], dropped: "implausible" };
+  }
+  return { rows, dropped: null };
 }
 
-/** Every weigh-in of a weight-range envelope, each once. */
+/**
+ * Every weigh-in of a weight-range envelope, each once. A weigh-in that maps
+ * to nothing is counted on the wide event by reason, never silently.
+ */
 export function mapGarminWeightRange(
   env: GarminWeightRangeEnvelope | null,
 ): GarminMappedMeasurement[] {
   const seen = new Set<string>();
   const out: GarminMappedMeasurement[] = [];
+  const dropped: Partial<Record<GarminWeighInDrop, number>> = {};
   for (const day of env?.dailyWeightSummaries ?? []) {
     const entries = day?.allWeightMetrics?.length
       ? day.allWeightMetrics
@@ -344,12 +377,20 @@ export function mapGarminWeightRange(
         ? [day.latestWeight]
         : [];
     for (const w of entries) {
-      for (const row of mapGarminWeighIn(w)) {
+      const mapped = mapGarminWeighIn(w);
+      if (mapped.dropped) {
+        dropped[mapped.dropped] = (dropped[mapped.dropped] ?? 0) + 1;
+        continue;
+      }
+      for (const row of mapped.rows) {
         if (seen.has(row.externalId)) continue;
         seen.add(row.externalId);
         out.push(row);
       }
     }
+  }
+  if (Object.keys(dropped).length > 0) {
+    annotate({ meta: { "garmin.weight.dropped": dropped } });
   }
   return out;
 }

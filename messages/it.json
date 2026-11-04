@@ -5698,7 +5698,11 @@
           "recovery": "Recupero",
           "stress": "Stress",
           "sleepDebt": "Debito di sonno",
-          "hrvRmssd": "HRV (RMSSD)"
+          "hrvRmssd": "HRV (RMSSD)",
+          "bodyBattery": "Body Battery",
+          "stressLevel": "Livello di stress",
+          "trainingReadiness": "Prontezza all'allenamento",
+          "acuteTrainingLoad": "Carico di allenamento acuto"
         },
         "sourceLabels": {
           "WITHINGS": "Withings",
@@ -7728,7 +7732,6 @@
     "garminKeyExpiring": "La tua chiave Garmin scade il {date}. Crea prima una nuova chiave in Garmin Connect e incollala qui.",
     "garminKeyExpiryUnknown": "Garmin non dice quando scade questa chiave. Sostituisci la chiave e scegli la validità impostata in Garmin Connect: questa scheda ti avviserà una settimana prima.",
     "garminConnected": "Garmin collegato. La prima sincronizzazione è in arrivo.",
-    "garminConnectFailed": "Impossibile collegarsi a Garmin.",
     "garminKeyHowTo": "In Garmin Connect apri Impostazioni, poi Personal API, e crea una chiave. Garmin la mostra una sola volta, quindi copiala subito.",
     "garminKeySettingsLink": "Apri Garmin Connect",
     "garminApiKey": "Chiave Personal API",
@@ -7739,7 +7742,30 @@
     "garminKeyValidityDays": "{count} giorni",
     "garminKeyValidityHelp": "Garmin non segnala quando una chiave scade. Con la validità, questa scheda ti avvisa una settimana prima che la chiave smetta di funzionare.",
     "garminConnect": "Collega",
-    "garminUpdate": "Salva modifiche"
+    "garminUpdate": "Salva modifiche",
+    "garminRegion": "Servizio Garmin",
+    "garminRegionGlobal": "Garmin Connect (globale)",
+    "garminRegionChina": "Garmin Connect Cina",
+    "garminErrors": {
+      "keyRefused": "Garmin non ha accettato questa chiave. Controlla che sia stata copiata per intero, che appartenga al servizio scelto e che non sia scaduta o revocata.",
+      "rateLimited": "Garmin sta limitando le richieste. Riprova tra qualche minuto.",
+      "unreachable": "Garmin non è raggiungibile. Riprova tra qualche minuto.",
+      "invalid": "Questa chiave non sembra corretta. Incollala di nuovo, senza spazi.",
+      "generic": "Non ha funzionato. Riprova."
+    },
+    "garminKeyValidityMenu": "Validità della chiave",
+    "garminValiditySaved": "Validità salvata.",
+    "garminKeyCreatedOn": "Creata il",
+    "garminKeyCreatedOnHelp": "Il giorno in cui hai creato la chiave in Garmin Connect. Se lo lasci vuoto, si conta dal giorno in cui l'hai collegata qui.",
+    "garminUnavailable": "Garmin non fornisce questi dati per il tuo account: {list}.",
+    "garminResource": {
+      "daily": "riepiloghi giornalieri",
+      "activities": "attività",
+      "sleep": "sonno",
+      "hrv": "HRV",
+      "weight": "pesate",
+      "cycle": "ciclo mestruale"
+    }
   },
   "admin": {
     "title": "Administration",

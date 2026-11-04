@@ -21,7 +21,7 @@
     "app/api/export/health-record/route.ts :: apiHandler(arg)": 241,
     "app/api/ingest/medication/route.ts :: apiHandler(arg)": 259,
     "app/api/insights/cards/route.ts :: apiHandler(arg)": 211,
-    "app/api/integrations/status/route.ts :: apiHandler(arg)": 475,
+    "app/api/integrations/status/route.ts :: apiHandler(arg)": 476,
     "app/api/labs/[id]/route.ts :: apiHandler(arg) #2": 239,
     "app/api/labs/ocr/commit/route.ts :: commitOcrRows": 280,
     "app/api/labs/route.ts :: postLabResult": 242,

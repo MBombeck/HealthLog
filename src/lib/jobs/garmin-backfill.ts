@@ -46,9 +46,11 @@ import {
   readGarminCycleSummary,
   writeGarminPeriodDays,
 } from "@/lib/garmin/cycle-sync";
+import { garminUnavailableCode } from "@/lib/garmin/unavailable";
 import {
   GARMIN_RESOURCE_WINDOW_DAYS,
   readGarminWindow,
+  retireGarminSleepDays,
   recordGarminSyncFailure,
   upsertGarminMeasurements,
 } from "@/lib/garmin/sync";
@@ -123,7 +125,12 @@ function floorFor(
   step: GarminBackfillStep,
   progress: GarminBackfillProgress,
 ): string | undefined {
-  if (HISTORY_PROBES.includes(step)) return GARMIN_HISTORY_FLOOR;
+  // Weigh-ins can predate the first watch (a scale-only account has no watch
+  // at all), so the weight walk goes to the floor on its own and does not
+  // wait for, or move, the learned history start.
+  if (HISTORY_PROBES.includes(step) || step === "weight") {
+    return GARMIN_HISTORY_FLOOR;
+  }
   if (progress.historyStart === undefined) return undefined;
   if (progress.historyStart === null) return progress.anchor;
   const margin = shiftDateKey(progress.historyStart, -HISTORY_MARGIN_DAYS);
@@ -137,18 +144,37 @@ function settleHistoryStart(progress: GarminBackfillProgress): void {
   }
 }
 
+/**
+ * Write the progress note, only while the connection the slice started on is
+ * still the stored one. A disconnect, or a new key, changes
+ * `garminConnectedAt`; a slice still in flight then writes nothing, so it can
+ * neither restore a cleared note nor stamp a new key's history as done.
+ * Returns whether the write landed.
+ */
 async function saveProgress(
   userId: string,
+  connectedAt: Date | null,
   progress: GarminBackfillProgress,
-): Promise<void> {
-  await prisma.user.update({
-    where: { id: userId },
-    data: { garminBackfillProgress: garminBackfillProgressJson(progress) },
+  completedAt?: Date,
+): Promise<boolean> {
+  const res = await prisma.user.updateMany({
+    where: {
+      id: userId,
+      garminApiKeyEncrypted: { not: null },
+      garminConnectedAt: connectedAt,
+    },
+    data: {
+      garminBackfillProgress: garminBackfillProgressJson(progress),
+      ...(completedAt ? { garminBackfillCompletedAt: completedAt } : {}),
+    },
   });
+  return res.count > 0;
 }
 
 interface SliceContext {
   userId: string;
+  /** The connection the slice started on (see `saveProgress`). */
+  connectedAt: Date | null;
   tz: string;
   progress: GarminBackfillProgress;
   session: GarminSession;
@@ -166,6 +192,8 @@ interface SliceWalk {
   retryAfterMs: number | undefined;
   failure: unknown;
   failures: GarminBackfillStep[];
+  /** The connection changed under the slice; nothing more was written. */
+  replaced: boolean;
 }
 
 /**
@@ -196,6 +224,8 @@ async function readStepWindow(
     { startDate, endDate: state.before },
     ctx.tz,
   );
+  if (step === "sleep")
+    await retireGarminSleepDays(userId, read.sleepEmptyDays);
   let written = await upsertGarminMeasurements(userId, read.measurements, {
     emitArrivals: false,
   });
@@ -220,12 +250,18 @@ async function walkSlice(ctx: SliceContext): Promise<SliceWalk> {
     retryAfterMs: undefined,
     failure: undefined,
     failures: [],
+    replaced: false,
   };
-  const settle = async (state: { done?: boolean }) => {
+  const save = async (): Promise<boolean> => {
+    if (await saveProgress(userId, ctx.connectedAt, progress)) return true;
+    out.replaced = true;
+    return false;
+  };
+  const settle = async (state: { done?: boolean }): Promise<boolean> => {
     state.done = true;
     out.newlySettled += 1;
     settleHistoryStart(progress);
-    await saveProgress(userId, progress);
+    return save();
   };
 
   walk: for (const step of GARMIN_BACKFILL_STEPS) {
@@ -234,14 +270,17 @@ async function walkSlice(ctx: SliceContext): Promise<SliceWalk> {
     if (state.done) continue;
     const floor = floorFor(step, progress);
     if (floor === undefined) break;
-    if (step === "cycle" && !ctx.cycleAvailable) {
-      await settle(state);
+    if (
+      (step === "cycle" && !ctx.cycleAvailable) ||
+      progress.unavailable?.[step]
+    ) {
+      if (!(await settle(state))) break walk;
       continue;
     }
     let windows = 0;
     while (!state.done) {
       if (state.before <= floor) {
-        await settle(state);
+        if (!(await settle(state))) break walk;
         break;
       }
       if (
@@ -260,14 +299,25 @@ async function walkSlice(ctx: SliceContext): Promise<SliceWalk> {
         windows += 1;
         const written = await readStepWindow(ctx, step, state, floor);
         if (written === null) {
-          await settle(state);
+          if (!(await settle(state))) break walk;
           break;
         }
         out.imported += written;
         state.windows = (state.windows ?? 0) + 1;
         out.windowsWritten += 1;
-        await saveProgress(userId, progress);
+        if (!(await save())) break walk;
       } catch (err) {
+        const code = garminUnavailableCode(step, err);
+        if (code) {
+          // Garmin will not serve this resource to this account: the step
+          // is done, noted once, and does not hold the backfill open.
+          progress.unavailable = { ...progress.unavailable, [step]: code };
+          annotate({
+            meta: { "garmin.resource.unavailable": { resource: step, code } },
+          });
+          if (!(await settle(state))) break walk;
+          break;
+        }
         if (isGarminKeyRefusal(err)) {
           await recordGarminSyncFailure(userId, err);
           out.failure = err;
@@ -341,6 +391,7 @@ export async function runGarminBackfillForUser(
   });
   const walked = await walkSlice({
     userId,
+    connectedAt: creds.connectedAt,
     tz,
     progress,
     session,
@@ -352,12 +403,21 @@ export async function runGarminBackfillForUser(
   const { imported, windowsWritten, newlySettled, stopReason, failures } =
     walked;
   const { retryAfterMs, failure } = walked;
+  if (walked.replaced) {
+    // Disconnected or given a new key mid-slice: the new connection's own
+    // chain (sent by its connect) takes it from here.
+    annotate({
+      action: { name: "garmin.backfill.replaced", details: { slice } },
+    });
+    return { imported, continued: false };
+  }
 
   try {
     await rememberGarminKeyExpiry(
       userId,
       session.learnedKeyExpiresAt,
       creds.keyExpiresAt,
+      { exchanged: session.proven },
     );
   } catch (err) {
     // A convenience; the backfill does not depend on it.
@@ -389,13 +449,16 @@ export async function runGarminBackfillForUser(
   });
 
   if (settled && stopReason === null && failures.length === 0) {
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        garminBackfillCompletedAt: new Date(now()),
-        garminBackfillProgress: garminBackfillProgressJson(progress),
-      },
-    });
+    if (
+      !(await saveProgress(
+        userId,
+        creds.connectedAt,
+        progress,
+        new Date(now()),
+      ))
+    ) {
+      return { imported, continued: false };
+    }
     annotate({
       action: {
         name: "garmin.backfill.complete",

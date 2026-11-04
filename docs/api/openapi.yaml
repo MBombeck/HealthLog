@@ -9080,6 +9080,98 @@ paths:
                       - EXTERNAL
                       - HEALTH_CONNECT
                       - GARMIN
+                bodyBattery:
+                  maxItems: 17
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                      - COMPUTED
+                      - WHOOP
+                      - FITBIT
+                      - NIGHTSCOUT
+                      - POLAR
+                      - OURA
+                      - TELEGRAM
+                      - MCP
+                      - GOOGLE_HEALTH
+                      - STRAVA
+                      - EXTERNAL
+                      - HEALTH_CONNECT
+                      - GARMIN
+                stressLevel:
+                  maxItems: 17
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                      - COMPUTED
+                      - WHOOP
+                      - FITBIT
+                      - NIGHTSCOUT
+                      - POLAR
+                      - OURA
+                      - TELEGRAM
+                      - MCP
+                      - GOOGLE_HEALTH
+                      - STRAVA
+                      - EXTERNAL
+                      - HEALTH_CONNECT
+                      - GARMIN
+                trainingReadiness:
+                  maxItems: 17
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                      - COMPUTED
+                      - WHOOP
+                      - FITBIT
+                      - NIGHTSCOUT
+                      - POLAR
+                      - OURA
+                      - TELEGRAM
+                      - MCP
+                      - GOOGLE_HEALTH
+                      - STRAVA
+                      - EXTERNAL
+                      - HEALTH_CONNECT
+                      - GARMIN
+                acuteTrainingLoad:
+                  maxItems: 17
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - MANUAL
+                      - WITHINGS
+                      - IMPORT
+                      - APPLE_HEALTH
+                      - COMPUTED
+                      - WHOOP
+                      - FITBIT
+                      - NIGHTSCOUT
+                      - POLAR
+                      - OURA
+                      - TELEGRAM
+                      - MCP
+                      - GOOGLE_HEALTH
+                      - STRAVA
+                      - EXTERNAL
+                      - HEALTH_CONNECT
+                      - GARMIN
                 metricPriority:
                   type: object
                   properties:
@@ -9521,6 +9613,98 @@ paths:
                           - HEALTH_CONNECT
                           - GARMIN
                     hrvRmssd:
+                      maxItems: 17
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                          - COMPUTED
+                          - WHOOP
+                          - FITBIT
+                          - NIGHTSCOUT
+                          - POLAR
+                          - OURA
+                          - TELEGRAM
+                          - MCP
+                          - GOOGLE_HEALTH
+                          - STRAVA
+                          - EXTERNAL
+                          - HEALTH_CONNECT
+                          - GARMIN
+                    bodyBattery:
+                      maxItems: 17
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                          - COMPUTED
+                          - WHOOP
+                          - FITBIT
+                          - NIGHTSCOUT
+                          - POLAR
+                          - OURA
+                          - TELEGRAM
+                          - MCP
+                          - GOOGLE_HEALTH
+                          - STRAVA
+                          - EXTERNAL
+                          - HEALTH_CONNECT
+                          - GARMIN
+                    stressLevel:
+                      maxItems: 17
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                          - COMPUTED
+                          - WHOOP
+                          - FITBIT
+                          - NIGHTSCOUT
+                          - POLAR
+                          - OURA
+                          - TELEGRAM
+                          - MCP
+                          - GOOGLE_HEALTH
+                          - STRAVA
+                          - EXTERNAL
+                          - HEALTH_CONNECT
+                          - GARMIN
+                    trainingReadiness:
+                      maxItems: 17
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                          - MANUAL
+                          - WITHINGS
+                          - IMPORT
+                          - APPLE_HEALTH
+                          - COMPUTED
+                          - WHOOP
+                          - FITBIT
+                          - NIGHTSCOUT
+                          - POLAR
+                          - OURA
+                          - TELEGRAM
+                          - MCP
+                          - GOOGLE_HEALTH
+                          - STRAVA
+                          - EXTERNAL
+                          - HEALTH_CONNECT
+                          - GARMIN
+                    acuteTrainingLoad:
                       maxItems: 17
                       type: array
                       items:
@@ -21529,12 +21713,11 @@ paths:
       tags:
         - Integrations
       summary: Connect (or replace) the caller's Garmin Personal API key
-      description: Validates the key by buying a token with it BEFORE storing anything, first at Garmin's global service and,
-        when that refuses the key, at the China service. On success the key is encrypted at rest, the region that
-        accepted it and the key's expiry are noted, the history backfill is reopened, the `garmin` ledger is reset to
-        connected, and a first sync plus the backfill are enqueued best-effort. Re-sending replaces the key. The key is
-        never logged or echoed. Body capped at 16 KiB, rate-limited 10 requests / 60 s per user. Auth via cookie or
-        Bearer.
+      description: Validates the key by buying a token with it BEFORE storing anything, at the one Garmin service `region`
+        names; the key is never sent to the other. On success the key is encrypted at rest, the region that accepted it
+        and the key's expiry are noted, the history backfill is reopened, the `garmin` ledger is reset to connected, and
+        a first sync plus the backfill are enqueued best-effort. Re-sending replaces the key. The key is never logged or
+        echoed. Body capped at 16 KiB, rate-limited 10 requests / 60 s per user. Auth via cookie or Bearer.
       requestBody:
         required: true
         content:
@@ -21660,6 +21843,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+  /api/garmin/key-expiry:
+    patch:
+      tags:
+        - Integrations
+      summary: Correct when the stored Garmin key expires
+      description: Sets the stored key's expiry from the validity picked when it was created, counted from `createdOn` or else
+        from the day it was connected, without pasting the key again. Nothing is sent to Garmin. Rate-limited 20
+        requests / 60 s per user. Auth via cookie or Bearer.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GarminKeyExpiryRequest"
+      responses:
+        "200":
+          description: The expiry was stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GarminKeyExpiryEnvelope"
+        "401": *a1
+        "403": *a9
+        "404":
+          description: No Garmin key is stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
   /api/garmin/disconnect:
     post:
       tags:
@@ -36869,6 +37083,12 @@ components:
           minLength: 16
           maxLength: 1024
           pattern: ^\S+$
+        region:
+          default: global
+          type: string
+          enum:
+            - global
+            - china
         validityDays:
           anyOf:
             - anyOf:
@@ -36883,9 +37103,30 @@ components:
             - type: "null"
       required:
         - apiKey
-      description: The Personal API key from Garmin Connect (Settings, Personal API), trimmed before use, and optionally the
-        validity picked when it was created. Garmin does not report a key's expiry, so the validity is what lets the
+      description: The Personal API key from Garmin Connect (Settings, Personal API), trimmed before use; `region`, the one
+        Garmin service the key is sent to (`global` by default, `china` for Garmin's service in China); and optionally
+        the validity picked when it was created. Garmin does not report a key's expiry, so the validity is what lets the
         card warn a week ahead until the key's last day reveals the real end.
+    GarminKeyExpiryRequest:
+      type: object
+      properties:
+        validityDays:
+          anyOf:
+            - anyOf:
+                - type: number
+                  const: 30
+                - type: number
+                  const: 90
+                - type: number
+                  const: 180
+                - type: number
+                  const: 365
+            - type: "null"
+        createdOn:
+          type: string
+      description: The validity picked when the key was created (30, 90, 180 or 365 days; null forgets the estimate) and,
+        optionally, the day it was created in Garmin Connect. Without `createdOn` the validity counts from the day the
+        key was connected.
     WhoopCredentialsRequest:
       type: object
       properties:
@@ -59444,6 +59685,98 @@ components:
               - EXTERNAL
               - HEALTH_CONNECT
               - GARMIN
+        bodyBattery:
+          maxItems: 17
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+              - GARMIN
+        stressLevel:
+          maxItems: 17
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+              - GARMIN
+        trainingReadiness:
+          maxItems: 17
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+              - GARMIN
+        acuteTrainingLoad:
+          maxItems: 17
+          type: array
+          items:
+            type: string
+            enum:
+              - MANUAL
+              - WITHINGS
+              - IMPORT
+              - APPLE_HEALTH
+              - COMPUTED
+              - WHOOP
+              - FITBIT
+              - NIGHTSCOUT
+              - POLAR
+              - OURA
+              - TELEGRAM
+              - MCP
+              - GOOGLE_HEALTH
+              - STRAVA
+              - EXTERNAL
+              - HEALTH_CONNECT
+              - GARMIN
         metricPriority:
           type: object
           properties:
@@ -59885,6 +60218,98 @@ components:
                   - HEALTH_CONNECT
                   - GARMIN
             hrvRmssd:
+              maxItems: 17
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                  - COMPUTED
+                  - WHOOP
+                  - FITBIT
+                  - NIGHTSCOUT
+                  - POLAR
+                  - OURA
+                  - TELEGRAM
+                  - MCP
+                  - GOOGLE_HEALTH
+                  - STRAVA
+                  - EXTERNAL
+                  - HEALTH_CONNECT
+                  - GARMIN
+            bodyBattery:
+              maxItems: 17
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                  - COMPUTED
+                  - WHOOP
+                  - FITBIT
+                  - NIGHTSCOUT
+                  - POLAR
+                  - OURA
+                  - TELEGRAM
+                  - MCP
+                  - GOOGLE_HEALTH
+                  - STRAVA
+                  - EXTERNAL
+                  - HEALTH_CONNECT
+                  - GARMIN
+            stressLevel:
+              maxItems: 17
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                  - COMPUTED
+                  - WHOOP
+                  - FITBIT
+                  - NIGHTSCOUT
+                  - POLAR
+                  - OURA
+                  - TELEGRAM
+                  - MCP
+                  - GOOGLE_HEALTH
+                  - STRAVA
+                  - EXTERNAL
+                  - HEALTH_CONNECT
+                  - GARMIN
+            trainingReadiness:
+              maxItems: 17
+              type: array
+              items:
+                type: string
+                enum:
+                  - MANUAL
+                  - WITHINGS
+                  - IMPORT
+                  - APPLE_HEALTH
+                  - COMPUTED
+                  - WHOOP
+                  - FITBIT
+                  - NIGHTSCOUT
+                  - POLAR
+                  - OURA
+                  - TELEGRAM
+                  - MCP
+                  - GOOGLE_HEALTH
+                  - STRAVA
+                  - EXTERNAL
+                  - HEALTH_CONNECT
+                  - GARMIN
+            acuteTrainingLoad:
               maxItems: 17
               type: array
               items:
@@ -68672,11 +69097,11 @@ components:
                 - oura_no_resilience
             - type: "null"
           description: "Why the recovery page has nothing to chart, resolved on the server; null when any recovery type
-            (ANS_CHARGE, DAY_STRAIN, WORKOUT_STRAIN, CARDIO_LOAD, AVERAGE_HEART_RATE, MAX_HEART_RATE,
-            ENERGY_EXPENDITURE_KJ, RESILIENCE) has a reading. `oura_permission`: Oura is connected and its grant leaves
-            out the scope the resilience level needs, one reconnect fixes it. `oura_no_resilience`: Oura is connected
-            and no level has arrived yet. `general`: anyone else. Clients render the empty note from this value and
-            never work it out from the connection status."
+            (ANS_CHARGE, DAY_STRAIN, WORKOUT_STRAIN, CARDIO_LOAD, BODY_BATTERY, STRESS_LEVEL, TRAINING_READINESS,
+            ACUTE_TRAINING_LOAD, AVERAGE_HEART_RATE, MAX_HEART_RATE, ENERGY_EXPENDITURE_KJ, RESILIENCE) has a reading.
+            `oura_permission`: Oura is connected and its grant leaves out the scope the resilience level needs, one
+            reconnect fixes it. `oura_no_resilience`: Oura is connected and no level has arrived yet. `general`: anyone
+            else. Clients render the empty note from this value and never work it out from the connection status."
       required:
         - summaries
         - bmi
@@ -83909,6 +84334,20 @@ components:
             - complete
             - share
           additionalProperties: false
+        unavailableResources:
+          type: array
+          items:
+            type: string
+            enum:
+              - daily
+              - activities
+              - sleep
+              - hrv
+              - weight
+              - cycle
+          description: Resources Garmin refuses for this account with a lasting 4xx (a menstrual-cycle summary for someone who
+            tracks no cycle, say). Each is skipped by the sync and counts as done for the backfill; none turns the
+            connection red. A new key clears the list.
         state:
           deprecated: true
           description: "Deprecated, still served: read `health`."
@@ -84003,6 +84442,29 @@ components:
         - latencyMs
       additionalProperties: false
       description: The stored key bought a token. Only ever returned on success; a failed probe is an error status.
+    GarminKeyExpiryEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            keyExpiry:
+              $ref: "#/components/schemas/GarminKeyExpiry"
+          required:
+            - keyExpiry
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
     GarminDisconnectEnvelope:
       type: object
       properties:
@@ -85652,6 +86114,23 @@ components:
             - type: number
               minimum: 0
               maximum: 1
+            - type: "null"
+        unavailableResources:
+          description: Garmin only. Null when no key is stored.
+          anyOf:
+            - type: array
+              items:
+                type: string
+                enum:
+                  - daily
+                  - activities
+                  - sleep
+                  - hrv
+                  - weight
+                  - cycle
+              description: Resources Garmin refuses for this account with a lasting 4xx (a menstrual-cycle summary for someone who
+                tracks no cycle, say). Each is skipped by the sync and counts as done for the backfill; none turns the
+                connection red. A new key clears the list.
             - type: "null"
         retirement:
           description: Fitbit only. The end of the legacy Fitbit Web API.

@@ -5698,7 +5698,11 @@
           "recovery": "회복",
           "stress": "스트레스",
           "sleepDebt": "수면 부채",
-          "hrvRmssd": "심박변이도 (RMSSD)"
+          "hrvRmssd": "심박변이도 (RMSSD)",
+          "bodyBattery": "바디 배터리",
+          "stressLevel": "스트레스 수준",
+          "trainingReadiness": "트레이닝 준비도",
+          "acuteTrainingLoad": "급성 훈련 부하"
         },
         "sourceLabels": {
           "WITHINGS": "Withings",
@@ -7728,7 +7732,6 @@
     "garminKeyExpiring": "Garmin 키가 {date}에 만료됩니다. 그 전에 Garmin Connect에서 새 키를 만들어 여기에 붙여 넣으세요.",
     "garminKeyExpiryUnknown": "Garmin은 이 키의 만료일을 알려 주지 않습니다. 키를 교체하면서 Garmin Connect에서 고른 유효 기간을 선택하면 이 카드가 일주일 전에 알려 드립니다.",
     "garminConnected": "Garmin이 연결되었습니다. 첫 동기화가 시작됩니다.",
-    "garminConnectFailed": "Garmin에 연결하지 못했습니다.",
     "garminKeyHowTo": "Garmin Connect에서 설정, Personal API 순으로 열고 키를 만드세요. Garmin은 키를 한 번만 보여 주므로 바로 복사해 두세요.",
     "garminKeySettingsLink": "Garmin Connect 열기",
     "garminApiKey": "Personal API 키",
@@ -7739,7 +7742,30 @@
     "garminKeyValidityDays": "{count}일",
     "garminKeyValidityHelp": "Garmin은 키 만료일을 알려 주지 않습니다. 유효 기간을 알려 주면 키가 작동을 멈추기 일주일 전에 이 카드가 알려 드립니다.",
     "garminConnect": "연결",
-    "garminUpdate": "변경 사항 저장"
+    "garminUpdate": "변경 사항 저장",
+    "garminRegion": "Garmin 서비스",
+    "garminRegionGlobal": "Garmin Connect (글로벌)",
+    "garminRegionChina": "Garmin Connect 중국",
+    "garminErrors": {
+      "keyRefused": "Garmin이 이 키를 받아들이지 않았습니다. 키를 빠짐없이 복사했는지, 선택한 서비스의 키인지, 만료되거나 취소되지 않았는지 확인하세요.",
+      "rateLimited": "Garmin이 지금 요청을 제한하고 있습니다. 몇 분 후에 다시 시도하세요.",
+      "unreachable": "Garmin에 연결할 수 없습니다. 몇 분 후에 다시 시도하세요.",
+      "invalid": "키 형식이 올바르지 않습니다. 공백 없이 다시 붙여 넣으세요.",
+      "generic": "실패했습니다. 다시 시도하세요."
+    },
+    "garminKeyValidityMenu": "키 유효 기간",
+    "garminValiditySaved": "유효 기간을 저장했습니다.",
+    "garminKeyCreatedOn": "생성일",
+    "garminKeyCreatedOnHelp": "Garmin Connect에서 키를 만든 날입니다. 비워 두면 여기에 연결한 날부터 계산합니다.",
+    "garminUnavailable": "Garmin이 내 계정에 이 데이터를 제공하지 않습니다: {list}.",
+    "garminResource": {
+      "daily": "일일 요약",
+      "activities": "활동",
+      "sleep": "수면",
+      "hrv": "HRV",
+      "weight": "체중 측정",
+      "cycle": "생리 주기"
+    }
   },
   "admin": {
     "title": "관리자",

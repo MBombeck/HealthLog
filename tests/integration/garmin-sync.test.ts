@@ -39,6 +39,8 @@ import {
 process.env.ENCRYPTION_KEY ??=
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
+import { Prisma } from "@/generated/prisma/client";
+
 import { cookieJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
@@ -75,6 +77,24 @@ const fake = vi.hoisted(() => ({
   rateLimitHit: -1,
   /** First day of the one logged cycle, relative to today. */
   cycleStart: "",
+  /**
+   * The weigh-in shape: `spec` is Garmin's document (kilograms, no
+   * `samplePk`, a string instant), `live` the shape seen on the live
+   * service (grams, a `samplePk`, epoch ms).
+   */
+  weightShape: "spec" as "spec" | "live",
+  /** Extra weigh-in days, beyond today (e.g. before the first watch day). */
+  extraWeighDays: [] as string[],
+  /** The status the cycle summary answers with; 200 for the made-up cycle. */
+  cycleStatus: 200,
+  /** The status the HRV range answers with; 200 for the made-up nights. */
+  hrvStatus: 200,
+  /** Sleep days Garmin no longer reports (deleted, or now a nap). */
+  sleepGone: [] as string[],
+  /** Host each request was addressed to before the rewrite. */
+  hosts: [] as string[],
+  /** Runs on each data request, before the answer. */
+  onData: null as null | ((path: string) => Promise<void>),
   sends: [] as Array<{ queue: string; payload: unknown }>,
 }));
 
@@ -96,6 +116,7 @@ vi.mock("@/lib/safe-fetch", async (importOriginal) => {
       init?: RequestInit,
       opts?: Parameters<typeof actual.safeFetch>[2],
     ) => {
+      fake.hosts.push(new URL(url.toString()).host);
       const target = url
         .toString()
         .replace(
@@ -131,6 +152,31 @@ function jwt(): string {
 
 const TOKEN = jwt();
 
+/** One weigh-in of 75.5 kg with 19 % body fat, in the configured shape. */
+function weighIn(day: string) {
+  const at = Date.parse(`${day}T06:00:00Z`);
+  return fake.weightShape === "spec"
+    ? {
+        calendarDate: day,
+        date: new Date(at).toISOString().replace("Z", ""),
+        timestampGMT: new Date(at).toISOString(),
+        weight: 75.5,
+        bodyFat: 19,
+        muscleMass: 34,
+        boneMass: 3,
+      }
+    : {
+        samplePk: 500 + Number(day.slice(8, 10)),
+        calendarDate: day,
+        date: at,
+        timestampGMT: at,
+        weight: 75_500,
+        bodyFat: 19,
+        muscleMass: 34_000,
+        boneMass: 3_000,
+      };
+}
+
 /** The made-up history, generated per request. */
 function answer(path: string, q: URLSearchParams): unknown {
   const inHistory = (d: string) => d >= fake.historyFrom && d <= fake.today;
@@ -156,7 +202,7 @@ function answer(path: string, q: URLSearchParams): unknown {
   }
   if (path === "/sleep-service/sleep/dailySleepSummariesByDate") {
     return daysBetween(q.get("startDate")!, q.get("endDate")!).map((d) =>
-      inHistory(d)
+      inHistory(d) && !fake.sleepGone.includes(d)
         ? {
             calendarDate: d,
             sleepTimeSeconds: 25_200,
@@ -173,6 +219,7 @@ function answer(path: string, q: URLSearchParams): unknown {
     );
   }
   if (path.startsWith("/hrv-service/hrv/daily/")) {
+    if (fake.hrvStatus !== 200) return { status: fake.hrvStatus };
     const [, , , , from, to] = path.split("/");
     return {
       hrvSummaries: daysBetween(from!, to!)
@@ -182,24 +229,14 @@ function answer(path: string, q: URLSearchParams): unknown {
   }
   if (path.startsWith("/weight-service/weight/range/")) {
     const [, , , , from, to] = path.split("/");
-    const weighDay = fake.today;
+    const days = [fake.today, ...fake.extraWeighDays].filter(
+      (d) => d >= from! && d <= to!,
+    );
     return {
-      dailyWeightSummaries:
-        weighDay >= from! && weighDay <= to!
-          ? [
-              {
-                summaryDate: weighDay,
-                allWeightMetrics: [
-                  {
-                    samplePk: 501,
-                    timestampGMT: Date.parse(`${weighDay}T06:00:00Z`),
-                    weight: 75_500,
-                    bodyFat: 19,
-                  },
-                ],
-              },
-            ]
-          : [],
+      dailyWeightSummaries: days.map((d) => ({
+        summaryDate: d,
+        allWeightMetrics: [weighIn(d)],
+      })),
     };
   }
   if (path === "/activitylist-service/activities/search/activities") {
@@ -221,6 +258,7 @@ function answer(path: string, q: URLSearchParams): unknown {
       : [];
   }
   if (path.startsWith("/periodichealth-service/menstrualcycle/summary/")) {
+    if (fake.cycleStatus !== 200) return { status: fake.cycleStatus };
     const day = path.split("/").pop()!;
     const cycleStart = fake.cycleStart;
     return day >= cycleStart
@@ -271,7 +309,17 @@ beforeAll(async () => {
       res.writeHead(429, { "retry-after": "900" }).end();
       return;
     }
+    await fake.onData?.(u.pathname);
     const body = answer(u.pathname, u.searchParams);
+    if (
+      body &&
+      typeof body === "object" &&
+      "status" in body &&
+      Object.keys(body).length === 1
+    ) {
+      res.writeHead((body as { status: number }).status).end();
+      return;
+    }
     if (body === null) {
       res.writeHead(404).end();
       return;
@@ -314,6 +362,13 @@ beforeEach(async () => {
   fake.today = new Date().toISOString().slice(0, 10);
   fake.historyFrom = addDays(fake.today, -20);
   fake.cycleStart = addDays(fake.today, -15);
+  fake.weightShape = "spec";
+  fake.extraWeighDays = [];
+  fake.cycleStatus = 200;
+  fake.hrvStatus = 200;
+  fake.sleepGone = [];
+  fake.hosts.length = 0;
+  fake.onData = null;
   const { clearGarminTokenCache } = await import("@/lib/garmin/client");
   clearGarminTokenCache();
   await prisma.user.create({
@@ -559,10 +614,11 @@ describe("Garmin connect and disconnect", () => {
     const body = await res.json();
     expect(body.meta?.errorCode).toBe("garmin.key_refused");
     expect(JSON.stringify(body)).not.toContain("w".repeat(24));
-    // Tried the global service, then the China one.
+    // Only the chosen service (global by default) was asked.
     expect(
       fake.requests.filter((r) => r.includes("personalapitoken")),
-    ).toHaveLength(2);
+    ).toHaveLength(1);
+    expect(fake.hosts).toEqual(["personal.connectapi.garmin.com"]);
     const user = await getPrismaClient().user.findUnique({
       where: { id: USER_ID },
       select: { garminApiKeyEncrypted: true },
@@ -642,5 +698,302 @@ describe("Garmin connect and disconnect", () => {
       failed: false,
     });
     expect(fake.requests.length).toBe(before);
+  });
+});
+
+describe("Garmin connect sends the key only to the chosen service", () => {
+  it("contacts the China host alone when the person picks it", async () => {
+    const { POST } = await import("@/app/api/garmin/connect/route");
+    const res = await POST(
+      new NextRequest("http://localhost/api/garmin/connect", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ apiKey: fake.key, region: "china" }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(fake.hosts).toEqual(["personal.connectapi.garmin.cn"]);
+    const user = await getPrismaClient().user.findUnique({
+      where: { id: USER_ID },
+      select: { garminRegion: true },
+    });
+    expect(user?.garminRegion).toBe("china");
+  });
+});
+
+describe("Garmin weigh-ins", () => {
+  it.each(["spec", "live"] as const)(
+    "writes a whole weigh-in from the %s shape",
+    async (shape) => {
+      await connectUser();
+      fake.weightShape = shape;
+      const { syncUserGarmin } = await import("@/lib/garmin/sync");
+      await syncUserGarmin(USER_ID, { lookbackDays: 1 });
+      const rows = await getPrismaClient().measurement.findMany({
+        where: {
+          userId: USER_ID,
+          type: { in: ["WEIGHT", "BODY_FAT", "MUSCLE_MASS", "BONE_MASS"] },
+        },
+        select: { type: true, value: true, externalId: true },
+        orderBy: { type: "asc" },
+      });
+      expect(
+        rows
+          .map((r) => [r.type, r.value] as const)
+          .sort(([a], [b]) => a.localeCompare(b)),
+      ).toEqual([
+        ["BODY_FAT", 19],
+        ["BONE_MASS", 3],
+        ["MUSCLE_MASS", 34],
+        ["WEIGHT", 75.5],
+      ]);
+      // One weigh-in, one id across its rows; a re-read lands on the same.
+      expect(new Set(rows.map((r) => r.externalId!.split(":")[1])).size).toBe(
+        1,
+      );
+      await syncUserGarmin(USER_ID, { lookbackDays: 1 });
+      expect(
+        await getPrismaClient().measurement.count({
+          where: { userId: USER_ID, type: "WEIGHT" },
+        }),
+      ).toBe(1);
+    },
+  );
+
+  it("walks weigh-ins back past the first watch day", async () => {
+    await connectUser();
+    fake.historyFrom = addDays(fake.today, -20);
+    fake.extraWeighDays = [addDays(fake.today, -600)];
+    const { runGarminBackfillForUser } =
+      await import("@/lib/jobs/garmin-backfill");
+    for (let slice = 0; slice < 30; slice++) {
+      const u = await getPrismaClient().user.findUnique({
+        where: { id: USER_ID },
+        select: { garminBackfillCompletedAt: true },
+      });
+      if (u?.garminBackfillCompletedAt) break;
+      await runGarminBackfillForUser(USER_ID, () => false, slice);
+    }
+    const weights = await getPrismaClient().measurement.findMany({
+      where: { userId: USER_ID, type: "WEIGHT" },
+      select: { measuredAt: true },
+      orderBy: { measuredAt: "asc" },
+    });
+    expect(weights).toHaveLength(2);
+    expect(weights[0]!.measuredAt.toISOString().slice(0, 10)).toBe(
+      addDays(fake.today, -600),
+    );
+  });
+});
+
+describe("Garmin resources the account does not have", () => {
+  it("completes the backfill and keeps the connection green when the cycle summary is refused", async () => {
+    await connectUser();
+    fake.cycleStatus = 404;
+    const { runGarminBackfillForUser } =
+      await import("@/lib/jobs/garmin-backfill");
+    const prisma = getPrismaClient();
+    for (let slice = 0; slice < 30; slice++) {
+      const u = await prisma.user.findUnique({
+        where: { id: USER_ID },
+        select: { garminBackfillCompletedAt: true },
+      });
+      if (u?.garminBackfillCompletedAt) break;
+      await runGarminBackfillForUser(USER_ID, () => false, slice);
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: USER_ID },
+      select: { garminBackfillCompletedAt: true, garminBackfillProgress: true },
+    });
+    expect(user?.garminBackfillCompletedAt).not.toBeNull();
+    expect(
+      (user?.garminBackfillProgress as { unavailable?: unknown }).unavailable,
+    ).toEqual({ cycle: "http_404" });
+
+    // The hourly sync skips it and stays green.
+    const { syncUserGarmin } = await import("@/lib/garmin/sync");
+    fake.requests.length = 0;
+    const result = await syncUserGarmin(USER_ID, { lookbackDays: 1 });
+    expect(result.failed).toBe(false);
+    expect(fake.requests.some((r) => r.includes("menstrualcycle"))).toBe(false);
+    const ledger = await prisma.integrationStatus.findFirst({
+      where: { userId: USER_ID, integration: "garmin" },
+    });
+    expect(ledger?.state).toBe("connected");
+  });
+
+  it("notes a resource the hourly sync is refused, skips it after, and stays green", async () => {
+    await connectUser();
+    fake.hrvStatus = 404;
+    const { syncUserGarmin } = await import("@/lib/garmin/sync");
+    const first = await syncUserGarmin(USER_ID, { lookbackDays: 1 });
+    expect(first.failed).toBe(false);
+    const prisma = getPrismaClient();
+    const user = await prisma.user.findUnique({
+      where: { id: USER_ID },
+      select: { garminBackfillProgress: true },
+    });
+    expect(
+      (user?.garminBackfillProgress as { unavailable?: unknown }).unavailable,
+    ).toEqual({ hrv: "http_404" });
+    fake.requests.length = 0;
+    await syncUserGarmin(USER_ID, { lookbackDays: 1 });
+    expect(fake.requests.some((r) => r.includes("/hrv-service/"))).toBe(false);
+    const ledger = await prisma.integrationStatus.findFirst({
+      where: { userId: USER_ID, integration: "garmin" },
+    });
+    expect(ledger?.state).toBe("connected");
+  });
+
+  it("never parks the connection on a refused cycle summary", async () => {
+    await connectUser();
+    fake.cycleStatus = 401;
+    const { syncUserGarmin } = await import("@/lib/garmin/sync");
+    const result = await syncUserGarmin(USER_ID, { lookbackDays: 1 });
+    expect(result.failed).toBe(false);
+    const ledger = await getPrismaClient().integrationStatus.findFirst({
+      where: { userId: USER_ID, integration: "garmin" },
+    });
+    expect(ledger?.state).toBe("connected");
+  });
+});
+
+describe("Garmin parked key", () => {
+  it("asks Garmin again once a day and reconnects when the key works", async () => {
+    await connectUser();
+    const prisma = getPrismaClient();
+    fake.dataUnauthorized = 2;
+    const { syncUserGarmin } = await import("@/lib/garmin/sync");
+    await expect(
+      syncUserGarmin(USER_ID, { lookbackDays: 1 }),
+    ).rejects.toThrow();
+    // Within the day: skipped, nothing asked.
+    const before = fake.requests.length;
+    await syncUserGarmin(USER_ID, { skipWhenParked: true, lookbackDays: 1 });
+    expect(fake.requests.length).toBe(before);
+    // A day later: one probe, accepted, and the run goes on.
+    await prisma.integrationStatus.updateMany({
+      where: { userId: USER_ID, integration: "garmin" },
+      data: { lastAttemptAt: new Date(Date.now() - 25 * 3_600_000) },
+    });
+    const result = await syncUserGarmin(USER_ID, {
+      skipWhenParked: true,
+      lookbackDays: 1,
+    });
+    expect(result.failed).toBe(false);
+    expect(result.imported).toBeGreaterThan(0);
+    const ledger = await prisma.integrationStatus.findFirst({
+      where: { userId: USER_ID, integration: "garmin" },
+    });
+    expect(ledger?.state).toBe("connected");
+  });
+});
+
+describe("Garmin backfill and a reconnect mid-slice", () => {
+  it("writes nothing once the connection under the slice was replaced", async () => {
+    await connectUser();
+    const prisma = getPrismaClient();
+    const replacedAt = new Date(Date.now() + 1000);
+    fake.onData = async () => {
+      fake.onData = null;
+      await prisma.user.update({
+        where: { id: USER_ID },
+        data: {
+          garminConnectedAt: replacedAt,
+          garminBackfillProgress: Prisma.DbNull,
+          garminBackfillCompletedAt: null,
+        },
+      });
+    };
+    const { runGarminBackfillForUser } =
+      await import("@/lib/jobs/garmin-backfill");
+    const out = await runGarminBackfillForUser(USER_ID, () => false, 0);
+    expect(out.continued).toBe(false);
+    const user = await prisma.user.findUnique({
+      where: { id: USER_ID },
+      select: { garminBackfillProgress: true, garminBackfillCompletedAt: true },
+    });
+    expect(user).toEqual({
+      garminBackfillProgress: null,
+      garminBackfillCompletedAt: null,
+    });
+  });
+});
+
+describe("Garmin catch-up and removed nights", () => {
+  it("reaches back to the last successful sync after a long outage", async () => {
+    await connectUser();
+    const prisma = getPrismaClient();
+    await prisma.integrationStatus.create({
+      data: {
+        userId: USER_ID,
+        integration: "garmin",
+        state: "error_transient",
+        lastSuccessAt: new Date(Date.now() - 60 * 86_400_000),
+      },
+    });
+    const { resolveGarminLookbackDays } = await import("@/lib/garmin/sync");
+    expect(await resolveGarminLookbackDays(USER_ID)).toBe(61);
+  });
+
+  it("retires a night Garmin no longer reports", async () => {
+    await connectUser();
+    const { syncUserGarmin } = await import("@/lib/garmin/sync");
+    await syncUserGarmin(USER_ID, { lookbackDays: 3 });
+    const gone = addDays(fake.today, -1);
+    const live = (day: string) =>
+      getPrismaClient().measurement.count({
+        where: {
+          userId: USER_ID,
+          deletedAt: null,
+          externalId: { startsWith: `sleep:${day}:` },
+        },
+      });
+    expect(await live(gone)).toBe(7);
+    fake.sleepGone = [gone];
+    await syncUserGarmin(USER_ID, { lookbackDays: 3 });
+    expect(await live(gone)).toBe(0);
+    expect(await live(addDays(fake.today, -2))).toBe(7);
+  });
+});
+
+describe("Garmin key expiry", () => {
+  it("clears an estimated end the key outlived, and takes a corrected validity", async () => {
+    await connectUser();
+    const prisma = getPrismaClient();
+    await prisma.user.update({
+      where: { id: USER_ID },
+      data: { garminKeyExpiresAt: new Date(Date.now() - 86_400_000) },
+    });
+    const { syncUserGarmin } = await import("@/lib/garmin/sync");
+    await syncUserGarmin(USER_ID, { lookbackDays: 1 });
+    expect(
+      (
+        await prisma.user.findUnique({
+          where: { id: USER_ID },
+          select: { garminKeyExpiresAt: true },
+        })
+      )?.garminKeyExpiresAt,
+    ).toBeNull();
+
+    const { PATCH } = await import("@/app/api/garmin/key-expiry/route");
+    const res = await PATCH(
+      new NextRequest("http://localhost/api/garmin/key-expiry", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          validityDays: 90,
+          createdOn: addDays(fake.today, -10),
+        }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    const stored = await prisma.user.findUnique({
+      where: { id: USER_ID },
+      select: { garminKeyExpiresAt: true },
+    });
+    expect(stored?.garminKeyExpiresAt?.toISOString()).toBe(
+      `${addDays(fake.today, 80)}T12:00:00.000Z`,
+    );
   });
 });

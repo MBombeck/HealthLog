@@ -5698,7 +5698,11 @@
           "recovery": "Recovery",
           "stress": "Stress",
           "sleepDebt": "Sleep debt",
-          "hrvRmssd": "HRV (RMSSD)"
+          "hrvRmssd": "HRV (RMSSD)",
+          "bodyBattery": "Body Battery",
+          "stressLevel": "Stress level",
+          "trainingReadiness": "Training readiness",
+          "acuteTrainingLoad": "Acute training load"
         },
         "sourceLabels": {
           "WITHINGS": "Withings",
@@ -7728,7 +7732,6 @@
     "garminKeyExpiring": "Your Garmin key expires on {date}. Create a new key in Garmin Connect and paste it here before then.",
     "garminKeyExpiryUnknown": "Garmin does not say when this key expires. Replace the key and choose the validity you picked in Garmin Connect, and this card will warn you a week ahead.",
     "garminConnected": "Garmin connected. The first sync is on its way.",
-    "garminConnectFailed": "Could not connect to Garmin.",
     "garminKeyHowTo": "In Garmin Connect, open Settings, then Personal API, and create a key. Garmin shows it only once, so copy it straight away.",
     "garminKeySettingsLink": "Open Garmin Connect",
     "garminApiKey": "Personal API key",
@@ -7739,7 +7742,30 @@
     "garminKeyValidityDays": "{count} days",
     "garminKeyValidityHelp": "Garmin does not report when a key expires. With the validity, this card warns you a week before the key stops working.",
     "garminConnect": "Connect",
-    "garminUpdate": "Save changes"
+    "garminUpdate": "Save changes",
+    "garminRegion": "Garmin service",
+    "garminRegionGlobal": "Garmin Connect (global)",
+    "garminRegionChina": "Garmin Connect China",
+    "garminErrors": {
+      "keyRefused": "Garmin did not accept this key. Check that it was copied whole, belongs to the chosen service and has not expired or been revoked.",
+      "rateLimited": "Garmin is limiting requests right now. Try again in a few minutes.",
+      "unreachable": "Garmin cannot be reached. Try again in a few minutes.",
+      "invalid": "That key does not look right. Paste it again, without spaces.",
+      "generic": "That did not work. Try again."
+    },
+    "garminKeyValidityMenu": "Key validity",
+    "garminValiditySaved": "Validity saved.",
+    "garminKeyCreatedOn": "Created on",
+    "garminKeyCreatedOnHelp": "The day you created the key in Garmin Connect. Leave it empty to count from the day you connected it here.",
+    "garminUnavailable": "Garmin does not provide this data for your account: {list}.",
+    "garminResource": {
+      "daily": "daily summaries",
+      "activities": "activities",
+      "sleep": "sleep",
+      "hrv": "HRV",
+      "weight": "weigh-ins",
+      "cycle": "menstrual cycle"
+    }
   },
   "admin": {
     "title": "Administration",

@@ -40,19 +40,34 @@ export async function getGarminCredentials(
 }
 
 /**
- * Persist the key's expiry a token revealed, when it differs from what is
- * stored. A learned expiry is Garmin's own figure and replaces the estimate
- * made from the validity picked at connect.
+ * Keep the stored expiry honest after a run.
+ *
+ * - A token that revealed the key's end (`learned`) is Garmin's own figure
+ *   and replaces whatever is stored, the estimate from the picked validity
+ *   included.
+ * - A key that just bought a token has not expired, whatever the estimate
+ *   says: an estimate already in the past is wrong (the key was created
+ *   later than assumed, or with a longer validity) and is cleared, so the
+ *   card stops calling a working key expired.
  */
 export async function rememberGarminKeyExpiry(
   userId: string,
   learned: number | null,
   stored: Date | null,
+  opts: { exchanged?: boolean; now?: Date } = {},
 ): Promise<void> {
-  if (learned === null) return;
-  if (stored && Math.abs(stored.getTime() - learned) < 60_000) return;
+  const now = opts.now ?? new Date();
+  let next: Date | null | undefined;
+  if (learned !== null) {
+    if (!stored || Math.abs(stored.getTime() - learned) >= 60_000) {
+      next = new Date(learned);
+    }
+  } else if (opts.exchanged && stored && stored.getTime() <= now.getTime()) {
+    next = null;
+  }
+  if (next === undefined) return;
   await prisma.user.updateMany({
     where: { id: userId, garminApiKeyEncrypted: { not: null } },
-    data: { garminKeyExpiresAt: new Date(learned) },
+    data: { garminKeyExpiresAt: next },
   });
 }

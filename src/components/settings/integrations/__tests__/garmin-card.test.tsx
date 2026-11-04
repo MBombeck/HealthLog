@@ -83,8 +83,13 @@ describe("GarminCard on the shared card", () => {
     expect(html).toContain(
       'href="https://docs.healthlog.dev/guides/connect-garmin/"',
     );
-    // 30, 90, 180 and 365 days, plus "I don't know".
-    expect(html.match(/<option /g)).toHaveLength(5);
+    // The service: Garmin Connect (global) first, China second.
+    expect(html).toContain('id="garmin-region"');
+    expect(html).toMatch(
+      /<option value="global"[^>]*>Garmin Connect \(global\)<\/option><option value="china"/,
+    );
+    // Two services, then 30, 90, 180 and 365 days plus "I don't know".
+    expect(html.match(/<option /g)).toHaveLength(7);
   });
 
   it("keeps the sibling menu and opens the form for a new key", () => {
@@ -102,6 +107,7 @@ describe("GarminCard on the shared card", () => {
       "test",
       "view-data",
       "credentials",
+      "validity",
       "setup-guide",
       "disconnect",
     ]);
@@ -161,5 +167,30 @@ describe("GarminCard on the shared card", () => {
     expect(html).not.toContain('data-testid="garmin-key-expiry"');
     const details = html.slice(html.indexOf('data-slot="integration-details"'));
     expect(details).toContain('data-testid="garmin-key-valid-until"');
+  });
+});
+
+describe("GarminCard — resources Garmin does not provide", () => {
+  it("lists them in the details and the copied diagnostics, never the body", () => {
+    const html = render({
+      connected: true,
+      configured: true,
+      health: healthFixture(),
+      keyExpiry: {
+        state: "ok",
+        expiresAt: "2027-01-30T00:00:00.000Z",
+        daysLeft: 87,
+      },
+      unavailableResources: ["cycle"],
+    });
+    const details = html.slice(html.indexOf('data-slot="integration-details"'));
+    expect(details).toContain('data-testid="garmin-unavailable"');
+    expect(details).toContain(
+      "Garmin does not provide this data for your account: menstrual cycle.",
+    );
+    expect(lastCardProps?.diagnosticsExtra).toContain(
+      "Garmin does not provide this data for your account: menstrual cycle.",
+    );
+    expect(html).toMatch(/data-state="ok"/);
   });
 });

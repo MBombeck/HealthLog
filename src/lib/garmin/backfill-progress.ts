@@ -46,6 +46,13 @@ export interface GarminBackfillProgress {
   oldestSeen?: string;
   /** Learned once both probes are done; null when they found nothing. */
   historyStart?: string | null;
+  /**
+   * Resources Garmin refuses for this account with a lasting 4xx (a cycle
+   * summary for someone who tracks no cycle, say), by HTTP code. A refused
+   * resource is done for the backfill and skipped by the hourly sync; it
+   * does not turn the connection red. A new key clears the note.
+   */
+  unavailable?: Partial<Record<GarminBackfillStep, string>>;
   steps: Partial<Record<GarminBackfillStep, GarminBackfillStepState>>;
 }
 
@@ -80,6 +87,15 @@ export function readGarminBackfillProgress(
         : {}),
     };
   }
+  const unavailable: Partial<Record<GarminBackfillStep, string>> = {};
+  if (raw.unavailable && typeof raw.unavailable === "object") {
+    for (const name of GARMIN_BACKFILL_STEPS) {
+      const code = (raw.unavailable as Record<string, unknown>)[name];
+      if (typeof code === "string" && /^[a-z0-9_]{1,32}$/.test(code)) {
+        unavailable[name] = code;
+      }
+    }
+  }
   const oldestSeen = day.safeParse(raw.oldestSeen);
   const historyStart =
     raw.historyStart === null ? null : day.safeParse(raw.historyStart);
@@ -91,6 +107,7 @@ export function readGarminBackfillProgress(
       : historyStart.success
         ? { historyStart: historyStart.data }
         : {}),
+    ...(Object.keys(unavailable).length > 0 ? { unavailable } : {}),
     steps,
   };
 }
@@ -101,6 +118,9 @@ export function garminBackfillProgressJson(progress: GarminBackfillProgress) {
     ...(progress.oldestSeen ? { oldestSeen: progress.oldestSeen } : {}),
     ...(progress.historyStart !== undefined
       ? { historyStart: progress.historyStart }
+      : {}),
+    ...(progress.unavailable && Object.keys(progress.unavailable).length > 0
+      ? { unavailable: { ...progress.unavailable } }
       : {}),
     steps: Object.fromEntries(
       Object.entries(progress.steps).map(([name, s]) => [
@@ -113,6 +133,13 @@ export function garminBackfillProgressJson(progress: GarminBackfillProgress) {
       ]),
     ),
   };
+}
+
+/** The resources Garmin refuses for this account, sorted, for the card. */
+export function garminUnavailableResources(
+  progress: GarminBackfillProgress | null,
+): GarminBackfillStep[] {
+  return GARMIN_BACKFILL_STEPS.filter((s) => progress?.unavailable?.[s]);
 }
 
 /** Share of the walk done, 0..1, for the card's progress line. */

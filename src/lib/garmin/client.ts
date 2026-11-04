@@ -131,20 +131,28 @@ export function extractGarminToken(body: string): string {
   }
 }
 
-/** A JWT's `exp` claim in epoch ms, read without verifying the signature. */
-export function garminTokenExpiry(token: string): number | undefined {
+/** A JWT's time claims (`exp`, `iat`) in epoch ms, read without verifying. */
+export function garminTokenClaims(token: string): {
+  exp: number | undefined;
+  iat: number | undefined;
+} {
   const payload = token.split(".")[1];
-  if (!payload) return undefined;
+  if (!payload) return { exp: undefined, iat: undefined };
   try {
     const claims = JSON.parse(
       Buffer.from(payload, "base64url").toString("utf8"),
-    ) as { exp?: unknown };
-    return typeof claims.exp === "number" && Number.isFinite(claims.exp)
-      ? claims.exp * 1000
-      : undefined;
+    ) as { exp?: unknown; iat?: unknown };
+    const ms = (v: unknown) =>
+      typeof v === "number" && Number.isFinite(v) ? v * 1000 : undefined;
+    return { exp: ms(claims.exp), iat: ms(claims.iat) };
   } catch {
-    return undefined;
+    return { exp: undefined, iat: undefined };
   }
+}
+
+/** A JWT's `exp` claim in epoch ms, read without verifying the signature. */
+export function garminTokenExpiry(token: string): number | undefined {
+  return garminTokenClaims(token).exp;
 }
 
 export interface GarminToken {
@@ -231,14 +239,21 @@ export async function exchangeGarminKey(
     });
   }
   const issuedAt = now();
-  const exp = garminTokenExpiry(value);
+  const { exp, iat } = garminTokenClaims(value);
+  // The token's own lifetime, from its issue claim when it carries one: the
+  // local clock may be off by minutes, the token's two claims are not.
+  const lifetime = exp === undefined ? undefined : exp - (iat ?? issuedAt);
   const expiresAt = exp ?? issuedAt + FALLBACK_LIFETIME_MS;
   return {
     value,
     expiresAt,
     refreshAt: refreshTime(issuedAt, expiresAt),
     keyExpiresAt:
-      exp !== undefined && exp - issuedAt < KEY_CAPPED_BELOW_MS ? exp : null,
+      exp !== undefined &&
+      lifetime !== undefined &&
+      lifetime < KEY_CAPPED_BELOW_MS
+        ? exp
+        : null,
   };
 }
 
@@ -280,6 +295,8 @@ export class GarminSession {
   learnedKeyExpiresAt: number | null = null;
   /** Number of key exchanges this session made (for the record and tests). */
   exchanges = 0;
+  /** Garmin accepted the key in this session: a token bought or a read answered. */
+  proven = false;
 
   constructor(opts: {
     userId: string;
@@ -315,6 +332,7 @@ export class GarminSession {
       this.transport,
     );
     this.exchanges += 1;
+    this.proven = true;
     if (fresh.keyExpiresAt !== null) {
       this.learnedKeyExpiresAt = fresh.keyExpiresAt;
     }
@@ -357,6 +375,7 @@ export class GarminSession {
         });
       }
     }
+    if (res.status >= 200 && res.status < 300) this.proven = true;
     if (res.status === 204) return null;
     if (res.status < 200 || res.status >= 300) {
       await res.body?.cancel().catch(() => {});

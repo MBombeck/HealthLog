@@ -52,6 +52,11 @@ export const RANKED_TYPES: readonly MeasurementType[] = [
   // so the SQL collapse ranks a future device-native producer above the
   // COMPUTED proxy deterministically. No-op until a second producer lands.
   "STRESS_SCORE",
+  // Garmin's day scores and the bridged training figures.
+  "BODY_BATTERY",
+  "STRESS_LEVEL",
+  "TRAINING_READINESS",
+  "ACUTE_TRAINING_LOAD",
   "SLEEP_DURATION",
   "ACTIVITY_STEPS",
   "ACTIVE_ENERGY_BURNED",
