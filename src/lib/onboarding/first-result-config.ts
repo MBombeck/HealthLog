@@ -61,7 +61,8 @@ export const AREA_PAGE_HREF: Readonly<
  *   a dead end.
  * - `shared` — an operator env app is the fallback (`available` says whether
  *   any usable credentials resolve, own or shared).
- * - `self-hosted` — a URL the person pastes; nothing can be missing up front.
+ * - `self-hosted` — a URL or a key the person pastes; nothing can be missing
+ *   up front.
  */
 export type SourceCredentialModel = "byo" | "shared" | "self-hosted";
 
@@ -80,6 +81,12 @@ export const SOURCE_INTEGRATION: Readonly<
   oura: { anchor: "oura", statusKey: "oura", credentials: "shared" },
   whoop: { anchor: "whoop", statusKey: "whoop", credentials: "byo" },
   polar: { anchor: "polar", statusKey: "polar", credentials: "shared" },
+  // The person's own Personal API key, pasted on the card.
+  garmin: {
+    anchor: "garmin",
+    statusKey: "garmin",
+    credentials: "self-hosted",
+  },
   fitbit: { anchor: "fitbit", statusKey: "fitbit", credentials: "byo" },
   strava: { anchor: "strava", statusKey: "strava", credentials: "shared" },
   nightscout: {

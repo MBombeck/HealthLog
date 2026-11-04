@@ -24,6 +24,9 @@
   cycles like a period logged by hand, a finished Garmin period also marks
   its last day, and periods imported earlier are repaired once on the next
   start. A day you logged yourself is never changed. (#1333)
+- **Garmin in the setup questions.** The onboarding question about where
+  your readings come from now offers Garmin, and can end on connecting it.
+  (#1333)
 - **Typing into the smoking history.** "When you stopped" only took text
   that was already a whole YYYY-MM month, so every keystroke was dropped
   and only a paste got in. The start year clamped each keystroke into its

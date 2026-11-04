@@ -99,6 +99,7 @@ export const ONBOARDING_SOURCE_KEYS = [
   "oura",
   "whoop",
   "polar",
+  "garmin",
   "fitbit",
   "strava",
   "nightscout",

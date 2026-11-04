@@ -8,6 +8,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { CONNECTION_KEYS } from "@/lib/integrations/connection-health";
 import { ONBOARDING_AREA_KEYS } from "@/lib/modules/registry";
 import { NAV_DESTINATIONS } from "@/components/layout/nav-model";
 
@@ -18,7 +19,21 @@ import {
   deliveringSources,
   SOURCE_INTEGRATION,
 } from "../first-result-config";
+import { ONBOARDING_SOURCE_KEYS } from "../needs";
 import { BROWSER_CONNECTABLE_SOURCES } from "../wizard-steps";
+
+/**
+ * Connections the setup flow deliberately does not ask about, each with its
+ * reason. Every other connection must be a Q4 source; a provider shipped on
+ * Settings and missing here was absent from the flow without anybody deciding
+ * it.
+ */
+const NOT_AN_ONBOARDING_SOURCE: Record<string, string> = {
+  "google-health":
+    "the successor transport behind the Fitbit answer, which still links the classic Fitbit card",
+  dawarich:
+    "movement context for the environment module, not a source of readings",
+};
 
 describe("first-result targets", () => {
   it("covers every area with exactly one of a form or a page", () => {
@@ -34,6 +49,33 @@ describe("first-result targets", () => {
     for (const href of Object.values(AREA_PAGE_HREF)) {
       expect(hrefs.has(href), href).toBe(true);
     }
+  });
+
+  it("asks about every connection Settings offers, or says why not", () => {
+    const sources = new Set<string>(ONBOARDING_SOURCE_KEYS);
+    const missing = CONNECTION_KEYS.filter(
+      (key) => !sources.has(key) && !(key in NOT_AN_ONBOARDING_SOURCE),
+    );
+    expect(missing).toEqual([]);
+    for (const key of Object.keys(NOT_AN_ONBOARDING_SOURCE)) {
+      expect(CONNECTION_KEYS as readonly string[]).toContain(key);
+    }
+  });
+
+  it("offers Garmin as a source the browser connects with a pasted key", () => {
+    expect(BROWSER_CONNECTABLE_SOURCES).toContain("garmin");
+    expect(SOURCE_INTEGRATION.garmin).toEqual({
+      anchor: "garmin",
+      statusKey: "garmin",
+      credentials: "self-hosted",
+    });
+    const view = connectSourceView("garmin", {
+      connected: false,
+      configured: false,
+      syncHealth: { verdict: "disconnected", since: null },
+      lastSuccessAt: null,
+    });
+    expect(view?.slot).toBe("connect");
   });
 
   it("names an integration for every source the browser can connect", () => {

@@ -36694,7 +36694,7 @@ components:
               type: string
               const: done
             sources:
-              maxItems: 10
+              maxItems: 11
               type: array
               items:
                 type: string
@@ -36705,6 +36705,7 @@ components:
                   - oura
                   - whoop
                   - polar
+                  - garmin
                   - fitbit
                   - strava
                   - nightscout
@@ -83103,6 +83104,7 @@ components:
               - oura
               - whoop
               - polar
+              - garmin
               - fitbit
               - strava
               - nightscout
