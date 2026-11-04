@@ -10,6 +10,12 @@
   range, so the first digit turned into 1900. Both fields now keep what is
   typed and commit it once it is a valid value, and leaving the month field
   pads "2019-3" to "2019-03". (#1334)
+- **Crisis lines for the country you are in.** A questionnaire answered
+  from a phone set to English in Belgium (`en-BE`), French in Switzerland,
+  or English in Austria got the international crisis set, because the
+  country was only read for some languages. The region in the language tag
+  now picks the country's lines whatever the language; a bare language
+  code keeps the combined sets as before. (#1338)
 
 ### Changed
 
