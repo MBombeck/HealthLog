@@ -30,6 +30,23 @@
   Each injected dose now carries a chip with the site next to its status,
   in the table and on the mobile cards, so the rotation can be read back
   from the history. Doses without a site look as before.
+- **Garmin, directly.** Garmin Connect now offers a Personal API, and
+  HealthLog reads it: create a key in Garmin Connect (Settings, Personal
+  API), paste it into the new Garmin card, and steps, distance, floors,
+  active calories, resting heart rate, sleep stages and sleep score,
+  overnight SpO₂, breathing rate and HRV, weigh-ins with body composition,
+  activities and logged period days sync every hour, with the whole
+  history filled in behind. Body Battery and Garmin's all-day stress level
+  arrive as types of their own (`BODY_BATTERY`, `STRESS_LEVEL`), never mixed
+  into the computed scores. Garmin keys expire after 30 to 365 days; the
+  card warns a week ahead and asks for a new key when Garmin stops
+  accepting the old one. Accounts on Garmin's China service work too. The
+  key is stored encrypted and only ever sent to Garmin. (#1333)
+- **Training Readiness and acute training load.** The Personal API does
+  not carry them, so they are new types (`TRAINING_READINESS`,
+  `ACUTE_TRAINING_LOAD`) a Home Assistant bridge can push through an ingest
+  token, and they chart on the recovery page next to Body Battery. The Home
+  Assistant guide has the automation. (#1333)
 
 ### Changed
 
@@ -96,6 +113,8 @@
 - @Oguz3003 for staying with the Raspberry Pi 4 until it reads PDFs
   (#1311).
 - @mills1975 for asking how blood pressure differs over the day (#1331).
+- @kruemelro for asking for a direct Garmin connection on Garmin's new
+  Personal API (#1333).
 
 ## [1.46.6] — 2026-11-02
 

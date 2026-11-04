@@ -1,52 +1,104 @@
-# Garmin (via Apple Health or Google Health Connect)
+# Garmin
 
-**There is no direct Garmin connector for a self-hosted HealthLog instance, and
-there cannot be one.** Garmin's data-sharing program is business-partner-only:
-it is approval-gated, requires a public callback endpoint, and is not the
-"register your own app, paste a key" model the wearable integrations here rely
-on. So instead of a broken half-integration, HealthLog reads Garmin data the
-honest way — through the phone health platform your Garmin already feeds.
+HealthLog reads Garmin Connect directly through Garmin's **Personal API**: you
+create a key for your own account in Garmin Connect, paste it into HealthLog,
+and the server pulls your data every hour. Nothing is pushed by Garmin, and
+nothing is written back.
 
-## The path that works
+The Personal API is for your own data only. Each person on an instance
+creates and pastes their own key; there is no shared app and no operator
+setup.
 
-```
-Garmin device  →  Garmin Connect  →  Apple Health (iOS)  ─┐
-                                   →  Google Health Connect ├─→  HealthLog
-                                      (Android)            ─┘
-```
+## Create a key
 
-- **iOS:** Garmin Connect writes to Apple Health automatically. Import it with
-  the existing [Apple Health](./apple-health.md) path (the `export.zip` upload or
-  the native client's background sync).
-- **Android:** since Garmin Connect 5.14.1 (July 2025) the app writes to **Google
-  Health Connect**. Connect HealthLog through the existing
-  [Google Health](./google-health.md) integration.
+1. Open [Garmin Connect → Settings → Personal API](https://connect.garmin.com/app/settings/personalApiToken).
+2. Create a key and choose how long it stays valid: 30, 90, 180 days or one
+   year.
+3. Copy it right away. Garmin shows the key once.
 
-No extra code, no Garmin developer account, no approval queue — if your Garmin
-already syncs to your phone's health platform, HealthLog already reads it.
+## Connect
+
+Open **Settings → Integrations → Garmin**, paste the key, and pick the same
+validity you chose in Garmin Connect. HealthLog checks the key with Garmin
+before storing anything, so a mistyped or revoked key is refused on the spot.
+The key is stored encrypted at rest and is never shown again, logged or sent
+anywhere but Garmin.
+
+Accounts registered with Garmin's China service work too: a key the global
+service does not know is tried there once, and the service that accepts it is
+remembered.
+
+After connecting, the last 30 days arrive within a minute and the rest of your
+history follows in the background. The card says "Older history is still
+loading" until it is done.
+
+## Key expiry
+
+Garmin keys expire and cannot be extended. Garmin does not report a key's end
+date through the API, so HealthLog works it out from the validity you picked
+at connect, and replaces that estimate with Garmin's own date once the key is
+in its last day (the short-lived tokens it buys are cut off at the key's end).
+
+From seven days before the end the card says when the key expires. When it
+has expired, or you revoked it in Garmin Connect, syncing stops and the card
+asks for a new key: create one, open **Replace key** in the card's menu and
+paste it. Nothing imported is lost. If you did not pick a validity, the card
+says that it cannot warn ahead.
 
 ## What comes through
 
-Everything Garmin shares with Apple Health / Health Connect flows in: steps,
-heart rate (including beat-to-beat variability), sleep stages (REM / deep /
-light), calories (active and total), distance, weight and body composition,
-cadence, and — partially — blood-oxygen saturation.
+| Garmin data                                                           | HealthLog type             | Unit          |
+| --------------------------------------------------------------------- | -------------------------- | ------------- |
+| Steps                                                                 | `ACTIVITY_STEPS`           | steps         |
+| Step distance                                                         | `WALKING_RUNNING_DISTANCE` | m             |
+| Floors climbed                                                        | `FLIGHTS_CLIMBED`          | flights       |
+| Active calories                                                       | `ACTIVE_ENERGY_BURNED`     | kcal          |
+| Resting heart rate                                                    | `RESTING_HEART_RATE`       | bpm           |
+| All-day average stress level                                          | `STRESS_LEVEL`             | 0–100         |
+| Body Battery (the day's high)                                         | `BODY_BATTERY`             | 0–100         |
+| Sleep stages (light, deep, REM, awake)                                | `SLEEP_DURATION` per stage | minutes       |
+| Sleep score                                                           | `SLEEP_SCORE`              | 0–100         |
+| Average overnight SpO₂                                                | `OXYGEN_SATURATION`        | %             |
+| Average overnight breathing rate                                      | `RESPIRATORY_RATE`         | breaths/min   |
+| Overnight HRV (RMSSD)                                                 | `HRV_RMSSD`                | ms            |
+| Weight, BMI, body fat, body water, muscle and bone mass, visceral fat | the body-composition types | kg, %, rating |
+| Activities                                                            | workouts                   |               |
+| Logged period days                                                    | the cycle tracker          |               |
 
-## What Garmin withholds
+Notes:
 
-These are Garmin's **proprietary** scores. Garmin does **not** share them with
-Apple Health or Health Connect, so no self-hosted integration — and no amount of
-configuration — can obtain them. They are only available inside Garmin Connect
-itself:
+- Garmin's HRV is RMSSD and lands on `HRV_RMSSD`. Garmin reports no SDNN, so
+  nothing is written to `HEART_RATE_VARIABILITY`.
+- Stress and Body Battery are Garmin's own scores and keep types of their own.
+  They are not mixed into HealthLog's computed stress score.
+- Days you did not wear the watch import nothing, not zeros.
+- Period days are only added on days you have not logged yourself; your own
+  entries are never changed. Cycles Garmin only predicts are not imported.
+- When the same data also arrives through Apple Health or Health Connect, the
+  source order in **Settings → Sources** decides which one a chart shows.
+  Garmin ranks with the other watches.
 
-- Body Battery
-- HRV Status
-- VO₂ max
-- Training Load and Training Effect
-- Recovery Time
-- Intensity Minutes
-- Stress score
-- Running dynamics
+## What the Personal API does not carry
 
-If you rely on those specific numbers, keep the Garmin Connect app for them;
-everything else lands in HealthLog through the platform path above.
+Training Readiness, Training Status, acute training load and recovery time
+are not part of the Personal API. If you read them elsewhere, for example
+through a Home Assistant integration, push them through an ingest token: see
+[Home Assistant](./home-assistant.md#garmin-training-figures). They land as
+`TRAINING_READINESS` and `ACUTE_TRAINING_LOAD` and show on the recovery page
+beside Body Battery.
+
+## Limits
+
+- Garmin sets how many requests a key may make. HealthLog reads one resource
+  at a time and stops the hour's run at Garmin's first rate-limit answer; the
+  history backfill waits as long as Garmin asks before it goes on.
+- Disconnecting removes the key from HealthLog. It stays valid at Garmin until
+  you revoke it there.
+
+## Without a key
+
+Garmin Connect also writes to Apple Health on iOS and to Google Health Connect
+on Android, so the [Apple Health](./apple-health.md) and
+[Google Health](./google-health.md) paths keep working for anyone who prefers
+not to create a key. Body Battery, stress and Garmin's sleep score only come
+through the Personal API.
