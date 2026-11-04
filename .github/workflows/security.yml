@@ -245,12 +245,23 @@ jobs:
           rm trivy-install.sh
           trivy --version
 
-      # Blocking since v1.15.20 — a HIGH/CRITICAL finding in the built
-      # image fails the job. For a finding without an upstream fix
-      # (e.g. a base-image CVE Wolfi has not patched yet), add the CVE
-      # id to a `.trivyignore` file at the repository root — Trivy reads
-      # it automatically — one CVE per line, each with a comment naming
-      # the tracking issue and the re-check condition. Never suppress a
-      # finding that has a fixed version available; bump instead.
+      # Every HIGH/CRITICAL finding in the built image, fixed or not, as a
+      # table in the job log. Reporting only: a Debian base carries
+      # advisories the distribution has not fixed yet (or marked as not
+      # worth a fix), and nothing this repository changes can remove those.
+      # The list is here so they stay visible and move to the gate below
+      # the day a fix is published.
+      - name: Trivy container scan (all findings)
+        run: trivy image --format table --severity CRITICAL,HIGH --exit-code 0 healthlog:scan
+
+      # Blocking since v1.15.20 — a HIGH/CRITICAL finding with a published
+      # fix fails the job. `--ignore-unfixed` leaves out only the findings
+      # listed above that have no fixed version yet; a fix that reaches the
+      # Debian archive, the Node image or a dependency turns this red until
+      # it is taken (rebuild, bump the base digest, or bump the package).
+      # `.trivyignore` at the repository root (Trivy reads it automatically)
+      # is for a finding with a fix that cannot reach this image, one CVE
+      # per line with a comment naming what it covers and when to remove
+      # it. Never suppress a finding whose fix applies here; take it.
       - name: Trivy container scan
-        run: trivy image --format table --severity CRITICAL,HIGH --exit-code 1 healthlog:scan
+        run: trivy image --format table --severity CRITICAL,HIGH --ignore-unfixed --exit-code 1 healthlog:scan
