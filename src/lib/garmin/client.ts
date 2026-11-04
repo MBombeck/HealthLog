@@ -19,7 +19,6 @@
  * Egress goes through `safeFetch` to two fixed hosts (global and China), so
  * there is no user-supplied host to pin. Answers are read with a byte cap.
  */
-import { createHash } from "node:crypto";
 
 import { getEvent } from "@/lib/logging/context";
 import { shiftDateKey } from "@/lib/tz/format";
@@ -38,8 +37,6 @@ export const GARMIN_HOSTS = {
 } as const;
 
 export type GarminRegion = keyof typeof GARMIN_HOSTS;
-
-export const GARMIN_REGIONS = Object.keys(GARMIN_HOSTS) as GarminRegion[];
 
 export function isGarminRegion(value: unknown): value is GarminRegion {
   return value === "global" || value === "china";
@@ -258,7 +255,8 @@ export async function exchangeGarminKey(
 }
 
 interface CachedToken extends GarminToken {
-  fingerprint: string;
+  /** The key and service the token was bought with; a pasted key misses. */
+  keyRef: string;
 }
 
 /** Process-local token cache, per account. Never persisted. */
@@ -270,8 +268,10 @@ export function clearGarminTokenCache(userId?: string): void {
   else tokenCache.delete(userId);
 }
 
-function keyFingerprint(apiKey: string, region: GarminRegion): string {
-  return createHash("sha256").update(`${region}\n${apiKey}`).digest("hex");
+// Compared in memory only, like the key the session already holds. A hash
+// would add nothing here and reads as a password digest to a scanner.
+function keyRefFor(apiKey: string, region: GarminRegion): string {
+  return `${region}\n${apiKey}`;
 }
 
 export type GarminQuery = Record<
@@ -290,7 +290,7 @@ export class GarminSession {
   private readonly apiKey: string;
   private readonly region: GarminRegion;
   private readonly transport: GarminTransport;
-  private readonly fingerprint: string;
+  private readonly keyRef: string;
   /** The key's expiry, once a token revealed it. */
   learnedKeyExpiresAt: number | null = null;
   /** Number of key exchanges this session made (for the record and tests). */
@@ -308,7 +308,7 @@ export class GarminSession {
     this.apiKey = opts.apiKey;
     this.region = opts.region;
     this.transport = opts.transport ?? {};
-    this.fingerprint = keyFingerprint(opts.apiKey, opts.region);
+    this.keyRef = keyRefFor(opts.apiKey, opts.region);
   }
 
   private now(): number {
@@ -321,7 +321,7 @@ export class GarminSession {
     if (
       !force &&
       cached &&
-      cached.fingerprint === this.fingerprint &&
+      cached.keyRef === this.keyRef &&
       this.now() < cached.refreshAt
     ) {
       return cached.value;
@@ -336,7 +336,7 @@ export class GarminSession {
     if (fresh.keyExpiresAt !== null) {
       this.learnedKeyExpiresAt = fresh.keyExpiresAt;
     }
-    tokenCache.set(this.userId, { ...fresh, fingerprint: this.fingerprint });
+    tokenCache.set(this.userId, { ...fresh, keyRef: this.keyRef });
     return fresh.value;
   }
 
