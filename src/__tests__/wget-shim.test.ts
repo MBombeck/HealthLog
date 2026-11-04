@@ -175,6 +175,12 @@ describe("wget shim", () => {
     expect((await wget(["--spider"])).code).toBe(2);
   });
 
+  it("takes a URL without a scheme, like busybox wget", async () => {
+    const bare = base.replace(/^http:\/\//, "");
+    expect((await wget(["-qO-", `${bare}/ok`])).code).toBe(0);
+    expect((await wget(["-qO-", `${bare}/down`])).code).toBe(1);
+  });
+
   it("is what the image installs as wget", () => {
     const dockerfile = readSource("Dockerfile", "AS runner");
     const runner = dockerfile.slice(dockerfile.search(/^FROM .* AS runner$/m));

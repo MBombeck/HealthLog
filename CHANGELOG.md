@@ -58,11 +58,14 @@
   password hashing and the Prisma engine run their glibc builds. The
   published arm64 image renders PDF pages on a Raspberry Pi 4 again, where
   the Alpine build of the renderer needs CPU features an ARMv8.0 core
-  lacks. Node security releases now reach the image with the official
-  Node image, usually within days. The image carries no package manager:
-  npm, npx, corepack and yarn are removed. `pg_dump` and `pg_restore` are
-  PostgreSQL 18.6, the bundled database's version; `psql` is no longer in
-  the app image, so run it in the `db` container. A health check that
+  lacks. Node security releases now come with the official Node image,
+  which HealthLog pins and moves forward with its releases. The image
+  carries no package manager: npm, npx, corepack and yarn are removed.
+  `pg_dump` and `pg_restore` are PostgreSQL 18.6, the bundled database's
+  version. A few tools the Alpine image happened to carry are gone too:
+  `psql`, `pg_isready`, `pg_dumpall`, `ps`, `top`, `nc`, `unzip` and the
+  full `wget`. HealthLog uses none of them in the app container; run
+  `psql` in the `db` container. A health check that
   still calls `wget`, from a compose file copied before this release or a
   platform template, keeps working: the image carries a small `wget` that
   answers health checks and nothing else. The current `docker-compose.yml`

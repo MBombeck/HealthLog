@@ -392,8 +392,9 @@ COPY --from=builder /app/src/generated ./src/generated
 # pending migration count, the second runs `migrate deploy` with its
 # lock-timeout retry. `db-dump.mjs` takes the dump before migrating, and
 # `db-restore.mjs` is the `db-restore` service; both share
-# `src/lib/database-backup/dump-core.mjs` with the app. Root-owned on purpose:
-# the app user can run them but not rewrite them.
+# `src/lib/database-backup/dump-core.mjs` with the app. The files are
+# root-owned, so the app user can run them but not edit them in place. The
+# directory around them stays the app user's.
 COPY --from=builder /app/scripts/reset-password.mjs ./scripts/reset-password.mjs
 COPY --from=builder /app/scripts/pending-migrations.mjs ./scripts/pending-migrations.mjs
 COPY --from=builder /app/scripts/migrate-deploy.mjs ./scripts/migrate-deploy.mjs
@@ -421,8 +422,8 @@ RUN node scripts/db-dump.mjs 2>&1 | grep -q "db-dump: usage:" && \
     pg_restore --version | grep -q "(PostgreSQL) 18\."
 
 # The migration CLI from the `prisma-cli` stage. The Prisma config loads
-# dotenv from /app, so expose the isolated copy there. Root-owned: the app
-# user can run it but not rewrite it.
+# dotenv from /app, so expose the isolated copy there. /opt/prisma-cli is
+# root-owned: the app user can run it but not change it.
 COPY --from=prisma-cli /opt/prisma-cli /opt/prisma-cli
 RUN ln -sfn /opt/prisma-cli/node_modules/.bin/tsx /usr/local/bin/healthlog-tsx && \
     ln -sfn /opt/prisma-cli/node_modules/dotenv /app/node_modules/dotenv && \

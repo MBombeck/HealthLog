@@ -62,6 +62,9 @@ function parseArgs(argv) {
     };
     if (/^https?:\/\//i.test(arg)) {
       opts.url ??= arg;
+    } else if (/^[a-z0-9.[\]:-]+(:\d+)?\//i.test(arg)) {
+      // busybox wget takes `127.0.0.1:3000/api/health` without a scheme.
+      opts.url ??= `http://${arg}`;
     } else if (arg === "--spider") {
       opts.spider = true;
     } else if (arg === "-q" || arg === "--quiet") {

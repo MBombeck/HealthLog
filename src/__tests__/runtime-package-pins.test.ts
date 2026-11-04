@@ -92,7 +92,12 @@ describe("runtime package pins", () => {
       pg!.image,
     );
     expect(client, `a pinned major 18 image, not ${pg!.image}`).not.toBeNull();
-    const db = /^\s*image:\s*postgres:(\d+\.\d+)-alpine$/m.exec(COMPOSE);
+    // The `db` service's own image line, not the first postgres image in the
+    // file: `db-upgrade` carries the previous major.
+    const db =
+      /^ {2}db:\n(?:(?! {2}\S).*\n)*? {4}image:\s*postgres:(\d+\.\d+)-alpine$/m.exec(
+        COMPOSE,
+      );
     expect(db, "the compose file pins the database").not.toBeNull();
     // One decision: a database minor bump moves the client with it.
     expect(client![1]).toBe(db![1]);
