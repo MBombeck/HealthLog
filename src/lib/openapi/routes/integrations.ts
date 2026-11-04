@@ -378,6 +378,12 @@ const healthKitConfigResponse = z
       .describe(
         "The unified Apple Health connection state. Null when the phone has never delivered anything (or the read failed). Present on the GET read; omitted from the PATCH echo.",
       ),
+    acceptedTypes: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "The HealthKit quantity and category identifiers `POST /api/measurements/batch` maps today (e.g. `HKQuantityTypeIdentifierBodyMass`, `HKCategoryTypeIdentifierSleepAnalysis`), sorted. Derived from the server's mapping table, so a type the server defers is never listed. A client requests and sends only types in this list and its own table; when the field is absent (an older server) it keeps its own table. Present on the GET read; omitted from the PATCH echo.",
+      ),
   })
   .meta({
     id: "HealthKitConfigResponse",

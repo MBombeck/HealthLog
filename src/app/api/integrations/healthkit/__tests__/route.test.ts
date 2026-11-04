@@ -45,6 +45,10 @@ import { getSession } from "@/lib/auth/session";
 import { listLiveMeasurementTypes } from "@/lib/measurements/live-types";
 import { APPLE_HEALTH_DATA_STALE_AFTER_MS } from "@/lib/integrations/sync-verdict";
 import { auditLog } from "@/lib/auth/audit";
+import {
+  APPLE_HEALTH_TYPE_MAP,
+  HK_QUANTITY_TYPE_DEFERRED,
+} from "@/lib/measurements/apple-health-mapping";
 
 const SESSION_OK = {
   session: { id: "sess-1", expiresAt: new Date(Date.now() + 3_600_000) },
@@ -109,6 +113,23 @@ describe("GET /api/integrations/healthkit", () => {
     expect(body.data.entries.length).toBeGreaterThan(0);
     const bodyMass = body.data.entries.find((e) => e.id === "bodyMass");
     expect(bodyMass?.direction).toBe("bidirectional");
+  });
+
+  it("lists the sample types the batch route maps, never a deferred one", async () => {
+    vi.mocked(getSession).mockResolvedValue(
+      SESSION_OK as Awaited<ReturnType<typeof getSession>>,
+    );
+    const res = await callGet(makeGetReq());
+    const body = (await res.json()) as { data: { acceptedTypes: string[] } };
+    expect(body.data.acceptedTypes).toEqual(
+      Object.keys(APPLE_HEALTH_TYPE_MAP).sort(),
+    );
+    expect(body.data.acceptedTypes).toContain(
+      "HKCategoryTypeIdentifierSleepAnalysis",
+    );
+    for (const id of HK_QUANTITY_TYPE_DEFERRED) {
+      expect(body.data.acceptedTypes).not.toContain(id);
+    }
   });
 });
 

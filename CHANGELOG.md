@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Added
+
+- `GET /api/integrations/healthkit` lists the HealthKit sample types the
+  server accepts as `acceptedTypes`, taken from the same mapping the batch
+  upload uses. The iOS app can then ask for and send only types the server
+  stores, instead of reading a type the server would skip. (#1340)
+
 ### Fixed
 
 - **Typing into the smoking history.** "When you stopped" only took text
