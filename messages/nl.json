@@ -5286,7 +5286,8 @@
         },
         "hints": {
           "apple-health": "Gesynchroniseerd door de iOS-app, of geïmporteerd uit een export.",
-          "file": "Te importeren onder Instellingen zodra je hier klaar bent."
+          "file": "Te importeren onder Instellingen zodra je hier klaar bent.",
+          "fitbit": "Wordt nu gekoppeld via Google Health."
         }
       },
       "visit": {
@@ -5340,6 +5341,7 @@
           "waiting": "Nog niet gekoppeld.",
           "openSettings": "Instellingen → Koppelingen openen",
           "noDate": "onbekend",
+          "throughGoogleHealth": "{source}-gegevens komen nu binnen via {target}: de klassieke {source}-koppeling is stopgezet. Koppel {target} met het Google-account waarmee je {source} is aangemeld, dan komen je metingen daarvandaan.",
           "needsCredentials": {
             "title": "Deze instantie heeft nog geen {target}-app geregistreerd.",
             "detail": "Voer je eigen inloggegevens in onder Instellingen → Koppelingen, daarna kan de koppeling starten."

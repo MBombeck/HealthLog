@@ -5286,7 +5286,8 @@
         },
         "hints": {
           "apple-health": "Sincronizado pelo aplicativo iOS ou importado de uma exportação.",
-          "file": "Importado nas Configurações quando terminar aqui."
+          "file": "Importado nas Configurações quando terminar aqui.",
+          "fitbit": "Agora é conectado pelo Google Health."
         }
       },
       "visit": {
@@ -5340,6 +5341,7 @@
           "waiting": "Ainda não conectado.",
           "openSettings": "Abrir Configurações → Integrações",
           "noDate": "desconhecido",
+          "throughGoogleHealth": "Os dados do {source} agora chegam pelo {target}: a conexão clássica com o {source} foi desativada. Conecte o {target} com a conta Google em que o seu {source} está conectado, e suas leituras chegam por lá.",
           "needsCredentials": {
             "title": "Esta instância ainda não tem um aplicativo {target} registrado.",
             "detail": "Insira suas próprias credenciais em Configurações → Integrações, então a conexão pode começar."

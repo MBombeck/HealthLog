@@ -72,7 +72,7 @@ interface StatusOverrides {
   lastSuccessAt?: string | null;
 }
 
-function statuses(overrides: StatusOverrides | null) {
+function statuses(overrides: StatusOverrides | null, integration = "whoop") {
   envelope.value =
     overrides === null
       ? { isLoading: true, data: undefined }
@@ -82,7 +82,7 @@ function statuses(overrides: StatusOverrides | null) {
             threshold: 3,
             integrations: [
               {
-                integration: "whoop",
+                integration,
                 connected: overrides.connected ?? false,
                 configured: overrides.configured ?? true,
                 available: overrides.available,
@@ -121,8 +121,9 @@ function state(
 function render(
   overrides: StatusOverrides | null,
   needs: Partial<OnboardingStateDto["needs"]> = {},
+  integration = "whoop",
 ) {
-  statuses(overrides);
+  statuses(overrides, integration);
   return renderToStaticMarkup(
     <QueryClientProvider client={new QueryClient()}>
       <I18nProvider initialLocale="en">
@@ -239,5 +240,62 @@ describe("<FirstResultScreen> — the connect arm", () => {
     const html = render(null, { medication: "yes" });
     expect(html).toContain('data-task="connect-source"');
     expect(html).toContain("Connect WHOOP");
+  });
+});
+
+/**
+ * Fitbit's classic Web API was shut down on 2026-10-30 and Fitbit data now
+ * arrives through Google Health. The answer stays "Fitbit"; the task has to
+ * open, read and name the Google Health card, and say why.
+ */
+describe("<FirstResultScreen> — a Fitbit answer", () => {
+  const fitbit = { sources: ["fitbit" as const] };
+
+  it("opens the Google Health card and says Fitbit data comes through it", () => {
+    const html = render({ connected: false }, fitbit, "google-health");
+    expect(html).toContain('data-connect-slot="connect"');
+    expect(html).toContain("Connect Google Health");
+    expect(html).toContain("/settings/integrations#google-health");
+    expect(html).not.toContain("/settings/integrations#fitbit");
+    expect(html).toContain('data-slot="onboarding-task-through"');
+    expect(html).toContain("Fitbit data now comes through Google Health");
+  });
+
+  it("reads the Google Health connection, not the classic Fitbit one", () => {
+    const delivering = render(
+      {
+        connected: true,
+        verdict: "fresh",
+        lastSuccessAt: "2026-11-01T06:00:00.000Z",
+      },
+      fitbit,
+      "google-health",
+    );
+    expect(delivering).toContain("Google Health is already connected");
+    expect(delivering).toContain("Fitbit data now comes through Google Health");
+
+    // A classic Fitbit row that still says connected is not the result.
+    const classic = render(
+      {
+        connected: true,
+        verdict: "fresh",
+        lastSuccessAt: "2026-10-29T06:00:00.000Z",
+      },
+      fitbit,
+      "fitbit",
+    );
+    expect(classic).not.toContain("is already connected");
+    expect(classic).not.toContain("data-connect-slot=");
+  });
+
+  it("names the Google Health app when the instance has none on file", () => {
+    const html = render(
+      { connected: false, configured: false },
+      fitbit,
+      "google-health",
+    );
+    expect(html).toContain('data-connect-slot="credentials"');
+    expect(html).toContain("no Google Health app on file yet");
+    expect(html).toContain("Fitbit data now comes through Google Health");
   });
 });

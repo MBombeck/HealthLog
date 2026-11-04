@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -36,6 +36,7 @@ import {
   connectSourceView,
   deliveringSources,
   SOURCE_INTEGRATION,
+  sourceConnectionLabelKey,
   type ConnectSourceSlot,
 } from "@/lib/onboarding/first-result-config";
 import type { OnboardingStateDto } from "@/lib/onboarding/needs";
@@ -166,7 +167,9 @@ function targetLabel(
 ): string {
   if (!offer.target) return "";
   if (offer.task === "connect-source") {
-    return t(questionOptionLabelKey("sources", offer.target));
+    return isBrowserConnectableSource(offer.target)
+      ? t(sourceConnectionLabelKey(offer.target))
+      : t(questionOptionLabelKey("sources", offer.target));
   }
   return t(questionOptionLabelKey("areas", offer.target));
 }
@@ -217,8 +220,32 @@ function ConnectSourceTask({
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
-  const { anchor, statusKey } = SOURCE_INTEGRATION[source];
-  const label = t(questionOptionLabelKey("sources", source));
+  const { anchor, statusKey, through } = SOURCE_INTEGRATION[source];
+  // The connection's name: the integration it goes through when the device's
+  // own card is gone (Fitbit through Google Health), else the answer itself.
+  const label = t(sourceConnectionLabelKey(source));
+  // Said on every tile, so a person who picked Fitbit is never left wondering
+  // why the step talks about Google Health.
+  const throughNote = through ? (
+    <p
+      className="text-muted-foreground text-sm"
+      data-slot="onboarding-task-through"
+    >
+      {t(through.noteKey, {
+        source: t(questionOptionLabelKey("sources", source)),
+        target: label,
+      })}
+    </p>
+  ) : null;
+  const withThroughNote = (tile: ReactNode): ReactNode =>
+    throughNote ? (
+      <div className="space-y-4">
+        {throughNote}
+        {tile}
+      </div>
+    ) : (
+      tile
+    );
   // Refetches on window focus, so coming back from the integrations tab
   // after the handshake picks the fresh verdict up on its own.
   const statuses = useIntegrationStatuses(true);
@@ -245,16 +272,16 @@ function ConnectSourceTask({
   const settingsHref = `/settings/integrations#${anchor}`;
 
   if (!view) {
-    // Nothing is known yet. The heading is the person's own answer, so it
-    // stays; the body says only that the check is running.
-    return (
+    // Nothing is known yet. The heading names the connection, so it stays;
+    // the body says only that the check is running.
+    return withThroughNote(
       <p
         className="text-muted-foreground text-sm"
         role="status"
         data-slot="onboarding-task-checking"
       >
         {t("onboarding.flow.first-result.connect-source.checking")}
-      </p>
+      </p>,
     );
   }
 
@@ -264,17 +291,17 @@ function ConnectSourceTask({
     : t("onboarding.flow.first-result.connect-source.noDate");
 
   if (view.slot === "result") {
-    return (
+    return withThroughNote(
       <ResultTile
         title={t(`${key}.title`, { target: label })}
         detail={t(`${key}.detail`, { when })}
         connect={{ slot: view.slot, state: view.verdict }}
-      />
+      />,
     );
   }
 
   if (view.slot === "attention") {
-    return (
+    return withThroughNote(
       <ConnectNoticeTile
         slot={view.slot}
         state={view.verdict}
@@ -283,12 +310,12 @@ function ConnectSourceTask({
         detail={t(`${key}.detail`, { when })}
         href={settingsHref}
         cta={t("onboarding.flow.first-result.connect-source.openSettings")}
-      />
+      />,
     );
   }
 
   if (view.slot === "credentials") {
-    return (
+    return withThroughNote(
       <ConnectNoticeTile
         slot={view.slot}
         state={view.verdict}
@@ -302,11 +329,11 @@ function ConnectSourceTask({
         )}
         href={settingsHref}
         cta={t("onboarding.flow.first-result.connect-source.openSettings")}
-      />
+      />,
     );
   }
 
-  return (
+  return withThroughNote(
     <div
       className="bg-card border-border space-y-4 rounded-xl border p-4 md:p-6"
       data-slot="onboarding-task-connect"
@@ -328,7 +355,7 @@ function ConnectSourceTask({
       <p className="text-muted-foreground text-xs" aria-live="polite">
         {t("onboarding.flow.first-result.connect-source.waiting")}
       </p>
-    </div>
+    </div>,
   );
 }
 

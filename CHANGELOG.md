@@ -32,6 +32,12 @@
 - **Garmin in the setup questions.** The onboarding question about where
   your readings come from now offers Garmin, and can end on connecting it.
   (#1333)
+- **Fitbit in the setup questions leads to Google Health.** Fitbit shut its
+  classic connection down on 30 October, but answering "Fitbit" still ended
+  the setup on that card. Fitbit stays an answer, since the devices are still
+  in use; the last step now opens the Google Health card, reads that
+  connection, and says that Fitbit data comes through Google Health now. The
+  question shows the same note under the Fitbit choice.
 - **Cycle days in the integration details.** The Garmin and Oura cards list
   the newest imported cycle day and how many there are under "Data
   received", next to the other data types. (#1333)

@@ -5286,7 +5286,8 @@
         },
         "hints": {
           "apple-health": "Synced by the iOS app, or imported from an export.",
-          "file": "Imported under Settings once you are done here."
+          "file": "Imported under Settings once you are done here.",
+          "fitbit": "Connected through Google Health now."
         }
       },
       "visit": {
@@ -5340,6 +5341,7 @@
           "waiting": "Not connected yet.",
           "openSettings": "Open Settings → Integrations",
           "noDate": "unknown",
+          "throughGoogleHealth": "{source} data now comes through {target}: the classic {source} connection has been shut down. Connect {target} with the Google account your {source} is signed in to, and your readings arrive from there.",
           "needsCredentials": {
             "title": "This instance has no {target} app on file yet.",
             "detail": "Enter your own credentials under Settings → Integrations, then the connection can start."

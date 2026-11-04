@@ -70,6 +70,7 @@ const OPTION_HINTS: Readonly<Record<string, string>> = {
   "who.both": "onboarding.flow.who.hints.both",
   "sources.apple-health": "onboarding.flow.sources.hints.apple-health",
   "sources.file": "onboarding.flow.sources.hints.file",
+  "sources.fitbit": "onboarding.flow.sources.hints.fitbit",
 };
 
 export function QuestionScreen({

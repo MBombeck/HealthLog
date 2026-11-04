@@ -39,7 +39,7 @@ import {
   CHECKLIST_DISMISSED_ITEMS_KEY as DISMISSED_ITEMS_KEY,
   CHECKLIST_EXPANDED_KEY as EXPANDED_KEY,
 } from "@/lib/onboarding/checklist-storage";
-import { questionOptionLabelKey } from "@/lib/onboarding/question-config";
+import { sourceConnectionLabelKey } from "@/lib/onboarding/first-result-config";
 import { isBrowserConnectableSource } from "@/lib/onboarding/wizard-steps";
 
 const ITEM_ICONS: Record<ChecklistItemId, LucideIcon> = {
@@ -547,9 +547,7 @@ export function GettingStartedChecklist() {
                   >
                     {item.id === "dataSource" && namedSource
                       ? t("gettingStarted.items.dataSourceNamedTitle", {
-                          source: t(
-                            questionOptionLabelKey("sources", namedSource),
-                          ),
+                          source: t(sourceConnectionLabelKey(namedSource)),
                         })
                       : t(labels.title)}
                   </p>
