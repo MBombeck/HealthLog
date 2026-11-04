@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Typing into the smoking history.** "When you stopped" only took text
+  that was already a whole YYYY-MM month, so every keystroke was dropped
+  and only a paste got in. The start year clamped each keystroke into its
+  range, so the first digit turned into 1900. Both fields now keep what is
+  typed and commit it once it is a valid value, and leaving the month field
+  pads "2019-3" to "2019-03". (#1334)
+
+### Changed
+
+- Dependabot no longer proposes a new Node major for the image. The major
+  is tied to `engines`, `.nvmrc` and `.node-version` and moves by hand.
+
 ## [1.47.0] — 2026-11-04
 
 ### Added

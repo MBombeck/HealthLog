@@ -281,6 +281,11 @@ function NumberField({
   onChange: (value: number | null) => void;
   disabled: boolean;
 }) {
+  // What the person is typing. A year passes through "1", "19" and "198" on
+  // its way to "1985", so clamping each keystroke turned the first digit into
+  // the minimum and the field could not be typed into. A value is committed
+  // once it is in range, and leaving the field puts the committed one back.
+  const [draft, setDraft] = useState<string | null>(null);
   return (
     <Field id={id} label={label}>
       <Input
@@ -290,19 +295,72 @@ function NumberField({
         min={min}
         max={max}
         step={step}
-        value={value ?? ""}
+        value={draft ?? (value === null ? "" : String(value))}
         disabled={disabled}
         onChange={(event) => {
           const raw = event.target.value;
+          setDraft(raw);
           if (raw === "") return onChange(null);
           const parsed = Number(raw);
-          if (Number.isFinite(parsed)) {
-            onChange(Math.min(max, Math.max(min, parsed)));
+          if (Number.isFinite(parsed) && parsed >= min && parsed <= max) {
+            onChange(parsed);
           }
         }}
+        onBlur={() => setDraft(null)}
       />
     </Field>
   );
+}
+
+/**
+ * A month typed as YYYY-MM. Only a complete month is committed, so the field
+ * keeps what is being typed on its own: holding it to the committed value
+ * threw away every keystroke until the text was a whole month, and only a
+ * paste got through. Leaving the field pads "2019-3" to "2019-03" and puts
+ * the committed month back over anything that is not one.
+ */
+function QuitMonthInput({
+  id,
+  value,
+  onChange,
+  disabled,
+}: {
+  id: string;
+  value: string | null;
+  onChange: (value: string | null) => void;
+  disabled: boolean;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <Input
+      id={id}
+      placeholder="YYYY-MM"
+      inputMode="numeric"
+      maxLength={7}
+      value={draft ?? value ?? ""}
+      disabled={disabled}
+      onChange={(event) => {
+        const raw = event.target.value;
+        setDraft(raw);
+        const month = completeMonth(raw);
+        if (month !== undefined) onChange(month);
+      }}
+      onBlur={() => {
+        if (draft !== null) {
+          const short = /^(\d{4})-([1-9])$/.exec(draft.trim());
+          if (short) onChange(`${short[1]}-0${short[2]}`);
+        }
+        setDraft(null);
+      }}
+    />
+  );
+}
+
+/** A whole month, null for an emptied field, undefined while still typing. */
+function completeMonth(raw: string): string | null | undefined {
+  const text = raw.trim();
+  if (text === "") return null;
+  return /^\d{4}-(0[1-9]|1[0-2])$/.test(text) ? text : undefined;
 }
 
 function MultiField<T extends string>({
@@ -544,23 +602,13 @@ function SectionBody({
                   id={id("quit")}
                   label={t("records.life.fields.quitMonth")}
                 >
-                  <Input
+                  <QuitMonthInput
                     id={id("quit")}
-                    placeholder="YYYY-MM"
-                    inputMode="numeric"
-                    maxLength={7}
-                    value={v.quitMonth ?? ""}
+                    value={v.quitMonth}
                     disabled={disabled}
-                    onChange={(event) => {
-                      const raw = event.target.value.trim();
-                      patch("TOBACCO_DETAIL", {
-                        quitMonth: /^\d{4}-(0[1-9]|1[0-2])$/.test(raw)
-                          ? raw
-                          : raw === ""
-                            ? null
-                            : v.quitMonth,
-                      });
-                    }}
+                    onChange={(quitMonth) =>
+                      patch("TOBACCO_DETAIL", { quitMonth })
+                    }
                   />
                 </Field>
               ) : null}
