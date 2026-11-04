@@ -22,13 +22,13 @@ overrides:
   # bump; the fix landed in 8.5.23.
   "postcss@<8.5.23": "^8.5.23"
   "nanoid@<3.3.18": "^3.3.18"
-  # GHSA-frvp-7c67-39w9 raised the floor from 1.19.13 to 1.19.15. Mirrored for
-  # /opt/prisma-cli in the Dockerfile, which is where the flagged 1.19.11
-  # actually landed: prisma pulls it through @prisma/dev, and that install
-  # reads npm `overrides`, not this file. The bound stays on the 1.x line
-  # because the advisory is fixed there too and 2.x is a major nothing asked
-  # for.
-  "@hono/node-server@<1.19.15": "^1.19.15"
+  # GHSA-frvp-7c67-39w9 raised the floor from 1.19.13 to 1.19.15. The
+  # serveStatic double decode fixed in 2.1.3 has no fix on the 1.x line, so
+  # the bound moves to 2.x, which the MCP SDK accepts (`^1.19.9 || ^2.0.5`).
+  # The app never calls serveStatic; the copy sits on the MCP path all the
+  # same. Mirrored for /opt/prisma-cli in the Dockerfile, where an older
+  # @prisma/dev once pulled it in.
+  "@hono/node-server@<2.1.3": "^2.1.3"
   "picomatch@<4.0.4": "^4.0.4"
   # CVE-2026-111181 (HIGH) raised the floor from 2.3.0. The copy arrives
   # under express in the MCP SDK, on a production path.
@@ -40,6 +40,9 @@ overrides:
   "source-map-js@<1.2.2": "^1.2.2"
   "postcss-selector-parser@<7.1.6": "^7.1.6"
   "smol-toml@<1.9.0": "^1.9.0"
+  # Command injection through services() on Windows, under shadcn's CLI at
+  # dev time only. 5.33.16 has the fix.
+  "systeminformation@<5.33.16": "^5.33.16"
   # Array-limit bypass through bracket-key comma parsing, and a denial of
   # service through an attacker-controlled isBuffer. 6.16.0 covers both.
   "qs@<6.16.0": "^6.16.0"

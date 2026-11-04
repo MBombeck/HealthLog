@@ -16,6 +16,14 @@
 - Dependabot no longer proposes a new Node major for the image. The major
   is tied to `engines`, `.nvmrc` and `.node-version` and moves by hand.
 
+### Security
+
+- `@hono/node-server` moves to the 2.x line, which fixes a second decode of
+  the request path in `serveStatic`. It arrives under the MCP SDK; the app
+  uses the SDK's web-standard transport and never loads it, but the copy
+  was in the tree. `systeminformation`, under the shadcn CLI at dev time,
+  moves past a Windows command injection.
+
 ## [1.47.0] — 2026-11-04
 
 ### Added
