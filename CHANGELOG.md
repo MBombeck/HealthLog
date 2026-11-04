@@ -16,6 +16,10 @@
   country was only read for some languages. The region in the language tag
   now picks the country's lines whatever the language; a bare language
   code keeps the combined sets as before. (#1338)
+- **SSO sign-in in the app names the deletion date.** Signing in with SSO
+  on the phone to an account pending deletion now carries the date the
+  account is erased, as the web sign-in already did, so the app can say
+  until when an admin can still undo it. (#1341)
 
 ### Changed
 

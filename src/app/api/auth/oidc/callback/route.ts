@@ -96,6 +96,26 @@ function secondFactorRedirect(
 }
 
 /**
+ * A failure on the native leg: the custom scheme with `error` and, at most,
+ * a non-secret detail beside it. An error redirect carries no code, ticket,
+ * or session.
+ */
+function nativeErrorRedirect(params: Record<string, string>): NextResponse {
+  const response = NextResponse.redirect(buildNativeCallbackUrl(params));
+  deleteStateCookie(response);
+  return response;
+}
+
+/**
+ * The purge date as the `purgeAt` parameter the native leg carries beside
+ * `account_deletion_pending`, mirroring `deletionPendingRedirect` (#1341).
+ * Only the date: nothing else about the account rides the URL.
+ */
+function purgeAtParam(purgeAt: Date | null): Record<string, string> {
+  return purgeAt ? { purgeAt: purgeAt.toISOString() } : {};
+}
+
+/**
  * The web sign-in page for an account pending deletion, with the date it is
  * erased, so the page can say until when an admin can undo it.
  */
@@ -180,16 +200,13 @@ export const GET = apiHandler(async (req: NextRequest) => {
     return response;
   };
 
-  const failRedirect = (reason: string): NextResponse => {
+  const failRedirect = (
+    reason: string,
+    nativeExtra: Record<string, string> = {},
+  ): NextResponse => {
     if (isReproof) return reproofBack(reason);
     if (isClaim) return claimRedirect(reason);
-    if (isNative) {
-      const response = NextResponse.redirect(
-        buildNativeCallbackUrl({ error: reason }),
-      );
-      deleteStateCookie(response);
-      return response;
-    }
+    if (isNative) return nativeErrorRedirect({ error: reason, ...nativeExtra });
     return errorRedirect(reason);
   };
 
@@ -349,7 +366,10 @@ export const GET = apiHandler(async (req: NextRequest) => {
     // the caller is this account, so the sign-in page may name the date.
     const pendingDeletion = await pendingDeletionOf(user.id);
     if (pendingDeletion) {
-      if (isNative || isClaim) return failRedirect("account_deletion_pending");
+      if (isNative || isClaim) {
+        const extra = purgeAtParam(pendingDeletion.purgeAt);
+        return failRedirect("account_deletion_pending", extra);
+      }
       return deletionPendingRedirect(pendingDeletion.purgeAt);
     }
 
