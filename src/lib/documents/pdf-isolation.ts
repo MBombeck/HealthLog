@@ -79,14 +79,23 @@ const CHILD_PATH = ["src", "lib", "documents", "pdf-child.mjs"];
 
 export type PdfChildRequest =
   | { op: "text"; data: Uint8Array; maxPages: number }
+  | { op: "page-texts"; data: Uint8Array; maxPages: number }
   | { op: "render"; data: Uint8Array; options: RenderOptions }
   | { op: "image-thumbnail"; data: Uint8Array; options: ImageThumbnailOptions };
 
 type PdfChildValue<R extends PdfChildRequest> = R extends { op: "text" }
   ? string
-  : R extends { op: "render" }
-    ? RenderedDocument
-    : ImageThumbnailOutcome;
+  : R extends { op: "page-texts" }
+    ? PdfPageTexts
+    : R extends { op: "render" }
+      ? RenderedDocument
+      : ImageThumbnailOutcome;
+
+/** A document's text layer page by page: the first pages read, and how many it has. */
+export interface PdfPageTexts {
+  pageCount: number;
+  texts: string[];
+}
 
 /** Why a child gave no result. */
 export type PdfChildFailure =
@@ -212,6 +221,7 @@ async function residentMb(pid: number): Promise<number | null> {
 interface ChildReply {
   ok: boolean;
   text?: string;
+  pageTexts?: PdfPageTexts;
   document?: RenderedDocument;
   thumbnail?: ImageThumbnailOutcome;
   error?: { name: string; message: string };
@@ -237,6 +247,9 @@ function decodeValue<R extends PdfChildRequest>(
   reply: ChildReply,
 ): PdfChildValue<R> {
   if (request.op === "text") return reply.text as PdfChildValue<R>;
+  if (request.op === "page-texts") {
+    return reply.pageTexts as PdfChildValue<R>;
+  }
   if (request.op === "render") {
     return decodeDocument(
       reply.document as RenderedDocument,

@@ -9,7 +9,15 @@ already installed, longer if a TLS-fronted public hostname is in scope
 
 - **Docker 24+ with Compose v2.** The bundled `docker-compose.yml`
   pulls a multi-arch image from GitHub Container Registry (linux/amd64
-  and linux/arm64), so a Raspberry Pi 5 or an x86 VPS both work unchanged.
+  and linux/arm64), so a Raspberry Pi 4 or 5 or an x86 VPS all work
+  unchanged. The image is built on the official Node 22 image (Debian
+  slim, glibc). Document thumbnails and
+  scanned-PDF rendering use a native renderer that runs on every arm64
+  board, the Pi 4 included, and on x86-64 CPUs with AVX2; on an older x86
+  CPU (Celeron/Atom-class NAS chips) it switches itself off and those two
+  features fall back to text only. `NATIVE_CANVAS=off` or `on` in `.env`
+  overrides that detection (`on` crashes PDF processing on a CPU that truly
+  lacks the instructions).
 - **3 GB RAM (4 GB recommended), 10 GB free disk.** The Postgres data
   volume grows with measurement history; the Apple Health import worker
   can briefly hold a 1.5 GB upload in `/tmp` while it parses. The app

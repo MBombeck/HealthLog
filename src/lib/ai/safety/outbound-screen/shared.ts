@@ -20,7 +20,7 @@ export const COUNT_UNIT =
  * units plus the count forms; `ml` is left out on purpose because
  * "increase your water intake to 2000 ml" is ordinary hydration advice.
  */
-export const DRUG_UNIT = `(?:mg|mcg|µg|iu|ui|i\\.u\\.|units?|unidades?|unità|unités?|jednostek|jednostki|eenheden|eenheid|ie|i\\.e\\.|einheiten|${COUNT_UNIT})`;
+export const DRUG_UNIT = `(?:mg|mcg|µg|iu|ui|i\\.u\\.|units?|unidades?|unità|unités?|jednostek|jednostki|eenheden|eenheid|ie|i\\.e\\.|einheiten|мкг|мг|ед|ме|${COUNT_UNIT})`;
 
 /**
  * Dose units, shared across every locale. The GLP-1 + general oral-dose
@@ -28,7 +28,7 @@ export const DRUG_UNIT = `(?:mg|mcg|µg|iu|ui|i\\.u\\.|units?|unidades?|unità|u
  * insulin-unit spellings the locales use (`eenheden` is the Dutch one, `ui`
  * the Portuguese abbreviation of "unidades internacionais").
  */
-export const DOSE_UNIT = `(?:ml|${DRUG_UNIT})`;
+export const DOSE_UNIT = `(?:ml|мл|${DRUG_UNIT})`;
 
 /**
  * What may follow a dose unit. A concentration is a lab value, not a dose:
@@ -36,9 +36,11 @@ export const DOSE_UNIT = `(?:ml|${DRUG_UNIT})`;
  * medication, and a bare `\b` let both trip the "try … N mg" pattern. A
  * per-day or per-kilogram rate ("2000 mg/day", "10 mg/kg") IS a dose and still
  * matches. The lookahead also ends a unit that closes on a non-word letter
- * ("unità", "i.e.") where `\b` cannot.
+ * ("unità", "i.e.") where `\b` cannot. Cyrillic counts as a letter here:
+ * `\w` is ASCII-only, so without it «3 месяца» read as "3 МЕ".
  */
-export const UNIT_END = "(?!\\w|\\s*\\/\\s*(?:dl|l|min|mmol)\\b)";
+export const UNIT_END =
+  "(?![\\w\\u0400-\\u04FF]|\\s*\\/\\s*(?:dl|l|min|mmol)\\b)";
 
 /**
  * One to four words of object between a change verb and its target — "your
@@ -91,6 +93,26 @@ export const LETTER = "a-zà-ÿąćęłńóśźż";
  * one ("comparing" is why heparin is spelled out rather than stemmed).
  */
 export const INN_STEM = `(?<![${LETTER}])[${LETTER}]{2,}(?:pril|pryl|sartan|olol|statin|statyn|dipin|dypin|formin|glutid|glutyd|gliflozin|gliptin|xaban|ksaban|prazol|semid)[${LETTER}]{0,4}(?![${LETTER}])|(?<![${LETTER}])(?:enoxa|dalte)?heparin[${LETTER}]{0,4}`;
+
+/**
+ * The generic-name stems of `INN_STEM` as Russian and Korean write them
+ * ("метопролол", "аторвастатин", "메토프롤롤", "아토르바스타틴"). JavaScript's
+ * `\b` and `\w` are ASCII-only, so the edges are spelled out per script.
+ * The Korean "-xaban" stems carry their first syllable ("픽사반", "록사반") so
+ * a word like "조사반" (an inspection team) is not read as a drug.
+ */
+export const INN_STEM_CYRILLIC =
+  "(?<![а-яё])[а-яё]{2,}(?:прил|сартан|олол|статин|дипин|формин|глутид|глифлозин|глиптин|ксабан|празол|семид)[а-яё]{0,4}(?![а-яё])";
+export const INN_STEM_HANGUL =
+  "[가-힣]*(?:프릴|사르탄|프롤롤|롤롤|스타틴|디핀|포르민|트포민|글루타이드|글루티드|플로진|글립틴|픽사반|록사반|독사반|프라졸|세미드)";
+
+/**
+ * A liquid volume. Kept apart from `DRUG_UNIT` because "drink 500 ml of
+ * water" is hydration advice: a pattern may use it only beside a liquid drug
+ * form ("syrup", "Hustensaft", "сироп") or a medication noun.
+ */
+export const LIQUID_UNIT =
+  "(?:ml|мл|millilit(?:er|re)s?|milliliters?|mililitros?|millilitri|mililitr[a-zó]*|миллилитр[а-яё]*|밀리리터|cc)";
 
 export const ENGINE = "(?:framingham|ascvd|score2|qrisk)";
 

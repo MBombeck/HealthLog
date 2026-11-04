@@ -107,6 +107,22 @@ NODE_PATH=/opt/prisma-cli/node_modules \
   node scripts/migrate-deploy.mjs
 echo "HealthLog: Migrations complete."
 
+# ── The app's database role ──────────────────────────────────
+# Everything above ran as the owner DATABASE_URL names. The app itself
+# connects as `healthlog_app_<database>_<hash>`, this database's own role,
+# which reads and writes rows and runs the queue but cannot change the schema (scripts/db-app-role.mjs says what it may and
+# may not do, and docs/self-hosting/database-role.md how to opt out). The
+# script hands the role's URL over on descriptor 3 only, never on stdout or
+# stderr; nothing handed over means it said why and the app stays on the
+# owner, as before. The owner's URL is replaced, not kept beside it, so it
+# does not reach the app's environment.
+app_database_url="$(node scripts/db-app-role.mjs 3>&1 1>&2)" || app_database_url=""
+if [ -n "$app_database_url" ]; then
+  DATABASE_URL="$app_database_url"
+  export DATABASE_URL
+fi
+unset app_database_url
+
 # ── Start application ────────────────────────────────────────
 echo "HealthLog: Starting application..."
 exec "$@"

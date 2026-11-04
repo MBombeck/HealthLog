@@ -309,6 +309,7 @@ export const SCHEDULED_AND_SENT_QUEUES: ReadonlySet<string> = new Set([
   "environment-aq-history",
   "environment-fetch",
   "free-text-encryption-backfill",
+  "garmin-sync",
   "geolite2-fetch",
   "insight-pregenerate",
   "intake-slot-dedup",

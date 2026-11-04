@@ -26,6 +26,7 @@ import { bank as pl } from "../outbound-screen/locales/pl";
 import { bank as nl } from "../outbound-screen/locales/nl";
 import { bank as ko } from "../outbound-screen/locales/ko";
 import { bank as ptBR } from "../outbound-screen/locales/pt-br";
+import { bank as ru } from "../outbound-screen/locales/ru";
 import type { LocaleBank } from "../outbound-screen/shared";
 
 const BANKS: Record<Locale, LocaleBank> = {
@@ -38,6 +39,7 @@ const BANKS: Record<Locale, LocaleBank> = {
   nl,
   ko,
   "pt-BR": ptBR,
+  ru: ru,
 };
 
 const SENTENCES: Record<Locale, readonly string[]> = {
@@ -82,6 +84,10 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "Owing to the heat, it rose.",
     "Salt is responsible for it.",
     "Keep taking your 7.5 mg as prescribed.",
+    "Don't take atorvastatin tonight.",
+    "Take a break from enalapril.",
+    "Add 4 more units of insulin.",
+    "Take 10 ml of the syrup.",
   ],
   de: [
     "Reduzieren Sie die Dosis um die Hälfte.",
@@ -125,6 +131,12 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "Der Auslöser war Salz.",
     "Salz ist verantwortlich für den Anstieg.",
     "Nimm dein Metformin weiter wie verordnet.",
+    "Nehmen Sie kein Atorvastatin.",
+    "Nimm heute Abend dein Metoprolol nicht.",
+    "Mach eine Pause mit dem Enalapril.",
+    "Setzen Sie das Ramipril für ein paar Tage aus.",
+    "Geben Sie 2 zusätzliche Einheiten Insulin dazu.",
+    "Nehmen Sie 10 ml Hustensaft.",
   ],
   fr: [
     "Réduisez la dose de moitié.",
@@ -159,6 +171,11 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "Il a baissé grâce à la marche.",
     "Le stress provoque une hausse.",
     "Continuez à prendre votre metformine.",
+    "Ne prenez pas votre atorvastatine ce soir.",
+    "Faites une pause avec l’énalapril.",
+    "Mettez le ramipril en pause.",
+    "Rajoutez 2 unités d’insuline.",
+    "Prenez 10 ml de sirop.",
   ],
   es: [
     "Reduzca la dosis a la mitad.",
@@ -192,6 +209,10 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "Bajó gracias a la caminata.",
     "Fue impulsado por el estrés.",
     "Siga tomando su metformina.",
+    "No tome atorvastatina esta noche.",
+    "Tome un descanso del enalapril.",
+    "Añada 4 unidades más de insulina.",
+    "Tome 10 ml del jarabe.",
   ],
   it: [
     "Riduca la dose della metà.",
@@ -224,6 +245,10 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "È calato grazie a una camminata.",
     "È stato guidato da stress.",
     "Continui a prendere la metformina.",
+    "Non prenda l’atorvastatina stasera.",
+    "Faccia una pausa dall’enalapril.",
+    "Prenda 10 ml di sciroppo.",
+    "Aggiunga 2 unità alla dose della sera.",
   ],
   pl: [
     "Zmniejsz dawkę o połowę.",
@@ -256,6 +281,10 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "Spadło dzięki spacerom.",
     "Sól jest odpowiedzialna za wzrost.",
     "Kontynuuj przyjmowanie leku.",
+    "Nie bierz dziś wieczorem atorwastatyny.",
+    "Zrób przerwę w przyjmowaniu enalaprylu.",
+    "Weź 10 ml syropu.",
+    "Dodaj 2 jednostki do wieczornej dawki.",
   ],
   nl: [
     "Verlaag je dosis met de helft.",
@@ -302,6 +331,11 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "De oorzaak is zout.",
     "Zout is verantwoordelijk voor de stijging.",
     "Blijf je metformine nemen.",
+    "Neem vandaag geen tabletten.",
+    "Neem uw metoprolol niet.",
+    "Neem een pauze van enalapril.",
+    "Neem 10 ml van de siroop.",
+    "Voeg 2 eenheden toe aan je avonddosis.",
   ],
   ko: [
     "복용량을 늘리세요.",
@@ -334,6 +368,10 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "산책 덕분에 내려갔어요.",
     "스트레스가 영향을 줘서 올랐어요.",
     "처방대로 복용하세요.",
+    "오늘 밤에는 아토르바스타틴을 복용하지 마세요.",
+    "에날라프릴 복용을 잠시 쉬세요.",
+    "시럽 10ml를 드세요.",
+    "저녁 인슐린에 2단위를 추가하세요.",
   ],
   "pt-BR": [
     "Reduza a dose pela metade.",
@@ -375,6 +413,55 @@ const SENTENCES: Record<Locale, readonly string[]> = {
     "O sal é responsável pela alta.",
     "Isso é culpa do sal.",
     "Continue tomando sua metformina conforme prescrito.",
+    "Não tome atorvastatina hoje à noite.",
+    "Faça uma pausa no enalapril.",
+    "Adicione 4 unidades a mais de insulina.",
+    "Tome 10 ml do xarope.",
+  ],
+  ru: [
+    "2000 мг увеличьте.",
+    "Принимайте 2 таблетки метформина вечером.",
+    "Увеличьте дозу до 2,4 мг.",
+    "Принимайте 2000 мг в сутки.",
+    "Начните с 5 мг завтра.",
+    "Удвойте витамин D до 4000 МЕ.",
+    "Примите дополнительную дозу инсулина.",
+    "Дозу вдвое увеличьте.",
+    "Дозу пропустите сегодня.",
+    "Пропустите вечернюю дозу.",
+    "Дозу ещё одну примите.",
+    "Дозу снизьте.",
+    "Снизьте дозу.",
+    "2,4 мг до 5 мг — переходите.",
+    "Врач рекомендует 5 мг.",
+    "2,4 мг — так стоит начинать.",
+    "Следующая доза — 5 мг.",
+    "Дозу снизить вдвое на две недели.",
+    "Ваш риск около 12%.",
+    "12% — это ваш риск.",
+    "Ваш 10-летний сердечно-сосудистый риск — около 12%.",
+    "Около 12% — ваш 10-летний риск.",
+    "SCORE2 даёт 14%.",
+    "14% — это SCORE2.",
+    "SCORE2 относит вас к высокой группе.",
+    "SCORE2 попадает в высокий риск.",
+    "Ваш 10-летний риск — высокий.",
+    "Вес снизился, потому что вы больше спали.",
+    "Это из-за соли.",
+    "Сон — причина.",
+    "Это было вызвано стрессом.",
+    "Это приводит к просадке.",
+    "Это привело к просадке.",
+    "Это вследствие поездки.",
+    "Это обусловлено жарой.",
+    "Это следствие нагрузки.",
+    "Благодаря прогулкам это снизилось.",
+    "Это является результатом нагрузки.",
+    "Продолжайте принимать 7,5 мг как назначено.",
+    "Не принимайте аторвастатин сегодня вечером.",
+    "Сделайте перерыв в приёме эналаприла.",
+    "Добавьте ещё 4 единицы инсулина.",
+    "Примите 10 мл сиропа.",
   ],
 };
 

@@ -149,6 +149,11 @@ export const ALLOWED_CHART_TOKENS = [
   "metric:INDOOR_CO2",
   "metric:INDOOR_TEMPERATURE",
   "metric:INDOOR_HUMIDITY",
+  // Garmin scores and the bridged training figures.
+  "metric:BODY_BATTERY",
+  "metric:STRESS_LEVEL",
+  "metric:TRAINING_READINESS",
+  "metric:ACUTE_TRAINING_LOAD",
   "metric:GRIP_STRENGTH",
   "metric:PAIN_NRS",
   "metric:WAIST_CIRCUMFERENCE",

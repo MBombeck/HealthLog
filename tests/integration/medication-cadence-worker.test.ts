@@ -66,10 +66,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // Side-effects on the create-intake hot path that the one-shot test
 // exercises but doesn't care about — keep them inert so the test
 // stays focused on the schedule-resolution + lifecycle contract.

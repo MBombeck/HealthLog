@@ -26,9 +26,6 @@ import { readCoachReach } from "@/lib/ai/coach/history-reach-read";
 import { UNBOUNDED_REACH } from "@/lib/ai/coach/history-reach";
 import { assembleTurnContext } from "@/lib/ai/coach/turn/context";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => null),
 }));

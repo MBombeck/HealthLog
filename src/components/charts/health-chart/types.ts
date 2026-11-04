@@ -1,3 +1,4 @@
+import type { BpPartOfDay } from "@/lib/analytics/bp-time-of-day";
 import type { ComponentType } from "react";
 
 import type {
@@ -138,6 +139,11 @@ export interface HealthChartProps {
    * anything. Only while drawn in days, never in `mini` mode.
    */
   dayLinks?: boolean;
+  /**
+   * Draw each day from the readings of one part of it only (#1331, the
+   * blood-pressure hours in `bp-time-of-day.ts`). Unset draws the whole day.
+   */
+  partOfDay?: BpPartOfDay;
 }
 
 export interface ChartDataPoint {

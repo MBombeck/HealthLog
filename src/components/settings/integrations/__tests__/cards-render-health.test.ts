@@ -87,10 +87,13 @@ describe("structural guard: cards read health, not the retired fields", () => {
 
   /**
    * `.state` is also the name of `health.state` and of a Google Health sync
-   * run's progress state. Those bases are the allowed readers; any other base
-   * reading `.state` is a ledger state finding its way back onto a card.
+   * run's progress state, and of the Garmin key's expiry state (a server-
+   * resolved fact of its own, not a ledger state). Those bases are the
+   * allowed readers; any other base reading `.state` is a ledger state
+   * finding its way back onto a card.
    */
-  const STATE_READERS = /(^|\.)(health|progress|syncProgress|record)$/;
+  const STATE_READERS =
+    /(^|\.)(health|progress|syncProgress|record|keyExpiry)$/;
 
   const files = [
     ...walkSourceFiles(join(SRC, CARDS), { floor: 15 })

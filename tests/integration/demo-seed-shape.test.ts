@@ -18,13 +18,9 @@
  * day-to-day steps around 1 to 2 mmHg outside the climb and the fall). The
  * peak also has a ceiling: past 148 the chart's padded axis jumps to 50-200.
  */
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 let systolic: number[];
 let diastolic: number[];

@@ -77,11 +77,16 @@ describe("lab CSV import of a value without a unit", () => {
   });
 
   it("refuses a real unit under the marker without one", async () => {
+    // A marker of its own, kept in "1", rather than the one the case above
+    // mints: the cases run in either order.
+    await prisma.biomarker.create({
+      data: { userId: USER, name: "LDL/HDL-Quotient", unit: "1" },
+    });
     const result = await run(
       [
         "Analyt;Wert;Einheit;Datum",
-        "Cholesterin/HDL-Quotient;3,4;mg/dL;02.03.2025",
-        "Cholesterin/HDL-Quotient;3,2;1;03.03.2025",
+        "LDL/HDL-Quotient;3,4;mg/dL;02.03.2025",
+        "LDL/HDL-Quotient;3,2;1;03.03.2025",
       ].join("\n"),
     );
     expect(result.errors).toEqual([

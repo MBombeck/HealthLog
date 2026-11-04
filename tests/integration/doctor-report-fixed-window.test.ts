@@ -17,10 +17,6 @@ import { selectionFromLeaves } from "@/lib/report-selection/selection";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const RANGE = {
   start: new Date("2026-01-01T00:00:00.000Z"),
   end: new Date("2026-03-31T23:59:59.999Z"),

@@ -16,10 +16,6 @@ vi.mock("@/lib/auth/audit", () => ({
 
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // v1.18.0 — the GET alias resolves the module map. Stub it so these
 // tests assert the projection wiring without standing up the gate's
 // own DB round-trips (operator availability + assistant flags + cycle).

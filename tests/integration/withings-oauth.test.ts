@@ -51,10 +51,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const TEST_USER_ID = "user-withings-oauth";
 
 const WITHINGS_TOKEN_URL = "https://wbsapi.withings.net/v2/oauth2";

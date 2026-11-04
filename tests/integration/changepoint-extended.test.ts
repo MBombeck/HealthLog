@@ -4,14 +4,10 @@
  * (`readDayAggregates`); this proves that path finds a step, reports its
  * segment sizes, and leaves a switched-off module's metric unread.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { buildExtendedChangepointSignals } from "@/lib/insights/derived/changepoint";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

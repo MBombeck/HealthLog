@@ -46,10 +46,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const TZ = "Europe/Berlin";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MIN = 60_000;

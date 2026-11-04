@@ -24,9 +24,6 @@ import {
 } from "@/lib/ai/coach/history-reach";
 import type { CoachLabsBlock } from "@/lib/ai/coach/labs-snapshot";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => null),
 }));

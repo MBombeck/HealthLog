@@ -1,5 +1,131 @@
 # Changelog
 
+## [Unreleased]
+
+## [1.47.0] — 2026-11-04
+
+### Added
+
+- **Blood pressure by time of day.** The blood pressure page has a card
+  with the morning, midday and evening averages side by side, each with
+  its count and pulse, and the morning minus evening difference once both
+  have at least three readings. Morning runs 04:00 to 11:59, midday 12:00
+  to 17:59 and evening 18:00 to 03:59 in your time zone, wide on purpose,
+  because home measurement guidance ties the two readings to waking and to
+  bedtime rather than to a clock. A control under it narrows the chart to
+  one part of the day, kept in the URL, and the stat strip names the part
+  while it is narrowed. The server computes the split, so the app can show
+  the same numbers (`GET /api/measurements/blood-pressure/time-of-day`,
+  and `partOfDay` on the daily series). (#1331)
+- **Russian.** HealthLog speaks Russian, its tenth language: the whole
+  interface, the AI output language, the safety screen's Russian bank,
+  Russian month names in the coach's fact check, and the questionnaires
+  with the "show original" switch, marked as not yet validated. (#1322)
+- **A lab reading has its own id over MCP.** `fetch labresult:<id>`
+  returns one reading with the report and visits it came from, and the
+  links on documents and visits now point at the reading that report
+  holds instead of the analyte's latest one. `lab:<analyte>` still answers
+  with the latest reading. (#1323)
+- **The intake history shows where an injection went.** A dose logged
+  with an injection site already stored it, but the per-medication
+  history only showed when it was taken and where the entry came from.
+  Each injected dose now carries a chip with the site next to its status,
+  in the table and on the mobile cards, so the rotation can be read back
+  from the history. Doses without a site look as before.
+- **Garmin, directly.** Garmin Connect now offers a Personal API, and
+  HealthLog reads it: create a key in Garmin Connect (Settings, Personal
+  API), paste it into the new Garmin card, and steps, distance, floors,
+  active calories, resting heart rate, sleep stages and sleep score,
+  overnight SpO₂, breathing rate and HRV, weigh-ins with body composition,
+  activities and logged period days sync every hour, with the whole
+  history filled in behind. Body Battery and Garmin's all-day stress level
+  arrive as types of their own (`BODY_BATTERY`, `STRESS_LEVEL`), never mixed
+  into the computed scores. Garmin keys expire after 30 to 365 days; the
+  card warns a week ahead and asks for a new key when Garmin stops
+  accepting the old one. Accounts on Garmin's China service work too; the
+  key goes only to the service you pick. The key is stored encrypted and
+  only ever sent to Garmin. (#1333)
+- **Training Readiness and acute training load.** The Personal API does
+  not carry them, so they are new types (`TRAINING_READINESS`,
+  `ACUTE_TRAINING_LOAD`) a Home Assistant bridge can push through an ingest
+  token, and they chart on the recovery page next to Body Battery. The Home
+  Assistant guide has the automation. (#1333)
+
+### Changed
+
+- **The image runs on the official Node 22 image (Debian slim) instead of
+  Alpine.** The runtime is glibc now, so the native page renderer,
+  password hashing and the Prisma engine run their glibc builds. The
+  published arm64 image renders PDF pages on a Raspberry Pi 4 again, where
+  the Alpine build of the renderer needs CPU features an ARMv8.0 core
+  lacks. Node security releases now come with the official Node image,
+  which HealthLog pins and moves forward with its releases. The image
+  carries no package manager: npm, npx, corepack and yarn are removed.
+  `pg_dump` and `pg_restore` are PostgreSQL 18.6, the bundled database's
+  version. A few tools the Alpine image happened to carry are gone too:
+  `psql`, `pg_isready`, `pg_dumpall`, `ps`, `top`, `nc`, `unzip` and the
+  full `wget`. HealthLog uses none of them in the app container; run
+  `psql` in the `db` container. A health check that
+  still calls `wget`, from a compose file copied before this release or a
+  platform template, keeps working: the image carries a small `wget` that
+  answers health checks and nothing else. The current `docker-compose.yml`
+  probes with Node directly, and that is the one to switch to. (#1311)
+- **The app connects to the database with less power.** On Postgres 17 or
+  later, with a database user that may create roles (the bundled compose
+  file's user may), the app and the worker now connect as a role of their
+  own that reads and writes rows but cannot change or drop tables, create
+  functions, read server files or create roles. Migrations, the dump
+  before them and restores still run as the owner, and so does the queue
+  schema, which the role may only write rows into. Nothing needs setting:
+  the role is created at start, with a password derived from an existing
+  secret, one per database. Where the role cannot be set up (Postgres 16,
+  a managed database without the right, `DB_APP_ROLE=off`), the app runs
+  as before and says why at start. `docs/self-hosting/database-role.md`
+  has the details.
+
+### Fixed
+
+- **Medication adherence reads faster.** Every rate walked a schedule from
+  the day the medication was created, so it slowed down as a medication
+  aged, about 4 ms per rate after two years. It now starts just before the
+  window it reads, with the same result.
+- **A PDF the server cannot render is read by its text.** On a host
+  without the page renderer (an x86 CPU without AVX2), an AI provider that
+  takes pages as images could not read a PDF at all, and the message asked
+  for a Claude provider without saying why. A PDF with a text layer is now
+  read as text there, and a scan says plainly that this server cannot turn
+  its pages into images. A PDF that fails to render on a capable server is
+  reported as that, not as a provider problem. (#1311)
+- **A marker that started with a text result takes the unit of its first
+  number.** A marker created from "see note" had an empty unit that locked
+  once it held a reading, so the first number, a unitless ratio included,
+  was refused. While a marker holds only text readings, its first number
+  now sets the unit. (#1313)
+- **The AI safety screen catches more medication instructions.** A
+  negated take ("don't take your metoprolol tonight"), a pause, an extra
+  amount without a target ("add 4 more units of insulin") and a liquid
+  dose of a syrup or solution are now held back in all ten languages,
+  while advice such as drinking water or taking a break from screens
+  passes. A Dutch reminder not to stop a medication without a doctor was
+  held back before and passes now.
+- **Least-squares fits keep r² within 0 to 1.** Values far from zero with
+  little spread could give an r² a hair above 1.
+
+### Thanks
+
+- @FloMaetschke for the injection site in the intake history (#1330).
+- @l1137l for the Russian translation, the Russian safety bank and the
+  patience through two reviews (#1322).
+- @johnnyrepo026 for finding the text-first marker that refused its first
+  number (#1313).
+- @mbreitkreuz for testing the MCP links down to two reports on one day
+  (#1323).
+- @Oguz3003 for staying with the Raspberry Pi 4 until it reads PDFs
+  (#1311).
+- @mills1975 for asking how blood pressure differs over the day (#1331).
+- @kruemelro for asking for a direct Garmin connection on Garmin's new
+  Personal API (#1333).
+
 ## [1.46.6] — 2026-11-02
 
 ### Added

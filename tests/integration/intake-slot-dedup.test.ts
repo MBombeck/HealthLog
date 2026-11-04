@@ -17,7 +17,7 @@
  *   4. taken > skipped tie-break keeps the taken row.
  *   5. Boot discovery only matches users that actually hold duplicates.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
@@ -33,10 +33,6 @@ import { localHmAsUtc } from "@/lib/tz/local-day";
 
 const TEST_USER_ID = "user-intake-slot-dedup";
 const OTHER_USER_ID = "user-intake-slot-dedup-clean";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 beforeEach(async () => {
   const prisma = getPrismaClient();

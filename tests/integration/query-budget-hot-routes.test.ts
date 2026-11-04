@@ -54,10 +54,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const USER_ID = "user-query-budget";
 const DAY_MS = 86_400_000;
 
@@ -428,15 +424,35 @@ describe("statement budgets on the hot routes (real Postgres)", () => {
         externalId: `budget-hr-${i}`,
       };
     });
-    const m = await countStatements(async () => {
-      const res = await (POST as unknown as Handler)(
+    const post = (body: unknown) =>
+      (POST as unknown as Handler)(
         new NextRequest("http://localhost/api/measurements/batch", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ entries }),
+          body: JSON.stringify(body),
         }),
         { params: Promise.resolve({}) },
       );
+    // One reading a month earlier first, as the reads warm up: it fills the
+    // process-level caches a running server holds, which this case would
+    // otherwise pay for whenever it runs before the reads do.
+    const warmAt = daysAgo(30).toISOString();
+    const warm = await post({
+      entries: [
+        {
+          hkIdentifier: "HKQuantityTypeIdentifierHeartRate",
+          value: 60,
+          unit: "count/min",
+          startDate: warmAt,
+          endDate: warmAt,
+          externalId: "budget-hr-warm",
+        },
+      ],
+    });
+    expect(warm.status, "batch warm-up").toBe(200);
+    await evictUserCaches();
+    const m = await countStatements(async () => {
+      const res = await post({ entries });
       return {
         status: res.status,
         body: (await res.json()) as { data: { inserted: number } },

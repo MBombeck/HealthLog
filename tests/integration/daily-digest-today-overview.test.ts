@@ -9,7 +9,7 @@
  * AI provider is the subject on purpose: the overview has to be whole
  * without one.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { loadDailyDigest } from "@/lib/daily/load-digest";
@@ -18,10 +18,6 @@ import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
 import { PRIORITY_ITEM_KINDS } from "@/lib/daily/priority-item";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const TZ = "Europe/Berlin";
 const DAY = 24 * 60 * 60 * 1000;

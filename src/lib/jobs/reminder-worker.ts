@@ -11,6 +11,7 @@
  * Usage: Run as a standalone process or call startReminderWorker() from a
  * custom server setup. In dev, use: npx tsx src/lib/jobs/reminder-worker.ts
  */
+import { prisma } from "@/lib/db";
 import { markWorkerStarted, recordError } from "@/lib/jobs/worker-status";
 import { createWorkerBoss, setGlobalBoss } from "@/lib/jobs/boss-instance";
 import { reportJobsCutOffAtBoot } from "@/lib/jobs/job-observer";
@@ -47,7 +48,17 @@ export async function startReminderWorker() {
     return;
   }
 
-  const boss = createWorkerBoss(DATABASE_URL);
+  // Under the restricted database role the boot installed and migrated the
+  // queue schema as its owner, and the role owns nothing there; pg-boss then
+  // only reads and writes rows. A connection that owns the schema, or a fresh
+  // database without one, lets pg-boss install and migrate it itself.
+  const [{ owned }] = await prisma.$queryRaw<{ owned: boolean | null }[]>`
+    SELECT pg_has_role(current_user, n.nspowner, 'USAGE') AS owned
+      FROM (SELECT 1) one
+      LEFT JOIN pg_namespace n ON n.nspname = 'pgboss'`;
+  const boss = createWorkerBoss(DATABASE_URL, {
+    ownsQueueSchema: owned !== false,
+  });
 
   boss.on("error", (error: unknown) => {
     workerLog("error", "boss emitted error", error);

@@ -129,6 +129,10 @@ const METRIC_LABEL_KEYS: Record<SourcePriorityMetricKey, string> = {
   stress: "settings.sections.sources.metrics.stress",
   // v1.25.0 — native-vs-computed sleep-debt ladder.
   sleepDebt: "settings.sections.sources.metrics.sleepDebt",
+  bodyBattery: "settings.sections.sources.metrics.bodyBattery",
+  stressLevel: "settings.sections.sources.metrics.stressLevel",
+  trainingReadiness: "settings.sections.sources.metrics.trainingReadiness",
+  acuteTrainingLoad: "settings.sections.sources.metrics.acuteTrainingLoad",
 };
 
 const DEVICE_TYPE_LABEL_KEYS: Record<DeviceType, string> = {

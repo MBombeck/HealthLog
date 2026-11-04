@@ -18,9 +18,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 // The gate resolver runs for real; only its data sources are stubbed, so the
 // module state is driven the way production drives it.
 vi.mock("@/lib/db", () => ({

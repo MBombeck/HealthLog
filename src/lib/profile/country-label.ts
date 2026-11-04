@@ -18,6 +18,7 @@ const NAMES: Readonly<Record<string, Readonly<Record<SourceCountry, string>>>> =
     nl: { DE: "Duitsland", KR: "Zuid-Korea", US: "Verenigde Staten" },
     ko: { DE: "독일", KR: "대한민국", US: "미국" },
     "pt-BR": { DE: "Alemanha", KR: "Coreia do Sul", US: "Estados Unidos" },
+    ru: { DE: "Германия", KR: "Южная Корея", US: "США" },
   };
 
 export function countryLabel(

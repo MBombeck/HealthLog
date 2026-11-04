@@ -224,10 +224,11 @@ describe("release container inputs", () => {
     const dockerfile = readRepoFile("Dockerfile");
     const fromLines = dockerfile.match(/^FROM node:[^\n]+$/gm) ?? [];
 
-    expect(fromLines).toHaveLength(3);
+    // deps, builder, the prisma-cli install and the runner.
+    expect(fromLines).toHaveLength(4);
     expect(new Set(fromLines.map((line) => line.split(" AS ")[0]))).toEqual(
       new Set([
-        "FROM node:22-alpine@sha256:16e22a550f3863206a3f701448c45f7912c6896a62de43add43bb9c86130c3e2",
+        "FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f",
       ]),
     );
   });
@@ -243,8 +244,14 @@ describe("release container inputs", () => {
     expect(
       dockerfile.match(/corepack prepare pnpm@11\.15\.1 --activate/g),
     ).toHaveLength(2);
+    // The Prisma CLI is installed in its own stage and copied over; the
+    // runner removes the base image's package managers and fails the build
+    // if any is left (runtime-package-pins holds the rest).
     expect(dockerfile).toContain(
-      "rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack /root/.cache/node/corepack",
+      "COPY --from=prisma-cli /opt/prisma-cli /opt/prisma-cli",
+    );
+    expect(dockerfile).toContain(
+      "sh -c '! command -v npm && ! command -v npx && ! command -v corepack && ! command -v yarn && ! command -v pnpm'",
     );
     expect(dockerfile).toContain("tsx@4.23.1");
     expect(dockerfile).toContain(

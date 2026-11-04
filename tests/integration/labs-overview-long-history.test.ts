@@ -38,10 +38,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 /** Days before now, so the fixture never ages out of its own windows. */
 const daysAgo = (days: number) => new Date(Date.now() - days * DAY_MS);
 

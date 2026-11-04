@@ -55,10 +55,6 @@ vi.mock("@/lib/recovery/database-dump-health", () => ({
   readDatabaseBackupHealth: async () => null,
 }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 import { getPrismaClient, truncateAllTables } from "./setup";
 
 const ADMIN_ID = "user-readiness-admin";

@@ -44,10 +44,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 import { _resetCryptoCacheForTests, getKeyFingerprint } from "@/lib/crypto";
 import { offhostKeyId } from "@/lib/jobs/offhost-key";
 import type { RecoveryKit } from "@/lib/recovery/kit-rules";

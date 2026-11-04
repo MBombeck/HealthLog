@@ -10,15 +10,11 @@
  * holds every Withings and Apple Health row against the type maps those
  * integrations ingest through.
  */
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { APPLE_HEALTH_TYPE_MAP } from "@/lib/measurements/apple-health-mapping";
 import { MEASURE_TYPE_MAP } from "@/lib/withings/client";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const WITHINGS_TYPES = new Set(
   Object.values(MEASURE_TYPE_MAP).map((m) => m.type),

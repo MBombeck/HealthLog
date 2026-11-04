@@ -18,7 +18,7 @@
  * Means are compared to nine significant digits: the tier sums the same day
  * values in a different order. Extremes are compared exactly.
  */
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { Prisma, type MeasurementType } from "@/generated/prisma/client";
@@ -246,6 +246,12 @@ beforeAll(async () => {
 }, 300_000);
 
 describe("readAllTimeExtremes over the DAY tier", () => {
+  // A clean tier over whatever rows are left for every case: some cases
+  // break a tier row on purpose, and the next case must not read it.
+  beforeEach(async () => {
+    await recomputeUserRollups(USER, { granularities: ["DAY"] });
+  }, 120_000);
+
   it("reads the tier for every type", async () => {
     const covered = await prisma.measurementRollup.groupBy({
       by: ["type"],

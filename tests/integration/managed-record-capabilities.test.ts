@@ -49,10 +49,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 import { delegatedDomains } from "@/lib/sharing/domain-write-support";
 import type { ShareDomain } from "@/lib/sharing/scope";
 

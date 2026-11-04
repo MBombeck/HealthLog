@@ -27,6 +27,11 @@ vi.mock("@/lib/labs/ocr-upload", () => ({
 }));
 vi.mock("@/lib/documents/rasterize-pdf", () => ({
   rasterizePdf: vi.fn(),
+  RASTER_MAX_PAGES: 10,
+}));
+vi.mock("@/lib/documents/pdf-text-layer", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/documents/pdf-text-layer")>()),
+  readPdfTextLayer: vi.fn(),
 }));
 vi.mock("@/lib/documents/describe", () => ({
   transcribeDocument: vi.fn().mockResolvedValue({ text: "glucose 90" }),
@@ -62,6 +67,7 @@ import { runContentIndexBackfillForUser } from "../document-content-index-backfi
 import { prisma } from "@/lib/db";
 import { detectOcrMimeType } from "@/lib/labs/ocr-upload";
 import { rasterizePdf } from "@/lib/documents/rasterize-pdf";
+import { readPdfTextLayer } from "@/lib/documents/pdf-text-layer";
 import { transcribeDocument } from "@/lib/documents/describe";
 import { resolveDocumentVisionProvider } from "@/lib/documents/provider-order";
 import { AiUnavailableError } from "@/lib/ai/capabilities/refusal";
@@ -331,9 +337,7 @@ describe("runContentIndexBackfillForUser", () => {
     vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue([
       { id: "pdf-1" },
     ] as never);
-    vi.mocked(detectOcrMimeType).mockReturnValueOnce(
-      "application/pdf" as never,
-    );
+    vi.mocked(detectOcrMimeType).mockReturnValueOnce("application/pdf");
     vi.mocked(rasterizePdf).mockResolvedValue({
       ok: true,
       images: [{ mediaType: "image/png", dataBase64: "cGFnZQ==" }],
@@ -374,9 +378,7 @@ describe("runContentIndexBackfillForUser", () => {
     vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue([
       { id: "pdf-1" },
     ] as never);
-    vi.mocked(detectOcrMimeType).mockReturnValueOnce(
-      "application/pdf" as never,
-    );
+    vi.mocked(detectOcrMimeType).mockReturnValueOnce("application/pdf");
     vi.mocked(rasterizePdf).mockResolvedValue({ ok: false } as never);
 
     const result = await runContentIndexBackfillForUser("user-1");
@@ -390,6 +392,55 @@ describe("runContentIndexBackfillForUser", () => {
       failed: 0,
       reason: "ok",
     });
+  });
+
+  it("indexes the text layer of a PDF this server cannot render, without a provider call (#1311)", async () => {
+    vi.mocked(resolveDocumentVisionProvider).mockResolvedValue({
+      chain: [{ providerType: "codex", instance: {} }],
+      withheld: null,
+      pick: {
+        entry: { providerType: "codex", instance: {} },
+        providerType: "codex",
+        pdfSupported: false,
+      },
+    } as never);
+    vi.mocked(prisma.inboundDocument.findMany).mockResolvedValue([
+      { id: "pdf-1" },
+    ] as never);
+    vi.mocked(detectOcrMimeType).mockReturnValueOnce("application/pdf");
+    vi.mocked(rasterizePdf).mockResolvedValue({
+      ok: false,
+      reason: "unsupported",
+    });
+    vi.mocked(readPdfTextLayer).mockResolvedValue({
+      ok: true,
+      layer: {
+        pageCount: 1,
+        pagesRead: 1,
+        pages: [{ page: 1, text: "Haemoglobin 14.2 g/dl 13.5 - 17.5" }],
+        pagesWithoutText: [],
+      },
+    });
+
+    const result = await runContentIndexBackfillForUser("user-1");
+    expect(transcribeDocument).not.toHaveBeenCalled();
+    expect(upsertContentIndex).toHaveBeenCalledWith(
+      expect.objectContaining({
+        documentId: "pdf-1",
+        text: "Haemoglobin 14.2 g/dl 13.5 - 17.5",
+        source: "local-pdf",
+        providerType: null,
+      }),
+    );
+    // The index reads every page the local index would, not the render cap.
+    expect(readPdfTextLayer).toHaveBeenCalledWith(
+      expect.anything(),
+      200,
+      expect.any(String),
+    );
+    // The reservation went back: nothing was sent.
+    expect(vi.mocked(reconcileSpend).mock.calls.at(-1)![2]).toBe(0);
+    expect(result).toMatchObject({ indexed: 1, skipped: 0, failed: 0 });
   });
 
   it("stops when the daily budget is reached (resumable)", async () => {

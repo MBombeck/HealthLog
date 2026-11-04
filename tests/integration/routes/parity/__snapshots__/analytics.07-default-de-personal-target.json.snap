@@ -1137,6 +1137,62 @@
           "slope30": null,
           "avg30LastMonth": null,
           "avg30LastYear": null
+        },
+        "BODY_BATTERY": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "STRESS_LEVEL": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "TRAINING_READINESS": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
+        },
+        "ACUTE_TRAINING_LOAD": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
         }
       },
       "bmi": 25.9,
@@ -2089,7 +2145,11 @@
         "AFIB_BURDEN": null,
         "INDOOR_CO2": null,
         "INDOOR_TEMPERATURE": null,
-        "INDOOR_HUMIDITY": null
+        "INDOOR_HUMIDITY": null,
+        "BODY_BATTERY": null,
+        "STRESS_LEVEL": null,
+        "TRAINING_READINESS": null,
+        "ACUTE_TRAINING_LOAD": null
       }
     },
     "error": null

@@ -157,6 +157,9 @@ export function defineRequestClockCases(expectedZone: string): void {
     });
 
     it("cuts every window of the live aggregate on the request's clock", async () => {
+      // The live path is the one without a tier; drop whatever the rollup
+      // case built if it ran first.
+      await prisma.measurementRollup.deleteMany({ where: { userId } });
       await expectWindows("live");
     });
 

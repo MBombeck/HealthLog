@@ -8,14 +8,10 @@
  * Exercises the widened measurement `type: { in: [...] }` filter and the
  * structured-tag join end-to-end against Postgres.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { fetchMoodAggregates } from "@/lib/insights/mood-aggregates";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const TEST_USER_ID = "user-crosstab";
 const dayMs = 24 * 60 * 60 * 1000;

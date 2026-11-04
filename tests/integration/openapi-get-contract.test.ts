@@ -77,10 +77,6 @@ vi.mock("@/lib/jobs/worker-status", async (importOriginal) => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // No request leaves the process. An operation that needs the network to
 // answer belongs in NOT_CALLED with that reason; one that merely tries and
 // copes with the failure is checked on the path it takes when it cannot.

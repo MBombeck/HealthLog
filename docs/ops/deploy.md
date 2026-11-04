@@ -140,6 +140,25 @@ An INVALID index whose migration is already recorded applied is not touched at
 boot. The boot names it on stderr with `WARNING — index … is INVALID`; rebuild
 it with `REINDEX INDEX CONCURRENTLY "<index>";` when the database is quiet.
 
+### The app's database role
+
+The steps above run as the owner `DATABASE_URL` names: the dump, the
+migrations and, after them, the job queue's own install or migration and the
+setup of `healthlog_app_<database>_<hash>`, the role the app then connects as
+([database-role.md](../self-hosting/database-role.md)). Neither the app nor
+its queue ever runs a migration. A migration that creates a table needs
+nothing more: the setup grants the role every table it lacks before the app
+starts.
+
+The queue schema `pgboss` stays the owner's. When an update brings a newer
+pg-boss with a schema migration, the start runs it as the owner, including
+its index builds, before the app starts; on a large queue that start takes as
+long as the builds. Stop the old container (and a separate worker) before the
+new one starts, as for any update with migrations. A web container and a
+worker container that start together wait for each other on an advisory lock
+and derive the same password. Going back to 1.46 runs as the owner, as 1.46
+always did, and finds nothing in the queue schema it did not create.
+
 ### v1.46.0 notes
 
 - **Postgres 18.** The compose file moves the bundled database from

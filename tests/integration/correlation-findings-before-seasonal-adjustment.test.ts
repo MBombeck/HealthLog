@@ -7,7 +7,7 @@
  * (`AppSettings.correlationSeasonalEngineSince`), which the first discovery
  * sync of the new engine stamps before it writes, not by a calendar date.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import {
@@ -21,10 +21,6 @@ import {
   buildProfileBackupSection,
   restoreProfileData,
 } from "@/lib/export/profile-backup";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MARKER = new Date("2026-10-08T00:00:00.000Z");

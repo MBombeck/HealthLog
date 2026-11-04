@@ -1,6 +1,9 @@
 /** Outbound-screen banks for German, composed by `../../outbound-screen.ts`. */
 import {
   DOSE_UNIT,
+  DRUG_UNIT,
+  LIQUID_UNIT,
+  SPELLED_COUNT,
   UNIT_END,
   objectSlot,
   TARGET,
@@ -36,6 +39,23 @@ const DE_DOSE_OBJECT =
 
 /** A German count in front of a medication noun ("eine Tablette mehr"). */
 const DE_COUNT = "ein(?:e|en)?|zwei|drei|vier|halbe|\\d+(?:[.,]\\d+)?";
+
+/** The German intake imperatives a hold, an increment or a liquid dose uses. */
+const DE_TAKE =
+  "(?:nimm|nehmen\\s+sie|spritz|spritzen\\s+sie|injizier(?:e)?|injizieren\\s+sie)";
+
+/**
+ * The object of a negated intake. A protective qualifier ends it, so "nimm
+ * keine doppelte Dosis", "keine zusätzliche Tablette" and "nimm die halbe
+ * Dosis nicht" stay warnings.
+ */
+const DE_HOLD_SLOT = objectSlot(
+  `${DE_STOP}|als|zu|mit|für|gegen|statt|ohne|über|auf|doppelt\\w*|zusätzlich\\w*|extra|weitere\\w*|halbe\\w*|hälfte|zweite\\w*|mehr|zwei|andere\\w*`,
+  4,
+);
+
+/** A liquid drug form a measured volume may be a dose of; juice is not one. */
+const DE_LIQUID = `(?<![${LETTER}])(?:husten|fieber|schmerz)?saft(?:e?s)?(?![${LETTER}])|[${LETTER}]*(?:sirup|lösung|suspension|tinktur|tropfen|elixier)[${LETTER}]*`;
 
 const SPELLED_DE =
   "(?:null|eins?|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|elf|zwölf|dreizehn|vierzehn|fünfzehn|sechzehn|siebzehn|achtzehn|neunzehn|zwanzig|dreißig|vierzig|fünfzig|sechzig|siebzig|achtzig|neunzig)";
@@ -145,6 +165,40 @@ export const bank: LocaleBank = {
         `\\b(?:erhöh(?:e|en)?|steiger(?:e|n)?|reduzier(?:e|en)?|senk(?:e|en)?|verringer(?:e|n)?)(?:\\s+sie)?\\s+${DE_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:jetzt|heute|morgen|etwas|leicht|langsam|schrittweise|ab\\s+sofort|für|bis)\\b)`,
         "i",
       ),
+    ),
+    // A negated intake is a hold: "Nehmen Sie kein Atorvastatin", "nimm heute
+    // keine Tabletten", "nimm dein Metoprolol heute nicht". A protective
+    // qualifier or an interaction ("keine Tabletten mit Grapefruitsaft")
+    // keeps it a warning.
+    new RegExp(
+      `\\b${DE_TAKE}\\s+${objectSlot(DE_STOP, 3)}kein(?:e|en|er|es)?\\s+${DE_HOLD_SLOT}${med}(?![${LETTER}])(?!\\s+(?:doppelt|zusätzlich|extra|auf|gleichzeitig|zusammen|mit|ohne|zu|zur|zum|als|gegen)(?![${LETTER}]))`,
+      "i",
+    ),
+    new RegExp(
+      `\\b${DE_TAKE}\\s+${DE_HOLD_SLOT}${med}\\s+(?:(?:heute|morgen|abends?|früh|vorerst|zunächst|erst\\s*mal|diese\\s+woche)\\s+){0,3}nicht(?:\\s+mehr)?(?:\\s+ein)?(?=\\s*(?:[.!;),]|$)|\\s+(?:und|oder|bis|vor|ab)\\s)`,
+      "i",
+    ),
+    // A pause: "Mach eine Pause mit dem Enalapril", "legen Sie eine Pause bei
+    // Ihrem Ramipril ein", "setzen Sie das Ramipril für ein paar Tage aus".
+    new RegExp(
+      `\\b(?:mach(?:e|en\\s+sie)?|leg(?:e|en\\s+sie)?|gönn(?:e|en\\s+sie)?)\\s+(?:(?:dir|sich)\\s+)?(?:eine|ein)\\s+(?:[^\\s\\d.?!,;:]+\\s+)?(?:pause|einnahmepause|auszeit)\\s+(?:mit|bei|von|vom|beim|in)\\s+(?:(?:der\\s+)?einnahme\\s+(?:von\\s+)?)?${DE_SHORT}${med}`,
+      "i",
+    ),
+    new RegExp(
+      `\\bsetz(?:e|en)?(?:\\s+sie)?\\s+${DE_SLOT}${med}(?:(?!\\b(?:nicht|nie|niemals)\\b)[^.?!]){0,30}?\\saus(?=\\s*(?:[.!?,;:]|$))`,
+      "i",
+    ),
+    // An increment: "Geben Sie 2 zusätzliche Einheiten dazu", "gib noch 2
+    // Einheiten". The amount carries a drug unit.
+    new RegExp(
+      `\\b(?:gib|geben\\s+sie|${DE_TAKE})\\s+(?:(?:dir|sich)\\s+)?${DE_SHORT}(?:noch\\s+)?(?:[\\d.,]+|${SPELLED_COUNT})\\s*(?:(?:zusätzlich\\w*|weitere\\w*|extra)\\s+)?${DRUG_UNIT}${UNIT_END}`,
+      "i",
+    ),
+    // A measured volume of a liquid drug form: "Nehmen Sie 10 ml Hustensaft".
+    // "Trinken Sie 500 ml Wasser" and orange juice pass.
+    new RegExp(
+      `\\b(?:nimm|nehmen\\s+sie|gib|geben\\s+sie)\\s+(?:(?:dir|sich)\\s+)?${DE_SHORT}[\\d.,]+\\s*${LIQUID_UNIT}${UNIT_END}\\s+${DE_SHORT}(?:${DE_LIQUID}|${med})`,
+      "i",
     ),
   ],
   dose: [

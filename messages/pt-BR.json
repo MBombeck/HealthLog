@@ -969,7 +969,12 @@
     "durationMinutesOnly": "{minutes} min",
     "durationInvalid": "Insira uma duração como 7,5, 7:30 ou 7h 30m.",
     "durationTooLong": "Uma entrada não pode durar mais de 24 horas.",
-    "sourceHealthConnect": "Health Connect"
+    "sourceHealthConnect": "Health Connect",
+    "typeBodyBattery": "Body Battery",
+    "typeStressLevel": "Nível de estresse",
+    "typeTrainingReadiness": "Prontidão para treinar",
+    "typeAcuteTrainingLoad": "Carga de treino aguda",
+    "sourceGarmin": "Garmin"
   },
   "metricCatalog": {
     "title": "O que o HealthLog pode acompanhar",
@@ -1895,6 +1900,7 @@
     "intakeHistoryColScheduled": "Programada",
     "intakeHistoryColStatus": "Status",
     "intakeHistoryColSource": "Fonte",
+    "intakeHistoryInjectionSite": "Local da injeção: {site}",
     "intakeHistoryStatusTaken": "Tomada",
     "intakeHistoryStatusSkipped": "Pulada",
     "intakeHistorySortByTaken": "Ordenar por horário da tomada",
@@ -4758,7 +4764,8 @@
       "unitScore": "pontuação",
       "unitMinutes": "min",
       "unitBpm": "bpm",
-      "unitKj": "kJ"
+      "unitKj": "kJ",
+      "unitLoad": "carga"
     },
     "sleepQuality": {
       "title": "Qualidade do sono",
@@ -4780,7 +4787,11 @@
         "cardioLoadExplainer": "Um proxy de carga de treino que acompanha a carga cardiovascular aguda que você acumulou. Compare com os seus próprios dias recentes.",
         "averageHeartRateExplainer": "Sua frequência cardíaca média ao longo do dia ou ciclo inteiro, conforme relatado pelo seu wearable.",
         "maxHeartRateExplainer": "Seu pico de frequência cardíaca ao longo do dia ou ciclo inteiro, conforme relatado pelo seu wearable.",
-        "energyExpenditureKjExplainer": "A energia que seu corpo gastou ao longo do dia, em quilojoules, como seu dispositivo a reporta nativamente."
+        "energyExpenditureKjExplainer": "A energia que seu corpo gastou ao longo do dia, em quilojoules, como seu dispositivo a reporta nativamente.",
+        "bodyBatteryExplainer": "Sua reserva de energia na escala de 0 a 100 da Garmin, a carga mais alta do dia. Descanso e sono a recarregam, estresse e atividade a consomem.",
+        "trainingReadinessExplainer": "O quanto seu corpo está pronto para um treino pesado, na escala de 0 a 100 da Garmin. O valor chega por uma ponte que você configurou, pois a Garmin não o compartilha diretamente.",
+        "stressLevelExplainer": "O nível médio de estresse do dia segundo a Garmin, numa escala de 0 a 100, lido da variabilidade da sua frequência cardíaca. Mais baixo é mais calmo.",
+        "acuteTrainingLoadExplainer": "A carga de treino aguda da Garmin: a carga ponderada das suas atividades dos últimos sete dias. Chega por uma ponte que você configurou. Compare com as suas próprias semanas recentes."
       },
       "loadError": "Não foi possível carregar as suas leituras de recuperação."
     },
@@ -4971,6 +4982,40 @@
       "emptyDescription": "Nenhuma pontuação foi registrada nesta faixa ainda.",
       "usualRange": "Sombreado: sua faixa habitual, {lo} a {hi}.",
       "seam": "A linha quebra onde o que conta para a pontuação mudou."
+    },
+    "bpTimeOfDay": {
+      "title": "Por período do dia",
+      "description": "Sua pressão arterial média em cada período do dia, no intervalo do gráfico.",
+      "part": {
+        "morning": "Manhã",
+        "midday": "Tarde",
+        "evening": "Noite"
+      },
+      "filterAll": "Dia todo",
+      "filterLabel": "Mostrar no gráfico",
+      "readingsOne": "{count} medição",
+      "readingsFew": "{count} medições",
+      "readingsOther": "{count} medições",
+      "notEnough": "Poucas medições",
+      "pulse": "Pulso {value} bpm",
+      "difference": "Manhã menos noite: {systolic}/{diastolic} mmHg.",
+      "differencePending": "Manhã e noite são comparadas quando cada uma tiver pelo menos {min} medições.",
+      "hours": "Manhã {morning}, tarde {midday}, noite {evening}, no seu fuso horário.",
+      "hourRange": "{start}–{end}",
+      "emptyTitle": "Nenhuma medição completa neste intervalo",
+      "emptyDescription": "Medições com valor sistólico e diastólico aparecem aqui.",
+      "error": "Não foi possível carregar as médias por período do dia.",
+      "chartTitle": {
+        "morning": "Pressão arterial pela manhã",
+        "midday": "Pressão arterial à tarde",
+        "evening": "Pressão arterial à noite"
+      },
+      "statsLabel": "{series}, {part}",
+      "statsPart": {
+        "morning": "pela manhã",
+        "midday": "ao meio-dia",
+        "evening": "à noite"
+      }
     }
   },
   "thresholds": {
@@ -5653,7 +5698,11 @@
           "recovery": "Recuperação",
           "stress": "Estresse",
           "sleepDebt": "Déficit de sono",
-          "hrvRmssd": "VFC (RMSSD)"
+          "hrvRmssd": "VFC (RMSSD)",
+          "bodyBattery": "Body Battery",
+          "stressLevel": "Nível de estresse",
+          "trainingReadiness": "Prontidão para treinar",
+          "acuteTrainingLoad": "Carga de treino aguda"
         },
         "sourceLabels": {
           "WITHINGS": "Withings",
@@ -5671,7 +5720,8 @@
           "GOOGLE_HEALTH": "Google Health",
           "STRAVA": "Strava",
           "EXTERNAL": "Dispositivo externo",
-          "HEALTH_CONNECT": "Health Connect"
+          "HEALTH_CONNECT": "Health Connect",
+          "GARMIN": "Garmin"
         },
         "deviceLabels": {
           "watch": "Relógio",
@@ -7465,11 +7515,6 @@
         "lastEnteredHere": "Último registro feito aqui {relative}"
       }
     },
-    "garminInfo": {
-      "title": "Garmin",
-      "body": "O Garmin não tem conexão direta aqui. Conecte pelo Apple Health (iOS) ou pelo Google Health Connect (Android). As pontuações próprias da Garmin (Body Battery, Training Load, HRV Status, VO₂ máx.) não são compartilhadas pela Garmin com nenhuma das duas plataformas.",
-      "docsLink": "Ler o guia"
-    },
     "glucoseReference": {
       "title": "Faixa de referência da glicose",
       "description": "Com qual faixa as suas leituras de glicose são comparadas.",
@@ -7669,7 +7714,58 @@
     "deleteAccountConfirmDescriptionGrace": "Você sai da sessão e sua conta é bloqueada na hora. Depois de {days} dias, ela é apagada de vez, com todos os dados de saúde, chaves de acesso, sessões e registros de auditoria. Até lá, um administrador deste servidor pode desfazer a exclusão. As cópias nos backups deste servidor expiram depois do período de retenção.",
     "deleteAccountScheduled": "Sua conta está bloqueada e será apagada em {date}. Saindo da sessão.",
     "dangerZoneSuccessGrace": "Seu registro de saúde foi excluído. Um administrador deste servidor pode restaurá-lo até {date}.",
-    "dangerZoneRestoreLimits": "O acesso também termina: o que você compartilha com outras pessoas, o que elas compartilham com você e qualquer papel de guardião. Uma restauração traz o registro de volta como está agora. O que for adicionado depois da exclusão é substituído, e conexões de integração, compartilhamentos, papéis de guardião e links de compartilhamento não voltam; precisam ser configurados de novo."
+    "dangerZoneRestoreLimits": "O acesso também termina: o que você compartilha com outras pessoas, o que elas compartilham com você e qualquer papel de guardião. Uma restauração traz o registro de volta como está agora. O que for adicionado depois da exclusão é substituído, e conexões de integração, compartilhamentos, papéis de guardião e links de compartilhamento não voltam; precisam ser configurados de novo.",
+    "garmin": "Garmin",
+    "garminTag": "Personal API",
+    "garminDescription": "Cole uma chave da Garmin Personal API para sincronizar sono, VFC, Body Battery, estresse, passos, peso e atividades do Garmin Connect.",
+    "garminSync": "Sincronizar agora",
+    "garminSyncResult": "{count} registros sincronizados",
+    "garminSyncFailed": "Falha na sincronização",
+    "garminViewData": "Ver sua recuperação",
+    "garminReplaceKey": "Substituir chave",
+    "garminDisconnect": "Desconectar",
+    "garminDisconnectTitle": "Desconectar a Garmin?",
+    "garminDisconnectDescription": "As próximas sincronizações param e a chave é removida deste servidor. Os dados já importados continuam no seu histórico. A chave continua válida na Garmin até você revogá-la lá.",
+    "garminKeyValidUntil": "Chave válida até {date}",
+    "garminKeyExpired": "Sua chave Garmin expirou em {date}. Crie uma nova chave no Garmin Connect e cole-a aqui para retomar a sincronização.",
+    "garminKeyExpiresToday": "Sua chave Garmin expira hoje. Crie uma nova chave no Garmin Connect e cole-a aqui para a sincronização não parar.",
+    "garminKeyExpiring": "Sua chave Garmin expira em {date}. Antes disso, crie uma nova chave no Garmin Connect e cole-a aqui.",
+    "garminKeyExpiryUnknown": "A Garmin não informa quando esta chave expira. Substitua a chave e escolha a validade definida no Garmin Connect, e este cartão avisará você com uma semana de antecedência.",
+    "garminConnected": "Garmin conectada. A primeira sincronização está a caminho.",
+    "garminKeyHowTo": "No Garmin Connect, abra Configurações, depois Personal API, e crie uma chave. A Garmin mostra a chave só uma vez, então copie-a na hora.",
+    "garminKeySettingsLink": "Abrir o Garmin Connect",
+    "garminApiKey": "Chave da Personal API",
+    "garminApiKeyPlaceholder": "Cole a chave",
+    "garminApiKeySavedPlaceholder": "Salva. Cole uma nova chave para substituí-la",
+    "garminKeyValidity": "Validade escolhida",
+    "garminKeyValidityUnknown": "Não sei",
+    "garminKeyValidityDays": "{count} dias",
+    "garminKeyValidityHelp": "A Garmin não informa quando uma chave expira. Com a validade, este cartão avisa você uma semana antes de a chave parar de funcionar.",
+    "garminConnect": "Conectar",
+    "garminUpdate": "Salvar alterações",
+    "garminRegion": "Serviço Garmin",
+    "garminRegionGlobal": "Garmin Connect (global)",
+    "garminRegionChina": "Garmin Connect China",
+    "garminErrors": {
+      "keyRefused": "A Garmin não aceitou esta chave. Verifique se ela foi copiada inteira, pertence ao serviço escolhido e não expirou nem foi revogada.",
+      "rateLimited": "A Garmin está limitando as solicitações agora. Tente de novo em alguns minutos.",
+      "unreachable": "Não foi possível alcançar a Garmin. Tente de novo em alguns minutos.",
+      "invalid": "Essa chave não parece correta. Cole-a de novo, sem espaços.",
+      "generic": "Não deu certo. Tente de novo."
+    },
+    "garminKeyValidityMenu": "Validade da chave",
+    "garminValiditySaved": "Validade salva.",
+    "garminKeyCreatedOn": "Criada em",
+    "garminKeyCreatedOnHelp": "O dia em que você criou a chave no Garmin Connect. Deixe vazio para contar a partir do dia em que a conectou aqui.",
+    "garminUnavailable": "A Garmin não fornece estes dados para sua conta: {list}.",
+    "garminResource": {
+      "daily": "resumos diários",
+      "activities": "atividades",
+      "sleep": "sono",
+      "hrv": "VFC",
+      "weight": "pesagens",
+      "cycle": "ciclo menstrual"
+    }
   },
   "admin": {
     "title": "Administração",
@@ -10393,7 +10489,7 @@
       "fileTooLarge": "O arquivo é grande demais (máx. 12 MB).",
       "fileType": "Envie um JPEG, PNG, WebP ou PDF.",
       "extractFailed": "Não foi possível ler o laudo. Tente uma foto mais nítida.",
-      "pdfNeedsAnthropic": "A digitalização de PDF precisa de um provedor de visão Claude; envie uma foto em vez disso.",
+      "pdfRendererUnavailable": "O processador deste servidor não consegue renderizar páginas de PDF, então um laudo digitalizado só pode ser lido por um provedor de IA que aceite arquivos PDF diretamente. Envie uma foto em vez disso.",
       "refTextLabel": "Faixa como impressa",
       "refTextPlaceholder": "ex.: 3,5 - 5,0",
       "aiUnavailable": "Digitalizar um laudo com IA não está disponível aqui agora.",
@@ -11960,7 +12056,7 @@
           "decrypt-error": "O arquivo armazenado não pôde ser aberto para leitura.",
           "raster-failed": "As páginas do PDF não puderam ser renderizadas para leitura. Formatos de compressão de fax digitalizado são uma causa conhecida.",
           "provider-error": "O provedor de IA não conseguiu ler este documento na última tentativa.",
-          "pdf-needs-anthropic": "O provedor de IA configurado não consegue ler arquivos PDF. Um provedor Claude ou OCR local consegue.",
+          "pdf-needs-anthropic": "O processador deste servidor não consegue renderizar páginas de PDF e este PDF não tem camada de texto. Um provedor de IA que aceite arquivos PDF diretamente consegue ler, ou envie fotos das páginas.",
           "empty-transcription": "O provedor de IA não retornou texto para este documento.",
           "resource-limit": "Este PDF é grande ou complexo demais para ser lido aqui. O arquivo em si está bem e continua abrindo."
         }
@@ -12043,7 +12139,7 @@
       "errorRateLimitedWaitFew": "O limite horário de leitura por IA foi atingido. Tente novamente em cerca de {count} minutos.",
       "errorRateLimitedWaitOther": "O limite horário de leitura por IA foi atingido. Tente novamente em cerca de {count} minutos.",
       "errorBudget": "Seu orçamento de IA para hoje foi esgotado.",
-      "errorPdfNeedsVision": "Digitalizar PDFs precisa de um provedor de visão Claude.",
+      "errorPdfRendererUnavailable": "O processador deste servidor não consegue renderizar páginas de PDF, então um PDF digitalizado só pode ser lido por um provedor de IA que aceite arquivos PDF diretamente, ou como fotos das páginas.",
       "errorFileType": "Este tipo de arquivo não pode ser lido.",
       "errorNotIndexed": "Leia o documento primeiro, depois extraia.",
       "errorOutputLimit": "O provedor de IA atingiu o limite de saída antes de devolver um único valor. Tente um modelo que permita respostas mais longas.",

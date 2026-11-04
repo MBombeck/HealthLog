@@ -211,27 +211,32 @@ async function readersOfD1(method: PulseDayMeanMethod) {
   };
 }
 
-describe("every reader follows the active method", () => {
-  it("weighs every hour alike under hour_mean_v1", async () => {
-    const seen = await readersOfD1("hour_mean_v1");
-    for (const [reader, value] of Object.entries(seen)) {
-      expect(value, reader).toBeCloseTo(V1, 6);
-    }
+// One instance through the cases in order: the readers, the dry run, the
+// rebuild after apply (which reads the dry run's record) and the large
+// account last, whose rows every earlier count leaves out. The order holds
+// under a shuffled run.
+describe("the pulse day-mean method, one instance", { shuffle: false }, () => {
+  describe("every reader follows the active method", () => {
+    it("weighs every hour alike under hour_mean_v1", async () => {
+      const seen = await readersOfD1("hour_mean_v1");
+      for (const [reader, value] of Object.entries(seen)) {
+        expect(value, reader).toBeCloseTo(V1, 6);
+      }
+    });
+
+    it("weighs the lone reading's hour a third under weighted_hour_mean_v2", async () => {
+      const seen = await readersOfD1("weighted_hour_mean_v2");
+      for (const [reader, value] of Object.entries(seen)) {
+        expect(value, reader).toBeCloseTo(V2, 6);
+      }
+      expect(Number(V2.toFixed(1))).toBe(60.9);
+      setActivePulseDayMeanMethod("hour_mean_v1");
+    });
   });
 
-  it("weighs the lone reading's hour a third under weighted_hour_mean_v2", async () => {
-    const seen = await readersOfD1("weighted_hour_mean_v2");
-    for (const [reader, value] of Object.entries(seen)) {
-      expect(value, reader).toBeCloseTo(V2, 6);
-    }
-    expect(Number(V2.toFixed(1))).toBe(60.9);
-    setActivePulseDayMeanMethod("hour_mean_v1");
-  });
-});
-
-/** Every table except the settings row, as one digest per table. */
-async function snapshotTables(): Promise<Record<string, string>> {
-  const tables = await prisma.$queryRaw<Array<{ name: string }>>`
+  /** Every table except the settings row, as one digest per table. */
+  async function snapshotTables(): Promise<Record<string, string>> {
+    const tables = await prisma.$queryRaw<Array<{ name: string }>>`
     SELECT table_name AS name
     FROM information_schema.tables
     WHERE table_schema = 'public'
@@ -239,147 +244,147 @@ async function snapshotTables(): Promise<Record<string, string>> {
       AND table_name NOT IN ('app_settings', '_prisma_migrations')
     ORDER BY table_name
   `;
-  const out: Record<string, string> = {};
-  for (const { name } of tables) {
-    if (!/^[a-z0-9_]+$/.test(name)) throw new Error(`table name ${name}`);
-    const [r] = await prisma.$queryRawUnsafe<Array<{ n: number; d: string }>>(
-      `SELECT count(*)::int AS n,
+    const out: Record<string, string> = {};
+    for (const { name } of tables) {
+      if (!/^[a-z0-9_]+$/.test(name)) throw new Error(`table name ${name}`);
+      const [r] = await prisma.$queryRawUnsafe<Array<{ n: number; d: string }>>(
+        `SELECT count(*)::int AS n,
               coalesce(md5(string_agg(t::text, '|' ORDER BY t::text)), '') AS d
        FROM "${name}" t`,
-    );
-    out[name] = `${r.n}:${r.d}`;
+      );
+      out[name] = `${r.n}:${r.d}`;
+    }
+    return out;
   }
-  return out;
-}
 
-/** The settings row without the dry-run column. */
-async function settingsWithoutDryRun() {
-  const [r] = await prisma.$queryRaw<Array<{ j: Record<string, unknown> }>>`
+  /** The settings row without the dry-run column. */
+  async function settingsWithoutDryRun() {
+    const [r] = await prisma.$queryRaw<Array<{ j: Record<string, unknown> }>>`
     SELECT to_jsonb(s) - 'pulse_day_mean_dry_run_json' - 'updated_at' AS j
     FROM app_settings s WHERE s.id = 'singleton'
   `;
-  return r.j;
-}
+    return r.j;
+  }
 
-describe("the dry run", () => {
-  it("writes its result and nothing else", async () => {
-    const tablesBefore = await snapshotTables();
-    const settingsBefore = await settingsWithoutDryRun();
-    expect(tablesBefore.measurement_rollups).not.toMatch(/^0:/);
+  describe("the dry run", () => {
+    it("writes its result and nothing else", async () => {
+      const tablesBefore = await snapshotTables();
+      const settingsBefore = await settingsWithoutDryRun();
+      expect(tablesBefore.measurement_rollups).not.toMatch(/^0:/);
 
-    const outcome = await handlePulseDayMean(job("dry_run"));
-    expect(outcome.ok).toBe(true);
+      const outcome = await handlePulseDayMean(job("dry_run"));
+      expect(outcome.ok).toBe(true);
 
-    expect(await snapshotTables()).toEqual(tablesBefore);
-    expect(await settingsWithoutDryRun()).toEqual(settingsBefore);
+      expect(await snapshotTables()).toEqual(tablesBefore);
+      expect(await settingsWithoutDryRun()).toEqual(settingsBefore);
 
-    const stored = await prisma.appSettings.findUniqueOrThrow({
-      where: { id: "singleton" },
-    });
-    const run = pulseDayMeanStoredRunsSchema.parse(
-      stored.pulseDayMeanDryRunJson,
-    );
-    expect(run.status).toBe("done");
-    expect(run.finishedAt).not.toBeNull();
-    expect(run.result).toEqual({
-      accounts: 2,
-      daysCompared: 3,
-      daysChangedOver1Bpm: 2,
-      maxChangeBpm: 10,
-      distribution: [
-        { bucket: "0-1", days: 1 },
-        { bucket: "1-2", days: 1 },
-        { bucket: "2-5", days: 0 },
-        { bucket: "5+", days: 1 },
-      ],
-      perAccount: [
-        { account: "#1", days: 2, changedOver1Bpm: 1 },
-        { account: "#2", days: 1, changedOver1Bpm: 1 },
-      ],
-    });
-    // No account id leaves the job.
-    expect(JSON.stringify(stored.pulseDayMeanDryRunJson)).not.toContain(A);
-    expect(stored.pulseDayMeanMethod).toBe("hour_mean_v1");
-  });
-});
-
-describe("the rebuild after apply", () => {
-  const dayMean = async (userId: string, day: number) =>
-    (
-      await readCanonicalRollupBuckets({
-        userId,
-        type: "PULSE",
-        granularity: "DAY",
-        from: new Date(day),
-        to: new Date(day),
-        toInclusive: true,
-      })
-    )[0]?.mean;
-
-  it("rewrites the PULSE rollups under the stored method", async () => {
-    expect(await dayMean(A, D1)).toBeCloseTo(V1, 6);
-    expect(await dayMean(B, D1)).toBeCloseTo(80, 6);
-
-    await prisma.appSettings.update({
-      where: { id: "singleton" },
-      data: { pulseDayMeanMethod: "weighted_hour_mean_v2" },
-    });
-    const outcome = await handlePulseDayMean(job("rebuild"));
-    expect(outcome.ok).toBe(true);
-    // The rebuild is on the record beside the dry run, with what it did.
-    const { readPulseDayMeanStatus } =
-      await import("@/lib/jobs/pulse-day-mean");
-    const status = await readPulseDayMeanStatus();
-    expect(status.lastRebuild).toMatchObject({ status: "done" });
-    expect(status.lastRebuild?.accounts).toBeGreaterThan(0);
-    expect(status.lastDryRun?.status).toBe("done");
-
-    expect(await dayMean(A, D1)).toBeCloseTo(V2, 6);
-    expect(await dayMean(A, D2)).toBeCloseTo(70, 6);
-    expect(await dayMean(B, D1)).toBeCloseTo(70, 6);
-
-    await prisma.appSettings.update({
-      where: { id: "singleton" },
-      data: { pulseDayMeanMethod: "hour_mean_v1" },
+      const stored = await prisma.appSettings.findUniqueOrThrow({
+        where: { id: "singleton" },
+      });
+      const run = pulseDayMeanStoredRunsSchema.parse(
+        stored.pulseDayMeanDryRunJson,
+      );
+      expect(run.status).toBe("done");
+      expect(run.finishedAt).not.toBeNull();
+      expect(run.result).toEqual({
+        accounts: 2,
+        daysCompared: 3,
+        daysChangedOver1Bpm: 2,
+        maxChangeBpm: 10,
+        distribution: [
+          { bucket: "0-1", days: 1 },
+          { bucket: "1-2", days: 1 },
+          { bucket: "2-5", days: 0 },
+          { bucket: "5+", days: 1 },
+        ],
+        perAccount: [
+          { account: "#1", days: 2, changedOver1Bpm: 1 },
+          { account: "#2", days: 1, changedOver1Bpm: 1 },
+        ],
+      });
+      // No account id leaves the job.
+      expect(JSON.stringify(stored.pulseDayMeanDryRunJson)).not.toContain(A);
+      expect(stored.pulseDayMeanMethod).toBe("hour_mean_v1");
     });
   });
-});
 
-describe("a large account under the production heap", () => {
-  const BIG = "pulse-method-big";
-  const YEARS = 2;
-  /** The production container's heap ceiling. */
-  const PROD_HEAP_MB = 524;
-  /**
-   * The seed's transactions run past Prisma's 5 s default under a loaded
-   * host: a month took at most 0.55 s on a quiet machine and 9.9 s at a load
-   * average near 95, which expired the transaction. The bound is the
-   * fixture's, not the code's under test.
-   */
-  const SEED_TRANSACTION = { maxWait: 30_000, timeout: 120_000 };
+  describe("the rebuild after apply", () => {
+    const dayMean = async (userId: string, day: number) =>
+      (
+        await readCanonicalRollupBuckets({
+          userId,
+          type: "PULSE",
+          granularity: "DAY",
+          from: new Date(day),
+          to: new Date(day),
+          toInclusive: true,
+        })
+      )[0]?.mean;
 
-  beforeAll(async () => {
-    await prisma.user.create({
-      data: { id: BIG, username: BIG, timezone: "UTC" },
+    it("rewrites the PULSE rollups under the stored method", async () => {
+      expect(await dayMean(A, D1)).toBeCloseTo(V1, 6);
+      expect(await dayMean(B, D1)).toBeCloseTo(80, 6);
+
+      await prisma.appSettings.update({
+        where: { id: "singleton" },
+        data: { pulseDayMeanMethod: "weighted_hour_mean_v2" },
+      });
+      const outcome = await handlePulseDayMean(job("rebuild"));
+      expect(outcome.ok).toBe(true);
+      // The rebuild is on the record beside the dry run, with what it did.
+      const { readPulseDayMeanStatus } =
+        await import("@/lib/jobs/pulse-day-mean");
+      const status = await readPulseDayMeanStatus();
+      expect(status.lastRebuild).toMatchObject({ status: "done" });
+      expect(status.lastRebuild?.accounts).toBeGreaterThan(0);
+      expect(status.lastDryRun?.status).toBe("done");
+
+      expect(await dayMean(A, D1)).toBeCloseTo(V2, 6);
+      expect(await dayMean(A, D2)).toBeCloseTo(70, 6);
+      expect(await dayMean(B, D1)).toBeCloseTo(70, 6);
+
+      await prisma.appSettings.update({
+        where: { id: "singleton" },
+        data: { pulseDayMeanMethod: "hour_mean_v1" },
+      });
     });
-    // One reading a minute for two years, about a million rows, and every
-    // seventh hour holding a single reading so the two methods disagree.
-    //
-    // Written a month at a time, each month in its own transaction with the
-    // statement timeout lifted for that transaction only and a transaction
-    // timeout sized for a loaded host (`SEED_TRANSACTION`): as one statement
-    // the million-row insert outran the timeout on CI's shared Postgres, and
-    // both timeouts guard the code under test, not this fixture.
-    const end = new Date();
-    end.setUTCHours(0, 0, 0, 0);
-    const start = new Date(end.getTime() - YEARS * 365 * DAY);
-    const CHUNK = 30 * DAY;
-    for (let from = start.getTime(); from < end.getTime(); from += CHUNK) {
-      const chunkFrom = new Date(from);
-      const chunkTo = new Date(Math.min(from + CHUNK, end.getTime()));
-      await prisma.$transaction(async (tx) => {
-        await tx.$executeRaw`SET LOCAL statement_timeout = 0`;
-        await tx.$executeRaw`
+  });
+
+  describe("a large account under the production heap", () => {
+    const BIG = "pulse-method-big";
+    const YEARS = 2;
+    /** The production container's heap ceiling. */
+    const PROD_HEAP_MB = 524;
+    /**
+     * The seed's transactions run past Prisma's 5 s default under a loaded
+     * host: a month took at most 0.55 s on a quiet machine and 9.9 s at a load
+     * average near 95, which expired the transaction. The bound is the
+     * fixture's, not the code's under test.
+     */
+    const SEED_TRANSACTION = { maxWait: 30_000, timeout: 120_000 };
+
+    beforeAll(async () => {
+      await prisma.user.create({
+        data: { id: BIG, username: BIG, timezone: "UTC" },
+      });
+      // One reading a minute for two years, about a million rows, and every
+      // seventh hour holding a single reading so the two methods disagree.
+      //
+      // Written a month at a time, each month in its own transaction with the
+      // statement timeout lifted for that transaction only and a transaction
+      // timeout sized for a loaded host (`SEED_TRANSACTION`): as one statement
+      // the million-row insert outran the timeout on CI's shared Postgres, and
+      // both timeouts guard the code under test, not this fixture.
+      const end = new Date();
+      end.setUTCHours(0, 0, 0, 0);
+      const start = new Date(end.getTime() - YEARS * 365 * DAY);
+      const CHUNK = 30 * DAY;
+      for (let from = start.getTime(); from < end.getTime(); from += CHUNK) {
+        const chunkFrom = new Date(from);
+        const chunkTo = new Date(Math.min(from + CHUNK, end.getTime()));
+        await prisma.$transaction(async (tx) => {
+          await tx.$executeRaw`SET LOCAL statement_timeout = 0`;
+          await tx.$executeRaw`
           INSERT INTO measurements (id, user_id, type, unit, source, value, measured_at, created_at, updated_at)
           SELECT 'big-' || (extract(epoch FROM ts)::bigint / 60)::text, ${BIG}, 'PULSE', 'bpm', 'APPLE_HEALTH',
                  60 + ((extract(epoch FROM ts)::bigint / 60) % 40),
@@ -391,60 +396,63 @@ describe("a large account under the production heap", () => {
                ) AS s(ts)
           WHERE extract(hour FROM ts)::int % 7 <> 3 OR extract(minute FROM ts)::int = 0
         `;
+        }, SEED_TRANSACTION);
+      }
+      await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SET LOCAL statement_timeout = 0`;
+        await tx.$executeRaw`ANALYZE measurements`;
       }, SEED_TRANSACTION);
-    }
-    await prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SET LOCAL statement_timeout = 0`;
-      await tx.$executeRaw`ANALYZE measurements`;
-    }, SEED_TRANSACTION);
-  }, 600_000);
+    }, 600_000);
 
-  async function peakHeapMb(work: () => Promise<unknown>) {
-    const base = process.memoryUsage().heapUsed;
-    let peak = base;
-    const timer = setInterval(() => {
+    async function peakHeapMb(work: () => Promise<unknown>) {
+      const base = process.memoryUsage().heapUsed;
+      let peak = base;
+      const timer = setInterval(() => {
+        peak = Math.max(peak, process.memoryUsage().heapUsed);
+      }, 25);
+      try {
+        await work();
+      } finally {
+        clearInterval(timer);
+      }
       peak = Math.max(peak, process.memoryUsage().heapUsed);
-    }, 25);
-    try {
-      await work();
-    } finally {
-      clearInterval(timer);
+      return {
+        grewMb: (peak - base) / 1_048_576,
+        peakMb: peak / 1_048_576,
+      };
     }
-    peak = Math.max(peak, process.memoryUsage().heapUsed);
-    return {
-      grewMb: (peak - base) / 1_048_576,
-      peakMb: peak / 1_048_576,
-    };
-  }
 
-  it("stays flat through the dry run and the rebuild", async () => {
-    const rows = await prisma.measurement.count({ where: { userId: BIG } });
-    expect(rows).toBeGreaterThan(900_000);
+    it("stays flat through the dry run and the rebuild", async () => {
+      const rows = await prisma.measurement.count({ where: { userId: BIG } });
+      expect(rows).toBeGreaterThan(900_000);
 
-    const dry = await peakHeapMb(() => computePulseDayMeanDryRun());
-    await prisma.appSettings.update({
-      where: { id: "singleton" },
-      data: { pulseDayMeanMethod: "weighted_hour_mean_v2" },
-    });
-    const rebuild = await peakHeapMb(() => handlePulseDayMean(job("rebuild")));
-    process.stderr.write(
-      `[pulse-day-mean heap] rows=${rows} dryRun grew=${dry.grewMb.toFixed(1)} MB peak=${dry.peakMb.toFixed(1)} MB; rebuild grew=${rebuild.grewMb.toFixed(1)} MB peak=${rebuild.peakMb.toFixed(1)} MB\n`,
-    );
-    // A window's aggregate rows, never the readings: a few MB at most. The
-    // bound leaves room for the test runner's own churn and is still a small
-    // slice of the production ceiling.
-    expect(dry.grewMb).toBeLessThan(64);
-    expect(rebuild.grewMb).toBeLessThan(64);
-    expect(dry.grewMb).toBeLessThan(PROD_HEAP_MB / 8);
+      const dry = await peakHeapMb(() => computePulseDayMeanDryRun());
+      await prisma.appSettings.update({
+        where: { id: "singleton" },
+        data: { pulseDayMeanMethod: "weighted_hour_mean_v2" },
+      });
+      const rebuild = await peakHeapMb(() =>
+        handlePulseDayMean(job("rebuild")),
+      );
+      process.stderr.write(
+        `[pulse-day-mean heap] rows=${rows} dryRun grew=${dry.grewMb.toFixed(1)} MB peak=${dry.peakMb.toFixed(1)} MB; rebuild grew=${rebuild.grewMb.toFixed(1)} MB peak=${rebuild.peakMb.toFixed(1)} MB\n`,
+      );
+      // A window's aggregate rows, never the readings: a few MB at most. The
+      // bound leaves room for the test runner's own churn and is still a small
+      // slice of the production ceiling.
+      expect(dry.grewMb).toBeLessThan(64);
+      expect(rebuild.grewMb).toBeLessThan(64);
+      expect(dry.grewMb).toBeLessThan(PROD_HEAP_MB / 8);
 
-    const days = await readCanonicalRollupBuckets({
-      userId: BIG,
-      type: "PULSE",
-      granularity: "DAY",
-      from: new Date(Date.now() - 400 * DAY),
-      to: new Date(),
-      toInclusive: true,
-    });
-    expect(days.length).toBeGreaterThan(300);
-  }, 900_000);
+      const days = await readCanonicalRollupBuckets({
+        userId: BIG,
+        type: "PULSE",
+        granularity: "DAY",
+        from: new Date(Date.now() - 400 * DAY),
+        to: new Date(),
+        toInclusive: true,
+      });
+      expect(days.length).toBeGreaterThan(300);
+    }, 900_000);
+  });
 });

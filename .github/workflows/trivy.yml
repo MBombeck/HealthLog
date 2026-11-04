@@ -6,7 +6,7 @@ name: Trivy Scheduled Scan
 #   - `security.yml` → `dependency-audit` runs `pnpm audit --prod` on every
 #     push to `main` and once a day, blocking on HIGH/CRITICAL.
 #   - `security.yml` → `docker-security` builds the image on a push to `main`
-#     and runs `trivy image` against it, blocking on HIGH/CRITICAL.
+#     and runs `trivy image` against it, blocking on HIGH/CRITICAL with a fix.
 #
 # Both are change-triggered, and both answer "is this change safe". Neither
 # answers "is what we shipped last week still safe", because an advisory
@@ -162,3 +162,6 @@ jobs:
           format: table
           severity: "CRITICAL"
           exit-code: "1"
+          # Same rule as the blocking gate in security.yml: a finding with a
+          # published fix fails, one without is in the SARIF report above.
+          ignore-unfixed: true

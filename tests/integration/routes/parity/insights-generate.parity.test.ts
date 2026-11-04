@@ -635,380 +635,394 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("GET /api/insights/generate parity", () => {
-  it("G01 an anonymous call", async () => {
-    await get("G01-anonymous", { auth: anonymous });
-  });
-
-  it("G02 the AI analysis opt-out", async () => {
-    await get("G02-opted-out", { auth: optedOut, userId: OPTED_OUT_ID });
-  });
-
-  it("G03 no cached briefing", async () => {
-    await resetBriefing(OWNER_ID);
-    await get("G03-empty");
-  });
-
-  it("G04 a briefing written today", async () => {
-    await resetBriefing(OWNER_ID, {
-      text: cached(GROUNDED_BRIEFING, new Date(NOW.getTime() - HOUR)),
-      cachedAt: new Date(NOW.getTime() - HOUR),
-      cachedLocale: "en",
+// One walk: each request sees what the earlier ones stored, so the cases
+// keep their order even when a run shuffles (`shuffle: false`).
+describe("insights-generate parity walk", { shuffle: false }, () => {
+  describe("GET /api/insights/generate parity", () => {
+    it("G01 an anonymous call", async () => {
+      await get("G01-anonymous", { auth: anonymous });
     });
-    await get("G04-fresh");
-  });
 
-  it("G05 a briefing written yesterday", async () => {
-    await resetBriefing(OWNER_ID, {
-      text: cached(GROUNDED_BRIEFING, new Date(NOW.getTime() - 20 * HOUR)),
-      cachedAt: new Date(NOW.getTime() - 2 * HOUR),
-      cachedLocale: "en",
+    it("G02 the AI analysis opt-out", async () => {
+      await get("G02-opted-out", { auth: optedOut, userId: OPTED_OUT_ID });
     });
-    await get("G05-stale");
-  });
 
-  it("G06 a briefing in another language", async () => {
-    await resetBriefing(OWNER_ID, {
-      text: cached(GROUNDED_BRIEFING, new Date(NOW.getTime() - HOUR)),
-      cachedAt: new Date(NOW.getTime() - HOUR),
-      cachedLocale: "de",
-    });
-    await get("G06-other-language");
-  });
-
-  it("G07 an unparseable cache row", async () => {
-    await resetBriefing(OWNER_ID, {
-      text: "{not json",
-      cachedAt: new Date(NOW.getTime() - HOUR),
-    });
-    await get("G07-unparseable");
-  });
-
-  it("G08 a legacy payload, untagged", async () => {
-    await resetBriefing(OWNER_ID, {
-      text: { summary: "Legacy", recommendations: ["Drink water."] },
-      cachedAt: new Date(NOW.getTime() - HOUR),
-    });
-    await get("G08-legacy");
-  });
-
-  it("G09 a failure newer than the last good briefing", async () => {
-    await resetBriefing(OWNER_ID, {
-      text: cached(GROUNDED_BRIEFING, new Date(NOW.getTime() - 3 * HOUR)),
-      cachedAt: new Date(NOW.getTime() - 3 * HOUR),
-      cachedLocale: "en",
-      markers: [
-        {
-          reason: "all-providers-failed",
-          at: new Date(NOW.getTime() - HOUR),
-          httpStatus: 429,
-        },
-      ],
-    });
-    await get("G09-held-after-failure");
-  });
-
-  it("G10 a failure with no good briefing, and an older superseded one", async () => {
-    await resetBriefing(OWNER_ID, {
-      markers: [
-        { reason: "provider-error", at: new Date(NOW.getTime() - 5 * HOUR) },
-        { reason: "invalid-json", at: new Date(NOW.getTime() - HOUR) },
-      ],
-    });
-    await get("G10-failed-empty");
-  });
-
-  it("G11 a briefing the grounding gate withheld", async () => {
-    await resetBriefing(OWNER_ID, {
-      text: cached(null, new Date(NOW.getTime() - 2 * HOUR)),
-      cachedAt: new Date(NOW.getTime() - 2 * HOUR),
-      cachedLocale: "en",
-      markers: [
-        { reason: "briefing-ungrounded", at: new Date(NOW.getTime() - HOUR) },
-      ],
-    });
-    await get("G11-withheld");
-  });
-});
-
-describe("POST /api/insights/generate parity", () => {
-  it("P01 an anonymous call", async () => {
-    await post("P01-anonymous", { force: true }, { auth: anonymous });
-  });
-
-  it("P02 the AI analysis opt-out", async () => {
-    await post(
-      "P02-opted-out",
-      { force: true },
-      { auth: optedOut, userId: OPTED_OUT_ID },
-    );
-  });
-
-  it("P03 a body over the cap", async () => {
-    await resetBriefing(OWNER_ID);
-    await post("P03-body-too-large", { pad: "x".repeat(17 * 1024) });
-  });
-
-  it("P04 a cached briefing written today", async () => {
-    await resetBriefing(OWNER_ID, {
-      text: cached(GROUNDED_BRIEFING, new Date(NOW.getTime() - HOUR)),
-      cachedAt: new Date(NOW.getTime() - HOUR),
-      cachedLocale: "en",
-    });
-    await post("P04-cache-hit", {});
-  });
-
-  it("P05 a cached briefing from yesterday, regenerated", async () => {
-    await resetBriefing(OWNER_ID, {
-      text: cached(GROUNDED_BRIEFING, new Date(NOW.getTime() - 20 * HOUR)),
-      cachedAt: new Date(NOW.getTime() - 2 * HOUR),
-      cachedLocale: "en",
-    });
-    seams.script.push({ content: reply(GROUNDED_BRIEFING) });
-    await post("P05-yesterday-regenerated", {});
-  });
-
-  it("P06 a cache in another language, regenerated", async () => {
-    await resetBriefing(OWNER_ID, {
-      text: cached(GROUNDED_BRIEFING, new Date(NOW.getTime() - HOUR)),
-      cachedAt: new Date(NOW.getTime() - HOUR),
-      cachedLocale: "de",
-    });
-    seams.script.push({ content: reply(GROUNDED_BRIEFING) });
-    await post("P06-other-language-regenerated", {});
-  });
-
-  it("P07 a briefingless cache when the hour's quota is spent", async () => {
-    await resetBriefing(OWNER_ID, {
-      text: cached(null, new Date(NOW.getTime() - HOUR)),
-      cachedAt: new Date(NOW.getTime() - HOUR),
-      cachedLocale: "en",
-      quotaUsed: 10,
-    });
-    await post("P07-quota-cached-fallback", {});
-  });
-
-  it("P08 a forced generation when the hour's quota is spent", async () => {
-    await resetBriefing(OWNER_ID, { quotaUsed: 10 });
-    await post("P08-quota-refused");
-  });
-
-  it("P09 a key no resolver can open", async () => {
-    await resetBriefing(UNREADABLE_KEY_ID);
-    await post(
-      "P09-unreadable-key",
-      { force: true },
-      { auth: unreadableKey, userId: UNREADABLE_KEY_ID },
-    );
-  });
-
-  it("P10 a fresh generation", async () => {
-    await resetBriefing(OWNER_ID);
-    seams.script.push({ content: reply(GROUNDED_BRIEFING), tokensUsed: 2100 });
-    await post("P10-generated");
-  });
-
-  it("P11 a reply the strict schema accepts", async () => {
-    await resetBriefing(OWNER_ID);
-    seams.script.push({
-      content: reply(GROUNDED_BRIEFING, { disclaimer: "Consult your doctor." }),
-    });
-    await post("P11-strict-reply");
-  });
-
-  it("P12 a generation in German with the comparison, about-me and short form", async () => {
-    await prisma.user.update({
-      where: { id: OWNER_ID },
-      data: {
-        locale: "de",
-        aiUsageLevel: "FRUGAL",
-        dashboardWidgetsJson: { comparisonBaseline: "lastMonth" },
-      },
-    });
-    await prisma.allergy.create({
-      data: { userId: OWNER_ID, substance: "Penicillin" },
-    });
-    await resetBriefing(OWNER_ID);
-    seams.script.push({ content: reply(GROUNDED_BRIEFING) });
-    await post("P12-generated-de-short");
-    await prisma.allergy.deleteMany({ where: { userId: OWNER_ID } });
-    await prisma.user.update({
-      where: { id: OWNER_ID },
-      data: { locale: "en", aiUsageLevel: null, dashboardWidgetsJson: {} },
-    });
-  });
-
-  it("P13 an oversized raw payload, downgraded once", async () => {
-    await prisma.user.update({
-      where: { id: OWNER_ID },
-      data: { insightsPrivacyMode: "raw" },
-    });
-    await resetBriefing(OWNER_ID);
-    seams.oversize.push(6_100_000);
-    seams.script.push({ content: reply(GROUNDED_BRIEFING) });
-    await post("P13-downgraded");
-  });
-
-  it("P14 an oversized aggregate too, downgraded twice", async () => {
-    await resetBriefing(OWNER_ID);
-    seams.oversize.push(6_100_000, 5_400_000);
-    seams.script.push({ content: reply(GROUNDED_BRIEFING) });
-    await post("P14-hard-downgraded");
-  });
-
-  it("P15 oversized on every rung", async () => {
-    await resetBriefing(OWNER_ID);
-    seams.oversize.push(6_100_000, 5_400_000, 5_200_000);
-    await post("P15-too-large");
-    await prisma.user.update({
-      where: { id: OWNER_ID },
-      data: { insightsPrivacyMode: "aggregated" },
-    });
-  });
-
-  it("P16 the day's token ceiling", async () => {
-    await resetBriefing(OWNER_ID, { spentToday: 5_000_000 });
-    await post("P16-budget-exceeded");
-  });
-
-  it("P17 every provider refused the credential", async () => {
-    await resetBriefing(OWNER_ID);
-    seams.script.push({
-      error: () => new AllProvidersFailedError([hop(401), hop(403, 2)]),
-    });
-    await post("P17-chain-auth");
-  });
-
-  it("P18 every provider rate-limited", async () => {
-    await resetBriefing(OWNER_ID);
-    seams.script.push({ error: () => new AllProvidersFailedError([hop(429)]) });
-    await post("P18-chain-rate-limited");
-  });
-
-  it("P19 a provider in a 5xx", async () => {
-    await resetBriefing(OWNER_ID);
-    seams.script.push({
-      error: () => new AllProvidersFailedError([hop(401), hop(502, 2)]),
-    });
-    await post("P19-chain-5xx");
-  });
-
-  it("P20 every provider unreachable", async () => {
-    await resetBriefing(OWNER_ID);
-    seams.script.push({
-      error: () => new AllProvidersFailedError([hop(null), hop(null, 2)]),
-    });
-    await post("P20-chain-transport");
-  });
-
-  it("P21 a mixed chain failure", async () => {
-    await resetBriefing(OWNER_ID);
-    seams.script.push({
-      error: () => new AllProvidersFailedError([hop(404), hop(429, 2)]),
-    });
-    await post("P21-chain-mixed");
-  });
-
-  it("P22 one provider error per status class", async () => {
-    for (const status of [401, 429, 500, 400]) {
+    it("G03 no cached briefing", async () => {
       await resetBriefing(OWNER_ID);
-      seams.script.push({ error: providerError(status) });
-      await post(`P22-provider-${status}`);
-    }
-  });
-
-  it("P23 a reply that is not JSON", async () => {
-    await resetBriefing(OWNER_ID);
-    seams.script.push({ content: "Sure! Here is your briefing." });
-    await post("P23-invalid-json");
-  });
-
-  it("P24 a reply cut off at the token ceiling", async () => {
-    await resetBriefing(OWNER_ID);
-    seams.script.push({ content: '{"summary": "Your', finishReason: "length" });
-    await post("P24-truncated");
-  });
-
-  it("P25 an ungrounded briefing the retry fixes", async () => {
-    await resetBriefing(OWNER_ID);
-    seams.script.push(
-      { content: reply(UNGROUNDED_BRIEFING) },
-      { content: reply(GROUNDED_BRIEFING), tokensUsed: 900 },
-    );
-    await post("P25-grounding-retry-kept");
-  });
-
-  it("P26 still ungrounded, the previous briefing stands in", async () => {
-    await resetBriefing(OWNER_ID, {
-      text: cached(PREVIOUS_BRIEFING, new Date(NOW.getTime() - 26 * HOUR)),
-      cachedAt: new Date(NOW.getTime() - 26 * HOUR),
-      cachedLocale: "en",
+      await get("G03-empty");
     });
-    seams.script.push(
-      { content: reply(UNGROUNDED_BRIEFING) },
-      { content: reply(UNGROUNDED_BRIEFING) },
-    );
-    await post("P26-grounding-previous");
-  });
 
-  it("P27 still ungrounded, nothing to stand in", async () => {
-    await resetBriefing(OWNER_ID);
-    seams.script.push(
-      { content: reply(UNGROUNDED_BRIEFING) },
-      { content: reply(UNGROUNDED_BRIEFING) },
-    );
-    await post("P27-grounding-stripped");
-  });
-
-  it("P28 an ungrounded briefing whose retry is not JSON", async () => {
-    await resetBriefing(OWNER_ID);
-    seams.script.push(
-      { content: reply(UNGROUNDED_BRIEFING) },
-      { content: "not json" },
-    );
-    await post("P28-grounding-retry-unparseable");
-  });
-
-  it("P29 a reply the outbound screen blocks", async () => {
-    await resetBriefing(OWNER_ID);
-    seams.script.push({
-      content: reply(GROUNDED_BRIEFING, {
-        summary:
-          "Your 10-year cardiovascular risk is elevated — consider stepping your dose up.",
-      }),
+    it("G04 a briefing written today", async () => {
+      await resetBriefing(OWNER_ID, {
+        text: cached(GROUNDED_BRIEFING, new Date(NOW.getTime() - HOUR)),
+        cachedAt: new Date(NOW.getTime() - HOUR),
+        cachedLocale: "en",
+      });
+      await get("G04-fresh");
     });
-    await post("P29-outbound-screened", { force: true });
+
+    it("G05 a briefing written yesterday", async () => {
+      await resetBriefing(OWNER_ID, {
+        text: cached(GROUNDED_BRIEFING, new Date(NOW.getTime() - 20 * HOUR)),
+        cachedAt: new Date(NOW.getTime() - 2 * HOUR),
+        cachedLocale: "en",
+      });
+      await get("G05-stale");
+    });
+
+    it("G06 a briefing in another language", async () => {
+      await resetBriefing(OWNER_ID, {
+        text: cached(GROUNDED_BRIEFING, new Date(NOW.getTime() - HOUR)),
+        cachedAt: new Date(NOW.getTime() - HOUR),
+        cachedLocale: "de",
+      });
+      await get("G06-other-language");
+    });
+
+    it("G07 an unparseable cache row", async () => {
+      await resetBriefing(OWNER_ID, {
+        text: "{not json",
+        cachedAt: new Date(NOW.getTime() - HOUR),
+      });
+      await get("G07-unparseable");
+    });
+
+    it("G08 a legacy payload, untagged", async () => {
+      await resetBriefing(OWNER_ID, {
+        text: { summary: "Legacy", recommendations: ["Drink water."] },
+        cachedAt: new Date(NOW.getTime() - HOUR),
+      });
+      await get("G08-legacy");
+    });
+
+    it("G09 a failure newer than the last good briefing", async () => {
+      await resetBriefing(OWNER_ID, {
+        text: cached(GROUNDED_BRIEFING, new Date(NOW.getTime() - 3 * HOUR)),
+        cachedAt: new Date(NOW.getTime() - 3 * HOUR),
+        cachedLocale: "en",
+        markers: [
+          {
+            reason: "all-providers-failed",
+            at: new Date(NOW.getTime() - HOUR),
+            httpStatus: 429,
+          },
+        ],
+      });
+      await get("G09-held-after-failure");
+    });
+
+    it("G10 a failure with no good briefing, and an older superseded one", async () => {
+      await resetBriefing(OWNER_ID, {
+        markers: [
+          { reason: "provider-error", at: new Date(NOW.getTime() - 5 * HOUR) },
+          { reason: "invalid-json", at: new Date(NOW.getTime() - HOUR) },
+        ],
+      });
+      await get("G10-failed-empty");
+    });
+
+    it("G11 a briefing the grounding gate withheld", async () => {
+      await resetBriefing(OWNER_ID, {
+        text: cached(null, new Date(NOW.getTime() - 2 * HOUR)),
+        cachedAt: new Date(NOW.getTime() - 2 * HOUR),
+        cachedLocale: "en",
+        markers: [
+          { reason: "briefing-ungrounded", at: new Date(NOW.getTime() - HOUR) },
+        ],
+      });
+      await get("G11-withheld");
+    });
   });
 
-  it("P30 the about-me text changing during the generation", async () => {
-    await resetBriefing(OWNER_ID);
-    seams.script.push({
-      content: reply(GROUNDED_BRIEFING),
-      during: async () => {
-        await prisma.allergy.create({
-          data: { userId: OWNER_ID, substance: "Latex" },
-        });
-      },
+  describe("POST /api/insights/generate parity", () => {
+    it("P01 an anonymous call", async () => {
+      await post("P01-anonymous", { force: true }, { auth: anonymous });
     });
-    await post("P30-profile-scope-changed");
-    await prisma.allergy.deleteMany({ where: { userId: OWNER_ID } });
-  });
 
-  it("P31 the profile changing during the generation", async () => {
-    await resetBriefing(OWNER_ID);
-    seams.script.push({
-      content: reply(GROUNDED_BRIEFING),
-      during: async () => {
-        await prisma.user.update({
-          where: { id: OWNER_ID },
-          data: { displayName: "Renamed Person" },
-        });
-      },
+    it("P02 the AI analysis opt-out", async () => {
+      await post(
+        "P02-opted-out",
+        { force: true },
+        { auth: optedOut, userId: OPTED_OUT_ID },
+      );
     });
-    await post("P31-scope-changed");
-    await prisma.user.update({
-      where: { id: OWNER_ID },
-      data: { displayName: "Parity Person" },
+
+    it("P03 a body over the cap", async () => {
+      await resetBriefing(OWNER_ID);
+      await post("P03-body-too-large", { pad: "x".repeat(17 * 1024) });
+    });
+
+    it("P04 a cached briefing written today", async () => {
+      await resetBriefing(OWNER_ID, {
+        text: cached(GROUNDED_BRIEFING, new Date(NOW.getTime() - HOUR)),
+        cachedAt: new Date(NOW.getTime() - HOUR),
+        cachedLocale: "en",
+      });
+      await post("P04-cache-hit", {});
+    });
+
+    it("P05 a cached briefing from yesterday, regenerated", async () => {
+      await resetBriefing(OWNER_ID, {
+        text: cached(GROUNDED_BRIEFING, new Date(NOW.getTime() - 20 * HOUR)),
+        cachedAt: new Date(NOW.getTime() - 2 * HOUR),
+        cachedLocale: "en",
+      });
+      seams.script.push({ content: reply(GROUNDED_BRIEFING) });
+      await post("P05-yesterday-regenerated", {});
+    });
+
+    it("P06 a cache in another language, regenerated", async () => {
+      await resetBriefing(OWNER_ID, {
+        text: cached(GROUNDED_BRIEFING, new Date(NOW.getTime() - HOUR)),
+        cachedAt: new Date(NOW.getTime() - HOUR),
+        cachedLocale: "de",
+      });
+      seams.script.push({ content: reply(GROUNDED_BRIEFING) });
+      await post("P06-other-language-regenerated", {});
+    });
+
+    it("P07 a briefingless cache when the hour's quota is spent", async () => {
+      await resetBriefing(OWNER_ID, {
+        text: cached(null, new Date(NOW.getTime() - HOUR)),
+        cachedAt: new Date(NOW.getTime() - HOUR),
+        cachedLocale: "en",
+        quotaUsed: 10,
+      });
+      await post("P07-quota-cached-fallback", {});
+    });
+
+    it("P08 a forced generation when the hour's quota is spent", async () => {
+      await resetBriefing(OWNER_ID, { quotaUsed: 10 });
+      await post("P08-quota-refused");
+    });
+
+    it("P09 a key no resolver can open", async () => {
+      await resetBriefing(UNREADABLE_KEY_ID);
+      await post(
+        "P09-unreadable-key",
+        { force: true },
+        { auth: unreadableKey, userId: UNREADABLE_KEY_ID },
+      );
+    });
+
+    it("P10 a fresh generation", async () => {
+      await resetBriefing(OWNER_ID);
+      seams.script.push({
+        content: reply(GROUNDED_BRIEFING),
+        tokensUsed: 2100,
+      });
+      await post("P10-generated");
+    });
+
+    it("P11 a reply the strict schema accepts", async () => {
+      await resetBriefing(OWNER_ID);
+      seams.script.push({
+        content: reply(GROUNDED_BRIEFING, {
+          disclaimer: "Consult your doctor.",
+        }),
+      });
+      await post("P11-strict-reply");
+    });
+
+    it("P12 a generation in German with the comparison, about-me and short form", async () => {
+      await prisma.user.update({
+        where: { id: OWNER_ID },
+        data: {
+          locale: "de",
+          aiUsageLevel: "FRUGAL",
+          dashboardWidgetsJson: { comparisonBaseline: "lastMonth" },
+        },
+      });
+      await prisma.allergy.create({
+        data: { userId: OWNER_ID, substance: "Penicillin" },
+      });
+      await resetBriefing(OWNER_ID);
+      seams.script.push({ content: reply(GROUNDED_BRIEFING) });
+      await post("P12-generated-de-short");
+      await prisma.allergy.deleteMany({ where: { userId: OWNER_ID } });
+      await prisma.user.update({
+        where: { id: OWNER_ID },
+        data: { locale: "en", aiUsageLevel: null, dashboardWidgetsJson: {} },
+      });
+    });
+
+    it("P13 an oversized raw payload, downgraded once", async () => {
+      await prisma.user.update({
+        where: { id: OWNER_ID },
+        data: { insightsPrivacyMode: "raw" },
+      });
+      await resetBriefing(OWNER_ID);
+      seams.oversize.push(6_100_000);
+      seams.script.push({ content: reply(GROUNDED_BRIEFING) });
+      await post("P13-downgraded");
+    });
+
+    it("P14 an oversized aggregate too, downgraded twice", async () => {
+      await resetBriefing(OWNER_ID);
+      seams.oversize.push(6_100_000, 5_400_000);
+      seams.script.push({ content: reply(GROUNDED_BRIEFING) });
+      await post("P14-hard-downgraded");
+    });
+
+    it("P15 oversized on every rung", async () => {
+      await resetBriefing(OWNER_ID);
+      seams.oversize.push(6_100_000, 5_400_000, 5_200_000);
+      await post("P15-too-large");
+      await prisma.user.update({
+        where: { id: OWNER_ID },
+        data: { insightsPrivacyMode: "aggregated" },
+      });
+    });
+
+    it("P16 the day's token ceiling", async () => {
+      await resetBriefing(OWNER_ID, { spentToday: 5_000_000 });
+      await post("P16-budget-exceeded");
+    });
+
+    it("P17 every provider refused the credential", async () => {
+      await resetBriefing(OWNER_ID);
+      seams.script.push({
+        error: () => new AllProvidersFailedError([hop(401), hop(403, 2)]),
+      });
+      await post("P17-chain-auth");
+    });
+
+    it("P18 every provider rate-limited", async () => {
+      await resetBriefing(OWNER_ID);
+      seams.script.push({
+        error: () => new AllProvidersFailedError([hop(429)]),
+      });
+      await post("P18-chain-rate-limited");
+    });
+
+    it("P19 a provider in a 5xx", async () => {
+      await resetBriefing(OWNER_ID);
+      seams.script.push({
+        error: () => new AllProvidersFailedError([hop(401), hop(502, 2)]),
+      });
+      await post("P19-chain-5xx");
+    });
+
+    it("P20 every provider unreachable", async () => {
+      await resetBriefing(OWNER_ID);
+      seams.script.push({
+        error: () => new AllProvidersFailedError([hop(null), hop(null, 2)]),
+      });
+      await post("P20-chain-transport");
+    });
+
+    it("P21 a mixed chain failure", async () => {
+      await resetBriefing(OWNER_ID);
+      seams.script.push({
+        error: () => new AllProvidersFailedError([hop(404), hop(429, 2)]),
+      });
+      await post("P21-chain-mixed");
+    });
+
+    it("P22 one provider error per status class", async () => {
+      for (const status of [401, 429, 500, 400]) {
+        await resetBriefing(OWNER_ID);
+        seams.script.push({ error: providerError(status) });
+        await post(`P22-provider-${status}`);
+      }
+    });
+
+    it("P23 a reply that is not JSON", async () => {
+      await resetBriefing(OWNER_ID);
+      seams.script.push({ content: "Sure! Here is your briefing." });
+      await post("P23-invalid-json");
+    });
+
+    it("P24 a reply cut off at the token ceiling", async () => {
+      await resetBriefing(OWNER_ID);
+      seams.script.push({
+        content: '{"summary": "Your',
+        finishReason: "length",
+      });
+      await post("P24-truncated");
+    });
+
+    it("P25 an ungrounded briefing the retry fixes", async () => {
+      await resetBriefing(OWNER_ID);
+      seams.script.push(
+        { content: reply(UNGROUNDED_BRIEFING) },
+        { content: reply(GROUNDED_BRIEFING), tokensUsed: 900 },
+      );
+      await post("P25-grounding-retry-kept");
+    });
+
+    it("P26 still ungrounded, the previous briefing stands in", async () => {
+      await resetBriefing(OWNER_ID, {
+        text: cached(PREVIOUS_BRIEFING, new Date(NOW.getTime() - 26 * HOUR)),
+        cachedAt: new Date(NOW.getTime() - 26 * HOUR),
+        cachedLocale: "en",
+      });
+      seams.script.push(
+        { content: reply(UNGROUNDED_BRIEFING) },
+        { content: reply(UNGROUNDED_BRIEFING) },
+      );
+      await post("P26-grounding-previous");
+    });
+
+    it("P27 still ungrounded, nothing to stand in", async () => {
+      await resetBriefing(OWNER_ID);
+      seams.script.push(
+        { content: reply(UNGROUNDED_BRIEFING) },
+        { content: reply(UNGROUNDED_BRIEFING) },
+      );
+      await post("P27-grounding-stripped");
+    });
+
+    it("P28 an ungrounded briefing whose retry is not JSON", async () => {
+      await resetBriefing(OWNER_ID);
+      seams.script.push(
+        { content: reply(UNGROUNDED_BRIEFING) },
+        { content: "not json" },
+      );
+      await post("P28-grounding-retry-unparseable");
+    });
+
+    it("P29 a reply the outbound screen blocks", async () => {
+      await resetBriefing(OWNER_ID);
+      seams.script.push({
+        content: reply(GROUNDED_BRIEFING, {
+          summary:
+            "Your 10-year cardiovascular risk is elevated — consider stepping your dose up.",
+        }),
+      });
+      await post("P29-outbound-screened", { force: true });
+    });
+
+    it("P30 the about-me text changing during the generation", async () => {
+      await resetBriefing(OWNER_ID);
+      seams.script.push({
+        content: reply(GROUNDED_BRIEFING),
+        during: async () => {
+          await prisma.allergy.create({
+            data: { userId: OWNER_ID, substance: "Latex" },
+          });
+        },
+      });
+      await post("P30-profile-scope-changed");
+      await prisma.allergy.deleteMany({ where: { userId: OWNER_ID } });
+    });
+
+    it("P31 the profile changing during the generation", async () => {
+      await resetBriefing(OWNER_ID);
+      seams.script.push({
+        content: reply(GROUNDED_BRIEFING),
+        during: async () => {
+          await prisma.user.update({
+            where: { id: OWNER_ID },
+            data: { displayName: "Renamed Person" },
+          });
+        },
+      });
+      await post("P31-scope-changed");
+      await prisma.user.update({
+        where: { id: OWNER_ID },
+        data: { displayName: "Parity Person" },
+      });
     });
   });
 });

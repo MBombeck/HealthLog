@@ -1,5 +1,5 @@
 {
-  "registeredQueueCount": 127,
+  "registeredQueueCount": 129,
   "registeredQueues": [
     "account-deletion-purge",
     "achievement-unlock-sweep",
@@ -48,6 +48,8 @@
     "fitbit-sleep-repair",
     "fitbit-sync",
     "free-text-encryption-backfill",
+    "garmin-backfill",
+    "garmin-sync",
     "geo-backfill",
     "geolite2-fetch",
     "google-health-backfill",
@@ -829,6 +831,36 @@
       "notify": false,
       "partition": false,
       "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "garmin-backfill",
+      "notify": false,
+      "partition": false,
+      "policy": "exclusive",
+      "retention_seconds": 1209600,
+      "retry_backoff": false,
+      "retry_delay": 0,
+      "retry_delay_max": null,
+      "retry_limit": 2
+    },
+    {
+      "dead_letter": null,
+      "deletion_seconds": 604800,
+      "expire_seconds": 900,
+      "heartbeat_seconds": null,
+      "name": "garmin-sync",
+      "notify": false,
+      "partition": false,
+      "policy": "standard",
       "retention_seconds": 1209600,
       "retry_backoff": false,
       "retry_delay": 0,
@@ -2372,6 +2404,17 @@
       "timezone": "Europe/Berlin"
     },
     {
+      "cron": "23 * * * *",
+      "data": {},
+      "key": "",
+      "kind": "cron",
+      "name": "garmin-sync",
+      "options": {
+        "tz": "Europe/Berlin"
+      },
+      "timezone": "Europe/Berlin"
+    },
+    {
       "cron": "40 * * * *",
       "data": {},
       "key": "",
@@ -3307,6 +3350,18 @@
     },
     {
       "queue": "free-text-encryption-backfill",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "garmin-backfill",
+      "options": {
+        "localConcurrency": 1
+      }
+    },
+    {
+      "queue": "garmin-sync",
       "options": {
         "localConcurrency": 1
       }

@@ -18,13 +18,9 @@
  * of going through pg-boss so the integration suite stays free of
  * out-of-process job-queue plumbing.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const TEST_USER_ID = "user-pr-detection-e2e";
 

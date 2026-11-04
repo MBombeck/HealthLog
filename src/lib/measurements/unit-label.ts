@@ -5,7 +5,7 @@
  * are symbols every locale reads as they are (kg, mmHg, bpm, ms, %), but a
  * handful are English words ("breaths/min", "steps", "flights", "years",
  * "minutes") or bare kind markers ("score", "rating", "count", "event",
- * "level", "ratio", "unknown"). Passed straight through, the words printed
+ * "level", "ratio", "load", "unknown"). Passed straight through, the words printed
  * "15,4 breaths/min" on a German screen. Every display path resolves the
  * token here, so a new word-shaped unit is a one-line addition in one place
  * and `unit-label.test.ts` refuses a canonical unit that is neither a known
@@ -53,6 +53,8 @@ const UNITLESS_UNIT_TOKENS: ReadonlySet<string> = new Set([
   "event",
   "level",
   "ratio",
+  // Garmin's acute training load: a bare load figure.
+  "load",
   // State of Mind valence: a bare −1..1 number.
   "valence",
   "unknown",

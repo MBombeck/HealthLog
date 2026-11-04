@@ -36,10 +36,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const ISSUER = "https://idp.example.test";
 const METADATA = {
   issuer: ISSUER,

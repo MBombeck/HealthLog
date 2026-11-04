@@ -276,7 +276,10 @@ function chatReq(body: Record<string, unknown>): Request {
 
 describe("coach chat — tool-mode routing (F1)", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    // Reset, not clear: cases swap in their own tool loop and parsers, and a
+    // cleared mock would hand those to the next case. Every mock here goes
+    // back to the implementation it was created with.
+    vi.resetAllMocks();
     reserveBudget.mockResolvedValue({
       allowed: true,
       reserved: 3000,

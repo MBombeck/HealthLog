@@ -7,7 +7,7 @@
  * a queue without loading the sync it feeds.
  *
  * The hourly minutes are staggered so the polls do not land on one boss poll:
- * used are :00 :05 :08 :11 :13 :15 :17 :18 :20 :35 :41 :47 :50.
+ * used are :00 :05 :08 :11 :13 :15 :17 :18 :20 :23 :35 :41 :47 :50.
  */
 
 /** Withings measure catch-net (the webhook is primary). */
@@ -72,6 +72,10 @@ export const POLAR_SYNC_CRON = "13 * * * *";
 /** Oura Cloud poll. */
 export const OURA_SYNC_QUEUE = "oura-sync";
 export const OURA_SYNC_CRON = "15 * * * *";
+
+/** Garmin Personal API poll (no webhooks exist for the personal tier). */
+export const GARMIN_SYNC_QUEUE = "garmin-sync";
+export const GARMIN_SYNC_CRON = "23 * * * *";
 
 /** Strava poll (the webhook is not wired). */
 export const STRAVA_SYNC_QUEUE = "strava-sync";

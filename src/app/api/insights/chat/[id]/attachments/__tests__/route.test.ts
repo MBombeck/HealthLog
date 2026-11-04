@@ -34,9 +34,6 @@ vi.mock("@/lib/ai/capabilities/gate", async () =>
     await import("@/__tests__/helpers/provider-order-mock")
   ).openCapabilityGateMock(),
 );
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: () => null })),
   cookies: vi.fn(async () => ({
@@ -87,6 +84,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
   vi.mocked(validateAttachmentCandidate).mockResolvedValue({ ok: true });
+  // Open again for every case (the factory's own answer): the detach case
+  // closes every capability, and `clearAllMocks` would carry that refusal
+  // into whichever case runs next.
+  vi.mocked(requireAiCapability).mockReset();
 });
 
 describe("POST attach", () => {

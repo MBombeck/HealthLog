@@ -59,10 +59,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // v1.40 — a lab scan is queued for the background worker; a queue that takes
 // the send lets the route answer 202, and the test then runs the worker.
 vi.mock("@/lib/jobs/boss-instance", () => ({

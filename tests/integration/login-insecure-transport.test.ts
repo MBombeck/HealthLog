@@ -42,10 +42,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const { hashPassword } = await import("@/lib/auth/password");
 const { encrypt } = await import("@/lib/crypto");
 const { generateTotpSecret } = await import("@/lib/auth/mfa/totp");

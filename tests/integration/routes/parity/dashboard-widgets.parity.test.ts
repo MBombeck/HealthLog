@@ -169,7 +169,7 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("/api/dashboard/widgets parity", () => {
+describe("/api/dashboard/widgets parity", { shuffle: false }, () => {
   let lastToken = "";
 
   it("01 the first read, filled into the cache", async () => {

@@ -244,9 +244,28 @@ describe("least-squares line", () => {
           return;
         }
         expect(fit.r2).toBeGreaterThanOrEqual(0);
-        expect(fit.r2).toBeLessThanOrEqual(1 + 1e-9);
+        expect(fit.r2).toBeLessThanOrEqual(1);
       }),
     );
+  });
+
+  // Shrunk counterexamples of the property above from two nightly seeds
+  // (802398975 and 1070990592): two points on a line far from zero, where
+  // the centred sums rounded r² above 1.
+  it.each([
+    [
+      [0, 1],
+      [-999.87, -999.97],
+    ],
+    [
+      [0, -1],
+      [9996.28, 9993.55],
+    ],
+  ])("keeps r² at most 1 for x %j, y %j", (xs, ys) => {
+    const fit = linearFit(xs, ys)!;
+    expect(fit.r2).not.toBeNull();
+    expect(fit.r2!).toBeLessThanOrEqual(1);
+    expect(fit.r2!).toBeGreaterThan(0.999);
   });
 
   it("refuses a vertical line instead of inventing a slope", () => {

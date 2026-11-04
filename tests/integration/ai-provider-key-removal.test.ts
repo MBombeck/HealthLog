@@ -37,10 +37,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 async function seedAccountWithKeys(): Promise<string> {
   const prisma = getPrismaClient();
   const { encrypt } = await import("@/lib/crypto");

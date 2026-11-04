@@ -43,10 +43,6 @@ import {
   type RegressionAccumulators,
 } from "@/lib/rollups/measurement-read";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => null),
 }));

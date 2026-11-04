@@ -8,6 +8,7 @@ import {
 } from "@/lib/integrations/connection-health";
 
 import de from "../../../../../messages/de.json";
+import ru from "../../../../../messages/ru.json";
 import en from "../../../../../messages/en.json";
 import es from "../../../../../messages/es.json";
 import fr from "../../../../../messages/fr.json";
@@ -36,6 +37,7 @@ const CATALOGS: Record<Locale, unknown> = {
   nl,
   ko,
   "pt-BR": ptBR,
+  ru: ru,
 };
 
 function translator(locale: Locale) {

@@ -26,9 +26,6 @@ import { ensureUserMoodRollupsFresh } from "@/lib/rollups/mood-rollups";
 import type { CoachScopeSource, CoachScopeWindow } from "@/lib/ai/coach/types";
 import type { MeasurementType, SleepStage } from "@/generated/prisma/client";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => null),
 }));

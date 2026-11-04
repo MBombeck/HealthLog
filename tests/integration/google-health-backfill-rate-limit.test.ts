@@ -195,10 +195,6 @@ vi.mock("@/lib/jobs/boss-instance", async (importOriginal) => ({
   }),
 }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 async function seed(): Promise<void> {
   const prisma = getPrismaClient();
   await truncateAllTables(prisma);

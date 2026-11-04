@@ -7,6 +7,10 @@
  */
 import type { Buffer } from "node:buffer";
 
+import {
+  readPdfTextLayer,
+  textLayerText,
+} from "@/lib/documents/pdf-text-layer";
 import { rasterizePdf } from "@/lib/documents/rasterize-pdf";
 
 import type { OcrChunk } from "./ocr-read";
@@ -164,6 +168,7 @@ export type OcrVisionMime =
 export type OcrVisionPlan =
   | {
       ok: true;
+      mode: "vision";
       chunks: OcrChunk[];
       /** The PDF's page count, when it was rendered. */
       totalPages?: number;
@@ -171,11 +176,147 @@ export type OcrVisionPlan =
       pageCoverage?: { read: number; total: number };
     }
   /**
-   * `busy`: the reader could not take the PDF now (busy past the wait a read
-   * gets, or its process ended for no measured reason). Not a verdict on the
-   * file; the person asks again.
+   * #1311 — a PDF this server cannot render, for a provider that cannot take
+   * it whole, read by its text layer: one text part per page group, as the
+   * rendered pages would have been, each read under the text bound. Pages
+   * without a text layer (scanned pages), and pages the reads could not take
+   * in full, are listed in `unreadPages`.
    */
-  | { ok: false; busy?: true };
+  | {
+      ok: true;
+      mode: "text";
+      chunks: OcrChunk[];
+      /** The pages' text the chunks were cut from, for provenance. */
+      ocrText: string;
+      totalPages: number;
+      pageCoverage?: { read: number; total: number };
+      unreadPages: number[];
+    }
+  | {
+      ok: false;
+      /**
+       * `busy`: the reader could not take the PDF now (busy past the wait a
+       * read gets, or its process ended for no measured reason). Not a
+       * verdict on the file; the person asks again. `renderFailed`: this PDF
+       * would not render on a server that renders PDFs. `rendererUnavailable`:
+       * this server cannot render PDF pages at all, and the PDF has no text
+       * layer to read instead (a scan).
+       */
+      reason: "busy" | "renderFailed" | "rendererUnavailable";
+    };
+
+/** The page-cap note for a PDF read from its first `read` of `total` pages. */
+function coverage(
+  read: number,
+  total: number,
+): { pageCoverage?: { read: number; total: number } } {
+  return total > read ? { pageCoverage: { read, total } } : {};
+}
+
+/**
+ * #1311 — read a PDF this server cannot render by its text layer, in page
+ * groups planned as the rendered pages would be.
+ */
+async function planTextLayerReads(
+  bytes: Buffer,
+  schedule: OcrSchedule,
+  textReadChars: number,
+): Promise<OcrVisionPlan> {
+  const read = await readPdfTextLayer(bytes, OCR_MAX_PAGES, "documents.ocr");
+  if (!read.ok) {
+    return {
+      ok: false,
+      reason:
+        read.reason === "busy"
+          ? "busy"
+          : read.reason === "none"
+            ? "rendererUnavailable"
+            : "renderFailed",
+    };
+  }
+  const { layer } = read;
+  const { chunks, unreadPages } = planTextLayerChunks(
+    layer.pages,
+    maxReadsFor(schedule),
+    textReadChars,
+  );
+  return {
+    ok: true,
+    mode: "text",
+    chunks,
+    ocrText: textLayerText(layer),
+    totalPages: layer.pageCount,
+    ...coverage(layer.pagesRead, layer.pageCount),
+    unreadPages: [...new Set([...layer.pagesWithoutText, ...unreadPages])].sort(
+      (a, b) => a - b,
+    ),
+  };
+}
+
+/**
+ * The reads of a text layer, page-aware and under the same per-read bound as
+ * any other text: a page longer than `target` is read in parts at line
+ * boundaries, each part its own read while the deadline allows that many;
+ * otherwise the parts are packed into at most `maxReads` reads of about the
+ * share the deadline leaves, never past twice `target` (the most one read's
+ * answer is sized for). When the reads cannot take it all, the text is read
+ * from its start and the pages left over, wholly or in part, are returned in
+ * `unreadPages`, as `planTextReads` counts its `unreadParts`.
+ */
+export function planTextLayerChunks(
+  pages: { page: number; text: string }[],
+  maxReads: number,
+  target: number,
+): { chunks: OcrChunk[]; unreadPages: number[] } {
+  const reads = Math.max(1, Math.floor(maxReads));
+  const units = pages.flatMap(({ page, text }) =>
+    splitOcrText(text, Number.POSITIVE_INFINITY, target)
+      // A single line past the target stays whole in `splitOcrText`; one
+      // that long is cut, so no read can exceed the bound.
+      .flatMap((part) =>
+        part.length <= target
+          ? [part]
+          : Array.from({ length: Math.ceil(part.length / target) }, (_, i) =>
+              part.slice(i * target, (i + 1) * target),
+            ),
+      )
+      .map((part) => ({ page, text: part })),
+  );
+  // As many reads as parts: a page (or a page part) per read, as rendered
+  // pages are read.
+  if (units.length <= reads) {
+    return {
+      chunks: units.map((u) => ({ text: u.text, pages: [u.page] })),
+      unreadPages: [],
+    };
+  }
+  const total = units.reduce((n, u) => n + u.text.length, 0);
+  const size = Math.min(target * 2, Math.max(target, Math.ceil(total / reads)));
+  const packed: { page: number; text: string }[][] = [];
+  let current: { page: number; text: string }[] = [];
+  let length = 0;
+  for (const unit of units) {
+    if (current.length > 0 && length + 2 + unit.text.length > size) {
+      packed.push(current);
+      current = [];
+      length = 0;
+    }
+    current.push(unit);
+    length += (current.length > 1 ? 2 : 0) + unit.text.length;
+  }
+  if (current.length > 0) packed.push(current);
+  const kept = packed.slice(0, reads);
+  const unreadPages = [
+    ...new Set(packed.slice(reads).flatMap((c) => c.map((u) => u.page))),
+  ];
+  return {
+    chunks: kept.map((chunk) => ({
+      text: chunk.map((u) => u.text).join("\n\n"),
+      pages: [...new Set(chunk.map((u) => u.page))],
+    })),
+    unreadPages,
+  };
+}
 
 /**
  * Plan the reads of an image or a PDF. Every PDF is rendered first: a report
@@ -184,17 +325,21 @@ export type OcrVisionPlan =
  * natively still gets the document itself when it is one page, or when it
  * cannot be rendered. With each page's text layer: a digitally produced
  * report states its digits exactly there, and the rendered page alone is a
- * picture at a capped resolution.
+ * picture at a capped resolution. On a server that cannot render at all, a
+ * provider that cannot take the PDF whole reads its text layer instead.
  */
 export async function planVisionReads(
   bytes: Buffer,
   mime: OcrVisionMime,
   pdfSupported: boolean,
   schedule: OcrSchedule,
+  /** Text per read when the PDF is read by its text layer (the surface's own). */
+  textReadChars: number = OCR_TEXT_READ_CHARS,
 ): Promise<OcrVisionPlan> {
   if (mime !== "application/pdf") {
     return {
       ok: true,
+      mode: "vision",
       chunks: [
         {
           images: [{ mediaType: mime, dataBase64: bytes.toString("base64") }],
@@ -217,28 +362,28 @@ export async function planVisionReads(
     }));
     return {
       ok: true,
+      mode: "vision",
       chunks,
       totalPages: raster.pageCount,
       // A PDF longer than the page cap is read from its first pages only,
       // and the person reviewing the rows is the one who needs to know.
-      ...(raster.pageCount > raster.images.length
-        ? {
-            pageCoverage: {
-              read: raster.images.length,
-              total: raster.pageCount,
-            },
-          }
-        : {}),
+      ...coverage(raster.images.length, raster.pageCount),
     };
   }
-  if (!pdfSupported) {
-    return !raster.ok &&
-      (raster.reason === "busy" || raster.reason === "interrupted")
-      ? { ok: false, busy: true }
-      : { ok: false };
+  if (!pdfSupported && !raster.ok) {
+    if (raster.reason === "busy" || raster.reason === "interrupted") {
+      return { ok: false, reason: "busy" };
+    }
+    // Refs #776 — a render failure on a server that renders is this
+    // document's; a server that cannot render at all is the server's.
+    if (raster.reason !== "unsupported") {
+      return { ok: false, reason: "renderFailed" };
+    }
+    return planTextLayerReads(bytes, schedule, textReadChars);
   }
   return {
     ok: true,
+    mode: "vision",
     chunks: [
       {
         images: [],

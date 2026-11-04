@@ -32,6 +32,8 @@ const getLabsOutput: z.ZodRawShape = {
         referenceHigh: z.number().nullable(),
         rangeStatus: z.enum(["in-range", "below", "above", "unknown"]),
         takenAt: z.string(),
+        // This reading's own fetch id, `labresult:<id>`.
+        id: z.string(),
         // The fetch ids of what this reading links to; each is described
         // once in `linkedRecords`.
         links: z.array(z.string()),
@@ -140,7 +142,7 @@ export const getLabsTool: McpToolDefinition = {
   name: "get_labs",
   title: "Get lab results",
   description:
-    "Fetch the user's lab results. By default returns the latest reading per biomarker over the whole record. Filtered to one named analyte, each matching marker also carries a summarised history (the newest earlier values in full, older ones as one mean / min / max / count per year). Pass history:true with an analyte to return that analyte's reading TRAJECTORY (newest first, paginated). Each reading carries its value, unit, reference range, and in-range/below/above status; a ratio or an index recorded without a unit has an empty unit. Each reading (the latest, an earlier value in full, a trajectory reading; not a per-year summary) carries links: the ids of the records it is linked to (the report it was read from, the visits it is filed against), [] when none, at most 25 with linksTruncated; every linked record is described once in linkedRecords (id for fetch, kind, label, date, and for a document imported from Paperless-ngx or Papra its sourceSystem and sourceId). A document is listed only while the Documents module is on. Returns { present: false } when no labs match, and { present: false, reason: \"module_disabled\" } when the labs module is switched off.",
+    "Fetch the user's lab results. By default returns the latest reading per biomarker over the whole record. Filtered to one named analyte, each matching marker also carries a summarised history (the newest earlier values in full, older ones as one mean / min / max / count per year). Pass history:true with an analyte to return that analyte's reading TRAJECTORY (newest first, paginated). Each reading carries its value, unit, reference range, and in-range/below/above status; a ratio or an index recorded without a unit has an empty unit. Each reading (the latest, an earlier value in full, a trajectory reading; not a per-year summary) carries its own id (`labresult:<id>`, which `fetch` hydrates into that one reading) and links: the ids of the records it is linked to (the report it was read from, the visits it is filed against), [] when none, at most 25 with linksTruncated; every linked record is described once in linkedRecords (id for fetch, kind, label, date, and for a document imported from Paperless-ngx or Papra its sourceSystem and sourceId). A document is listed only while the Documents module is on. Returns { present: false } when no labs match, and { present: false, reason: \"module_disabled\" } when the labs module is switched off.",
   inputShape: {
     analyte: z.string().min(1).max(80).optional(),
     history: z

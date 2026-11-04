@@ -6,17 +6,13 @@
  * with two sources on the same days, two device types within one source,
  * dense CGM glucose, summed steps and readings next to Berlin midnight.
  */
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { readSourceDayAggregates } from "@/lib/measurements/day-aggregates";
 import { metricDayMap } from "@/lib/insights/mood-crosstab";
 import { PHASE_CROSSTAB_METRIC_TYPES } from "@/lib/cycle/phase-crosstab";
 import type { CrossMetricMeasurement } from "@/lib/insights/mood-aggregates";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const prisma = getPrismaClient();
 const USER = "cycle-crosstab-agg";

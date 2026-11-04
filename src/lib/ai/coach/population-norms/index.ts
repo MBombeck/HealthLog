@@ -15,6 +15,7 @@ import { patterns as pl } from "./pl";
 import { patterns as nl } from "./nl";
 import { patterns as ptBR } from "./pt-br";
 import { patterns as ko } from "./ko";
+import { patterns as ru } from "./ru";
 
 export const POPULATION_NORM_PATTERNS: Readonly<
   Record<Locale, readonly RegExp[]>
@@ -28,4 +29,5 @@ export const POPULATION_NORM_PATTERNS: Readonly<
   nl,
   "pt-BR": ptBR,
   ko,
+  ru,
 };

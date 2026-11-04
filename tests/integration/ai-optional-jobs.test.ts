@@ -23,10 +23,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const providerSpy = vi.fn(async () => ({
   content: JSON.stringify({ summary: "A calm and steady stretch." }),
   model: "spy-model",

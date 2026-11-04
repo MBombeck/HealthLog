@@ -48,10 +48,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const prisma = getPrismaClient();
 const DAY = 86_400_000;
 const now = new Date();

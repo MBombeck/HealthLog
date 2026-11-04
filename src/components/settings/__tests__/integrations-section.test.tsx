@@ -102,6 +102,7 @@ const PROVIDERS = [
   "oura",
   "strava",
   "nightscout",
+  "garmin",
 ] as const;
 
 function health(overrides: Record<string, unknown> = {}) {
@@ -176,7 +177,7 @@ describe("IntegrationsSection — one status display per card", () => {
     expect(html).not.toContain("Last attempt");
     // The seven other providers and Apple Health are not connected and say so
     // once each.
-    expect(count(html, ">Not connected.<")).toBe(8);
+    expect(count(html, ">Not connected.<")).toBe(9);
   });
 
   it("never shows the stored provider error or a failure counter", () => {
@@ -247,17 +248,12 @@ describe("IntegrationsSection — one status display per card", () => {
     });
 
     const html = render();
-    expect(count(html, 'data-slot="integration-setup-guide"')).toBe(8);
+    expect(count(html, 'data-slot="integration-setup-guide"')).toBe(9);
     for (const provider of PROVIDERS) {
       expect(html).toContain(`data-testid="${provider}-setup-guide"`);
       expect(html).toContain(
         `href="https://docs.healthlog.dev/guides/connect-${provider}/"`,
       );
     }
-    // Garmin has no connector; its note goes straight to the section of the
-    // Google Health guide that explains the route, not through a redirect.
-    expect(html).toContain(
-      'href="https://docs.healthlog.dev/guides/connect-google-health/#garmin-owners"',
-    );
   });
 });

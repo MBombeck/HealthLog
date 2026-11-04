@@ -408,7 +408,7 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("GET /api/insights/comprehensive parity", () => {
+describe("GET /api/insights/comprehensive parity", { shuffle: false }, () => {
   it("01 an anonymous call", async () => {
     await step("01-anonymous", { auth: anonymous });
   });

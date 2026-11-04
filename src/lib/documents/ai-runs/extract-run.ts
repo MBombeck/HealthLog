@@ -52,6 +52,8 @@ import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
 import { refusalAsFailure } from "./http";
 import { meteredReadBudget } from "./metered-budget";
 import {
+  pdfRendererUnavailable,
+  pdfRenderFailed,
   readerBusyFailure,
   runFailure,
   unreadableDocument,
@@ -217,15 +219,6 @@ function visionSource(
   };
 }
 
-/** A PDF this provider can read neither rendered nor whole. */
-const pdfUnreadable = (): AiRunOutcome<never> =>
-  runFailure({
-    status: 422,
-    message:
-      "PDF scanning needs a Claude vision provider; use local OCR instead.",
-    errorCode: "documents.inbound.pdfNeedsAnthropic",
-  });
-
 /**
  * The answer for an extraction no read produced anything from. Honest about
  * why: an answer cut at the provider's output limit is not an unreadable copy,
@@ -308,7 +301,13 @@ export async function executeDocumentExtract(args: {
   }
   const plan = await planInboundReads(source, schedule);
   if (!plan.ok) {
-    return refused(plan.busy ? readerBusyFailure() : pdfUnreadable());
+    return refused(
+      plan.reason === "busy"
+        ? readerBusyFailure()
+        : plan.reason === "rendererUnavailable"
+          ? pdfRendererUnavailable()
+          : pdfRenderFailed(),
+    );
   }
   await schedule.arm(plan.args.chunks.length * OCR_EXTRACT_MODEL_CALLS);
 

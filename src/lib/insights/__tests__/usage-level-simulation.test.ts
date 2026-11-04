@@ -129,9 +129,27 @@ function day(): Event[] {
   return events.sort((a, b) => a.at.localeCompare(b.at));
 }
 
-const ALL_SCOPES_AT_WARM = new Set<string>();
+/**
+ * Every scope the day dirties: run it once on `full` with no warm, which
+ * enqueues each scope at least once. Each case derives it itself rather than
+ * reading what an earlier case left behind.
+ */
+async function discoverWarmScopes(): Promise<Set<string>> {
+  sim.notes.clear();
+  sim.level = "FULL";
+  for (const event of day()) {
+    vi.setSystemTime(new Date(`2026-10-15T${event.at}:00Z`));
+    await invalidateStatusInsightsForTypes("u1", event.types, {
+      source: event.source,
+    });
+  }
+  return new Set(sim.notes.keys());
+}
 
-async function simulate(level: string | null): Promise<{
+async function simulate(
+  level: string | null,
+  warmScopes: ReadonlySet<string>,
+): Promise<{
   warm: number;
   ingest: number;
   bySource: Record<"sync" | "manual", number>;
@@ -141,8 +159,8 @@ async function simulate(level: string | null): Promise<{
   sim.level = level;
   // The 04:30 warm regenerates every scope the day will touch.
   const warmAt = Date.parse("2026-10-15T04:30:00Z");
-  for (const scope of ALL_SCOPES_AT_WARM) sim.notes.set(scope, warmAt);
-  const warm = ALL_SCOPES_AT_WARM.size;
+  for (const scope of warmScopes) sim.notes.set(scope, warmAt);
+  const warm = warmScopes.size;
   const bySource = { sync: 0, manual: 0 };
   for (const event of day()) {
     vi.setSystemTime(new Date(`2026-10-15T${event.at}:00Z`));
@@ -161,25 +179,14 @@ beforeEach(() => {
 
 describe("generations per day on a watch-synced account", () => {
   it("counts the scopes once to seed the warm", async () => {
-    // Discover every scope the day dirties: run it once on `full` with no
-    // warm, which enqueues each scope at least once.
-    ALL_SCOPES_AT_WARM.clear();
-    sim.notes.clear();
-    sim.level = "FULL";
-    for (const event of day()) {
-      vi.setSystemTime(new Date(`2026-10-15T${event.at}:00Z`));
-      await invalidateStatusInsightsForTypes("u1", event.types, {
-        source: event.source,
-      });
-    }
-    for (const scope of sim.notes.keys()) ALL_SCOPES_AT_WARM.add(scope);
-    expect(ALL_SCOPES_AT_WARM.size).toBe(19);
+    expect((await discoverWarmScopes()).size).toBe(19);
   });
 
   it("before v1.43 (every ingest at one hour) versus each level", async () => {
-    const full = await simulate("FULL"); // the behaviour before v1.43
-    const standard = await simulate("STANDARD");
-    const frugal = await simulate("FRUGAL");
+    const warmScopes = await discoverWarmScopes();
+    const full = await simulate("FULL", warmScopes); // the behaviour before v1.43
+    const standard = await simulate("STANDARD", warmScopes);
+    const frugal = await simulate("FRUGAL", warmScopes);
     const result = { full, standard, frugal };
     process.stdout.write(`SIMULATION ${JSON.stringify(result)}\n`);
 

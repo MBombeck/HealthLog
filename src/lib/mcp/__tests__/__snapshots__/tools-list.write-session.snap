@@ -378,7 +378,7 @@
   {
     "name": "get_labs",
     "title": "Get lab results",
-    "description": "Fetch the user's lab results. By default returns the latest reading per biomarker over the whole record. Filtered to one named analyte, each matching marker also carries a summarised history (the newest earlier values in full, older ones as one mean / min / max / count per year). Pass history:true with an analyte to return that analyte's reading TRAJECTORY (newest first, paginated). Each reading carries its value, unit, reference range, and in-range/below/above status; a ratio or an index recorded without a unit has an empty unit. Each reading (the latest, an earlier value in full, a trajectory reading; not a per-year summary) carries links: the ids of the records it is linked to (the report it was read from, the visits it is filed against), [] when none, at most 25 with linksTruncated; every linked record is described once in linkedRecords (id for fetch, kind, label, date, and for a document imported from Paperless-ngx or Papra its sourceSystem and sourceId). A document is listed only while the Documents module is on. Returns { present: false } when no labs match, and { present: false, reason: \"module_disabled\" } when the labs module is switched off.",
+    "description": "Fetch the user's lab results. By default returns the latest reading per biomarker over the whole record. Filtered to one named analyte, each matching marker also carries a summarised history (the newest earlier values in full, older ones as one mean / min / max / count per year). Pass history:true with an analyte to return that analyte's reading TRAJECTORY (newest first, paginated). Each reading carries its value, unit, reference range, and in-range/below/above status; a ratio or an index recorded without a unit has an empty unit. Each reading (the latest, an earlier value in full, a trajectory reading; not a per-year summary) carries its own id (`labresult:<id>`, which `fetch` hydrates into that one reading) and links: the ids of the records it is linked to (the report it was read from, the visits it is filed against), [] when none, at most 25 with linksTruncated; every linked record is described once in linkedRecords (id for fetch, kind, label, date, and for a document imported from Paperless-ngx or Papra its sourceSystem and sourceId). A document is listed only while the Documents module is on. Returns { present: false } when no labs match, and { present: false, reason: \"module_disabled\" } when the labs module is switched off.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -526,6 +526,9 @@
               "takenAt": {
                 "type": "string"
               },
+              "id": {
+                "type": "string"
+              },
               "links": {
                 "type": "array",
                 "items": {
@@ -544,6 +547,7 @@
               "referenceHigh",
               "rangeStatus",
               "takenAt",
+              "id",
               "links",
               "linksTruncated"
             ],
@@ -3986,7 +3990,7 @@
   {
     "name": "fetch",
     "title": "Fetch one health record",
-    "description": "Hydrate a single record returned by `search`, by its id (e.g. `metric:weight`, `med:<id>`, `lab:LDL`, `visit:<id>`, `condition:<id>`, `document:<id>`, `vaccination:<id>`). Returns { id, title, text, url, metadata } where `text` is a server-authoritative, plain-text prose summary suitable for citation and `url` deep-links to the specific record in HealthLog. A visit, condition, document, vaccination, lab or medication carries its key fields and its directly linked records (metadata.links, each with an id `fetch` accepts, a label and a date, at most 25 with metadata.linksTruncated, and \"Linked records: none.\" in the text when there are none); a linked document imported from Paperless-ngx or Papra also names its sourceSystem and sourceId (never an address), and a document is listed only while the Documents module is on. A lab lists the links of its latest reading (the report it was read from, the visits it is filed against); a medication its conditions, documents and visits; a document also lists the lab results read from it and the medications filed against it; a document returns its metadata and at most a bounded excerpt of its own indexed text (the words of the stored document), never the file; a document held back from AI reading returns no excerpt and metadata.reason \"ai_read_deferred\". Fields that were never recorded are null. Returns a not-found message when the id does not resolve, and metadata.reason \"module_disabled\" when the record's module is switched off.",
+    "description": "Hydrate a single record returned by `search`, by its id (e.g. `metric:weight`, `med:<id>`, `lab:LDL`, `labresult:<id>`, `visit:<id>`, `condition:<id>`, `document:<id>`, `vaccination:<id>`). Returns { id, title, text, url, metadata } where `text` is a server-authoritative, plain-text prose summary suitable for citation and `url` deep-links to the specific record in HealthLog. A visit, condition, document, vaccination, lab or medication carries its key fields and its directly linked records (metadata.links, each with an id `fetch` accepts, a label and a date, at most 25 with metadata.linksTruncated, and \"Linked records: none.\" in the text when there are none); a linked document imported from Paperless-ngx or Papra also names its sourceSystem and sourceId (never an address), and a document is listed only while the Documents module is on. A lab (`lab:<analyte>`) answers with its latest reading (metadata.readingId names it) and lists that reading's links (the report it was read from, the visits it is filed against); a lab result (`labresult:<id>`, the id a reading carries in get_labs and the id every link to a lab result uses) answers with that one reading, its value or text result, unit, reference range, in-range/below/above status and date, and that reading's own links; a medication its conditions, documents and visits; a document also lists the lab results read from it and the medications filed against it; a document returns its metadata and at most a bounded excerpt of its own indexed text (the words of the stored document), never the file; a document held back from AI reading returns no excerpt and metadata.reason \"ai_read_deferred\". Fields that were never recorded are null. Returns a not-found message when the id does not resolve, and metadata.reason \"module_disabled\" when the record's module is switched off.",
     "inputSchema": {
       "type": "object",
       "properties": {

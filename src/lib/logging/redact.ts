@@ -125,6 +125,8 @@ export function redactSecrets(input: string): string {
   return (
     redactPathSegments(redactPrismaInvocation(input))
       .replace(/Bearer\s+\S+/gi, "Bearer [REDACTED]")
+      // A Garmin Personal API key rides as `Authorization: ApiKey <key>`.
+      .replace(/\bApiKey\s+\S+/g, "ApiKey [REDACTED]")
       .replace(/bot\d+:[A-Za-z0-9_-]+/g, "bot[REDACTED]")
       // `sk-` is a common English-prefix substring (task-force, risk-
       // management, disk-io). Without a word-boundary, the original

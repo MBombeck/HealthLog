@@ -896,6 +896,10 @@ describe("MCP_METRIC_STATUS_DISCOVERY", () => {
         "STAIR_ASCENT_SPEED",
         "STAIR_DESCENT_SPEED",
         "ENERGY_EXPENDITURE_KJ",
+        "BODY_BATTERY",
+        "STRESS_LEVEL",
+        "TRAINING_READINESS",
+        "ACUTE_TRAINING_LOAD",
       ].sort(),
     );
     const wristTemp = MCP_METRIC_STATUS_DISCOVERY.find(

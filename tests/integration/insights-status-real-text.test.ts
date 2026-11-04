@@ -18,10 +18,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // Stub the provider resolution so the chain runner has a deterministic
 // provider to walk. `runRawCompletionWithFallback` runs for real on top
 // of this — exercising the same plumbing the live status path uses.

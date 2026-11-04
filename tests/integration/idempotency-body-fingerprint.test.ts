@@ -46,10 +46,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const USER_A = "idem-fingerprint-a";
 const USER_B = "idem-fingerprint-b";
 const KEY = "bp-entry-5c1e2a7f";

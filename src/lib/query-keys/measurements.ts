@@ -100,29 +100,32 @@ export const measurementKeys = {
     // appended when set, so every pre-v1.18.6 caller packs a
     // byte-identical tuple and the existing cache layout is unchanged.
     readMode: string = "",
-  ) =>
-    readMode
-      ? ([
-          "chart-data",
-          types,
-          valueMode,
-          bmiDivisor,
-          timezone,
-          fromIso,
-          toIso,
-          valueScale,
-          readMode,
-        ] as const)
-      : ([
-          "chart-data",
-          types,
-          valueMode,
-          bmiDivisor,
-          timezone,
-          fromIso,
-          toIso,
-          valueScale,
-        ] as const),
+    // #1331 — the part of the day the series is narrowed to. Appended only
+    // when set (behind the read mode, which then always rides), so the
+    // whole-day key of every chart stays as it was.
+    partOfDay: string = "",
+  ) => {
+    const base = [
+      "chart-data",
+      types,
+      valueMode,
+      bmiDivisor,
+      timezone,
+      fromIso,
+      toIso,
+      valueScale,
+    ] as const;
+    if (partOfDay) return [...base, readMode, partOfDay] as const;
+    return readMode ? ([...base, readMode] as const) : base;
+  },
+
+  /**
+   * #1331 — blood pressure by part of the day
+   * (`GET /api/measurements/blood-pressure/time-of-day?days=`). Under the
+   * `["measurements"]` prefix, so a new reading refreshes it with the list.
+   */
+  bpTimeOfDay: (days: number) =>
+    ["measurements", "bp-time-of-day", days] as const,
 
   /**
    * v1.8.5 — bounded recent-timestamp read powering the

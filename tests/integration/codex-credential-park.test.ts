@@ -40,10 +40,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("@/lib/logging/signal", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/logging/signal")>();
   return { ...actual, emitSignal: vi.fn(actual.emitSignal) };

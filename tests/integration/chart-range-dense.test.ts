@@ -37,10 +37,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const USER = "chart-range-dense-user";
 const TZ = "Europe/Berlin";
 const TO = new Date("2026-09-20T18:00:00.000Z");

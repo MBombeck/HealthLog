@@ -44,6 +44,7 @@ export const CONNECTION_KEYS: readonly ConnectionKey[] = [
   "strava",
   "nightscout",
   "dawarich",
+  "garmin",
   "apple-health",
 ];
 

@@ -152,6 +152,14 @@ export const SOURCE_PRIORITY_METRIC_KEYS = [
   // RMSSD natively, Apple Health relays it from third-party apps; SDNN keeps
   // the `hrv` ladder, since the two measures are not interchangeable.
   "hrvRmssd",
+  // Garmin's own day scores and the training figures a bridge pushes. Each
+  // type has two producers in practice: the Garmin sync (or nobody, for the
+  // training figures) and a person's own writes through an ingest token, a
+  // hand entry or MCP. The ladders keep the pick deterministic.
+  "bodyBattery",
+  "stressLevel",
+  "trainingReadiness",
+  "acuteTrainingLoad",
 ] as const;
 
 export type SourcePriorityMetricKey =
@@ -261,12 +269,20 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
   // device-native wearables and above MANUAL so an Apple-Watch + Strava twin of
   // the same run collapses onto the richer device row, while a Strava-only run
   // still survives.
+  // Garmin (Personal API) is a worn watch in the same class as the
+  // Fitbit / Google Health wearables and ranks right after them on every
+  // ladder it writes to, above the rings and straps that follow. On weight
+  // and body fat it sits with the scale-fed sources, since a Garmin Index
+  // scale reports there; below WITHINGS and the HealthKit relay. It writes
+  // no SDNN, so the `hrv` ladder does not name it; its overnight HRV is
+  // RMSSD and ranks on `hrvRmssd`.
   steps: [
     "APPLE_HEALTH",
     "HEALTH_CONNECT",
     "WITHINGS",
     "FITBIT",
     "GOOGLE_HEALTH",
+    "GARMIN",
     "OURA",
     "POLAR",
     "STRAVA",
@@ -281,6 +297,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WITHINGS",
     "FITBIT",
     "GOOGLE_HEALTH",
+    "GARMIN",
     "OURA",
     "POLAR",
     "MANUAL",
@@ -294,6 +311,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WITHINGS",
     "FITBIT",
     "GOOGLE_HEALTH",
+    "GARMIN",
     "OURA",
     "POLAR",
     "MANUAL",
@@ -306,6 +324,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WITHINGS",
     "FITBIT",
     "GOOGLE_HEALTH",
+    "GARMIN",
     "MANUAL",
     "EXTERNAL",
     "MCP",
@@ -323,6 +342,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WHOOP",
     "FITBIT",
     "GOOGLE_HEALTH",
+    "GARMIN",
     "OURA",
     "POLAR",
     "APPLE_HEALTH",
@@ -341,6 +361,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WHOOP",
     "FITBIT",
     "GOOGLE_HEALTH",
+    "GARMIN",
     "OURA",
     "POLAR",
     "APPLE_HEALTH",
@@ -352,6 +373,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WITHINGS",
     "APPLE_HEALTH",
     "HEALTH_CONNECT",
+    "GARMIN",
     "MANUAL",
     "EXTERNAL",
     "MCP",
@@ -389,6 +411,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WITHINGS",
     "APPLE_HEALTH",
     "HEALTH_CONNECT",
+    "GARMIN",
     "MANUAL",
     "EXTERNAL",
     "MCP",
@@ -415,6 +438,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WHOOP",
     "FITBIT",
     "GOOGLE_HEALTH",
+    "GARMIN",
     "OURA",
     "POLAR",
     "APPLE_HEALTH",
@@ -446,6 +470,7 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WHOOP",
     "FITBIT",
     "GOOGLE_HEALTH",
+    "GARMIN",
     "OURA",
     "POLAR",
     "APPLE_HEALTH",
@@ -475,11 +500,21 @@ export const DEFAULT_SOURCE_PRIORITY: Required<MetricPriority> = {
     "WHOOP",
     "FITBIT",
     "GOOGLE_HEALTH",
+    "GARMIN",
     "OURA",
     "POLAR",
     "APPLE_HEALTH",
     "HEALTH_CONNECT",
   ],
+  // The device's own figure leads; what a person types, bridges or has an
+  // assistant write is the fallback, in the order the hand-entered sources
+  // hold on every other ladder (MANUAL, then EXTERNAL, MCP, TELEGRAM).
+  bodyBattery: ["GARMIN", "MANUAL", "EXTERNAL", "MCP", "TELEGRAM"],
+  stressLevel: ["GARMIN", "MANUAL", "EXTERNAL", "MCP", "TELEGRAM"],
+  // No provider sync writes these; a bridge (EXTERNAL) is the usual
+  // producer, and a hand-typed correction outranks it like everywhere else.
+  trainingReadiness: ["MANUAL", "EXTERNAL", "MCP", "TELEGRAM"],
+  acuteTrainingLoad: ["MANUAL", "EXTERNAL", "MCP", "TELEGRAM"],
 };
 
 /**

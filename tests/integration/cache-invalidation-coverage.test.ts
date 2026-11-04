@@ -42,21 +42,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-// `ensureDbCompatibility` is intentionally LEFT REAL for this file —
-// the admin app-settings PUT touches the `app_settings` table whose
-// columns land via that helper rather than the migration set in
-// `prisma/migrations/`. Mocking it out (as the other integration tests
-// do for speed) would make the upsert reference a `default_locale`
-// column the test container doesn't carry. Letting the real helper
-// run inside the route handler keeps the schema consistent for the
-// admin-settings test case in this file.
-//
-// `isolate: false` in `vitest.integration.config.mts` shares module
-// state across files, so a sibling test file that mocks db-compat
-// would leak its mock here. The beforeEach below explicitly imports
-// the actual implementation through `vi.importActual` and runs it on
-// each test setup to defeat that bleed-through.
-
 const PRIMARY_USER_ID = "user-cache-invalidation-primary";
 const OTHER_USER_ID = "user-cache-invalidation-other";
 
@@ -98,12 +83,6 @@ beforeEach(async () => {
   headerJar.clear();
   const { __resetAllCachesForTests } = await import("@/lib/cache/server-cache");
   __resetAllCachesForTests();
-  // Run the real db-compat helper directly so a sibling test file's
-  // `vi.mock("@/lib/db-compat", ...)` cannot leave the `app_settings`
-  // table missing columns the admin-settings PUT writes through.
-  const realDbCompat =
-    await vi.importActual<typeof import("@/lib/db-compat")>("@/lib/db-compat");
-  await realDbCompat.ensureDbCompatibility();
   await seedUsers();
 });
 

@@ -14,7 +14,12 @@ import {
   Check,
   SkipForward,
   MoreHorizontal,
+  MapPin,
 } from "lucide-react";
+import {
+  describeInjectionSite,
+  type InjectionSiteKey,
+} from "@/lib/medications/injection-sites";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-is-mobile";
@@ -94,6 +99,12 @@ export interface IntakeEvent {
   source: IntakeSourceValue;
   /** v1.42.2 — recorded by the server (`autoMarkTaken`), not the person. */
   autoRecorded?: boolean;
+  /**
+   * Where an injected dose went. Set only for medications with
+   * `trackInjectionSites` on and only when the person picked a site; the
+   * list renders it as a badge so the rotation is visible in the history.
+   */
+  injectionSite?: InjectionSiteKey | null;
   createdAt: string;
 }
 
@@ -400,25 +411,15 @@ export function IntakeHistoryListV2({
                           {formatters.dateTime(event.scheduledFor)}
                         </TableCell>
                         <TableCell>
-                          {isTaken ? (
-                            <Badge
-                              variant="secondary"
-                              className="bg-success/15 text-success gap-1 text-xs"
-                            >
-                              <Check aria-hidden="true" className="h-3 w-3" />
-                              {t("medications.intakeHistoryStatusTaken")}
-                            </Badge>
-                          ) : isSkipped ? (
-                            <Badge
-                              variant="outline"
-                              className="text-muted-foreground gap-1 text-xs"
-                            >
-                              <SkipForward
-                                aria-hidden="true"
-                                className="h-3 w-3"
-                              />
-                              {t("medications.intakeHistoryStatusSkipped")}
-                            </Badge>
+                          <IntakeStatusBadge
+                            taken={isTaken}
+                            skipped={isSkipped}
+                          />
+                          {event.injectionSite ? (
+                            <InjectionSiteBadge
+                              site={event.injectionSite}
+                              className="ml-1.5"
+                            />
                           ) : null}
                         </TableCell>
                         <TableCell>
@@ -506,28 +507,14 @@ export function IntakeHistoryListV2({
                               {formatters.dateTime(event.scheduledFor)}
                             </p>
                             <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                              {isTaken ? (
-                                <Badge
-                                  variant="secondary"
-                                  className="bg-success/15 text-success gap-1 text-xs"
-                                >
-                                  <Check
-                                    aria-hidden="true"
-                                    className="h-3 w-3"
-                                  />
-                                  {t("medications.intakeHistoryStatusTaken")}
-                                </Badge>
-                              ) : isSkipped ? (
-                                <Badge
-                                  variant="outline"
-                                  className="text-muted-foreground gap-1 text-xs"
-                                >
-                                  <SkipForward
-                                    aria-hidden="true"
-                                    className="h-3 w-3"
-                                  />
-                                  {t("medications.intakeHistoryStatusSkipped")}
-                                </Badge>
+                              <IntakeStatusBadge
+                                taken={isTaken}
+                                skipped={isSkipped}
+                              />
+                              {event.injectionSite ? (
+                                <InjectionSiteBadge
+                                  site={event.injectionSite}
+                                />
                               ) : null}
                               <Badge
                                 variant="outline"
@@ -685,4 +672,69 @@ function SortHeaderButton({
       {indicator}
     </button>
   );
+}
+
+/**
+ * Injection-site chip for one history row. The visible text is the
+ * localised site name (same vocabulary as the body-map picker); the
+ * accessible name prefixes it with "Injection site" so a screen reader
+ * does not announce a bare "Left thigh" next to the status.
+ */
+function InjectionSiteBadge({
+  site,
+  className,
+}: {
+  site: InjectionSiteKey;
+  className?: string;
+}) {
+  const { t } = useTranslations();
+  const siteName = t(describeInjectionSite(site));
+  return (
+    <Badge
+      variant="outline"
+      className={`text-muted-foreground gap-1 text-xs font-normal ${className ?? ""}`.trim()}
+      aria-label={t("medications.intakeHistoryInjectionSite", {
+        site: siteName,
+      })}
+      data-slot="intake-injection-site"
+    >
+      <MapPin aria-hidden="true" className="h-3 w-3" />
+      {siteName}
+    </Badge>
+  );
+}
+
+/**
+ * Taken / skipped chip shared by the desktop table and the mobile cards.
+ * Renders nothing for a row that is neither (the `status:"completed"`
+ * query keeps those out, but the shape stays defensive).
+ */
+function IntakeStatusBadge({
+  taken,
+  skipped,
+}: {
+  taken: boolean;
+  skipped: boolean;
+}) {
+  const { t } = useTranslations();
+  if (taken) {
+    return (
+      <Badge
+        variant="secondary"
+        className="bg-success/15 text-success gap-1 text-xs"
+      >
+        <Check aria-hidden="true" className="h-3 w-3" />
+        {t("medications.intakeHistoryStatusTaken")}
+      </Badge>
+    );
+  }
+  if (skipped) {
+    return (
+      <Badge variant="outline" className="text-muted-foreground gap-1 text-xs">
+        <SkipForward aria-hidden="true" className="h-3 w-3" />
+        {t("medications.intakeHistoryStatusSkipped")}
+      </Badge>
+    );
+  }
+  return null;
 }

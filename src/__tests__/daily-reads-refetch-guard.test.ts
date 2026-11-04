@@ -125,6 +125,7 @@ const NO_REFETCH_ALLOWLIST = [
   // Background integration-sync completion on the Settings surface — the user
   // is configuring an integration, not acting on the hero; convergence via the
   // daily reads' own poll/focus refetch is the intended behaviour.
+  "components/settings/integrations/garmin-card.tsx",
   "components/settings/integrations/google-health-card.tsx",
   "components/settings/integrations/integration-actions.tsx",
   "components/settings/integrations/nightscout-card.tsx",

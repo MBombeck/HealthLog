@@ -52,10 +52,6 @@ vi.mock("@/lib/rate-limit", () => ({
   rateLimitHeaders: vi.fn(() => ({})),
 }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("@/lib/auth/hmac", () => ({
   // Return a deterministic hex string that does NOT echo the raw
   // value — mirrors the real HMAC-SHA256 shape. The audit row's
@@ -88,7 +84,6 @@ import {
   checkAuthSurfaceRateLimit,
   rateLimitHeaders,
 } from "@/lib/rate-limit";
-import { ensureDbCompatibility } from "@/lib/db-compat";
 
 const TYPED_EMAIL = "leaked-identifier@example.com";
 
@@ -117,7 +112,6 @@ beforeEach(() => {
     ip: "1.2.3.4",
   } as never);
   vi.mocked(rateLimitHeaders).mockReturnValue({} as never);
-  vi.mocked(ensureDbCompatibility).mockResolvedValue(undefined);
 });
 
 describe("POST /api/auth/login — auth.login.failed audit row (H-1)", () => {

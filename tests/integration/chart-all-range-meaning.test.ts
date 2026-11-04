@@ -18,9 +18,6 @@ import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
 import { bucketTimeSeries } from "@/lib/charts/bucket-time-series";
 import type { MeasurementType } from "@/generated/prisma/client";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => null),
 }));

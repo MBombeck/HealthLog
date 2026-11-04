@@ -26,10 +26,6 @@ import { getPrismaClient, truncateAllTables } from "./setup";
 import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
 import { fetchMeasurementDailySeriesTiered } from "@/lib/insights/correlation-channel-series";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // The DAY-only recompute never touches pg-boss; leave the boss detached for
 // parity with the sibling rollup suites (`isolate: false` shares the mock).
 vi.mock("@/lib/jobs/boss-instance", () => ({

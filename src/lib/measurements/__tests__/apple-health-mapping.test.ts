@@ -27,6 +27,12 @@ const MEASUREMENT_TYPES_WITHOUT_HK_COUNTERPART = new Set<MeasurementType>([
   "INDOOR_CO2",
   "INDOOR_TEMPERATURE",
   "INDOOR_HUMIDITY",
+  // Garmin's own scores (Personal API) and the training figures a bridge
+  // pushes through the ingest token; Garmin shares none of them with HealthKit.
+  "BODY_BATTERY",
+  "STRESS_LEVEL",
+  "TRAINING_READINESS",
+  "ACUTE_TRAINING_LOAD",
   // Withings-only metrics (no HK identifier ships any of these as a
   // first-class quantity — Apple delegates body-composition tail to
   // third-party devices via the BodyMass/BodyFat pair).

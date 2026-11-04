@@ -37,10 +37,6 @@ vi.mock("@/lib/rate-limit", () => ({
   checkAuthSurfaceRateLimit: vi.fn(),
 }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 import { POST } from "../route";
 import { resolveShareGateState } from "@/lib/clinician-share/resolve-share-token";
 import { verifyPassphrase } from "@/lib/clinician-share/passphrase";

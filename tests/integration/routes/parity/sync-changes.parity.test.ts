@@ -298,7 +298,7 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("GET /api/sync/changes parity", () => {
+describe("GET /api/sync/changes parity", { shuffle: false }, () => {
   let firstCursor: string;
 
   it("drains the feed in small pages to the end", async () => {

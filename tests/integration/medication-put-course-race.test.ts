@@ -40,10 +40,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // The check the concurrent request outran: it saw no conflict.
 vi.mock("@/lib/medications/courses", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/medications/courses")>()),

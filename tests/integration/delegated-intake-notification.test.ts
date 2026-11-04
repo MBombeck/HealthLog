@@ -50,10 +50,6 @@ vi.mock("@parse/node-apn", () => {
   return { default: { Provider, Notification }, Provider, Notification };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 import { getPrismaClient, truncateAllTables } from "./setup";
 
 const OWNER_ID = "user-delegated-intake-owner";

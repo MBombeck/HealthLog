@@ -19,6 +19,7 @@ import { MEASUREMENTS_WRITE_SCOPE } from "@/lib/measurements/scopes";
 import { reconcileExternalMeasurement } from "@/lib/measurements/reconcile-external-measurement";
 import { upsertNightscoutEntries } from "@/lib/nightscout/sync";
 import { upsertOuraMeasurements } from "@/lib/oura/sync";
+import { upsertGarminMeasurements } from "@/lib/garmin/sync";
 import { upsertPolarMeasurements } from "@/lib/polar/sync";
 import { syncUserActivity } from "@/lib/withings/sync-activity";
 import { upsertWhoopMeasurements } from "@/lib/whoop/sync-core";
@@ -51,10 +52,6 @@ vi.mock("next/headers", async () => {
     })),
   };
 });
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const USER_ID = "measurement-source-write-smoke";
 const MEASURED_AT = new Date("2026-07-20T08:00:00.000Z");
@@ -245,6 +242,21 @@ const SOURCE_CASES = {
       ]);
     },
   },
+  GARMIN: {
+    expectedType: "BODY_BATTERY",
+    expectedExternalId: "daily:2026-07-20:body_battery",
+    write: async () => {
+      await upsertGarminMeasurements(USER_ID, [
+        {
+          type: "BODY_BATTERY",
+          value: 81,
+          unit: "score",
+          measuredAt: new Date("2026-07-20T10:00:00.000Z"),
+          externalId: "daily:2026-07-20:body_battery",
+        },
+      ]);
+    },
+  },
   TELEGRAM: {
     expectedType: "WEIGHT",
     expectedExternalId: "telegram:source-smoke",
@@ -427,9 +439,9 @@ describe("MeasurementSource write paths against real Postgres", () => {
       });
     }
 
-    expect(sourceCases).toHaveLength(16);
+    expect(sourceCases).toHaveLength(17);
     expect(await prisma.measurement.count({ where: { userId: USER_ID } })).toBe(
-      16,
+      17,
     );
   });
 });

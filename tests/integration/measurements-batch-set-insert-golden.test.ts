@@ -38,10 +38,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const SET_USER = "golden-set-based";
 const RECONCILER_USER = "golden-reconciler";
 

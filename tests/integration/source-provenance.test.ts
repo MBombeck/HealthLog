@@ -8,7 +8,7 @@
  * day values count asleep stages only, and the comparison lines the two
  * sources up per day.
  */
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import {
@@ -21,10 +21,6 @@ import {
   readSourceComparison,
 } from "@/lib/provenance/source-provenance";
 import type { Prisma } from "@/generated/prisma/client";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const prisma = getPrismaClient();
 const USER = "provenance-user";

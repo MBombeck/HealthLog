@@ -92,10 +92,6 @@ vi.mock("@/lib/analytics/mood-series", () => ({
   })),
 }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: () => null })),
   cookies: vi.fn(async () => ({

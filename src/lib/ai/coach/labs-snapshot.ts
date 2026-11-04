@@ -56,6 +56,7 @@
  * lookback limit (the whole record when there is none), or, for a named read,
  * when no marker matches the analyte.
  */
+import type { Prisma } from "@/generated/prisma/client";
 import { sameLabUnit } from "@/lib/labs/unit-normalise";
 import {
   UNBOUNDED_REACH,
@@ -229,6 +230,77 @@ export function shapeLabHistory(
   };
 }
 
+/** What a reading is shaped from; `noteEncrypted` is never selected. */
+const LAB_READING_SELECT = {
+  id: true,
+  analyte: true,
+  panel: true,
+  value: true,
+  valueText: true,
+  unit: true,
+  referenceLow: true,
+  referenceHigh: true,
+  sourceReferenceLow: true,
+  sourceReferenceHigh: true,
+  sourceReferenceText: true,
+  sourceUnit: true,
+  takenAt: true,
+  biomarkerId: true,
+  biomarker: {
+    select: {
+      id: true,
+      name: true,
+      unit: true,
+      lowerBound: true,
+      upperBound: true,
+      panel: true,
+    },
+  },
+} as const satisfies Prisma.LabResultSelect;
+
+type LabReadingRow = Prisma.LabResultGetPayload<{
+  select: typeof LAB_READING_SELECT;
+}>;
+
+/** One stored row as a reading, without its id. */
+function labReading(
+  row: LabReadingRow,
+  resolved: ReturnType<typeof resolveLabFields>,
+): CoachLabReading {
+  return {
+    // v1.30.25 — analyte / panel / unit are NOT server-authored. A lab row
+    // committed from an uploaded document carries the name a model
+    // transcribed out of that PDF (`resolveOrMintBiomarker` stores it
+    // verbatim as `Biomarker.name`), so a hostile document chooses this
+    // string. It reaches BOTH the snapshot prompt and the `labs_read`
+    // tool result, so it is sanitised HERE at the shared source rather
+    // than at either consumer. `sanitizeForPrompt` strips control chars
+    // and the instruction-shaped patterns; the fence around the block
+    // carries the data/instruction contract.
+    analyte: sanitizeForPrompt(resolved.analyte, MAX_ANALYTE_CHARS),
+    panel: resolved.panel
+      ? sanitizeForPrompt(resolved.panel, MAX_ANALYTE_CHARS)
+      : null,
+    value: row.value,
+    valueText: row.valueText ? sanitizeValueText(row.valueText) : null,
+    // A value without a unit is stored as "1"; the model is shown none,
+    // so it never writes "3.6 1".
+    unit: sanitizeForPrompt(labUnitText(resolved.unit), MAX_UNIT_CHARS),
+    referenceLow: resolved.referenceLow,
+    referenceHigh: resolved.referenceHigh,
+    // A qualitative row has nothing to compare against the bounds →
+    // neutral "unknown", never a fabricated verdict. A numeric row
+    // classifies against the window in force for it — the report's own
+    // range when it carries one, the catalog band otherwise. Same rule as
+    // every other lab surface.
+    rangeStatus: classifyAgainstEffectiveRange(
+      row.value,
+      resolved.effectiveRange,
+    ),
+    takenAt: row.takenAt.toISOString(),
+  };
+}
+
 /**
  * Build the labs context block, or `null` when the account has no readings in
  * the lookback window. Selects label + value + resolved bounds + dates only —
@@ -283,32 +355,7 @@ export async function buildLabsSnapshotBlock(
     },
     orderBy: { takenAt: "desc" },
     take: MAX_ROWS,
-    select: {
-      id: true,
-      analyte: true,
-      panel: true,
-      value: true,
-      valueText: true,
-      unit: true,
-      referenceLow: true,
-      referenceHigh: true,
-      sourceReferenceLow: true,
-      sourceReferenceHigh: true,
-      sourceReferenceText: true,
-      sourceUnit: true,
-      takenAt: true,
-      biomarkerId: true,
-      biomarker: {
-        select: {
-          id: true,
-          name: true,
-          unit: true,
-          lowerBound: true,
-          upperBound: true,
-          panel: true,
-        },
-      },
-    },
+    select: LAB_READING_SELECT,
   });
 
   if (rows.length === 0) return null;
@@ -358,39 +405,7 @@ export async function buildLabsSnapshotBlock(
       unit: resolved.unit,
       takenAt: row.takenAt,
       earlier: [],
-      reading: {
-        // v1.30.25 — analyte / panel / unit are NOT server-authored. A lab row
-        // committed from an uploaded document carries the name a model
-        // transcribed out of that PDF (`resolveOrMintBiomarker` stores it
-        // verbatim as `Biomarker.name`), so a hostile document chooses this
-        // string. It reaches BOTH the snapshot prompt and the `labs_read`
-        // tool result, so it is sanitised HERE at the shared source rather
-        // than at either consumer. `sanitizeForPrompt` strips control chars
-        // and the instruction-shaped patterns; the fence around the block
-        // carries the data/instruction contract.
-        analyte: sanitizeForPrompt(resolved.analyte, MAX_ANALYTE_CHARS),
-        panel: resolved.panel
-          ? sanitizeForPrompt(resolved.panel, MAX_ANALYTE_CHARS)
-          : null,
-        value: row.value,
-        valueText: row.valueText ? sanitizeValueText(row.valueText) : null,
-        // A value without a unit is stored as "1"; the model is shown none,
-        // so it never writes "3.6 1".
-        unit: sanitizeForPrompt(labUnitText(resolved.unit), MAX_UNIT_CHARS),
-        referenceLow: resolved.referenceLow,
-        referenceHigh: resolved.referenceHigh,
-        // A qualitative row has nothing to compare against the bounds →
-        // neutral "unknown", never a fabricated verdict. A numeric row
-        // classifies against the window in force for it — the report's own
-        // range when it carries one, the catalog band otherwise. Same rule as
-        // every other lab surface.
-        rangeStatus: classifyAgainstEffectiveRange(
-          row.value,
-          resolved.effectiveRange,
-        ),
-        takenAt: row.takenAt.toISOString(),
-        ...id,
-      },
+      reading: { ...labReading(row, resolved), ...id },
     });
   }
 
@@ -409,4 +424,21 @@ export async function buildLabsSnapshotBlock(
   if (recent.length === 0) return null;
 
   return { recent };
+}
+
+/**
+ * One reading by its lab result id, shaped exactly like a block entry, or
+ * `null` when it is not this account's, is deleted, or the labs module is off.
+ */
+export async function readLabReading(
+  userId: string,
+  labResultId: string,
+): Promise<CoachLabReading | null> {
+  if (!(await isModuleEnabled(userId, "labs"))) return null;
+  const row = await prisma.labResult.findFirst({
+    where: { id: labResultId, userId, deletedAt: null },
+    select: LAB_READING_SELECT,
+  });
+  if (!row) return null;
+  return labReading(row, resolveLabFields(row, row.biomarker));
 }

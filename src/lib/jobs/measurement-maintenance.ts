@@ -62,6 +62,10 @@ import { sessionOptionsDisabled } from "@/lib/db";
 
 import { withJobLock } from "@/lib/jobs/job-lock";
 import {
+  CONCURRENT_COPY,
+  RETIRED_MEASUREMENT_INDEXES as RETIRED_INDEXES_SHARED,
+} from "@/lib/jobs/retired-measurement-indexes.mjs";
+import {
   jobDone,
   jobFailed,
   percentFact,
@@ -170,14 +174,11 @@ export function maintenanceSessionStatements(): string[] {
 
 /**
  * Indexes on `measurements` the schema no longer declares, which a run drops
- * when the migration that retired them could not. Each one's migration names
- * it; `IF EXISTS` makes the drop a no-op once it is gone.
+ * when the migration that retired them could not. The list lives in a plain
+ * module because the boot step `scripts/db-app-role.mjs` reads it too.
  */
-export const RETIRED_MEASUREMENT_INDEXES: readonly string[] = [
-  // 0416: a prefix of the unique key `(user_id, type, measured_at, source,
-  // sleep_stage)`, which plans every query it served at the same cost.
-  "measurements_user_id_type_measured_at_idx",
-];
+export const RETIRED_MEASUREMENT_INDEXES: readonly string[] =
+  RETIRED_INDEXES_SHARED;
 
 /** How long a run waits for the locks that drop a retired index. */
 export const RETIRED_INDEX_LOCK_TIMEOUT = "60s";
@@ -186,9 +187,6 @@ const LOCK_TIMEOUT_VALUE = /^\d{1,6}(ms|s)$/;
 
 /** The only shape an index name may have before it is spliced into SQL. */
 const INDEX_NAME = /^[a-z0-9_]{1,63}$/;
-
-/** Postgres's suffixes for the copies a concurrent rebuild leaves behind. */
-const CONCURRENT_COPY = /_ccnew\d*$|_ccold\d*$/;
 
 const PURGE_QUEUE = "compaction-tombstone-purge";
 
@@ -214,6 +212,12 @@ export interface MeasurementMaintenanceSummary {
   tableBytesAfter: number;
   indexBytesBefore: number;
   indexBytesAfter: number;
+  /**
+   * Retired indexes and invalid rebuild copies the run found but may not
+   * drop, because it does not connect as the table's owner. The next start
+   * drops them as the owner (`scripts/db-app-role.mjs`).
+   */
+  dropsLeftForBoot: string[];
 }
 
 interface IndexRow {
@@ -333,6 +337,34 @@ function errorText(err: unknown): string {
   return typeof code === "string" ? `${code}: ${message}` : message;
 }
 
+/**
+ * Whether this connection may drop indexes on `measurements`, which only the
+ * table's owner (or a member of the owning role) may. The app's restricted
+ * role may not: it holds MAINTAIN on the table, which covers `VACUUM` and
+ * `REINDEX` but not `DROP INDEX`. Under it the drops wait for the next start,
+ * which runs them as the owner (`scripts/db-app-role.mjs`).
+ */
+export async function mayDropMeasurementIndexes(
+  db: MaintenanceConnection,
+): Promise<boolean> {
+  const { rows } = await db.query<{ owns: boolean }>(
+    `SELECT pg_has_role(current_user, c.relowner, 'USAGE') AS owns
+       FROM pg_class c WHERE c.oid = 'measurements'::regclass`,
+  );
+  return rows[0]?.owns === true;
+}
+
+/** The droppable indexes present on the table: retired ones and invalid copies. */
+async function indexesToDrop(db: MaintenanceConnection): Promise<string[]> {
+  return (await measurementIndexes(db))
+    .filter(
+      (index) =>
+        RETIRED_MEASUREMENT_INDEXES.includes(index.name) ||
+        (!index.valid && CONCURRENT_COPY.test(index.name)),
+    )
+    .map((index) => index.name);
+}
+
 /** Drop the invalid copies an interrupted concurrent rebuild left behind. */
 async function dropInvalidCopies(
   db: MaintenanceConnection,
@@ -434,21 +466,25 @@ export async function runMeasurementMaintenance(
 ): Promise<MeasurementMaintenanceSummary> {
   const before = await relationSizes(db);
   const steps: MaintenanceStep[] = [];
-  const summary = (
+  const mayDrop = await mayDropMeasurementIndexes(db);
+  const summary = async (
     outcome: MeasurementMaintenanceSummary["outcome"],
     after = before,
-  ): MeasurementMaintenanceSummary => ({
+  ): Promise<MeasurementMaintenanceSummary> => ({
     outcome,
     steps,
     tableBytesBefore: before.table,
     tableBytesAfter: after.table,
     indexBytesBefore: before.indexes,
     indexBytesAfter: after.indexes,
+    dropsLeftForBoot: mayDrop ? [] : await indexesToDrop(db),
   });
 
   // Every run, the nightly tick included: a retired index costs every write
   // until it is gone, and the drop blocks no reader or writer.
-  await dropRetiredIndexes(db, steps, options.retiredLockTimeout);
+  if (mayDrop) {
+    await dropRetiredIndexes(db, steps, options.retiredLockTimeout);
+  }
 
   if (!payload.vacuum && !payload.reindex) return summary("nothing_due");
 
@@ -495,7 +531,7 @@ export async function runMeasurementMaintenance(
   }
 
   if (payload.reindex) {
-    await dropInvalidCopies(db, steps);
+    if (mayDrop) await dropInvalidCopies(db, steps);
     const targets = (await measurementIndexes(db)).filter(
       (index) =>
         index.valid &&
@@ -529,7 +565,9 @@ export async function runMeasurementMaintenance(
         });
         // A failed concurrent rebuild leaves its half-built copy behind,
         // holding disk. Drop it and stop: the likeliest cause is the disk.
-        await dropInvalidCopies(db, steps);
+        // Without the owner's right to drop it, the copy stays until the next
+        // start and the summary names it.
+        if (mayDrop) await dropInvalidCopies(db, steps);
         return summary("failed", await relationSizes(db));
       }
     }
@@ -602,6 +640,15 @@ export async function handleMeasurementMaintenance(
           `measurements heap is ${health.bloatFactor}x what its live rows need; only VACUUM FULL in a maintenance window gives the space back`,
         );
       }
+    }
+    if (result.dropsLeftForBoot.length > 0) {
+      evt.addMeta(
+        "maintenance_drops_left_for_boot",
+        result.dropsLeftForBoot.length,
+      );
+      evt.addWarning(
+        `index ${result.dropsLeftForBoot.join(", ")} on measurements is due to be dropped, which only the table's owner may do; the next start drops it as the owner`,
+      );
     }
     const retiredLeft = result.steps.filter(
       (s) => s.step === "drop_retired" && !s.ok,

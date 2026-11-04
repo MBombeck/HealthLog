@@ -94,6 +94,9 @@ describe("buildCoachSnapshot — Apple Health additive metrics (v1.4.23)", () =>
     // for 60 s; reset between tests so each fixture is read fresh.
     __resetCoachSnapshotCacheForTests();
     resolveModuleMapMock.mockResolvedValue(allModulesEnabled());
+    // No readings unless a case seeds its own; the case that only inspects
+    // the query used to inherit whatever rows the case before it left.
+    prismaMock.measurement.findMany.mockResolvedValue([]);
     prismaMock.moodEntry.findMany.mockResolvedValue([]);
     prismaMock.medicationIntakeEvent.findMany.mockResolvedValue([]);
     prismaMock.medication.findMany.mockResolvedValue([]);

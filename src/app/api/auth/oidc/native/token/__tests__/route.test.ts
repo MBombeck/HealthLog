@@ -9,10 +9,6 @@ vi.mock("@/lib/db", () => ({
   prisma: { user: { findUnique: vi.fn() } },
 }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("@/lib/rate-limit", () => ({
   checkAuthSurfaceRateLimit: vi.fn(),
   rateLimitHeaders: vi.fn(() => ({})),

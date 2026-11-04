@@ -2353,6 +2353,14 @@
       },
       "ouraBackfillCompletedAt": "2026-06-30T12:34:56.789Z",
       "ouraUserId": "rt-User-ouraUserId",
+      "garminApiKeyEncrypted": "<sealed:v1:rt-User-garminApiKeyEncrypted>",
+      "garminKeyExpiresAt": "2026-06-30T12:34:56.789Z",
+      "garminConnectedAt": "2026-06-30T12:34:56.789Z",
+      "garminRegion": "rt-User-garminRegion",
+      "garminBackfillProgress": {
+        "roundTrip": "rt-User-garminBackfillProgress"
+      },
+      "garminBackfillCompletedAt": "2026-06-30T12:34:56.789Z",
       "clientAppSharedBy": {
         "roundTrip": "rt-User-clientAppSharedBy"
       },

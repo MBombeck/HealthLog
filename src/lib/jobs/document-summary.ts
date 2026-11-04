@@ -46,6 +46,7 @@ import { resolveDocumentVisionProvider } from "@/lib/documents/provider-order";
 import { withPdfWork } from "@/lib/documents/pdf-isolation";
 import { PdfReaderUnavailableError } from "@/lib/documents/pdfjs";
 import { encryptDocumentSummary } from "@/lib/documents/store";
+import { providerInputOf } from "@/lib/documents/vision-input";
 import { prisma } from "@/lib/db";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { annotate } from "@/lib/logging/context";
@@ -234,7 +235,7 @@ export async function runDocumentSummaryJob(
   const vision = await prepareSummaryVision(userId, document, pick);
   if (!vision.ok) {
     // Cannot read this file with the picked provider (decrypt miss, unsupported
-    // type, or a PDF needing an Anthropic provider). Graceful no-op.
+    // type, a PDF that will not render or, unrenderable here, a scan). No-op.
     await markSummaryState(userId, documentId, "UNAVAILABLE");
     annotate({
       action: { name: "documents.summary.autoSkipped" },
@@ -276,8 +277,7 @@ export async function runDocumentSummaryJob(
     const { summary, blocked } = await runDocumentSummary({
       provider: pick.entry.instance,
       providerType: pick.providerType,
-      images: vision.images,
-      documents: vision.documents,
+      ...providerInputOf(vision),
       locale,
     });
     await reconcileSpend(

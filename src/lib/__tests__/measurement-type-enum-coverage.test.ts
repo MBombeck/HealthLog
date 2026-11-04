@@ -124,6 +124,11 @@ const EXPECTED_TYPES = [
   "INDOOR_CO2",
   "INDOOR_TEMPERATURE",
   "INDOOR_HUMIDITY",
+  // ── Garmin Personal API + bridged training figures ──
+  "BODY_BATTERY",
+  "STRESS_LEVEL",
+  "TRAINING_READINESS",
+  "ACUTE_TRAINING_LOAD",
 ] as const;
 
 describe("measurementTypeEnum coverage", () => {

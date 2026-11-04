@@ -169,6 +169,8 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   // v1.43 — Dawarich connection (URL and API key, like the Nightscout pair).
   { model: "User", field: "dawarichUrlEncrypted", kind: "string" },
   { model: "User", field: "dawarichApiKeyEncrypted", kind: "string" },
+  // Garmin Personal API key.
+  { model: "User", field: "garminApiKeyEncrypted", kind: "string" },
   { model: "User", field: "polarAccessTokenEncrypted", kind: "string" },
   { model: "User", field: "polarUserIdEncrypted", kind: "string" },
   { model: "User", field: "polarClientIdEncrypted", kind: "string" },

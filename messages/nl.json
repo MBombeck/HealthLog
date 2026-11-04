@@ -969,7 +969,12 @@
     "durationMinutesOnly": "{minutes} min",
     "durationInvalid": "Voer een duur in, bijvoorbeeld 7,5, 7:30 of 7h 30m.",
     "durationTooLong": "Eén registratie kan niet langer zijn dan 24 uur.",
-    "sourceHealthConnect": "Health Connect"
+    "sourceHealthConnect": "Health Connect",
+    "typeBodyBattery": "Body Battery",
+    "typeStressLevel": "Stressniveau",
+    "typeTrainingReadiness": "Trainingsgereedheid",
+    "typeAcuteTrainingLoad": "Acute trainingsbelasting",
+    "sourceGarmin": "Garmin"
   },
   "metricCatalog": {
     "title": "Wat HealthLog kan bijhouden",
@@ -1895,6 +1900,7 @@
     "intakeHistoryColScheduled": "Gepland",
     "intakeHistoryColStatus": "Status",
     "intakeHistoryColSource": "Bron",
+    "intakeHistoryInjectionSite": "Injectieplaats: {site}",
     "intakeHistoryStatusTaken": "Ingenomen",
     "intakeHistoryStatusSkipped": "Overgeslagen",
     "intakeHistorySortByTaken": "Sorteren op innametijd",
@@ -4758,7 +4764,8 @@
       "unitScore": "score",
       "unitMinutes": "min",
       "unitBpm": "bpm",
-      "unitKj": "kJ"
+      "unitKj": "kJ",
+      "unitLoad": "belasting"
     },
     "sleepQuality": {
       "title": "Slaapkwaliteit",
@@ -4777,7 +4784,11 @@
         "cardioLoadExplainer": "Een indicatie van trainingsbelasting die de acute cardiovasculaire belasting volgt die je hebt opgebouwd. Vergelijk het met je eigen recente dagen.",
         "averageHeartRateExplainer": "Je gemiddelde hartslag over de hele dag of cyclus, zoals gerapporteerd door je wearable.",
         "maxHeartRateExplainer": "Je hoogste hartslag over de hele dag of cyclus, zoals gerapporteerd door je wearable.",
-        "energyExpenditureKjExplainer": "De energie die je lichaam over de dag heeft verbruikt, in kilojoule, zoals je apparaat die zelf rapporteert."
+        "energyExpenditureKjExplainer": "De energie die je lichaam over de dag heeft verbruikt, in kilojoule, zoals je apparaat die zelf rapporteert.",
+        "bodyBatteryExplainer": "Je energiereserve op de schaal van 0 tot 100 van Garmin, het hoogste niveau van de dag. Rust en slaap vullen hem aan, stress en activiteit putten hem uit.",
+        "trainingReadinessExplainer": "Hoe klaar je lichaam is voor een zware training, op de schaal van 0 tot 100 van Garmin. De waarde komt via een brug die je zelf hebt ingesteld, omdat Garmin hem niet rechtstreeks deelt.",
+        "stressLevelExplainer": "Garmins gemiddelde stressniveau over de dag op een schaal van 0 tot 100, afgeleid uit je hartslagvariabiliteit. Lager is rustiger.",
+        "acuteTrainingLoadExplainer": "Garmins acute trainingsbelasting: de gewogen belasting van je activiteiten van de afgelopen zeven dagen. De waarde komt via een brug die je zelf hebt ingesteld. Vergelijk hem met je eigen recente weken."
       },
       "emptyAction": "Integraties openen",
       "emptyOuraNoResilience": "Oura is verbonden, en het veerkrachtniveau verschijnt hier zodra Oura er een levert.",
@@ -4971,6 +4982,40 @@
       "emptyDescription": "In deze periode is nog geen score vastgelegd.",
       "usualRange": "Gearceerd: je gebruikelijke bereik, {lo} tot {hi}.",
       "seam": "De lijn wordt onderbroken op het moment dat veranderde wat meetelt voor de score."
+    },
+    "bpTimeOfDay": {
+      "title": "Per moment van de dag",
+      "description": "Je gemiddelde bloeddruk per moment van de dag, over de periode van de grafiek.",
+      "part": {
+        "morning": "Ochtend",
+        "midday": "Middag",
+        "evening": "Avond"
+      },
+      "filterAll": "Hele dag",
+      "filterLabel": "Tonen in de grafiek",
+      "readingsOne": "{count} meting",
+      "readingsFew": "{count} metingen",
+      "readingsOther": "{count} metingen",
+      "notEnough": "Te weinig metingen",
+      "pulse": "Hartslag {value} bpm",
+      "difference": "Ochtend min avond: {systolic}/{diastolic} mmHg.",
+      "differencePending": "Ochtend en avond worden vergeleken zodra elk minstens {min} metingen heeft.",
+      "hours": "Ochtend {morning}, middag {midday}, avond {evening}, in je eigen tijdzone.",
+      "hourRange": "{start}–{end}",
+      "emptyTitle": "Geen volledige metingen in deze periode",
+      "emptyDescription": "Metingen met zowel een systolische als een diastolische waarde verschijnen hier.",
+      "error": "De gemiddelden per moment van de dag konden niet worden geladen.",
+      "chartTitle": {
+        "morning": "Bloeddruk 's ochtends",
+        "midday": "Bloeddruk 's middags",
+        "evening": "Bloeddruk 's avonds"
+      },
+      "statsLabel": "{series}, {part}",
+      "statsPart": {
+        "morning": "'s ochtends",
+        "midday": "'s middags",
+        "evening": "'s avonds"
+      }
     }
   },
   "thresholds": {
@@ -5653,7 +5698,11 @@
           "recovery": "Herstel",
           "stress": "Stress",
           "sleepDebt": "Slaaptekort",
-          "hrvRmssd": "HRV (RMSSD)"
+          "hrvRmssd": "HRV (RMSSD)",
+          "bodyBattery": "Body Battery",
+          "stressLevel": "Stressniveau",
+          "trainingReadiness": "Trainingsgereedheid",
+          "acuteTrainingLoad": "Acute trainingsbelasting"
         },
         "sourceLabels": {
           "WITHINGS": "Withings",
@@ -5671,7 +5720,8 @@
           "GOOGLE_HEALTH": "Google Health",
           "STRAVA": "Strava",
           "EXTERNAL": "Extern apparaat",
-          "HEALTH_CONNECT": "Health Connect"
+          "HEALTH_CONNECT": "Health Connect",
+          "GARMIN": "Garmin"
         },
         "deviceLabels": {
           "watch": "Horloge",
@@ -7465,11 +7515,6 @@
         "lastEnteredHere": "Laatst hier ingevoerd {relative}"
       }
     },
-    "garminInfo": {
-      "title": "Garmin",
-      "body": "Garmin heeft hier geen directe koppeling. Koppel via Apple Health (iOS) of Google Health Connect (Android). De eigen scores van Garmin (Body Battery, Training Load, HRV Status, VO₂ max) deelt Garmin met geen van beide platforms.",
-      "docsLink": "Lees de handleiding"
-    },
     "glucoseReference": {
       "title": "Referentiebereik voor glucose",
       "description": "Aan welk bereik je bloedglucosemetingen worden getoetst.",
@@ -7669,7 +7714,58 @@
     "deleteAccountConfirmDescriptionGrace": "Je wordt uitgelogd en je account wordt meteen vergrendeld. Na {days} dagen wordt het definitief gewist, met alle gezondheidsgegevens, passkeys, sessies en auditregels. Tot dan kan een beheerder van deze server de verwijdering ongedaan maken. Kopieën in de back-ups van deze server verlopen na hun bewaartermijn.",
     "deleteAccountScheduled": "Je account is vergrendeld en wordt op {date} gewist. Je wordt uitgelogd.",
     "dangerZoneSuccessGrace": "Je gezondheidsdossier is verwijderd. Een beheerder van deze server kan het tot {date} terugzetten.",
-    "dangerZoneRestoreLimits": "Ook toegang eindigt: wat je met anderen deelt, wat anderen met jou delen en elke rol als verzorger. Terugzetten brengt het dossier terug zoals het nu is. Wat na het verwijderen is toegevoegd, wordt vervangen, en koppelingen, delen, verzorgersrollen en deellinks komen niet terug; die moeten opnieuw worden ingesteld."
+    "dangerZoneRestoreLimits": "Ook toegang eindigt: wat je met anderen deelt, wat anderen met jou delen en elke rol als verzorger. Terugzetten brengt het dossier terug zoals het nu is. Wat na het verwijderen is toegevoegd, wordt vervangen, en koppelingen, delen, verzorgersrollen en deellinks komen niet terug; die moeten opnieuw worden ingesteld.",
+    "garmin": "Garmin",
+    "garminTag": "Personal API",
+    "garminDescription": "Plak een Garmin Personal API-sleutel om slaap, HRV, Body Battery, stress, stappen, gewicht en activiteiten uit Garmin Connect te synchroniseren.",
+    "garminSync": "Nu synchroniseren",
+    "garminSyncResult": "{count} items gesynchroniseerd",
+    "garminSyncFailed": "Synchronisatie mislukt",
+    "garminViewData": "Je herstel bekijken",
+    "garminReplaceKey": "Sleutel vervangen",
+    "garminDisconnect": "Ontkoppelen",
+    "garminDisconnectTitle": "Garmin ontkoppelen?",
+    "garminDisconnectDescription": "Toekomstige synchronisaties stoppen en de sleutel wordt van deze server verwijderd. Al geïmporteerde gegevens blijven in je geschiedenis. Bij Garmin blijft de sleutel werken tot je hem daar intrekt.",
+    "garminKeyValidUntil": "Sleutel geldig tot {date}",
+    "garminKeyExpired": "Je Garmin-sleutel is op {date} verlopen. Maak in Garmin Connect een nieuwe sleutel en plak die hier om weer te synchroniseren.",
+    "garminKeyExpiresToday": "Je Garmin-sleutel verloopt vandaag. Maak in Garmin Connect een nieuwe sleutel en plak die hier zodat het synchroniseren niet stopt.",
+    "garminKeyExpiring": "Je Garmin-sleutel verloopt op {date}. Maak vóór die datum in Garmin Connect een nieuwe sleutel en plak die hier.",
+    "garminKeyExpiryUnknown": "Garmin vertelt niet wanneer deze sleutel verloopt. Vervang de sleutel en kies de geldigheid die je in Garmin Connect hebt gekozen, dan waarschuwt deze kaart je een week van tevoren.",
+    "garminConnected": "Garmin gekoppeld. De eerste synchronisatie is onderweg.",
+    "garminKeyHowTo": "Open in Garmin Connect de instellingen, dan Personal API, en maak een sleutel. Garmin toont hem maar één keer, dus kopieer hem meteen.",
+    "garminKeySettingsLink": "Garmin Connect openen",
+    "garminApiKey": "Personal API-sleutel",
+    "garminApiKeyPlaceholder": "Plak de sleutel",
+    "garminApiKeySavedPlaceholder": "Opgeslagen. Plak een nieuwe sleutel om hem te vervangen",
+    "garminKeyValidity": "Gekozen geldigheid",
+    "garminKeyValidityUnknown": "Weet ik niet",
+    "garminKeyValidityDays": "{count} dagen",
+    "garminKeyValidityHelp": "Garmin meldt niet wanneer een sleutel verloopt. Met de geldigheid waarschuwt deze kaart je een week voordat de sleutel stopt met werken.",
+    "garminConnect": "Koppelen",
+    "garminUpdate": "Wijzigingen opslaan",
+    "garminRegion": "Garmin-dienst",
+    "garminRegionGlobal": "Garmin Connect (wereldwijd)",
+    "garminRegionChina": "Garmin Connect China",
+    "garminErrors": {
+      "keyRefused": "Garmin heeft deze sleutel niet geaccepteerd. Controleer of hij volledig is gekopieerd, bij de gekozen dienst hoort en niet verlopen of ingetrokken is.",
+      "rateLimited": "Garmin beperkt op dit moment het aantal verzoeken. Probeer het over een paar minuten opnieuw.",
+      "unreachable": "Garmin is niet bereikbaar. Probeer het over een paar minuten opnieuw.",
+      "invalid": "Die sleutel ziet er niet goed uit. Plak hem opnieuw, zonder spaties.",
+      "generic": "Dat is niet gelukt. Probeer het opnieuw."
+    },
+    "garminKeyValidityMenu": "Geldigheid van de sleutel",
+    "garminValiditySaved": "Geldigheid opgeslagen.",
+    "garminKeyCreatedOn": "Aangemaakt op",
+    "garminKeyCreatedOnHelp": "De dag waarop je de sleutel in Garmin Connect hebt gemaakt. Leeg gelaten telt de geldigheid vanaf de dag dat je hem hier hebt gekoppeld.",
+    "garminUnavailable": "Garmin levert deze gegevens niet voor je account: {list}.",
+    "garminResource": {
+      "daily": "dagoverzichten",
+      "activities": "activiteiten",
+      "sleep": "slaap",
+      "hrv": "HRV",
+      "weight": "wegingen",
+      "cycle": "menstruatiecyclus"
+    }
   },
   "admin": {
     "title": "Beheer",
@@ -10393,7 +10489,7 @@
       "fileTooLarge": "Het bestand is te groot (max. 12 MB).",
       "fileType": "Upload een JPEG, PNG, WebP of PDF.",
       "extractFailed": "Het rapport kon niet worden gelezen. Probeer een scherpere foto.",
-      "pdfNeedsAnthropic": "Voor het scannen van PDF's is een Claude-provider met beeldherkenning nodig; upload in plaats daarvan een foto.",
+      "pdfRendererUnavailable": "De processor van deze server kan geen PDF-pagina's weergeven, dus een gescand rapport kan hier alleen worden gelezen door een AI-provider die PDF-bestanden rechtstreeks aanneemt. Upload in plaats daarvan een foto.",
       "refTextLabel": "Bereik zoals afgedrukt",
       "refTextPlaceholder": "bijv. 3,5 - 5,0",
       "aiUnavailable": "Een rapport scannen met AI is hier op dit moment niet beschikbaar.",
@@ -11960,7 +12056,7 @@
           "decrypt-error": "Het opgeslagen bestand kon niet worden geopend om te lezen.",
           "raster-failed": "De PDF-pagina's konden niet worden weergegeven om te lezen. Compressieformaten van gescande faxen zijn een bekende oorzaak.",
           "provider-error": "De AI-provider kon dit document bij de laatste poging niet lezen.",
-          "pdf-needs-anthropic": "De ingestelde AI-provider kan geen PDF-bestanden lezen. Een Claude-provider of lokale OCR kan dat wel.",
+          "pdf-needs-anthropic": "De processor van deze server kan geen PDF-pagina's weergeven en deze PDF heeft geen tekstlaag. Een AI-provider die PDF-bestanden rechtstreeks aanneemt kan hem lezen, of upload foto's van de pagina's.",
           "empty-transcription": "De AI-provider gaf geen tekst terug voor dit document.",
           "resource-limit": "Deze pdf is te groot of te complex om hier te lezen. Het bestand zelf is in orde en opent nog steeds."
         }
@@ -12043,7 +12139,7 @@
       "errorRateLimitedWaitFew": "De limiet voor lezen met AI per uur is bereikt. Probeer het over ongeveer {count} minuten opnieuw.",
       "errorRateLimitedWaitOther": "De limiet voor lezen met AI per uur is bereikt. Probeer het over ongeveer {count} minuten opnieuw.",
       "errorBudget": "Je AI-budget voor vandaag is op.",
-      "errorPdfNeedsVision": "Voor het scannen van PDF's is een Claude-provider met beeldherkenning nodig.",
+      "errorPdfRendererUnavailable": "De processor van deze server kan geen PDF-pagina's weergeven, dus een gescande PDF kan hier alleen worden gelezen door een AI-provider die PDF-bestanden rechtstreeks aanneemt, of als foto's van de pagina's.",
       "errorFileType": "Dit bestandstype kan niet worden gelezen.",
       "errorNotIndexed": "Laat het document eerst lezen en extraheer daarna.",
       "errorOutputLimit": "De AI-provider bereikte zijn uitvoerlimiet voordat hij één waarde teruggaf. Probeer een model dat langere antwoorden toestaat.",

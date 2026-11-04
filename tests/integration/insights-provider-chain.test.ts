@@ -42,10 +42,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // safeFetch's requirePublicHost path runs through undici's own `fetch`
 // (version-locked with its dispatcher) rather than the global. Delegate it to
 // the global `fetch` spy these tests install so the provider HTTP is mocked.

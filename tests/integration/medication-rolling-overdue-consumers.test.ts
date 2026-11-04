@@ -28,10 +28,6 @@ const LAST_TAKEN = new Date("2026-07-21T06:00:00.000Z");
 const OVERDUE_OCCURRENCE = new Date("2026-07-28T06:00:00.000Z");
 const NEXT_OCCURRENCE = new Date("2026-08-04T06:00:00.000Z");
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 beforeEach(async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(NOW);

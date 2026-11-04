@@ -42,10 +42,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const adminNotices = vi.hoisted(() => [] as Array<Record<string, unknown>>);
 vi.mock("@/lib/notifications/dispatch-localised", () => ({
   dispatchLocalisedNotification: vi.fn(

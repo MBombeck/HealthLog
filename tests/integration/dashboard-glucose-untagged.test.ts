@@ -40,10 +40,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 interface AnalyticsEnvelope {
   data: {
     glucoseByContext: Record<string, DataSummary> | null;

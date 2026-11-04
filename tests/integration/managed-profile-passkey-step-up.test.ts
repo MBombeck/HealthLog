@@ -44,10 +44,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("@/lib/notifications/dispatch-localised", () => ({
   dispatchLocalisedNotification: vi.fn(async () => {}),
 }));

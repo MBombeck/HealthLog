@@ -288,7 +288,7 @@ const PINNED_AFFORDANCES: Record<
     "toast.success": 2,
   },
   "src/components/medications/intake-history-list-v2.tsx": {
-    "text-success": 2,
+    "text-success": 1,
   },
   "src/components/medications/scheduling/schedule-history-timeline.tsx": {
     "toast.success": 2,
@@ -415,6 +415,10 @@ const PINNED_AFFORDANCES: Record<
     "text-success": 2,
   },
   "src/components/settings/integrations/nightscout-card.tsx": {
+    "text-success": 1,
+  },
+  // The connect form's "connected" line, the Nightscout form's twin.
+  "src/components/settings/integrations/garmin-card.tsx": {
     "text-success": 1,
   },
   // A paused connection resumed.

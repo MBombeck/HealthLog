@@ -7,6 +7,7 @@
  * body reaching the stored failure or the event stream.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { jsPDF } from "jspdf";
 
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
 vi.mock("@/lib/documents/rasterize-pdf", async (importOriginal) => ({
@@ -708,7 +709,7 @@ describe("vision mode", () => {
     });
   });
 
-  it("falls back to pdfNeedsAnthropic and refunds when rendering fails", async () => {
+  it("reports a render failure of this PDF and refunds", async () => {
     vi.mocked(rasterizePdf).mockResolvedValue({
       ok: false,
       reason: "render-failed",
@@ -722,7 +723,7 @@ describe("vision mode", () => {
     expect(out).toMatchObject({
       ok: false,
       status: 422,
-      errorCode: "labs.ocr.pdfNeedsAnthropic",
+      errorCode: "labs.ocr.extractFailed",
     });
     expect(runOcrExtraction).not.toHaveBeenCalled();
     expect(reconcileSpend).toHaveBeenCalledWith(
@@ -734,4 +735,119 @@ describe("vision mode", () => {
       { servedBy: null, reservedOwner: "operator" },
     );
   });
+});
+
+describe("a PDF on a server that cannot render PDF pages (#1311)", () => {
+  const PNG =
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+  /** `true` a lab page with a text layer, `false` a scanned page. */
+  const report = (layout: boolean[]) => {
+    const doc = new jsPDF();
+    layout.forEach((hasText, i) => {
+      if (i > 0) doc.addPage();
+      if (hasText) {
+        doc.text(`Haemoglobin 14.${i} g/dl 13.5 - 17.5`, 10, 15);
+        doc.text("Leukocytes 6.1 /nl 4.0 - 10.0", 10, 23);
+      } else {
+        doc.addImage(`data:image/png;base64,${PNG}`, "PNG", 10, 10, 180, 250);
+      }
+    });
+    return Buffer.from(doc.output("arraybuffer"));
+  };
+
+  beforeEach(() => {
+    vi.mocked(rasterizePdf).mockResolvedValue({
+      ok: false,
+      reason: "unsupported",
+    });
+  });
+
+  it("reads the text layer a page at a time and names the scanned pages as unread", async () => {
+    vi.mocked(runOcrExtraction).mockImplementation(extraction());
+    const out = await executeOcrExtraction({
+      userId: "u1",
+      input: { ...pdf(), bytes: report([true, false, true]) },
+      budget,
+      schedule: noDeadline(),
+    });
+    expect(out).toEqual({
+      ok: true,
+      data: { rows: [], unreadPages: [2] },
+    });
+    const args = vi.mocked(runOcrExtraction).mock.calls[0][0];
+    expect(args.mode).toBe("text");
+    expect(args.totalPages).toBe(3);
+    expect(args.chunks.map((c) => c.pages)).toEqual([[1], [3]]);
+    expect(args.chunks[0].text).toContain("Haemoglobin 14.0 g/dl");
+    expect(args.chunks.every((c) => !c.images && !c.documents)).toBe(true);
+  }, 30_000);
+
+  it("answers a scan with pdfRendererUnavailable and refunds", async () => {
+    const out = await executeOcrExtraction({
+      userId: "u1",
+      input: { ...pdf(), bytes: report([false]) },
+      budget,
+      schedule: noDeadline(),
+    });
+    expect(out).toMatchObject({
+      ok: false,
+      status: 422,
+      errorCode: "labs.ocr.pdfRendererUnavailable",
+    });
+    expect(runOcrExtraction).not.toHaveBeenCalled();
+    expect(reconcileSpend).toHaveBeenCalledWith(
+      "u1",
+      1500,
+      0,
+      expect.anything(),
+      0,
+      expect.anything(),
+    );
+  }, 30_000);
+
+  it("still sends the PDF whole to a provider that takes PDFs", async () => {
+    vi.mocked(runOcrExtraction).mockImplementation(extraction());
+    await executeOcrExtraction({
+      userId: "u1",
+      input: { ...pdf(anthropicPick), bytes: report([false]) },
+      budget,
+      schedule: noDeadline(),
+    });
+    const args = vi.mocked(runOcrExtraction).mock.calls[0][0];
+    expect(args.mode).toBe("vision");
+    expect(args.chunks[0].documents).toHaveLength(1);
+  }, 30_000);
+
+  it("keeps every text read of a dense report under the per-read bound", async () => {
+    // Twelve pages of about 3 000 characters each, and a request's three
+    // reads: grouping whole pages would send reads of 12 000 characters.
+    const doc = new jsPDF();
+    for (let page = 0; page < 12; page++) {
+      if (page > 0) doc.addPage();
+      for (let line = 0; line < 34; line++) {
+        doc.text(
+          `Analyte ${page}-${line} 12.${line} mg/dl 10.0 - 20.0 ref lab A`,
+          10,
+          8 + line * 8,
+        );
+      }
+    }
+    vi.mocked(runOcrExtraction).mockImplementation(extraction());
+    const out = await executeOcrExtraction({
+      userId: "u1",
+      input: { ...pdf(), bytes: Buffer.from(doc.output("arraybuffer")) },
+      budget,
+      schedule: schedule(6),
+    });
+    const args = vi.mocked(runOcrExtraction).mock.calls[0][0];
+    expect(args.chunks.length).toBeLessThanOrEqual(3);
+    for (const chunk of args.chunks) {
+      expect(chunk.text!.length).toBeLessThanOrEqual(OCR_TEXT_READ_MAX_CHARS);
+    }
+    // What the three reads could not take is named, not silently dropped.
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    expect(out.data.unreadPages?.length).toBeGreaterThan(0);
+    expect(out.data.unreadPages).toContain(12);
+  }, 30_000);
 });

@@ -23,7 +23,7 @@ import { createHash, randomBytes } from "node:crypto";
 import v8 from "node:v8";
 import vm from "node:vm";
 
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 process.env.ENCRYPTION_KEY ??=
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
@@ -41,10 +41,6 @@ import { storeBackupBlob } from "@/lib/export/store-backup-blob";
 import { STORED_BACKUP_SELECT } from "@/lib/export/stored-backup";
 import { parseBackupPayload } from "@/lib/validations/backup";
 import { summarizeBackup } from "@/lib/validations/backup-summary";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const prisma = getPrismaClient();
 const OWNER_ID = "backup-document-owner";

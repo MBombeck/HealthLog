@@ -12,11 +12,17 @@
  * the Documents module) and the visits it is filed against. A labs answer
  * lists many readings, and one report usually holds a whole panel, so the
  * answer names each linked record once, in `linkedRecords`, and a reading
- * carries the ids of its links only. Every id there is one `fetch` accepts.
+ * carries the ids of its links only. Every id there is one `fetch` accepts,
+ * and so is the reading's own `id` (`labresult:<id>`, that one reading).
  */
 import { buildLabsSnapshotBlock } from "@/lib/ai/coach/labs-snapshot";
 import { UNBOUNDED_REACH } from "@/lib/ai/coach/history-reach";
-import { boundLinks, linksBySource, type RecordLink } from "./record-links";
+import {
+  boundLinks,
+  labResultFetchId,
+  linksBySource,
+  type RecordLink,
+} from "./record-links";
 
 /** What a lab result lists as linked, in this order. */
 export const LAB_LINK_TARGETS = ["document", "encounter"] as const;
@@ -59,9 +65,10 @@ function idReadings(result: unknown): IdReading[] {
 }
 
 /**
- * Replace each reading's lab result id with the ids of what it links to
- * (`links`, bounded, with `linksTruncated`), and add the linked records once
- * each as `linkedRecords`. A reading linked to nothing carries `links: []`.
+ * Turn each reading's lab result id into its `fetch` id (`labresult:<id>`),
+ * add the ids of what it links to (`links`, bounded, with `linksTruncated`),
+ * and add the linked records once each as `linkedRecords`. A reading linked
+ * to nothing carries `links: []`.
  * An answer without ids (a miss) comes back unchanged. `result` must be the
  * caller's own copy: its readings are rewritten in place.
  */
@@ -82,7 +89,7 @@ export async function attachLabLinks(
     const { links, linksTruncated } = boundLinks(
       bySource.get(reading.id) ?? [],
     );
-    delete (reading as { id?: string }).id;
+    reading.id = labResultFetchId(reading.id);
     reading.links = links.flatMap((l) => (l.id ? [l.id] : []));
     reading.linksTruncated = linksTruncated;
     for (const link of links) {

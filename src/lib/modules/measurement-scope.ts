@@ -99,7 +99,11 @@ const METRIC_STATUS_MODULE_OWNERS: Partial<Record<MeasurementType, ModuleKey>> =
     DAY_STRAIN: "workouts",
     WORKOUT_STRAIN: "workouts",
     CARDIO_LOAD: "workouts",
+    ACUTE_TRAINING_LOAD: "workouts",
     ANS_CHARGE: "recovery",
+    BODY_BATTERY: "recovery",
+    STRESS_LEVEL: "recovery",
+    TRAINING_READINESS: "recovery",
     CARDIO_RECOVERY: "recovery",
     // The HRV fallback type. `resolveRichMetricForUser` swaps HRV to its RMSSD
     // fallback for an account that only has ring/strap nightly RMSSD rows, so

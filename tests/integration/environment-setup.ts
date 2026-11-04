@@ -78,10 +78,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 /**
  * The same pin the unit setup applies (see `vitest.setup.ts`): the Fitbit
  * suites run before the Web API turndown, whatever the real date, and a test

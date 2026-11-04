@@ -105,7 +105,7 @@ The App Store listing carries a small price, which exists to cover Apple's yearl
 
 ## Tech stack
 
-Next.js 16 (App Router, React Server Components), TypeScript strict, PostgreSQL 18 with Prisma, pg-boss for jobs, Tailwind CSS 4 + shadcn/ui, Recharts, WebAuthn passkeys, Vitest + Playwright, multi-stage Alpine Docker image. The OpenAPI 3.1 contract for native clients is generated from the Zod schemas at [`docs/api/openapi.yaml`](docs/api/openapi.yaml).
+Next.js 16 (App Router, React Server Components), TypeScript strict, PostgreSQL 18 with Prisma, pg-boss for jobs, Tailwind CSS 4 + shadcn/ui, Recharts, WebAuthn passkeys, Vitest + Playwright, multi-stage Docker image on the official Node 22 Debian slim base. The OpenAPI 3.1 contract for native clients is generated from the Zod schemas at [`docs/api/openapi.yaml`](docs/api/openapi.yaml).
 
 ## Documentation
 

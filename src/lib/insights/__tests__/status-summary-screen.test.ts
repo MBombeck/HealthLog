@@ -23,6 +23,7 @@ const DOSE_VIOLATION: Record<string, string> = {
   pl: '{"summary":"Proszę zwiększyć dawkę do 2,4 mg w przyszłym tygodniu."}',
   ko: '{"summary":"다음 주에 2.4mg으로 늘려 보세요."}',
   nl: '{"summary":"Verhoog je dosis volgende week naar 2,4 mg."}',
+  ru: '{"summary":"Подумайте об увеличении дозы до 10 мг на следующей неделе."}',
   "pt-BR": '{"summary":"Aumente sua dose para 2,4 mg na próxima semana."}',
 };
 
@@ -35,6 +36,7 @@ const CAUSAL_VIOLATION: Record<string, string> = {
   pl: '{"summary":"Waga spadła, ponieważ spał Pan więcej."}',
   ko: '{"summary":"수면 때문에 체중이 줄었어요."}',
   nl: '{"summary":"Je gewicht daalde omdat je meer sliep."}',
+  ru: '{"summary":"Ваш вес снизился, потому что вы больше спали."}',
   "pt-BR": '{"summary":"Seu peso caiu porque você dormiu mais."}',
 };
 
@@ -47,6 +49,7 @@ const CLEAN: Record<string, string> = {
   pl: '{"summary":"Waga wynosi średnio 82 kg w tym tygodniu, stabilnie wobec zeszłego miesiąca."}',
   ko: '{"summary":"이번 주 체중은 평균 82kg으로, 지난달과 비슷해요."}',
   nl: '{"summary":"Je gewicht ligt deze week gemiddeld op 82 kg, stabiel ten opzichte van vorige maand."}',
+  ru: '{"summary":"Ваш вес на этой неделе в среднем 82 кг, стабильно к прошлому месяцу."}',
   "pt-BR":
     '{"summary":"Seu peso está em média em 82 kg nesta semana, estável em relação ao mês passado."}',
 };

@@ -76,6 +76,7 @@ const LABELS: Record<ConnectionKey, string> = {
   strava: "Strava",
   nightscout: "Nightscout",
   dawarich: "Dawarich",
+  garmin: "Garmin",
   "apple-health": "Apple Health",
 };
 
@@ -145,6 +146,7 @@ async function listWatchedUserIds(): Promise<string[]> {
             { stravaAccessTokenEncrypted: { not: null } },
             { nightscoutUrlEncrypted: { not: null } },
             { dawarichUrlEncrypted: { not: null } },
+            { garminApiKeyEncrypted: { not: null } },
             { healthKitLastSyncedAt: { not: null } },
           ],
         },

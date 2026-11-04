@@ -185,6 +185,14 @@ export function metricKeyForType(
       return "stress";
     case "SLEEP_DURATION":
       return "sleep";
+    case "BODY_BATTERY":
+      return "bodyBattery";
+    case "STRESS_LEVEL":
+      return "stressLevel";
+    case "TRAINING_READINESS":
+      return "trainingReadiness";
+    case "ACUTE_TRAINING_LOAD":
+      return "acuteTrainingLoad";
     default:
       return cumulativeMetricKey(type);
   }

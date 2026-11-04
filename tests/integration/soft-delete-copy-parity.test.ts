@@ -46,10 +46,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 async function signIn(username: string): Promise<string> {
   const prisma = getPrismaClient();
   const user = await prisma.user.create({

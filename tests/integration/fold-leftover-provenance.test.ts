@@ -17,10 +17,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const WS_HK = "HKQuantityTypeIdentifierWalkingSpeed";
 const HRV_HK = "HKQuantityTypeIdentifierHeartRateVariabilitySDNN";
 

@@ -25,9 +25,6 @@ import { useTranslations } from "@/lib/i18n/context";
  */
 export const DOCS_GUIDES_BASE = "https://docs.healthlog.dev/guides";
 
-/** Garmin has no connector; the Google Health guide explains the route. */
-export const GARMIN_DOCS_HREF = `${DOCS_GUIDES_BASE}/connect-google-health/#garmin-owners`;
-
 export type IntegrationDocsProvider =
   | "whoop"
   | "withings"
@@ -37,7 +34,8 @@ export type IntegrationDocsProvider =
   | "nightscout"
   | "google-health"
   | "strava"
-  | "dawarich";
+  | "dawarich"
+  | "garmin";
 
 export function integrationDocsHref(provider: IntegrationDocsProvider): string {
   return `${DOCS_GUIDES_BASE}/connect-${provider}/`;

@@ -22,9 +22,6 @@ import {
   medicationsCsvQuerySchema,
 } from "@/lib/validations/record-import";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/jobs/boss-instance", () => ({
   getGlobalBoss: vi.fn(() => null),
 }));
@@ -93,7 +90,9 @@ beforeAll(async () => {
   });
 });
 
-describe("lab CSV import", () => {
+// One walk: a dry run, the import, the same file again. Each step reads what
+// the one before it wrote, so the order holds under a shuffled run.
+describe("lab CSV import", { shuffle: false }, () => {
   it("a dry run writes nothing and reports the plan", async () => {
     const result = await importLabsCsv({
       userId: USER,
@@ -192,6 +191,14 @@ describe("lab CSV import", () => {
 });
 
 describe("lab CSV import in a zone of the file's own", () => {
+  // An account of its own, so its two draws are not in the other cases' counts.
+  const ZONE_USER = "csv-import-zone-user";
+  beforeAll(async () => {
+    await prisma.user.create({
+      data: { id: ZONE_USER, username: ZONE_USER, timezone: TZ },
+    });
+  });
+
   it("cuts the duplicate day in the zone the file is read in", async () => {
     // Read in New York, these are draws on two days (1 and 2 March). In the
     // account's Berlin they both fall on 2 March, which used to make the
@@ -202,7 +209,7 @@ describe("lab CSV import in a zone of the file's own", () => {
       "Zone marker;7;mg/dL;2025-03-02T02:00",
     ].join("\n");
     const result = await importLabsCsv({
-      userId: USER,
+      userId: ZONE_USER,
       tz: TZ,
       stream: textToStream(csv),
       maxBytes: 1_000_000,
@@ -384,6 +391,15 @@ describe("medication CSV import", () => {
 });
 
 describe("medication CSV import, a crash between medication and category", () => {
+  // An account of its own: the medication import case counts every
+  // medication its account holds.
+  const CRASH_USER = "csv-import-crash-user";
+  beforeAll(async () => {
+    await prisma.user.create({
+      data: { id: CRASH_USER, username: CRASH_USER, timezone: TZ },
+    });
+  });
+
   const CSV = ["name,dose,times", "Atorvastatin,20 mg,20:00"].join("\n");
   const query = medicationsCsvQuerySchema.parse({
     name: "0",
@@ -396,7 +412,7 @@ describe("medication CSV import, a crash between medication and category", () =>
     categoryFault.on = true;
     await expect(
       importMedicationsCsv({
-        userId: USER,
+        userId: CRASH_USER,
         tz: TZ,
         stream: textToStream(CSV),
         maxBytes: 100_000,
@@ -406,12 +422,12 @@ describe("medication CSV import, a crash between medication and category", () =>
     categoryFault.on = false;
     expect(
       await prisma.medication.count({
-        where: { userId: USER, name: "Atorvastatin" },
+        where: { userId: CRASH_USER, name: "Atorvastatin" },
       }),
     ).toBe(0);
 
     const retry = await importMedicationsCsv({
-      userId: USER,
+      userId: CRASH_USER,
       tz: TZ,
       stream: textToStream(CSV),
       maxBytes: 100_000,
@@ -419,7 +435,7 @@ describe("medication CSV import, a crash between medication and category", () =>
     });
     expect(retry).toMatchObject({ inserted: 1, duplicates: 0 });
     const med = await prisma.medication.findFirstOrThrow({
-      where: { userId: USER, name: "Atorvastatin" },
+      where: { userId: CRASH_USER, name: "Atorvastatin" },
       select: { id: true },
     });
     expect(

@@ -60,6 +60,8 @@ export function targetLanguageName(locale: Locale): string {
       return "Dutch";
     case "pt-BR":
       return "Brazilian Portuguese";
+    case "ru":
+      return "Russian";
     default:
       return "English";
   }

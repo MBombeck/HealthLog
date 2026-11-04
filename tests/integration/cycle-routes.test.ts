@@ -45,10 +45,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 async function loginAs(userId: string): Promise<void> {
   cookieJar.clear();
   headerJar.clear();

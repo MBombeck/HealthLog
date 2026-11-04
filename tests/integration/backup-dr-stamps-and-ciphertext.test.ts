@@ -53,10 +53,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const prisma = getPrismaClient();
 const CREATED = new Date("2026-03-03T03:03:03.000Z");
 const UPDATED = new Date("2026-04-04T04:04:04.000Z");

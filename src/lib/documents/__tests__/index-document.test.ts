@@ -85,6 +85,11 @@ const PICK = {
   },
 };
 
+/** Answer the provider lookup with {@link PICK}. */
+function pickExternal(): void {
+  vi.mocked(resolveDocumentVisionProvider).mockResolvedValue(PICK as never);
+}
+
 /** A LOCAL (self-hosted) document pick — never egresses, toggle-independent. */
 const LOCAL_PICK = {
   chain: [{ providerType: "local", instance: {} }],
@@ -123,7 +128,7 @@ beforeEach(() => {
 
 describe("indexDocumentContent — provider-first path", () => {
   it("indexes via an external provider (vision) when configured + toggle ON", async () => {
-    vi.mocked(resolveDocumentVisionProvider).mockResolvedValue(PICK as never);
+    pickExternal();
     visionOk();
     vi.mocked(transcribeDocument).mockResolvedValue({
       text: "haemoglobin 14.2 cholesterol 190",
@@ -176,7 +181,7 @@ describe("indexDocumentContent — local fallback path", () => {
       ...DOC,
       aiReadDeferred: true,
     } as never);
-    vi.mocked(resolveDocumentVisionProvider).mockResolvedValue(PICK as never);
+    pickExternal();
     visionOk();
     const outcome = await indexDocumentContent("user-1", "doc-1");
     expect(outcome).toMatchObject({ indexed: true, source: "local-pdf" });
@@ -186,7 +191,7 @@ describe("indexDocumentContent — local fallback path", () => {
 
   it("a deferred import stays local even with an external pick and the toggle ON", async () => {
     // #1038 — `aiRead=defer`: the person asked for AI reading to wait.
-    vi.mocked(resolveDocumentVisionProvider).mockResolvedValue(PICK as never);
+    pickExternal();
     visionOk();
     const outcome = await indexDocumentContent("user-1", "doc-1", {
       localOnly: true,
@@ -220,7 +225,7 @@ describe("indexDocumentContent — local fallback path", () => {
   });
 
   it("stays LOCAL for an external pick when the toggle is OFF (never egresses)", async () => {
-    vi.mocked(resolveDocumentVisionProvider).mockResolvedValue(PICK as never);
+    pickExternal();
     vi.mocked(documentAutoReadEnabled).mockResolvedValue(false);
 
     const outcome = await indexDocumentContent("user-1", "doc-1");
@@ -232,10 +237,10 @@ describe("indexDocumentContent — local fallback path", () => {
   });
 
   it("falls back to local when the provider cannot read the PDF", async () => {
-    vi.mocked(resolveDocumentVisionProvider).mockResolvedValue(PICK as never);
+    pickExternal();
     vi.mocked(prepareVisionInput).mockReturnValue({
       ok: false,
-      reason: "pdfNeedsAnthropic",
+      reason: "pdfRendererUnavailable",
     } as never);
 
     const outcome = await indexDocumentContent("user-1", "doc-1");
@@ -244,8 +249,22 @@ describe("indexDocumentContent — local fallback path", () => {
     expect(transcribeDocument).not.toHaveBeenCalled();
   });
 
+  it("leaves a text-layer read of an unrenderable PDF to the local path, with no provider call", async () => {
+    pickExternal();
+    vi.mocked(prepareVisionInput).mockResolvedValue({
+      ok: true,
+      mode: "text",
+      text: "Haemoglobin 14.2 g/dl",
+    });
+
+    const outcome = await indexDocumentContent("user-1", "doc-1");
+    expect(outcome).toMatchObject({ indexed: true, source: "local-pdf" });
+    expect(reserveBudget).not.toHaveBeenCalled();
+    expect(transcribeDocument).not.toHaveBeenCalled();
+  });
+
   it("falls back to local when the daily budget is exhausted", async () => {
-    vi.mocked(resolveDocumentVisionProvider).mockResolvedValue(PICK as never);
+    pickExternal();
     visionOk();
     vi.mocked(reserveBudget).mockResolvedValue({
       allowed: false,
@@ -258,7 +277,7 @@ describe("indexDocumentContent — local fallback path", () => {
   });
 
   it("refunds and falls back to local when the provider call throws", async () => {
-    vi.mocked(resolveDocumentVisionProvider).mockResolvedValue(PICK as never);
+    pickExternal();
     visionOk();
     vi.mocked(transcribeDocument).mockRejectedValueOnce(new Error("boom"));
 
@@ -309,7 +328,7 @@ describe("indexDocumentContent — local fallback path", () => {
   });
 
   it("keeps resource-limit over a provider note: the provider never got further either", async () => {
-    vi.mocked(resolveDocumentVisionProvider).mockResolvedValue(PICK as never);
+    pickExternal();
     vi.mocked(prepareVisionInput).mockResolvedValue({
       ok: false,
       reason: "rasterFailed",

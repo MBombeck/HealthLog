@@ -248,64 +248,68 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("GET /api/workouts/{id} parity", () => {
-  it("the detail reads", async () => {
-    await step("get-01-canonical", { method: "GET", id: ids.run });
-    await step("get-02-compact", {
-      method: "GET",
-      id: ids.run,
-      query: { compact: "1" },
+// One walk: each request sees what the earlier ones stored, so the cases
+// keep their order even when a run shuffles (`shuffle: false`).
+describe("workout-detail parity walk", { shuffle: false }, () => {
+  describe("GET /api/workouts/{id} parity", () => {
+    it("the detail reads", async () => {
+      await step("get-01-canonical", { method: "GET", id: ids.run });
+      await step("get-02-compact", {
+        method: "GET",
+        id: ids.run,
+        query: { compact: "1" },
+      });
+      await step("get-03-hidden-twin", { method: "GET", id: ids.twin });
+      await step("get-04-ride", { method: "GET", id: ids.ride });
+      await step("get-05-other-account", {
+        method: "GET",
+        id: ids.run,
+        auth: stranger,
+      });
+      await step("get-06-missing", {
+        method: "GET",
+        id: "cmissingworkout000000000",
+      });
     });
-    await step("get-03-hidden-twin", { method: "GET", id: ids.twin });
-    await step("get-04-ride", { method: "GET", id: ids.ride });
-    await step("get-05-other-account", {
-      method: "GET",
-      id: ids.run,
-      auth: stranger,
-    });
-    await step("get-06-missing", {
-      method: "GET",
-      id: "cmissingworkout000000000",
+
+    it("the module switched off", async () => {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { modulePreferencesJson: { workouts: false } },
+      });
+      await step("get-07-module-off", { method: "GET", id: ids.run });
+      await prisma.user.update({
+        where: { id: userId },
+        data: { modulePreferencesJson: {} },
+      });
     });
   });
 
-  it("the module switched off", async () => {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { modulePreferencesJson: { workouts: false } },
+  describe("DELETE /api/workouts/{id} parity", () => {
+    it("a synced workout, a missing one, another account's", async () => {
+      await step("delete-01-synced", {
+        method: "DELETE",
+        id: ids.ride,
+        readBack: true,
+      });
+      await step("delete-02-missing", {
+        method: "DELETE",
+        id: "cmissingworkout000000000",
+      });
+      await step("delete-03-other-account", {
+        method: "DELETE",
+        id: ids.walk,
+        auth: stranger,
+        readBack: true,
+      });
     });
-    await step("get-07-module-off", { method: "GET", id: ids.run });
-    await prisma.user.update({
-      where: { id: userId },
-      data: { modulePreferencesJson: {} },
-    });
-  });
-});
 
-describe("DELETE /api/workouts/{id} parity", () => {
-  it("a synced workout, a missing one, another account's", async () => {
-    await step("delete-01-synced", {
-      method: "DELETE",
-      id: ids.ride,
-      readBack: true,
-    });
-    await step("delete-02-missing", {
-      method: "DELETE",
-      id: "cmissingworkout000000000",
-    });
-    await step("delete-03-other-account", {
-      method: "DELETE",
-      id: ids.walk,
-      auth: stranger,
-      readBack: true,
-    });
-  });
-
-  it("a hand-entered workout and the record it set", async () => {
-    await step("delete-04-manual", {
-      method: "DELETE",
-      id: ids.walk,
-      readBack: true,
+    it("a hand-entered workout and the record it set", async () => {
+      await step("delete-04-manual", {
+        method: "DELETE",
+        id: ids.walk,
+        readBack: true,
+      });
     });
   });
 });

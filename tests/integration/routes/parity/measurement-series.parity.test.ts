@@ -239,7 +239,7 @@ beforeAll(async () => {
   delegate = { auth: session };
 });
 
-describe("GET /api/measurements/series parity", () => {
+describe("GET /api/measurements/series parity", { shuffle: false }, () => {
   it("the plain readers", async () => {
     await step("01-weight", { kind: "weight" });
     await step("02-steps", { kind: "steps", days: 14 });

@@ -23,11 +23,11 @@
  *
  * Extraction is pure Node: `zlib.gunzipSync` + a minimal in-process tar reader
  * (`extractMmdbFromTarGz`), NOT a shell-out to `tar`. The runtime image does
- * carry busybox `tar`+`gzip`, but this module is reachable from the worker-boot
+ * carry `tar` and `gzip`, but this module is reachable from the worker-boot
  * import chain (`instrumentation.ts` → `reminder-worker` → this file), and a
  * `child_process` import there makes Next's file tracer give up and trace the
  * whole project into the standalone output. `node:zlib` keeps the trace bounded,
- * removes the busybox runtime dependency entirely, and is trivially unit-testable
+ * removes the dependency on those tools entirely, and is trivially unit-testable
  * — the MaxMind tarball nests a single `.mmdb` under one date-stamped directory,
  * a shape a ~40-line reader handles without a dependency.
  */

@@ -12,10 +12,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 /**
  * Five years before this the fold boundary falls on 2021-10-10, so the first
  * rolled-up month is November 2021 and the first rolled-up quarter Q1 2022.

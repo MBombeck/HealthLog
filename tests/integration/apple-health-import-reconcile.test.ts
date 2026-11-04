@@ -26,10 +26,6 @@ import {
   _setWorkerPrismaForTests,
 } from "@/lib/jobs/apple-health-import-worker";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // Controllable pg-boss handle: the reconcile consults `getJobById` for a
 // row's real queue state.
 const bossMock = vi.hoisted(() => ({

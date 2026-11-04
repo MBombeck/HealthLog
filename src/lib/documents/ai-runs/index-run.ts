@@ -29,10 +29,15 @@ import {
   transcribeDocument,
 } from "@/lib/documents/describe";
 import { recordIndexAttempt } from "@/lib/documents/index-document";
+import { LOCAL_MAX_PAGES } from "@/lib/documents/local-extract";
 import type { requireDocumentVisionProvider } from "@/lib/documents/provider-order";
 import { annotate } from "@/lib/logging/context";
 
-import { readerBusyFailure } from "./run-support";
+import {
+  pdfRendererUnavailable,
+  pdfRenderFailed,
+  readerBusyFailure,
+} from "./run-support";
 import { settleAiRunBudget } from "./store";
 import type {
   AiRunBudget,
@@ -80,7 +85,7 @@ const failure = (f: {
 async function finishIndex(
   userId: string,
   documentId: string,
-  source: "vision" | "text-ocr",
+  source: "vision" | "text-ocr" | "local-pdf",
   tokenCount: number,
   origin: IndexOrigin,
 ): Promise<AiRunOutcome<DocumentIndexRunResult>> {
@@ -150,7 +155,11 @@ export async function executeDocumentIndex(args: {
   const { pick, budget } = input;
   const servedBy = pick.entry.providerType as ProviderChainType;
 
-  const vision = await prepareVisionInput(document, pick.pdfSupported);
+  // A text-layer read here IS the index, so it takes every page the local
+  // text index would, not only the pages a vision read is capped to.
+  const vision = await prepareVisionInput(document, pick.pdfSupported, {
+    textLayerPages: LOCAL_MAX_PAGES,
+  });
   if (!vision.ok) {
     // Preparation failed before any provider dispatch — the reservation and
     // the slot go back. Refs #776 — each failure is also recorded on the row
@@ -160,28 +169,21 @@ export async function executeDocumentIndex(args: {
     await refundDocumentAiSlot(userId);
     // A busy reader says nothing about the document: no attempt is recorded.
     if (vision.reason === "readerBusy") return readerBusyFailure();
-    if (vision.reason === "pdfNeedsAnthropic") {
+    if (vision.reason === "pdfRendererUnavailable") {
+      // The recorded reason keeps its name: a provider that takes PDF files
+      // whole would read this scan, and the stored outcome is a wire value.
       await recordIndexAttempt(userId, document.id, {
         indexed: false,
         reason: "pdf-needs-anthropic",
       });
-      return failure({
-        status: 422,
-        message:
-          "PDF scanning needs a Claude vision provider; use local OCR instead.",
-        errorCode: "documents.inbound.pdfNeedsAnthropic",
-      });
+      return pdfRendererUnavailable();
     }
     if (vision.reason === "rasterFailed") {
       await recordIndexAttempt(userId, document.id, {
         indexed: false,
         reason: "raster-failed",
       });
-      return failure({
-        status: 422,
-        message: "The PDF pages couldn't be rendered for scanning.",
-        errorCode: "documents.inbound.extractFailed",
-      });
+      return pdfRenderFailed();
     }
     if (vision.reason === "fileType") {
       await recordIndexAttempt(userId, document.id, {
@@ -203,6 +205,21 @@ export async function executeDocumentIndex(args: {
       message: "Couldn't read the stored document.",
       errorCode: "documents.inbound.extractFailed",
     });
+  }
+
+  if (vision.mode === "text") {
+    // #1311 — this server cannot render the PDF, and its text layer is the
+    // reading: indexed as the local text read it is, with no provider call.
+    // The reservation goes back; the slot stays spent on the read.
+    await settleAiRunBudget(userId, budget, 0, null);
+    const { tokenCount } = await upsertContentIndex({
+      userId,
+      documentId: document.id,
+      text: vision.text,
+      source: "local-pdf",
+      providerType: null,
+    });
+    return finishIndex(userId, document.id, "local-pdf", tokenCount, origin);
   }
 
   let text: string;

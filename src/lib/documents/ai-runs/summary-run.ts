@@ -27,6 +27,7 @@ import {
   type DescribeInput,
 } from "@/lib/documents/describe";
 import { encryptDocumentSummary } from "@/lib/documents/store";
+import { providerInputOf } from "@/lib/documents/vision-input";
 import type { Locale } from "@/lib/i18n/config";
 import { annotate } from "@/lib/logging/context";
 
@@ -195,8 +196,7 @@ export async function executeDocumentSummary(args: {
     describeInput = {
       provider: pick.entry.instance,
       providerType: pick.providerType,
-      images: vision.images,
-      documents: vision.documents,
+      ...providerInputOf(vision),
     };
   }
 

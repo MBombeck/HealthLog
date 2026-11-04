@@ -28,22 +28,10 @@
  * consolidation's day transaction and the first test fails with the
  * consolidation rejected on `40P01`.
  */
-import {
-  afterAll,
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 import { acceptingBoss } from "./restore-job-driver";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const OWNER = "restore-deadlock-owner";
 const DAY = "2026-01-10";

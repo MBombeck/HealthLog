@@ -47,6 +47,8 @@ const subsystemSurface = {
   "integration-watchdog-daily": { audience: "system" },
   "strava-backfill": { audience: "system" },
   "oura-backfill": { audience: "system" },
+  "garmin-sync": { audience: "account" },
+  "garmin-backfill": { audience: "system" },
   "oidc-native-handoff-cleanup": { audience: "system" },
 
   // register-status.ts

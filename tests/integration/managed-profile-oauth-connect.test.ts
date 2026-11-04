@@ -38,10 +38,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const OURA_TOKEN_URL = "https://moi.ouraring.com/oauth/v2/ext/oauth-token";
 const OURA_ISS = "https://moi.ouraring.com/oauth/v2/ext/oauth-anonymous";
 const GUARDIAN = "guardian-oauth";

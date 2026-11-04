@@ -45,10 +45,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const providerSpy = vi.fn(async () => ({
   content: JSON.stringify({ summary: "A calm and steady stretch." }),
   model: "spy-model",

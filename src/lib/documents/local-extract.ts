@@ -46,7 +46,7 @@ import {
 export const LOCAL_TEXT_MIN_CHARS = 24;
 
 /** Cap on pages parsed — bounds CPU/time on a pathological many-page PDF. */
-const LOCAL_MAX_PAGES = 200;
+export const LOCAL_MAX_PAGES = 200;
 
 /** Provenance tag written to `DocumentContentIndex.source` on the local path. */
 export type LocalExtractSource = "local-pdf" | "local-ocr";

@@ -358,212 +358,216 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("GET /api/medications/{id} parity", () => {
-  it("01 a rolling injection with stock, a composition and a custom category", async () => {
-    await get("01-rolling", med.rolling);
-  });
+// One walk: each request sees what the earlier ones stored, so the cases
+// keep their order even when a run shuffles (`shuffle: false`).
+describe("medication-detail parity walk", { shuffle: false }, () => {
+  describe("GET /api/medications/{id} parity", () => {
+    it("01 a rolling injection with stock, a composition and a custom category", async () => {
+      await get("01-rolling", med.rolling);
+    });
 
-  it("02 a daily tablet without stock", async () => {
-    await get("02-daily", med.tablet);
-  });
+    it("02 a daily tablet without stock", async () => {
+      await get("02-daily", med.tablet);
+    });
 
-  it("03 a record-only medication", async () => {
-    await get("03-record-only", med.recordOnly);
-  });
+    it("03 a record-only medication", async () => {
+      await get("03-record-only", med.recordOnly);
+    });
 
-  it("04 another account's medication", async () => {
-    await get("04-not-found", med.foreign);
-  });
+    it("04 another account's medication", async () => {
+      await get("04-not-found", med.foreign);
+    });
 
-  it("05 a reading delegate, and nobody", async () => {
-    await get("05a-reader", med.rolling, reader);
-    await get("05b-anonymous", med.rolling, { auth: anonymous });
-  });
-});
-
-describe("PUT /api/medications/{id} parity", () => {
-  it("11 plain fields", async () => {
-    await put("11-plain-fields", med.tablet, {
-      name: "Daily tablet renamed",
-      dose: "20mg",
-      treatmentClass: "GENERIC",
-      dosesPerUnit: 30,
-      reorderLeadDays: 5,
-      deliveryForm: "ORAL",
-      notificationsEnabled: false,
-      liveActivityEnabled: true,
-      criticalAlarmEnabled: true,
-      atcCode: "C09AA05",
-      rxNormCode: null,
+    it("05 a reading delegate, and nobody", async () => {
+      await get("05a-reader", med.rolling, reader);
+      await get("05b-anonymous", med.rolling, { auth: anonymous });
     });
   });
 
-  it("12 a schedule replace whose dose time leaves the stale window", async () => {
-    await put("12-schedule-replace", med.tablet, {
-      schedules: [
-        {
-          windowStart: "08:00",
-          windowEnd: "10:00",
-          timesOfDay: ["11:30"],
-          label: "Late morning",
-          dose: "10mg",
-          unitsPerDose: 2,
-          reminderGraceMinutes: 30,
-        },
-        {
-          windowStart: "20:00",
-          windowEnd: "22:00",
-          daysOfWeek: [1, 3, 5],
-          intervalWeeks: 2,
-          doseWindows: [{ timeOfDay: "20:00", start: "19:30", end: "21:00" }],
-        },
-      ],
+  describe("PUT /api/medications/{id} parity", () => {
+    it("11 plain fields", async () => {
+      await put("11-plain-fields", med.tablet, {
+        name: "Daily tablet renamed",
+        dose: "20mg",
+        treatmentClass: "GENERIC",
+        dosesPerUnit: 30,
+        reorderLeadDays: 5,
+        deliveryForm: "ORAL",
+        notificationsEnabled: false,
+        liveActivityEnabled: true,
+        criticalAlarmEnabled: true,
+        atcCode: "C09AA05",
+        rxNormCode: null,
+      });
+    });
+
+    it("12 a schedule replace whose dose time leaves the stale window", async () => {
+      await put("12-schedule-replace", med.tablet, {
+        schedules: [
+          {
+            windowStart: "08:00",
+            windowEnd: "10:00",
+            timesOfDay: ["11:30"],
+            label: "Late morning",
+            dose: "10mg",
+            unitsPerDose: 2,
+            reminderGraceMinutes: 30,
+          },
+          {
+            windowStart: "20:00",
+            windowEnd: "22:00",
+            daysOfWeek: [1, 3, 5],
+            intervalWeeks: 2,
+            doseWindows: [{ timeOfDay: "20:00", start: "19:30", end: "21:00" }],
+          },
+        ],
+      });
+    });
+
+    it("13 the same schedule echoed back", async () => {
+      await put("13-schedule-echo", med.tablet, {
+        schedules: [
+          {
+            windowStart: "11:30",
+            windowEnd: "11:30",
+            timesOfDay: ["11:30"],
+            label: "Late morning",
+            dose: "10mg",
+            unitsPerDose: 2,
+            reminderGraceMinutes: 30,
+            rrule: "FREQ=DAILY",
+          },
+          {
+            windowStart: "20:00",
+            windowEnd: "22:00",
+            daysOfWeek: [1, 3, 5],
+            intervalWeeks: 2,
+            doseWindows: [{ timeOfDay: "20:00", start: "19:30", end: "21:00" }],
+          },
+        ],
+      });
+    });
+
+    it("14 the top-level reminder window", async () => {
+      await put("14-grace-bridge", med.tablet, { reminderGraceMinutes: 45 });
+    });
+
+    it("15 a pause and a resume", async () => {
+      await put("15a-pause", med.tablet, { active: false });
+      await put("15b-resume", med.tablet, { active: true });
+    });
+
+    it("16 automatic recording switched on", async () => {
+      await put("16-auto-mark-taken", med.tablet, { autoMarkTaken: true });
+    });
+
+    it("17 the category writes", async () => {
+      await put("17a-custom-category", med.tablet, { category: CUSTOM_KEY });
+      await put(
+        "17b-native-other-kept",
+        med.tablet,
+        { category: "OTHER" },
+        { auth: ownerBearer },
+      );
+      await put("17c-web-other", med.tablet, { category: "OTHER" });
+      await put("17d-unknown-category", med.tablet, {
+        category: "custom:0a6c2d4e-1111-4222-8333-944455556666",
+      });
+    });
+
+    it("18 a record-only medication and both tracking transitions", async () => {
+      await put("18a-record-schedule-kept", med.recordOnly, {
+        name: "Record only renamed",
+        schedules: [daily("06:00", "07:00")],
+        oneShot: false,
+      });
+      await put("18b-tracking-on", med.recordOnly, { trackIntake: true });
+      await put("18c-tracking-off", med.recordOnly, { trackIntake: false });
+    });
+
+    it("19 the as-needed flips and their refusals", async () => {
+      await put("19a-scheduled-without-schedules", med.asNeeded, {
+        asNeeded: false,
+      });
+      await put("19b-scheduled", med.asNeeded, {
+        asNeeded: false,
+        schedules: [daily("08:00", "09:00")],
+      });
+      await put("19c-as-needed-keeping-schedules", med.asNeeded, {
+        asNeeded: true,
+      });
+      await put("19d-as-needed", med.asNeeded, {
+        asNeeded: true,
+        schedules: [],
+      });
+    });
+
+    it("20 the one-shot refusals and a conversion", async () => {
+      await put("20a-one-shot-two-schedules", med.booster, {
+        oneShot: true,
+        startsOn: "2026-10-20",
+        schedules: [daily("09:00", "10:00"), daily("18:00", "19:00")],
+      });
+      await put("20b-one-shot-recurrence", med.booster, {
+        oneShot: true,
+        startsOn: "2026-10-20",
+        schedules: [
+          { windowStart: "09:00", windowEnd: "10:00", rrule: "FREQ=DAILY" },
+        ],
+      });
+      await put("20c-one-shot", med.booster, {
+        oneShot: true,
+        startsOn: "2026-10-20",
+        schedules: [{ windowStart: "09:00", windowEnd: "10:00" }],
+      });
+    });
+
+    it("21 the course refusals and a course edit", async () => {
+      await put("21a-course-overlap", med.course, { startsOn: "2026-08-20" });
+      await put("21b-course-window-required", med.course, {
+        startsOn: null,
+        endsOn: null,
+      });
+      await put("21c-course-end", med.course, { endsOn: "2026-12-31" });
+    });
+
+    it("22 a units change on a medication with a composition", async () => {
+      await put("22-composition-units", med.rolling, { unitsPerDose: 2 });
+    });
+
+    it("23 a body the schema refuses, and another account's medication", async () => {
+      await put("23a-invalid", med.tablet, {
+        name: "",
+        unitsPerDose: -1,
+        schedules: "daily",
+      });
+      await put("23b-not-found", med.foreign, { name: "Taken over" });
+    });
+
+    it("24 a delegate who may write, one who may manage, and nobody", async () => {
+      await put("24a-writer", med.tablet, { name: "By a writer" }, writer);
+      await put("24b-manager", med.tablet, { name: "By a manager" }, manager);
+      await put(
+        "24c-anonymous",
+        med.tablet,
+        { name: "By nobody" },
+        { auth: anonymous },
+      );
     });
   });
 
-  it("13 the same schedule echoed back", async () => {
-    await put("13-schedule-echo", med.tablet, {
-      schedules: [
-        {
-          windowStart: "11:30",
-          windowEnd: "11:30",
-          timesOfDay: ["11:30"],
-          label: "Late morning",
-          dose: "10mg",
-          unitsPerDose: 2,
-          reminderGraceMinutes: 30,
-          rrule: "FREQ=DAILY",
-        },
-        {
-          windowStart: "20:00",
-          windowEnd: "22:00",
-          daysOfWeek: [1, 3, 5],
-          intervalWeeks: 2,
-          doseWindows: [{ timeOfDay: "20:00", start: "19:30", end: "21:00" }],
-        },
-      ],
+  describe("DELETE /api/medications/{id} parity", () => {
+    it("31 the owner deletes a medication with a composition and an ingest token", async () => {
+      await del("31-delete", med.doomed);
     });
-  });
 
-  it("14 the top-level reminder window", async () => {
-    await put("14-grace-bridge", med.tablet, { reminderGraceMinutes: 45 });
-  });
-
-  it("15 a pause and a resume", async () => {
-    await put("15a-pause", med.tablet, { active: false });
-    await put("15b-resume", med.tablet, { active: true });
-  });
-
-  it("16 automatic recording switched on", async () => {
-    await put("16-auto-mark-taken", med.tablet, { autoMarkTaken: true });
-  });
-
-  it("17 the category writes", async () => {
-    await put("17a-custom-category", med.tablet, { category: CUSTOM_KEY });
-    await put(
-      "17b-native-other-kept",
-      med.tablet,
-      { category: "OTHER" },
-      { auth: ownerBearer },
-    );
-    await put("17c-web-other", med.tablet, { category: "OTHER" });
-    await put("17d-unknown-category", med.tablet, {
-      category: "custom:0a6c2d4e-1111-4222-8333-944455556666",
+    it("32 the same medication again", async () => {
+      await del("32-not-found", med.doomed);
     });
-  });
 
-  it("18 a record-only medication and both tracking transitions", async () => {
-    await put("18a-record-schedule-kept", med.recordOnly, {
-      name: "Record only renamed",
-      schedules: [daily("06:00", "07:00")],
-      oneShot: false,
+    it("33 a managing delegate, and nobody", async () => {
+      await del("33a-manager", med.booster, manager);
+      await del("33b-anonymous", med.booster, { auth: anonymous });
     });
-    await put("18b-tracking-on", med.recordOnly, { trackIntake: true });
-    await put("18c-tracking-off", med.recordOnly, { trackIntake: false });
-  });
-
-  it("19 the as-needed flips and their refusals", async () => {
-    await put("19a-scheduled-without-schedules", med.asNeeded, {
-      asNeeded: false,
-    });
-    await put("19b-scheduled", med.asNeeded, {
-      asNeeded: false,
-      schedules: [daily("08:00", "09:00")],
-    });
-    await put("19c-as-needed-keeping-schedules", med.asNeeded, {
-      asNeeded: true,
-    });
-    await put("19d-as-needed", med.asNeeded, {
-      asNeeded: true,
-      schedules: [],
-    });
-  });
-
-  it("20 the one-shot refusals and a conversion", async () => {
-    await put("20a-one-shot-two-schedules", med.booster, {
-      oneShot: true,
-      startsOn: "2026-10-20",
-      schedules: [daily("09:00", "10:00"), daily("18:00", "19:00")],
-    });
-    await put("20b-one-shot-recurrence", med.booster, {
-      oneShot: true,
-      startsOn: "2026-10-20",
-      schedules: [
-        { windowStart: "09:00", windowEnd: "10:00", rrule: "FREQ=DAILY" },
-      ],
-    });
-    await put("20c-one-shot", med.booster, {
-      oneShot: true,
-      startsOn: "2026-10-20",
-      schedules: [{ windowStart: "09:00", windowEnd: "10:00" }],
-    });
-  });
-
-  it("21 the course refusals and a course edit", async () => {
-    await put("21a-course-overlap", med.course, { startsOn: "2026-08-20" });
-    await put("21b-course-window-required", med.course, {
-      startsOn: null,
-      endsOn: null,
-    });
-    await put("21c-course-end", med.course, { endsOn: "2026-12-31" });
-  });
-
-  it("22 a units change on a medication with a composition", async () => {
-    await put("22-composition-units", med.rolling, { unitsPerDose: 2 });
-  });
-
-  it("23 a body the schema refuses, and another account's medication", async () => {
-    await put("23a-invalid", med.tablet, {
-      name: "",
-      unitsPerDose: -1,
-      schedules: "daily",
-    });
-    await put("23b-not-found", med.foreign, { name: "Taken over" });
-  });
-
-  it("24 a delegate who may write, one who may manage, and nobody", async () => {
-    await put("24a-writer", med.tablet, { name: "By a writer" }, writer);
-    await put("24b-manager", med.tablet, { name: "By a manager" }, manager);
-    await put(
-      "24c-anonymous",
-      med.tablet,
-      { name: "By nobody" },
-      { auth: anonymous },
-    );
-  });
-});
-
-describe("DELETE /api/medications/{id} parity", () => {
-  it("31 the owner deletes a medication with a composition and an ingest token", async () => {
-    await del("31-delete", med.doomed);
-  });
-
-  it("32 the same medication again", async () => {
-    await del("32-not-found", med.doomed);
-  });
-
-  it("33 a managing delegate, and nobody", async () => {
-    await del("33a-manager", med.booster, manager);
-    await del("33b-anonymous", med.booster, { auth: anonymous });
   });
 });

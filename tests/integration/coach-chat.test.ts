@@ -47,10 +47,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 // Stub feature extraction so we don't need a full measurement seed.
 vi.mock("@/lib/insights/features", () => ({
   extractFeatures: vi.fn(async () => ({

@@ -48,7 +48,9 @@ export function fitFromSums(sums: FitSums): LinearFit | null {
   if (n < 2) return null;
   const sxx = sumXx - (sumX * sumX) / n;
   const sxy = sumXy - (sumX * sumY) / n;
-  const syy = sumYy - (sumY * sumY) / n;
+  // A sum of squares is never negative; the subtraction can still land a
+  // hair below zero when every y sits close to one large value.
+  const syy = Math.max(0, sumYy - (sumY * sumY) / n);
   if (sxx === 0) return null;
   const slope = sxy / sxx;
   const meanX = sumX / n;
@@ -56,7 +58,12 @@ export function fitFromSums(sums: FitSums): LinearFit | null {
   return {
     slope,
     intercept: meanY - slope * meanX,
-    r2: syy === 0 ? null : (sxy * sxy) / (sxx * syy),
+    // r² is at most 1 by Cauchy–Schwarz. With y far from zero and little
+    // spread (two weighings of about 1000, a tenth apart) the centred sums
+    // lose their last digits and the ratio came out at 1.00000004. The clamp
+    // keeps it in range; inside the range the same lost digits remain, which
+    // the points and the stored-sums paths share by design.
+    r2: syy === 0 ? null : Math.min(1, (sxy * sxy) / (sxx * syy)),
     n,
     meanX,
     meanY,

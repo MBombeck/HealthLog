@@ -55,9 +55,6 @@ vi.mock("@/lib/arrivals/emit-shared", () => ({
   emitDataArrival: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 vi.mock("@/lib/logging/context", async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return { ...actual, annotate: vi.fn() };

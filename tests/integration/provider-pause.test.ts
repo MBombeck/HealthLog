@@ -11,10 +11,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 import {
   HARD_FAILURE_COOLDOWN_MS,
   PROVIDER_PAUSE_BASE_MS,

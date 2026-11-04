@@ -29,10 +29,6 @@ import { openLocation, sealLocation } from "@/lib/environment/location-cipher";
 import { handleEnvironmentAqHistory } from "@/lib/jobs/environment-air-quality-history";
 import { getPrismaClient, truncateAllTables } from "./setup";
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const OWNER = "aq-history-owner";
 const NOW = new Date("2026-10-09T03:00:00Z");
 const BOCHUM = { lat: 51.5, lon: 7.2, label: "Bochum" };

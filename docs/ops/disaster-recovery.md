@@ -147,6 +147,15 @@ different.
    Sign in. The app's own key check runs at start and refuses to serve on a
    key that does not open the data.
 
+The restore runs as the owner `DATABASE_URL` names, and the restored tables
+belong to it. The app connects as its own role,
+`healthlog_app_<database>_<hash>`
+([database-role.md](../self-hosting/database-role.md)): the start in step 5
+grants that role the restored tables, the queue's included, before the app
+runs; the queue schema stays the owner's. A dump carries grants to the role;
+`db-restore` leaves them out (`--no-owner --no-privileges`). Restoring with `pg_restore` by hand, pass
+the same two flags, or it fails on a database without the role.
+
 When the dumps are still in the server's `backups` volume (the database
 volume was lost, the backups volume was not), step 4 is
 `docker compose run --rm db-restore latest`.

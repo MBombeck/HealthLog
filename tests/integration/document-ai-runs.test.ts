@@ -57,10 +57,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const queue = vi.hoisted(() => ({
   up: true,
   send: vi.fn(async () => "job-1"),

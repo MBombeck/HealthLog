@@ -11,6 +11,8 @@ import {
   medicationExtras,
   unlessDeferred,
   WORD_END,
+  LIQUID_UNIT,
+  SPELLED_COUNT,
   type LocaleBank,
 } from "../shared";
 
@@ -25,6 +27,18 @@ const NL_SHORT = objectSlot(
 );
 
 const NL_MED_NOUN = `(?:[${LETTER}]*(?:dosis|doses|dosering|tablet(?:ten|je|jes)?|medicijn(?:en)?|medicatie|medicament(?:en)?|geneesmiddel(?:en)?|insuline|injecties?|capsules?)|pil(?:len|letje|letjes)?|prik(?:ken)?|spuitjes?|inhalator)(?![${LETTER}])`;
+
+/**
+ * The object of a negated intake. A protective qualifier ends it, so "neem
+ * geen dubbele dosis" and "neem niet meer dan 4 tabletten" stay warnings.
+ */
+const NL_HOLD_SLOT = objectSlot(
+  `${NL_STOP}|om|voor|met|bij|in|op|van|naar|tot|na|zonder|tijdens|over|dan|te|meer|dubbele?|halve|helft|twee|extra|tweede|andere`,
+  3,
+);
+
+/** A liquid drug form a measured volume may be a dose of. */
+const NL_LIQUID = `[${LETTER}]*(?:siroop|stroop|oplossing|suspensie|druppels|elixer)(?![${LETTER}])`;
 
 const SPELLED_NL =
   "(?:nul|een|één|twee|drie|vier|vijf|zes|zeven|acht|negen|tien|elf|twaalf|dertien|veertien|vijftien|zestien|zeventien|achttien|negentien|twintig|dertig|veertig|vijftig|zestig)";
@@ -140,6 +154,36 @@ export const bank: LocaleBank = {
         `(?<!\\b(?:niet|nooit)\\s)\\b(?:verhoog|verlaag|verminder)\\s+${NL_SHORT}${med}(?=\\s*(?:[.!?;:)]|$)|\\s+(?:nu|vandaag|morgen|vanavond|iets|wat|een\\s+beetje|geleidelijk|vanaf)\\b)`,
         "i",
       ),
+    ),
+    // A negated intake is a hold: "Neem vandaag geen tabletten", "neem
+    // vanavond je atorvastatine niet in". A protective qualifier or an
+    // interaction ("geen tabletten met grapefruitsap") keeps it a warning.
+    new RegExp(
+      `${WORD_START}(?:neem|gebruik|spuit|injecteer)\\s+${objectSlot(NL_STOP, 3)}geen\\s+${NL_HOLD_SLOT}${med}(?![${LETTER}])(?!\\s+(?:dubbel|extra|tegelijk|samen|met|op|om|zonder|bij|tegen)${WORD_END})`,
+      "i",
+    ),
+    new RegExp(
+      `${WORD_START}(?:neem|gebruik|spuit|injecteer)\\s+${NL_HOLD_SLOT}${med}\\s+(?:(?:vandaag|vanavond|vanochtend|morgen|voorlopig|even|deze\\s+week)\\s+){0,2}niet(?:\\s+meer)?(?:\\s+in)?(?=\\s*(?:[.!;),]|$))`,
+      "i",
+    ),
+    // A pause: "Neem een pauze van enalapril", "las een pauze in met je
+    // ramipril". A pause from screens names no medication.
+    new RegExp(
+      `${WORD_START}(?:neem|las|houd)\\s+(?:even\\s+)?(?:een\\s+)?(?:[^\\s\\d.?!,;:]+\\s+)?pauze\\s+(?:in\\s+)?(?:van|met|bij)\\s+${NL_SHORT}${med}`,
+      "i",
+    ),
+    // A measured volume of a liquid drug form: "Neem 10 ml van de siroop".
+    // "Drink 500 ml water" passes.
+    new RegExp(
+      `${WORD_START}(?:neem|gebruik)\\s+${NL_SHORT}[\\d.,]+\\s*${LIQUID_UNIT}${UNIT_END}\\s+(?:van\\s+)?${NL_SHORT}(?:${NL_LIQUID}|${med})`,
+      "i",
+    ),
+    // An increment: "Voeg 2 eenheden toe aan je avonddosis", "doe er 2
+    // eenheden insuline bij". The amount carries a drug unit, so "voeg 2
+    // wandelingen toe" passes.
+    new RegExp(
+      `${WORD_START}(?:voeg|doe)\\s+(?:er\\s+)?(?:nog\\s+)?(?:[\\d.,]+|${SPELLED_COUNT})\\s*${DRUG_UNIT}${UNIT_END}`,
+      "i",
     ),
   ],
   dose: [

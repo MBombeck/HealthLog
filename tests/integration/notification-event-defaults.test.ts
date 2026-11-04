@@ -44,10 +44,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 const USERNAME = "event-defaults";
 
 async function seedAccount(moodReminderEnabled: boolean): Promise<string> {

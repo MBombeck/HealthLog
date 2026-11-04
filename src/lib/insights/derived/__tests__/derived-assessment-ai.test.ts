@@ -34,6 +34,7 @@ import {
   resolveReadOnlyStatusMiss,
 } from "@/lib/insights/status-cache";
 import { runStatusCompletion } from "@/lib/insights/status-provider";
+import { invalidateUserTimezone } from "@/lib/tz/resolver";
 import {
   resolveDerivedAssessment,
   generateDerivedScoreAssessment,
@@ -71,6 +72,9 @@ function okDerived(): Derived<unknown> {
 
 beforeEach(() => {
   vi.resetAllMocks();
+  // The zone resolver keeps a per-user cache for a minute; without this the
+  // first case to run fills it and every later one skips the read.
+  invalidateUserTimezone("u-ny");
   findUnique.mockResolvedValue({ timezone: "America/New_York" });
 });
 

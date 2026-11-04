@@ -70,6 +70,8 @@ const WRITE_SITES: Record<string, string> = {
   "lib/whoop/webhook-handler.ts": TAIL,
   // Retiring the rows of Oura sleep periods the person rejected or deleted.
   "lib/oura/sync.ts": TAIL,
+  // Retiring the rows of nights Garmin no longer reports.
+  "lib/garmin/sync.ts": TAIL,
   // Retiring the equivalent-distance rows earlier Oura syncs wrote.
   "lib/oura/retire-distance.ts": TAIL,
   // Integration syncs: each collects the (type, day) pairs it touched and

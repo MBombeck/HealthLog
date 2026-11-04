@@ -42,10 +42,6 @@ vi.mock("next/headers", async () => {
   };
 });
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("@/lib/auth/passkey", async () => {
   const actual =
     await vi.importActual<typeof import("@/lib/auth/passkey")>(

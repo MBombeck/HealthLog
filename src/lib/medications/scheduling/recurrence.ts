@@ -56,6 +56,7 @@
 import { RRule } from "rrule";
 
 import { parseScheduleRecurrence } from "@/lib/medication-schedule";
+import { alignedRruleStart } from "@/lib/medications/scheduling/aligned-rrule-start";
 import { wallClockInTz } from "@/lib/tz/wall-clock";
 import { startOfLocalDayInTz } from "@/lib/tz/local-day";
 import { tzOffsetMinutes } from "@/lib/tz/format";
@@ -787,7 +788,13 @@ function expandRrule(
   // to end — the anchor's day is read from its UTC fields and only then is
   // the HH:mm materialised in the user's zone. Reading the anchor in the
   // user's zone instead turned Monday 00:00Z into Sunday evening west of UTC.
-  const dtstartLine = `DTSTART:${formatUtcBasic(anchorCivilDay(ctx))}`;
+  // Pad the day-anchor window by 2 days each side: a calendar day spans
+  // instants up to 14 h either side of its UTC midnight.
+  const padded = 2 * DAY_MS;
+  const after = new Date(from.getTime() - padded);
+  const before = new Date(to.getTime() + padded);
+  const start = alignedRruleStart(rruleStr, anchorCivilDay(ctx), after);
+  const dtstartLine = `DTSTART:${formatUtcBasic(start)}`;
   // Skip the engine-side UNTIL suffix when the user's RRULE already
   // bounds the recurrence with COUNT or UNTIL — RFC 5545 forbids both
   // (and any two-UNTIL collision), and RRule.fromString throws on the
@@ -808,13 +815,6 @@ function expandRrule(
     return [];
   }
 
-  // Walk a generously padded day-anchor window so a per-day timesOfDay
-  // expansion still hits the requested [from, to] after the time-of-day
-  // is applied: a calendar day spans instants up to 14 h either side of
-  // its UTC midnight, so widen the window by 2 days on each side.
-  const padded = 2 * DAY_MS;
-  const after = new Date(from.getTime() - padded);
-  const before = new Date(to.getTime() + padded);
   // An RRULE with BYHOUR (the measurement-reminder protocols) emits several
   // anchors per day; the times of day are expanded per calendar day, so
   // collapse the anchors to their days first.

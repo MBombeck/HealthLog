@@ -220,185 +220,192 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("POST /api/measurements parity", () => {
-  it("a single reading, its duplicate, a refused one", async () => {
-    const weight = {
-      type: "WEIGHT",
-      value: 80.4,
-      measuredAt: "2026-10-14T06:30:00.000Z",
-      notes: "after the run",
-      deviceType: "scale",
-    };
-    await post("post-01-single", weight);
-    await post("post-02-single-duplicate", weight);
-    await post("post-03-single-invalid", {
-      type: "WEIGHT",
-      value: "heavy",
-      measuredAt: "2026-10-14T06:30:00.000Z",
-    });
-    await post("post-04-single-glucose", {
-      type: "BLOOD_GLUCOSE",
-      value: 104,
-      measuredAt: "2026-10-14T07:00:00.000Z",
-      glucoseContext: "FASTING",
-      symptomsPresent: false,
-    });
-  });
-
-  it("a combined two-value reading, its duplicate, a refused one", async () => {
-    const reading = [
-      {
-        type: "BLOOD_PRESSURE_SYS",
-        value: 128,
-        measuredAt: "2026-10-14T08:00:00.000Z",
-      },
-      {
-        type: "BLOOD_PRESSURE_DIA",
-        value: 82,
-        measuredAt: "2026-10-14T08:00:00.000Z",
-      },
-      {
-        type: "PULSE",
-        value: 66,
-        measuredAt: "2026-10-14T08:00:00.000Z",
-        notes: "seated",
-        symptomsPresent: true,
-      },
-    ];
-    await post("post-05-batch", reading);
-    await post("post-06-batch-duplicate", reading);
-    await post("post-07-batch-invalid", [{ type: "PULSE", value: -1 }]);
-  });
-
-  it("a named sleep-stage segment, its re-post and its mirror", async () => {
-    const segment = {
-      type: "SLEEP_DURATION",
-      sleepStage: "DEEP",
-      startDate: "2026-10-14T01:00:00.000Z",
-      endDate: "2026-10-14T02:30:00.000Z",
-      externalId: "bridge-sleep-1",
-    };
-    await post("post-08-sleep-stage", segment);
-    await post("post-09-sleep-stage-again", segment);
-    await post("post-10-sleep-stage-mirror", {
-      ...segment,
-      externalId: "hk-sleep-1",
-      source: "APPLE_HEALTH",
-    });
-    await post("post-11-sleep-stage-invalid", {
-      type: "SLEEP_DURATION",
-      sleepStage: "DEEP",
-    });
-  });
-
-  it("a narrow bridge token with and without a source", async () => {
-    const bridge = await makeToken(
-      { id: ownerId },
-      { permissions: [MEASUREMENTS_WRITE_SCOPE] },
-    );
-    await post(
-      "post-12-bridge-with-source",
-      {
+// One walk: each request sees what the earlier ones stored, so the cases
+// keep their order even when a run shuffles (`shuffle: false`).
+describe("measurements parity walk", { shuffle: false }, () => {
+  describe("POST /api/measurements parity", () => {
+    it("a single reading, its duplicate, a refused one", async () => {
+      const weight = {
         type: "WEIGHT",
-        value: 80.1,
-        measuredAt: "2026-10-15T06:30:00.000Z",
-        source: "MANUAL",
-      },
-      bridge,
-    );
-    await post(
-      "post-13-bridge",
-      {
+        value: 80.4,
+        measuredAt: "2026-10-14T06:30:00.000Z",
+        notes: "after the run",
+        deviceType: "scale",
+      };
+      await post("post-01-single", weight);
+      await post("post-02-single-duplicate", weight);
+      await post("post-03-single-invalid", {
         type: "WEIGHT",
-        value: 80.1,
-        measuredAt: "2026-10-15T06:30:00.000Z",
-      },
-      bridge,
-    );
-  });
-
-  it("a delegate writing into a shared record", async () => {
-    const delegateUser = await makeUser({ timezone: "UTC" });
-    await makeGrant({ id: ownerId }, delegateUser, { access: "WRITE" });
-    const delegate = await makeSession(delegateUser);
-    await switchSessionTo(delegate.sessionId, ownerId);
-    await post(
-      "post-14-delegated",
-      {
-        type: "PULSE",
-        value: 71,
-        measuredAt: "2026-10-15T07:00:00.000Z",
-      },
-      delegate,
-    );
-    await switchSessionTo(delegate.sessionId, null);
-  });
-});
-
-describe("GET /api/measurements parity", () => {
-  beforeAll(async () => {
-    // Day totals for the cumulative list modes, from the phone.
-    for (const [day, value] of [
-      ["2026-10-12", 7_100],
-      ["2026-10-13", 8_400],
-      ["2026-10-14", 5_100],
-    ] as const) {
-      await prisma.measurement.create({
-        data: {
-          userId: ownerId,
-          type: "ACTIVITY_STEPS",
-          value,
-          unit: "steps",
-          source: "APPLE_HEALTH",
-          measuredAt: new Date(`${day}T12:00:00.000Z`),
-          externalId: `stats:${STEPS}:${day}`,
-          aggregationProvenance: "HEALTHKIT_STATISTICS",
-        },
+        value: "heavy",
+        measuredAt: "2026-10-14T06:30:00.000Z",
       });
-    }
+      await post("post-04-single-glucose", {
+        type: "BLOOD_GLUCOSE",
+        value: 104,
+        measuredAt: "2026-10-14T07:00:00.000Z",
+        glucoseContext: "FASTING",
+        symptomsPresent: false,
+      });
+    });
+
+    it("a combined two-value reading, its duplicate, a refused one", async () => {
+      const reading = [
+        {
+          type: "BLOOD_PRESSURE_SYS",
+          value: 128,
+          measuredAt: "2026-10-14T08:00:00.000Z",
+        },
+        {
+          type: "BLOOD_PRESSURE_DIA",
+          value: 82,
+          measuredAt: "2026-10-14T08:00:00.000Z",
+        },
+        {
+          type: "PULSE",
+          value: 66,
+          measuredAt: "2026-10-14T08:00:00.000Z",
+          notes: "seated",
+          symptomsPresent: true,
+        },
+      ];
+      await post("post-05-batch", reading);
+      await post("post-06-batch-duplicate", reading);
+      await post("post-07-batch-invalid", [{ type: "PULSE", value: -1 }]);
+    });
+
+    it("a named sleep-stage segment, its re-post and its mirror", async () => {
+      const segment = {
+        type: "SLEEP_DURATION",
+        sleepStage: "DEEP",
+        startDate: "2026-10-14T01:00:00.000Z",
+        endDate: "2026-10-14T02:30:00.000Z",
+        externalId: "bridge-sleep-1",
+      };
+      await post("post-08-sleep-stage", segment);
+      await post("post-09-sleep-stage-again", segment);
+      await post("post-10-sleep-stage-mirror", {
+        ...segment,
+        externalId: "hk-sleep-1",
+        source: "APPLE_HEALTH",
+      });
+      await post("post-11-sleep-stage-invalid", {
+        type: "SLEEP_DURATION",
+        sleepStage: "DEEP",
+      });
+    });
+
+    it("a narrow bridge token with and without a source", async () => {
+      const bridge = await makeToken(
+        { id: ownerId },
+        { permissions: [MEASUREMENTS_WRITE_SCOPE] },
+      );
+      await post(
+        "post-12-bridge-with-source",
+        {
+          type: "WEIGHT",
+          value: 80.1,
+          measuredAt: "2026-10-15T06:30:00.000Z",
+          source: "MANUAL",
+        },
+        bridge,
+      );
+      await post(
+        "post-13-bridge",
+        {
+          type: "WEIGHT",
+          value: 80.1,
+          measuredAt: "2026-10-15T06:30:00.000Z",
+        },
+        bridge,
+      );
+    });
+
+    it("a delegate writing into a shared record", async () => {
+      const delegateUser = await makeUser({ timezone: "UTC" });
+      await makeGrant({ id: ownerId }, delegateUser, { access: "WRITE" });
+      const delegate = await makeSession(delegateUser);
+      await switchSessionTo(delegate.sessionId, ownerId);
+      await post(
+        "post-14-delegated",
+        {
+          type: "PULSE",
+          value: 71,
+          measuredAt: "2026-10-15T07:00:00.000Z",
+        },
+        delegate,
+      );
+      await switchSessionTo(delegate.sessionId, null);
+    });
   });
 
-  it("the plain page and its filters", async () => {
-    await get("get-01-page", { limit: 50 });
-    await get("get-02-type-sorted", {
-      type: "PULSE",
-      sortBy: "value",
-      sortDir: "asc",
+  describe("GET /api/measurements parity", () => {
+    beforeAll(async () => {
+      // Day totals for the cumulative list modes, from the phone.
+      for (const [day, value] of [
+        ["2026-10-12", 7_100],
+        ["2026-10-13", 8_400],
+        ["2026-10-14", 5_100],
+      ] as const) {
+        await prisma.measurement.create({
+          data: {
+            userId: ownerId,
+            type: "ACTIVITY_STEPS",
+            value,
+            unit: "steps",
+            source: "APPLE_HEALTH",
+            measuredAt: new Date(`${day}T12:00:00.000Z`),
+            externalId: `stats:${STEPS}:${day}`,
+            aggregationProvenance: "HEALTHKIT_STATISTICS",
+          },
+        });
+      }
     });
-    await get("get-03-filtered", {
-      sourceEq: "MANUAL",
-      valueMin: 70,
-      valueMax: 130,
-      from: "2026-10-14T00:00:00.000Z",
-      to: "2026-10-15T23:59:59.000Z",
-      limit: 2,
-      offset: 1,
-    });
-  });
 
-  it("the list modes", async () => {
-    await get("get-04-sleep", { type: "SLEEP_DURATION" });
-    await get("get-05-drill-down", {
-      type: "ACTIVITY_STEPS",
-      dayKey: "2026-10-13",
+    it("the plain page and its filters", async () => {
+      await get("get-01-page", { limit: 50 });
+      await get("get-02-type-sorted", {
+        type: "PULSE",
+        sortBy: "value",
+        sortDir: "asc",
+      });
+      await get("get-03-filtered", {
+        sourceEq: "MANUAL",
+        valueMin: 70,
+        valueMax: 130,
+        from: "2026-10-14T00:00:00.000Z",
+        to: "2026-10-15T23:59:59.000Z",
+        limit: 2,
+        offset: 1,
+      });
     });
-    await get("get-06-day-grouped", { type: "ACTIVITY_STEPS", groupBy: "day" });
-    await get("get-07-rollup-series", {
-      type: "ACTIVITY_STEPS",
-      source: "rollup",
-      aggregate: "daily",
-      from: "2026-10-10T00:00:00.000Z",
-      to: "2026-10-15T23:59:59.000Z",
-    });
-    await get("get-08-live-aggregate", {
-      type: "PULSE",
-      aggregate: "weekly",
-      from: "2026-09-01T00:00:00.000Z",
-      to: "2026-10-15T23:59:59.000Z",
-    });
-  });
 
-  it("a refused query", async () => {
-    await get("get-09-invalid", { limit: 0, sortDir: "sideways" });
+    it("the list modes", async () => {
+      await get("get-04-sleep", { type: "SLEEP_DURATION" });
+      await get("get-05-drill-down", {
+        type: "ACTIVITY_STEPS",
+        dayKey: "2026-10-13",
+      });
+      await get("get-06-day-grouped", {
+        type: "ACTIVITY_STEPS",
+        groupBy: "day",
+      });
+      await get("get-07-rollup-series", {
+        type: "ACTIVITY_STEPS",
+        source: "rollup",
+        aggregate: "daily",
+        from: "2026-10-10T00:00:00.000Z",
+        to: "2026-10-15T23:59:59.000Z",
+      });
+      await get("get-08-live-aggregate", {
+        type: "PULSE",
+        aggregate: "weekly",
+        from: "2026-09-01T00:00:00.000Z",
+        to: "2026-10-15T23:59:59.000Z",
+      });
+    });
+
+    it("a refused query", async () => {
+      await get("get-09-invalid", { limit: 0, sortDir: "sideways" });
+    });
   });
 });

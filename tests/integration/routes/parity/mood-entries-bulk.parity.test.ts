@@ -214,7 +214,7 @@ afterAll(async () => {
   await prisma.moodTag.delete({ where: { id: SHORT_FACTOR_ID } });
 });
 
-describe("POST /api/mood-entries/bulk parity", () => {
+describe("POST /api/mood-entries/bulk parity", { shuffle: false }, () => {
   it("01 a first drain", async () => {
     await step("01-first-drain", { entries: firstDrain });
   });

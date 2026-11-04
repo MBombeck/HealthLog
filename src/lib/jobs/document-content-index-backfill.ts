@@ -55,6 +55,7 @@ import {
   upsertContentIndex,
 } from "@/lib/documents/content-index";
 import { transcribeDocument } from "@/lib/documents/describe";
+import { LOCAL_MAX_PAGES } from "@/lib/documents/local-extract";
 import { withPdfWork } from "@/lib/documents/pdf-isolation";
 import { getGlobalBoss } from "@/lib/jobs/boss-instance";
 import { resolveDocumentVisionProvider } from "@/lib/documents/provider-order";
@@ -323,7 +324,7 @@ export async function runContentIndexBackfillForUser(
       }
       const vision = await withPdfWork(
         { owner: userId, lane: "background" },
-        () => prepareVisionInput(document, pick.pdfSupported),
+        () => prepareForIndex(document, pick.pdfSupported),
       );
       if (!vision.ok) {
         // Not vision-indexable after all (undecryptable, unreadable bytes,
@@ -395,8 +396,21 @@ export async function runContentIndexBackfillForUser(
 }
 
 /**
- * One document's provider read and its index row, with the reservation
- * settled either way. A provider miss on one document must not abort the
+ * The stored original as index input. A text-layer read is the index itself,
+ * so it takes every page the local text index reads, not the render cap.
+ */
+function prepareForIndex(
+  document: NonNullable<Awaited<ReturnType<typeof loadOwnedDocument>>>,
+  pdfSupported: boolean,
+) {
+  return prepareVisionInput(document, pdfSupported, {
+    textLayerPages: LOCAL_MAX_PAGES,
+  });
+}
+
+/**
+ * One document's provider read (or its text-layer read, #1311) and its index
+ * row, with the reservation settled either way. A provider miss on one document must not abort the
  * batch: it is refunded and left un-indexed (a later run retries it).
  * #1279 — what the failed reply reported spending stays charged, and the
  * caller stops the walk after several misses in a row.
@@ -413,6 +427,23 @@ async function transcribeAndIndex(
       servedBy,
       reservedOwner: budget.owner,
     });
+  if (vision.mode === "text") {
+    // #1311 — this server cannot render the PDF and read its text layer
+    // instead: that is the index, and no provider is called for it.
+    await settle(0, null);
+    try {
+      await upsertContentIndex({
+        userId,
+        documentId,
+        text: vision.text,
+        source: "local-pdf",
+        providerType: null,
+      });
+    } catch (err) {
+      return { error: err };
+    }
+    return "indexed";
+  }
   let text: string;
   try {
     ({ text } = await transcribeDocument({

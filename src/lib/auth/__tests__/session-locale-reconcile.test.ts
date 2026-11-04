@@ -37,10 +37,6 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
-
 vi.mock("@/lib/logging/context", () => ({ getEvent: () => undefined }));
 
 vi.mock("@/lib/auth/hmac", () => ({

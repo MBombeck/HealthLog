@@ -17,13 +17,9 @@
  * `purgeTombstonesByAccount` and the purge waits out the hold, then deletes
  * the restoring account's tombstones once the stand-in rolls back.
  */
-import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
-
-vi.mock("@/lib/db-compat", () => ({
-  ensureDbCompatibility: vi.fn().mockResolvedValue(undefined),
-}));
 
 const RESTORING = "tombstone-restoring";
 const OTHER = "tombstone-other";
