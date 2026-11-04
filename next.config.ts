@@ -327,13 +327,11 @@ const nextConfig: NextConfig = {
       // image-only-wire provider (codex/OAuth) can read it — the ambient
       // auto-read path. `@napi-rs/canvas` loads a native `.node` binary that the
       // Turbopack NFT tracer resolves dynamically and therefore misses, so pin
-      // the JS loader AND the two musl prebuilts (the Alpine runtime image is
-      // amd64 + arm64) into the standalone image explicitly. pnpm keeps them
-      // unhoisted under `.pnpm`. No cairo/pango apk is needed — the prebuilt
-      // `.node` is self-contained.
+      // the JS loader into the standalone image explicitly. The glibc prebuilt
+      // the Debian runtime image loads is placed by the Dockerfile's canvas
+      // hoist step, which `canvas-binary-hoist-guard.test.ts` pins. No system
+      // cairo/pango is needed: the prebuilt `.node` is self-contained.
       "./node_modules/.pnpm/@napi-rs+canvas@*/node_modules/@napi-rs/canvas/**",
-      "./node_modules/.pnpm/@napi-rs+canvas-linux-x64-musl@*/node_modules/@napi-rs/canvas-linux-x64-musl/**",
-      "./node_modules/.pnpm/@napi-rs+canvas-linux-arm64-musl@*/node_modules/@napi-rs/canvas-linux-arm64-musl/**",
     ],
   },
   // v1.4.34 — silence the Turbopack NFT trace warnings emitted
