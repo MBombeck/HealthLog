@@ -42,6 +42,11 @@ export default defineConfig({
       // files that set it themselves (`account-deletion-grace.test.ts`,
       // `offhost-purge-on-deletion.test.ts`).
       ACCOUNT_DELETION_GRACE_DAYS: "0",
+      // Below `testTimeout`, so a statement that runs or waits too long is
+      // cancelled by the server, whose error names the statement and what it
+      // waited on. At the production default of 60 s the test timeout fired
+      // first and said only that the test took too long.
+      DATABASE_STATEMENT_TIMEOUT_MS: "45000",
     },
     include: ["tests/integration/**/*.test.ts"],
     // Container boot + migration apply is slow; give each test a generous
