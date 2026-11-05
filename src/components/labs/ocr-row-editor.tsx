@@ -75,6 +75,33 @@ function unitMismatchMessage(
     : ["labs.ocr.errorUnitMismatch", { markerUnit: row.markerUnit ?? "" }];
 }
 
+/**
+ * v1.18.10 (#5) — a NEW biomarker mints its catalog reference range from THIS
+ * extracted row, so the range is load-bearing and worth a second look. Surface
+ * the range confidence for a new numeric marker, and call it out when the
+ * model was unsure (or set no bounds at all) so the user verifies the range it
+ * will be judged against. A text result ("SEE NOTE") records no window of its
+ * own, but a new marker minted from it takes the one printed beside it, so the
+ * range is shown there too, and only called out when there is one: a text
+ * result often has no numeric range, and that is not a gap.
+ */
+function rangeReview(row: OcrReviewRow): {
+  showRange: boolean;
+  showRangeBadge: boolean;
+  flagRange: boolean;
+} {
+  const isQualitative = row.valueText !== null && row.valueText !== undefined;
+  const isNew = row.biomarkerMatch === "new";
+  const lowRangeConfidence = row.confidence.range < CONFIDENCE_THRESHOLD;
+  const hasBounds = row.referenceLow !== null || row.referenceHigh !== null;
+  const showRangeBadge = isNew && (!isQualitative || hasBounds);
+  return {
+    showRange: !isQualitative || isNew,
+    showRangeBadge,
+    flagRange: showRangeBadge && (lowRangeConfidence || !hasBounds),
+  };
+}
+
 export function OcrRowEditor({
   row,
   onChange,
@@ -138,15 +165,7 @@ export function OcrRowEditor({
       ? row.confidence.value < CONFIDENCE_THRESHOLD
       : lowValueConfidence);
 
-  // v1.18.10 (#5) — a NEW numeric biomarker mints its catalog reference range
-  // from THIS extracted row. The range is therefore load-bearing and worth a
-  // second look. Surface the range confidence prominently for new numeric
-  // markers, and call it out explicitly when the model was unsure (or set no
-  // bounds at all) so the user verifies the range it will be judged against.
-  const isNewNumericMarker = !isQualitative && row.biomarkerMatch === "new";
-  const lowRangeConfidence = row.confidence.range < CONFIDENCE_THRESHOLD;
-  const hasBounds = row.referenceLow !== null || row.referenceHigh !== null;
-  const flagRange = isNewNumericMarker && (lowRangeConfidence || !hasBounds);
+  const { showRange, showRangeBadge, flagRange } = rangeReview(row);
 
   return (
     // `@container` makes the row follow the width of the dialog, not the
@@ -353,11 +372,11 @@ export function OcrRowEditor({
             </div>
           </div>
 
-          {/* v1.18.10 (#5) — for a NEW numeric biomarker the reference range below
+          {/* v1.18.10 (#5) — for a NEW biomarker the reference range below
           becomes the marker's catalog range. Make that consequence visible, and
           flag low range-confidence / a missing range so the user verifies it
           before saving. A calm `secondary` badge, not an alarm. */}
-          {isNewNumericMarker ? (
+          {showRangeBadge ? (
             <div className="flex flex-wrap items-center gap-1.5">
               <Badge variant={flagRange ? "secondary" : "outline"}>
                 <Ruler aria-hidden />
@@ -368,7 +387,7 @@ export function OcrRowEditor({
             </div>
           ) : null}
 
-          {!isQualitative ? (
+          {showRange ? (
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label htmlFor={`${fieldId}-lo`} className="text-xs">
@@ -424,7 +443,7 @@ export function OcrRowEditor({
           reading of this string, and correcting the string is how a range the
           parser could not read ("bis 5,0", "negativ") still reaches the row
           instead of being dropped. */}
-          {!isQualitative ? (
+          {showRange ? (
             <div className="space-y-1">
               <Label htmlFor={`${fieldId}-refText`} className="text-xs">
                 {t("labs.ocr.refTextLabel")}

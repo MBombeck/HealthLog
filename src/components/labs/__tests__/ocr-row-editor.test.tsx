@@ -125,6 +125,44 @@ describe("<OcrRowEditor> layout", () => {
   });
 });
 
+describe("<OcrRowEditor> range beside a text result", () => {
+  const text: OcrReviewRow = {
+    ...baseRow,
+    value: null,
+    valueText: "SEE NOTE",
+    unit: null,
+    referenceLow: 10,
+    referenceHigh: 20,
+    referenceText: "10 - 20",
+  };
+
+  it("offers the range for review when the row mints a new marker", () => {
+    const html = render(undefined, "en", { ...text, biomarkerMatch: "new" });
+    for (const id of ["-lo", "-hi", "-refText"]) {
+      expect(html, `field ${id}`).toContain(`${id}"`);
+    }
+    expect(html).toContain("Reference range taken from the scan");
+  });
+
+  it("does not ask to verify a range a new text marker never had", () => {
+    const html = render(undefined, "en", {
+      ...text,
+      biomarkerMatch: "new",
+      referenceLow: null,
+      referenceHigh: null,
+      referenceText: null,
+    });
+    expect(html).not.toContain("Verify the reference range");
+  });
+
+  it("leaves it out when the row goes to an existing marker", () => {
+    const html = render(undefined, "en", text);
+    for (const id of ["-lo", "-hi", "-refText"]) {
+      expect(html, `field ${id}`).not.toContain(`${id}"`);
+    }
+  });
+});
+
 describe("<OcrRowEditor> unit differs from the marker's", () => {
   const mismatched: OcrReviewRow = {
     ...baseRow,

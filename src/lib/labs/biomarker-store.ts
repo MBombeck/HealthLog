@@ -86,6 +86,10 @@ export interface MintedBiomarker {
  * reused as-is: its unit / range are authoritative and the incoming free-text
  * unit / bounds are NOT allowed to silently rewrite it. When nothing resolves,
  * a marker is minted from the reading's own spelling / unit / bounds. The
+ * bounds are the report's printed window whether the reading is a number or a
+ * text result ("SEE NOTE" beside "10 - 20"): the marker outlives the reading,
+ * and its next number is judged against them. A window that cannot be true
+ * (low above high) is not minted; nothing says which of the two is wrong. The
  * `@@unique([userId, name])` index is the structural backstop; a concurrent
  * double-write converges via the catch-and-refetch.
  *
@@ -109,14 +113,18 @@ export async function resolveOrMintBiomarker(
   const hit = resolveInIndex(index, name, input.unit || null);
   if (hit) return toMinted(hit.marker);
 
+  const transposed =
+    input.referenceLow !== null &&
+    input.referenceHigh !== null &&
+    input.referenceLow > input.referenceHigh;
   try {
     const created = await prisma.biomarker.create({
       data: {
         userId,
         name,
         unit: input.unit,
-        lowerBound: input.referenceLow,
-        upperBound: input.referenceHigh,
+        lowerBound: transposed ? null : input.referenceLow,
+        upperBound: transposed ? null : input.referenceHigh,
         panel: input.panel,
         analyteKey: matchAnalyteKey({ name, unit: input.unit }),
       },

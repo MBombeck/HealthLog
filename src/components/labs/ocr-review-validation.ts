@@ -157,6 +157,9 @@ export function toCommitRow(row: OcrReviewRow): OcrCommitRowInput | null {
       analyte,
       valueText,
       takenAt: takenAt.toISOString(),
+      // A text result has no window of its own, but a new marker minted from
+      // it takes the one printed beside it.
+      ...printedRange(row),
       ...chosen(row),
     };
   }
@@ -170,10 +173,19 @@ export function toCommitRow(row: OcrReviewRow): OcrCommitRowInput | null {
     value: row.value,
     unit,
     takenAt: takenAt.toISOString(),
+    ...printedRange(row),
+    ...chosen(row),
+  };
+}
+
+/** The reviewed window: the two bounds and the string they were read from. */
+function printedRange(
+  row: OcrReviewRow,
+): Pick<OcrCommitRowInput, "referenceLow" | "referenceHigh" | "referenceText"> {
+  return {
     ...(row.referenceLow !== null ? { referenceLow: row.referenceLow } : {}),
     ...(row.referenceHigh !== null ? { referenceHigh: row.referenceHigh } : {}),
     ...(row.referenceText ? { referenceText: row.referenceText } : {}),
-    ...chosen(row),
   };
 }
 

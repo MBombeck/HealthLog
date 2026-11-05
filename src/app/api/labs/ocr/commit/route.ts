@@ -249,10 +249,10 @@ async function commitOcrRows(request: NextRequest) {
           user.id,
           {
             analyte: row.analyte,
-            // A qualitative reading has no numeric unit / range.
+            // A text result has no unit; its printed window still seeds.
             unit: isQualitative ? (row.unit ?? "") : (row.unit as string),
-            referenceLow: isQualitative ? null : sourceLow,
-            referenceHigh: isQualitative ? null : sourceHigh,
+            referenceLow: sourceLow,
+            referenceHigh: sourceHigh,
             panel: row.panel ?? null,
           },
           { index: markerIndex },

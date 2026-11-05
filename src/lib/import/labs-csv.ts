@@ -74,6 +74,8 @@ export interface LabCsvRow {
   valueText: string | null;
   unit: string | null;
   takenAt: Date;
+  /** The file's window. On a text result it only seeds a new marker: the
+   * reading itself records no window. */
   sourceReferenceLow: number | null;
   sourceReferenceHigh: number | null;
   sourceReferenceText: string | null;
@@ -200,8 +202,8 @@ export function normaliseLabRow(
       valueText,
       unit,
       takenAt: date.instant,
-      sourceReferenceLow: valueText === null ? low : null,
-      sourceReferenceHigh: valueText === null ? high : null,
+      sourceReferenceLow: low,
+      sourceReferenceHigh: high,
       sourceReferenceText: valueText === null ? rangeText : null,
       panel,
       note,
@@ -473,10 +475,8 @@ export async function importLabsCsv(args: {
           {
             analyte: row.analyte,
             unit: row.unit ?? "",
-            referenceLow:
-              row.valueText === null ? row.sourceReferenceLow : null,
-            referenceHigh:
-              row.valueText === null ? row.sourceReferenceHigh : null,
+            referenceLow: row.sourceReferenceLow,
+            referenceHigh: row.sourceReferenceHigh,
             panel: row.panel,
           },
           { index: working },
@@ -484,8 +484,8 @@ export async function importLabsCsv(args: {
       if (!marker) created.add(row.analyte);
 
       let storedValue = row.value;
-      let storedLow = row.sourceReferenceLow;
-      let storedHigh = row.sourceReferenceHigh;
+      let storedLow = row.valueText === null ? row.sourceReferenceLow : null;
+      let storedHigh = row.valueText === null ? row.sourceReferenceHigh : null;
       let convertedFrom: { sourceValue: number; sourceUnit: string } | null =
         null;
       if (row.value !== null) {

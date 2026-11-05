@@ -62,6 +62,14 @@
   on the phone to an account pending deletion now carries the date the
   account is erased, as the web sign-in already did, so the app can say
   until when an admin can still undo it. (#1341)
+- **A marker started from a text result keeps its range.** When a report
+  printed a text result such as "SEE NOTE" with a numeric range beside it,
+  the new marker was saved without that range, so its first number later
+  had nothing to be judged against. The range now goes onto the new marker,
+  from a document, a lab scan, a CSV import or a typed reading, and the
+  scan review shows it for such a row. A range that is text itself, like
+  "NEGATIVE", is not turned into bounds, and a marker that already exists
+  keeps its own. (#1313)
 
 ### Changed
 
