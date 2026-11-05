@@ -20,7 +20,7 @@ vi.mock("@/lib/db", () => ({
       createManyAndReturn: vi.fn(),
     },
     workoutRoute: {
-      createMany: vi.fn(),
+      createManyAndReturn: vi.fn(),
     },
     workoutSamples: {
       createManyAndReturn: vi.fn(),
@@ -201,13 +201,16 @@ beforeEach(() => {
     }) as never,
   );
   vi.mocked(prisma.workout.findFirst).mockResolvedValue(null);
-  vi.mocked(prisma.workoutRoute.createMany).mockResolvedValue({ count: 0 });
-  // The series write reports which rows landed, so an enrichment can tell
-  // an attach from a row a concurrent writer got in first. The fake
-  // echoes every row back as landed.
+  // The series and track writes report which rows landed, so an
+  // enrichment can tell an attach from a row a concurrent writer got in
+  // first. The fakes echo every row back as landed.
+  const echoLanded = (async (args: { data: Array<{ workoutId: string }> }) =>
+    args.data.map((row) => ({ workoutId: row.workoutId }))) as never;
+  vi.mocked(prisma.workoutRoute.createManyAndReturn).mockImplementation(
+    echoLanded,
+  );
   vi.mocked(prisma.workoutSamples.createManyAndReturn).mockImplementation(
-    (async (args: { data: Array<{ workoutId: string }> }) =>
-      args.data.map((row) => ({ workoutId: row.workoutId }))) as never,
+    echoLanded,
   );
   // v1.4.43 — default to no per-user source-priority override so
   // the write-time picker walks the canonical default ladder. Tests
@@ -550,7 +553,7 @@ describe("POST /api/workouts/batch — workout-route opt-in", () => {
     };
     // Same per-entry status as a stored track: the client needs no branch.
     expect(body.data.entries[0]?.status).toBe("inserted");
-    expect(prisma.workoutRoute.createMany).not.toHaveBeenCalled();
+    expect(prisma.workoutRoute.createManyAndReturn).not.toHaveBeenCalled();
   });
 
   it("drops the track when the account row carries no opt-in at all", async () => {
@@ -564,7 +567,7 @@ describe("POST /api/workouts/batch — workout-route opt-in", () => {
 
     const res = await POST(makeRequest({ workouts: [withRoute()] }));
     expect(res.status).toBe(200);
-    expect(prisma.workoutRoute.createMany).not.toHaveBeenCalled();
+    expect(prisma.workoutRoute.createManyAndReturn).not.toHaveBeenCalled();
   });
 });
 
@@ -599,8 +602,9 @@ describe("POST /api/workouts/batch — nested route attachment", () => {
       }),
     );
     expect(res.status).toBe(200);
-    expect(prisma.workoutRoute.createMany).toHaveBeenCalledTimes(1);
-    const call = vi.mocked(prisma.workoutRoute.createMany).mock.calls[0]?.[0];
+    expect(prisma.workoutRoute.createManyAndReturn).toHaveBeenCalledTimes(1);
+    const call = vi.mocked(prisma.workoutRoute.createManyAndReturn).mock
+      .calls[0]?.[0];
     const rows = (
       call as {
         data: Array<{
@@ -654,7 +658,7 @@ describe("POST /api/workouts/batch — per-workout HR series (v1.10.0)", () => {
     );
     expect(res.status).toBe(200);
     // The route table is untouched — an indoor workout has no GPS route.
-    expect(prisma.workoutRoute.createMany).not.toHaveBeenCalled();
+    expect(prisma.workoutRoute.createManyAndReturn).not.toHaveBeenCalled();
     // The HR series lands in the dedicated child table by FK.
     expect(prisma.workoutSamples.createManyAndReturn).toHaveBeenCalledTimes(1);
     const call = vi.mocked(prisma.workoutSamples.createManyAndReturn).mock
@@ -703,10 +707,10 @@ describe("POST /api/workouts/batch — per-workout HR series (v1.10.0)", () => {
       }),
     );
     expect(res.status).toBe(200);
-    expect(prisma.workoutRoute.createMany).toHaveBeenCalledTimes(1);
+    expect(prisma.workoutRoute.createManyAndReturn).toHaveBeenCalledTimes(1);
     expect(prisma.workoutSamples.createManyAndReturn).toHaveBeenCalledTimes(1);
     const routeRows = (
-      vi.mocked(prisma.workoutRoute.createMany).mock.calls[0]?.[0] as {
+      vi.mocked(prisma.workoutRoute.createManyAndReturn).mock.calls[0]?.[0] as {
         data: Array<{ workoutId: string }>;
       }
     ).data;

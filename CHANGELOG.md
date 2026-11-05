@@ -26,6 +26,12 @@
   window. The native client can then tell "nothing in this window" from
   "further back than the Coach may read". The answer still names the limit,
   and the web trail keeps its wording.
+- Turning on workout routes no longer helps only workouts recorded from
+  then on. When the app sends a route again for a workout that is already
+  stored without one, the server now keeps it, sealed like any other
+  track, and fills the workout's climb if it had none; the entry reports
+  `enriched`, as it does for a heart-rate series. A workout that already
+  has a route keeps it, and with routes switched off nothing is stored.
 
 ### Fixed
 

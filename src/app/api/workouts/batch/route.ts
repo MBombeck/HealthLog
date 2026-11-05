@@ -36,8 +36,8 @@
  *   - `Content-Length` ceiling at 5 MB before parsing — anything
  *     larger returns 413 so the iOS client falls back to one workout
  *     per call.
- *   - Per-entry status (`inserted | duplicate | enriched | skipped`) so
- *     the iOS sync cursor can checkpoint accurately.
+ *   - Per-entry status (`inserted | duplicate | enriched | updated |
+ *     skipped`) so the iOS sync cursor can checkpoint accurately.
  *
  * Idempotency contract:
  *   - HTTP-level via `Idempotency-Key` (replays cached envelope).
@@ -45,12 +45,15 @@
  *     composite index. Re-posting the same batch surfaces duplicates
  *     rather than failing the call.
  *
- * Heart-rate series enrichment: a re-post that matches a stored
- * workout and carries a `samples` array attaches that series when the
- * workout has none. The workout row itself stays first-write-wins —
- * nothing on it is written, not one column — and a workout that already
- * holds a series is a no-op, so the client's history sweep is repeatable
- * as often as it likes. See `src/lib/workouts/batch-ingest/plan.ts`.
+ * Enrichment: a re-post that matches a stored workout and carries a
+ * `samples` array attaches that series when the workout has none, and one
+ * that carries a `route` attaches that track when the workout has none and
+ * the account keeps tracks. The workout row itself stays first-write-wins:
+ * a series writes nothing on it, an attached track fills only an empty
+ * `elevationM` with its climb (as an insert would). A workout that already
+ * holds a series or a track keeps it, so the client's history sweep is
+ * repeatable as often as it likes. See
+ * `src/lib/workouts/batch-ingest/plan.ts`.
  *
  * Race reconciliation uses PostgreSQL's `INSERT ... RETURNING` through
  * Prisma's `createManyAndReturn`. The returned composite keys identify the

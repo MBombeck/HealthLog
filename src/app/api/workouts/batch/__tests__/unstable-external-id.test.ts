@@ -27,7 +27,7 @@ vi.mock("@/lib/db", () => ({
 
 const txClient = {
   workout: { createManyAndReturn: vi.fn() },
-  workoutRoute: { createMany: vi.fn() },
+  workoutRoute: { createManyAndReturn: vi.fn() },
   workoutSamples: { createMany: vi.fn() },
 };
 
@@ -133,7 +133,7 @@ beforeEach(() => {
       }));
     },
   );
-  txClient.workoutRoute.createMany.mockResolvedValue({ count: 0 });
+  txClient.workoutRoute.createManyAndReturn.mockResolvedValue([]);
   txClient.workoutSamples.createMany.mockResolvedValue({ count: 0 });
 });
 

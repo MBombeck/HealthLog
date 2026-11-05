@@ -1,7 +1,7 @@
 /**
  * What each surviving entry of a workout batch does to the store: insert a
- * new workout, hand a stored one its heart-rate series, correct a
- * hand-entered one in place, or nothing (a duplicate).
+ * new workout, hand a stored one the heart-rate series or GPS track it lacks,
+ * correct a hand-entered one in place, or nothing (a duplicate).
  */
 import { prisma } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
@@ -62,11 +62,16 @@ function manualOverwriteChanges(
 
 export interface WritePlan {
   toInsert: PreparedWorkout[];
-  /** Stored workouts this batch hands a heart-rate series to. */
+  /**
+   * Stored workouts this batch hands what they lack: a heart-rate series,
+   * a GPS track, or both. Each part is null when the entry carried none or
+   * the stored workout already has one.
+   */
   toEnrich: Array<{
     index: number;
     workoutId: string;
-    samples: NonNullable<PreparedWorkout["samples"]>;
+    samples: PreparedWorkout["samples"];
+    route: PreparedWorkout["route"];
   }>;
   /** Hand-entered workouts this batch edits in place. */
   toOverwrite: Array<{
@@ -82,6 +87,7 @@ export interface WritePlan {
 type StoredWorkout = {
   id: string;
   hasSeries: boolean;
+  hasRoute: boolean;
   values: ManualOverwriteValues;
 };
 
@@ -89,8 +95,8 @@ type StoredWorkout = {
  * Only the write-time dedup survivors are probed against existing rows; the
  * dropped twins already carry a `duplicate` status and never reach the DB.
  *
- * The same probe answers both questions: does the row exist, and does it
- * already carry a series. `id` comes along so an enrichment can address the
+ * The same probe answers every question: does the row exist, and does it
+ * already carry a series and a track. `id` comes along so an enrichment can address the
  * stored workout without a second round trip.
  */
 async function readStoredWorkouts(
@@ -115,6 +121,7 @@ async function readStoredWorkouts(
           source: true,
           externalId: true,
           samples: { select: { workoutId: true } },
+          route: { select: { workoutId: true } },
           sportType: true,
           startedAt: true,
           endedAt: true,
@@ -137,6 +144,7 @@ async function readStoredWorkouts(
     existingByKey.set(`${row.source}::${row.externalId}`, {
       id: row.id,
       hasSeries: row.samples !== null,
+      hasRoute: row.route !== null,
       values: {
         sportType: row.sportType,
         startedAt: row.startedAt,
@@ -197,17 +205,23 @@ export async function planWorkoutWrites(
         plan.duplicates += 1;
       }
     } else if (known) {
-      if (p.samples && !known.hasSeries && !enrichClaimed.has(known.id)) {
+      // `p.route` is already null while the account keeps no tracks, so
+      // the opt-in needs no second check here.
+      const samples = p.samples && !known.hasSeries ? p.samples : null;
+      const route = p.route && !known.hasRoute ? p.route : null;
+      if ((samples || route) && !enrichClaimed.has(known.id)) {
         enrichClaimed.add(known.id);
         // Enrichment. The status is assigned after the write, because
-        // a concurrent writer may get the series in first — in which
-        // case this entry is the plain duplicate it always was. A
-        // second entry of this batch naming the same workout takes the
-        // duplicate arm above: one workout, one series, one `enriched`.
+        // a concurrent writer may get the series or the track in first —
+        // in which case this entry is the plain duplicate it always was.
+        // A second entry of this batch naming the same workout takes the
+        // duplicate arm: one workout, one series, one track, one
+        // `enriched`.
         plan.toEnrich.push({
           index: p.index,
           workoutId: known.id,
-          samples: p.samples,
+          samples,
+          route,
         });
       } else {
         results[p.index] = { index: p.index, status: "duplicate" };

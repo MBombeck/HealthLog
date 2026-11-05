@@ -5289,10 +5289,13 @@ paths:
         accurately. An entry matching a stored workout is first-write-wins for the workout row, except a hand-entered
         one (`source: MANUAL` with a `manual:` externalId), which a resend with other values overwrites and reports
         `updated`; when it carries a `samples` array and the stored workout has no heart-rate series, the series is
-        attached and the entry reports `enriched` (repeatable: a workout that already has a series is a no-op). An entry
-        whose `samples` array fails validation is refused on its own with `reason: "invalid_samples"` — the rest of the
-        batch still lands. The request body ceiling is 5 MB enforced at the HTTP layer — clients above the ceiling
-        receive a 413 with `workout.batch.payload_too_large`.
+        attached and the entry reports `enriched` (repeatable: a workout that already has a series is a no-op). The same
+        holds for a `route` while the account keeps tracks (`storeWorkoutRoutes`): a stored workout without a track gets
+        the one the entry carries, sealed like any other, and the entry reports `enriched`; a workout that already has a
+        track keeps it. An entry that attaches both reports one `enriched`. An entry whose `samples` array fails
+        validation is refused on its own with `reason: "invalid_samples"` — the rest of the batch still lands. The
+        request body ceiling is 5 MB enforced at the HTTP layer — clients above the ceiling receive a 413 with
+        `workout.batch.payload_too_large`.
 
 
         **Narrow token.** Also reachable with a `workouts:write` Bearer (minted at `POST /api/tokens/workouts`), the
@@ -52685,8 +52688,8 @@ components:
           minimum: 0
           maximum: 9007199254740991
           description: Entries that wrote no workout row because the workout was already stored. The top-level counters count
-            workout rows, so an entry reported as `enriched` counts here as well even though its heart-rate series was
-            attached.
+            workout rows, so an entry reported as `enriched` counts here as well even though its heart-rate series or
+            GPS track was attached.
         skipped:
           type: array
           items:
@@ -52729,11 +52732,14 @@ components:
             - updated
             - skipped
           description: "`inserted`: a new workout row. `duplicate`: the workout was already stored and nothing was written.
-            `enriched`: the workout was already stored and the heart-rate series this entry carried was attached to it;
-            the workout row itself was not written, and the entry also counts towards the top-level `duplicates`.
-            `updated` (since v1.40.0): a workout entered by hand (`source: MANUAL`, `externalId` starting `manual:`) was
-            sent again with different values and the stored row now carries them; no row was inserted, so it also counts
-            towards `duplicates`. `skipped`: the server refused the entry, see `reason`."
+            `enriched`: the workout was already stored and the heart-rate series or GPS track this entry carried (or
+            both) was attached because the stored workout had none; no workout row was inserted, and the entry also
+            counts towards the top-level `duplicates`. A track is attached only while the account keeps tracks
+            (`storeWorkoutRoutes`), and when the stored workout had no elevation, the climb derived from the attached
+            track fills `elevationM`; no other column of the workout row is written. `updated` (since v1.40.0): a
+            workout entered by hand (`source: MANUAL`, `externalId` starting `manual:`) was sent again with different
+            values and the stored row now carries them; no row was inserted, so it also counts towards `duplicates`.
+            `skipped`: the server refused the entry, see `reason`."
         reason:
           description: "Why a `skipped` entry was refused: `unstable_external_id` for an id that does not survive a client
             restart, `invalid_samples` for a heart-rate series that failed validation."

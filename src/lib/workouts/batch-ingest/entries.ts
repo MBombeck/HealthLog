@@ -20,9 +20,9 @@ export type WorkoutEntry = CreateBatchWorkoutInput["workouts"][number];
  * Per-entry outcome the iOS client uses to advance its sync cursor.
  * `inserted`, `duplicate` and `enriched` all indicate the row landed (or
  * was already present); the client can checkpoint past them identically.
- * `enriched` additionally says the entry's heart-rate series was attached
- * to a workout that had none, which is what lets a history sweep count
- * its own progress. `skipped` covers entries the server refused: an
+ * `enriched` additionally says the entry's heart-rate series or GPS track
+ * (or both) was attached to a stored workout that had none, which is what
+ * lets a history sweep count its own progress. `skipped` covers entries the server refused: an
  * unusable external id, or a `samples` array that failed validation.
  * `updated` says a hand-entered workout (`manual:` id, source MANUAL) was
  * sent again with different values and the stored row now carries them.
