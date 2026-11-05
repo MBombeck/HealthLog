@@ -866,13 +866,18 @@ test("a lab marker is picked, drawn as its readings, read on its own and kept", 
     '[data-slot="timeline-point-target"][data-series="lab:bm-ferritin"][data-t="fe-1"]',
   );
   const tip = page.locator('[data-slot="timeline-point-tip"]');
-  // A CI run focused the target and no tip opened. The cause is not pinned
-  // down (the tips layer unmounts while the chart has no layout, which is
-  // one candidate); focus again until the tip opens.
-  await expect(async () => {
-    await target.focus();
-    await expect(tip).toHaveAttribute("data-t", "fe-1", { timeout: 1_000 });
-  }).toPass({ timeout: 10_000 });
+  // A pointer resting on another line's point, as the menu click can leave
+  // it: the focus takes the card, and that point losing the pointer (the
+  // focus scrolls the chart from under it) must not close the card.
+  await page
+    .locator('[data-slot="timeline-point-target"][data-series="WEIGHT"]')
+    .last()
+    .hover();
+  await expect(tip).toHaveAttribute("data-series", "WEIGHT");
+  await target.focus();
+  await expect(tip).toHaveAttribute("data-t", "fe-1");
+  await page.mouse.move(0, 0);
+  await expect(tip).toHaveAttribute("data-t", "fe-1");
   await expect(tip).toContainText("22 ng/mL");
   await expect(tip).toContainText("Laborbefund März");
 

@@ -36,6 +36,7 @@ import {
   useState,
   type KeyboardEvent,
   type ReactNode,
+  type RefObject,
 } from "react";
 import Link from "next/link";
 
@@ -73,6 +74,24 @@ interface Active {
   key: string;
   t: string;
   pinned: boolean;
+}
+
+/**
+ * The card once the point `key`/`t` loses the pointer or the focus. Only that
+ * point's own card goes, and then to the point the keyboard holds, if any: a
+ * pointer leaving one point (or a scroll moving it from under a resting
+ * pointer) never takes away the card of another point that has the focus. A
+ * card pinned by a tap stays until a tap elsewhere.
+ */
+export function releaseCard(
+  active: Active | null,
+  key: string,
+  t: string,
+  focused: { key: string; t: string } | null,
+): Active | null {
+  if (!active || active.pinned) return active;
+  if (active.key !== key || active.t !== t) return active;
+  return focused ? { ...focused, pinned: false } : null;
 }
 
 /** One point's target and card, a value line's or a lab line's alike. */
@@ -117,6 +136,8 @@ export function SeriesPointTips({
   const cardRef = useRef<HTMLDivElement>(null);
   const [cardWidth, setCardWidth] = useState(200);
   const buttons = useRef(new Map<string, HTMLButtonElement>());
+  // The point the keyboard holds, the card a pointer leaving gives back to.
+  const focused = useRef<{ key: string; t: string } | null>(null);
 
   // The card's real width, once drawn, for the clamping below.
   useLayoutEffect(() => {
@@ -209,13 +230,18 @@ export function SeriesPointTips({
               }}
               onPointerLeave={(event) => {
                 if (event.pointerType !== "mouse") return;
-                setActive((a) => (a?.pinned ? a : null));
+                const held = focused.current;
+                setActive((a) => releaseCard(a, s.key, p.t, held));
               }}
               onFocus={() => {
+                focused.current = { key: s.key, t: p.t };
                 setStops((st) => ({ ...st, [s.key]: p.t }));
                 setActive({ key: s.key, t: p.t, pinned: false });
               }}
-              onBlur={() => setActive((a) => (a?.pinned ? a : null))}
+              onBlur={() => {
+                focused.current = null;
+                setActive((a) => releaseCard(a, s.key, p.t, null));
+              }}
               onKeyDown={(event) => {
                 event.stopPropagation();
                 if (event.key === "Enter" || event.key === " ") {
@@ -259,34 +285,63 @@ export function SeriesPointTips({
         }),
       )}
       {line && point ? (
-        <div
-          ref={cardRef}
-          data-slot="timeline-point-tip"
-          data-series={line.key}
-          data-t={point.t}
-          className={
-            active?.pinned
-              ? "absolute z-10 w-max max-w-60"
-              : "pointer-events-none absolute z-10 w-max max-w-60"
-          }
-          style={{
-            left: tipLeft(point.x, cardWidth, layout.width),
-            // Above the point, below it when the line sits at the top.
-            ...(point.y > 120
-              ? { bottom: layout.height - point.y + POINT_TARGET / 2 }
-              : { top: point.y + POINT_TARGET / 2 }),
-          }}
-        >
-          <RichChartTooltip
-            active
-            label={point.label}
-            rows={[point.row]}
-            action={tipAction(point, active?.pinned ?? false, () =>
-              onOpenDay(point.day),
-            )}
-          />
-        </div>
+        <PointCard
+          cardRef={cardRef}
+          seriesKey={line.key}
+          point={point}
+          pinned={active?.pinned ?? false}
+          left={tipLeft(point.x, cardWidth, layout.width)}
+          layoutHeight={layout.height}
+          onOpenDay={onOpenDay}
+        />
       ) : null}
+    </div>
+  );
+}
+
+/** The card over one point, kept above it (below it at the chart's top). */
+function PointCard({
+  cardRef,
+  seriesKey,
+  point,
+  pinned,
+  left,
+  layoutHeight,
+  onOpenDay,
+}: {
+  cardRef: RefObject<HTMLDivElement | null>;
+  seriesKey: string;
+  point: TipPoint;
+  pinned: boolean;
+  left: number;
+  layoutHeight: number;
+  onOpenDay: (date: string) => void;
+}) {
+  return (
+    <div
+      ref={cardRef}
+      data-slot="timeline-point-tip"
+      data-series={seriesKey}
+      data-t={point.t}
+      className={
+        pinned
+          ? "absolute z-10 w-max max-w-60"
+          : "pointer-events-none absolute z-10 w-max max-w-60"
+      }
+      style={{
+        left,
+        // Above the point, below it when the line sits at the top.
+        ...(point.y > 120
+          ? { bottom: layoutHeight - point.y + POINT_TARGET / 2 }
+          : { top: point.y + POINT_TARGET / 2 }),
+      }}
+    >
+      <RichChartTooltip
+        active
+        label={point.label}
+        rows={[point.row]}
+        action={tipAction(point, pinned, () => onOpenDay(point.day))}
+      />
     </div>
   );
 }
