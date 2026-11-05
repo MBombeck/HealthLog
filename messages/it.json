@@ -13339,7 +13339,9 @@
       "specialty": "Dalla tua ultima visita ({specialty}) del {date}",
       "kind": "Dalla tua ultima visita dello stesso tipo ({kind}) del {date}",
       "default": "Gli ultimi {days} giorni",
-      "defaultReason": "Nessuna visita precedente presso lo stesso studio, nella stessa specialità o dello stesso tipo."
+      "defaultReason": "Nessuna visita precedente presso lo stesso studio, nella stessa specialità o dello stesso tipo.",
+      "capped": "Gli ultimi due anni",
+      "cappedReason": "L'ultima visita corrispondente risale a più di due anni fa, e un report copre al massimo due anni."
     }
   },
   "checkups": {

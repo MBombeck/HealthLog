@@ -127,6 +127,7 @@ describe("<ReportVisitOffer>", () => {
             practitionerName: "Former skin practice",
             specialty: "Dermatology",
           },
+          capped: false,
         },
       }),
     ]);
@@ -144,6 +145,7 @@ describe("<ReportVisitOffer>", () => {
           to: "2026-12-01",
           basis: "default",
           since: null,
+          capped: false,
         },
       }),
     ]);
@@ -151,6 +153,31 @@ describe("<ReportVisitOffer>", () => {
     expect(html).toContain(
       "No earlier visit with the same practice, specialty or kind.",
     );
+  });
+
+  it("says the last two years on a window capped at the longest report", () => {
+    const html = render([
+      visit({
+        id: "derm",
+        preparation: {
+          from: "2024-12-02",
+          to: "2026-12-01",
+          basis: "practitioner",
+          since: {
+            id: "old-derm",
+            occurredAt: "2022-03-02T09:00:00.000Z",
+            kind: "SPECIALIST",
+            practitionerName: "Skin practice",
+            specialty: "Dermatology",
+          },
+          capped: true,
+        },
+      }),
+    ]);
+    expect(html).toContain("The last two years");
+    expect(html).toContain("a report covers two years at most");
+    // Not "since your last visit", which would promise the whole stretch.
+    expect(html).not.toContain("Since your last visit");
   });
 
   it("applies the server's start and the appointment's day on a press", () => {
@@ -164,6 +191,7 @@ describe("<ReportVisitOffer>", () => {
           to: "2026-12-01",
           basis: "default",
           since: null,
+          capped: false,
         },
       }),
       "Europe/Berlin",
@@ -188,6 +216,7 @@ describe("<ReportVisitOffer>", () => {
         to: "2026-11-12",
         basis: "default",
         since: null,
+        capped: false,
       },
     });
     expect(visitReportWindow(early, "America/New_York")).toEqual({

@@ -13339,7 +13339,9 @@
       "specialty": "Since your last {specialty} visit on {date}",
       "kind": "Since your last visit of the same kind ({kind}) on {date}",
       "default": "The last {days} days",
-      "defaultReason": "No earlier visit with the same practice, specialty or kind."
+      "defaultReason": "No earlier visit with the same practice, specialty or kind.",
+      "capped": "The last two years",
+      "cappedReason": "The last matching visit is more than two years ago, and a report covers two years at most."
     }
   },
   "checkups": {

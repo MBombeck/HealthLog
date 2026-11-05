@@ -78505,7 +78505,8 @@ components:
         from:
           type: string
           description: "First day of the window, `YYYY-MM-DD` on the record's own calendar: the day of `since`, or 90 days before
-            today on `default`."
+            today on `default`. Never more than 730 days back from `to`, both days counted: the longest window the
+            health-report export covers (see `capped`)."
         to:
           type: string
           description: The booked visit's own day, `YYYY-MM-DD` on the same calendar as `from` (the record's, not the reader's). A
@@ -78525,11 +78526,17 @@ components:
           anyOf:
             - $ref: "#/components/schemas/EncounterPreparationAnchor"
             - type: "null"
+        capped:
+          type: boolean
+          description: True when `since` lies further back than a health report covers, so `from` is the first day of the last 730
+            days ending on `to` instead of the day of `since`. A client says the window covers the last two years rather
+            than everything since that visit; a report for `from` to `to` is the one the export builds.
       required:
         - from
         - to
         - basis
         - since
+        - capped
       additionalProperties: false
       description: "The window before a booked visit, resolved server-side: where the visit preparation and the doctor report
         offered for the appointment start, and why there. Never the last visit of any kind, which is how a dermatology

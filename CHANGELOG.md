@@ -29,6 +29,15 @@
 
 ### Fixed
 
+- **The report offered for a visit is the report you get.** When the last
+  matching visit was more than two years ago, the next-visit card offered a
+  report from that day, but a report covers two years at most, and the
+  export quietly made a 90-day report instead. The window before a visit
+  now stops at two years and says "The last two years", and the visit list
+  marks it with `preparation.capped`. A report range longer than two years,
+  however it is asked for, now covers the last two years of it rather than
+  falling back to 90 days. (Two years across a clock change also no longer
+  count as one day too many.)
 - **PDF previews show in Safari.** On macOS and iOS the preview of an
   uploaded PDF stayed an empty box. The page's security policy told the
   browser that nothing may frame it, and Safari applied that to the

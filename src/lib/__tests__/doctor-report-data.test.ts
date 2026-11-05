@@ -126,7 +126,7 @@ describe("normaliseDateRange", () => {
     expect(range.days).toBe(90);
   });
 
-  it("falls back when range exceeds 730 days", () => {
+  it("clamps a range longer than 730 days to the last 730 before its end", () => {
     const range = normaliseDateRange(
       {
         startDate: "2023-01-01T00:00:00.000Z",
@@ -134,7 +134,25 @@ describe("normaliseDateRange", () => {
       },
       NOW,
     );
-    expect(range.days).toBe(90);
+    // Not the 90-day default: the end stays, the start moves up.
+    expect(range.days).toBe(730);
+    expect(range.end.toISOString()).toBe("2026-01-01T00:00:00.000Z");
+    expect(range.start.toISOString()).toBe("2024-01-02T00:00:00.001Z");
+  });
+
+  it("counts 730 local days as 730 across a net autumn clock change", () => {
+    // 2024-10-26 .. 2026-10-25 in Berlin, cut the way the panel cuts it:
+    // the first day starts in summer time, the last ends in winter time, so
+    // the span runs an hour past 730 times 24 hours.
+    const start = new Date("2024-10-25T22:00:00.000Z");
+    const end = new Date("2026-10-25T22:59:59.999Z");
+    expect(end.getTime() - start.getTime()).toBeGreaterThan(730 * 86_400_000);
+    const range = normaliseDateRange(
+      { startDate: start.toISOString(), endDate: end.toISOString() },
+      NOW,
+    );
+    expect(range.start.toISOString()).toBe(start.toISOString());
+    expect(range.days).toBe(730);
   });
 
   it("accepts the maximum 730-day window", () => {

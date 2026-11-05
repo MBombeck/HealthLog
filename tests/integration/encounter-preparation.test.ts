@@ -14,8 +14,11 @@ process.env.ENCRYPTION_KEY ??=
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
 import { GET as listEncounters } from "@/app/api/encounters/route";
+import { normaliseDateRange } from "@/lib/doctor-report-helpers";
+import { REPORT_MAX_RANGE_DAYS } from "@/lib/doctor-report-range";
 import type { EncounterListDTO } from "@/lib/encounters/dto";
-import { shiftDateKey } from "@/lib/tz/format";
+import { daysBetweenDateKeys, shiftDateKey } from "@/lib/tz/format";
+import { startOfLocalDayKey } from "@/lib/tz/local-day";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
@@ -147,6 +150,7 @@ describe("GET /api/encounters — the window before a booked visit", () => {
         practitionerName: "Skin practice",
         specialty: "Dermatology",
       },
+      capped: false,
     });
     // Only a booked visit carries one.
     expect(body.past.every((v) => v.preparation === null)).toBe(true);
@@ -207,6 +211,7 @@ describe("GET /api/encounters — the window before a booked visit", () => {
       to: berlinDay(next.occurredAt),
       basis: "default",
       since: null,
+      capped: false,
     });
   });
 
@@ -228,6 +233,72 @@ describe("GET /api/encounters — the window before a booked visit", () => {
     expect(
       body.upcoming.find((v) => v.id === next.id)?.preparation?.since?.id,
     ).toBe(anchor.id);
+  });
+
+  it("caps a window older than a report covers, and the export builds that report", async () => {
+    const derm = await practitioner("Skin practice", "Dermatology");
+    // Three years back: further than the 730 days a report covers.
+    const anchor = await encounter({
+      occurredAt: daysFromNow(-1100),
+      practitionerId: derm.id,
+    });
+    const next = await encounter({
+      occurredAt: daysFromNow(6),
+      status: "PLANNED",
+      practitionerId: derm.id,
+    });
+
+    const prep = (await list()).upcoming.find(
+      (v) => v.id === next.id,
+    )?.preparation;
+    const to = berlinDay(next.occurredAt);
+    expect(prep).toMatchObject({
+      from: shiftDateKey(to, -(REPORT_MAX_RANGE_DAYS - 1)),
+      to,
+      basis: "practitioner",
+      capped: true,
+    });
+    // The anchor is still named: the window is measured from it.
+    expect(prep?.since?.id).toBe(anchor.id);
+    expect(daysBetweenDateKeys(prep!.from, to) + 1).toBe(REPORT_MAX_RANGE_DAYS);
+
+    // The report the panel requests for that window, cut the way it cuts
+    // it: from the first instant of `from` to the last of `to`. The export
+    // takes it whole instead of falling back to its 90-day default.
+    const startDate = startOfLocalDayKey(prep!.from, "Europe/Berlin");
+    const endDate = new Date(
+      startOfLocalDayKey(shiftDateKey(to, 1), "Europe/Berlin").getTime() - 1,
+    );
+    const range = normaliseDateRange({
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    });
+    expect(range.start.toISOString()).toBe(startDate.toISOString());
+    expect(range.end.toISOString()).toBe(endDate.toISOString());
+    expect(range.days).toBe(REPORT_MAX_RANGE_DAYS);
+  });
+
+  it("leaves a window that fits a report as it is", async () => {
+    const derm = await practitioner("Skin practice", "Dermatology");
+    const next = await encounter({
+      occurredAt: daysFromNow(6),
+      status: "PLANNED",
+      practitionerId: derm.id,
+    });
+    const to = berlinDay(next.occurredAt);
+    // Exactly the longest report, both end days counted.
+    const anchorDay = shiftDateKey(to, -(REPORT_MAX_RANGE_DAYS - 1));
+    await encounter({
+      occurredAt: new Date(
+        startOfLocalDayKey(anchorDay, "Europe/Berlin").getTime() +
+          10 * 60 * 60 * 1000,
+      ),
+      practitionerId: derm.id,
+    });
+    const prep = (await list()).upcoming.find(
+      (v) => v.id === next.id,
+    )?.preparation;
+    expect(prep).toMatchObject({ from: anchorDay, capped: false });
   });
 
   it("leaves a cancelled upcoming visit without a window", async () => {

@@ -13339,7 +13339,9 @@
       "specialty": "Od ostatniej wizyty ({specialty}) {date}",
       "kind": "Od ostatniej wizyty tego samego rodzaju ({kind}) {date}",
       "default": "Ostatnie {days} dni",
-      "defaultReason": "Brak wcześniejszej wizyty w tym samym gabinecie, tej samej specjalizacji lub tego samego rodzaju."
+      "defaultReason": "Brak wcześniejszej wizyty w tym samym gabinecie, tej samej specjalizacji lub tego samego rodzaju.",
+      "capped": "Ostatnie dwa lata",
+      "cappedReason": "Ostatnia pasująca wizyta była ponad dwa lata temu, a raport obejmuje najwyżej dwa lata."
     }
   },
   "checkups": {

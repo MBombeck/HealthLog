@@ -13339,7 +13339,9 @@
       "specialty": "Seit deinem letzten Termin ({specialty}) am {date}",
       "kind": "Seit deinem letzten Termin der gleichen Art ({kind}) am {date}",
       "default": "Die letzten {days} Tage",
-      "defaultReason": "Kein früherer Termin bei derselben Praxis, in derselben Fachrichtung oder derselben Art."
+      "defaultReason": "Kein früherer Termin bei derselben Praxis, in derselben Fachrichtung oder derselben Art.",
+      "capped": "Die letzten zwei Jahre",
+      "cappedReason": "Der letzte passende Termin liegt mehr als zwei Jahre zurück, und ein Bericht umfasst höchstens zwei Jahre."
     }
   },
   "checkups": {

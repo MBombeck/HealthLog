@@ -13339,7 +13339,9 @@
       "specialty": "Desde tu última visita ({specialty}) el {date}",
       "kind": "Desde tu última visita del mismo tipo ({kind}) el {date}",
       "default": "Los últimos {days} días",
-      "defaultReason": "No hay ninguna visita anterior con la misma consulta, especialidad o tipo."
+      "defaultReason": "No hay ninguna visita anterior con la misma consulta, especialidad o tipo.",
+      "capped": "Los últimos dos años",
+      "cappedReason": "La última visita coincidente fue hace más de dos años, y un informe abarca como máximo dos años."
     }
   },
   "checkups": {

@@ -189,7 +189,7 @@ const encounterPreparation = z
     from: z
       .string()
       .describe(
-        "First day of the window, `YYYY-MM-DD` on the record's own calendar: the day of `since`, or 90 days before today on `default`.",
+        "First day of the window, `YYYY-MM-DD` on the record's own calendar: the day of `since`, or 90 days before today on `default`. Never more than 730 days back from `to`, both days counted: the longest window the health-report export covers (see `capped`).",
       ),
     to: z
       .string()
@@ -202,6 +202,11 @@ const encounterPreparation = z
         "The rule that chose `from`, first match wins over the visits that took place (DONE) before this one: `practitioner` (the last visit with the same practitioner), `specialty` (the last visit with a practitioner of the same specialty, compared without case or extra spaces), `kind` (the last visit of the same kind, for ROUTINE, PREVENTIVE and THERAPY only), `default` (none matched: the last 90 days).",
       ),
     since: preparationAnchor.nullable(),
+    capped: z
+      .boolean()
+      .describe(
+        "True when `since` lies further back than a health report covers, so `from` is the first day of the last 730 days ending on `to` instead of the day of `since`. A client says the window covers the last two years rather than everything since that visit; a report for `from` to `to` is the one the export builds.",
+      ),
   })
   .meta({
     id: "EncounterPreparation",

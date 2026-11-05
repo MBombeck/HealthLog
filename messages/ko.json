@@ -13339,7 +13339,9 @@
       "specialty": "{date} 마지막 {specialty} 방문 이후",
       "kind": "{date} 같은 유형({kind})의 마지막 방문 이후",
       "default": "최근 {days}일",
-      "defaultReason": "같은 병원, 진료과 또는 유형의 이전 방문이 없어요."
+      "defaultReason": "같은 병원, 진료과 또는 유형의 이전 방문이 없어요.",
+      "capped": "최근 2년",
+      "cappedReason": "마지막으로 일치하는 진료가 2년 이상 지났으며, 보고서는 최대 2년까지 다룹니다."
     }
   },
   "checkups": {

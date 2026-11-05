@@ -13339,7 +13339,9 @@
       "specialty": "Desde a sua última consulta de {specialty}, em {date}",
       "kind": "Desde a sua última consulta do mesmo tipo ({kind}), em {date}",
       "default": "Os últimos {days} dias",
-      "defaultReason": "Nenhuma consulta anterior com o mesmo consultório, especialidade ou tipo."
+      "defaultReason": "Nenhuma consulta anterior com o mesmo consultório, especialidade ou tipo.",
+      "capped": "Os últimos dois anos",
+      "cappedReason": "A última consulta correspondente foi há mais de dois anos, e um relatório cobre no máximo dois anos."
     }
   },
   "checkups": {

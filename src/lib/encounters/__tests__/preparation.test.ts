@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import type { EncounterKind } from "@/generated/prisma/client";
+import { REPORT_MAX_RANGE_DAYS } from "@/lib/doctor-report-range";
+import { daysBetweenDateKeys, shiftDateKey } from "@/lib/tz/format";
 import {
   PREPARATION_DEFAULT_DAYS,
   resolvePreparation,
@@ -76,6 +78,7 @@ describe("the window before a booked visit", () => {
         practitionerName: "Skin practice",
         specialty: "Dermatology",
       },
+      capped: false,
     });
   });
 
@@ -103,6 +106,7 @@ describe("the window before a booked visit", () => {
       to: "2026-10-23",
       basis: "default",
       since: null,
+      capped: false,
     });
     expect(PREPARATION_DEFAULT_DAYS).toBe(90);
   });
@@ -150,6 +154,35 @@ describe("the window before a booked visit", () => {
     ]);
     expect(prep.basis).toBe("practitioner");
     expect(prep.since?.id).toBe("derm-a");
+  });
+
+  it("caps a window older than a report covers, still naming its visit", () => {
+    const derm = (id: string, at: string) =>
+      visit(id, at, {
+        kind: "SPECIALIST",
+        practitionerId: "p-derm",
+        name: "Skin practice",
+        specialty: "Dermatology",
+      });
+    const prep = resolve(next, [derm("old", "2023-04-03T09:00:00.000Z")]);
+    expect(prep).toMatchObject({
+      from: shiftDateKey("2026-10-23", -(REPORT_MAX_RANGE_DAYS - 1)),
+      to: "2026-10-23",
+      basis: "practitioner",
+      capped: true,
+      since: { id: "old", occurredAt: "2023-04-03T09:00:00.000Z" },
+    });
+    expect(daysBetweenDateKeys(prep.from, prep.to) + 1).toBe(
+      REPORT_MAX_RANGE_DAYS,
+    );
+    // One day inside the limit is left as it is.
+    const edge = shiftDateKey("2026-10-23", -(REPORT_MAX_RANGE_DAYS - 1));
+    expect(
+      resolve(next, [derm("edge", `${edge}T09:00:00.000Z`)]),
+    ).toMatchObject({ from: edge, capped: false });
+    expect(
+      resolve(next, [derm("over", `${shiftDateKey(edge, -1)}T09:00:00.000Z`)]),
+    ).toMatchObject({ from: edge, capped: true });
   });
 
   it("only counts visits before the booked one", () => {

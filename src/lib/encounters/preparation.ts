@@ -26,7 +26,11 @@
  * is no better a start than the default.
  *
  * The window starts on the matched visit's own day: a dose changed at that
- * visit belongs to what the next one should know.
+ * visit belongs to what the next one should know. It covers at most
+ * {@link REPORT_MAX_RANGE_DAYS} days, the longest report the export
+ * produces: a matched visit further back moves `from` to the first day of
+ * that stretch and sets `capped`, so the report offered for the visit is the
+ * one the export builds.
  *
  * Resolved on the server, published on the visit list, never recomputed by a
  * client. A person can still change both dates on the report.
@@ -34,7 +38,8 @@
  * Pure and client-safe; the read lives in `preparation-read.ts`.
  */
 import type { EncounterKind } from "@/generated/prisma/client";
-import { shiftDateKey, userDayKey } from "@/lib/tz/format";
+import { REPORT_MAX_RANGE_DAYS } from "@/lib/doctor-report-range";
+import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
 
 /** The window when no earlier visit matches the booked one. */
 export const PREPARATION_DEFAULT_DAYS = 90;
@@ -72,8 +77,17 @@ export interface EncounterPreparationDTO {
   to: string;
   /** Which rule chose `from`. */
   basis: PreparationBasis;
-  /** The visit `from` is the day of; null on `default`. */
+  /**
+   * The visit the window is measured from; null on `default`. `from` is its
+   * day unless `capped`.
+   */
   since: PreparationAnchorDTO | null;
+  /**
+   * True when `since` lies further back than a report covers and `from` was
+   * moved to the first day of the last {@link REPORT_MAX_RANGE_DAYS} days
+   * before `to`.
+   */
+  capped: boolean;
 }
 
 /** The fields the rule reads, off a booked visit or an earlier one. */
@@ -140,10 +154,14 @@ export function resolvePreparation(args: {
   for (const [basis, matches] of rules) {
     const hit = earlier.find(matches);
     if (!hit) continue;
+    const day = userDayKey(hit.occurredAt, tz);
+    // Both end days count: `from` to `to` spans at most the report's days.
+    const capped = daysBetweenDateKeys(day, to) > REPORT_MAX_RANGE_DAYS - 1;
     return {
-      from: userDayKey(hit.occurredAt, tz),
+      from: capped ? shiftDateKey(to, -(REPORT_MAX_RANGE_DAYS - 1)) : day,
       to,
       basis,
+      capped,
       since: {
         id: hit.id,
         occurredAt: hit.occurredAt.toISOString(),
@@ -158,5 +176,6 @@ export function resolvePreparation(args: {
     to,
     basis: "default",
     since: null,
+    capped: false,
   };
 }

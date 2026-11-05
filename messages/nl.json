@@ -13339,7 +13339,9 @@
       "specialty": "Sinds je laatste bezoek ({specialty}) op {date}",
       "kind": "Sinds je laatste bezoek van hetzelfde soort ({kind}) op {date}",
       "default": "De afgelopen {days} dagen",
-      "defaultReason": "Geen eerder bezoek bij dezelfde praktijk, in hetzelfde specialisme of van hetzelfde soort."
+      "defaultReason": "Geen eerder bezoek bij dezelfde praktijk, in hetzelfde specialisme of van hetzelfde soort.",
+      "capped": "De afgelopen twee jaar",
+      "cappedReason": "Het laatste passende bezoek is meer dan twee jaar geleden, en een rapport beslaat hooguit twee jaar."
     }
   },
   "checkups": {

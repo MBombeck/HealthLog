@@ -197,6 +197,7 @@ describe("<VisitsSection> since the last visit", () => {
       to: "2026-12-01",
       basis: "practitioner",
       since: sameDoctor,
+      capped: false,
     },
   });
   const unprepared = visit({ ...next, preparation: null });
@@ -346,6 +347,7 @@ describe("<VisitsSection> since the last visit", () => {
               to: "2026-12-01",
               basis: "default",
               since: null,
+              capped: false,
             },
           }),
         ],

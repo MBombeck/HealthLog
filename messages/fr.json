@@ -13339,7 +13339,9 @@
       "specialty": "Depuis votre dernière visite ({specialty}) le {date}",
       "kind": "Depuis votre dernière visite du même type ({kind}) le {date}",
       "default": "Les {days} derniers jours",
-      "defaultReason": "Aucune visite antérieure au même cabinet, dans la même spécialité ou du même type."
+      "defaultReason": "Aucune visite antérieure au même cabinet, dans la même spécialité ou du même type.",
+      "capped": "Les deux dernières années",
+      "cappedReason": "La dernière consultation correspondante date de plus de deux ans, et un rapport couvre au plus deux ans."
     }
   },
   "checkups": {

@@ -10,6 +10,7 @@
  * itself stays in `doctor-report-data.ts`.
  */
 
+import { REPORT_MAX_RANGE_DAYS } from "@/lib/doctor-report-range";
 import type {
   MeasurementSource,
   MeasurementType,
@@ -247,20 +248,24 @@ export function normaliseDays(value: unknown, fallback = 90): number {
 }
 
 const MIN_RANGE_DAYS = 1;
-/**
- * Maximum span between `startDate` and `endDate`. Two years balances the
- * "give me everything I have" case (chronic condition follow-up) against
- * unbounded server work; the existing `days` fallback is capped at 365 so a
- * caller asking for a 730-day window must come through the explicit-range
- * surface and proves they want it.
- */
-const MAX_RANGE_DAYS = 730;
+// The maximum span between `startDate` and `endDate` is
+// REPORT_MAX_RANGE_DAYS (730). Two years balances the "give me everything I
+// have" case (chronic condition follow-up) against unbounded server work;
+// the `days` fallback is capped at 365, so a 730-day window has to come
+// through the explicit range.
 const DEFAULT_RANGE_DAYS = 90;
+const DAY_MS = 86_400_000;
+/**
+ * A local day lasts 23 to 25 hours, so a range of whole local days can run
+ * an hour past the same number of 24-hour days. The day count forgives that
+ * hour: two years of local days are 730 days, not 731.
+ */
+const DST_SLACK_MS = 3_600_000;
 
 /**
  * Default ceiling on the number of `MedicationAdministration` source rows
  * materialised per export, and the bounds an operator override is clamped
- * to. The report window is already bounded at {@link MAX_RANGE_DAYS}
+ * to. The report window is already bounded at {@link REPORT_MAX_RANGE_DAYS}
  * (730 days), but a chronic medication dosed several times a day across
  * that window — multiplied by several such medications — can still produce
  * thousands of administration resources in a single Bundle. The default of
@@ -321,7 +326,10 @@ function parseIsoDate(value: unknown): Date | null {
  *
  * Resolution order:
  *  1. Both `startDate` AND `endDate` parse as valid ISO timestamps with
- *     `endDate >= startDate` and span <= 730 days → use them.
+ *     `endDate >= startDate` and span <= 730 days → use them. A longer span
+ *     keeps its end and is clamped to the last 730 days before it; it used
+ *     to fall through to the 90-day default, a much shorter report than the
+ *     one asked for. The cover line prints the window the report covers.
  *  2. Neither/invalid range, but a valid `days` integer (1..365) is provided
  *     → fall back to "last `days` days ending now".
  *  3. Otherwise fall back to "last 90 days ending now" (the v1.4.14 default).
@@ -346,8 +354,16 @@ export function normaliseDateRange(
     const endMs = endCandidate.getTime();
     if (endMs >= startMs) {
       const spanMs = endMs - startMs;
-      const spanDays = Math.ceil(spanMs / 86_400_000) || 1;
-      if (spanDays >= MIN_RANGE_DAYS && spanDays <= MAX_RANGE_DAYS) {
+      // `|| 1` also turns the -0 of a span shorter than the slack into one.
+      const spanDays = Math.ceil((spanMs - DST_SLACK_MS) / DAY_MS) || 1;
+      if (spanDays > REPORT_MAX_RANGE_DAYS) {
+        return {
+          start: new Date(endMs - REPORT_MAX_RANGE_DAYS * DAY_MS + 1),
+          end: endCandidate,
+          days: REPORT_MAX_RANGE_DAYS,
+        };
+      }
+      if (spanDays >= MIN_RANGE_DAYS) {
         return {
           start: startCandidate,
           end: endCandidate,
