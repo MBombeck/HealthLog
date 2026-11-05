@@ -449,7 +449,10 @@ describe("queryKey factory enforcement", () => {
 describe("invalidateKeys", () => {
   it("calls invalidateQueries for every key in the bundle", async () => {
     const invalidate = vi.fn().mockResolvedValue(undefined);
-    const client = { invalidateQueries: invalidate } as unknown as QueryClient;
+    const client = {
+      invalidateQueries: invalidate,
+      getQueryCache: () => ({ findAll: () => [] }),
+    } as unknown as QueryClient;
     const keys: QueryKey[] = [["a"], ["b", "c"], ["d"]];
 
     await invalidateKeys(client, keys);
@@ -466,7 +469,10 @@ describe("invalidateKeys", () => {
       .mockResolvedValueOnce(undefined)
       .mockRejectedValueOnce(new Error("boom"))
       .mockResolvedValueOnce(undefined);
-    const client = { invalidateQueries: invalidate } as unknown as QueryClient;
+    const client = {
+      invalidateQueries: invalidate,
+      getQueryCache: () => ({ findAll: () => [] }),
+    } as unknown as QueryClient;
     const keys: QueryKey[] = [["a"], ["b"], ["c"]];
 
     const results = await invalidateKeys(client, keys);
