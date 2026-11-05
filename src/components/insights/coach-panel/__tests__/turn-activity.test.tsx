@@ -102,6 +102,14 @@ describe("describeStep", () => {
     ]);
   });
 
+  it("keeps the window sentence on a read past the lookback limit", () => {
+    const reach: CoachStep = { ...SLEEP, reason: "outside_reach" };
+    expect(describeStep(reach, t, tCount).meta).toEqual([
+      "last 30 days",
+      "no readings in this window",
+    ]);
+  });
+
   it("counts metrics on the snapshot step and rows on labs", () => {
     const snapshot: CoachStep = {
       id: "s1",

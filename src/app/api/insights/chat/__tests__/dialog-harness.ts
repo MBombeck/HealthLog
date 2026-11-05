@@ -46,6 +46,8 @@ export interface DialogWorld {
   resultsWithheld: boolean;
   /** The provider's rounds, consumed in order. */
   script: ScriptRound[];
+  /** The stored `User.coachPrefsJson`; null is the defaults. */
+  coachPrefs: Record<string, unknown> | null;
 }
 
 export const world: DialogWorld = {
@@ -56,6 +58,7 @@ export const world: DialogWorld = {
   storedProvenance: {},
   resultsWithheld: false,
   script: [],
+  coachPrefs: null,
 };
 
 /** Everything the scripted provider was sent and answered, in order. */
@@ -412,6 +415,7 @@ export function resetDialog(): void {
   world.storedProvenance = {};
   world.resultsWithheld = false;
   world.script = [];
+  world.coachPrefs = null;
   providerCalls.length = 0;
   messageSeq = 0;
   for (const fn of Object.values(m)) fn.mockReset();
@@ -465,7 +469,7 @@ export const modules = {
     prisma: {
       user: {
         findUnique: async () => ({
-          coachPrefsJson: null,
+          coachPrefsJson: world.coachPrefs,
           displayName: null,
           aiResponseTimeoutSeconds: null,
         }),

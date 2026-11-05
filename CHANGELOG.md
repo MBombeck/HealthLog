@@ -20,6 +20,12 @@
   it. It used to be skipped. It is summed per day, charted, listed with your
   measurements, included in backups and exports, and readable over MCP. It
   feeds no score and no insight. (#1340)
+- When the Coach looks for readings older than the lookback limit you set
+  for it, its live trail now says so on the wire: the `step` and `activity`
+  frames carry `reason: "outside_reach"` instead of looking like an empty
+  window. The native client can then tell "nothing in this window" from
+  "further back than the Coach may read". The answer still names the limit,
+  and the web trail keeps its wording.
 
 ### Fixed
 

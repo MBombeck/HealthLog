@@ -28,6 +28,7 @@ import {
   SUGGESTED_ACTION_TYPES,
   type CheckupIntervalId,
 } from "@/lib/ai/coach/suggest-action";
+import { COACH_STEP_REASONS } from "@/lib/ai/coach/step-reasons";
 import { COACH_TOOL_NAMES } from "@/lib/ai/coach/tools/definitions";
 import {
   COACH_MEMORY_CATEGORIES,
@@ -100,15 +101,7 @@ export const coachStepSchema = z
       .int()
       .optional()
       .describe("Readings or rows the server counted. Never a health value."),
-    reason: z
-      .enum([
-        "no_data",
-        "outside_window",
-        "module_disabled",
-        "retrieval_failed",
-        "invalid_arguments",
-      ])
-      .optional(),
+    reason: z.enum(COACH_STEP_REASONS).optional(),
     resultRef: resultRefSchema
       .optional()
       .describe("The table this step produced (`r1`..), when it produced one."),
@@ -123,7 +116,7 @@ export const coachStepSchema = z
   .meta({
     id: "CoachStep",
     description:
-      "One thing the Coach read on a turn. Sent live as `step` frames that upsert by `id` (`running`, then `done` / `empty` / `failed`), and persisted on `metricSource.steps`. Catalog labels, domains, windows and counts only: never free text, an analyte name or a value.",
+      "One thing the Coach read on a turn. Sent live as `step` frames that upsert by `id` (`running`, then `done` / `empty` / `failed`), and persisted on `metricSource.steps`. Catalog labels, domains, windows and counts only: never free text, an analyte name or a value. `reason` says why a step found nothing or failed: `outside_window` means no readings in the window read, `outside_reach` that readings exist but all lie past the lookback limit set for the Coach (the answer names the limit). A client without a string for a reason shows the step without one.",
   });
 
 // ── Results ───────────────────────────────────────────────────────────────
@@ -464,12 +457,13 @@ const coachActivityMetaShape = {
     .describe("Readings, lookups or entries the server counted."),
   durationMs: z.number().int().optional(),
   stop: coachStopReasonSchema.optional().describe("Set on the `stop` entry."),
+  reason: z.enum(["outside_reach"]).optional(),
 };
 
 export const coachActivityMetaSchema = z.object(coachActivityMetaShape).meta({
   id: "CoachActivityMeta",
   description:
-    "v1.41 — one entry of a turn's trail as persisted on `metricSource.activity`: phase, status, round, catalog label, counts. The model-written title and text are behind `GET /api/insights/chat/{id}/messages/{messageId}/trail`.",
+    "v1.41 — one entry of a turn's trail as persisted on `metricSource.activity`: phase, status, round, catalog label, counts. The model-written title and text are behind `GET /api/insights/chat/{id}/messages/{messageId}/trail`. `reason` is set only on a settled `fetch` entry whose readings all lie past the lookback limit set for the Coach (`outside_reach`), mirroring the step it stands for.",
 });
 
 export const coachActivitySchema = z

@@ -145,8 +145,12 @@ function collectEntries(
       ...(granularity ? { granularity } : {}),
     };
     if (step.status === "empty") {
-      if (step.reason && ABSENT_REASONS.has(step.reason)) {
-        add({ ...base, absent: step.reason as Absent });
+      // Past the lookback limit the method line keeps the window sentence,
+      // as it always has; the answer names the limit.
+      const reason =
+        step.reason === "outside_reach" ? "outside_window" : step.reason;
+      if (reason && ABSENT_REASONS.has(reason)) {
+        add({ ...base, absent: reason as Absent });
       }
       continue;
     }

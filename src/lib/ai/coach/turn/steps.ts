@@ -119,9 +119,9 @@ const MISS: Readonly<
   no_data: { status: "empty", reason: "no_data" },
   analyte_not_found: { status: "empty", reason: "no_data" },
   outside_window: { status: "empty", reason: "outside_window" },
-  // Beyond the lookback limit: to the person, "no readings in this window"
-  // is the true sentence; the limit itself is named in the answer.
-  outside_reach: { status: "empty", reason: "outside_window" },
+  // Beyond the lookback limit: the readings exist, the limit keeps them
+  // out. Its own reason, so a trail can say so; the answer names the limit.
+  outside_reach: { status: "empty", reason: "outside_reach" },
   module_disabled: { status: "empty", reason: "module_disabled" },
   retrieval_failed: { status: "failed", reason: "retrieval_failed" },
   no_data_unconfirmed: { status: "failed", reason: "retrieval_failed" },

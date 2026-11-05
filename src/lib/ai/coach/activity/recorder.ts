@@ -86,6 +86,7 @@ export function createActivityRecorder(args: {
     if (patch.count !== undefined && Number.isSafeInteger(patch.count)) {
       entry.meta.count = Math.max(0, patch.count);
     }
+    if (patch.reason === "outside_reach") entry.meta.reason = patch.reason;
     if (patch.title !== undefined) {
       const title = screenActivityTitle(patch.title, args.screen);
       if (title) entry.title = title;

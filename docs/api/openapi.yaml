@@ -62336,6 +62336,7 @@ components:
           enum:
             - no_data
             - outside_window
+            - outside_reach
             - module_disabled
             - retrieval_failed
             - invalid_arguments
@@ -62355,7 +62356,10 @@ components:
       additionalProperties: false
       description: "One thing the Coach read on a turn. Sent live as `step` frames that upsert by `id` (`running`, then `done`
         / `empty` / `failed`), and persisted on `metricSource.steps`. Catalog labels, domains, windows and counts only:
-        never free text, an analyte name or a value."
+        never free text, an analyte name or a value. `reason` says why a step found nothing or failed: `outside_window`
+        means no readings in the window read, `outside_reach` that readings exist but all lie past the lookback limit
+        set for the Coach (the answer names the limit). A client without a string for a reason shows the step without
+        one."
     CoachStepDomain:
       type: string
       enum:
@@ -62916,6 +62920,10 @@ components:
             - time
             - cap
             - no_progress
+        reason:
+          type: string
+          enum:
+            - outside_reach
       required:
         - id
         - phase
@@ -62926,7 +62934,8 @@ components:
       additionalProperties: false
       description: "v1.41 — one entry of a turn's trail as persisted on `metricSource.activity`: phase, status, round, catalog
         label, counts. The model-written title and text are behind `GET
-        /api/insights/chat/{id}/messages/{messageId}/trail`."
+        /api/insights/chat/{id}/messages/{messageId}/trail`. `reason` is set only on a settled `fetch` entry whose
+        readings all lie past the lookback limit set for the Coach (`outside_reach`), mirroring the step it stands for."
     CoachStop:
       type: object
       properties:
@@ -63536,6 +63545,10 @@ components:
             - time
             - cap
             - no_progress
+        reason:
+          type: string
+          enum:
+            - outside_reach
         title:
           description: A screened reasoning title or checkpoint sentence.
           type: string

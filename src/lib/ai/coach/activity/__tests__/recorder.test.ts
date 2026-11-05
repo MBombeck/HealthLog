@@ -62,6 +62,30 @@ describe("createActivityRecorder", () => {
     });
   });
 
+  it("names a fetch past the lookback limit on the entry and its metadata", () => {
+    const { rec, frames } = recorder();
+    const reach = rec.start({
+      phase: "fetch",
+      round: 1,
+      ...fetchActivityLabel("en", { domain: "weight", window: "last90days" }),
+      stepRef: "s1",
+    });
+    rec.finish(reach, "empty", { reason: "outside_reach" });
+    const plain = rec.start({
+      phase: "fetch",
+      round: 1,
+      ...fetchActivityLabel("en", { domain: "pulse", window: "last90days" }),
+      stepRef: "s2",
+    });
+    rec.finish(plain, "empty");
+    expect(
+      frames.find((f) => f.id === reach && f.status === "empty"),
+    ).toMatchObject({ reason: "outside_reach" });
+    expect(frames.at(-1)).not.toHaveProperty("reason");
+    expect(rec.meta()[0]).toMatchObject({ reason: "outside_reach" });
+    expect(rec.meta()[1]).not.toHaveProperty("reason");
+  });
+
   it("drops a title that prescribes a dose and keeps the catalog label", () => {
     const { rec, frames } = recorder();
     const id = rec.start({

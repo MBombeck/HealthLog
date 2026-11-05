@@ -22,6 +22,7 @@
 import type {
   CoachActivityMeta,
   CoachActivityPhase,
+  CoachStep,
   CoachStepStatus,
   CoachStopReason,
   CoachTrail,
@@ -67,6 +68,27 @@ export interface ActivityPatch {
   labelKey?: string;
   label?: string;
   count?: number;
+  /** Why a settled fetch found nothing, when it is a reason the trail names. */
+  reason?: CoachActivityMeta["reason"];
+}
+
+/**
+ * How a `fetch` entry closes for the step it stands for: the step's status
+ * (`done` for one that never settled), its count, and `outside_reach` when
+ * the step says its readings all lie past the lookback limit. Any other
+ * step reason stays on the step.
+ */
+export function settledFetch(
+  status: CoachStepStatus,
+  step: Pick<CoachStep, "count" | "reason"> | null,
+): [Exclude<CoachStepStatus, "running">, ActivityPatch] {
+  return [
+    status === "running" ? "done" : status,
+    {
+      ...(step?.count !== undefined ? { count: step.count } : {}),
+      ...(step?.reason === "outside_reach" ? { reason: step.reason } : {}),
+    },
+  ];
 }
 
 export interface ActivityRecorder {
