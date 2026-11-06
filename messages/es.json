@@ -12011,7 +12011,8 @@
       "unsupportedType": "Este tipo de archivo no es compatible.",
       "purged": "Este documento se eliminó definitivamente y no se puede restaurar.",
       "duplicateExists": "Ya hay guardado un documento idéntico.",
-      "rateLimited": "Demasiadas subidas. Inténtalo de nuevo en unos minutos.",
+      "uploadBusy": "El servidor estaba ocupado con otras subidas. Inténtalo de nuevo ahora.",
+      "rateLimited": "Has alcanzado el límite de subidas de esta hora. Inténtalo de nuevo más tarde.",
       "generic": "La subida falló. Inténtalo de nuevo."
     },
     "toast": {

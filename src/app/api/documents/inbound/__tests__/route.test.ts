@@ -159,8 +159,8 @@ import { getAiCapability } from "@/lib/ai/capabilities/gate";
 import {
   acquireDocumentUploadSlot,
   DOCUMENT_UPLOAD_GLOBAL_CONCURRENCY,
-  DOCUMENT_UPLOAD_PER_USER_CONCURRENCY,
 } from "@/lib/documents/upload-policy";
+import { DOCUMENT_UPLOAD_PER_USER_CONCURRENCY } from "@/lib/documents/inbound-constants";
 
 const post = POST as unknown as (r: Request) => Promise<Response>;
 const get = GET as unknown as (r: Request) => Promise<Response>;
@@ -413,6 +413,8 @@ describe("POST /api/documents/inbound (vault upload)", () => {
     try {
       const res = await post(request);
       expect(res.status).toBe(429);
+      // The web upload queue waits this long and retries the same file.
+      expect(res.headers.get("Retry-After")).toBe("1");
       await expect(res.json()).resolves.toMatchObject({
         meta: { reason: "uploadBusy" },
       });
@@ -431,6 +433,8 @@ describe("POST /api/documents/inbound (vault upload)", () => {
     try {
       const res = await post(mkUpload());
       expect(res.status).toBe(429);
+      // The web upload queue waits this long and retries the same file.
+      expect(res.headers.get("Retry-After")).toBe("1");
       await expect(res.json()).resolves.toMatchObject({
         meta: { reason: "uploadBusy" },
       });

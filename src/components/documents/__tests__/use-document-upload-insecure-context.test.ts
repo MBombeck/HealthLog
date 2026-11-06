@@ -69,6 +69,10 @@ class FakeXhr {
     this.request.headers[name] = value;
   }
 
+  getResponseHeader(): string | null {
+    return null;
+  }
+
   addEventListener(type: string, listener: () => void): void {
     this.listeners.set(type, listener);
   }

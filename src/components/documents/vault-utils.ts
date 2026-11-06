@@ -19,6 +19,8 @@ import {
 import type { DocumentVaultFilters } from "@/lib/query-keys/documents";
 import { userDayKey } from "@/lib/tz/format";
 
+import { parseRetryAfterSeconds } from "./upload-busy-retry";
+
 const KIND_SET = new Set<string>(INBOUND_DOCUMENT_KINDS);
 
 /**
@@ -378,8 +380,10 @@ export function resolveBulkShareDocuments(
 
 /**
  * The §3.2 failure reasons the upload/restore paths translate client-side,
- * plus the transport-level fallbacks. `rateLimited` maps 429; `generic`
- * covers everything unclassifiable (proxy-stripped bodies included).
+ * plus the transport-level fallbacks. `uploadBusy` is the route's
+ * concurrency refusal (429 with `Retry-After`, retried by the client before
+ * it ever shows); `rateLimited` is every other 429; `generic` covers
+ * everything unclassifiable (proxy-stripped bodies included).
  */
 export type UploadFailureReason =
   | "fileTooLarge"
@@ -387,6 +391,7 @@ export type UploadFailureReason =
   | "unsupportedType"
   | "purged"
   | "duplicateExists"
+  | "uploadBusy"
   | "rateLimited"
   | "generic";
 
@@ -400,6 +405,8 @@ export interface UploadFailure {
   usedBytes?: number;
   /** §3.2 — present on `duplicateExists` (restore-conflict shape). */
   existingId?: string;
+  /** Present on `uploadBusy`: the response's `Retry-After`, in seconds. */
+  retryAfterSeconds?: number;
 }
 
 export interface UploadSuccess {
@@ -431,8 +438,12 @@ function numberOrUndefined(v: unknown): number | undefined {
 export function classifyUploadFailure(
   status: number,
   meta: Record<string, unknown> | undefined,
+  retryAfterSeconds?: number,
 ): UploadFailure {
   const reason = typeof meta?.reason === "string" ? meta.reason : "";
+  if (status === 429 && reason === "uploadBusy") {
+    return { ok: false, reason: "uploadBusy", retryAfterSeconds };
+  }
   if (REASONS.has(reason)) {
     return {
       ok: false,
@@ -461,6 +472,7 @@ export function classifyUploadFailure(
 export function parseUploadResponse(
   status: number,
   bodyText: string,
+  retryAfterHeader?: string | null,
 ): UploadResult {
   let envelope: {
     data?: unknown;
@@ -486,7 +498,11 @@ export function parseUploadResponse(
     }
     return { ok: false, reason: "generic" };
   }
-  return classifyUploadFailure(status, envelope?.meta);
+  return classifyUploadFailure(
+    status,
+    envelope?.meta,
+    parseRetryAfterSeconds(retryAfterHeader),
+  );
 }
 
 /** What a keypress on a focused document card does. */

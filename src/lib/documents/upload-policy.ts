@@ -30,6 +30,7 @@
  */
 import { detectAvatarMimeType } from "@/lib/avatar";
 import { prisma } from "@/lib/db";
+import { DOCUMENT_UPLOAD_PER_USER_CONCURRENCY } from "@/lib/documents/inbound-constants";
 
 // ─── Limits (§3.3) ──────────────────────────────────────────────────────────
 
@@ -47,9 +48,12 @@ export const DOCUMENT_HARD_MAX_FILE_BYTES = 104_857_600;
 /** Default per-user quota: 1 GiB. */
 export const DOCUMENT_DEFAULT_QUOTA_BYTES = 1_073_741_824;
 
-/** In-memory admission bounds for body accumulation in one server process. */
+/**
+ * In-memory admission bounds for body accumulation in one server process. The
+ * per-user bound lives in `inbound-constants.ts` because the web upload queue
+ * sizes itself from it.
+ */
 export const DOCUMENT_UPLOAD_GLOBAL_CONCURRENCY = 4;
-export const DOCUMENT_UPLOAD_PER_USER_CONCURRENCY = 2;
 
 let activeDocumentUploads = 0;
 const activeDocumentUploadsByUser = new Map<string, number>();

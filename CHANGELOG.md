@@ -91,6 +91,15 @@
   scan review shows it for such a row. A range that is text itself, like
   "NEGATIVE", is not turned into bounds, and a marker that already exists
   keeps its own. (#1313)
+- **Several files dropped at once all arrive.** The server takes two
+  uploads per person at a time and asks the next one to come back in a
+  second, but the documents page sent three at once and showed that
+  answer as an error telling you to wait a few minutes. The page now sends
+  two at a time, and a file the server turns away for a moment, say while
+  another tab is still uploading, waits and goes again on its own for up
+  to half a minute before it reports anything. Attaching a new file in the
+  Coach does the same. Reaching the hourly upload limit now says that
+  instead of "a few minutes".
 
 ### Changed
 

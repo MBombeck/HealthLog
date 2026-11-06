@@ -12011,7 +12011,8 @@
       "unsupportedType": "Dit bestandstype wordt niet ondersteund.",
       "purged": "Dit document is definitief verwijderd en kan niet worden hersteld.",
       "duplicateExists": "Er is al een identiek document opgeslagen.",
-      "rateLimited": "Te veel uploads op dit moment. Probeer het over een paar minuten opnieuw.",
+      "uploadBusy": "De server was bezig met andere uploads. Probeer het nu opnieuw.",
+      "rateLimited": "Je hebt de uploadlimiet voor dit uur bereikt. Probeer het later opnieuw.",
       "generic": "Uploaden is mislukt. Probeer het opnieuw."
     },
     "toast": {

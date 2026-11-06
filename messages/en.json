@@ -12011,7 +12011,8 @@
       "unsupportedType": "This file type is not supported.",
       "purged": "This document was permanently removed and cannot be restored.",
       "duplicateExists": "An identical document is already stored.",
-      "rateLimited": "Too many uploads right now. Try again in a few minutes.",
+      "uploadBusy": "The server was busy with other uploads. Try again now.",
+      "rateLimited": "You have reached the upload limit for this hour. Try again later.",
       "generic": "Upload failed. Please try again."
     },
     "toast": {

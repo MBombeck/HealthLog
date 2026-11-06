@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * The vault's upload manager: a client-side queue with concurrency 3, one
+ * The vault's upload manager: a client-side queue as wide as the server's
+ * per-person upload admission (`DOCUMENT_UPLOAD_PER_USER_CONCURRENCY`), one
  * multipart XHR POST per file (XHR because it exposes real upload-progress
  * events with zero dependencies — fetch upload streaming is not portable),
  * client-side image downscaling, and per-file terminal states.
@@ -17,22 +18,33 @@
  * toasts "already stored" and hands the row id to the timeline for a brief
  * highlight. This is the one call site that must read success-side `meta`;
  * `parseUploadResponse` in `vault-utils.ts` owns that parse.
+ *
+ * Busy contract: when the server is still holding other uploads (another
+ * tab, another device, another person on the same process) it answers 429
+ * `uploadBusy` with `Retry-After`. The file stays in its uploading row and
+ * is sent again (`upload-busy-retry.ts`); only a spent retry budget turns it
+ * into an error. Leaving the page cancels any pending retry.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { useTranslations } from "@/lib/i18n/context";
+import { DOCUMENT_UPLOAD_PER_USER_CONCURRENCY } from "@/lib/documents/inbound-constants";
 import { randomId } from "@/lib/random-id";
 import { invalidateKeys, queryKeys } from "@/lib/query-keys";
+import { uploadWithBusyRetry } from "./upload-busy-retry";
 import {
   parseUploadResponse,
   type UploadFailure,
   type UploadResult,
 } from "./vault-utils";
 
-/** Client-side parallelism — matches the plan's NAS memory envelope. */
-const CONCURRENCY = 3;
+/**
+ * Client-side parallelism. Any wider and the queue's own surplus files are
+ * refused as busy by the server, which admits this many per person.
+ */
+const CONCURRENCY = DOCUMENT_UPLOAD_PER_USER_CONCURRENCY;
 
 /** Longest-edge ceiling for the client-side image downscale. */
 const IMAGE_MAX_EDGE = 3000;
@@ -133,7 +145,13 @@ export function uploadViaXhr(
       }
     });
     xhr.addEventListener("load", () => {
-      resolve(parseUploadResponse(xhr.status, xhr.responseText));
+      resolve(
+        parseUploadResponse(
+          xhr.status,
+          xhr.responseText,
+          xhr.getResponseHeader("Retry-After"),
+        ),
+      );
     });
     xhr.addEventListener("error", () =>
       resolve({ ok: false, reason: "generic" }),
@@ -197,11 +215,16 @@ export function useDocumentUpload(
   >([]);
   const mountedRef = useRef(true);
   const highlightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Aborted on unmount so no busy-retry timer outlives the page. */
+  const retryAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     mountedRef.current = true;
+    const retryAbort = new AbortController();
+    retryAbortRef.current = retryAbort;
     return () => {
       mountedRef.current = false;
+      retryAbort.abort();
       if (highlightTimer.current) clearTimeout(highlightTimer.current);
     };
   }, []);
@@ -259,8 +282,15 @@ export function useDocumentUpload(
       void (async () => {
         try {
           const prepared = await downscaleImage(next.file);
-          const result = await uploadViaXhr(prepared, next.options, (f) =>
-            patchItem(next.localId, { progress: f }),
+          const result = await uploadWithBusyRetry(
+            () =>
+              uploadViaXhr(prepared, next.options, (f) =>
+                patchItem(next.localId, { progress: f }),
+              ),
+            {
+              signal: retryAbortRef.current?.signal,
+              onRetry: () => patchItem(next.localId, { progress: 0 }),
+            },
           );
           settle(next.localId, result);
         } finally {

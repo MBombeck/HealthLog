@@ -12011,7 +12011,8 @@
       "unsupportedType": "Este tipo de arquivo não é suportado.",
       "purged": "Este documento foi removido permanentemente e não pode ser restaurado.",
       "duplicateExists": "Um documento idêntico já está armazenado.",
-      "rateLimited": "Envios demais agora. Tente novamente em alguns minutos.",
+      "uploadBusy": "O servidor estava ocupado com outros envios. Tente novamente agora.",
+      "rateLimited": "Você atingiu o limite de envios desta hora. Tente novamente mais tarde.",
       "generic": "Falha no envio. Tente novamente."
     },
     "toast": {

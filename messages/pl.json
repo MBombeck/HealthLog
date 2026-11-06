@@ -12011,7 +12011,8 @@
       "unsupportedType": "Ten typ pliku nie jest obsługiwany.",
       "purged": "Ten dokument został trwale usunięty i nie można go przywrócić.",
       "duplicateExists": "Identyczny dokument jest już zapisany.",
-      "rateLimited": "Zbyt wiele przesyłań. Spróbuj ponownie za kilka minut.",
+      "uploadBusy": "Serwer był zajęty innymi przesyłaniami. Spróbuj ponownie teraz.",
+      "rateLimited": "Osiągnięto limit przesyłań na tę godzinę. Spróbuj ponownie później.",
       "generic": "Przesyłanie nie powiodło się. Spróbuj ponownie."
     },
     "toast": {

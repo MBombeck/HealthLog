@@ -47,6 +47,13 @@ export function isAiReadSource(
 
 export const DOCUMENT_LIST_DEFAULT_LIMIT = 50;
 
+/**
+ * Uploads one person may have in flight on one server process. The upload
+ * route refuses the next one with 429 `uploadBusy`; the vault's upload queue
+ * runs at exactly this width so it never provokes that refusal itself.
+ */
+export const DOCUMENT_UPLOAD_PER_USER_CONCURRENCY = 2;
+
 /** Max document ids one bulk request may touch. */
 export const DOCUMENT_BULK_MAX_IDS = 100;
 

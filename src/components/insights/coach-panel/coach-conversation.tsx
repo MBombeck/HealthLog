@@ -14,17 +14,13 @@ import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { DAY_QUERY_PARAM } from "@/lib/day/contract";
 import { queryKeys } from "@/lib/query-keys";
-import { randomId } from "@/lib/random-id";
-import { apiDelete, apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
+import { apiDelete, apiGet } from "@/lib/api/api-fetch";
 import type { CoachFollowUp, CoachScope } from "@/lib/ai/coach/types";
 import type { CoachLaunchScope } from "@/lib/insights/coach-launch-context";
 import type { InboundDocumentDetailDto } from "@/lib/validations/inbound-documents";
 import { MAX_COACH_ATTACHMENTS } from "@/lib/documents/inbound-constants";
 import { useModuleEnabled } from "@/hooks/use-module-enabled";
-import {
-  parseUploadResponse,
-  stagedAttachmentPollInterval,
-} from "@/components/documents/vault-utils";
+import { stagedAttachmentPollInterval } from "@/components/documents/vault-utils";
 import {
   metricScopeLabelFallback,
   scopeSourceMetricLabelKey,
@@ -33,6 +29,11 @@ import {
 import { CoachDrawerBody } from "./coach-drawer-body";
 import { CoachHero } from "./coach-hero";
 import { CoachInput } from "./coach-input";
+import {
+  uploadCoachAttachment,
+  useUnmountSignal,
+  type CoachAttachmentUpload,
+} from "./upload-attachment";
 import {
   GuidedQuestionBubble,
   GuidedSummaryBubble,
@@ -554,35 +555,26 @@ export function CoachConversation({
     for (const id of ids) attachDoc.mutate(id);
   }
 
+  const unmountSignal = useUnmountSignal();
   async function handleUploadNew(files: File[]) {
     const toUpload = files.slice(0, remainingSlots);
     for (const file of toUpload) {
-      const form = new FormData();
-      form.append("file", file);
-      let response: Response;
+      let upload: CoachAttachmentUpload;
       try {
-        response = await apiFetchRaw("/api/documents/inbound", {
-          method: "POST",
-          headers: { "Idempotency-Key": randomId() },
-          body: form,
-        });
+        upload = await uploadCoachAttachment(file, unmountSignal.current);
       } catch (failure) {
         showErrorToast(t("insights.coach.attach.uploadError"), {
           cause: failure,
         });
         continue;
       }
-      const parsed = parseUploadResponse(
-        response.status,
-        await response.text(),
-      );
-      if (!parsed.ok) {
+      if (!upload.result.ok) {
         showErrorToast(t("insights.coach.attach.uploadError"), {
-          cause: response,
+          cause: upload.response,
         });
         continue;
       }
-      const doc = parsed.document;
+      const doc = upload.result.document;
       // Reflect the new document in the vault + seed its detail so the pill
       // resolves its title immediately (it indexes in the background).
       queryClient.invalidateQueries({

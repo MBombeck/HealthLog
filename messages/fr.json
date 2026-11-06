@@ -12011,7 +12011,8 @@
       "unsupportedType": "Ce type de fichier n'est pas pris en charge.",
       "purged": "Ce document a été définitivement supprimé et ne peut pas être restauré.",
       "duplicateExists": "Un document identique est déjà enregistré.",
-      "rateLimited": "Trop de téléversements. Réessayez dans quelques minutes.",
+      "uploadBusy": "Le serveur était occupé par d’autres téléversements. Réessayez maintenant.",
+      "rateLimited": "Vous avez atteint la limite de téléversements pour cette heure. Réessayez plus tard.",
       "generic": "Le téléversement a échoué. Veuillez réessayer."
     },
     "toast": {

@@ -304,6 +304,27 @@ describe("upload response contract (§3.2)", () => {
     });
     expect(parseUploadResponse(500, "")).toMatchObject({ reason: "generic" });
   });
+
+  it("tells the busy refusal apart from the hourly limit and keeps its Retry-After", () => {
+    const busyBody = JSON.stringify({
+      data: null,
+      error: "Too many uploads are already in progress.",
+      meta: { errorCode: "documents.inbound.uploadBusy", reason: "uploadBusy" },
+    });
+    expect(parseUploadResponse(429, busyBody, "1")).toEqual({
+      ok: false,
+      reason: "uploadBusy",
+      retryAfterSeconds: 1,
+    });
+    const limitBody = JSON.stringify({
+      data: null,
+      error: "Too many uploads. Try again later.",
+      meta: { errorCode: "documents.inbound.rateLimited" },
+    });
+    expect(parseUploadResponse(429, limitBody, "1800")).toMatchObject({
+      reason: "rateLimited",
+    });
+  });
 });
 
 describe("shift-click range selection", () => {

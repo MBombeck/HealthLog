@@ -12011,7 +12011,8 @@
       "unsupportedType": "Questo tipo di file non è supportato.",
       "purged": "Questo documento è stato rimosso definitivamente e non può essere ripristinato.",
       "duplicateExists": "Un documento identico è già archiviato.",
-      "rateLimited": "Troppi caricamenti. Riprova tra qualche minuto.",
+      "uploadBusy": "Il server era occupato con altri caricamenti. Riprova adesso.",
+      "rateLimited": "Hai raggiunto il limite di caricamenti per quest’ora. Riprova più tardi.",
       "generic": "Caricamento non riuscito. Riprova."
     },
     "toast": {

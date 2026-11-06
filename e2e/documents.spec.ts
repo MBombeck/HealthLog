@@ -820,6 +820,49 @@ test.describe("document vault", () => {
     await expect(openButton(page, `${marker}-copy.pdf`)).not.toBeVisible();
   });
 
+  test("a busy server is waited out and the file still lands", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile, "runs once on the desktop project (shared bucket)");
+    // The route answers the first POST the way a full upload slot does; the
+    // queue must retry it after Retry-After instead of showing an error.
+    let refused = 0;
+    await page.route("**/api/documents/inbound", async (route) => {
+      if (route.request().method() === "POST" && refused === 0) {
+        refused += 1;
+        await route.fulfill({
+          status: 429,
+          headers: { "Retry-After": "1", "Content-Type": "application/json" },
+          body: JSON.stringify({
+            data: null,
+            error: "Too many uploads are already in progress.",
+            meta: {
+              errorCode: "documents.inbound.uploadBusy",
+              reason: "uploadBusy",
+            },
+          }),
+        });
+        return;
+      }
+      await route.fallback();
+    });
+    await page.goto("/documents");
+    const marker = `busy-probe-${Date.now()}`;
+
+    await uploadViaPicker(page, `${marker}.pdf`, uniquePdf(marker));
+    await page
+      .getByRole("searchbox", { name: "Search documents" })
+      .fill(marker);
+    await expect(openButton(page, `${marker}.pdf`)).toBeVisible({
+      timeout: 15_000,
+    });
+    expect(refused).toBe(1);
+    await expect(
+      page.locator('[data-slot="document-upload-card"]'),
+    ).toHaveCount(0);
+  });
+
   // ── Admin cap: commit-on-Enter + rejection copy naming the limit ──────
 
   test("a 1 MB admin cap rejects an oversized upload with the limit in the copy", async ({

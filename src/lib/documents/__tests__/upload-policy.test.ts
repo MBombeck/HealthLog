@@ -22,13 +22,13 @@ import {
   DOCUMENT_DEFAULT_MAX_FILE_BYTES,
   acquireDocumentUploadSlot,
   DOCUMENT_UPLOAD_GLOBAL_CONCURRENCY,
-  DOCUMENT_UPLOAD_PER_USER_CONCURRENCY,
   DOCUMENT_DEFAULT_QUOTA_BYTES,
   DOCUMENT_HARD_MAX_FILE_BYTES,
   detectDocumentType,
   resolveDocumentLimits,
   servingClassFor,
 } from "../upload-policy";
+import { DOCUMENT_UPLOAD_PER_USER_CONCURRENCY } from "../inbound-constants";
 
 // ─── Magic-byte fixtures ─────────────────────────────────────────────────────
 
