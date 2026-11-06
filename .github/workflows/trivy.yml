@@ -142,6 +142,13 @@ jobs:
           output: trivy-published-image.sarif
           severity: "CRITICAL,HIGH,MEDIUM"
           limit-severities-for-sarif: true
+          # Only findings with a published fix reach code scanning. Debian
+          # leaves many base-package advisories unfixed in stable (no-dsa,
+          # postponed), and nothing in this repository can act on those: the
+          # build's `apt-get upgrade` takes the fix the day Debian ships one,
+          # and that is when the alert should appear. Listing them all made
+          # the page a hundred-odd rows deep without one to act on.
+          ignore-unfixed: true
           exit-code: "0"
 
       - name: Upload results
@@ -162,6 +169,6 @@ jobs:
           format: table
           severity: "CRITICAL"
           exit-code: "1"
-          # Same rule as the blocking gate in security.yml: a finding with a
-          # published fix fails, one without is in the SARIF report above.
+          # Same rule as the blocking gate in security.yml and the SARIF
+          # report above: only a finding with a published fix counts.
           ignore-unfixed: true
