@@ -121,6 +121,27 @@ the grace window to 0 or wait it out, remove the old volume, and let the
 dumps age out or delete them
 ([backup-restore.md](../ops/backup-restore.md)).
 
+## Calendar subscription
+
+The cycle settings can publish your forecast as a calendar feed that Google
+Calendar, Apple Calendar or Outlook subscribes to. It is off by default, and
+turning it on changes the arrangement this page describes: from then on the
+feed's dates also sit with that calendar provider, on its servers, under its
+policies. That is exactly the cloud vendor self-hosting otherwise keeps out of
+the picture.
+
+What the feed carries is deliberately small. Each event is an all-day date
+range and a title, nothing else: no symptoms, notes, flow, temperatures, test
+results, contraception or intercourse fields. By default the title is a dot
+and the calendar is named "HealthLog", so a glance at a shared screen says
+nothing; past cycles are left out unless you ask for them, and the fertile
+window is only offered when your goal is trying to conceive.
+
+Turning the subscription off, or rotating its link, stops the provider's next
+poll. It does not reach the copies the provider already fetched: remove the
+subscribed calendar there as well. The link itself is a credential; see
+[keeping it out of access logs](./reverse-proxy.md#credentials-in-the-url-path-keep-them-out-of-access-logs).
+
 ## Practical hardening
 
 If reproductive-health privacy is the reason you self-host, the
