@@ -32,6 +32,39 @@
   track, and fills the workout's climb if it had none; the entry reports
   `enriched`, as it does for a heart-rate series. A workout that already
   has a route keeps it, and with routes switched off nothing is stored.
+- **Lab markers grouped by category.** Under Settings, Arrangement, Labs,
+  the list can now group markers by their panel (Lipids, Liver, Thyroid
+  and so on), each group with a header that says whether its latest values
+  are all in range or how many are outside it. A catalog panel is
+  recognised in every language, a panel you typed yourself becomes its own
+  group, and a marker without a panel falls back to the catalog panel its
+  name belongs to, or to Other. You choose which groups open on load: all,
+  only those with a value outside range, or none. Grouping is off by
+  default. The server resolves the groups once: `GET /api/labs/overview`
+  carries `categories` and `grouped`, the layout preferences gain
+  `groupBy` and `groupsOpen`, `GET /api/biomarkers` lists the panels you
+  already use as `customPanels` for the panel field's suggestions, and a
+  merge preview names the panel the kept marker takes over as
+  `adoptedPanel`. No migration. (#1349)
+- **Your cycle forecast as a calendar subscription.** Cycle, Settings,
+  Calendar subscription publishes the next period, and once three cycles
+  are logged up to six after it, as an ICS feed for Google, Apple or
+  Outlook calendar. Each event spans the window the period may start in,
+  wider the further ahead it is, and the feed stops where a date would be
+  more guess than estimate. Past cycles (up to twelve) and the fertile
+  window of the next cycle (only with the goal of trying to conceive) are
+  opt-in. Titles are a dot by default, and events never carry symptoms,
+  notes or other log details. The link is shown once, can be rotated or
+  turned off, and is turned off by a password change or a deletion
+  request. Only the record's owner, or a managed profile's guardian, can
+  turn it on, from a signed-in browser after confirming it is them. The
+  feed answers with an `ETag`, and an unknown or revoked link gets the same
+  404. `GET /api/cycle/calendar` adds `projection` and `projectionState`
+  so the web and iOS calendars draw the same cycles ahead, and the Coach
+  and MCP cycle context list them as `upcoming`. Migration
+  `0494_cycle_calendar_feed`. Self-hosters: the feed link sits in the URL
+  path, so keep `/api/cycle/feed/` out of your proxy's access log;
+  `docs/self-hosting/reverse-proxy.md` shows how. (#1350)
 
 ### Fixed
 
