@@ -15,7 +15,6 @@
  */
 import { NextRequest } from "next/server";
 
-import { prisma } from "@/lib/db";
 import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -28,24 +27,27 @@ import { requireCycleEnabled } from "@/lib/cycle/gate";
 import { cycleCalendarQuerySchema } from "@/lib/validations/cycle";
 import {
   buildCalendar,
-  type CalendarDayLogRow,
+  toCycleInputs,
+  toDayLogInputs,
 } from "@/lib/cycle/engine-adapter";
+import {
+  CALENDAR_DEFAULT_PAST_DAYS,
+  dayLogWindowStart,
+  loadCalendarInputs,
+} from "@/lib/cycle/load-inputs";
+import { PROJECTION_MAX_HORIZON, projectCycles } from "@/lib/cycle/projection";
 import {
   toCyclePredictionDTO,
   goalAllowsFertileWindow,
   cycleDisclaimerKey,
-  resolveSensitiveFields,
 } from "@/lib/cycle/dto";
 import { resolveCycleVerdict } from "@/lib/cycle/verdict";
-import { addDays, dayDiff } from "@/lib/cycle/day-math";
-import { BBT_WINDOW } from "@/lib/cycle/types";
+import { addDays } from "@/lib/cycle/day-math";
 import { moodDateKey } from "@/lib/mood/date-key";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { resolveServerLocale } from "@/lib/i18n/server-locale";
-import { startOfLocalDayKey } from "@/lib/tz/local-day";
 
-const DEFAULT_PAST_DAYS = 90;
 const DEFAULT_FORWARD_DAYS = 180;
 /** Hard cap on the rendered span (days) to bound the day-grid build. */
 const MAX_SPAN_DAYS = 400;
@@ -75,7 +77,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   const tz = user.timezone ?? DEFAULT_TIMEZONE;
   const today = moodDateKey(new Date(), tz);
-  const from = parsed.data.from ?? addDays(today, -DEFAULT_PAST_DAYS);
+  const from = parsed.data.from ?? addDays(today, -CALENDAR_DEFAULT_PAST_DAYS);
   const to = parsed.data.to ?? addDays(today, DEFAULT_FORWARD_DAYS);
 
   // Reject an inverted or absurdly wide range up front.
@@ -87,102 +89,18 @@ export const GET = apiHandler(async (request: NextRequest) => {
     });
   }
 
-  const [cycles, dayLogRows, nightlyTemps] = await Promise.all([
-    prisma.menstrualCycle.findMany({
-      where: { userId: user.id, deletedAt: null },
-      orderBy: { startDate: "asc" },
-    }),
-    // Bound the day-log read to the rendered span plus the symptothermal
-    // lookback — the earlier of `from` and (today − BBT_WINDOW). Cycle-length
-    // stats run off MenstrualCycle rows, so day-logs can be windowed (QA: perf
-    // — unbounded full-history read on a hot, per-navigation route).
-    prisma.cycleDayLog.findMany({
-      where: {
-        userId: user.id,
-        deletedAt: null,
-        date: {
-          gte:
-            dayDiff(from, addDays(today, -BBT_WINDOW)) <= 0
-              ? from
-              : addDays(today, -BBT_WINDOW),
-        },
-      },
-      orderBy: { date: "asc" },
-      select: {
-        date: true,
-        flow: true,
-        basalBodyTempC: true,
-        temperatureExcluded: true,
-        ovulationTest: true,
-        cervicalMucus: true,
-        cervixPosition: true,
-        cervixFirmness: true,
-        cervixOpening: true,
-        intermenstrualBleeding: true,
-        // The intent fields and their encrypted envelope, resolved below
-        // through the same reader the day-log route uses. Same `cycle` grant
-        // as that route (see sharing-surface-guard), so the grid shows a
-        // delegate nothing the day log would not.
-        sexualActivity: true,
-        protectedSex: true,
-        pregnancyTest: true,
-        progesteroneTest: true,
-        contraceptive: true,
-        sensitiveEncrypted: true,
-        // Selected for presence only; the text is never decrypted here.
-        notesEncrypted: true,
-        _count: { select: { symptomLinks: true } },
-      },
-    }),
-    // Apple Watch wrist/skin temperature feeds the temperature-trend
-    // ovulation layer. Read the WRIST_TEMPERATURE measurements as nightly
-    // values; the engine derives the trailing-mean deviation itself.
-    //
-    // This is a measurements read on a route declared under `cycle`, and it
-    // needs no section predicate for one reason: no value from it reaches the
-    // response. It goes into `predictCycle` and what comes out the other side
-    // is a shifted date. The crosstab next door reads the same channel and IS
-    // fenced, because there the values are the answer.
-    prisma.measurement.findMany({
-      where: {
-        userId: user.id,
-        deletedAt: null,
-        type: "WRIST_TEMPERATURE",
-        measuredAt: {
-          gte: startOfLocalDayKey(addDays(today, -90), tz),
-        },
-      },
-      orderBy: { measuredAt: "asc" },
-      select: { measuredAt: true, value: true },
-    }),
-  ]);
-
-  const dayLogs: CalendarDayLogRow[] = dayLogRows.map((l) => {
-    const sensitive = resolveSensitiveFields(l);
-    return {
-      date: l.date,
-      flow: l.flow,
-      basalBodyTempC: l.basalBodyTempC,
-      temperatureExcluded: l.temperatureExcluded,
-      ovulationTest: l.ovulationTest,
-      cervicalMucus: l.cervicalMucus,
-      cervixPosition: l.cervixPosition,
-      cervixFirmness: l.cervixFirmness,
-      cervixOpening: l.cervixOpening,
-      intermenstrualBleeding: l.intermenstrualBleeding,
-      sexualActivity: sensitive.sexualActivity,
-      pregnancyTest: sensitive.pregnancyTest,
-      progesteroneTest: sensitive.progesteroneTest,
-      contraceptive: sensitive.contraceptive,
-      hasSymptoms: l._count.symptomLinks > 0,
-      hasNote: l.notesEncrypted != null && l.notesEncrypted !== "",
-    };
+  // One loader for the forecast's inputs, shared with the Coach block and the
+  // calendar feed (`load-inputs.ts`). The day-log read is bounded to the
+  // rendered span plus the symptothermal lookback. Cycle lengths come from the
+  // MenstrualCycle rows; the window only reaches the period-length fallback,
+  // which is why the readers that promise to agree with this page read the
+  // default view's window (`defaultCalendarDayLogStart`).
+  const { cycles, dayLogs, nights } = await loadCalendarInputs({
+    userId: user.id,
+    today,
+    tz,
+    dayLogsFrom: dayLogWindowStart(from, today),
   });
-
-  const nights = nightlyTemps.map((m) => ({
-    date: moodDateKey(m.measuredAt, tz),
-    valueC: m.value,
-  }));
 
   const goalAllowsFertile = goalAllowsFertileWindow(profile.goal);
 
@@ -244,6 +162,19 @@ export const GET = apiHandler(async (request: NextRequest) => {
       cycles.filter((c) => c.startDate <= today).at(-1)?.startDate ?? null,
   });
 
+  // The cycles beyond the next one, from the same engine run. Read by the
+  // predictions panel; the calendar feed serves the same projection, so a
+  // client never extrapolates further dates itself. Fertile fields stay in
+  // `prediction.*`, where the goal and cold-start gates already apply.
+  const projection = projectCycles({
+    prediction,
+    cycles: toCycleInputs(cycles),
+    dayLogs: toDayLogInputs(dayLogs),
+    goal: profile.goal,
+    today,
+    horizon: PROJECTION_MAX_HORIZON,
+  });
+
   annotate({
     action: { name: "cycle.calendar.read" },
     meta: {
@@ -276,6 +207,10 @@ export const GET = apiHandler(async (request: NextRequest) => {
     // client renders a calm "learning your cycle" banner over the grid. Additive
     // + back-compatible — older iOS builds ignore the field.
     stillLearning,
+    // Additive (#1350): the next cycles with their widening bands, and why
+    // the list holds what it holds (OK / LEARNING / LATE / OFF).
+    projection: projection.cycles,
+    projectionState: projection.state,
     days,
     meta: { generatedAt },
   });

@@ -89,8 +89,8 @@ export function mad(values: readonly number[], centre: number): number {
 /* §1 — cycle-length estimation                                       */
 /* ------------------------------------------------------------------ */
 
-/** Completed cycle = one whose successor's start exists, giving a known length. */
-function completedLengths(cycles: readonly CycleInput[]): number[] {
+/** Completed cycle = one whose successor's start exists (shared with projection.ts). */
+export function completedLengths(cycles: readonly CycleInput[]): number[] {
   // Sort by startDate ascending (the canonical order), then diff consecutive
   // starts. A cycle is completed iff a later start exists.
   const starts = cycles.map((c) => c.startDate).sort((a, b) => dayDiff(a, b));
@@ -597,9 +597,9 @@ function varianceFactor(cv: number): number {
 
 /**
  * §3(b)/§3 — logging-density derived factors. Returns the adherence confidence
- * factor and the LOG_SPARSITY band-penalty term.
+ * factor and the LOG_SPARSITY band-penalty term (also widens projection.ts).
  */
-function adherenceFactors(
+export function adherenceFactors(
   lastStart: string,
   estimatedLength: number,
   dayLogs: readonly DayLogInput[],

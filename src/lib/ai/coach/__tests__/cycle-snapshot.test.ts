@@ -190,6 +190,59 @@ describe("buildCycleSnapshotBlock", () => {
       /descriptive pattern, not a cause/,
     );
   });
+
+  it("carries the projected later periods as ranges (#1350)", async () => {
+    prismaMock.cycleProfile.findUnique.mockResolvedValue(profile());
+    // Thirteen regular cycles: past the cold start, so the projection reaches
+    // beyond the next period.
+    const many = Array.from({ length: 13 }, (_, i) => {
+      const start = new Date(Date.UTC(2025, 3, 7 + i * 28));
+      return {
+        startDate: start.toISOString().slice(0, 10),
+        endDate: null,
+        periodEndDate: new Date(start.getTime() + 4 * 86_400_000)
+          .toISOString()
+          .slice(0, 10),
+        ovulationDate: null,
+        ovulationConfirmed: false,
+      };
+    });
+    prismaMock.menstrualCycle.findMany.mockResolvedValue(many);
+    const block = await buildCycleSnapshotBlock("u1", "FEMALE", NOW);
+    expect(block!.upcoming.length).toBeGreaterThan(1);
+    expect(block!.upcoming[0].start).toBe(block!.nextEvent!.nextPeriodStart);
+    expect(block!.upcoming[0].earliestStart).toBe(
+      block!.nextEvent!.nextPeriodStartLow,
+    );
+    for (const u of block!.upcoming) {
+      expect(Object.keys(u).sort()).toEqual([
+        "earliestStart",
+        "latestStart",
+        "start",
+      ]);
+    }
+  });
+
+  it("carries no upcoming periods when prediction is off", async () => {
+    prismaMock.cycleProfile.findUnique.mockResolvedValue(
+      profile({ predictionEnabled: false }),
+    );
+    prismaMock.menstrualCycle.findMany.mockResolvedValue(cycles());
+    const block = await buildCycleSnapshotBlock("u1", "FEMALE", NOW);
+    expect(block!.upcoming).toEqual([]);
+    expect(block!.nextEvent).toBeNull();
+  });
+
+  it("reads day logs from the calendar's default window, not the whole history", async () => {
+    prismaMock.cycleProfile.findUnique.mockResolvedValue(profile());
+    prismaMock.menstrualCycle.findMany.mockResolvedValue(cycles());
+    await buildCycleSnapshotBlock("u1", "FEMALE", NOW);
+    expect(prismaMock.cycleDayLog.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ date: { gte: "2025-12-22" } }),
+      }),
+    );
+  });
 });
 
 describe("buildCycleSnapshotBlock — the reader's units", () => {

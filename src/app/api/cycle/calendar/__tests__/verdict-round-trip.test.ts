@@ -167,6 +167,52 @@ describe("GET /api/cycle/calendar is a read", () => {
   });
 });
 
+describe("GET /api/cycle/calendar carries the projection (#1350)", () => {
+  it("publishes the projection whose first row is the prediction", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-10T12:00:00Z"));
+
+    const { status, body } = await callCalendar();
+    expect(status).toBe(200);
+    const data = body.data as {
+      prediction: { nextPeriodStart: string; nextPeriodStartLow: string };
+      projection: Array<Record<string, unknown>>;
+      projectionState: string;
+    };
+    expect(data.projectionState).not.toBe("OFF");
+    expect(data.projection.length).toBeGreaterThan(0);
+    {
+      expect(data.projection[0]).toMatchObject({
+        k: 1,
+        start: data.prediction.nextPeriodStart,
+        bandStart: data.prediction.nextPeriodStartLow,
+      });
+      // Dates and bands only: the fertile window stays in `prediction`.
+      expect(Object.keys(data.projection[0]).sort()).toEqual([
+        "bandEnd",
+        "bandStart",
+        "k",
+        "periodLength",
+        "start",
+      ]);
+    }
+  });
+
+  it("publishes an empty projection, state OFF, with prediction switched off", async () => {
+    // The mock answers with one object; switching it off there switches it
+    // off for the route's own call.
+    const gate = await requireCycleEnabled("user-1", null);
+    if (gate.enabled) gate.profile.predictionEnabled = false;
+    const { body } = await callCalendar();
+    const data = body.data as {
+      projection: unknown[];
+      projectionState: string;
+    };
+    expect(data.projection).toEqual([]);
+    expect(data.projectionState).toBe("OFF");
+  });
+});
+
 describe("GET /api/cycle/calendar carries the resolved verdict", () => {
   it("puts the whole verdict on the wire", async () => {
     // 2026-06-10 12:00 UTC is already 2026-06-11 for a user at UTC+14.

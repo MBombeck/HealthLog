@@ -336,6 +336,43 @@ export function buildPhaseDayMap(
   return out;
 }
 
+/** The rows every forecast reads: the record's cycles, day logs and nights. */
+export interface CycleEngineInputs {
+  cycles: readonly Pick<
+    MenstrualCycle,
+    | "startDate"
+    | "endDate"
+    | "periodEndDate"
+    | "ovulationDate"
+    | "ovulationConfirmed"
+  >[];
+  dayLogs: readonly DayLogInput[];
+  nights: readonly NightlyTempInput[];
+}
+
+/**
+ * The forecast, or null when the profile asks for none.
+ *
+ * One predicate for every surface that shows a forecast: the calendar, the
+ * Coach and MCP cycle block, and the calendar feed. Prediction switched off
+ * and raw-chart mode both answer null, so no caller can forget one of the two
+ * and paint a forecast the settings refused.
+ */
+export function gatedPrediction(
+  profile: CycleProfileInput,
+  inputs: CycleEngineInputs,
+  today: string,
+): CyclePredictionResult | null {
+  if (!profile.predictionEnabled || profile.rawChartMode) return null;
+  return predictCycle(
+    toCycleInputs(inputs.cycles),
+    inputs.dayLogs,
+    profile,
+    today,
+    inputs.nights,
+  );
+}
+
 export interface CalendarBuildResult {
   prediction: CyclePredictionResult | null;
   /**
@@ -385,16 +422,11 @@ export function buildCalendar(
   const lutealLength = resolveLuteal(profile);
 
   // Forecast (only when prediction is on + not raw-chart mode).
-  let prediction: CyclePredictionResult | null = null;
-  if (profile.predictionEnabled && !profile.rawChartMode) {
-    prediction = predictCycle(
-      toCycleInputs(cycles),
-      toDayLogInputs(dayLogs),
-      toProfileInput(profile),
-      today,
-      nights,
-    );
-  }
+  const prediction = gatedPrediction(
+    toProfileInput(profile),
+    { cycles, dayLogs: toDayLogInputs(dayLogs), nights },
+    today,
+  );
 
   // Cold-start gate: until ≥3 cycles are observed the engine's fertile/
   // ovulation/phase output rests on a population prior, so the calendar must

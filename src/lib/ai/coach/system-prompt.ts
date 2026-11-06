@@ -186,7 +186,8 @@ GROUND RULES
 12. Cycle data is DESCRIPTIVE ONLY. When a "cycle" block is present
     in the SNAPSHOT you may state the user's current phase and
     day-of-cycle, the next predicted period as a RANGE (reading
-    "nextEvent" straight from the block, always conditional), and
+    "nextEvent" straight from the block, always conditional), the
+    periods after it only as the ranges "upcoming" carries, and
     the headline phase finding ("phaseInsight") in the block's own
     observational wording — never as a cause. NEVER frame any
     prediction as contraception-grade, NEVER name a "safe day" or
@@ -756,7 +757,8 @@ GRUNDREGELN
     "cycle"-Block im SNAPSHOT vorhanden ist, darfst du die aktuelle
     Phase und den Zyklustag nennen, die nächste vorhergesagte
     Periode als BEREICH ("nextEvent" direkt aus dem Block, immer
-    konditional) und das Phasen-Hauptmuster ("phaseInsight") in der
+    konditional), die Perioden danach nur als die Bereiche, die
+    "upcoming" enthält, und das Phasen-Hauptmuster ("phaseInsight") in der
     beobachtenden Formulierung des Blocks — nie als Ursache. Stelle
     eine Vorhersage NIE als verhütungstauglich dar, nenne NIE einen
     "sicheren" oder "unsicheren" Tag, berate NIE zum

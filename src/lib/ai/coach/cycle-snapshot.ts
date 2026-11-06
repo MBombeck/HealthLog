@@ -29,14 +29,19 @@ import {
   resolveUnitPreferences,
   type UnitPreferences,
 } from "@/lib/measurements/display-transform";
-import { predictCycle, type NightlyTempInput } from "@/lib/cycle";
-import { LUTEAL_DEFAULT, type CyclePhase } from "@/lib/cycle/types";
+import { resolveLuteal } from "@/lib/cycle";
+import type { CyclePhase } from "@/lib/cycle/types";
 import {
   phaseForDate,
   buildPhaseDayMap,
+  gatedPrediction,
   toCycleInputs,
-  toDayLogInputs,
 } from "@/lib/cycle/engine-adapter";
+import {
+  defaultCalendarDayLogStart,
+  loadCycleEngineInputs,
+} from "@/lib/cycle/load-inputs";
+import { PROJECTION_MAX_HORIZON, projectCycles } from "@/lib/cycle/projection";
 import type { CycleProfileInput } from "@/lib/cycle/types";
 import { goalAllowsFertileWindow } from "@/lib/cycle/dto";
 import {
@@ -110,12 +115,25 @@ interface NextEventBlock {
   fertileWindowEnd?: string;
 }
 
+/** One projected period start with its band (#1350). */
+interface UpcomingCycleBlock {
+  start: string;
+  earliestStart: string;
+  latestStart: string;
+}
+
 export interface CycleSnapshotBlock {
   phase: CyclePhase | null;
   dayOfCycle: number | null;
   goal: string;
   cyclesObserved: number;
   nextEvent: NextEventBlock | null;
+  /**
+   * The next period and the ones after it, widening, self-capped where the
+   * band passes ±10 days or half a cycle. Empty while prediction is off, while
+   * the next period is later than its band, or with no logged cycle.
+   */
+  upcoming: UpcomingCycleBlock[];
   phaseInsight: PhaseInsightBlock | null;
 }
 
@@ -206,80 +224,47 @@ export async function buildCycleSnapshotBlock(
   const today = moodDateKey(now, tz);
   const from = addDays(today, -WINDOW_DAYS);
 
-  const [cycles, dayLogRows, nightlyTempRows, measurementRows, userRow] =
-    await Promise.all([
-      prisma.menstrualCycle.findMany({
-        where: { userId, deletedAt: null },
-        orderBy: { startDate: "asc" },
-      }),
-      prisma.cycleDayLog.findMany({
-        where: { userId, deletedAt: null },
-        orderBy: { date: "asc" },
-        select: {
-          date: true,
-          flow: true,
-          basalBodyTempC: true,
-          temperatureExcluded: true,
-          ovulationTest: true,
-          cervicalMucus: true,
-          cervixPosition: true,
-          cervixFirmness: true,
-          cervixOpening: true,
-        },
-      }),
-      prisma.measurement.findMany({
-        where: {
-          userId,
-          deletedAt: null,
-          type: "WRIST_TEMPERATURE",
-          measuredAt: {
-            gte: startOfLocalDayKey(addDays(today, -90), tz),
-          },
-        },
-        orderBy: { measuredAt: "asc" },
-        select: { measuredAt: true, value: true },
-      }),
-      // A year of steps, heart-rate variability and CGM glucose is far too
-      // many readings to hold as objects (#1023). The crosstab only needs
-      // each day's sum and count per source and device, which is what the
-      // per-source picker decides on, so the fold runs in SQL. Days are the
-      // user's days, the ones `metricDayMap` keys on and the phase days are
-      // dated in.
-      readSourceDayAggregates({
-        userId,
-        types: PHASE_CROSSTAB_METRIC_TYPES,
-        since: startOfLocalDayKey(from, tz),
-        timeZone: tz,
-      }),
-      prisma.user.findUnique({
-        where: { id: userId },
-        select: {
-          sourcePriorityJson: true,
-          unitPreference: true,
-          glucoseUnit: true,
-        },
-      }),
-    ]);
+  const [inputs, measurementRows, userRow] = await Promise.all([
+    // The forecast's inputs through the calendar's own loader and the
+    // calendar's default day-log window, so "next period" here is the date the
+    // calendar page shows (`load-inputs.ts`).
+    loadCycleEngineInputs({
+      userId,
+      today,
+      tz,
+      dayLogsFrom: defaultCalendarDayLogStart(today),
+    }),
+    // A year of steps, heart-rate variability and CGM glucose is far too
+    // many readings to hold as objects (#1023). The crosstab only needs
+    // each day's sum and count per source and device, which is what the
+    // per-source picker decides on, so the fold runs in SQL. Days are the
+    // user's days, the ones `metricDayMap` keys on and the phase days are
+    // dated in.
+    readSourceDayAggregates({
+      userId,
+      types: PHASE_CROSSTAB_METRIC_TYPES,
+      since: startOfLocalDayKey(from, tz),
+      timeZone: tz,
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        sourcePriorityJson: true,
+        unitPreference: true,
+        glucoseUnit: true,
+      },
+    }),
+  ]);
+  const { cycles } = inputs;
 
   if (cycles.length === 0) return null;
 
-  const lutealLength = profile.lutealPhaseLength ?? LUTEAL_DEFAULT;
+  // The engine's own clamp, so the phase this block names agrees with the
+  // calendar's band for an out-of-range stored luteal length.
+  const lutealLength = resolveLuteal(profileInput);
   const goalAllowsFertile = goalAllowsFertileWindow(profile.goal);
 
-  const nights: NightlyTempInput[] = nightlyTempRows.map((m) => ({
-    date: moodDateKey(m.measuredAt, tz),
-    valueC: m.value,
-  }));
-  const prediction =
-    profile.predictionEnabled && !profile.rawChartMode
-      ? predictCycle(
-          toCycleInputs(cycles),
-          toDayLogInputs(dayLogRows),
-          profileInput,
-          today,
-          nights,
-        )
-      : null;
+  const prediction = gatedPrediction(profileInput, inputs, today);
 
   const { phase, dayOfCycle } = phaseForDate(
     today,
@@ -317,6 +302,22 @@ export async function buildCycleSnapshotBlock(
         : {}),
     };
   }
+
+  // The cycles after the next one, from the same projection the calendar
+  // publishes and the calendar feed serves. Dates and bands only.
+  const projection = projectCycles({
+    prediction,
+    cycles: toCycleInputs(cycles),
+    dayLogs: inputs.dayLogs,
+    goal: profile.goal,
+    today,
+    horizon: PROJECTION_MAX_HORIZON,
+  });
+  const upcoming: UpcomingCycleBlock[] = projection.cycles.map((c) => ({
+    start: c.start,
+    earliestStart: c.bandStart,
+    latestStart: c.bandEnd,
+  }));
 
   // Headline phase insight — the FDR-surviving luteal-vs-follicular contrast.
   const phaseByDay = buildPhaseDayMap(
@@ -378,6 +379,7 @@ export async function buildCycleSnapshotBlock(
     goal: profile.goal,
     cyclesObserved: cycles.length,
     nextEvent,
+    upcoming,
     phaseInsight,
   };
 }
