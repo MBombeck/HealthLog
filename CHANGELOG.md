@@ -65,6 +65,17 @@
   `0494_cycle_calendar_feed`. Self-hosters: the feed link sits in the URL
   path, so keep `/api/cycle/feed/` out of your proxy's access log;
   `docs/self-hosting/reverse-proxy.md` shows how. (#1350)
+- **Your own symptoms as lines on the timeline.** The timeline's values
+  menu has a Symptoms group with every symptom you have logged at least
+  once, hidden ones included. A line sits on a fixed 0 to 10 scale and
+  follows the zoom: each point is the mean of the bucket's days, where a
+  day counts with the highest intensity logged on it, and it says how many
+  days that was. A day without an entry is left out rather than counted as
+  zero. Symptoms follow the illness module and its sharing domain, so the
+  lines are only offered where the symptom log itself is.
+  `GET /api/timeline` takes `symptom:<id>` in `values` (up to 24) and answers
+  with `symptomSeries` and `availableSymptoms`; with `zoom=all` the window
+  reaches back to the first entry of a chosen symptom. No migration. (#981)
 
 ### Fixed
 
