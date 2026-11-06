@@ -10505,6 +10505,23 @@
     "loadMoreReadings": "Cargar más mediciones",
     "documentsLink": "Documentos de resultados",
     "notLinkedYet": "Aún no vinculado a un biomarcador",
+    "groups": {
+      "other": "Otros",
+      "allInRange": "Todo en rango",
+      "outsideCountOne": "{count} de {total} fuera de rango",
+      "outsideCountFew": "{count} de {total} fuera de rango",
+      "outsideCountOther": "{count} de {total} fuera de rango",
+      "heading": "Categorías",
+      "description": "Agrupa los valores por panel, como Lípidos o Hígado, con un estado por grupo.",
+      "label": "Agrupación",
+      "none": "Ninguna",
+      "category": "Por categoría",
+      "openLabel": "Abiertas al cargar",
+      "openExpanded": "Todas",
+      "openFlagged": "Solo fuera de rango",
+      "openCollapsed": "Ninguna",
+      "orderWithinGroups": "El orden se aplica dentro de cada categoría."
+    },
     "sourceRange": {
       "fromReport": "Rango del informe {range}",
       "catalogDiffers": "tu rango {range}",

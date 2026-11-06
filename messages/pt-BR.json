@@ -10505,6 +10505,23 @@
     "loadMoreReadings": "Carregar mais leituras",
     "documentsLink": "Documentos de laudos laboratoriais",
     "notLinkedYet": "Ainda não vinculado a um biomarcador",
+    "groups": {
+      "other": "Outros",
+      "allInRange": "Tudo na faixa",
+      "outsideCountOne": "{count} de {total} fora da faixa",
+      "outsideCountFew": "{count} de {total} fora da faixa",
+      "outsideCountOther": "{count} de {total} fora da faixa",
+      "heading": "Categorias",
+      "description": "Agrupa os valores por painel, como Lipídios ou Fígado, com um status por grupo.",
+      "label": "Agrupamento",
+      "none": "Nenhum",
+      "category": "Por categoria",
+      "openLabel": "Abertas ao carregar",
+      "openExpanded": "Todas",
+      "openFlagged": "Só fora da faixa",
+      "openCollapsed": "Nenhuma",
+      "orderWithinGroups": "A ordem vale dentro de cada categoria."
+    },
     "sourceRange": {
       "fromReport": "Faixa do laudo {range}",
       "catalogDiffers": "sua faixa {range}",

@@ -80,8 +80,22 @@ export interface LabOverviewMarkerDto {
   latest: LabResultDto;
 }
 
+/** One category of the labs list, resolved by the server; rendered as given. */
+export interface LabOverviewCategoryDto {
+  /** Opaque: a catalog panel key, `custom:<hash>`, or `other`. */
+  key: string;
+  label: string;
+  /** The `markers[].key` values in this category. */
+  markerKeys: string[];
+  counts: { inRange: number; below: number; above: number; unknown: number };
+  status: LabResultDto["rangeStatus"];
+}
+
 export interface LabOverviewResponse {
   markers: LabOverviewMarkerDto[];
+  categories: LabOverviewCategoryDto[];
+  /** True when grouping adds anything; a flat list otherwise. */
+  grouped: boolean;
 }
 
 /** A user-scoped Biomarker catalog entry as the API serialises it. */

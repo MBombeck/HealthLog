@@ -10505,6 +10505,23 @@
     "loadMoreReadings": "Загрузить больше измерений",
     "documentsLink": "Документы анализов",
     "notLinkedYet": "Пока не связано с показателем",
+    "groups": {
+      "other": "Другое",
+      "allInRange": "Все в диапазоне",
+      "outsideCountOne": "{count} из {total} вне диапазона",
+      "outsideCountFew": "{count} из {total} вне диапазона",
+      "outsideCountOther": "{count} из {total} вне диапазона",
+      "heading": "Категории",
+      "description": "Группирует значения по панелям, например Липиды или Печень, со статусом для каждой группы.",
+      "label": "Группировка",
+      "none": "Нет",
+      "category": "По категориям",
+      "openLabel": "Раскрыто при открытии",
+      "openExpanded": "Все",
+      "openFlagged": "Только вне диапазона",
+      "openCollapsed": "Ни одной",
+      "orderWithinGroups": "Порядок действует внутри каждой категории."
+    },
     "sourceRange": {
       "fromReport": "Диапазон из отчёта {range}",
       "catalogDiffers": "ваш диапазон {range}",

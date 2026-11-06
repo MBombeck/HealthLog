@@ -139,8 +139,45 @@ const labOverviewMarker = z
       "One biomarker in the caller's lab history. `key` is `bm:<biomarkerId>` for a catalog-linked marker or `analyte:<lower-cased name>` for a legacy unlinked one. `count` is every live reading of the marker. `trend` holds the values of its newest readings (at most 50), oldest first, null for a qualitative reading. `latest` is the newest reading, serialised exactly like a `GET /api/labs` row.",
   });
 
-const labOverviewResponse = z
-  .object({ markers: z.array(labOverviewMarker) })
+export const labOverviewCategoryCounts = z
+  .object({
+    inRange: z.number().int(),
+    below: z.number().int(),
+    above: z.number().int(),
+    unknown: z.number().int(),
+  })
+  .meta({
+    id: "LabOverviewCategoryCounts",
+    description:
+      "How many members' newest readings are in range, below, above, or unassessed (qualitative, or no range).",
+  });
+
+export const labOverviewCategory = z
+  .object({
+    key: z.string(),
+    label: z.string(),
+    markerKeys: z.array(z.string()),
+    counts: labOverviewCategoryCounts,
+    status: z.enum(["in-range", "below", "above", "unknown"]),
+  })
+  .meta({
+    id: "LabOverviewCategory",
+    description:
+      "One category of the labs list, resolved by the server. `key` is opaque: a catalog panel key, `custom:<hash>` for the person's own panel, or `other`; it carries no user text and is stable, so a client may key collapse state on it. `label` is rendered as given (a catalog panel in the caller's locale, the person's own spelling, or the localised \"Other\"). `markerKeys` names the `markers[].key` values in the category. `status` combines the members' newest readings: `above` when any is above its range, else `below` when any is below, else `in-range` when any was assessed, else `unknown`. A client renders these values and never rebuilds the category, the order or the status.",
+  });
+
+export const labOverviewResponse = z
+  .object({
+    markers: z.array(labOverviewMarker),
+    categories: z.array(labOverviewCategory).meta({
+      description:
+        "The list's categories in display order: catalog panels in catalog order, then the person's own panels by label, then `other`.",
+    }),
+    grouped: z.boolean().meta({
+      description:
+        "Whether grouping adds anything: true when there are two categories or more and at least one is not `other`. A client that shows categories (the `groupBy` list preference) shows a flat list while this is false.",
+    }),
+  })
   .meta({ id: "LabOverviewResponse" });
 
 const notFound = {
@@ -207,7 +244,7 @@ export const labsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Labs"],
       summary: "Per-marker overview of the caller's lab history",
       description:
-        "One entry per biomarker over every live lab result, newest reading first: the newest reading, the reading count and a short trend. Unlike `GET /api/labs` it is not paged, so a marker measured only long ago is never cut off by a page size.",
+        "One entry per biomarker over every live lab result, newest reading first: the newest reading, the reading count and a short trend. Unlike `GET /api/labs` it is not paged, so a marker measured only long ago is never cut off by a page size. `categories` and `grouped` carry the list's categories, resolved server-side; their labels follow the caller's locale (the language cookie, else the caller's stored language, else `Accept-Language`).",
       requestParams: { query: labOverviewQuery },
       responses: {
         ...recordRefusal(),

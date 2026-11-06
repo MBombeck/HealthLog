@@ -294,6 +294,29 @@ export const BIOMARKER_PANELS = [
   "bloodCount",
 ] as const;
 
+export type BiomarkerPanelKey = (typeof BIOMARKER_PANELS)[number];
+
+/**
+ * The panel an analyte with no seed belongs to, for grouping the labs list.
+ * Every key in `ANALYTE_ALIASES` and `LAB_NAME_ALIASES` that is not a seed
+ * slug is listed here, so a marker recognised by one of those names lands in
+ * a catalog category instead of "Other" (`marker-category-coverage.test.ts`
+ * holds the two lists together). Uric acid sits with the kidney markers and
+ * LDH with the liver markers, the way German lab reports print them.
+ */
+export const ALIAS_PANEL: Readonly<Record<string, BiomarkerPanelKey>> = {
+  urea: "renal",
+  "blood-urea-nitrogen": "renal",
+  "uric-acid": "renal",
+  ldh: "liver",
+  "calcium-total": "electrolytes",
+  crp: "inflammation",
+  rbc: "bloodCount",
+  mcv: "bloodCount",
+  mch: "bloodCount",
+  mchc: "bloodCount",
+};
+
 /**
  * Names a marker may carry for an analyte the unit-conversion registry knows
  * (`src/lib/labs/unit-conversion/registry.ts`), keyed by the analyte key a

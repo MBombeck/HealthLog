@@ -10505,6 +10505,23 @@
     "loadMoreReadings": "Weitere Werte laden",
     "documentsLink": "Befund-Dokumente",
     "notLinkedYet": "Noch keinem Biomarker zugeordnet",
+    "groups": {
+      "other": "Sonstige",
+      "allInRange": "Alle im Bereich",
+      "outsideCountOne": "{count} von {total} außerhalb des Bereichs",
+      "outsideCountFew": "{count} von {total} außerhalb des Bereichs",
+      "outsideCountOther": "{count} von {total} außerhalb des Bereichs",
+      "heading": "Kategorien",
+      "description": "Gruppiert die Werte nach Panel, etwa Lipide oder Leber, mit einem Status je Gruppe.",
+      "label": "Gruppierung",
+      "none": "Keine",
+      "category": "Nach Kategorie",
+      "openLabel": "Beim Öffnen aufgeklappt",
+      "openExpanded": "Alle",
+      "openFlagged": "Nur außerhalb des Bereichs",
+      "openCollapsed": "Keine",
+      "orderWithinGroups": "Die Reihenfolge gilt innerhalb jeder Kategorie."
+    },
     "sourceRange": {
       "fromReport": "Befundbereich {range}",
       "catalogDiffers": "dein Bereich {range}",

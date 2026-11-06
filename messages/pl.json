@@ -10505,6 +10505,23 @@
     "loadMoreReadings": "Wczytaj więcej pomiarów",
     "documentsLink": "Dokumenty wyników badań",
     "notLinkedYet": "Jeszcze niepowiązane z biomarkerem",
+    "groups": {
+      "other": "Inne",
+      "allInRange": "Wszystkie w normie",
+      "outsideCountOne": "{count} z {total} poza normą",
+      "outsideCountFew": "{count} z {total} poza normą",
+      "outsideCountOther": "{count} z {total} poza normą",
+      "heading": "Kategorie",
+      "description": "Grupuje wartości według panelu, np. Lipidy lub Wątroba, ze statusem dla każdej grupy.",
+      "label": "Grupowanie",
+      "none": "Brak",
+      "category": "Według kategorii",
+      "openLabel": "Rozwinięte po otwarciu",
+      "openExpanded": "Wszystkie",
+      "openFlagged": "Tylko poza normą",
+      "openCollapsed": "Żadne",
+      "orderWithinGroups": "Kolejność obowiązuje w obrębie każdej kategorii."
+    },
     "sourceRange": {
       "fromReport": "Zakres z wyniku {range}",
       "catalogDiffers": "twój zakres {range}",

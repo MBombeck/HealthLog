@@ -10505,6 +10505,23 @@
     "loadMoreReadings": "Load more readings",
     "documentsLink": "Lab report documents",
     "notLinkedYet": "Not linked to a biomarker yet",
+    "groups": {
+      "other": "Other",
+      "allInRange": "All in range",
+      "outsideCountOne": "{count} of {total} outside range",
+      "outsideCountFew": "{count} of {total} outside range",
+      "outsideCountOther": "{count} of {total} outside range",
+      "heading": "Categories",
+      "description": "Group the values by panel, such as Lipids or Liver, with a range status per group.",
+      "label": "Grouping",
+      "none": "None",
+      "category": "By category",
+      "openLabel": "Open on load",
+      "openExpanded": "All",
+      "openFlagged": "Outside range only",
+      "openCollapsed": "None",
+      "orderWithinGroups": "The order applies within each category."
+    },
     "sourceRange": {
       "fromReport": "Report range {range}",
       "catalogDiffers": "your range {range}",

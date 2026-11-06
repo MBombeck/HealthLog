@@ -10505,6 +10505,23 @@
     "loadMoreReadings": "측정값 더 보기",
     "documentsLink": "검사 결과지 문서",
     "notLinkedYet": "아직 바이오마커에 연결되지 않았어요",
+    "groups": {
+      "other": "기타",
+      "allInRange": "모두 범위 내",
+      "outsideCountOne": "{total}개 중 {count}개 범위 밖",
+      "outsideCountFew": "{total}개 중 {count}개 범위 밖",
+      "outsideCountOther": "{total}개 중 {count}개 범위 밖",
+      "heading": "카테고리",
+      "description": "지질, 간처럼 패널별로 값을 묶고 그룹마다 상태를 보여줘요.",
+      "label": "묶기",
+      "none": "없음",
+      "category": "카테고리별",
+      "openLabel": "열 때 펼치기",
+      "openExpanded": "모두",
+      "openFlagged": "범위 밖만",
+      "openCollapsed": "없음",
+      "orderWithinGroups": "순서는 각 카테고리 안에서 적용돼요."
+    },
     "sourceRange": {
       "fromReport": "결과지 범위 {range}",
       "catalogDiffers": "내 범위 {range}",

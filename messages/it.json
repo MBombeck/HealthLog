@@ -10505,6 +10505,23 @@
     "loadMoreReadings": "Carica altre misurazioni",
     "documentsLink": "Documenti dei referti",
     "notLinkedYet": "Non ancora collegato a un biomarcatore",
+    "groups": {
+      "other": "Altri",
+      "allInRange": "Tutti nella norma",
+      "outsideCountOne": "{count} su {total} fuori norma",
+      "outsideCountFew": "{count} su {total} fuori norma",
+      "outsideCountOther": "{count} su {total} fuori norma",
+      "heading": "Categorie",
+      "description": "Raggruppa i valori per panel, ad esempio Lipidi o Fegato, con uno stato per gruppo.",
+      "label": "Raggruppamento",
+      "none": "Nessuno",
+      "category": "Per categoria",
+      "openLabel": "Aperte al caricamento",
+      "openExpanded": "Tutte",
+      "openFlagged": "Solo fuori norma",
+      "openCollapsed": "Nessuna",
+      "orderWithinGroups": "L’ordine vale all’interno di ogni categoria."
+    },
     "sourceRange": {
       "fromReport": "Intervallo del referto {range}",
       "catalogDiffers": "il tuo intervallo {range}",

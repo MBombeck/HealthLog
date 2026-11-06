@@ -5,7 +5,8 @@
  *
  * `LabsSettings` — Settings > Arrangement > Labs: the card-vs-list view
  * (MOD-03), the sort (recency, alphabetical or manual, MOD-04) and the manual
- * order of the biomarkers. Order and view only, persisted per account through
+ * order of the biomarkers, and whether the list shows its categories and
+ * which of them start open. Persisted per account through
  * `useModuleListPrefs("labs")`.
  *
  * `LabsModuleSettings` — Settings > Modules > Labs: the on-device text
@@ -17,6 +18,7 @@ import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import {
   ArrowDownUp,
   FlaskConical,
+  FolderTree,
   LayoutGrid,
   ListOrdered,
   ScanText,
@@ -27,6 +29,7 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Segmented } from "@/components/ui/segmented";
 import { Switch } from "@/components/ui/switch";
 import { apiGet } from "@/lib/api/api-fetch";
 import { showErrorToast } from "@/lib/errors/error-toast";
@@ -40,6 +43,8 @@ import {
 import {
   applyOrder,
   useModuleListPrefs,
+  type ModuleGroupBy,
+  type ModuleGroupsOpen,
   type ModuleSortDir,
 } from "@/lib/module-list-prefs";
 
@@ -50,7 +55,8 @@ import { labUnitLabel } from "@/lib/labs/dimensionless";
 
 export function LabsSettings() {
   const { t } = useTranslations();
-  const { prefs, setView, setOrder, setSortDir } = useModuleListPrefs("labs");
+  const { prefs, setView, setOrder, setSortDir, setGroupBy, setGroupsOpen } =
+    useModuleListPrefs("labs");
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.biomarkers(),
@@ -107,11 +113,23 @@ export function LabsSettings() {
         </div>
       </SettingsCard>
 
+      <LabsGroupingCard
+        groupBy={prefs.groupBy}
+        groupsOpen={prefs.groupsOpen}
+        onGroupBy={setGroupBy}
+        onGroupsOpen={setGroupsOpen}
+      />
+
       {manual ? (
         <SettingsCard id="labs-order" className="scroll-mt-28">
           <SettingsCardHeader
             icon={ListOrdered}
             title={t("moduleList.reorder.heading")}
+            description={
+              prefs.groupBy === "category"
+                ? t("labs.groups.orderWithinGroups")
+                : undefined
+            }
           />
           {isLoading ? (
             <div className="space-y-2">
@@ -125,6 +143,64 @@ export function LabsSettings() {
         </SettingsCard>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * Categories on or off, and which of them start open. The second choice only
+ * shows while categories are on; it means nothing for a flat list.
+ */
+function LabsGroupingCard({
+  groupBy,
+  groupsOpen,
+  onGroupBy,
+  onGroupsOpen,
+}: {
+  groupBy: ModuleGroupBy;
+  groupsOpen: ModuleGroupsOpen;
+  onGroupBy: (value: ModuleGroupBy) => void;
+  onGroupsOpen: (value: ModuleGroupsOpen) => void;
+}) {
+  const { t } = useTranslations();
+  return (
+    <SettingsCard id="labs-groups" className="scroll-mt-28">
+      <SettingsCardHeader
+        icon={FolderTree}
+        title={t("labs.groups.heading")}
+        description={t("labs.groups.description")}
+      />
+      <div className="space-y-2">
+        <p className="text-sm font-medium">{t("labs.groups.label")}</p>
+        <Segmented
+          mode="toggle"
+          value={groupBy}
+          onChange={onGroupBy}
+          label={t("labs.groups.label")}
+          optionSlot={(value) => `labs-group-by-${value}`}
+          options={[
+            { value: "none", label: t("labs.groups.none") },
+            { value: "category", label: t("labs.groups.category") },
+          ]}
+        />
+      </div>
+      {groupBy === "category" ? (
+        <div className="space-y-2" data-slot="labs-groups-open">
+          <p className="text-sm font-medium">{t("labs.groups.openLabel")}</p>
+          <Segmented
+            mode="toggle"
+            value={groupsOpen}
+            onChange={onGroupsOpen}
+            label={t("labs.groups.openLabel")}
+            optionSlot={(value) => `labs-groups-open-${value}`}
+            options={[
+              { value: "expanded", label: t("labs.groups.openExpanded") },
+              { value: "flagged", label: t("labs.groups.openFlagged") },
+              { value: "collapsed", label: t("labs.groups.openCollapsed") },
+            ]}
+          />
+        </div>
+      ) : null}
+    </SettingsCard>
   );
 }
 

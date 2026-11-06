@@ -10505,6 +10505,23 @@
     "loadMoreReadings": "Charger plus de mesures",
     "documentsLink": "Documents de résultats",
     "notLinkedYet": "Pas encore lié à un biomarqueur",
+    "groups": {
+      "other": "Autres",
+      "allInRange": "Tout dans la norme",
+      "outsideCountOne": "{count} sur {total} hors norme",
+      "outsideCountFew": "{count} sur {total} hors norme",
+      "outsideCountOther": "{count} sur {total} hors norme",
+      "heading": "Catégories",
+      "description": "Regroupe les valeurs par panel, par exemple Lipides ou Foie, avec un statut par groupe.",
+      "label": "Regroupement",
+      "none": "Aucun",
+      "category": "Par catégorie",
+      "openLabel": "Ouvertes à l’affichage",
+      "openExpanded": "Toutes",
+      "openFlagged": "Hors norme seulement",
+      "openCollapsed": "Aucune",
+      "orderWithinGroups": "L’ordre s’applique au sein de chaque catégorie."
+    },
     "sourceRange": {
       "fromReport": "Plage du compte rendu {range}",
       "catalogDiffers": "votre plage {range}",

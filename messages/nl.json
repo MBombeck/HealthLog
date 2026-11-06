@@ -10505,6 +10505,23 @@
     "loadMoreReadings": "Meer metingen laden",
     "documentsLink": "Documenten met labrapporten",
     "notLinkedYet": "Nog niet gekoppeld aan een biomarker",
+    "groups": {
+      "other": "Overig",
+      "allInRange": "Alles binnen bereik",
+      "outsideCountOne": "{count} van {total} buiten bereik",
+      "outsideCountFew": "{count} van {total} buiten bereik",
+      "outsideCountOther": "{count} van {total} buiten bereik",
+      "heading": "Categorieën",
+      "description": "Groepeert de waarden per groep, zoals Lipiden of Lever, met een status per groep.",
+      "label": "Groeperen",
+      "none": "Niet",
+      "category": "Per categorie",
+      "openLabel": "Open bij laden",
+      "openExpanded": "Alle",
+      "openFlagged": "Alleen buiten bereik",
+      "openCollapsed": "Geen",
+      "orderWithinGroups": "De volgorde geldt binnen elke categorie."
+    },
     "sourceRange": {
       "fromReport": "Bereik volgens rapport: {range}",
       "catalogDiffers": "jouw bereik: {range}",
