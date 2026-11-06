@@ -13944,7 +13944,17 @@
     },
     "legendLabValue": "Lab value, as measured",
     "legendLabOutside": "Outside the reference range",
-    "legendLabRange": "Reference range"
+    "legendLabRange": "Reference range",
+    "legendSymptom": "Symptom line: each logged day's highest intensity (0 to 10), averaged over the logged days",
+    "symptoms": {
+      "menuTitle": "Symptoms",
+      "full": "Up to {max} symptoms at once. Remove one to add another.",
+      "hidden": "hidden",
+      "unnamed": "Symptom",
+      "daysOne": "on 1 day",
+      "daysFew": "mean of {count} days",
+      "daysOther": "mean of {count} days"
+    }
   },
   "lifeEvents": {
     "title": "Life event",

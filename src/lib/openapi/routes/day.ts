@@ -129,7 +129,7 @@ export const dayPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Records"],
       summary: "The record over the years",
       description:
-        "Lanes of conditions, allergies, medications, vaccinations, visits, lab days, documents and life events, the standing items without a start, and monthly (or finer, by zoom) value series. Empty lanes are not sent; lanes of a switched-off module never are. The `life` lane (life events and travel periods) is the owner's only and is never sent to a delegate. Requires the opt-in `timeline` module.",
+        "Lanes of conditions, allergies, medications, vaccinations, visits, lab days, documents and life events, the standing items without a start, and monthly (or finer, by zoom) value series, among them the lab markers (`labSeries`, single readings) and the person-defined symptoms (`symptomSeries`, the day's highest intensity averaged over logged days, on a fixed 0 to 10 scale; read only with the illness module on and the illness section visible) named in `values`. Empty lanes are not sent; lanes of a switched-off module never are. The `life` lane (life events and travel periods) is the owner's only and is never sent to a delegate. Requires the opt-in `timeline` module.",
       requestParams: { query: timelineQuerySchema },
       responses: {
         "200": {

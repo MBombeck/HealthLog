@@ -13944,7 +13944,17 @@
     },
     "legendLabValue": "측정된 그대로의 검사 수치",
     "legendLabOutside": "참고 범위 밖",
-    "legendLabRange": "참고 범위"
+    "legendLabRange": "참고 범위",
+    "legendSymptom": "증상 선: 기록한 날마다의 가장 높은 강도(0~10)를 기록한 날 기준으로 평균한 값",
+    "symptoms": {
+      "menuTitle": "증상",
+      "full": "증상은 한 번에 최대 {max}개까지 표시할 수 있습니다. 다른 증상을 추가하려면 하나를 제거하세요.",
+      "hidden": "숨김",
+      "unnamed": "증상",
+      "daysOne": "1일",
+      "daysFew": "{count}일 평균",
+      "daysOther": "{count}일 평균"
+    }
   },
   "lifeEvents": {
     "title": "삶의 사건",

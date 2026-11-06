@@ -13944,7 +13944,17 @@
     },
     "legendLabValue": "Valeur de laboratoire, telle que mesurée",
     "legendLabOutside": "Hors de l’intervalle de référence",
-    "legendLabRange": "Intervalle de référence"
+    "legendLabRange": "Intervalle de référence",
+    "legendSymptom": "Ligne de symptôme : intensité la plus forte de chaque jour noté (0 à 10), en moyenne sur les jours notés",
+    "symptoms": {
+      "menuTitle": "Symptômes",
+      "full": "Jusqu’à {max} symptômes à la fois. Retirez-en un pour en ajouter un autre.",
+      "hidden": "masqué",
+      "unnamed": "Symptôme",
+      "daysOne": "sur 1 jour",
+      "daysFew": "moyenne sur {count} jours",
+      "daysOther": "moyenne sur {count} jours"
+    }
   },
   "lifeEvents": {
     "title": "Événement de vie",

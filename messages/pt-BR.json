@@ -13944,7 +13944,17 @@
     },
     "legendLabValue": "Valor de exame, como foi medido",
     "legendLabOutside": "Fora da faixa de referência",
-    "legendLabRange": "Faixa de referência"
+    "legendLabRange": "Faixa de referência",
+    "legendSymptom": "Linha do sintoma: a maior intensidade de cada dia registrado (de 0 a 10), em média sobre os dias registrados",
+    "symptoms": {
+      "menuTitle": "Sintomas",
+      "full": "Até {max} sintomas ao mesmo tempo. Remova um para adicionar outro.",
+      "hidden": "oculto",
+      "unnamed": "Sintoma",
+      "daysOne": "em 1 dia",
+      "daysFew": "média de {count} dias",
+      "daysOther": "média de {count} dias"
+    }
   },
   "lifeEvents": {
     "title": "Evento de vida",

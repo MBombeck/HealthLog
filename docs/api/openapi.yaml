@@ -26948,9 +26948,12 @@ paths:
         - Records
       summary: The record over the years
       description: Lanes of conditions, allergies, medications, vaccinations, visits, lab days, documents and life events, the
-        standing items without a start, and monthly (or finer, by zoom) value series. Empty lanes are not sent; lanes of
-        a switched-off module never are. The `life` lane (life events and travel periods) is the owner's only and is
-        never sent to a delegate. Requires the opt-in `timeline` module.
+        standing items without a start, and monthly (or finer, by zoom) value series, among them the lab markers
+        (`labSeries`, single readings) and the person-defined symptoms (`symptomSeries`, the day's highest intensity
+        averaged over logged days, on a fixed 0 to 10 scale; read only with the illness module on and the illness
+        section visible) named in `values`. Empty lanes are not sent; lanes of a switched-off module never are. The
+        `life` lane (life events and travel periods) is the owner's only and is never sent to a delegate. Requires the
+        opt-in `timeline` module.
       parameters:
         - in: query
           name: zoom
@@ -26979,19 +26982,22 @@ paths:
         - in: query
           name: values
           schema:
-            description: "Comma-separated value series to include, as `MeasurementType` names, `MOOD`, or a lab marker as
-              `lab:<biomarkerId>` (see `availableLabs`). A name given twice counts once, so the list is bounded by the
-              names that exist; an unknown measurement name or a malformed marker key answers 422. At most 24 lab
-              markers are drawn (ids, unlike names, are not a closed set): the first 24 are kept and any further ones
-              left out without an error. A lab marker that is not in the record (deleted, or another record's) is
-              likewise left out of `labSeries`, so a stored choice never breaks the page."
+            description: "Comma-separated value series to include, as `MeasurementType` names, `MOOD`, a lab marker as
+              `lab:<biomarkerId>` (see `availableLabs`), or a person-defined symptom as `symptom:<definitionId>` (see
+              `availableSymptoms`). A name given twice counts once, so the list is bounded by the names that exist; an
+              unknown measurement name or a malformed marker or symptom key answers 422. At most 24 lab markers and 24
+              symptoms are drawn (ids, unlike names, are not a closed set): the first 24 of each are kept and any
+              further ones left out without an error. A lab marker or symptom that is not in the record (deleted, or
+              another record's) is likewise left out of `labSeries` / `symptomSeries`, so a stored choice never breaks
+              the page."
             type: string
-          description: "Comma-separated value series to include, as `MeasurementType` names, `MOOD`, or a lab marker as
-            `lab:<biomarkerId>` (see `availableLabs`). A name given twice counts once, so the list is bounded by the
-            names that exist; an unknown measurement name or a malformed marker key answers 422. At most 24 lab markers
-            are drawn (ids, unlike names, are not a closed set): the first 24 are kept and any further ones left out
-            without an error. A lab marker that is not in the record (deleted, or another record's) is likewise left out
-            of `labSeries`, so a stored choice never breaks the page."
+          description: "Comma-separated value series to include, as `MeasurementType` names, `MOOD`, a lab marker as
+            `lab:<biomarkerId>` (see `availableLabs`), or a person-defined symptom as `symptom:<definitionId>` (see
+            `availableSymptoms`). A name given twice counts once, so the list is bounded by the names that exist; an
+            unknown measurement name or a malformed marker or symptom key answers 422. At most 24 lab markers and 24
+            symptoms are drawn (ids, unlike names, are not a closed set): the first 24 of each are kept and any further
+            ones left out without an error. A lab marker or symptom that is not in the record (deleted, or another
+            record's) is likewise left out of `labSeries` / `symptomSeries`, so a stored choice never breaks the page."
       responses:
         "200":
           description: The timeline for the requested zoom and window.
@@ -94385,6 +94391,19 @@ components:
             $ref: "#/components/schemas/TimelineLabMarker"
           description: Every lab marker this record has a numeric reading for, whatever the window, when the caller may see labs.
             Each may be named in `values` by its `key`.
+        symptomSeries:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineSymptomSeries"
+          description: The person-defined symptoms named in `values`, in the order named, each averaged per `bucket` over the days
+            it was logged. A symptom named but not found in the record is left out.
+        availableSymptoms:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineSymptomOption"
+          description: Every person-defined symptom this record has logged at least once, hidden ones included (their history is
+            kept), in the record's own order, when the caller may see illness data. Each may be named in `values` by its
+            `key`.
         notable:
           type: array
           items:
@@ -94414,6 +94433,8 @@ components:
         - availableSeries
         - labSeries
         - availableLabs
+        - symptomSeries
+        - availableSymptoms
         - notable
       additionalProperties: false
     TimelineItem:
@@ -94589,6 +94610,104 @@ components:
         - name
         - panel
         - unit
+      additionalProperties: false
+    TimelineSymptomSeries:
+      type: object
+      properties:
+        key:
+          type: string
+          description: "`symptom:<definitionId>`, as named in `values`."
+        definitionId:
+          type: string
+        label:
+          description: The person's own name for the symptom. Null when it cannot be read; the client words a stand-in.
+          type:
+            - string
+            - "null"
+        icon:
+          description: The symptom's icon name; null for the default glyph.
+          type:
+            - string
+            - "null"
+        isActive:
+          type: boolean
+          description: "False for a hidden symptom: no longer offered for entry, its history kept and drawn."
+        scale:
+          type: object
+          properties:
+            min:
+              type: number
+              const: 0
+            max:
+              type: number
+              const: 10
+          required:
+            - min
+            - max
+          additionalProperties: false
+          description: The fixed scale the line is drawn on, the intensity scale, whatever the window holds.
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimelineSymptomPoint"
+          description: Buckets of the response's `bucket` with at least one logged day, oldest first. A bucket without one is
+            absent, never zero and never interpolated.
+      required:
+        - key
+        - definitionId
+        - label
+        - icon
+        - isActive
+        - scale
+        - points
+      additionalProperties: false
+    TimelineSymptomPoint:
+      type: object
+      properties:
+        t:
+          type: string
+          description: The bucket's first day.
+        mean:
+          type: number
+          minimum: 0
+          maximum: 10
+          description: The mean of the bucket's day values over the days the symptom was logged. A day's value is the highest
+            intensity (0 to 10) logged on it; a day without an entry is not a zero and does not count.
+        count:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+          description: Days the symptom was logged in the bucket, the days behind the mean. Clients draw a point from fewer than
+            three as thin.
+      required:
+        - t
+        - mean
+        - count
+      additionalProperties: false
+    TimelineSymptomOption:
+      type: object
+      properties:
+        key:
+          type: string
+          description: "`symptom:<definitionId>`, to name in `values`."
+        definitionId:
+          type: string
+        label:
+          type:
+            - string
+            - "null"
+        icon:
+          type:
+            - string
+            - "null"
+        isActive:
+          type: boolean
+      required:
+        - key
+        - definitionId
+        - label
+        - icon
+        - isActive
       additionalProperties: false
     TimelineReadinessEnvelope:
       type: object

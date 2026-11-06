@@ -138,6 +138,8 @@ function timeline(values: readonly string[]): TimelineResponse {
         unit: "ng/mL",
       },
     ],
+    symptomSeries: [],
+    availableSymptoms: [],
     notable: [],
   };
 }

@@ -428,6 +428,10 @@ export type TimelineSeries = TimelineResponse["series"][number];
 export type TimelineLabSeries = TimelineResponse["labSeries"][number];
 export type TimelineLabPoint = TimelineLabSeries["points"][number];
 export type TimelineLabMarker = TimelineResponse["availableLabs"][number];
+export type TimelineSymptomSeries = TimelineResponse["symptomSeries"][number];
+export type TimelineSymptomPoint = TimelineSymptomSeries["points"][number];
+export type TimelineSymptomOption =
+  TimelineResponse["availableSymptoms"][number];
 
 /**
  * A lab marker's line is named in `values` as `lab:<biomarkerId>` (#1299),
@@ -450,18 +454,55 @@ export function timelineLabMarkerId(key: string): string | null {
 }
 
 /**
- * `keys` with every lab marker past the first `TIMELINE_LAB_SERIES_MAX` left
- * out, everything else in its place. The server applies it to what it is
- * asked for and the page to what it asks, so a stored list longer than the
- * cap (another device, an older build) loads its first markers instead of
- * failing the page.
+ * A person-defined symptom's line is named in `values` as
+ * `symptom:<definitionId>` (#981), beside the lab markers and on the same
+ * terms: checked for its shape only, capped, and left out without an error
+ * when the record does not have it.
  */
-export function capTimelineLabKeys(keys: readonly string[]): string[] {
+export const TIMELINE_SYMPTOM_KEY_PREFIX = "symptom:";
+
+/** The most symptoms one request draws. Definition ids are not a closed set. */
+export const TIMELINE_SYMPTOM_SERIES_MAX = 24;
+
+/**
+ * The scale a symptom line is drawn on: the intensity a symptom is logged
+ * with, 0 to 10, whatever the window holds, so two symptoms (and one symptom
+ * in two windows) read against the same marks.
+ */
+export const TIMELINE_SYMPTOM_SCALE = { min: 0, max: 10 } as const;
+
+/** The definition id a `values` entry names, or null when it names none. */
+export function timelineSymptomDefinitionId(key: string): string | null {
+  if (!key.startsWith(TIMELINE_SYMPTOM_KEY_PREFIX)) return null;
+  const id = key.slice(TIMELINE_SYMPTOM_KEY_PREFIX.length);
+  return /^[A-Za-z0-9_-]{1,64}$/.test(id) ? id : null;
+}
+
+/** The `values` entry for a symptom definition. */
+export function timelineSymptomKey(definitionId: string): string {
+  return `${TIMELINE_SYMPTOM_KEY_PREFIX}${definitionId}`;
+}
+
+/**
+ * `keys` with every lab marker past the first `TIMELINE_LAB_SERIES_MAX` and
+ * every symptom past the first `TIMELINE_SYMPTOM_SERIES_MAX` left out,
+ * everything else in its place. The server applies it to what it is asked
+ * for and the page to what it asks, so a stored list longer than a cap
+ * (another device, an older build) loads its first lines instead of failing
+ * the page.
+ */
+export function capTimelineSeriesKeys(keys: readonly string[]): string[] {
   let labs = 0;
-  return keys.filter(
-    (key) =>
-      timelineLabMarkerId(key) === null || ++labs <= TIMELINE_LAB_SERIES_MAX,
-  );
+  let symptoms = 0;
+  return keys.filter((key) => {
+    if (timelineLabMarkerId(key) !== null) {
+      return ++labs <= TIMELINE_LAB_SERIES_MAX;
+    }
+    if (timelineSymptomDefinitionId(key) !== null) {
+      return ++symptoms <= TIMELINE_SYMPTOM_SERIES_MAX;
+    }
+    return true;
+  });
 }
 
 /** The `values` entry for a lab marker. */

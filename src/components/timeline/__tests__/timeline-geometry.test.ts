@@ -854,3 +854,46 @@ describe("label room (v1.42 final)", () => {
     }
   });
 });
+
+describe("layoutSeries, a symptom line (#981)", () => {
+  const window = { from: "2026-01-01", to: "2026-06-30" };
+  const scale = createScale(window, 164, 1200);
+  const lay = (points: Array<{ t: string; mean: number; count: number }>) =>
+    layoutSeries(
+      [{ key: "symptom:sd1", unit: null, points }],
+      0,
+      window,
+      scale,
+      "month",
+    )[0];
+
+  it("sits on the fixed 0 to 10 scale, whatever the window holds", () => {
+    const quiet = lay([
+      { t: "2026-01-01", mean: 2, count: 4 },
+      { t: "2026-02-01", mean: 3, count: 1 },
+    ]);
+    const loud = lay([
+      { t: "2026-01-01", mean: 2, count: 4 },
+      { t: "2026-02-01", mean: 9, count: 5 },
+    ]);
+    // The same mean lands on the same height in both rows.
+    expect(quiet.points[0].y).toBe(loud.points[0].y);
+    // 0 and 10 are inside the row, 5 halfway between them.
+    const mid = lay([{ t: "2026-01-01", mean: 5, count: 3 }]).points[0].y;
+    const top = lay([{ t: "2026-01-01", mean: 10, count: 3 }]).points[0].y;
+    const bottom = lay([{ t: "2026-01-01", mean: 0, count: 3 }]).points[0].y;
+    expect(top).toBeLessThan(mid);
+    expect(mid).toBeLessThan(bottom);
+    expect(mid).toBeCloseTo((top + bottom) / 2, 5);
+    expect(top).toBeGreaterThan(quiet.top);
+    expect(bottom).toBeLessThan(quiet.top + quiet.height);
+  });
+
+  it("draws a mean resting on fewer than three days hollow", () => {
+    const line = lay([
+      { t: "2026-01-01", mean: 4, count: 2 },
+      { t: "2026-02-01", mean: 4, count: 3 },
+    ]);
+    expect(line.points.map((p) => p.thin)).toEqual([true, false]);
+  });
+});

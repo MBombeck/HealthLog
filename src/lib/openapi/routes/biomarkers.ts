@@ -15,8 +15,8 @@ import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
 
 import { LAB_UNIT_DESCRIPTION } from "@/lib/labs/dimensionless";
+import { dateKeySchema } from "@/lib/day/date-key-schema";
 import {
-  dateKeySchema,
   labSeriesQuerySchema,
   timelineLabSeries,
 } from "@/lib/day/wire-schemas";

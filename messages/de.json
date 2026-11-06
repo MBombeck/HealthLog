@@ -13944,7 +13944,17 @@
     },
     "legendLabValue": "Laborwert, wie gemessen",
     "legendLabOutside": "Außerhalb des Referenzbereichs",
-    "legendLabRange": "Referenzbereich"
+    "legendLabRange": "Referenzbereich",
+    "legendSymptom": "Symptomlinie: höchste Stärke jedes erfassten Tages (0 bis 10), gemittelt über die erfassten Tage",
+    "symptoms": {
+      "menuTitle": "Symptome",
+      "full": "Bis zu {max} Symptome gleichzeitig. Entferne eines, um ein anderes hinzuzufügen.",
+      "hidden": "ausgeblendet",
+      "unnamed": "Symptom",
+      "daysOne": "an 1 Tag",
+      "daysFew": "Schnitt aus {count} Tagen",
+      "daysOther": "Schnitt aus {count} Tagen"
+    }
   },
   "lifeEvents": {
     "title": "Lebensereignis",
