@@ -1824,7 +1824,11 @@ export async function seed() {
       { analyte: "Ferritin", value: 88, unit: "ng/mL", low: 30, high: 400 },
     ];
 
-    const insertQuant = async (panel: string, lab: QuantLab, takenAt: Date) => {
+    const insertQuant = async (
+      panel: string | null,
+      lab: QuantLab,
+      takenAt: Date,
+    ) => {
       await client.query(
         `INSERT INTO lab_results (id, user_id, panel, analyte, value, value_text, unit, reference_low, reference_high, source_value, source_unit, taken_at, source, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, NULL, $6, $7, $8, $9, $10, $11, 'MANUAL', NOW(), NOW())`,
@@ -1843,7 +1847,11 @@ export async function seed() {
         ],
       );
     };
-    const insertQual = async (panel: string, lab: QualLab, takenAt: Date) => {
+    const insertQual = async (
+      panel: string | null,
+      lab: QualLab,
+      takenAt: Date,
+    ) => {
       await client.query(
         `INSERT INTO lab_results (id, user_id, panel, analyte, value, value_text, unit, reference_low, reference_high, taken_at, source, created_at, updated_at)
          VALUES ($1, $2, $3, $4, NULL, $5, $6, NULL, NULL, $7, 'MANUAL', NOW(), NOW())`,
@@ -1851,14 +1859,17 @@ export async function seed() {
       );
     };
 
+    // No panel on the readings: a draw label ("Annual blood panel") would
+    // become one category holding every marker, and the labs list would stay
+    // flat. Without one each marker lands in its catalog category by name.
     for (const lab of recentQuant) {
-      await insertQuant("Annual blood panel", lab, recentPanelAt);
+      await insertQuant(null, lab, recentPanelAt);
     }
     for (const lab of recentQual) {
-      await insertQual("Annual blood panel", lab, recentPanelAt);
+      await insertQual(null, lab, recentPanelAt);
     }
     for (const lab of olderQuant) {
-      await insertQuant("Blood panel (last year)", lab, olderPanelAt);
+      await insertQuant(null, lab, olderPanelAt);
     }
     const labResults = [...recentQuant, ...recentQual, ...olderQuant];
 
@@ -2901,7 +2912,7 @@ export async function seed() {
     for (const panel of historyPanels) {
       for (const [key, value] of Object.entries(panel.values)) {
         await insertQuant(
-          "Blood panel",
+          null,
           { ...panelLabs[key], value },
           daysAgoAt(panel.n, 9, 0),
         );
