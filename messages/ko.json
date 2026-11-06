@@ -10569,6 +10569,7 @@
       "convertedOther": "측정값 {count}개, {unit}에서 {targetUnit}(으)로 환산",
       "refused": "{unit}은(는) {targetUnit}(으)로 환산할 수 없어요.",
       "aliasesAdded": "이 이름들은 남긴 바이오마커로 연결돼요:",
+      "adoptsPanel": "남긴 바이오마커가 {panel} 패널을 이어받아요.",
       "blocked": "환산할 수 없는 단위가 있으면 아무것도 합치지 않아요. 그 바이오마커를 빼거나 다른 항목을 남겨 주세요.",
       "noUndo": "합친 뒤에는 되돌릴 수 없어요.",
       "doneToastOne": "{name}(으)로 합쳤어요, 측정값 {count}개 이동",

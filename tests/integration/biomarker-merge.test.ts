@@ -448,6 +448,101 @@ describe("POST /api/biomarkers/{id}/merge", () => {
   });
 });
 
+describe("the merged marker's panel", () => {
+  it("takes the first source panel when the target has none, and says so on the dry run", async () => {
+    const prisma = getPrismaClient();
+    const target = await seedMarker("ALP", "U/L", 2);
+    const first = await seedMarker("Alk.P", "U/L", 2);
+    const second = await seedMarker("Alkaline Phosphatase", "U/L", 2);
+    await prisma.biomarker.update({
+      where: { id: first.id },
+      data: { panel: "Leber" },
+    });
+    await prisma.biomarker.update({
+      where: { id: second.id },
+      data: { panel: "Liver" },
+    });
+
+    const preview = await merge(target.id, {
+      sourceIds: [first.id, second.id],
+      dryRun: true,
+    });
+    expect(preview.status).toBe(200);
+    const dry = (await preview.json()).data;
+    expect(dry.adoptedPanel).toBe("Leber");
+    expect(dry.target.panel).toBeNull();
+    expect(
+      (await prisma.biomarker.findUnique({ where: { id: target.id } }))?.panel,
+    ).toBeNull();
+
+    const done = (
+      await (
+        await merge(target.id, { sourceIds: [first.id, second.id] })
+      ).json()
+    ).data;
+    expect(done.adoptedPanel).toBe("Leber");
+    expect(done.target.panel).toBe("Leber");
+    expect(
+      (await prisma.biomarker.findUnique({ where: { id: target.id } }))?.panel,
+    ).toBe("Leber");
+  });
+
+  it("keeps the target's own panel", async () => {
+    const prisma = getPrismaClient();
+    const target = await seedMarker("ALP", "U/L", 1);
+    const source = await seedMarker("Alk.P", "U/L", 1);
+    await prisma.biomarker.update({
+      where: { id: target.id },
+      data: { panel: "Mine" },
+    });
+    await prisma.biomarker.update({
+      where: { id: source.id },
+      data: { panel: "Theirs" },
+    });
+    const done = (
+      await (await merge(target.id, { sourceIds: [source.id] })).json()
+    ).data;
+    expect(done.adoptedPanel).toBeNull();
+    expect(done.target.panel).toBe("Mine");
+  });
+});
+
+describe("clearing a marker's fields", () => {
+  it("clears panel, context and both bounds on an explicit null", async () => {
+    const prisma = getPrismaClient();
+    const marker = await seedMarker("Ferritin", "ng/mL", 0);
+    const { PUT } = await import("@/app/api/biomarkers/[id]/route");
+    const put = (body: unknown) =>
+      PUT(json(body, `http://localhost/api/biomarkers/${marker.id}`, "PUT"), {
+        params: Promise.resolve({ id: marker.id }),
+      });
+    expect(
+      (
+        await put({
+          panel: "Iron",
+          context: "fasting",
+          lowerBound: 30,
+          upperBound: 400,
+        })
+      ).status,
+    ).toBe(200);
+    const res = await put({
+      panel: null,
+      context: null,
+      lowerBound: null,
+      upperBound: null,
+    });
+    expect(res.status).toBe(200);
+    const row = await prisma.biomarker.findUniqueOrThrow({
+      where: { id: marker.id },
+    });
+    expect(row.panel).toBeNull();
+    expect(row.contextEncrypted).toBeNull();
+    expect(row.lowerBound).toBeNull();
+    expect(row.upperBound).toBeNull();
+  });
+});
+
 describe("aliases on the marker", () => {
   async function put(id: string, body: unknown) {
     const { PUT } = await import("@/app/api/biomarkers/[id]/route");

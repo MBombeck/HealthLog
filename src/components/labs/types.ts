@@ -183,5 +183,7 @@ export interface BiomarkerMergeResultDto {
   movedReadings: number;
   convertedReadings: number;
   aliasesAdded: string[];
+  /** The panel the target takes over from a source, or null. */
+  adoptedPanel: string | null;
   mergeId: string | null;
 }

@@ -10569,6 +10569,7 @@
       "convertedOther": "{count} leituras, convertidas de {unit} para {targetUnit}",
       "refused": "{unit} não pode ser convertida para {targetUnit}.",
       "aliasesAdded": "Estes nomes levarão ao biomarcador mantido:",
+      "adoptsPanel": "O biomarcador mantido assume o painel {panel}.",
       "blocked": "Nada pode ser mesclado enquanto uma unidade não puder ser convertida. Deixe esse biomarcador fora ou mantenha outro.",
       "noUndo": "Uma mesclagem não pode ser desfeita.",
       "doneToastOne": "Mesclado em {name}, {count} leitura movida",

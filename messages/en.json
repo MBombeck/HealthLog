@@ -10569,6 +10569,7 @@
       "convertedOther": "{count} readings, converted from {unit} to {targetUnit}",
       "refused": "{unit} cannot be converted to {targetUnit}.",
       "aliasesAdded": "These names will lead to the kept biomarker:",
+      "adoptsPanel": "The kept biomarker takes over the panel {panel}.",
       "blocked": "Nothing can be merged while a unit cannot be converted. Leave that biomarker out or keep another one.",
       "noUndo": "A merge cannot be undone.",
       "doneToastOne": "Merged into {name}, {count} reading moved",

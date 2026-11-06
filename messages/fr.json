@@ -10569,6 +10569,7 @@
       "convertedOther": "{count} mesures, converties de {unit} en {targetUnit}",
       "refused": "{unit} ne peut pas être converti en {targetUnit}.",
       "aliasesAdded": "Ces noms mèneront au biomarqueur conservé :",
+      "adoptsPanel": "Le biomarqueur conservé reprend le panel {panel}.",
       "blocked": "Rien n'est fusionné tant qu'une unité ne peut pas être convertie. Laissez ce biomarqueur de côté ou conservez-en un autre.",
       "noUndo": "Une fusion ne peut pas être annulée.",
       "doneToastOne": "Fusionné dans {name}, {count} mesure déplacée",

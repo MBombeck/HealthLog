@@ -78354,6 +78354,13 @@ components:
           items:
             type: string
           description: Names that become aliases of the target.
+        adoptedPanel:
+          description: "The panel the target takes over: when the target has none, the first panel a source carries, in the order
+            the sources were given. `null` when the target keeps its own panel or no source has one. Reported on a dry
+            run too, while `target.panel` there is still the stored one."
+          type:
+            - string
+            - "null"
         mergeId:
           description: "`null` on a dry run."
           type:
@@ -78366,6 +78373,7 @@ components:
         - movedReadings
         - convertedReadings
         - aliasesAdded
+        - adoptedPanel
         - mergeId
       additionalProperties: false
       description: What a merge did, or would do on a dry run. Readings in another unit are converted where the analyte's

@@ -10569,6 +10569,7 @@
       "convertedOther": "{count} metingen, omgerekend van {unit} naar {targetUnit}",
       "refused": "{unit} kan niet worden omgerekend naar {targetUnit}.",
       "aliasesAdded": "Deze namen verwijzen voortaan naar de behouden biomarker:",
+      "adoptsPanel": "De behouden biomarker neemt de groep {panel} over.",
       "blocked": "Er kan niets worden samengevoegd zolang een eenheid niet kan worden omgerekend. Laat die biomarker weg of behoud een andere.",
       "noUndo": "Samenvoegen kan niet ongedaan worden gemaakt.",
       "doneToastOne": "Samengevoegd in {name}, {count} meting verplaatst",

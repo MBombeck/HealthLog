@@ -10569,6 +10569,7 @@
       "convertedOther": "{count} misurazioni, convertite da {unit} a {targetUnit}",
       "refused": "{unit} non può essere convertito in {targetUnit}.",
       "aliasesAdded": "Questi nomi porteranno al biomarcatore mantenuto:",
+      "adoptsPanel": "Il biomarcatore mantenuto assume il panel {panel}.",
       "blocked": "Non si unisce nulla finché un'unità non può essere convertita. Escludi quel biomarcatore o mantienine un altro.",
       "noUndo": "Un'unione non può essere annullata.",
       "doneToastOne": "Unito in {name}, {count} misurazione spostata",

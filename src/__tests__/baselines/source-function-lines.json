@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 344,
-  "total": 111553,
+  "total": 111520,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -132,7 +132,7 @@
     "components/insights/trends-row.tsx :: TrendsRow": 215,
     "components/labs/biomarker-form.tsx :: BiomarkerForm": 229,
     "components/labs/biomarker-manager.tsx :: BiomarkerManager": 242,
-    "components/labs/biomarker-merge-sheet.tsx :: BiomarkerMergeSheet": 250,
+    "components/labs/biomarker-merge-sheet.tsx :: BiomarkerMergeSheet": 239,
     "components/labs/lab-biomarker-chart.tsx :: LabBiomarkerChart": 370,
     "components/labs/lab-biomarker-detail.tsx :: LabBiomarkerDetail": 481,
     "components/labs/lab-form.tsx :: LabForm": 473,
@@ -314,7 +314,7 @@
     "lib/jobs/reminder/medication-reminder-check.ts :: handleReminderCheck": 592,
     "lib/jobs/reminder/medication-reminder-check.ts :: handleReminderCheck > withBackgroundEvent(arg)": 587,
     "lib/jobs/workout-insight-generate.ts :: runWorkoutInsightGenerate": 324,
-    "lib/labs/biomarker-merge.ts :: runMerge": 254,
+    "lib/labs/biomarker-merge.ts :: runMerge": 232,
     "lib/measurements/consolidate-daily-mean.ts :: consolidateDailyMean": 278,
     "lib/measurements/consolidate-legacy-steps.ts :: consolidateLegacySteps": 263,
     "lib/measurements/dense-intraday-retention.ts :: runDenseIntradayRetention": 539,

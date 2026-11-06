@@ -229,6 +229,12 @@ const biomarkerMergeResult = z
     aliasesAdded: z
       .array(z.string())
       .describe("Names that become aliases of the target."),
+    adoptedPanel: z
+      .string()
+      .nullable()
+      .describe(
+        "The panel the target takes over: when the target has none, the first panel a source carries, in the order the sources were given. `null` when the target keeps its own panel or no source has one. Reported on a dry run too, while `target.panel` there is still the stored one.",
+      ),
     mergeId: z.string().nullable().describe("`null` on a dry run."),
   })
   .meta({

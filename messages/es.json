@@ -10569,6 +10569,7 @@
       "convertedOther": "{count} mediciones, convertidas de {unit} a {targetUnit}",
       "refused": "{unit} no se puede convertir a {targetUnit}.",
       "aliasesAdded": "Estos nombres llevarán al biomarcador conservado:",
+      "adoptsPanel": "El biomarcador conservado adopta el panel {panel}.",
       "blocked": "No se combina nada mientras una unidad no se pueda convertir. Deja fuera ese biomarcador o conserva otro.",
       "noUndo": "Una combinación no se puede deshacer.",
       "doneToastOne": "Combinado en {name}, {count} medición movida",

@@ -10569,6 +10569,7 @@
       "convertedOther": "{count} Messungen, umgerechnet von {unit} in {targetUnit}",
       "refused": "{unit} lässt sich nicht in {targetUnit} umrechnen.",
       "aliasesAdded": "Diese Namen führen danach zum behaltenen Biomarker:",
+      "adoptsPanel": "Der behaltene Biomarker übernimmt das Panel {panel}.",
       "blocked": "Solange sich eine Einheit nicht umrechnen lässt, wird nichts zusammengeführt. Lass diesen Biomarker weg oder behalte einen anderen.",
       "noUndo": "Das Zusammenführen lässt sich nicht rückgängig machen.",
       "doneToastOne": "In {name} zusammengeführt, {count} Messung verschoben",

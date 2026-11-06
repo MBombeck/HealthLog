@@ -22,6 +22,8 @@
  *   - one `biomarker_merges` row per source, and the rows that already pointed
  *     at a source now point at the target, so an id merged twice still finds
  *     where it went;
+ *   - a target without a panel takes the first panel a source carries, in
+ *     the order the sources were given (the dry run reports it too);
  *   - the sources are deleted.
  *
  * There is no undo. The ledger keeps what a later split would need to know
@@ -62,6 +64,8 @@ export interface BiomarkerMergeResult {
   movedReadings: number;
   convertedReadings: number;
   aliasesAdded: string[];
+  /** The panel the target takes over from a source, or null (dry run too). */
+  adoptedPanel: string | null;
   mergeId: string | null;
 }
 
@@ -230,47 +234,18 @@ async function runMerge(
   }
   const convertedReadings = convertedLive;
 
-  // The spellings the target gains: each source's name and its aliases, once
-  // each, except what the target's name already is or another marker (not a
-  // source) already answers to.
-  const sourceAliases = await tx.biomarkerAlias.findMany({
-    where: { userId, biomarkerId: { in: [...sourceIds] } },
-    select: { id: true, name: true, nameFolded: true },
+  const { sourceAliases, added } = await planMergeAliases(tx, {
+    userId,
+    target,
+    sources,
   });
-  const otherAliases = await tx.biomarkerAlias.findMany({
-    where: { userId, biomarkerId: { notIn: [...sourceIds] } },
-    select: { biomarkerId: true, nameFolded: true },
-  });
-  const blocked = new Set(
-    otherAliases
-      .filter((a) => a.biomarkerId !== targetId)
-      .map((a) => a.nameFolded),
-  );
-  const targetAliasFolds = new Set(
-    otherAliases
-      .filter((a) => a.biomarkerId === targetId)
-      .map((a) => a.nameFolded),
-  );
-  const otherMarkerFolds = new Set(
-    (
-      await tx.biomarker.findMany({
-        where: { userId, id: { notIn: [targetId, ...sourceIds] } },
-        select: { name: true },
-      })
-    ).map((m) => foldForMatch(m.name)),
-  );
-  const targetFold = foldForMatch(target.name);
-  const added = new Map<string, string>();
-  const consider = (name: string) => {
-    const folded = foldForMatch(name).slice(0, BIOMARKER_ALIAS_MAX_LENGTH);
-    if (!folded || folded === targetFold) return;
-    if (targetAliasFolds.has(folded) || added.has(folded)) return;
-    if (blocked.has(folded) || otherMarkerFolds.has(folded)) return;
-    added.set(folded, name.trim().slice(0, BIOMARKER_ALIAS_MAX_LENGTH));
-  };
-  for (const source of sources) consider(source.name);
-  for (const alias of sourceAliases) consider(alias.name);
   const aliasesAdded = [...added.values()];
+  // A target without a panel takes the first one a source carries, in the
+  // order the sources were given, so the merged marker keeps its category.
+  const adoptedPanel =
+    target.panel === null
+      ? (sources.find((source) => source.panel !== null)?.panel ?? null)
+      : null;
 
   const refused = summaries.filter((s) => s.conversion === "refused");
   if (!dryRun && refused.length > 0) {
@@ -346,6 +321,12 @@ async function runMerge(
       });
       mergeId ??= row.id;
     }
+    if (adoptedPanel !== null) {
+      await tx.biomarker.update({
+        where: { id: targetId },
+        data: { panel: adoptedPanel },
+      });
+    }
     await tx.biomarker.deleteMany({
       where: { userId, id: { in: [...sourceIds] } },
     });
@@ -365,9 +346,70 @@ async function runMerge(
       movedReadings,
       convertedReadings,
       aliasesAdded,
+      adoptedPanel,
       mergeId,
     },
   };
+}
+
+/**
+ * The spellings the target gains: each source's name and its aliases, once
+ * each, except what the target's name already is or another marker (not a
+ * source) already answers to.
+ */
+async function planMergeAliases(
+  tx: Prisma.TransactionClient,
+  input: {
+    userId: string;
+    target: { id: string; name: string };
+    sources: ReadonlyArray<{ id: string; name: string }>;
+  },
+): Promise<{
+  sourceAliases: Array<{ id: string; name: string; nameFolded: string }>;
+  added: Map<string, string>;
+}> {
+  const { userId, target, sources } = input;
+  const targetId = target.id;
+  const sourceIds = sources.map((source) => source.id);
+  const sourceAliases = await tx.biomarkerAlias.findMany({
+    where: { userId, biomarkerId: { in: [...sourceIds] } },
+    select: { id: true, name: true, nameFolded: true },
+  });
+  const otherAliases = await tx.biomarkerAlias.findMany({
+    where: { userId, biomarkerId: { notIn: [...sourceIds] } },
+    select: { biomarkerId: true, nameFolded: true },
+  });
+  const blocked = new Set(
+    otherAliases
+      .filter((a) => a.biomarkerId !== targetId)
+      .map((a) => a.nameFolded),
+  );
+  const targetAliasFolds = new Set(
+    otherAliases
+      .filter((a) => a.biomarkerId === targetId)
+      .map((a) => a.nameFolded),
+  );
+  const otherMarkerFolds = new Set(
+    (
+      await tx.biomarker.findMany({
+        where: { userId, id: { notIn: [targetId, ...sourceIds] } },
+        select: { name: true },
+      })
+    ).map((m) => foldForMatch(m.name)),
+  );
+  const targetFold = foldForMatch(target.name);
+  const added = new Map<string, string>();
+  const consider = (name: string) => {
+    const folded = foldForMatch(name).slice(0, BIOMARKER_ALIAS_MAX_LENGTH);
+    if (!folded || folded === targetFold) return;
+    if (targetAliasFolds.has(folded) || added.has(folded)) return;
+    if (blocked.has(folded) || otherMarkerFolds.has(folded)) return;
+    added.set(folded, name.trim().slice(0, BIOMARKER_ALIAS_MAX_LENGTH));
+  };
+  for (const source of sources) consider(source.name);
+  for (const alias of sourceAliases) consider(alias.name);
+
+  return { sourceAliases, added };
 }
 
 /**

@@ -10569,6 +10569,7 @@
       "convertedOther": "{count} pomiarów, przeliczonych z {unit} na {targetUnit}",
       "refused": "Nie można przeliczyć {unit} na {targetUnit}.",
       "aliasesAdded": "Te nazwy będą prowadzić do zachowanego biomarkera:",
+      "adoptsPanel": "Zachowany biomarker przejmuje panel {panel}.",
       "blocked": "Nic nie zostanie scalone, dopóki jednej jednostki nie da się przeliczyć. Pomiń ten biomarker albo zachowaj inny.",
       "noUndo": "Scalenia nie można cofnąć.",
       "doneToastOne": "Scalono w {name}, przeniesiono {count} pomiar",
