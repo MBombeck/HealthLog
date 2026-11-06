@@ -52,6 +52,7 @@ vi.mock("@/lib/db", () => ({
     trustedDevice: { deleteMany: vi.fn() },
     mcpOAuthConnection: { updateMany: vi.fn() },
     clinicianShareLink: { updateMany: vi.fn() },
+    cycleCalendarFeed: { updateMany: vi.fn() },
     stepUpElevation: { deleteMany: vi.fn() },
     $transaction: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
   },
@@ -582,6 +583,15 @@ describe("destroyAllSessions", () => {
     });
     expect(prisma.clinicianShareLink.updateMany).toHaveBeenCalledWith({
       where: { userId: "user-rotated", revokedAt: null },
+      data: { revokedAt: expect.any(Date) },
+    });
+    // The calendar feeds on the record and the ones this account minted on a
+    // record it manages are both URL credentials, and both end here.
+    expect(prisma.cycleCalendarFeed.updateMany).toHaveBeenCalledWith({
+      where: {
+        OR: [{ userId: "user-rotated" }, { createdById: "user-rotated" }],
+        revokedAt: null,
+      },
       data: { revokedAt: expect.any(Date) },
     });
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);

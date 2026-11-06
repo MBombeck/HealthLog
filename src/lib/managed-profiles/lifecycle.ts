@@ -555,6 +555,25 @@ export async function clearManagedProfileMarker(
         where: { id: profile.id },
         data: { managedProfileAt: null },
       });
+      // #1350 — a calendar feed a Guardian minted on the profile ends with the
+      // handover. The new owner never saw the disclosure that came with it,
+      // and a Guardian who keeps MANAGE afterwards would otherwise keep a
+      // standing link to a grown-up's cycle dates nobody re-agreed to.
+      const revoked = await client.cycleCalendarFeed.updateMany({
+        where: {
+          userId: profile.id,
+          createdById: { not: profile.id },
+          revokedAt: null,
+        },
+        data: { revokedAt: new Date() },
+      });
+      if (revoked.count > 0) {
+        await auditLog("cycle.feed.revoke.handover", {
+          userId: profile.id,
+          details: { revoked: revoked.count },
+          client,
+        });
+      }
     });
   if (tx) {
     await clear(tx);

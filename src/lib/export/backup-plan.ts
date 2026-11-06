@@ -792,6 +792,8 @@ export const NOT_IN_BACKUP_MODELS: Readonly<Record<string, string>> = {
     "Live authorization over another person's health record. A backup is a snapshot of DATA, and rolling data back is a decision the owner's admin makes; rolling an authorization back is a decision nobody makes — the grant an owner revoked on Tuesday would come back alive out of Monday's file, silently, with no notification and nobody aware that access resumed. Every credential-shaped row in this file is excluded for that reason (ApiToken, TrustedDevice, StepUpElevation, UserKnownDevice) and a share link for the closest one (ClinicianShareLink). The cost is stated rather than hidden: after a disaster restore, sharing is OFF and the owner has to invite again and the delegate has to accept again. That is the fail-safe direction — access lost, never access resumed — and re-consenting after a restore is the correct amount of ceremony for handing someone your health record a second time.",
   ClinicianShareLink:
     "A live URL handed to a practice. Restoring it would resurrect a link the account may have revoked deliberately — and it points at a host that may not be this one.",
+  CycleCalendarFeed:
+    "A live calendar-feed URL (#1350): a credential a calendar provider polls, stored only as its hash. Restoring it would bring back a link the owner may have revoked or rotated, and it names a host that may not be this one. After a restore the owner turns the subscription on again and re-adds the new link.",
   ClinicianShareLinkDocument:
     "Names which documents a share link exposed. Without the link it grants nothing, and with it, it would re-expose files through a URL the account may have revoked.",
 
@@ -834,20 +836,3 @@ export const AUTH_MODELS_OUT_OF_SCOPE: readonly string[] = [
   "OidcNativeHandoff",
   "InviteRedemption",
 ];
-
-export type BackupVerdict = "BACKED_UP" | "DERIVED" | "NOT_IN_BACKUP" | "AUTH";
-
-/**
- * The verdict for a model, or `null` when the schema carries a model this file
- * has never ruled on. The guard turns that `null` into a failing test, which
- * is the whole point: a new model gets a decision, not a default.
- */
-export function backupVerdict(model: string): BackupVerdict | null {
-  if ((BACKED_UP_MODELS as readonly string[]).includes(model)) {
-    return "BACKED_UP";
-  }
-  if (model in DERIVED_MODELS) return "DERIVED";
-  if (model in NOT_IN_BACKUP_MODELS) return "NOT_IN_BACKUP";
-  if (AUTH_MODELS_OUT_OF_SCOPE.includes(model)) return "AUTH";
-  return null;
-}
