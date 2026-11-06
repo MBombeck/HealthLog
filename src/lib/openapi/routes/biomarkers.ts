@@ -208,7 +208,7 @@ const biomarkerMergeRequest = biomarkerMergeSchema.meta({
     "Fold `sourceIds` (1..10, unique, without the target) into the marker in the path. `dryRun` (default false) answers the same result and writes nothing; a client shows it before asking to confirm, because a merge cannot be undone.",
 });
 
-const biomarkerMergeResult = z
+export const biomarkerMergeResult = z
   .object({
     dryRun: z.boolean(),
     target: biomarkerRow.describe(
