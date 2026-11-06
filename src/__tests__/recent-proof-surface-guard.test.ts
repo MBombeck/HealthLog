@@ -98,6 +98,17 @@ const TOKEN_ARM_COOKIE_PROOF_ROUTES = [
 ].sort();
 
 /**
+ * Routes that resolve through `requireRecordAuth` and are cookie-only: they
+ * refuse a Bearer caller outright, then take the cookie arm. The cycle
+ * calendar feed's mint and rotate (#1350) hand out a standing URL credential,
+ * so no token may reach them and the session needs a fresh proof.
+ */
+const RECORD_COOKIE_ONLY_PROOF_ROUTES = [
+  "app/api/cycle/feed-subscription/route.ts",
+  "app/api/cycle/feed-subscription/rotate/route.ts",
+].sort();
+
+/**
  * The connection consent. It resolves the session through `getSession`
  * (OAuth answers in its own error format, not the envelope) and asks for the
  * proof on the consent page and again on "allow".
@@ -143,9 +154,28 @@ describe("the recent-proof gate", () => {
       [
         ...COOKIE_PROOF_ROUTES,
         ...TOKEN_ARM_COOKIE_PROOF_ROUTES,
+        ...RECORD_COOKIE_ONLY_PROOF_ROUTES,
         ...CONSENT_PROOF_ROUTES,
       ].sort(),
     );
+  });
+
+  it("a cookie-only record route refuses a token before it asks", () => {
+    for (const rel of RECORD_COOKIE_ONLY_PROOF_ROUTES) {
+      const src = read(rel);
+      expect(importedAs(rel, "requireRecordAuth"), rel).toHaveLength(1);
+      // Every proof call sits after a Bearer refusal in the same handler.
+      const proofs = [...src.matchAll(/await assertRecentCookieProof\(/g)];
+      expect(proofs.length, rel).toBeGreaterThan(0);
+      for (const proof of proofs) {
+        const before = src.slice(0, proof.index);
+        const handlerStart = before.lastIndexOf("apiHandler(");
+        expect(handlerStart, rel).toBeGreaterThan(-1);
+        expect(before.slice(handlerStart), rel).toMatch(
+          /if \(auth\.authMethod !== "cookie"\) return cookieOnlyRefusal\(\);/,
+        );
+      }
+    }
   });
 
   it("a route that resolves either transport asks only on the cookie", () => {

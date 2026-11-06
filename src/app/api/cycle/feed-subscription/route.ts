@@ -1,0 +1,239 @@
+/**
+ * `/api/cycle/feed-subscription` — the record's calendar subscription
+ * (#1350).
+ *
+ *   GET    → the status: token prefix, options, fetch statistics, and what
+ *            the feed serves right now. Never the hash, never the URL.
+ *   POST   → turn it on. Mints an `hlf_` token, stores only its HMAC, and
+ *            returns the URL exactly once.
+ *   PATCH  → change the options.
+ *   DELETE → turn it off. The row is revoked, never deleted.
+ *
+ * A separate namespace from the feed itself (`/api/cycle/feed/<token>`), so
+ * neither the path redactor nor the public-path prefix can ever catch it.
+ *
+ * Auth: cookie session only, through `requireRecordAuth("manage", "cycle")`:
+ * the owner, or a MANAGE delegate whose grant covers the cycle section. A
+ * READ or WRITE delegate is refused. Turning it on also needs a fresh proof,
+ * because the link outlives the session that made it. A delegate's feed is
+ * re-checked against their grant on every fetch, and a handover claim ends it.
+ */
+import { NextRequest } from "next/server";
+
+import {
+  apiHandler,
+  assertRecentCookieProof,
+  requireRecordAuth,
+} from "@/lib/api-handler";
+import { apiError, apiSuccess } from "@/lib/api-response";
+import { parseJsonBody } from "@/lib/api/body";
+import { isApiGloballyEnabled } from "@/lib/app-settings";
+import { auditLog } from "@/lib/auth/audit";
+import { requireCycleEnabled } from "@/lib/cycle/gate";
+import {
+  FEED_MINT_LIMIT_PER_HOUR,
+  FEED_MINT_WINDOW_MS,
+  cookieOnlyRefusal,
+  feedExists,
+  feedLinks,
+  noLiveFeed,
+} from "@/lib/cycle/feed/manage";
+import {
+  FEED_SUMMARY_SELECT,
+  cycleFeedStatus,
+  findLiveFeed,
+  toFeedSummary,
+} from "@/lib/cycle/feed/status";
+import { mintFeedToken } from "@/lib/cycle/feed/token";
+import { prisma } from "@/lib/db";
+import { resolveOrigin } from "@/lib/http/origin";
+import { annotate } from "@/lib/logging/context";
+import { isP2002 } from "@/lib/prisma-errors";
+import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  destroyedDetails,
+  overwriteDetails,
+} from "@/lib/sharing/audit-details";
+import { cycleFeedOptionsPatchSchema } from "@/lib/validations/cycle-feed";
+
+export const GET = apiHandler(async () => {
+  const auth = await requireRecordAuth("manage", "cycle");
+  if (auth.authMethod !== "cookie") return cookieOnlyRefusal();
+  const { user } = auth;
+  annotate({ action: { name: "cycle.feed.status" } });
+
+  const gate = await requireCycleEnabled(user.id, user.gender);
+  if (!gate.enabled) return gate.response;
+
+  return apiSuccess(await cycleFeedStatus(user, gate.profile.goal));
+});
+
+export const POST = apiHandler(async (request: NextRequest) => {
+  const auth = await requireRecordAuth("manage", "cycle");
+  if (auth.authMethod !== "cookie") return cookieOnlyRefusal();
+  const { user, actor } = auth;
+  // The proof is the person at the keyboard, so it is the actor's session.
+  await assertRecentCookieProof(actor, auth.session.id);
+  annotate({ action: { name: "cycle.feed.create" } });
+
+  // The operator's external-access switch covers this credential too.
+  if (!(await isApiGloballyEnabled())) {
+    return apiError("API is globally disabled", 403, {
+      errorCode: "cycle.feed.api_disabled",
+    });
+  }
+  const gate = await requireCycleEnabled(user.id, user.gender);
+  if (!gate.enabled) return gate.response;
+
+  const rl = await checkRateLimit(
+    `cycle-feed:mint:${actor.id}`,
+    FEED_MINT_LIMIT_PER_HOUR,
+    FEED_MINT_WINDOW_MS,
+  );
+  if (!rl.allowed) {
+    return apiError("Too many calendar links, try again later", 429, {
+      errorCode: "cycle.feed.rateLimited",
+    });
+  }
+
+  if (await findLiveFeed(user.id)) return feedExists();
+
+  const minted = mintFeedToken();
+  let created;
+  try {
+    created = await prisma.cycleCalendarFeed.create({
+      data: {
+        userId: user.id,
+        createdById: actor.id,
+        tokenHash: minted.hash,
+        tokenPrefix: minted.prefix,
+      },
+      select: FEED_SUMMARY_SELECT,
+    });
+  } catch (err) {
+    // A second mint racing this one lost to the one-live-feed index.
+    if (isP2002(err)) return feedExists();
+    throw err;
+  }
+
+  await auditLog("cycle.feed.create", {
+    userId: user.id,
+    details: { feedId: created.id, tokenPrefix: created.tokenPrefix },
+  });
+
+  return apiSuccess(
+    {
+      ...feedLinks(resolveOrigin(request), minted.raw),
+      feed: toFeedSummary(created),
+    },
+    201,
+  );
+});
+
+export const PATCH = apiHandler(async (request: NextRequest) => {
+  const auth = await requireRecordAuth("manage", "cycle");
+  if (auth.authMethod !== "cookie") return cookieOnlyRefusal();
+  const { user } = auth;
+  annotate({ action: { name: "cycle.feed.update" } });
+
+  const gate = await requireCycleEnabled(user.id, user.gender);
+  if (!gate.enabled) return gate.response;
+
+  const parsed = await parseJsonBody(request, cycleFeedOptionsPatchSchema, {
+    maxBytes: 4 * 1024,
+  });
+  if (!parsed.ok) return parsed.error;
+  const input = parsed.data;
+
+  // The fertile window is a conception-goal option and nothing else. Refused
+  // here rather than stored and ignored, so a later goal change cannot switch
+  // on something the person never chose under that goal.
+  if (
+    input.includeFertile === true &&
+    gate.profile.goal !== "TRYING_TO_CONCEIVE"
+  ) {
+    return apiError(
+      "The fertile window is only offered when trying to conceive",
+      422,
+      {
+        errorCode: "cycle.feed.fertile_goal",
+      },
+    );
+  }
+
+  const live = await findLiveFeed(user.id);
+  if (!live) return noLiveFeed();
+
+  const data = {
+    ...(input.horizonCycles !== undefined
+      ? { horizonCycles: input.horizonCycles }
+      : {}),
+    ...(input.historyCycles !== undefined
+      ? { historyCycles: input.historyCycles }
+      : {}),
+    ...(input.includeFertile !== undefined
+      ? { includeFertile: input.includeFertile }
+      : {}),
+    ...(input.titleMode !== undefined ? { titleMode: input.titleMode } : {}),
+  };
+  const updated = await prisma.cycleCalendarFeed.update({
+    where: { id: live.id },
+    data,
+    select: FEED_SUMMARY_SELECT,
+  });
+
+  await auditLog("cycle.feed.update", {
+    userId: user.id,
+    details: {
+      feedId: live.id,
+      ...overwriteDetails({
+        before: {
+          horizonCycles: live.horizonCycles,
+          historyCycles: live.historyCycles,
+          includeFertile: live.includeFertile,
+          titleMode: live.titleMode,
+        },
+        after: {
+          horizonCycles: updated.horizonCycles,
+          historyCycles: updated.historyCycles,
+          includeFertile: updated.includeFertile,
+          titleMode: updated.titleMode,
+        },
+      }),
+    },
+  });
+
+  return apiSuccess(await cycleFeedStatus(user, gate.profile.goal));
+});
+
+export const DELETE = apiHandler(async () => {
+  const auth = await requireRecordAuth("manage", "cycle");
+  if (auth.authMethod !== "cookie") return cookieOnlyRefusal();
+  const { user } = auth;
+  annotate({ action: { name: "cycle.feed.revoke" } });
+
+  const live = await findLiveFeed(user.id);
+  if (!live) return noLiveFeed();
+
+  await prisma.cycleCalendarFeed.update({
+    where: { id: live.id },
+    data: { revokedAt: new Date() },
+  });
+  // The link stops working on the provider's next poll. What the provider
+  // already copied is beyond reach, which the settings card says before the
+  // link is ever made.
+  await auditLog("cycle.feed.revoke", {
+    userId: user.id,
+    details: {
+      feedId: live.id,
+      ...destroyedDetails({
+        model: "CycleCalendarFeed",
+        id: live.id,
+        label: live.tokenPrefix,
+        effectiveAt: live.createdAt,
+      }),
+    },
+  });
+
+  return apiSuccess({ revoked: true });
+});

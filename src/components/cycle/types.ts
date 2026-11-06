@@ -114,8 +114,26 @@ export interface CalendarResponse {
    * phase band — render the calm "learning your cycle" state over the grid.
    */
   stillLearning: boolean;
+  /**
+   * #1350 — the next cycles with widening bands, resolved server-side (the
+   * calendar feed serves the same list). Render as given; never extrapolate.
+   */
+  projection: ProjectedCycle[];
+  projectionState: ProjectionState;
   days: CalendarDay[];
   meta: { generatedAt: string };
+}
+
+/** Mirrors `ProjectionState` in `src/lib/cycle/projection.ts`. */
+export type ProjectionState = "OK" | "LEARNING" | "LATE" | "OFF";
+
+/** Mirrors `ProjectedCycle` in `src/lib/cycle/projection.ts`. */
+export interface ProjectedCycle {
+  k: number;
+  start: string;
+  periodLength: number;
+  bandStart: string;
+  bandEnd: string;
 }
 
 export interface MenstrualCycleDTO {

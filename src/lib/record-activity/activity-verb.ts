@@ -65,6 +65,8 @@ export function recordActivityVerbLine(
   if (refused !== null) return refused;
   const medication = medicationManageVerb(t, action, name);
   if (medication !== null) return medication;
+  const cycle = cycleManageVerb(t, action, name);
+  if (cycle !== null) return cycle;
   switch (action) {
     case "measurement.create":
       return t("recordSharing.activityVerb.measurementCreate", { name });
@@ -269,19 +271,6 @@ export function recordActivityVerbLine(
       return t("recordSharing.activityVerb.moodRestore", { name });
     case "mental-health.create":
       return t("recordSharing.activityVerb.mentalHealthCreate", { name });
-
-    case "cycle.cycle.delete":
-      return t("recordSharing.activityVerb.cycleDelete", { name });
-    case "cycle.day-log.upsert":
-      return t("recordSharing.activityVerb.cycleDayLogUpsert", { name });
-    case "cycle.day-log.update":
-      return t("recordSharing.activityVerb.cycleDayLogUpdate", { name });
-    case "cycle.day-log.delete":
-      return t("recordSharing.activityVerb.cycleDayLogDelete", { name });
-    case "cycle.period.boundary":
-      return t("recordSharing.activityVerb.cyclePeriodBoundary", { name });
-    case "cycle.symptom.custom.create":
-      return t("recordSharing.activityVerb.cycleSymptomCreate", { name });
 
     case "nutrient.water.write":
       return t("recordSharing.activityVerb.nutrientWaterWrite", { name });
@@ -492,6 +481,42 @@ function medicationManageVerb(
       return t("recordSharing.activityVerb.medicationIntakeHistoryImport", {
         name,
       });
+    default:
+      return null;
+  }
+}
+
+/**
+ * The cycle section's delegated acts: its log, its period boundaries, its
+ * symptom vocabulary and its calendar subscription (#1350). Null for anything
+ * else, so the caller falls through to the rest of the list.
+ */
+function cycleManageVerb(
+  t: Translator,
+  action: string,
+  name: string,
+): string | null {
+  switch (action) {
+    case "cycle.cycle.delete":
+      return t("recordSharing.activityVerb.cycleDelete", { name });
+    case "cycle.day-log.upsert":
+      return t("recordSharing.activityVerb.cycleDayLogUpsert", { name });
+    case "cycle.day-log.update":
+      return t("recordSharing.activityVerb.cycleDayLogUpdate", { name });
+    case "cycle.day-log.delete":
+      return t("recordSharing.activityVerb.cycleDayLogDelete", { name });
+    case "cycle.period.boundary":
+      return t("recordSharing.activityVerb.cyclePeriodBoundary", { name });
+    case "cycle.symptom.custom.create":
+      return t("recordSharing.activityVerb.cycleSymptomCreate", { name });
+    case "cycle.feed.create":
+      return t("recordSharing.activityVerb.cycleFeedCreate", { name });
+    case "cycle.feed.update":
+      return t("recordSharing.activityVerb.cycleFeedUpdate", { name });
+    case "cycle.feed.rotate":
+      return t("recordSharing.activityVerb.cycleFeedRotate", { name });
+    case "cycle.feed.revoke":
+      return t("recordSharing.activityVerb.cycleFeedRevoke", { name });
     default:
       return null;
   }

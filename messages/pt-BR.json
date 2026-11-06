@@ -10026,7 +10026,70 @@
     "startedPeriodOnDate": "Minha menstruação começou neste dia",
     "endedPeriodOnDate": "Minha menstruação terminou neste dia",
     "startAbsorbed": "Início da menstruação salvo. Seu início em {absorbed} foi mesclado em {date}.",
-    "startRestored": "Salvo. O início em {dates} está de volta."
+    "startRestored": "Salvo. O início em {dates} está de volta.",
+    "feed": {
+      "title": "Assinatura de calendário",
+      "description": "Suas próximas menstruações como eventos de dia inteiro no app de calendário que você já usa.",
+      "disclosure": "Seu provedor de calendário (Google, iCloud, Outlook) guarda essas datas nos servidores dele. Desativar depois não apaga as cópias que ele já tem.",
+      "turnOn": "Ativar assinatura",
+      "error": "Não foi possível alterar a assinatura de calendário. Tente de novo.",
+      "linkHidden": "Um link que começa com {prefix} está ativo. Ele só aparece uma vez, ao ser criado; renove-o para ter um novo.",
+      "linkLabel": "Link da assinatura",
+      "linkOnce": "Só aparece agora. Cole no seu app de calendário ou renove depois para ter um novo.",
+      "copy": "Copiar link",
+      "copied": "Link copiado.",
+      "copyFailed": "Não deu para copiar. Selecione o link e copie manualmente.",
+      "openInCalendar": "Abrir no app de calendário",
+      "notFetched": "Ainda não buscado.",
+      "lastFetched": "Última busca {when} por {fetcher}.",
+      "fetcher": {
+        "GOOGLE": "Google Agenda",
+        "APPLE": "Calendário da Apple",
+        "MICROSOFT": "Outlook",
+        "OTHER": "um app de calendário"
+      },
+      "horizon": "Ciclos à frente",
+      "history": "Ciclos anteriores",
+      "historyNone": "Nenhum",
+      "titles": "Títulos dos eventos",
+      "titleMode": {
+        "DISCREET": "Discreto (●)",
+        "DESCRIPTIVE": "Descritivo"
+      },
+      "fertile": "Janela fértil",
+      "fertileDescription": "Adiciona a janela fértil estimada do próximo ciclo. Uma estimativa, não um método contraceptivo.",
+      "rotate": "Renovar link",
+      "rotateTitle": "Renovar o link?",
+      "rotateBody": "Calendários com o link antigo deixam de ser atualizados. Você recebe um novo link para adicionar no lugar.",
+      "turnOff": "Desativar",
+      "turnOffTitle": "Desativar a assinatura de calendário?",
+      "turnOffBody": "O link para de funcionar. As cópias que seu provedor de calendário já tem ficam lá até você remover o calendário.",
+      "help": {
+        "title": "Como adicionar ao seu calendário",
+        "google": "Google Agenda: Outras agendas, Do URL, depois cole o link. O Google atualiza mais ou menos a cada 12 a 24 horas.",
+        "apple": "Calendário da Apple: no Mac, Arquivo, Nova Assinatura de Calendário; no iPhone, Ajustes, Calendário, Contas, Adicionar Conta, Outra, Adicionar Calendário Assinado.",
+        "outlook": "Outlook: Adicionar calendário, Assinar da Web, depois cole o link. O Outlook atualiza a cada poucas horas."
+      },
+      "ics": {
+        "calendarName": "Ciclo (HealthLog)",
+        "periodEstimate": "Menstruação (estimativa)",
+        "periodLogged": "Menstruação (registrada)",
+        "fertileEstimate": "Janela fértil (estimativa)",
+        "likelyStart": "Início mais provável {date}, {band}",
+        "bandOne": "±{count} dia",
+        "bandFew": "±{count} dias",
+        "bandOther": "±{count} dias"
+      }
+    },
+    "projection": {
+      "title": "Ciclos seguintes",
+      "around": "Por volta de {date}",
+      "state": {
+        "LEARNING": "Até haver 3 ciclos registrados, só a próxima menstruação é incluída.",
+        "LATE": "Sem previsão enquanto esta menstruação estiver mais atrasada que o esperado; ela volta assim que você a registrar.",
+        "OFF": "As previsões estão desativadas; só ciclos anteriores são incluídos, se escolhidos."
+      }
+    }
   },
   "cycleReminders": {
     "periodSoonTitle": "Menstruação provavelmente em breve",
@@ -13182,7 +13245,11 @@
       "biomarkerMerge": "{name} mesclou biomarcadores",
       "medicationIngredientsUpdate": "{name} alterou o que um suplemento contém",
       "auditCCreate": "{name} respondeu às perguntas AUDIT-C",
-      "auditCDelete": "{name} removeu uma entrada AUDIT-C"
+      "auditCDelete": "{name} removeu uma entrada AUDIT-C",
+      "cycleFeedCreate": "{name} ativou a assinatura de calendário",
+      "cycleFeedUpdate": "{name} alterou a assinatura de calendário",
+      "cycleFeedRotate": "{name} renovou o link da assinatura de calendário",
+      "cycleFeedRevoke": "{name} desativou a assinatura de calendário"
     },
     "section": {
       "measurements": {

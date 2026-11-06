@@ -2892,7 +2892,7 @@
     "lib/withings/sync.ts": 6,
     "lib/withings/webhook-handler.ts": 3,
     "lib/workouts/list-read.ts": 1,
-    "proxy.ts": 29,
+    "proxy.ts": 27,
     "types/analytics.ts": 8,
     "types/backups.ts": 1
   }

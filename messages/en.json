@@ -10026,7 +10026,70 @@
     "startedPeriodOnDate": "My period started this day",
     "endedPeriodOnDate": "My period ended this day",
     "startAbsorbed": "Period start saved. Your start on {absorbed} was merged into {date}.",
-    "startRestored": "Saved. The start on {dates} is back."
+    "startRestored": "Saved. The start on {dates} is back.",
+    "feed": {
+      "title": "Calendar subscription",
+      "description": "Your next periods as all-day events in the calendar app you already use.",
+      "disclosure": "Your calendar provider (Google, iCloud, Outlook) stores these dates on its servers. Turning this off later does not remove copies it already holds.",
+      "turnOn": "Turn on subscription",
+      "error": "The calendar subscription could not be changed. Try again.",
+      "linkHidden": "A link starting with {prefix} is active. It is shown only once, when it is made; rotate it to get a new one.",
+      "linkLabel": "Subscription link",
+      "linkOnce": "Shown only now. Paste it into your calendar app, or rotate it later for a new one.",
+      "copy": "Copy link",
+      "copied": "Link copied.",
+      "copyFailed": "Copying did not work. Select the link and copy it by hand.",
+      "openInCalendar": "Open in calendar app",
+      "notFetched": "Not fetched yet.",
+      "lastFetched": "Last fetched {when} by {fetcher}.",
+      "fetcher": {
+        "GOOGLE": "Google Calendar",
+        "APPLE": "Apple Calendar",
+        "MICROSOFT": "Outlook",
+        "OTHER": "a calendar app"
+      },
+      "horizon": "Cycles ahead",
+      "history": "Past cycles",
+      "historyNone": "None",
+      "titles": "Event titles",
+      "titleMode": {
+        "DISCREET": "Discreet (●)",
+        "DESCRIPTIVE": "Descriptive"
+      },
+      "fertile": "Fertile window",
+      "fertileDescription": "Adds the estimated fertile window of the next cycle. An estimate, not a contraceptive method.",
+      "rotate": "Rotate link",
+      "rotateTitle": "Rotate the link?",
+      "rotateBody": "Calendars using the old link stop updating. You get a new link to add instead.",
+      "turnOff": "Turn off",
+      "turnOffTitle": "Turn off the calendar subscription?",
+      "turnOffBody": "The link stops working. Copies your calendar provider already holds stay until you remove the calendar there.",
+      "help": {
+        "title": "Adding it to your calendar",
+        "google": "Google Calendar: Other calendars, From URL, then paste the link. Google refreshes about every 12 to 24 hours.",
+        "apple": "Apple Calendar: on a Mac, File, New Calendar Subscription; on iPhone, Settings, Calendar, Accounts, Add Account, Other, Add Subscribed Calendar.",
+        "outlook": "Outlook: Add calendar, Subscribe from web, then paste the link. Outlook refreshes every few hours."
+      },
+      "ics": {
+        "calendarName": "Cycle (HealthLog)",
+        "periodEstimate": "Period (estimate)",
+        "periodLogged": "Period (logged)",
+        "fertileEstimate": "Fertile window (estimate)",
+        "likelyStart": "Most likely start {date}, {band}",
+        "bandOne": "±{count} day",
+        "bandFew": "±{count} days",
+        "bandOther": "±{count} days"
+      }
+    },
+    "projection": {
+      "title": "Later cycles",
+      "around": "Around {date}",
+      "state": {
+        "LEARNING": "Until 3 cycles are logged, only the next period is included.",
+        "LATE": "No forecast while this period is later than expected; it returns once you log it.",
+        "OFF": "Forecasts are turned off; only past cycles are included, if chosen."
+      }
+    }
   },
   "cycleReminders": {
     "periodSoonTitle": "Period likely soon",
@@ -13182,7 +13245,11 @@
       "biomarkerMerge": "{name} merged biomarkers",
       "medicationIngredientsUpdate": "{name} changed what a supplement contains",
       "auditCCreate": "{name} answered the AUDIT-C questions",
-      "auditCDelete": "{name} removed an AUDIT-C entry"
+      "auditCDelete": "{name} removed an AUDIT-C entry",
+      "cycleFeedCreate": "{name} turned on the calendar subscription",
+      "cycleFeedUpdate": "{name} changed the calendar subscription",
+      "cycleFeedRotate": "{name} replaced the calendar subscription link",
+      "cycleFeedRevoke": "{name} turned off the calendar subscription"
     },
     "section": {
       "measurements": {

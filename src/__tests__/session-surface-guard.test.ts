@@ -294,6 +294,14 @@ describe("S2 — the URL-token authentication set is frozen", () => {
     // action-bound, short-lived token in the path is the credential. Rate
     // limited before verification, single-use through the mood entry's unique
     // key, and scrubbed from logs by `PATH_SECRET_PATHS`.
+    // #1350 — the cycle calendar feed. A calendar provider polls it from its
+    // own servers with no session, so the `hlf_` path segment is the
+    // credential. Rate limited before the lookup, HMAC-hashed at rest, every
+    // gate (account, operator switch, cycle module, a carrier's MANAGE grant)
+    // re-read per fetch behind one 404, dates-only content, and scrubbed from
+    // logs by `PATH_SECRET_PATHS`.
+    "app/api/cycle/feed/[token]/route.ts":
+      "calendar provider polls without a session; the hlf_ path token is the credential",
     "app/api/notifications/action/[token]/route.ts":
       "signed single-use quick-answer token from a notification action",
   };
@@ -329,6 +337,7 @@ describe("S2 — the URL-token authentication set is frozen", () => {
     expect(bySegment.length).toBeGreaterThan(0);
     expect(bySegment).toEqual([
       "app/api/c/[token]/unlock/route.ts",
+      "app/api/cycle/feed/[token]/route.ts",
       "app/api/notifications/action/[token]/route.ts",
       "app/api/whoop/webhook/[token]/route.ts",
       "app/api/withings/webhook/[token]/route.ts",

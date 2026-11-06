@@ -42,7 +42,7 @@
     "lib/dashboard-layout.ts": 976,
     "lib/dashboard/snapshot.ts": 1550,
     "lib/day/records.ts": 1174,
-    "lib/export/backup-plan.ts": 853,
+    "lib/export/backup-plan.ts": 838,
     "lib/export/coach-backup.ts": 1070,
     "lib/export/profile-backup.ts": 1019,
     "lib/fitbit/client.ts": 1262,
@@ -86,6 +86,6 @@
     "lib/validations/inbound-documents.ts": 1018,
     "lib/withings/sync-sleep.ts": 884,
     "lib/withings/sync.ts": 933,
-    "proxy.ts": 865
+    "proxy.ts": 846
   }
 }

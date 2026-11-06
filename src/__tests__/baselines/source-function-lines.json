@@ -12,7 +12,6 @@
     "app/api/auth/oidc/callback/route.ts :: apiHandler(arg)": 258,
     "app/api/auth/register/route.ts :: apiHandler(arg)": 266,
     "app/api/coach/about-me/route.ts :: apiHandler(arg) #2": 309,
-    "app/api/cycle/calendar/route.ts :: apiHandler(arg)": 230,
     "app/api/cycle/day-logs/bulk/route.ts :: postBulk": 213,
     "app/api/cycle/insights/route.ts :: apiHandler(arg)": 226,
     "app/api/devices/route.ts :: apiHandler(arg)": 226,
@@ -81,7 +80,7 @@
     "components/cycle/bbt-chart.tsx :: BbtChart": 244,
     "components/cycle/cycle-calendar.tsx :: CycleCalendar": 292,
     "components/cycle/cycle-settings.tsx :: CycleSettings": 228,
-    "components/cycle/cycle-view.tsx :: CycleView": 408,
+    "components/cycle/cycle-view.tsx :: CycleView": 407,
     "components/cycle/log-day-sheet.tsx :: LogDaySheet": 753,
     "components/daily/today-hero.tsx :: TodayHero": 488,
     "components/dashboard/dashboard-header.tsx :: DashboardHeader": 215,
@@ -242,7 +241,7 @@
     "hooks/use-sheet-drag.ts :: createSheetDrag": 312,
     "lib/activity/calendar-math.ts :: buildActivityCalendar": 204,
     "lib/ai/anthropic-client.ts :: generateCompletion": 294,
-    "lib/ai/coach/cycle-snapshot.ts :: buildCycleSnapshotBlock": 218,
+    "lib/ai/coach/cycle-snapshot.ts :: buildCycleSnapshotBlock": 202,
     "lib/ai/coach/glp1-snapshot.ts :: buildGlp1SnapshotBlock": 218,
     "lib/ai/coach/snapshot.ts :: buildCoachSnapshotImpl": 880,
     "lib/ai/coach/tools/loop.ts :: runCoachToolLoop": 438,
@@ -335,7 +334,7 @@
     "lib/notifications/senders/web-push.ts :: sendViaWebPush": 268,
     "lib/personal-records/pr-detection-worker.ts :: detectPersonalRecordsForUser": 239,
     "lib/personal-records/pr-direction.ts :: getPRDirection": 208,
-    "lib/record-activity/activity-verb.ts :: recordActivityVerbLine": 272,
+    "lib/record-activity/activity-verb.ts :: recordActivityVerbLine": 261,
     "lib/strava/sync.ts :: runStravaSync": 219,
     "lib/support/report.ts :: collectSupportReportFacts": 332,
     "lib/targets/build-response.ts :: buildTargetsResponse": 330,
@@ -346,6 +345,6 @@
     "lib/withings/sync-ecg.ts :: syncUserEcg": 202,
     "lib/withings/sync-sleep.ts :: syncUserSleep": 414,
     "lib/withings/sync.ts :: syncUserMeasurements": 337,
-    "proxy.ts :: proxy": 493
+    "proxy.ts :: proxy": 471
   }
 }

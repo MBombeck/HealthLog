@@ -10026,7 +10026,70 @@
     "startedPeriodOnDate": "Le mestruazioni sono iniziate questo giorno",
     "endedPeriodOnDate": "Le mestruazioni sono finite questo giorno",
     "startAbsorbed": "Inizio delle mestruazioni salvato. Il tuo inizio del {absorbed} è stato unito a quello del {date}.",
-    "startRestored": "Salvato. L’inizio del {dates} è di nuovo presente."
+    "startRestored": "Salvato. L’inizio del {dates} è di nuovo presente.",
+    "feed": {
+      "title": "Abbonamento al calendario",
+      "description": "Le tue prossime mestruazioni come eventi di un'intera giornata nell'app di calendario che usi già.",
+      "disclosure": "Il tuo fornitore di calendario (Google, iCloud, Outlook) conserva queste date sui suoi server. Disattivare l'abbonamento in seguito non elimina le copie che ha già.",
+      "turnOn": "Attiva abbonamento",
+      "error": "Non è stato possibile modificare l'abbonamento al calendario. Riprova.",
+      "linkHidden": "È attivo un link che inizia con {prefix}. Viene mostrato una sola volta, quando viene creato; rinnovalo per averne uno nuovo.",
+      "linkLabel": "Link di abbonamento",
+      "linkOnce": "Visibile solo adesso. Incollalo nella tua app di calendario, oppure rinnovalo più tardi per averne uno nuovo.",
+      "copy": "Copia link",
+      "copied": "Link copiato.",
+      "copyFailed": "La copia non è riuscita. Seleziona il link e copialo a mano.",
+      "openInCalendar": "Apri nell'app di calendario",
+      "notFetched": "Non ancora scaricato.",
+      "lastFetched": "Ultimo scaricamento {when} da {fetcher}.",
+      "fetcher": {
+        "GOOGLE": "Google Calendar",
+        "APPLE": "Calendario di Apple",
+        "MICROSOFT": "Outlook",
+        "OTHER": "un'app di calendario"
+      },
+      "horizon": "Cicli in avanti",
+      "history": "Cicli passati",
+      "historyNone": "Nessuno",
+      "titles": "Titoli degli eventi",
+      "titleMode": {
+        "DISCREET": "Discreto (●)",
+        "DESCRIPTIVE": "Descrittivo"
+      },
+      "fertile": "Finestra fertile",
+      "fertileDescription": "Aggiunge la finestra fertile stimata del prossimo ciclo. Una stima, non un metodo contraccettivo.",
+      "rotate": "Rinnova link",
+      "rotateTitle": "Rinnovare il link?",
+      "rotateBody": "I calendari che usano il vecchio link smettono di aggiornarsi. Ricevi un nuovo link da aggiungere al suo posto.",
+      "turnOff": "Disattiva",
+      "turnOffTitle": "Disattivare l'abbonamento al calendario?",
+      "turnOffBody": "Il link smette di funzionare. Le copie che il tuo fornitore di calendario ha già restano finché non rimuovi lì il calendario.",
+      "help": {
+        "title": "Aggiungerlo al calendario",
+        "google": "Google Calendar: Altri calendari, Da URL, poi incolla il link. Google aggiorna circa ogni 12-24 ore.",
+        "apple": "Calendario di Apple: sul Mac, File, Nuovo abbonamento a calendario; su iPhone, Impostazioni, Calendario, Account, Aggiungi account, Altro, Aggiungi calendario sottoscritto.",
+        "outlook": "Outlook: Aggiungi calendario, Sottoscrivi dal Web, poi incolla il link. Outlook aggiorna ogni poche ore."
+      },
+      "ics": {
+        "calendarName": "Ciclo (HealthLog)",
+        "periodEstimate": "Mestruazioni (stima)",
+        "periodLogged": "Mestruazioni (registrate)",
+        "fertileEstimate": "Finestra fertile (stima)",
+        "likelyStart": "Inizio più probabile {date}, {band}",
+        "bandOne": "±{count} giorno",
+        "bandFew": "±{count} giorni",
+        "bandOther": "±{count} giorni"
+      }
+    },
+    "projection": {
+      "title": "Cicli successivi",
+      "around": "Intorno al {date}",
+      "state": {
+        "LEARNING": "Finché non sono registrati 3 cicli, è incluso solo il prossimo ciclo mestruale.",
+        "LATE": "Nessuna previsione finché queste mestruazioni sono più in ritardo del previsto; torna appena le registri.",
+        "OFF": "Le previsioni sono disattivate; sono inclusi solo i cicli passati, se li hai scelti."
+      }
+    }
   },
   "cycleReminders": {
     "periodSoonTitle": "Ciclo probabilmente in arrivo",
@@ -13182,7 +13245,11 @@
       "biomarkerMerge": "{name} ha unito dei biomarcatori",
       "medicationIngredientsUpdate": "{name} ha modificato la composizione di un integratore",
       "auditCCreate": "{name} ha compilato il questionario AUDIT-C",
-      "auditCDelete": "{name} ha eliminato una voce AUDIT-C"
+      "auditCDelete": "{name} ha eliminato una voce AUDIT-C",
+      "cycleFeedCreate": "{name} ha attivato l'abbonamento al calendario",
+      "cycleFeedUpdate": "{name} ha modificato l'abbonamento al calendario",
+      "cycleFeedRotate": "{name} ha rinnovato il link dell'abbonamento al calendario",
+      "cycleFeedRevoke": "{name} ha disattivato l'abbonamento al calendario"
     },
     "section": {
       "measurements": {

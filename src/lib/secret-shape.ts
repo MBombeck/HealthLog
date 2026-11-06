@@ -5,7 +5,8 @@
  *
  *   `hlk_` access tokens, `hlr_` refresh tokens, `hls_` clinician share-link
  *   tokens and session secrets, `hlv_` registration invite tokens, `hlp_`
- *   managed-profile handover tokens (v1.42), `hle_`
+ *   managed-profile handover tokens (v1.42), `hlf_` cycle calendar-feed
+ *   tokens (#1350), `hle_`
  *   elevation tokens, `hlh_` native sign-in handoff codes, and the MCP OAuth
  *   artifacts `hlac_` (authorization code), `hlrt_` (refresh token) and `hlc_`
  *   (client id);
@@ -18,7 +19,7 @@
  * that knows the secrets in play must also refuse text containing them.
  */
 const SECRET_SHAPED =
-  /(?:\b(?:hlk_|hlr_|hls_|hlv_|hlp_|hle_|hlh_|hlac_|hlrt_|hlc_)[A-Za-z0-9_-]+|\bsk-(?:ant-)?[A-Za-z0-9_-]{8,})/;
+  /(?:\b(?:hlk_|hlr_|hls_|hlv_|hlp_|hlf_|hle_|hlh_|hlac_|hlrt_|hlc_)[A-Za-z0-9_-]+|\bsk-(?:ant-)?[A-Za-z0-9_-]{8,})/;
 
 export function looksSecretShaped(text: string): boolean {
   return SECRET_SHAPED.test(text);

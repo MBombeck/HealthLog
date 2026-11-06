@@ -41,6 +41,7 @@ import {
   listEnvelope,
 } from "./shared";
 import { isoDateTime } from "@/lib/validations/datetime";
+import { projectedCycleDto, projectionStateEnum } from "./cycle-feed";
 
 // ── Cycle tracking (v1.15.0) ─────────────────────────────────────────
 // The `/api/cycle` capture / calendar / history / settings surface +
@@ -316,6 +317,12 @@ const cycleCalendarResponse = z.object({
   // population prior) — the client shows a calm "learning your cycle" state.
   // Additive + back-compatible.
   stillLearning: z.boolean(),
+  // #1350 — the next cycles with widening bands, from the same engine run and
+  // the same projection the calendar feed serves. Additive. Fertile fields are
+  // never here; they stay in `prediction.*` behind the goal and cold-start
+  // gates.
+  projection: z.array(projectedCycleDto),
+  projectionState: projectionStateEnum,
   days: z.array(cycleCalendarDayDto),
   meta: z.object({ generatedAt: isoDateTime() }),
 });

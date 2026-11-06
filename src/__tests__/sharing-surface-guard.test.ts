@@ -1403,6 +1403,14 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "cycle",
     why: "Setting a period boundary, which re-anchors the neighbouring cycles. Reached only through this module's MANAGE arm; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
   },
+  "app/api/cycle/feed-subscription/route.ts": {
+    domain: "cycle",
+    why: "The record's calendar subscription (#1350): its status, turning it on, its options and turning it off. Reached only through this module's MANAGE arm, and only over a cookie; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
+  },
+  "app/api/cycle/feed-subscription/rotate/route.ts": {
+    domain: "cycle",
+    why: "A new link for the record's calendar subscription, the old one revoked in the same transaction (#1350). Reached only through this module's MANAGE arm, and only over a cookie; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
+  },
   "app/api/medications/[id]/schedule-revisions/[revisionId]/route.ts": {
     domain: "medications",
     why: "Editing and deleting an era; the delete is hard, so C3 carries its dates and dose. Reached only through this module's MANAGE arm; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
@@ -1879,6 +1887,16 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     conditions: ["C4"],
     why: "Setting a period boundary, which re-anchors the neighbouring cycles. C4 on the dates it moves.",
   },
+  "app/api/cycle/feed-subscription/route.ts": {
+    domain: "cycle",
+    conditions: ["C1", "C3", "C4"],
+    why: "The record's calendar subscription (#1350), the one credential a MANAGE delegate may mint. It extends no reach: the feed serves dates the grant already lets the manager read, and every fetch re-reads the manager's live MANAGE grant over the cycle section, so revoking or narrowing the grant ends the link on the provider's next poll, and a handover claim revokes it outright. Cookie-only with a fresh proof on the mint, so a Bearer token cannot leave one behind. C1 on the mint bucket, C3 on the revoke (the credential is unusable after it), C4 on the options.",
+  },
+  "app/api/cycle/feed-subscription/rotate/route.ts": {
+    domain: "cycle",
+    conditions: ["C1"],
+    why: "Replacing the subscription's link in one transaction (#1350). Same argument as the subscription route: no reach beyond the grant, re-checked per fetch, cookie-only with a fresh proof. C1 on the shared mint bucket.",
+  },
   "app/api/cycle/symptoms/custom/route.ts": {
     domain: "cycle",
     conditions: ["C1"],
@@ -2295,8 +2313,12 @@ const ACTOR_ROUTES: Record<string, string> = {
  * Ending a running course (#1280) joins the record list and the
  * manage literal: it was refused under a switch while the medication's PUT,
  * which used to carry the end, admitted a manager. 272 -> 274.
+ *
+ * The cycle calendar subscription (#1350) and its rotate join the record list
+ * and the manage literal: the owner and a MANAGE delegate over the cycle
+ * section may turn it on, change it, rotate it and turn it off. 276 -> 280.
  */
-const FROZEN_ENTRY_COUNT = 276;
+const FROZEN_ENTRY_COUNT = 280;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -3074,7 +3096,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(93);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(97);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>

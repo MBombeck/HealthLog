@@ -280,7 +280,7 @@ const ROUTE_IMPORTS = import.meta.glob<Record<string, unknown>>(
 
 describe("the complete MANAGE handler matrix", () => {
   it("starts with a non-empty, exact handler inventory", () => {
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(93);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(97);
   });
 });
 
@@ -2678,6 +2678,75 @@ proveManageRoute("POST /api/cycle/symptoms/custom", {
     })) === 1,
 });
 
+/** A live calendar feed on the record, minted as the owner would (#1350). */
+async function makeCycleFeed(ownerId: string, prefix = "hlf_matr") {
+  await enableCycle(ownerId);
+  return getPrismaClient().cycleCalendarFeed.create({
+    data: {
+      userId: ownerId,
+      createdById: ownerId,
+      tokenHash: `matrix-${ownerId}-${prefix}`,
+      tokenPrefix: prefix,
+    },
+  });
+}
+
+async function liveCycleFeeds(ownerId: string) {
+  return getPrismaClient().cycleCalendarFeed.findMany({
+    where: { userId: ownerId, revokedAt: null },
+  });
+}
+
+proveManageRoute("POST /api/cycle/feed-subscription", {
+  route: "/api/cycle/feed-subscription",
+  prepare: async (ownerId) => ({ ownerId: await enableCycle(ownerId) }),
+  ok: 201,
+  auditAction: "cycle.feed.create",
+  applied: async ({ ownerId }) => (await liveCycleFeeds(ownerId)).length === 1,
+});
+
+proveManageRoute("PATCH /api/cycle/feed-subscription", {
+  route: "/api/cycle/feed-subscription",
+  action: "PATCH",
+  prepare: async (ownerId) => {
+    await makeCycleFeed(ownerId);
+    return { ownerId };
+  },
+  body: () => ({ horizonCycles: 6, titleMode: "DESCRIPTIVE" }),
+  ok: 200,
+  auditAction: "cycle.feed.update",
+  applied: async ({ ownerId }) => {
+    const [feed] = await liveCycleFeeds(ownerId);
+    return feed?.horizonCycles === 6 && feed.titleMode === "DESCRIPTIVE";
+  },
+});
+
+proveManageRoute("DELETE /api/cycle/feed-subscription", {
+  route: "/api/cycle/feed-subscription",
+  action: "DELETE",
+  prepare: async (ownerId) => {
+    await makeCycleFeed(ownerId);
+    return { ownerId };
+  },
+  ok: 200,
+  auditAction: "cycle.feed.revoke",
+  applied: async ({ ownerId }) => (await liveCycleFeeds(ownerId)).length === 0,
+});
+
+proveManageRoute("POST /api/cycle/feed-subscription/rotate", {
+  route: "/api/cycle/feed-subscription/rotate",
+  prepare: async (ownerId) => ({
+    ownerId,
+    previous: (await makeCycleFeed(ownerId)).id,
+  }),
+  ok: 201,
+  auditAction: "cycle.feed.rotate",
+  applied: async ({ ownerId, previous }) => {
+    const live = await liveCycleFeeds(ownerId);
+    return live.length === 1 && live[0].id !== previous;
+  },
+});
+
 proveManageRoute("POST /api/medications/categories", {
   route: "/api/medications/categories",
   prepare: async (ownerId) => ({ ownerId }),
@@ -3020,7 +3089,7 @@ describe("the conditions the admissions were granted on", () => {
 describe("the complete MANAGE handler matrix", () => {
   it("registers one strict actor-and-effect driver for every admission", () => {
     const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-    expect(STRICT_DRIVER_KEYS.size).toBe(93);
+    expect(STRICT_DRIVER_KEYS.size).toBe(97);
     expect([...STRICT_DRIVER_KEYS].sort()).toEqual(expected);
   });
 });
@@ -3032,6 +3101,6 @@ describe("the complete MANAGE handler matrix", () => {
 afterAll(() => {
   if (EFFECT_CASES_STARTED.size !== STRICT_DRIVER_KEYS.size) return;
   const expected = ADMITTED_MUTATING_HANDLERS.map(matrixKey).sort();
-  expect(REAL_EFFECT_KEYS.size).toBe(93);
+  expect(REAL_EFFECT_KEYS.size).toBe(97);
   expect([...REAL_EFFECT_KEYS].sort()).toEqual(expected);
 });

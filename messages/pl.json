@@ -10026,7 +10026,70 @@
     "startedPeriodOnDate": "Miesiączka zaczęła się tego dnia",
     "endedPeriodOnDate": "Miesiączka skończyła się tego dnia",
     "startAbsorbed": "Początek miesiączki zapisany. Twój początek z {absorbed} został połączony z {date}.",
-    "startRestored": "Zapisano. Początek z {dates} jest z powrotem."
+    "startRestored": "Zapisano. Początek z {dates} jest z powrotem.",
+    "feed": {
+      "title": "Subskrypcja kalendarza",
+      "description": "Twoje kolejne miesiączki jako wydarzenia całodniowe w aplikacji kalendarza, której już używasz.",
+      "disclosure": "Twój dostawca kalendarza (Google, iCloud, Outlook) przechowuje te daty na swoich serwerach. Późniejsze wyłączenie nie usuwa kopii, które już ma.",
+      "turnOn": "Włącz subskrypcję",
+      "error": "Nie udało się zmienić subskrypcji kalendarza. Spróbuj ponownie.",
+      "linkHidden": "Aktywny jest link zaczynający się od {prefix}. Jest pokazywany tylko raz, przy utworzeniu; odnów go, aby dostać nowy.",
+      "linkLabel": "Link subskrypcji",
+      "linkOnce": "Widoczny tylko teraz. Wklej go do aplikacji kalendarza albo odnów go później, aby dostać nowy.",
+      "copy": "Kopiuj link",
+      "copied": "Link skopiowany.",
+      "copyFailed": "Kopiowanie nie zadziałało. Zaznacz link i skopiuj go ręcznie.",
+      "openInCalendar": "Otwórz w aplikacji kalendarza",
+      "notFetched": "Jeszcze nie pobrano.",
+      "lastFetched": "Ostatnio pobrane {when} przez: {fetcher}.",
+      "fetcher": {
+        "GOOGLE": "Kalendarz Google",
+        "APPLE": "Kalendarz Apple",
+        "MICROSOFT": "Outlook",
+        "OTHER": "aplikacja kalendarza"
+      },
+      "horizon": "Cykle do przodu",
+      "history": "Poprzednie cykle",
+      "historyNone": "Brak",
+      "titles": "Tytuły wydarzeń",
+      "titleMode": {
+        "DISCREET": "Dyskretne (●)",
+        "DESCRIPTIVE": "Opisowe"
+      },
+      "fertile": "Okno płodne",
+      "fertileDescription": "Dodaje szacowane okno płodne następnego cyklu. To szacunek, nie metoda antykoncepcji.",
+      "rotate": "Odnów link",
+      "rotateTitle": "Odnowić link?",
+      "rotateBody": "Kalendarze ze starym linkiem przestaną się aktualizować. Dostaniesz nowy link, który dodasz zamiast niego.",
+      "turnOff": "Wyłącz",
+      "turnOffTitle": "Wyłączyć subskrypcję kalendarza?",
+      "turnOffBody": "Link przestanie działać. Kopie, które ma już Twój dostawca kalendarza, zostaną, dopóki nie usuniesz tam kalendarza.",
+      "help": {
+        "title": "Jak dodać go do kalendarza",
+        "google": "Kalendarz Google: Inne kalendarze, Z adresu URL, potem wklej link. Google odświeża mniej więcej co 12 do 24 godzin.",
+        "apple": "Kalendarz Apple: na Macu Plik, Nowa subskrypcja kalendarza; na iPhonie Ustawienia, Kalendarz, Konta, Dodaj konto, Inne, Dodaj subskrybowany kalendarz.",
+        "outlook": "Outlook: Dodaj kalendarz, Subskrybuj z sieci Web, potem wklej link. Outlook odświeża co kilka godzin."
+      },
+      "ics": {
+        "calendarName": "Cykl (HealthLog)",
+        "periodEstimate": "Miesiączka (szacunek)",
+        "periodLogged": "Miesiączka (zapisana)",
+        "fertileEstimate": "Okno płodne (szacunek)",
+        "likelyStart": "Najbardziej prawdopodobny początek {date}, {band}",
+        "bandOne": "±{count} dzień",
+        "bandFew": "±{count} dni",
+        "bandOther": "±{count} dni"
+      }
+    },
+    "projection": {
+      "title": "Kolejne cykle",
+      "around": "Około {date}",
+      "state": {
+        "LEARNING": "Dopóki nie zapiszesz 3 cykli, uwzględniana jest tylko najbliższa miesiączka.",
+        "LATE": "Brak prognozy, dopóki ta miesiączka spóźnia się bardziej niż oczekiwano; wróci, gdy ją zapiszesz.",
+        "OFF": "Prognozy są wyłączone; uwzględniane są tylko poprzednie cykle, jeśli je wybrano."
+      }
+    }
   },
   "cycleReminders": {
     "periodSoonTitle": "Miesiączka prawdopodobnie wkrótce",
@@ -13182,7 +13245,11 @@
       "biomarkerMerge": "{name} scalił biomarkery",
       "medicationIngredientsUpdate": "{name} zmienił skład suplementu",
       "auditCCreate": "{name} wypełnił kwestionariusz AUDIT-C",
-      "auditCDelete": "{name} usunął wpis AUDIT-C"
+      "auditCDelete": "{name} usunął wpis AUDIT-C",
+      "cycleFeedCreate": "{name} włączył subskrypcję kalendarza",
+      "cycleFeedUpdate": "{name} zmienił subskrypcję kalendarza",
+      "cycleFeedRotate": "{name} odnowił link subskrypcji kalendarza",
+      "cycleFeedRevoke": "{name} wyłączył subskrypcję kalendarza"
     },
     "section": {
       "measurements": {

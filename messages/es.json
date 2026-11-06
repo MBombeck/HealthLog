@@ -10026,7 +10026,70 @@
     "startedPeriodOnDate": "Mi periodo empezó este día",
     "endedPeriodOnDate": "Mi periodo terminó este día",
     "startAbsorbed": "Inicio del periodo guardado. Tu inicio del {absorbed} se ha unido al del {date}.",
-    "startRestored": "Guardado. El inicio del {dates} vuelve a estar."
+    "startRestored": "Guardado. El inicio del {dates} vuelve a estar.",
+    "feed": {
+      "title": "Suscripción de calendario",
+      "description": "Tus próximos periodos como eventos de todo el día en la app de calendario que ya usas.",
+      "disclosure": "Tu proveedor de calendario (Google, iCloud, Outlook) guarda estas fechas en sus servidores. Desactivarlo más tarde no borra las copias que ya tiene.",
+      "turnOn": "Activar suscripción",
+      "error": "No se pudo cambiar la suscripción de calendario. Inténtalo de nuevo.",
+      "linkHidden": "Hay activo un enlace que empieza por {prefix}. Solo se muestra una vez, al crearlo; renuévalo para obtener uno nuevo.",
+      "linkLabel": "Enlace de suscripción",
+      "linkOnce": "Solo se muestra ahora. Pégalo en tu app de calendario o renuévalo más tarde para obtener uno nuevo.",
+      "copy": "Copiar enlace",
+      "copied": "Enlace copiado.",
+      "copyFailed": "No se pudo copiar. Selecciona el enlace y cópialo a mano.",
+      "openInCalendar": "Abrir en la app de calendario",
+      "notFetched": "Aún no se ha consultado.",
+      "lastFetched": "Última consulta {when} por {fetcher}.",
+      "fetcher": {
+        "GOOGLE": "Google Calendar",
+        "APPLE": "Calendario de Apple",
+        "MICROSOFT": "Outlook",
+        "OTHER": "una app de calendario"
+      },
+      "horizon": "Ciclos por delante",
+      "history": "Ciclos pasados",
+      "historyNone": "Ninguno",
+      "titles": "Títulos de los eventos",
+      "titleMode": {
+        "DISCREET": "Discreto (●)",
+        "DESCRIPTIVE": "Descriptivo"
+      },
+      "fertile": "Ventana fértil",
+      "fertileDescription": "Añade la ventana fértil estimada del próximo ciclo. Una estimación, no un método anticonceptivo.",
+      "rotate": "Renovar enlace",
+      "rotateTitle": "¿Renovar el enlace?",
+      "rotateBody": "Los calendarios que usan el enlace antiguo dejan de actualizarse. Recibes un enlace nuevo para añadirlo en su lugar.",
+      "turnOff": "Desactivar",
+      "turnOffTitle": "¿Desactivar la suscripción de calendario?",
+      "turnOffBody": "El enlace deja de funcionar. Las copias que ya tiene tu proveedor de calendario se quedan hasta que elimines allí el calendario.",
+      "help": {
+        "title": "Añadirlo a tu calendario",
+        "google": "Google Calendar: Otros calendarios, Desde URL y pega el enlace. Google actualiza más o menos cada 12 a 24 horas.",
+        "apple": "Calendario de Apple: en Mac, Archivo, Nueva suscripción a calendario; en iPhone, Ajustes, Calendario, Cuentas, Añadir cuenta, Otra, Añadir calendario suscrito.",
+        "outlook": "Outlook: Agregar calendario, Suscribirse desde la web y pega el enlace. Outlook actualiza cada pocas horas."
+      },
+      "ics": {
+        "calendarName": "Ciclo (HealthLog)",
+        "periodEstimate": "Periodo (estimación)",
+        "periodLogged": "Periodo (registrado)",
+        "fertileEstimate": "Ventana fértil (estimación)",
+        "likelyStart": "Inicio más probable {date}, {band}",
+        "bandOne": "±{count} día",
+        "bandFew": "±{count} días",
+        "bandOther": "±{count} días"
+      }
+    },
+    "projection": {
+      "title": "Ciclos siguientes",
+      "around": "Hacia el {date}",
+      "state": {
+        "LEARNING": "Hasta que haya 3 ciclos registrados, solo se incluye el próximo periodo.",
+        "LATE": "Sin previsión mientras este periodo llegue más tarde de lo esperado; vuelve en cuanto lo registres.",
+        "OFF": "Las previsiones están desactivadas; solo se incluyen ciclos pasados, si los elegiste."
+      }
+    }
   },
   "cycleReminders": {
     "periodSoonTitle": "El periodo llegará pronto",
@@ -13182,7 +13245,11 @@
       "biomarkerMerge": "{name} combinó biomarcadores",
       "medicationIngredientsUpdate": "{name} cambió la composición de un suplemento",
       "auditCCreate": "{name} respondió el cuestionario AUDIT-C",
-      "auditCDelete": "{name} eliminó una entrada del AUDIT-C"
+      "auditCDelete": "{name} eliminó una entrada del AUDIT-C",
+      "cycleFeedCreate": "{name} activó la suscripción de calendario",
+      "cycleFeedUpdate": "{name} cambió la suscripción de calendario",
+      "cycleFeedRotate": "{name} renovó el enlace de la suscripción de calendario",
+      "cycleFeedRevoke": "{name} desactivó la suscripción de calendario"
     },
     "section": {
       "measurements": {

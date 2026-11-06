@@ -210,6 +210,14 @@ const MODULE_ROUTE_TREES: ReadonlyArray<string> = [
  * ungated. Each carries its reason inline per the bucket-4 contract.
  */
 const EXEMPT_ROUTES: ReadonlyArray<string> = [
+  // ── CYCLE CALENDAR FEED (#1350) ───────────────────────────────────
+  // Not ungated: the anonymous feed cannot answer the module's 403 (that
+  // would tell a prober the token is real), so `serveCycleFeed` re-reads
+  // `isCycleAvailableForUser` (the user toggle AND the operator switch) on
+  // every fetch and answers its blunt 404. `requireCycleEnabled` would also
+  // upsert a profile on an anonymous request. The behaviour is pinned in
+  // BEHAVIOURAL_GATE_TESTS below.
+  "src/app/api/cycle/feed/[token]/route.ts",
   // ── DATA LAYER (mood) ─────────────────────────────────────────────
   // Raw MoodEntry CRUD. The module gate governs whether mood SURFACES
   // (nav, dashboard tile, analysis, doctor report), not whether the row
@@ -508,6 +516,11 @@ const REQUIRED_TREE_MODULE: Readonly<Record<string, ModuleKey>> = {
  */
 const BEHAVIOURAL_GATE_TESTS: ReadonlyArray<{ path: string; proves: string }> =
   [
+    {
+      path: "src/lib/cycle/feed/__tests__/serve.test.ts",
+      proves:
+        "the anonymous cycle calendar feed answers its blunt 404, and builds nothing, when cycle tracking is unavailable for the record",
+    },
     {
       path: "tests/integration/routes/fhir-module-gate.test.ts",
       proves:

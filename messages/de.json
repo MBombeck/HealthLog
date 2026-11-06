@@ -10026,7 +10026,70 @@
     "startedPeriodOnDate": "Periode hat an diesem Tag begonnen",
     "endedPeriodOnDate": "Periode an diesem Tag beendet",
     "startAbsorbed": "Periodenbeginn gespeichert. Dein Beginn am {absorbed} wurde mit dem {date} zusammengeführt.",
-    "startRestored": "Gespeichert. Der Beginn am {dates} ist wieder da."
+    "startRestored": "Gespeichert. Der Beginn am {dates} ist wieder da.",
+    "feed": {
+      "title": "Kalender-Abo",
+      "description": "Deine nächsten Perioden als ganztägige Termine in der Kalender-App, die du schon nutzt.",
+      "disclosure": "Dein Kalenderanbieter (Google, iCloud, Outlook) speichert diese Daten auf seinen Servern. Schaltest du das Abo später ab, bleiben Kopien, die er schon hat, dort liegen.",
+      "turnOn": "Abo einschalten",
+      "error": "Das Kalender-Abo konnte nicht geändert werden. Versuch es noch einmal.",
+      "linkHidden": "Ein Link, der mit {prefix} beginnt, ist aktiv. Er wird nur einmal gezeigt, beim Erstellen; erneuere ihn, wenn du einen neuen brauchst.",
+      "linkLabel": "Abo-Link",
+      "linkOnce": "Nur jetzt sichtbar. Füge ihn in deine Kalender-App ein oder erneuere ihn später für einen neuen.",
+      "copy": "Link kopieren",
+      "copied": "Link kopiert.",
+      "copyFailed": "Kopieren hat nicht geklappt. Markiere den Link und kopiere ihn von Hand.",
+      "openInCalendar": "In Kalender-App öffnen",
+      "notFetched": "Noch nicht abgerufen.",
+      "lastFetched": "Zuletzt {when} von {fetcher} abgerufen.",
+      "fetcher": {
+        "GOOGLE": "Google Kalender",
+        "APPLE": "Apple Kalender",
+        "MICROSOFT": "Outlook",
+        "OTHER": "einer Kalender-App"
+      },
+      "horizon": "Zyklen voraus",
+      "history": "Vergangene Zyklen",
+      "historyNone": "Keine",
+      "titles": "Termintitel",
+      "titleMode": {
+        "DISCREET": "Diskret (●)",
+        "DESCRIPTIVE": "Beschreibend"
+      },
+      "fertile": "Fruchtbares Fenster",
+      "fertileDescription": "Fügt das geschätzte fruchtbare Fenster des nächsten Zyklus hinzu. Eine Schätzung, keine Verhütungsmethode.",
+      "rotate": "Link erneuern",
+      "rotateTitle": "Link erneuern?",
+      "rotateBody": "Kalender mit dem alten Link werden nicht mehr aktualisiert. Du bekommst einen neuen Link, den du stattdessen einträgst.",
+      "turnOff": "Ausschalten",
+      "turnOffTitle": "Kalender-Abo ausschalten?",
+      "turnOffBody": "Der Link funktioniert nicht mehr. Kopien bei deinem Kalenderanbieter bleiben, bis du den Kalender dort entfernst.",
+      "help": {
+        "title": "So trägst du es ein",
+        "google": "Google Kalender: Weitere Kalender, Per URL, dann den Link einfügen. Google aktualisiert etwa alle 12 bis 24 Stunden.",
+        "apple": "Apple Kalender: am Mac Ablage, Neues Kalenderabonnement; am iPhone Einstellungen, Kalender, Accounts, Account hinzufügen, Andere, Kalenderabo hinzufügen.",
+        "outlook": "Outlook: Kalender hinzufügen, Aus dem Internet abonnieren, dann den Link einfügen. Outlook aktualisiert alle paar Stunden."
+      },
+      "ics": {
+        "calendarName": "Zyklus (HealthLog)",
+        "periodEstimate": "Periode (Schätzung)",
+        "periodLogged": "Periode (erfasst)",
+        "fertileEstimate": "Fruchtbares Fenster (Schätzung)",
+        "likelyStart": "Wahrscheinlicher Beginn {date}, {band}",
+        "bandOne": "±{count} Tag",
+        "bandFew": "±{count} Tage",
+        "bandOther": "±{count} Tage"
+      }
+    },
+    "projection": {
+      "title": "Spätere Zyklen",
+      "around": "Um den {date}",
+      "state": {
+        "LEARNING": "Bis 3 Zyklen erfasst sind, ist nur die nächste Periode enthalten.",
+        "LATE": "Keine Prognose, solange diese Periode später kommt als erwartet; sie ist zurück, sobald du sie erfasst.",
+        "OFF": "Prognosen sind ausgeschaltet; enthalten sind nur vergangene Zyklen, falls gewählt."
+      }
+    }
   },
   "cycleReminders": {
     "periodSoonTitle": "Periode steht wahrscheinlich bevor",
@@ -13182,7 +13245,11 @@
       "biomarkerMerge": "{name} hat Biomarker zusammengeführt",
       "medicationIngredientsUpdate": "{name} hat die Zusammensetzung eines Präparats geändert",
       "auditCCreate": "{name} hat den AUDIT-C-Fragebogen ausgefüllt",
-      "auditCDelete": "{name} hat einen AUDIT-C-Eintrag gelöscht"
+      "auditCDelete": "{name} hat einen AUDIT-C-Eintrag gelöscht",
+      "cycleFeedCreate": "{name} hat das Kalender-Abo eingeschaltet",
+      "cycleFeedUpdate": "{name} hat das Kalender-Abo geändert",
+      "cycleFeedRotate": "{name} hat den Link des Kalender-Abos erneuert",
+      "cycleFeedRevoke": "{name} hat das Kalender-Abo ausgeschaltet"
     },
     "section": {
       "measurements": {

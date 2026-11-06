@@ -14,6 +14,10 @@ describe("looksSecretShaped", () => {
     ["an MCP authorization code", "hlac_eyJ0eXAi"],
     ["an MCP refresh token", "hlrt_eyJ0eXAi"],
     ["an MCP client id", "hlc_eyJ0eXAi"],
+    [
+      "a cycle calendar-feed token",
+      `url /api/cycle/feed/hlf_${"9e".repeat(24)}.ics`,
+    ],
     ["an OpenAI key", "echoed sk-1234567890"],
     ["an Anthropic key", "sk-ant-api03-xyz12345"],
   ])("matches %s", (_label, text) => {

@@ -10026,7 +10026,70 @@
     "startedPeriodOnDate": "Mijn menstruatie begon op deze dag",
     "endedPeriodOnDate": "Mijn menstruatie eindigde op deze dag",
     "startAbsorbed": "Begin van menstruatie opgeslagen. Je begin op {absorbed} is samengevoegd met {date}.",
-    "startRestored": "Opgeslagen. Het begin op {dates} is terug."
+    "startRestored": "Opgeslagen. Het begin op {dates} is terug.",
+    "feed": {
+      "title": "Agenda-abonnement",
+      "description": "Je volgende menstruaties als afspraken voor de hele dag in de agenda-app die je al gebruikt.",
+      "disclosure": "Je agendaprovider (Google, iCloud, Outlook) bewaart deze datums op zijn servers. Als je dit later uitzet, blijven kopieën die hij al heeft daar staan.",
+      "turnOn": "Abonnement aanzetten",
+      "error": "Het agenda-abonnement kon niet worden gewijzigd. Probeer het opnieuw.",
+      "linkHidden": "Er is een link actief die begint met {prefix}. Die wordt maar één keer getoond, bij het aanmaken; vernieuw hem voor een nieuwe.",
+      "linkLabel": "Abonnementslink",
+      "linkOnce": "Alleen nu zichtbaar. Plak hem in je agenda-app, of vernieuw hem later voor een nieuwe.",
+      "copy": "Link kopiëren",
+      "copied": "Link gekopieerd.",
+      "copyFailed": "Kopiëren is niet gelukt. Selecteer de link en kopieer hem zelf.",
+      "openInCalendar": "Openen in agenda-app",
+      "notFetched": "Nog niet opgehaald.",
+      "lastFetched": "Laatst opgehaald {when} door {fetcher}.",
+      "fetcher": {
+        "GOOGLE": "Google Agenda",
+        "APPLE": "Apple Agenda",
+        "MICROSOFT": "Outlook",
+        "OTHER": "een agenda-app"
+      },
+      "horizon": "Cycli vooruit",
+      "history": "Eerdere cycli",
+      "historyNone": "Geen",
+      "titles": "Titels van afspraken",
+      "titleMode": {
+        "DISCREET": "Discreet (●)",
+        "DESCRIPTIVE": "Beschrijvend"
+      },
+      "fertile": "Vruchtbare periode",
+      "fertileDescription": "Voegt de geschatte vruchtbare periode van de volgende cyclus toe. Een schatting, geen anticonceptiemethode.",
+      "rotate": "Link vernieuwen",
+      "rotateTitle": "Link vernieuwen?",
+      "rotateBody": "Agenda's met de oude link worden niet meer bijgewerkt. Je krijgt een nieuwe link om in plaats daarvan toe te voegen.",
+      "turnOff": "Uitzetten",
+      "turnOffTitle": "Agenda-abonnement uitzetten?",
+      "turnOffBody": "De link werkt niet meer. Kopieën die je agendaprovider al heeft, blijven staan tot je de agenda daar verwijdert.",
+      "help": {
+        "title": "Toevoegen aan je agenda",
+        "google": "Google Agenda: Andere agenda's, Via URL, en plak de link. Google ververst ongeveer elke 12 tot 24 uur.",
+        "apple": "Apple Agenda: op de Mac Archief, Nieuw agenda-abonnement; op de iPhone Instellingen, Agenda, Accounts, Voeg account toe, Andere, Voeg agenda-abonnement toe.",
+        "outlook": "Outlook: Agenda toevoegen, Abonneren vanaf internet, en plak de link. Outlook ververst om de paar uur."
+      },
+      "ics": {
+        "calendarName": "Cyclus (HealthLog)",
+        "periodEstimate": "Menstruatie (schatting)",
+        "periodLogged": "Menstruatie (geregistreerd)",
+        "fertileEstimate": "Vruchtbare periode (schatting)",
+        "likelyStart": "Meest waarschijnlijke begin {date}, {band}",
+        "bandOne": "±{count} dag",
+        "bandFew": "±{count} dagen",
+        "bandOther": "±{count} dagen"
+      }
+    },
+    "projection": {
+      "title": "Latere cycli",
+      "around": "Rond {date}",
+      "state": {
+        "LEARNING": "Tot er 3 cycli zijn geregistreerd, is alleen de volgende menstruatie opgenomen.",
+        "LATE": "Geen voorspelling zolang deze menstruatie later is dan verwacht; die komt terug zodra je haar registreert.",
+        "OFF": "Voorspellingen staan uit; alleen eerdere cycli zijn opgenomen, als je die hebt gekozen."
+      }
+    }
   },
   "cycleReminders": {
     "periodSoonTitle": "Menstruatie waarschijnlijk binnenkort",
@@ -13182,7 +13245,11 @@
       "biomarkerMerge": "{name} heeft biomarkers samengevoegd",
       "medicationIngredientsUpdate": "{name} heeft de samenstelling van een supplement gewijzigd",
       "auditCCreate": "{name} heeft de AUDIT-C-vragen beantwoord",
-      "auditCDelete": "{name} heeft een AUDIT-C-registratie verwijderd"
+      "auditCDelete": "{name} heeft een AUDIT-C-registratie verwijderd",
+      "cycleFeedCreate": "{name} heeft het agenda-abonnement aangezet",
+      "cycleFeedUpdate": "{name} heeft het agenda-abonnement gewijzigd",
+      "cycleFeedRotate": "{name} heeft de link van het agenda-abonnement vernieuwd",
+      "cycleFeedRevoke": "{name} heeft het agenda-abonnement uitgezet"
     },
     "section": {
       "measurements": {

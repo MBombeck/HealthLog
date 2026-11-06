@@ -101,6 +101,16 @@ describe("GlitchTip forwarder — path-segment secret redaction", () => {
     expect(input.url).not.toContain(shareToken);
   });
 
+  it("does not forward a cycle calendar-feed token verbatim", async () => {
+    // Built at run time so no token-shaped literal sits in the source.
+    const feedToken = `hlf_${"3c".repeat(24)}`;
+    const input = await forwardedPayload(
+      `http://localhost/api/cycle/feed/${feedToken}.ics`,
+    );
+    expect(input.url).not.toContain(feedToken);
+    expect(input.url).toContain("/api/cycle/feed/");
+  });
+
   it("still strips the query string", async () => {
     const input = await forwardedPayload(
       "http://localhost/api/auth/oidc/callback?code=abc123&state=xyz789",

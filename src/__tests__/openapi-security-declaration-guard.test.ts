@@ -77,6 +77,8 @@ const UNAUTHENTICATED: Readonly<Record<string, string>> = {
     "Starts the identity-provider handoff, for the browser and for the native client.",
   "/api/auth/oidc/status":
     "Says whether single sign-on is configured, so the sign-in screen can offer it.",
+  "/api/cycle/feed/{token}":
+    "A calendar provider polls it from its own servers with no session; the `hlf_` path token is the credential.",
   "/api/notifications/vapid":
     "The instance's public Web Push key. Public by definition.",
   "/api/auth/claim/preview":
