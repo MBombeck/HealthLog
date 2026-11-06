@@ -289,6 +289,67 @@ describe("turning the subscription on", () => {
     expect(await db().cycleCalendarFeed.count()).toBe(0);
   });
 
+  it("refuses a MANAGE delegate on an adult's record, for every verb", async () => {
+    const owner = await makeUser("owner");
+    const manager = await makeUser("manager");
+    // The owner's own feed exists, so a refused DELETE has something to miss.
+    await mint(owner.id);
+    const { inviteGrant, acceptGrant } = await import("@/lib/sharing/grants");
+    const invited = await inviteGrant({
+      grantorId: owner.id,
+      granteeId: manager.id,
+      access: "MANAGE",
+      scope: null,
+    });
+    await acceptGrant({ grantId: invited.id, granteeId: manager.id });
+    const session = await signIn(manager.id);
+    await switchSessionTo(session.id, owner.id);
+
+    for (const res of [
+      await manage("GET"),
+      await manage("POST"),
+      await manage("PATCH", { horizonCycles: 6 }),
+      await manage("DELETE"),
+      await rotate(),
+    ]) {
+      expect(res.status).toBe(403);
+    }
+    const feeds = await db().cycleCalendarFeed.findMany({
+      where: { userId: owner.id },
+    });
+    expect(feeds).toHaveLength(1);
+    expect(feeds[0].revokedAt).toBeNull();
+    expect(feeds[0].horizonCycles).toBe(3);
+    expect(feeds[0].createdById).toBe(owner.id);
+  });
+
+  it("serves no feed a delegate holds on an adult's record, even with MANAGE", async () => {
+    // Written directly, as a row from before the narrowing would look: the
+    // fetch path refuses it on the missing managed-profile marker alone.
+    const owner = await makeUser("owner");
+    const manager = await makeUser("manager");
+    await seedCycles(owner.id);
+    const { inviteGrant, acceptGrant } = await import("@/lib/sharing/grants");
+    const invited = await inviteGrant({
+      grantorId: owner.id,
+      granteeId: manager.id,
+      access: "MANAGE",
+      scope: null,
+    });
+    await acceptGrant({ grantId: invited.id, granteeId: manager.id });
+    const { mintFeedToken } = await import("@/lib/cycle/feed/token");
+    const minted = mintFeedToken();
+    await db().cycleCalendarFeed.create({
+      data: {
+        userId: owner.id,
+        createdById: manager.id,
+        tokenHash: minted.hash,
+        tokenPrefix: minted.prefix,
+      },
+    });
+    await expect404(await fetchFeed(`${minted.raw}.ics`));
+  });
+
   it("refuses the fertile window outside TRYING_TO_CONCEIVE", async () => {
     const owner = await makeUser("owner");
     await mint(owner.id);
@@ -432,7 +493,7 @@ describe("fetching the feed", () => {
     expect(throttled).toBe(true);
   });
 
-  it("dies with the carrier's MANAGE grant, and a handover claim revokes it", async () => {
+  it("lets a managed profile's guardian hold one, until the grant or the handover ends it", async () => {
     const profile = await makeUser("profile", { managedProfileAt: new Date() });
     const guardian = await makeUser("guardian");
     await seedCycles(profile.id);

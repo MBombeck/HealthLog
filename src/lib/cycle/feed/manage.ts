@@ -4,9 +4,9 @@
  * Management is cookie-only. Minting hands out a standing URL credential, so
  * it needs the person at the keyboard (a fresh proof on the session) and is
  * not reachable from a Bearer token at all; the native app shows "set up on
- * the web" instead. The routes resolve through `requireRecordAuth("manage",
- * "cycle")`, so the owner and a MANAGE delegate over the cycle section reach
- * them and a READ or WRITE delegate does not.
+ * the web" instead. The routes resolve through `requireGuardianAuth()`, so
+ * the owner and the guardian of a managed profile reach them, and every
+ * delegate on an adult's record (MANAGE included) does not.
  */
 import { apiError } from "@/lib/api-response";
 

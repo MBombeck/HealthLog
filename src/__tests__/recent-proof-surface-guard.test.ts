@@ -98,7 +98,7 @@ const TOKEN_ARM_COOKIE_PROOF_ROUTES = [
 ].sort();
 
 /**
- * Routes that resolve through `requireRecordAuth` and are cookie-only: they
+ * Routes that resolve through `requireGuardianAuth` and are cookie-only: they
  * refuse a Bearer caller outright, then take the cookie arm. The cycle
  * calendar feed's mint and rotate (#1350) hand out a standing URL credential,
  * so no token may reach them and the session needs a fresh proof.
@@ -163,7 +163,7 @@ describe("the recent-proof gate", () => {
   it("a cookie-only record route refuses a token before it asks", () => {
     for (const rel of RECORD_COOKIE_ONLY_PROOF_ROUTES) {
       const src = read(rel);
-      expect(importedAs(rel, "requireRecordAuth"), rel).toHaveLength(1);
+      expect(importedAs(rel, "requireGuardianAuth"), rel).toHaveLength(1);
       // Every proof call sits after a Bearer refusal in the same handler.
       const proofs = [...src.matchAll(/await assertRecentCookieProof\(/g)];
       expect(proofs.length, rel).toBeGreaterThan(0);

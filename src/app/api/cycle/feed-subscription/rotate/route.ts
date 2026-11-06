@@ -8,15 +8,15 @@
  * URL is returned exactly once.
  *
  * Same gates as turning the subscription on: cookie session only, the owner or
- * a MANAGE delegate over the cycle section, a fresh proof, the operator's
- * external-access switch, and the per-actor mint bucket.
+ * the guardian of a managed profile (`requireGuardianAuth`), a fresh proof,
+ * the operator's external-access switch, and the per-actor mint bucket.
  */
 import { NextRequest } from "next/server";
 
 import {
   apiHandler,
   assertRecentCookieProof,
-  requireRecordAuth,
+  requireGuardianAuth,
 } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { isApiGloballyEnabled } from "@/lib/app-settings";
@@ -37,7 +37,7 @@ import { annotate } from "@/lib/logging/context";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export const POST = apiHandler(async (request: NextRequest) => {
-  const auth = await requireRecordAuth("manage", "cycle");
+  const auth = await requireGuardianAuth();
   if (auth.authMethod !== "cookie") return cookieOnlyRefusal();
   const { user, actor } = auth;
   await assertRecentCookieProof(actor, auth.session.id);

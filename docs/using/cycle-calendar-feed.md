@@ -13,9 +13,11 @@ dates on its servers, and turning the subscription off later does not remove
 copies it already holds. HealthLog asks you to confirm it is you (a password or
 passkey) and then shows the link once. Copy it, or use **Open in calendar app**.
 
-Only the record's owner, or someone who manages it with a MANAGE grant that
-covers cycle data, can turn it on. It is managed on the web; the iOS app shows
-where to find it.
+Only you can turn it on for your own record. For a managed profile (a child's
+record, for instance), its guardian can. Someone you have shared your record
+with cannot, whatever level of access you gave them: the feed puts your dates
+in their calendar provider's cloud, and that is your decision alone. It is
+managed on the web; the iOS app shows where to find it.
 
 ## Adding it to your calendar
 

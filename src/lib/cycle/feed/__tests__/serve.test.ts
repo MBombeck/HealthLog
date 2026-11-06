@@ -83,6 +83,7 @@ beforeEach(() => {
     id: "subject",
     timezone: "Europe/Berlin",
     locale: "en",
+    managedProfileAt: null,
   });
   gates.api.mockResolvedValue(true);
   gates.cycle.mockResolvedValue(true);
@@ -187,11 +188,17 @@ describe("serveCycleFeed", () => {
     expect(built.build).not.toHaveBeenCalled();
   });
 
-  describe("a feed a delegate minted", () => {
+  describe("a feed a guardian minted on a managed profile", () => {
     beforeEach(() => {
       db.cycleCalendarFeed.findFirst.mockResolvedValue({
         ...FEED_ROW,
         createdById: "manager",
+      });
+      db.user.findFirst.mockResolvedValue({
+        id: "subject",
+        timezone: "Europe/Berlin",
+        locale: "en",
+        managedProfileAt: new Date("2026-01-01"),
       });
     });
 
@@ -227,13 +234,31 @@ describe("serveCycleFeed", () => {
       await expectBlunt404(await fetchFeed());
     });
 
+    it("is a blunt 404 once the profile is an adult's account", async () => {
+      // A live MANAGE grant is not enough: only a guardian of a managed
+      // profile may hold a feed on somebody else's record.
+      gates.grant.mockResolvedValue(grant());
+      db.user.findFirst.mockResolvedValue({
+        id: "subject",
+        timezone: null,
+        locale: null,
+        managedProfileAt: null,
+      });
+      await expectBlunt404(await fetchFeed());
+    });
+
     it("is a blunt 404 once the manager's account is gone", async () => {
       gates.grant.mockResolvedValue(grant());
       db.user.findFirst.mockImplementation(
         async (args: { where: { id: string } }) =>
           args.where.id === "manager"
             ? null
-            : { id: "subject", timezone: null, locale: null },
+            : {
+                id: "subject",
+                timezone: null,
+                locale: null,
+                managedProfileAt: new Date("2026-01-01"),
+              },
       );
       await expectBlunt404(await fetchFeed());
     });

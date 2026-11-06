@@ -114,7 +114,7 @@ const feedOptionsRequest = cycleFeedOptionsPatchSchema.meta({
 });
 
 const MANAGEMENT_REFUSALS = recordRefusal(
-  "Calendar subscriptions are managed over a browser session only: any Bearer token gets `cycle.feed.cookie_only`. Cycle tracking switched off for the record answers `cycle.disabled`; the operator's external-access switch answers `cycle.feed.api_disabled` on turning it on and on rotating. Reached by the record's owner and by a MANAGE delegate whose grant covers the cycle section, never by a READ or WRITE delegate.",
+  "Calendar subscriptions are managed over a browser session only: any Bearer token gets `cycle.feed.cookie_only`. Cycle tracking switched off for the record answers `cycle.disabled`; the operator's external-access switch answers `cycle.feed.api_disabled` on turning it on and on rotating. Reached by the record's owner on their own record and by the guardian of a managed profile; a delegate on an adult's record is refused at every grant level, MANAGE included.",
 );
 
 const REPROOF_401 = {
@@ -145,7 +145,7 @@ export const cycleFeedPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Cycle"],
       summary: "The subscribable cycle forecast as iCalendar (public, #1350)",
       description:
-        "Anonymous: a calendar provider polls this URL, so the raw `hlf_` token in the path (optionally followed by `.ics`) is the ONLY credential. Rate-limited per source address before any lookup and per token after it. Every gate is re-read on each fetch: the record and the minting account are not pending deletion, the operator's external-access switch is on, cycle tracking is available, and a feed minted by a delegate still has a live MANAGE grant over the cycle section. Every miss (malformed, unknown, revoked, switched off, deleted, lapsed grant) is the same 404. The body is RFC 5545: all-day events, dates only, discreet titles by default, the next few periods with widening bands (self-capped), optionally past periods and, for TRYING_TO_CONCEIVE, the next fertile window. `ETag` is the content hash; a matching `If-None-Match` answers 304.",
+        "Anonymous: a calendar provider polls this URL, so the raw `hlf_` token in the path (optionally followed by `.ics`) is the ONLY credential. Rate-limited per source address before any lookup and per token after it. Every gate is re-read on each fetch: the record and the minting account are not pending deletion, the operator's external-access switch is on, cycle tracking is available, and a feed minted by a managed profile's guardian still sits on a managed profile the guardian holds a live MANAGE grant over. Every miss (malformed, unknown, revoked, switched off, deleted, lapsed grant) is the same 404. The body is RFC 5545: all-day events, dates only, discreet titles by default, the next few periods with widening bands (self-capped), optionally past periods and, for TRYING_TO_CONCEIVE, the next fertile window. `ETag` is the content hash; a matching `If-None-Match` answers 304.",
       security: [],
       requestParams: {
         path: z.object({

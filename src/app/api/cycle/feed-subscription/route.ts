@@ -12,18 +12,23 @@
  * A separate namespace from the feed itself (`/api/cycle/feed/<token>`), so
  * neither the path redactor nor the public-path prefix can ever catch it.
  *
- * Auth: cookie session only, through `requireRecordAuth("manage", "cycle")`:
- * the owner, or a MANAGE delegate whose grant covers the cycle section. A
- * READ or WRITE delegate is refused. Turning it on also needs a fresh proof,
- * because the link outlives the session that made it. A delegate's feed is
- * re-checked against their grant on every fetch, and a handover claim ends it.
+ * Auth: cookie session only, through `requireGuardianAuth()`: the record's
+ * owner on their own record, or the guardian of a managed profile (a MANAGE
+ * grant on a record that carries the managed-profile marker). A delegate on
+ * an adult's record is refused at every grant level, MANAGE included: the
+ * feed is a standing credential whose contents end up in a third party's
+ * calendar cloud, and only the person the data is about, or the guardian of
+ * somebody who cannot decide for themselves, may put them there. Turning it
+ * on and rotating also need a fresh proof. A guardian's feed is re-checked
+ * against the live grant and the marker on every fetch, and a handover claim
+ * ends it.
  */
 import { NextRequest } from "next/server";
 
 import {
   apiHandler,
   assertRecentCookieProof,
-  requireRecordAuth,
+  requireGuardianAuth,
 } from "@/lib/api-handler";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
@@ -57,7 +62,7 @@ import {
 import { cycleFeedOptionsPatchSchema } from "@/lib/validations/cycle-feed";
 
 export const GET = apiHandler(async () => {
-  const auth = await requireRecordAuth("manage", "cycle");
+  const auth = await requireGuardianAuth();
   if (auth.authMethod !== "cookie") return cookieOnlyRefusal();
   const { user } = auth;
   annotate({ action: { name: "cycle.feed.status" } });
@@ -69,7 +74,7 @@ export const GET = apiHandler(async () => {
 });
 
 export const POST = apiHandler(async (request: NextRequest) => {
-  const auth = await requireRecordAuth("manage", "cycle");
+  const auth = await requireGuardianAuth();
   if (auth.authMethod !== "cookie") return cookieOnlyRefusal();
   const { user, actor } = auth;
   // The proof is the person at the keyboard, so it is the actor's session.
@@ -131,7 +136,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
 });
 
 export const PATCH = apiHandler(async (request: NextRequest) => {
-  const auth = await requireRecordAuth("manage", "cycle");
+  const auth = await requireGuardianAuth();
   if (auth.authMethod !== "cookie") return cookieOnlyRefusal();
   const { user } = auth;
   annotate({ action: { name: "cycle.feed.update" } });
@@ -207,7 +212,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
 });
 
 export const DELETE = apiHandler(async () => {
-  const auth = await requireRecordAuth("manage", "cycle");
+  const auth = await requireGuardianAuth();
   if (auth.authMethod !== "cookie") return cookieOnlyRefusal();
   const { user } = auth;
   annotate({ action: { name: "cycle.feed.revoke" } });

@@ -9,7 +9,7 @@
 -- here only.
 --
 -- Both foreign keys cascade: deleting the record ends its feed, and deleting
--- the carrier who minted it does too, so a delegate's account going away
+-- the carrier who minted it does too, so a guardian's account going away
 -- cannot leave a link behind that nobody can revoke.
 --
 -- One DO block, so the file is one statement that rolls back whole and the

@@ -17,8 +17,11 @@
  *   5. The gates, all read live and none of them through a session: the
  *      record and the carrier are not pending deletion, the operator's
  *      external-access switch is on, cycle tracking is available for the
- *      record (user toggle AND operator module switch), and a feed minted by
- *      a delegate still has a live MANAGE grant that covers the cycle section.
+ *      record (user toggle AND operator module switch), and a feed a
+ *      guardian minted still sits on a managed profile the guardian holds a
+ *      live MANAGE grant over. Only a guardian of a managed profile can mint
+ *      for somebody else (`requireGuardianAuth`); the marker is re-read here
+ *      so a feed can never outlive the profile becoming an adult's account.
  *
  * Every miss is the same 404 with the same bytes: unknown, malformed,
  * revoked, switched off, deleted, or a grant that has lapsed. A prober learns
@@ -123,7 +126,12 @@ async function feedStillAllowed(feed: {
   const [subject, apiOn, cycleOn] = await Promise.all([
     prisma.user.findFirst({
       where: activeAccount({ id: feed.userId }),
-      select: { id: true, timezone: true, locale: true },
+      select: {
+        id: true,
+        timezone: true,
+        locale: true,
+        managedProfileAt: true,
+      },
     }),
     isApiGloballyEnabled(),
     isCycleAvailableForUser(feed.userId),
@@ -133,6 +141,9 @@ async function feedStillAllowed(feed: {
   if (!cycleOn) return { ok: false, reason: "cycle_disabled" };
 
   if (feed.createdById !== feed.userId) {
+    if (subject.managedProfileAt === null) {
+      return { ok: false, reason: "not_managed" };
+    }
     const [carrier, grant] = await Promise.all([
       prisma.user.findFirst({
         where: activeAccount({ id: feed.createdById }),

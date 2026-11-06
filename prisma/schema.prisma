@@ -1168,8 +1168,8 @@ model User {
   cycleSymptomsCustom CycleSymptom[]   @relation("UserCycleSymptoms")
   // #1350 — the subscribable cycle forecast. `cycleCalendarFeeds` is the
   // record the feed serves; `cycleCalendarFeedsMinted` is the carrier who
-  // minted it, which is the owner on their own record and a MANAGE delegate
-  // on a record they manage.
+  // minted it, which is the owner on their own record and the guardian on a
+  // managed profile.
   cycleCalendarFeeds       CycleCalendarFeed[] @relation("CycleCalendarFeedSubject")
   cycleCalendarFeedsMinted CycleCalendarFeed[] @relation("CycleCalendarFeedCreator")
 
@@ -8360,8 +8360,9 @@ model CycleCalendarFeed {
   id          String @id @default(cuid())
   /// The record whose forecast the feed serves.
   userId      String @map("user_id")
-  /// Who minted it: the owner, or a MANAGE delegate. A carrier's feed is
-  /// re-checked against their live grant on every fetch.
+  /// Who minted it: the owner, or the guardian of a managed profile. A
+  /// guardian's feed is re-checked against their live MANAGE grant and the
+  /// managed-profile marker on every fetch.
   createdById String @map("created_by_id")
 
   /// HMAC-SHA256 of the raw `hlf_` token.
