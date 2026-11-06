@@ -869,9 +869,11 @@ function entries(user: Pick<User, "id">): Entry[] {
         route: "/api/settings/module-list-layout",
         body: {
           version: 1,
-          list: "illness",
-          view: "list",
+          list: "labs",
+          view: "cards",
           sortDir: "alphaAsc",
+          groupBy: "category",
+          groupsOpen: "collapsed",
         },
       },
       read: {
@@ -881,11 +883,13 @@ function entries(user: Pick<User, "id">): Entry[] {
           route: "/api/settings/module-list-layout",
         },
         pick: (res) => [
-          at(res.data, "lists.illness.view"),
-          at(res.data, "lists.illness.sortDir"),
+          at(res.data, "lists.labs.view"),
+          at(res.data, "lists.labs.sortDir"),
+          at(res.data, "lists.labs.groupBy"),
+          at(res.data, "lists.labs.groupsOpen"),
         ],
       },
-      expected: ["list", "alphaAsc"],
+      expected: ["cards", "alphaAsc", "category", "collapsed"],
     },
     {
       columns: ["activityGoalsJson"],

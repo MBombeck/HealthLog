@@ -7,6 +7,8 @@
 import { z } from "zod/v4";
 
 import {
+  MODULE_GROUPS_OPEN,
+  MODULE_GROUP_BYS,
   MODULE_LIST_ID_MAX,
   MODULE_LIST_KEYS,
   MODULE_LIST_ORDER_MAX,
@@ -24,5 +26,7 @@ export const moduleListLayoutPutSchema = z
       .max(MODULE_LIST_ORDER_MAX)
       .optional(),
     sortDir: z.enum(MODULE_SORT_DIRS).optional(),
+    groupBy: z.enum(MODULE_GROUP_BYS).optional(),
+    groupsOpen: z.enum(MODULE_GROUPS_OPEN).optional(),
   })
   .strict();

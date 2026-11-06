@@ -124,6 +124,8 @@ describe("/api/settings/module-list-layout — integration", () => {
       view: "list",
       order: ["m2", "m1"],
       sortDir: "manual",
+      groupBy: "none",
+      groupsOpen: "expanded",
       saved: true,
     });
     expect(body.data.lists.illness).toMatchObject({
@@ -143,6 +145,49 @@ describe("/api/settings/module-list-layout — integration", () => {
       labs: { order: ["m2", "m1"], sortDir: "manual" },
       illness: { view: "list" },
     });
+  });
+
+  it("stores the category choices and reads them back", async () => {
+    const { userId } = await seedUser();
+    const { GET, PUT } =
+      await import("@/app/api/settings/module-list-layout/route");
+    const put = await (PUT as Handler)(
+      json("PUT", URL, {
+        version: 1,
+        list: "labs",
+        groupBy: "category",
+        groupsOpen: "flagged",
+      }),
+    );
+    expect(put.status).toBe(200);
+    // A later write of another field keeps them.
+    await (PUT as Handler)(
+      json("PUT", URL, { version: 1, list: "labs", view: "cards" }),
+    );
+
+    const res = await (GET as Handler)(new Request(URL));
+    const body = (await res.json()) as {
+      data: { lists: Record<string, Record<string, unknown>> };
+    };
+    expect(body.data.lists.labs).toMatchObject({
+      view: "cards",
+      groupBy: "category",
+      groupsOpen: "flagged",
+      saved: true,
+    });
+    const row = await getPrismaClient().user.findUnique({
+      where: { id: userId },
+      select: { moduleListLayoutJson: true },
+    });
+    expect(row?.moduleListLayoutJson).toEqual({
+      version: 1,
+      labs: { groupBy: "category", groupsOpen: "flagged", view: "cards" },
+    });
+
+    const refused = await (PUT as Handler)(
+      json("PUT", URL, { version: 1, list: "labs", groupsOpen: "all" }),
+    );
+    expect(refused.status).toBe(422);
   });
 
   it("refuses unknown lists, values and keys with every issue named", async () => {

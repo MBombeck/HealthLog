@@ -34117,6 +34117,17 @@ components:
             - alphaAsc
             - alphaDesc
             - manual
+        groupBy:
+          type: string
+          enum:
+            - none
+            - category
+        groupsOpen:
+          type: string
+          enum:
+            - expanded
+            - flagged
+            - collapsed
       required:
         - version
         - list
@@ -75011,6 +75022,22 @@ components:
             - alphaDesc
             - manual
           description: Sort of the labs list; `manual` follows `order`. Default "recentDesc". The other lists ignore it.
+        groupBy:
+          type: string
+          enum:
+            - none
+            - category
+          description: 'Whether the labs list shows its server-resolved categories (`category`) or one flat list (`none`). Default
+            "none". The labs list stays flat while `GET /api/labs/overview` answers `grouped: false`. The other lists
+            ignore it.'
+        groupsOpen:
+          type: string
+          enum:
+            - expanded
+            - flagged
+            - collapsed
+          description: 'Which labs categories start open: every one (`expanded`), only those whose `status` is `above` or `below`
+            (`flagged`), or none (`collapsed`). Default "expanded". The other lists ignore it.'
         saved:
           type: boolean
           description: True when the server holds a choice for this list; false means every field is a default.
@@ -75018,6 +75045,8 @@ components:
         - view
         - order
         - sortDir
+        - groupBy
+        - groupsOpen
         - saved
       additionalProperties: false
     ModuleListLayoutSavedEnvelope:

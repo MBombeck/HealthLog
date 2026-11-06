@@ -2,7 +2,7 @@
 
 /**
  * Per-list presentation for the labs, illness and checkups lists: card or
- * list view, a manual order, and (labs only) the sort.
+ * list view, a manual order, and (labs only) the sort and the categories.
  *
  * The choices live on the server (`GET/PUT /api/settings/module-list-layout`,
  * `User.moduleListLayoutJson`) so they follow a person to every device. Until
@@ -39,11 +39,15 @@ import {
   type ModuleListKey,
   type ModuleListLayout,
   type ModuleListPrefs,
+  type ModuleGroupBy,
+  type ModuleGroupsOpen,
   type ModuleListView,
   type ModuleSortDir,
 } from "@/lib/settings/module-list-layout";
 
 export type {
+  ModuleGroupBy,
+  ModuleGroupsOpen,
   ModuleListKey,
   ModuleListPrefs,
   ModuleListView,
@@ -59,7 +63,8 @@ export function legacyModuleListStorageKey(list: ModuleListKey): string {
 
 /**
  * Parse a browser-stored blob from before the server column. Anything
- * malformed collapses onto the defaults field by field.
+ * malformed collapses onto the defaults field by field. The browser never
+ * held the category fields, so those always come from the defaults.
  */
 export function parseModuleListPrefs(
   raw: string | null,
@@ -69,6 +74,7 @@ export function parseModuleListPrefs(
   try {
     const blob = JSON.parse(raw) as Record<string, unknown>;
     return {
+      ...defaults,
       view: isModuleListView(blob.view) ? blob.view : defaults.view,
       order: normaliseModuleListOrder(blob.order) ?? [],
       sortDir: isModuleSortDir(blob.sortDir) ? blob.sortDir : defaults.sortDir,
@@ -220,7 +226,12 @@ export async function runSetModuleListPrefs(deps: {
       ...patch,
     });
     if (saved) queryClient.setQueryData(key, saved);
-    if (patch.view !== undefined || patch.sortDir !== undefined) {
+    if (
+      patch.view !== undefined ||
+      patch.sortDir !== undefined ||
+      patch.groupBy !== undefined ||
+      patch.groupsOpen !== undefined
+    ) {
       toastWrittenOutcome("success", t("settings.saved"));
     }
   } catch (failure) {
@@ -238,6 +249,8 @@ export function useModuleListPrefs(list: ModuleListKey): {
   setView: (view: ModuleListView) => void;
   setOrder: (order: string[]) => void;
   setSortDir: (sortDir: ModuleSortDir) => void;
+  setGroupBy: (groupBy: ModuleGroupBy) => void;
+  setGroupsOpen: (groupsOpen: ModuleGroupsOpen) => void;
 } {
   const queryClient = useQueryClient();
   const { t } = useTranslations();
@@ -259,7 +272,13 @@ export function useModuleListPrefs(list: ModuleListKey): {
   const entry = data?.lists[list];
   const prefs = useMemo<ModuleListPrefs>(() => {
     if (entry) {
-      return { view: entry.view, order: entry.order, sortDir: entry.sortDir };
+      return {
+        view: entry.view,
+        order: entry.order,
+        sortDir: entry.sortDir,
+        groupBy: entry.groupBy,
+        groupsOpen: entry.groupsOpen,
+      };
     }
     const defaults = moduleListDefaults(list);
     if (!mounted) return defaults;
@@ -282,5 +301,14 @@ export function useModuleListPrefs(list: ModuleListKey): {
     [write],
   );
 
-  return { prefs, setView, setOrder, setSortDir };
+  const setGroupBy = useCallback(
+    (groupBy: ModuleGroupBy) => write({ groupBy }),
+    [write],
+  );
+  const setGroupsOpen = useCallback(
+    (groupsOpen: ModuleGroupsOpen) => write({ groupsOpen }),
+    [write],
+  );
+
+  return { prefs, setView, setOrder, setSortDir, setGroupBy, setGroupsOpen };
 }

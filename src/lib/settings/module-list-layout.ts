@@ -10,6 +10,10 @@
  *   block in the server's own order.
  * - `sortDir`: only the labs list reads it (recency, alphabetical, or the
  *   manual `order`).
+ * - `groupBy` / `groupsOpen`: only the labs list reads them. `groupBy` shows
+ *   the list under its server-resolved categories (`"category"`) or flat
+ *   (`"none"`, the default); `groupsOpen` says which categories start open:
+ *   all of them, only those with a value outside its range, or none.
  *
  * Null / missing column = the defaults below. The GET never lazy-writes, and
  * the PUT stores only the fields a person has actually chosen, so a default
@@ -37,6 +41,12 @@ export const MODULE_SORT_DIRS = [
 ] as const;
 export type ModuleSortDir = (typeof MODULE_SORT_DIRS)[number];
 
+export const MODULE_GROUP_BYS = ["none", "category"] as const;
+export type ModuleGroupBy = (typeof MODULE_GROUP_BYS)[number];
+
+export const MODULE_GROUPS_OPEN = ["expanded", "flagged", "collapsed"] as const;
+export type ModuleGroupsOpen = (typeof MODULE_GROUPS_OPEN)[number];
+
 /** Longest order a list keeps; a longer one is cut, never refused. */
 export const MODULE_LIST_ORDER_MAX = 500;
 /** Longest id an order entry may carry (cuid and uuid fit comfortably). */
@@ -46,6 +56,8 @@ export interface ModuleListPrefs {
   view: ModuleListView;
   order: string[];
   sortDir: ModuleSortDir;
+  groupBy: ModuleGroupBy;
+  groupsOpen: ModuleGroupsOpen;
 }
 
 export interface ModuleListPrefsEntry extends ModuleListPrefs {
@@ -62,6 +74,8 @@ const BASE_DEFAULTS: ModuleListPrefs = {
   view: "cards",
   order: [],
   sortDir: "recentDesc",
+  groupBy: "none",
+  groupsOpen: "expanded",
 };
 
 /** Labs opens on the compact list, the dense reading table (#40). */
@@ -90,6 +104,20 @@ export function isModuleSortDir(value: unknown): value is ModuleSortDir {
   );
 }
 
+export function isModuleGroupBy(value: unknown): value is ModuleGroupBy {
+  return (
+    typeof value === "string" &&
+    (MODULE_GROUP_BYS as readonly string[]).includes(value)
+  );
+}
+
+export function isModuleGroupsOpen(value: unknown): value is ModuleGroupsOpen {
+  return (
+    typeof value === "string" &&
+    (MODULE_GROUPS_OPEN as readonly string[]).includes(value)
+  );
+}
+
 /** Keep string ids of a sane length, first occurrence wins, capped. */
 export function normaliseModuleListOrder(raw: unknown): string[] | null {
   if (!Array.isArray(raw)) return null;
@@ -114,12 +142,22 @@ export function storedModuleListChoices(
   raw: unknown,
 ): Partial<ModuleListPrefs> {
   if (raw === null || raw === undefined || typeof raw !== "object") return {};
-  const blob = raw as { view?: unknown; order?: unknown; sortDir?: unknown };
+  const blob = raw as {
+    view?: unknown;
+    order?: unknown;
+    sortDir?: unknown;
+    groupBy?: unknown;
+    groupsOpen?: unknown;
+  };
   const order = normaliseModuleListOrder(blob.order);
   return {
     ...(isModuleListView(blob.view) ? { view: blob.view } : {}),
     ...(order !== null ? { order } : {}),
     ...(isModuleSortDir(blob.sortDir) ? { sortDir: blob.sortDir } : {}),
+    ...(isModuleGroupBy(blob.groupBy) ? { groupBy: blob.groupBy } : {}),
+    ...(isModuleGroupsOpen(blob.groupsOpen)
+      ? { groupsOpen: blob.groupsOpen }
+      : {}),
   };
 }
 
