@@ -70,6 +70,7 @@ export const GET = apiHandler(async (request: Request) => {
       items: timeline.lanes.reduce((n, l) => n + l.items.length, 0),
       series: timeline.series.length,
       labSeries: timeline.labSeries.length,
+      symptomSeries: timeline.symptomSeries.length,
       notable: timeline.notable.length,
     },
   });

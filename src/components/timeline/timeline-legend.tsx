@@ -19,11 +19,17 @@ import { LabExcludedNote } from "./lab-lines";
 export function TimelineLegend({
   bucket,
   hasSeries,
+  hasSymptoms = false,
   labSeries = [],
   label = (key) => key,
 }: {
   bucket: TimelineBucket;
   hasSeries: boolean;
+  /**
+   * A symptom line is drawn (#981): what its points are is said once, since
+   * its mean is of day peaks over logged days, not of readings.
+   */
+  hasSymptoms?: boolean;
   /**
    * The lab lines drawn: their three marks are explained, and what a line
    * left out is said here, where the marks are (#1299).
@@ -112,6 +118,14 @@ export function TimelineLegend({
             {t("timeline.legendThin")}
           </span>
         </>
+      )}
+      {hasSymptoms && (
+        <span
+          className="inline-flex items-center gap-1.5"
+          data-slot="timeline-legend-symptom"
+        >
+          {t("timeline.legendSymptom")}
+        </span>
       )}
       {hasLabs && (
         <>

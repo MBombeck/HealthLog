@@ -25,6 +25,7 @@ import {
   formatBucket,
 } from "./timeline-dates";
 import { isSpan } from "./timeline-geometry";
+import { useSeriesCountText } from "./use-series-value-format";
 
 /**
  * The chart as a table, for a screen reader: every entry with its lane and
@@ -116,7 +117,8 @@ export function SeriesTable({
   fmt: SeriesValueFormat;
   intl: string;
 }) {
-  const { t, tCount } = useTranslations();
+  const { t } = useTranslations();
+  const countText = useSeriesCountText();
   const { bucket, series } = timeline;
   const inWindow = (start: string) =>
     start <= window.to && bucketAfter(start, bucket) > window.from;
@@ -163,7 +165,7 @@ export function SeriesTable({
                 return (
                   <td key={s.key}>
                     {point
-                      ? `${formatSeriesValue(s.key, point.mean, s.unit, fmt)}, ${tCount("timeline.values.readings", point.count)}`
+                      ? `${formatSeriesValue(s.key, point.mean, s.unit, fmt)}, ${countText(s.key, point.count)}`
                       : t("timeline.values.noValue")}
                   </td>
                 );

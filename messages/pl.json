@@ -13944,7 +13944,17 @@
     },
     "legendLabValue": "Wynik badania, tak jak zmierzono",
     "legendLabOutside": "Poza zakresem referencyjnym",
-    "legendLabRange": "Zakres referencyjny"
+    "legendLabRange": "Zakres referencyjny",
+    "legendSymptom": "Linia objawu: najwyższe natężenie każdego zapisanego dnia (od 0 do 10), uśrednione po zapisanych dniach",
+    "symptoms": {
+      "menuTitle": "Objawy",
+      "full": "Naraz można pokazać do {max} objawów. Usuń jeden, aby dodać inny.",
+      "hidden": "ukryty",
+      "unnamed": "Objaw",
+      "daysOne": "w 1 dniu",
+      "daysFew": "średnia z {count} dni",
+      "daysOther": "średnia z {count} dni"
+    }
   },
   "lifeEvents": {
     "title": "Wydarzenie życiowe",

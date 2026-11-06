@@ -9,7 +9,7 @@
  */
 import { z } from "zod/v4";
 
-import { dateOnlyAtNoonUtc, isCalendarDateKey } from "@/lib/tz/date-only";
+import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
 
 import {
   DAY_EVENT_KINDS,
@@ -34,12 +34,13 @@ import {
 } from "./contract";
 import { isoDateTime } from "@/lib/validations/datetime";
 
-/* ─── Shared pieces ───────────────────────────────────────────────────────── */
+import { dateKeySchema } from "./date-key-schema";
+import {
+  timelineSymptomOption,
+  timelineSymptomSeries,
+} from "./timeline-symptom-schemas";
 
-export const dateKeySchema = z
-  .string()
-  .refine(isCalendarDateKey, { message: "Expected a YYYY-MM-DD calendar date" })
-  .describe("A local calendar date, `YYYY-MM-DD`.");
+/* ─── Shared pieces ───────────────────────────────────────────────────────── */
 
 const instant = isoDateTime();
 
@@ -401,7 +402,7 @@ export const timelineQuerySchema = withWindowRules(
       .string()
       .optional()
       .describe(
-        "Comma-separated value series to include, as `MeasurementType` names, `MOOD`, or a lab marker as `lab:<biomarkerId>` (see `availableLabs`). A name given twice counts once, so the list is bounded by the names that exist; an unknown measurement name or a malformed marker key answers 422. At most 24 lab markers are drawn (ids, unlike names, are not a closed set): the first 24 are kept and any further ones left out without an error. A lab marker that is not in the record (deleted, or another record's) is likewise left out of `labSeries`, so a stored choice never breaks the page.",
+        "Comma-separated value series to include, as `MeasurementType` names, `MOOD`, a lab marker as `lab:<biomarkerId>` (see `availableLabs`), or a person-defined symptom as `symptom:<definitionId>` (see `availableSymptoms`). A name given twice counts once, so the list is bounded by the names that exist; an unknown measurement name or a malformed marker or symptom key answers 422. At most 24 lab markers and 24 symptoms are drawn (ids, unlike names, are not a closed set): the first 24 of each are kept and any further ones left out without an error. A lab marker or symptom that is not in the record (deleted, or another record's) is likewise left out of `labSeries` / `symptomSeries`, so a stored choice never breaks the page.",
       ),
   }),
 );
@@ -615,6 +616,16 @@ export const timelineResponseSchema = z
       .array(timelineLabMarker)
       .describe(
         "Every lab marker this record has a numeric reading for, whatever the window, when the caller may see labs. Each may be named in `values` by its `key`.",
+      ),
+    symptomSeries: z
+      .array(timelineSymptomSeries)
+      .describe(
+        "The person-defined symptoms named in `values`, in the order named, each averaged per `bucket` over the days it was logged. A symptom named but not found in the record is left out.",
+      ),
+    availableSymptoms: z
+      .array(timelineSymptomOption)
+      .describe(
+        "Every person-defined symptom this record has logged at least once, hidden ones included (their history is kept), in the record's own order, when the caller may see illness data. Each may be named in `values` by its `key`.",
       ),
     notable: z.array(
       z.object({ date: dateKeySchema, kind: z.enum(DAY_NOTABLE_KINDS) }),

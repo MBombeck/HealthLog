@@ -53,6 +53,7 @@ import { useLabReference, useLabValueText, useLabVerdict } from "./lab-lines";
 import { formatSeriesValue, type SeriesValueFormat } from "./series-format";
 import { formatDayMonthYear } from "./timeline-dates";
 import type { TimelineLayout } from "./timeline-geometry";
+import { useSeriesCountText } from "./use-series-value-format";
 
 /** Hit target across, in px: bigger than the dot, a comfortable aim. */
 export const POINT_TARGET = 24;
@@ -401,7 +402,8 @@ function useTipLines({
   fmt: SeriesValueFormat;
   bucketLabel: (t: string) => string;
 }): Array<{ key: string; points: TipPoint[] }> {
-  const { t: tr, tCount, locale } = useTranslations();
+  const { t: tr, locale } = useTranslations();
+  const countText = useSeriesCountText();
   const intl = resolveIntlLocale(locale);
   const verdict = useLabVerdict();
   const labValueText = useLabValueText();
@@ -420,13 +422,13 @@ function useTipLines({
         x: p.x,
         y: p.y,
         day: dayOf(p.t),
-        ariaLabel: `${words(s.key, p.t, p.mean, s.unit)}, ${tCount("timeline.values.readings", p.count)}`,
+        ariaLabel: `${words(s.key, p.t, p.mean, s.unit)}, ${countText(s.key, p.count)}`,
         label: bucketLabel(p.t),
         row: {
           name: seriesLabel(s.key),
           value: formatSeriesValue(s.key, p.mean, s.unit, fmt),
           color: seriesColor(s.key),
-          delta: tCount("timeline.values.readings", p.count),
+          delta: countText(s.key, p.count),
         },
         report: null,
       })),

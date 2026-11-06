@@ -514,6 +514,8 @@ export function fullTimeline(today: string) {
     availableSeries: FULL_AVAILABLE,
     labSeries: [],
     availableLabs: [],
+    symptomSeries: [],
+    availableSymptoms: [],
     notable: [{ date: "2026-01-04", kind: "extremeHigh" }],
   };
 }
@@ -608,6 +610,50 @@ function labsLane(keys: readonly string[]) {
         }),
       ),
   };
+}
+
+/**
+ * Two of the person's own symptoms (#981): a headache logged over several
+ * quarters, one quarter resting on two days, and a nausea hidden from entry
+ * since, logged once. Their points are bucket means of day peaks on the
+ * fixed 0 to 10 scale; only quarters are drawn here, the bucket an `all`
+ * view of the full record uses.
+ */
+export const SYMPTOM_OPTIONS = [
+  {
+    key: "symptom:sd-headache",
+    definitionId: "sd-headache",
+    label: "Kopfschmerz",
+    icon: "brain",
+    isActive: true,
+  },
+  {
+    key: "symptom:sd-nausea",
+    definitionId: "sd-nausea",
+    label: "Übelkeit",
+    icon: null,
+    isActive: false,
+  },
+];
+
+const SYMPTOM_QUARTERS: Record<
+  string,
+  Array<{ t: string; mean: number; count: number }>
+> = {
+  "symptom:sd-headache": [
+    { t: "2024-01-01", mean: 6.5, count: 9 },
+    { t: "2024-04-01", mean: 4, count: 2 },
+    { t: "2025-01-01", mean: 3.25, count: 5 },
+  ],
+  "symptom:sd-nausea": [{ t: "2023-07-01", mean: 2, count: 1 }],
+};
+
+function symptomLines(keys: readonly string[], bucket: Bucket) {
+  return SYMPTOM_OPTIONS.filter((o) => keys.includes(o.key)).map((o) => ({
+    ...o,
+    scale: { min: 0, max: 10 },
+    points: bucket === "quarter" ? SYMPTOM_QUARTERS[o.key] : [],
+  }));
 }
 
 export function readyTimeline(today: string) {
@@ -733,6 +779,8 @@ export function readyTimeline(today: string) {
     availableSeries: ["BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA", "WEIGHT"],
     labSeries: [],
     availableLabs: [],
+    symptomSeries: [],
+    availableSymptoms: [],
     notable: [],
   };
 }
@@ -935,6 +983,8 @@ export async function mockTimeline(
     dataFrom?: string;
     /** The record has lab markers to offer and draw (#1299). */
     labs?: boolean;
+    /** The record has logged symptoms to offer and draw (#981). */
+    symptoms?: boolean;
   } = {},
 ): Promise<TimelineMockLog> {
   const log: TimelineMockLog = { timelineQueries: [], lifeEventPosts: [] };
@@ -950,7 +1000,11 @@ export async function mockTimeline(
       .filter(Boolean);
     // A lab marker is a line of its own (`labSeries`), never a mean.
     const labKeys = named.filter((key) => key.startsWith("lab:"));
-    const values = named.filter((key) => !key.startsWith("lab:"));
+    // A symptom is a line of its own too (`symptomSeries`), on 0 to 10.
+    const symptomKeys = named.filter((key) => key.startsWith("symptom:"));
+    const values = named.filter(
+      (key) => !key.startsWith("lab:") && !key.startsWith("symptom:"),
+    );
     const labs =
       state === "full" && options.labs
         ? {
@@ -966,6 +1020,13 @@ export async function mockTimeline(
     const from = url.searchParams.get("from");
     const to = url.searchParams.get("to");
     const bucket = bucketFor(zoom, from, to);
+    const symptoms =
+      state === "full" && options.symptoms
+        ? {
+            symptomSeries: symptomLines(symptomKeys, bucket),
+            availableSymptoms: SYMPTOM_OPTIONS,
+          }
+        : {};
     const dataFrom =
       options.dataFrom ?? (state === "full" ? "2019-01-01" : "2024-05-01");
     if (options.onlyOld && (zoom === "quarter" || zoom === "year")) {
@@ -988,6 +1049,7 @@ export async function mockTimeline(
     return json(route, 200, {
       ...body,
       ...labs,
+      ...symptoms,
       zoom,
       bucket,
       ...(chosen

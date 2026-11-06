@@ -149,6 +149,8 @@ function twoMedications(): TimelineResponse {
     availableSeries: [],
     labSeries: [],
     availableLabs: [],
+    symptomSeries: [],
+    availableSymptoms: [],
     notable: [],
   };
 }

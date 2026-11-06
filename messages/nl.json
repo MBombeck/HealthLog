@@ -13944,7 +13944,17 @@
     },
     "legendLabValue": "Labwaarde, zoals gemeten",
     "legendLabOutside": "Buiten het referentiebereik",
-    "legendLabRange": "Referentiebereik"
+    "legendLabRange": "Referentiebereik",
+    "legendSymptom": "Symptoomlijn: de hoogste intensiteit van elke vastgelegde dag (0 tot 10), gemiddeld over de vastgelegde dagen",
+    "symptoms": {
+      "menuTitle": "Symptomen",
+      "full": "Maximaal {max} symptomen tegelijk. Verwijder er een om een ander toe te voegen.",
+      "hidden": "verborgen",
+      "unnamed": "Symptoom",
+      "daysOne": "op 1 dag",
+      "daysFew": "gemiddelde van {count} dagen",
+      "daysOther": "gemiddelde van {count} dagen"
+    }
   },
   "lifeEvents": {
     "title": "Levensgebeurtenis",

@@ -17,6 +17,9 @@
  * Lab markers the record has values for are offered beside the measurements
  * (#1299): a chosen marker is stored and requested like any other line, as
  * `lab:<biomarkerId>`, and drawn as its single readings, never as means.
+ * The person's own symptoms (#981) are offered the same way, as
+ * `symptom:<definitionId>`, and drawn as value lines on the fixed intensity
+ * scale: each point the mean of the day peaks the server averaged.
  *
  * At 768 px and up the chart; below it the chronicle, which is also the
  * list form of the chart. The readiness card sits on top while a lane is
@@ -37,10 +40,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import {
-  capTimelineLabKeys,
+  capTimelineSeriesKeys,
   DAY_QUERY_PARAM,
   TIMELINE_ZOOMS,
   timelineLabMarkerId,
+  timelineSymptomDefinitionId,
   type LifeEventDTO,
   type TimelineLaneKey,
   type TimelineResponse,
@@ -88,7 +92,9 @@ import {
   LayersMenu,
   TimelineValuesMenu,
   labMarkerNames,
+  symptomNames,
 } from "./timeline-menus";
+import { withSymptomLines } from "./series-format";
 import {
   isBoolean,
   isStringArray,
@@ -151,7 +157,8 @@ function timelineIsEmpty(data: TimelineResponse): boolean {
     data.lanes.every((l) => l.items.length === 0) &&
     data.standing.length === 0 &&
     data.series.every((s) => s.points.length === 0) &&
-    data.labSeries.every((s) => s.points.length === 0)
+    data.labSeries.every((s) => s.points.length === 0) &&
+    data.symptomSeries.every((s) => s.points.length === 0)
   );
 }
 
@@ -178,6 +185,10 @@ function useValueLines(
       // A lab line belongs to the labs module; whether the record has the
       // marker is the server's to say.
       if (timelineLabMarkerId(key) !== null) return modules?.labs !== false;
+      // A symptom line rides the illness module, as symptoms do everywhere.
+      if (timelineSymptomDefinitionId(key) !== null) {
+        return modules?.illness !== false;
+      }
       if (!KNOWN_SERIES.has(key)) return false;
       const owner: ModuleKey | null | undefined =
         VALUE_OPTION_MODULE[key as keyof typeof VALUE_OPTION_MODULE];
@@ -185,10 +196,10 @@ function useValueLines(
     },
     [modules],
   );
-  // Lab markers past the cap are not asked for (the server would leave
-  // them out); the menu holds further ones back.
+  // Lab markers and symptoms past their caps are not asked for (the server
+  // would leave them out); the menu holds further ones back.
   const values = useMemo(
-    () => capTimelineLabKeys(storedValues.filter(allowed)),
+    () => capTimelineSeriesKeys(storedValues.filter(allowed)),
     [storedValues, allowed],
   );
   // One colour per chosen line, shared by the chart, the selection bar, the
@@ -200,6 +211,39 @@ function useValueLines(
   const seriesColor = (key: string) =>
     seriesColors.get(key) ?? SERIES_PALETTE[0];
   return { values, allowed, setStoredValues, seriesColor };
+}
+
+/**
+ * The timeline as the page draws it: symptom lines (#981) are drawn and
+ * worded as value lines from here on.
+ */
+function useWithSymptomLines(
+  raw: TimelineResponse | undefined,
+): TimelineResponse | undefined {
+  return useMemo(() => (raw ? withSymptomLines(raw) : undefined), [raw]);
+}
+
+/**
+ * Each value line's name. Blood pressure reads as its own name here; the
+ * list labels ("Sys", "Dia") lean on a column header the chart does not
+ * have. A lab marker reads by its own name, as on the labs list, and a
+ * symptom by the name the person gave it.
+ */
+function useSeriesLabel(
+  data: TimelineResponse | undefined,
+): (key: string) => string {
+  const { t } = useTranslations();
+  const labNames = labMarkerNames(data);
+  const symptomLabels = symptomNames(data);
+  return (key: string) =>
+    key === "BLOOD_PRESSURE_SYS" || key === "BLOOD_PRESSURE_DIA"
+      ? t(TIMELINE_BLOOD_PRESSURE_SERIES_KEY[key])
+      : key === "MOOD"
+        ? t("timeline.readiness.lanes.mood")
+        : timelineSymptomDefinitionId(key) !== null
+          ? (symptomLabels.get(key) ?? t("timeline.symptoms.unnamed"))
+          : (labNames.get(key) ??
+            t(MEASUREMENT_TYPE_LABEL_KEYS[key as MeasurementType] ?? key));
 }
 
 export function TimelineView() {
@@ -318,7 +362,7 @@ export function TimelineView() {
     }
   }
 
-  const data = timeline.data;
+  const data = useWithSymptomLines(timeline.data);
   // A pick outside a newly chosen range no longer counts as one.
   const chosen =
     selected !== null &&
@@ -362,17 +406,7 @@ export function TimelineView() {
     setLifeEventOpen(true);
   }
 
-  const labNames = labMarkerNames(data);
-  // Blood pressure reads as its own name here; the list labels ("Sys",
-  // "Dia") lean on a column header the chart does not have. A lab marker
-  // reads by its own name, as on the labs list.
-  const seriesLabel = (key: string) =>
-    key === "BLOOD_PRESSURE_SYS" || key === "BLOOD_PRESSURE_DIA"
-      ? t(TIMELINE_BLOOD_PRESSURE_SERIES_KEY[key])
-      : key === "MOOD"
-        ? t("timeline.readiness.lanes.mood")
-        : (labNames.get(key) ??
-          t(MEASUREMENT_TYPE_LABEL_KEYS[key as MeasurementType] ?? key));
+  const seriesLabel = useSeriesLabel(data);
 
   const shownWindow = data
     ? windowFor(
@@ -405,6 +439,7 @@ export function TimelineView() {
       allowed={allowed}
       rank={SERIES_RANK}
       labsOn={modules?.labs !== false}
+      symptomsOn={modules?.illness !== false}
       label={seriesLabel}
       color={seriesColor}
       onChange={setStoredValues}
@@ -603,6 +638,7 @@ export function TimelineView() {
                 <TimelineLegend
                   bucket={data.bucket}
                   hasSeries={data.series.length > 0}
+                  hasSymptoms={data.symptomSeries.length > 0}
                   labSeries={data.labSeries}
                   label={seriesLabel}
                 />

@@ -43,6 +43,7 @@ import {
 import { useItemWords } from "./item-words";
 import { LabReadingsLine, labReadingsIn, useLabValueText } from "./lab-lines";
 import { itemsInPeriod } from "./timeline-geometry";
+import { useSeriesCountText } from "./use-series-value-format";
 import { MEAN_PARTS_ROW, MeanPartsLine, laneDotStyle } from "./timeline-chart";
 import {
   bucketValues,
@@ -78,7 +79,8 @@ export function SelectionBar({
   onOpenDay,
   onEditLifeEvent,
 }: SelectionBarProps) {
-  const { t, tCount, locale } = useTranslations();
+  const { t, locale } = useTranslations();
+  const countText = useSeriesCountText();
   const words = useItemWords();
   const intl = resolveIntlLocale(locale);
   const bucket = timeline.bucket;
@@ -218,7 +220,7 @@ export function SelectionBar({
               label: seriesLabel,
               bloodPressure: t("timeline.values.bloodPressure"),
               noValue: t("timeline.values.noValue"),
-              readings: (n) => tCount("timeline.values.readings", n),
+              readings: countText,
             })}
             seriesColor={seriesColor}
           />
