@@ -58,8 +58,8 @@
   turned off, and is turned off by a password change or a deletion
   request. Only the record's owner, or a managed profile's guardian, can
   turn it on, from a signed-in browser after confirming it is them. The
-  feed answers with an `ETag`, and an unknown or revoked link gets the same
-  404. `GET /api/cycle/calendar` adds `projection` and `projectionState`
+  feed answers with an `ETag`, and every unknown or revoked link gets the
+  same plain 404. `GET /api/cycle/calendar` adds `projection` and `projectionState`
   so the web and iOS calendars draw the same cycles ahead, and the Coach
   and MCP cycle context list them as `upcoming`. Migration
   `0494_cycle_calendar_feed`. Self-hosters: the feed link sits in the URL
