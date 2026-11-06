@@ -10322,6 +10322,7 @@
         "unitLockedHint": "Depois que este marcador tiver leituras, sua unidade permanece como está. Caso contrário, os valores armazenados seriam exibidos em uma nova unidade sem serem convertidos.",
         "panel": "Painel",
         "panelPlaceholder": "ex.: Lipídios",
+        "panelHint": "Escolha uma sugestão ou digite o seu. Os painéis do catálogo são reconhecidos em todos os idiomas.",
         "lowerBound": "Referência baixa",
         "upperBound": "Referência alta",
         "lowerPlaceholder": "Limite inferior",

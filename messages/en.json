@@ -10322,6 +10322,7 @@
         "unitLockedHint": "Once this marker has readings, its unit stays as it is. The stored values would otherwise be shown in a new unit without being converted.",
         "panel": "Panel",
         "panelPlaceholder": "e.g. Lipids",
+        "panelHint": "Pick a suggestion or type your own. Catalog panels are recognised in every language.",
         "lowerBound": "Reference low",
         "upperBound": "Reference high",
         "lowerPlaceholder": "Lower bound",

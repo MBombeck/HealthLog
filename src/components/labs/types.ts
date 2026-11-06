@@ -161,6 +161,11 @@ export type BiomarkerTrendDto =
 
 export interface BiomarkerListResponse {
   biomarkers: BiomarkerDto[];
+  /**
+   * The person's own panels that are no catalog panel, one spelling each,
+   * for the panel suggestions.
+   */
+  customPanels: string[];
 }
 
 /** v1.43 — `POST /api/biomarkers/{id}/merge`, for the preview and the result. */

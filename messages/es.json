@@ -10322,6 +10322,7 @@
         "unitLockedHint": "Cuando este marcador ya tiene valores, su unidad no cambia. De lo contrario, los valores guardados se mostrarían en una unidad nueva sin convertirse.",
         "panel": "Panel",
         "panelPlaceholder": "p. ej. Lípidos",
+        "panelHint": "Elige una sugerencia o escribe la tuya. Los paneles del catálogo se reconocen en todos los idiomas.",
         "lowerBound": "Referencia mínima",
         "upperBound": "Referencia máxima",
         "lowerPlaceholder": "Límite inferior",

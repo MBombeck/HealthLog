@@ -10322,6 +10322,7 @@
         "unitLockedHint": "Zodra deze marker metingen heeft, blijft de eenheid zoals die is. Anders zouden de opgeslagen waarden zonder omrekening in een nieuwe eenheid worden getoond.",
         "panel": "Groep",
         "panelPlaceholder": "bijv. Lipiden",
+        "panelHint": "Kies een suggestie of typ je eigen groep. Groepen uit de catalogus worden in elke taal herkend.",
         "lowerBound": "Referentie ondergrens",
         "upperBound": "Referentie bovengrens",
         "lowerPlaceholder": "Ondergrens",

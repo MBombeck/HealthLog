@@ -77763,8 +77763,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Biomarker"
+        customPanels:
+          type: array
+          items:
+            type: string
+          description: The caller's panels that are no catalog panel in any language, one spelling per folded form (the most
+            frequent, ties to the alphabetically first), sorted. Suggestions for the panel field; catalog panels are not
+            repeated here.
       required:
         - biomarkers
+        - customPanels
       additionalProperties: false
     Biomarker:
       type: object

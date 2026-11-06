@@ -10322,6 +10322,7 @@
         "unitLockedHint": "이 마커에 기록된 값이 있으면 단위는 그대로 유지돼요. 그렇지 않으면 저장된 값이 변환되지 않은 채 새 단위로 표시돼요.",
         "panel": "패널",
         "panelPlaceholder": "예: 지질",
+        "panelHint": "제안에서 고르거나 직접 입력하세요. 카탈로그 패널은 모든 언어에서 인식돼요.",
         "lowerBound": "참고 하한",
         "upperBound": "참고 상한",
         "lowerPlaceholder": "하한값",

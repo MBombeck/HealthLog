@@ -15,6 +15,7 @@ import { aliasNamesByMarker } from "@/lib/labs/biomarker-aliases";
 import { serialiseBiomarker } from "@/lib/labs/biomarker-dto";
 import { encryptContextToBytes } from "@/lib/labs/biomarker-store";
 import { matchAnalyteKey } from "@/lib/labs/analyte-match";
+import { customPanelSuggestions } from "@/lib/labs/marker-category";
 import { annotate } from "@/lib/logging/context";
 import { createBiomarkerSchema } from "@/lib/validations/biomarkers";
 
@@ -64,6 +65,9 @@ export const GET = apiHandler(async () => {
     biomarkers: rows.map((row) =>
       serialiseBiomarker(row, aliases.get(row.id) ?? [], { soft: true }),
     ),
+    // The person's own panel spellings, for the panel suggestions in the
+    // marker form; catalog panels are offered there from the bundle.
+    customPanels: customPanelSuggestions(rows.map((row) => row.panel)),
   });
 });
 

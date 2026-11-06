@@ -10322,6 +10322,7 @@
         "unitLockedHint": "Gdy ten marker ma już wyniki, jego jednostka pozostaje bez zmian. W przeciwnym razie zapisane wartości byłyby pokazywane w nowej jednostce bez przeliczenia.",
         "panel": "Panel",
         "panelPlaceholder": "np. Lipidy",
+        "panelHint": "Wybierz podpowiedź lub wpisz własny. Panele z katalogu są rozpoznawane w każdym języku.",
         "lowerBound": "Dolna granica",
         "upperBound": "Górna granica",
         "lowerPlaceholder": "Dolna granica",

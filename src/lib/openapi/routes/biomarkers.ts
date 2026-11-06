@@ -152,8 +152,15 @@ const biomarkerDetail = biomarkerRow
   })
   .meta({ id: "BiomarkerDetail" });
 
-const listResponse = z
-  .object({ biomarkers: z.array(biomarkerRow) })
+export const biomarkerListResponse = z
+  .object({
+    biomarkers: z.array(biomarkerRow),
+    customPanels: z
+      .array(z.string())
+      .describe(
+        "The caller's panels that are no catalog panel in any language, one spelling per folded form (the most frequent, ties to the alphabetically first), sorted. Suggestions for the panel field; catalog panels are not repeated here.",
+      ),
+  })
   .meta({ id: "ListBiomarkersResponse" });
 
 const conflict = {
@@ -243,7 +250,10 @@ export const biomarkerPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "Biomarker catalog.",
           content: {
             "application/json": {
-              schema: dataEnvelope(listResponse, "ListBiomarkersEnvelope"),
+              schema: dataEnvelope(
+                biomarkerListResponse,
+                "ListBiomarkersEnvelope",
+              ),
             },
           },
         },

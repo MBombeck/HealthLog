@@ -10322,6 +10322,7 @@
         "unitLockedHint": "Sobald dieser Marker Werte hat, bleibt seine Einheit, wie sie ist. Sonst würden die gespeicherten Werte in einer neuen Einheit angezeigt, ohne umgerechnet zu werden.",
         "panel": "Panel",
         "panelPlaceholder": "z. B. Lipide",
+        "panelHint": "Wähle einen Vorschlag oder gib ein eigenes ein. Panels aus dem Katalog werden in jeder Sprache erkannt.",
         "lowerBound": "Referenz unten",
         "upperBound": "Referenz oben",
         "lowerPlaceholder": "Untere Grenze",

@@ -24,7 +24,10 @@ function render(prefs: Partial<ModuleListPrefs>) {
     queryKeys.moduleListLayout(),
     resolveModuleListLayout({ version: 1, labs: prefs }),
   );
-  queryClient.setQueryData(queryKeys.biomarkers(), { biomarkers: [] });
+  queryClient.setQueryData(queryKeys.biomarkers(), {
+    biomarkers: [],
+    customPanels: [],
+  });
   return renderToStaticMarkup(
     <QueryClientProvider client={queryClient}>
       <I18nProvider initialLocale="en">

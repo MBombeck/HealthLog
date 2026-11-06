@@ -10322,6 +10322,7 @@
         "unitLockedHint": "Dès que ce marqueur a des valeurs, son unité reste la même. Sinon, les valeurs enregistrées s'afficheraient dans une nouvelle unité sans être converties.",
         "panel": "Panel",
         "panelPlaceholder": "ex. Lipides",
+        "panelHint": "Choisissez une suggestion ou saisissez la vôtre. Les panels du catalogue sont reconnus dans toutes les langues.",
         "lowerBound": "Référence basse",
         "upperBound": "Référence haute",
         "lowerPlaceholder": "Borne inférieure",
