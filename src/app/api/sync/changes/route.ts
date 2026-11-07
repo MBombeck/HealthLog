@@ -43,8 +43,9 @@
  *     cycle tracking off gets both blocks empty (never a 403 — see the
  *     gate note in the handler) and their cursor watermarks untouched.
  *
- * `start=now` (#1339) answers an empty page whose cursor sits at
- * `serverNow` in every domain, in the same opaque format, so a client that
+ * `start=now` (#1339) answers an empty page whose cursor sits a minute
+ * before `serverNow` in every domain (`START_NOW_OVERLAP_MS`), in the same
+ * opaque format, so a client that
  * only wants what changes from now on (the Apple Health write-back) pages
  * forward from there instead of draining the whole history first.
  *

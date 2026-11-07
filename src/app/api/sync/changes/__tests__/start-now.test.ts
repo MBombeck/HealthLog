@@ -1,8 +1,9 @@
 /**
  * `GET /api/sync/changes?start=now` (#1339) — a cursor at the present.
  *
- * The answer is an empty page whose cursor sits at `serverNow` in every
- * domain, in the feed's own opaque format, and nothing is read: the point is
+ * The answer is an empty page whose cursor sits a minute before `serverNow`
+ * in every domain (a write stamped before it and committed after it is not
+ * skipped), in the feed's own opaque format, and nothing is read: the point is
  * to skip the history walk, so a read here would be the bug. The database is
  * deliberately not mocked and not reachable: any read would fail the request,
  * so the 200 below is itself the proof that none happened.
@@ -54,7 +55,7 @@ beforeEach(() => {
 });
 
 describe("GET /api/sync/changes?start=now", () => {
-  it("answers an empty page with a cursor at serverNow in every domain", async () => {
+  it("answers an empty page with a cursor a minute before serverNow in every domain", async () => {
     const before = Date.now();
     const res = await GET(req("?start=now"));
     const after = Date.now();
@@ -80,7 +81,10 @@ describe("GET /api/sync/changes?start=now", () => {
     const cursor = decodeCursor(data.cursor);
     expect(cursor).not.toBeNull();
     for (const domain of SYNC_DOMAINS) {
-      expect(cursor![domain], domain).toEqual({ updatedAtMs: nowMs, id: "0" });
+      expect(cursor![domain], domain).toEqual({
+        updatedAtMs: nowMs - 60_000,
+        id: "0",
+      });
     }
     expect(decodeCursorIssuedAt(data.cursor)).toBe(nowMs);
   });

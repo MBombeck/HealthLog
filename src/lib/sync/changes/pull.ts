@@ -110,8 +110,8 @@ function emptyChanges(): SyncChangesBody["changes"] {
 }
 
 /**
- * `start=now` (#1339): an empty page with a cursor at `serverNow` in every
- * domain, for a client that wants changes from now on (the Apple Health
+ * `start=now` (#1339): an empty page with a cursor a minute before
+ * `serverNow` in every domain (`encodeCursorAtNow`), for a client that wants changes from now on (the Apple Health
  * write-back) without paging through the history first. `hasMore` is false:
  * the client is caught up as of `serverNow` by definition.
  */

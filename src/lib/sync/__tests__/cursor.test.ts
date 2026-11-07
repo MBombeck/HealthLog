@@ -8,6 +8,7 @@ import {
   decodeCursor,
   decodeCursorIssuedAt,
   encodeCursorAtNow,
+  START_NOW_OVERLAP_MS,
   SYNC_DOMAINS,
   type SyncCursor,
 } from "../cursor";
@@ -138,12 +139,18 @@ describe("cursor issue time (sync reset)", () => {
 });
 
 describe("encodeCursorAtNow", () => {
-  it("places every domain at the instant, before any id in that millisecond", () => {
+  it("places every domain a minute back, before any id in that millisecond", () => {
     const nowMs = 1_790_000_000_123;
     const token = encodeCursorAtNow(nowMs);
     const cursor = decodeCursor(token);
+    // A write stamped before the instant but committed after it is still
+    // ahead of the watermark.
+    expect(START_NOW_OVERLAP_MS).toBe(60_000);
     for (const domain of SYNC_DOMAINS) {
-      expect(cursor?.[domain], domain).toEqual({ updatedAtMs: nowMs, id: "0" });
+      expect(cursor?.[domain], domain).toEqual({
+        updatedAtMs: nowMs - 60_000,
+        id: "0",
+      });
     }
     expect(decodeCursorIssuedAt(token)).toBe(nowMs);
     // Every cuid sorts after the tie-breaker, so a row in the same
