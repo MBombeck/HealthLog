@@ -91,11 +91,15 @@ export async function createSubordinatePeriodDays(
 
 /**
  * Stamp the last day of a finished period on the cycle that opens at
- * `start`, when that cycle has no period end yet. A person's own end, or one
- * an earlier pass stamped, stays. Returns whether a stamp was written.
+ * `start`, when that cycle has no period end yet and the wearable opened it:
+ * its first day is the wearable's own live row. A cycle the person opened
+ * herself on that date carries her account of the period (her days, her end
+ * or none yet), and a wearable never writes over it. An end already set, by
+ * her or an earlier pass, stays. Returns whether a stamp was written.
  */
 export async function stampSubordinatePeriodEnd(
   userId: string,
+  source: SubordinateCycleSource,
   start: string,
   lastDay: string,
 ): Promise<boolean> {
@@ -106,6 +110,9 @@ export async function stampSubordinatePeriodEnd(
       startDate: start,
       deletedAt: null,
       periodEndDate: null,
+      dayLogs: {
+        some: { userId, date: start, source, deletedAt: null },
+      },
     },
     data: { periodEndDate: lastDay, syncVersion: { increment: 1 } },
   });

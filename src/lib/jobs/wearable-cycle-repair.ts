@@ -182,7 +182,10 @@ async function repairAccount(
     // An open cycle may still be bleeding; the hourly sync stamps its end.
     if (!cycle?.endDate) continue;
     const end = await garminRunEnd(prisma, userId, start);
-    if (end && (await stampSubordinatePeriodEnd(userId, start, end))) {
+    if (
+      end &&
+      (await stampSubordinatePeriodEnd(userId, "GARMIN", start, end))
+    ) {
       result.periodEnds += 1;
     }
   }

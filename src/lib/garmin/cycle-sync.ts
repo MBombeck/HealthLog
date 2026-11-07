@@ -7,7 +7,7 @@
  * The write goes through `createSubordinatePeriodDays`, which attributes each
  * created day to its cycle and opens the cycle a first bleeding day starts,
  * as every other cycle writer does. A finished period also stamps its last
- * day on that cycle, when the cycle has no period end yet.
+ * day on that cycle, when Garmin opened it and it has no period end yet.
  *
  * `GET /periodichealth-service/menstrualcycle/summary/{date}` describes the
  * cycle a date falls in: its start and its period length. A cycle Garmin
@@ -98,7 +98,12 @@ export async function writeGarminPeriod(
     period.days,
   );
   if (period.ended) {
-    await stampSubordinatePeriodEnd(userId, period.start, period.days.at(-1)!);
+    await stampSubordinatePeriodEnd(
+      userId,
+      "GARMIN",
+      period.start,
+      period.days.at(-1)!,
+    );
   }
   return created;
 }
