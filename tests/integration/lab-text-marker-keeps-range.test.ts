@@ -368,14 +368,39 @@ describe("a text marker's range and the first unit it adopts", () => {
 // --- CSV import -------------------------------------------------------------
 
 describe("a CSV text result", () => {
-  const query = () =>
+  const query = (dryRun = false) =>
     labsCsvQuerySchema.parse({
       analyte: "0",
       value: "1",
       unit: "2",
       date: "3",
       referenceRange: "4",
+      dryRun: dryRun ? "1" : "0",
     });
+
+  it("previews a text row the way it writes it", async () => {
+    const csv = [
+      "Analyte;Value;Unit;Date;Range",
+      "BUN/Creatinine ratio;SEE NOTE;;2026-09-01;10 - 20",
+      "Sodium;140;mmol/L;2026-09-01;135 - 145",
+    ].join("\n");
+    const preview = await importLabsCsv({
+      userId: USER,
+      tz: "UTC",
+      stream: textToStream(csv),
+      maxBytes: 1_000_000,
+      query: query(true),
+    });
+    // The text reading stores no window of its own; the number keeps its.
+    expect(preview.preview).toMatchObject([
+      {
+        marker: "BUN/Creatinine ratio",
+        referenceLow: null,
+        referenceHigh: null,
+      },
+      { marker: "Sodium", referenceLow: 135, referenceHigh: 145 },
+    ]);
+  });
 
   it("gives a new marker a numeric range and leaves a text range out", async () => {
     const result = await importLabsCsv({

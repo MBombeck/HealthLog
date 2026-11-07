@@ -39,6 +39,7 @@ import {
   type MarkerIndex,
 } from "@/lib/labs/biomarker-resolve";
 import { resolveOrMintBiomarker } from "@/lib/labs/biomarker-store";
+import { mintedBounds } from "@/lib/labs/minted-bounds";
 import { parseReferenceRange } from "@/lib/labs/parse-reference-range";
 import { readingInMarkerUnit } from "@/lib/labs/reading-conversion";
 import {
@@ -255,7 +256,21 @@ interface Planned {
   marker: IndexedMarker | null;
 }
 
+/**
+ * The window the write keeps on the reading: the printed one for a number, none
+ * for a text result (its range seeds a new marker, not the reading).
+ */
+function readingWindow(row: LabCsvRow): {
+  low: number | null;
+  high: number | null;
+} {
+  return row.valueText === null
+    ? { low: row.sourceReferenceLow, high: row.sourceReferenceHigh }
+    : { low: null, high: null };
+}
+
 function displayRow(row: LabCsvRow, marker: string) {
+  const window = readingWindow(row);
   return {
     line: row.line,
     marker,
@@ -263,8 +278,8 @@ function displayRow(row: LabCsvRow, marker: string) {
     valueText: row.valueText,
     unit: row.unit,
     takenAt: row.takenAt.toISOString(),
-    referenceLow: row.sourceReferenceLow,
-    referenceHigh: row.sourceReferenceHigh,
+    referenceLow: window.low,
+    referenceHigh: window.high,
     panel: row.panel,
     note: row.note !== null,
   };
@@ -346,8 +361,7 @@ export async function importLabsCsv(args: {
           id: `pending:${pendingId++}`,
           name: row.analyte,
           unit,
-          lowerBound: row.sourceReferenceLow,
-          upperBound: row.sourceReferenceHigh,
+          ...mintedBounds(row.sourceReferenceLow, row.sourceReferenceHigh),
           panel: row.panel,
           analyteKey: matchAnalyteKey({ name: row.analyte, unit }),
           hidden: false,
@@ -484,8 +498,7 @@ export async function importLabsCsv(args: {
       if (!marker) created.add(row.analyte);
 
       let storedValue = row.value;
-      let storedLow = row.valueText === null ? row.sourceReferenceLow : null;
-      let storedHigh = row.valueText === null ? row.sourceReferenceHigh : null;
+      let { low: storedLow, high: storedHigh } = readingWindow(row);
       let convertedFrom: { sourceValue: number; sourceUnit: string } | null =
         null;
       if (row.value !== null) {
