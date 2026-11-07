@@ -159,6 +159,10 @@
 
 ### Security
 
+- Next.js moves to 16.4.5, which fixes seven moderate advisories. Most
+  concern `use cache` and Cache Components, which HealthLog does not use;
+  one concerns self-hosted apps that pass a fetched response on to the
+  client, and one the Edge runtime's internal headers.
 - `@hono/node-server` moves to the 2.x line, which fixes a second decode of
   the request path in `serveStatic`. It arrives under the MCP SDK; the app
   uses the SDK's web-standard transport and never loads it, but the copy
