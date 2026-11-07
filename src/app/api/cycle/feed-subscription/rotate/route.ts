@@ -5,7 +5,10 @@
  * One transaction: the live feed is revoked and its successor minted with the
  * same options, so there is never a moment with two live links or with none.
  * Calendars holding the old link stop updating on their next poll. The new
- * URL is returned exactly once.
+ * URL is returned exactly once. Two rotations racing both revoke the same
+ * feed, and the second successor then meets the one-live-feed index: that
+ * one gets the mint path's 409 `cycle.feed.exists`, and the winner's link
+ * stands.
  *
  * Same gates as turning the subscription on: cookie session only, the owner or
  * the guardian of a managed profile (`requireGuardianAuth`), a fresh proof,
@@ -26,6 +29,7 @@ import {
   FEED_MINT_LIMIT_PER_HOUR,
   FEED_MINT_WINDOW_MS,
   cookieOnlyRefusal,
+  feedExists,
   feedLinks,
   noLiveFeed,
 } from "@/lib/cycle/feed/manage";
@@ -34,6 +38,7 @@ import { mintFeedToken } from "@/lib/cycle/feed/token";
 import { prisma } from "@/lib/db";
 import { resolveOrigin } from "@/lib/http/origin";
 import { annotate } from "@/lib/logging/context";
+import { isP2002 } from "@/lib/prisma-errors";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 export const POST = apiHandler(async (request: NextRequest) => {
@@ -63,46 +68,52 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   const minted = mintFeedToken();
-  const rotated = await prisma.$transaction(async (tx) => {
-    const live = await tx.cycleCalendarFeed.findFirst({
-      where: { userId: user.id, revokedAt: null },
-      select: {
-        id: true,
-        horizonCycles: true,
-        historyCycles: true,
-        includeFertile: true,
-        titleMode: true,
-      },
-    });
-    if (!live) return null;
-    await tx.cycleCalendarFeed.update({
-      where: { id: live.id },
-      data: { revokedAt: new Date() },
-    });
-    const created = await tx.cycleCalendarFeed.create({
-      data: {
+  const rotated = await prisma
+    .$transaction(async (tx) => {
+      const live = await tx.cycleCalendarFeed.findFirst({
+        where: { userId: user.id, revokedAt: null },
+        select: {
+          id: true,
+          horizonCycles: true,
+          historyCycles: true,
+          includeFertile: true,
+          titleMode: true,
+        },
+      });
+      if (!live) return null;
+      await tx.cycleCalendarFeed.update({
+        where: { id: live.id },
+        data: { revokedAt: new Date() },
+      });
+      const created = await tx.cycleCalendarFeed.create({
+        data: {
+          userId: user.id,
+          createdById: actor.id,
+          tokenHash: minted.hash,
+          tokenPrefix: minted.prefix,
+          horizonCycles: live.horizonCycles,
+          historyCycles: live.historyCycles,
+          includeFertile: live.includeFertile,
+          titleMode: live.titleMode,
+        },
+        select: FEED_SUMMARY_SELECT,
+      });
+      await auditLog("cycle.feed.rotate", {
         userId: user.id,
-        createdById: actor.id,
-        tokenHash: minted.hash,
-        tokenPrefix: minted.prefix,
-        horizonCycles: live.horizonCycles,
-        historyCycles: live.historyCycles,
-        includeFertile: live.includeFertile,
-        titleMode: live.titleMode,
-      },
-      select: FEED_SUMMARY_SELECT,
+        details: {
+          feedId: created.id,
+          previousFeedId: live.id,
+          tokenPrefix: created.tokenPrefix,
+        },
+        client: tx,
+      });
+      return created;
+    })
+    .catch((err: unknown) => {
+      if (isP2002(err)) return "raced" as const;
+      throw err;
     });
-    await auditLog("cycle.feed.rotate", {
-      userId: user.id,
-      details: {
-        feedId: created.id,
-        previousFeedId: live.id,
-        tokenPrefix: created.tokenPrefix,
-      },
-      client: tx,
-    });
-    return created;
-  });
+  if (rotated === "raced") return feedExists();
   if (!rotated) return noLiveFeed();
 
   return apiSuccess(

@@ -958,13 +958,20 @@ paths:
         - Cycle
       summary: Replace the calendar subscription's link (#1350)
       description: "One transaction: the live link is revoked and a new one minted with the same options. Returns the new URL
-        EXACTLY ONCE. Calendars using the old link stop updating."
+        EXACTLY ONCE. Calendars using the old link stop updating. Of two rotations racing, the one that loses answers
+        409 `cycle.feed.exists` and the winner's link stands."
       responses:
         "201": *a13
         "401": *a14
         "403": *a10
         "404":
           description: No subscription is on (`cycle.feed.none`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: Another rotation replaced the link at the same moment (`cycle.feed.exists`).
           content:
             application/json:
               schema:

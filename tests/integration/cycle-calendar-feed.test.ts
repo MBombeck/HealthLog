@@ -212,6 +212,31 @@ describe("turning the subscription on", () => {
     ).toBe(1);
   });
 
+  it("answers the losing one of two racing rotations with 409, never 500", async () => {
+    const owner = await makeUser("owner");
+    await mint(owner.id);
+    // Both read the same live feed and revoke it; the second successor then
+    // meets the one-live-feed index. Four rounds stay inside the mint bucket.
+    const statuses: number[] = [];
+    for (let round = 0; round < 4; round++) {
+      const pair = await Promise.all([rotate(), rotate()]);
+      for (const res of pair) {
+        statuses.push(res.status);
+        if (res.status === 409) {
+          expect((await res.json()).meta.errorCode).toBe("cycle.feed.exists");
+        }
+      }
+      expect(
+        await db().cycleCalendarFeed.count({
+          where: { userId: owner.id, revokedAt: null },
+        }),
+      ).toBe(1);
+    }
+    expect(statuses.every((s) => s === 201 || s === 409)).toBe(true);
+    // The race was really run, not sidestepped by one finishing first.
+    expect(statuses).toContain(409);
+  });
+
   it("the partial unique index rejects a second live row written directly", async () => {
     const owner = await makeUser("owner");
     const base = {

@@ -271,11 +271,16 @@ export const cycleFeedPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Cycle"],
       summary: "Replace the calendar subscription's link (#1350)",
       description:
-        "One transaction: the live link is revoked and a new one minted with the same options. Returns the new URL EXACTLY ONCE. Calendars using the old link stop updating.",
+        "One transaction: the live link is revoked and a new one minted with the same options. Returns the new URL EXACTLY ONCE. Calendars using the old link stop updating. Of two rotations racing, the one that loses answers 409 `cycle.feed.exists` and the winner's link stands.",
       responses: {
         ...mintResponses,
         "404": {
           description: "No subscription is on (`cycle.feed.none`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "409": {
+          description:
+            "Another rotation replaced the link at the same moment (`cycle.feed.exists`).",
           content: { "application/json": { schema: errorEnvelope } },
         },
       },
