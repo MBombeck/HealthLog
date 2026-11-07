@@ -144,6 +144,11 @@
   to half a minute before it reports anything. Attaching a new file in the
   Coach does the same. Reaching the hourly upload limit now says that
   instead of "a few minutes".
+- **Counts in Russian, French and Portuguese.** Russian uses its singular
+  form for 21, 31 and so on, and French and Brazilian Portuguese use it for
+  zero, but those strings had the digit 1 written in, so "21 days" read as
+  "1 day". They now carry the actual count, and a guard keeps new ones from
+  writing the digit.
 
 ### Changed
 
