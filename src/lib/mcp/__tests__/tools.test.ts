@@ -326,6 +326,11 @@ describe("MCP tool registry — surface", () => {
     }
   });
 
+  it("tells a client that get_cycle returns the upcoming periods", () => {
+    const def = MCP_TOOLS.find((t) => t.name === "get_cycle");
+    expect(def?.description).toContain("`upcoming`");
+  });
+
   it("annotates every tool read-only / closed-world (cloud-connector requirement)", () => {
     for (const def of MCP_TOOLS) {
       expect(def.annotations.readOnlyHint).toBe(true);
