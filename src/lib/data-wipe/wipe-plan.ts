@@ -223,6 +223,10 @@ export const WIPE_MODELS = [
   // `resolveShareGateState` both resolve an unknown `tokenHash` to `null`, and
   // null is the same blunt 404 a revoked link gets.
   "ClinicianShareLink",
+  // #1350 — the cycle calendar feed, on both sides (see WIPE_OWNER_FIELDS):
+  // the feed on this record, and any this account minted on a record it
+  // manages. Deleting the row is the revocation, as for the share link.
+  "CycleCalendarFeed",
   // v1.36.0 — account grants, on BOTH sides (see WIPE_OWNER_FIELDS): the ones
   // this account made over its own record, and the ones it holds over someone
   // else's.
@@ -587,6 +591,8 @@ export const WIPE_OWNER_FIELDS: Readonly<Record<string, readonly string[]>> = {
   NotificationEvent: ["recordUserId"],
   NotificationEgressAuthorization: ["recordUserId", "recipientUserId"],
   ManagedProfileHandover: ["profileId", "createdById"],
+  // #1350 — the record the feed serves, and the carrier who minted it.
+  CycleCalendarFeed: ["userId", "createdById"],
   // Both sides. Wiping only the grantor side would leave the account still
   // holding read access to other people's records after it asked for
   // everything of its own to be deleted.

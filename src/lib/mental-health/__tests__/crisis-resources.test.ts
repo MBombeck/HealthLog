@@ -86,6 +86,49 @@ describe("crisisResourcesForLocale", () => {
     }
   });
 
+  it("resolves the country from the region subtag whatever the language", () => {
+    const cases: Array<[string, string]> = [
+      ["en-BE", "zelfmoordlijn1813"],
+      ["fr-BE", "zelfmoordlijn1813"],
+      ["en-NL", "zelfmoordpreventie113"],
+      ["en-AT", "telefonSeelsorgeAt"],
+      ["fr-CH", "dargeboteneHand"],
+      ["it_CH", "dargeboteneHand"],
+      ["en-DE", "telefonSeelsorge"],
+      ["de-DE", "telefonSeelsorge"],
+      ["en-PT", "sns24"],
+      ["en-BR", "cvv"],
+      ["es-US", "lifeline988"],
+      ["zh-Hant-CH", "dargeboteneHand"],
+    ];
+    for (const [locale, first] of cases) {
+      const set = crisisResourcesForLocale(locale);
+      expect(set.resources[0]?.id, locale).toBe(first);
+    }
+    // A country set never carries another country's lines.
+    expect(
+      crisisResourcesForLocale("en-DE").resources.map((r) => r.id),
+    ).not.toContain("dargeboteneHand");
+    expect(crisisResourcesForLocale("en-AT").emergencyNumber).toBe("112");
+    expect(crisisResourcesForLocale("es-US").emergencyNumber).toBe("911");
+  });
+
+  it("keeps the language rules when the region has no set of its own", () => {
+    expect(
+      crisisResourcesForLocale("de-LI").resources.map((r) => r.id),
+    ).toEqual(crisisResourcesForLocale("de").resources.map((r) => r.id));
+    expect(crisisResourcesForLocale("nl-SR").resources[0]?.id).toBe(
+      "zelfmoordpreventie113",
+    );
+    expect(crisisResourcesForLocale("nl-SR").resources).toHaveLength(3);
+    for (const locale of ["en", "en-GB", "fr-FR", "", null, undefined]) {
+      expect(
+        crisisResourcesForLocale(locale).resources.map((r) => r.id),
+        String(locale),
+      ).toEqual(crisisResourcesForLocale("xx").resources.map((r) => r.id));
+    }
+  });
+
   it("names every crisis resource in every language", () => {
     // History re-derives the set from the row's stored locale and renders it
     // in whatever language the reader uses now.

@@ -739,10 +739,10 @@
     "emptyDescription": "Registre sua primeira medição ou entrada de humor. Blocos e gráficos aparecem automaticamente conforme os dados chegam.",
     "emptyAddMeasurement": "Adicionar sua primeira medição",
     "staleHint": "Última leitura há {count} d",
-    "staleHintWeeksOne": "Última leitura há 1 semana",
+    "staleHintWeeksOne": "Última leitura há {count} semana",
     "staleHintWeeksOther": "Última leitura há {count} semanas",
     "staleHintWeeksFew": "Última leitura há {count} semanas",
-    "staleHintMonthsOne": "Última leitura há 1 mês",
+    "staleHintMonthsOne": "Última leitura há {count} mês",
     "staleHintMonthsOther": "Última leitura há {count} meses",
     "staleHintMonthsFew": "Última leitura há {count} meses",
     "recentWorkouts": {
@@ -819,6 +819,7 @@
     "typeHeartRateVariability": "Variabilidade da frequência cardíaca",
     "typeRestingHeartRate": "Frequência cardíaca em repouso",
     "typeActiveEnergyBurned": "Energia ativa",
+    "typeBasalEnergyBurned": "Energia em repouso",
     "typeFlightsClimbed": "Andares subidos",
     "typeWalkingRunningDistance": "Distância caminhada + corrida",
     "typeVo2Max": "VO2 máx",
@@ -2286,7 +2287,7 @@
           "currentSince": "Plano atual desde {date}",
           "noTimes": "Sem horários fixos",
           "manualChip": "Adicionado manualmente",
-          "showErasOne": "Mostrar 1 era anterior",
+          "showErasOne": "Mostrar {count} era anterior",
           "showErasOther": "Mostrar {count} eras anteriores",
           "hideEras": "Ocultar eras anteriores",
           "addEra": "Adicionar era anterior",
@@ -2358,7 +2359,7 @@
     "tableColActions": "Ações",
     "tableSortBy": "Ordenar por {column}",
     "tableComplianceDays": "{days} d",
-    "tableStockDoseOne": "1 dose",
+    "tableStockDoseOne": "{count} dose",
     "tableStockDoses": "{count} doses",
     "tableStockRunway": "≈ {days} dias restantes",
     "cardLowStockRunway": "Estoque: ≈ {days} dias",
@@ -3237,7 +3238,7 @@
       "settingsClustersLabel": "Dados que o Coach vê",
       "settingsClustersHint": "Escolha quais grupos dos seus dados o Coach pode ler. Mais dados significam respostas mais ricas e um prompt maior.",
       "settingsClusterNoData": "Ainda sem dados",
-      "sourcesMemberCountOne": "1 métrica",
+      "sourcesMemberCountOne": "{count} métrica",
       "sourcesMemberCountFew": "{count} métricas",
       "sourcesMemberCountOther": "{count} métricas",
       "lookback": {
@@ -3337,7 +3338,7 @@
         "indexing": "Indexando…",
         "indexingHint": "Um documento ainda está sendo indexado. Você pode enviar quando estiver pronto.",
         "fencedHint": "Esta conversa roda sem acesso aos seus dados de saúde. O coach lê apenas os documentos anexados.",
-        "documentsAttachedOne": "1 documento anexado",
+        "documentsAttachedOne": "{count} documento anexado",
         "documentsAttachedOther": "{count} documentos anexados",
         "railBadge": "Conversa de documento isolada",
         "uploadError": "Falha no envio. Tente novamente.",
@@ -3941,9 +3942,9 @@
         "learningBody": "Até agora são {count} em {days}. Um pouco mais de histórico e um quadro mais completo entra em foco. Continue registrando, ou deixe um dispositivo conectado preencher.",
         "learningBodyEmpty": "Assim que algumas leituras chegarem (registradas por você ou sincronizadas de um dispositivo), seu tempo na faixa, média e variabilidade tomarão forma aqui.",
         "readingsCount": "{count} leituras",
-        "readingsCountOne": "1 leitura",
+        "readingsCountOne": "{count} leitura",
         "daysCount": "{days} dias",
-        "daysCountOne": "1 dia",
+        "daysCountOne": "{count} dia",
         "tir": {
           "title": "Tempo na faixa",
           "caption": "Parcela das leituras em cada faixa ({low}–{high} {unit} é a meta).",
@@ -3995,7 +3996,7 @@
             "bedtime": "Hora de dormir",
             "unspecified": "Sem marcação",
             "readingsShort": "{count} leituras",
-            "readingsShortOne": "1 leitura"
+            "readingsShortOne": "{count} leitura"
           }
         }
       }
@@ -4934,7 +4935,7 @@
       },
       "crossLink": {
         "title": "Registros de ECG",
-        "recordingsOne": "1 registro em arquivo.",
+        "recordingsOne": "{count} registro em arquivo.",
         "recordingsMany": "{count} registros em arquivo.",
         "latestResult": "Resultado mais recente do dispositivo: {result}.",
         "cta": "Ver registros"
@@ -4948,7 +4949,7 @@
       "caption": "Média em intervalos de 10 minutos.",
       "hourlyNote": "Mostrando a média horária deste dia; dias recentes mostram o detalhe completo de 10 minutos.",
       "empty": "Não há leituras de frequência cardíaca suficientes para este dia mostrar sua forma ainda.",
-      "coverageOne": "Com base em 1 leitura ao longo de {hours}h.",
+      "coverageOne": "Com base em {count} leitura ao longo de {hours}h.",
       "coverageMany": "Com base em {count} leituras ao longo de {hours}h.",
       "baseline": "Em repouso",
       "today": "Hoje",
@@ -5277,6 +5278,7 @@
           "oura": "Oura",
           "whoop": "WHOOP",
           "polar": "Polar",
+          "garmin": "Garmin",
           "fitbit": "Fitbit",
           "strava": "Strava",
           "nightscout": "Nightscout",
@@ -5284,7 +5286,8 @@
         },
         "hints": {
           "apple-health": "Sincronizado pelo aplicativo iOS ou importado de uma exportação.",
-          "file": "Importado nas Configurações quando terminar aqui."
+          "file": "Importado nas Configurações quando terminar aqui.",
+          "fitbit": "Agora é conectado pelo Google Health."
         }
       },
       "visit": {
@@ -5338,6 +5341,7 @@
           "waiting": "Ainda não conectado.",
           "openSettings": "Abrir Configurações → Integrações",
           "noDate": "desconhecido",
+          "throughGoogleHealth": "Os dados do {source} agora chegam pelo {target}: a conexão clássica com o {source} foi desativada. Conecte o {target} com a conta Google em que o seu {source} está conectado, e suas leituras chegam por lá.",
           "needsCredentials": {
             "title": "Esta instância ainda não tem um aplicativo {target} registrado.",
             "detail": "Insira suas próprias credenciais em Configurações → Integrações, então a conexão pode começar."
@@ -5438,7 +5442,7 @@
   },
   "trendHints": {
     "title": "Primeira tendência após 5 leituras",
-    "remainingOne": "Falta 1 leitura.",
+    "remainingOne": "Falta {count} leitura.",
     "remainingMany": "Faltam {count} leituras."
   },
   "settings": {
@@ -6903,7 +6907,9 @@
       "summary": "{count} tipos de dados, mais recente {relative}",
       "quiet": "{count} sem atividade",
       "workouts": "Treinos",
-      "medicationDoses": "Doses de medicamentos"
+      "medicationDoses": "Doses de medicamentos",
+      "cycleDays": "Dias do ciclo",
+      "cycleDaysCount": "Dias do ciclo ({count})"
     },
     "integrationFallback": {
       "description": "Configurado nesta conta sem um cartão de configurações próprio."
@@ -8009,7 +8015,7 @@
       "colRedeemedBy": "Resgatado por",
       "colActions": "Ações",
       "byCreator": "por {by}",
-      "expiresInDaysOne": "em 1 dia",
+      "expiresInDaysOne": "em {count} dia",
       "expiresInDaysOther": "em {count} dias",
       "statusActive": "Ativo",
       "statusExpired": "Expirado",
@@ -10020,7 +10026,70 @@
     "startedPeriodOnDate": "Minha menstruação começou neste dia",
     "endedPeriodOnDate": "Minha menstruação terminou neste dia",
     "startAbsorbed": "Início da menstruação salvo. Seu início em {absorbed} foi mesclado em {date}.",
-    "startRestored": "Salvo. O início em {dates} está de volta."
+    "startRestored": "Salvo. O início em {dates} está de volta.",
+    "feed": {
+      "title": "Assinatura de calendário",
+      "description": "Suas próximas menstruações como eventos de dia inteiro no app de calendário que você já usa.",
+      "disclosure": "Seu provedor de calendário (Google, iCloud, Outlook) guarda essas datas nos servidores dele. Desativar depois não apaga as cópias que ele já tem.",
+      "turnOn": "Ativar assinatura",
+      "error": "Não foi possível alterar a assinatura de calendário. Tente de novo.",
+      "linkHidden": "Um link que começa com {prefix} está ativo. Ele só aparece uma vez, ao ser criado; renove-o para ter um novo.",
+      "linkLabel": "Link da assinatura",
+      "linkOnce": "Só aparece agora. Cole no seu app de calendário ou renove depois para ter um novo.",
+      "copy": "Copiar link",
+      "copied": "Link copiado.",
+      "copyFailed": "Não deu para copiar. Selecione o link e copie manualmente.",
+      "openInCalendar": "Abrir no app de calendário",
+      "notFetched": "Ainda não buscado.",
+      "lastFetched": "Última busca {when} por {fetcher}.",
+      "fetcher": {
+        "GOOGLE": "Google Agenda",
+        "APPLE": "Calendário da Apple",
+        "MICROSOFT": "Outlook",
+        "OTHER": "um app de calendário"
+      },
+      "horizon": "Ciclos à frente",
+      "history": "Ciclos anteriores",
+      "historyNone": "Nenhum",
+      "titles": "Títulos dos eventos",
+      "titleMode": {
+        "DISCREET": "Discreto (●)",
+        "DESCRIPTIVE": "Descritivo"
+      },
+      "fertile": "Janela fértil",
+      "fertileDescription": "Adiciona a janela fértil estimada do próximo ciclo. Uma estimativa, não um método contraceptivo.",
+      "rotate": "Renovar link",
+      "rotateTitle": "Renovar o link?",
+      "rotateBody": "Calendários com o link antigo deixam de ser atualizados. Você recebe um novo link para adicionar no lugar.",
+      "turnOff": "Desativar",
+      "turnOffTitle": "Desativar a assinatura de calendário?",
+      "turnOffBody": "O link para de funcionar. As cópias que seu provedor de calendário já tem ficam lá até você remover o calendário.",
+      "help": {
+        "title": "Como adicionar ao seu calendário",
+        "google": "Google Agenda: Outras agendas, Do URL, depois cole o link. O Google atualiza mais ou menos a cada 12 a 24 horas.",
+        "apple": "Calendário da Apple: no Mac, Arquivo, Nova Assinatura de Calendário; no iPhone, Ajustes, Calendário, Contas, Adicionar Conta, Outra, Adicionar Calendário Assinado.",
+        "outlook": "Outlook: Adicionar calendário, Assinar da Web, depois cole o link. O Outlook atualiza a cada poucas horas."
+      },
+      "ics": {
+        "calendarName": "Ciclo (HealthLog)",
+        "periodEstimate": "Menstruação (estimativa)",
+        "periodLogged": "Menstruação (registrada)",
+        "fertileEstimate": "Janela fértil (estimativa)",
+        "likelyStart": "Início mais provável {date}, {band}",
+        "bandOne": "±{count} dia",
+        "bandFew": "±{count} dias",
+        "bandOther": "±{count} dias"
+      }
+    },
+    "projection": {
+      "title": "Ciclos seguintes",
+      "around": "Por volta de {date}",
+      "state": {
+        "LEARNING": "Até haver 3 ciclos registrados, só a próxima menstruação é incluída.",
+        "LATE": "Sem previsão enquanto esta menstruação estiver mais atrasada que o esperado; ela volta assim que você a registrar.",
+        "OFF": "As previsões estão desativadas; só ciclos anteriores são incluídos, se escolhidos."
+      }
+    }
   },
   "cycleReminders": {
     "periodSoonTitle": "Menstruação provavelmente em breve",
@@ -10316,6 +10385,7 @@
         "unitLockedHint": "Depois que este marcador tiver leituras, sua unidade permanece como está. Caso contrário, os valores armazenados seriam exibidos em uma nova unidade sem serem convertidos.",
         "panel": "Painel",
         "panelPlaceholder": "ex.: Lipídios",
+        "panelHint": "Escolha uma sugestão ou digite o seu. Os painéis do catálogo são reconhecidos em todos os idiomas.",
         "lowerBound": "Referência baixa",
         "upperBound": "Referência alta",
         "lowerPlaceholder": "Limite inferior",
@@ -10499,6 +10569,23 @@
     "loadMoreReadings": "Carregar mais leituras",
     "documentsLink": "Documentos de laudos laboratoriais",
     "notLinkedYet": "Ainda não vinculado a um biomarcador",
+    "groups": {
+      "other": "Outros",
+      "allInRange": "Tudo na faixa",
+      "outsideCountOne": "{count} de {total} fora da faixa",
+      "outsideCountFew": "{count} de {total} fora da faixa",
+      "outsideCountOther": "{count} de {total} fora da faixa",
+      "heading": "Categorias",
+      "description": "Agrupa os valores por painel, como Lipídios ou Fígado, com um status por grupo.",
+      "label": "Agrupamento",
+      "none": "Nenhum",
+      "category": "Por categoria",
+      "openLabel": "Abertas ao carregar",
+      "openExpanded": "Todas",
+      "openFlagged": "Só fora da faixa",
+      "openCollapsed": "Nenhuma",
+      "orderWithinGroups": "A ordem vale dentro de cada categoria."
+    },
     "sourceRange": {
       "fromReport": "Faixa do laudo {range}",
       "catalogDiffers": "sua faixa {range}",
@@ -10545,6 +10632,7 @@
       "convertedOther": "{count} leituras, convertidas de {unit} para {targetUnit}",
       "refused": "{unit} não pode ser convertida para {targetUnit}.",
       "aliasesAdded": "Estes nomes levarão ao biomarcador mantido:",
+      "adoptsPanel": "O biomarcador mantido assume o painel {panel}.",
       "blocked": "Nada pode ser mesclado enquanto uma unidade não puder ser convertida. Deixe esse biomarcador fora ou mantenha outro.",
       "noUndo": "Uma mesclagem não pode ser desfeita.",
       "doneToastOne": "Mesclado em {name}, {count} leitura movida",
@@ -10947,7 +11035,7 @@
     },
     "insights": {
       "title": "Seu histórico de doenças",
-      "countOne": "Você registrou 1 episódio neste período.",
+      "countOne": "Você registrou {count} episódio neste período.",
       "countOther": "Você registrou {count} episódios neste período.",
       "typicalGap": "Lacuna típica de recuperação: {days} dias entre se sentir melhor e seus números se estabilizarem.",
       "typicalGapWithDriver": "Lacuna típica de recuperação: {days} dias; você tende a se sentir melhor antes de seu {vital} se estabilizar.",
@@ -10960,7 +11048,7 @@
       "resolved": "Resolvidos"
     },
     "flares": {
-      "countOne": "1 surto",
+      "countOne": "{count} surto",
       "countOther": "{count} surtos"
     },
     "timeline": {
@@ -11092,13 +11180,13 @@
       "toggleShow": "Mostrar o que o Coach examinou",
       "toggleHide": "Ocultar o que o Coach examinou",
       "announceDone": "Concluído: {label}",
-      "readingsOne": "1 leitura",
+      "readingsOne": "{count} leitura",
       "readingsFew": "{count} leituras",
       "readingsOther": "{count} leituras",
-      "rowsOne": "1 linha",
+      "rowsOne": "{count} linha",
       "rowsFew": "{count} linhas",
       "rowsOther": "{count} linhas",
-      "metricsOne": "1 métrica",
+      "metricsOne": "{count} métrica",
       "metricsFew": "{count} métricas",
       "metricsOther": "{count} métricas",
       "reason": {
@@ -11202,7 +11290,7 @@
       "entry": "{domain}, {window}: {detail}",
       "entryNoWindow": "{domain}: {detail}",
       "reused": "de uma resposta anterior",
-      "readingsOne": "1 leitura",
+      "readingsOne": "{count} leitura",
       "readingsFew": "{count} leituras",
       "readingsOther": "{count} leituras",
       "aggregation": {
@@ -12005,7 +12093,8 @@
       "unsupportedType": "Este tipo de arquivo não é suportado.",
       "purged": "Este documento foi removido permanentemente e não pode ser restaurado.",
       "duplicateExists": "Um documento idêntico já está armazenado.",
-      "rateLimited": "Envios demais agora. Tente novamente em alguns minutos.",
+      "uploadBusy": "O servidor estava ocupado com outros envios. Tente novamente agora.",
+      "rateLimited": "Você atingiu o limite de envios desta hora. Tente novamente mais tarde.",
       "generic": "Falha no envio. Tente novamente."
     },
     "toast": {
@@ -12159,7 +12248,7 @@
     },
     "ai": {
       "readDone": "A IA leu seu documento.",
-      "readStagedOne": "A IA leu seu documento. 1 valor laboratorial está pronto para revisão.",
+      "readStagedOne": "A IA leu seu documento. {count} valor laboratorial está pronto para revisão.",
       "readStagedFew": "A IA leu seu documento. {count} valores laboratoriais estão prontos para revisão.",
       "readStagedOther": "A IA leu seu documento. {count} valores laboratoriais estão prontos para revisão.",
       "read": "Ler com IA",
@@ -12191,12 +12280,12 @@
       "fieldValueText": "Resultado (texto)",
       "fieldUnit": "Unidade",
       "fieldDose": "Dose",
-      "unverifiedNoteOne": "1 valor ainda precisa de verificação e permanece pendente.",
+      "unverifiedNoteOne": "{count} valor ainda precisa de verificação e permanece pendente.",
       "unverifiedNoteFew": "{count} valores ainda precisam de verificação e permanecem pendentes.",
       "unverifiedNoteOther": "{count} valores ainda precisam de verificação e permanecem pendentes.",
       "finish": "Concluir revisão",
       "confirmFailed": "A revisão não pôde ser salva. Tente novamente.",
-      "savedToastOne": "1 valor salvo",
+      "savedToastOne": "{count} valor salvo",
       "savedToastFew": "{count} valores salvos",
       "savedToastOther": "{count} valores salvos",
       "nothingSavedToast": "Revisão salva. Nenhum valor foi adicionado.",
@@ -13156,7 +13245,11 @@
       "biomarkerMerge": "{name} mesclou biomarcadores",
       "medicationIngredientsUpdate": "{name} alterou o que um suplemento contém",
       "auditCCreate": "{name} respondeu às perguntas AUDIT-C",
-      "auditCDelete": "{name} removeu uma entrada AUDIT-C"
+      "auditCDelete": "{name} removeu uma entrada AUDIT-C",
+      "cycleFeedCreate": "{name} ativou a assinatura de calendário",
+      "cycleFeedUpdate": "{name} alterou a assinatura de calendário",
+      "cycleFeedRotate": "{name} renovou o link da assinatura de calendário",
+      "cycleFeedRevoke": "{name} desativou a assinatura de calendário"
     },
     "section": {
       "measurements": {
@@ -13333,7 +13426,9 @@
       "specialty": "Desde a sua última consulta de {specialty}, em {date}",
       "kind": "Desde a sua última consulta do mesmo tipo ({kind}), em {date}",
       "default": "Os últimos {days} dias",
-      "defaultReason": "Nenhuma consulta anterior com o mesmo consultório, especialidade ou tipo."
+      "defaultReason": "Nenhuma consulta anterior com o mesmo consultório, especialidade ou tipo.",
+      "capped": "Os últimos dois anos",
+      "cappedReason": "A última consulta correspondente foi há mais de dois anos, e um relatório cobre no máximo dois anos."
     }
   },
   "checkups": {
@@ -13510,7 +13605,7 @@
       "deleteBody": "“{symptom}” e todas as suas entradas serão excluídos. Para manter o histórico, oculte-o em vez disso.",
       "deleteEventTitle": "Excluir entrada?",
       "deleteEventBody": "Esta entrada será excluída.",
-      "hiddenOne": "Ocultos (1)",
+      "hiddenOne": "Ocultos ({count})",
       "hiddenFew": "Ocultos ({count})",
       "hiddenOther": "Ocultos ({count})",
       "recent": "Últimos 30 dias",
@@ -13577,14 +13672,14 @@
     "valuesAllFew": "Todos os {count} valores",
     "valuesAllOther": "Todos os {count} valores",
     "valuesFewer": "Menos valores",
-    "countEntriesOne": "1 entrada",
+    "countEntriesOne": "{count} entrada",
     "countEntriesFew": "{count} entradas",
     "countEntriesOther": "{count} entradas",
-    "meanOfReadingsOne": "Média de 1 leitura",
+    "meanOfReadingsOne": "Média de {count} leitura",
     "meanOfReadingsFew": "Média de {count} leituras",
     "meanOfReadingsOther": "Média de {count} leituras",
     "sinceLastVisit": {
-      "countOne": "1 entrada",
+      "countOne": "{count} entrada",
       "countFew": "{count} entradas",
       "countOther": "{count} entradas",
       "allOne": "Mostrar tudo",
@@ -13773,7 +13868,7 @@
       },
       "noValue": "sem valor",
       "bloodPressure": "Pressão arterial",
-      "readingsOne": "1 leitura",
+      "readingsOne": "{count} leitura",
       "readingsFew": "média de {count} leituras",
       "readingsOther": "média de {count} leituras"
     },
@@ -13806,7 +13901,7 @@
       "empty": "Nenhuma entrada de {from} a {to}",
       "emptySingle": "Nenhuma entrada em {period}",
       "ended": "{label} terminou",
-      "afterDaysOne": "após 1 dia",
+      "afterDaysOne": "após {count} dia",
       "afterDaysFew": "após {count} dias",
       "afterDaysOther": "após {count} dias",
       "notable": {
@@ -13830,7 +13925,7 @@
       "apply": "Aplicar"
     },
     "item": {
-      "labValuesOne": "1 valor laboratorial",
+      "labValuesOne": "{count} valor laboratorial",
       "labValuesFew": "{count} valores laboratoriais",
       "labValuesOther": "{count} valores laboratoriais"
     },
@@ -13849,7 +13944,17 @@
     },
     "legendLabValue": "Valor de exame, como foi medido",
     "legendLabOutside": "Fora da faixa de referência",
-    "legendLabRange": "Faixa de referência"
+    "legendLabRange": "Faixa de referência",
+    "legendSymptom": "Linha do sintoma: a maior intensidade de cada dia registrado (de 0 a 10), em média sobre os dias registrados",
+    "symptoms": {
+      "menuTitle": "Sintomas",
+      "full": "Até {max} sintomas ao mesmo tempo. Remova um para adicionar outro.",
+      "hidden": "oculto",
+      "unnamed": "Sintoma",
+      "daysOne": "em {count} dia",
+      "daysFew": "média de {count} dias",
+      "daysOther": "média de {count} dias"
+    }
   },
   "lifeEvents": {
     "title": "Evento de vida",

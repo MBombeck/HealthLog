@@ -28,10 +28,12 @@ const groupByMock = {
 const liveTypesMock = vi.hoisted(() => vi.fn());
 const queryRawMock = vi.hoisted(() => vi.fn());
 const workoutGroupByMock = vi.hoisted(() => vi.fn());
+const cycleDayGroupByMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/db", () => ({
   prisma: {
     $queryRaw: queryRawMock,
     workout: { groupBy: workoutGroupByMock },
+    cycleDayLog: { groupBy: cycleDayGroupByMock },
   },
 }));
 vi.mock("@/lib/measurements/live-types", () => ({
@@ -77,6 +79,8 @@ beforeEach(() => {
   );
   workoutGroupByMock.mockReset();
   workoutGroupByMock.mockResolvedValue([]);
+  cycleDayGroupByMock.mockReset();
+  cycleDayGroupByMock.mockResolvedValue([]);
 });
 
 describe("getSourceMetricFreshness", () => {
@@ -115,6 +119,47 @@ describe("getSourceMetricFreshness", () => {
     expect(
       liveTypesMock.mock.calls.map((call) => call[1].source).sort(),
     ).toEqual([...Object.values(INTEGRATION_MEASUREMENT_SOURCE)].sort());
+  });
+
+  it("lists the cycle days a wearable imported, newest day and count", async () => {
+    cycleDayGroupByMock.mockResolvedValue([
+      { source: "GARMIN", _max: { date: "2026-10-20" }, _count: { _all: 42 } },
+      { source: "OURA", _max: { date: null }, _count: { _all: 0 } },
+    ]);
+    const result = await getSourceMetricFreshness("u1");
+    expect(result.garmin).toEqual([
+      {
+        type: "CYCLE_DAYS",
+        lastSeenAt: "2026-10-20T12:00:00.000Z",
+        count: 42,
+      },
+    ]);
+    expect(result.oura).toBeUndefined();
+    // Only the live rows of the cycle-importing sources are asked about.
+    expect(cycleDayGroupByMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          userId: "u1",
+          deletedAt: null,
+          source: { in: ["GARMIN", "OURA"] },
+        },
+      }),
+    );
+  });
+
+  it("never calls a quiet period a dead pipe", () => {
+    const [entry] = classifyMetricFreshness(
+      [
+        {
+          type: "CYCLE_DAYS",
+          lastSeenAt: "2026-01-01T12:00:00.000Z",
+          count: 5,
+        },
+      ],
+      "fresh",
+      new Date("2026-07-01T00:00:00.000Z"),
+    );
+    expect(entry).toMatchObject({ stale: false, count: 5 });
   });
 
   it("skips rows with no reading and unmapped sources", async () => {

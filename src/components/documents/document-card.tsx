@@ -469,6 +469,9 @@ export function UploadStateCard({
       case "duplicateExists":
         failureCopy = t("documents.error.duplicateExists");
         break;
+      case "uploadBusy":
+        failureCopy = t("documents.error.uploadBusy");
+        break;
       case "rateLimited":
         failureCopy = t("documents.error.rateLimited");
         break;

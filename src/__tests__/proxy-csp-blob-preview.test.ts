@@ -11,7 +11,7 @@ import { NextRequest } from "next/server";
  *   - `frame-src` exists and admits precisely 'self' and blob: — nothing else.
  *   - `img-src` admits blob: alongside 'self' and data:.
  *   - The boundaries that make blob: safe stay untouched: `object-src 'none'`,
- *     `frame-ancestors 'none'`, `default-src 'self'`, nonce-bound script-src.
+ *     `frame-ancestors 'self'`, `default-src 'self'`, nonce-bound script-src.
  *   - The vault SERVE route keeps its own stricter document CSP unchanged.
  *
  * Security rationale (mirrors the comment in proxy.ts): a `blob:` URL can only
@@ -73,7 +73,10 @@ describe("proxy.ts blob preview CSP (#787)", () => {
     const res = proxy(makeRequest("/documents"));
     const csp = res.headers.get("content-security-policy") ?? "";
     expect(directive(csp, "object-src")).toEqual(["'none'"]);
-    expect(directive(csp, "frame-ancestors")).toEqual(["'none'"]);
+    // 'self', never 'none': the blob: preview inherits this policy, and
+    // WebKit applies the inherited frame-ancestors to the preview's own
+    // parent, so 'none' blanks every PDF preview in Safari.
+    expect(directive(csp, "frame-ancestors")).toEqual(["'self'"]);
     expect(directive(csp, "default-src")).toEqual(["'self'"]);
     expect(csp).toMatch(/script-src 'self' 'nonce-/);
   });

@@ -171,6 +171,62 @@ describe("the live trail", () => {
     expect(interim).toBeLessThan(firstToken);
   });
 
+  it("names a read past the lookback limit on its step and its fetch entry", async () => {
+    world.coachPrefs = { defaultWindow: "last7days" };
+    world.script = [
+      { calls: [{ name: "get_day", args: { date: "2026-06-01" } }] },
+      { text: "That day lies beyond the lookback limit you set." },
+    ];
+    const { status, frames } = await h.postTurn(post, {
+      message: "What happened on 1 June?",
+      locale: "en",
+    });
+    expect(status).toBe(200);
+    const step = framesOf<{ step: { id: string; status: string } }>(
+      frames,
+      "step",
+    )
+      .map((f) => f.step)
+      .at(-1);
+    expect(step).toMatchObject({
+      tool: "get_day",
+      status: "empty",
+      reason: "outside_reach",
+    });
+    const fetch = framesOf<{ activity: CoachActivity }>(frames, "activity")
+      .map((f) => f.activity)
+      .filter((a) => a.phase === "fetch")
+      .at(-1);
+    expect(fetch).toMatchObject({
+      status: "empty",
+      stepRef: step?.id,
+      reason: "outside_reach",
+    });
+  });
+
+  it("names no reason on a fetch inside the limit", async () => {
+    world.script = [
+      {
+        calls: [
+          {
+            name: "get_metric_table",
+            args: { metric: "bp", window: "last30days" },
+          },
+        ],
+      },
+      { text: "Steady. result:r1" },
+    ];
+    const { frames } = await h.postTurn(post, {
+      message: "How was my blood pressure?",
+      locale: "en",
+    });
+    const fetches = framesOf<{ activity: CoachActivity }>(frames, "activity")
+      .map((f) => f.activity)
+      .filter((a) => a.phase === "fetch");
+    expect(fetches.length).toBeGreaterThan(0);
+    for (const entry of fetches) expect(entry).not.toHaveProperty("reason");
+  });
+
   it("persists the structure on the provenance and the text in the trail", async () => {
     world.script = [
       {

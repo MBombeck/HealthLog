@@ -1,13 +1,13 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 84,
-  "total": 94309,
+  "total": 94047,
   "entries": {
     "app/medications/page-client.tsx": 839,
     "components/charts/mood-chart.tsx": 1166,
     "components/cycle/log-day-sheet.tsx": 1639,
     "components/insights/coach-panel/chat-bubble.tsx": 822,
-    "components/insights/coach-panel/coach-conversation.tsx": 1286,
+    "components/insights/coach-panel/coach-conversation.tsx": 1278,
     "components/insights/coach-panel/use-coach.ts": 1486,
     "components/insights/derived/vitals-dashboard.tsx": 1033,
     "components/insights/health-score-card.tsx": 1023,
@@ -17,7 +17,7 @@
     "components/medications/medication-table.tsx": 853,
     "components/medications/wizard/wizard-payload.ts": 1414,
     "components/mood/mood-list.tsx": 1408,
-    "components/records/life-circumstances-manager.tsx": 1080,
+    "components/records/life-circumstances-manager.tsx": 828,
     "components/timeline/timeline-chart.tsx": 1093,
     "components/timeline/timeline-geometry.ts": 1288,
     "lib/ai/anthropic-client.ts": 804,
@@ -26,8 +26,8 @@
     "lib/ai/coach/persistence.ts": 1218,
     "lib/ai/coach/results/metric-table-tool.ts": 1102,
     "lib/ai/coach/snapshot.ts": 1346,
-    "lib/ai/coach/stream-events.ts": 817,
-    "lib/ai/coach/types.ts": 1011,
+    "lib/ai/coach/stream-events.ts": 811,
+    "lib/ai/coach/types.ts": 1008,
     "lib/ai/codex-client.ts": 907,
     "lib/ai/prompts/insight-generator.ts": 1115,
     "lib/ai/provider.ts": 1628,
@@ -42,7 +42,7 @@
     "lib/dashboard-layout.ts": 976,
     "lib/dashboard/snapshot.ts": 1550,
     "lib/day/records.ts": 1174,
-    "lib/export/backup-plan.ts": 853,
+    "lib/export/backup-plan.ts": 838,
     "lib/export/coach-backup.ts": 1070,
     "lib/export/profile-backup.ts": 1019,
     "lib/fitbit/client.ts": 1262,
@@ -86,6 +86,6 @@
     "lib/validations/inbound-documents.ts": 1018,
     "lib/withings/sync-sleep.ts": 884,
     "lib/withings/sync.ts": 933,
-    "proxy.ts": 870
+    "proxy.ts": 846
   }
 }

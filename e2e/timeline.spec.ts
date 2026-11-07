@@ -18,6 +18,9 @@
  *   7. A lab marker (#1299) is picked from the values menu, drawn as its
  *      single readings with the range behind them, read on its own, kept
  *      across a reload, and listed on its lab day on a phone.
+ *   8. A symptom (#981) is picked from the values menu, drawn as a value
+ *      line on the fixed 0 to 10 scale, read with the days behind a point,
+ *      kept across a reload, and named in the phone chronicle.
  *
  * The timeline's server routes are mocked with the contract's shapes
  * (`utils/mock-timeline.ts`); the module switch is the real one. Every
@@ -866,13 +869,18 @@ test("a lab marker is picked, drawn as its readings, read on its own and kept", 
     '[data-slot="timeline-point-target"][data-series="lab:bm-ferritin"][data-t="fe-1"]',
   );
   const tip = page.locator('[data-slot="timeline-point-tip"]');
-  // A CI run focused the target and no tip opened. The cause is not pinned
-  // down (the tips layer unmounts while the chart has no layout, which is
-  // one candidate); focus again until the tip opens.
-  await expect(async () => {
-    await target.focus();
-    await expect(tip).toHaveAttribute("data-t", "fe-1", { timeout: 1_000 });
-  }).toPass({ timeout: 10_000 });
+  // A pointer resting on another line's point, as the menu click can leave
+  // it: the focus takes the card, and that point losing the pointer (the
+  // focus scrolls the chart from under it) must not close the card.
+  await page
+    .locator('[data-slot="timeline-point-target"][data-series="WEIGHT"]')
+    .last()
+    .hover();
+  await expect(tip).toHaveAttribute("data-series", "WEIGHT");
+  await target.focus();
+  await expect(tip).toHaveAttribute("data-t", "fe-1");
+  await page.mouse.move(0, 0);
+  await expect(tip).toHaveAttribute("data-t", "fe-1");
   await expect(tip).toContainText("22 ng/mL");
   await expect(tip).toContainText("Laborbefund März");
 
@@ -912,6 +920,86 @@ test("a lab marker is picked, drawn as its readings, read on its own and kept", 
     .click();
   await page.keyboard.press("Escape");
   await expect(labs).toHaveCount(0);
+});
+
+test("a symptom is picked, drawn as a 0 to 10 line, read with its days and kept", async ({
+  page,
+}) => {
+  await setTimelineModuleOn(page);
+  const log = await mockTimeline(page, "full", TODAY, { symptoms: true });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/timeline?zoom=all");
+  await expect(page.locator('[data-slot="timeline-chart"]')).toBeVisible({
+    timeout: 20_000,
+  });
+
+  await page
+    .locator(
+      '[data-slot="timeline-desktop"] [data-slot="timeline-values-trigger"]',
+    )
+    .click();
+  const menu = page.locator('[data-slot="timeline-values-menu"]');
+  await expect(
+    menu.locator('[data-slot="timeline-values-symptoms"]'),
+  ).toBeVisible();
+  // A symptom hidden from entry is still offered, and says so.
+  await expect(
+    menu.locator(
+      '[data-slot="timeline-values-option"][data-key="symptom:sd-nausea"]',
+    ),
+  ).toBeVisible();
+  await menu
+    .locator(
+      '[data-slot="timeline-values-option"][data-key="symptom:sd-headache"]',
+    )
+    .click();
+  await page.keyboard.press("Escape");
+  await expect(menu).toBeHidden();
+
+  const row = page.locator('g[data-series="symptom:sd-headache"]');
+  const points = row.locator('[data-slot="timeline-series-point"]');
+  await expect(points).toHaveCount(3);
+  // The quarter resting on two days is hollow.
+  await expect(points.nth(1)).toHaveAttribute("data-thin", "true");
+  await expect(
+    page.locator('[data-slot="timeline-legend-symptom"]'),
+  ).toBeVisible();
+  expect(log.timelineQueries.at(-1)?.get("values")?.split(",")).toContain(
+    "symptom:sd-headache",
+  );
+
+  const target = page.locator(
+    '[data-slot="timeline-point-target"][data-series="symptom:sd-headache"][data-t="2024-01-01"]',
+  );
+  const tip = page.locator('[data-slot="timeline-point-tip"]');
+  await target.focus();
+  await expect(tip).toHaveAttribute("data-t", "2024-01-01");
+  // Out of 10 in the account's own decimal mark, with the days behind it.
+  await expect(tip).toContainText(/6[.,]5\/10/);
+  await expect(tip).toContainText(/\b9\b/);
+
+  const axe = await new AxeBuilder({ page })
+    .include('[data-slot="timeline-page"]')
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  expect(axe.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+
+  // The choice is kept: a reload asks for the symptom again.
+  await page.reload();
+  await expect(points).toHaveCount(3, { timeout: 20_000 });
+
+  // On a phone: its means in the chronicle, no sideways scroll.
+  await page.setViewportSize({ width: 390, height: 844 });
+  const means = page.locator(
+    '[data-slot="timeline-mobile"] [data-slot="timeline-mean-part"][data-series="symptom:sd-headache"]',
+  );
+  await expect(means.first()).toBeVisible();
+  const overflow = await page.evaluate(
+    () =>
+      document.documentElement.scrollWidth -
+      document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
 });
 
 test("the timeline page ends where its content does, at every desktop width", async ({

@@ -34,4 +34,8 @@ export const cycleKeys = {
   /** The caller's own custom symptoms (decrypted labels) the log-day sheet
    * merges into the seeded chip grid. */
   cycleCustomSymptoms: () => ["cycle", "custom-symptoms"] as const,
+  /** #1350 — the calendar subscription's status. Under the `["cycle"]` prefix
+   * on purpose: a logged period changes what the feed serves (a late period
+   * becomes a forecast again), so every cycle write refreshes the card too. */
+  cycleFeedSubscription: () => ["cycle", "feed-subscription"] as const,
 };

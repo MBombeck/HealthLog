@@ -391,14 +391,44 @@ export const aiInputDependentKeys = [
  * invalidations (cache would otherwise be left half-stale) and so the `void
  * invalidateKeys(...)` fire-and-forget pattern in delete handlers never
  * surfaces an unhandled rejection.
+ *
+ * A query still on its first fetch is invalidated once more after that fetch
+ * settles. TanStack restarts an in-flight fetch on invalidation only when the
+ * query already holds data; without data it hands back the in-flight promise,
+ * and that fetch's success clears the invalidated flag. Its answer can predate
+ * the write being announced: an upload settling just as a typed search
+ * switches the vault list to a fresh key left the list on a read taken before
+ * the row existed, with nothing scheduled to correct it.
  */
 export function invalidateKeys(
   queryClient: QueryClient,
   keys: readonly QueryKey[],
 ): Promise<PromiseSettledResult<unknown>[]> {
   return Promise.allSettled(
-    keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+    keys.map((queryKey) => invalidateKey(queryClient, queryKey)),
   );
+}
+
+async function invalidateKey(
+  queryClient: QueryClient,
+  queryKey: QueryKey,
+): Promise<void> {
+  const firstLoads = queryClient.getQueryCache().findAll({
+    queryKey,
+    predicate: (query) =>
+      query.state.data === undefined && query.state.fetchStatus === "fetching",
+  });
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey }),
+    ...firstLoads.map(async (query) => {
+      // Its outcome is not ours to report; only that it has ended.
+      await query.promise?.catch(() => undefined);
+      await queryClient.invalidateQueries({
+        queryKey: query.queryKey,
+        exact: true,
+      });
+    }),
+  ]);
 }
 
 /**

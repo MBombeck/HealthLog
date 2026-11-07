@@ -23,6 +23,7 @@ import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
+import { resolveOrigin } from "@/lib/http/origin";
 import {
   createShareLinkSchema,
   SHARE_LINK_FORBIDDEN_LEAVES,
@@ -40,23 +41,6 @@ import {
   PASSPHRASE_FRAGMENT_KEY,
 } from "@/lib/clinician-share/passphrase";
 import type { Prisma } from "@/generated/prisma/client";
-
-/**
- * The absolute origin to build the public share URL from. Prefers the
- * forwarded host/proto a reverse proxy sets (the documented self-hosting path
- * fronts the app with Caddy/Traefik/Nginx), falling back to the request URL's
- * own origin. The QR payload carries the passphrase in the FRAGMENT only.
- */
-function resolveOrigin(request: NextRequest): string {
-  const proto =
-    request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() ||
-    new URL(request.url).protocol.replace(":", "");
-  const host =
-    request.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
-    request.headers.get("host") ||
-    new URL(request.url).host;
-  return `${proto}://${host}`;
-}
 
 /**
  * The row selection every owner-facing projection reads. `_count.documents`

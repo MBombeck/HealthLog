@@ -25,6 +25,8 @@ import {
 } from "./shared";
 import { WEBHOOK_PAYLOAD_FORMATS } from "@/lib/notifications/types";
 import {
+  MODULE_GROUPS_OPEN,
+  MODULE_GROUP_BYS,
   MODULE_LIST_VIEWS,
   MODULE_SORT_DIRS,
 } from "@/lib/settings/module-list-layout";
@@ -46,6 +48,16 @@ const moduleListPrefsEntry = z
       .enum(MODULE_SORT_DIRS)
       .describe(
         'Sort of the labs list; `manual` follows `order`. Default "recentDesc". The other lists ignore it.',
+      ),
+    groupBy: z
+      .enum(MODULE_GROUP_BYS)
+      .describe(
+        'Whether the labs list shows its server-resolved categories (`category`) or one flat list (`none`). Default "none". The labs list stays flat while `GET /api/labs/overview` answers `grouped: false`. The other lists ignore it.',
+      ),
+    groupsOpen: z
+      .enum(MODULE_GROUPS_OPEN)
+      .describe(
+        'Which labs categories start open: every one (`expanded`), only those whose `status` is `above` or `below` (`flagged`), or none (`collapsed`). Default "expanded". The other lists ignore it.',
       ),
     saved: z
       .boolean()

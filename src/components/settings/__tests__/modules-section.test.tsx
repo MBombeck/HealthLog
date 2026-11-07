@@ -40,6 +40,7 @@ const invalidateSpy = vi.fn();
 vi.mock("@tanstack/react-query", () => ({
   useQueryClient: () => ({
     invalidateQueries: invalidateSpy,
+    getQueryCache: () => ({ findAll: () => [] }),
     // v1.32.22 — the writer reads/seeds the optimistic-concurrency token
     // via the query cache; no token seeded → tokenless (unconditional) write.
     getQueryData: () => undefined,

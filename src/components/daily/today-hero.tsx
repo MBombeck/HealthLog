@@ -373,7 +373,7 @@ export function TodayHero({
         <span
           data-slot="today-hero-score-basis"
           className={cn(
-            "text-muted-foreground text-xs text-balance md:max-w-[11rem] md:text-right",
+            "text-muted-foreground text-xs text-balance md:max-w-[11rem] md:text-center",
             size === "sm" && "max-w-[11rem]",
           )}
         >
@@ -388,7 +388,7 @@ export function TodayHero({
      footprint, so the column never collapses. The compact all-clear keeps
      the ring and its meta lines in one centred column. */
   const compactScoreColumn = (
-    <div className="flex shrink-0 flex-col items-center gap-1 text-center md:items-end">
+    <div className="flex shrink-0 flex-col items-center gap-1 text-center">
       {scoreRing("sm")}
       {scoreMetaLines("sm")}
     </div>
@@ -507,8 +507,8 @@ export function TodayHero({
                 {todayBlock}
               </div>
             ) : null}
-            {/* One column from md up (the ring, its meta lines under it,
-                trailing edge), as before. Below md the column dissolves
+            {/* One column from md up: the ring, its meta lines centred
+                under it. Below md the column dissolves
                 (`contents`) into two grid items: the dial in the top-right
                 cell beside the lead, and the meta lines on a full-width row
                 right after the read row, flush with the dial's edge: under
@@ -518,7 +518,7 @@ export function TodayHero({
             <div
               data-slot="today-hero-score-column"
               className={cn(
-                "contents md:col-start-2 md:row-start-1 md:flex md:shrink-0 md:flex-col md:items-end md:gap-1 md:self-start md:text-right",
+                "contents md:col-start-2 md:row-start-1 md:flex md:shrink-0 md:flex-col md:items-center md:gap-1 md:self-start md:text-center",
                 leadBlock && todayBlock && "md:row-span-2",
               )}
             >

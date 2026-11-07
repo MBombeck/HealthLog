@@ -234,12 +234,11 @@ async function postLabResult(request: NextRequest) {
   } else {
     biomarker = await resolveOrMintBiomarker(user.id, {
       analyte: analyte as string,
-      // A qualitative reading has no numeric unit / range — mint the catalog
-      // marker with an empty unit label and no bounds. A numeric reading
-      // supplies its unit (Zod requires it on the free-text numeric path).
+      // A qualitative reading mints with an empty unit but the printed range;
+      // a numeric one supplies its unit (Zod requires it on this path).
       unit: isQualitative ? (unit ?? "") : (unit as string),
-      referenceLow: isQualitative ? null : (referenceLow ?? null),
-      referenceHigh: isQualitative ? null : (referenceHigh ?? null),
+      referenceLow: referenceLow ?? null,
+      referenceHigh: referenceHigh ?? null,
       panel: panel ?? null,
     });
   }

@@ -14,7 +14,13 @@ import { TileHeader } from "@/components/insights/tile-header";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import type { Formatters } from "@/lib/format-locale";
 import { FERTILE_HUE, FLOW_HUE, OVULATION_HUE } from "./phase-tokens";
-import type { CyclePrediction, CycleHistoryResponse } from "./types";
+import type {
+  CyclePrediction,
+  CycleHistoryResponse,
+  ProjectedCycle,
+  ProjectionState,
+} from "./types";
+import { UpcomingCycles } from "./upcoming-cycles";
 import { EmptyState } from "@/components/ui/empty-state";
 
 /**
@@ -59,12 +65,17 @@ export interface PredictionsPanelProps {
   prediction: CyclePrediction | null;
   rawChartMode: boolean;
   history: CycleHistoryResponse | undefined;
+  /** #1350 — the server's projection of the cycles after the next one. */
+  projection?: readonly ProjectedCycle[];
+  projectionState?: ProjectionState | null;
 }
 
 export function PredictionsPanel({
   prediction,
   rawChartMode,
   history,
+  projection = [],
+  projectionState = null,
 }: PredictionsPanelProps) {
   const { t } = useTranslations();
   const fmt = useFormatters();
@@ -94,6 +105,7 @@ export function PredictionsPanel({
                 body={t("cycle.predictions.stillLearningBody")}
               />
               <NextPeriod prediction={prediction} />
+              <UpcomingCycles projection={projection} state={projectionState} />
             </>
           ) : (
             <>
@@ -119,6 +131,7 @@ export function PredictionsPanel({
                   value={formatDate(prediction.predictedOvulation, fmt)}
                 />
               ) : null}
+              <UpcomingCycles projection={projection} state={projectionState} />
             </>
           )}
         </CardContent>

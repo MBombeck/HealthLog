@@ -65,7 +65,7 @@ export const PUT = apiHandler(async (request: Request) => {
   });
   if (!parsed.ok) return parsed.error;
 
-  const { list, view, order, sortDir } = parsed.data;
+  const { list, view, order, sortDir, groupBy, groupsOpen } = parsed.data;
   // Preserve-when-absent: one stored read fills whichever field the body
   // left out, and every other list stays as stored. Only fields a person has
   // chosen are written, so a field never picked keeps following the default.
@@ -77,6 +77,8 @@ export const PUT = apiHandler(async (request: Request) => {
       ...(view ? { view } : {}),
       ...(order ? { order: [...new Set(order)] } : {}),
       ...(sortDir ? { sortDir } : {}),
+      ...(groupBy ? { groupBy } : {}),
+      ...(groupsOpen ? { groupsOpen } : {}),
     };
     const next = { ...stored, [list]: nextChoices };
     await tx.user.update({
@@ -93,6 +95,8 @@ export const PUT = apiHandler(async (request: Request) => {
       list,
       view: layout.lists[list].view,
       sortDir: layout.lists[list].sortDir,
+      groupBy: layout.lists[list].groupBy,
+      groupsOpen: layout.lists[list].groupsOpen,
       orderLength: layout.lists[list].order.length,
     },
   });

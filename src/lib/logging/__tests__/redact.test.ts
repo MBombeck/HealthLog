@@ -127,6 +127,7 @@ describe("redactSecrets", () => {
   it.each([
     ["an invite token", `hlv_${"0a".repeat(32)}`],
     ["a managed-profile handover token", `hlp_${"0a".repeat(32)}`],
+    ["a cycle calendar-feed token", `hlf_${"0a".repeat(24)}`],
     ["a session secret", `hls_${"ab".repeat(32)}`],
     ["an elevation", `hle_${"cd".repeat(32)}`],
     ["a native sign-in handoff code", `hlh_${"Ab9_-".repeat(9)}Ab`],
@@ -328,6 +329,36 @@ describe("notification quick-answer token in the path", () => {
     ).toBe("POST https://health.example/api/notifications/action/[REDACTED]");
     expect(PATH_SECRET_PATHS.map((p) => p.prefix)).toContain(
       "/api/notifications/action/",
+    );
+  });
+});
+
+describe("cycle calendar-feed token in the path (#1350)", () => {
+  const token = `hlf_${"5b".repeat(24)}`;
+
+  it("scrubs the feed token from the path, with or without .ics", () => {
+    expect(redactSecrets(`/api/cycle/feed/${token}`)).toBe(
+      "/api/cycle/feed/[REDACTED]",
+    );
+    expect(redactSecrets(`/api/cycle/feed/${token}.ics`)).toBe(
+      "/api/cycle/feed/[REDACTED]",
+    );
+    expect(
+      redactSecrets(`GET https://health.example/api/cycle/feed/${token}.ics`),
+    ).toBe("GET https://health.example/api/cycle/feed/[REDACTED]");
+    expect(PATH_SECRET_PATHS.map((p) => p.prefix)).toContain(
+      "/api/cycle/feed/",
+    );
+  });
+
+  it("leaves the management namespace readable", () => {
+    // A different segment, so the feed prefix (ending in `/`) never reaches
+    // it: an operator reading the logs still sees which management verb ran.
+    expect(redactSecrets("/api/cycle/feed-subscription")).toBe(
+      "/api/cycle/feed-subscription",
+    );
+    expect(redactSecrets("/api/cycle/feed-subscription/rotate")).toBe(
+      "/api/cycle/feed-subscription/rotate",
     );
   });
 });

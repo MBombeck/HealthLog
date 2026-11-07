@@ -133,7 +133,7 @@ RUN mkdir -p /opt/prisma-cli && \
     npm init -y && \
     npm pkg set 'overrides.deepmerge-ts=^8.0.0' && \
     npm pkg set 'overrides.mysql2=^3.22.0' && \
-    npm pkg set 'overrides.@hono/node-server=^1.19.15' && \
+    npm pkg set 'overrides.@hono/node-server=^2.1.3' && \
     npm pkg set 'overrides.valibot=^1.4.2' && \
     npm pkg set 'allowScripts.@prisma/engines=true' 'allowScripts.prisma=true' 'allowScripts.esbuild=true' --json && \
     npm install --omit=dev prisma@7.10.1 @prisma/engines@7.10.1 tsx@4.23.1 dotenv@18.0.9 --no-fund --no-audit

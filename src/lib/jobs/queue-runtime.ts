@@ -493,6 +493,9 @@ export const QUEUE_RUNTIME: Readonly<Record<string, QueueRuntime>> = {
   "lab-document-date-repair": short(
     "Reads the document lab values still filed at their confirmation moment, a handful per account, and moves each with one update.",
   ),
+  "wearable-cycle-repair": short(
+    "Reads the wearable period days still without a cycle, a few hundred per account at most, and opens or attributes each with a short transaction.",
+  ),
   "measurement-maintenance": {
     runtime: "long",
     expireInSeconds: MEASUREMENT_MAINTENANCE_SEND_OPTIONS.expireInSeconds,

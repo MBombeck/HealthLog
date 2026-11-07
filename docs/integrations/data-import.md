@@ -194,6 +194,7 @@ hand-authored.
 | `WALKING_ASYMMETRY`             | percent (0–100)      |
 | `WALKING_DOUBLE_SUPPORT`        | percent (0–100)      |
 | `ACTIVE_ENERGY_BURNED`          | kcal                 |
+| `BASAL_ENERGY_BURNED`           | kcal                 |
 | `ENERGY_EXPENDITURE_KJ`         | kJ                   |
 | `VO2_MAX`                       | mL/(kg·min)          |
 | `PULSE_WAVE_VELOCITY`           | m/s                  |

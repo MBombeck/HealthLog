@@ -104,3 +104,59 @@ describe("<PredictionsPanel>", () => {
     expect(html).toContain("Prediction is off");
   });
 });
+
+describe("<PredictionsPanel> later cycles (#1350)", () => {
+  const projection = [
+    {
+      k: 1,
+      start: "2026-07-01",
+      periodLength: 5,
+      bandStart: "2026-06-29",
+      bandEnd: "2026-07-03",
+    },
+    {
+      k: 2,
+      start: "2026-07-29",
+      periodLength: 5,
+      bandStart: "2026-07-26",
+      bandEnd: "2026-08-01",
+    },
+    {
+      k: 3,
+      start: "2026-08-26",
+      periodLength: 5,
+      bandStart: "2026-08-22",
+      bandEnd: "2026-08-30",
+    },
+  ];
+
+  it("lists the cycles after the next one, as the server's windows", () => {
+    const html = render(
+      <PredictionsPanel
+        prediction={basePrediction}
+        rawChartMode={false}
+        history={emptyHistory}
+        projection={projection}
+        projectionState="OK"
+      />,
+    );
+    expect(html).toContain('data-slot="cycle-projection"');
+    expect(html).toContain("Later cycles");
+    // Two later rows; cycle 1 is the next-period row above them.
+    expect(html.match(/Around /g)).toHaveLength(2);
+  });
+
+  it("states a late period instead of listing later cycles", () => {
+    const html = render(
+      <PredictionsPanel
+        prediction={basePrediction}
+        rawChartMode={false}
+        history={emptyHistory}
+        projection={[]}
+        projectionState="LATE"
+      />,
+    );
+    expect(html).toContain('data-slot="cycle-projection-late"');
+    expect(html).not.toContain('data-slot="cycle-projection"');
+  });
+});

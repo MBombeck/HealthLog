@@ -819,6 +819,7 @@
     "typeHeartRateVariability": "Hartslagvariabiliteit",
     "typeRestingHeartRate": "Rusthartslag",
     "typeActiveEnergyBurned": "Actieve energie",
+    "typeBasalEnergyBurned": "Rustenergie",
     "typeFlightsClimbed": "Beklommen verdiepingen",
     "typeWalkingRunningDistance": "Afstand wandelen + hardlopen",
     "typeVo2Max": "VO₂max",
@@ -5277,6 +5278,7 @@
           "oura": "Oura",
           "whoop": "WHOOP",
           "polar": "Polar",
+          "garmin": "Garmin",
           "fitbit": "Fitbit",
           "strava": "Strava",
           "nightscout": "Nightscout",
@@ -5284,7 +5286,8 @@
         },
         "hints": {
           "apple-health": "Gesynchroniseerd door de iOS-app, of geïmporteerd uit een export.",
-          "file": "Te importeren onder Instellingen zodra je hier klaar bent."
+          "file": "Te importeren onder Instellingen zodra je hier klaar bent.",
+          "fitbit": "Wordt nu gekoppeld via Google Health."
         }
       },
       "visit": {
@@ -5338,6 +5341,7 @@
           "waiting": "Nog niet gekoppeld.",
           "openSettings": "Instellingen → Koppelingen openen",
           "noDate": "onbekend",
+          "throughGoogleHealth": "{source}-gegevens komen nu binnen via {target}: de klassieke {source}-koppeling is stopgezet. Koppel {target} met het Google-account waarmee je {source} is aangemeld, dan komen je metingen daarvandaan.",
           "needsCredentials": {
             "title": "Deze instantie heeft nog geen {target}-app geregistreerd.",
             "detail": "Voer je eigen inloggegevens in onder Instellingen → Koppelingen, daarna kan de koppeling starten."
@@ -6903,7 +6907,9 @@
       "summary": "{count} gegevenstypen, nieuwste {relative}",
       "quiet": "{count} stil",
       "workouts": "Trainingen",
-      "medicationDoses": "Medicatiedoses"
+      "medicationDoses": "Medicatiedoses",
+      "cycleDays": "Cyclusdagen",
+      "cycleDaysCount": "Cyclusdagen ({count})"
     },
     "integrationFallback": {
       "description": "Ingesteld op dit account zonder eigen instellingenkaart."
@@ -10020,7 +10026,70 @@
     "startedPeriodOnDate": "Mijn menstruatie begon op deze dag",
     "endedPeriodOnDate": "Mijn menstruatie eindigde op deze dag",
     "startAbsorbed": "Begin van menstruatie opgeslagen. Je begin op {absorbed} is samengevoegd met {date}.",
-    "startRestored": "Opgeslagen. Het begin op {dates} is terug."
+    "startRestored": "Opgeslagen. Het begin op {dates} is terug.",
+    "feed": {
+      "title": "Agenda-abonnement",
+      "description": "Je volgende menstruaties als afspraken voor de hele dag in de agenda-app die je al gebruikt.",
+      "disclosure": "Je agendaprovider (Google, iCloud, Outlook) bewaart deze datums op zijn servers. Als je dit later uitzet, blijven kopieën die hij al heeft daar staan.",
+      "turnOn": "Abonnement aanzetten",
+      "error": "Het agenda-abonnement kon niet worden gewijzigd. Probeer het opnieuw.",
+      "linkHidden": "Er is een link actief die begint met {prefix}. Die wordt maar één keer getoond, bij het aanmaken; vernieuw hem voor een nieuwe.",
+      "linkLabel": "Abonnementslink",
+      "linkOnce": "Alleen nu zichtbaar. Plak hem in je agenda-app, of vernieuw hem later voor een nieuwe.",
+      "copy": "Link kopiëren",
+      "copied": "Link gekopieerd.",
+      "copyFailed": "Kopiëren is niet gelukt. Selecteer de link en kopieer hem zelf.",
+      "openInCalendar": "Openen in agenda-app",
+      "notFetched": "Nog niet opgehaald.",
+      "lastFetched": "Laatst opgehaald {when} door {fetcher}.",
+      "fetcher": {
+        "GOOGLE": "Google Agenda",
+        "APPLE": "Apple Agenda",
+        "MICROSOFT": "Outlook",
+        "OTHER": "een agenda-app"
+      },
+      "horizon": "Cycli vooruit",
+      "history": "Eerdere cycli",
+      "historyNone": "Geen",
+      "titles": "Titels van afspraken",
+      "titleMode": {
+        "DISCREET": "Discreet (●)",
+        "DESCRIPTIVE": "Beschrijvend"
+      },
+      "fertile": "Vruchtbare periode",
+      "fertileDescription": "Voegt de geschatte vruchtbare periode van de volgende cyclus toe. Een schatting, geen anticonceptiemethode.",
+      "rotate": "Link vernieuwen",
+      "rotateTitle": "Link vernieuwen?",
+      "rotateBody": "Agenda's met de oude link worden niet meer bijgewerkt. Je krijgt een nieuwe link om in plaats daarvan toe te voegen.",
+      "turnOff": "Uitzetten",
+      "turnOffTitle": "Agenda-abonnement uitzetten?",
+      "turnOffBody": "De link werkt niet meer. Kopieën die je agendaprovider al heeft, blijven staan tot je de agenda daar verwijdert.",
+      "help": {
+        "title": "Toevoegen aan je agenda",
+        "google": "Google Agenda: Andere agenda's, Via URL, en plak de link. Google ververst ongeveer elke 12 tot 24 uur.",
+        "apple": "Apple Agenda: op de Mac Archief, Nieuw agenda-abonnement; op de iPhone Instellingen, Agenda, Accounts, Voeg account toe, Andere, Voeg agenda-abonnement toe.",
+        "outlook": "Outlook: Agenda toevoegen, Abonneren vanaf internet, en plak de link. Outlook ververst om de paar uur."
+      },
+      "ics": {
+        "calendarName": "Cyclus (HealthLog)",
+        "periodEstimate": "Menstruatie (schatting)",
+        "periodLogged": "Menstruatie (geregistreerd)",
+        "fertileEstimate": "Vruchtbare periode (schatting)",
+        "likelyStart": "Meest waarschijnlijke begin {date}, {band}",
+        "bandOne": "±{count} dag",
+        "bandFew": "±{count} dagen",
+        "bandOther": "±{count} dagen"
+      }
+    },
+    "projection": {
+      "title": "Latere cycli",
+      "around": "Rond {date}",
+      "state": {
+        "LEARNING": "Tot er 3 cycli zijn geregistreerd, is alleen de volgende menstruatie opgenomen.",
+        "LATE": "Geen voorspelling zolang deze menstruatie later is dan verwacht; die komt terug zodra je haar registreert.",
+        "OFF": "Voorspellingen staan uit; alleen eerdere cycli zijn opgenomen, als je die hebt gekozen."
+      }
+    }
   },
   "cycleReminders": {
     "periodSoonTitle": "Menstruatie waarschijnlijk binnenkort",
@@ -10316,6 +10385,7 @@
         "unitLockedHint": "Zodra deze marker metingen heeft, blijft de eenheid zoals die is. Anders zouden de opgeslagen waarden zonder omrekening in een nieuwe eenheid worden getoond.",
         "panel": "Groep",
         "panelPlaceholder": "bijv. Lipiden",
+        "panelHint": "Kies een suggestie of typ je eigen groep. Groepen uit de catalogus worden in elke taal herkend.",
         "lowerBound": "Referentie ondergrens",
         "upperBound": "Referentie bovengrens",
         "lowerPlaceholder": "Ondergrens",
@@ -10499,6 +10569,23 @@
     "loadMoreReadings": "Meer metingen laden",
     "documentsLink": "Documenten met labrapporten",
     "notLinkedYet": "Nog niet gekoppeld aan een biomarker",
+    "groups": {
+      "other": "Overig",
+      "allInRange": "Alles binnen bereik",
+      "outsideCountOne": "{count} van {total} buiten bereik",
+      "outsideCountFew": "{count} van {total} buiten bereik",
+      "outsideCountOther": "{count} van {total} buiten bereik",
+      "heading": "Categorieën",
+      "description": "Groepeert de waarden per groep, zoals Lipiden of Lever, met een status per groep.",
+      "label": "Groeperen",
+      "none": "Niet",
+      "category": "Per categorie",
+      "openLabel": "Open bij laden",
+      "openExpanded": "Alle",
+      "openFlagged": "Alleen buiten bereik",
+      "openCollapsed": "Geen",
+      "orderWithinGroups": "De volgorde geldt binnen elke categorie."
+    },
     "sourceRange": {
       "fromReport": "Bereik volgens rapport: {range}",
       "catalogDiffers": "jouw bereik: {range}",
@@ -10545,6 +10632,7 @@
       "convertedOther": "{count} metingen, omgerekend van {unit} naar {targetUnit}",
       "refused": "{unit} kan niet worden omgerekend naar {targetUnit}.",
       "aliasesAdded": "Deze namen verwijzen voortaan naar de behouden biomarker:",
+      "adoptsPanel": "De behouden biomarker neemt de groep {panel} over.",
       "blocked": "Er kan niets worden samengevoegd zolang een eenheid niet kan worden omgerekend. Laat die biomarker weg of behoud een andere.",
       "noUndo": "Samenvoegen kan niet ongedaan worden gemaakt.",
       "doneToastOne": "Samengevoegd in {name}, {count} meting verplaatst",
@@ -12005,7 +12093,8 @@
       "unsupportedType": "Dit bestandstype wordt niet ondersteund.",
       "purged": "Dit document is definitief verwijderd en kan niet worden hersteld.",
       "duplicateExists": "Er is al een identiek document opgeslagen.",
-      "rateLimited": "Te veel uploads op dit moment. Probeer het over een paar minuten opnieuw.",
+      "uploadBusy": "De server was bezig met andere uploads. Probeer het nu opnieuw.",
+      "rateLimited": "Je hebt de uploadlimiet voor dit uur bereikt. Probeer het later opnieuw.",
       "generic": "Uploaden is mislukt. Probeer het opnieuw."
     },
     "toast": {
@@ -13156,7 +13245,11 @@
       "biomarkerMerge": "{name} heeft biomarkers samengevoegd",
       "medicationIngredientsUpdate": "{name} heeft de samenstelling van een supplement gewijzigd",
       "auditCCreate": "{name} heeft de AUDIT-C-vragen beantwoord",
-      "auditCDelete": "{name} heeft een AUDIT-C-registratie verwijderd"
+      "auditCDelete": "{name} heeft een AUDIT-C-registratie verwijderd",
+      "cycleFeedCreate": "{name} heeft het agenda-abonnement aangezet",
+      "cycleFeedUpdate": "{name} heeft het agenda-abonnement gewijzigd",
+      "cycleFeedRotate": "{name} heeft de link van het agenda-abonnement vernieuwd",
+      "cycleFeedRevoke": "{name} heeft het agenda-abonnement uitgezet"
     },
     "section": {
       "measurements": {
@@ -13333,7 +13426,9 @@
       "specialty": "Sinds je laatste bezoek ({specialty}) op {date}",
       "kind": "Sinds je laatste bezoek van hetzelfde soort ({kind}) op {date}",
       "default": "De afgelopen {days} dagen",
-      "defaultReason": "Geen eerder bezoek bij dezelfde praktijk, in hetzelfde specialisme of van hetzelfde soort."
+      "defaultReason": "Geen eerder bezoek bij dezelfde praktijk, in hetzelfde specialisme of van hetzelfde soort.",
+      "capped": "De afgelopen twee jaar",
+      "cappedReason": "Het laatste passende bezoek is meer dan twee jaar geleden, en een rapport beslaat hooguit twee jaar."
     }
   },
   "checkups": {
@@ -13849,7 +13944,17 @@
     },
     "legendLabValue": "Labwaarde, zoals gemeten",
     "legendLabOutside": "Buiten het referentiebereik",
-    "legendLabRange": "Referentiebereik"
+    "legendLabRange": "Referentiebereik",
+    "legendSymptom": "Symptoomlijn: de hoogste intensiteit van elke vastgelegde dag (0 tot 10), gemiddeld over de vastgelegde dagen",
+    "symptoms": {
+      "menuTitle": "Symptomen",
+      "full": "Maximaal {max} symptomen tegelijk. Verwijder er een om een ander toe te voegen.",
+      "hidden": "verborgen",
+      "unnamed": "Symptoom",
+      "daysOne": "op 1 dag",
+      "daysFew": "gemiddelde van {count} dagen",
+      "daysOther": "gemiddelde van {count} dagen"
+    }
   },
   "lifeEvents": {
     "title": "Levensgebeurtenis",

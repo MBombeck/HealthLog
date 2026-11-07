@@ -22,7 +22,10 @@ type Translate = (
 export interface PreparationText {
   /** Where the window starts: "Since your last visit with … on …". */
   title: string;
-  /** Why, when the title alone does not say: only on the default window. */
+  /**
+   * Why, when the title alone does not say: on the default window, and on a
+   * window capped at the longest report.
+   */
   reason: string | null;
 }
 
@@ -33,6 +36,14 @@ export function preparationText(
 ): PreparationText {
   const date = formatDay(preparation.from);
   const since = preparation.since;
+  // The matched visit is further back than a report covers: the window is
+  // the last two years, and the title must not promise everything since.
+  if (preparation.capped) {
+    return {
+      title: t("encounters.preparation.capped"),
+      reason: t("encounters.preparation.cappedReason"),
+    };
+  }
   switch (preparation.basis) {
     case "practitioner":
       return {

@@ -1,133 +1,186 @@
 "use client";
 
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
-import { useMemo, useEffect } from "react";
-import Link from "next/link";
+import { useId, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, FlaskConical } from "lucide-react";
+import { FlaskConical } from "lucide-react";
 
-import { MedicationCardHeader } from "@/components/medications/medication-card-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiGet } from "@/lib/api/api-fetch";
-import { formatReferenceRange } from "@/lib/labs/reference-range";
-import { formatLabReading } from "@/lib/labs/format-value";
-import { LabConvertedNote } from "./lab-converted-note";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { queryKeys } from "@/lib/query-keys";
-import { applyOrder, useModuleListPrefs } from "@/lib/module-list-prefs";
+import {
+  applyOrder,
+  useModuleListPrefs,
+  type ModuleListPrefs,
+} from "@/lib/module-list-prefs";
 
-import { LabTrendSparkline } from "./lab-trend-sparkline";
-import { useLabDate, useLabNumber } from "./use-lab-format";
-import { LabReferenceRangeBar } from "./lab-reference-range-bar";
-import { ReferenceRangeBadge } from "./reference-range-badge";
-import { SourceRangeNote } from "./source-range-note";
-import type {
-  LabOverviewMarkerDto,
-  LabOverviewResponse,
-  LabResultDto,
-} from "./types";
-import { labUnitLabel } from "@/lib/labs/dimensionless";
-
-interface MarkerGroup {
-  /** Stable group key: `bm:<biomarkerId>`, or `analyte:<lower>` for legacy rows. */
-  key: string;
-  /** Link target when the group is catalog-linked; null for legacy rows. */
-  biomarkerId: string | null;
-  analyte: string;
-  panel: string | null;
-  /** The marker's unit as the card names it ("No unit" for a ratio). */
-  unit: string;
-  /** Every live reading of the marker, counted by the server. */
-  count: number;
-  /** Values of the newest readings, oldest first, for the sparkline. */
-  trend: (number | null)[];
-  latest: LabResultDto;
-}
+import {
+  groupMarkerRows,
+  LabGroupHeader,
+  useGroupsOpen,
+  type MarkerGroup,
+} from "./lab-list-groups";
+import {
+  LabCard,
+  LabListRow,
+  LIST_GRID_CLASS,
+  LIST_SUBGRID_CLASS,
+  toMarkerRows,
+  type MarkerRow,
+} from "./lab-list-rows";
+import type { LabOverviewResponse } from "./types";
 
 /**
- * One group per marker, as the server resolved it over the whole history. A
- * catalog-linked group deep-links to its detail chart; legacy groups render
- * inert until the backfill links them. The server already orders by the
- * newest reading.
+ * The person's Labs sort over the server's most-recent-first order:
+ * `recentAsc` reverses, the alpha options sort by analyte name (#43), and
+ * `manual` applies the persisted biomarker order (legacy un-linked rows, which
+ * carry no biomarkerId, sort after the ordered block). Under categories the
+ * same order holds inside each category.
  */
-function toGroups(
-  markers: LabOverviewMarkerDto[],
-  t: (key: string) => string,
-): MarkerGroup[] {
-  return markers.map((marker) => ({
-    key: marker.key,
-    biomarkerId: marker.latest.biomarkerId,
-    analyte: marker.latest.analyte,
-    panel: marker.latest.panel,
-    unit: labUnitLabel(marker.latest.unit, t),
-    count: marker.count,
-    trend: marker.trend,
-    latest: marker.latest,
-  }));
+function sortRows(rows: MarkerRow[], prefs: ModuleListPrefs): MarkerRow[] {
+  if (prefs.sortDir === "recentAsc") return [...rows].reverse();
+  if (prefs.sortDir === "alphaAsc" || prefs.sortDir === "alphaDesc") {
+    const dir = prefs.sortDir === "alphaAsc" ? 1 : -1;
+    return [...rows].sort(
+      (a, b) =>
+        dir *
+        a.analyte.localeCompare(b.analyte, undefined, { sensitivity: "base" }),
+    );
+  }
+  if (prefs.sortDir === "manual") {
+    return applyOrder(rows, prefs.order, (row) => row.biomarkerId ?? row.key);
+  }
+  return rows;
 }
 
-/**
- * The badge's grid cell. The badge renders nothing for a reading without a
- * reference range, and a missing cell would pull the range bar and the trend
- * one column to the left; the wrapper keeps every row at five cells.
- */
-function RangeBadgeCell({ status }: { status: LabResultDto["rangeStatus"] }) {
+type GroupsOpen = ReturnType<typeof useGroupsOpen>;
+
+/** The compact table: one bordered card of divided rows (#40). */
+function LabTable({
+  rows,
+  groups,
+  groupsOpen,
+}: {
+  rows: MarkerRow[];
+  groups: MarkerGroup[] | null;
+  groupsOpen: GroupsOpen;
+}) {
   return (
-    <div data-slot="lab-list-badge-cell" className={MOBILE_CELL.badge}>
-      <ReferenceRangeBadge status={status} compact className="lg:w-full" />
+    // `lab-list` marks the read results in both view shapes. The loading
+    // branch carries `lab-list-loading` instead, so the marker cannot stand
+    // for a silhouette.
+    <div data-slot="lab-list" className="space-y-3">
+      <Card className="@container">
+        <CardContent className={LIST_GRID_CLASS}>
+          {groups
+            ? groups.map((group) => (
+                <TableGroup
+                  key={group.category.key}
+                  group={group}
+                  groupsOpen={groupsOpen}
+                />
+              ))
+            : rows.map((row) => <LabListRow key={row.key} row={row} />)}
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
-function LabRangeBarSlot({ reading }: { reading: LabResultDto }) {
+function useGroupToggle(group: MarkerGroup, groupsOpen: GroupsOpen) {
+  const panelId = `${useId()}-panel`;
+  return {
+    open: groupsOpen.isOpen(group.category),
+    onToggle: () => groupsOpen.toggle(group.category),
+    panelId,
+  };
+}
+
+/**
+ * One category inside the table. The header spans every column and the rows
+ * below keep the table's subgrid, so the columns line up across categories.
+ */
+function TableGroup({
+  group,
+  groupsOpen,
+}: {
+  group: MarkerGroup;
+  groupsOpen: GroupsOpen;
+}) {
+  const { open, onToggle, panelId } = useGroupToggle(group, groupsOpen);
   return (
-    <div className={cn("w-full", MOBILE_CELL.rangeBar)}>
-      {/* A phone keeps the bar's own 12rem cap; from `lg` the bar fills its
-          column, which is 12rem until the list is wide enough to grow it. */}
-      <LabReferenceRangeBar
-        className="lg:max-w-none"
-        value={reading.value}
-        referenceLow={reading.referenceLow}
-        referenceHigh={reading.referenceHigh}
-        unit={reading.unit}
+    <div className={cn(LIST_SUBGRID_CLASS, "divide-y-0")}>
+      <LabGroupHeader
+        category={group.category}
+        open={open}
+        onToggle={onToggle}
+        panelId={panelId}
+        className="px-4 py-1 lg:col-span-full"
       />
+      <div
+        id={panelId}
+        hidden={!open}
+        className={cn(LIST_SUBGRID_CLASS, "border-border border-t")}
+      >
+        {open
+          ? group.rows.map((row) => <LabListRow key={row.key} row={row} />)
+          : null}
+      </div>
     </div>
   );
 }
 
-/**
- * The compact list is a five-column table from `lg` up: name and reading, range
- * badge, range bar, trend, chevron. Below that the same five cells fold into
- * two lines per row, because the fixed columns alone (badge + 12rem bar + 72px
- * trend + gaps) are wider than a phone, and the only flexible column — the
- * name — was the one that gave way: it collapsed to nothing and the row
- * panned sideways off the card.
- *
- * Phone layout, per row:
- *
- *     name / reading · date      badge   ›
- *     range bar                  trend
- *
- * The placement classes are all `max-lg:` so the desktop table keeps exactly
- * the subgrid it had.
- */
-const ROW_CLASS =
-  "grid min-w-0 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-2 px-4 py-2.5 lg:col-span-full lg:grid-cols-subgrid lg:gap-y-0";
+function CardGrid({
+  rows,
+  underCategory,
+}: {
+  rows: MarkerRow[];
+  underCategory: boolean;
+}) {
+  return (
+    <ul
+      className={cn(
+        "grid list-none gap-4 p-0",
+        // A lone lab spans the full row rather than orphaning half of it;
+        // two or more fall into the two-up grid.
+        rows.length > 1 && "sm:grid-cols-2",
+      )}
+    >
+      {rows.map((row) => (
+        <LabCard key={row.key} row={row} underCategory={underCategory} />
+      ))}
+    </ul>
+  );
+}
 
-const MOBILE_CELL = {
-  reading: "max-lg:col-start-1 max-lg:row-start-1",
-  badge: "max-lg:col-start-2 max-lg:row-start-1 max-lg:justify-self-end",
-  rangeBar: "max-lg:col-start-1 max-lg:row-start-2 max-lg:empty:hidden",
-  trend:
-    "max-lg:col-start-2 max-lg:row-start-2 max-lg:justify-self-end max-lg:empty:hidden",
-  end: "max-lg:col-start-3 max-lg:row-start-1",
-  notLinked: "max-lg:col-span-full max-lg:row-start-3",
-} as const;
+function CardGroup({
+  group,
+  groupsOpen,
+}: {
+  group: MarkerGroup;
+  groupsOpen: GroupsOpen;
+}) {
+  const { open, onToggle, panelId } = useGroupToggle(group, groupsOpen);
+  return (
+    <section className="space-y-4">
+      <LabGroupHeader
+        category={group.category}
+        open={open}
+        onToggle={onToggle}
+        panelId={panelId}
+      />
+      <div id={panelId} hidden={!open}>
+        {open ? <CardGrid rows={group.rows} underCategory /> : null}
+      </div>
+    </section>
+  );
+}
 
 export function LabList({
   onAddFirst,
@@ -137,12 +190,11 @@ export function LabList({
   /** Told whether the list is empty, so the page can drop its header add. */
   onEmptyChange?: (empty: boolean) => void;
 } = {}) {
-  const { t } = useTranslations();
-  const labNumber = useLabNumber();
-  const labDate = useLabDate();
+  const { t, locale } = useTranslations();
   const { canWriteDomain } = useRecordCapabilities();
   const canAddLab = canWriteDomain("labs");
   const { prefs } = useModuleListPrefs("labs");
+  const groupsOpen = useGroupsOpen(prefs.groupsOpen);
 
   // v1.22 — a short, factual line under each marker heading describing what the
   // biomarker measures, sourced from the catalog via i18n. Free-text markers
@@ -152,35 +204,24 @@ export function LabList({
   // One entry per biomarker over the whole history, grouped server-side: a
   // capped page of raw rows dropped every marker measured only long ago.
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: queryKeys.labResultsOverview(),
+    queryKey: queryKeys.labResultsOverview(locale),
     queryFn: () => apiGet<LabOverviewResponse>("/api/labs/overview"),
   });
 
-  const groups = useMemo(() => {
-    const base = toGroups(data?.markers ?? [], t);
-    // v1.18.6 — honour the user's Labs sort choice. The server
-    // order is most-recent-first; `recentAsc` reverses, the alpha
-    // options sort by analyte name (#43), and `manual` applies the persisted
-    // biomarker order (legacy un-linked groups, which carry no biomarkerId,
-    // sort after the ordered block).
-    if (prefs.sortDir === "recentAsc") return [...base].reverse();
-    if (prefs.sortDir === "alphaAsc" || prefs.sortDir === "alphaDesc") {
-      const dir = prefs.sortDir === "alphaAsc" ? 1 : -1;
-      return [...base].sort(
-        (a, b) =>
-          dir *
-          a.analyte.localeCompare(b.analyte, undefined, {
-            sensitivity: "base",
-          }),
-      );
-    }
-    if (prefs.sortDir === "manual") {
-      return applyOrder(base, prefs.order, (g) => g.biomarkerId ?? g.key);
-    }
-    return base;
-  }, [data?.markers, prefs.sortDir, prefs.order, t]);
+  const rows = useMemo(
+    () => sortRows(toMarkerRows(data?.markers ?? [], t), prefs),
+    [data?.markers, prefs, t],
+  );
+  // Categories only when the person asked for them and the server says they
+  // add something; otherwise the flat list it always was.
+  const grouped = prefs.groupBy === "category" && data?.grouped === true;
+  const categories = data?.categories;
+  const groups = useMemo(
+    () => (grouped && categories ? groupMarkerRows(rows, categories) : null),
+    [grouped, categories, rows],
+  );
 
-  const listEmpty = !isLoading && !isError && groups.length === 0;
+  const listEmpty = !isLoading && !isError && rows.length === 0;
   useEffect(() => {
     onEmptyChange?.(listEmpty);
   }, [listEmpty, onEmptyChange]);
@@ -215,7 +256,7 @@ export function LabList({
     );
   }
 
-  if (groups.length === 0) {
+  if (rows.length === 0) {
     return (
       <EmptyState
         icon={<FlaskConical className="size-6" />}
@@ -234,206 +275,29 @@ export function LabList({
   // not on these overview rows. The list/tile rows navigate; the trash icon was
   // removed here so a stray tap can't delete a biomarker from the overview.
 
-  // v1.18.6 — compact list view: one bordered card holding tight
-  // divided rows instead of a card per biomarker. This is the default view
-  // (#40); the card/tile view is the alternative the settings toggle selects.
+  // v1.18.6 — compact list view is the default (#40); the card/tile view is
+  // the alternative the settings toggle selects.
   if (prefs.view === "list") {
+    return <LabTable rows={rows} groups={groups} groupsOpen={groupsOpen} />;
+  }
+
+  // v1.18.9 (#40) — card/tile view.
+  if (groups) {
     return (
-      // `lab-list` marks the read results in both view shapes. The loading
-      // branch above carries `lab-list-loading` instead, so the marker
-      // cannot stand for a silhouette.
-      <div data-slot="lab-list" className="space-y-3">
-        {/* `@container` makes the columns follow the width the list has, not the
-            window's: below `@5xl` (64rem of card) the row is the `lg` table it
-            always was (the two tiers exclude each other, so the result does not
-            depend on the order the CSS is emitted in), from there up the range
-            bar takes part of the extra width instead of all of it going to the
-            name. The trend column stays 72px in both tiers: the sparkline is a
-            fixed 72px glyph, and a wider column would only open an empty strip
-            between it and the chevron. */}
-        <Card className="@container">
-          <CardContent className="divide-border grid grid-cols-1 divide-y p-0 lg:gap-x-3 lg:@max-5xl:grid-cols-[minmax(0,1fr)_max-content_12rem_72px_auto] @5xl:grid-cols-[minmax(0,1fr)_max-content_minmax(12rem,18rem)_72px_auto]">
-            {groups.map((group) => {
-              const inner = (
-                <div className={cn("min-w-0 flex-1", MOBILE_CELL.reading)}>
-                  <div className="flex flex-wrap items-baseline gap-x-2 text-sm">
-                    {/* One line with an ellipsis on a phone; from `lg` the name
-                        wraps instead, so a long one (the schema allows 120
-                        characters) always reads in full. It wraps between
-                        words and hyphenates in the page language; a word is
-                        only cut when it is wider than the column on its own
-                        (`anywhere` cut "Hämoglobin" in the middle of the
-                        word whenever the column was a little short). */}
-                    <span
-                      data-slot="lab-list-analyte"
-                      className="truncate font-medium lg:overflow-visible lg:break-words lg:text-clip lg:hyphens-auto lg:whitespace-normal"
-                    >
-                      {group.analyte}
-                    </span>
-                  </div>
-                  <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 text-xs">
-                    <span className="text-foreground font-semibold tabular-nums">
-                      {formatLabReading(group.latest, labNumber)}
-                    </span>
-                    <span>{labDate(group.latest.takenAt)}</span>
-                    <LabConvertedNote reading={group.latest} />
-                  </div>
-                </div>
-              );
-              // The whole row navigates into the detail (where delete lives).
-              return group.biomarkerId ? (
-                <Link
-                  key={group.key}
-                  href={`/labs/${group.biomarkerId}`}
-                  className={cn(
-                    ROW_CLASS,
-                    "hover:bg-muted/40 transition-colors",
-                  )}
-                >
-                  {inner}
-                  <RangeBadgeCell status={group.latest.rangeStatus} />
-                  <LabRangeBarSlot reading={group.latest} />
-                  <div className={cn("w-[72px]", MOBILE_CELL.trend)}>
-                    <LabTrendSparkline
-                      values={group.trend}
-                      referenceLow={group.latest.referenceLow}
-                      referenceHigh={group.latest.referenceHigh}
-                    />
-                  </div>
-                  {/* With a pointer the row's hover already says it opens; a
-                      phone has no hover, so the chevron stays there. */}
-                  <ChevronRight
-                    className={cn(
-                      "text-muted-foreground h-4 w-4 shrink-0 lg:invisible",
-                      MOBILE_CELL.end,
-                    )}
-                  />
-                </Link>
-              ) : (
-                // Un-linked group (not backfilled to a catalog biomarker):
-                // render inert but say so, so it doesn't read as a broken
-                // link next to its clickable neighbours.
-                <div key={group.key} className={ROW_CLASS}>
-                  {inner}
-                  <RangeBadgeCell status={group.latest.rangeStatus} />
-                  <LabRangeBarSlot reading={group.latest} />
-                  <div className={cn("w-[72px]", MOBILE_CELL.trend)}>
-                    <LabTrendSparkline
-                      values={group.trend}
-                      referenceLow={group.latest.referenceLow}
-                      referenceHigh={group.latest.referenceHigh}
-                    />
-                  </div>
-                  <span
-                    className={cn(
-                      "text-muted-foreground shrink-0 text-xs italic",
-                      MOBILE_CELL.notLinked,
-                    )}
-                  >
-                    {t("labs.notLinkedYet")}
-                  </span>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
+      <div data-slot="lab-list" className="space-y-10">
+        {groups.map((group) => (
+          <CardGroup
+            key={group.category.key}
+            group={group}
+            groupsOpen={groupsOpen}
+          />
+        ))}
       </div>
     );
   }
-
-  // v1.18.9 (#40) — card/tile view. The tile reuses the medication module's
-  // `MedicationCardHeader` so a lab tile reads identically to a medication or
-  // Vorsorge tile side-by-side: name on line 1, the reference-range badge as
-  // the line-1 chip, the panel as the category badge. v1.18.10 (#3) — no delete
-  // control on the tile; the trash icon lives only on the value detail view.
   return (
-    <ul
-      data-slot="lab-list"
-      className={cn(
-        "grid list-none gap-4 p-0",
-        // A lone lab spans the full row rather than orphaning half of it;
-        // two or more fall into the two-up grid.
-        groups.length > 1 && "sm:grid-cols-2",
-      )}
-    >
-      {groups.map((group) => {
-        return (
-          <li key={group.key} className="contents">
-            <Card className="h-full gap-3">
-              <MedicationCardHeader
-                name={group.analyte}
-                dose=""
-                categoryLabel={group.panel ?? group.unit}
-                nameChip={
-                  <ReferenceRangeBadge
-                    status={group.latest.rangeStatus}
-                    compact
-                  />
-                }
-                href={
-                  group.biomarkerId ? `/labs/${group.biomarkerId}` : undefined
-                }
-                linkLabel={group.analyte}
-              />
-              <CardContent>
-                <div className="flex items-end justify-between gap-3">
-                  <div className="text-muted-foreground flex min-w-0 flex-1 flex-wrap items-center gap-x-2 text-sm">
-                    <span className="text-foreground font-semibold tabular-nums">
-                      {formatLabReading(group.latest, labNumber)}
-                    </span>
-                    {group.latest.value !== null &&
-                    (group.latest.referenceLow !== null ||
-                      group.latest.referenceHigh !== null) ? (
-                      <span className="text-xs">
-                        {t("labs.referenceLabel")}{" "}
-                        {formatReferenceRange(
-                          group.latest.referenceLow,
-                          group.latest.referenceHigh,
-                          labNumber,
-                        )}
-                      </span>
-                    ) : null}
-                    <SourceRangeNote
-                      reading={group.latest}
-                      className="text-xs"
-                    />
-                    <span className="text-xs">
-                      {labDate(group.latest.takenAt)}
-                    </span>
-                    <LabConvertedNote reading={group.latest} />
-                    {group.count > 1 ? (
-                      <span className="text-xs">
-                        {t("labs.readingsCount", {
-                          count: group.count,
-                        })}
-                      </span>
-                    ) : null}
-                    <LabReferenceRangeBar
-                      value={group.latest.value}
-                      referenceLow={group.latest.referenceLow}
-                      referenceHigh={group.latest.referenceHigh}
-                      unit={group.latest.unit}
-                    />
-                  </div>
-                  <LabTrendSparkline
-                    values={group.trend}
-                    referenceLow={group.latest.referenceLow}
-                    referenceHigh={group.latest.referenceHigh}
-                  />
-                </div>
-                {/* Un-linked group: the header renders no link, so name the
-                    reason rather than leaving a card that silently does
-                    nothing on tap. */}
-                {!group.biomarkerId ? (
-                  <p className="text-muted-foreground text-xs italic">
-                    {t("labs.notLinkedYet")}
-                  </p>
-                ) : null}
-              </CardContent>
-            </Card>
-          </li>
-        );
-      })}
-    </ul>
+    <div data-slot="lab-list">
+      <CardGrid rows={rows} underCategory={false} />
+    </div>
   );
 }

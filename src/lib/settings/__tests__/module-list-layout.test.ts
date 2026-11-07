@@ -14,6 +14,8 @@ describe("resolveModuleListLayout", () => {
       view: "list",
       order: [],
       sortDir: "recentDesc",
+      groupBy: "none",
+      groupsOpen: "expanded",
       saved: false,
     });
     expect(layout.lists.illness.view).toBe("cards");
@@ -30,6 +32,8 @@ describe("resolveModuleListLayout", () => {
       view: "cards",
       order: ["b", "a"],
       sortDir: "recentDesc",
+      groupBy: "none",
+      groupsOpen: "expanded",
       saved: true,
     });
     expect(layout.lists.labs.saved).toBe(false);
@@ -44,9 +48,30 @@ describe("resolveModuleListLayout", () => {
       view: "list",
       order: [],
       sortDir: "recentDesc",
+      groupBy: "none",
+      groupsOpen: "expanded",
       saved: false,
     });
     expect(layout.lists.vorsorge.saved).toBe(false);
+  });
+});
+
+describe("category choices", () => {
+  it("keeps valid category choices and drops unknown ones", () => {
+    const layout = resolveModuleListLayout({
+      labs: { groupBy: "category", groupsOpen: "flagged" },
+      illness: { groupBy: "panel", groupsOpen: "all" },
+    });
+    expect(layout.lists.labs).toMatchObject({
+      groupBy: "category",
+      groupsOpen: "flagged",
+      saved: true,
+    });
+    expect(layout.lists.illness).toMatchObject({
+      groupBy: "none",
+      groupsOpen: "expanded",
+      saved: false,
+    });
   });
 });
 

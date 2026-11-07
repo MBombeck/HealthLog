@@ -819,6 +819,7 @@
     "typeHeartRateVariability": "심박변이도",
     "typeRestingHeartRate": "안정 시 심박수",
     "typeActiveEnergyBurned": "활동 에너지",
+    "typeBasalEnergyBurned": "휴식 에너지",
     "typeFlightsClimbed": "오른 층수",
     "typeWalkingRunningDistance": "걷기 + 달리기 거리",
     "typeVo2Max": "VO₂ max",
@@ -5277,6 +5278,7 @@
           "oura": "Oura",
           "whoop": "WHOOP",
           "polar": "Polar",
+          "garmin": "Garmin",
           "fitbit": "Fitbit",
           "strava": "Strava",
           "nightscout": "Nightscout",
@@ -5284,7 +5286,8 @@
         },
         "hints": {
           "apple-health": "iOS 앱이 동기화하거나 내보내기 파일에서 가져옵니다.",
-          "file": "여기서 마친 뒤 설정에서 가져옵니다."
+          "file": "여기서 마친 뒤 설정에서 가져옵니다.",
+          "fitbit": "이제 Google Health를 통해 연결됩니다."
         }
       },
       "visit": {
@@ -5338,6 +5341,7 @@
           "waiting": "아직 연결되지 않았습니다.",
           "openSettings": "설정 → 연동 열기",
           "noDate": "알 수 없음",
+          "throughGoogleHealth": "{source} 데이터는 이제 {target}를 통해 들어옵니다. 기존 {source} 연결은 종료되었습니다. {source}에 로그인한 Google 계정으로 {target}를 연결하면 측정값이 그곳에서 들어옵니다.",
           "needsCredentials": {
             "title": "이 인스턴스에는 아직 {target} 앱이 등록되어 있지 않습니다.",
             "detail": "설정 → 연동에서 직접 발급받은 인증 정보를 입력하면 연결을 시작할 수 있습니다."
@@ -6903,7 +6907,9 @@
       "summary": "데이터 유형 {count}개, 최신 {relative}",
       "quiet": "{count}개 잠잠",
       "workouts": "운동",
-      "medicationDoses": "약 복용"
+      "medicationDoses": "약 복용",
+      "cycleDays": "주기 기록일",
+      "cycleDaysCount": "주기 기록일 ({count})"
     },
     "integrationFallback": {
       "description": "이 계정에 설정돼 있지만 전용 설정 카드는 없어요."
@@ -10020,7 +10026,70 @@
     "startedPeriodOnDate": "이 날 생리를 시작했어요",
     "endedPeriodOnDate": "이 날 생리가 끝났어요",
     "startAbsorbed": "생리 시작을 저장했어요. {absorbed}의 시작은 {date}로 합쳐졌어요.",
-    "startRestored": "저장했어요. {dates}의 시작이 다시 표시돼요."
+    "startRestored": "저장했어요. {dates}의 시작이 다시 표시돼요.",
+    "feed": {
+      "title": "캘린더 구독",
+      "description": "다음 생리 예정일을 지금 쓰는 캘린더 앱에 종일 일정으로 보여줘요.",
+      "disclosure": "캘린더 제공업체(Google, iCloud, Outlook)는 이 날짜를 자사 서버에 저장해요. 나중에 구독을 꺼도 이미 가져간 사본은 지워지지 않아요.",
+      "turnOn": "구독 켜기",
+      "error": "캘린더 구독을 변경하지 못했어요. 다시 시도해 주세요.",
+      "linkHidden": "{prefix}(으)로 시작하는 링크가 활성 상태예요. 링크는 만들 때 한 번만 보여요. 새 링크가 필요하면 다시 발급하세요.",
+      "linkLabel": "구독 링크",
+      "linkOnce": "지금만 보여요. 캘린더 앱에 붙여 넣거나, 나중에 다시 발급해 새 링크를 받으세요.",
+      "copy": "링크 복사",
+      "copied": "링크를 복사했어요.",
+      "copyFailed": "복사하지 못했어요. 링크를 선택해 직접 복사하세요.",
+      "openInCalendar": "캘린더 앱에서 열기",
+      "notFetched": "아직 가져가지 않았어요.",
+      "lastFetched": "{fetcher}에서 마지막으로 가져감: {when}.",
+      "fetcher": {
+        "GOOGLE": "Google 캘린더",
+        "APPLE": "Apple 캘린더",
+        "MICROSOFT": "Outlook",
+        "OTHER": "캘린더 앱"
+      },
+      "horizon": "앞으로의 주기",
+      "history": "지난 주기",
+      "historyNone": "없음",
+      "titles": "일정 제목",
+      "titleMode": {
+        "DISCREET": "드러나지 않게 (●)",
+        "DESCRIPTIVE": "내용 표시"
+      },
+      "fertile": "가임기",
+      "fertileDescription": "다음 주기의 예상 가임기를 추가해요. 추정일 뿐 피임 방법이 아니에요.",
+      "rotate": "링크 다시 발급",
+      "rotateTitle": "링크를 다시 발급할까요?",
+      "rotateBody": "이전 링크를 쓰는 캘린더는 더 이상 업데이트되지 않아요. 대신 추가할 새 링크를 받게 돼요.",
+      "turnOff": "끄기",
+      "turnOffTitle": "캘린더 구독을 끌까요?",
+      "turnOffBody": "링크가 더 이상 작동하지 않아요. 캘린더 제공업체가 이미 가진 사본은 거기서 캘린더를 삭제할 때까지 남아 있어요.",
+      "help": {
+        "title": "캘린더에 추가하는 방법",
+        "google": "Google 캘린더: 다른 캘린더, URL로 추가에서 링크를 붙여 넣으세요. Google은 대략 12~24시간마다 새로 고쳐요.",
+        "apple": "Apple 캘린더: Mac에서는 파일, 새로운 캘린더 구독. iPhone에서는 설정, 캘린더, 계정, 계정 추가, 기타, 구독 캘린더 추가.",
+        "outlook": "Outlook: 캘린더 추가, 웹에서 구독에서 링크를 붙여 넣으세요. Outlook은 몇 시간마다 새로 고쳐요."
+      },
+      "ics": {
+        "calendarName": "주기 (HealthLog)",
+        "periodEstimate": "생리 (예상)",
+        "periodLogged": "생리 (기록)",
+        "fertileEstimate": "가임기 (예상)",
+        "likelyStart": "가장 가능성 높은 시작일 {date}, {band}",
+        "bandOne": "±{count}일",
+        "bandFew": "±{count}일",
+        "bandOther": "±{count}일"
+      }
+    },
+    "projection": {
+      "title": "이후 주기",
+      "around": "{date}쯤",
+      "state": {
+        "LEARNING": "주기가 3번 기록될 때까지는 다음 생리만 포함돼요.",
+        "LATE": "이번 생리가 예상보다 늦어지는 동안에는 예측이 없어요. 기록하면 다시 나타나요.",
+        "OFF": "예측이 꺼져 있어요. 선택한 경우 지난 주기만 포함돼요."
+      }
+    }
   },
   "cycleReminders": {
     "periodSoonTitle": "생리가 곧 시작될 것 같아요",
@@ -10316,6 +10385,7 @@
         "unitLockedHint": "이 마커에 기록된 값이 있으면 단위는 그대로 유지돼요. 그렇지 않으면 저장된 값이 변환되지 않은 채 새 단위로 표시돼요.",
         "panel": "패널",
         "panelPlaceholder": "예: 지질",
+        "panelHint": "제안에서 고르거나 직접 입력하세요. 카탈로그 패널은 모든 언어에서 인식돼요.",
         "lowerBound": "참고 하한",
         "upperBound": "참고 상한",
         "lowerPlaceholder": "하한값",
@@ -10499,6 +10569,23 @@
     "loadMoreReadings": "측정값 더 보기",
     "documentsLink": "검사 결과지 문서",
     "notLinkedYet": "아직 바이오마커에 연결되지 않았어요",
+    "groups": {
+      "other": "기타",
+      "allInRange": "모두 범위 내",
+      "outsideCountOne": "{total}개 중 {count}개 범위 밖",
+      "outsideCountFew": "{total}개 중 {count}개 범위 밖",
+      "outsideCountOther": "{total}개 중 {count}개 범위 밖",
+      "heading": "카테고리",
+      "description": "지질, 간처럼 패널별로 값을 묶고 그룹마다 상태를 보여줘요.",
+      "label": "묶기",
+      "none": "없음",
+      "category": "카테고리별",
+      "openLabel": "열 때 펼치기",
+      "openExpanded": "모두",
+      "openFlagged": "범위 밖만",
+      "openCollapsed": "없음",
+      "orderWithinGroups": "순서는 각 카테고리 안에서 적용돼요."
+    },
     "sourceRange": {
       "fromReport": "결과지 범위 {range}",
       "catalogDiffers": "내 범위 {range}",
@@ -10545,6 +10632,7 @@
       "convertedOther": "측정값 {count}개, {unit}에서 {targetUnit}(으)로 환산",
       "refused": "{unit}은(는) {targetUnit}(으)로 환산할 수 없어요.",
       "aliasesAdded": "이 이름들은 남긴 바이오마커로 연결돼요:",
+      "adoptsPanel": "남긴 바이오마커가 {panel} 패널을 이어받아요.",
       "blocked": "환산할 수 없는 단위가 있으면 아무것도 합치지 않아요. 그 바이오마커를 빼거나 다른 항목을 남겨 주세요.",
       "noUndo": "합친 뒤에는 되돌릴 수 없어요.",
       "doneToastOne": "{name}(으)로 합쳤어요, 측정값 {count}개 이동",
@@ -12005,7 +12093,8 @@
       "unsupportedType": "지원하지 않는 파일 형식이에요.",
       "purged": "이 문서는 완전히 삭제되어 복구할 수 없어요.",
       "duplicateExists": "같은 문서가 이미 저장돼 있어요.",
-      "rateLimited": "지금은 업로드가 너무 많아요. 몇 분 뒤에 다시 시도해 주세요.",
+      "uploadBusy": "서버가 다른 업로드를 처리하느라 바빴어요. 지금 다시 시도해 주세요.",
+      "rateLimited": "이번 시간의 업로드 한도에 도달했어요. 나중에 다시 시도해 주세요.",
       "generic": "업로드하지 못했어요. 다시 시도해 주세요."
     },
     "toast": {
@@ -13156,7 +13245,11 @@
       "biomarkerMerge": "{name} 님이 바이오마커를 합쳤어요",
       "medicationIngredientsUpdate": "{name} 님이 보충제 성분을 수정했어요",
       "auditCCreate": "{name} 님이 AUDIT-C 문항에 답했어요",
-      "auditCDelete": "{name} 님이 AUDIT-C 기록을 삭제했어요"
+      "auditCDelete": "{name} 님이 AUDIT-C 기록을 삭제했어요",
+      "cycleFeedCreate": "{name} 님이 캘린더 구독을 켰어요",
+      "cycleFeedUpdate": "{name} 님이 캘린더 구독을 변경했어요",
+      "cycleFeedRotate": "{name} 님이 캘린더 구독 링크를 다시 발급했어요",
+      "cycleFeedRevoke": "{name} 님이 캘린더 구독을 껐어요"
     },
     "section": {
       "measurements": {
@@ -13333,7 +13426,9 @@
       "specialty": "{date} 마지막 {specialty} 방문 이후",
       "kind": "{date} 같은 유형({kind})의 마지막 방문 이후",
       "default": "최근 {days}일",
-      "defaultReason": "같은 병원, 진료과 또는 유형의 이전 방문이 없어요."
+      "defaultReason": "같은 병원, 진료과 또는 유형의 이전 방문이 없어요.",
+      "capped": "최근 2년",
+      "cappedReason": "마지막으로 일치하는 진료가 2년 이상 지났으며, 보고서는 최대 2년까지 다룹니다."
     }
   },
   "checkups": {
@@ -13849,7 +13944,17 @@
     },
     "legendLabValue": "측정된 그대로의 검사 수치",
     "legendLabOutside": "참고 범위 밖",
-    "legendLabRange": "참고 범위"
+    "legendLabRange": "참고 범위",
+    "legendSymptom": "증상 선: 기록한 날마다의 가장 높은 강도(0~10)를 기록한 날 기준으로 평균한 값",
+    "symptoms": {
+      "menuTitle": "증상",
+      "full": "증상은 한 번에 최대 {max}개까지 표시할 수 있습니다. 다른 증상을 추가하려면 하나를 제거하세요.",
+      "hidden": "숨김",
+      "unnamed": "증상",
+      "daysOne": "1일",
+      "daysFew": "{count}일 평균",
+      "daysOther": "{count}일 평균"
+    }
   },
   "lifeEvents": {
     "title": "삶의 사건",

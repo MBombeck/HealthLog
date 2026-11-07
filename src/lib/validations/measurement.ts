@@ -169,6 +169,8 @@ export const measurementTypeEnum = z.enum([
   // them through the ingest token (`measurements:write`, source EXTERNAL).
   "TRAINING_READINESS",
   "ACUTE_TRAINING_LOAD",
+  // ── resting energy (#1340), HealthKit `basalEnergyBurned` ──
+  "BASAL_ENERGY_BURNED",
 ]);
 
 /**

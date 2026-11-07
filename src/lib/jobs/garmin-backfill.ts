@@ -44,7 +44,7 @@ import {
 import {
   periodFromGarminCycleSummary,
   readGarminCycleSummary,
-  writeGarminPeriodDays,
+  writeGarminPeriod,
 } from "@/lib/garmin/cycle-sync";
 import { garminUnavailableCode } from "@/lib/garmin/unavailable";
 import {
@@ -212,7 +212,7 @@ async function readStepWindow(
     const period = periodFromGarminCycleSummary(summary, progress.anchor);
     // No logged cycle at or before this day: the walk is over.
     if (!period || period.start > state.before) return null;
-    await writeGarminPeriodDays(userId, period.days);
+    await writeGarminPeriod(userId, period);
     state.before = shiftDateKey(period.start, -1);
     return 0;
   }

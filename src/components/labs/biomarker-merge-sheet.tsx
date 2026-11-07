@@ -204,18 +204,7 @@ export function BiomarkerMergeSheet({
               </li>
             ))}
           </ul>
-          {preview.aliasesAdded.length > 0 ? (
-            <div className="space-y-1.5">
-              <p className="text-muted-foreground text-xs">
-                {t("labs.merge.aliasesAdded")}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {preview.aliasesAdded.map((alias) => (
-                  <TagChip key={alias}>{alias}</TagChip>
-                ))}
-              </div>
-            </div>
-          ) : null}
+          <MergePreviewNotes preview={preview} />
           {(refused?.length ?? 0) > 0 ? (
             <p role="alert" className="text-destructive text-sm">
               {t("labs.merge.blocked")}
@@ -281,5 +270,31 @@ export function BiomarkerMergeSheet({
         </div>
       )}
     </ResponsiveSheet>
+  );
+}
+
+/** What the kept marker gains besides the readings: spellings and a panel. */
+function MergePreviewNotes({ preview }: { preview: BiomarkerMergeResultDto }) {
+  const { t } = useTranslations();
+  return (
+    <>
+      {preview.aliasesAdded.length > 0 ? (
+        <div className="space-y-1.5">
+          <p className="text-muted-foreground text-xs">
+            {t("labs.merge.aliasesAdded")}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {preview.aliasesAdded.map((alias) => (
+              <TagChip key={alias}>{alias}</TagChip>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {preview.adoptedPanel ? (
+        <p className="text-sm" data-slot="biomarker-merge-adopts-panel">
+          {t("labs.merge.adoptsPanel", { panel: preview.adoptedPanel })}
+        </p>
+      ) : null}
+    </>
   );
 }

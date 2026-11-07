@@ -55,6 +55,7 @@ const STATUSES = new Set(["running", "done", "empty", "failed"]);
 const REASONS = new Set([
   "no_data",
   "outside_window",
+  "outside_reach",
   "module_disabled",
   "retrieval_failed",
   "invalid_arguments",
@@ -218,6 +219,7 @@ function fuzzResult(r: () => number): CoachToolResult | undefined {
   const reasons = [
     "no_data",
     "outside_window",
+    "outside_reach",
     "unavailable_in_scope",
     "no_data_unconfirmed",
     "retrieval_failed",
@@ -416,6 +418,10 @@ describe("toStep — mapping", () => {
         },
       }),
     ).toMatchObject({ status: "empty", reason: "outside_window", count: 40 });
+    // Past the lookback limit: its own reason, and no figure from the rows.
+    const reach = at("outside_reach");
+    expect(reach).toMatchObject({ status: "empty", reason: "outside_reach" });
+    expect(reach).not.toHaveProperty("count");
     expect(at("retrieval_failed")).toMatchObject({
       status: "failed",
       reason: "retrieval_failed",

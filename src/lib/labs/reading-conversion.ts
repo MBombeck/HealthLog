@@ -16,6 +16,8 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 
 import { ensureAnalyteKey } from "./analyte-key-store";
+import { mintedBounds } from "./minted-bounds";
+import { isDimensionlessUnit } from "./dimensionless";
 import {
   convertLabRange,
   convertLabValue,
@@ -28,6 +30,9 @@ export interface ReadingMarker {
   name: string;
   unit: string;
   analyteKey?: string | null;
+  /** Set on the caller's object when the first numeric unit replaces them. */
+  lowerBound?: number | null;
+  upperBound?: number | null;
 }
 
 export type ReadingInMarkerUnit =
@@ -66,7 +71,10 @@ export async function readingInMarkerUnit(
     input;
   if (
     unit !== undefined &&
-    (await adoptFirstNumericUnit(client, marker, unit))
+    (await adoptFirstNumericUnit(client, marker, unit, {
+      low: sourceReferenceLow,
+      high: sourceReferenceHigh,
+    }))
   ) {
     return {
       ok: true,
@@ -128,11 +136,21 @@ export async function readingInMarkerUnit(
  * caller's object, which writes the reading under it. The adoption is not in
  * the reading's transaction: if the write fails after it, the marker keeps
  * the unit the reading stated, which is the unit its next reading will state.
+ *
+ * The range the marker holds came with no unit: the text result it was minted
+ * from stated none. Numbers stated without a unit are dimensionless, so they
+ * stay only when the adopted unit is the unity ("1"), the ratio a text result
+ * beside "10 - 20" usually is. Under any other unit they are not a window
+ * (a "30 - 100" printed in ng/mL is not one in nmol/L, and there is no unit
+ * to convert from), so they give way to the window this reading printed in
+ * the unit it states, or to none, the way a marker this reading had minted
+ * would have started.
  */
 async function adoptFirstNumericUnit(
   client: Pick<PrismaClient, "biomarker" | "labResult">,
   marker: ReadingMarker,
   unit: string,
+  printed: { low: number | null; high: number | null },
 ): Promise<boolean> {
   const stated = unit.trim();
   if (marker.unit.trim() !== "" || stated === "") return false;
@@ -140,9 +158,12 @@ async function adoptFirstNumericUnit(
     where: { biomarkerId: marker.id, value: { not: null }, deletedAt: null },
   });
   if (numeric > 0) return false;
+  const bounds = isDimensionlessUnit(stated)
+    ? null
+    : mintedBounds(printed.low, printed.high);
   const { count } = await client.biomarker.updateMany({
     where: { id: marker.id, unit: "" },
-    data: { unit: stated },
+    data: { unit: stated, ...bounds },
   });
   if (count === 0) {
     // Another reading set the unit first: carry on with the one it chose,
@@ -155,5 +176,9 @@ async function adoptFirstNumericUnit(
     return false;
   }
   marker.unit = stated;
+  if (bounds) {
+    marker.lowerBound = bounds.lowerBound;
+    marker.upperBound = bounds.upperBound;
+  }
   return true;
 }

@@ -6,7 +6,7 @@ export const getCycleTool: McpToolDefinition = {
   name: "get_cycle",
   title: "Get menstrual cycle",
   description:
-    "Fetch the user's menstrual-cycle context: current phase + day-of-cycle, the next predicted event, and the headline phase-correlation finding. Descriptive only — never a contraception-grade or 'safe day' claim. Gated on cycle tracking being enabled for the account; returns { present: false } when cycle tracking is off or there is no data.",
+    "Fetch the user's menstrual-cycle context: current phase + day-of-cycle, the next predicted event, the upcoming period starts after it (`upcoming`: each a likely start with its earliest-to-latest band, widening and self-capped), and the headline phase-correlation finding. Descriptive only — never a contraception-grade or 'safe day' claim. Gated on cycle tracking being enabled for the account; returns { present: false } when cycle tracking is off or there is no data.",
   inputShape: {},
   annotations: READ_ONLY_ANNOTATIONS,
   outputShape: coachReadOutput,

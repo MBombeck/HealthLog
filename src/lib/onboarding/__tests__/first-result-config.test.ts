@@ -8,6 +8,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { CONNECTION_KEYS } from "@/lib/integrations/connection-health";
 import { ONBOARDING_AREA_KEYS } from "@/lib/modules/registry";
 import { NAV_DESTINATIONS } from "@/components/layout/nav-model";
 
@@ -17,8 +18,41 @@ import {
   connectSourceView,
   deliveringSources,
   SOURCE_INTEGRATION,
+  sourceConnectionLabelKey,
 } from "../first-result-config";
+import { ONBOARDING_SOURCE_KEYS } from "../needs";
 import { BROWSER_CONNECTABLE_SOURCES } from "../wizard-steps";
+const EN: unknown = JSON.parse(
+  readFileSync(
+    join(__dirname, "..", "..", "..", "..", "messages", "en.json"),
+    "utf8",
+  ),
+);
+
+function resolves(key: string): boolean {
+  let node: unknown = EN;
+  for (const part of key.split(".")) {
+    if (typeof node !== "object" || node === null) return false;
+    node = (node as Record<string, unknown>)[part];
+  }
+  return typeof node === "string" && node.length > 0;
+}
+
+/**
+ * Connections the setup flow deliberately does not ask about, each with its
+ * reason. Every other connection must be a Q4 source; a provider shipped on
+ * Settings and missing here was absent from the flow without anybody deciding
+ * it.
+ */
+const NOT_AN_ONBOARDING_SOURCE: Record<string, string> = {
+  // Google Health carries Fitbit devices, so its question is the Fitbit
+  // answer: people name the device they own, not the transport. The test
+  // below holds that the Fitbit answer really does lead there.
+  "google-health":
+    "reached through the Fitbit answer, whose task opens the Google Health card",
+  dawarich:
+    "movement context for the environment module, not a source of readings",
+};
 
 describe("first-result targets", () => {
   it("covers every area with exactly one of a form or a page", () => {
@@ -34,6 +68,74 @@ describe("first-result targets", () => {
     for (const href of Object.values(AREA_PAGE_HREF)) {
       expect(hrefs.has(href), href).toBe(true);
     }
+  });
+
+  it("asks about every connection Settings offers, or says why not", () => {
+    const sources = new Set<string>(ONBOARDING_SOURCE_KEYS);
+    const missing = CONNECTION_KEYS.filter(
+      (key) => !sources.has(key) && !(key in NOT_AN_ONBOARDING_SOURCE),
+    );
+    expect(missing).toEqual([]);
+    for (const key of Object.keys(NOT_AN_ONBOARDING_SOURCE)) {
+      expect(CONNECTION_KEYS as readonly string[]).toContain(key);
+    }
+  });
+
+  it("routes the Fitbit answer to Google Health, not the retired classic card", () => {
+    // Fitbit's classic Web API was shut down on 2026-10-30. The answer stays,
+    // because people still own Fitbit devices; the connection is Google
+    // Health's, on the person's own Google OAuth client.
+    expect(ONBOARDING_SOURCE_KEYS).toContain("fitbit");
+    expect(BROWSER_CONNECTABLE_SOURCES).toContain("fitbit");
+    expect(SOURCE_INTEGRATION.fitbit).toMatchObject({
+      anchor: "google-health",
+      statusKey: "google-health",
+      credentials: "byo",
+    });
+    expect(CONNECTION_KEYS as readonly string[]).toContain(
+      SOURCE_INTEGRATION.fitbit.statusKey,
+    );
+    expect(sourceConnectionLabelKey("fitbit")).toBe("settings.googleHealth");
+    expect(resolves(sourceConnectionLabelKey("fitbit"))).toBe(true);
+    expect(resolves(SOURCE_INTEGRATION.fitbit.through!.noteKey)).toBe(true);
+    // Every other source is named and opened by its own answer.
+    for (const source of BROWSER_CONNECTABLE_SOURCES) {
+      if (source === "fitbit") continue;
+      expect(SOURCE_INTEGRATION[source].through, source).toBeUndefined();
+      expect(sourceConnectionLabelKey(source)).toBe(
+        `onboarding.flow.sources.options.${source}`,
+      );
+    }
+  });
+
+  it("reads a Fitbit answer's delivery from Google Health", () => {
+    const entry = (integration: string) => ({
+      integration,
+      connected: true,
+      configured: true,
+      syncHealth: { verdict: "fresh" as const, since: null },
+      lastSuccessAt: null,
+    });
+    expect(deliveringSources([entry("google-health")]).has("fitbit")).toBe(
+      true,
+    );
+    expect(deliveringSources([entry("fitbit")]).has("fitbit")).toBe(false);
+  });
+
+  it("offers Garmin as a source the browser connects with a pasted key", () => {
+    expect(BROWSER_CONNECTABLE_SOURCES).toContain("garmin");
+    expect(SOURCE_INTEGRATION.garmin).toEqual({
+      anchor: "garmin",
+      statusKey: "garmin",
+      credentials: "self-hosted",
+    });
+    const view = connectSourceView("garmin", {
+      connected: false,
+      configured: false,
+      syncHealth: { verdict: "disconnected", since: null },
+      lastSuccessAt: null,
+    });
+    expect(view?.slot).toBe("connect");
   });
 
   it("names an integration for every source the browser can connect", () => {

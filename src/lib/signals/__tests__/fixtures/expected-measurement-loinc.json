@@ -83,6 +83,12 @@
     "unit": "kcal",
     "category": "activity"
   },
+  "BASAL_ENERGY_BURNED": {
+    "loinc": "HKQuantityTypeIdentifierBasalEnergyBurned",
+    "display": "Resting energy",
+    "unit": "kcal",
+    "category": "activity"
+  },
   "WALKING_SPEED": {
     "loinc": "HKQuantityTypeIdentifierWalkingSpeed",
     "display": "Walking speed",

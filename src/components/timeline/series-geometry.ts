@@ -3,11 +3,13 @@
  * geometry (v1.42, #613; lab lines #1299). `timeline-geometry.ts` stacks
  * them under the lanes; each row is laid out here on its own scale.
  */
-import type {
-  TimelineBucket,
-  TimelineLabPoint,
-  TimelineLabSeries,
-  TimelineSeries,
+import {
+  TIMELINE_SYMPTOM_SCALE,
+  timelineSymptomDefinitionId,
+  type TimelineBucket,
+  type TimelineLabPoint,
+  type TimelineLabSeries,
+  type TimelineSeries,
 } from "@/lib/day/contract";
 
 import { bucketAfter, bucketIndex, dayNumber } from "./timeline-dates";
@@ -70,7 +72,8 @@ export const MAX_BRIDGED_GAP: Readonly<Record<TimelineBucket, number>> = {
 };
 
 /**
- * One neutral line per series, scaled to its own range inside the window.
+ * One neutral line per series, scaled to its own range inside the window (a
+ * symptom's to the fixed intensity scale, `TIMELINE_SYMPTOM_SCALE`).
  * A point sits in the middle of its bucket, and every bucket with a reading
  * gets its point, so one month with no neighbours stays visible. Missing
  * buckets stay missing: a short gap is bridged by a dashed stroke
@@ -104,9 +107,17 @@ export function layoutSeries(
         points: [],
       };
     }
-    let lo = Math.min(...inside.map((p) => p.mean));
-    let hi = Math.max(...inside.map((p) => p.mean));
-    const pad = Math.max((hi - lo) * 0.12, Math.abs(hi) * 0.01, 0.5);
+    // A symptom line sits on the intensity scale whatever the window
+    // holds (#981): a 3 reads as a 3, not as the top of a quiet stretch.
+    const fixed =
+      timelineSymptomDefinitionId(s.key) !== null
+        ? TIMELINE_SYMPTOM_SCALE
+        : null;
+    let lo = fixed ? fixed.min : Math.min(...inside.map((p) => p.mean));
+    let hi = fixed ? fixed.max : Math.max(...inside.map((p) => p.mean));
+    const pad = fixed
+      ? (hi - lo) * 0.05
+      : Math.max((hi - lo) * 0.12, Math.abs(hi) * 0.01, 0.5);
     lo -= pad;
     hi += pad;
     const y = (v: number) => rowTop + height * (1 - (v - lo) / (hi - lo));

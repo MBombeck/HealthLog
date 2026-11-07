@@ -86,6 +86,15 @@ export const MAINTENANCE_DISCOVERY: readonly BootDiscovery[] = [
         await import("@/lib/jobs/lab-document-date-repair")
       ).enqueueBootTimeLabDocumentDateRepair(),
   },
+  // Converges to nothing once the wearable period days have their cycles; a
+  // boot with none costs one query.
+  {
+    name: "wearable-cycle-repair",
+    run: async () =>
+      (
+        await import("@/lib/jobs/wearable-cycle-repair")
+      ).enqueueBootTimeWearableCycleRepair(),
+  },
   // Self-limiting and idempotent; a boot with no backlog costs one query.
   {
     name: "compaction-tombstone-purge",

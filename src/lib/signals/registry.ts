@@ -520,6 +520,30 @@ export const SIGNALS: Record<string, SignalDefinition> = {
       category: "activity",
     },
   },
+  // Resting energy (#1340). Stored, charted and exported; read
+  // through MCP like active energy, but kept off the Coach snapshot and the
+  // correlations, and no score or total is built from it.
+  BASAL_ENERGY: {
+    key: "BASAL_ENERGY",
+    kind: "measurement",
+    source: { measurementType: "BASAL_ENERGY_BURNED" },
+    displayName: "Resting energy",
+    unit: "kcal/day",
+    direction: "target-band",
+    archetype: "activity-fitness",
+    surfaces: {
+      detailPage: false,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    fhir: {
+      loinc: "HKQuantityTypeIdentifierBasalEnergyBurned",
+      display: "Resting energy",
+      unit: "kcal",
+      category: "activity",
+    },
+  },
   FLIGHTS_CLIMBED: {
     key: "FLIGHTS_CLIMBED",
     kind: "measurement",

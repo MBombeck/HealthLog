@@ -12,6 +12,9 @@
  * list sorts them into; a lab line is chosen and stored like any other, up
  * to `TIMELINE_LAB_SERIES_MAX` at once: past it the unchosen markers are
  * held back with a line that says why, and a chosen one can always go.
+ * Between the two it offers the person's own symptoms (#981) that have been
+ * logged, hidden ones included and marked as such, on the same terms up to
+ * `TIMELINE_SYMPTOM_SERIES_MAX`.
  */
 import { ChartLine, ChevronDown, Layers } from "lucide-react";
 
@@ -28,7 +31,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   TIMELINE_LAB_SERIES_MAX,
+  TIMELINE_SYMPTOM_SERIES_MAX,
   timelineLabMarkerId,
+  timelineSymptomDefinitionId,
   type TimelineLaneKey,
   type TimelineResponse,
 } from "@/lib/day/contract";
@@ -43,8 +48,15 @@ export interface LabOptionGroup {
   keys: readonly string[];
 }
 
+/** A symptom the menu offers: its key, and whether it is hidden from entry. */
+export interface SymptomOption {
+  key: string;
+  hidden: boolean;
+}
+
 export function ValueSeriesMenu({
   options,
+  symptoms = [],
   labGroups = [],
   selected,
   label,
@@ -53,6 +65,8 @@ export function ValueSeriesMenu({
   iconOnly = false,
 }: {
   options: readonly string[];
+  /** The record's logged symptoms, in the record's own order. */
+  symptoms?: readonly SymptomOption[];
   /** The record's lab markers, grouped as the labs list groups them. */
   labGroups?: readonly LabOptionGroup[];
   selected: readonly string[];
@@ -67,13 +81,20 @@ export function ValueSeriesMenu({
   const labsFull =
     selected.filter((key) => timelineLabMarkerId(key) !== null).length >=
     TIMELINE_LAB_SERIES_MAX;
-  const option = (key: string) => {
+  const symptomsFull =
+    selected.filter((key) => timelineSymptomDefinitionId(key) !== null)
+      .length >= TIMELINE_SYMPTOM_SERIES_MAX;
+  const option = (key: string, hint?: string) => {
     const checked = selected.includes(key);
     return (
       <DropdownMenuCheckboxItem
         key={key}
         checked={checked}
-        disabled={labsFull && !checked && timelineLabMarkerId(key) !== null}
+        disabled={
+          !checked &&
+          ((labsFull && timelineLabMarkerId(key) !== null) ||
+            (symptomsFull && timelineSymptomDefinitionId(key) !== null))
+        }
         data-slot="timeline-values-option"
         data-key={key}
         onSelect={(event) => event.preventDefault()}
@@ -92,6 +113,9 @@ export function ValueSeriesMenu({
           aria-hidden="true"
         />
         {label(key)}
+        {hint ? (
+          <span className="text-muted-foreground ml-auto text-xs">{hint}</span>
+        ) : null}
       </DropdownMenuCheckboxItem>
     );
   };
@@ -121,7 +145,33 @@ export function ValueSeriesMenu({
         data-slot="timeline-values-menu"
       >
         <DropdownMenuLabel>{t("timeline.values.menuTitle")}</DropdownMenuLabel>
-        {options.map(option)}
+        {options.map((key) => option(key))}
+        {symptoms.length > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel data-slot="timeline-values-symptoms">
+              {t("timeline.symptoms.menuTitle")}
+            </DropdownMenuLabel>
+            {symptomsFull && (
+              <p
+                data-slot="timeline-values-symptoms-full"
+                className="text-muted-foreground px-2 pb-1 text-xs"
+              >
+                {t("timeline.symptoms.full", {
+                  max: TIMELINE_SYMPTOM_SERIES_MAX,
+                })}
+              </p>
+            )}
+            <DropdownMenuGroup data-slot="timeline-values-symptom-group">
+              {symptoms.map((s) =>
+                option(
+                  s.key,
+                  s.hidden ? t("timeline.symptoms.hidden") : undefined,
+                ),
+              )}
+            </DropdownMenuGroup>
+          </>
+        )}
         {labGroups.length > 0 && (
           <>
             <DropdownMenuSeparator />
@@ -146,7 +196,7 @@ export function ValueSeriesMenu({
                     {group.panel ?? t("timeline.labs.otherPanel")}
                   </DropdownMenuLabel>
                 )}
-                {group.keys.map(option)}
+                {group.keys.map((key) => option(key))}
               </DropdownMenuGroup>
             ))}
           </>
@@ -251,10 +301,26 @@ export function labMarkerNames(
   );
 }
 
+/** Each symptom's name by its key, from what the server sent. */
+export function symptomNames(
+  timeline:
+    Pick<TimelineResponse, "availableSymptoms" | "symptomSeries"> | undefined,
+): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const s of [
+    ...(timeline?.availableSymptoms ?? []),
+    ...(timeline?.symptomSeries ?? []),
+  ]) {
+    if (s.label !== null) out.set(s.key, s.label);
+  }
+  return out;
+}
+
 /**
  * The values menu as the page holds it: every series the record has, the
  * chosen ones kept even when they have nothing yet, in `rank`'s order and
- * then the record's; then the record's lab markers by group. It counts and
+ * then the record's; then the record's logged symptoms in its own order;
+ * then the record's lab markers by group. It counts and
  * toggles the lines it can name, so a stored marker the record no longer
  * has drops out with the next change.
  */
@@ -264,6 +330,7 @@ export function TimelineValuesMenu({
   allowed,
   rank,
   labsOn,
+  symptomsOn,
   label,
   color,
   onChange,
@@ -274,6 +341,7 @@ export function TimelineValuesMenu({
   allowed: (key: string) => boolean;
   rank: readonly string[];
   labsOn: boolean;
+  symptomsOn: boolean;
   label: (key: string) => string;
   color: (key: string) => string;
   onChange: (next: string[]) => void;
@@ -283,7 +351,11 @@ export function TimelineValuesMenu({
   const options = [
     ...new Set([
       ...(timeline?.availableSeries ?? []).filter(allowed),
-      ...values.filter((key) => timelineLabMarkerId(key) === null),
+      ...values.filter(
+        (key) =>
+          timelineLabMarkerId(key) === null &&
+          timelineSymptomDefinitionId(key) === null,
+      ),
     ]),
   ].sort((a, b) => rank.indexOf(a) - rank.indexOf(b));
   const markers = new Map(
@@ -291,15 +363,29 @@ export function TimelineValuesMenu({
       (m) => [m.key, m],
     ),
   );
+  // A chosen symptom is offered even when the list no longer holds it (a
+  // line sent for it names it), so it can be unticked.
+  const symptomMap = new Map(
+    [
+      ...(timeline?.availableSymptoms ?? []),
+      ...(timeline?.symptomSeries ?? []),
+    ].map((s) => [s.key, { key: s.key, hidden: !s.isActive }]),
+  );
+  const symptoms = symptomsOn ? [...symptomMap.values()] : [];
   const labGroups = labsOn
     ? labOptionGroups([...markers.values()], resolveIntlLocale(locale))
     : [];
   return (
     <ValueSeriesMenu
       options={options}
+      symptoms={symptoms}
       labGroups={labGroups}
-      selected={values.filter(
-        (key) => timelineLabMarkerId(key) === null || markers.has(key),
+      selected={values.filter((key) =>
+        timelineLabMarkerId(key) !== null
+          ? markers.has(key)
+          : timelineSymptomDefinitionId(key) !== null
+            ? symptomMap.has(key)
+            : true,
       )}
       label={label}
       color={color}

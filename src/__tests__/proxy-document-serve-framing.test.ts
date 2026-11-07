@@ -4,8 +4,7 @@ import { NextRequest } from "next/server";
 /**
  * The document vault's decrypt-and-serve route is framed same-origin by the
  * detail preview (`<iframe>` for inline-class PDFs). The proxy's blanket
- * `X-Frame-Options: DENY` + `frame-ancestors 'none'` would refuse that
- * embed, and the blanket page CSP overrides whatever the route sets
+ * `X-Frame-Options: DENY` would refuse that embed, and the blanket page CSP overrides whatever the route sets
  * (middleware headers win) — so the proxy carves out EXACTLY the
  * `/original` path with a same-origin framing posture and a document CSP
  * (`default-src 'none'`; deliberately no `sandbox` — Chromium
@@ -58,7 +57,7 @@ describe("proxy.ts document serve-route framing carve-out", () => {
     const res = proxy(makeRequest("/api/documents/inbound"));
     expect(res.headers.get("x-frame-options")).toBe("DENY");
     expect(res.headers.get("content-security-policy") ?? "").toContain(
-      "frame-ancestors 'none'",
+      "frame-ancestors 'self'",
     );
   });
 
@@ -82,7 +81,7 @@ describe("proxy.ts document serve-route framing carve-out", () => {
     const res = proxy(makeRequest("/documents"));
     expect(res.headers.get("x-frame-options")).toBe("DENY");
     expect(res.headers.get("content-security-policy") ?? "").toContain(
-      "frame-ancestors 'none'",
+      "frame-ancestors 'self'",
     );
   });
 });
@@ -103,11 +102,12 @@ describe("proxy.ts share document serve-route framing carve-out", () => {
 
   it("keeps the DENY + page-CSP posture on the /c/<token> view page itself", () => {
     const res = proxy(makeRequest(`/c/${shareToken}`));
-    // The clinician view is a PAGE — it must not be framable and keeps the
-    // page CSP; only the blob subresource under it takes the serve posture.
+    // The clinician view is a PAGE — it keeps the page CSP, framable by its
+    // own origin only (see the blob: note in proxy.ts); only the served
+    // document under it takes the serve posture.
     expect(res.headers.get("x-frame-options")).toBe("DENY");
     expect(res.headers.get("content-security-policy") ?? "").toContain(
-      "frame-ancestors 'none'",
+      "frame-ancestors 'self'",
     );
   });
 

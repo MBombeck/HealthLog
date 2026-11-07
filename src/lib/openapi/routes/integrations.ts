@@ -243,11 +243,19 @@ const metricFreshnessEntry = z
     type: z
       .string()
       .describe(
-        "The measurement type (e.g. `RESPIRATORY_RATE`), `WORKOUTS` for the workout leg, or (Apple Health only, since v1.42.4) `MEDICATION_DOSE` for medication doses imported from Apple Health. Clients should show or skip a type they do not know rather than fail.",
+        "The measurement type (e.g. `RESPIRATORY_RATE`), `WORKOUTS` for the workout leg, `CYCLE_DAYS` for the period days a wearable imported (Garmin, Oura), or (Apple Health only, since v1.42.4) `MEDICATION_DOSE` for medication doses imported from Apple Health. Clients should show or skip a type they do not know rather than fail.",
       ),
     lastSeenAt: isoDateTime().describe(
-      "Newest recorded reading for this type from this source.",
+      "Newest recorded reading for this type from this source. On `CYCLE_DAYS`, the newest cycle day at noon UTC.",
     ),
+    count: z
+      .number()
+      .int()
+      .nonnegative()
+      .optional()
+      .describe(
+        "How many live cycle days the source holds. Present on `CYCLE_DAYS` only.",
+      ),
     stale: z
       .boolean()
       .describe(
@@ -377,6 +385,12 @@ const healthKitConfigResponse = z
       .optional()
       .describe(
         "The unified Apple Health connection state. Null when the phone has never delivered anything (or the read failed). Present on the GET read; omitted from the PATCH echo.",
+      ),
+    acceptedTypes: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "The HealthKit quantity and category identifiers `POST /api/measurements/batch` maps today (e.g. `HKQuantityTypeIdentifierBodyMass`, `HKCategoryTypeIdentifierSleepAnalysis`), sorted. Derived from the server's mapping table, so a type the server defers is never listed. A client requests and sends only types in this list and its own table; when the field is absent (an older server) it keeps its own table. Present on the GET read; omitted from the PATCH echo.",
       ),
   })
   .meta({

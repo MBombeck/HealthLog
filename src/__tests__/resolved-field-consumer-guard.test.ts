@@ -173,6 +173,31 @@ const RULES: ResolvedFieldRule[] = [
         "the `/me` payload normaliser: types and coerces the field, decides nothing",
     },
   },
+  {
+    field: "marker category (labs list categories)",
+    servedBy:
+      "`categories` / `grouped` on `GET /api/labs/overview` (`src/lib/labs/marker-category.ts`)",
+    // Symbols, not modules: the marker form imports the catalog module for
+    // its seed list, which is fine. Resolving a category or its status from
+    // a name or a panel in the browser is the rebuild.
+    patterns: [
+      /\bcatalogKeyForName\s*\(/,
+      /\bresolveMarkerCategory\s*\(/,
+      /\bsummariseCategory\s*\(/,
+      /\bcategoriseOverview\s*\(/,
+      /\bALIAS_PANEL\b/,
+      /\bbuildLocalisedLabelIndex\s*\(/,
+    ],
+    samples: [
+      "const key = catalogKeyForName(row.analyte);",
+      "const ref = resolveMarkerCategory({ panel, name });",
+      "const { status } = summariseCategory(statuses);",
+      "const { categories } = categoriseOverview(markers, locale);",
+      "const panel = ALIAS_PANEL[key];",
+      "const index = buildLocalisedLabelIndex(entries);",
+    ],
+    allow: {},
+  },
 ];
 
 function isClientModule(rel: string, source: string): boolean {

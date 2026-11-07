@@ -7,6 +7,9 @@ import {
   encodeCursor,
   decodeCursor,
   decodeCursorIssuedAt,
+  encodeCursorAtNow,
+  START_NOW_OVERLAP_MS,
+  SYNC_DOMAINS,
   type SyncCursor,
 } from "../cursor";
 
@@ -132,5 +135,27 @@ describe("cursor issue time (sync reset)", () => {
   it("reads no issue time from a token that carries none", () => {
     expect(decodeCursorIssuedAt(encodeCursor(cursor))).toBeNull();
     expect(decodeCursorIssuedAt("not a token")).toBeNull();
+  });
+});
+
+describe("encodeCursorAtNow", () => {
+  it("places every domain a minute back, before any id in that millisecond", () => {
+    const nowMs = 1_790_000_000_123;
+    const token = encodeCursorAtNow(nowMs);
+    const cursor = decodeCursor(token);
+    // A write stamped before the instant but committed after it is still
+    // ahead of the watermark.
+    expect(START_NOW_OVERLAP_MS).toBe(60_000);
+    for (const domain of SYNC_DOMAINS) {
+      expect(cursor?.[domain], domain).toEqual({
+        updatedAtMs: nowMs - 60_000,
+        id: "0",
+      });
+    }
+    expect(decodeCursorIssuedAt(token)).toBe(nowMs);
+    // Every cuid sorts after the tie-breaker, so a row in the same
+    // millisecond is delivered, not skipped.
+    expect("0" < "c").toBe(true);
+    expect("0" < "a").toBe(true);
   });
 });

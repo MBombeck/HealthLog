@@ -57,6 +57,15 @@ describe("isAllowlistedApiRead — offline read boundary", () => {
     expect(isAllowlistedApiRead("/api/withings/callback")).toBe(false);
   });
 
+  it("never caches the cycle calendar feed or its management routes (#1350)", () => {
+    // The feed URL is a credential and its body is a record's cycle dates;
+    // neither belongs in a browser's durable storage.
+    const feed = `/api/cycle/feed/hlf_${"1f".repeat(24)}.ics`;
+    expect(isAllowlistedApiRead(feed)).toBe(false);
+    expect(isAllowlistedApiRead("/api/cycle/feed-subscription")).toBe(false);
+    expect(SW_SOURCE).not.toContain("/api/cycle");
+  });
+
   it("does not match a prefix that is only a partial path segment", () => {
     // `/api/measurements-export` must NOT match `/api/measurements`.
     expect(isAllowlistedApiRead("/api/measurements-export")).toBe(false);

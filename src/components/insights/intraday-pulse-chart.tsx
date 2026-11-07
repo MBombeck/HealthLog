@@ -183,12 +183,12 @@ export function IntradayPulseChart({
       : t("insights.intradayPulse.caption");
 
   const coverageNote = coverage
-    ? coverage.readingCount === 1
-      ? t("insights.intradayPulse.coverageOne", { hours: coverage.hours })
-      : t("insights.intradayPulse.coverageMany", {
-          count: coverage.readingCount,
-          hours: coverage.hours,
-        })
+    ? t(
+        coverage.readingCount === 1
+          ? "insights.intradayPulse.coverageOne"
+          : "insights.intradayPulse.coverageMany",
+        { count: coverage.readingCount, hours: coverage.hours },
+      )
     : null;
 
   const dayLabel = isToday

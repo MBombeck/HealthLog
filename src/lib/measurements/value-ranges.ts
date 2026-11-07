@@ -38,6 +38,9 @@ export const VALUE_RANGES: Record<string, { min: number; max: number }> = {
   // Active energy kcal/sample — a daily-rollup sample tops out around
   // 6–8000 kcal even for ultra-endurance days.
   ACTIVE_ENERGY_BURNED: { min: 0, max: 10000 },
+  // Resting energy kcal/sample — a whole day at rest sits around 1200–3000
+  // kcal; the same ceiling as active energy leaves room for a large body.
+  BASAL_ENERGY_BURNED: { min: 0, max: 10000 },
   // Flights — vertical-feet/3 ≈ flights; cap generous.
   FLIGHTS_CLIMBED: { min: 0, max: 1000 },
   // Walking/running distance per sample (metres). 200 km covers an

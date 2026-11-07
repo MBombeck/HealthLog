@@ -28,6 +28,7 @@ const unitMap: Record<string, string> = {
   HEART_RATE_VARIABILITY: "ms",
   RESTING_HEART_RATE: "bpm",
   ACTIVE_ENERGY_BURNED: "kcal",
+  BASAL_ENERGY_BURNED: "kcal",
   FLIGHTS_CLIMBED: "flights",
   WALKING_RUNNING_DISTANCE: "m",
   VO2_MAX: "mL/(kg·min)",

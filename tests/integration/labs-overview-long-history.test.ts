@@ -270,3 +270,152 @@ describe("GET /api/labs/overview on a 25-year history", () => {
     expect(((await res.json()) as OverviewBody).data.markers).toEqual([]);
   });
 });
+
+interface CategoryBody {
+  data: {
+    markers: Array<{ key: string }>;
+    grouped: boolean;
+    categories: Array<{
+      key: string;
+      label: string;
+      markerKeys: string[];
+      counts: {
+        inRange: number;
+        below: number;
+        above: number;
+        unknown: number;
+      };
+      status: string;
+    }>;
+  };
+}
+
+describe("GET /api/labs/overview categories", () => {
+  async function seedCategories() {
+    const prisma = getPrismaClient();
+    const mk = (name: string, panel: string | null, low = 1, high = 10) =>
+      prisma.biomarker.create({
+        data: {
+          userId: USER_ID,
+          name,
+          unit: "U/L",
+          lowerBound: low,
+          upperBound: high,
+          panel,
+        },
+      });
+    const ldl = await mk("LDL", "Lipide");
+    const hdl = await mk("HDL", null);
+    const tsh = await mk("TSH", "Thyroid");
+    const own1 = await mk("Zinc", "Trace elements");
+    const own2 = await mk("Selenium", "trace  ELEMENTS");
+    const own3 = await mk("Copper", "trace  ELEMENTS");
+    const reading = (id: string, analyte: string, value: number, day: number) =>
+      ({
+        userId: USER_ID,
+        biomarkerId: id,
+        analyte,
+        value,
+        unit: "U/L",
+        takenAt: daysAgo(day),
+      }) as const;
+    await prisma.labResult.createMany({
+      data: [
+        reading(ldl.id, "LDL", 20, 3),
+        reading(hdl.id, "HDL", 0.5, 2),
+        reading(tsh.id, "TSH", 5, 1),
+        // The newest reading of the custom group carries the rarer spelling.
+        reading(own1.id, "Zinc", 5, 0),
+        reading(own2.id, "Selenium", 5, 6),
+        reading(own3.id, "Copper", 5, 4),
+      ],
+    });
+    // A legacy unlinked row, panel-less, recognised by name.
+    await prisma.labResult.create({
+      data: {
+        userId: USER_ID,
+        analyte: "Mystery marker",
+        value: 3,
+        unit: "U/L",
+        takenAt: daysAgo(5),
+      },
+    });
+    return { ldl, hdl, tsh };
+  }
+
+  it("resolves order, members, counts and status on the server", async () => {
+    const { ldl, hdl, tsh } = await seedCategories();
+    cookieJar.set("healthlog-locale", "en");
+    const res = await getOverview();
+    expect(res.status).toBe(200);
+    const { categories, grouped, markers } = (
+      (await res.json()) as CategoryBody
+    ).data;
+    expect(grouped).toBe(true);
+    expect(categories.map((c) => c.label)).toEqual([
+      "Lipids",
+      "Thyroid",
+      "trace  ELEMENTS",
+      "Other",
+    ]);
+    const lipids = categories[0];
+    expect(lipids.key).toBe("lipids");
+    expect([...lipids.markerKeys].sort()).toEqual(
+      [`bm:${ldl.id}`, `bm:${hdl.id}`].sort(),
+    );
+    // Mixed above and below: the warning tone, never a third state.
+    expect(lipids.counts).toEqual({
+      inRange: 0,
+      below: 1,
+      above: 1,
+      unknown: 0,
+    });
+    expect(lipids.status).toBe("above");
+    expect(categories[1]).toMatchObject({
+      markerKeys: [`bm:${tsh.id}`],
+      status: "in-range",
+    });
+    const custom = categories[2];
+    expect(custom.key).toMatch(/^custom:[0-9a-f]{12}$/);
+    expect(custom.markerKeys).toHaveLength(3);
+    // The most frequent spelling, not the newest reading's.
+    expect(custom.label).toBe("trace  ELEMENTS");
+    expect(categories[3].markerKeys).toEqual(["analyte:mystery marker"]);
+    // Every marker sits in exactly one category.
+    expect(categories.flatMap((c) => c.markerKeys).sort()).toEqual(
+      markers.map((m) => m.key).sort(),
+    );
+  });
+
+  it("labels in the caller's language", async () => {
+    await seedCategories();
+    cookieJar.set("healthlog-locale", "de");
+    const { categories } = (
+      (await (await getOverview()).json()) as CategoryBody
+    ).data;
+    expect(categories.map((c) => c.label)).toEqual([
+      "Lipide",
+      "Schilddrüse",
+      "trace  ELEMENTS",
+      "Sonstige",
+    ]);
+  });
+
+  it("stays flat when grouping adds nothing", async () => {
+    const prisma = getPrismaClient();
+    await prisma.labResult.create({
+      data: {
+        userId: USER_ID,
+        analyte: "Mystery marker",
+        value: 3,
+        unit: "U/L",
+        takenAt: daysAgo(5),
+      },
+    });
+    const { categories, grouped } = (
+      (await (await getOverview()).json()) as CategoryBody
+    ).data;
+    expect(grouped).toBe(false);
+    expect(categories).toHaveLength(1);
+  });
+});

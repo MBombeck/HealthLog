@@ -31,8 +31,14 @@ export const labKeys = {
 
   // The Labs list: one entry per biomarker over the whole history
   // (`GET /api/labs/overview`). The `lab-results` prefix lets every result
-  // mutation's `labResults()` invalidation evict it.
-  labResultsOverview: () => ["lab-results", "overview"] as const,
+  // mutation's `labResults()` invalidation evict it. The optional locale
+  // segment gives each language its own cell, because the response carries
+  // localised category labels; the zero-arg form stays the prefix of every
+  // locale cell, so a prefix invalidation still reaches them all.
+  labResultsOverview: (locale?: string) =>
+    locale
+      ? (["lab-results", "overview", locale] as const)
+      : (["lab-results", "overview"] as const),
 
   // One reading's detail (`GET /api/labs/{id}`): the decrypted note and the
   // records it relates to. Under the `lab-results` prefix so every result

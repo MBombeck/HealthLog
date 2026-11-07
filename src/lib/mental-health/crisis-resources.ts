@@ -195,33 +195,68 @@ const NL_BE: CrisisResourceSet = {
 };
 
 /**
- * Resolve a crisis-resource set from the user's locale. Region detection is
- * coarse (locale prefix) and defaults to the international set — the goal is to
- * always surface SOMETHING actionable, never to be exhaustive.
+ * Country sets reached by a region subtag, whatever the language. Someone in
+ * Belgium with the phone in English sends "en-BE" and gets Belgium's line,
+ * not the international set.
+ */
+const BY_REGION: Readonly<Record<string, CrisisResourceSet>> = {
+  at: AT,
+  be: BE,
+  br: BR,
+  ch: CH,
+  de: DE,
+  nl: NL,
+  pt: PT,
+  us: US,
+};
+
+/**
+ * The region subtag of a BCP 47 tag ("en-BE" -> "be", "zh-Hant-TW" -> "tw"),
+ * or null for a bare language code. Only a two-letter subtag after the
+ * language counts; a script subtag ("Hant") is skipped.
+ */
+function regionSubtag(tag: string): string | null {
+  const parts = tag.split("-");
+  for (const part of parts.slice(1)) {
+    if (/^[a-z]{2}$/.test(part)) return part;
+  }
+  return null;
+}
+
+/**
+ * Resolve a crisis-resource set from the user's locale. The region subtag
+ * decides first: any language with a region we have a set for ("en-BE",
+ * "fr-CH", "en-AT", "de-DE") gets that country's set. Without a region the
+ * language decides, coarsely, and anything unknown gets the international
+ * set: the goal is to always surface SOMETHING actionable, never to be
+ * exhaustive.
  *
- * A region-qualified tag ("de-AT", "de_CH", "pt-PT", …) resolves to the exact
- * country set when the caller has one to give us. The web stores the app
- * locale, which is a bare "de", "nl" or the folded "pt-BR", so it lands on the
- * combined sets: never assume Germany, the Netherlands or Brazil when the
- * region is unknown.
+ * One tag is not a region signal: "pt-BR" is the web's folded Portuguese
+ * bundle (see PT_BR_AMBIGUOUS), so it keeps the ambiguous set. The web stores
+ * the app locale, which is otherwise a bare "de", "nl", "en", so it lands on
+ * the combined sets: never assume Germany, the Netherlands or Brazil when the
+ * region is unknown. A bare country code ("at", "ch", "us", "br", "be")
+ * still resolves to that country.
  */
 export function crisisResourcesForLocale(
   locale: string | null | undefined,
 ): CrisisResourceSet {
-  const lc = (locale ?? "").toLowerCase().replace("_", "-");
-  if (lc === "de-at" || lc === "at") return AT;
-  if (lc === "de-ch" || lc === "ch") return CH;
-  if (lc.startsWith("de")) return DE_AT_CH;
-  if (lc.startsWith("en-us") || lc === "us") return US;
-  if (lc === "br") return BR;
-  if (lc === "pt-pt") return PT;
-  // "pt-BR" from the web is the folded app locale, not a region signal; see
-  // PT_BR_AMBIGUOUS. Any other Portuguese tag (pt, pt-AO, pt-MZ) lands here
-  // too, and still gets 112 and the worldwide directory first.
-  if (lc === "pt" || lc.startsWith("pt-")) return PT_BR_AMBIGUOUS;
-  if (lc === "nl-nl") return NL;
-  if (lc === "nl-be" || lc === "be") return BE;
+  const lc = (locale ?? "").trim().toLowerCase().replaceAll("_", "-");
+  if (lc === "pt-br") return PT_BR_AMBIGUOUS;
+  const region = regionSubtag(lc);
+  if (region !== null) {
+    const byRegion = BY_REGION[region];
+    if (byRegion) return byRegion;
+  }
+  if (lc === "at" || lc === "ch" || lc === "us" || lc === "br" || lc === "be") {
+    return BY_REGION[lc];
+  }
+  const language = lc.split("-")[0];
+  if (language === "de") return DE_AT_CH;
+  // Any other Portuguese tag (pt, pt-AO, pt-MZ) still gets 112 and the
+  // worldwide directory first.
+  if (language === "pt") return PT_BR_AMBIGUOUS;
   // The bare "nl" the web stores, and any other Dutch tag: both countries.
-  if (lc === "nl" || lc.startsWith("nl-")) return NL_BE;
+  if (language === "nl") return NL_BE;
   return INTERNATIONAL;
 }

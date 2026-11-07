@@ -115,6 +115,27 @@ describe("toCommitRow agrees with validateReviewRow", () => {
   it("anchors the date at noon UTC", () => {
     expect(toCommitRow(row())?.takenAt).toBe("2026-06-10T12:00:00.000Z");
   });
+
+  it("sends the range printed beside a text result", () => {
+    expect(
+      toCommitRow(
+        row({
+          value: null,
+          valueText: "SEE NOTE",
+          unit: null,
+          referenceLow: 10,
+          referenceHigh: 20,
+          referenceText: "10 - 20",
+          biomarkerMatch: "new",
+        }),
+      ),
+    ).toMatchObject({
+      valueText: "SEE NOTE",
+      referenceLow: 10,
+      referenceHigh: 20,
+      referenceText: "10 - 20",
+    });
+  });
 });
 
 describe("collectRowErrors", () => {

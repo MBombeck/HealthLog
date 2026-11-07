@@ -34,6 +34,7 @@ export const BROWSER_CONNECTABLE_SOURCES = [
   "oura",
   "whoop",
   "polar",
+  "garmin",
   "fitbit",
   "strava",
   "nightscout",

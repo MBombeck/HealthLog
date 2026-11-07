@@ -9,8 +9,8 @@ import {
   DERIVED_MODELS,
   NOT_IN_BACKUP_MODELS,
   RAW_SQL_TABLES,
-  backupVerdict,
 } from "@/lib/export/backup-plan";
+import { backupVerdict } from "@/lib/export/backup-verdict";
 
 /**
  * Every model in the schema has a written verdict about the backup.

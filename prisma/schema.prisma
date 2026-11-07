@@ -1166,6 +1166,12 @@ model User {
   // v1.15.0 — owner of a per-user custom CycleSymptom (NULL = the global
   // seeded catalogue).
   cycleSymptomsCustom CycleSymptom[]   @relation("UserCycleSymptoms")
+  // #1350 — the subscribable cycle forecast. `cycleCalendarFeeds` is the
+  // record the feed serves; `cycleCalendarFeedsMinted` is the carrier who
+  // minted it, which is the owner on their own record and the guardian on a
+  // managed profile.
+  cycleCalendarFeeds       CycleCalendarFeed[] @relation("CycleCalendarFeedSubject")
+  cycleCalendarFeedsMinted CycleCalendarFeed[] @relation("CycleCalendarFeedCreator")
 
   // v1.39 — the needs-based onboarding's answers and step ledger for THIS
   // record. 1:1, and keyed by record rather than by the person at the
@@ -1807,6 +1813,9 @@ enum MeasurementType {
   STRESS_LEVEL // score (0–100) — Garmin's all-day average stress level. Device-native and kept apart from the COMPUTED STRESS_SCORE, whose readers are single-source.
   TRAINING_READINESS // score (0–100) — Garmin Training Readiness. Not in the Personal API; written by a bridge through the ingest token (source EXTERNAL).
   ACUTE_TRAINING_LOAD // load (unit-less) — Garmin acute training load. Not in the Personal API; written by a bridge through the ingest token (source EXTERNAL).
+  // v1.47.1 — resting energy (#1340). Its own type beside ACTIVE_ENERGY_BURNED,
+  // never folded into it and never summed with it into a total.
+  BASAL_ENERGY_BURNED // kcal — HealthKit `basalEnergyBurned`, the energy the body uses at rest; cumulative, daily SUM.
 
   @@map("measurement_type")
 }
@@ -8323,6 +8332,76 @@ model CycleProfile {
 
   @@unique([userId])
   @@map("cycle_profiles")
+}
+
+/// #1350 — how the feed titles its events. DISCREET shows a dot and names the
+/// calendar "HealthLog"; DESCRIPTIVE names the period and the calendar.
+enum CycleCalendarFeedTitleMode {
+  DISCREET
+  DESCRIPTIVE
+
+  @@map("cycle_calendar_feed_title_mode")
+}
+
+/// #1350 — a subscribable calendar feed of one record's cycle forecast.
+///
+/// The row is a URL credential. Only the HMAC of the raw `hlf_` token is
+/// stored (`hashToken`, the same key as `ApiToken.tokenHash`); the raw token is
+/// returned once at mint and is unrecoverable afterwards. The feed is computed
+/// live on every fetch from the record's own rows, so nothing about the
+/// forecast is stored here.
+///
+/// At most one live feed per record: a partial unique index on `user_id WHERE
+/// revoked_at IS NULL`, written in the migration because Prisma cannot express
+/// it. Revocation stamps `revokedAt` and never deletes, so the status read can
+/// say when a link stopped working. Not in the backup: a restore would bring
+/// back a link the owner revoked (see `backup-plan.ts`).
+model CycleCalendarFeed {
+  id          String @id @default(cuid())
+  /// The record whose forecast the feed serves.
+  userId      String @map("user_id")
+  /// Who minted it: the owner, or the guardian of a managed profile. A
+  /// guardian's feed is re-checked against their live MANAGE grant and the
+  /// managed-profile marker on every fetch.
+  createdById String @map("created_by_id")
+
+  /// HMAC-SHA256 of the raw `hlf_` token.
+  tokenHash   String @unique @map("token_hash")
+  /// The first 8 characters of the raw token, shown in settings so the owner
+  /// can tell which link is live. Not enough to rebuild it.
+  tokenPrefix String @map("token_prefix")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  /// Fetch statistics, written fire-and-forget by the feed route and read by
+  /// the status endpoint ("last fetched 3 h ago by Google Calendar").
+  lastFetchedAt DateTime? @map("last_fetched_at")
+  fetchCount    Int       @default(0) @map("fetch_count")
+  /// The last fetcher's User-Agent, truncated to 80 characters.
+  lastFetcherUa String?   @map("last_fetcher_ua")
+
+  /// SHA-256 of the last served body without its timestamps. When a fetch
+  /// builds a different body, `contentChangedAt` moves; both drive DTSTAMP,
+  /// LAST-MODIFIED and the ETag.
+  bodyHash         String?  @map("body_hash")
+  contentChangedAt DateTime @default(now()) @map("content_changed_at")
+
+  /// Forecast cycles ahead (1..6). The feed caps itself further once the
+  /// band grows past ±10 days or half a cycle.
+  horizonCycles  Int                        @default(3) @map("horizon_cycles")
+  /// Observed cycles included as history (0..12).
+  historyCycles  Int                        @default(0) @map("history_cycles")
+  /// The fertile window of the next cycle, for TRYING_TO_CONCEIVE only.
+  includeFertile Boolean                    @default(false) @map("include_fertile")
+  titleMode      CycleCalendarFeedTitleMode @default(DISCREET) @map("title_mode")
+
+  user      User @relation("CycleCalendarFeedSubject", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy User @relation("CycleCalendarFeedCreator", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([createdById])
+  @@map("cycle_calendar_feeds")
 }
 
 /// One row per menstrual cycle (a period-start anchor + derived span).

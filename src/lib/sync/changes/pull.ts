@@ -13,6 +13,7 @@ import {
   decodeCursor,
   decodeCursorIssuedAt,
   encodeCursor,
+  encodeCursorAtNow,
   SYNC_DOMAINS,
   type SyncCursor,
   type SyncDomain,
@@ -105,6 +106,26 @@ function emptyChanges(): SyncChangesBody["changes"] {
     cycleDays: { upserts: [], tombstones: [] },
     cycles: { upserts: [], tombstones: [] },
     measurementMirror: { upserts: [], tombstones: [] },
+  };
+}
+
+/**
+ * `start=now` (#1339): an empty page with a cursor a minute before
+ * `serverNow` in every domain (`encodeCursorAtNow`), for a client that wants changes from now on (the Apple Health
+ * write-back) without paging through the history first. `hasMore` is false:
+ * the client is caught up as of `serverNow` by definition.
+ */
+export function syncChangesFromNow(serverNow: Date): SyncChangesBody {
+  annotate({
+    action: { name: "sync.changes.start_now" },
+    meta: { returned: 0 },
+  });
+  return {
+    serverNow: serverNow.toISOString(),
+    cursor: encodeCursorAtNow(serverNow.getTime()),
+    hasMore: false,
+    cursorExpired: false,
+    changes: emptyChanges(),
   };
 }
 

@@ -129,10 +129,12 @@ const EXPECTED_TYPES = [
   "STRESS_LEVEL",
   "TRAINING_READINESS",
   "ACUTE_TRAINING_LOAD",
+  // ── resting energy (#1340) ──
+  "BASAL_ENERGY_BURNED",
 ] as const;
 
 describe("measurementTypeEnum coverage", () => {
-  it("exposes the 86 canonical measurement types", () => {
+  it("exposes the 91 canonical measurement types", () => {
     expect([...measurementTypeEnum.options].sort()).toEqual(
       [...EXPECTED_TYPES].sort(),
     );

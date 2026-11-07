@@ -32,6 +32,8 @@ import { cn } from "@/lib/utils";
 const WORKOUT_TYPE = "WORKOUTS";
 /** The pseudo-type carrying Apple Health medication doses. */
 const MEDICATION_DOSE_TYPE = "MEDICATION_DOSE";
+/** The pseudo-type carrying the cycle days a wearable imported. */
+const CYCLE_DAY_TYPE = "CYCLE_DAYS";
 
 /**
  * Turn an unmapped enum name into something readable. `MEASUREMENT_TYPE_LABEL_KEYS`
@@ -67,7 +69,11 @@ export function MetricFreshnessList<
   if (!entries?.length) return null;
 
   const reference = now ?? new Date();
-  const label = (type: string): string => {
+  const label = (type: string, count?: number): string => {
+    if (type === CYCLE_DAY_TYPE)
+      return count === undefined
+        ? t("settings.integrationFreshness.cycleDays")
+        : t("settings.integrationFreshness.cycleDaysCount", { count });
     if (type === WORKOUT_TYPE)
       return t("settings.integrationFreshness.workouts");
     if (type === MEDICATION_DOSE_TYPE)
@@ -142,7 +148,7 @@ export function MetricFreshnessList<
                       extra && !entry.stale && "text-foreground",
                     )}
                   >
-                    {label(entry.type)}
+                    {label(entry.type, entry.count)}
                   </span>
                 </span>
                 <time

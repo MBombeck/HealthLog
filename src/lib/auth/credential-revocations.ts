@@ -15,6 +15,7 @@ type CredentialStore = Pick<
   | "trustedDevice"
   | "mcpOAuthConnection"
   | "clinicianShareLink"
+  | "cycleCalendarFeed"
   | "stepUpElevation"
 >;
 
@@ -54,6 +55,14 @@ export function credentialRevocations(
     // change; the owner makes a fresh link for the people who should keep it.
     db.clinicianShareLink.updateMany({
       where: { userId, revokedAt: null },
+      data: { revokedAt: now },
+    }),
+    // A cycle calendar feed is the same kind of door (#1350): a URL that
+    // serves the record's forecast to whoever holds it. Both the feeds on this
+    // record and the ones this account minted on a record it manages end here,
+    // so a remediation never leaves a link it cannot see.
+    db.cycleCalendarFeed.updateMany({
+      where: { OR: [{ userId }, { createdById: userId }], revokedAt: null },
       data: { revokedAt: now },
     }),
     db.stepUpElevation.deleteMany({ where: { userId } }),

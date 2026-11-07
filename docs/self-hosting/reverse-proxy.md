@@ -336,6 +336,49 @@ A `TRUST_PROXY_HOPS` value that is not a whole number resolves no client
 address at all (requests keep working) and is named in the `[proxy-trust]`
 boot line.
 
+## Credentials in the URL path: keep them out of access logs
+
+A few HealthLog URLs carry their credential in the path, because the caller
+cannot send a header: the cycle calendar feed (`/api/cycle/feed/hlf_…`,
+polled by Google, Apple or Outlook), the clinician share view (`/c/hls_…`)
+and the provider webhooks. HealthLog scrubs these segments from its own logs
+and error reports. It cannot reach your proxy's access log, which records the
+full path of every request by default, so anyone who can read that log can
+read a live feed link.
+
+Either drop those requests from the access log or rewrite the path before it
+is written. For Caddy, skip logging the token-bearing paths:
+
+```caddyfile
+your-instance.example.com {
+    @credential_paths path /api/cycle/feed/* /c/*
+    log_skip @credential_paths
+    reverse_proxy app:3000
+}
+```
+
+For Nginx, log a redacted path instead of `$request`:
+
+```nginx
+map $request_uri $redacted_uri {
+    ~^/api/cycle/feed/  /api/cycle/feed/[REDACTED];
+    ~^/c/               /c/[REDACTED];
+    default             $request_uri;
+}
+log_format redacted '$remote_addr - [$time_local] "$request_method $redacted_uri" '
+                    '$status $body_bytes_sent "$http_user_agent"';
+access_log /var/log/nginx/access.log redacted;
+```
+
+Traefik's access log has no per-path filter; turn `accessLog` off, or keep it
+on a host only you can read. If a feed link has been in a log you do not
+control, rotate it in the app (Cycle, Settings, Calendar subscription, Rotate
+link): the old one stops working on the provider's next poll.
+
+The feed answers with `Cache-Control: private, no-cache` and an `ETag`, so a
+caching proxy in front must pass `If-None-Match` through rather than cache the
+body for everyone.
+
 ## Running over plain HTTP on a LAN (no reverse proxy)
 
 The session cookie carries the `Secure` flag by default under

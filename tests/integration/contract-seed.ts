@@ -1125,6 +1125,7 @@ const PATH_PARAM_SOURCES: Record<string, Record<string, string>> = {
   "/api/managed-profiles/{id}/handover": { id: "managedProfile" },
   "/api/workouts/{id}": { id: "workout" },
   "/api/biomarkers/{id}": { id: "biomarker" },
+  "/api/biomarkers/{id}/series": { id: "biomarker" },
   "/api/insights/ecg/{id}": { id: "ecg" },
   "/api/insights/chat/{id}": { id: "conversation" },
   "/api/insights/chat/{id}/messages/{messageId}/results": {

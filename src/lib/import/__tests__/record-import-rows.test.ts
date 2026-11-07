@@ -106,6 +106,26 @@ describe("lab rows", () => {
     });
   });
 
+  it("keeps the numeric range beside a text result, and no text range", () => {
+    expect(
+      lab(["BUN/Creatinine ratio", "SEE NOTE", "", "2025-03-01", "10 - 20"]),
+    ).toMatchObject({
+      ok: true,
+      row: {
+        valueText: "SEE NOTE",
+        sourceReferenceLow: 10,
+        sourceReferenceHigh: 20,
+        sourceReferenceText: null,
+      },
+    });
+    expect(
+      lab(["Urine nitrite", "neg", "", "2025-03-01", "NEGATIVE"]),
+    ).toMatchObject({
+      ok: true,
+      row: { sourceReferenceLow: null, sourceReferenceHigh: null },
+    });
+  });
+
   it.each([
     [["", "5", "%", "2025-03-01", ""], "missing_value", "analyte"],
     [["HbA1c", "", "%", "2025-03-01", ""], "missing_value", "value"],

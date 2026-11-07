@@ -285,6 +285,8 @@ export const SPARSE_METRIC_TYPES: ReadonlySet<string> = new Set([
   "WORKOUTS",
   // As-needed and paused medications leave weeks without a dose by design.
   "MEDICATION_DOSE",
+  // A period comes once a month, and not at all in a pregnancy.
+  "CYCLE_DAYS",
 ]);
 
 /** The pseudo-type carrying a source's newest workout, next to its metrics. */
@@ -296,15 +298,23 @@ export const WORKOUT_FRESHNESS_TYPE = "WORKOUTS";
  */
 export const MEDICATION_DOSE_FRESHNESS_TYPE = "MEDICATION_DOSE";
 
+/**
+ * The pseudo-type carrying the newest cycle day a wearable imported (Garmin,
+ * Oura), with how many it holds.
+ */
+export const CYCLE_DAY_FRESHNESS_TYPE = "CYCLE_DAYS";
+
 /** Newest recorded reading for one `(source, type)` pair, as queried. */
 export interface MetricFreshnessSample {
   /**
-   * The `MeasurementType` (e.g. "RESPIRATORY_RATE"), `WORKOUTS`, or
-   * `MEDICATION_DOSE` on the Apple Health list.
+   * The `MeasurementType` (e.g. "RESPIRATORY_RATE"), `WORKOUTS`,
+   * `CYCLE_DAYS`, or `MEDICATION_DOSE` on the Apple Health list.
    */
   type: string;
   /** ISO timestamp of the newest (non-deleted) reading for this metric. */
   lastSeenAt: string;
+  /** How many live rows the source holds. `CYCLE_DAYS` only. */
+  count?: number;
 }
 
 /** A sample plus the server's staleness verdict for it. */

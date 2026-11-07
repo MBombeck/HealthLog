@@ -164,6 +164,7 @@ export const MEASUREMENT_LEAF_GROUP: Record<MeasurementType, ReportGroupId> = {
   WALKING_RUNNING_DISTANCE: "activity",
   FLIGHTS_CLIMBED: "activity",
   ACTIVE_ENERGY_BURNED: "activity",
+  BASAL_ENERGY_BURNED: "activity",
   ENERGY_EXPENDITURE_KJ: "activity",
   STRAIN_SCORE: "activity",
   DAY_STRAIN: "activity",
@@ -286,6 +287,7 @@ export const LEAF_MODULE: Partial<Record<ReportLeafId, ModuleKey>> = {
   // Activity / movement series and the training-load scores.
   ACTIVITY_STEPS: "workouts",
   ACTIVE_ENERGY_BURNED: "workouts",
+  BASAL_ENERGY_BURNED: "workouts",
   EXERCISE_MINUTES: "workouts",
   STAND_MINUTES: "workouts",
   STAND_HOURS: "workouts",

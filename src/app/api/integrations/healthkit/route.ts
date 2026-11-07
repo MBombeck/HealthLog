@@ -21,6 +21,7 @@ import { annotate } from "@/lib/logging/context";
 import { prisma, toJson } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { getAppleHealthSyncProgress } from "@/lib/integrations/apple-health-progress";
+import { acceptedHealthKitTypes } from "@/lib/measurements/healthkit-accepted-types";
 import {
   getHealthKitTypeArrivals,
   healthKitWriteBackTypes,
@@ -241,6 +242,8 @@ export const GET = apiHandler(async () => {
     ),
     syncProgress,
     health,
+    // #1340 — what the batch route maps, so the app asks only for those.
+    acceptedTypes: acceptedHealthKitTypes(),
   });
 });
 

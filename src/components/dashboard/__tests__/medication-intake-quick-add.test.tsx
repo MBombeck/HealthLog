@@ -39,7 +39,10 @@ import {
 // populated medications list; per-test mockReturnValue calls override.
 const mockUseQuery = vi.fn();
 const mockInvalidateQueries = vi.fn().mockResolvedValue(undefined);
-const mockQueryClient = { invalidateQueries: mockInvalidateQueries };
+const mockQueryClient = {
+  invalidateQueries: mockInvalidateQueries,
+  getQueryCache: () => ({ findAll: () => [] }),
+};
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (opts: unknown) => mockUseQuery(opts),
   useQueryClient: () => mockQueryClient,
@@ -411,6 +414,7 @@ describe("submit invalidation — the quick-add is a capture-picker surface, not
     const invalidateQueries = vi.fn().mockResolvedValue(undefined);
     const queryClient = {
       invalidateQueries,
+      getQueryCache: () => ({ findAll: () => [] }),
     } as unknown as QueryClientType;
 
     await invalidateMedicationReads(queryClient);

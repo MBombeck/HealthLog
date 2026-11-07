@@ -75,6 +75,10 @@ function isMaskPlaceholder(words: string[]): boolean {
  * reason. Prune an entry only when the value genuinely diverges in a locale.
  */
 const LEGIT_IDENTICAL = new Set<string>([
+  // #1350 — "Google Calendar" is the product's own name in the Spanish and
+  // Italian UI, and "Cycle (HealthLog)" is the French word for the same thing.
+  "cycle.feed.fetcher.GOOGLE",
+  "cycle.feed.ics.calendarName",
   // Vaccine catalogue: clinical proper nouns whose accepted written form is the
   // same across these locales. "Hib" carries its Latin binomial verbatim, and
   // "Hepatitis A" / "Hepatitis B" read identically in Spanish. The catalogue

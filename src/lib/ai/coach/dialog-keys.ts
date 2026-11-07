@@ -65,6 +65,8 @@ export const COACH_STEP_REASON_KEYS: Readonly<Record<CoachStepReason, string>> =
   {
     no_data: "coach.step.reason.noData",
     outside_window: "coach.step.reason.outsideWindow",
+    // The web trail keeps the window sentence; the answer names the limit.
+    outside_reach: "coach.step.reason.outsideWindow",
     module_disabled: "coach.step.reason.moduleDisabled",
     retrieval_failed: "coach.step.reason.retrievalFailed",
     invalid_arguments: "coach.step.reason.invalidArguments",

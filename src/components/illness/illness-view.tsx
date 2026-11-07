@@ -77,7 +77,7 @@ function NestedEpisodes({ episodes }: { episodes?: IllnessEpisodeDTO[] }) {
       {allFlares ? (
         <p className="text-muted-foreground text-xs font-medium">
           {count === 1
-            ? t("illness.flares.countOne")
+            ? t("illness.flares.countOne", { count })
             : t("illness.flares.countOther", { count })}
         </p>
       ) : null}

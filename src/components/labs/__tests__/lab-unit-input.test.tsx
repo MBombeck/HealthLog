@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "@/lib/i18n/context";
@@ -22,8 +23,14 @@ import { OcrRowEditor } from "../ocr-row-editor";
  */
 
 function render(node: React.ReactNode): string {
+  // The marker form reads the biomarker list for its panel suggestions.
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, enabled: false } },
+  });
   return renderToStaticMarkup(
-    <I18nProvider initialLocale="en">{node}</I18nProvider>,
+    <QueryClientProvider client={queryClient}>
+      <I18nProvider initialLocale="en">{node}</I18nProvider>
+    </QueryClientProvider>,
   );
 }
 

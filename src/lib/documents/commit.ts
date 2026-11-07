@@ -197,8 +197,10 @@ async function commitObservation(
     biomarker = await resolveOrMintBiomarker(userId, {
       analyte: data.label,
       unit: isQualitative ? (data.unit ?? "") : (data.unit as string),
-      referenceLow: isQualitative ? null : sourceLow,
-      referenceHigh: isQualitative ? null : sourceHigh,
+      // A text result mints with the window printed beside it as well: the
+      // marker's next number is judged against it.
+      referenceLow: sourceLow,
+      referenceHigh: sourceHigh,
       panel: null,
     });
   }

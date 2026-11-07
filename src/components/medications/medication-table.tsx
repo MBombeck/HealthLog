@@ -698,7 +698,7 @@ function MedicationTableRowItem({
           )}
         >
           {stock === 1
-            ? t("medications.tableStockDoseOne")
+            ? t("medications.tableStockDoseOne", { count: stock })
             : t("medications.tableStockDoses", { count: stock })}
         </span>
         {runwayDays !== null && (

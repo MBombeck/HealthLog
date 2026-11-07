@@ -653,6 +653,9 @@ describe("GET /api/auth/oidc/callback — duplicate-callback idempotency", () =>
   });
 });
 
+/** The two columns `pendingDeletionOf` reads off the user row. */
+type PendingRow = Awaited<ReturnType<typeof prisma.user.findUnique>>;
+
 describe("GET /api/auth/oidc/callback — native branch", () => {
   beforeEach(() => {
     vi.mocked(checkAuthSurfaceRateLimit).mockResolvedValue({
@@ -748,6 +751,40 @@ describe("GET /api/auth/oidc/callback — native branch", () => {
     const location = res.headers.get("location")!;
     expect(location).toBe(
       "healthlog://oidc-callback?error=oidc_identity_conflict",
+    );
+  });
+
+  it("carries purgeAt, and nothing else, on a native sign-in to an account pending deletion", async () => {
+    mockIdentity();
+    mockUserLookups({
+      byIdentity: userRow({ oidcIssuer: METADATA.issuer, oidcSub: "sub-1" }),
+    });
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+      deletionRequestedAt: new Date("2026-11-01T10:00:00.000Z"),
+      deletionPurgeAt: new Date("2026-12-01T10:00:00.000Z"),
+    } as PendingRow);
+
+    const res = await GET(nativeRequest());
+    expect(res.headers.get("location")).toBe(
+      "healthlog://oidc-callback?error=account_deletion_pending&purgeAt=2026-12-01T10%3A00%3A00.000Z",
+    );
+    expect(mintNativeHandoff).not.toHaveBeenCalled();
+    expect(createSession).not.toHaveBeenCalled();
+  });
+
+  it("omits purgeAt on the native leg when the purge date is unknown", async () => {
+    mockIdentity();
+    mockUserLookups({
+      byIdentity: userRow({ oidcIssuer: METADATA.issuer, oidcSub: "sub-1" }),
+    });
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+      deletionRequestedAt: new Date("2026-11-01T10:00:00.000Z"),
+      deletionPurgeAt: null,
+    } as PendingRow);
+
+    const res = await GET(nativeRequest());
+    expect(res.headers.get("location")).toBe(
+      "healthlog://oidc-callback?error=account_deletion_pending",
     );
   });
 

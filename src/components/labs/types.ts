@@ -80,8 +80,22 @@ export interface LabOverviewMarkerDto {
   latest: LabResultDto;
 }
 
+/** One category of the labs list, resolved by the server; rendered as given. */
+export interface LabOverviewCategoryDto {
+  /** Opaque: a catalog panel key, `custom:<hash>`, or `other`. */
+  key: string;
+  label: string;
+  /** The `markers[].key` values in this category. */
+  markerKeys: string[];
+  counts: { inRange: number; below: number; above: number; unknown: number };
+  status: LabResultDto["rangeStatus"];
+}
+
 export interface LabOverviewResponse {
   markers: LabOverviewMarkerDto[];
+  categories: LabOverviewCategoryDto[];
+  /** True when grouping adds anything; a flat list otherwise. */
+  grouped: boolean;
 }
 
 /** A user-scoped Biomarker catalog entry as the API serialises it. */
@@ -147,6 +161,11 @@ export type BiomarkerTrendDto =
 
 export interface BiomarkerListResponse {
   biomarkers: BiomarkerDto[];
+  /**
+   * The person's own panels that are no catalog panel, one spelling each,
+   * for the panel suggestions.
+   */
+  customPanels: string[];
 }
 
 /** v1.43 — `POST /api/biomarkers/{id}/merge`, for the preview and the result. */
@@ -164,5 +183,7 @@ export interface BiomarkerMergeResultDto {
   movedReadings: number;
   convertedReadings: number;
   aliasesAdded: string[];
+  /** The panel the target takes over from a source, or null. */
+  adoptedPanel: string | null;
   mergeId: string | null;
 }

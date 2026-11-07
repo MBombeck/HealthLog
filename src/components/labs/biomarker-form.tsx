@@ -26,6 +26,8 @@ import {
 } from "@/lib/labs/biomarker-catalog";
 import { useTranslations } from "@/lib/i18n/context";
 
+import { buildBiomarkerBody } from "./biomarker-form-body";
+import { BiomarkerPanelField } from "./biomarker-panel-field";
 import { LabUnitInput } from "./lab-unit-input";
 import type { BiomarkerDto } from "./types";
 
@@ -113,14 +115,10 @@ export function BiomarkerForm({
       return;
     }
 
-    const body = {
-      name: name.trim(),
-      unit: unit.trim(),
-      ...(low !== null ? { lowerBound: low } : {}),
-      ...(high !== null ? { upperBound: high } : {}),
-      ...(panel.trim() ? { panel: panel.trim() } : {}),
-      ...(context.trim() ? { context: context.trim() } : {}),
-    };
+    const body = buildBiomarkerBody(
+      { name, unit, lower: low, upper: high, panel, context },
+      existing ?? null,
+    );
 
     setSubmitting(true);
     try {
@@ -238,18 +236,7 @@ export function BiomarkerForm({
             </p>
           ) : null}
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="biomarker-panel">
-            {t("labs.biomarker.form.panel")}
-          </Label>
-          <Input
-            id="biomarker-panel"
-            value={panel}
-            onChange={(e) => setPanel(e.target.value)}
-            placeholder={t("labs.biomarker.form.panelPlaceholder")}
-            maxLength={120}
-          />
-        </div>
+        <BiomarkerPanelField value={panel} onChange={setPanel} />
         <div className="space-y-1.5">
           <Label htmlFor="biomarker-lower">
             {t("labs.biomarker.form.lowerBound")}

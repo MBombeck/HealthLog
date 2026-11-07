@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { lockPersonalRecordsForUser } from "@/lib/personal-records/pr-detection-worker";
 import { encryptRouteGeometry } from "@/lib/workouts/route-geometry-cipher";
+import { routeClimbM } from "@/lib/workouts/route-climb";
 
 import type { EntryResult, PreparedWorkout } from "./entries";
 import { MANUAL_OVERWRITE_FIELDS, type WritePlan } from "./plan";
@@ -47,13 +48,19 @@ export async function writeWorkoutPlan(
   const { insertedIdByIndex } = outcome;
   /** Workout ids whose series row this request actually wrote. */
   const seriesLanded = new Set<string>();
+  /** Workout ids whose track row this request actually wrote. */
+  const routesLanded = new Set<string>();
   /** Batch indices whose manual edit this request actually wrote. */
   const overwritten = new Set<number>();
 
   await prisma.$transaction(async (tx) => {
     await overwriteManualWorkouts(tx, userId, toOverwrite, overwritten);
     await insertWorkouts(tx, toInsert, insertedIdByIndex);
-    await insertChildren(tx, plan, insertedIdByIndex, seriesLanded);
+    await insertChildren(tx, plan, insertedIdByIndex, {
+      seriesLanded,
+      routesLanded,
+    });
+    await fillClimbFromAttachedRoutes(tx, userId, toEnrich, routesLanded);
   });
 
   outcome.insertedCount = insertedIdByIndex.size;
@@ -68,13 +75,16 @@ export async function writeWorkoutPlan(
 
   // An enriched entry is still a duplicate of the workout row: the
   // top-level counters count rows, and no row was inserted for it.
-  // The per-entry status carries what happened to the series.
+  // The per-entry status carries what happened to the series and the
+  // track: one `enriched` when either (or both) landed.
   for (const e of toEnrich) {
+    const landed =
+      seriesLanded.has(e.workoutId) || routesLanded.has(e.workoutId);
     results[e.index] = {
       index: e.index,
-      status: seriesLanded.has(e.workoutId) ? "enriched" : "duplicate",
+      status: landed ? "enriched" : "duplicate",
     };
-    if (seriesLanded.has(e.workoutId)) outcome.enrichedCount += 1;
+    if (landed) outcome.enrichedCount += 1;
     outcome.duplicates += 1;
   }
 
@@ -194,29 +204,36 @@ async function insertWorkouts(
   }
 }
 
+/** One track row, the same for a new workout and a stored one. */
+function routeRow(
+  workoutId: string,
+  route: NonNullable<PreparedWorkout["route"]>,
+): Prisma.WorkoutRouteCreateManyInput {
+  return {
+    workoutId,
+    // The GPS track is stored sealed only; the readable `geometry`
+    // column stays NULL.
+    geometryEncrypted: encryptRouteGeometry(route.geometry),
+    sampleTimestamps:
+      route.sampleTimestamps === null
+        ? Prisma.JsonNull
+        : (route.sampleTimestamps as Prisma.InputJsonValue),
+  };
+}
+
 async function insertChildren(
   tx: Tx,
   plan: WritePlan,
   insertedIdByIndex: Map<number, string>,
-  seriesLanded: Set<string>,
+  landed: { seriesLanded: Set<string>; routesLanded: Set<string> },
 ): Promise<void> {
+  const { seriesLanded, routesLanded } = landed;
   const routesToInsert: Prisma.WorkoutRouteCreateManyInput[] = [];
   const samplesToInsert: Prisma.WorkoutSamplesCreateManyInput[] = [];
   for (const p of plan.toInsert) {
     const id = insertedIdByIndex.get(p.index);
     if (!id) continue;
-    if (p.route) {
-      routesToInsert.push({
-        workoutId: id,
-        // The GPS track is stored sealed only; the readable `geometry`
-        // column stays NULL.
-        geometryEncrypted: encryptRouteGeometry(p.route.geometry),
-        sampleTimestamps:
-          p.route.sampleTimestamps === null
-            ? Prisma.JsonNull
-            : (p.route.sampleTimestamps as Prisma.InputJsonValue),
-      });
-    }
+    if (p.route) routesToInsert.push(routeRow(id, p.route));
     if (p.samples) {
       samplesToInsert.push({
         workoutId: id,
@@ -226,24 +243,32 @@ async function insertChildren(
     }
   }
 
-  // Enrichment rides the SAME child write as a fresh workout's
-  // series — one mechanism, one place where a series is stored.
+  // Enrichment rides the SAME child writes as a fresh workout's
+  // series and track — one mechanism, one place where each is stored.
   // The only difference is where the `workoutId` came from: the
   // pre-flight probe instead of this request's INSERT ... RETURNING.
   // Nothing here writes to the workout row.
   for (const e of plan.toEnrich) {
-    samplesToInsert.push({
-      workoutId: e.workoutId,
-      samples: e.samples.samples as Prisma.InputJsonValue,
-      sampleCount: e.samples.sampleCount,
-    });
+    if (e.samples) {
+      samplesToInsert.push({
+        workoutId: e.workoutId,
+        samples: e.samples.samples as Prisma.InputJsonValue,
+        sampleCount: e.samples.sampleCount,
+      });
+    }
+    if (e.route) routesToInsert.push(routeRow(e.workoutId, e.route));
   }
 
   for (let i = 0; i < routesToInsert.length; i += CHUNK) {
-    await tx.workoutRoute.createMany({
+    // `workoutId` is unique here too: a workout that gained a track
+    // between the probe and this write (a concurrent batch, the Apple
+    // Health import) keeps it, and RETURNING leaves this one out.
+    const landedRoutes = await tx.workoutRoute.createManyAndReturn({
       data: routesToInsert.slice(i, i + CHUNK),
       skipDuplicates: true,
+      select: { workoutId: true },
     });
+    for (const row of landedRoutes) routesLanded.add(row.workoutId);
   }
   for (let i = 0; i < samplesToInsert.length; i += CHUNK) {
     // RETURNING names the rows that actually landed. `workoutId` is
@@ -256,5 +281,28 @@ async function insertChildren(
       select: { workoutId: true },
     });
     for (const row of landed) seriesLanded.add(row.workoutId);
+  }
+}
+
+/**
+ * A track attached to a stored workout fills its climb the way a new
+ * workout's does (`preparedFor`), because the readers take the climb from
+ * the workout row and never open the track for it. Only where the column
+ * is still empty: an elevation the source sent stays.
+ */
+async function fillClimbFromAttachedRoutes(
+  tx: Tx,
+  userId: string,
+  toEnrich: WritePlan["toEnrich"],
+  routesLanded: ReadonlySet<string>,
+): Promise<void> {
+  for (const e of toEnrich) {
+    if (!e.route || !routesLanded.has(e.workoutId)) continue;
+    const climb = routeClimbM(e.route.geometry);
+    if (climb === null) continue;
+    await tx.workout.updateMany({
+      where: { id: e.workoutId, userId, elevationM: null },
+      data: { elevationM: climb },
+    });
   }
 }

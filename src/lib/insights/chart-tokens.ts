@@ -39,6 +39,7 @@ export const ALLOWED_CHART_TOKENS = [
   "metric:HEART_RATE_VARIABILITY",
   "metric:RESTING_HEART_RATE",
   "metric:ACTIVE_ENERGY_BURNED",
+  "metric:BASAL_ENERGY_BURNED",
   "metric:FLIGHTS_CLIMBED",
   "metric:WALKING_RUNNING_DISTANCE",
   "metric:VO2_MAX",

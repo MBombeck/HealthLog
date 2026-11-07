@@ -940,6 +940,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "labs",
     why: "One biomarker of the record, fetch-then-guard against the resolved user.",
   },
+  "app/api/biomarkers/[id]/series/route.ts": {
+    domain: "labs",
+    why: "One marker's lab line (#1342), the timeline's `labSeries` for that marker: the marker is looked up under the resolved user, and the report behind a point is named only when the grant also covers documents. Read only.",
+  },
   "app/api/biomarkers/[id]/merge/route.ts": {
     domain: "labs",
     why: "Merging markers of the record into one (v1.43): every read and write is narrowed to the resolved user, and the sources must be that record's markers.",
@@ -2150,6 +2154,10 @@ const GUARDIAN_ROUTES: Record<string, string> = {
     "Starts an OAuth connect for the managed record a guardian administers. It returns the consent URL and the state names the managed record; the callback re-checks the browser's live MANAGE grant before any token lands. Refused on an adult record by the marker, at every grant level.",
   "app/api/record-settings/integrations/[provider]/disconnect/route.ts":
     "Disconnects a provider from the managed record a guardian administers, through the same disconnect the owner runs. Imported data stays. Refused on an adult record by the marker, at every grant level.",
+  "app/api/cycle/feed-subscription/route.ts":
+    "The record's cycle calendar subscription (#1350): status, turning it on, its options, turning it off. A standing credential whose contents land in a third party's calendar cloud, so only the person the dates are about or the guardian of a managed profile may hold one; refused on an adult record at every grant level, MANAGE included. Cookie-only, fresh proof on the mint; the feed re-reads the grant and the marker on every fetch and a handover claim revokes it.",
+  "app/api/cycle/feed-subscription/rotate/route.ts":
+    "A new link for the record's cycle calendar subscription, the old one revoked in the same transaction (#1350). Same argument as the subscription route: owner or managed-profile guardian only, cookie-only, fresh proof.",
 };
 
 /**
@@ -2291,8 +2299,13 @@ const ACTOR_ROUTES: Record<string, string> = {
  * Ending a running course (#1280) joins the record list and the
  * manage literal: it was refused under a switch while the medication's PUT,
  * which used to carry the end, admitted a manager. 272 -> 274.
+ *
+ * The cycle calendar subscription (#1350) and its rotate join the guardian
+ * list: a standing credential to a third-party calendar is the owner's to
+ * make, or a managed profile's guardian's, never an adult record's delegate's.
+ * 276 -> 278.
  */
-const FROZEN_ENTRY_COUNT = 275;
+const FROZEN_ENTRY_COUNT = 278;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

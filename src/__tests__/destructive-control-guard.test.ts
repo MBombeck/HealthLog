@@ -511,6 +511,14 @@ const REGISTRY: DestructiveEntry[] = [
     recovery: "tombstoned-no-restore",
     confirm: ["ConfirmButton", "ConfirmDialog"],
   },
+  {
+    file: "components/cycle/use-cycle-feed.ts",
+    destroys:
+      "the record's calendar-feed link (#1350); calendars subscribed to it stop updating, and turning it on again issues a new link",
+    triggers: ["components/cycle/cycle-calendar-feed-card.tsx"],
+    recovery: "permanent",
+    confirm: ["ConfirmButton"],
+  },
 
   // ── Medications ─────────────────────────────────────────────────────────
   {

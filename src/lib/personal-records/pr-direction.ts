@@ -185,10 +185,10 @@ export function getPRDirection(
     case "OXYGEN_SATURATION":
     case "SLEEP_DURATION":
     case "FAT_FREE_MASS":
-    // v1.4.30 — audio-exposure events fire on a threshold-cross, not
-    // on a goal axis. A "record" for "fewest loud-listening days in
-    // a row" is interesting but better surfaced as a streak than a
-    // PR direction. Defer.
+    // Resting energy follows body size, not effort.
+    case "BASAL_ENERGY_BURNED":
+    // v1.4.30 — audio-exposure events fire on a threshold-cross, not on a
+    // goal axis; a "fewest loud days" record reads better as a streak.
     case "AUDIO_EXPOSURE_EVENT":
     // v1.5.5 — homeostatic / display-only metrics. Respiratory rate
     // is goal-neutral (homeostatic) and walking HR average is fitness

@@ -819,6 +819,7 @@
     "typeHeartRateVariability": "Zmienność rytmu serca",
     "typeRestingHeartRate": "Tętno spoczynkowe",
     "typeActiveEnergyBurned": "Aktywna energia",
+    "typeBasalEnergyBurned": "Energia spoczynkowa",
     "typeFlightsClimbed": "Pokonane piętra",
     "typeWalkingRunningDistance": "Dystans marszu i biegu",
     "typeVo2Max": "VO₂ max",
@@ -5277,6 +5278,7 @@
           "oura": "Oura",
           "whoop": "WHOOP",
           "polar": "Polar",
+          "garmin": "Garmin",
           "fitbit": "Fitbit",
           "strava": "Strava",
           "nightscout": "Nightscout",
@@ -5284,7 +5286,8 @@
         },
         "hints": {
           "apple-health": "Synchronizowane przez aplikację iOS lub importowane z eksportu.",
-          "file": "Import w Ustawieniach, gdy skończysz tutaj."
+          "file": "Import w Ustawieniach, gdy skończysz tutaj.",
+          "fitbit": "Teraz łączy się przez Google Health."
         }
       },
       "visit": {
@@ -5338,6 +5341,7 @@
           "waiting": "Jeszcze nie połączono.",
           "openSettings": "Otwórz Ustawienia → Integracje",
           "noDate": "nieznany",
+          "throughGoogleHealth": "Dane z {source} trafiają teraz przez {target}: klasyczne połączenie z {source} zostało wyłączone. Połącz {target} z kontem Google, na którym zalogowany jest Twój {source}, a pomiary zaczną napływać stamtąd.",
           "needsCredentials": {
             "title": "Ta instancja nie ma jeszcze zapisanej aplikacji {target}.",
             "detail": "Wpisz własne dane dostępowe w Ustawieniach → Integracje, wtedy połączenie będzie mogło ruszyć."
@@ -6903,7 +6907,9 @@
       "summary": "{count} typów danych, najnowsze {relative}",
       "quiet": "{count} bez danych",
       "workouts": "Treningi",
-      "medicationDoses": "Dawki leków"
+      "medicationDoses": "Dawki leków",
+      "cycleDays": "Dni cyklu",
+      "cycleDaysCount": "Dni cyklu ({count})"
     },
     "integrationFallback": {
       "description": "Skonfigurowane na tym koncie, ale bez własnej karty ustawień."
@@ -10020,7 +10026,70 @@
     "startedPeriodOnDate": "Miesiączka zaczęła się tego dnia",
     "endedPeriodOnDate": "Miesiączka skończyła się tego dnia",
     "startAbsorbed": "Początek miesiączki zapisany. Twój początek z {absorbed} został połączony z {date}.",
-    "startRestored": "Zapisano. Początek z {dates} jest z powrotem."
+    "startRestored": "Zapisano. Początek z {dates} jest z powrotem.",
+    "feed": {
+      "title": "Subskrypcja kalendarza",
+      "description": "Twoje kolejne miesiączki jako wydarzenia całodniowe w aplikacji kalendarza, której już używasz.",
+      "disclosure": "Twój dostawca kalendarza (Google, iCloud, Outlook) przechowuje te daty na swoich serwerach. Późniejsze wyłączenie nie usuwa kopii, które już ma.",
+      "turnOn": "Włącz subskrypcję",
+      "error": "Nie udało się zmienić subskrypcji kalendarza. Spróbuj ponownie.",
+      "linkHidden": "Aktywny jest link zaczynający się od {prefix}. Jest pokazywany tylko raz, przy utworzeniu; odnów go, aby dostać nowy.",
+      "linkLabel": "Link subskrypcji",
+      "linkOnce": "Widoczny tylko teraz. Wklej go do aplikacji kalendarza albo odnów go później, aby dostać nowy.",
+      "copy": "Kopiuj link",
+      "copied": "Link skopiowany.",
+      "copyFailed": "Kopiowanie nie zadziałało. Zaznacz link i skopiuj go ręcznie.",
+      "openInCalendar": "Otwórz w aplikacji kalendarza",
+      "notFetched": "Jeszcze nie pobrano.",
+      "lastFetched": "Ostatnio pobrane {when} przez: {fetcher}.",
+      "fetcher": {
+        "GOOGLE": "Kalendarz Google",
+        "APPLE": "Kalendarz Apple",
+        "MICROSOFT": "Outlook",
+        "OTHER": "aplikacja kalendarza"
+      },
+      "horizon": "Cykle do przodu",
+      "history": "Poprzednie cykle",
+      "historyNone": "Brak",
+      "titles": "Tytuły wydarzeń",
+      "titleMode": {
+        "DISCREET": "Dyskretne (●)",
+        "DESCRIPTIVE": "Opisowe"
+      },
+      "fertile": "Okno płodne",
+      "fertileDescription": "Dodaje szacowane okno płodne następnego cyklu. To szacunek, nie metoda antykoncepcji.",
+      "rotate": "Odnów link",
+      "rotateTitle": "Odnowić link?",
+      "rotateBody": "Kalendarze ze starym linkiem przestaną się aktualizować. Dostaniesz nowy link, który dodasz zamiast niego.",
+      "turnOff": "Wyłącz",
+      "turnOffTitle": "Wyłączyć subskrypcję kalendarza?",
+      "turnOffBody": "Link przestanie działać. Kopie, które ma już Twój dostawca kalendarza, zostaną, dopóki nie usuniesz tam kalendarza.",
+      "help": {
+        "title": "Jak dodać go do kalendarza",
+        "google": "Kalendarz Google: Inne kalendarze, Z adresu URL, potem wklej link. Google odświeża mniej więcej co 12 do 24 godzin.",
+        "apple": "Kalendarz Apple: na Macu Plik, Nowa subskrypcja kalendarza; na iPhonie Ustawienia, Kalendarz, Konta, Dodaj konto, Inne, Dodaj subskrybowany kalendarz.",
+        "outlook": "Outlook: Dodaj kalendarz, Subskrybuj z sieci Web, potem wklej link. Outlook odświeża co kilka godzin."
+      },
+      "ics": {
+        "calendarName": "Cykl (HealthLog)",
+        "periodEstimate": "Miesiączka (szacunek)",
+        "periodLogged": "Miesiączka (zapisana)",
+        "fertileEstimate": "Okno płodne (szacunek)",
+        "likelyStart": "Najbardziej prawdopodobny początek {date}, {band}",
+        "bandOne": "±{count} dzień",
+        "bandFew": "±{count} dni",
+        "bandOther": "±{count} dni"
+      }
+    },
+    "projection": {
+      "title": "Kolejne cykle",
+      "around": "Około {date}",
+      "state": {
+        "LEARNING": "Dopóki nie zapiszesz 3 cykli, uwzględniana jest tylko najbliższa miesiączka.",
+        "LATE": "Brak prognozy, dopóki ta miesiączka spóźnia się bardziej niż oczekiwano; wróci, gdy ją zapiszesz.",
+        "OFF": "Prognozy są wyłączone; uwzględniane są tylko poprzednie cykle, jeśli je wybrano."
+      }
+    }
   },
   "cycleReminders": {
     "periodSoonTitle": "Miesiączka prawdopodobnie wkrótce",
@@ -10316,6 +10385,7 @@
         "unitLockedHint": "Gdy ten marker ma już wyniki, jego jednostka pozostaje bez zmian. W przeciwnym razie zapisane wartości byłyby pokazywane w nowej jednostce bez przeliczenia.",
         "panel": "Panel",
         "panelPlaceholder": "np. Lipidy",
+        "panelHint": "Wybierz podpowiedź lub wpisz własny. Panele z katalogu są rozpoznawane w każdym języku.",
         "lowerBound": "Dolna granica",
         "upperBound": "Górna granica",
         "lowerPlaceholder": "Dolna granica",
@@ -10499,6 +10569,23 @@
     "loadMoreReadings": "Wczytaj więcej pomiarów",
     "documentsLink": "Dokumenty wyników badań",
     "notLinkedYet": "Jeszcze niepowiązane z biomarkerem",
+    "groups": {
+      "other": "Inne",
+      "allInRange": "Wszystkie w normie",
+      "outsideCountOne": "{count} z {total} poza normą",
+      "outsideCountFew": "{count} z {total} poza normą",
+      "outsideCountOther": "{count} z {total} poza normą",
+      "heading": "Kategorie",
+      "description": "Grupuje wartości według panelu, np. Lipidy lub Wątroba, ze statusem dla każdej grupy.",
+      "label": "Grupowanie",
+      "none": "Brak",
+      "category": "Według kategorii",
+      "openLabel": "Rozwinięte po otwarciu",
+      "openExpanded": "Wszystkie",
+      "openFlagged": "Tylko poza normą",
+      "openCollapsed": "Żadne",
+      "orderWithinGroups": "Kolejność obowiązuje w obrębie każdej kategorii."
+    },
     "sourceRange": {
       "fromReport": "Zakres z wyniku {range}",
       "catalogDiffers": "twój zakres {range}",
@@ -10545,6 +10632,7 @@
       "convertedOther": "{count} pomiarów, przeliczonych z {unit} na {targetUnit}",
       "refused": "Nie można przeliczyć {unit} na {targetUnit}.",
       "aliasesAdded": "Te nazwy będą prowadzić do zachowanego biomarkera:",
+      "adoptsPanel": "Zachowany biomarker przejmuje panel {panel}.",
       "blocked": "Nic nie zostanie scalone, dopóki jednej jednostki nie da się przeliczyć. Pomiń ten biomarker albo zachowaj inny.",
       "noUndo": "Scalenia nie można cofnąć.",
       "doneToastOne": "Scalono w {name}, przeniesiono {count} pomiar",
@@ -12005,7 +12093,8 @@
       "unsupportedType": "Ten typ pliku nie jest obsługiwany.",
       "purged": "Ten dokument został trwale usunięty i nie można go przywrócić.",
       "duplicateExists": "Identyczny dokument jest już zapisany.",
-      "rateLimited": "Zbyt wiele przesyłań. Spróbuj ponownie za kilka minut.",
+      "uploadBusy": "Serwer był zajęty innymi przesyłaniami. Spróbuj ponownie teraz.",
+      "rateLimited": "Osiągnięto limit przesyłań na tę godzinę. Spróbuj ponownie później.",
       "generic": "Przesyłanie nie powiodło się. Spróbuj ponownie."
     },
     "toast": {
@@ -13156,7 +13245,11 @@
       "biomarkerMerge": "{name} scalił biomarkery",
       "medicationIngredientsUpdate": "{name} zmienił skład suplementu",
       "auditCCreate": "{name} wypełnił kwestionariusz AUDIT-C",
-      "auditCDelete": "{name} usunął wpis AUDIT-C"
+      "auditCDelete": "{name} usunął wpis AUDIT-C",
+      "cycleFeedCreate": "{name} włączył subskrypcję kalendarza",
+      "cycleFeedUpdate": "{name} zmienił subskrypcję kalendarza",
+      "cycleFeedRotate": "{name} odnowił link subskrypcji kalendarza",
+      "cycleFeedRevoke": "{name} wyłączył subskrypcję kalendarza"
     },
     "section": {
       "measurements": {
@@ -13333,7 +13426,9 @@
       "specialty": "Od ostatniej wizyty ({specialty}) {date}",
       "kind": "Od ostatniej wizyty tego samego rodzaju ({kind}) {date}",
       "default": "Ostatnie {days} dni",
-      "defaultReason": "Brak wcześniejszej wizyty w tym samym gabinecie, tej samej specjalizacji lub tego samego rodzaju."
+      "defaultReason": "Brak wcześniejszej wizyty w tym samym gabinecie, tej samej specjalizacji lub tego samego rodzaju.",
+      "capped": "Ostatnie dwa lata",
+      "cappedReason": "Ostatnia pasująca wizyta była ponad dwa lata temu, a raport obejmuje najwyżej dwa lata."
     }
   },
   "checkups": {
@@ -13849,7 +13944,17 @@
     },
     "legendLabValue": "Wynik badania, tak jak zmierzono",
     "legendLabOutside": "Poza zakresem referencyjnym",
-    "legendLabRange": "Zakres referencyjny"
+    "legendLabRange": "Zakres referencyjny",
+    "legendSymptom": "Linia objawu: najwyższe natężenie każdego zapisanego dnia (od 0 do 10), uśrednione po zapisanych dniach",
+    "symptoms": {
+      "menuTitle": "Objawy",
+      "full": "Naraz można pokazać do {max} objawów. Usuń jeden, aby dodać inny.",
+      "hidden": "ukryty",
+      "unnamed": "Objaw",
+      "daysOne": "w 1 dniu",
+      "daysFew": "średnia z {count} dni",
+      "daysOther": "średnia z {count} dni"
+    }
   },
   "lifeEvents": {
     "title": "Wydarzenie życiowe",

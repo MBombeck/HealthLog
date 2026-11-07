@@ -28,9 +28,9 @@ import { isoDateTime } from "@/lib/validations/datetime";
 // refused: an unusable external id, or a `samples` array that failed
 // validation (`reason: "invalid_samples"`).
 //
-// `enriched` says the entry matched a stored workout that had no
-// heart-rate series and the series it carried was attached. The
-// workout row itself was not written, so such an entry also counts
+// `enriched` says the entry matched a stored workout that lacked the
+// heart-rate series or the GPS track it carried, and that part was
+// attached. No workout row was inserted, so such an entry also counts
 // towards `duplicates`. That rule is part of the published contract,
 // not just a note here: it rides the field descriptions below, because
 // a client summing the counters has to know which bucket an
@@ -41,7 +41,7 @@ const workoutBatchEntryResult = z
     status: z
       .enum(["inserted", "duplicate", "enriched", "updated", "skipped"])
       .describe(
-        "`inserted`: a new workout row. `duplicate`: the workout was already stored and nothing was written. `enriched`: the workout was already stored and the heart-rate series this entry carried was attached to it; the workout row itself was not written, and the entry also counts towards the top-level `duplicates`. `updated` (since v1.40.0): a workout entered by hand (`source: MANUAL`, `externalId` starting `manual:`) was sent again with different values and the stored row now carries them; no row was inserted, so it also counts towards `duplicates`. `skipped`: the server refused the entry, see `reason`.",
+        "`inserted`: a new workout row. `duplicate`: the workout was already stored and nothing was written. `enriched`: the workout was already stored and the heart-rate series or GPS track this entry carried (or both) was attached because the stored workout had none; no workout row was inserted, and the entry also counts towards the top-level `duplicates`. A track is attached only while the account keeps tracks (`storeWorkoutRoutes`), and when the stored workout had no elevation, the climb derived from the attached track fills `elevationM`; no other column of the workout row is written. `updated` (since v1.40.0): a workout entered by hand (`source: MANUAL`, `externalId` starting `manual:`) was sent again with different values and the stored row now carries them; no row was inserted, so it also counts towards `duplicates`. `skipped`: the server refused the entry, see `reason`.",
       ),
     reason: z
       .string()
@@ -71,7 +71,7 @@ const workoutBatchResponse = z
       .int()
       .nonnegative()
       .describe(
-        "Entries that wrote no workout row because the workout was already stored. The top-level counters count workout rows, so an entry reported as `enriched` counts here as well even though its heart-rate series was attached.",
+        "Entries that wrote no workout row because the workout was already stored. The top-level counters count workout rows, so an entry reported as `enriched` counts here as well even though its heart-rate series or GPS track was attached.",
       ),
     skipped: z.array(
       z.object({
@@ -440,7 +440,7 @@ export const workoutPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Measurements"],
       summary: "Typed workout batch ingest (v1.4.25 W16b)",
       description:
-        'Server-side ingest endpoint for HKWorkout records (iOS) and Withings activity rows (server-to-server). Up to 100 workouts per call; nested route geometry (GeoJSON LineString) is capped at 20 000 points and stored in a 1:1 `WorkoutRoute` row keyed by `workoutId`. Idempotent via the `Idempotency-Key` header (replay window 24h). Per-entry status (`inserted | duplicate | enriched | updated | skipped`) lets the iOS sync cursor checkpoint accurately. An entry matching a stored workout is first-write-wins for the workout row, except a hand-entered one (`source: MANUAL` with a `manual:` externalId), which a resend with other values overwrites and reports `updated`; when it carries a `samples` array and the stored workout has no heart-rate series, the series is attached and the entry reports `enriched` (repeatable: a workout that already has a series is a no-op). An entry whose `samples` array fails validation is refused on its own with `reason: "invalid_samples"` — the rest of the batch still lands. The request body ceiling is 5 MB enforced at the HTTP layer — clients above the ceiling receive a 413 with `workout.batch.payload_too_large`.\n\n' +
+        'Server-side ingest endpoint for HKWorkout records (iOS) and Withings activity rows (server-to-server). Up to 100 workouts per call; nested route geometry (GeoJSON LineString) is capped at 20 000 points and stored in a 1:1 `WorkoutRoute` row keyed by `workoutId`. Idempotent via the `Idempotency-Key` header (replay window 24h). Per-entry status (`inserted | duplicate | enriched | updated | skipped`) lets the iOS sync cursor checkpoint accurately. An entry matching a stored workout is first-write-wins for the workout row, except a hand-entered one (`source: MANUAL` with a `manual:` externalId), which a resend with other values overwrites and reports `updated`; when it carries a `samples` array and the stored workout has no heart-rate series, the series is attached and the entry reports `enriched` (repeatable: a workout that already has a series is a no-op). The same holds for a `route` while the account keeps tracks (`storeWorkoutRoutes`): a stored workout without a track gets the one the entry carries, sealed like any other, and the entry reports `enriched`; a workout that already has a track keeps it. An entry that attaches both reports one `enriched`. An entry whose `samples` array fails validation is refused on its own with `reason: "invalid_samples"` — the rest of the batch still lands. The request body ceiling is 5 MB enforced at the HTTP layer — clients above the ceiling receive a 413 with `workout.batch.payload_too_large`.\n\n' +
         "**Narrow token.** Also reachable with a `workouts:write` Bearer (minted at `POST /api/tokens/workouts`), the supported way to push workouts from a bridge that is not the phone. This route is the scope's only one. Such a credential writes only on its owner's own record; its workouts are attributed `EXTERNAL`, resolved from the credential, and it may not name a source itself, so a batch in which any entry carries one, `MANUAL` and `APPLE_HEALTH` alike, is refused 422 (`workout.batch.source_not_permitted`) and nothing is written. `EXTERNAL` gives those writes their own `(userId, source, externalId)` namespace, so a bridge's ids can never collide with the phone's. Every other narrow token, `measurements:write` included, is refused 403.",
       requestBody: {
         required: true,

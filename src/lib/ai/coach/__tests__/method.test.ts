@@ -83,6 +83,31 @@ describe("buildMethod", () => {
     });
   });
 
+  it("keeps the window sentence for a read past the lookback limit", () => {
+    const method = buildMethod({
+      steps: [
+        step({
+          id: "s1",
+          tool: "get_sleep",
+          domain: "sleep",
+          window: "last30days",
+          status: "empty",
+          reason: "outside_reach",
+        }),
+      ],
+      results: [],
+      locale: "en",
+    });
+    expect(method?.text).toBe(
+      "Sleep, last 30 days: no readings in this window",
+    );
+    expect(method?.entries[0]).toEqual({
+      domain: "sleep",
+      window: "last30days",
+      absent: "outside_window",
+    });
+  });
+
   it("says totals for a summed metric and a rate for compliance", () => {
     const method = buildMethod({
       steps: [

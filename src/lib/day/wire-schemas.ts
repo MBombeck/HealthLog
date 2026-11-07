@@ -9,7 +9,7 @@
  */
 import { z } from "zod/v4";
 
-import { dateOnlyAtNoonUtc, isCalendarDateKey } from "@/lib/tz/date-only";
+import { dateOnlyAtNoonUtc } from "@/lib/tz/date-only";
 
 import {
   DAY_EVENT_KINDS,
@@ -34,12 +34,13 @@ import {
 } from "./contract";
 import { isoDateTime } from "@/lib/validations/datetime";
 
-/* ─── Shared pieces ───────────────────────────────────────────────────────── */
+import { dateKeySchema } from "./date-key-schema";
+import {
+  timelineSymptomOption,
+  timelineSymptomSeries,
+} from "./timeline-symptom-schemas";
 
-export const dateKeySchema = z
-  .string()
-  .refine(isCalendarDateKey, { message: "Expected a YYYY-MM-DD calendar date" })
-  .describe("A local calendar date, `YYYY-MM-DD`.");
+/* ─── Shared pieces ───────────────────────────────────────────────────────── */
 
 const instant = isoDateTime();
 
@@ -356,43 +357,69 @@ export const dayNotableResponseSchema = z
 
 /* ─── GET /api/timeline ───────────────────────────────────────────────────── */
 
-export const timelineQuerySchema = z
-  .object({
-    zoom: z
-      .enum(TIMELINE_ZOOMS)
-      .default("all")
-      .describe(
-        "`range` is a chosen stretch: it requires `from` and `to`, at most 15 years apart, and its value series average quarters, months, weeks or days by its length.",
-      ),
-    from: dateKeySchema.optional(),
-    to: dateKeySchema.optional(),
+const timelineWindowShape = {
+  zoom: z
+    .enum(TIMELINE_ZOOMS)
+    .default("all")
+    .describe(
+      "`range` is a chosen stretch: it requires `from` and `to`, at most 15 years apart, and its value series average quarters, months, weeks or days by its length.",
+    ),
+  from: dateKeySchema.optional(),
+  to: dateKeySchema.optional(),
+};
+
+/** The `range` rules every timeline-shaped window shares. */
+function withWindowRules<
+  S extends z.ZodType<{ zoom: string; from?: string; to?: string }>,
+>(schema: S): S {
+  return schema
+    .refine((q) => q.zoom !== "range" || (q.from && q.to), {
+      message: "`range` needs both `from` and `to`",
+      path: ["from"],
+    })
+    .refine(
+      (q) =>
+        q.zoom !== "range" ||
+        !q.from ||
+        !q.to ||
+        // Both ends as the same instant of their calendar day, so the
+        // difference counts calendar days whatever the process zone.
+        (dateOnlyAtNoonUtc(q.to).getTime() -
+          dateOnlyAtNoonUtc(q.from).getTime()) /
+          86_400_000 <
+          TIMELINE_RANGE_MAX_DAYS,
+      {
+        message: `A range spans at most ${TIMELINE_RANGE_MAX_DAYS} days`,
+        path: ["to"],
+      },
+    );
+}
+
+export const timelineQuerySchema = withWindowRules(
+  z.object({
+    ...timelineWindowShape,
     values: z
       .string()
       .optional()
       .describe(
-        "Comma-separated value series to include, as `MeasurementType` names, `MOOD`, or a lab marker as `lab:<biomarkerId>` (see `availableLabs`). A name given twice counts once, so the list is bounded by the names that exist; an unknown measurement name or a malformed marker key answers 422. At most 24 lab markers are drawn (ids, unlike names, are not a closed set): the first 24 are kept and any further ones left out without an error. A lab marker that is not in the record (deleted, or another record's) is likewise left out of `labSeries`, so a stored choice never breaks the page.",
+        "Comma-separated value series to include, as `MeasurementType` names, `MOOD`, a lab marker as `lab:<biomarkerId>` (see `availableLabs`), or a person-defined symptom as `symptom:<definitionId>` (see `availableSymptoms`). A name given twice counts once, so the list is bounded by the names that exist; an unknown measurement name or a malformed marker or symptom key answers 422. At most 24 lab markers and 24 symptoms are drawn (ids, unlike names, are not a closed set): the first 24 of each are kept and any further ones left out without an error. A lab marker or symptom that is not in the record (deleted, or another record's) is likewise left out of `labSeries` / `symptomSeries`, so a stored choice never breaks the page.",
       ),
-  })
-  .refine((q) => q.zoom !== "range" || (q.from && q.to), {
-    message: "`range` needs both `from` and `to`",
-    path: ["from"],
-  })
-  .refine(
-    (q) =>
-      q.zoom !== "range" ||
-      !q.from ||
-      !q.to ||
-      // Both ends as the same instant of their calendar day, so the
-      // difference counts calendar days whatever the process zone.
-      (dateOnlyAtNoonUtc(q.to).getTime() -
-        dateOnlyAtNoonUtc(q.from).getTime()) /
-        86_400_000 <
-        TIMELINE_RANGE_MAX_DAYS,
-    {
-      message: `A range spans at most ${TIMELINE_RANGE_MAX_DAYS} days`,
-      path: ["to"],
-    },
-  );
+  }),
+);
+
+/**
+ * The window of `GET /api/biomarkers/{id}/series` (#1342): the timeline's
+ * own zoom, `from` and `to`, under the same rules, so one marker's line is
+ * cut exactly as `labSeries` on the timeline cuts it.
+ */
+export const labSeriesQuerySchema = withWindowRules(
+  z.object({
+    ...timelineWindowShape,
+    zoom: timelineWindowShape.zoom.describe(
+      "The window, as on the timeline: `all` from the marker's first reading, `year` and `quarter` back from `to` (today by default), `range` a chosen stretch that requires `from` and `to`, at most 15 years apart. Points are never averaged, whatever the zoom.",
+    ),
+  }),
+);
 
 const timelineItem = z
   .object({
@@ -509,7 +536,7 @@ const timelineLabPoint = z
   })
   .meta({ id: "TimelineLabPoint" });
 
-const timelineLabSeries = z
+export const timelineLabSeries = z
   .object({
     key: z.string().describe("`lab:<biomarkerId>`, as named in `values`."),
     biomarkerId: z.string(),
@@ -589,6 +616,16 @@ export const timelineResponseSchema = z
       .array(timelineLabMarker)
       .describe(
         "Every lab marker this record has a numeric reading for, whatever the window, when the caller may see labs. Each may be named in `values` by its `key`.",
+      ),
+    symptomSeries: z
+      .array(timelineSymptomSeries)
+      .describe(
+        "The person-defined symptoms named in `values`, in the order named, each averaged per `bucket` over the days it was logged. A symptom named but not found in the record is left out.",
+      ),
+    availableSymptoms: z
+      .array(timelineSymptomOption)
+      .describe(
+        "Every person-defined symptom this record has logged at least once, hidden ones included (their history is kept), in the record's own order, when the caller may see illness data. Each may be named in `values` by its `key`.",
       ),
     notable: z.array(
       z.object({ date: dateKeySchema, kind: z.enum(DAY_NOTABLE_KINDS) }),

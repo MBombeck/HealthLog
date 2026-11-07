@@ -1,9 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { ApiError } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
+import { queryKeys } from "@/lib/query-keys";
 import en from "../../../../messages/en.json";
 
 /**
@@ -36,9 +38,18 @@ const MARKER: BiomarkerDto = {
   updatedAt: "2026-01-01T00:00:00.000Z",
 };
 
-function render(node: React.ReactNode) {
+function render(node: React.ReactNode, customPanels: string[] = []) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
+  queryClient.setQueryData(queryKeys.biomarkers(), {
+    biomarkers: [],
+    customPanels,
+  });
   return renderToStaticMarkup(
-    <I18nProvider initialLocale="en">{node}</I18nProvider>,
+    <QueryClientProvider client={queryClient}>
+      <I18nProvider initialLocale="en">{node}</I18nProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -77,5 +88,22 @@ describe("<BiomarkerForm> unit lock", () => {
     expect(localizedApiError(err, t, "labs.biomarker.form.saveError")).toBe(
       en.apiErrors.biomarkers.unit.locked,
     );
+  });
+});
+
+describe("<BiomarkerForm> panel suggestions", () => {
+  it("suggests every catalog panel and the person's own panels", () => {
+    const html = render(<BiomarkerForm />, ["Annual check"]);
+    const list = html.match(
+      /<datalist[^>]*data-slot="biomarker-panel-suggestions"[^>]*>(.*?)<\/datalist>/,
+    );
+    expect(list).not.toBeNull();
+    const values = [...list![1].matchAll(/value="([^"]*)"/g)].map((m) => m[1]);
+    expect(values).toContain("Lipids");
+    expect(values).toContain("Blood count");
+    expect(values).toContain("Annual check");
+    expect(values).toHaveLength(11);
+    const id = /<datalist[^>]*id="([^"]+)"/.exec(html)![1];
+    expect(html).toContain(`list="${id}"`);
   });
 });

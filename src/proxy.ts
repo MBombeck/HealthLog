@@ -7,6 +7,7 @@ import {
   RETIRED_ROUTE_STATUS,
 } from "@/lib/http/retired-routes";
 import { setBaselineSecurityHeaders } from "@/lib/http/proxy-bypass-routes";
+import { setPathCredentialHeaders } from "@/lib/http/path-credential-headers";
 import { DEMO_REFUSAL_BODY } from "@/lib/demo-refusal";
 import { resolveRequestId } from "@/lib/http/request-id";
 import { redactSecrets } from "@/lib/logging/redact";
@@ -49,6 +50,8 @@ export const PUBLIC_PATHS = [
   // token in the path is the whole credential, verified by the route after
   // its rate limit. Trailing slash: admits only `/action/<token>`.
   "/api/notifications/action/",
+  // #1350 — the calendar feed; the `hlf_` path token is the credential.
+  "/api/cycle/feed/",
   "/api/monitoring/",
   "/api/withings/webhook",
   // v1.11.0 — WHOOP webhook (`recovery.updated` / `sleep.updated` /
@@ -635,15 +638,14 @@ export function proxy(request: NextRequest) {
     response.headers.set(HEALTHLOG_PAGE_MARKER_HEADER, "1");
   }
 
-  // The document vault's decrypt-and-serve route is framed SAME-ORIGIN by
-  // the document detail preview (an <iframe> for inline-class PDFs). The
-  // blanket `X-Frame-Options: DENY` + `frame-ancestors 'none'` below would
-  // refuse that embed, and the blanket page CSP would clobber the route's
-  // own `Content-Security-Policy: sandbox` (middleware headers win over
-  // route headers). Scope: exactly the `/original` path — list/detail API
-  // routes keep the full DENY posture. The replacement CSP keeps the
-  // sandbox (the served bytes are user-uploaded and must never script in
-  // the app origin) and narrows framing to 'self' instead of dropping it.
+  // The document vault's decrypt-and-serve route is framed SAME-ORIGIN by the
+  // document detail preview (an <iframe> for inline-class PDFs). It gets a
+  // document CSP, not the page CSP, which would replace the route's own CSP
+  // (middleware headers win over route headers). Scope: exactly the
+  // `/original` path; list/detail API routes keep the page posture. The
+  // document CSP lets the user-uploaded bytes load nothing and permits only
+  // same-origin framing (`frame-ancestors 'self'`); it carries no `sandbox`,
+  // see the CSP note below.
   const isDocumentServeRoute =
     /^\/api\/documents\/inbound\/[^/]+\/original$/.test(pathname);
 
@@ -651,11 +653,10 @@ export function proxy(request: NextRequest) {
   // `/c/<token>/d/<id>` is the share analogue of the owner `/original` route:
   // it decrypts and serves a user-uploaded document that the clinician view
   // (`/c/<token>`) frames same-origin (an <iframe> for inline-class PDFs). It
-  // needs the SAME narrow posture — SAMEORIGIN framing + a document CSP — and
-  // NOT the `/c/` page CSP, which pins `frame-ancestors 'none'` and would
-  // refuse the preview embed. Anchored to EXACTLY two dynamic segments so a
-  // `/c/<token>` page, a `/c/<token>/d/<id>/extra`, or a `/c/<token>/dx/<id>`
-  // lookalike never inherits the carve-out.
+  // needs the SAME narrow posture (the document CSP) and NOT the `/c/` page
+  // CSP, which is written for an app page. Anchored to EXACTLY two dynamic
+  // segments so a `/c/<token>` page, a `/c/<token>/d/<id>/extra`, or a
+  // `/c/<token>/dx/<id>` lookalike never inherits the carve-out.
   const isShareDocumentServeRoute = /^\/c\/[^/]+\/d\/[^/]+$/.test(pathname);
 
   // Both serve routes take the narrow, document-only header posture.
@@ -682,7 +683,8 @@ export function proxy(request: NextRequest) {
     response.headers.set("Cache-Control", "private, no-store");
   }
 
-  // Security headers
+  // Security headers. Framing is refused by the CSP's `frame-ancestors`; a
+  // browser that reads it ignores X-Frame-Options, kept for older ones.
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", isServeRoute ? "SAMEORIGIN" : "DENY");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -691,35 +693,13 @@ export function proxy(request: NextRequest) {
     "camera=(), microphone=(), geolocation=()",
   );
 
-  // v1.11.0 — the public clinician share view at `/c/<token>`
-  // is a scoped health record authenticated by an unguessable bearer token
-  // in the path. Defend it at the edge regardless of what the RSC emits:
-  //   - `Cache-Control: no-store` so no shared proxy / CDN ever retains a
-  //     scoped record (the page is `force-dynamic`, but that governs Next's
-  //     cache, not a downstream intermediary).
-  //   - `X-Robots-Tag: noindex, nofollow` as the header peer of the page's
-  //     `robots` meta — a crawler that never parses the document still obeys
-  //     the header, and the token must never reach a search index.
-  //   - `Referrer-Policy: no-referrer` so the token-bearing URL is not
-  //     leaked in the `Referer` of any outbound navigation from the page.
-  //
-  // v1.17.0 — `/invite/<hlv_token>` (iOS #16) carries an equally sensitive
-  // secret in the path, so it earns the same edge defence even though it is
-  // a pure server redirect: no shared proxy / CDN may cache it and no
-  // crawler may index the token-bearing URL.
-  if (pathname.startsWith("/c/") || pathname.startsWith("/invite/")) {
-    response.headers.set(
-      "Cache-Control",
-      "no-store, no-cache, must-revalidate",
-    );
-    response.headers.set("X-Robots-Tag", "noindex, nofollow");
-    response.headers.set("Referrer-Policy", "no-referrer");
-  }
+  // Paths whose credential is the URL itself (share view, invite, feed).
+  setPathCredentialHeaders(pathname, response.headers);
   // COOP isolates this BrowsingContextGroup from cross-origin popups,
   // closing the Spectre-class side-channel surface a stray
   // `window.opener` reference would otherwise carry. CORP narrows the
   // page's resources to same-origin loaders, complementing the
-  // `frame-ancestors 'none'` CSP rule for non-document subresources.
+  // same-origin-only `frame-ancestors` CSP rule for non-document subresources.
   // The legacy `X-Permitted-Cross-Domain-Policies` line shuts the
   // Flash/PDF crossdomain.xml channel that some scanners still flag.
   response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
@@ -797,7 +777,7 @@ export function proxy(request: NextRequest) {
   // them.
   const csp = isServeRoute
     ? // Vault serve route (owner `/original` OR share `/c/<token>/d/<id>`; see
-      // the X-Frame-Options note above): the
+      // the framing note above): the
       // response is a user-uploaded document, not an app page.
       // `default-src 'none'` — a served document may load nothing as if
       // it were a page — and `frame-ancestors 'self'` permits exactly the
@@ -810,21 +790,16 @@ export function proxy(request: NextRequest) {
       // HTML/SVG denied entirely, and attachment-only posture for every
       // non-passive format.
       `default-src 'none'; frame-ancestors 'self';`
-    : // v1.37.15 — `frame-src 'self' blob:` + `blob:` in `img-src` (both dev
-      // and prod). Since the record fence (v1.37.0) every vault preview loads
-      // through `useFencedObjectUrl`, i.e. a `blob:` object URL: without a
-      // `frame-src` the PDF preview iframe fell through to `default-src
-      // 'self'` and was blocked loudly, and `img-src 'self' data:` degraded
-      // every blob thumbnail to its fallback icon silently. Admitting `blob:`
-      // is same-origin-tight: a blob: URL can only be minted by script running
-      // on this origin (`URL.createObjectURL`), script execution stays
-      // nonce-bound (prod), and `object-src 'none'` / `frame-ancestors
-      // 'none'` / `default-src 'self'` are unchanged — no foreign origin
-      // gains anything. Reverting the previews to direct `/api` src instead
-      // is barred by the record-fence guard.
+    : // v1.37.15 — `frame-src 'self' blob:` + `blob:` in `img-src`: every
+      // vault preview loads through `useFencedObjectUrl` as a `blob:` URL,
+      // which only script on this origin can mint; script stays nonce-bound
+      // and `object-src 'none'` / `default-src 'self'` hold. A blob: document
+      // inherits this policy and WebKit applies its `frame-ancestors` to the
+      // blob frame's own parent, so 'none' blanked every PDF preview in
+      // Safari (macOS and iOS); 'self' still refuses every foreign origin.
       isDev
       ? `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src 'self' blob:; connect-src 'self'; font-src 'self';`
-      : `default-src 'self'; script-src 'self' 'nonce-${nonce}'${wasmScriptSrc}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src 'self' blob:; connect-src 'self'${aiConnectSrc}${withingsConnectSrc}${whoopConnectSrc}${stravaConnectSrc}; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self'; report-uri ${cspReportEndpoint}; report-to csp-endpoint;`;
+      : `default-src 'self'; script-src 'self' 'nonce-${nonce}'${wasmScriptSrc}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; frame-src 'self' blob:; connect-src 'self'${aiConnectSrc}${withingsConnectSrc}${whoopConnectSrc}${stravaConnectSrc}; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; worker-src 'self'; report-uri ${cspReportEndpoint}; report-to csp-endpoint;`;
   // The MCP OAuth authorization endpoint sets its own CSP. Its consent form
   // posts to this origin and the server then redirects to the connecting
   // client's `redirect_uri`; Chromium applies `form-action` to that redirect,

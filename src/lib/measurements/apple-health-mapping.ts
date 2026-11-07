@@ -380,6 +380,17 @@ export const APPLE_HEALTH_TYPE_MAP: Record<string, AppleHealthMapping> = {
     convertToDbUnit: (v) => v,
     aggregation: "sum",
   },
+  // Resting energy (#1340). A type of its own, never folded into
+  // ACTIVE_ENERGY_BURNED and never added to it: the two are different
+  // quantities, and no total is derived from them.
+  HKQuantityTypeIdentifierBasalEnergyBurned: {
+    hkIdentifier: "HKQuantityTypeIdentifierBasalEnergyBurned",
+    measurementType: "BASAL_ENERGY_BURNED",
+    hkUnit: "kcal",
+    dbUnit: "kcal",
+    convertToDbUnit: (v) => v,
+    aggregation: "sum",
+  },
   HKQuantityTypeIdentifierFlightsClimbed: {
     hkIdentifier: "HKQuantityTypeIdentifierFlightsClimbed",
     measurementType: "FLIGHTS_CLIMBED",
@@ -894,6 +905,8 @@ export const CUMULATIVE_HK_TYPES: ReadonlySet<MeasurementType> =
   new Set<MeasurementType>([
     "ACTIVITY_STEPS",
     "ACTIVE_ENERGY_BURNED",
+    // Resting energy (#1340) accrues through the day the same way.
+    "BASAL_ENERGY_BURNED",
     "FLIGHTS_CLIMBED",
     "WALKING_RUNNING_DISTANCE",
     "TIME_IN_DAYLIGHT",
@@ -1183,7 +1196,8 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   "HKQuantityTypeIdentifierHeight", // already on User.heightCm
   // v1.10.0 — `HeartRateRecoveryOneMinute` + `AppleSleepingWristTemperature`
   // moved into the mapping table (CARDIO_RECOVERY + WRIST_TEMPERATURE).
-  "HKQuantityTypeIdentifierBasalEnergyBurned",
+  // `BasalEnergyBurned` moved into the mapping table as BASAL_ENERGY_BURNED
+  // (#1340).
   // Running / walking form — v1.5+
   // v1.5.5 — `WalkingStepLength` + `WalkingSpeed` moved into the
   // mapping table (raw SI on the wire — metres and m/s respectively).

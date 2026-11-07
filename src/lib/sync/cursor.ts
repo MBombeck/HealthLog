@@ -102,6 +102,33 @@ export function encodeCursor(cursor: SyncCursor, issuedAtMs?: number): string {
   return Buffer.from(json, "utf-8").toString("base64url");
 }
 
+/**
+ * How far behind the present a `start=now` cursor is placed. `updatedAt` is
+ * stamped by the application when the write is built, not when it commits, so
+ * a transaction in flight at `nowMs` can commit a row stamped before it after
+ * the cursor was handed out; a watermark at `nowMs` would skip that row for
+ * good. A minute covers any write the app keeps open.
+ */
+export const START_NOW_OVERLAP_MS = 60_000;
+
+/**
+ * A token positioned just before `nowMs` in every domain (#1339), the same
+ * opaque format a drained page hands out: paging forward from it yields what
+ * changes from now on, with no walk through the history first. The watermarks
+ * sit `START_NOW_OVERLAP_MS` back and the id `"0"` sorts before every cuid, so
+ * a row stamped in that last minute is delivered rather than skipped; the
+ * client's upserts are idempotent, so an overlap costs nothing and a gap would.
+ * The issue time stays `nowMs`: it is when the token was handed out.
+ */
+export function encodeCursorAtNow(nowMs: number): string {
+  const cursor: SyncCursor = {};
+  const watermark = nowMs - START_NOW_OVERLAP_MS;
+  for (const domain of SYNC_DOMAINS) {
+    cursor[domain] = { updatedAtMs: watermark, id: "0" };
+  }
+  return encodeCursor(cursor, nowMs);
+}
+
 function parseWatermark(raw: unknown): DomainWatermark | null {
   if (typeof raw !== "object" || raw === null) return null;
   const u = (raw as { u?: unknown }).u;

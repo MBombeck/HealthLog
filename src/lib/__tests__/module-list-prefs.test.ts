@@ -62,7 +62,13 @@ describe("parseModuleListPrefs", () => {
         JSON.stringify({ view: "grid", sortDir: "weird", order: ["a", "b"] }),
         defaults,
       ),
-    ).toEqual({ view: "cards", sortDir: "recentDesc", order: ["a", "b"] });
+    ).toEqual({
+      view: "cards",
+      sortDir: "recentDesc",
+      order: ["a", "b"],
+      groupBy: "none",
+      groupsOpen: "expanded",
+    });
   });
 
   it("applies the labs default (list view, #40) when nothing is stored", () => {

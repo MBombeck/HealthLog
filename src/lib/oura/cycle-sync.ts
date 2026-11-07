@@ -17,44 +17,25 @@
  * So this module never touches the shared upsert helper. It only ever
  * CREATEs a day that has NO existing `CycleDayLog` row at all (any source),
  * and never updates a row it did not itself create. A day already owned by
- * this module (source = OURA) is left alone on re-sync too — the marker is
- * a fixed single-value hint (`flow: LIGHT`), not a corrigible reading, so
- * there is nothing to refresh. The whole path degenerates to a cheap
- * "create if absent, otherwise no-op".
+ * this module (source = OURA) is left alone on re-sync too: the marker is a
+ * fixed single-value hint (`flow: LIGHT`), not a corrigible reading, so there
+ * is nothing to refresh.
+ *
+ * The create goes through `createSubordinatePeriodDays`, which does what the
+ * shared upsert does around the row: the day is attributed to the cycle it
+ * falls in, and a first bleeding day opens its cycle, the same inference the
+ * single capture, the bulk drain, the Apple Health fold and the Health Connect
+ * import run. Oura reports no period length, so no period end is stamped.
  *
  * Gated behind the SAME two-layer cycle-module gate every other cycle
  * writer respects (`isCycleAvailableForUser`) so an operator-disabled
  * instance, or a user who turned cycle tracking off, never accumulates rows
- * from a background Oura poll. No `MenstrualCycle` span is ever created or
- * mutated here — mirrors the Apple Health importer precedent
- * (`src/lib/cycle/import-accumulator.ts`), which attributes day-logs to an
- * EXISTING cycle but never synthesises a new one from flow data either;
- * cycle-span creation stays an explicit user action
- * (`POST /api/cycle/period`).
+ * from a background Oura poll.
  */
-import { prisma } from "@/lib/db";
-import { getEvent } from "@/lib/logging/context";
 import { isCycleAvailableForUser } from "@/lib/cycle/gate";
+import { createSubordinatePeriodDays } from "@/lib/cycle/subordinate-period-days";
 import { fetchDailyCyclePhases } from "./client";
 import { derivePeriodDaysFromCyclePhases } from "./map";
-
-/** The conservative "logged but unspecified intensity" flow level — mirrors
- * the HealthKit `unspecified` → `LIGHT` boundary documented in
- * `healthkit-mapping.ts`: a detected-but-unmeasured bleeding day is at least
- * light flow, never invented as MEDIUM/HEAVY. */
-const OURA_PERIOD_FLOW = "LIGHT" as const;
-
-/** Prisma P2002 (unique constraint) detector, mirrored locally from
- * `day-log-write.ts` rather than imported — a two-line duplicate is cheaper
- * than coupling this module to that helper's internals. */
-function isUniqueViolation(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code?: unknown }).code === "P2002"
-  );
-}
 
 /**
  * Sync one user's Oura `daily_cycle_phases` window into `CycleDayLog`.
@@ -88,36 +69,5 @@ export async function syncUserOuraCyclePhases(
   const available = await isCycleAvailableForUser(userId);
   if (!available) return 0;
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { timezone: true },
-  });
-  const tz = user?.timezone ?? null;
-
-  let created = 0;
-  for (const day of periodDays) {
-    try {
-      await prisma.cycleDayLog.create({
-        data: {
-          userId,
-          date: day,
-          tz,
-          source: "OURA",
-          flow: OURA_PERIOD_FLOW,
-        },
-      });
-      created += 1;
-    } catch (err) {
-      if (isUniqueViolation(err)) {
-        // A row already exists for this date — the user's own entry, an
-        // Apple Health import, or this module's own prior write. Never
-        // overwrite: Oura is a subordinate signal here.
-        continue;
-      }
-      getEvent()?.addWarning(
-        `oura: cycle day-log create failed for ${userId} ${day}: ${err}`,
-      );
-    }
-  }
-  return created;
+  return createSubordinatePeriodDays(userId, "OURA", periodDays);
 }

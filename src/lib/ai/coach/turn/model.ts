@@ -54,7 +54,10 @@ import type {
   CoachStop,
 } from "@/lib/ai/coach/types";
 import type { AiToolCall } from "@/lib/ai/types";
-import type { ActivityRecorder } from "@/lib/ai/coach/activity/contract";
+import {
+  settledFetch,
+  type ActivityRecorder,
+} from "@/lib/ai/coach/activity/contract";
 import {
   createActivityRecorder,
   type TurnActivityRecorder,
@@ -518,11 +521,7 @@ export async function runTurnModel(args: {
           steps.record(step);
           const entry = fetches.get(index);
           const status = step?.status ?? (result.present ? "done" : "empty");
-          if (entry) {
-            activity.finish(entry.id, status === "running" ? "done" : status, {
-              ...(step?.count !== undefined ? { count: step.count } : {}),
-            });
-          }
+          if (entry) activity.finish(entry.id, ...settledFetch(status, step));
           const reads = roundReads.get(round) ?? [];
           reads.push({
             count: step?.count ?? 0,

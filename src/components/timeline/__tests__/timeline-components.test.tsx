@@ -25,7 +25,7 @@ import {
   SeriesNameLinks,
   TimelineChart,
 } from "../timeline-chart";
-import { SeriesPointTips, tipLeft } from "../series-point-tips";
+import { SeriesPointTips, releaseCard, tipLeft } from "../series-point-tips";
 import { TimelineChronicle } from "../timeline-chronicle";
 import { layoutTimeline } from "../timeline-geometry";
 import { useSeriesValueFormat } from "../use-series-value-format";
@@ -691,6 +691,38 @@ describe("a value line's point, on its own", () => {
     expect(weight).not.toContain("Blutdruck");
     // Nothing shows until a point is pointed at.
     expect(html).not.toContain('data-slot="timeline-point-tip"');
+  });
+
+  it("lets a point that loses the pointer or the focus take only its own card", () => {
+    const lab = { key: "lab:bm-ferritin", t: "fe-1" };
+    // The pointer rested on a weight point, then the keyboard took the lab
+    // reading (and its scroll moved the weight point away from the pointer):
+    // the weight point's leave must not close the reading's card.
+    expect(
+      releaseCard({ ...lab, pinned: false }, "WEIGHT", "2026-01-01", lab),
+    ).toEqual({ ...lab, pinned: false });
+    // The pointer leaving its own point gives the card back to the focus.
+    expect(
+      releaseCard(
+        { key: "WEIGHT", t: "2026-01-01", pinned: false },
+        "WEIGHT",
+        "2026-01-01",
+        lab,
+      ),
+    ).toEqual({ ...lab, pinned: false });
+    // With nothing focused, it closes.
+    expect(
+      releaseCard(
+        { key: "WEIGHT", t: "2026-01-01", pinned: false },
+        "WEIGHT",
+        "2026-01-01",
+        null,
+      ),
+    ).toBeNull();
+    // A pinned card stays until a tap elsewhere.
+    const pinned = { key: "WEIGHT", t: "2026-01-01", pinned: true };
+    expect(releaseCard(pinned, "WEIGHT", "2026-01-01", null)).toBe(pinned);
+    expect(releaseCard(null, "WEIGHT", "2026-01-01", lab)).toBeNull();
   });
 
   it("keeps the card inside the chart's width", () => {

@@ -15,6 +15,12 @@ import type { ZodOpenApiObject } from "zod-openapi";
 import { z } from "zod/v4";
 
 import { LAB_UNIT_DESCRIPTION } from "@/lib/labs/dimensionless";
+import { dateKeySchema } from "@/lib/day/date-key-schema";
+import {
+  labSeriesQuerySchema,
+  timelineLabSeries,
+} from "@/lib/day/wire-schemas";
+import { TIMELINE_ZOOMS } from "@/lib/day/contract";
 
 import {
   createBiomarkerSchema,
@@ -146,8 +152,15 @@ const biomarkerDetail = biomarkerRow
   })
   .meta({ id: "BiomarkerDetail" });
 
-const listResponse = z
-  .object({ biomarkers: z.array(biomarkerRow) })
+export const biomarkerListResponse = z
+  .object({
+    biomarkers: z.array(biomarkerRow),
+    customPanels: z
+      .array(z.string())
+      .describe(
+        "The caller's panels that are no catalog panel in any language, one spelling per folded form (the most frequent, ties to the alphabetically first), sorted. Suggestions for the panel field; catalog panels are not repeated here.",
+      ),
+  })
   .meta({ id: "ListBiomarkersResponse" });
 
 const conflict = {
@@ -173,13 +186,29 @@ const notFound = {
   },
 };
 
+const biomarkerSeries = z
+  .object({
+    zoom: z.enum(TIMELINE_ZOOMS),
+    range: z.object({
+      from: dateKeySchema,
+      to: dateKeySchema,
+      dataFrom: dateKeySchema
+        .nullable()
+        .describe(
+          "The local day of the marker's first numeric reading; null when it has none. `all` starts here.",
+        ),
+    }),
+    series: timelineLabSeries,
+  })
+  .meta({ id: "BiomarkerSeries" });
+
 const biomarkerMergeRequest = biomarkerMergeSchema.meta({
   id: "BiomarkerMergeRequest",
   description:
     "Fold `sourceIds` (1..10, unique, without the target) into the marker in the path. `dryRun` (default false) answers the same result and writes nothing; a client shows it before asking to confirm, because a merge cannot be undone.",
 });
 
-const biomarkerMergeResult = z
+export const biomarkerMergeResult = z
   .object({
     dryRun: z.boolean(),
     target: biomarkerRow.describe(
@@ -200,6 +229,12 @@ const biomarkerMergeResult = z
     aliasesAdded: z
       .array(z.string())
       .describe("Names that become aliases of the target."),
+    adoptedPanel: z
+      .string()
+      .nullable()
+      .describe(
+        "The panel the target takes over: when the target has none, the first panel a source carries, in the order the sources were given. `null` when the target keeps its own panel or no source has one. Reported on a dry run too, while `target.panel` there is still the stored one.",
+      ),
     mergeId: z.string().nullable().describe("`null` on a dry run."),
   })
   .meta({
@@ -221,7 +256,10 @@ export const biomarkerPaths: NonNullable<ZodOpenApiObject["paths"]> = {
           description: "Biomarker catalog.",
           content: {
             "application/json": {
-              schema: dataEnvelope(listResponse, "ListBiomarkersEnvelope"),
+              schema: dataEnvelope(
+                biomarkerListResponse,
+                "ListBiomarkersEnvelope",
+              ),
             },
           },
         },
@@ -322,6 +360,38 @@ export const biomarkerPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...notFound,
         ...stdResponses,
+      },
+    },
+  },
+  "/api/biomarkers/{id}/series": {
+    get: {
+      tags: ["Labs"],
+      summary: "One marker's lab line",
+      description:
+        "The line `labSeries` on `GET /api/timeline` draws for this marker, cut by the same `zoom`, `from` and `to` rules: every numeric reading in the window, oldest first, one point each (never averaged), readings in a unit that does not convert counted in `excluded`, and the band to draw behind them. `all` starts at the marker's first reading. Gated on the `labs` module, not on `timeline`. A point names the report it was read from only when the caller may see documents. Cross-user ids answer 404; a merged marker answers 404 with `meta.mergedInto`.",
+      requestParams: {
+        path: z.object({ id: z.string() }),
+        query: labSeriesQuerySchema,
+      },
+      responses: {
+        ...recordRefusal(
+          "`module.disabled` with `meta.module = labs`: the record has the labs module switched off, or the operator turned it off server-wide.",
+        ),
+        "200": {
+          description: "The marker's line over the window.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(biomarkerSeries, "BiomarkerSeriesEnvelope"),
+            },
+          },
+        },
+        ...notFound,
+        ...stdResponses,
+        "422": {
+          description:
+            "`labs.series.invalid`: an unknown `zoom`, a malformed date, a `range` without both ends or longer than 15 years, or `from` after `to`.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
       },
     },
   },

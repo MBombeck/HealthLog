@@ -366,7 +366,7 @@ export const COACH_TOOL_DEFS: AiToolDef[] = [
   {
     name: "get_cycle",
     description:
-      "Fetch the user's menstrual-cycle context: current phase + day-of-cycle, the next predicted event, and the headline phase-correlation finding. Descriptive only — never a contraception-grade or 'safe day' claim. Returns { present: false } when cycle tracking is off or there is no data.",
+      "Fetch the user's menstrual-cycle context: current phase + day-of-cycle, the next predicted event, the upcoming period starts after it (`upcoming`: each a likely start with its earliest-to-latest band, widening and self-capped), and the headline phase-correlation finding. Descriptive only — never a contraception-grade or 'safe day' claim. Returns { present: false } when cycle tracking is off or there is no data.",
     parameters: {
       type: "object",
       additionalProperties: false,

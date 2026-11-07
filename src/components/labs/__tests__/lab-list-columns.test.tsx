@@ -4,7 +4,15 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import type { LabOverviewResponse, LabResultDto } from "../types";
+import {
+  resolveModuleListLayout,
+  type ModuleListPrefs,
+} from "@/lib/settings/module-list-layout";
+import type {
+  LabOverviewCategoryDto,
+  LabOverviewResponse,
+  LabResultDto,
+} from "../types";
 
 /**
  * Every row of the compact list is five grid cells from `lg` up. The range
@@ -51,7 +59,14 @@ function reading(over: Partial<LabResultDto>): LabResultDto {
   } as LabResultDto;
 }
 
-function renderList(results: LabResultDto[]) {
+function renderList(
+  results: LabResultDto[],
+  options: {
+    prefs?: Partial<ModuleListPrefs>;
+    categories?: LabOverviewCategoryDto[];
+    grouped?: boolean;
+  } = {},
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
@@ -76,8 +91,16 @@ function renderList(results: LabResultDto[]) {
         latest: ordered[ordered.length - 1],
       };
     }),
+    categories: options.categories ?? [],
+    grouped: options.grouped ?? false,
   };
-  queryClient.setQueryData(queryKeys.labResultsOverview(), data);
+  queryClient.setQueryData(queryKeys.labResultsOverview("en"), data);
+  if (options.prefs) {
+    queryClient.setQueryData(
+      queryKeys.moduleListLayout(),
+      resolveModuleListLayout({ version: 1, labs: options.prefs }),
+    );
+  }
   return renderToStaticMarkup(
     <QueryClientProvider client={queryClient}>
       <I18nProvider initialLocale="en">
@@ -195,5 +218,112 @@ describe("<LabList> columns", () => {
     ]);
     expect(count(html, 'data-slot="lab-converted-note"')).toBe(1);
     expect(html).toContain("converted from 5.6 mmol/L");
+  });
+});
+
+describe("<LabList> categories", () => {
+  const readings = [
+    reading({ id: "l1", biomarkerId: "b1", analyte: "LDL", panel: "Lipids" }),
+    reading({
+      id: "l2",
+      biomarkerId: "b2",
+      analyte: "HDL",
+      panel: "Lipids",
+      rangeStatus: "above",
+    }),
+    reading({ id: "t1", biomarkerId: "b3", analyte: "TSH", panel: "Thyroid" }),
+  ];
+  const categories: LabOverviewCategoryDto[] = [
+    {
+      key: "lipids",
+      label: "Lipids",
+      markerKeys: ["bm:b1", "bm:b2"],
+      counts: { inRange: 1, below: 0, above: 1, unknown: 0 },
+      status: "above",
+    },
+    {
+      key: "thyroid",
+      label: "Thyroid",
+      markerKeys: ["bm:b3"],
+      counts: { inRange: 1, below: 0, above: 0, unknown: 0 },
+      status: "in-range",
+    },
+  ];
+  const headers = (html: string) =>
+    [...html.matchAll(/<button[^>]*data-slot="lab-list-group"[^>]*>/g)].map(
+      (m) => m[0],
+    );
+
+  it("stays flat while grouping is off, or while the server says it adds nothing", () => {
+    expect(
+      headers(renderList(readings, { categories, grouped: true })),
+    ).toHaveLength(0);
+    expect(
+      headers(
+        renderList(readings, {
+          categories,
+          grouped: false,
+          prefs: { groupBy: "category" },
+        }),
+      ),
+    ).toHaveLength(0);
+  });
+
+  it("renders one disclosure per category, open by default, with the status in its name", () => {
+    const html = renderList(readings, {
+      categories,
+      grouped: true,
+      prefs: { groupBy: "category" },
+    });
+    const found = headers(html);
+    expect(found).toHaveLength(2);
+    for (const button of found) {
+      expect(button).toContain('aria-expanded="true"');
+      expect(button).toMatch(/aria-controls="[^"]+"/);
+    }
+    expect(html).toContain("1 of 2 outside range");
+    expect(html).toContain("All in range");
+    expect(count(html, 'href="/labs/')).toBe(3);
+    // Server order: lipids first.
+    expect(html.indexOf("Lipids")).toBeLessThan(html.indexOf("Thyroid"));
+    // The header spans the table's columns, the rows keep the subgrid.
+    expect(html).toContain("lg:col-span-full");
+    expect(html).toContain("lg:grid-cols-subgrid");
+  });
+
+  it("opens only flagged categories, or none, as the person chose", () => {
+    const flagged = renderList(readings, {
+      categories,
+      grouped: true,
+      prefs: { groupBy: "category", groupsOpen: "flagged" },
+    });
+    const [lipids, thyroid] = headers(flagged);
+    expect(lipids).toContain('aria-expanded="true"');
+    expect(thyroid).toContain('aria-expanded="false"');
+    expect(count(flagged, 'href="/labs/')).toBe(2);
+
+    const collapsed = renderList(readings, {
+      categories,
+      grouped: true,
+      prefs: { groupBy: "category", groupsOpen: "collapsed" },
+    });
+    expect(
+      headers(collapsed).every((h) => h.includes('aria-expanded="false"')),
+    ).toBe(true);
+    expect(count(collapsed, 'href="/labs/')).toBe(0);
+  });
+
+  it("names the unit instead of the panel on a card under its category", () => {
+    const grouped = renderList(readings, {
+      categories,
+      grouped: true,
+      prefs: { groupBy: "category", view: "cards" },
+    });
+    expect(headers(grouped)).toHaveLength(2);
+    // Each panel label appears once, in its header, not again on the cards.
+    expect(count(grouped, ">Lipids<")).toBe(1);
+
+    const flat = renderList(readings, { prefs: { view: "cards" } });
+    expect(count(flat, ">Lipids<")).toBe(2);
   });
 });

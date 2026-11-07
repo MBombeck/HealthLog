@@ -89,6 +89,7 @@ const t = (key: string, params?: Record<string, string | number>) =>
 function fakeQueryClient(): QueryClientType {
   return {
     invalidateQueries: vi.fn().mockResolvedValue(undefined),
+    getQueryCache: () => ({ findAll: () => [] }),
   } as unknown as QueryClientType;
 }
 

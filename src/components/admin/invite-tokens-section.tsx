@@ -290,7 +290,7 @@ export function InviteTokensSection() {
     const days = daysUntil(invite.expiresAt, now);
     if (days <= 0) return "—";
     return days === 1
-      ? t("admin.invites.expiresInDaysOne")
+      ? t("admin.invites.expiresInDaysOne", { count: days })
       : t("admin.invites.expiresInDaysOther", { count: days });
   }
 

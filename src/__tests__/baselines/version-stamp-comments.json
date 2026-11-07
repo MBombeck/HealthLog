@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
-  "count": 2894,
-  "total": 9223,
+  "count": 2892,
+  "total": 9220,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1072,7 +1072,7 @@
     "components/labs/lab-biomarker-detail.tsx": 13,
     "components/labs/lab-form.tsx": 6,
     "components/labs/lab-history-list.tsx": 4,
-    "components/labs/lab-list.tsx": 6,
+    "components/labs/lab-list.tsx": 5,
     "components/labs/lab-reference-range-bar.tsx": 1,
     "components/labs/lab-trend-card.tsx": 1,
     "components/labs/lab-trend-sparkline.tsx": 1,
@@ -2892,7 +2892,7 @@
     "lib/withings/sync.ts": 6,
     "lib/withings/webhook-handler.ts": 3,
     "lib/workouts/list-read.ts": 1,
-    "proxy.ts": 29,
+    "proxy.ts": 27,
     "types/analytics.ts": 8,
     "types/backups.ts": 1
   }

@@ -73,6 +73,12 @@ updates:
       # (runtime-package-pins.test.ts fails while the two differ).
       - dependency-name: "postgres"
         update-types: ["version-update:semver-major"]
+      # The Node major in the build and runner stages is the one `engines`,
+      # `.nvmrc` and `.node-version` name, and the native modules are built
+      # against it. Moving it is a release decision, so it arrives by hand.
+      # Digest and minor updates of the pinned major still come as PRs.
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
   # The `docker` ecosystem above reads the Dockerfile only. The bundled
   # database lives in `docker-compose.yml`, which GitHub treats as its own
   # ecosystem, so without this block a new PostgreSQL minor release never

@@ -10,6 +10,7 @@ import { z } from "zod/v4";
 import { locales } from "@/lib/i18n/config";
 
 import { COACH_SCOPE_SOURCES } from "./scope-sources";
+import type { COACH_STEP_REASONS } from "./step-reasons";
 
 import type { AiUnavailableReason } from "@/lib/ai/capabilities/types";
 import type { CoachSuggestedAction } from "./suggest-action";
@@ -339,8 +340,9 @@ export interface CoachActivityMeta {
   /** Readings, lookups or remembered entries the server counted. */
   count?: number;
   durationMs?: number;
-  /** Set on the `stop` entry. */
+  /** `stop`: on the stop entry. `reason`: a fetch past the lookback limit. */
   stop?: CoachStopReason;
+  reason?: "outside_reach";
 }
 
 /** One trail entry on the wire: the metadata plus the owner-only model text. */
@@ -446,13 +448,8 @@ export type CoachStepDomain =
   | "day"
   | "snapshot";
 
-/** Why a step or a method entry found nothing. */
-export type CoachStepReason =
-  | "no_data"
-  | "outside_window"
-  | "module_disabled"
-  | "retrieval_failed"
-  | "invalid_arguments";
+/** Why a step or a method entry found nothing (`step-reasons.ts`). */
+export type CoachStepReason = (typeof COACH_STEP_REASONS)[number];
 
 export interface CoachStep {
   /** `s1`..`s64`, unique within a turn; frames upsert by id. */

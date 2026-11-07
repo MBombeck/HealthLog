@@ -10,6 +10,7 @@
 import type { SyncVerdict } from "@/lib/integrations/sync-verdict";
 import type { OnboardingAreaKey } from "@/lib/modules/registry";
 
+import { questionOptionLabelKey } from "./question-config";
 import {
   BROWSER_CONNECTABLE_SOURCES,
   type BrowserConnectableSource,
@@ -61,9 +62,29 @@ export const AREA_PAGE_HREF: Readonly<
  *   a dead end.
  * - `shared` — an operator env app is the fallback (`available` says whether
  *   any usable credentials resolve, own or shared).
- * - `self-hosted` — a URL the person pastes; nothing can be missing up front.
+ * - `self-hosted` — a URL or a key the person pastes; nothing can be missing
+ *   up front.
  */
 export type SourceCredentialModel = "byo" | "shared" | "self-hosted";
+
+/**
+ * How a source is connected when that is not the source's own card. The
+ * answer stays the device the person owns; the connection is made, named and
+ * read back through another integration.
+ */
+export interface SourceConnectedThrough {
+  /** The i18n key of the integration the connection is named after. */
+  labelKey: string;
+  /** The i18n key of the sentence saying why it goes through there. */
+  noteKey: string;
+}
+
+export interface SourceIntegrationTarget {
+  anchor: string;
+  statusKey: string;
+  credentials: SourceCredentialModel;
+  through?: SourceConnectedThrough;
+}
 
 /**
  * The connections panel's anchor for each connectable source — the `id` of
@@ -71,16 +92,32 @@ export type SourceCredentialModel = "byo" | "shared" | "self-hosted";
  * published under on `/api/integrations/status`.
  */
 export const SOURCE_INTEGRATION: Readonly<
-  Record<
-    BrowserConnectableSource,
-    { anchor: string; statusKey: string; credentials: SourceCredentialModel }
-  >
+  Record<BrowserConnectableSource, SourceIntegrationTarget>
 > = Object.freeze({
   withings: { anchor: "withings", statusKey: "withings", credentials: "byo" },
   oura: { anchor: "oura", statusKey: "oura", credentials: "shared" },
   whoop: { anchor: "whoop", statusKey: "whoop", credentials: "byo" },
   polar: { anchor: "polar", statusKey: "polar", credentials: "shared" },
-  fitbit: { anchor: "fitbit", statusKey: "fitbit", credentials: "byo" },
+  // The person's own Personal API key, pasted on the card.
+  garmin: {
+    anchor: "garmin",
+    statusKey: "garmin",
+    credentials: "self-hosted",
+  },
+  // Fitbit's classic Web API was shut down on 2026-10-30; Fitbit data now
+  // arrives through Google Health. The answer stays "Fitbit", because that is
+  // the device, and the task opens, reads and names the Google Health card.
+  // Google Health runs on the person's own Google OAuth client.
+  fitbit: {
+    anchor: "google-health",
+    statusKey: "google-health",
+    credentials: "byo",
+    through: {
+      labelKey: "settings.googleHealth",
+      noteKey:
+        "onboarding.flow.first-result.connect-source.throughGoogleHealth",
+    },
+  },
   strava: { anchor: "strava", statusKey: "strava", credentials: "shared" },
   nightscout: {
     anchor: "nightscout",
@@ -88,6 +125,19 @@ export const SOURCE_INTEGRATION: Readonly<
     credentials: "self-hosted",
   },
 });
+
+/**
+ * The i18n key a source's connection is named with: the integration it goes
+ * through when there is one, otherwise the person's own answer.
+ */
+export function sourceConnectionLabelKey(
+  source: BrowserConnectableSource,
+): string {
+  return (
+    SOURCE_INTEGRATION[source].through?.labelKey ??
+    questionOptionLabelKey("sources", source)
+  );
+}
 
 /** Which tile the connect step renders. */
 export type ConnectSourceSlot =

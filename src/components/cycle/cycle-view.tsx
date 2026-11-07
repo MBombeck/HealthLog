@@ -23,7 +23,7 @@ import { PhaseEducationCard } from "./phase-education-card";
 import { PredictionsPanel } from "./predictions-panel";
 import { CyclePhaseHeadline, CyclePhaseCrosstab } from "./cycle-phase-crosstab";
 import { CycleSymptomPatterns } from "./cycle-symptom-patterns";
-import { CycleSettings } from "./cycle-settings";
+import { CycleSettingsTab } from "./cycle-settings-tab";
 import { PHASE_HUE } from "./phase-tokens";
 import { monthOf, monthWindowOutside } from "./calendar-window";
 import {
@@ -417,6 +417,8 @@ export function CycleView() {
                   prediction={calendar.data?.prediction ?? null}
                   rawChartMode={calendar.data?.profile.rawChartMode ?? false}
                   history={history.data?.data}
+                  projection={calendar.data?.projection}
+                  projectionState={calendar.data?.projectionState ?? null}
                 />
                 <CycleHistoryChart
                   history={history.data?.data}
@@ -471,10 +473,7 @@ export function CycleView() {
                 <Loader2 className="text-muted-foreground h-6 w-6 animate-spin motion-reduce:animate-none" />
               </div>
             ) : profileQuery.data && canManageCycle ? (
-              <CycleSettings
-                key={profileQuery.data.updatedAt}
-                profile={profileQuery.data}
-              />
+              <CycleSettingsTab profile={profileQuery.data} />
             ) : null}
           </TabsContent>
         </Tabs>

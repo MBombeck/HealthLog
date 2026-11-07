@@ -2,6 +2,169 @@
 
 ## [Unreleased]
 
+## [1.47.1] — 2026-11-07
+
+### Added
+
+- `GET /api/integrations/healthkit` lists the HealthKit sample types the
+  server accepts as `acceptedTypes`, taken from the same mapping the batch
+  upload uses. The iOS app can then ask for and send only types the server
+  stores, instead of reading a type the server would skip. (#1340)
+- `GET /api/sync/changes?start=now` answers an empty page with a cursor
+  that starts at the present. The iOS app can page forward from it to
+  write readings to Apple Health in the background, without first walking
+  years of history. (#1339)
+- `GET /api/biomarkers/{id}/series` returns one lab marker's line, the same
+  points and window the timeline draws for it, under the Labs module. The
+  iOS app can show a marker's chart with the timeline switched off. (#1342)
+- Resting energy from Apple Health is stored as a metric of its own,
+  `BASAL_ENERGY_BURNED` in kcal, next to active energy and never added to
+  it. It used to be skipped. It is summed per day, charted, listed with your
+  measurements, included in backups and exports, and readable over MCP. It
+  feeds no score and no insight. (#1340)
+- When the Coach looks for readings older than the lookback limit you set
+  for it, its live trail now says so on the wire: the `step` and `activity`
+  frames carry `reason: "outside_reach"` instead of looking like an empty
+  window. The native client can then tell "nothing in this window" from
+  "further back than the Coach may read". The answer still names the limit,
+  and the web trail keeps its wording.
+- Turning on workout routes no longer helps only workouts recorded from
+  then on. When the app sends a route again for a workout that is already
+  stored without one, the server now keeps it, sealed like any other
+  track, and fills the workout's climb if it had none; the entry reports
+  `enriched`, as it does for a heart-rate series. A workout that already
+  has a route keeps it, and with routes switched off nothing is stored.
+- **Lab markers grouped by category.** Under Settings, Arrangement, Labs,
+  the list can now group markers by their panel (Lipids, Liver, Thyroid
+  and so on), each group with a header that says whether its latest values
+  are all in range or how many are outside it. A catalog panel is
+  recognised in every language, a panel you typed yourself becomes its own
+  group, and a marker without a panel falls back to the catalog panel its
+  name belongs to, or to Other. You choose which groups open on load: all,
+  only those with a value outside range, or none. Grouping is off by
+  default. The server resolves the groups once: `GET /api/labs/overview`
+  carries `categories` and `grouped`, the layout preferences gain
+  `groupBy` and `groupsOpen`, `GET /api/biomarkers` lists the panels you
+  already use as `customPanels` for the panel field's suggestions, and a
+  merge preview names the panel the kept marker takes over as
+  `adoptedPanel`. No migration. (#1349)
+- **Your cycle forecast as a calendar subscription.** Cycle, Settings,
+  Calendar subscription publishes the next period, and once three cycles
+  are logged up to six after it, as an ICS feed for Google, Apple or
+  Outlook calendar. Each event spans the window the period may start in,
+  wider the further ahead it is, and the feed stops where a date would be
+  more guess than estimate. Past cycles (up to twelve) and the fertile
+  window of the next cycle (only with the goal of trying to conceive) are
+  opt-in. Titles are a dot by default, and events never carry symptoms,
+  notes or other log details. The link is shown once, can be rotated or
+  turned off, and is turned off by a password change or a deletion
+  request. Only the record's owner, or a managed profile's guardian, can
+  turn it on, from a signed-in browser after confirming it is them. The
+  feed answers with an `ETag`, and every unknown or revoked link gets the
+  same plain 404. `GET /api/cycle/calendar` adds `projection` and `projectionState`
+  so the web and iOS calendars draw the same cycles ahead, and the Coach
+  and MCP cycle context list them as `upcoming`. Migration
+  `0494_cycle_calendar_feed`. Self-hosters: the feed link sits in the URL
+  path, so keep `/api/cycle/feed/` out of your proxy's access log;
+  `docs/self-hosting/reverse-proxy.md` shows how. (#1350)
+- **Your own symptoms as lines on the timeline.** The timeline's values
+  menu has a Symptoms group with every symptom you have logged at least
+  once, hidden ones included. A line sits on a fixed 0 to 10 scale and
+  follows the zoom: each point is the mean of the bucket's days, where a
+  day counts with the highest intensity logged on it, and it says how many
+  days that was. A day without an entry is left out rather than counted as
+  zero. Symptoms follow the illness module and its sharing domain, so the
+  lines are only offered where the symptom log itself is.
+  `GET /api/timeline` takes `symptom:<id>` in `values` (up to 24) and answers
+  with `symptomSeries` and `availableSymptoms`; with `zoom=all` the window
+  reaches back to the first entry of a chosen symptom. No migration. (#981)
+
+### Fixed
+
+- **The report offered for a visit is the report you get.** When the last
+  matching visit was more than two years ago, the next-visit card offered a
+  report from that day, but a report covers two years at most, and the
+  export quietly made a 90-day report instead. The window before a visit
+  now stops at two years and says "The last two years", and the visit list
+  marks it with `preparation.capped`. A report range longer than two years,
+  however it is asked for, now covers the last two years of it rather than
+  falling back to 90 days. (Two years across a clock change also no longer
+  count as one day too many.)
+- **PDF previews show in Safari.** On macOS and iOS the preview of an
+  uploaded PDF stayed an empty box. The page's security policy told the
+  browser that nothing may frame it, and Safari applied that to the
+  preview the page itself opens. The policy now allows framing by the app
+  itself and still refuses every other site. (#1311)
+- **Periods from Garmin and Oura open their cycles.** Period days imported
+  from a watch or a ring were stored as days only, so the cycle tracker saw
+  no cycle start, no lengths and no forecast. They now open and fill their
+  cycles like a period logged by hand, a finished Garmin period also marks
+  its last day, and periods imported earlier are repaired once on the next
+  start. A day you logged yourself is never changed. (#1333)
+- **Garmin in the setup questions.** The onboarding question about where
+  your readings come from now offers Garmin, and can end on connecting it.
+  (#1333)
+- **Fitbit in the setup questions leads to Google Health.** Fitbit shut its
+  classic connection down on 30 October, but answering "Fitbit" still ended
+  the setup on that card. Fitbit stays an answer, since the devices are still
+  in use; the last step now opens the Google Health card, reads that
+  connection, and says that Fitbit data comes through Google Health now. The
+  question shows the same note under the Fitbit choice.
+- **Cycle days in the integration details.** The Garmin and Oura cards list
+  the newest imported cycle day and how many there are under "Data
+  received", next to the other data types. (#1333)
+- **Typing into the smoking history.** "When you stopped" only took text
+  that was already a whole YYYY-MM month, so every keystroke was dropped
+  and only a paste got in. The start year clamped each keystroke into its
+  range, so the first digit turned into 1900. Both fields now keep what is
+  typed and commit it once it is a valid value, and leaving the month field
+  pads "2019-3" to "2019-03". (#1334)
+- **Crisis lines for the country you are in.** A questionnaire answered
+  from a phone set to English in Belgium (`en-BE`), French in Switzerland,
+  or English in Austria got the international crisis set, because the
+  country was only read for some languages. The region in the language tag
+  now picks the country's lines whatever the language; a bare language
+  code keeps the combined sets as before. (#1338)
+- **SSO sign-in in the app names the deletion date.** Signing in with SSO
+  on the phone to an account pending deletion now carries the date the
+  account is erased, as the web sign-in already did, so the app can say
+  until when an admin can still undo it. (#1341)
+- **A marker started from a text result keeps its range.** When a report
+  printed a text result such as "SEE NOTE" with a numeric range beside it,
+  the new marker was saved without that range, so its first number later
+  had nothing to be judged against. The range now goes onto the new marker,
+  from a document, a lab scan, a CSV import or a typed reading, and the
+  scan review shows it for such a row. A range that is text itself, like
+  "NEGATIVE", is not turned into bounds, and a marker that already exists
+  keeps its own. (#1313)
+- **Several files dropped at once all arrive.** The server takes two
+  uploads per person at a time and asks the next one to come back in a
+  second, but the documents page sent three at once and showed that
+  answer as an error telling you to wait a few minutes. The page now sends
+  two at a time, and a file the server turns away for a moment, say while
+  another tab is still uploading, waits and goes again on its own for up
+  to half a minute before it reports anything. Attaching a new file in the
+  Coach does the same. Reaching the hourly upload limit now says that
+  instead of "a few minutes".
+- **Counts in Russian, French and Portuguese.** Russian uses its singular
+  form for 21, 31 and so on, and French and Brazilian Portuguese use it for
+  zero, but those strings had the digit 1 written in, so "21 days" read as
+  "1 day". They now carry the actual count, and a guard keeps new ones from
+  writing the digit.
+
+### Changed
+
+- Dependabot no longer proposes a new Node major for the image. The major
+  is tied to `engines`, `.nvmrc` and `.node-version` and moves by hand.
+
+### Security
+
+- `@hono/node-server` moves to the 2.x line, which fixes a second decode of
+  the request path in `serveStatic`. It arrives under the MCP SDK; the app
+  uses the SDK's web-standard transport and never loads it, but the copy
+  was in the tree. `systeminformation`, under the shadcn CLI at dev time,
+  moves past a Windows command injection.
+
 ## [1.47.0] — 2026-11-04
 
 ### Added

@@ -17,10 +17,11 @@ import { MeasurementType as MeasurementTypes } from "@/generated/prisma/enums";
 import type { MeasurementType } from "@/generated/prisma/enums";
 
 import {
-  capTimelineLabKeys,
+  capTimelineSeriesKeys,
   DAY_NOTABLE_MAX_SPAN_DAYS,
   TIMELINE_LANE_KEYS,
   timelineLabMarkerId,
+  timelineSymptomDefinitionId,
   type TimelineBucket,
   type TimelineItem,
   type TimelineQuery,
@@ -43,6 +44,11 @@ import {
   loadLabSeries,
 } from "@/lib/timeline/lab-series";
 import { loadTimelineSeries, MOOD_SERIES_KEY } from "@/lib/timeline/series";
+import {
+  firstSymptomDay,
+  loadAvailableSymptoms,
+  loadSymptomSeries,
+} from "@/lib/timeline/symptom-series";
 import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { EVENT_MEASUREMENT_TYPES } from "@/lib/validations/measurement";
 
@@ -106,6 +112,30 @@ const ZOOM_DAYS: Readonly<
   quarter: 91,
 };
 
+/**
+ * The `[from, to]` a zoom reads, as local day keys. `to` defaults to today;
+ * `all` (and a `range`, which names both ends) starts at `dataFrom`, the
+ * earliest day there is anything to show, or a year back when there is
+ * nothing; `year` and `quarter` reach back their fixed span from `to`. The
+ * timeline and one marker's lab line (`/api/biomarkers/{id}/series`, #1342)
+ * both cut their window here.
+ */
+export function resolveTimelineWindow(
+  query: { zoom: TimelineZoom; from?: string; to?: string },
+  today: string,
+  dataFrom: string | null,
+): { from: string; to: string } {
+  const to = query.to ?? today;
+  const from =
+    query.from ??
+    (query.zoom === "all" || query.zoom === "range"
+      ? dataFrom !== null && dataFrom < to
+        ? dataFrom
+        : shiftDateKey(to, -364)
+      : shiftDateKey(to, -(ZOOM_DAYS[query.zoom] - 1)));
+  return { from, to };
+}
+
 const MEASUREMENT_TYPE_SET: ReadonlySet<string> = new Set(
   Object.values(MeasurementTypes),
 );
@@ -117,9 +147,11 @@ const MEASUREMENT_TYPE_SET: ReadonlySet<string> = new Set(
  * grows past the names that exist, and each series is its own row under the
  * lanes. A lab marker (`lab:<biomarkerId>`, #1299) is checked for its shape
  * only: whether the record has it is the loader's question, and the answer
- * to a stale one is no line rather than an error. Marker ids are not a
- * closed set, so their count is capped: the first
- * `TIMELINE_LAB_SERIES_MAX` are kept and the rest left out. A refusal would
+ * to a stale one is no line rather than an error. A person-defined symptom
+ * (`symptom:<definitionId>`, #981) is checked the same way. Marker and
+ * definition ids are not a closed set, so their counts are capped: the first
+ * `TIMELINE_LAB_SERIES_MAX` markers and `TIMELINE_SYMPTOM_SERIES_MAX`
+ * symptoms are kept and the rest left out. A refusal would
  * be stored with the choice and fail the page on every visit, with the menu
  * that could undo it never drawn.
  */
@@ -135,9 +167,10 @@ export function parseSeriesKeys(raw: string | undefined): string[] | null {
   ];
   for (const key of keys) {
     if (timelineLabMarkerId(key) !== null) continue;
+    if (timelineSymptomDefinitionId(key) !== null) continue;
     if (key !== MOOD_SERIES_KEY && !MEASUREMENT_TYPE_SET.has(key)) return null;
   }
-  return capTimelineLabKeys(keys);
+  return capTimelineSeriesKeys(keys);
 }
 
 /**
@@ -226,7 +259,13 @@ export async function loadTimeline(args: {
     laneVisible(key, access),
   );
   const measurementsVisible = access.domainVisible("measurements");
-  const [reads, firstReading] = await Promise.all([
+  const labIds = args.seriesKeys
+    .map(timelineLabMarkerId)
+    .filter((id): id is string => id !== null);
+  const symptomIds = args.seriesKeys
+    .map(timelineSymptomDefinitionId)
+    .filter((id): id is string => id !== null);
+  const [reads, firstReading, firstSymptom] = await Promise.all([
     Promise.all(visibleLanes.map((key) => LANE_READERS[key](frame))),
     measurementsVisible
       ? prisma.measurement.findFirst({
@@ -235,20 +274,16 @@ export async function loadTimeline(args: {
           select: { measuredAt: true },
         })
       : Promise.resolve(null),
+    // A chosen symptom has no lane of its own to carry its first day.
+    firstSymptomDay({ recordId, ids: symptomIds, tz, access }),
   ]);
 
   const starts = reads.flatMap((r) => r.items.map((i) => i.start));
   if (firstReading) starts.push(userDayKey(firstReading.measuredAt, tz));
+  if (firstSymptom) starts.push(firstSymptom);
   const dataFrom = starts.length > 0 ? starts.sort()[0] : null;
 
-  const to = query.to ?? today;
-  const from =
-    query.from ??
-    (query.zoom === "all" || query.zoom === "range"
-      ? dataFrom !== null && dataFrom < to
-        ? dataFrom
-        : shiftDateKey(to, -364)
-      : shiftDateKey(to, -(ZOOM_DAYS[query.zoom] - 1)));
+  const { from, to } = resolveTimelineWindow(query, today, dataFrom);
 
   const lanes: TimelineResponse["lanes"] = [];
   const standing: StandingItem[] = [];
@@ -260,11 +295,9 @@ export async function loadTimeline(args: {
     standing.push(...reads[i].standing);
   });
 
-  const labIds = args.seriesKeys
-    .map(timelineLabMarkerId)
-    .filter((id): id is string => id !== null);
   const seriesKeys = args.seriesKeys.filter((key) =>
-    timelineLabMarkerId(key) !== null
+    timelineLabMarkerId(key) !== null ||
+    timelineSymptomDefinitionId(key) !== null
       ? false
       : key === MOOD_SERIES_KEY
         ? access.modules.mood !== false && access.domainVisible("mind")
@@ -279,33 +312,50 @@ export async function loadTimeline(args: {
       ? shiftDateKey(to, -(DAY_NOTABLE_MAX_SPAN_DAYS - 1))
       : from;
   const bucket = timelineBucket(query.zoom, from, to);
-  const [series, notable, availableSeries, labSeries, availableLabs] =
-    await Promise.all([
-      loadTimelineSeries({
-        userId: recordId,
-        keys: seriesKeys,
-        from,
-        to,
-        tz,
-        bucket,
-        priorityJson,
-        now,
-      }),
-      measurementsVisible
-        ? loadNotableRange({
-            userId: recordId,
-            from: notableFrom,
-            to,
-            tz,
-            priorityJson,
-            typeVisible: (t) => measurementTypeVisible(t, access.modules),
-            gaps: false,
-          })
-        : Promise.resolve([]),
-      loadAvailableSeries({ recordId, access }),
-      loadLabSeries({ recordId, ids: labIds, from, to, tz, access }),
-      loadAvailableLabMarkers({ recordId, access }),
-    ]);
+  const [
+    series,
+    notable,
+    availableSeries,
+    labSeries,
+    availableLabs,
+    symptomSeries,
+    availableSymptoms,
+  ] = await Promise.all([
+    loadTimelineSeries({
+      userId: recordId,
+      keys: seriesKeys,
+      from,
+      to,
+      tz,
+      bucket,
+      priorityJson,
+      now,
+    }),
+    measurementsVisible
+      ? loadNotableRange({
+          userId: recordId,
+          from: notableFrom,
+          to,
+          tz,
+          priorityJson,
+          typeVisible: (t) => measurementTypeVisible(t, access.modules),
+          gaps: false,
+        })
+      : Promise.resolve([]),
+    loadAvailableSeries({ recordId, access }),
+    loadLabSeries({ recordId, ids: labIds, from, to, tz, access }),
+    loadAvailableLabMarkers({ recordId, access }),
+    loadSymptomSeries({
+      recordId,
+      ids: symptomIds,
+      from,
+      to,
+      tz,
+      bucket,
+      access,
+    }),
+    loadAvailableSymptoms({ recordId, access }),
+  ]);
 
   return {
     zoom: query.zoom,
@@ -317,6 +367,8 @@ export async function loadTimeline(args: {
     availableSeries,
     labSeries,
     availableLabs,
+    symptomSeries,
+    availableSymptoms,
     notable: notable.map(({ date, kind }) => ({ date, kind })),
   };
 }

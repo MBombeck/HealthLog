@@ -179,7 +179,8 @@ export function labelledMeanParts(
     label: (key: string) => string;
     bloodPressure: string;
     noValue: string;
-    readings: (count: number) => string;
+    /** The readings (a symptom: the days) behind a series' mean. */
+    readings: (key: string, count: number) => string;
   },
 ): MeanPart[] {
   const sys = means.find(
@@ -196,7 +197,7 @@ export function labelledMeanParts(
       parts.push({
         key: m.key,
         text: `${words.bloodPressure} ${pressure(sys, dia!, format)}`,
-        detail: words.readings(sys.count ?? 0),
+        detail: words.readings(sys.key, sys.count ?? 0),
       });
       continue;
     }
@@ -206,8 +207,34 @@ export function labelledMeanParts(
         m.mean === null
           ? `${words.label(m.key)} ${words.noValue}`
           : `${words.label(m.key)} ${formatSeriesValue(m.key, m.mean, m.unit, format)}`,
-      ...(m.mean === null ? {} : { detail: words.readings(m.count ?? 0) }),
+      ...(m.mean === null
+        ? {}
+        : { detail: words.readings(m.key, m.count ?? 0) }),
     });
   }
   return parts;
+}
+
+/**
+ * The timeline with its symptom lines (#981) folded into the value lines.
+ * A symptom line is a bucket mean like any value line, so the chart, the
+ * selection bar, the tables and the chronicle draw and word it as one: on
+ * its fixed scale (`layoutSeries`), with the days behind each mean
+ * (`useSeriesCountText`). The server's points are kept as they are.
+ */
+export function withSymptomLines<
+  T extends Pick<TimelineResponse, "series" | "symptomSeries">,
+>(timeline: T): T {
+  if (timeline.symptomSeries.length === 0) return timeline;
+  return {
+    ...timeline,
+    series: [
+      ...timeline.series,
+      ...timeline.symptomSeries.map((s) => ({
+        key: s.key,
+        unit: null,
+        points: s.points,
+      })),
+    ],
+  };
 }

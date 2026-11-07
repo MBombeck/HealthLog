@@ -39,6 +39,7 @@ import {
   type MarkerIndex,
 } from "@/lib/labs/biomarker-resolve";
 import { resolveOrMintBiomarker } from "@/lib/labs/biomarker-store";
+import { mintedBounds } from "@/lib/labs/minted-bounds";
 import { parseReferenceRange } from "@/lib/labs/parse-reference-range";
 import { readingInMarkerUnit } from "@/lib/labs/reading-conversion";
 import {
@@ -74,6 +75,8 @@ export interface LabCsvRow {
   valueText: string | null;
   unit: string | null;
   takenAt: Date;
+  /** The file's window. On a text result it only seeds a new marker: the
+   * reading itself records no window. */
   sourceReferenceLow: number | null;
   sourceReferenceHigh: number | null;
   sourceReferenceText: string | null;
@@ -200,8 +203,8 @@ export function normaliseLabRow(
       valueText,
       unit,
       takenAt: date.instant,
-      sourceReferenceLow: valueText === null ? low : null,
-      sourceReferenceHigh: valueText === null ? high : null,
+      sourceReferenceLow: low,
+      sourceReferenceHigh: high,
       sourceReferenceText: valueText === null ? rangeText : null,
       panel,
       note,
@@ -253,7 +256,21 @@ interface Planned {
   marker: IndexedMarker | null;
 }
 
+/**
+ * The window the write keeps on the reading: the printed one for a number, none
+ * for a text result (its range seeds a new marker, not the reading).
+ */
+function readingWindow(row: LabCsvRow): {
+  low: number | null;
+  high: number | null;
+} {
+  return row.valueText === null
+    ? { low: row.sourceReferenceLow, high: row.sourceReferenceHigh }
+    : { low: null, high: null };
+}
+
 function displayRow(row: LabCsvRow, marker: string) {
+  const window = readingWindow(row);
   return {
     line: row.line,
     marker,
@@ -261,8 +278,8 @@ function displayRow(row: LabCsvRow, marker: string) {
     valueText: row.valueText,
     unit: row.unit,
     takenAt: row.takenAt.toISOString(),
-    referenceLow: row.sourceReferenceLow,
-    referenceHigh: row.sourceReferenceHigh,
+    referenceLow: window.low,
+    referenceHigh: window.high,
     panel: row.panel,
     note: row.note !== null,
   };
@@ -344,8 +361,7 @@ export async function importLabsCsv(args: {
           id: `pending:${pendingId++}`,
           name: row.analyte,
           unit,
-          lowerBound: row.sourceReferenceLow,
-          upperBound: row.sourceReferenceHigh,
+          ...mintedBounds(row.sourceReferenceLow, row.sourceReferenceHigh),
           panel: row.panel,
           analyteKey: matchAnalyteKey({ name: row.analyte, unit }),
           hidden: false,
@@ -473,10 +489,8 @@ export async function importLabsCsv(args: {
           {
             analyte: row.analyte,
             unit: row.unit ?? "",
-            referenceLow:
-              row.valueText === null ? row.sourceReferenceLow : null,
-            referenceHigh:
-              row.valueText === null ? row.sourceReferenceHigh : null,
+            referenceLow: row.sourceReferenceLow,
+            referenceHigh: row.sourceReferenceHigh,
             panel: row.panel,
           },
           { index: working },
@@ -484,8 +498,7 @@ export async function importLabsCsv(args: {
       if (!marker) created.add(row.analyte);
 
       let storedValue = row.value;
-      let storedLow = row.sourceReferenceLow;
-      let storedHigh = row.sourceReferenceHigh;
+      let { low: storedLow, high: storedHigh } = readingWindow(row);
       let convertedFrom: { sourceValue: number; sourceUnit: string } | null =
         null;
       if (row.value !== null) {

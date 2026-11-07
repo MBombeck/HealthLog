@@ -45,6 +45,8 @@ notes, and machine-readable specs that ship alongside the source:
   code. [`using/search.md`](./using/search.md) covers the command palette's
   record search: opening it, what it finds, how matching works, and its
   limits on very large and shared records.
+  [`using/cycle-calendar-feed.md`](./using/cycle-calendar-feed.md) covers
+  subscribing to the cycle forecast from Google, Apple or Outlook.
 - [`migration/`](./migration/) — migration notes. Currently only
   v1.3 to v1.4; later releases are covered by `CHANGELOG.md` and
   <https://docs.healthlog.dev>.
