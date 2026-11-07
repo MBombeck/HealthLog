@@ -638,15 +638,14 @@ export function proxy(request: NextRequest) {
     response.headers.set(HEALTHLOG_PAGE_MARKER_HEADER, "1");
   }
 
-  // The document vault's decrypt-and-serve route is framed SAME-ORIGIN by
-  // the document detail preview (an <iframe> for inline-class PDFs). The
-  // blanket `X-Frame-Options: DENY` below would
-  // refuse that embed, and the blanket page CSP would clobber the route's
-  // own `Content-Security-Policy: sandbox` (middleware headers win over
-  // route headers). Scope: exactly the `/original` path — list/detail API
-  // routes keep the full DENY posture. The replacement CSP keeps the
-  // sandbox (the served bytes are user-uploaded and must never script in
-  // the app origin) and narrows framing to 'self' instead of dropping it.
+  // The document vault's decrypt-and-serve route is framed SAME-ORIGIN by the
+  // document detail preview (an <iframe> for inline-class PDFs). It gets a
+  // document CSP, not the page CSP, which would replace the route's own CSP
+  // (middleware headers win over route headers). Scope: exactly the
+  // `/original` path; list/detail API routes keep the page posture. The
+  // document CSP lets the user-uploaded bytes load nothing and permits only
+  // same-origin framing (`frame-ancestors 'self'`); it carries no `sandbox`,
+  // see the CSP note below.
   const isDocumentServeRoute =
     /^\/api\/documents\/inbound\/[^/]+\/original$/.test(pathname);
 
@@ -654,11 +653,10 @@ export function proxy(request: NextRequest) {
   // `/c/<token>/d/<id>` is the share analogue of the owner `/original` route:
   // it decrypts and serves a user-uploaded document that the clinician view
   // (`/c/<token>`) frames same-origin (an <iframe> for inline-class PDFs). It
-  // needs the SAME narrow posture — SAMEORIGIN framing + a document CSP — and
-  // NOT the `/c/` page posture, whose `X-Frame-Options: DENY` would refuse
-  // the preview embed. Anchored to EXACTLY two dynamic segments so a
-  // `/c/<token>` page, a `/c/<token>/d/<id>/extra`, or a `/c/<token>/dx/<id>`
-  // lookalike never inherits the carve-out.
+  // needs the SAME narrow posture (the document CSP) and NOT the `/c/` page
+  // CSP, which is written for an app page. Anchored to EXACTLY two dynamic
+  // segments so a `/c/<token>` page, a `/c/<token>/d/<id>/extra`, or a
+  // `/c/<token>/dx/<id>` lookalike never inherits the carve-out.
   const isShareDocumentServeRoute = /^\/c\/[^/]+\/d\/[^/]+$/.test(pathname);
 
   // Both serve routes take the narrow, document-only header posture.
@@ -685,7 +683,8 @@ export function proxy(request: NextRequest) {
     response.headers.set("Cache-Control", "private, no-store");
   }
 
-  // Security headers
+  // Security headers. Framing is refused by the CSP's `frame-ancestors`; a
+  // browser that reads it ignores X-Frame-Options, kept for older ones.
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("X-Frame-Options", isServeRoute ? "SAMEORIGIN" : "DENY");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
@@ -778,7 +777,7 @@ export function proxy(request: NextRequest) {
   // them.
   const csp = isServeRoute
     ? // Vault serve route (owner `/original` OR share `/c/<token>/d/<id>`; see
-      // the X-Frame-Options note above): the
+      // the framing note above): the
       // response is a user-uploaded document, not an app page.
       // `default-src 'none'` — a served document may load nothing as if
       // it were a page — and `frame-ancestors 'self'` permits exactly the
