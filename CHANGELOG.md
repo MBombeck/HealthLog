@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.47.1] — 2026-11-07
+
 ### Added
 
 - `GET /api/integrations/healthkit` lists the HealthKit sample types the
