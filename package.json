@@ -125,7 +125,7 @@
     "@vitest/coverage-v8": "^5.0.5",
     "ajv": "^8.20.0",
     "eslint": "^9",
-    "eslint-config-next": "16.4.3",
+    "eslint-config-next": "16.4.5",
     "fast-check": "4.10.2",
     "knip": "^6.44.1",
     "lefthook": "^2.2.2",
