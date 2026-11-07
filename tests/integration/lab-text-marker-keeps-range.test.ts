@@ -289,6 +289,82 @@ describe("a free-text reading that is a text result", () => {
   });
 });
 
+describe("a text marker's range and the first unit it adopts", () => {
+  it("drops a range stated without a unit when a real unit arrives", async () => {
+    // The report printed "30 - 100" beside a pending result, in ng/mL, and
+    // said so nowhere: the marker holds the numbers with no unit.
+    await postLab({
+      analyte: "Vitamin D",
+      valueText: "PENDING",
+      referenceLow: 30,
+      referenceHigh: 100,
+    });
+    const { id } = await bounds("Vitamin D");
+    // The next report states nmol/L. 30 - 100 is not a window in nmol/L.
+    await postLab({
+      biomarkerId: id,
+      value: 60,
+      unit: "nmol/L",
+      takenAt: "2026-10-01T12:00:00.000Z",
+    });
+    const marker = await prisma.biomarker.findUniqueOrThrow({ where: { id } });
+    expect(marker).toMatchObject({
+      unit: "nmol/L",
+      lowerBound: null,
+      upperBound: null,
+    });
+    const reading = await prisma.labResult.findFirstOrThrow({
+      where: { biomarkerId: id, value: { not: null } },
+    });
+    expect(reading).toMatchObject({
+      unit: "nmol/L",
+      referenceLow: null,
+      referenceHigh: null,
+    });
+  });
+
+  it("takes the window the first number printed in the unit it adopts", async () => {
+    await postLab({
+      analyte: "Vitamin D",
+      valueText: "PENDING",
+      referenceLow: 30,
+      referenceHigh: 100,
+    });
+    const { id } = await bounds("Vitamin D");
+    await postLab({
+      biomarkerId: id,
+      value: 60,
+      unit: "nmol/L",
+      sourceReferenceLow: 75,
+      sourceReferenceHigh: 250,
+      takenAt: "2026-10-01T12:00:00.000Z",
+    });
+    expect(await bounds("Vitamin D")).toMatchObject({ low: 75, high: 250 });
+  });
+
+  it("keeps a unitless range when the unit adopted is the unity", async () => {
+    await postLab({
+      analyte: "BUN/Creatinine ratio",
+      valueText: "SEE NOTE",
+      referenceLow: 10,
+      referenceHigh: 20,
+    });
+    const { id } = await bounds("BUN/Creatinine ratio");
+    await postLab({
+      biomarkerId: id,
+      value: 18,
+      unit: "1",
+      sourceReferenceLow: 5,
+      sourceReferenceHigh: 30,
+      takenAt: "2026-10-01T12:00:00.000Z",
+    });
+    expect(await bounds("BUN/Creatinine ratio")).toMatchObject({
+      low: 10,
+      high: 20,
+    });
+  });
+});
+
 // --- CSV import -------------------------------------------------------------
 
 describe("a CSV text result", () => {

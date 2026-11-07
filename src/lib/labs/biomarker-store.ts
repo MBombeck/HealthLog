@@ -21,6 +21,7 @@ import {
   type IndexedMarker,
   type MarkerIndex,
 } from "@/lib/labs/biomarker-resolve";
+import { mintedBounds } from "@/lib/labs/minted-bounds";
 import { getEvent } from "@/lib/logging/context";
 
 /** Encrypt a UTF-8 context note into the `Bytes` payload the schema stores. */
@@ -89,7 +90,10 @@ export interface MintedBiomarker {
  * bounds are the report's printed window whether the reading is a number or a
  * text result ("SEE NOTE" beside "10 - 20"): the marker outlives the reading,
  * and its next number is judged against them. A window that cannot be true
- * (low above high) is not minted; nothing says which of the two is wrong. The
+ * (low above high) is not minted; nothing says which of the two is wrong. A
+ * text result that states no unit mints a marker with none, and its range is
+ * then a unitless one: the first number keeps it only under the unity "1"
+ * (`adoptFirstNumericUnit` in `./reading-conversion.ts`). The
  * `@@unique([userId, name])` index is the structural backstop; a concurrent
  * double-write converges via the catch-and-refetch.
  *
@@ -113,18 +117,18 @@ export async function resolveOrMintBiomarker(
   const hit = resolveInIndex(index, name, input.unit || null);
   if (hit) return toMinted(hit.marker);
 
-  const transposed =
-    input.referenceLow !== null &&
-    input.referenceHigh !== null &&
-    input.referenceLow > input.referenceHigh;
+  const { lowerBound, upperBound } = mintedBounds(
+    input.referenceLow,
+    input.referenceHigh,
+  );
   try {
     const created = await prisma.biomarker.create({
       data: {
         userId,
         name,
         unit: input.unit,
-        lowerBound: transposed ? null : input.referenceLow,
-        upperBound: transposed ? null : input.referenceHigh,
+        lowerBound,
+        upperBound,
         panel: input.panel,
         analyteKey: matchAnalyteKey({ name, unit: input.unit }),
       },
