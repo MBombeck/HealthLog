@@ -287,7 +287,6 @@ async function chooseStandardPdfScope(page: Page): Promise<void> {
 interface GeneratedReport {
   status: number;
   contentType: string;
-  contentLength: string | undefined;
   bytes: Buffer;
   text: string;
   filename: string;
@@ -348,7 +347,6 @@ async function generateReport(page: Page): Promise<GeneratedReport> {
   return {
     status: response.status(),
     contentType: response.headers()["content-type"] ?? "",
-    contentLength: response.headers()["content-length"],
     bytes,
     text,
     filename: download.suggestedFilename(),
@@ -370,9 +368,13 @@ function expectRealPdf(report: GeneratedReport): void {
   expect(report.contentType).toContain("application/pdf");
   expect(report.bytes.subarray(0, 5).toString("latin1")).toBe("%PDF-");
   expect(report.bytes.byteLength).toBeGreaterThan(MIN_PDF_BYTES);
-  // The route declares the length it sent; a disagreement means the body was
-  // truncated on the way out, which a magic-number check alone would miss.
-  expect(report.contentLength).toBe(String(report.bytes.byteLength));
+  // A body truncated on the way out keeps its header but loses the trailer,
+  // which a magic-number check alone would miss. The route's Content-Length
+  // cannot say this: Next drops that header from every route response since
+  // 16.4.5, so the bytes have to.
+  expect(report.bytes.subarray(-1024).toString("latin1").trimEnd()).toMatch(
+    /%%EOF$/,
+  );
   // The name the CLIENT anchor invents, not the route's `Content-Disposition`
   // — the two differ by a word today. This says the panel saved a PDF, and it
   // is not contract coverage of the header.
