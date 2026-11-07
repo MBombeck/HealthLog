@@ -24,6 +24,7 @@ vi.mock("@/lib/jobs/boss-instance", () => ({
   }),
 }));
 
+import { removeCycleStartedOn } from "@/lib/cycle/cycle-boundaries";
 import {
   enqueueBootTimeWearableCycleRepair,
   repairWearableCycleDays,
@@ -32,6 +33,7 @@ import {
 const GARMIN_USER = "user-wearable-repair-garmin";
 const OURA_USER = "user-wearable-repair-oura";
 const BLOCKED_USER = "user-wearable-repair-blocked";
+const OFF_USER = "user-wearable-repair-off";
 
 const DAY_MS = 86_400_000;
 const addDays = (day: string, n: number) =>
@@ -196,5 +198,80 @@ describe("wearable cycle repair", () => {
         select: { id: true, cycleId: true, syncVersion: true, flow: true },
       }),
     ).toEqual(daysBefore);
+  });
+
+  it("never reopens a cycle the person deleted", async () => {
+    const prisma = getPrismaClient();
+    await repairWearableCycleDays();
+    // The cycle delete: the first cycle goes, and with nothing before it
+    // its Garmin days are left without a cycle.
+    await prisma.$transaction((db) =>
+      removeCycleStartedOn(db, GARMIN_USER, "2026-07-01"),
+    );
+    const orphaned = await prisma.cycleDayLog.count({
+      where: { userId: GARMIN_USER, cycleId: null, deletedAt: null },
+    });
+    expect(orphaned).toBe(5);
+
+    sends.length = 0;
+    expect(await enqueueBootTimeWearableCycleRepair()).toEqual({
+      enqueued: false,
+      error: null,
+    });
+    expect(await repairWearableCycleDays()).toMatchObject({
+      scanned: 0,
+      opened: 0,
+    });
+    expect((await liveCycles(GARMIN_USER)).map((c) => c.startDate)).toEqual([
+      "2026-07-29",
+      "2026-08-26",
+    ]);
+  });
+
+  it("does not move the start to the next day when the first day is deleted", async () => {
+    const prisma = getPrismaClient();
+    await repairWearableCycleDays();
+    // The day-log delete: the opening day goes, and its cycle with it.
+    const first = await prisma.cycleDayLog.findFirstOrThrow({
+      where: { userId: GARMIN_USER, date: "2026-07-01" },
+    });
+    await prisma.$transaction(async (db) => {
+      await db.cycleDayLog.update({
+        where: { id: first.id },
+        data: { deletedAt: new Date() },
+      });
+      return removeCycleStartedOn(db, GARMIN_USER, "2026-07-01");
+    });
+
+    await repairWearableCycleDays();
+    expect((await liveCycles(GARMIN_USER)).map((c) => c.startDate)).toEqual([
+      "2026-07-29",
+      "2026-08-26",
+    ]);
+  });
+
+  it("leaves an account with cycle tracking off alone", async () => {
+    const prisma = getPrismaClient();
+    await seedUser(OFF_USER);
+    await prisma.cycleProfile.create({
+      data: { userId: OFF_USER, cycleTrackingEnabled: false },
+    });
+    await orphanDays(OFF_USER, "GARMIN", ["2026-07-01", "2026-07-02"]);
+
+    const result = await repairWearableCycleDays();
+    expect(result.accounts).toBe(2);
+    expect(await liveCycles(OFF_USER)).toEqual([]);
+    expect(
+      await prisma.cycleDayLog.count({
+        where: { userId: OFF_USER, cycleId: null },
+      }),
+    ).toBe(2);
+
+    // Its rows are no work while the module is off: the boot stays quiet.
+    sends.length = 0;
+    expect(await enqueueBootTimeWearableCycleRepair()).toEqual({
+      enqueued: false,
+      error: null,
+    });
   });
 });

@@ -19,6 +19,18 @@
  * pass converges: a second run finds nothing, and a boot with nothing to
  * repair costs one query.
  *
+ * It repairs, and never re-decides what a person took back. A cycle she
+ * deleted (or whose first day she deleted or cleared) stays as a tombstone
+ * with no `absorbedIntoId`; its wearable days are left without a cycle when
+ * nothing lies before them, which looks exactly like the backlog. A day that
+ * lies within the hard minimum cycle length after such a removed start is
+ * therefore never a candidate: inside that span it can only be the period she
+ * removed, and reopening it on the next boot would undo her delete. A start
+ * folded into another one is not a removal and does not count.
+ *
+ * Accounts with the cycle module off are left alone, as the syncs leave them
+ * (`isCycleAvailableForUser`), and their rows do not make a boot enqueue.
+ *
  * Only cycles and the `cycleId` link move. No day-log's own content is
  * touched, a person's own rows included. A Garmin period whose cycle this pass
  * opened and that is over (a later cycle has started) has its last day stamped
@@ -30,6 +42,7 @@ import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { activeAccountSql } from "@/lib/account-deletion/active-account";
 import { ensureCycleForBleedingDay } from "@/lib/cycle/cycle-boundaries";
 import { addDays } from "@/lib/cycle/day-math";
+import { isCycleAvailableForUser } from "@/lib/cycle/gate";
 import { stampSubordinatePeriodEnd } from "@/lib/cycle/subordinate-period-days";
 import { HARD_CYCLE_MIN, PERIOD_MAX } from "@/lib/cycle/types";
 import { prisma as defaultPrisma } from "@/lib/db";
@@ -57,7 +70,8 @@ interface CandidateRow {
  * The SQL half of the rule. `limit` turns it into the boot's existence check.
  * The second arm mirrors `ensureCycleForBleedingDay`: with no cycle on or
  * before the day, it opens one unless a later start lies within the hard
- * minimum cycle length without being the same period.
+ * minimum cycle length without being the same period. The last arm keeps
+ * out every day a removed start still speaks for (see the file comment).
  */
 function candidateQuery(limit: number | null): Prisma.Sql {
   return Prisma.sql`
@@ -82,6 +96,14 @@ function candidateQuery(limit: number | null): Prisma.Sql {
             AND c."start_date" < to_char(d."date"::date + ${HARD_CYCLE_MIN}::int, 'YYYY-MM-DD')
         )
       )
+      AND NOT EXISTS (
+        SELECT 1 FROM "menstrual_cycles" r
+        WHERE r."user_id" = d."user_id"
+          AND r."deleted_at" IS NOT NULL
+          AND r."absorbed_into_id" IS NULL
+          AND r."start_date" <= d."date"
+          AND r."start_date" > to_char(d."date"::date - ${HARD_CYCLE_MIN}::int, 'YYYY-MM-DD')
+      )
       AND ${activeAccountSql('d."user_id"')}
     ORDER BY d."user_id", d."date"
     ${limit === null ? Prisma.empty : Prisma.sql`LIMIT ${limit}`}
@@ -97,7 +119,7 @@ export interface WearableCycleRepairResult {
   attributed: number;
   /** Garmin period ends stamped on an opened cycle. */
   periodEnds: number;
-  /** Accounts touched. */
+  /** Accounts repaired (the cycle module on). */
   accounts: number;
 }
 
@@ -207,9 +229,11 @@ export async function repairWearableCycleDays(
     opened: 0,
     attributed: 0,
     periodEnds: 0,
-    accounts: byUser.size,
+    accounts: 0,
   };
   for (const [userId, list] of byUser) {
+    if (!(await isCycleAvailableForUser(userId))) continue;
+    result.accounts += 1;
     await repairAccount(prisma, userId, list, result);
   }
   return result;
@@ -248,8 +272,23 @@ export async function handleWearableCycleRepair(
 }
 
 /**
+ * Whether any account with candidates has the cycle module on. Candidates
+ * come in account order, so the first account that may be repaired ends it.
+ */
+async function anyRepairableAccount(prisma: PrismaClient): Promise<boolean> {
+  const rows = await prisma.$queryRaw<CandidateRow[]>(candidateQuery(null));
+  const seen = new Set<string>();
+  for (const row of rows) {
+    if (seen.has(row.userId)) continue;
+    seen.add(row.userId);
+    if (await isCycleAvailableForUser(row.userId)) return true;
+  }
+  return false;
+}
+
+/**
  * Boot discovery: one existence query, and the one job only when there is
- * something to repair.
+ * something to repair for an account that tracks its cycle.
  */
 export async function enqueueBootTimeWearableCycleRepair(
   prisma: PrismaClient = defaultPrisma,
@@ -259,6 +298,9 @@ export async function enqueueBootTimeWearableCycleRepair(
   try {
     const any = await prisma.$queryRaw<CandidateRow[]>(candidateQuery(1));
     if (any.length === 0) return { enqueued: false, error: null };
+    if (!(await anyRepairableAccount(prisma))) {
+      return { enqueued: false, error: null };
+    }
     const id = await boss.send(
       WEARABLE_CYCLE_REPAIR_QUEUE,
       {},
