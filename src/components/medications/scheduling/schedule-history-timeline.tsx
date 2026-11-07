@@ -82,6 +82,12 @@ interface ScheduleRevisionsResponse {
   revisions: ScheduleRevisionRow[];
 }
 
+/** The "show earlier eras" toggle, by how many there are. */
+const SHOW_ERAS_KEY = {
+  one: "medications.detail.zeitplan.history.showErasOne",
+  other: "medications.detail.zeitplan.history.showErasOther",
+} as const;
+
 /**
  * Dose-time readout of one era: the union of its entries' times,
  * deduped + sorted ("07:00 / 19:00"). PRN-only eras have no times —
@@ -284,11 +290,9 @@ export function ScheduleHistoryTimeline({
             />
             {expanded
               ? t("medications.detail.zeitplan.history.hideEras")
-              : revisions.length === 1
-                ? t("medications.detail.zeitplan.history.showErasOne")
-                : t("medications.detail.zeitplan.history.showErasOther", {
-                    count: revisions.length,
-                  })}
+              : t(SHOW_ERAS_KEY[revisions.length === 1 ? "one" : "other"], {
+                  count: revisions.length,
+                })}
           </Button>
         )}
         <Button

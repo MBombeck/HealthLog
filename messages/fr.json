@@ -739,10 +739,10 @@
     "emptyDescription": "Saisissez votre première mesure ou humeur. Les tuiles et graphiques apparaissent automatiquement dès qu’il y a des données.",
     "emptyAddMeasurement": "Saisir la première mesure",
     "staleHint": "Dernière valeur il y a {count} j",
-    "staleHintWeeksOne": "Dernière valeur il y a 1 semaine",
+    "staleHintWeeksOne": "Dernière valeur il y a {count} semaine",
     "staleHintWeeksOther": "Dernière valeur il y a {count} semaines",
     "staleHintWeeksFew": "Dernière valeur il y a {count} semaines",
-    "staleHintMonthsOne": "Dernière valeur il y a 1 mois",
+    "staleHintMonthsOne": "Dernière valeur il y a {count} mois",
     "staleHintMonthsOther": "Dernière valeur il y a {count} mois",
     "staleHintMonthsFew": "Dernière valeur il y a {count} mois",
     "recentWorkouts": {
@@ -2287,7 +2287,7 @@
           "currentSince": "Plan actuel depuis {date}",
           "noTimes": "Aucune heure fixe",
           "manualChip": "Ajoutée manuellement",
-          "showErasOne": "Afficher 1 période antérieure",
+          "showErasOne": "Afficher {count} période antérieure",
           "showErasOther": "Afficher {count} périodes antérieures",
           "hideEras": "Masquer les périodes antérieures",
           "addEra": "Ajouter une période antérieure",
@@ -2359,7 +2359,7 @@
     "tableColActions": "Actions",
     "tableSortBy": "Trier par {column}",
     "tableComplianceDays": "{days} j",
-    "tableStockDoseOne": "1 dose",
+    "tableStockDoseOne": "{count} dose",
     "tableStockDoses": "{count} doses",
     "tableStockRunway": "≈ {days} jours restants",
     "cardLowStockRunway": "Réserve : ≈ {days} jours",
@@ -3238,7 +3238,7 @@
       "settingsClustersLabel": "Données vues par le Coach",
       "settingsClustersHint": "Choisissez les groupes de données que le Coach peut lire. Plus de données, des réponses plus riches et un prompt plus grand.",
       "settingsClusterNoData": "Pas encore de données",
-      "sourcesMemberCountOne": "1 mesure",
+      "sourcesMemberCountOne": "{count} mesure",
       "sourcesMemberCountFew": "{count} mesures",
       "sourcesMemberCountOther": "{count} mesures",
       "lookback": {
@@ -3338,7 +3338,7 @@
         "indexing": "Indexation…",
         "indexingHint": "Un document est encore en cours d'indexation ; vous pourrez envoyer une fois prêt.",
         "fencedHint": "Cette conversation s'exécute sans accès à vos données de santé : le coach lit uniquement les documents joints.",
-        "documentsAttachedOne": "1 document joint",
+        "documentsAttachedOne": "{count} document joint",
         "documentsAttachedOther": "{count} documents joints",
         "railBadge": "Chat de document cloisonné",
         "uploadError": "Échec du téléversement. Veuillez réessayer.",
@@ -3942,9 +3942,9 @@
         "learningBody": "Pour l’instant, cela fait {count} sur {days}. Avec un peu plus d’historique, le tableau se précise : continuez à enregistrer ou laissez un appareil connecté compléter.",
         "learningBodyEmpty": "Dès que quelques mesures arrivent (saisies par vous ou synchronisées depuis un appareil), votre temps dans la cible, votre moyenne et votre variabilité prennent forme ici.",
         "readingsCount": "{count} mesures",
-        "readingsCountOne": "1 mesure",
+        "readingsCountOne": "{count} mesure",
         "daysCount": "{days} jours",
-        "daysCountOne": "1 jour",
+        "daysCountOne": "{count} jour",
         "tir": {
           "title": "Temps dans la cible",
           "caption": "Part des mesures dans chaque plage ({low}–{high} {unit} est la cible).",
@@ -3996,7 +3996,7 @@
             "bedtime": "Au coucher",
             "unspecified": "Non précisée",
             "readingsShort": "{count} mesures",
-            "readingsShortOne": "1 mesure"
+            "readingsShortOne": "{count} mesure"
           }
         }
       }
@@ -4935,7 +4935,7 @@
       },
       "crossLink": {
         "title": "Enregistrements ECG",
-        "recordingsOne": "1 enregistrement disponible.",
+        "recordingsOne": "{count} enregistrement disponible.",
         "recordingsMany": "{count} enregistrements disponibles.",
         "latestResult": "Dernier résultat de l’appareil : {result}.",
         "cta": "Voir les enregistrements"
@@ -4949,7 +4949,7 @@
       "caption": "Moyenné par tranches de 10 minutes.",
       "hourlyNote": "Moyenne horaire affichée pour cette journée. Les jours récents affichent le détail complet par tranches de 10 minutes.",
       "empty": "Pas encore assez de mesures pour cette journée pour en afficher le rythme.",
-      "coverageOne": "Basé sur 1 mesure sur {hours}h.",
+      "coverageOne": "Basé sur {count} mesure sur {hours}h.",
       "coverageMany": "Basé sur {count} mesures sur {hours}h.",
       "baseline": "Repos",
       "today": "Aujourd'hui",
@@ -5442,7 +5442,7 @@
   },
   "trendHints": {
     "title": "Première tendance après 5 mesures",
-    "remainingOne": "Encore 1 mesure avant la tendance.",
+    "remainingOne": "Encore {count} mesure avant la tendance.",
     "remainingMany": "Encore {count} mesures avant la tendance."
   },
   "settings": {
@@ -8015,7 +8015,7 @@
       "colRedeemedBy": "Utilisée par",
       "colActions": "Actions",
       "byCreator": "par {by}",
-      "expiresInDaysOne": "dans 1 jour",
+      "expiresInDaysOne": "dans {count} jour",
       "expiresInDaysOther": "dans {count} jours",
       "statusActive": "Active",
       "statusExpired": "Expirée",
@@ -11035,7 +11035,7 @@
     },
     "insights": {
       "title": "Votre historique de maladies",
-      "countOne": "Vous avez enregistré 1 épisode sur cette période.",
+      "countOne": "Vous avez enregistré {count} épisode sur cette période.",
       "countOther": "Vous avez enregistré {count} épisodes sur cette période.",
       "typicalGap": "Écart de récupération typique : {days} jours entre le mieux-être et la stabilisation de vos valeurs.",
       "typicalGapWithDriver": "Écart de récupération typique : {days} jours. Vous vous sentez généralement mieux avant que {vital} ne se stabilise.",
@@ -11048,7 +11048,7 @@
       "resolved": "Résolus"
     },
     "flares": {
-      "countOne": "1 poussée",
+      "countOne": "{count} poussée",
       "countOther": "{count} poussées"
     },
     "timeline": {
@@ -11180,13 +11180,13 @@
       "toggleShow": "Afficher ce que le Coach a consulté",
       "toggleHide": "Masquer ce que le Coach a consulté",
       "announceDone": "Terminé : {label}",
-      "readingsOne": "1 mesure",
+      "readingsOne": "{count} mesure",
       "readingsFew": "{count} mesures",
       "readingsOther": "{count} mesures",
-      "rowsOne": "1 ligne",
+      "rowsOne": "{count} ligne",
       "rowsFew": "{count} lignes",
       "rowsOther": "{count} lignes",
-      "metricsOne": "1 indicateur",
+      "metricsOne": "{count} indicateur",
       "metricsFew": "{count} indicateurs",
       "metricsOther": "{count} indicateurs",
       "reason": {
@@ -11290,7 +11290,7 @@
       "entry": "{domain}, {window} : {detail}",
       "entryNoWindow": "{domain} : {detail}",
       "reused": "d'une réponse précédente",
-      "readingsOne": "1 mesure",
+      "readingsOne": "{count} mesure",
       "readingsFew": "{count} mesures",
       "readingsOther": "{count} mesures",
       "aggregation": {
@@ -12248,7 +12248,7 @@
     },
     "ai": {
       "readDone": "L’IA a lu votre document.",
-      "readStagedOne": "L’IA a lu votre document. 1 valeur de laboratoire attend votre vérification.",
+      "readStagedOne": "L’IA a lu votre document. {count} valeur de laboratoire attend votre vérification.",
       "readStagedFew": "L’IA a lu votre document. {count} valeurs de laboratoire attendent votre vérification.",
       "readStagedOther": "L’IA a lu votre document. {count} valeurs de laboratoire attendent votre vérification.",
       "read": "Lire avec l’IA",
@@ -12280,12 +12280,12 @@
       "fieldValueText": "Résultat (texte)",
       "fieldUnit": "Unité",
       "fieldDose": "Dose",
-      "unverifiedNoteOne": "1 valeur reste à vérifier et demeure en attente.",
+      "unverifiedNoteOne": "{count} valeur reste à vérifier et demeure en attente.",
       "unverifiedNoteFew": "{count} valeurs restent à vérifier et demeurent en attente.",
       "unverifiedNoteOther": "{count} valeurs restent à vérifier et demeurent en attente.",
       "finish": "Terminer la vérification",
       "confirmFailed": "La vérification n’a pas pu être enregistrée. Réessayez.",
-      "savedToastOne": "1 valeur enregistrée",
+      "savedToastOne": "{count} valeur enregistrée",
       "savedToastFew": "{count} valeurs enregistrées",
       "savedToastOther": "{count} valeurs enregistrées",
       "nothingSavedToast": "Vérification enregistrée. Aucune valeur n’a été ajoutée.",
@@ -13605,7 +13605,7 @@
       "deleteBody": "« {symptom} » et toutes ses entrées seront supprimés. Pour garder l'historique, masquez-le plutôt.",
       "deleteEventTitle": "Supprimer l'entrée ?",
       "deleteEventBody": "Cette entrée sera supprimée.",
-      "hiddenOne": "Masqués (1)",
+      "hiddenOne": "Masqués ({count})",
       "hiddenFew": "Masqués ({count})",
       "hiddenOther": "Masqués ({count})",
       "recent": "30 derniers jours",
@@ -13672,14 +13672,14 @@
     "valuesAllFew": "Les {count} valeurs",
     "valuesAllOther": "Les {count} valeurs",
     "valuesFewer": "Moins de valeurs",
-    "countEntriesOne": "1 entrée",
+    "countEntriesOne": "{count} entrée",
     "countEntriesFew": "{count} entrées",
     "countEntriesOther": "{count} entrées",
-    "meanOfReadingsOne": "Moyenne de 1 mesure",
+    "meanOfReadingsOne": "Moyenne de {count} mesure",
     "meanOfReadingsFew": "Moyenne de {count} mesures",
     "meanOfReadingsOther": "Moyenne de {count} mesures",
     "sinceLastVisit": {
-      "countOne": "1 entrée",
+      "countOne": "{count} entrée",
       "countFew": "{count} entrées",
       "countOther": "{count} entrées",
       "allOne": "Tout afficher",
@@ -13868,7 +13868,7 @@
       },
       "noValue": "aucune valeur",
       "bloodPressure": "Tension artérielle",
-      "readingsOne": "1 mesure",
+      "readingsOne": "{count} mesure",
       "readingsFew": "moyenne de {count} mesures",
       "readingsOther": "moyenne de {count} mesures"
     },
@@ -13901,7 +13901,7 @@
       "empty": "Aucune entrée de {from} à {to}",
       "emptySingle": "Aucune entrée en {period}",
       "ended": "Fin : {label}",
-      "afterDaysOne": "après 1 jour",
+      "afterDaysOne": "après {count} jour",
       "afterDaysFew": "après {count} jours",
       "afterDaysOther": "après {count} jours",
       "notable": {
@@ -13925,7 +13925,7 @@
       "apply": "Appliquer"
     },
     "item": {
-      "labValuesOne": "1 valeur de laboratoire",
+      "labValuesOne": "{count} valeur de laboratoire",
       "labValuesFew": "{count} valeurs de laboratoire",
       "labValuesOther": "{count} valeurs de laboratoire"
     },
@@ -13951,7 +13951,7 @@
       "full": "Jusqu’à {max} symptômes à la fois. Retirez-en un pour en ajouter un autre.",
       "hidden": "masqué",
       "unnamed": "Symptôme",
-      "daysOne": "sur 1 jour",
+      "daysOne": "sur {count} jour",
       "daysFew": "moyenne sur {count} jours",
       "daysOther": "moyenne sur {count} jours"
     }

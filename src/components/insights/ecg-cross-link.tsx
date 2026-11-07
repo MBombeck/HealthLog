@@ -52,7 +52,7 @@ export function EcgCrossLink({ enabled = true, className }: EcgCrossLinkProps) {
 
   const countText =
     count === 1
-      ? t("insights.ecg.crossLink.recordingsOne")
+      ? t("insights.ecg.crossLink.recordingsOne", { count })
       : t("insights.ecg.crossLink.recordingsMany", { count });
   const resultText = resultKey
     ? t("insights.ecg.crossLink.latestResult", { result: t(resultKey) })

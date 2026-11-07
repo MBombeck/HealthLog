@@ -26,7 +26,7 @@ export function TrendHint({ count }: TrendHintProps) {
 
   const description =
     result.remaining === 1
-      ? t("trendHints.remainingOne")
+      ? t("trendHints.remainingOne", { count: result.remaining })
       : t("trendHints.remainingMany", { count: result.remaining });
 
   return (

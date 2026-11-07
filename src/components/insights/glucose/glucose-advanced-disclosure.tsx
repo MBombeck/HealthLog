@@ -123,6 +123,7 @@ export function GlucoseAdvancedDisclosure({
                     {summary.count === 1
                       ? t(
                           "insights.bloodGlucose.clinical.advanced.byContext.readingsShortOne",
+                          { count: summary.count },
                         )
                       : t(
                           "insights.bloodGlucose.clinical.advanced.byContext.readingsShort",

@@ -739,10 +739,10 @@
     "emptyDescription": "Registre sua primeira medição ou entrada de humor. Blocos e gráficos aparecem automaticamente conforme os dados chegam.",
     "emptyAddMeasurement": "Adicionar sua primeira medição",
     "staleHint": "Última leitura há {count} d",
-    "staleHintWeeksOne": "Última leitura há 1 semana",
+    "staleHintWeeksOne": "Última leitura há {count} semana",
     "staleHintWeeksOther": "Última leitura há {count} semanas",
     "staleHintWeeksFew": "Última leitura há {count} semanas",
-    "staleHintMonthsOne": "Última leitura há 1 mês",
+    "staleHintMonthsOne": "Última leitura há {count} mês",
     "staleHintMonthsOther": "Última leitura há {count} meses",
     "staleHintMonthsFew": "Última leitura há {count} meses",
     "recentWorkouts": {
@@ -2287,7 +2287,7 @@
           "currentSince": "Plano atual desde {date}",
           "noTimes": "Sem horários fixos",
           "manualChip": "Adicionado manualmente",
-          "showErasOne": "Mostrar 1 era anterior",
+          "showErasOne": "Mostrar {count} era anterior",
           "showErasOther": "Mostrar {count} eras anteriores",
           "hideEras": "Ocultar eras anteriores",
           "addEra": "Adicionar era anterior",
@@ -2359,7 +2359,7 @@
     "tableColActions": "Ações",
     "tableSortBy": "Ordenar por {column}",
     "tableComplianceDays": "{days} d",
-    "tableStockDoseOne": "1 dose",
+    "tableStockDoseOne": "{count} dose",
     "tableStockDoses": "{count} doses",
     "tableStockRunway": "≈ {days} dias restantes",
     "cardLowStockRunway": "Estoque: ≈ {days} dias",
@@ -3238,7 +3238,7 @@
       "settingsClustersLabel": "Dados que o Coach vê",
       "settingsClustersHint": "Escolha quais grupos dos seus dados o Coach pode ler. Mais dados significam respostas mais ricas e um prompt maior.",
       "settingsClusterNoData": "Ainda sem dados",
-      "sourcesMemberCountOne": "1 métrica",
+      "sourcesMemberCountOne": "{count} métrica",
       "sourcesMemberCountFew": "{count} métricas",
       "sourcesMemberCountOther": "{count} métricas",
       "lookback": {
@@ -3338,7 +3338,7 @@
         "indexing": "Indexando…",
         "indexingHint": "Um documento ainda está sendo indexado. Você pode enviar quando estiver pronto.",
         "fencedHint": "Esta conversa roda sem acesso aos seus dados de saúde. O coach lê apenas os documentos anexados.",
-        "documentsAttachedOne": "1 documento anexado",
+        "documentsAttachedOne": "{count} documento anexado",
         "documentsAttachedOther": "{count} documentos anexados",
         "railBadge": "Conversa de documento isolada",
         "uploadError": "Falha no envio. Tente novamente.",
@@ -3942,9 +3942,9 @@
         "learningBody": "Até agora são {count} em {days}. Um pouco mais de histórico e um quadro mais completo entra em foco. Continue registrando, ou deixe um dispositivo conectado preencher.",
         "learningBodyEmpty": "Assim que algumas leituras chegarem (registradas por você ou sincronizadas de um dispositivo), seu tempo na faixa, média e variabilidade tomarão forma aqui.",
         "readingsCount": "{count} leituras",
-        "readingsCountOne": "1 leitura",
+        "readingsCountOne": "{count} leitura",
         "daysCount": "{days} dias",
-        "daysCountOne": "1 dia",
+        "daysCountOne": "{count} dia",
         "tir": {
           "title": "Tempo na faixa",
           "caption": "Parcela das leituras em cada faixa ({low}–{high} {unit} é a meta).",
@@ -3996,7 +3996,7 @@
             "bedtime": "Hora de dormir",
             "unspecified": "Sem marcação",
             "readingsShort": "{count} leituras",
-            "readingsShortOne": "1 leitura"
+            "readingsShortOne": "{count} leitura"
           }
         }
       }
@@ -4935,7 +4935,7 @@
       },
       "crossLink": {
         "title": "Registros de ECG",
-        "recordingsOne": "1 registro em arquivo.",
+        "recordingsOne": "{count} registro em arquivo.",
         "recordingsMany": "{count} registros em arquivo.",
         "latestResult": "Resultado mais recente do dispositivo: {result}.",
         "cta": "Ver registros"
@@ -4949,7 +4949,7 @@
       "caption": "Média em intervalos de 10 minutos.",
       "hourlyNote": "Mostrando a média horária deste dia; dias recentes mostram o detalhe completo de 10 minutos.",
       "empty": "Não há leituras de frequência cardíaca suficientes para este dia mostrar sua forma ainda.",
-      "coverageOne": "Com base em 1 leitura ao longo de {hours}h.",
+      "coverageOne": "Com base em {count} leitura ao longo de {hours}h.",
       "coverageMany": "Com base em {count} leituras ao longo de {hours}h.",
       "baseline": "Em repouso",
       "today": "Hoje",
@@ -5442,7 +5442,7 @@
   },
   "trendHints": {
     "title": "Primeira tendência após 5 leituras",
-    "remainingOne": "Falta 1 leitura.",
+    "remainingOne": "Falta {count} leitura.",
     "remainingMany": "Faltam {count} leituras."
   },
   "settings": {
@@ -8015,7 +8015,7 @@
       "colRedeemedBy": "Resgatado por",
       "colActions": "Ações",
       "byCreator": "por {by}",
-      "expiresInDaysOne": "em 1 dia",
+      "expiresInDaysOne": "em {count} dia",
       "expiresInDaysOther": "em {count} dias",
       "statusActive": "Ativo",
       "statusExpired": "Expirado",
@@ -11035,7 +11035,7 @@
     },
     "insights": {
       "title": "Seu histórico de doenças",
-      "countOne": "Você registrou 1 episódio neste período.",
+      "countOne": "Você registrou {count} episódio neste período.",
       "countOther": "Você registrou {count} episódios neste período.",
       "typicalGap": "Lacuna típica de recuperação: {days} dias entre se sentir melhor e seus números se estabilizarem.",
       "typicalGapWithDriver": "Lacuna típica de recuperação: {days} dias; você tende a se sentir melhor antes de seu {vital} se estabilizar.",
@@ -11048,7 +11048,7 @@
       "resolved": "Resolvidos"
     },
     "flares": {
-      "countOne": "1 surto",
+      "countOne": "{count} surto",
       "countOther": "{count} surtos"
     },
     "timeline": {
@@ -11180,13 +11180,13 @@
       "toggleShow": "Mostrar o que o Coach examinou",
       "toggleHide": "Ocultar o que o Coach examinou",
       "announceDone": "Concluído: {label}",
-      "readingsOne": "1 leitura",
+      "readingsOne": "{count} leitura",
       "readingsFew": "{count} leituras",
       "readingsOther": "{count} leituras",
-      "rowsOne": "1 linha",
+      "rowsOne": "{count} linha",
       "rowsFew": "{count} linhas",
       "rowsOther": "{count} linhas",
-      "metricsOne": "1 métrica",
+      "metricsOne": "{count} métrica",
       "metricsFew": "{count} métricas",
       "metricsOther": "{count} métricas",
       "reason": {
@@ -11290,7 +11290,7 @@
       "entry": "{domain}, {window}: {detail}",
       "entryNoWindow": "{domain}: {detail}",
       "reused": "de uma resposta anterior",
-      "readingsOne": "1 leitura",
+      "readingsOne": "{count} leitura",
       "readingsFew": "{count} leituras",
       "readingsOther": "{count} leituras",
       "aggregation": {
@@ -12248,7 +12248,7 @@
     },
     "ai": {
       "readDone": "A IA leu seu documento.",
-      "readStagedOne": "A IA leu seu documento. 1 valor laboratorial está pronto para revisão.",
+      "readStagedOne": "A IA leu seu documento. {count} valor laboratorial está pronto para revisão.",
       "readStagedFew": "A IA leu seu documento. {count} valores laboratoriais estão prontos para revisão.",
       "readStagedOther": "A IA leu seu documento. {count} valores laboratoriais estão prontos para revisão.",
       "read": "Ler com IA",
@@ -12280,12 +12280,12 @@
       "fieldValueText": "Resultado (texto)",
       "fieldUnit": "Unidade",
       "fieldDose": "Dose",
-      "unverifiedNoteOne": "1 valor ainda precisa de verificação e permanece pendente.",
+      "unverifiedNoteOne": "{count} valor ainda precisa de verificação e permanece pendente.",
       "unverifiedNoteFew": "{count} valores ainda precisam de verificação e permanecem pendentes.",
       "unverifiedNoteOther": "{count} valores ainda precisam de verificação e permanecem pendentes.",
       "finish": "Concluir revisão",
       "confirmFailed": "A revisão não pôde ser salva. Tente novamente.",
-      "savedToastOne": "1 valor salvo",
+      "savedToastOne": "{count} valor salvo",
       "savedToastFew": "{count} valores salvos",
       "savedToastOther": "{count} valores salvos",
       "nothingSavedToast": "Revisão salva. Nenhum valor foi adicionado.",
@@ -13605,7 +13605,7 @@
       "deleteBody": "“{symptom}” e todas as suas entradas serão excluídos. Para manter o histórico, oculte-o em vez disso.",
       "deleteEventTitle": "Excluir entrada?",
       "deleteEventBody": "Esta entrada será excluída.",
-      "hiddenOne": "Ocultos (1)",
+      "hiddenOne": "Ocultos ({count})",
       "hiddenFew": "Ocultos ({count})",
       "hiddenOther": "Ocultos ({count})",
       "recent": "Últimos 30 dias",
@@ -13672,14 +13672,14 @@
     "valuesAllFew": "Todos os {count} valores",
     "valuesAllOther": "Todos os {count} valores",
     "valuesFewer": "Menos valores",
-    "countEntriesOne": "1 entrada",
+    "countEntriesOne": "{count} entrada",
     "countEntriesFew": "{count} entradas",
     "countEntriesOther": "{count} entradas",
-    "meanOfReadingsOne": "Média de 1 leitura",
+    "meanOfReadingsOne": "Média de {count} leitura",
     "meanOfReadingsFew": "Média de {count} leituras",
     "meanOfReadingsOther": "Média de {count} leituras",
     "sinceLastVisit": {
-      "countOne": "1 entrada",
+      "countOne": "{count} entrada",
       "countFew": "{count} entradas",
       "countOther": "{count} entradas",
       "allOne": "Mostrar tudo",
@@ -13868,7 +13868,7 @@
       },
       "noValue": "sem valor",
       "bloodPressure": "Pressão arterial",
-      "readingsOne": "1 leitura",
+      "readingsOne": "{count} leitura",
       "readingsFew": "média de {count} leituras",
       "readingsOther": "média de {count} leituras"
     },
@@ -13901,7 +13901,7 @@
       "empty": "Nenhuma entrada de {from} a {to}",
       "emptySingle": "Nenhuma entrada em {period}",
       "ended": "{label} terminou",
-      "afterDaysOne": "após 1 dia",
+      "afterDaysOne": "após {count} dia",
       "afterDaysFew": "após {count} dias",
       "afterDaysOther": "após {count} dias",
       "notable": {
@@ -13925,7 +13925,7 @@
       "apply": "Aplicar"
     },
     "item": {
-      "labValuesOne": "1 valor laboratorial",
+      "labValuesOne": "{count} valor laboratorial",
       "labValuesFew": "{count} valores laboratoriais",
       "labValuesOther": "{count} valores laboratoriais"
     },
@@ -13951,7 +13951,7 @@
       "full": "Até {max} sintomas ao mesmo tempo. Remova um para adicionar outro.",
       "hidden": "oculto",
       "unnamed": "Sintoma",
-      "daysOne": "em 1 dia",
+      "daysOne": "em {count} dia",
       "daysFew": "média de {count} dias",
       "daysOther": "média de {count} dias"
     }

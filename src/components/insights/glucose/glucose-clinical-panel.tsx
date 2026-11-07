@@ -90,14 +90,14 @@ export function GlucoseClinicalPanel() {
     const hasAny = clinical.readingCount > 0;
     const readingsLabel =
       clinical.readingCount === 1
-        ? t("insights.bloodGlucose.clinical.readingsCountOne")
+        ? t("insights.bloodGlucose.clinical.readingsCountOne", { count: 1 })
         : t("insights.bloodGlucose.clinical.readingsCount", {
             count: clinical.readingCount,
           });
     const spanDays = Math.max(1, Math.round(clinical.actualSpanDays));
     const daysLabel =
       spanDays === 1
-        ? t("insights.bloodGlucose.clinical.daysCountOne")
+        ? t("insights.bloodGlucose.clinical.daysCountOne", { count: spanDays })
         : t("insights.bloodGlucose.clinical.daysCount", { days: spanDays });
 
     return (

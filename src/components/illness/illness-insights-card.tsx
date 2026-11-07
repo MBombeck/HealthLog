@@ -74,7 +74,9 @@ export function IllnessInsightsCard({
           <div className="space-y-4 text-sm">
             <p className="text-foreground">
               {data!.episodeCount === 1
-                ? t("illness.insights.countOne")
+                ? t("illness.insights.countOne", {
+                    count: data!.episodeCount,
+                  })
                 : t("illness.insights.countOther", {
                     count: data!.episodeCount,
                   })}
