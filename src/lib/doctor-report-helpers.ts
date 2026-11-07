@@ -19,6 +19,7 @@ import { pickCanonicalSourceRows } from "@/lib/analytics/source-priority";
 import { decryptFromBytes } from "@/lib/ai/coach/bytes-codec";
 import { metricKeyForType } from "@/lib/measurements/cumulative-day-sum";
 import { userDayKey } from "@/lib/tz/resolver";
+import { wallClockInTz, zonedWallClockToUtc } from "@/lib/tz/wall-clock";
 import { resolveCanonicalRecovery } from "@/lib/insights/derived/recovery-resolve";
 import {
   buildComplianceMedicationContext,
@@ -321,6 +322,28 @@ function parseIsoDate(value: unknown): Date | null {
 }
 
 /**
+ * The instant 1 ms after the same wall clock `days` calendar days before
+ * `end`, in `tz`. Offsets are whole minutes, so the milliseconds within the
+ * second carry over unchanged.
+ */
+function localDaysBefore(end: Date, days: number, tz: string): Date {
+  const at = wallClockInTz(end, tz);
+  const day = new Date(Date.UTC(at.year, at.month - 1, at.day - days));
+  const start = zonedWallClockToUtc(
+    {
+      year: day.getUTCFullYear(),
+      month: day.getUTCMonth() + 1,
+      day: day.getUTCDate(),
+      hour: at.hour,
+      minute: at.minute,
+      second: at.second,
+    },
+    tz,
+  );
+  return new Date(start.getTime() + end.getUTCMilliseconds() + 1);
+}
+
+/**
  * Turn an arbitrary `{ startDate?, endDate?, days? }` payload into a validated
  * inclusive reporting window.
  *
@@ -330,6 +353,10 @@ function parseIsoDate(value: unknown): Date | null {
  *     keeps its end and is clamped to the last 730 days before it; it used
  *     to fall through to the 90-day default, a much shorter report than the
  *     one asked for. The cover line prints the window the report covers.
+ *     The 730 days are local days in `tz`: the start is the end's wall clock
+ *     730 calendar days back, plus 1 ms, so an end at 23:59:59.999 clamps to
+ *     midnight however many clock changes lie between. Counting 730 × 24 h
+ *     instead lands an hour off midnight across an odd number of them.
  *  2. Neither/invalid range, but a valid `days` integer (1..365) is provided
  *     → fall back to "last `days` days ending now".
  *  3. Otherwise fall back to "last 90 days ending now" (the v1.4.14 default).
@@ -341,6 +368,8 @@ function parseIsoDate(value: unknown): Date | null {
 export function normaliseDateRange(
   value: unknown,
   now: Date = new Date(),
+  /** The record's timezone; the clamp counts local days in it. */
+  tz = "UTC",
 ): DoctorReportRange {
   const body =
     typeof value === "object" && value !== null
@@ -358,7 +387,7 @@ export function normaliseDateRange(
       const spanDays = Math.ceil((spanMs - DST_SLACK_MS) / DAY_MS) || 1;
       if (spanDays > REPORT_MAX_RANGE_DAYS) {
         return {
-          start: new Date(endMs - REPORT_MAX_RANGE_DAYS * DAY_MS + 1),
+          start: localDaysBefore(endCandidate, REPORT_MAX_RANGE_DAYS, tz),
           end: endCandidate,
           days: REPORT_MAX_RANGE_DAYS,
         };

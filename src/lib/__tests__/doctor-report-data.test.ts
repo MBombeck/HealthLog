@@ -140,6 +140,24 @@ describe("normaliseDateRange", () => {
     expect(range.start.toISOString()).toBe("2024-01-02T00:00:00.001Z");
   });
 
+  it("clamps to whole local days across an odd number of clock changes", () => {
+    // The last day is 2026-03-29 in Berlin, the day summer time starts; the
+    // 730th day before it, 2024-03-30, is still in winter time. Five clock
+    // changes lie between, so 730 times 24 hours lands an hour off midnight.
+    const range = normaliseDateRange(
+      {
+        startDate: "2023-01-01T00:00:00.000Z",
+        endDate: "2026-03-29T21:59:59.999Z",
+      },
+      NOW,
+      "Europe/Berlin",
+    );
+    expect(range.days).toBe(730);
+    // Midnight on 2024-03-30, Berlin winter time.
+    expect(range.start.toISOString()).toBe("2024-03-29T23:00:00.000Z");
+    expect(range.end.toISOString()).toBe("2026-03-29T21:59:59.999Z");
+  });
+
   it("counts 730 local days as 730 across a net autumn clock change", () => {
     // 2024-10-26 .. 2026-10-25 in Berlin, cut the way the panel cuts it:
     // the first day starts in summer time, the last ends in winter time, so

@@ -146,7 +146,8 @@ export const POST = apiHandler(async (request: NextRequest) => {
     });
   }
 
-  const range = normaliseDateRange(input.range ?? undefined);
+  const userTz = await resolveUserTimezone(user.id);
+  const range = normaliseDateRange(input.range, undefined, userTz);
   const practiceName = sanitisePracticeName(input.practiceName);
   const includeCharts = input.includeCharts ?? true;
 
@@ -168,38 +169,36 @@ export const POST = apiHandler(async (request: NextRequest) => {
     input.germanAtc ??
     (GERMAN_ATC_DEFAULT_LOCALES as readonly string[]).includes(locale);
 
-  const [data, userTz, userRow, allergyRows, familyHistoryRows] =
-    await Promise.all([
-      collectDoctorReportData(user.id, range, selection, { practiceName }),
-      resolveUserTimezone(user.id),
-      prisma.user.findUnique({
-        where: { id: user.id },
-        select: {
-          insuranceNumberEncrypted: true,
-          timeFormat: true,
-          // Issue #922 — the exported PDF is spelled the way the person
-          // who exported it reads dates, not the locale default.
-          dateFormat: true,
-        },
-      }),
-      // Structured records are always-available reference data (not
-      // time-windowed), so they ride alongside the report rather than through
-      // the aggregator. Owner-scoped, live rows only — and each read is gated
-      // on its own leaf, so a deselected section is not loaded, not merely
-      // dropped later.
-      selection.has("ALLERGIES")
-        ? prisma.allergy.findMany({
-            where: { userId: user.id, deletedAt: null },
-            orderBy: { createdAt: "desc" },
-          })
-        : Promise.resolve([]),
-      selection.has("FAMILY_HISTORY")
-        ? prisma.familyHistoryEntry.findMany({
-            where: { userId: user.id, deletedAt: null },
-            orderBy: { createdAt: "desc" },
-          })
-        : Promise.resolve([]),
-    ]);
+  const [data, userRow, allergyRows, familyHistoryRows] = await Promise.all([
+    collectDoctorReportData(user.id, range, selection, { practiceName }),
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        insuranceNumberEncrypted: true,
+        timeFormat: true,
+        // Issue #922 — the exported PDF is spelled the way the person
+        // who exported it reads dates, not the locale default.
+        dateFormat: true,
+      },
+    }),
+    // Structured records are always-available reference data (not
+    // time-windowed), so they ride alongside the report rather than through
+    // the aggregator. Owner-scoped, live rows only — and each read is gated
+    // on its own leaf, so a deselected section is not loaded, not merely
+    // dropped later.
+    selection.has("ALLERGIES")
+      ? prisma.allergy.findMany({
+          where: { userId: user.id, deletedAt: null },
+          orderBy: { createdAt: "desc" },
+        })
+      : Promise.resolve([]),
+    selection.has("FAMILY_HISTORY")
+      ? prisma.familyHistoryEntry.findMany({
+          where: { userId: user.id, deletedAt: null },
+          orderBy: { createdAt: "desc" },
+        })
+      : Promise.resolve([]),
+  ]);
 
   const fhirRecords = {
     allergies: allergyRows.map(toAllergyDTO),
