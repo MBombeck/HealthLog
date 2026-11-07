@@ -510,7 +510,7 @@ describe("fetching the feed", () => {
 
   it("throttles a well-formed unknown token through the anonymous limit", async () => {
     let throttled = false;
-    for (let i = 0; i < 130 && !throttled; i++) {
+    for (let i = 0; i < 610 && !throttled; i++) {
       const res = await fetchFeed(`hlf_${"1".repeat(48)}.ics`);
       if (res.status === 429) throttled = true;
       else expect(res.status).toBe(404);

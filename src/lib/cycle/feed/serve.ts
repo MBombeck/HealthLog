@@ -56,12 +56,18 @@ import { parseFeedTokenSegment } from "./token";
 
 /**
  * Per source address, across every feed. Generous because the big calendar
- * providers poll from a pool of addresses that churns; the per-token bucket
- * below is the one that bounds a single link.
+ * providers poll from a pool of addresses that churns, and a household behind
+ * one address may hold several links on several devices; the per-token bucket
+ * below is the one that bounds a single link. The token is a random secret
+ * checked by its HMAC, so guessing links is not what these limits stop.
  */
-const SURFACE_LIMIT_PER_HOUR = 120;
-/** Per link. A provider polling every few minutes still fits. */
-const TOKEN_LIMIT_PER_HOUR = 30;
+const SURFACE_LIMIT_PER_HOUR = 600;
+/**
+ * Per link. One link subscribed on a phone, a tablet and a computer, each
+ * refreshing every five minutes, is 36 fetches an hour; 120 leaves room for
+ * a fourth device and for retries.
+ */
+const TOKEN_LIMIT_PER_HOUR = 120;
 const HOUR_MS = 60 * 60 * 1000;
 
 /** The longest User-Agent kept for the status read. */

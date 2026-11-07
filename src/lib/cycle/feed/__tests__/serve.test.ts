@@ -145,7 +145,7 @@ describe("serveCycleFeed", () => {
     expect(limits.surface).toHaveBeenCalledWith(
       expect.anything(),
       "cycle-feed",
-      120,
+      600,
       3_600_000,
     );
   });
@@ -156,7 +156,7 @@ describe("serveCycleFeed", () => {
     expect(res.status).toBe(429);
     expect(limits.token).toHaveBeenCalledWith(
       `cycle-feed:${hashToken(TOKEN)}`,
-      30,
+      120,
       3_600_000,
     );
     expect(built.build).not.toHaveBeenCalled();
