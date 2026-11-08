@@ -216,9 +216,12 @@ describe("turning the subscription on", () => {
     const owner = await makeUser("owner");
     await mint(owner.id);
     // Both read the same live feed and revoke it; the second successor then
-    // meets the one-live-feed index. Four rounds stay inside the mint bucket.
+    // meets the one-live-feed index. A fast runner can still finish one
+    // rotation before the other starts, so rounds go on until a pair has
+    // really collided, with the mint bucket emptied between them.
     const statuses: number[] = [];
-    for (let round = 0; round < 4; round++) {
+    for (let round = 0; round < 25 && !statuses.includes(409); round++) {
+      await db().rateLimit.deleteMany();
       const pair = await Promise.all([rotate(), rotate()]);
       for (const res of pair) {
         statuses.push(res.status);
