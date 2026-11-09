@@ -4,6 +4,8 @@
  *
  * One transaction: the live feed is revoked and its successor minted with the
  * same options, so there is never a moment with two live links or with none.
+ * The forecast style is copied too: a feed minted before that option keeps
+ * BAND rather than taking a new feed's default.
  * Calendars holding the old link stop updating on their next poll. The new
  * URL is returned exactly once. Two rotations racing both revoke the same
  * feed, and the second successor then meets the one-live-feed index: that
@@ -78,6 +80,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
           historyCycles: true,
           includeFertile: true,
           titleMode: true,
+          forecastStyle: true,
         },
       });
       if (!live) return null;
@@ -95,6 +98,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
           historyCycles: live.historyCycles,
           includeFertile: live.includeFertile,
           titleMode: live.titleMode,
+          forecastStyle: live.forecastStyle,
         },
         select: FEED_SUMMARY_SELECT,
       });

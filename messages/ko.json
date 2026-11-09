@@ -10056,6 +10056,17 @@
         "DISCREET": "드러나지 않게 (●)",
         "DESCRIPTIVE": "내용 표시"
       },
+      "forecasts": "예측 표시 방식",
+      "forecastStyle": {
+        "EXACT": "예상일만",
+        "MARGIN": "예상일과 여유 기간",
+        "BAND": "하나의 기간"
+      },
+      "forecastStyleHint": {
+        "EXACT": "예상되는 날만 표시합니다.",
+        "MARGIN": "예상일과 함께, 더 일찍 또는 늦게 시작할 수 있는 날을 별도 일정으로 표시합니다.",
+        "BAND": "생리가 있을 수 있는 모든 날을 하나의 일정으로 표시합니다."
+      },
       "fertile": "가임기",
       "fertileDescription": "다음 주기의 예상 가임기를 추가해요. 추정일 뿐 피임 방법이 아니에요.",
       "rotate": "링크 다시 발급",
@@ -10075,6 +10086,7 @@
         "periodEstimate": "생리 (예상)",
         "periodLogged": "생리 (기록)",
         "fertileEstimate": "가임기 (예상)",
+        "periodPossible": "생리 가능",
         "likelyStart": "가장 가능성 높은 시작일 {date}, {band}",
         "bandOne": "±{count}일",
         "bandFew": "±{count}일",

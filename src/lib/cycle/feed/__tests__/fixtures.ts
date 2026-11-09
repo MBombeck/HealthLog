@@ -48,6 +48,7 @@ export const FEED = {
   historyCycles: 0,
   includeFertile: false,
   titleMode: "DISCREET" as const,
+  forecastStyle: "BAND" as const,
 };
 
 export const SUBJECT = {

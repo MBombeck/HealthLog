@@ -59,7 +59,10 @@ import {
   destroyedDetails,
   overwriteDetails,
 } from "@/lib/sharing/audit-details";
-import { cycleFeedOptionsPatchSchema } from "@/lib/validations/cycle-feed";
+import {
+  NEW_FEED_FORECAST_STYLE,
+  cycleFeedOptionsPatchSchema,
+} from "@/lib/validations/cycle-feed";
 
 export const GET = apiHandler(async () => {
   const auth = await requireGuardianAuth();
@@ -110,6 +113,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       data: {
         userId: user.id,
         createdById: actor.id,
+        forecastStyle: NEW_FEED_FORECAST_STYLE,
         tokenHash: minted.hash,
         tokenPrefix: minted.prefix,
       },
@@ -180,6 +184,9 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
       ? { includeFertile: input.includeFertile }
       : {}),
     ...(input.titleMode !== undefined ? { titleMode: input.titleMode } : {}),
+    ...(input.forecastStyle !== undefined
+      ? { forecastStyle: input.forecastStyle }
+      : {}),
   };
   const updated = await prisma.cycleCalendarFeed.update({
     where: { id: live.id },
@@ -197,12 +204,14 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
           historyCycles: live.historyCycles,
           includeFertile: live.includeFertile,
           titleMode: live.titleMode,
+          forecastStyle: live.forecastStyle,
         },
         after: {
           horizonCycles: updated.horizonCycles,
           historyCycles: updated.historyCycles,
           includeFertile: updated.includeFertile,
           titleMode: updated.titleMode,
+          forecastStyle: updated.forecastStyle,
         },
       }),
     },

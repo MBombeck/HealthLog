@@ -10056,6 +10056,17 @@
         "DISCREET": "Diskret (●)",
         "DESCRIPTIVE": "Beschreibend"
       },
+      "forecasts": "Darstellung der Schätzung",
+      "forecastStyle": {
+        "EXACT": "Nur erwartete Tage",
+        "MARGIN": "Erwartete Tage mit Spielraum",
+        "BAND": "Ein Zeitraum"
+      },
+      "forecastStyleHint": {
+        "EXACT": "Nur die erwarteten Tage.",
+        "MARGIN": "Die erwarteten Tage, dazu als eigene Termine die Tage davor und danach, falls die Periode früher oder später beginnt.",
+        "BAND": "Ein Termin über alle Tage, auf die die Periode fallen kann."
+      },
       "fertile": "Fruchtbares Fenster",
       "fertileDescription": "Fügt das geschätzte fruchtbare Fenster des nächsten Zyklus hinzu. Eine Schätzung, keine Verhütungsmethode.",
       "rotate": "Link erneuern",
@@ -10075,6 +10086,7 @@
         "periodEstimate": "Periode (Schätzung)",
         "periodLogged": "Periode (erfasst)",
         "fertileEstimate": "Fruchtbares Fenster (Schätzung)",
+        "periodPossible": "Periode möglich",
         "likelyStart": "Wahrscheinlicher Beginn {date}, {band}",
         "bandOne": "±{count} Tag",
         "bandFew": "±{count} Tage",

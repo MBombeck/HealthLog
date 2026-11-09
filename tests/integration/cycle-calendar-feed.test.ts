@@ -407,6 +407,96 @@ describe("turning the subscription on", () => {
   });
 });
 
+describe("the forecast style", () => {
+  /** The live row's style, read from the table rather than the route. */
+  async function liveStyle(userId: string) {
+    const row = await db().cycleCalendarFeed.findFirstOrThrow({
+      where: { userId, revokedAt: null },
+      select: { forecastStyle: true },
+    });
+    return row.forecastStyle;
+  }
+
+  /** How many VEVENTs the live link serves. */
+  async function eventCount(url: string) {
+    const res = await fetchFeed(segmentOf(url));
+    expect(res.status).toBe(200);
+    return (await res.text()).split("BEGIN:VEVENT").length - 1;
+  }
+
+  it("starts a new subscription on MARGIN and publishes it in the status", async () => {
+    const owner = await makeUser("owner");
+    await seedCycles(owner.id);
+    await signIn(owner.id);
+    const res = await manage("POST");
+    expect(res.status).toBe(201);
+    expect((await res.json()).data.feed.forecastStyle).toBe("MARGIN");
+    expect(await liveStyle(owner.id)).toBe("MARGIN");
+    const status = (await (await manage("GET")).json()).data;
+    expect(status.feed.forecastStyle).toBe("MARGIN");
+  });
+
+  it("keeps a feed minted before the option on BAND, through a rotation", async () => {
+    const owner = await makeUser("owner");
+    // A row written without the column, as every feed minted before it was.
+    await db().cycleCalendarFeed.create({
+      data: {
+        userId: owner.id,
+        createdById: owner.id,
+        tokenHash: "pre-option",
+        tokenPrefix: "hlf_0000",
+      },
+    });
+    expect(await liveStyle(owner.id)).toBe("BAND");
+
+    await signIn(owner.id);
+    const res = await rotate();
+    expect(res.status).toBe(201);
+    expect((await res.json()).data.feed.forecastStyle).toBe("BAND");
+    expect(await liveStyle(owner.id)).toBe("BAND");
+  });
+
+  it("changes on PATCH, is audited, survives a rotation, and changes the body", async () => {
+    const owner = await makeUser("owner");
+    await seedCycles(owner.id);
+    const minted = await mint(owner.id);
+    const marginEvents = await eventCount(minted.url);
+
+    await signIn(owner.id);
+    const res = await manage("PATCH", { forecastStyle: "EXACT" });
+    expect(res.status).toBe(200);
+    expect((await res.json()).data.feed.forecastStyle).toBe("EXACT");
+    expect(await liveStyle(owner.id)).toBe("EXACT");
+    // The calculated period alone: fewer events than with its margins, and
+    // one per forecast cycle.
+    const exactEvents = await eventCount(minted.url);
+    expect(exactEvents).toBeGreaterThan(0);
+    expect(marginEvents).toBeGreaterThan(exactEvents);
+
+    const audit = await db().auditLog.findFirstOrThrow({
+      where: { action: "cycle.feed.update", userId: owner.id },
+    });
+    // The audit names the changed field and the value it replaced.
+    const details = JSON.parse(audit.details ?? "{}");
+    expect(details.fields).toEqual(["forecastStyle"]);
+    expect(details.previous).toEqual({ forecastStyle: "MARGIN" });
+
+    await signIn(owner.id);
+    const rotated = await rotate();
+    expect(rotated.status).toBe(201);
+    expect((await rotated.json()).data.feed.forecastStyle).toBe("EXACT");
+    expect(await liveStyle(owner.id)).toBe("EXACT");
+  });
+
+  it("refuses a style that does not exist", async () => {
+    const owner = await makeUser("owner");
+    await mint(owner.id);
+    const res = await manage("PATCH", { forecastStyle: "WIDE" });
+    expect(res.status).toBe(422);
+    expect(await liveStyle(owner.id)).toBe("MARGIN");
+  });
+});
+
 describe("fetching the feed", () => {
   it("serves iCalendar with an ETag and answers 304 to it", async () => {
     const owner = await makeUser("owner");

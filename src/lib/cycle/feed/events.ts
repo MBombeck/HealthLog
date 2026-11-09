@@ -11,6 +11,13 @@
  * DISCREET (the default) titles every event with a dot and names the calendar
  * "HealthLog", so a glance at a shared screen or a lock-screen notification
  * says nothing. DESCRIPTIVE names the period, in the record's own language.
+ *
+ * A forecast period is drawn in one of three styles. EXACT is the period as
+ * calculated: the most likely first day for the predicted number of bleeding
+ * days. MARGIN is the same event, plus the days the period may start earlier
+ * or run on later as their own "possible" events, so the calculated days stay
+ * readable as such. BAND is one event over every day the period may fall on,
+ * from the earliest likely start to the last bleeding day of the latest.
  */
 import { addDays, dayDiff } from "@/lib/cycle/day-math";
 import type { ProjectedCycle } from "@/lib/cycle/projection";
@@ -21,9 +28,12 @@ import type { ServerTranslator } from "@/lib/i18n/server-translator";
 import { eventUid, type IcsCalendar, type IcsEvent } from "../ics";
 
 export type FeedTitleMode = "DISCREET" | "DESCRIPTIVE";
+export type FeedForecastStyle = "EXACT" | "MARGIN" | "BAND";
 
 /** The discreet title: one dot, no word. */
 export const DISCREET_SUMMARY = "●";
+/** The discreet title of a MARGIN style's possible days: an open dot. */
+export const DISCREET_MARGIN_SUMMARY = "○";
 /** The discreet calendar name. */
 export const DISCREET_CALENDAR_NAME = "HealthLog";
 
@@ -39,6 +49,7 @@ export interface HistoryPeriod {
 export interface FeedEventInput {
   feedId: string;
   titleMode: FeedTitleMode;
+  forecastStyle: FeedForecastStyle;
   projected: readonly ProjectedCycle[];
   history: readonly HistoryPeriod[];
   /** The next fertile window, already gated; null when not shown. */
@@ -63,26 +74,81 @@ function bandText(days: number, translator: ServerTranslator): string {
   );
 }
 
-function forecastEvent(p: ProjectedCycle, input: FeedEventInput): IcsEvent {
+/** The forecast's description: the likely start and the band, or the band. */
+function forecastDescription(p: ProjectedCycle, input: FeedEventInput): string {
   const { translator } = input;
-  const band = dayDiff(p.bandEnd, p.start);
+  const band = bandText(dayDiff(p.bandEnd, p.start), translator);
+  return input.titleMode === "DESCRIPTIVE"
+    ? translator.t("cycle.feed.ics.likelyStart", {
+        date: shortDate(p.start, translator),
+        band,
+      })
+    : band;
+}
+
+/**
+ * One forecast cycle's events. DTEND is exclusive throughout, so the period
+ * itself ends the day after its last bleeding day.
+ */
+function forecastEvents(p: ProjectedCycle, input: FeedEventInput): IcsEvent[] {
+  const { translator } = input;
   const descriptive = input.titleMode === "DESCRIPTIVE";
-  return {
-    uid: eventUid(input.feedId, `pred:${p.k}`),
-    // The whole window the period may fall in: earliest likely start through
-    // the last bleeding day of the latest likely start. DTEND is exclusive.
-    start: p.bandStart,
-    endExclusive: addDays(p.bandEnd, p.periodLength),
-    summary: descriptive
-      ? translator.t("cycle.feed.ics.periodEstimate")
-      : DISCREET_SUMMARY,
-    description: descriptive
-      ? translator.t("cycle.feed.ics.likelyStart", {
-          date: shortDate(p.start, translator),
-          band: bandText(band, translator),
-        })
-      : bandText(band, translator),
-  };
+  const description = forecastDescription(p, input);
+  const periodSummary = descriptive
+    ? translator.t("cycle.feed.ics.periodEstimate")
+    : DISCREET_SUMMARY;
+
+  if (input.forecastStyle === "BAND") {
+    return [
+      {
+        uid: eventUid(input.feedId, `pred:${p.k}`),
+        // The whole window the period may fall in: earliest likely start
+        // through the last bleeding day of the latest likely start.
+        start: p.bandStart,
+        endExclusive: addDays(p.bandEnd, p.periodLength),
+        summary: periodSummary,
+        description,
+      },
+    ];
+  }
+
+  const periodEnd = addDays(p.start, p.periodLength);
+  const events: IcsEvent[] = [
+    {
+      uid: eventUid(input.feedId, `pred:${p.k}`),
+      start: p.start,
+      endExclusive: periodEnd,
+      summary: periodSummary,
+      description,
+    },
+  ];
+  if (input.forecastStyle === "EXACT") return events;
+
+  const marginSummary = descriptive
+    ? translator.t("cycle.feed.ics.periodPossible")
+    : DISCREET_MARGIN_SUMMARY;
+  // The days before the likely start it may begin on, and the days after the
+  // likely period it may still run on. A side with no band has no event.
+  if (dayDiff(p.start, p.bandStart) > 0) {
+    events.push({
+      uid: eventUid(input.feedId, `pred:${p.k}:before`),
+      start: p.bandStart,
+      endExclusive: p.start,
+      summary: marginSummary,
+      description,
+    });
+  }
+  const bandEndExclusive = addDays(p.bandEnd, p.periodLength);
+  if (dayDiff(bandEndExclusive, periodEnd) > 0) {
+    events.push({
+      uid: eventUid(input.feedId, `pred:${p.k}:after`),
+      start: periodEnd,
+      endExclusive: bandEndExclusive,
+      summary: marginSummary,
+      description,
+    });
+  }
+  return events;
 }
 
 function historyEvent(h: HistoryPeriod, input: FeedEventInput): IcsEvent {
@@ -116,7 +182,7 @@ function fertileEvent(
 export function buildFeedCalendar(input: FeedEventInput): IcsCalendar {
   const events: IcsEvent[] = [
     ...input.history.map((h) => historyEvent(h, input)),
-    ...input.projected.map((p) => forecastEvent(p, input)),
+    ...input.projected.flatMap((p) => forecastEvents(p, input)),
     ...(input.fertile ? [fertileEvent(input.fertile, input)] : []),
   ].sort((a, b) => dayDiff(a.start, b.start) || a.uid.localeCompare(b.uid));
   return {

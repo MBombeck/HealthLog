@@ -10056,6 +10056,17 @@
         "DISCREET": "Discreto (●)",
         "DESCRIPTIVE": "Descriptivo"
       },
+      "forecasts": "Cómo se ven las previsiones",
+      "forecastStyle": {
+        "EXACT": "Días previstos",
+        "MARGIN": "Días previstos y margen",
+        "BAND": "Un solo intervalo"
+      },
+      "forecastStyleHint": {
+        "EXACT": "Solo los días previstos.",
+        "MARGIN": "Los días previstos, con los días en que puede empezar antes o después como eventos aparte.",
+        "BAND": "Un solo evento que cubre todos los días en que puede caer."
+      },
       "fertile": "Ventana fértil",
       "fertileDescription": "Añade la ventana fértil estimada del próximo ciclo. Una estimación, no un método anticonceptivo.",
       "rotate": "Renovar enlace",
@@ -10075,6 +10086,7 @@
         "periodEstimate": "Periodo (estimación)",
         "periodLogged": "Periodo (registrado)",
         "fertileEstimate": "Ventana fértil (estimación)",
+        "periodPossible": "Periodo posible",
         "likelyStart": "Inicio más probable {date}, {band}",
         "bandOne": "±{count} día",
         "bandFew": "±{count} días",

@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Choose how the calendar subscription draws a forecast.** A logged
+  period of a few days next to a forecast spanning more than a week was
+  hard to read, because the forecast event covered every day the period
+  might fall on. The calendar subscription card now offers three styles
+  under "How forecasts look": just the expected days; the expected days
+  with the days the period may start earlier or run on later as separate
+  "possible" events (an open dot in discreet mode); or the single event
+  covering the whole range, as before. A subscription turned on from now
+  on starts with the expected days and their margin; one that is already
+  on keeps the single range until you change it, and rotating the link
+  keeps whichever style it has. `PATCH /api/cycle/feed-subscription`
+  accepts `forecastStyle` (`EXACT`, `MARGIN` or `BAND`) and the status
+  carries it. Migration `0495_cycle_feed_forecast_style`. (#1350)
+
 ## [1.47.1] — 2026-11-07
 
 ### Added

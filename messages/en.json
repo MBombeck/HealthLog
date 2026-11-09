@@ -10056,6 +10056,17 @@
         "DISCREET": "Discreet (●)",
         "DESCRIPTIVE": "Descriptive"
       },
+      "forecasts": "How forecasts look",
+      "forecastStyle": {
+        "EXACT": "Expected days",
+        "MARGIN": "Expected days with margin",
+        "BAND": "One range"
+      },
+      "forecastStyleHint": {
+        "EXACT": "Just the expected days.",
+        "MARGIN": "Expected days, with the days it may start earlier or later as separate entries.",
+        "BAND": "One entry covering every day it may fall on."
+      },
       "fertile": "Fertile window",
       "fertileDescription": "Adds the estimated fertile window of the next cycle. An estimate, not a contraceptive method.",
       "rotate": "Rotate link",
@@ -10075,6 +10086,7 @@
         "periodEstimate": "Period (estimate)",
         "periodLogged": "Period (logged)",
         "fertileEstimate": "Fertile window (estimate)",
+        "periodPossible": "Period possible",
         "likelyStart": "Most likely start {date}, {band}",
         "bandOne": "±{count} day",
         "bandFew": "±{count} days",

@@ -10056,6 +10056,17 @@
         "DISCREET": "Discreto (●)",
         "DESCRIPTIVE": "Descrittivo"
       },
+      "forecasts": "Aspetto delle previsioni",
+      "forecastStyle": {
+        "EXACT": "Giorni previsti",
+        "MARGIN": "Giorni previsti e margine",
+        "BAND": "Un unico intervallo"
+      },
+      "forecastStyleHint": {
+        "EXACT": "Solo i giorni previsti.",
+        "MARGIN": "I giorni previsti, con i giorni in cui possono iniziare prima o dopo come eventi separati.",
+        "BAND": "Un unico evento che copre tutti i giorni in cui possono cadere."
+      },
       "fertile": "Finestra fertile",
       "fertileDescription": "Aggiunge la finestra fertile stimata del prossimo ciclo. Una stima, non un metodo contraccettivo.",
       "rotate": "Rinnova link",
@@ -10075,6 +10086,7 @@
         "periodEstimate": "Mestruazioni (stima)",
         "periodLogged": "Mestruazioni (registrate)",
         "fertileEstimate": "Finestra fertile (stima)",
+        "periodPossible": "Mestruazioni possibili",
         "likelyStart": "Inizio più probabile {date}, {band}",
         "bandOne": "±{count} giorno",
         "bandFew": "±{count} giorni",

@@ -10056,6 +10056,17 @@
         "DISCREET": "Discreto (●)",
         "DESCRIPTIVE": "Descritivo"
       },
+      "forecasts": "Como as previsões aparecem",
+      "forecastStyle": {
+        "EXACT": "Dias previstos",
+        "MARGIN": "Dias previstos e margem",
+        "BAND": "Um único intervalo"
+      },
+      "forecastStyleHint": {
+        "EXACT": "Só os dias previstos.",
+        "MARGIN": "Os dias previstos, com os dias em que ela pode começar antes ou depois como eventos separados.",
+        "BAND": "Um único evento cobrindo todos os dias em que ela pode cair."
+      },
       "fertile": "Janela fértil",
       "fertileDescription": "Adiciona a janela fértil estimada do próximo ciclo. Uma estimativa, não um método contraceptivo.",
       "rotate": "Renovar link",
@@ -10075,6 +10086,7 @@
         "periodEstimate": "Menstruação (estimativa)",
         "periodLogged": "Menstruação (registrada)",
         "fertileEstimate": "Janela fértil (estimativa)",
+        "periodPossible": "Menstruação possível",
         "likelyStart": "Início mais provável {date}, {band}",
         "bandOne": "±{count} dia",
         "bandFew": "±{count} dias",

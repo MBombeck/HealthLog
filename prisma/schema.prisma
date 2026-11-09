@@ -8343,6 +8343,17 @@ enum CycleCalendarFeedTitleMode {
   @@map("cycle_calendar_feed_title_mode")
 }
 
+/// #1350 — how the feed draws a forecast period. EXACT is the calculated
+/// period alone; MARGIN adds the days it may start earlier or end later as
+/// separate events; BAND is one event over every day it may fall on.
+enum CycleCalendarFeedForecastStyle {
+  EXACT
+  MARGIN
+  BAND
+
+  @@map("cycle_calendar_feed_forecast_style")
+}
+
 /// #1350 — a subscribable calendar feed of one record's cycle forecast.
 ///
 /// The row is a URL credential. Only the HMAC of the raw `hlf_` token is
@@ -8389,12 +8400,15 @@ model CycleCalendarFeed {
 
   /// Forecast cycles ahead (1..6). The feed caps itself further once the
   /// band grows past ±10 days or half a cycle.
-  horizonCycles  Int                        @default(3) @map("horizon_cycles")
+  horizonCycles  Int                            @default(3) @map("horizon_cycles")
   /// Observed cycles included as history (0..12).
-  historyCycles  Int                        @default(0) @map("history_cycles")
+  historyCycles  Int                            @default(0) @map("history_cycles")
   /// The fertile window of the next cycle, for TRYING_TO_CONCEIVE only.
-  includeFertile Boolean                    @default(false) @map("include_fertile")
-  titleMode      CycleCalendarFeedTitleMode @default(DISCREET) @map("title_mode")
+  includeFertile Boolean                        @default(false) @map("include_fertile")
+  titleMode      CycleCalendarFeedTitleMode     @default(DISCREET) @map("title_mode")
+  /// BAND by default so a feed minted before the option keeps its events. A
+  /// new feed is minted with MARGIN by the subscription route.
+  forecastStyle  CycleCalendarFeedForecastStyle @default(BAND) @map("forecast_style")
 
   user      User @relation("CycleCalendarFeedSubject", fields: [userId], references: [id], onDelete: Cascade)
   createdBy User @relation("CycleCalendarFeedCreator", fields: [createdById], references: [id], onDelete: Cascade)

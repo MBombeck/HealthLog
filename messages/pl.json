@@ -10056,6 +10056,17 @@
         "DISCREET": "Dyskretne (●)",
         "DESCRIPTIVE": "Opisowe"
       },
+      "forecasts": "Wygląd prognoz",
+      "forecastStyle": {
+        "EXACT": "Przewidywane dni",
+        "MARGIN": "Przewidywane dni z marginesem",
+        "BAND": "Jeden zakres"
+      },
+      "forecastStyleHint": {
+        "EXACT": "Tylko przewidywane dni.",
+        "MARGIN": "Przewidywane dni, a jako osobne wydarzenia dni, w które miesiączka może zacząć się wcześniej lub później.",
+        "BAND": "Jedno wydarzenie obejmujące wszystkie dni, na które może przypaść."
+      },
       "fertile": "Okno płodne",
       "fertileDescription": "Dodaje szacowane okno płodne następnego cyklu. To szacunek, nie metoda antykoncepcji.",
       "rotate": "Odnów link",
@@ -10075,6 +10086,7 @@
         "periodEstimate": "Miesiączka (szacunek)",
         "periodLogged": "Miesiączka (zapisana)",
         "fertileEstimate": "Okno płodne (szacunek)",
+        "periodPossible": "Możliwa miesiączka",
         "likelyStart": "Najbardziej prawdopodobny początek {date}, {band}",
         "bandOne": "±{count} dzień",
         "bandFew": "±{count} dni",

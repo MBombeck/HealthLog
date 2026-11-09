@@ -10056,6 +10056,17 @@
         "DISCREET": "Discreet (●)",
         "DESCRIPTIVE": "Beschrijvend"
       },
+      "forecasts": "Weergave van voorspellingen",
+      "forecastStyle": {
+        "EXACT": "Verwachte dagen",
+        "MARGIN": "Verwachte dagen met marge",
+        "BAND": "Eén bereik"
+      },
+      "forecastStyleHint": {
+        "EXACT": "Alleen de verwachte dagen.",
+        "MARGIN": "De verwachte dagen, met de dagen waarop ze eerder of later kan beginnen als aparte afspraken.",
+        "BAND": "Eén afspraak over alle dagen waarop ze kan vallen."
+      },
       "fertile": "Vruchtbare periode",
       "fertileDescription": "Voegt de geschatte vruchtbare periode van de volgende cyclus toe. Een schatting, geen anticonceptiemethode.",
       "rotate": "Link vernieuwen",
@@ -10075,6 +10086,7 @@
         "periodEstimate": "Menstruatie (schatting)",
         "periodLogged": "Menstruatie (geregistreerd)",
         "fertileEstimate": "Vruchtbare periode (schatting)",
+        "periodPossible": "Menstruatie mogelijk",
         "likelyStart": "Meest waarschijnlijke begin {date}, {band}",
         "bandOne": "±{count} dag",
         "bandFew": "±{count} dagen",

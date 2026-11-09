@@ -10056,6 +10056,17 @@
         "DISCREET": "Discret (●)",
         "DESCRIPTIVE": "Explicite"
       },
+      "forecasts": "Affichage des prévisions",
+      "forecastStyle": {
+        "EXACT": "Jours prévus",
+        "MARGIN": "Jours prévus et marge",
+        "BAND": "Une seule plage"
+      },
+      "forecastStyleHint": {
+        "EXACT": "Seulement les jours prévus.",
+        "MARGIN": "Les jours prévus, avec en événements séparés les jours où les règles peuvent commencer plus tôt ou plus tard.",
+        "BAND": "Un seul événement couvrant tous les jours où elles peuvent tomber."
+      },
       "fertile": "Fenêtre fertile",
       "fertileDescription": "Ajoute la fenêtre fertile estimée du prochain cycle. Une estimation, pas une méthode contraceptive.",
       "rotate": "Renouveler le lien",
@@ -10075,6 +10086,7 @@
         "periodEstimate": "Règles (estimation)",
         "periodLogged": "Règles (enregistrées)",
         "fertileEstimate": "Fenêtre fertile (estimation)",
+        "periodPossible": "Règles possibles",
         "likelyStart": "Début le plus probable {date}, {band}",
         "bandOne": "±{count} jour",
         "bandFew": "±{count} jours",
