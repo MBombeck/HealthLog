@@ -275,7 +275,6 @@ export async function runSetModuleListPrefs(deps: {
  */
 export function useModuleListPrefs(list: ModuleListKey): {
   prefs: ModuleListPrefs;
-  isLoaded: boolean;
   setView: (view: ModuleListView) => void;
   setOrder: (order: string[]) => void;
   setSortDir: (sortDir: ModuleSortDir) => void;
@@ -292,21 +291,17 @@ export function useModuleListPrefs(list: ModuleListKey): {
     staleTime: 5 * 60 * 1000,
   });
 
-  const isLoaded = data !== undefined;
-
   useEffect(() => {
     if (!data) return;
     void carryOverLegacyModuleListPrefs({ list, layout: data, queryClient });
   }, [data, list, queryClient]);
 
   // The browser copy is read only after hydration, so the server render and
-  // the first client paint agree (React #418). While the server entry is
-  // unsaved (saved: false), the browser copy is preferred until carry-over
-  // completes and a saved server entry arrives.
+  // the first client paint agree (React #418).
   const mounted = useMounted();
   const entry = data?.lists[list];
   const prefs = useMemo<ModuleListPrefs>(() => {
-    if (entry?.saved) {
+    if (entry) {
       return {
         view: entry.view,
         order: entry.order,
@@ -317,22 +312,8 @@ export function useModuleListPrefs(list: ModuleListKey): {
       };
     }
     const defaults = moduleListDefaults(list);
-    const fallback: ModuleListPrefs = entry
-      ? {
-          view: entry.view,
-          order: entry.order,
-          sortDir: entry.sortDir,
-          groupBy: entry.groupBy,
-          groupsOpen: entry.groupsOpen,
-          categoryOrder: entry.categoryOrder,
-        }
-      : defaults;
-    if (!mounted) return fallback;
-    const legacy = readLegacy(list);
-    if (legacy !== null) {
-      return parseModuleListPrefs(legacy, fallback);
-    }
-    return fallback;
+    if (!mounted) return defaults;
+    return parseModuleListPrefs(readLegacy(list), defaults);
   }, [entry, list, mounted]);
 
   const write = useCallback(
@@ -367,7 +348,6 @@ export function useModuleListPrefs(list: ModuleListKey): {
 
   return {
     prefs,
-    isLoaded,
     setView,
     setOrder,
     setSortDir,
