@@ -53,10 +53,19 @@ export function useLabListFilters() {
     return () => clearTimeout(handle);
   }, [searchDraft, filters.q, applyFilters]);
 
-  // "/" focuses search input anywhere on the page
+  // "/" focuses the search field, unless the key is meant for something
+  // else: a field being typed in, or an open dialog, menu or list whose
+  // focus must not jump to the page behind it.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey) {
+      if (
+        event.key !== "/" ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        event.defaultPrevented ||
+        event.isComposing
+      ) {
         return;
       }
       const target = event.target as HTMLElement | null;
@@ -65,7 +74,10 @@ export function useLabListFilters() {
         (target.tagName === "INPUT" ||
           target.tagName === "TEXTAREA" ||
           target.tagName === "SELECT" ||
-          target.isContentEditable)
+          target.isContentEditable ||
+          target.closest(
+            '[role="dialog"], [role="alertdialog"], [role="menu"], [role="listbox"]',
+          ))
       ) {
         return;
       }

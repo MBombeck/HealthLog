@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { page } from "vitest/browser";
+import { page, userEvent } from "vitest/browser";
+import { useState } from "react";
 
 import { renderWithApp } from "../../../../tests/browser/render";
 import { LabFilterRail, type LabFilterRailProps } from "../lab-filter-rail";
+import { useLabListFilters } from "../use-lab-list-filters";
 
 function props(): LabFilterRailProps {
   return {
@@ -154,5 +156,60 @@ describe("<LabFilterRail> layout", () => {
     const centers = controls.map(centerY);
 
     expect(Math.max(...centers) - Math.min(...centers)).toBeLessThan(2);
+  });
+});
+
+/** The rail wired to the real filter hook, with a dialog to open over it. */
+function WiredRail() {
+  const lab = useLabListFilters();
+  const [dialog, setDialog] = useState(false);
+  return (
+    <>
+      <LabFilterRail
+        {...props()}
+        filters={lab.filters}
+        searchDraft={lab.searchDraft}
+        onSearchChange={lab.setSearchDraft}
+        searchInputRef={lab.searchInputRef}
+      />
+      <button type="button" onClick={() => setDialog(true)}>
+        Open dialog
+      </button>
+      {dialog ? (
+        <div role="dialog" aria-label="Sheet">
+          <button type="button" autoFocus>
+            Inside
+          </button>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+describe("<LabFilterRail> keyboard", () => {
+  it("focuses the search field on / and keeps focus there after clearing", async () => {
+    const { screen } = await renderWithApp(<WiredRail />);
+    const search = screen.getByRole("searchbox", { name: "Search biomarkers" });
+
+    (
+      screen.getByRole("button", { name: "Open dialog" }).element() as HTMLElement
+    ).focus();
+    await userEvent.keyboard("/");
+    await expect.element(search).toHaveFocus();
+    await expect.element(search).toHaveValue("");
+
+    await userEvent.keyboard("iron");
+    await screen.getByRole("button", { name: "Clear search" }).click();
+    await expect.element(search).toHaveValue("");
+    await expect.element(search).toHaveFocus();
+  });
+
+  it("leaves / alone while focus is inside an open dialog", async () => {
+    const { screen } = await renderWithApp(<WiredRail />);
+    await screen.getByRole("button", { name: "Open dialog" }).click();
+    const inside = screen.getByRole("button", { name: "Inside" });
+    await expect.element(inside).toHaveFocus();
+    await userEvent.keyboard("/");
+    await expect.element(inside).toHaveFocus();
   });
 });

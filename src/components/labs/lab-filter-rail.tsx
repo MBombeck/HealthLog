@@ -97,7 +97,11 @@ export function LabFilterRail({
         ) : (
           <button
             type="button"
-            onClick={() => onSearchChange("")}
+            onClick={() => {
+              onSearchChange("");
+              // The button goes away with the text; focus stays in the field.
+              searchInputRef.current?.focus();
+            }}
             aria-label={t("labs.filter.clearSearch")}
             className="text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 absolute top-1/2 right-0 inline-flex size-11 -translate-y-1/2 sm:size-10 items-center justify-center rounded-full outline-none focus-visible:ring-[3px]"
           >
