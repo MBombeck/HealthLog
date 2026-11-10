@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   HOLD_OPEN_MIN_CYCLE_DAYS,
+  hasLongCycle,
   holdsOpenAfterReminder,
 } from "../holds-open";
 
@@ -35,13 +36,17 @@ describe("holdsOpenAfterReminder", () => {
     expect(holdsOpenAfterReminder(r({ intervalDays: 8 }), TZ, SLOT)).toBe(true);
   });
 
-  it("lets a weekly or shorter interval roll on", () => {
-    expect(holdsOpenAfterReminder(r({ intervalDays: 7 }), TZ, SLOT)).toBe(
-      false,
-    );
-    expect(holdsOpenAfterReminder(r({ intervalDays: 1 }), TZ, SLOT)).toBe(
-      false,
-    );
+  // A rolling interval is anchored on its last satisfaction, so its next
+  // slot only exists once it is measured: rolling it on after its reminder
+  // re-anchored it on the send instead, and a missed every-two-days blood
+  // pressure reading read "in 2 days" each evening and never "overdue".
+  it("holds every rolling interval open, however short", () => {
+    for (const intervalDays of [1, 2, 3, 7]) {
+      expect(
+        holdsOpenAfterReminder(r({ intervalDays }), TZ, SLOT),
+        `every ${intervalDays} days`,
+      ).toBe(true);
+    }
   });
 
   it("reads a rule by the gap to its next occurrence", () => {
@@ -107,5 +112,34 @@ describe("holdsOpenAfterReminder", () => {
     expect(
       holdsOpenAfterReminder(rule, TZ, new Date("2026-09-01T07:00:00.000Z")),
     ).toBe(false);
+  });
+});
+
+// The digest's narrower question: whether a reminder is infrequent enough to
+// sit on the start page for its whole due day. A daily weigh-in at 20:00 is
+// not, even though it now stays due once its reminder is sent.
+describe("hasLongCycle", () => {
+  it("reads a rolling interval by its length", () => {
+    expect(hasLongCycle(r({ intervalDays: 1 }), TZ, SLOT)).toBe(false);
+    expect(hasLongCycle(r({ intervalDays: 7 }), TZ, SLOT)).toBe(false);
+    expect(hasLongCycle(r({ intervalDays: 8 }), TZ, SLOT)).toBe(true);
+  });
+
+  it("agrees with holdsOpenAfterReminder on every rule and on no cadence", () => {
+    for (const rrule of [
+      "FREQ=YEARLY;INTERVAL=1",
+      "FREQ=WEEKLY",
+      "FREQ=DAILY;BYHOUR=9,19",
+      "FREQ=DAILY;UNTIL=20260926T235959Z",
+      null,
+    ]) {
+      expect(hasLongCycle(r({ rrule }), TZ, SLOT), String(rrule)).toBe(
+        holdsOpenAfterReminder(r({ rrule }), TZ, SLOT),
+      );
+    }
+  });
+
+  it("never counts an appointment", () => {
+    expect(hasLongCycle(r({ origin: "ENCOUNTER" }), TZ, SLOT)).toBe(false);
   });
 });

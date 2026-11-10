@@ -272,8 +272,13 @@ describe("PATCH /api/measurement-reminders/[id] — nextDueAt honours explicit-n
     expect(persisted.nextDueAt).toEqual(new Date("2026-01-31T17:00:00Z"));
   });
 
-  it("re-enabling a disabled short-cycle reminder schedules it from now", async () => {
-    const weekly = { ...BASE_ROW, intervalDays: 7, enabled: false };
+  it("re-enabling a disabled weekly calendar rule schedules it from now", async () => {
+    const weekly = {
+      ...BASE_ROW,
+      intervalDays: null,
+      rrule: "FREQ=WEEKLY",
+      enabled: false,
+    };
     findFirstMock.mockResolvedValue(weekly);
 
     const res = await PATCH(makeRequest({ enabled: true }), params);
@@ -291,6 +296,26 @@ describe("PATCH /api/measurement-reminders/[id] — nextDueAt honours explicit-n
     // Thirty-day cycle, due in January: switching it off and on again is not
     // doing it.
     findFirstMock.mockResolvedValue({ ...BASE_ROW, enabled: false });
+
+    const res = await PATCH(makeRequest({ enabled: true }), params);
+    expect(res.status).toBe(200);
+
+    const persisted = updateMock.mock.calls[0]?.[0]?.data as Record<
+      string,
+      unknown
+    >;
+    expect(persisted.enabled).toBe(true);
+    expect("nextDueAt" in persisted).toBe(false);
+  });
+
+  it("re-enabling a missed short rolling reminder keeps its open slot", async () => {
+    // Every two days, never measured: switching it off and on again is not
+    // measuring it either.
+    findFirstMock.mockResolvedValue({
+      ...BASE_ROW,
+      intervalDays: 2,
+      enabled: false,
+    });
 
     const res = await PATCH(makeRequest({ enabled: true }), params);
     expect(res.status).toBe(200);

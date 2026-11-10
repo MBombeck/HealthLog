@@ -1406,7 +1406,7 @@ describe("buildDailyDigest — due check-ups and today's visits hold their place
     const d = buildDailyDigest(
       input({
         ...crowd,
-        preventiveDue: [{ label: "Skin check", staysDue: true }],
+        preventiveDue: [{ label: "Skin check", longCycle: true }],
       }),
       t,
     );
@@ -1416,7 +1416,7 @@ describe("buildDailyDigest — due check-ups and today's visits hold their place
     expect(d.worthALook[0].kind).toBe("dose_window");
   });
 
-  it("does not pin a short-cycle reminder: it rolls on anyway", () => {
+  it("does not pin a short-cycle reminder: it comes round within days", () => {
     const d = buildDailyDigest(
       input({ ...crowd, preventiveDue: [{ label: "Weigh-in" }] }),
       t,
@@ -1436,7 +1436,7 @@ describe("buildDailyDigest — due check-ups and today's visits hold their place
     const d = buildDailyDigest(
       input({
         ...crowd,
-        preventiveDue: [{ label: "Skin check", staysDue: true }],
+        preventiveDue: [{ label: "Skin check", longCycle: true }],
         upcomingVisits: [visit()],
       }),
       t,
@@ -1546,7 +1546,7 @@ describe("buildDailyDigest — due check-ups and today's visits hold their place
   it("leaves the due check-ups item on the checkups list", () => {
     const d = buildDailyDigest(
       input({
-        preventiveDue: [{ label: "Skin check", staysDue: true }],
+        preventiveDue: [{ label: "Skin check", longCycle: true }],
         upcomingVisits: [visit()],
       }),
       t,

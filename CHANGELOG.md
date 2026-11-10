@@ -55,6 +55,20 @@
 
 ### Fixed
 
+- **A missed "every N days" checkup now stays due until it is measured.**
+  A checkup on a cycle of a week or less, such as blood pressure every
+  two days, moved its next due date on by its cycle the moment its
+  reminder went out, measured or not. The card then read "in 2 days"
+  every evening and never "today" or "overdue", and the start page
+  dropped it. Such a checkup now counts from its last reading: once its
+  reminder is sent it stays due, then overdue, until a reading lands or
+  it is marked done, skipped or snoozed, and while it stays open the
+  reminder comes again every N days, at most once a week, at its usual
+  hour. A first due date in the past stays overdue past its first
+  reminder instead of jumping ahead. A checkup that already moved on
+  corrects itself at its next reminder.
+  Calendar schedules that repeat within a week, such as a twice-daily
+  measurement course, still move on to their next time. (#1369)
 - **A lab's "(calc)" note no longer becomes part of the unit.** Some
   reports print "(calc)" beside a calculated value, and a document read
   could copy it into the unit, so a marker was created in "g/dL (calc)"
