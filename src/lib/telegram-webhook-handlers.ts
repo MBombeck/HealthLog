@@ -29,7 +29,10 @@ import {
   attachTelegramMoodNote,
 } from "@/lib/mood/create-from-telegram";
 import { scheduleTelegramAutoDelete } from "@/lib/telegram-cleanup";
-import { satisfyReminder } from "@/lib/measurement-reminders/satisfy";
+import {
+  SATISFIABLE_REMINDER_SELECT,
+  satisfyReminder,
+} from "@/lib/measurement-reminders/satisfy";
 import {
   isTelegramCapturableType,
   logTelegramMeasurement,
@@ -865,19 +868,9 @@ export async function handleCallback(update: TelegramUpdate) {
         origin: { not: "ENCOUNTER" },
       },
       select: {
-        id: true,
-        userId: true,
+        ...SATISFIABLE_REMINDER_SELECT,
         // v1.19.2 — the target metric; drives the optional numeric capture.
         measurementType: true,
-        intervalDays: true,
-        rrule: true,
-        anchorDate: true,
-        notifyHour: true,
-        nextDueAt: true,
-        lastSatisfiedAt: true,
-        lastSkippedAt: true,
-        createdAt: true,
-        endsOn: true,
       },
     });
     if (!reminder) {

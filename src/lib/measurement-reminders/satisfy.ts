@@ -81,6 +81,21 @@ export interface SatisfiableReminder {
   endsOn: Date | null;
 }
 
+/** The select a caller that narrows its read gives a satisfiable row. */
+export const SATISFIABLE_REMINDER_SELECT = {
+  id: true,
+  userId: true,
+  intervalDays: true,
+  rrule: true,
+  anchorDate: true,
+  notifyHour: true,
+  nextDueAt: true,
+  lastSatisfiedAt: true,
+  lastSkippedAt: true,
+  createdAt: true,
+  endsOn: true,
+} as const satisfies Record<keyof SatisfiableReminder, true>;
+
 export interface SatisfyResult {
   /** True when the reminder was advanced; false when the event was older
    *  than (or equal to) the existing `lastSatisfiedAt` (forward-only
