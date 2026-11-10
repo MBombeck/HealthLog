@@ -101,6 +101,13 @@
   could be lost to the new link. Turning it off now wins whichever comes
   first, and the change lands on the link that stays live.
 
+### Security
+
+- `node-forge` moves to 1.4.3, which fixes five advisories in certificate
+  chain checks, signatures and TLS handling. It arrives only under the APNs
+  library, and HealthLog signs push requests with a token key, so none of
+  that code runs; the update keeps the dependency audit clean.
+
 ## [1.47.1] — 2026-11-07
 
 ### Added
