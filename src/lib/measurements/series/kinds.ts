@@ -72,6 +72,10 @@ export const kindEnum = z.enum([
   "restingHeartRate",
   "heartRateVariability",
   "vo2Max",
+  // #1367 — blood ketones, and the glucose-ketone index derived from them and
+  // the glucose reading taken with each (`glucose-ketone-index.ts`).
+  "ketones",
+  "glucoseKetoneIndex",
 ]);
 
 export type SeriesKind = z.infer<typeof kindEnum>;
@@ -90,6 +94,11 @@ export const KIND_TO_TYPE: Record<SeriesKind, MeasurementType> = {
   restingHeartRate: "RESTING_HEART_RATE",
   heartRateVariability: "HEART_RATE_VARIABILITY",
   vo2Max: "VO2_MAX",
+  ketones: "BLOOD_KETONES",
+  // The index has no stored type. It belongs to its ketone reading, so the
+  // change direction and day values read as the ketone series' would; neither
+  // has a band, so nothing is judged.
+  glucoseKetoneIndex: "BLOOD_KETONES",
 };
 
 /**
@@ -119,6 +128,9 @@ export const SERIES_UNIT: Record<SeriesKind, string> = {
   restingHeartRate: "bpm",
   heartRateVariability: "ms",
   vo2Max: "mL/(kg·min)",
+  ketones: "mmol/L",
+  // A ratio of two concentrations in the same unit: dimensionless.
+  glucoseKetoneIndex: "ratio",
 };
 
 export interface SeriesPoint {
@@ -142,6 +154,17 @@ export interface SeriesPoint {
    */
   valueMin?: number | null;
   valueMax?: number | null;
+  /**
+   * #1367 — the two readings a `kind=glucoseKetoneIndex` point was built
+   * from. Absent for every other kind. `id` and `at` are the ketone
+   * reading's; this names the glucose reading paired with it.
+   */
+  gki?: {
+    glucoseId: string;
+    glucoseAt: string;
+    glucoseMmol: number;
+    ketonesMmol: number;
+  };
 }
 
 export function stdDev(values: number[]): number {

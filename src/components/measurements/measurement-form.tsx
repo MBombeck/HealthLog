@@ -5,13 +5,6 @@ import { useActiveRecordName } from "@/hooks/use-record-capabilities";
 import { useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { DateTimeField } from "@/components/ui/date-time-field";
 import { FieldGroup } from "@/components/ui/field-group";
@@ -23,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, MoreHorizontal, Plus, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "@/lib/i18n/context";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
@@ -50,6 +42,11 @@ import {
 } from "@/lib/measurements/last-used-type";
 
 import { DurationReadAs } from "./duration-read-as";
+import { ketoneFingerstickBatch } from "./ketone-fingerstick";
+import {
+  MeasurementFormFooter,
+  PairedGlucoseField,
+} from "./measurement-form-parts";
 
 const MAX_COMMENT_LENGTH = MEASUREMENT_NOTES_MAX_LENGTH;
 
@@ -103,6 +100,13 @@ export const MEASUREMENT_TYPES = [
     labelKey: "measurements.typeBloodGlucose",
     unit: "mg/dL",
     placeholder: "95",
+  },
+  // #1367 — ketones, with the same fingerstick's glucose (one entry).
+  {
+    value: "BLOOD_KETONES",
+    labelKey: "measurements.typeBloodKetones",
+    unit: "mmol/L",
+    placeholder: "1.2",
   },
   {
     value: "TOTAL_BODY_WATER",
@@ -360,6 +364,8 @@ export function MeasurementForm({
   const [sysBp, setSysBp] = useState("");
   const [diaBp, setDiaBp] = useState("");
   const [pulse, setPulse] = useState("");
+  // The glucose of a fingerstick entered with its ketones; optional.
+  const [pairedGlucose, setPairedGlucose] = useState("");
   const [notes, setNotes] = useState("");
   const [measuredAt, setMeasuredAt] = useState(() =>
     localDateTimeValue(defaultDate),
@@ -383,6 +389,7 @@ export function MeasurementForm({
   const typeInfo = MEASUREMENT_TYPES.find((t) => t.value === type);
   const isBpMode = type === "BLOOD_PRESSURE";
   const isGlucoseMode = type === "BLOOD_GLUCOSE";
+  const isKetoneMode = type === "BLOOD_KETONES";
   // A duration field (sleep, in hours) also reads "7:30" and "7h 30m"; the
   // hint under it says how the entry was understood.
   const durationUnit = durationEntryUnit(type);
@@ -395,6 +402,7 @@ export function MeasurementForm({
     setSysBp("");
     setDiaBp("");
     setPulse("");
+    setPairedGlucose("");
     setNotes("");
     setMeasuredAt(localDateTimeValue(defaultDate));
     setError(null);
@@ -440,6 +448,21 @@ export function MeasurementForm({
           });
         }
 
+        await apiPost("/api/measurements", batch);
+      } else if (isKetoneMode) {
+        // One fingerstick, posted as one transaction (`ketone-fingerstick.ts`).
+        const batch = ketoneFingerstickBatch({
+          ketones: value,
+          glucose: pairedGlucose,
+          glucoseUnit,
+          glucoseContext,
+          measuredAt: timestamp,
+          notes,
+        });
+        if (!batch) {
+          setError(t("measurements.saveError"));
+          return;
+        }
         await apiPost("/api/measurements", batch);
       } else {
         // Single measurement. Canonical storage stays SI: an imperial user
@@ -503,6 +526,7 @@ export function MeasurementForm({
       setSysBp("");
       setDiaBp("");
       setPulse("");
+      setPairedGlucose("");
       setNotes("");
       await invalidateKeys(queryClient, measurementDependentKeys);
       await refetchInactiveDailyReads(queryClient);
@@ -528,49 +552,12 @@ export function MeasurementForm({
   }
 
   const footerNode = (
-    <div className="flex w-full items-center justify-between gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="size-11"
-            disabled={loading}
-            aria-label={t("common.moreOptions")}
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={resetForm}>
-            <RotateCcw className="mr-2 h-4 w-4" />
-            {t("measurements.formReset")}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <div className="flex items-center gap-2">
-        {onCancel && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={loading}
-          >
-            {t("common.cancel")}
-          </Button>
-        )}
-        <Button type="submit" form={formId} disabled={loading}>
-          {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />
-          ) : (
-            <Plus className="h-4 w-4" />
-          )}
-          {t("common.save")}
-        </Button>
-      </div>
-    </div>
+    <MeasurementFormFooter
+      loading={loading}
+      formId={formId}
+      onReset={resetForm}
+      onCancel={onCancel}
+    />
   );
 
   return (
@@ -718,7 +705,17 @@ export function MeasurementForm({
         </FieldGroup>
       )}
 
-      {isGlucoseMode && (
+      {isKetoneMode && (
+        <PairedGlucoseField
+          value={pairedGlucose}
+          onChange={setPairedGlucose}
+          unit={glucoseUnit}
+          invalid={!!error}
+          describedBy={errorDescriptor}
+        />
+      )}
+
+      {(isGlucoseMode || (isKetoneMode && pairedGlucose.trim() !== "")) && (
         <FieldGroup
           htmlFor="glucose-context"
           label={t("measurements.glucoseContext")}

@@ -813,6 +813,10 @@
     "typeSleep": "Сон",
     "typeSteps": "Шаги",
     "typeBloodGlucose": "Глюкоза крови",
+    "typeBloodKetones": "Кетоны в крови",
+    "glucoseKetoneIndex": "Глюкозо-кетоновый индекс",
+    "pairedGlucoseLabel": "Глюкоза из того же измерения ({unit})",
+    "pairedGlucoseHint": "Сохраняется как отдельное измерение глюкозы с тем же временем; по этой паре рассчитывается глюкозо-кетоновый индекс.",
     "typeTotalBodyWater": "Общая вода в организме",
     "typeBoneMass": "Костная масса",
     "typeOxygenSaturation": "Насыщение кислородом",
@@ -4002,6 +4006,23 @@
       }
     },
     "navBloodGlucose": "Глюкоза",
+    "navBloodKetones": "Кетоны",
+    "bloodKetones": {
+      "title": "Кетоны в крови",
+      "description": "Ваши измерения бета-гидроксибутирата в динамике, в {unit}.",
+      "chartTitle": "Кетоны в крови",
+      "emptyState": {
+        "title": "Измерений кетонов пока нет",
+        "description": "Измерения кетонов появятся здесь, как только вы запишете одно, отдельно или вместе с глюкозой из того же прокола.",
+        "cta": "Записать кетоны"
+      },
+      "gki": {
+        "description": "Глюкоза, делённая на кетоны, для каждого измерения кетонов с измерением глюкозы в пределах 15 минут.",
+        "emptyTitle": "Индекса пока нет",
+        "emptyDescription": "Он появится, когда к измерению кетонов будет измерение глюкозы в то же время или в пределах 15 минут.",
+        "latest": "Последний {value}: глюкоза {glucose} {unit} на кетоны {ketones} {unit}, {date}."
+      }
+    },
     "totalBodyWater": {
       "title": "Общая вода в организме",
       "description": "Ваша общая вода в организме в динамике, в килограммах.",
@@ -13689,6 +13710,10 @@
     "valuesAllFew": "Все {count} значения",
     "valuesAllOther": "Все {count} значений",
     "valuesFewer": "Меньше значений",
+    "gkiPair": "Глюкоза {glucose} / кетоны {ketones}",
+    "gkiCountOne": "Последний из {count}",
+    "gkiCountFew": "Последний из {count}",
+    "gkiCountOther": "Последний из {count}",
     "countEntriesOne": "{count} запись",
     "countEntriesFew": "Записей: {count}",
     "countEntriesOther": "Записей: {count}",

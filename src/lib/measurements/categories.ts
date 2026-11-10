@@ -128,6 +128,7 @@ export const MEASUREMENT_CATEGORIES: ReadonlyMap<
 
   // ── Metabolic ──
   ["BLOOD_GLUCOSE", "metabolic"],
+  ["BLOOD_KETONES", "metabolic"],
   ["SKIN_TEMPERATURE", "metabolic"],
   // v1.10.0 — wrist temperature is an overnight skin-side reading;
   // it sits with skin temperature in the metabolic cluster.

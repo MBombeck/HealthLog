@@ -44,7 +44,9 @@ export type SeriesKind =
   | "oxygenSaturation"
   | "restingHeartRate"
   | "heartRateVariability"
-  | "vo2Max";
+  | "vo2Max"
+  | "ketones"
+  | "glucoseKetoneIndex";
 
 export interface SeriesReferenceLine {
   value: number;

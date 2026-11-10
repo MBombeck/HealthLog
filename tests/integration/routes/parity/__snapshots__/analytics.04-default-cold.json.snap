@@ -1357,6 +1357,20 @@
           "slope30": null,
           "avg30LastMonth": null,
           "avg30LastYear": null
+        },
+        "BLOOD_KETONES": {
+          "count": 0,
+          "latest": null,
+          "min": null,
+          "max": null,
+          "mean": null,
+          "median": null,
+          "avg7": null,
+          "avg30": null,
+          "slope7": null,
+          "slope30": null,
+          "avg30LastMonth": null,
+          "avg30LastYear": null
         }
       },
       "bmi": 25.9,
@@ -2500,7 +2514,8 @@
         "STRESS_LEVEL": null,
         "TRAINING_READINESS": null,
         "ACUTE_TRAINING_LOAD": null,
-        "BASAL_ENERGY_BURNED": null
+        "BASAL_ENERGY_BURNED": null,
+        "BLOOD_KETONES": null
       }
     },
     "error": null

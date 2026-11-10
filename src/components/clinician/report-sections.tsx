@@ -261,6 +261,21 @@ export function MeasurementGroups({
                     max: show(type, stat!.max, digits),
                   })}
                 />
+                {type === "BLOOD_KETONES" &&
+                report.glucoseKetoneIndex &&
+                scope.admits("BLOOD_GLUCOSE") ? (
+                  // #1367 — the index the server derived from the ketone
+                  // and glucose readings, beside the ketones; no unit.
+                  <StatRow
+                    label={t("measurements.glucoseKetoneIndex")}
+                    value={statSummary(t, "", {
+                      latest: fmtDigits(report.glucoseKetoneIndex.latest, 1),
+                      avg: fmtDigits(report.glucoseKetoneIndex.avg, 1),
+                      min: fmtDigits(report.glucoseKetoneIndex.min, 1),
+                      max: fmtDigits(report.glucoseKetoneIndex.max, 1),
+                    })}
+                  />
+                ) : null}
                 {unvalidated > 0 && (
                   <p
                     className="text-muted-foreground text-xs"

@@ -341,6 +341,35 @@ export const SIGNALS: Record<string, SignalDefinition> = {
       mcp: true,
     },
   },
+  // Blood ketones (#1367). Beta-hydroxybutyrate from a fingerstick meter,
+  // typed by hand. No band: what a ketone reading should be depends on the
+  // plan a clinician sets, so the value is shown as recorded. Off the Coach
+  // snapshot and the correlations, readable over MCP.
+  BLOOD_KETONES: {
+    key: "BLOOD_KETONES",
+    kind: "measurement",
+    source: { measurementType: "BLOOD_KETONES" },
+    displayName: "Blood ketones (BHB)",
+    unit: "mmol/L",
+    direction: "target-band",
+    archetype: "physiological-vital",
+    surfaces: {
+      detailPage: true,
+      correlationEligible: false,
+      coachSnapshot: false,
+      mcp: true,
+    },
+    // LOINC 104816-4 "Beta hydroxybutyrate [Moles/volume] in Blood": the
+    // quantitative, method-less blood term. A typed value does not say
+    // whether it came from a strip or a venous draw, and the strip term
+    // (66441-7) is semi-quantitative, which a numeric mmol/L reading is not.
+    fhir: {
+      loinc: "104816-4",
+      display: "Beta hydroxybutyrate [Moles/volume] in Blood",
+      unit: "mmol/L",
+      category: "laboratory",
+    },
+  },
   WALKING_HEART_RATE_AVERAGE: {
     key: "WALKING_HEART_RATE_AVERAGE",
     kind: "measurement",

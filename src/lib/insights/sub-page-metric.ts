@@ -139,6 +139,8 @@ const SUB_PAGE_METRIC = {
   daylight: ["TIME_IN_DAYLIGHT"],
   // ── metabolic (v1.7.0) ──
   "blood-glucose": ["BLOOD_GLUCOSE"],
+  // #1367 — blood ketones, with the glucose-ketone index beneath the chart.
+  ketones: ["BLOOD_KETONES"],
   "skin-temperature": ["SKIN_TEMPERATURE"],
   // v1.10.0 — overnight wrist temperature joins the metabolic cluster.
   "wrist-temperature": ["WRIST_TEMPERATURE"],
@@ -243,6 +245,7 @@ export const SUB_PAGE_GROUP: Partial<Record<SubPageSlug, SubPageGroup>> = {
   daylight: "environment",
   // metabolic (v1.7.0)
   "blood-glucose": "metabolic",
+  ketones: "metabolic",
   "skin-temperature": "metabolic",
   // ── v1.10.0 — additive HealthKit signals (WX-A) ──
   // activity / mobility cluster

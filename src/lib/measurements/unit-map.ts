@@ -21,6 +21,7 @@ const unitMap: Record<string, string> = {
   SLEEP_DURATION: "minutes",
   ACTIVITY_STEPS: "steps",
   BLOOD_GLUCOSE: "mg/dL",
+  BLOOD_KETONES: "mmol/L",
   TOTAL_BODY_WATER: "kg",
   BONE_MASS: "kg",
   OXYGEN_SATURATION: "%",

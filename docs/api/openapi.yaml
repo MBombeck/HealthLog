@@ -4672,6 +4672,8 @@ paths:
               - restingHeartRate
               - heartRateVariability
               - vo2Max
+              - ketones
+              - glucoseKetoneIndex
           required: true
         - in: query
           name: days
@@ -4811,6 +4813,7 @@ paths:
               - TRAINING_READINESS
               - ACUTE_TRAINING_LOAD
               - BASAL_ENERGY_BURNED
+              - BLOOD_KETONES
         - in: query
           name: from
           schema:
@@ -5736,6 +5739,7 @@ paths:
               - TRAINING_READINESS
               - ACUTE_TRAINING_LOAD
               - BASAL_ENERGY_BURNED
+              - BLOOD_KETONES
             description: The metric.
           required: true
           description: The metric.
@@ -5866,6 +5870,7 @@ paths:
               - TRAINING_READINESS
               - ACUTE_TRAINING_LOAD
               - BASAL_ENERGY_BURNED
+              - BLOOD_KETONES
             description: The metric.
           required: true
           description: The metric.
@@ -28773,7 +28778,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 111
+              maxItems: 112
               type: array
               items:
                 type: string
@@ -28835,7 +28840,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 111
+              maxItems: 112
               type: array
               items:
                 type: string
@@ -29715,6 +29720,7 @@ components:
             - TRAINING_READINESS
             - ACUTE_TRAINING_LOAD
             - BASAL_ENERGY_BURNED
+            - BLOOD_KETONES
         value:
           type: number
         measuredAt:
@@ -31449,6 +31455,7 @@ components:
             - TRAINING_READINESS
             - ACUTE_TRAINING_LOAD
             - BASAL_ENERGY_BURNED
+            - BLOOD_KETONES
         biomarkerId:
           type: string
           minLength: 1
@@ -31948,7 +31955,7 @@ components:
           type: number
           const: 2
         leaves:
-          maxItems: 111
+          maxItems: 112
           type: array
           items:
             type: string
@@ -32593,7 +32600,7 @@ components:
               - order
         tiles:
           minItems: 1
-          maxItems: 63
+          maxItems: 64
           type: array
           items:
             type: object
@@ -32649,6 +32656,7 @@ components:
                   - audio-events
                   - daylight
                   - blood-glucose
+                  - ketones
                   - skin-temperature
                   - wrist-temperature
                   - mood
@@ -33151,6 +33159,7 @@ components:
         - TRAINING_READINESS
         - ACUTE_TRAINING_LOAD
         - BASAL_ENERGY_BURNED
+        - BLOOD_KETONES
       description: DB-stored measurement category. v1.4.23 added 7 Apple Health values (HRV, resting HR, active energy,
         flights, walking/running distance, VO2 max, body temperature).
     InsightsSettingsPutRequest:
@@ -37697,6 +37706,7 @@ components:
             - scoreSleep
             - scoreStress
             - scoreStrain
+            - bloodKetones
           description: Which chart's overlays are being written. Closed enum.
         prefs:
           type: object
@@ -37886,6 +37896,7 @@ components:
               - scoreSleep
               - scoreStress
               - scoreStrain
+              - bloodKetones
           additionalProperties:
             type: object
             properties:
@@ -38858,7 +38869,7 @@ components:
                 additionalProperties: false
             tiles:
               minItems: 1
-              maxItems: 63
+              maxItems: 64
               type: array
               items:
                 type: object
@@ -38914,6 +38925,7 @@ components:
                       - audio-events
                       - daylight
                       - blood-glucose
+                      - ketones
                       - skin-temperature
                       - wrist-temperature
                       - mood
@@ -42723,6 +42735,7 @@ components:
                   - TRAINING_READINESS
                   - ACUTE_TRAINING_LOAD
                   - BASAL_ENERGY_BURNED
+                  - BLOOD_KETONES
               value:
                 type: number
               valueMin:
@@ -43491,6 +43504,7 @@ components:
                             - TRAINING_READINESS
                             - ACUTE_TRAINING_LOAD
                             - BASAL_ENERGY_BURNED
+                            - BLOOD_KETONES
                         - type: "null"
                     biomarkerName:
                       anyOf:
@@ -46089,6 +46103,7 @@ components:
                   - TRAINING_READINESS
                   - ACUTE_TRAINING_LOAD
                   - BASAL_ENERGY_BURNED
+                  - BLOOD_KETONES
               dateKey:
                 type: string
                 pattern: ^\d{4}-\d{2}-\d{2}$
@@ -47289,6 +47304,7 @@ components:
                       - TRAINING_READINESS
                       - ACUTE_TRAINING_LOAD
                       - BASAL_ENERGY_BURNED
+                      - BLOOD_KETONES
                   - type: "null"
               intervalDays:
                 anyOf:
@@ -47515,6 +47531,7 @@ components:
                   - TRAINING_READINESS
                   - ACUTE_TRAINING_LOAD
                   - BASAL_ENERGY_BURNED
+                  - BLOOD_KETONES
               metricSlot:
                 type:
                   - string
@@ -51039,10 +51056,12 @@ components:
             - restingHeartRate
             - heartRateVariability
             - vo2Max
+            - ketones
+            - glucoseKetoneIndex
         unit:
           type: string
           description: Resolved unit token for `value`. `glucose` follows the user's mg/dL|mmol/L preference; `sleep` is `h`
-            (per-night time-asleep in hours).
+            (per-night time-asleep in hours); `ketones` is `mmol/L`; `glucoseKetoneIndex` is `ratio`.
         points:
           type: array
           items:
@@ -51089,6 +51108,31 @@ components:
                 type:
                   - number
                   - "null"
+              gki:
+                description: "#1367 — for `kind=glucoseKetoneIndex` only: the readings the index was computed from. `id` and `at` are
+                  the ketone reading's. Absent for every other kind."
+                type: object
+                properties:
+                  glucoseId:
+                    type: string
+                    description: The paired glucose reading's id.
+                  glucoseAt:
+                    type: string
+                    format: date-time
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                    description: The paired glucose reading's timestamp.
+                  glucoseMmol:
+                    type: number
+                    description: The paired glucose in mmol/L, one decimal.
+                  ketonesMmol:
+                    type: number
+                    description: The ketone reading (beta-hydroxybutyrate), mmol/L.
+                required:
+                  - glucoseId
+                  - glucoseAt
+                  - glucoseMmol
+                  - ketonesMmol
+                additionalProperties: false
             required:
               - id
               - at
@@ -51146,7 +51190,10 @@ components:
         ring recording every minute; a cuff, a fingerstick meter or a few readings a night stay raw). A bucket carries
         the mean as `value` and otherwise has the shape of a reading of its kind; a `pulse` bucket also carries its
         range as `valueMin` / `valueMax`, and a `glucose` bucket is converted to the user's unit like a raw reading.
-        `stats` is always computed over the underlying readings, never over the buckets."
+        `stats` is always computed over the underlying readings, never over the buckets. `glucoseKetoneIndex` (#1367) is
+        derived at read time, never stored: one point per ketone reading above zero that has a glucose reading at the
+        same instant or, failing that, the nearest one within 15 minutes either side; value = glucose (mmol/L, from
+        mg/dL by 18.0182) / ketones (mmol/L), one decimal. Draw it as given; do not recompute it."
     TrendVerdict:
       type: object
       properties:
@@ -53832,6 +53879,7 @@ components:
             - TRAINING_READINESS
             - ACUTE_TRAINING_LOAD
             - BASAL_ENERGY_BURNED
+            - BLOOD_KETONES
         date:
           type: string
           format: date
@@ -54112,6 +54160,7 @@ components:
             - TRAINING_READINESS
             - ACUTE_TRAINING_LOAD
             - BASAL_ENERGY_BURNED
+            - BLOOD_KETONES
         from:
           type: string
           format: date
@@ -64561,7 +64610,7 @@ components:
             additionalProperties: false
         tiles:
           minItems: 1
-          maxItems: 63
+          maxItems: 64
           type: array
           items:
             type: object
@@ -64617,6 +64666,7 @@ components:
                   - audio-events
                   - daylight
                   - blood-glucose
+                  - ketones
                   - skin-temperature
                   - wrist-temperature
                   - mood
@@ -88230,6 +88280,7 @@ components:
               - scoreSleep
               - scoreStress
               - scoreStrain
+              - bloodKetones
           additionalProperties:
             type: object
             properties:
@@ -88496,6 +88547,7 @@ components:
               - scoreSleep
               - scoreStress
               - scoreStrain
+              - bloodKetones
           additionalProperties:
             type: object
             properties:
@@ -93870,6 +93922,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DayValue"
+        glucoseKetoneIndex:
+          description: "#1367 — the day's glucose-ketone index, oldest first: glucose (mmol/L) over ketones (mmol/L) for each
+            ketone reading above zero with a glucose reading at the same instant or within 15 minutes either side.
+            Computed at read time; show it as given. Absent when the day has none, when either reading type is hidden
+            from the caller, and on older servers."
+          type: array
+          items:
+            $ref: "#/components/schemas/DayGlucoseKetoneIndex"
         events:
           type: array
           items:
@@ -94073,6 +94133,43 @@ components:
         - at
         - source
         - band
+      additionalProperties: false
+    DayGlucoseKetoneIndex:
+      type: object
+      properties:
+        at:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: The ketone reading's instant.
+        value:
+          type: number
+          description: The index, to one decimal.
+        ketoneId:
+          type: string
+          description: The ketone reading's id.
+        glucoseId:
+          type: string
+          description: The paired glucose reading's id.
+        glucoseAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: The paired glucose reading's instant.
+        ketonesMmol:
+          type: number
+          description: Beta-hydroxybutyrate, mmol/L.
+        glucoseMmol:
+          type: number
+          description: The paired glucose in mmol/L, one decimal.
+      required:
+        - at
+        - value
+        - ketoneId
+        - glucoseId
+        - glucoseAt
+        - ketonesMmol
+        - glucoseMmol
       additionalProperties: false
     DayEvent:
       type: object

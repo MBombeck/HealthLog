@@ -813,6 +813,10 @@
     "typeSleep": "Sleep",
     "typeSteps": "Steps",
     "typeBloodGlucose": "Blood glucose",
+    "typeBloodKetones": "Blood ketones",
+    "glucoseKetoneIndex": "Glucose-ketone index",
+    "pairedGlucoseLabel": "Glucose from the same reading ({unit})",
+    "pairedGlucoseHint": "Saved as its own glucose reading at the same time; the glucose-ketone index is worked out from the pair.",
     "typeTotalBodyWater": "Total body water",
     "typeBoneMass": "Bone mass",
     "typeOxygenSaturation": "Oxygen saturation",
@@ -4002,6 +4006,23 @@
       }
     },
     "navBloodGlucose": "Glucose",
+    "navBloodKetones": "Ketones",
+    "bloodKetones": {
+      "title": "Blood Ketones",
+      "description": "Your beta-hydroxybutyrate readings over time, in {unit}.",
+      "chartTitle": "Blood ketones",
+      "emptyState": {
+        "title": "No ketone readings yet",
+        "description": "Ketone readings appear here once you log one, on its own or with the glucose from the same fingerstick.",
+        "cta": "Log ketones"
+      },
+      "gki": {
+        "description": "Glucose divided by ketones, for each ketone reading with a glucose reading within 15 minutes.",
+        "emptyTitle": "No index yet",
+        "emptyDescription": "It appears once a ketone reading has a glucose reading taken at the same time or within 15 minutes.",
+        "latest": "Latest {value}: glucose {glucose} {unit} over ketones {ketones} {unit}, {date}."
+      }
+    },
     "totalBodyWater": {
       "title": "Total Body Water",
       "description": "Your total body water over time, in kilograms.",
@@ -13689,6 +13710,10 @@
     "valuesAllFew": "All {count} values",
     "valuesAllOther": "All {count} values",
     "valuesFewer": "Fewer values",
+    "gkiPair": "Glucose {glucose} / ketones {ketones}",
+    "gkiCountOne": "Latest of {count}",
+    "gkiCountFew": "Latest of {count}",
+    "gkiCountOther": "Latest of {count}",
     "countEntriesOne": "1 entry",
     "countEntriesFew": "{count} entries",
     "countEntriesOther": "{count} entries",

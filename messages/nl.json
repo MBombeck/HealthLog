@@ -813,6 +813,10 @@
     "typeSleep": "Slaap",
     "typeSteps": "Stappen",
     "typeBloodGlucose": "Bloedglucose",
+    "typeBloodKetones": "Bloedketonen",
+    "glucoseKetoneIndex": "Glucose-ketonindex",
+    "pairedGlucoseLabel": "Glucose uit dezelfde meting ({unit})",
+    "pairedGlucoseHint": "Wordt als eigen glucosemeting met hetzelfde tijdstip opgeslagen; uit het paar volgt de glucose-ketonindex.",
     "typeTotalBodyWater": "Totaal lichaamswater",
     "typeBoneMass": "Botmassa",
     "typeOxygenSaturation": "Zuurstofsaturatie",
@@ -4002,6 +4006,23 @@
       }
     },
     "navBloodGlucose": "Glucose",
+    "navBloodKetones": "Ketonen",
+    "bloodKetones": {
+      "title": "Bloedketonen",
+      "description": "Je bèta-hydroxybutyraatmetingen in de loop van de tijd, in {unit}.",
+      "chartTitle": "Bloedketonen",
+      "emptyState": {
+        "title": "Nog geen ketonmetingen",
+        "description": "Ketonmetingen verschijnen hier zodra je er een vastlegt, los of met de glucose uit dezelfde vingerprik.",
+        "cta": "Ketonen vastleggen"
+      },
+      "gki": {
+        "description": "Glucose gedeeld door ketonen, voor elke ketonmeting met een glucosemeting binnen 15 minuten.",
+        "emptyTitle": "Nog geen index",
+        "emptyDescription": "Hij verschijnt zodra een ketonmeting een glucosemeting op hetzelfde moment of binnen 15 minuten heeft.",
+        "latest": "Laatst {value}: glucose {glucose} {unit} gedeeld door ketonen {ketones} {unit}, {date}."
+      }
+    },
     "totalBodyWater": {
       "title": "Totaal lichaamswater",
       "description": "Je totale lichaamswater in de loop van de tijd, in kilogram.",
@@ -13689,6 +13710,10 @@
     "valuesAllFew": "Alle {count} waarden",
     "valuesAllOther": "Alle {count} waarden",
     "valuesFewer": "Minder waarden",
+    "gkiPair": "Glucose {glucose} / ketonen {ketones}",
+    "gkiCountOne": "Laatste van {count}",
+    "gkiCountFew": "Laatste van {count}",
+    "gkiCountOther": "Laatste van {count}",
     "countEntriesOne": "1 registratie",
     "countEntriesFew": "{count} registraties",
     "countEntriesOther": "{count} registraties",
