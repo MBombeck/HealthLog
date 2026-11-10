@@ -57,11 +57,8 @@ import { cn } from "@/lib/utils";
  * ui-guidelines §5).
  */
 
-/**
- * Shared pill chrome for filter-bar triggers and active chips.
- * Exported for custom controls (such as select triggers) that participate in the rail.
- */
-export const FILTER_BAR_PILL_CLASSES =
+/** Shared pill chrome — trigger and chip in one element. */
+const PILL_CLASSES =
   "border-border bg-card text-foreground inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm whitespace-nowrap shadow-xs transition-all duration-150 ease-out sm:min-h-9 h-auto py-1";
 const PILL_ACTIVE_CLASSES = "border-primary/40 bg-primary/10";
 
@@ -186,7 +183,7 @@ export function FilterBarSelect({
           data-slot="filter-bar-pill"
           data-active={active ? "true" : "false"}
           className={cn(
-            FILTER_BAR_PILL_CLASSES,
+            PILL_CLASSES,
             active && cn(PILL_ACTIVE_CLASSES, "pr-8"),
           )}
         >
@@ -265,7 +262,7 @@ export function FilterBarDateRange({
           data-slot="filter-bar-pill"
           data-active={active ? "true" : "false"}
           className={cn(
-            FILTER_BAR_PILL_CLASSES,
+            PILL_CLASSES,
             "outline-none",
             "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
             active && cn(PILL_ACTIVE_CLASSES, "pr-8"),
@@ -360,7 +357,7 @@ export function FilterBarNumberRange({
           data-slot="filter-bar-pill"
           data-active={active ? "true" : "false"}
           className={cn(
-            FILTER_BAR_PILL_CLASSES,
+            PILL_CLASSES,
             "outline-none",
             "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
             active && cn(PILL_ACTIVE_CLASSES, "pr-8"),

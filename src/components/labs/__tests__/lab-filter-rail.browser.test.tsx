@@ -14,7 +14,6 @@ function props(): LabFilterRailProps {
     onCategoryChange: vi.fn(),
     onFromDayChange: vi.fn(),
     onToDayChange: vi.fn(),
-    onSortChange: vi.fn(),
     onResetFilters: vi.fn(),
     isFiltered: false,
     categories: [
@@ -27,7 +26,6 @@ function props(): LabFilterRailProps {
       },
     ],
     total: 5,
-    currentSortDir: "recentDesc",
   };
 }
 
@@ -80,11 +78,6 @@ describe("<LabFilterRail> layout", () => {
       screen.getByRole("button", { name: "Date range" }).element(),
       screen.getByRole("combobox", { name: "Status: Out of range" }).element(),
       screen.getByRole("combobox", { name: "Category" }).element(),
-      screen
-        .getByRole("combobox", {
-          name: "Sort order: Most recent reading first",
-        })
-        .element(),
       screen.getByRole("button", { name: "Reset" }).element(),
     ];
 
@@ -95,7 +88,7 @@ describe("<LabFilterRail> layout", () => {
     }
   });
 
-  it("keeps sort and reset visible without clipping in German at 1536px", async () => {
+  it("keeps every control and reset visible without clipping in German at 1536px", async () => {
     await page.viewport(1536, 900);
     const { screen } = await renderWithApp(
       <LabFilterRail
@@ -122,11 +115,6 @@ describe("<LabFilterRail> layout", () => {
         })
         .element(),
       screen.getByRole("combobox", { name: "Kategorie" }).element(),
-      screen
-        .getByRole("combobox", {
-          name: "Sortierung: Neueste Messung zuerst",
-        })
-        .element(),
       screen.getByRole("button", { name: "Zurücksetzen" }).element(),
     ];
 
@@ -145,11 +133,6 @@ describe("<LabFilterRail> layout", () => {
       screen.getByRole("button", { name: "Date range" }).element(),
       screen.getByRole("combobox", { name: "Status" }).element(),
       screen.getByRole("combobox", { name: "Category" }).element(),
-      screen
-        .getByRole("combobox", {
-          name: "Sort order: Most recent reading first",
-        })
-        .element(),
     ];
     const centers = controls.map(centerY);
 

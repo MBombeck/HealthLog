@@ -5,7 +5,6 @@ import {
   useUrlFilterSync,
   type UrlFilterSyncOptions,
 } from "@/hooks/use-url-filter-sync";
-import type { ModuleSortDir } from "@/lib/settings/module-list-layout";
 import {
   labListFiltersToSearch,
   parseLabListSearchParams,
@@ -13,20 +12,11 @@ import {
   type LabStatusFilter,
 } from "./lab-list-filters";
 
-export function useLabListFilters({
-  defaultSort = "recentDesc",
-}: {
-  defaultSort?: ModuleSortDir;
-} = {}) {
-  const serialise = useCallback(
-    (f: LabListFilters) => labListFiltersToSearch(f, defaultSort),
-    [defaultSort],
-  );
-
+export function useLabListFilters() {
   const { filters, applyFilters, patchFilters } =
     useUrlFilterSync<LabListFilters>({
       parse: parseLabListSearchParams,
-      serialise,
+      serialise: labListFiltersToSearch,
     });
 
   // Debounced search draft
@@ -115,21 +105,6 @@ export function useLabListFilters({
     [patchFilters],
   );
 
-  const setSortFilter = useCallback(
-    (
-      value: ModuleSortDir,
-      modeOrOptions: "push" | "replace" | UrlFilterSyncOptions = "push",
-    ) => {
-      patchFilters(
-        {
-          sort: value === defaultSort ? undefined : value,
-        },
-        modeOrOptions,
-      );
-    },
-    [defaultSort, patchFilters],
-  );
-
   const resetFilters = useCallback(() => {
     setSearchDraft("");
     applyFilters({});
@@ -144,7 +119,6 @@ export function useLabListFilters({
     setCategoryFilter,
     setFromDay,
     setToDay,
-    setSortFilter,
     resetFilters,
   };
 }

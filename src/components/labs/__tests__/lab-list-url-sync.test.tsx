@@ -167,40 +167,15 @@ describe("LabList URL filter sync — interactions write to URL", () => {
     expect(browser.push).not.toHaveBeenCalled();
   });
 
-  it("pushes sort override and does not set isFiltered", () => {
-    render("");
+  it("leaves a sort param out of the filter state", () => {
+    render("sort=alphaAsc");
     expect(capturedRailProps!.isFiltered).toBe(false);
-    capturedRailProps!.onSortChange("alphaAsc");
-    expect(browser.push).toHaveBeenCalledWith("/labs?sort=alphaAsc");
-  });
-
-  it("omits sort from URL when selecting the preference default", () => {
-    render("sort=alphaAsc");
-    capturedRailProps!.onSortChange("recentDesc");
-    expect(browser.push).toHaveBeenCalledWith("/labs");
-  });
-
-  it("treats recentDesc as effective default sort when prefs.sortDir is manual without manual order", () => {
-    mockModulePrefs.sortDir = "manual";
-    mockModulePrefs.order = [];
-    render("");
-    expect(capturedRailProps!.currentSortDir).toBe("recentDesc");
-    capturedRailProps!.onSortChange("recentDesc");
-    // Does not write redundant ?sort=recentDesc to URL
-    expect(browser.push).not.toHaveBeenCalled();
-  });
-
-  it("clears sort override back to bare pathname when selecting recentDesc under manual prefs without manual order", () => {
-    mockModulePrefs.sortDir = "manual";
-    mockModulePrefs.order = [];
-    render("sort=alphaAsc");
-    expect(capturedRailProps!.currentSortDir).toBe("alphaAsc");
-    capturedRailProps!.onSortChange("recentDesc");
-    expect(browser.push).toHaveBeenCalledWith("/labs");
+    capturedRailProps!.onStatusChange("abnormal");
+    expect(browser.push).toHaveBeenCalledWith("/labs?status=abnormal");
   });
 
   it("reset clears every facet in one push", () => {
-    render("status=abnormal&category=cat_iron&from=2026-09-01&sort=alphaAsc");
+    render("status=abnormal&category=cat_iron&from=2026-09-01");
     expect(capturedRailProps!.isFiltered).toBe(true);
     capturedRailProps!.onResetFilters();
     expect(browser.push).toHaveBeenCalledWith("/labs");
@@ -210,23 +185,21 @@ describe("LabList URL filter sync — interactions write to URL", () => {
 describe("LabList URL filter sync — mounting restores filters from query", () => {
   it("restores every facet into the rail controls", () => {
     render(
-      "q=ferritin&status=in-range&category=cat_iron&from=2026-09-01&to=2026-09-30&sort=alphaDesc",
+      "q=ferritin&status=in-range&category=cat_iron&from=2026-09-01&to=2026-09-30",
     );
     expect(capturedRailProps!.filters.q).toBe("ferritin");
     expect(capturedRailProps!.filters.status).toBe("in-range");
     expect(capturedRailProps!.filters.category).toBe("cat_iron");
     expect(capturedRailProps!.filters.fromDay).toBe("2026-09-01");
     expect(capturedRailProps!.filters.toDay).toBe("2026-09-30");
-    expect(capturedRailProps!.currentSortDir).toBe("alphaDesc");
     expect(capturedRailProps!.isFiltered).toBe(true);
   });
 
   it("drops invalid status and invalid dates without breaking the page", () => {
-    render("status=INVALID&from=2026-02-30&to=not-a-date&sort=UNKNOWN");
+    render("status=INVALID&from=2026-02-30&to=not-a-date");
     expect(capturedRailProps!.filters.status).toBeUndefined();
     expect(capturedRailProps!.filters.fromDay).toBeUndefined();
     expect(capturedRailProps!.filters.toDay).toBeUndefined();
-    expect(capturedRailProps!.currentSortDir).toBe("recentDesc");
     expect(capturedRailProps!.isFiltered).toBe(false);
   });
 

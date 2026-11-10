@@ -71,7 +71,7 @@ describe("parseLabListSearchParams & labListFiltersToSearch", () => {
 
   it("parses valid facets", () => {
     const params = new URLSearchParams(
-      "q=iron&status=abnormal&category=cat_iron&from=2026-01-01&to=2026-12-31&sort=alphaAsc",
+      "q=iron&status=abnormal&category=cat_iron&from=2026-01-01&to=2026-12-31",
     );
     expect(parseLabListSearchParams(params)).toEqual<LabListFilters>({
       q: "iron",
@@ -79,13 +79,12 @@ describe("parseLabListSearchParams & labListFiltersToSearch", () => {
       category: "cat_iron",
       fromDay: "2026-01-01",
       toDay: "2026-12-31",
-      sort: "alphaAsc",
     });
   });
 
-  it("drops invalid status, invalid dates, and invalid sort", () => {
+  it("drops invalid status and invalid dates", () => {
     const params = new URLSearchParams(
-      "status=invalid&category=ALL&from=not-a-date&to=invalid&sort=random",
+      "status=invalid&category=ALL&from=not-a-date&to=invalid",
     );
     expect(parseLabListSearchParams(params)).toEqual({});
   });
@@ -106,14 +105,10 @@ describe("parseLabListSearchParams & labListFiltersToSearch", () => {
     ).toEqual({});
   });
 
-  it("omits default sort from search string", () => {
-    expect(labListFiltersToSearch({ sort: "recentDesc" }, "recentDesc")).toBe(
-      "",
-    );
-    expect(labListFiltersToSearch({ sort: "alphaAsc" }, "recentDesc")).toBe(
-      "sort=alphaAsc",
-    );
-    expect(labListFiltersToSearch({ sort: "alphaAsc" }, "alphaAsc")).toBe("");
+  it("ignores a sort param: the list follows the saved sort only", () => {
+    expect(
+      parseLabListSearchParams(new URLSearchParams("sort=alphaAsc")),
+    ).toEqual({});
   });
 
   it("roundtrips valid filters to search string", () => {
@@ -123,7 +118,6 @@ describe("parseLabListSearchParams & labListFiltersToSearch", () => {
       category: "lipids",
       fromDay: "2026-05-01",
       toDay: "2026-05-31",
-      sort: "recentAsc",
     };
     const search = labListFiltersToSearch(filters);
     const parsed = parseLabListSearchParams(new URLSearchParams(search));

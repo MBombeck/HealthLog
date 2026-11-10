@@ -7,21 +7,10 @@ import {
   FilterBar,
   FilterBarDateRange,
   FilterBarSelect,
-  FILTER_BAR_PILL_CLASSES,
   type FilterBarSelectOption,
 } from "@/components/ui/filter-bar";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
-import {
-  isModuleSortDir,
-  type ModuleSortDir,
-} from "@/lib/settings/module-list-layout";
 import {
   isLabStatusFilter,
   type LabListFilters,
@@ -38,13 +27,10 @@ export interface LabFilterRailProps {
   onCategoryChange: (category: string) => void;
   onFromDayChange: (from: string) => void;
   onToDayChange: (to: string) => void;
-  onSortChange: (sort: ModuleSortDir) => void;
   onResetFilters: () => void;
   isFiltered: boolean;
   categories?: LabOverviewCategoryDto[] | null;
   total?: number;
-  currentSortDir: ModuleSortDir;
-  hasManualOrder?: boolean;
 }
 
 export function LabFilterRail({
@@ -56,13 +42,10 @@ export function LabFilterRail({
   onCategoryChange,
   onFromDayChange,
   onToDayChange,
-  onSortChange,
   onResetFilters,
   isFiltered,
   categories,
   total,
-  currentSortDir,
-  hasManualOrder,
 }: LabFilterRailProps) {
   const { t, tCount } = useTranslations();
   const fmt = useFormatters();
@@ -80,19 +63,6 @@ export function LabFilterRail({
       label: c.label,
     }),
   );
-
-  const sortOptions: FilterBarSelectOption[] = [
-    { value: "recentDesc", label: t("labs.sort.recentDesc") },
-    { value: "recentAsc", label: t("labs.sort.recentAsc") },
-    { value: "alphaAsc", label: t("labs.sort.alphaAsc") },
-    { value: "alphaDesc", label: t("labs.sort.alphaDesc") },
-    ...(hasManualOrder
-      ? [{ value: "manual", label: t("labs.sort.manual") }]
-      : []),
-  ];
-
-  const currentSortLabel =
-    sortOptions.find((o) => o.value === currentSortDir)?.label ?? currentSortDir;
 
   return (
     <div data-slot="lab-filter-rail" className="space-y-3">
@@ -173,32 +143,6 @@ export function LabFilterRail({
           />
         )}
 
-        <span className="relative inline-flex shrink-0">
-          <Select
-            value={currentSortDir}
-            onValueChange={(val) => {
-              if (isModuleSortDir(val)) onSortChange(val);
-            }}
-          >
-            <SelectTrigger
-              aria-label={`${t("labs.sort.heading")}: ${currentSortLabel}`}
-              data-slot="filter-bar-pill"
-              className={FILTER_BAR_PILL_CLASSES}
-            >
-              <span className="truncate">
-                <span className="text-muted-foreground">{t("labs.sort.heading")}: </span>
-                {currentSortLabel}
-              </span>
-            </SelectTrigger>
-            <SelectContent position="popper" align="start">
-              {sortOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </span>
       </FilterBar>
     </div>
   );

@@ -17,7 +17,6 @@ import { queryKeys } from "@/lib/query-keys";
 import {
   useModuleListPrefs,
   type ModuleListView,
-  type ModuleSortDir,
 } from "@/lib/module-list-prefs";
 
 import { LabFilterRail } from "./lab-filter-rail";
@@ -328,7 +327,7 @@ export function LabList({
   const { t, locale } = useTranslations();
   const { canWriteDomain } = useRecordCapabilities();
   const canAddLab = canWriteDomain("labs");
-  const { prefs, isLoaded } = useModuleListPrefs("labs");
+  const { prefs } = useModuleListPrefs("labs");
   const displayTz = useDisplayTimezone();
 
   // v1.22 — a short, factual line under each marker heading describing what the
@@ -343,12 +342,6 @@ export function LabList({
     queryFn: () => apiGet<LabOverviewResponse>("/api/labs/overview"),
   });
 
-  const hasManualOrder = prefs.order.length > 0;
-  const effectiveDefaultSort: ModuleSortDir =
-    prefs.sortDir === "manual" && !hasManualOrder
-      ? "recentDesc"
-      : prefs.sortDir;
-
   const {
     filters,
     searchDraft,
@@ -358,15 +351,8 @@ export function LabList({
     setCategoryFilter,
     setFromDay,
     setToDay,
-    setSortFilter,
     resetFilters,
-  } = useLabListFilters({
-    defaultSort: effectiveDefaultSort,
-  });
-
-  const rawSort = filters.sort ?? effectiveDefaultSort;
-  const effectiveSortDir =
-    rawSort === "manual" && !hasManualOrder ? "recentDesc" : rawSort;
+  } = useLabListFilters();
 
   const rawRows = useMemo(
     () => toMarkerRows(data?.markers ?? [], t),
@@ -394,14 +380,6 @@ export function LabList({
   );
 
   const groupsOpen = useGroupsOpen(prefs.groupsOpen);
-
-  // Scrub unsupported manual sort if preferences confirm no manual order exists.
-  // afterPaint protects mount writes from router history initialization.
-  useEffect(() => {
-    if (isLoaded && filters.sort === "manual" && !hasManualOrder) {
-      setSortFilter(effectiveDefaultSort, { mode: "replace", afterPaint: true });
-    }
-  }, [isLoaded, filters.sort, hasManualOrder, effectiveDefaultSort, setSortFilter]);
 
   // Scrub stale category filter when categories load.
   // afterPaint protects mount writes from router history initialization.
@@ -436,8 +414,8 @@ export function LabList({
   );
 
   const rows = useMemo(
-    () => sortMarkerRows(filteredRows, effectiveSortDir, prefs.order),
-    [filteredRows, effectiveSortDir, prefs.order],
+    () => sortMarkerRows(filteredRows, prefs.sortDir, prefs.order),
+    [filteredRows, prefs.sortDir, prefs.order],
   );
 
   // Categories only when the person asked for them and the server says they
@@ -483,13 +461,10 @@ export function LabList({
       onCategoryChange={setCategoryFilter}
       onFromDayChange={setFromDay}
       onToDayChange={setToDay}
-      onSortChange={setSortFilter}
       onResetFilters={resetFilters}
       isFiltered={effectiveIsFiltered}
       categories={categories}
       total={rows.length}
-      currentSortDir={effectiveSortDir}
-      hasManualOrder={hasManualOrder}
     />
   );
 

@@ -252,12 +252,12 @@ describe("<LabList>", () => {
     expect(html).toContain("1 of 1 outside range");
   });
 
-  it("handles sort=manual gracefully when manual order is empty", () => {
-    mockSearch = "sort=manual";
+  it("sorts by the saved preference and ignores a sort param in the URL", () => {
+    mockSearch = "sort=recentDesc";
     mockModulePrefs = {
       view: "list",
-      order: [], // no manual order
-      sortDir: "recentDesc",
+      order: [],
+      sortDir: "alphaAsc",
       groupBy: "none",
       groupsOpen: "expanded",
       categoryOrder: [],
@@ -268,6 +268,12 @@ describe("<LabList>", () => {
     });
     const overview: LabOverviewResponse = {
       markers: [
+        {
+          key: "bm:b2",
+          count: 1,
+          trend: [5],
+          latest: mockReading({ id: "r2", biomarkerId: "b2", analyte: "Zinc" }),
+        },
         {
           key: "bm:b1",
           count: 1,
@@ -288,9 +294,9 @@ describe("<LabList>", () => {
       </QueryClientProvider>,
     );
 
-    // Should fall back to recentDesc instead of displaying raw "manual"
-    expect(html).toContain("Sort order: Most recent reading first");
-    expect(html).not.toContain("Sort order: manual");
+    expect(html.indexOf("Ferritin")).toBeGreaterThan(-1);
+    expect(html.indexOf("Zinc")).toBeGreaterThan(html.indexOf("Ferritin"));
+    expect(html).not.toContain("Sort order");
   });
 
   it("filters by local day bounds using display timezone (Europe/Warsaw)", () => {

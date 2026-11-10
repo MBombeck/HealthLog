@@ -2,17 +2,14 @@
 
 /**
  * Pure URL-facet helpers for the labs overview list, following the
- * documents-vault and measurements patterns: the list's filter and sort state
- * lives in the page URL (?q&status&category&from&to&sort) so a filtered view is
+ * documents-vault and measurements patterns: the list's filter state
+ * lives in the page URL (?q&status&category&from&to) so a filtered view is
  * deep-linkable and survives navigation, reload and back/forward. Parsing is
  * lenient — an unknown facet drops silently — and serialisation omits defaults
  * so the unfiltered list keeps a clean URL.
  */
 import { applyOrder } from "@/lib/module-list-prefs";
-import {
-  isModuleSortDir,
-  type ModuleSortDir,
-} from "@/lib/settings/module-list-layout";
+import type { ModuleSortDir } from "@/lib/settings/module-list-layout";
 import {
   dateOnlyKey,
   isCalendarDateKey,
@@ -45,8 +42,6 @@ export interface LabListFilters {
   /** Inclusive day bounds, YYYY-MM-DD for newest reading (latest.takenAt). */
   fromDay?: string;
   toDay?: string;
-  /** On-page sort override: recentDesc | recentAsc | alphaAsc | alphaDesc | manual. */
-  sort?: ModuleSortDir;
 }
 
 const STATUS_SET = new Set<string>(LAB_STATUS_FILTERS);
@@ -99,11 +94,6 @@ export function parseLabListSearchParams(
   const toDay = dayOrUndefined(params.get("to"));
   if (toDay) filters.toDay = toDay;
 
-  const sort = params.get("sort")?.trim();
-  if (sort && isModuleSortDir(sort)) {
-    filters.sort = sort;
-  }
-
   return filters;
 }
 
@@ -111,10 +101,7 @@ export function parseLabListSearchParams(
  * Serialise the filter object back into the page URL query string (no leading `?`).
  * Defaults/ALL values are omitted.
  */
-export function labListFiltersToSearch(
-  filters: LabListFilters,
-  defaultSort: ModuleSortDir = "recentDesc",
-): string {
+export function labListFiltersToSearch(filters: LabListFilters): string {
   const sp = new URLSearchParams();
   if (filters.q?.trim()) sp.set("q", filters.q.trim());
   if (filters.status && filters.status !== "ALL")
@@ -124,7 +111,6 @@ export function labListFiltersToSearch(
   }
   if (filters.fromDay) sp.set("from", filters.fromDay);
   if (filters.toDay) sp.set("to", filters.toDay);
-  if (filters.sort && filters.sort !== defaultSort) sp.set("sort", filters.sort);
   return sp.toString();
 }
 
@@ -205,7 +191,12 @@ export function filterMarkerRows(
 }
 
 /**
- * Sort marker rows according to the chosen sort direction and optional manual order.
+ * The person's Labs sort (Settings > Labs) over the server's
+ * most-recent-first order: `recentAsc` reverses, the alpha options sort by
+ * analyte name (#43), and `manual` applies the persisted biomarker order
+ * (legacy un-linked rows, which carry no biomarkerId, sort after the ordered
+ * block). Under categories the same order holds inside each category. The
+ * list has no sort control of its own; the saved one is the only one.
  */
 export function sortMarkerRows(
   rows: readonly MarkerRow[],

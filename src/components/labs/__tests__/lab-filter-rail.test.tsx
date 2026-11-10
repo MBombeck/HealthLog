@@ -20,7 +20,6 @@ describe("<LabFilterRail>", () => {
           onCategoryChange={vi.fn()}
           onFromDayChange={vi.fn()}
           onToDayChange={vi.fn()}
-          onSortChange={vi.fn()}
           onResetFilters={vi.fn()}
           isFiltered={false}
           categories={[
@@ -33,7 +32,6 @@ describe("<LabFilterRail>", () => {
             },
           ]}
           total={5}
-          currentSortDir="recentDesc"
         />
       </I18nProvider>,
     );
@@ -48,16 +46,13 @@ describe("<LabFilterRail>", () => {
     const dateRangeIdx = html.indexOf("Date range");
     const statusIdx = html.indexOf("Status");
     const categoryIdx = html.indexOf("Category");
-    const sortIdx = html.indexOf("Sort order");
 
     expect(searchIdx).toBeGreaterThan(-1);
     expect(dateRangeIdx).toBeGreaterThan(searchIdx);
     expect(statusIdx).toBeGreaterThan(dateRangeIdx);
     expect(categoryIdx).toBeGreaterThan(statusIdx);
-    expect(sortIdx).toBeGreaterThan(categoryIdx);
-
-    // Active sort label is shown directly in the trigger
-    expect(html).toContain("Sort order: Most recent reading first");
+    // The saved sort in Settings > Labs is the only sort; the rail has none.
+    expect(html).not.toContain("Sort order");
     expect(html).toContain("5 biomarkers");
   });
 
@@ -73,11 +68,9 @@ describe("<LabFilterRail>", () => {
           onCategoryChange={vi.fn()}
           onFromDayChange={vi.fn()}
           onToDayChange={vi.fn()}
-          onSortChange={vi.fn()}
           onResetFilters={vi.fn()}
           isFiltered={true}
           total={1}
-          currentSortDir="recentDesc"
         />
       </I18nProvider>,
     );
@@ -106,11 +99,9 @@ describe("<LabFilterRail>", () => {
             onCategoryChange={vi.fn()}
             onFromDayChange={vi.fn()}
             onToDayChange={vi.fn()}
-            onSortChange={vi.fn()}
-            onResetFilters={vi.fn()}
+              onResetFilters={vi.fn()}
             isFiltered={false}
             total={total}
-            currentSortDir="recentDesc"
           />
         </I18nProvider>,
       );
@@ -137,59 +128,13 @@ describe("<LabFilterRail>", () => {
           onCategoryChange={vi.fn()}
           onFromDayChange={vi.fn()}
           onToDayChange={vi.fn()}
-          onSortChange={vi.fn()}
           onResetFilters={vi.fn()}
           isFiltered={true}
           total={2}
-          currentSortDir="recentDesc"
         />
       </I18nProvider>,
     );
 
     expect(html).toContain("Reset");
-  });
-
-  it("renders active sort label in the trigger", () => {
-    const htmlAlpha = renderToStaticMarkup(
-      <I18nProvider initialLocale="en">
-        <LabFilterRail
-          filters={{}}
-          searchDraft=""
-          onSearchChange={vi.fn()}
-          searchInputRef={{ current: null }}
-          onStatusChange={vi.fn()}
-          onCategoryChange={vi.fn()}
-          onFromDayChange={vi.fn()}
-          onToDayChange={vi.fn()}
-          onSortChange={vi.fn()}
-          onResetFilters={vi.fn()}
-          isFiltered={false}
-          total={3}
-          currentSortDir="alphaAsc"
-        />
-      </I18nProvider>,
-    );
-    expect(htmlAlpha).toContain("Sort order: Name (A–Z)");
-
-    const htmlRecent = renderToStaticMarkup(
-      <I18nProvider initialLocale="en">
-        <LabFilterRail
-          filters={{}}
-          searchDraft=""
-          onSearchChange={vi.fn()}
-          searchInputRef={{ current: null }}
-          onStatusChange={vi.fn()}
-          onCategoryChange={vi.fn()}
-          onFromDayChange={vi.fn()}
-          onToDayChange={vi.fn()}
-          onSortChange={vi.fn()}
-          onResetFilters={vi.fn()}
-          isFiltered={false}
-          total={3}
-          currentSortDir="recentDesc"
-        />
-      </I18nProvider>,
-    );
-    expect(htmlRecent).toContain("Sort order: Most recent reading first");
   });
 });
