@@ -219,7 +219,7 @@ export const PATCH = apiHandler(
     const reEnabled = updateData.enabled === true && !existing.enabled;
     // Re-enabling a reminder that stays due after it is sent keeps the slot it
     // was on, overdue or not: switching it off and on again is not doing it.
-    // A short-cycle reminder is scheduled from now, as before.
+    // A calendar rule that recurs within the week is scheduled from now.
     const keepsOpenSlot =
       reEnabled &&
       !cadenceChanged &&

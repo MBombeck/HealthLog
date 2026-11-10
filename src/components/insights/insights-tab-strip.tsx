@@ -380,6 +380,7 @@ export const SUB_PAGE_TABS: Record<
     labelKey: "insights.navBloodGlucose",
     metric: "BLOOD_GLUCOSE",
   },
+  ketones: { labelKey: "insights.navBloodKetones", metric: "BLOOD_KETONES" },
   "skin-temperature": {
     labelKey: "insights.navSkinTemperature",
     metric: "SKIN_TEMPERATURE",

@@ -10,6 +10,18 @@ import { z } from "zod/v4";
 /** The feed's title modes. Mirrors `CycleCalendarFeedTitleMode`. */
 export const cycleFeedTitleModeEnum = z.enum(["DISCREET", "DESCRIPTIVE"]);
 
+/** How a forecast period is drawn. Mirrors `CycleCalendarFeedForecastStyle`. */
+export const cycleFeedForecastStyleEnum = z.enum(["EXACT", "MARGIN", "BAND"]);
+
+/**
+ * The style a newly minted feed starts with. The column's own default is BAND,
+ * which keeps every feed minted before the option on the events it had; a new
+ * one starts with the calculated days and their margin drawn apart.
+ */
+export const NEW_FEED_FORECAST_STYLE: z.infer<
+  typeof cycleFeedForecastStyleEnum
+> = "MARGIN";
+
 /** Forecast cycles ahead. The feed caps itself further by band width. */
 export const FEED_HORIZON_MIN = 1;
 export const FEED_HORIZON_MAX = 6;
@@ -33,6 +45,7 @@ export const cycleFeedOptionsPatchSchema = z
       .optional(),
     includeFertile: z.boolean().optional(),
     titleMode: cycleFeedTitleModeEnum.optional(),
+    forecastStyle: cycleFeedForecastStyleEnum.optional(),
   })
   .strict()
   .refine((v) => Object.keys(v).length > 0, {

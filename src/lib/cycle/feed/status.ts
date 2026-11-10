@@ -10,7 +10,7 @@ import type { ProjectionState } from "@/lib/cycle/projection";
 
 import { buildCycleFeed, type FeedSubject } from "./build";
 import { fetcherFamily, type FetcherFamily } from "./fetcher";
-import type { FeedTitleMode } from "./events";
+import type { FeedForecastStyle, FeedTitleMode } from "./events";
 
 export const FEED_SUMMARY_SELECT = {
   id: true,
@@ -23,6 +23,7 @@ export const FEED_SUMMARY_SELECT = {
   historyCycles: true,
   includeFertile: true,
   titleMode: true,
+  forecastStyle: true,
 } as const;
 
 export interface FeedSummaryRow {
@@ -36,6 +37,7 @@ export interface FeedSummaryRow {
   historyCycles: number;
   includeFertile: boolean;
   titleMode: FeedTitleMode;
+  forecastStyle: FeedForecastStyle;
 }
 
 export interface CycleFeedSummary {
@@ -49,6 +51,7 @@ export interface CycleFeedSummary {
   historyCycles: number;
   includeFertile: boolean;
   titleMode: FeedTitleMode;
+  forecastStyle: FeedForecastStyle;
 }
 
 export interface CycleFeedStatus {
@@ -74,6 +77,7 @@ export function toFeedSummary(row: FeedSummaryRow): CycleFeedSummary {
     historyCycles: row.historyCycles,
     includeFertile: row.includeFertile,
     titleMode: row.titleMode,
+    forecastStyle: row.forecastStyle,
   };
 }
 

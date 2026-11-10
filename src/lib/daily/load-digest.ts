@@ -28,7 +28,7 @@ import {
 import { userDayKey } from "@/lib/tz/format";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
 import { calendarDaysUntil } from "@/lib/measurement-reminders/due-day";
-import { holdsOpenAfterReminder } from "@/lib/measurement-reminders/holds-open";
+import { hasLongCycle } from "@/lib/measurement-reminders/holds-open";
 import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { DASHBOARD_REFETCH_INTERVAL_MS } from "@/lib/queries/refetch-interval";
 import { isArrivalKind } from "@/lib/arrivals/types";
@@ -592,9 +592,9 @@ export async function loadDailyDigest(
       //
       // Read up to the end of the person's local day; the filter below keeps
       // what is due now, plus what is due later today when it is a reminder
-      // that stays due (see `holdsOpenAfterReminder`). Since v1.39.2 such a
-      // reminder keeps its due date after it is sent, so the overdue ones
-      // stay here until they are satisfied, skipped or snoozed.
+      // on a long cycle (see `hasLongCycle`). A reminder that stays due after
+      // it is sent (`holdsOpenAfterReminder`) keeps its due date, so the
+      // overdue ones stay here until they are satisfied, skipped or snoozed.
       where: {
         userId: user.id,
         enabled: true,
@@ -896,21 +896,21 @@ export async function loadDailyDigest(
   // the checkups page and the dashboard card translate it, and so does this
   // line. A free-text label (every other row) is the person's own words.
   //
-  // A reminder that stays due after it is sent (a cycle longer than a week,
-  // a fortnightly questionnaire, a yearly check-up) is on the rail for its
-  // whole due day and keeps its place under the cap. A short-cycle one (a
-  // daily weigh-in, a twice-daily course) is a rhythm: it shows only once its
-  // time has come, is not pinned, and its next reading moves it on.
+  // A reminder on a cycle longer than a week (a fortnightly questionnaire, a
+  // yearly check-up) is on the rail for its whole due day and keeps its place
+  // under the cap. A short-cycle one (a daily weigh-in, a twice-daily course)
+  // is a rhythm: it shows only once its time has come and is not pinned; a
+  // missed rolling one then stays here, overdue, until its reading lands.
   const preventiveDue: DailyDigestPreventiveDue[] = [];
   for (const row of dueReminders) {
     if (row.nextDueAt === null) continue;
-    const staysDue = holdsOpenAfterReminder(row, user.timezone, row.nextDueAt);
-    if (!staysDue && row.nextDueAt.getTime() > now.getTime()) continue;
+    const longCycle = hasLongCycle(row, user.timezone, row.nextDueAt);
+    if (!longCycle && row.nextDueAt.getTime() > now.getTime()) continue;
     let label = row.label;
     if (row.origin === "COACH") {
       label = translateOrNull(t, row.label) ?? label;
     }
-    preventiveDue.push({ label, staysDue });
+    preventiveDue.push({ label, longCycle });
   }
 
   // Group the two figures for the reader. `Intl.NumberFormat` is the only

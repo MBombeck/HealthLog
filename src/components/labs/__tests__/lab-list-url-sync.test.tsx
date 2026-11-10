@@ -48,6 +48,7 @@ const mockModulePrefs: ModuleListPrefs = {
   sortDir: "recentDesc",
   groupBy: "none",
   groupsOpen: "expanded",
+  categoryOrder: [],
 };
 
 vi.mock("@/lib/module-list-prefs", async (importOriginal) => {

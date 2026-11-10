@@ -118,6 +118,13 @@ export interface DoctorReportData {
    * `stillLearning` when the period is too thin to assert clinically.
    */
   glucoseClinical: GlucoseClinicalMetrics;
+  /**
+   * #1367 — the glucose-ketone index over the period (count, mean, range,
+   * latest), derived at read time from each ketone reading and the glucose
+   * reading paired with it. Null when there is none or when either reading
+   * type is withheld. Optional so older fixtures still typecheck.
+   */
+  glucoseKetoneIndex?: DoctorReportStats | null;
   bmi: number | null;
   /** Keyed by medication id; see `DoctorReportCompliance`. */
   compliance: Record<string, DoctorReportCompliance>;

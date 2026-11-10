@@ -196,6 +196,32 @@ describe("measurementSeriesObservation", () => {
     expect(o.code.coding?.[0]?.code).toBe(MEASUREMENT_LOINC.WEIGHT.loinc);
   });
 
+  it("codes blood ketones as beta-hydroxybutyrate in blood (#1367)", () => {
+    const o = measurementSeriesObservation(
+      {
+        id: "k1",
+        type: "BLOOD_KETONES",
+        value: 1.4,
+        valueMin: null,
+        valueMax: null,
+        measuredAt: AT,
+        glucoseContext: null,
+      },
+      "mg/dL",
+      null,
+    )!;
+    assertR4Observation(o);
+    expect(o.category?.[0]?.coding?.[0]?.code).toBe("laboratory");
+    expect(o.code.coding).toEqual([
+      {
+        system: "http://loinc.org",
+        code: "104816-4",
+        display: "Beta hydroxybutyrate [Moles/volume] in Blood",
+      },
+    ]);
+    expect(o.valueQuantity).toMatchObject({ value: 1.4, unit: "mmol/L" });
+  });
+
   it("labels RMSSD as its own text-only statistic, never under SDNN's code", () => {
     const o = measurementSeriesObservation(
       {

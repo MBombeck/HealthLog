@@ -126,6 +126,7 @@ describe("/api/settings/module-list-layout — integration", () => {
       sortDir: "manual",
       groupBy: "none",
       groupsOpen: "expanded",
+      categoryOrder: [],
       saved: true,
     });
     expect(body.data.lists.illness).toMatchObject({
@@ -186,6 +187,61 @@ describe("/api/settings/module-list-layout — integration", () => {
 
     const refused = await (PUT as Handler)(
       json("PUT", URL, { version: 1, list: "labs", groupsOpen: "all" }),
+    );
+    expect(refused.status).toBe(422);
+  });
+
+  it("stores the category order deduplicated and keeps it through other writes", async () => {
+    const { userId } = await seedUser();
+    const { GET, PUT } =
+      await import("@/app/api/settings/module-list-layout/route");
+    const put = await (PUT as Handler)(
+      json("PUT", URL, {
+        version: 1,
+        list: "labs",
+        categoryOrder: ["thyroid", "other", "thyroid", "lipids"],
+      }),
+    );
+    expect(put.status).toBe(200);
+    await (PUT as Handler)(
+      json("PUT", URL, { version: 1, list: "labs", groupBy: "category" }),
+    );
+    const res = await (GET as Handler)(new Request(URL));
+    const body = (await res.json()) as {
+      data: { lists: Record<string, Record<string, unknown>> };
+    };
+    expect(body.data.lists.labs).toMatchObject({
+      categoryOrder: ["thyroid", "other", "lipids"],
+      groupBy: "category",
+      saved: true,
+    });
+    const row = await getPrismaClient().user.findUnique({
+      where: { id: userId },
+      select: { moduleListLayoutJson: true },
+    });
+    expect(row?.moduleListLayoutJson).toEqual({
+      version: 1,
+      labs: {
+        categoryOrder: ["thyroid", "other", "lipids"],
+        groupBy: "category",
+      },
+    });
+
+    // An empty order is a choice too: back to the default order.
+    await (PUT as Handler)(
+      json("PUT", URL, { version: 1, list: "labs", categoryOrder: [] }),
+    );
+    const reset = (await (await (GET as Handler)(new Request(URL))).json()) as {
+      data: { lists: { labs: { categoryOrder: string[] } } };
+    };
+    expect(reset.data.lists.labs.categoryOrder).toEqual([]);
+
+    const refused = await (PUT as Handler)(
+      json("PUT", URL, {
+        version: 1,
+        list: "labs",
+        categoryOrder: ["x".repeat(65), ""],
+      }),
     );
     expect(refused.status).toBe(422);
   });

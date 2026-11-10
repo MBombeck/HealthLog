@@ -32,16 +32,23 @@ managed on the web; the iOS app shows where to find it.
 ## What the feed shows
 
 - The next period and, once three cycles are logged, a few after it (three
-  by default, up to six). Each event covers the whole window the period may
-  fall in, and the window widens the further out it is. The list stops itself
-  where a date would be more guess than estimate (beyond about ±10 days, or
-  half a cycle).
+  by default, up to six). The range a period may fall in widens the further
+  out it is, and the list stops itself where a date would be more guess
+  than estimate (beyond about ±10 days, or half a cycle). How that range is
+  drawn is up to you, under "How forecasts look":
+  - **Expected days with margin** (the default for a new subscription): the
+    expected days as one event, and the days the period may start earlier
+    or run on later as separate "Period possible" events.
+  - **Expected days**: only the expected days, as one event.
+  - **One range**: one event covering the whole range. A subscription
+    turned on before v1.47.2 keeps this style until you change it, and
+    renewing the link keeps whichever style it has.
 - Optionally, your past cycles (up to twelve).
 - Optionally, when your goal is trying to conceive, the estimated fertile
   window of the next cycle. It is an estimate, not a contraceptive method.
 
-Titles are discreet by default: each event is a dot and the calendar is called
-"HealthLog". Descriptive titles name the period instead. Events never carry
+Titles are discreet by default: a period is a dot (●), a possible day an open
+dot (○), and the calendar is called "HealthLog". Descriptive titles name the period instead. Events never carry
 symptoms, notes or any other detail of your log.
 
 When a period is later than its window, the feed shows no forecast until you

@@ -30,7 +30,11 @@ import { moodDateKey } from "@/lib/mood/date-key";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 import { icsContentHash, type IcsCalendar } from "../ics";
-import { buildFeedCalendar, type FeedTitleMode } from "./events";
+import {
+  buildFeedCalendar,
+  type FeedForecastStyle,
+  type FeedTitleMode,
+} from "./events";
 import { historyPeriods, historyWindowStart } from "./history";
 
 /** The feed options the body depends on. */
@@ -40,6 +44,7 @@ export interface FeedOptions {
   historyCycles: number;
   includeFertile: boolean;
   titleMode: FeedTitleMode;
+  forecastStyle: FeedForecastStyle;
 }
 
 /** The record the feed serves, as far as building it needs. */
@@ -147,6 +152,7 @@ export async function buildCycleFeed(
   const calendar = buildFeedCalendar({
     feedId: feed.id,
     titleMode: feed.titleMode,
+    forecastStyle: feed.forecastStyle,
     projected: projection.cycles,
     history,
     fertile,

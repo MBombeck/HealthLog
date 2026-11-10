@@ -171,7 +171,7 @@ export const labOverviewResponse = z
     markers: z.array(labOverviewMarker),
     categories: z.array(labOverviewCategory).meta({
       description:
-        "The list's categories in display order: catalog panels in catalog order, then the person's own panels by label, then `other`.",
+        "The list's categories in display order, already arranged for the caller: the default order is catalog panels in catalog order, then the person's own panels by label, then `other`, and the caller's `categoryOrder` (`PUT /api/settings/module-list-layout`, labs list) is applied over it. Render them in this order.",
     }),
     grouped: z.boolean().meta({
       description:

@@ -14,6 +14,7 @@ import {
   decodeCursorIssuedAt,
   encodeCursor,
   encodeCursorAtNow,
+  drainedWatermark,
   SYNC_DOMAINS,
   type SyncCursor,
   type SyncDomain,
@@ -110,7 +111,7 @@ function emptyChanges(): SyncChangesBody["changes"] {
 }
 
 /**
- * `start=now` (#1339): an empty page with a cursor a minute before
+ * `start=now` (#1339): an empty page with a cursor two minutes before
  * `serverNow` in every domain (`encodeCursorAtNow`), for a client that wants changes from now on (the Apple Health
  * write-back) without paging through the history first. `hasMore` is false:
  * the client is caught up as of `serverNow` by definition.
@@ -232,6 +233,39 @@ export async function pullSyncChanges(input: {
     cd.hasMore ||
     cy.hasMore ||
     mm.hasMore;
+
+  // A row domain whose page ran dry takes the overlap watermark
+  // (`drainedWatermark`). On the last page of a walk every one does. On an
+  // earlier page only one whose watermark has not yet passed the overlap
+  // line: one that walked into the last stretch on a full page keeps its
+  // place, because reading that stretch again while it holds more than a
+  // page, with another domain still paging, would never end. The cycle
+  // domains are left alone while the module is off, and `measurementMirror`
+  // keeps its token stamps: re-reading its stretch would send every reading
+  // of a token whose switch just flipped once more on every pull.
+  const drained = drainedWatermark(serverNow.getTime());
+  const rowDomains: Array<[SyncDomain, boolean]> = [
+    ["measurements", m.hasMore],
+    ["mood", md.hasMore],
+    ["intakes", ik.hasMore],
+    ...(cycleEnabled
+      ? ([
+          ["cycleDays", cd.hasMore],
+          ["cycles", cy.hasMore],
+        ] as Array<[SyncDomain, boolean]>)
+      : []),
+  ];
+  for (const [domain, domainHasMore] of rowDomains) {
+    if (domainHasMore) continue;
+    const before = cursor[domain];
+    if (
+      !hasMore ||
+      before === undefined ||
+      before.updatedAtMs <= drained.updatedAtMs
+    ) {
+      nextCursor[domain] = drained;
+    }
+  }
 
   annotate({
     action: { name: "sync.changes.pull" },

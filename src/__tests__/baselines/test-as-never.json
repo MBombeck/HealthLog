@@ -1,7 +1,7 @@
 {
   "$comment": "as never casts in tests, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
   "count": 523,
-  "total": 5476,
+  "total": 5475,
   "entries": {
     "__tests__/api/auth/login/mfa-branch.test.ts": 10,
     "__tests__/api/auth/mfa/verify.test.ts": 9,
@@ -440,7 +440,7 @@
     "lib/jobs/__tests__/insight-status-generate.test.ts": 2,
     "lib/jobs/__tests__/measurement-maintenance-schedule.test.ts": 2,
     "lib/jobs/__tests__/measurement-reminder-byhour.test.ts": 2,
-    "lib/jobs/__tests__/measurement-reminder.test.ts": 33,
+    "lib/jobs/__tests__/measurement-reminder.test.ts": 32,
     "lib/jobs/__tests__/medication-intake-import.test.ts": 1,
     "lib/jobs/__tests__/medication-reminder-check.test.ts": 27,
     "lib/jobs/__tests__/mood-reminder.test.ts": 15,

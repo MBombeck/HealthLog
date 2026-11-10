@@ -20,6 +20,12 @@ export const VALUE_RANGES: Record<string, { min: number; max: number }> = {
   SLEEP_DURATION: { min: 0, max: 1440 },
   ACTIVITY_STEPS: { min: 0, max: 200000 },
   BLOOD_GLUCOSE: { min: 20, max: 800 }, // mg/dL — covers severe hypo to severe hyperglycemia
+  // Beta-hydroxybutyrate, mmol/L. The blood ketone meters people type these
+  // off (Abbott Precision Xtra / FreeStyle Optium, Keto-Mojo, Nova Max Plus)
+  // measure from 0.0 or 0.1 up to 8.0 mmol/L and print "HI" above it; 10
+  // leaves room for a venous value read off a lab sheet. A meter reads 0.0,
+  // so zero is a real reading, not an empty one.
+  BLOOD_KETONES: { min: 0, max: 10 },
   TOTAL_BODY_WATER: { min: 5, max: 100 }, // kg of water — adults typically 30–55 kg
   BONE_MASS: { min: 0.5, max: 8 }, // kg — adult plausibility (typical 2.5–4.5 kg)
   // Pulse oximetry (SpO2). BTS Guideline 2017 + ATS clinical practice put the

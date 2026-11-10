@@ -3,7 +3,7 @@
   "body": {
     "data": {
       "serverNow": "<now>",
-      "cursor": "eyJ2IjoyLCJ0IjoxNzkyMDY1NjAwMDAwLCJkIjp7Im1lYXN1cmVtZW50cyI6eyJ1IjoxNzkyMDQ4MjAwMDAwLCJpIjoibS0wMiJ9LCJtb29kIjp7InUiOjE3OTIwNTE4MDAwMDAsImkiOiJtb29kLTAyIn0sImludGFrZXMiOnsidSI6MTc5MjA1MzAwMDAwMCwiaSI6ImluLTAyIn0sImN5Y2xlRGF5cyI6eyJ1IjoxNzkyMDU2NjAwMDAwLCJpIjoiY2QtMDIifSwiY3ljbGVzIjp7InUiOjE3OTIwNTQ4MDAwMDAsImkiOiJjeS0wMiJ9fX0",
+      "cursor": "eyJ2IjoyLCJ0IjoxNzkyMDY1NjAwMDAwLCJkIjp7Im1lYXN1cmVtZW50cyI6eyJ1IjoxNzkyMDQ4MjAwMDAwLCJpIjoibS0wMiJ9LCJtb29kIjp7InUiOjE3OTIwNjU0ODAwMDAsImkiOiIwIn0sImludGFrZXMiOnsidSI6MTc5MjA1MzAwMDAwMCwiaSI6ImluLTAyIn0sImN5Y2xlRGF5cyI6eyJ1IjoxNzkyMDU2NjAwMDAwLCJpIjoiY2QtMDIifSwiY3ljbGVzIjp7InUiOjE3OTIwNTQ4MDAwMDAsImkiOiJjeS0wMiJ9fX0",
       "hasMore": true,
       "cursorExpired": false,
       "changes": {

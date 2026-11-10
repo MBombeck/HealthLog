@@ -193,6 +193,39 @@ describe("runInboundExtraction — stated-status-only mapping", () => {
     expect(result.facts.map((f) => f.needsReview)).toEqual([true, false]);
   });
 
+  it('drops a lab\'s "(calc)" note from the unit, so two reports land in one', async () => {
+    const provider = fakeProvider(
+      JSON.stringify({
+        facts: [
+          {
+            type: "OBSERVATION",
+            label: "Globulin",
+            value: 2.6,
+            unit: "g/dL (calc)",
+            confidence: 0.95,
+            sourceText: "Globulin 2.6 g/dL (calc)",
+          },
+          {
+            type: "OBSERVATION",
+            label: "A/G Ratio",
+            value: 1.7,
+            unit: "(calc)",
+            confidence: 0.95,
+            sourceText: "A/G Ratio 1.7 (calc)",
+          },
+        ],
+      }),
+    );
+
+    const result = await runInboundExtraction(oneRead(provider));
+    expect(
+      result.facts.map((f) => (f.data as ObservationFactData).unit),
+    ).toEqual(["g/dL", null]);
+    // A unit that was only the note goes to review: no unit is a choice a
+    // person makes, not one a read makes for them.
+    expect(result.facts.map((f) => f.needsReview)).toEqual([false, true]);
+  });
+
   it("stores the document's real span, not the model's echo of it", async () => {
     // The OCR text says "Hämoglobin    14.2 g/dL"; the model echoes a tidied
     // rendering of it. The stored provenance must be the document's characters.

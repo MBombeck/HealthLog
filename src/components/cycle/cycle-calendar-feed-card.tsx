@@ -28,6 +28,7 @@ import {
   type CycleFeedMinted,
   type CycleFeedOptionsPatch,
   type CycleFeedStatus,
+  type FeedForecastStyle,
   type FeedTitleMode,
 } from "./use-cycle-feed";
 
@@ -44,6 +45,7 @@ import {
 const HORIZONS = [1, 3, 6] as const;
 const HISTORIES = [0, 3, 6, 12] as const;
 const TITLE_MODES: FeedTitleMode[] = ["DISCREET", "DESCRIPTIVE"];
+const FORECAST_STYLES: FeedForecastStyle[] = ["EXACT", "MARGIN", "BAND"];
 
 /** A long URL with its middle elided, so both ends stay recognisable. */
 function middleTruncate(url: string, keep = 28): string {
@@ -351,6 +353,31 @@ function FeedOptions({ status }: { status: CycleFeedStatus }) {
             ))}
           </NativeSelect>
         </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="cycle-feed-forecast">{t("cycle.feed.forecasts")}</Label>
+        <NativeSelect
+          id="cycle-feed-forecast"
+          value={feed.forecastStyle}
+          disabled={update.isPending}
+          aria-describedby="cycle-feed-forecast-hint"
+          onChange={(e) =>
+            save({ forecastStyle: e.target.value as FeedForecastStyle })
+          }
+        >
+          {FORECAST_STYLES.map((s) => (
+            <option key={s} value={s}>
+              {t(`cycle.feed.forecastStyle.${s}`)}
+            </option>
+          ))}
+        </NativeSelect>
+        <p
+          id="cycle-feed-forecast-hint"
+          className="text-muted-foreground text-sm"
+          data-slot="cycle-feed-forecast-hint"
+        >
+          {t(`cycle.feed.forecastStyleHint.${feed.forecastStyle}`)}
+        </p>
       </div>
       {status.fertileAvailable ? (
         <div className="flex items-start justify-between gap-4">

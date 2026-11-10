@@ -70,8 +70,8 @@ describe("report scope gating — structural guard", () => {
   it("reads a plausible catalogue", () => {
     // Sanity floor: a silently degraded catalogue would pass everything below
     // vacuously.
-    expect(ALL_LEAF_IDS.length).toBe(111);
-    expect(Object.keys(MEASUREMENT_LEAF_GROUP)).toHaveLength(91);
+    expect(ALL_LEAF_IDS.length).toBe(112);
+    expect(Object.keys(MEASUREMENT_LEAF_GROUP)).toHaveLength(92);
     expect(Object.keys(STRUCTURED_LEAF_GROUP)).toHaveLength(20);
   });
 

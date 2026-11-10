@@ -54,6 +54,7 @@ const FEED_ROW = {
   historyCycles: 0,
   includeFertile: false,
   titleMode: "DISCREET",
+  forecastStyle: "BAND",
 };
 
 function request(path = `${TOKEN}.ics`, headers: Record<string, string> = {}) {

@@ -103,13 +103,16 @@ export function encodeCursor(cursor: SyncCursor, issuedAtMs?: number): string {
 }
 
 /**
- * How far behind the present a `start=now` cursor is placed. `updatedAt` is
- * stamped by the application when the write is built, not when it commits, so
- * a transaction in flight at `nowMs` can commit a row stamped before it after
- * the cursor was handed out; a watermark at `nowMs` would skip that row for
- * good. A minute covers any write the app keeps open.
+ * How far behind the present a caught-up watermark is placed: a `start=now`
+ * cursor, and every domain a page has drained. `updatedAt` is stamped by the
+ * application when the write is built, not when it commits, so a transaction
+ * in flight can commit a row stamped before a watermark after it was handed
+ * out; a watermark at the present would skip that row for good. The longest
+ * interactive transaction that writes served rows (the provider syncs and the
+ * intake import) times out at 60 s, so two minutes covers any of them with
+ * room to spare.
  */
-export const START_NOW_OVERLAP_MS = 60_000;
+export const START_NOW_OVERLAP_MS = 120_000;
 
 /**
  * A token positioned just before `nowMs` in every domain (#1339), the same
@@ -127,6 +130,27 @@ export function encodeCursorAtNow(nowMs: number): string {
     cursor[domain] = { updatedAtMs: watermark, id: "0" };
   }
   return encodeCursor(cursor, nowMs);
+}
+
+/**
+ * The watermark for a domain whose page has run dry: `START_NOW_OVERLAP_MS`
+ * before `nowMs`, whichever way that moves it.
+ *
+ * Back, when the last row delivered is newer: a long write (a provider sync
+ * holds its transaction for seconds) stamps its rows first and commits them
+ * last, so a quick write committing in between carried the watermark past
+ * them and the keyset never returned them. Held back, the next pull reads
+ * that stretch again and the late rows come with it.
+ *
+ * Forward, when the last row is older or there is none: the page just read
+ * everything past the old watermark, so nothing older than the overlap is
+ * left behind it. A domain that stays quiet would otherwise keep the stamp
+ * of its last row for good, and once that is older than the tombstone
+ * horizon every pull answers `cursorExpired` and the client resyncs from
+ * scratch, again and again.
+ */
+export function drainedWatermark(nowMs: number): DomainWatermark {
+  return { updatedAtMs: nowMs - START_NOW_OVERLAP_MS, id: "0" };
 }
 
 function parseWatermark(raw: unknown): DomainWatermark | null {

@@ -8,6 +8,10 @@
  *      it is reminded once, keeps its due date, shows on the start page's
  *      digest, is not reminded again the same day or the next, is reminded
  *      once more seven days on, and moves to next year when it is marked done.
+ *      A missed every-two-days blood pressure reading, first due a month
+ *      back, does the same on its own rhythm: due and overdue after each
+ *      reminder, asked for again every second day, two days on from the
+ *      reading that lands.
  *   2. **Migration 0355's repair.** The container has every migration applied
  *      already, so the data steps are pulled out of the `.sql` file and run
  *      again against rows seeded the way an upgrading instance holds them:
@@ -24,6 +28,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Prisma } from "@/generated/prisma/client";
 import { runMeasurementReminderTick } from "@/lib/jobs/measurement-reminder";
 import { satisfyReminder } from "@/lib/measurement-reminders/satisfy";
+import {
+  computeReminderNextDueAt,
+  parseReminderAnchor,
+} from "@/lib/measurement-reminders/scheduling";
+import {
+  isOverdueDue,
+  relativeDueKey,
+} from "@/lib/measurement-reminders/due-day";
 import { loadDailyDigest } from "@/lib/daily/load-digest";
 import type { DispatchOutcome } from "@/lib/notifications/dispatcher";
 
@@ -239,6 +251,97 @@ describe("an open fortnightly questionnaire through the reminder tick", () => {
   });
 });
 
+describe("a missed every-two-days reading through the reminder tick", () => {
+  // 18:00 in Berlin in November (UTC+1).
+  const SIX_PM = new Date("2026-11-08T17:00:00.000Z");
+
+  it("stays due and overdue, repeats every second day, and moves on from the reading", async () => {
+    const prisma = getPrismaClient();
+    const user = await seedUser("bp-owner");
+    // Created this morning with a first due date a month back, as the form
+    // does; the due date is the one the create route computes.
+    const createdAt = new Date("2026-11-08T09:00:00.000Z");
+    const schedule = {
+      intervalDays: 2,
+      rrule: null,
+      anchorDate: parseReminderAnchor("2026-10-04", TZ),
+      notifyHour: 18,
+      lastSatisfiedAt: null,
+      createdAt,
+    };
+    const firstDue = computeReminderNextDueAt(schedule, TZ, createdAt);
+    expect(firstDue).toEqual(new Date("2026-10-04T16:00:00.000Z"));
+    const created = await prisma.measurementReminder.create({
+      data: {
+        userId: user.id,
+        label: "Blood pressure",
+        measurementType: "BLOOD_PRESSURE_SYS",
+        ...schedule,
+        origin: "VORSORGE",
+        enabled: true,
+        nextDueAt: firstDue,
+        createdAt,
+      },
+    });
+    const dispatch = vi.fn(async () => OK);
+    const tick = (at: Date) =>
+      runMeasurementReminderTick(prisma, at, { dispatch });
+    const read = () =>
+      prisma.measurementReminder.findUniqueOrThrow({
+        where: { id: created.id },
+      });
+
+    // Reminded at 18:00; at 20:40 it still reads overdue, not "in 2 days".
+    expect((await tick(SIX_PM)).dispatched).toBe(1);
+    let row = await read();
+    expect(row.nextDueAt).toEqual(firstDue);
+    expect(row.lastNotifiedAt).toEqual(SIX_PM);
+    const evening = new Date(SIX_PM.getTime() + 160 * 60 * 1000);
+    expect(
+      isOverdueDue(
+        relativeDueKey(row.nextDueAt!.toISOString(), evening.getTime(), TZ),
+      ),
+    ).toBe(true);
+    const fullUser = await prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+    });
+    const digest = await loadDailyDigest(fullUser, evening, { locale: "en" });
+    const care = digest.worthALook.find((i) => i.kind === "preventive_care");
+    expect(care?.body).toContain("Blood pressure");
+
+    // The next evening: held. Two days on: reminded again, still due.
+    expect(
+      (await tick(new Date(SIX_PM.getTime() + DAY))).skippedRepeatHeld,
+    ).toBe(1);
+    const twoDaysOn = new Date(SIX_PM.getTime() + 2 * DAY);
+    await tick(twoDaysOn);
+    await tick(new Date(twoDaysOn.getTime() + 15 * 60 * 1000));
+    expect(dispatch).toHaveBeenCalledTimes(2);
+    row = await read();
+    expect(row.nextDueAt).toEqual(firstDue);
+    expect(row.lastNotifiedAt).toEqual(twoDaysOn);
+
+    // Measured the next morning: two days on from the reading.
+    const measuredAt = new Date("2026-11-11T07:30:00.000Z");
+    await prisma.measurement.create({
+      data: {
+        userId: user.id,
+        type: "BLOOD_PRESSURE_SYS",
+        value: 128,
+        unit: "mmHg",
+        measuredAt,
+        source: "MANUAL",
+      },
+    });
+    const resolved = await tick(new Date(SIX_PM.getTime() + 3 * DAY));
+    expect(resolved.autoResolved).toBe(1);
+    row = await read();
+    expect(row.lastSatisfiedAt).toEqual(measuredAt);
+    expect(row.nextDueAt).toEqual(new Date("2026-11-13T17:00:00.000Z"));
+    expect(dispatch).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe("migration 0355", () => {
   it("adds the nullable last_notified_at column", async () => {
     const rows = await getPrismaClient().$queryRawUnsafe<
@@ -395,7 +498,7 @@ describe("migration 0355", () => {
         updatedAt: new Date("2026-09-26T07:01:00.000Z"),
       },
       {
-        // A weekly check-up still rolls on under the new tick.
+        // A weekly cycle is outside this migration's repair.
         id: "weekly",
         data: {
           rrule: null,
@@ -404,7 +507,7 @@ describe("migration 0355", () => {
         },
       },
       {
-        // A measurement reminder on a short cycle still rolls on.
+        // A measurement reminder on a short cycle: outside this repair too.
         id: "measurement-3-day",
         data: {
           measurementType: "WEIGHT",

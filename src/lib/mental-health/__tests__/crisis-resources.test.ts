@@ -86,6 +86,21 @@ describe("crisisResourcesForLocale", () => {
     }
   });
 
+  it("gives a Korean reader 119 and the 109 suicide prevention line", () => {
+    for (const locale of ["ko", "ko-KR", "ko_KR", "kr", "en-KR"]) {
+      const set = crisisResourcesForLocale(locale);
+      expect(set.emergencyNumber, locale).toBe("119");
+      expect(set.resources, locale).toEqual([
+        { id: "suicidePrevention109", contacts: ["109"] },
+        { id: "findahelpline", contacts: ["findahelpline.com"] },
+      ]);
+    }
+    const { t } = getServerTranslator("ko");
+    expect(
+      t("mentalHealth.crisisResource.suicidePrevention109.name"),
+    ).toContain("109");
+  });
+
   it("resolves the country from the region subtag whatever the language", () => {
     const cases: Array<[string, string]> = [
       ["en-BE", "zelfmoordlijn1813"],
@@ -143,6 +158,7 @@ describe("crisisResourcesForLocale", () => {
         "en-US",
         "fr",
         "nl",
+        "ko",
       ].flatMap((l) => crisisResourcesForLocale(l).resources.map((r) => r.id)),
     );
     for (const locale of locales) {

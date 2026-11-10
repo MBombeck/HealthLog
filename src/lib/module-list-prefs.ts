@@ -2,7 +2,8 @@
 
 /**
  * Per-list presentation for the labs, illness and checkups lists: card or
- * list view, a manual order, and (labs only) the sort and the categories.
+ * list view, a manual order, and (labs only) the sort, the categories and
+ * their order.
  *
  * The choices live on the server (`GET/PUT /api/settings/module-list-layout`,
  * `User.moduleListLayoutJson`) so they follow a person to every device. Until
@@ -198,6 +199,11 @@ type Translator = (
  * Apply one field optimistically (the control has to feel instant), then
  * persist it. On failure the cache rolls back and a toast says so; a view or
  * sort change confirms with a toast, an order change is its own feedback.
+ *
+ * The category order is applied by the server (`GET /api/labs/overview`
+ * answers `categories` already arranged), so a change to it moves the
+ * cached overview's categories to the full order the editor sent, at once,
+ * and then refetches the overview, whose answer is the one that stays.
  */
 export async function runSetModuleListPrefs(deps: {
   list: ModuleListKey;
@@ -209,6 +215,25 @@ export async function runSetModuleListPrefs(deps: {
   const key = queryKeys.moduleListLayout();
   if (queryClient.isFetching({ queryKey: key }) > 0) {
     await queryClient.cancelQueries({ queryKey: key });
+  }
+  const overviewKey = queryKeys.labResultsOverview();
+  const categoryOrder = patch.categoryOrder;
+  if (categoryOrder !== undefined) {
+    await queryClient.cancelQueries({ queryKey: overviewKey });
+    queryClient.setQueriesData<{ categories?: { key: string }[] }>(
+      { queryKey: overviewKey },
+      (cached) =>
+        cached?.categories
+          ? {
+              ...cached,
+              categories: applyOrder(
+                cached.categories,
+                categoryOrder,
+                (category) => category.key,
+              ),
+            }
+          : cached,
+    );
   }
   const previous = queryClient.getQueryData<ModuleListLayout>(key);
   const base = previous ?? resolveModuleListLayout(null);
@@ -237,6 +262,10 @@ export async function runSetModuleListPrefs(deps: {
   } catch (failure) {
     queryClient.setQueryData(key, previous);
     showErrorToast(t("settings.savingError"), { cause: failure });
+  } finally {
+    if (categoryOrder !== undefined) {
+      void queryClient.invalidateQueries({ queryKey: overviewKey });
+    }
   }
 }
 
@@ -252,6 +281,7 @@ export function useModuleListPrefs(list: ModuleListKey): {
   setSortDir: (sortDir: ModuleSortDir) => void;
   setGroupBy: (groupBy: ModuleGroupBy) => void;
   setGroupsOpen: (groupsOpen: ModuleGroupsOpen) => void;
+  setCategoryOrder: (categoryOrder: string[]) => void;
 } {
   const queryClient = useQueryClient();
   const { t } = useTranslations();
@@ -283,6 +313,7 @@ export function useModuleListPrefs(list: ModuleListKey): {
         sortDir: entry.sortDir,
         groupBy: entry.groupBy,
         groupsOpen: entry.groupsOpen,
+        categoryOrder: entry.categoryOrder,
       };
     }
     const defaults = moduleListDefaults(list);
@@ -293,6 +324,7 @@ export function useModuleListPrefs(list: ModuleListKey): {
           sortDir: entry.sortDir,
           groupBy: entry.groupBy,
           groupsOpen: entry.groupsOpen,
+          categoryOrder: entry.categoryOrder,
         }
       : defaults;
     if (!mounted) return fallback;
@@ -328,6 +360,11 @@ export function useModuleListPrefs(list: ModuleListKey): {
     [write],
   );
 
+  const setCategoryOrder = useCallback(
+    (categoryOrder: string[]) => write({ categoryOrder }),
+    [write],
+  );
+
   return {
     prefs,
     isLoaded,
@@ -336,5 +373,6 @@ export function useModuleListPrefs(list: ModuleListKey): {
     setSortDir,
     setGroupBy,
     setGroupsOpen,
+    setCategoryOrder,
   };
 }

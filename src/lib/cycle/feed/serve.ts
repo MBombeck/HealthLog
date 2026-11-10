@@ -116,6 +116,7 @@ const FEED_SELECT = {
   historyCycles: true,
   includeFertile: true,
   titleMode: true,
+  forecastStyle: true,
 } as const;
 
 /**

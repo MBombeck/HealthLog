@@ -163,6 +163,7 @@ hand-authored.
 | `RESPIRATORY_RATE`              | count/min            |
 | `OXYGEN_SATURATION`             | percent (0–100)      |
 | `BLOOD_GLUCOSE`                 | mg/dL                |
+| `BLOOD_KETONES`                 | mmol/L               |
 | `BODY_FAT`                      | percent (0–100)      |
 | `FAT_MASS`                      | kg                   |
 | `FAT_FREE_MASS`                 | kg                   |

@@ -191,14 +191,47 @@ export interface CategorisableMarker {
 }
 
 /**
- * Every category of an overview, in display order (catalog panels in catalog
- * order, then the person's own by label, then "other"), and whether the list
+ * The person's category order (`categoryOrder` in the labs list layout)
+ * over categories already in the default order.
+ *
+ * Listed keys come first, in the listed order; a key the data does not have
+ * is skipped. A category the list does not name (a panel added since the
+ * person arranged the list) follows the listed ones in the default order.
+ * "other" is the one exception: left at the end of the listed categories it
+ * stays last, after any category added later, because a catch-all belongs
+ * at the bottom unless the person moved it up. An empty order is the
+ * default order.
+ */
+export function applyCategoryOrder<T extends { key: string }>(
+  categories: readonly T[],
+  order: readonly string[],
+): T[] {
+  if (order.length === 0) return [...categories];
+  const present = new Set(categories.map((category) => category.key));
+  const listed = order.filter((key) => present.has(key));
+  const rank = new Map(listed.map((key, index) => [key, index]));
+  const ordered = categories
+    .filter((category) => rank.has(category.key))
+    .sort((a, b) => rank.get(a.key)! - rank.get(b.key)!);
+  const rest = categories.filter((category) => !rank.has(category.key));
+  const otherLast = ordered.at(-1)?.key === OTHER_CATEGORY;
+  if (!otherLast || rest.length === 0) return [...ordered, ...rest];
+  return [...ordered.slice(0, -1), ...rest, ordered.at(-1)!];
+}
+
+/**
+ * Every category of an overview, in display order, and whether the list
  * groups at all: it does when there are two categories or more and at least
  * one is not "other". One category, or only "other", stays a flat list.
+ *
+ * The default order is catalog panels in catalog order (`BIOMARKER_PANELS`),
+ * then the person's own by label, then "other"; `categoryOrder`, the
+ * person's own arrangement, is applied over it (`applyCategoryOrder`).
  */
 export function categoriseOverview(
   markers: readonly CategorisableMarker[],
   locale: Locale,
+  categoryOrder: readonly string[] = [],
 ): { categories: LabOverviewCategory[]; grouped: boolean } {
   const { t } = getServerTranslator(locale);
   const buckets = new Map<
@@ -264,5 +297,5 @@ export function categoriseOverview(
   const grouped =
     categories.length >= 2 &&
     categories.some((category) => category.key !== OTHER_CATEGORY);
-  return { categories, grouped };
+  return { categories: applyCategoryOrder(categories, categoryOrder), grouped };
 }

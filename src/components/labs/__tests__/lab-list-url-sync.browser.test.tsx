@@ -179,6 +179,7 @@ describe("LabList stale category and group header handling", () => {
           sortDir: "recentDesc",
           groupBy: "none",
           groupsOpen: "expanded",
+          categoryOrder: [],
         },
       },
     });
@@ -226,6 +227,7 @@ describe("LabList stale category and group header handling", () => {
             sortDir: "recentDesc",
             groupBy: "none",
             groupsOpen: "expanded",
+            categoryOrder: [],
           },
         },
       },
@@ -322,6 +324,7 @@ describe("LabList stale category and group header handling", () => {
             sortDir: "recentDesc",
             groupBy: "none",
             groupsOpen: "expanded",
+            categoryOrder: [],
           },
         },
       },
@@ -378,6 +381,7 @@ describe("LabList stale category and group header handling", () => {
               sortDir: "recentDesc",
               groupBy: "none",
               groupsOpen: "expanded",
+              categoryOrder: [],
               saved: false,
             },
             illness: {
@@ -386,6 +390,7 @@ describe("LabList stale category and group header handling", () => {
               sortDir: "recentDesc",
               groupBy: "none",
               groupsOpen: "expanded",
+              categoryOrder: [],
               saved: false,
             },
             vorsorge: {
@@ -394,6 +399,7 @@ describe("LabList stale category and group header handling", () => {
               sortDir: "recentDesc",
               groupBy: "none",
               groupsOpen: "expanded",
+              categoryOrder: [],
               saved: false,
             },
           },
@@ -424,6 +430,7 @@ describe("LabList stale category and group header handling", () => {
               sortDir: "manual",
               groupBy: "none",
               groupsOpen: "expanded",
+              categoryOrder: [],
               saved: true,
             },
             illness: {
@@ -432,6 +439,7 @@ describe("LabList stale category and group header handling", () => {
               sortDir: "recentDesc",
               groupBy: "none",
               groupsOpen: "expanded",
+              categoryOrder: [],
               saved: false,
             },
             vorsorge: {
@@ -440,6 +448,7 @@ describe("LabList stale category and group header handling", () => {
               sortDir: "recentDesc",
               groupBy: "none",
               groupsOpen: "expanded",
+              categoryOrder: [],
               saved: false,
             },
           },
@@ -496,6 +505,7 @@ describe("LabList stale category and group header handling", () => {
           sortDir: "recentDesc",
           groupBy: "category",
           groupsOpen: "expanded",
+          categoryOrder: [],
         },
       },
     });
@@ -533,6 +543,7 @@ describe("LabList stale category and group header handling", () => {
           sortDir: "recentDesc",
           groupBy: "category",
           groupsOpen: "flagged",
+          categoryOrder: [],
         },
       },
     });

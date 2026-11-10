@@ -696,6 +696,8 @@ const seriesKindEnum = z.enum([
   "restingHeartRate",
   "heartRateVariability",
   "vo2Max",
+  "ketones",
+  "glucoseKetoneIndex",
 ]);
 
 const seriesQuerySchema = z.object({
@@ -747,6 +749,23 @@ const seriesPointSchema = z.object({
     .describe(
       "v1.19.2 (iOS #34 extension) — per-point MAXIMUM for `kind=pulse`. On an aggregated hourly heart-rate bucket `value` is the hour's average and this is the hour's high; null on a per-sample PULSE row and absent for every other kind.",
     ),
+  gki: z
+    .object({
+      glucoseId: z.string().describe("The paired glucose reading's id."),
+      glucoseAt: isoDateTime().describe(
+        "The paired glucose reading's timestamp.",
+      ),
+      glucoseMmol: z
+        .number()
+        .describe("The paired glucose in mmol/L, one decimal."),
+      ketonesMmol: z
+        .number()
+        .describe("The ketone reading (beta-hydroxybutyrate), mmol/L."),
+    })
+    .optional()
+    .describe(
+      "#1367 — for `kind=glucoseKetoneIndex` only: the readings the index was computed from. `id` and `at` are the ketone reading's. Absent for every other kind.",
+    ),
 });
 
 const seriesResponse = z
@@ -755,7 +774,7 @@ const seriesResponse = z
     unit: z
       .string()
       .describe(
-        "Resolved unit token for `value`. `glucose` follows the user's mg/dL|mmol/L preference; `sleep` is `h` (per-night time-asleep in hours).",
+        "Resolved unit token for `value`. `glucose` follows the user's mg/dL|mmol/L preference; `sleep` is `h` (per-night time-asleep in hours); `ketones` is `mmol/L`; `glucoseKetoneIndex` is `ratio`.",
       ),
     points: z.array(seriesPointSchema),
     stats: z
@@ -783,7 +802,7 @@ const seriesResponse = z
   .meta({
     id: "MeasurementsSeriesResponse",
     description:
-      "iOS-friendly per-kind time series: one point per reading (or per reconstructed night for `sleep`), an explicit `unit` token, and a summary `stats` block. Sample-dense kinds (`pulse`, `glucose`, `heartRateVariability`, `oxygenSaturation`) are bucketed server-side: beyond 90 days per local day, and within 90 days per local hour when the window holds more than 10 000 readings (a continuous glucose sensor, a watch or ring recording every minute; a cuff, a fingerstick meter or a few readings a night stay raw). A bucket carries the mean as `value` and otherwise has the shape of a reading of its kind; a `pulse` bucket also carries its range as `valueMin` / `valueMax`, and a `glucose` bucket is converted to the user's unit like a raw reading. `stats` is always computed over the underlying readings, never over the buckets.",
+      "iOS-friendly per-kind time series: one point per reading (or per reconstructed night for `sleep`), an explicit `unit` token, and a summary `stats` block. Sample-dense kinds (`pulse`, `glucose`, `heartRateVariability`, `oxygenSaturation`) are bucketed server-side: beyond 90 days per local day, and within 90 days per local hour when the window holds more than 10 000 readings (a continuous glucose sensor, a watch or ring recording every minute; a cuff, a fingerstick meter or a few readings a night stay raw). A bucket carries the mean as `value` and otherwise has the shape of a reading of its kind; a `pulse` bucket also carries its range as `valueMin` / `valueMax`, and a `glucose` bucket is converted to the user's unit like a raw reading. `stats` is always computed over the underlying readings, never over the buckets. `glucoseKetoneIndex` (#1367) is derived at read time, never stored: one point per ketone reading above zero that has a glucose reading at the same instant or, failing that, the nearest one within 15 minutes either side; value = glucose (mmol/L, from mg/dL by 18.0182) / ketones (mmol/L), one decimal. Draw it as given; do not recompute it.",
   });
 
 // ── Batched daily series (v1.18.6 dashboard fetch coalescing) ────────

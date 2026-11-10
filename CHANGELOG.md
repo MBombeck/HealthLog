@@ -11,6 +11,102 @@
   `?sort`) for shareable and navigable views, with local day-boundary alignment,
   singular/few/other pluralized counts, and reactive group header counts and
   statuses.
+- **Choose how the calendar subscription draws a forecast.** A logged
+  period of a few days next to a forecast spanning more than a week was
+  hard to read, because the forecast event covered every day the period
+  might fall on. The calendar subscription card now offers three styles
+  under "How forecasts look": just the expected days; the expected days
+  with the days the period may start earlier or run on later as separate
+  "possible" events (an open dot in discreet mode); or the single event
+  covering the whole range, as before. A subscription turned on from now
+  on starts with the expected days and their margin; one that is already
+  on keeps the single range until you change it, and rotating the link
+  keeps whichever style it has. `PATCH /api/cycle/feed-subscription`
+  accepts `forecastStyle` (`EXACT`, `MARGIN` or `BAND`) and the status
+  carries it. Migration `0495_cycle_feed_forecast_style`. (#1350)
+- **Crisis contacts for South Korea.** A questionnaire answer that shows
+  the crisis card now gives a Korean reader, or anyone whose locale names
+  South Korea, the emergency number 119 and the national suicide
+  prevention line 109, which answers around the clock. Before, Korean
+  fell through to the international set with 112, which reaches the
+  police there, not an ambulance.
+- **Set the order of the lab categories.** With the labs list grouped
+  by category you could reorder the markers but not the categories, and
+  nothing said how they were ordered. Settings > Arrangement > Labs now
+  has a "Category order" card while categories are on: move a category
+  with the handle or the arrows, and the card explains the default
+  (built-in categories in a fixed order, your own panels alphabetically,
+  Other last). A category that turns up later joins the end of your
+  order, and Other stays last if you left it there. The order is saved
+  with your account and applied by the server, so every device that
+  groups the list shows the same order. The labs list layout accepts
+  `categoryOrder`, and
+  `GET /api/labs/overview` answers `categories` in that order. (#1349)
+- **Blood ketones, and the glucose-ketone index worked out for you.**
+  Ketones (beta-hydroxybutyrate, mmol/L) are a measurement of their own
+  now, so a ketogenic diet no longer has to live in a custom metric with
+  the index typed in by hand beside it. Choose "Blood ketones" when you
+  add a measurement and, if the meter gave one, type the glucose from the
+  same fingerstick into the field below: both readings are saved together
+  with one time, or neither is. The glucose-ketone index is glucose in
+  mmol/L divided by ketones, for every ketone reading above zero, taken
+  from the glucose reading at the same time or, failing that, the nearest
+  one within 15 minutes. It is never stored, so it
+  follows any reading you edit or delete. It shows under the chart on the
+  new Ketones page, in the day view, and beside the ketones in the doctor
+  report and the clinician share; the FHIR export carries the ketone
+  readings under LOINC 104816-4. Values are shown as recorded, with no
+  band and no verdict. `GET /api/measurements/series` takes
+  `kind=ketones` and `kind=glucoseKetoneIndex`, and `GET /api/day/{date}`
+  carries `glucoseKetoneIndex`. Migration `0496_blood_ketones`. (#1367)
+
+### Fixed
+
+- **A missed "every N days" checkup now stays due until it is measured.**
+  A checkup on a cycle of a week or less, such as blood pressure every
+  two days, moved its next due date on by its cycle the moment its
+  reminder went out, measured or not. The card then read "in 2 days"
+  every evening and never "today" or "overdue", and the start page
+  dropped it. Such a checkup now counts from its last reading: once its
+  reminder is sent it stays due, then overdue, until a reading lands or
+  it is marked done, skipped or snoozed, and while it stays open the
+  reminder comes again every N days, at most once a week, at its usual
+  hour. A first due date in the past stays overdue past its first
+  reminder instead of jumping ahead. A checkup that already moved on
+  corrects itself at its next reminder.
+  Calendar schedules that repeat within a week, such as a twice-daily
+  measurement course, still move on to their next time. (#1369)
+- **A lab's "(calc)" note no longer becomes part of the unit.** Some
+  reports print "(calc)" beside a calculated value, and a document read
+  could copy it into the unit, so a marker was created in "g/dL (calc)"
+  or just "(calc)" and the next report's plain "g/dL" was refused as a
+  different unit. The read now drops that note (also "calculated",
+  "computed" and the German "berechnet"), a marker already saved in
+  "g/dL (calc)" accepts the plain "g/dL", and a unit that was only the
+  note counts as no unit and goes to review, so a person decides whether
+  the value really has none. A marker saved in just "(calc)" keeps that
+  unit until you change it on the marker. Any other text in brackets
+  still counts as part of the unit. (#1313)
+- **The sync feed no longer loses a reading written during a long
+  import, and no longer starts over for a quiet account.** A Garmin or
+  Withings import writes a batch in one transaction and stamps its
+  readings before it commits them. When a reading logged by hand
+  committed in between and the app synced right then, the feed's position
+  moved past the import's readings, and they never reached the app or
+  Apple Health. Separately, a kind of data that had not changed for more
+  than 75 days (mood, say, for someone who stopped logging it) kept its
+  old position in the feed, and from then on every sync was answered as
+  expired and the app started over from scratch, each time. Now every
+  kind of data that `GET /api/sync/changes` has fully caught up takes a
+  position two minutes behind the present, like `start=now` (which moves
+  from one minute to two): what changed in those two minutes is read
+  once more, so anything that committed late still arrives, and a quiet
+  kind of data never ages out.
+- **Changing the calendar subscription while its link is being renewed.**
+  A subscription turned off at the same moment its link was renewed could
+  come back under the new link, and an option changed at that moment
+  could be lost to the new link. Turning it off now wins whichever comes
+  first, and the change lands on the link that stays live.
 
 ## [1.47.1] — 2026-11-07
 

@@ -813,6 +813,10 @@
     "typeSleep": "Sen",
     "typeSteps": "Kroki",
     "typeBloodGlucose": "Glikemia",
+    "typeBloodKetones": "Ketony we krwi",
+    "glucoseKetoneIndex": "Indeks glukozowo-ketonowy",
+    "pairedGlucoseLabel": "Glukoza z tego samego pomiaru ({unit})",
+    "pairedGlucoseHint": "Zapisywana jako osobny odczyt glukozy z tą samą godziną; z tej pary obliczany jest indeks glukozowo-ketonowy.",
     "typeTotalBodyWater": "Całkowita woda w organizmie",
     "typeBoneMass": "Masa kostna",
     "typeOxygenSaturation": "Saturacja tlenem",
@@ -4002,6 +4006,23 @@
       }
     },
     "navBloodGlucose": "Glukoza",
+    "navBloodKetones": "Ketony",
+    "bloodKetones": {
+      "title": "Ketony we krwi",
+      "description": "Twoje odczyty beta-hydroksymaślanu w czasie, w {unit}.",
+      "chartTitle": "Ketony we krwi",
+      "emptyState": {
+        "title": "Brak jeszcze odczytów ketonów",
+        "description": "Odczyty ketonów pojawią się tutaj po zapisaniu jednego, osobno lub z glukozą z tego samego nakłucia.",
+        "cta": "Zapisz ketony"
+      },
+      "gki": {
+        "description": "Glukoza podzielona przez ketony, dla każdego odczytu ketonów z odczytem glukozy w ciągu 15 minut.",
+        "emptyTitle": "Brak jeszcze indeksu",
+        "emptyDescription": "Pojawi się, gdy do odczytu ketonów powyżej zera będzie odczyt glukozy z tej samej chwili lub w ciągu 15 minut.",
+        "latest": "Ostatnio {value}: glukoza {glucose} {unit} przez ketony {ketones} {unit}, {date}."
+      }
+    },
     "totalBodyWater": {
       "title": "Całkowita woda w organizmie",
       "description": "Twoja całkowita woda w organizmie w czasie, w kilogramach.",
@@ -10056,6 +10077,17 @@
         "DISCREET": "Dyskretne (●)",
         "DESCRIPTIVE": "Opisowe"
       },
+      "forecasts": "Wygląd prognoz",
+      "forecastStyle": {
+        "EXACT": "Przewidywane dni",
+        "MARGIN": "Przewidywane dni z marginesem",
+        "BAND": "Jeden zakres"
+      },
+      "forecastStyleHint": {
+        "EXACT": "Tylko przewidywane dni.",
+        "MARGIN": "Przewidywane dni, a jako osobne wydarzenia dni, w które miesiączka może zacząć się wcześniej lub później.",
+        "BAND": "Jedno wydarzenie obejmujące wszystkie dni, na które może przypaść."
+      },
       "fertile": "Okno płodne",
       "fertileDescription": "Dodaje szacowane okno płodne następnego cyklu. To szacunek, nie metoda antykoncepcji.",
       "rotate": "Odnów link",
@@ -10075,6 +10107,7 @@
         "periodEstimate": "Miesiączka (szacunek)",
         "periodLogged": "Miesiączka (zapisana)",
         "fertileEstimate": "Okno płodne (szacunek)",
+        "periodPossible": "Możliwa miesiączka",
         "likelyStart": "Najbardziej prawdopodobny początek {date}, {band}",
         "bandOne": "±{count} dzień",
         "bandFew": "±{count} dni",
@@ -10584,7 +10617,9 @@
       "openExpanded": "Wszystkie",
       "openFlagged": "Tylko poza normą",
       "openCollapsed": "Żadne",
-      "orderWithinGroups": "Kolejność obowiązuje w obrębie każdej kategorii."
+      "orderWithinGroups": "Kolejność obowiązuje w obrębie każdej kategorii.",
+      "orderHeading": "Kolejność kategorii",
+      "orderDefault": "Dopóki żadnej nie przesuniesz, wbudowane kategorie mają stałą kolejność, twoje własne idą alfabetycznie, a {other} na końcu."
     },
     "sourceRange": {
       "fromReport": "Zakres z wyniku {range}",
@@ -11512,6 +11547,9 @@
       },
       "zelfmoordlijn1813": {
         "name": "Zelfmoordlijn 1813 (Belgia, całą dobę, bezpłatnie, anonimowo)"
+      },
+      "suicidePrevention109": {
+        "name": "Telefon zapobiegania samobójstwom 109 (Korea Południowa, całodobowo, bezpłatnie)"
       }
     },
     "instrumentDescription": {
@@ -13687,6 +13725,10 @@
     "valuesAllFew": "Wszystkie {count} wartości",
     "valuesAllOther": "Wszystkie {count} wartości",
     "valuesFewer": "Mniej wartości",
+    "gkiPair": "Glukoza {glucose} {unit} / ketony {ketones} {unit}",
+    "gkiCountOne": "Ostatni z {count}",
+    "gkiCountFew": "Ostatni z {count}",
+    "gkiCountOther": "Ostatni z {count}",
     "countEntriesOne": "1 wpis",
     "countEntriesFew": "{count} wpisy",
     "countEntriesOther": "{count} wpisów",

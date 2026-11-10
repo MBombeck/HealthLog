@@ -11,6 +11,8 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { Prisma } from "@/generated/prisma/client";
+
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, switchSessionTo, truncateAllTables } from "./setup";
 
@@ -240,6 +242,106 @@ describe("turning the subscription on", () => {
     expect(statuses).toContain(409);
   });
 
+  /**
+   * Run `act` (a rotation unless named) while `write` holds the live feed's
+   * row in an open transaction, and commit `write` only once `act` is
+   * waiting on that row: `act` has read the feed, and its own write comes
+   * after the competing one whatever the scheduler does.
+   */
+  async function rotateAround(
+    userId: string,
+    write: (tx: Prisma.TransactionClient, feedId: string) => Promise<void>,
+    act: () => Promise<Response> = rotate,
+  ): Promise<Response> {
+    const feed = await db().cycleCalendarFeed.findFirstOrThrow({
+      where: { userId, revokedAt: null },
+      select: { id: true },
+    });
+    let pending: Promise<Response> | undefined;
+    await db().$transaction(
+      async (tx) => {
+        await write(tx, feed.id);
+        pending = act();
+        for (let i = 0; i < 100; i++) {
+          const [{ n }] = await db().$queryRaw<{ n: number }[]>`
+            SELECT count(*)::int AS n FROM pg_stat_activity
+            WHERE datname = current_database() AND wait_event_type = 'Lock'`;
+          if (n > 0) return;
+          await new Promise((r) => setTimeout(r, 20));
+        }
+        throw new Error("the request never waited on the feed row");
+      },
+      { timeout: 10_000 },
+    );
+    return pending!;
+  }
+
+  it("keeps a subscription that is turned off during a rotation off", async () => {
+    const owner = await makeUser("owner");
+    await mint(owner.id);
+    const res = await rotateAround(owner.id, async (tx, feedId) => {
+      await tx.cycleCalendarFeed.update({
+        where: { id: feedId },
+        data: { revokedAt: new Date() },
+      });
+    });
+    expect(res.status).toBe(404);
+    expect((await res.json()).meta.errorCode).toBe("cycle.feed.none");
+    expect(
+      await db().cycleCalendarFeed.count({
+        where: { userId: owner.id, revokedAt: null },
+      }),
+    ).toBe(0);
+  });
+
+  it("keeps a subscription off when it is turned off while a rotation commits", async () => {
+    const owner = await makeUser("owner");
+    await mint(owner.id);
+    // The rotation holds the live row (revoked, successor written, not yet
+    // committed) while the turn-off waits on it.
+    const res = await rotateAround(
+      owner.id,
+      async (tx, feedId) => {
+        await tx.cycleCalendarFeed.update({
+          where: { id: feedId },
+          data: { revokedAt: new Date() },
+        });
+        await tx.cycleCalendarFeed.create({
+          data: {
+            userId: owner.id,
+            createdById: owner.id,
+            tokenHash: "successor-hash",
+            tokenPrefix: "hlf_successor",
+          },
+        });
+      },
+      () => manage("DELETE"),
+    );
+    expect(res.status).toBe(200);
+    expect(
+      await db().cycleCalendarFeed.count({
+        where: { userId: owner.id, revokedAt: null },
+      }),
+    ).toBe(0);
+  });
+
+  it("carries an option changed during a rotation onto the new link", async () => {
+    const owner = await makeUser("owner");
+    await mint(owner.id);
+    const res = await rotateAround(owner.id, async (tx, feedId) => {
+      await tx.cycleCalendarFeed.update({
+        where: { id: feedId },
+        data: { forecastStyle: "EXACT" },
+      });
+    });
+    expect(res.status).toBe(201);
+    const live = await db().cycleCalendarFeed.findFirstOrThrow({
+      where: { userId: owner.id, revokedAt: null },
+      select: { forecastStyle: true },
+    });
+    expect(live.forecastStyle).toBe("EXACT");
+  });
+
   it("the partial unique index rejects a second live row written directly", async () => {
     const owner = await makeUser("owner");
     const base = {
@@ -404,6 +506,96 @@ describe("turning the subscription on", () => {
         true,
       );
     }
+  });
+});
+
+describe("the forecast style", () => {
+  /** The live row's style, read from the table rather than the route. */
+  async function liveStyle(userId: string) {
+    const row = await db().cycleCalendarFeed.findFirstOrThrow({
+      where: { userId, revokedAt: null },
+      select: { forecastStyle: true },
+    });
+    return row.forecastStyle;
+  }
+
+  /** How many VEVENTs the live link serves. */
+  async function eventCount(url: string) {
+    const res = await fetchFeed(segmentOf(url));
+    expect(res.status).toBe(200);
+    return (await res.text()).split("BEGIN:VEVENT").length - 1;
+  }
+
+  it("starts a new subscription on MARGIN and publishes it in the status", async () => {
+    const owner = await makeUser("owner");
+    await seedCycles(owner.id);
+    await signIn(owner.id);
+    const res = await manage("POST");
+    expect(res.status).toBe(201);
+    expect((await res.json()).data.feed.forecastStyle).toBe("MARGIN");
+    expect(await liveStyle(owner.id)).toBe("MARGIN");
+    const status = (await (await manage("GET")).json()).data;
+    expect(status.feed.forecastStyle).toBe("MARGIN");
+  });
+
+  it("keeps a feed minted before the option on BAND, through a rotation", async () => {
+    const owner = await makeUser("owner");
+    // A row written without the column, as every feed minted before it was.
+    await db().cycleCalendarFeed.create({
+      data: {
+        userId: owner.id,
+        createdById: owner.id,
+        tokenHash: "pre-option",
+        tokenPrefix: "hlf_0000",
+      },
+    });
+    expect(await liveStyle(owner.id)).toBe("BAND");
+
+    await signIn(owner.id);
+    const res = await rotate();
+    expect(res.status).toBe(201);
+    expect((await res.json()).data.feed.forecastStyle).toBe("BAND");
+    expect(await liveStyle(owner.id)).toBe("BAND");
+  });
+
+  it("changes on PATCH, is audited, survives a rotation, and changes the body", async () => {
+    const owner = await makeUser("owner");
+    await seedCycles(owner.id);
+    const minted = await mint(owner.id);
+    const marginEvents = await eventCount(minted.url);
+
+    await signIn(owner.id);
+    const res = await manage("PATCH", { forecastStyle: "EXACT" });
+    expect(res.status).toBe(200);
+    expect((await res.json()).data.feed.forecastStyle).toBe("EXACT");
+    expect(await liveStyle(owner.id)).toBe("EXACT");
+    // The calculated period alone: fewer events than with its margins, and
+    // one per forecast cycle.
+    const exactEvents = await eventCount(minted.url);
+    expect(exactEvents).toBeGreaterThan(0);
+    expect(marginEvents).toBeGreaterThan(exactEvents);
+
+    const audit = await db().auditLog.findFirstOrThrow({
+      where: { action: "cycle.feed.update", userId: owner.id },
+    });
+    // The audit names the changed field and the value it replaced.
+    const details = JSON.parse(audit.details ?? "{}");
+    expect(details.fields).toEqual(["forecastStyle"]);
+    expect(details.previous).toEqual({ forecastStyle: "MARGIN" });
+
+    await signIn(owner.id);
+    const rotated = await rotate();
+    expect(rotated.status).toBe(201);
+    expect((await rotated.json()).data.feed.forecastStyle).toBe("EXACT");
+    expect(await liveStyle(owner.id)).toBe("EXACT");
+  });
+
+  it("refuses a style that does not exist", async () => {
+    const owner = await makeUser("owner");
+    await mint(owner.id);
+    const res = await manage("PATCH", { forecastStyle: "WIDE" });
+    expect(res.status).toBe(422);
+    expect(await liveStyle(owner.id)).toBe("MARGIN");
   });
 });
 

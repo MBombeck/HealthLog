@@ -17,6 +17,7 @@ import { queryKeys } from "@/lib/query-keys";
 import type { ProjectionState } from "./types";
 
 export type FeedTitleMode = "DISCREET" | "DESCRIPTIVE";
+export type FeedForecastStyle = "EXACT" | "MARGIN" | "BAND";
 export type FeedFetcher = "GOOGLE" | "APPLE" | "MICROSOFT" | "OTHER";
 
 export interface CycleFeedSummary {
@@ -29,6 +30,7 @@ export interface CycleFeedSummary {
   historyCycles: number;
   includeFertile: boolean;
   titleMode: FeedTitleMode;
+  forecastStyle: FeedForecastStyle;
 }
 
 export interface CycleFeedStatus {
@@ -46,7 +48,11 @@ export interface CycleFeedMinted {
 export type CycleFeedOptionsPatch = Partial<
   Pick<
     CycleFeedSummary,
-    "horizonCycles" | "historyCycles" | "includeFertile" | "titleMode"
+    | "horizonCycles"
+    | "historyCycles"
+    | "includeFertile"
+    | "titleMode"
+    | "forecastStyle"
   >
 >;
 

@@ -68,6 +68,7 @@ describe("parseModuleListPrefs", () => {
       order: ["a", "b"],
       groupBy: "none",
       groupsOpen: "expanded",
+      categoryOrder: [],
     });
   });
 
@@ -201,6 +202,85 @@ describe("runSetModuleListPrefs", () => {
       before,
     );
     expect(showErrorToast).toHaveBeenCalled();
+  });
+});
+
+describe("runSetModuleListPrefs category order", () => {
+  const t = (key: string) => key;
+  const overview = (keys: string[]) => ({
+    markers: [],
+    grouped: true,
+    categories: keys.map((key) => ({ key, label: key })),
+  });
+
+  it("moves the cached overview's categories at once and refetches it", async () => {
+    const queryClient = new QueryClient();
+    const cell = queryKeys.labResultsOverview("en");
+    queryClient.setQueryData(cell, overview(["lipids", "thyroid", "other"]));
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    let cachedDuringWrite: unknown;
+    vi.mocked(apiPut).mockImplementation(async () => {
+      cachedDuringWrite = queryClient.getQueryData(cell);
+      return resolveModuleListLayout({
+        labs: { categoryOrder: ["thyroid", "other", "lipids"] },
+      });
+    });
+
+    await runSetModuleListPrefs({
+      list: "labs",
+      patch: { categoryOrder: ["thyroid", "other", "lipids"] },
+      queryClient,
+      t,
+    });
+
+    expect(apiPut).toHaveBeenCalledWith("/api/settings/module-list-layout", {
+      version: 1,
+      list: "labs",
+      categoryOrder: ["thyroid", "other", "lipids"],
+    });
+    expect(
+      (cachedDuringWrite as ReturnType<typeof overview>).categories.map(
+        (c) => c.key,
+      ),
+    ).toEqual(["thyroid", "other", "lipids"]);
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: queryKeys.labResultsOverview(),
+    });
+    // An order move is its own feedback, like the marker order.
+    expect(toastWrittenOutcome).not.toHaveBeenCalled();
+  });
+
+  it("refetches the overview after a failed write too, so the server order returns", async () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(
+      queryKeys.labResultsOverview("en"),
+      overview(["lipids", "thyroid"]),
+    );
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    vi.mocked(apiPut).mockRejectedValue(new Error("offline"));
+    await runSetModuleListPrefs({
+      list: "labs",
+      patch: { categoryOrder: ["thyroid", "lipids"] },
+      queryClient,
+      t,
+    });
+    expect(showErrorToast).toHaveBeenCalled();
+    expect(invalidate).toHaveBeenCalledWith({
+      queryKey: queryKeys.labResultsOverview(),
+    });
+  });
+
+  it("leaves the overview alone for any other field", async () => {
+    const queryClient = new QueryClient();
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries");
+    vi.mocked(apiPut).mockResolvedValue(resolveModuleListLayout(null));
+    await runSetModuleListPrefs({
+      list: "labs",
+      patch: { order: ["m1"] },
+      queryClient,
+      t,
+    });
+    expect(invalidate).not.toHaveBeenCalled();
   });
 });
 

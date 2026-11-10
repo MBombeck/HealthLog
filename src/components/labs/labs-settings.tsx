@@ -5,8 +5,8 @@
  *
  * `LabsSettings` — Settings > Arrangement > Labs: the card-vs-list view
  * (MOD-03), the sort (recency, alphabetical or manual, MOD-04) and the manual
- * order of the biomarkers, and whether the list shows its categories and
- * which of them start open. Persisted per account through
+ * order of the biomarkers, and whether the list shows its categories, which
+ * of them start open and their order. Persisted per account through
  * `useModuleListPrefs("labs")`.
  *
  * `LabsModuleSettings` — Settings > Modules > Labs: the on-device text
@@ -19,6 +19,7 @@ import {
   ArrowDownUp,
   FlaskConical,
   FolderTree,
+  Layers,
   LayoutGrid,
   ListOrdered,
   ScanText,
@@ -27,6 +28,7 @@ import {
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { NativeSelect } from "@/components/ui/native-select";
+import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Segmented } from "@/components/ui/segmented";
@@ -47,16 +49,28 @@ import {
   type ModuleGroupsOpen,
   type ModuleSortDir,
 } from "@/lib/module-list-prefs";
+import { mergeCategoryOrder } from "@/lib/settings/module-list-layout";
 
 import { BiomarkerManager } from "./biomarker-manager";
-import type { BiomarkerDto, BiomarkerListResponse } from "./types";
+import type {
+  BiomarkerDto,
+  BiomarkerListResponse,
+  LabOverviewResponse,
+} from "./types";
 import { useLabsLocalOcr, useUpdateLabsLocalOcr } from "./use-ocr-extract";
 import { labUnitLabel } from "@/lib/labs/dimensionless";
 
 export function LabsSettings() {
   const { t } = useTranslations();
-  const { prefs, setView, setOrder, setSortDir, setGroupBy, setGroupsOpen } =
-    useModuleListPrefs("labs");
+  const {
+    prefs,
+    setView,
+    setOrder,
+    setSortDir,
+    setGroupBy,
+    setGroupsOpen,
+    setCategoryOrder,
+  } = useModuleListPrefs("labs");
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.biomarkers(),
@@ -119,6 +133,14 @@ export function LabsSettings() {
         onGroupBy={setGroupBy}
         onGroupsOpen={setGroupsOpen}
       />
+
+      {prefs.groupBy === "category" ? (
+        <LabsCategoryOrderCard
+          onChange={(shown) =>
+            setCategoryOrder(mergeCategoryOrder(shown, prefs.categoryOrder))
+          }
+        />
+      ) : null}
 
       {manual ? (
         <SettingsCard id="labs-order" className="scroll-mt-28">
@@ -200,6 +222,56 @@ function LabsGroupingCard({
           />
         </div>
       ) : null}
+    </SettingsCard>
+  );
+}
+
+/**
+ * The order of the categories. The server answers them already in the
+ * person's order (`GET /api/labs/overview` applies `categoryOrder`), so the
+ * editor lists them as given, under the labels the overview carries, and
+ * sends the whole order after every move.
+ */
+function LabsCategoryOrderCard({
+  onChange,
+}: {
+  onChange: (categoryOrder: string[]) => void;
+}) {
+  const { t, locale } = useTranslations();
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: queryKeys.labResultsOverview(locale),
+    queryFn: () => apiGet<LabOverviewResponse>("/api/labs/overview"),
+  });
+  const items: ReorderItem[] = (data?.categories ?? []).map((category) => ({
+    id: category.key,
+    name: category.label,
+  }));
+
+  return (
+    <SettingsCard id="labs-category-order" className="scroll-mt-28">
+      <SettingsCardHeader
+        icon={Layers}
+        title={t("labs.groups.orderHeading")}
+        description={t("labs.groups.orderDefault", {
+          other: t("labs.groups.other"),
+        })}
+      />
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 3 }, (_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
+      ) : isError ? (
+        <QueryErrorRow
+          error={error}
+          inset
+          slot="labs-category-order-error"
+          onRetry={() => void refetch()}
+        />
+      ) : (
+        <ModuleOrderEditor items={items} onChange={onChange} />
+      )}
     </SettingsCard>
   );
 }

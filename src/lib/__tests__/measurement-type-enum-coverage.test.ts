@@ -131,10 +131,12 @@ const EXPECTED_TYPES = [
   "ACUTE_TRAINING_LOAD",
   // ── resting energy (#1340) ──
   "BASAL_ENERGY_BURNED",
+  // ── blood ketones (#1367) ──
+  "BLOOD_KETONES",
 ] as const;
 
 describe("measurementTypeEnum coverage", () => {
-  it("exposes the 91 canonical measurement types", () => {
+  it("exposes the 92 canonical measurement types", () => {
     expect([...measurementTypeEnum.options].sort()).toEqual(
       [...EXPECTED_TYPES].sort(),
     );

@@ -296,7 +296,7 @@ export function DayView({
             <DayRunning items={data.running} date={date} />
             {data.values.length > 0 ? (
               <div className="space-y-2.5">
-                <DayValues values={data.values} focusTypes={focusTypes} />
+                <DayValues day={data} focusTypes={focusTypes} />
                 <DayNotableLines
                   notables={otherNotables}
                   labelFor={labelFor}
