@@ -10704,6 +10704,7 @@
       "searchPlaceholder": "Rechercher des biomarqueurs...",
       "searchLabel": "Rechercher des biomarqueurs",
       "clearSearch": "Effacer la recherche",
+      "lastMeasured": "Dernière mesure",
       "statusLabel": "Statut",
       "statusAll": "Tous les statuts",
       "statusAbnormal": "Hors normes",

@@ -39,7 +39,12 @@ export interface LabListFilters {
   status?: LabStatusFilter;
   /** Category key (matches category.key) or ALL. */
   category?: string;
-  /** Inclusive day bounds, YYYY-MM-DD for newest reading (latest.takenAt). */
+  /**
+   * "Last measured": inclusive day bounds (`?from` / `?to`, YYYY-MM-DD) on
+   * the marker's newest reading (`latest.takenAt`), in the display zone.
+   * Older readings are not looked at, so a marker measured inside the range
+   * and again after it drops out, which is why the pill reads "Last measured".
+   */
   fromDay?: string;
   toDay?: string;
 }
@@ -179,7 +184,7 @@ export function filterMarkerRows(
       if (markerCategory !== category) return false;
     }
 
-    // 4. Date bounds on latest reading
+    // 4. "Last measured": the newest reading's day, never an older one
     if (fromDay || toDay) {
       const takenDate = dayKeyOf(row.latest.takenAt);
       if (fromDay && takenDate < fromDay) return false;

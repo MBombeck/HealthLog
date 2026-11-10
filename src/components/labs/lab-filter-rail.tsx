@@ -113,7 +113,7 @@ export function LabFilterRail({
         </div>
 
         <FilterBarDateRange
-          label={t("dataList.dateRange")}
+          label={t("labs.filter.lastMeasured")}
           from={filters.fromDay ?? ""}
           to={filters.toDay ?? ""}
           onFromChange={onFromDayChange}

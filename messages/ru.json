@@ -10704,6 +10704,7 @@
       "searchPlaceholder": "Поиск биомаркеров...",
       "searchLabel": "Поиск биомаркеров",
       "clearSearch": "Очистить поиск",
+      "lastMeasured": "Последнее измерение",
       "statusLabel": "Статус",
       "statusAll": "Все статусы",
       "statusAbnormal": "Вне нормы",

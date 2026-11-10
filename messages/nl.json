@@ -10704,6 +10704,7 @@
       "searchPlaceholder": "Biomarkers zoeken...",
       "searchLabel": "Biomarkers zoeken",
       "clearSearch": "Zoekopdracht wissen",
+      "lastMeasured": "Laatst gemeten",
       "statusLabel": "Status",
       "statusAll": "Alle statussen",
       "statusAbnormal": "Buiten bereik",

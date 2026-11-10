@@ -44,7 +44,7 @@ describe("<LabFilterRail> layout", () => {
     const { screen } = await renderWithApp(<LabFilterRail {...props()} />);
 
     const search = screen.getByRole("searchbox", { name: "Search biomarkers" });
-    const dateRange = screen.getByRole("button", { name: "Date range" });
+    const dateRange = screen.getByRole("button", { name: "Last measured" });
     const searchRect = search.element().getBoundingClientRect();
     const dateRect = dateRange.element().getBoundingClientRect();
 
@@ -75,7 +75,7 @@ describe("<LabFilterRail> layout", () => {
 
     const controls = [
       search.element(),
-      screen.getByRole("button", { name: "Date range" }).element(),
+      screen.getByRole("button", { name: "Last measured" }).element(),
       screen.getByRole("combobox", { name: "Status: Out of range" }).element(),
       screen.getByRole("combobox", { name: "Category" }).element(),
       screen.getByRole("button", { name: "Reset" }).element(),
@@ -108,7 +108,7 @@ describe("<LabFilterRail> layout", () => {
 
     const controls = [
       screen.getByRole("searchbox", { name: "Biomarker suchen" }).element(),
-      screen.getByRole("button", { name: "Zeitraum" }).element(),
+      screen.getByRole("button", { name: "Zuletzt gemessen" }).element(),
       screen
         .getByRole("combobox", {
           name: "Status: Außerhalb des Bereichs",
@@ -130,7 +130,7 @@ describe("<LabFilterRail> layout", () => {
     const { screen } = await renderWithApp(<LabFilterRail {...props()} />);
     const controls = [
       screen.getByRole("searchbox", { name: "Search biomarkers" }).element(),
-      screen.getByRole("button", { name: "Date range" }).element(),
+      screen.getByRole("button", { name: "Last measured" }).element(),
       screen.getByRole("combobox", { name: "Status" }).element(),
       screen.getByRole("combobox", { name: "Category" }).element(),
     ];

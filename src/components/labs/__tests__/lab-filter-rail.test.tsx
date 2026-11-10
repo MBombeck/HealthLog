@@ -43,7 +43,7 @@ describe("<LabFilterRail>", () => {
 
     // The shared rail keeps search and all filter dimensions in one ordered row.
     const searchIdx = html.indexOf('placeholder="Search biomarkers..."');
-    const dateRangeIdx = html.indexOf("Date range");
+    const dateRangeIdx = html.indexOf("Last measured");
     const statusIdx = html.indexOf("Status");
     const categoryIdx = html.indexOf("Category");
 

@@ -10704,6 +10704,7 @@
       "searchPlaceholder": "Search biomarkers...",
       "searchLabel": "Search biomarkers",
       "clearSearch": "Clear search",
+      "lastMeasured": "Last measured",
       "statusLabel": "Status",
       "statusAll": "All statuses",
       "statusAbnormal": "Out of range",

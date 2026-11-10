@@ -10704,6 +10704,7 @@
       "searchPlaceholder": "Buscar biomarcadores...",
       "searchLabel": "Buscar biomarcadores",
       "clearSearch": "Borrar búsqueda",
+      "lastMeasured": "Última medición",
       "statusLabel": "Estado",
       "statusAll": "Todos los estados",
       "statusAbnormal": "Fuera de rango",
