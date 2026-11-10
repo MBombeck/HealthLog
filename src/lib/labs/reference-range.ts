@@ -204,3 +204,30 @@ export function classifyAgainstEffectiveRange(
   if (value === null) return "unknown";
   return classifyReferenceRange(value, effective.low, effective.high);
 }
+
+export interface ReferenceRangeStatusCounts {
+  inRange: number;
+  below: number;
+  above: number;
+  unknown: number;
+}
+
+/**
+ * Resolve combined reference-range status according to the canonical priority rule:
+ * `above` > `below` > `in-range` > `unknown`.
+ *
+ * Any value above its range makes the group "above", else any below makes it "below",
+ * else any in-range makes it "in-range"; only when all members are unassessed does it
+ * resolve to "unknown".
+ */
+export function priorityReferenceRangeStatus(
+  input: ReferenceRangeStatusCounts,
+): ReferenceRangeStatus {
+  return input.above > 0
+    ? "above"
+    : input.below > 0
+      ? "below"
+      : input.inRange > 0
+        ? "in-range"
+        : "unknown";
+}

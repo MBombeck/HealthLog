@@ -28,19 +28,22 @@ import { cn } from "@/lib/utils";
  * instead of the per-page rows of large labelled Selects + date inputs
  * that had drifted apart. The grammar:
  *
- *   [filter icon] [Zeitraum] [Typ] [Quelle] … [Zurücksetzen]   [count]
+ *   [search] [filter icon] [Zeitraum] [Typ] [Quelle] … [Zurücksetzen]   [count]
  *
  * - Each dimension renders as ONE compact pill that is trigger and
  *   active-filter chip at once: inactive it shows just the dimension
  *   name ("Typ"), active it shows `Name: Wert`, picks up the primary
  *   accent, and grows a removable ✕. No second chip row, no duplicated
  *   state.
- * - Canonical order at the call sites: date range, type, source —
- *   surface-specific dimensions append after.
+ * - Canonical order at the call sites: search (if present), date range,
+ *   type, source — surface-specific dimensions append after.
  * - Reset appears only while at least one dimension is active.
- * - Mobile (< sm): the rail is a horizontal scroll row (hidden
+ * - Mobile (< sm): standard pill rails use a horizontal scroll row (hidden
  *   scrollbar, edge-bleed) so pills never wrap into a tall block; the
- *   result count drops onto its own line.
+ *   result count drops onto its own line. Surfaces that integrate search
+ *   into the rail (such as labs) wrap on mobile instead via
+ *   `railClassName` (`max-sm:flex-wrap`) so the search input stays
+ *   full-width and pills wrap naturally underneath.
  * - Purely presentational: filter state, query keys and fetching stay
  *   in the owning page/component — this file only renders the controls.
  *
@@ -54,8 +57,11 @@ import { cn } from "@/lib/utils";
  * ui-guidelines §5).
  */
 
-/** Shared pill chrome — trigger and chip in one element. */
-const PILL_CLASSES =
+/**
+ * Shared pill chrome for filter-bar triggers and active chips.
+ * Exported for custom controls (such as select triggers) that participate in the rail.
+ */
+export const FILTER_BAR_PILL_CLASSES =
   "border-border bg-card text-foreground inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm whitespace-nowrap shadow-xs transition-all duration-150 ease-out sm:min-h-9 h-auto py-1";
 const PILL_ACTIVE_CLASSES = "border-primary/40 bg-primary/10";
 
@@ -84,6 +90,7 @@ export function FilterBar({
   onReset,
   count,
   children,
+  railClassName,
 }: {
   /** True when at least one dimension is active — shows the reset button. */
   isFiltered: boolean;
@@ -91,6 +98,8 @@ export function FilterBar({
   onReset: () => void;
   /** Result count node (already translated/formatted by the caller). */
   count?: React.ReactNode;
+  /** Optional classes for the row of filter controls. */
+  railClassName?: string;
   children: React.ReactNode;
 }) {
   const { t } = useTranslations();
@@ -102,7 +111,12 @@ export function FilterBar({
       {/* Pill rail — horizontal scroll row below `sm` (hidden scrollbar,
           edge-bleed so the row scrolls to the screen edge), wrapping flex
           row on desktop. */}
-      <div className="-mx-4 flex [scrollbar-width:none] items-center gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden">
+      <div
+        className={cn(
+          "-mx-4 flex [scrollbar-width:none] items-center gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&::-webkit-scrollbar]:hidden",
+          railClassName,
+        )}
+      >
         <ListFilter
           className="text-muted-foreground size-4 shrink-0"
           aria-hidden="true"
@@ -121,7 +135,10 @@ export function FilterBar({
         )}
       </div>
       {count != null && (
-        <span className="text-muted-foreground text-sm tabular-nums">
+        <span
+          data-slot="filter-bar-count"
+          className="text-muted-foreground text-sm tabular-nums"
+        >
           {count}
         </span>
       )}
@@ -169,7 +186,7 @@ export function FilterBarSelect({
           data-slot="filter-bar-pill"
           data-active={active ? "true" : "false"}
           className={cn(
-            PILL_CLASSES,
+            FILTER_BAR_PILL_CLASSES,
             active && cn(PILL_ACTIVE_CLASSES, "pr-8"),
           )}
         >
@@ -248,7 +265,7 @@ export function FilterBarDateRange({
           data-slot="filter-bar-pill"
           data-active={active ? "true" : "false"}
           className={cn(
-            PILL_CLASSES,
+            FILTER_BAR_PILL_CLASSES,
             "outline-none",
             "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
             active && cn(PILL_ACTIVE_CLASSES, "pr-8"),
@@ -343,7 +360,7 @@ export function FilterBarNumberRange({
           data-slot="filter-bar-pill"
           data-active={active ? "true" : "false"}
           className={cn(
-            PILL_CLASSES,
+            FILTER_BAR_PILL_CLASSES,
             "outline-none",
             "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
             active && cn(PILL_ACTIVE_CLASSES, "pr-8"),

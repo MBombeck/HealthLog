@@ -10664,6 +10664,21 @@
     "unit": {
       "none": "Sin unidad",
       "noneHint": "Para un cociente o un índice como el INR o colesterol/HDL."
+    },
+    "filter": {
+      "searchPlaceholder": "Buscar biomarcadores...",
+      "searchLabel": "Buscar biomarcadores",
+      "clearSearch": "Borrar búsqueda",
+      "statusLabel": "Estado",
+      "statusAll": "Todos los estados",
+      "statusAbnormal": "Fuera de rango",
+      "categoryLabel": "Categoría",
+      "categoryAll": "Todas las categorías",
+      "markerCountOne": "{count} biomarcador",
+      "markerCountFew": "{count} biomarcadores",
+      "markerCountOther": "{count} biomarcadores",
+      "noMatchesTitle": "No se encontraron biomarcadores",
+      "noMatchesDescription": "Intenta cambiar los términos de búsqueda o los filtros."
     }
   },
   "modules": {

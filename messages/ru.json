@@ -10664,6 +10664,21 @@
     "unit": {
       "none": "Без единицы",
       "noneHint": "Для коэффициента или индекса, например МНО или холестерин/ЛПВП."
+    },
+    "filter": {
+      "searchPlaceholder": "Поиск биомаркеров...",
+      "searchLabel": "Поиск биомаркеров",
+      "clearSearch": "Очистить поиск",
+      "statusLabel": "Статус",
+      "statusAll": "Все статусы",
+      "statusAbnormal": "Вне нормы",
+      "categoryLabel": "Категория",
+      "categoryAll": "Все категории",
+      "markerCountOne": "{count} биомаркер",
+      "markerCountFew": "{count} биомаркера",
+      "markerCountOther": "{count} биомаркеров",
+      "noMatchesTitle": "Биомаркеры не найдены",
+      "noMatchesDescription": "Попробуйте изменить поисковый запрос или фильтры."
     }
   },
   "modules": {

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   classifyReferenceRange,
   formatReferenceRange,
+  priorityReferenceRangeStatus,
 } from "@/lib/labs/reference-range";
 
 describe("classifyReferenceRange", () => {
@@ -61,5 +62,25 @@ describe("formatReferenceRange", () => {
   it("defers digit formatting entirely to the callback", () => {
     const oneDecimal = (n: number) => n.toFixed(1);
     expect(formatReferenceRange(4, 6, oneDecimal)).toBe("4.0–6.0");
+  });
+});
+
+describe("priorityReferenceRangeStatus", () => {
+  it("implements canonical priority: above > below > in-range > unknown with counts", () => {
+    expect(
+      priorityReferenceRangeStatus({ above: 1, below: 1, inRange: 1, unknown: 1 }),
+    ).toBe("above");
+    expect(
+      priorityReferenceRangeStatus({ above: 0, below: 2, inRange: 5, unknown: 1 }),
+    ).toBe("below");
+    expect(
+      priorityReferenceRangeStatus({ above: 0, below: 0, inRange: 3, unknown: 2 }),
+    ).toBe("in-range");
+    expect(
+      priorityReferenceRangeStatus({ above: 0, below: 0, inRange: 0, unknown: 4 }),
+    ).toBe("unknown");
+    expect(
+      priorityReferenceRangeStatus({ above: 0, below: 0, inRange: 0, unknown: 0 }),
+    ).toBe("unknown");
   });
 });

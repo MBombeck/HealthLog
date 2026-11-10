@@ -10664,6 +10664,21 @@
     "unit": {
       "none": "Bez jednostki",
       "noneHint": "Dla ilorazu lub wskaźnika, np. INR albo cholesterol/HDL."
+    },
+    "filter": {
+      "searchPlaceholder": "Szukaj biomarkerów...",
+      "searchLabel": "Szukaj biomarkerów",
+      "clearSearch": "Wyczyść wyszukiwanie",
+      "statusLabel": "Status",
+      "statusAll": "Wszystkie statusy",
+      "statusAbnormal": "Poza zakresem",
+      "categoryLabel": "Kategoria",
+      "categoryAll": "Wszystkie kategorie",
+      "markerCountOne": "{count} biomarker",
+      "markerCountFew": "{count} biomarkery",
+      "markerCountOther": "{count} biomarkerów",
+      "noMatchesTitle": "Brak pasujących biomarkerów",
+      "noMatchesDescription": "Spróbuj zmienić zapytanie lub zresetować filtry."
     }
   },
   "modules": {

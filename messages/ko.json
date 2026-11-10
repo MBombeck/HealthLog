@@ -10664,6 +10664,21 @@
     "unit": {
       "none": "단위 없음",
       "noneHint": "INR이나 콜레스테롤/HDL 같은 비율 또는 지수에 사용해요."
+    },
+    "filter": {
+      "searchPlaceholder": "바이오마커 검색...",
+      "searchLabel": "바이오마커 검색",
+      "clearSearch": "검색어 지우기",
+      "statusLabel": "상태",
+      "statusAll": "모든 상태",
+      "statusAbnormal": "범위 벗어남",
+      "categoryLabel": "카테고리",
+      "categoryAll": "모든 카테고리",
+      "markerCountOne": "{count}개 바이오마커",
+      "markerCountFew": "{count}개 바이오마커",
+      "markerCountOther": "{count}개 바이오마커",
+      "noMatchesTitle": "일치하는 바이오마커 없음",
+      "noMatchesDescription": "검색어 또는 필터를 조정해 보세요."
     }
   },
   "modules": {

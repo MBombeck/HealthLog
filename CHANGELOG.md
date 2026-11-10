@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Biomarker list filtering and sorting.** The labs overview list gains
+  search, reference-range status (out of range, in range, above, below),
+  category, and date-range filtering alongside on-page sort options. Filter
+  state is synced to the URL (`?q`, `?status`, `?category`, `?from`, `?to`,
+  `?sort`) for shareable and navigable views, with local day-boundary alignment,
+  singular/few/other pluralized counts, and reactive group header counts and
+  statuses.
+
 ## [1.47.1] — 2026-11-07
 
 ### Added

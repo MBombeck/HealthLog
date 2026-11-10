@@ -4,8 +4,10 @@
  * A marker's category is its panel: the serialised `latest.panel`, which is
  * the biomarker's panel for a linked marker and the row's own for a legacy
  * unlinked one (the same value the card shows as its chip). The server
- * resolves the category, its label, its order and a combined status once;
- * the web list and the iOS app render that as given and never rebuild it.
+ * resolves the category, its label, its order, and combined counts and status
+ * for the full category once; clients (the web list and the iOS app) render
+ * that as given when unfiltered, while the web list summarizes the visible
+ * subset client-side when filters are active.
  *
  * Resolution, first match wins:
  *   1. the panel folds to a catalog panel label in any shipped locale
@@ -25,7 +27,11 @@ import { getServerTranslator } from "@/lib/i18n/server-translator";
 import { buildLocalisedLabelIndex } from "@/lib/i18n/localised-label-index";
 import type { Locale } from "@/lib/i18n/config";
 import { resolveIntlLocale } from "@/lib/format-locale";
-import type { ReferenceRangeStatus } from "@/lib/labs/reference-range";
+import {
+  priorityReferenceRangeStatus,
+  type ReferenceRangeStatus,
+  type ReferenceRangeStatusCounts,
+} from "@/lib/labs/reference-range";
 
 import { catalogKeyForName } from "./analyte-match";
 import {
@@ -45,12 +51,7 @@ export interface MarkerCategoryRef {
   kind: MarkerCategoryKind;
 }
 
-export interface CategoryCounts {
-  inRange: number;
-  below: number;
-  above: number;
-  unknown: number;
-}
+export type CategoryCounts = ReferenceRangeStatusCounts;
 
 export interface LabOverviewCategory {
   /** A catalog panel key, `custom:<hash>`, or `other`. Opaque to clients. */
@@ -129,14 +130,7 @@ export function summariseCategory(statuses: readonly ReferenceRangeStatus[]): {
     else if (status === "above") counts.above += 1;
     else counts.unknown += 1;
   }
-  const status: ReferenceRangeStatus =
-    counts.above > 0
-      ? "above"
-      : counts.below > 0
-        ? "below"
-        : counts.inRange > 0
-          ? "in-range"
-          : "unknown";
+  const status = priorityReferenceRangeStatus(counts);
   return { counts, status };
 }
 
