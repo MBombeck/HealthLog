@@ -3,7 +3,10 @@ import type { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
 
 import { queryKeys } from "@/lib/query-keys";
-import { renderWithApp, testQueryClient } from "../../../../tests/browser/render";
+import {
+  renderWithApp,
+  testQueryClient,
+} from "../../../../tests/browser/render";
 import {
   currentSearch,
   recordHistory,
@@ -210,7 +213,9 @@ describe("LabList stale category and group header handling", () => {
     // Group header button shows the filtered count ("1 of 1 outside range") and chip "1"
     const groupButton = screen.getByRole("button", { name: /Iron Panel/i });
     await expect.element(groupButton).toBeVisible();
-    await expect.element(groupButton.getByText("1 of 1 outside range")).toBeVisible();
+    await expect
+      .element(groupButton.getByText("1 of 1 outside range"))
+      .toBeVisible();
     await expect.element(groupButton.getByText("1")).toBeVisible();
   });
 

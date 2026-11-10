@@ -174,7 +174,9 @@ export interface LabGroupSummary {
 }
 
 /** Summarise counts and overall status for a list of rows. */
-export function summariseGroupRows(rows: readonly MarkerRow[]): LabGroupSummary {
+export function summariseGroupRows(
+  rows: readonly MarkerRow[],
+): LabGroupSummary {
   const counts = { inRange: 0, below: 0, above: 0, unknown: 0 };
   for (const row of rows) {
     const s = row.latest.rangeStatus;
@@ -278,9 +280,7 @@ export function LabGroupHeader({
         <span className="text-muted-foreground min-w-0 truncate text-xs font-medium tracking-wide uppercase">
           {category.label}
         </span>
-        <TagChip className="shrink-0 tabular-nums">
-          {rows.length}
-        </TagChip>
+        <TagChip className="shrink-0 tabular-nums">{rows.length}</TagChip>
         <span className="ml-auto shrink-0">
           <GroupStatus counts={counts} status={status} />
         </span>

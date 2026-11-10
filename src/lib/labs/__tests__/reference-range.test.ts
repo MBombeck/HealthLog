@@ -68,19 +68,44 @@ describe("formatReferenceRange", () => {
 describe("priorityReferenceRangeStatus", () => {
   it("implements canonical priority: above > below > in-range > unknown with counts", () => {
     expect(
-      priorityReferenceRangeStatus({ above: 1, below: 1, inRange: 1, unknown: 1 }),
+      priorityReferenceRangeStatus({
+        above: 1,
+        below: 1,
+        inRange: 1,
+        unknown: 1,
+      }),
     ).toBe("above");
     expect(
-      priorityReferenceRangeStatus({ above: 0, below: 2, inRange: 5, unknown: 1 }),
+      priorityReferenceRangeStatus({
+        above: 0,
+        below: 2,
+        inRange: 5,
+        unknown: 1,
+      }),
     ).toBe("below");
     expect(
-      priorityReferenceRangeStatus({ above: 0, below: 0, inRange: 3, unknown: 2 }),
+      priorityReferenceRangeStatus({
+        above: 0,
+        below: 0,
+        inRange: 3,
+        unknown: 2,
+      }),
     ).toBe("in-range");
     expect(
-      priorityReferenceRangeStatus({ above: 0, below: 0, inRange: 0, unknown: 4 }),
+      priorityReferenceRangeStatus({
+        above: 0,
+        below: 0,
+        inRange: 0,
+        unknown: 4,
+      }),
     ).toBe("unknown");
     expect(
-      priorityReferenceRangeStatus({ above: 0, below: 0, inRange: 0, unknown: 0 }),
+      priorityReferenceRangeStatus({
+        above: 0,
+        below: 0,
+        inRange: 0,
+        unknown: 0,
+      }),
     ).toBe("unknown");
   });
 });

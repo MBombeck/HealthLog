@@ -83,14 +83,12 @@ describe("<LabFilterRail>", () => {
     );
 
     expect(html).toContain('aria-label="Clear search"');
-    expect(html).not.toContain('<kbd');
+    expect(html).not.toContain("<kbd");
   });
 
   it("pluralizes marker count with tCount across locales", () => {
     const extractCountText = (html: string) => {
-      const match = html.match(
-        /<span[^>]*tabular-nums[^>]*>([^<]+)<\/span>/,
-      );
+      const match = html.match(/<span[^>]*tabular-nums[^>]*>([^<]+)<\/span>/);
       return match ? match[1].trim() : null;
     };
 
@@ -106,7 +104,7 @@ describe("<LabFilterRail>", () => {
             onCategoryChange={vi.fn()}
             onFromDayChange={vi.fn()}
             onToDayChange={vi.fn()}
-              onResetFilters={vi.fn()}
+            onResetFilters={vi.fn()}
             isFiltered={false}
             total={total}
           />

@@ -72,9 +72,9 @@ describe("<LabFilterRail> layout", () => {
       .closest('[data-slot="filter-bar"]')
       ?.querySelector("svg.lucide-list-filter, svg.lucide-funnel");
     expect(icon).toBeTruthy();
-    expect(Math.abs(centerY(icon!) - centerY(dateRange.element()))).toBeLessThan(
-      2,
-    );
+    expect(
+      Math.abs(centerY(icon!) - centerY(dateRange.element())),
+    ).toBeLessThan(2);
     expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(390);
   });
 
@@ -199,7 +199,9 @@ describe("<LabFilterRail> keyboard", () => {
     const search = screen.getByRole("searchbox", { name: "Search biomarkers" });
 
     (
-      screen.getByRole("button", { name: "Open dialog" }).element() as HTMLElement
+      screen
+        .getByRole("button", { name: "Open dialog" })
+        .element() as HTMLElement
     ).focus();
     await userEvent.keyboard("/");
     await expect.element(search).toHaveFocus();

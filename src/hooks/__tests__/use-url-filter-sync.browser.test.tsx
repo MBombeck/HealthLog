@@ -112,10 +112,7 @@ function FilterRail({ syncToUrl = true }: { syncToUrl?: boolean }) {
       <button
         type="button"
         onClick={() =>
-          patchFilters(
-            { type: "PULSE" },
-            { mode: "replace", afterPaint: true },
-          )
+          patchFilters({ type: "PULSE" }, { mode: "replace", afterPaint: true })
         }
       >
         Defer replace type
@@ -208,7 +205,9 @@ describe("useUrlFilterSync with FilterBar", () => {
     const { screen, history } = await mount("?type=WEIGHT");
     const entries = window.history.length;
     (
-      screen.getByRole("button", { name: "Defer replace type" }).element() as HTMLButtonElement
+      screen
+        .getByRole("button", { name: "Defer replace type" })
+        .element() as HTMLButtonElement
     ).click();
 
     // Immediately after trigger, the write is deferred until after paint:

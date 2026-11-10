@@ -35,7 +35,8 @@ vi.mock("@/lib/i18n/context", async (importOriginal) => {
 });
 
 vi.mock("@/lib/module-list-prefs", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/module-list-prefs")>();
+  const actual =
+    await importOriginal<typeof import("@/lib/module-list-prefs")>();
   return {
     ...actual,
     useModuleListPrefs: () => ({

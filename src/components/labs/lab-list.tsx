@@ -42,10 +42,7 @@ import {
   toMarkerRows,
   type MarkerRow,
 } from "./lab-list-rows";
-import type {
-  LabOverviewCategoryDto,
-  LabOverviewResponse,
-} from "./types";
+import type { LabOverviewCategoryDto, LabOverviewResponse } from "./types";
 
 type GroupsOpen = ReturnType<typeof useGroupsOpen>;
 

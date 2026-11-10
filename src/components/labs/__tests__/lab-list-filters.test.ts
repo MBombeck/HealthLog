@@ -178,9 +178,7 @@ describe("filterMarkerRows", () => {
       accented,
     ]);
     expect(filterMarkerRows([accented], { q: "hämo" })).toEqual([accented]);
-    expect(filterMarkerRows([accented], { q: "blutbild" })).toEqual([
-      accented,
-    ]);
+    expect(filterMarkerRows([accented], { q: "blutbild" })).toEqual([accented]);
     expect(filterMarkerRows([accented], { q: "ferritin" })).toEqual([]);
   });
 
@@ -269,12 +267,7 @@ describe("filterMarkerRows", () => {
       ),
     ).toEqual([]);
     expect(
-      filterMarkerRows(
-        [lateRow],
-        { toDay: "2026-08-31" },
-        undefined,
-        dayKeyNy,
-      ),
+      filterMarkerRows([lateRow], { toDay: "2026-08-31" }, undefined, dayKeyNy),
     ).toEqual([lateRow]);
   });
 });
@@ -319,8 +312,12 @@ describe("labReadingDayKey", () => {
   it("keeps noon UTC anchors on their stated date across all timezones", () => {
     const noonInstant = "2026-09-01T12:00:00.000Z";
     expect(labReadingDayKey(noonInstant, "UTC")).toBe("2026-09-01");
-    expect(labReadingDayKey(noonInstant, "America/New_York")).toBe("2026-09-01");
-    expect(labReadingDayKey(noonInstant, "Pacific/Kiritimati")).toBe("2026-09-01");
+    expect(labReadingDayKey(noonInstant, "America/New_York")).toBe(
+      "2026-09-01",
+    );
+    expect(labReadingDayKey(noonInstant, "Pacific/Kiritimati")).toBe(
+      "2026-09-01",
+    );
   });
 
   it("documents exact-noon date-anchor ambiguity vs true instant timestamps", () => {
@@ -329,12 +326,16 @@ describe("labReadingDayKey", () => {
     // `useLabDate` / `date-only.ts`. In Pacific/Kiritimati (UTC+14), 12:00 UTC would be
     // 02:00 on the NEXT calendar day if treated as an instant; but as an anchor it stays 2026-09-01.
     const noonAnchor = "2026-09-01T12:00:00.000Z";
-    expect(labReadingDayKey(noonAnchor, "Pacific/Kiritimati")).toBe("2026-09-01");
+    expect(labReadingDayKey(noonAnchor, "Pacific/Kiritimati")).toBe(
+      "2026-09-01",
+    );
 
     // Any non-noon instant (even 1 second off noon) is recognized as a true instant with time
     // and correctly shifts to the local date in the user's timezone:
     const nonNoonInstant = "2026-09-01T12:00:01.000Z";
-    expect(labReadingDayKey(nonNoonInstant, "Pacific/Kiritimati")).toBe("2026-09-02");
+    expect(labReadingDayKey(nonNoonInstant, "Pacific/Kiritimati")).toBe(
+      "2026-09-02",
+    );
     expect(labReadingDayKey(nonNoonInstant, "UTC")).toBe("2026-09-01");
   });
 
