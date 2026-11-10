@@ -4,10 +4,10 @@
  * A marker's category is its panel: the serialised `latest.panel`, which is
  * the biomarker's panel for a linked marker and the row's own for a legacy
  * unlinked one (the same value the card shows as its chip). The server
- * resolves the category, its label, its order, and combined counts and status
- * for the full category once; clients (the web list and the iOS app) render
- * that as given when unfiltered, while the web list summarizes the visible
- * subset client-side when filters are active.
+ * resolves the category, its label, its order and a combined status once;
+ * the web list and the iOS app render that as given and never rebuild it.
+ * While a filter hides some members, the web list summarises the matching
+ * ones by the same rule (`priorityReferenceRangeStatus`).
  *
  * Resolution, first match wins:
  *   1. the panel folds to a catalog panel label in any shipped locale

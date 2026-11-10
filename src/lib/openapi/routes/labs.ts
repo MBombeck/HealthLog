@@ -149,7 +149,7 @@ export const labOverviewCategoryCounts = z
   .meta({
     id: "LabOverviewCategoryCounts",
     description:
-      "How many members' newest readings are in range, below, above, or unassessed (qualitative, or no range) for the full category without filters.",
+      "How many members' newest readings are in range, below, above, or unassessed (qualitative, or no range).",
   });
 
 export const labOverviewCategory = z
@@ -163,7 +163,7 @@ export const labOverviewCategory = z
   .meta({
     id: "LabOverviewCategory",
     description:
-      "One category of the labs list, resolved by the server. `key` is opaque: a catalog panel key, `custom:<hash>` for the person's own panel, or `other`; it carries no user text and is stable, so a client may key collapse state on it. `label` is rendered as given (a catalog panel in the caller's locale, the person's own spelling, or the localised \"Other\"). `markerKeys` names the `markers[].key` values in the category. `counts` and `status` describe the full category without filters; a client renders these values directly when unfiltered, and may summarize the visible row subset client-side while filters are active.",
+      "One category of the labs list, resolved by the server. `key` is opaque: a catalog panel key, `custom:<hash>` for the person's own panel, or `other`; it carries no user text and is stable, so a client may key collapse state on it. `label` is rendered as given (a catalog panel in the caller's locale, the person's own spelling, or the localised \"Other\"). `markerKeys` names the `markers[].key` values in the category. `status` combines the members' newest readings: `above` when any is above its range, else `below` when any is below, else `in-range` when any was assessed, else `unknown`. A client renders these values and never rebuilds the category, the order or the status. A client that shows only the members matching a filter may summarise that subset by the same rule; without a filter it shows `counts` and `status` as sent.",
   });
 
 export const labOverviewResponse = z
