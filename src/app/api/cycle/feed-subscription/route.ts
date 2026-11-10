@@ -259,18 +259,29 @@ export const DELETE = apiHandler(async () => {
   // The link stops working on the provider's next poll. What the provider
   // already copied is beyond reach, which the settings card says before the
   // link is ever made.
-  await auditLog("cycle.feed.revoke", {
-    userId: user.id,
-    details: {
-      feedId: live.id,
-      ...destroyedDetails({
-        model: "CycleCalendarFeed",
-        id: live.id,
-        label: live.tokenPrefix,
-        effectiveAt: live.createdAt,
-      }),
-    },
+  //
+  // The trail names the feeds this request revoked, read back by the one
+  // stamp both passes wrote: a racing rotation may have revoked the feed
+  // read above itself, leaving its successor as the one turned off here.
+  const revoked = await prisma.cycleCalendarFeed.findMany({
+    where: { userId: user.id, revokedAt },
+    select: { id: true, tokenPrefix: true, createdAt: true },
+    orderBy: { createdAt: "asc" },
   });
+  for (const feed of revoked) {
+    await auditLog("cycle.feed.revoke", {
+      userId: user.id,
+      details: {
+        feedId: feed.id,
+        ...destroyedDetails({
+          model: "CycleCalendarFeed",
+          id: feed.id,
+          label: feed.tokenPrefix,
+          effectiveAt: feed.createdAt,
+        }),
+      },
+    });
+  }
 
   return apiSuccess({ revoked: true });
 });
