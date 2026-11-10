@@ -596,8 +596,10 @@ describe("the dump before migrating", () => {
   it("writes a checked dump with its manifest, and keeps the last two", async () => {
     for (let i = 0; i < 3; i++) {
       if (i > 0) await new Promise((r) => setTimeout(r, 1100));
-      const { code } = await preMigration({ DB_BACKUP_DIR: preDir });
-      expect(code).toBe(0);
+      const { code, errors } = await preMigration({ DB_BACKUP_DIR: preDir });
+      // One shuffled nightly run saw a 1 here with the reason swallowed by
+      // the console spy; the message carries it next time.
+      expect(code, errors).toBe(0);
     }
     const names = readdirSync(preDir).sort();
     expect(names).toHaveLength(4);
