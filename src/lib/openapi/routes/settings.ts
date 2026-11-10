@@ -59,6 +59,11 @@ const moduleListPrefsEntry = z
       .describe(
         'Which labs categories start open: every one (`expanded`), only those whose `status` is `above` or `below` (`flagged`), or none (`collapsed`). Default "expanded". The other lists ignore it.',
       ),
+    categoryOrder: z
+      .array(z.string())
+      .describe(
+        'The person\'s order of the labs categories, as `categories[].key` values of `GET /api/labs/overview`. The server applies it there, so a client renders `categories` as given and never sorts them itself. Keys missing from the live data are ignored; a category missing from the list follows the listed ones in the default order, and "other" left at the end of the list stays last. Default empty (the default order). The other lists ignore it.',
+      ),
     saved: z
       .boolean()
       .describe(

@@ -10596,7 +10596,9 @@
       "openExpanded": "Todas",
       "openFlagged": "Só fora da faixa",
       "openCollapsed": "Nenhuma",
-      "orderWithinGroups": "A ordem vale dentro de cada categoria."
+      "orderWithinGroups": "A ordem vale dentro de cada categoria.",
+      "orderHeading": "Ordem das categorias",
+      "orderDefault": "Até você mover uma, as categorias integradas seguem uma ordem fixa, as suas vêm em ordem alfabética e {other} fica por último."
     },
     "sourceRange": {
       "fromReport": "Faixa do laudo {range}",

@@ -23,6 +23,17 @@
   prevention line 109, which answers around the clock. Before, Korean
   fell through to the international set with 112, which reaches the
   police there, not an ambulance.
+- **Set the order of the lab categories.** With the labs list grouped
+  by category you could reorder the markers but not the categories, and
+  nothing said how they were ordered. Settings > Arrangement > Labs now
+  has a "Category order" card while categories are on: move a category
+  with the handle or the arrows, and the card explains the default
+  (built-in categories in a fixed order, your own panels alphabetically,
+  Other last). A category that turns up later joins the end of your
+  order, and Other stays last if you left it there. The order is saved
+  with your account and applied by the server, so the app shows the same
+  order. The labs list layout accepts `categoryOrder`, and
+  `GET /api/labs/overview` answers `categories` in that order. (#1349)
 
 ### Fixed
 

@@ -10596,7 +10596,9 @@
       "openExpanded": "Alle",
       "openFlagged": "Alleen buiten bereik",
       "openCollapsed": "Geen",
-      "orderWithinGroups": "De volgorde geldt binnen elke categorie."
+      "orderWithinGroups": "De volgorde geldt binnen elke categorie.",
+      "orderHeading": "Volgorde van de categorieën",
+      "orderDefault": "Tot je er een verplaatst, staan de ingebouwde categorieën in een vaste volgorde, je eigen alfabetisch daarna en {other} als laatste."
     },
     "sourceRange": {
       "fromReport": "Bereik volgens rapport: {range}",

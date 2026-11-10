@@ -10596,7 +10596,9 @@
       "openExpanded": "All",
       "openFlagged": "Outside range only",
       "openCollapsed": "None",
-      "orderWithinGroups": "The order applies within each category."
+      "orderWithinGroups": "The order applies within each category.",
+      "orderHeading": "Category order",
+      "orderDefault": "Until you move one, built-in categories keep a fixed order, your own follow alphabetically and {other} comes last."
     },
     "sourceRange": {
       "fromReport": "Report range {range}",

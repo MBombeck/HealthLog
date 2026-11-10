@@ -10596,7 +10596,9 @@
       "openExpanded": "Tutte",
       "openFlagged": "Solo fuori norma",
       "openCollapsed": "Nessuna",
-      "orderWithinGroups": "L’ordine vale all’interno di ogni categoria."
+      "orderWithinGroups": "L’ordine vale all’interno di ogni categoria.",
+      "orderHeading": "Ordine delle categorie",
+      "orderDefault": "Finché non ne sposti una, le categorie predefinite seguono un ordine fisso, le tue l’ordine alfabetico e {other} viene per ultima."
     },
     "sourceRange": {
       "fromReport": "Intervallo del referto {range}",

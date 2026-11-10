@@ -10596,7 +10596,9 @@
       "openExpanded": "Toutes",
       "openFlagged": "Hors norme seulement",
       "openCollapsed": "Aucune",
-      "orderWithinGroups": "L’ordre s’applique au sein de chaque catégorie."
+      "orderWithinGroups": "L’ordre s’applique au sein de chaque catégorie.",
+      "orderHeading": "Ordre des catégories",
+      "orderDefault": "Tant que vous n’en déplacez aucune, les catégories intégrées suivent un ordre fixe, les vôtres l’ordre alphabétique et {other} vient en dernier."
     },
     "sourceRange": {
       "fromReport": "Plage du compte rendu {range}",

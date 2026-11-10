@@ -34362,6 +34362,13 @@ components:
             - expanded
             - flagged
             - collapsed
+        categoryOrder:
+          maxItems: 200
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
       required:
         - version
         - list
@@ -75520,6 +75527,15 @@ components:
             - collapsed
           description: 'Which labs categories start open: every one (`expanded`), only those whose `status` is `above` or `below`
             (`flagged`), or none (`collapsed`). Default "expanded". The other lists ignore it.'
+        categoryOrder:
+          type: array
+          items:
+            type: string
+          description: The person's order of the labs categories, as `categories[].key` values of `GET /api/labs/overview`. The
+            server applies it there, so a client renders `categories` as given and never sorts them itself. Keys missing
+            from the live data are ignored; a category missing from the list follows the listed ones in the default
+            order, and "other" left at the end of the list stays last. Default empty (the default order). The other
+            lists ignore it.
         saved:
           type: boolean
           description: True when the server holds a choice for this list; false means every field is a default.
@@ -75529,6 +75545,7 @@ components:
         - sortDir
         - groupBy
         - groupsOpen
+        - categoryOrder
         - saved
       additionalProperties: false
     ModuleListLayoutSavedEnvelope:
@@ -77121,8 +77138,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LabOverviewCategory"
-          description: "The list's categories in display order: catalog panels in catalog order, then the person's own panels by
-            label, then `other`."
+          description: "The list's categories in display order, already arranged for the caller: the default order is catalog
+            panels in catalog order, then the person's own panels by label, then `other`, and the caller's
+            `categoryOrder` (`PUT /api/settings/module-list-layout`, labs list) is applied over it. Render them in this
+            order."
         grouped:
           type: boolean
           description: "Whether grouping adds anything: true when there are two categories or more and at least one is not

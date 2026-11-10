@@ -10596,7 +10596,9 @@
       "openExpanded": "Wszystkie",
       "openFlagged": "Tylko poza normą",
       "openCollapsed": "Żadne",
-      "orderWithinGroups": "Kolejność obowiązuje w obrębie każdej kategorii."
+      "orderWithinGroups": "Kolejność obowiązuje w obrębie każdej kategorii.",
+      "orderHeading": "Kolejność kategorii",
+      "orderDefault": "Dopóki żadnej nie przesuniesz, wbudowane kategorie mają stałą kolejność, twoje własne idą alfabetycznie, a {other} na końcu."
     },
     "sourceRange": {
       "fromReport": "Zakres z wyniku {range}",

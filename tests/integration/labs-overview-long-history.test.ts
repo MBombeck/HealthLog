@@ -401,6 +401,53 @@ describe("GET /api/labs/overview categories", () => {
     ]);
   });
 
+  it("answers the categories in the caller's saved order", async () => {
+    await seedCategories();
+    cookieJar.set("healthlog-locale", "en");
+    const { PUT } = await import("@/app/api/settings/module-list-layout/route");
+    const saved = await PUT(
+      new Request("http://localhost/api/settings/module-list-layout", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        // Lipids is left out (it follows the listed ones), "iron" has no
+        // values here (ignored), and "other" sits first.
+        body: JSON.stringify({
+          version: 1,
+          list: "labs",
+          categoryOrder: ["other", "iron", "thyroid"],
+        }),
+      }),
+    );
+    expect(saved.status).toBe(200);
+    const { categories, grouped } = (
+      (await (await getOverview()).json()) as CategoryBody
+    ).data;
+    expect(grouped).toBe(true);
+    expect(categories.map((c) => c.label)).toEqual([
+      "Other",
+      "Thyroid",
+      "Lipids",
+      "trace  ELEMENTS",
+    ]);
+
+    // Left at the end, "other" stays last behind the categories not named.
+    await PUT(
+      new Request("http://localhost/api/settings/module-list-layout", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          version: 1,
+          list: "labs",
+          categoryOrder: ["thyroid", "other"],
+        }),
+      }),
+    );
+    const again = (
+      (await (await getOverview()).json()) as CategoryBody
+    ).data.categories.map((c) => c.label);
+    expect(again).toEqual(["Thyroid", "Lipids", "trace  ELEMENTS", "Other"]);
+  });
+
   it("stays flat when grouping adds nothing", async () => {
     const prisma = getPrismaClient();
     await prisma.labResult.create({

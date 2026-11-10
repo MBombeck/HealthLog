@@ -10596,7 +10596,9 @@
       "openExpanded": "모두",
       "openFlagged": "범위 밖만",
       "openCollapsed": "없음",
-      "orderWithinGroups": "순서는 각 카테고리 안에서 적용돼요."
+      "orderWithinGroups": "순서는 각 카테고리 안에서 적용돼요.",
+      "orderHeading": "카테고리 순서",
+      "orderDefault": "직접 옮기기 전에는 기본 카테고리가 정해진 순서로, 직접 만든 카테고리가 가나다순으로 이어지고 {other}가 마지막에 와요."
     },
     "sourceRange": {
       "fromReport": "결과지 범위 {range}",

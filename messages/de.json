@@ -10596,7 +10596,9 @@
       "openExpanded": "Alle",
       "openFlagged": "Nur außerhalb des Bereichs",
       "openCollapsed": "Keine",
-      "orderWithinGroups": "Die Reihenfolge gilt innerhalb jeder Kategorie."
+      "orderWithinGroups": "Die Reihenfolge gilt innerhalb jeder Kategorie.",
+      "orderHeading": "Reihenfolge der Kategorien",
+      "orderDefault": "Bis du eine verschiebst, stehen eingebaute Kategorien in fester Folge, deine eigenen alphabetisch und {other} zuletzt."
     },
     "sourceRange": {
       "fromReport": "Befundbereich {range}",
