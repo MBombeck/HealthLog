@@ -3,7 +3,7 @@
   "body": {
     "data": {
       "serverNow": "<now>",
-      "cursor": "eyJ2IjoyLCJ0IjoxNzkyMDY1NjAwMDAwLCJkIjp7Im1lYXN1cmVtZW50cyI6eyJ1IjoxNzkyMDUwNjAwMDAwLCJpIjoibS0wNiJ9LCJtb29kIjp7InUiOjE3OTIwNTE4MDAwMDAsImkiOiJtb29kLTAyIn0sImludGFrZXMiOnsidSI6MTc5MjA1MzYwMDAwMCwiaSI6ImluLTAzIn0sImN5Y2xlRGF5cyI6eyJ1IjoxNzkyMDU3MjAwMDAwLCJpIjoiY2QtMDMifSwiY3ljbGVzIjp7InUiOjE3OTIwNTU0MDAwMDAsImkiOiJjeS0wMyJ9fX0",
+      "cursor": "eyJ2IjoyLCJ0IjoxNzkyMDY1NjAwMDAwLCJkIjp7Im1lYXN1cmVtZW50cyI6eyJ1IjoxNzkyMDY1NDgwMDAwLCJpIjoiMCJ9LCJtb29kIjp7InUiOjE3OTIwNjU0ODAwMDAsImkiOiIwIn0sImludGFrZXMiOnsidSI6MTc5MjA2NTQ4MDAwMCwiaSI6IjAifSwiY3ljbGVEYXlzIjp7InUiOjE3OTIwNjU0ODAwMDAsImkiOiIwIn0sImN5Y2xlcyI6eyJ1IjoxNzkyMDY1NDgwMDAwLCJpIjoiMCJ9fX0",
       "hasMore": false,
       "cursorExpired": false,
       "changes": {

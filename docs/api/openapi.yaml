@@ -4522,17 +4522,17 @@ paths:
         - in: query
           name: start
           schema:
-            description: "`now` answers an empty page (every domain empty, `hasMore: false`) whose `cursor` sits one minute before
+            description: "`now` answers an empty page (every domain empty, `hasMore: false`) whose `cursor` sits two minutes before
               `serverNow` in every domain, in the same opaque format as any other page. Paging forward from it yields
-              what changes from then on, plus anything written in that last minute (a write stamped before `serverNow`
+              what changes from then on, plus anything written in those two minutes (a write stamped before `serverNow`
               can commit after it, and is not skipped; upserts are idempotent, so a row seen twice is harmless),
               including `measurementMirror`, without walking the history first. Mutually exclusive with `cursor` (422).
               A server without it ignores the parameter and starts from the oldest row."
             type: string
             const: now
-          description: "`now` answers an empty page (every domain empty, `hasMore: false`) whose `cursor` sits one minute before
+          description: "`now` answers an empty page (every domain empty, `hasMore: false`) whose `cursor` sits two minutes before
             `serverNow` in every domain, in the same opaque format as any other page. Paging forward from it yields what
-            changes from then on, plus anything written in that last minute (a write stamped before `serverNow` can
+            changes from then on, plus anything written in those two minutes (a write stamped before `serverNow` can
             commit after it, and is not skipped; upserts are idempotent, so a row seen twice is harmless), including
             `measurementMirror`, without walking the history first. Mutually exclusive with `cursor` (422). A server
             without it ignores the parameter and starts from the oldest row."
@@ -50202,9 +50202,10 @@ components:
             - "null"
         hasMore:
           type: boolean
-          description: False once the client is caught up as of `serverNow`. The cursor of such a page sits at most a minute
-            before `serverNow` in each row domain, so the next pull reads rows changed in that last minute again (a
-            write still in flight may commit a row stamped there); upserts are idempotent.
+          description: False once the client is caught up as of `serverNow`. Every row domain that ran dry on a page takes a
+            watermark two minutes before `serverNow` (on the last page of a walk, all of them), so the next pull reads
+            rows changed in that stretch again (a write still in flight may commit a row stamped there) and a domain
+            that stays quiet never ages its cursor past the tombstone horizon; upserts are idempotent.
         cursorExpired:
           type: boolean
           description: True when the supplied cursor predates tombstone retention, or was issued before the account's data was

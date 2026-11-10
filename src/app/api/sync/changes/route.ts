@@ -30,11 +30,13 @@
  *     server `id` (the client mirrors those by server id).
  *   - `hasMore` is true when ANY served domain still has rows past its
  *     page; the next `cursor` advances every domain that returned rows.
- *     When `hasMore` is false the client is caught up as of `serverNow`,
- *     and that page's cursor is held back to a minute before it in every
- *     row domain (`holdBackDrainedCursor`): a row stamped in that minute
- *     whose write commits after the pull still arrives on the next one, at
- *     the cost of reading that minute twice.
+ *     When `hasMore` is false the client is caught up as of `serverNow`.
+ *     A row domain that ran dry takes a watermark two minutes before
+ *     `serverNow` (`drainedWatermark`; on the last page every one does):
+ *     a row stamped in that stretch whose write commits after the pull
+ *     still arrives on the next one, at the cost of reading the stretch
+ *     twice, and a domain that stays quiet keeps a fresh watermark instead
+ *     of ageing into `cursorExpired`.
  *   - `cursorExpired: true` when ANY domain watermark predates the
  *     tombstone-retention horizon — the client drops its cursor and does
  *     a clean initial sync (a deletion older than retention may have
@@ -47,7 +49,7 @@
  *     cycle tracking off gets both blocks empty (never a 403 — see the
  *     gate note in the handler) and their cursor watermarks untouched.
  *
- * `start=now` (#1339) answers an empty page whose cursor sits a minute
+ * `start=now` (#1339) answers an empty page whose cursor sits two minutes
  * before `serverNow` in every domain (`START_NOW_OVERLAP_MS`), in the same
  * opaque format, so a client that
  * only wants what changes from now on (the Apple Health write-back) pages

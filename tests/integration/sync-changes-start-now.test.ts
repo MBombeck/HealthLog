@@ -8,7 +8,7 @@
  * that token's readings on `measurementMirror`, because the switch happens
  * after the cursor.
  *
- * The cursor sits a minute behind the present: `updatedAt` is stamped when a
+ * The cursor sits two minutes behind the present: `updatedAt` is stamped when a
  * write is built, not when it commits, so a row stamped just before the
  * cursor can become visible just after it, and must not be skipped.
  */
@@ -138,7 +138,7 @@ describe("a cursor that starts now", () => {
     );
     expect(mirrored.every((r) => r.appleHealthMirror === true)).toBe(true);
 
-    // The drained cursor it hands back sits a minute back like the start
+    // The drained cursor it hands back sits two minutes back like the start
     // one, so the row written in that minute comes once more and nothing
     // else does. The mirror domain is not held back.
     const after = await pull({ cursor: next.cursor! });

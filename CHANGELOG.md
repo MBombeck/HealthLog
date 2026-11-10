@@ -63,14 +63,20 @@
   the plain unit. Any other text in brackets still counts as part of
   the unit. (#1313)
 - **The sync feed no longer loses a reading written during a long
-  import.** A Garmin or Withings import writes a batch in one transaction
-  and stamps its readings before it commits them. When a reading logged by
-  hand committed in between and the app synced right then, the feed's
-  position moved past the import's readings, and they never reached the
-  app or Apple Health. A caught-up page of `GET /api/sync/changes` now
-  hands back a position a minute behind the present, like `start=now`
-  already does, so the next pull reads that minute again and anything
-  that committed late comes with it.
+  import, and no longer starts over for a quiet account.** A Garmin or
+  Withings import writes a batch in one transaction and stamps its
+  readings before it commits them. When a reading logged by hand
+  committed in between and the app synced right then, the feed's position
+  moved past the import's readings, and they never reached the app or
+  Apple Health. Separately, a kind of data that had not changed for more
+  than 75 days (mood, say, for someone who stopped logging it) kept its
+  old position in the feed, and from then on every sync was answered as
+  expired and the app started over from scratch, each time. Now every
+  kind of data that `GET /api/sync/changes` has fully caught up takes a
+  position two minutes behind the present, like `start=now` (which moves
+  from one minute to two): what changed in those two minutes is read
+  once more, so anything that committed late still arrives, and a quiet
+  kind of data never ages out.
 - **Changing the calendar subscription while its link is being renewed.**
   A subscription turned off at the same moment its link was renewed could
   come back under the new link, and an option changed at that moment
