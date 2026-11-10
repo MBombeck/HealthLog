@@ -41,15 +41,32 @@ describe("<LabFilterRail> layout", () => {
 
   it("keeps search full width and wraps filter controls on phones", async () => {
     await page.viewport(390, 844);
-    const { screen } = await renderWithApp(<LabFilterRail {...props()} />);
+    // The page gutter the labs page gives the rail (its edge bleed relies on it).
+    const { screen } = await renderWithApp(
+      <div className="px-4">
+        <LabFilterRail {...props()} />
+      </div>,
+    );
 
     const search = screen.getByRole("searchbox", { name: "Search biomarkers" });
     const dateRange = screen.getByRole("button", { name: "Last measured" });
     const searchRect = search.element().getBoundingClientRect();
     const dateRect = dateRange.element().getBoundingClientRect();
 
-    expect(searchRect.width).toBeGreaterThan(300);
+    expect(searchRect.width).toBeGreaterThan(340);
     expect(dateRect.top).toBeGreaterThan(searchRect.bottom);
+
+    // The filter icon leads the pill row instead of sitting on a line of
+    // its own between the search field and the pills.
+    const icon = dateRange
+      .element()
+      .closest('[data-slot="filter-bar"]')
+      ?.querySelector("svg.lucide-list-filter, svg.lucide-funnel");
+    expect(icon).toBeTruthy();
+    expect(Math.abs(centerY(icon!) - centerY(dateRange.element()))).toBeLessThan(
+      2,
+    );
+    expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(390);
   });
 
   it("wraps controls cleanly without horizontal overflow at intermediate widths", async () => {

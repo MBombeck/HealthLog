@@ -82,7 +82,7 @@ describe("<LabFilterRail>", () => {
   it("pluralizes marker count with tCount across locales", () => {
     const extractCountText = (html: string) => {
       const match = html.match(
-        /<span[^>]*data-slot="filter-bar-count"[^>]*>([^<]+)<\/span>/,
+        /<span[^>]*tabular-nums[^>]*>([^<]+)<\/span>/,
       );
       return match ? match[1].trim() : null;
     };

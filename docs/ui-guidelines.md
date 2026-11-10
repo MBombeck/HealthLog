@@ -236,20 +236,15 @@ lists) uses the unified `<FilterBar>` rail from
 `src/components/ui/filter-bar.tsx` — never a per-page row of large
 labelled `<Select>`s and date inputs.
 
-- **Grammar**: `[search] [icon] [Zeitraum] [Typ] [Quelle] [extras…]
-[Zurücksetzen] … [count]`. Where search is supported (such as labs), the
-  search input is integrated as the leading element in the rail. Canonical
-  dimension order remains date range, type, source; surface-specific
-  dimensions append after.
+- **Grammar**: `[icon] [Zeitraum] [Typ] [Quelle] [extras…]
+[Zurücksetzen] … [count]`. Canonical dimension order is date range,
+  type, source; surface-specific dimensions append after.
 - **Pill = trigger + chip**: inactive pills show only the dimension
   name; active pills show `Name: Wert`, pick up the primary accent and
   grow a removable ✕. No separate chip row.
 - **Reset** renders only while at least one dimension is active.
-- **Mobile** (< `sm`): standard pill rails scroll horizontally (hidden
-  scrollbar, edge-bleed); the result count wraps to its own line. When an
-  integrated search input is present in the rail (such as in labs), the
-  rail wraps (`max-sm:flex-wrap`) so search spans full width and pills
-  wrap underneath, avoiding horizontal scroll while typing.
+- **Mobile** (< `sm`): the rail is a horizontal scroll row (hidden
+  scrollbar, edge-bleed); the result count wraps to its own line.
 - The component is presentation-only — filter state, query keys and
   fetching stay in the owning page. Use `FilterBarSelect` for enum
   dimensions and `FilterBarDateRange` for the from/to pair.
