@@ -10710,9 +10710,9 @@
       "statusAbnormal": "범위 벗어남",
       "categoryLabel": "카테고리",
       "categoryAll": "모든 카테고리",
-      "markerCountOne": "{count}개 바이오마커",
-      "markerCountFew": "{count}개 바이오마커",
-      "markerCountOther": "{count}개 바이오마커",
+      "markerCountOne": "바이오마커 {count}개",
+      "markerCountFew": "바이오마커 {count}개",
+      "markerCountOther": "바이오마커 {count}개",
       "noMatchesTitle": "일치하는 바이오마커 없음",
       "noMatchesDescription": "검색어 또는 필터를 조정해 보세요."
     }
