@@ -226,6 +226,27 @@ describe("runInboundExtraction — stated-status-only mapping", () => {
     expect(result.facts.map((f) => f.needsReview)).toEqual([false, true]);
   });
 
+  it('sends a "1 (calc)" unit to review like a plain "1"', async () => {
+    const provider = fakeProvider(
+      JSON.stringify({
+        facts: [
+          {
+            type: "OBSERVATION",
+            label: "CHOL/HDLC RATIO",
+            value: 4,
+            unit: "1 (calc)",
+            confidence: 0.95,
+            sourceText: "CHOL/HDLC RATIO 4.0 (calc)",
+          },
+        ],
+      }),
+    );
+
+    const result = await runInboundExtraction(oneRead(provider));
+    expect((result.facts[0].data as ObservationFactData).unit).toBe("1");
+    expect(result.facts[0].needsReview).toBe(true);
+  });
+
   it("stores the document's real span, not the model's echo of it", async () => {
     // The OCR text says "Hämoglobin    14.2 g/dL"; the model echoes a tidied
     // rendering of it. The stored provenance must be the document's characters.

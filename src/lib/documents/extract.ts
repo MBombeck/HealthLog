@@ -393,6 +393,9 @@ export async function runInboundExtraction(
     // every fact from it is unanchored by construction.
     const anchor = anchorSourceText(raw.sourceText, args.ocrText);
     if (!anchor.anchored) unanchored += 1;
+    // The unit as it will be stored, with any "(calc)" note gone, so a
+    // "1 (calc)" is judged as the "1" it becomes.
+    const unit = observationUnit(raw.unit);
     facts.push({
       factType: raw.type,
       confidence,
@@ -404,10 +407,8 @@ export async function runInboundExtraction(
       needsReview:
         confidence < INBOUND_CONFIDENCE_FLOOR ||
         (raw.type === "OBSERVATION" &&
-          (isDimensionlessUnit(raw.unit) ||
-            (raw.unit !== null &&
-              raw.unit.trim() !== "" &&
-              observationUnit(raw.unit) === null))),
+          (isDimensionlessUnit(unit) ||
+            (raw.unit !== null && raw.unit.trim() !== "" && unit === null))),
       data,
       provenance: {
         sourceText: anchor.sourceText,
