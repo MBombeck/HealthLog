@@ -10701,7 +10701,7 @@
       "noneHint": "Für einen Quotienten oder Index wie INR oder Cholesterin/HDL."
     },
     "filter": {
-      "searchPlaceholder": "Biomarker suchen...",
+      "searchPlaceholder": "Biomarker suchen…",
       "searchLabel": "Biomarker suchen",
       "clearSearch": "Suche leeren",
       "lastMeasured": "Zuletzt gemessen",

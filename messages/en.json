@@ -10701,7 +10701,7 @@
       "noneHint": "For a ratio or an index such as INR or cholesterol/HDL."
     },
     "filter": {
-      "searchPlaceholder": "Search biomarkers...",
+      "searchPlaceholder": "Search biomarkers…",
       "searchLabel": "Search biomarkers",
       "clearSearch": "Clear search",
       "lastMeasured": "Last measured",

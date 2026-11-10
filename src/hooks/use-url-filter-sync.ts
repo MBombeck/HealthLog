@@ -4,6 +4,13 @@ import { useCallback, useMemo, useState } from "react";
 
 import { setAllParams, useUrlSearch, writeUrlState } from "@/lib/url-state";
 
+export interface UrlFilterSyncOptions {
+  /** A new history entry (`push`) or the current one rewritten (`replace`). */
+  mode?: "push" | "replace";
+  /** Wait two painted frames before writing (a write made while mounting). */
+  afterPaint?: boolean;
+}
+
 /**
  * URL-owned filter state — the documents-vault pattern
  * (`src/components/documents/documents-view.tsx`), extracted so the
@@ -32,13 +39,6 @@ import { setAllParams, useUrlSearch, writeUrlState } from "@/lib/url-state";
  * for a list embedded under a URL that belongs to another surface (the
  * type-locked insights readings subpage).
  */
-export interface UrlFilterSyncOptions {
-  /** A new history entry (`push`) or the current one rewritten (`replace`). */
-  mode?: "push" | "replace";
-  /** Wait two painted frames before writing (a write made while mounting). */
-  afterPaint?: boolean;
-}
-
 export function useUrlFilterSync<T>({
   parse,
   serialise,

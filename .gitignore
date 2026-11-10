@@ -101,7 +101,3 @@ next-env.d.ts
 # Mutation testing (stryker.config.mjs): reports and the sandbox copy.
 /reports/mutation
 /.stryker-tmp
-
-# Local planning and code-review notes (agent output, never part of the
-# public docs surface or the shipped tree).
-/plans/

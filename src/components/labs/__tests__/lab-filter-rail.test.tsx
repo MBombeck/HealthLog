@@ -37,12 +37,12 @@ describe("<LabFilterRail>", () => {
     );
 
     expect(html).toContain('data-slot="lab-filter-rail"');
-    expect(html).toContain('placeholder="Search biomarkers..."');
+    expect(html).toContain('placeholder="Search biomarkers…"');
     expect(html).toContain('aria-keyshortcuts="/"');
     expect(html).toMatch(/<kbd[^>]*aria-hidden="true"[^>]*>\s*\/\s*<\/kbd>/);
 
     // The shared rail keeps search and all filter dimensions in one ordered row.
-    const searchIdx = html.indexOf('placeholder="Search biomarkers..."');
+    const searchIdx = html.indexOf('placeholder="Search biomarkers…"');
     const dateRangeIdx = html.indexOf("Last measured");
     const statusIdx = html.indexOf("Status");
     const categoryIdx = html.indexOf("Category");

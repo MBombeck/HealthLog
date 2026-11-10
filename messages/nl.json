@@ -10701,7 +10701,7 @@
       "noneHint": "Voor een verhouding of index zoals INR of cholesterol/HDL."
     },
     "filter": {
-      "searchPlaceholder": "Biomarkers zoeken...",
+      "searchPlaceholder": "Biomarkers zoeken…",
       "searchLabel": "Biomarkers zoeken",
       "clearSearch": "Zoekopdracht wissen",
       "lastMeasured": "Laatst gemeten",

@@ -10701,7 +10701,7 @@
       "noneHint": "Para uma razão ou um índice como INR ou colesterol/HDL."
     },
     "filter": {
-      "searchPlaceholder": "Buscar biomarcadores...",
+      "searchPlaceholder": "Buscar biomarcadores…",
       "searchLabel": "Buscar biomarcadores",
       "clearSearch": "Limpar busca",
       "lastMeasured": "Última medição",
