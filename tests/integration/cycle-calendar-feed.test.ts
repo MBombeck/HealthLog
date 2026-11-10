@@ -243,14 +243,15 @@ describe("turning the subscription on", () => {
   });
 
   /**
-   * Run `rotate()` while `write` holds the live feed's row in an open
-   * transaction, and commit `write` only once the rotation is waiting on
-   * that row: the rotation has read the feed, and its revoke comes after
-   * the competing write whatever the scheduler does.
+   * Run `act` (a rotation unless named) while `write` holds the live feed's
+   * row in an open transaction, and commit `write` only once `act` is
+   * waiting on that row: `act` has read the feed, and its own write comes
+   * after the competing one whatever the scheduler does.
    */
   async function rotateAround(
     userId: string,
     write: (tx: Prisma.TransactionClient, feedId: string) => Promise<void>,
+    act: () => Promise<Response> = rotate,
   ): Promise<Response> {
     const feed = await db().cycleCalendarFeed.findFirstOrThrow({
       where: { userId, revokedAt: null },
@@ -260,7 +261,7 @@ describe("turning the subscription on", () => {
     await db().$transaction(
       async (tx) => {
         await write(tx, feed.id);
-        pending = rotate();
+        pending = act();
         for (let i = 0; i < 100; i++) {
           const [{ n }] = await db().$queryRaw<{ n: number }[]>`
             SELECT count(*)::int AS n FROM pg_stat_activity
@@ -268,7 +269,7 @@ describe("turning the subscription on", () => {
           if (n > 0) return;
           await new Promise((r) => setTimeout(r, 20));
         }
-        throw new Error("the rotation never waited on the feed row");
+        throw new Error("the request never waited on the feed row");
       },
       { timeout: 10_000 },
     );
@@ -284,7 +285,39 @@ describe("turning the subscription on", () => {
         data: { revokedAt: new Date() },
       });
     });
-    expect(res.status).toBe(409);
+    expect(res.status).toBe(404);
+    expect((await res.json()).meta.errorCode).toBe("cycle.feed.none");
+    expect(
+      await db().cycleCalendarFeed.count({
+        where: { userId: owner.id, revokedAt: null },
+      }),
+    ).toBe(0);
+  });
+
+  it("keeps a subscription off when it is turned off while a rotation commits", async () => {
+    const owner = await makeUser("owner");
+    await mint(owner.id);
+    // The rotation holds the live row (revoked, successor written, not yet
+    // committed) while the turn-off waits on it.
+    const res = await rotateAround(
+      owner.id,
+      async (tx, feedId) => {
+        await tx.cycleCalendarFeed.update({
+          where: { id: feedId },
+          data: { revokedAt: new Date() },
+        });
+        await tx.cycleCalendarFeed.create({
+          data: {
+            userId: owner.id,
+            createdById: owner.id,
+            tokenHash: "successor-hash",
+            tokenPrefix: "hlf_successor",
+          },
+        });
+      },
+      () => manage("DELETE"),
+    );
+    expect(res.status).toBe(200);
     expect(
       await db().cycleCalendarFeed.count({
         where: { userId: owner.id, revokedAt: null },

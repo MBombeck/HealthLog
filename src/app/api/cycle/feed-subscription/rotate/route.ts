@@ -10,7 +10,8 @@
  * URL is returned exactly once. Of two rotations racing, the second finds
  * the feed already revoked (or its successor meets the one-live-feed index)
  * and gets the mint path's 409 `cycle.feed.exists`; the winner's link
- * stands. A subscription turned off during a rotation stays off, and an
+ * stands. A subscription turned off during a rotation stays off, whichever
+ * commits first, and the rotation then answers 404 `cycle.feed.none`; an
  * option changed during one lands on the link that stays live.
  *
  * Same gates as turning the subscription on: cookie session only, the owner or
@@ -36,7 +37,11 @@ import {
   feedLinks,
   noLiveFeed,
 } from "@/lib/cycle/feed/manage";
-import { FEED_SUMMARY_SELECT, toFeedSummary } from "@/lib/cycle/feed/status";
+import {
+  FEED_SUMMARY_SELECT,
+  findLiveFeed,
+  toFeedSummary,
+} from "@/lib/cycle/feed/status";
 import { mintFeedToken } from "@/lib/cycle/feed/token";
 import { prisma } from "@/lib/db";
 import { resolveOrigin } from "@/lib/http/origin";
@@ -128,7 +133,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
       if (isP2002(err)) return "raced" as const;
       throw err;
     });
-  if (rotated === "raced") return feedExists();
+  // Lost to another rotation, the link that won stands; lost to the
+  // subscription being turned off, there is none.
+  if (rotated === "raced") {
+    return (await findLiveFeed(user.id)) ? feedExists() : noLiveFeed();
+  }
   if (!rotated) return noLiveFeed();
 
   return apiSuccess(

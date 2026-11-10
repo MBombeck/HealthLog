@@ -245,10 +245,17 @@ export const DELETE = apiHandler(async () => {
   const live = await findLiveFeed(user.id);
   if (!live) return noLiveFeed();
 
-  await prisma.cycleCalendarFeed.update({
-    where: { id: live.id },
-    data: { revokedAt: new Date() },
-  });
+  // Every live feed of the record, not only the one read above, and twice:
+  // a rotation that held that row while this waited commits its successor
+  // after the first statement looked, and the second finds it. Off stays
+  // off even when the link was being renewed at the same moment.
+  const revokedAt = new Date();
+  for (let pass = 0; pass < 2; pass++) {
+    await prisma.cycleCalendarFeed.updateMany({
+      where: { userId: user.id, revokedAt: null },
+      data: { revokedAt },
+    });
+  }
   // The link stops working on the provider's next poll. What the provider
   // already copied is beyond reach, which the settings card says before the
   // link is ever made.

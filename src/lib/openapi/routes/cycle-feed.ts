@@ -219,7 +219,7 @@ export const cycleFeedPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Cycle"],
       summary: "Change the calendar subscription's options (#1350)",
       description:
-        "Field-by-field update of the options. The URL does not change; the feed's next fetch serves the new content.",
+        "Field-by-field update of the options. The URL does not change; the feed's next fetch serves the new content. A change saved while the link is being replaced applies to the link that stays live.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: feedOptionsRequest } },
@@ -235,6 +235,11 @@ export const cycleFeedPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "404": {
           description: "No subscription is on (`cycle.feed.none`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "409": {
+          description:
+            "The link was replaced twice while the change was being saved (`cycle.feed.exists`); nothing changed, and sending it again applies it to the link that is live now.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...MANAGEMENT_REFUSALS,
@@ -275,7 +280,7 @@ export const cycleFeedPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Cycle"],
       summary: "Replace the calendar subscription's link (#1350)",
       description:
-        "One transaction: the live link is revoked and a new one minted with the same options, the forecast style included. Returns the new URL EXACTLY ONCE. Calendars using the old link stop updating. Of two rotations racing, the one that loses answers 409 `cycle.feed.exists` and the winner's link stands.",
+        "One transaction: the live link is revoked and a new one minted with the same options, the forecast style included. Returns the new URL EXACTLY ONCE. Calendars using the old link stop updating. Of two rotations racing, the one that loses answers 409 `cycle.feed.exists` and the winner's link stands; a rotation racing the subscription being turned off answers 404 `cycle.feed.none` and the subscription stays off.",
       responses: {
         ...mintResponses,
         "404": {
