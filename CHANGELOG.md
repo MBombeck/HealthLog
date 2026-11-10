@@ -24,6 +24,18 @@
   fell through to the international set with 112, which reaches the
   police there, not an ambulance.
 
+### Fixed
+
+- **A lab's "(calc)" note no longer becomes part of the unit.** Some
+  reports print "(calc)" beside a calculated value, and a document read
+  could copy it into the unit, so a marker was created in "g/dL (calc)"
+  or just "(calc)" and the next report's plain "g/dL" was refused as a
+  different unit. The read now drops that note (also "calculated",
+  "computed" and the German "berechnet"), a unit that was only the note
+  counts as no unit, and a marker already saved with the note accepts
+  the plain unit. Any other text in brackets still counts as part of
+  the unit. (#1313)
+
 ## [1.47.1] — 2026-11-07
 
 ### Added

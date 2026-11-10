@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { normaliseLabUnit, sameLabUnit } from "../unit-normalise";
+import {
+  normaliseLabUnit,
+  sameLabUnit,
+  withoutLabUnitAnnotation,
+} from "../unit-normalise";
 
 describe("sameLabUnit — spellings of one unit", () => {
   it.each([
@@ -86,5 +90,21 @@ describe("normaliseLabUnit", () => {
     expect(normaliseLabUnit("mmol/l")).toBe("mmol/L");
     expect(normaliseLabUnit("ug/l")).toBe("µg/L");
     expect(normaliseLabUnit("MG/DL")).toBe("mg/dL");
+  });
+});
+
+describe("a calculated-value note in the unit", () => {
+  it("is not part of the unit", () => {
+    expect(sameLabUnit("g/dL (calc)", "g/dL")).toBe(true);
+    expect(sameLabUnit("mmol/l (berechnet)", "mmol/L")).toBe(true);
+    expect(sameLabUnit("mg/dL (Calc.)", "MG/DL")).toBe(true);
+    expect(withoutLabUnitAnnotation("(calc)")).toBe("");
+    expect(withoutLabUnitAnnotation(" g/dL (calculated) ")).toBe("g/dL");
+  });
+
+  it("keeps any other bracket, so it still surfaces as a mismatch", () => {
+    expect(sameLabUnit("mg/dL (fasting)", "mg/dL")).toBe(false);
+    expect(withoutLabUnitAnnotation("U/L (37 °C)")).toBe("U/L (37 °C)");
+    expect(withoutLabUnitAnnotation("(calc) g/dL")).toBe("(calc) g/dL");
   });
 });

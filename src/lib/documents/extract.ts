@@ -58,6 +58,7 @@ import {
   type OcrReadSurface,
 } from "@/lib/documents/ocr-read";
 import { isDimensionlessUnit } from "@/lib/labs/dimensionless";
+import { withoutLabUnitAnnotation } from "@/lib/labs/unit-normalise";
 import { annotate } from "@/lib/logging/context";
 import {
   INBOUND_CONFIDENCE_FLOOR,
@@ -168,7 +169,7 @@ function mapFactData(raw: ExtractedFactRaw): FactData | null {
       codeSystem: system === "LOINC" ? system : null,
       value: hasNumeric ? raw.value : null,
       valueText: hasNumeric ? null : raw.valueText,
-      unit: raw.unit,
+      unit: observationUnit(raw.unit),
       referenceLow: raw.referenceLow,
       referenceHigh: raw.referenceHigh,
       referenceText: raw.referenceText,
@@ -187,6 +188,17 @@ function mapFactData(raw: ExtractedFactRaw): FactData | null {
     effectiveDate,
   };
   return data;
+}
+
+/**
+ * The printed unit without a lab's "(calc)" note, so the same marker read
+ * from two reports, one with the note and one without, lands in one unit.
+ * A unit that was only the note is no unit.
+ */
+function observationUnit(unit: string | null): string | null {
+  if (unit === null) return null;
+  const bare = withoutLabUnitAnnotation(unit);
+  return bare === "" ? null : bare;
 }
 
 /** A staged fact ready to persist (before it gets an id). */
@@ -306,7 +318,7 @@ function factKey(raw: ExtractedFactRaw, readDate: string | null): string {
     raw.label.trim().toLowerCase(),
     raw.value ?? "",
     (raw.valueText ?? "").trim().toLowerCase(),
-    (raw.unit ?? "").trim().toLowerCase(),
+    (observationUnit(raw.unit) ?? "").toLowerCase(),
     (raw.referenceText ?? "").trim().toLowerCase(),
     (raw.dose ?? "").trim().toLowerCase(),
     normaliseDate(raw.effectiveDate) ?? readDate ?? "",
