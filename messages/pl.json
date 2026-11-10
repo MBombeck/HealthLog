@@ -4019,7 +4019,7 @@
       "gki": {
         "description": "Glukoza podzielona przez ketony, dla każdego odczytu ketonów z odczytem glukozy w ciągu 15 minut.",
         "emptyTitle": "Brak jeszcze indeksu",
-        "emptyDescription": "Pojawi się, gdy do odczytu ketonów będzie odczyt glukozy z tej samej chwili lub w ciągu 15 minut.",
+        "emptyDescription": "Pojawi się, gdy do odczytu ketonów powyżej zera będzie odczyt glukozy z tej samej chwili lub w ciągu 15 minut.",
         "latest": "Ostatnio {value}: glukoza {glucose} {unit} przez ketony {ketones} {unit}, {date}."
       }
     },
@@ -13710,7 +13710,7 @@
     "valuesAllFew": "Wszystkie {count} wartości",
     "valuesAllOther": "Wszystkie {count} wartości",
     "valuesFewer": "Mniej wartości",
-    "gkiPair": "Glukoza {glucose} / ketony {ketones}",
+    "gkiPair": "Glukoza {glucose} {unit} / ketony {ketones} {unit}",
     "gkiCountOne": "Ostatni z {count}",
     "gkiCountFew": "Ostatni z {count}",
     "gkiCountOther": "Ostatni z {count}",

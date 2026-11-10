@@ -4019,7 +4019,7 @@
       "gki": {
         "description": "Glicemia divisa per i chetoni, per ogni lettura di chetoni con una glicemia entro 15 minuti.",
         "emptyTitle": "Ancora nessun indice",
-        "emptyDescription": "Compare quando una lettura di chetoni ha una glicemia presa allo stesso momento o entro 15 minuti.",
+        "emptyDescription": "Compare quando una lettura di chetoni superiore a zero ha una glicemia presa allo stesso momento o entro 15 minuti.",
         "latest": "Ultimo {value}: glicemia {glucose} {unit} su chetoni {ketones} {unit}, {date}."
       }
     },
@@ -13710,7 +13710,7 @@
     "valuesAllFew": "Tutti i {count} valori",
     "valuesAllOther": "Tutti i {count} valori",
     "valuesFewer": "Meno valori",
-    "gkiPair": "Glicemia {glucose} / chetoni {ketones}",
+    "gkiPair": "Glicemia {glucose} {unit} / chetoni {ketones} {unit}",
     "gkiCountOne": "Ultimo di {count}",
     "gkiCountFew": "Ultimo di {count}",
     "gkiCountOther": "Ultimo di {count}",

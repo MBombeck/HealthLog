@@ -4019,7 +4019,7 @@
       "gki": {
         "description": "Glucosa dividida por cetonas, para cada lectura de cetonas con una de glucosa en un margen de 15 minutos.",
         "emptyTitle": "Aún no hay índice",
-        "emptyDescription": "Aparece cuando una lectura de cetonas tiene una de glucosa tomada a la misma hora o en un margen de 15 minutos.",
+        "emptyDescription": "Aparece cuando una lectura de cetonas mayor que cero tiene una de glucosa tomada a la misma hora o en un margen de 15 minutos.",
         "latest": "Último {value}: glucosa {glucose} {unit} entre cetonas {ketones} {unit}, {date}."
       }
     },
@@ -13710,7 +13710,7 @@
     "valuesAllFew": "Los {count} valores",
     "valuesAllOther": "Los {count} valores",
     "valuesFewer": "Menos valores",
-    "gkiPair": "Glucosa {glucose} / cetonas {ketones}",
+    "gkiPair": "Glucosa {glucose} {unit} / cetonas {ketones} {unit}",
     "gkiCountOne": "Último de {count}",
     "gkiCountFew": "Último de {count}",
     "gkiCountOther": "Último de {count}",

@@ -106,8 +106,12 @@ export function pairGlucoseKetoneIndex(
   ketones: readonly GkiReading[],
   glucose: readonly GkiReading[],
 ): GlucoseKetoneIndexPoint[] {
+  // The id breaks the last tie, so two glucose readings alike in time and
+  // source always give the same pair, whatever order the rows came in.
   const sortedGlucose = [...glucose].sort(
-    (a, b) => a.measuredAt.getTime() - b.measuredAt.getTime(),
+    (a, b) =>
+      a.measuredAt.getTime() - b.measuredAt.getTime() ||
+      a.id.localeCompare(b.id),
   );
   const sortedKetones = [...ketones].sort(
     (a, b) =>

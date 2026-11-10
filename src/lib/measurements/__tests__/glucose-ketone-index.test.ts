@@ -115,6 +115,18 @@ describe("pairGlucoseKetoneIndex", () => {
     expect(byTime?.glucoseId).toBe("g-earlier");
   });
 
+  it("gives the same pair for a full tie whatever order the rows came in", () => {
+    const a = reading("g-a", 0, 90, "APPLE_HEALTH");
+    const b = reading("g-b", 0, 110, "NIGHTSCOUT");
+    for (const glucose of [
+      [a, b],
+      [b, a],
+    ]) {
+      const [point] = pairGlucoseKetoneIndex([reading("k1", 0, 1)], glucose);
+      expect(point?.glucoseId).toBe("g-a");
+    }
+  });
+
   it("answers in ketone order whatever order the readings came in", () => {
     const points = pairGlucoseKetoneIndex(
       [reading("k2", 60, 2), reading("k1", 0, 1)],

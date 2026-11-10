@@ -15,7 +15,6 @@ import { prisma } from "@/lib/db";
 
 import {
   GKI_PAIRING_WINDOW_MINUTES,
-  GKI_PAIRING_WINDOW_MS,
   pairGlucoseKetoneIndex,
   type GkiReading,
   type GlucoseKetoneIndexPoint,
@@ -62,25 +61,24 @@ export async function readGlucoseKetoneIndex(args: {
   if (ketones.length === 0) return [];
   // An interval between two stored instants: no zone enters the arithmetic.
   const reach = `${GKI_PAIRING_WINDOW_MINUTES} minutes`;
+  // Driven from the ketone side: one index range per ketone reading on
+  // (user_id, type, measured_at), so a person with years of CGM glucose
+  // reads only the glucose around their fingersticks, never the series. A
+  // correlated EXISTS over a range had no equality to drive it the other
+  // way and walked every glucose row in the window.
+  const at = ketones.map((k) => k.measured_at);
   const glucose = await prisma.$queryRaw<Row[]>`
-    SELECT g."id", g."value", g."measured_at", g."source"::text AS "source"
-    FROM measurements g
-    WHERE g."user_id" = ${userId}
-      AND g."type" = 'BLOOD_GLUCOSE'::"measurement_type"
-      AND g."deleted_at" IS NULL
-      AND g."measured_at" >= ${new Date(from.getTime() - GKI_PAIRING_WINDOW_MS)}
-      AND g."measured_at" <= ${new Date(to.getTime() + GKI_PAIRING_WINDOW_MS)}
-      AND EXISTS (
-        SELECT 1 FROM measurements k
-        WHERE k."user_id" = ${userId}
-          AND k."type" = 'BLOOD_KETONES'::"measurement_type"
-          AND k."deleted_at" IS NULL
-          AND k."measured_at" >= ${from}
-          AND k."measured_at" < ${to}
-          AND k."value" > 0
-          AND k."measured_at" BETWEEN g."measured_at" - ${reach}::interval
-                                  AND g."measured_at" + ${reach}::interval
-      )
+    SELECT DISTINCT g."id", g."value", g."measured_at", g."source"
+    FROM unnest(${at}::timestamp(3)[]) AS k("at")
+    CROSS JOIN LATERAL (
+      SELECT m."id", m."value", m."measured_at", m."source"::text AS "source"
+      FROM measurements m
+      WHERE m."user_id" = ${userId}
+        AND m."type" = 'BLOOD_GLUCOSE'::"measurement_type"
+        AND m."deleted_at" IS NULL
+        AND m."measured_at" BETWEEN k."at" - ${reach}::interval
+                                AND k."at" + ${reach}::interval
+    ) g
   `;
   return pairGlucoseKetoneIndex(ketones.map(toReading), glucose.map(toReading));
 }

@@ -4019,7 +4019,7 @@
       "gki": {
         "description": "Glucose gedeeld door ketonen, voor elke ketonmeting met een glucosemeting binnen 15 minuten.",
         "emptyTitle": "Nog geen index",
-        "emptyDescription": "Hij verschijnt zodra een ketonmeting een glucosemeting op hetzelfde moment of binnen 15 minuten heeft.",
+        "emptyDescription": "Hij verschijnt zodra een ketonmeting boven nul een glucosemeting op hetzelfde moment of binnen 15 minuten heeft.",
         "latest": "Laatst {value}: glucose {glucose} {unit} gedeeld door ketonen {ketones} {unit}, {date}."
       }
     },
@@ -13710,7 +13710,7 @@
     "valuesAllFew": "Alle {count} waarden",
     "valuesAllOther": "Alle {count} waarden",
     "valuesFewer": "Minder waarden",
-    "gkiPair": "Glucose {glucose} / ketonen {ketones}",
+    "gkiPair": "Glucose {glucose} {unit} / ketonen {ketones} {unit}",
     "gkiCountOne": "Laatste van {count}",
     "gkiCountFew": "Laatste van {count}",
     "gkiCountOther": "Laatste van {count}",

@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import type { DayResponse } from "@/lib/day/contract";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { GKI_COMPONENT_UNIT } from "@/lib/measurements/glucose-ketone-index";
 
 type DayGki = NonNullable<DayResponse["glucoseKetoneIndex"]>[number];
 
@@ -38,6 +39,7 @@ export function DayGkiTile({ points }: { points: readonly DayGki[] }) {
             : t("day.gkiPair", {
                 glucose: fmt.number(latest.glucoseMmol, 1),
                 ketones: fmt.number(latest.ketonesMmol, 1),
+                unit: GKI_COMPONENT_UNIT,
               })}
         </span>
       </Link>

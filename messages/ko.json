@@ -4019,7 +4019,7 @@
       "gki": {
         "description": "15분 이내에 혈당 측정값이 있는 케톤 측정마다 혈당을 케톤으로 나눈 값이에요.",
         "emptyTitle": "아직 지수가 없어요",
-        "emptyDescription": "케톤 측정과 같은 시각이나 15분 이내에 잰 혈당이 있으면 나타나요.",
+        "emptyDescription": "0보다 큰 케톤 측정과 같은 시각이나 15분 이내에 잰 혈당이 있으면 나타나요.",
         "latest": "최근 {value}: 혈당 {glucose} {unit} ÷ 케톤 {ketones} {unit}, {date}."
       }
     },
@@ -13710,7 +13710,7 @@
     "valuesAllFew": "수치 {count}개 모두",
     "valuesAllOther": "수치 {count}개 모두",
     "valuesFewer": "수치 줄여 보기",
-    "gkiPair": "혈당 {glucose} / 케톤 {ketones}",
+    "gkiPair": "혈당 {glucose} {unit} / 케톤 {ketones} {unit}",
     "gkiCountOne": "{count}개 중 최근",
     "gkiCountFew": "{count}개 중 최근",
     "gkiCountOther": "{count}개 중 최근",

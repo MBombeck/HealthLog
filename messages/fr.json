@@ -4019,7 +4019,7 @@
       "gki": {
         "description": "Glycémie divisée par les cétones, pour chaque relevé de cétones accompagné d’une glycémie à 15 minutes près.",
         "emptyTitle": "Pas encore d’indice",
-        "emptyDescription": "Il apparaît dès qu’un relevé de cétones a une glycémie prise au même moment ou à 15 minutes près.",
+        "emptyDescription": "Il apparaît dès qu’un relevé de cétones supérieur à zéro a une glycémie prise au même moment ou à 15 minutes près.",
         "latest": "Dernier {value} : glycémie {glucose} {unit} sur cétones {ketones} {unit}, {date}."
       }
     },
@@ -13710,7 +13710,7 @@
     "valuesAllFew": "Les {count} valeurs",
     "valuesAllOther": "Les {count} valeurs",
     "valuesFewer": "Moins de valeurs",
-    "gkiPair": "Glycémie {glucose} / cétones {ketones}",
+    "gkiPair": "Glycémie {glucose} {unit} / cétones {ketones} {unit}",
     "gkiCountOne": "Dernier sur {count}",
     "gkiCountFew": "Dernier sur {count}",
     "gkiCountOther": "Dernier sur {count}",

@@ -4019,7 +4019,7 @@
       "gki": {
         "description": "Glucose divided by ketones, for each ketone reading with a glucose reading within 15 minutes.",
         "emptyTitle": "No index yet",
-        "emptyDescription": "It appears once a ketone reading has a glucose reading taken at the same time or within 15 minutes.",
+        "emptyDescription": "It appears once a ketone reading above zero has a glucose reading taken at the same time or within 15 minutes.",
         "latest": "Latest {value}: glucose {glucose} {unit} over ketones {ketones} {unit}, {date}."
       }
     },
@@ -13710,7 +13710,7 @@
     "valuesAllFew": "All {count} values",
     "valuesAllOther": "All {count} values",
     "valuesFewer": "Fewer values",
-    "gkiPair": "Glucose {glucose} / ketones {ketones}",
+    "gkiPair": "Glucose {glucose} {unit} / ketones {ketones} {unit}",
     "gkiCountOne": "Latest of {count}",
     "gkiCountFew": "Latest of {count}",
     "gkiCountOther": "Latest of {count}",
