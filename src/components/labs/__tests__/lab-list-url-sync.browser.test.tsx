@@ -289,6 +289,47 @@ describe("LabList stale category and group header handling", () => {
     expect(readStoredOpen("collapsed")).toEqual({});
   });
 
+  it("keeps a trailing space in the search field after the URL takes the query", async () => {
+    setSearch("");
+    const queryClient = labQueryClient();
+    queryClient.setQueryData(
+      queryKeys.labResultsOverview("en"),
+      overviewWithAbnormalMarker,
+    );
+
+    const { screen } = await renderWithApp(<LabList />, { queryClient });
+
+    const search = screen.getByRole("searchbox", { name: "Search biomarkers" });
+    await search.fill("iron ");
+    await expect.poll(currentSearch).toBe("?q=iron");
+    // One more frame for the URL change to reach the hook.
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    );
+    await expect.element(search).toHaveValue("iron ");
+  });
+
+  it("takes the query from the URL on back navigation", async () => {
+    setSearch("?q=iron");
+    const queryClient = labQueryClient();
+    queryClient.setQueryData(
+      queryKeys.labResultsOverview("en"),
+      overviewWithAbnormalMarker,
+    );
+
+    const { screen } = await renderWithApp(<LabList />, { queryClient });
+    const search = screen.getByRole("searchbox", { name: "Search biomarkers" });
+    await expect.element(search).toHaveValue("iron");
+
+    await screen.getByRole("button", { name: "Reset" }).click();
+    await expect.poll(currentSearch).toBe("");
+    await expect.element(search).toHaveValue("");
+
+    window.history.back();
+    await expect.poll(currentSearch).toBe("?q=iron");
+    await expect.element(search).toHaveValue("iron");
+  });
+
   it("memoizes setCategoryFilter callback identity across re-renders", async () => {
     const callbacks: unknown[] = [];
     const { screen } = await renderWithApp(

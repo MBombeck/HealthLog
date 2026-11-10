@@ -19,20 +19,29 @@ export function useLabListFilters() {
       serialise: labListFiltersToSearch,
     });
 
-  // Debounced search draft
-  const [searchDraft, setSearchDraft] = useState(filters.q ?? "");
-  const [lastUrlQ, setLastUrlQ] = useState(filters.q ?? "");
+  // The field edits a draft; the URL takes it, trimmed, 200 ms after the
+  // last keystroke. A `q` the URL gains from elsewhere (back/forward, a
+  // shared link, Reset) replaces the draft. One the draft wrote itself
+  // does not: adopting it would drop a trailing space ("vitamin " became
+  // "vitamin", and the next letter ran on), or a letter typed while the
+  // write was landing.
+  const urlQ = filters.q ?? "";
+  const [searchDraft, setSearchDraft] = useState(urlQ);
+  const [lastUrlQ, setLastUrlQ] = useState(urlQ);
+  const [ownWrite, setOwnWrite] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
-  if ((filters.q ?? "") !== lastUrlQ) {
-    setLastUrlQ(filters.q ?? "");
-    setSearchDraft(filters.q ?? "");
+  if (urlQ !== lastUrlQ) {
+    setLastUrlQ(urlQ);
+    if (urlQ === ownWrite) setOwnWrite(null);
+    else if (urlQ !== searchDraft.trim()) setSearchDraft(urlQ);
   }
 
   useEffect(() => {
     const handle = setTimeout(() => {
       const trimmed = searchDraft.trim();
       if (trimmed === (filters.q ?? "")) return;
+      setOwnWrite(trimmed);
       applyFilters(
         (current) =>
           trimmed === (current.q ?? "")
