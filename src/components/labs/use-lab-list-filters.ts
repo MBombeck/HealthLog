@@ -81,8 +81,12 @@ export function useLabListFilters() {
       ) {
         return;
       }
+      // No field on screen (loading, an error, nothing recorded yet): the
+      // key stays the browser's.
+      const input = searchInputRef.current;
+      if (!input || !input.isConnected) return;
       event.preventDefault();
-      searchInputRef.current?.focus();
+      input.focus();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
