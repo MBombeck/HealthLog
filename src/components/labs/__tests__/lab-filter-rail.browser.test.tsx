@@ -26,6 +26,13 @@ function props(): LabFilterRailProps {
         counts: { inRange: 1, below: 0, above: 0, unknown: 0 },
         status: "in-range",
       },
+      {
+        key: "cat_lipids",
+        label: "Lipids",
+        markerKeys: ["bm:b2"],
+        counts: { inRange: 1, below: 0, above: 0, unknown: 0 },
+        status: "in-range",
+      },
     ],
     total: 5,
   };

@@ -385,9 +385,10 @@ describe("<LabList>", () => {
       </QueryClientProvider>,
     );
 
-    // Stale category is ignored: marker is not filtered out, category dropdown is inactive
+    // Stale category is ignored: the marker is not filtered out, and with a
+    // single category there is no category pill to show it on.
     expect(html).toContain("Ferritin");
-    expect(html).toContain('aria-label="Category" data-active="false"');
+    expect(html).not.toContain('aria-label="Category');
     expect(html).not.toContain("Reset");
     expect(html).not.toContain("stale_unknown_category");
   });

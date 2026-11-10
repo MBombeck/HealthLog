@@ -137,11 +137,12 @@ describe("LabList stale category and group header handling", () => {
     expect(history.pushes()).toEqual([]);
     expect(history.replaces()).toEqual([""]);
 
-    // Visible filtering ignores stale category: marker is visible, category pill is inactive
+    // Visible filtering ignores the stale category: the marker is visible,
+    // and the one real category leaves no category pill behind.
     await expect.element(screen.getByText("Ferritin")).toBeVisible();
     await expect
-      .element(screen.getByRole("combobox", { name: "Category" }))
-      .toHaveAttribute("data-active", "false");
+      .element(screen.getByRole("combobox", { name: /^Category/ }))
+      .not.toBeInTheDocument();
   });
 
   it("preserves active non-stale filters and scrubs stale category from URL after paint", async () => {

@@ -30,6 +30,13 @@ describe("<LabFilterRail>", () => {
               counts: { inRange: 1, below: 0, above: 0, unknown: 0 },
               status: "in-range",
             },
+            {
+              key: "cat_lipids",
+              label: "Lipids",
+              markerKeys: ["bm:b2"],
+              counts: { inRange: 1, below: 0, above: 0, unknown: 0 },
+              status: "in-range",
+            },
           ]}
           total={5}
         />
@@ -136,5 +143,40 @@ describe("<LabFilterRail>", () => {
     );
 
     expect(html).toContain("Reset");
+  });
+
+  it("offers the category pill only when there is more than one category", () => {
+    const one = [
+      {
+        key: "cat_iron",
+        label: "Iron Panel",
+        markerKeys: ["bm:b1"],
+        counts: { inRange: 1, below: 0, above: 0, unknown: 0 },
+        status: "in-range" as const,
+      },
+    ];
+    const render = (category?: string) =>
+      renderToStaticMarkup(
+        <I18nProvider initialLocale="en">
+          <LabFilterRail
+            filters={category ? { category } : {}}
+            searchDraft=""
+            onSearchChange={vi.fn()}
+            searchInputRef={{ current: null }}
+            onStatusChange={vi.fn()}
+            onCategoryChange={vi.fn()}
+            onFromDayChange={vi.fn()}
+            onToDayChange={vi.fn()}
+            onResetFilters={vi.fn()}
+            isFiltered={Boolean(category)}
+            categories={one}
+            total={1}
+          />
+        </I18nProvider>,
+      );
+    expect(render()).not.toContain("Category");
+    // A link that already filters by the one category keeps its pill, so
+    // the filter can be cleared where it shows.
+    expect(render("cat_iron")).toContain("Category: Iron Panel");
   });
 });

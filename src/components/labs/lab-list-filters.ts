@@ -99,6 +99,12 @@ export function parseLabListSearchParams(
   const toDay = dayOrUndefined(params.get("to"));
   if (toDay) filters.toDay = toDay;
 
+  // A hand-edited or old link can carry the bounds the wrong way round;
+  // read it as the range it obviously means rather than as an empty one.
+  if (filters.fromDay && filters.toDay && filters.fromDay > filters.toDay) {
+    [filters.fromDay, filters.toDay] = [filters.toDay, filters.fromDay];
+  }
+
   return filters;
 }
 
@@ -145,6 +151,14 @@ export function labReadingDayKey(takenAt: string, tz: string): string {
 }
 
 /**
+ * Case- and accent-insensitive form for the search, so "hamoglobin" finds
+ * "Hämoglobin" and "proteine" finds "Protéine".
+ */
+function searchFold(value: string): string {
+  return value.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+}
+
+/**
  * Filter rows by text search, reference range status, category, and date bounds.
  */
 export function filterMarkerRows(
@@ -153,7 +167,8 @@ export function filterMarkerRows(
   categoryOf?: (markerKey: string) => string | undefined,
   dayKeyOf: (takenAt: string) => string = (iso) => iso.slice(0, 10),
 ): MarkerRow[] {
-  const query = filters.q?.trim().toLowerCase();
+  const trimmed = filters.q?.trim();
+  const query = trimmed ? searchFold(trimmed) : undefined;
   const status = filters.status;
   const category = filters.category;
   const fromDay = filters.fromDay;
@@ -162,8 +177,10 @@ export function filterMarkerRows(
   return rows.filter((row) => {
     // 1. Text search
     if (query) {
-      const analyteMatch = row.analyte.toLowerCase().includes(query);
-      const panelMatch = row.panel?.toLowerCase().includes(query) ?? false;
+      const analyteMatch = searchFold(row.analyte).includes(query);
+      const panelMatch = row.panel
+        ? searchFold(row.panel).includes(query)
+        : false;
       if (!analyteMatch && !panelMatch) return false;
     }
 

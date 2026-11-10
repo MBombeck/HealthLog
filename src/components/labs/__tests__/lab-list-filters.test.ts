@@ -89,6 +89,14 @@ describe("parseLabListSearchParams & labListFiltersToSearch", () => {
     expect(parseLabListSearchParams(params)).toEqual({});
   });
 
+  it("reads reversed date bounds as the range they mean", () => {
+    expect(
+      parseLabListSearchParams(
+        new URLSearchParams("from=2026-09-30&to=2026-09-01"),
+      ),
+    ).toEqual({ fromDay: "2026-09-01", toDay: "2026-09-30" });
+  });
+
   it("rejects non-existent calendar dates like 2026-02-30", () => {
     const params = new URLSearchParams("from=2026-02-30&to=2026-04-31");
     expect(parseLabListSearchParams(params)).toEqual({});
@@ -158,6 +166,22 @@ describe("filterMarkerRows", () => {
   it("filters by query matching analyte or panel", () => {
     expect(filterMarkerRows(rows, { q: "cholest" })).toEqual([row3]);
     expect(filterMarkerRows(rows, { q: "Iron" })).toEqual([row1, row2]);
+  });
+
+  it("matches the search regardless of case and accents", () => {
+    const accented = mockMarkerRow({
+      key: "bm:hb",
+      analyte: "Hämoglobin",
+      panel: "Blutbild",
+    });
+    expect(filterMarkerRows([accented], { q: "HAMOGLOBIN" })).toEqual([
+      accented,
+    ]);
+    expect(filterMarkerRows([accented], { q: "hämo" })).toEqual([accented]);
+    expect(filterMarkerRows([accented], { q: "blutbild" })).toEqual([
+      accented,
+    ]);
+    expect(filterMarkerRows([accented], { q: "ferritin" })).toEqual([]);
   });
 
   it("filters by status: abnormal (below or above)", () => {

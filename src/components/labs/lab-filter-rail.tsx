@@ -57,6 +57,9 @@ export function LabFilterRail({
     { value: "above", label: t("labs.range.above") },
   ];
 
+  // The server's categories in the server's order, so the pill follows the
+  // saved category order. One category is nothing to choose between, unless
+  // a link already filters by it and the pill is the way to clear it.
   const categoryOptions: FilterBarSelectOption[] = (categories ?? []).map(
     (c) => ({
       value: c.key,
@@ -142,7 +145,7 @@ export function LabFilterRail({
             allLabel={t("labs.filter.statusAll")}
           />
 
-          {categoryOptions.length > 0 && (
+          {(categoryOptions.length > 1 || filters.category) && (
             <FilterBarSelect
               label={t("labs.filter.categoryLabel")}
               value={filters.category ?? "ALL"}
