@@ -129,6 +129,34 @@ export function encodeCursorAtNow(nowMs: number): string {
   return encodeCursor(cursor, nowMs);
 }
 
+/**
+ * Hold a drained walk's watermarks back to `START_NOW_OVERLAP_MS` before
+ * `nowMs`, in place. The watermark of a page is the stamp of its last row,
+ * and that stamp says nothing about rows still in flight: a long write (a
+ * Garmin or Withings chunk holds its transaction for seconds) stamps its rows
+ * first and commits them last, so a quick write that commits in between can
+ * carry the watermark past them, and the keyset would never return them.
+ * Held back a minute, the next pull reads the last minute again and the
+ * late rows come with it; anything older is passed as before. Only the
+ * cursor of a walk that is done is held back: one that still has pages keeps
+ * moving forward, or a minute holding more than a page could never drain.
+ *
+ * `measurementMirror` is left alone. Its watermark is a token's mirror
+ * stamp, written by one short update, and reading its last minute again
+ * would send every reading of a token whose mirror switch just flipped
+ * once more on every pull in that minute.
+ */
+export function holdBackDrainedCursor(cursor: SyncCursor, nowMs: number): void {
+  const ceiling = nowMs - START_NOW_OVERLAP_MS;
+  for (const domain of SYNC_DOMAINS) {
+    if (domain === "measurementMirror") continue;
+    const wm = cursor[domain];
+    if (wm && wm.updatedAtMs > ceiling) {
+      cursor[domain] = { updatedAtMs: ceiling, id: "0" };
+    }
+  }
+}
+
 function parseWatermark(raw: unknown): DomainWatermark | null {
   if (typeof raw !== "object" || raw === null) return null;
   const u = (raw as { u?: unknown }).u;

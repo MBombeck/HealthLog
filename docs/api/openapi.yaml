@@ -50185,7 +50185,9 @@ components:
             - "null"
         hasMore:
           type: boolean
-          description: False once the client is caught up as of `serverNow`.
+          description: False once the client is caught up as of `serverNow`. The cursor of such a page sits at most a minute
+            before `serverNow` in each row domain, so the next pull reads rows changed in that last minute again (a
+            write still in flight may commit a row stamped there); upserts are idempotent.
         cursorExpired:
           type: boolean
           description: True when the supplied cursor predates tombstone retention, or was issued before the account's data was

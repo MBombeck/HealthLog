@@ -14,6 +14,7 @@ import {
   decodeCursorIssuedAt,
   encodeCursor,
   encodeCursorAtNow,
+  holdBackDrainedCursor,
   SYNC_DOMAINS,
   type SyncCursor,
   type SyncDomain,
@@ -232,6 +233,7 @@ export async function pullSyncChanges(input: {
     cd.hasMore ||
     cy.hasMore ||
     mm.hasMore;
+  if (!hasMore) holdBackDrainedCursor(nextCursor, serverNow.getTime());
 
   annotate({
     action: { name: "sync.changes.pull" },

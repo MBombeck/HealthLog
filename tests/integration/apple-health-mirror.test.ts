@@ -259,7 +259,13 @@ describe("switching the setting", () => {
 
     const next = await callRoute<{
       changes: {
-        measurements: { upserts: unknown[] };
+        measurements: {
+          upserts: Array<{
+            id: string;
+            updatedAt: string;
+            syncVersion: number;
+          }>;
+        };
         measurementMirror: {
           upserts: Array<{ id: string; appleHealthMirror: boolean }>;
         };
@@ -270,7 +276,15 @@ describe("switching the setting", () => {
       query: { cursor: first.data.cursor },
       auth: owner,
     });
-    expect(next.data.changes.measurements.upserts).toEqual([]);
+    // The reading was written within the last minute, so the drained cursor
+    // reads it once more; the switch itself changed nothing about it.
+    expect(
+      next.data.changes.measurements.upserts.map((r) => ({
+        id: r.id,
+        updatedAt: new Date(r.updatedAt),
+        syncVersion: r.syncVersion,
+      })),
+    ).toEqual([{ id, ...before }]);
     expect(next.data.changes.measurementMirror.upserts).toEqual([
       { id, appleHealthMirror: true },
     ]);

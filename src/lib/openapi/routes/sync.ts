@@ -285,7 +285,9 @@ export const syncChangesResponse = z
       .describe("Opaque cursor to echo into the next request."),
     hasMore: z
       .boolean()
-      .describe("False once the client is caught up as of `serverNow`."),
+      .describe(
+        "False once the client is caught up as of `serverNow`. The cursor of such a page sits at most a minute before `serverNow` in each row domain, so the next pull reads rows changed in that last minute again (a write still in flight may commit a row stamped there); upserts are idempotent.",
+      ),
     cursorExpired: z
       .boolean()
       .describe(

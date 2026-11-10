@@ -138,10 +138,48 @@ describe("a cursor that starts now", () => {
     );
     expect(mirrored.every((r) => r.appleHealthMirror === true)).toBe(true);
 
-    // And the cursor it hands back is a normal one: draining further is quiet.
+    // The drained cursor it hands back sits a minute back like the start
+    // one, so the row written in that minute comes once more and nothing
+    // else does. The mirror domain is not held back.
     const after = await pull({ cursor: next.cursor! });
-    expect(after.changes.measurements.upserts).toEqual([]);
+    expect(after.changes.measurements.upserts.map((r) => r.id)).toEqual([
+      fresh.id,
+    ]);
     expect(after.changes.measurementMirror.upserts).toEqual([]);
+  });
+
+  it("delivers a row stamped before a drained page's last row that commits after it", async () => {
+    // A long write stamps its rows first and commits them last; a quick
+    // write that commits in between moves the last row of the page past
+    // them.
+    const quick = await makeMeasurement(
+      { id: userId },
+      {
+        source: "EXTERNAL",
+        ingestTokenId: scale.tokenId,
+        measuredAt: new Date(Date.UTC(2026, 10, 4, 7)),
+        externalId: "quick",
+      },
+    );
+    const first = await pull({});
+    expect(first.hasMore).toBe(false);
+    expect(first.changes.measurements.upserts.map((r) => r.id)).toContain(
+      quick.id,
+    );
+    const late = await makeMeasurement(
+      { id: userId },
+      {
+        source: "EXTERNAL",
+        ingestTokenId: scale.tokenId,
+        measuredAt: new Date(Date.UTC(2026, 10, 4, 8)),
+        externalId: "late-after-page",
+        updatedAt: new Date(quick.updatedAt.getTime() - 1_000),
+      },
+    );
+    const next = await pull({ cursor: first.cursor! });
+    expect(next.changes.measurements.upserts.map((r) => r.id)).toContain(
+      late.id,
+    );
   });
 
   it("delivers a row stamped before the cursor that commits after it", async () => {
