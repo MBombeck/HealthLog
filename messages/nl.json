@@ -13727,6 +13727,7 @@
     "valuesAllOther": "Alle {count} waarden",
     "valuesFewer": "Minder waarden",
     "gkiPair": "Glucose {glucose} {unit} / ketonen {ketones} {unit}",
+    "gkiPairShort": "{glucose} / {ketones} {unit}",
     "gkiCountOne": "Laatste van {count}",
     "gkiCountFew": "Laatste van {count}",
     "gkiCountOther": "Laatste van {count}",

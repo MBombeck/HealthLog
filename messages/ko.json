@@ -13727,6 +13727,7 @@
     "valuesAllOther": "수치 {count}개 모두",
     "valuesFewer": "수치 줄여 보기",
     "gkiPair": "혈당 {glucose} {unit} / 케톤 {ketones} {unit}",
+    "gkiPairShort": "{glucose} / {ketones} {unit}",
     "gkiCountOne": "{count}개 중 최근",
     "gkiCountFew": "{count}개 중 최근",
     "gkiCountOther": "{count}개 중 최근",

@@ -23,6 +23,14 @@ export function DayGkiTile({ points }: { points: readonly DayGki[] }) {
   const fmt = useFormatters();
   const latest = points[points.length - 1];
   if (!latest) return null;
+  const pair = {
+    glucose: fmt.number(latest.glucoseMmol, 1),
+    ketones: fmt.number(
+      latest.ketonesMmol,
+      ketoneFractionDigits(latest.ketonesMmol),
+    ),
+    unit: GKI_COMPONENT_UNIT,
+  };
   return (
     <li data-slot="day-gki" className="flex min-w-0">
       <Link
@@ -36,18 +44,23 @@ export function DayGkiTile({ points }: { points: readonly DayGki[] }) {
         <span className="truncate text-base font-semibold tabular-nums">
           {fmt.number(latest.value, 1)}
         </span>
-        <span className="text-muted-foreground truncate text-xs tabular-nums">
-          {points.length > 1
-            ? tCount("day.gkiCount", points.length)
-            : t("day.gkiPair", {
-                glucose: fmt.number(latest.glucoseMmol, 1),
-                ketones: fmt.number(
-                  latest.ketonesMmol,
-                  ketoneFractionDigits(latest.ketonesMmol),
-                ),
-                unit: GKI_COMPONENT_UNIT,
-              })}
-        </span>
+        {points.length > 1 ? (
+          <span className="text-muted-foreground truncate text-xs tabular-nums">
+            {tCount("day.gkiCount", points.length)}
+          </span>
+        ) : (
+          <>
+            {/* The tile is about 150 px of text wide: the numbers alone fit,
+                the worded pair is for assistive tech. */}
+            <span
+              aria-hidden="true"
+              className="text-muted-foreground truncate text-xs tabular-nums"
+            >
+              {t("day.gkiPairShort", pair)}
+            </span>
+            <span className="sr-only">{t("day.gkiPair", pair)}</span>
+          </>
+        )}
       </Link>
     </li>
   );

@@ -13727,6 +13727,7 @@
     "valuesAllOther": "Все {count} значений",
     "valuesFewer": "Меньше значений",
     "gkiPair": "Глюкоза {glucose} {unit} / кетоны {ketones} {unit}",
+    "gkiPairShort": "{glucose} / {ketones} {unit}",
     "gkiCountOne": "Последний из {count}",
     "gkiCountFew": "Последний из {count}",
     "gkiCountOther": "Последний из {count}",

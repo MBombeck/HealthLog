@@ -13727,6 +13727,7 @@
     "valuesAllOther": "Alle {count} Werte",
     "valuesFewer": "Weniger Werte",
     "gkiPair": "Blutzucker {glucose} {unit} / Ketone {ketones} {unit}",
+    "gkiPairShort": "{glucose} / {ketones} {unit}",
     "gkiCountOne": "Letzter von {count}",
     "gkiCountFew": "Letzter von {count}",
     "gkiCountOther": "Letzter von {count}",

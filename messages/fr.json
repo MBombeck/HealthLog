@@ -13727,6 +13727,7 @@
     "valuesAllOther": "Les {count} valeurs",
     "valuesFewer": "Moins de valeurs",
     "gkiPair": "Glycémie {glucose} {unit} / cétones {ketones} {unit}",
+    "gkiPairShort": "{glucose} / {ketones} {unit}",
     "gkiCountOne": "Dernier sur {count}",
     "gkiCountFew": "Dernier sur {count}",
     "gkiCountOther": "Dernier sur {count}",
