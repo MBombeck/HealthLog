@@ -96,6 +96,7 @@ export function GkiCard() {
                 targetLow={null}
                 targetHigh={null}
                 decimals={1}
+                color="var(--chart-4)"
                 entries={points.map((p) => ({
                   id: p.id,
                   customMetricId: "",

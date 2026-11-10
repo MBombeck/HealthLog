@@ -88,7 +88,10 @@ describe("DELETE /api/cycle/feed-subscription", () => {
     m.findMany.mockResolvedValue([OLD, SUCCESSOR]);
 
     await (DELETE as unknown as () => Promise<Response>)();
-    expect(m.audit.mock.calls.map((c) => c[1].details.feedId)).toEqual([
+    const calls = m.audit.mock.calls as unknown as Array<
+      [string, { details: { feedId: string } }]
+    >;
+    expect(calls.map((c) => c[1].details.feedId)).toEqual([
       OLD.id,
       SUCCESSOR.id,
     ]);

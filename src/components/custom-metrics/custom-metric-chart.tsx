@@ -58,6 +58,22 @@ interface ChartPoint {
   value: number;
 }
 
+/** The values and any target bound, padded by a tenth of their spread. */
+function yDomainOf(
+  points: readonly ChartPoint[],
+  targetLow: number | null,
+  targetHigh: number | null,
+): [number, number] {
+  const candidates = points.map((p) => p.value);
+  if (targetLow != null) candidates.push(targetLow);
+  if (targetHigh != null) candidates.push(targetHigh);
+  if (candidates.length === 0) return [0, 1];
+  const min = Math.min(...candidates);
+  const max = Math.max(...candidates);
+  const pad = (max - min || Math.abs(max) || 1) * 0.1;
+  return [min - pad, max + pad];
+}
+
 export function CustomMetricChart({
   entries,
   name,
@@ -65,6 +81,7 @@ export function CustomMetricChart({
   targetLow,
   targetHigh,
   decimals,
+  color = "var(--primary)",
 }: {
   /** The metric's name: the day's focus label and the data table's caption. */
   name: string;
@@ -74,6 +91,8 @@ export function CustomMetricChart({
   targetLow: number | null;
   targetHigh: number | null;
   decimals: number | null;
+  /** The series colour; a chart token where it sits beside other series. */
+  color?: string;
 }) {
   const { t } = useTranslations();
   const fmt = useFormatters();
@@ -99,16 +118,10 @@ export function CustomMetricChart({
     }));
   }, [entries, range, nowMs]);
 
-  const yDomain = useMemo<[number, number]>(() => {
-    const candidates = points.map((p) => p.value);
-    if (targetLow != null) candidates.push(targetLow);
-    if (targetHigh != null) candidates.push(targetHigh);
-    if (candidates.length === 0) return [0, 1];
-    const min = Math.min(...candidates);
-    const max = Math.max(...candidates);
-    const pad = (max - min || Math.abs(max) || 1) * 0.1;
-    return [min - pad, max + pad];
-  }, [points, targetLow, targetHigh]);
+  const yDomain = useMemo(
+    () => yDomainOf(points, targetLow, targetHigh),
+    [points, targetLow, targetHigh],
+  );
 
   // v1.42 — each value opens its day (the calendar day of its instant in
   // the record's zone) through the doors every day-linked chart has.
@@ -134,7 +147,7 @@ export function CustomMetricChart({
     chartDays.openIndex !== undefined ? points[chartDays.openIndex] : undefined;
 
   const animate = !prefersReducedMotion();
-  const primary = "var(--primary)";
+  const primary = color;
 
   return (
     <div className="space-y-3">
