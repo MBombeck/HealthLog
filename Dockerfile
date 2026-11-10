@@ -17,7 +17,7 @@
 # future change to one of the stages cannot pair them wrongly.
 
 # ── Stage 1: Dependencies ──────────────────────────────────
-FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f AS deps
+FROM node:22-trixie-slim@sha256:be1e2a3dc2c4fd68cdfadad2a696a280e0d2749098bee509230174d72fb768c6 AS deps
 RUN corepack enable && corepack prepare pnpm@11.15.1 --activate
 WORKDIR /app
 
@@ -29,7 +29,7 @@ COPY scripts/prepare.mjs scripts/prepare.mjs
 RUN pnpm install --frozen-lockfile --prod=false
 
 # ── Stage 2: Build ─────────────────────────────────────────
-FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f AS builder
+FROM node:22-trixie-slim@sha256:be1e2a3dc2c4fd68cdfadad2a696a280e0d2749098bee509230174d72fb768c6 AS builder
 RUN corepack enable && corepack prepare pnpm@11.15.1 --activate
 WORKDIR /app
 
@@ -127,7 +127,7 @@ RUN node scripts/verify-message-catalogs.mjs --dir messages \
 # npm install never reads. Rebuilding this install both ways confirms it:
 # without the two fields below npm resolves 1.19.11 and 1.2.0, with them it
 # resolves 1.19.17 and 1.4.2, and `prisma --version` still reports 7.8.0.
-FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f AS prisma-cli
+FROM node:22-trixie-slim@sha256:be1e2a3dc2c4fd68cdfadad2a696a280e0d2749098bee509230174d72fb768c6 AS prisma-cli
 RUN mkdir -p /opt/prisma-cli && \
     cd /opt/prisma-cli && \
     npm init -y && \
@@ -159,7 +159,7 @@ RUN set -eu; \
     cp -L "$LIBPQ" /out/lib/libpq.so.5
 
 # ── Stage 5: Production runner ─────────────────────────────
-FROM node:22-trixie-slim@sha256:2117f713a417f3aff682ac8f5bc2ebbdf1beed51f36e67ab1e0fd3866b6d2d8f AS runner
+FROM node:22-trixie-slim@sha256:be1e2a3dc2c4fd68cdfadad2a696a280e0d2749098bee509230174d72fb768c6 AS runner
 # The package managers the base ships (npm, npx, corepack, yarn) go first.
 # Nothing at runtime installs a package, and the bundled npm carried the only
 # HIGH findings with a fix the image scan reported. Removed in a later layer,
