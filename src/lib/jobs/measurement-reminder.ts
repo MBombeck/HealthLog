@@ -704,6 +704,7 @@ type RollableReminder = {
   notifyHour: number;
   lastSatisfiedAt: Date | null;
   createdAt: Date;
+  endsOn: Date | null;
 };
 
 /**
@@ -733,6 +734,7 @@ function nextSlotAfterReminder(
     notifyHour: reminder.notifyHour,
     lastSatisfiedAt: rolling ? now : reminder.lastSatisfiedAt,
     createdAt: reminder.createdAt,
+    endsOn: reminder.endsOn,
   };
   return computeReminderNextDueAt(scheduleInput, timezone, now);
 }

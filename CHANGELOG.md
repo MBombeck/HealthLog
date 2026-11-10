@@ -110,6 +110,14 @@
   come back under the new link, and an option changed at that moment
   could be lost to the new link. Turning it off now wins whichever comes
   first, and the change lands on the link that stays live.
+- **A seven-day blood pressure course now ends after seven days.** A
+  course suggested by the Coach knew its last day only until its first
+  reminder went out. From then on every sent reminder, every reading and
+  every skip planned the next one without that end, so the morning and
+  evening reminders went on for good. The end now holds through every
+  reschedule, and once the last slot is past the course is cleared from
+  the list as intended. A course that already ran past its end sends the
+  one reminder it has planned and then stops.
 
 ### Security
 

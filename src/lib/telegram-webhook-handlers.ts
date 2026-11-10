@@ -877,6 +877,7 @@ export async function handleCallback(update: TelegramUpdate) {
         lastSatisfiedAt: true,
         lastSkippedAt: true,
         createdAt: true,
+        endsOn: true,
       },
     });
     if (!reminder) {

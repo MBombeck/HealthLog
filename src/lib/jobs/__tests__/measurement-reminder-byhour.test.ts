@@ -116,4 +116,83 @@ describe.each(ZONES)("BYHOUR=7,19 in %s", (tz) => {
 
     expect(sent).toEqual(["14 07:00", "14 19:00", "15 07:00", "15 19:00"]);
   });
+
+  it("stops after the last slot of a course window and leaves the row for the cleanup", async () => {
+    const endsOn = at(tz, 15, 12);
+    const base = {
+      intervalDays: null,
+      rrule: "FREQ=DAILY;BYHOUR=7,19",
+      anchorDate: at(tz, 14, 0),
+      notifyHour: 7,
+      lastSatisfiedAt: null,
+      createdAt: at(tz, 13, 12),
+      endsOn,
+    };
+    const row: Record<string, unknown> = {
+      id: "r-bp-course",
+      userId: "u1",
+      origin: "COACH",
+      measurementType: null,
+      label: "BP",
+      location: null,
+      lastSkippedAt: null,
+      lastNotifiedAt: null,
+      enabled: true,
+      deletedAt: null,
+      ...base,
+      nextDueAt: computeReminderNextDueAt(base, tz, at(tz, 14, 0)),
+      user: { id: "u1", timezone: tz, locale: "en" },
+    };
+    const prisma = {
+      measurementReminder: {
+        findMany: vi.fn(async () =>
+          (row.nextDueAt as Date | null) === null ? [] : [row],
+        ),
+        update: vi.fn(async ({ data }: { data: Record<string, unknown> }) => {
+          Object.assign(row, data);
+          return row;
+        }),
+        updateMany: vi.fn(async () => ({ count: 0 })),
+      },
+      measurement: { findFirst: vi.fn(async () => null) },
+      labResult: { findFirst: vi.fn(async () => null) },
+    };
+    const sent: string[] = [];
+    const dispatch = vi.fn(async () => ({
+      dispatched: true,
+      channelsAttempted: 1,
+      channelsSucceeded: 1,
+    }));
+
+    let last = at(tz, 14, 0);
+    for (
+      let t = at(tz, 14, 0).getTime();
+      t < at(tz, 18, 0).getTime();
+      t += 15 * 60_000
+    ) {
+      const now = new Date(t);
+      last = now;
+      const before = dispatch.mock.calls.length;
+      await runMeasurementReminderTick(prisma as never, now, {
+        dispatch: dispatch as never,
+        isModuleEnabled: async () => true,
+      });
+      if (dispatch.mock.calls.length > before) {
+        const p = wallClockInTz(now, tz);
+        sent.push(
+          `${p.day} ${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}`,
+        );
+      }
+    }
+
+    expect(sent).toEqual(["14 07:00", "14 19:00", "15 07:00", "15 19:00"]);
+    // The course rolled off its end: no next slot, which is exactly the
+    // shape the expired-course cleanup tombstones on the following tick.
+    expect(row.nextDueAt).toBeNull();
+    expect((row.endsOn as Date).getTime()).toBeLessThan(last.getTime());
+    const cleanup = prisma.measurementReminder.updateMany.mock.calls.find(
+      (call: unknown[]) => JSON.stringify(call[0]).includes('"origin":"COACH"'),
+    );
+    expect(cleanup).toBeDefined();
+  });
 });

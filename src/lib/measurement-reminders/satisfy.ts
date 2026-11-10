@@ -77,6 +77,8 @@ export interface SatisfiableReminder {
   lastSatisfiedAt: Date | null;
   lastSkippedAt: Date | null;
   createdAt: Date;
+  /** Course-window end; without it a finite course reschedules forever. */
+  endsOn: Date | null;
 }
 
 export interface SatisfyResult {
@@ -151,6 +153,7 @@ export async function satisfyReminder(
     notifyHour: reminder.notifyHour,
     lastSatisfiedAt: anchorAt,
     createdAt: reminder.createdAt,
+    endsOn: reminder.endsOn,
   };
   const nextDueAt = computeReminderNextDueAt(scheduleInput, timezone, anchorAt);
 
@@ -239,6 +242,7 @@ export async function skipReminder(
     notifyHour: reminder.notifyHour,
     lastSatisfiedAt: skippedAt,
     createdAt: reminder.createdAt,
+    endsOn: reminder.endsOn,
   };
   const nextDueAt = computeReminderNextDueAt(
     scheduleInput,
