@@ -62,6 +62,24 @@ export const MODULE_LIST_ID_MAX = 64;
  */
 export const MODULE_LIST_CATEGORY_ORDER_MAX = 200;
 
+/**
+ * The category order to save after a move: the categories on screen in
+ * their new order, then every saved key that is not on screen now, in its
+ * saved order. A category without readings at the moment (or one of another
+ * record a guardian arranged) keeps its place in the list instead of being
+ * dropped by a move that never showed it.
+ */
+export function mergeCategoryOrder(
+  shown: readonly string[],
+  saved: readonly string[],
+): string[] {
+  const onScreen = new Set(shown);
+  return [...shown, ...saved.filter((key) => !onScreen.has(key))].slice(
+    0,
+    MODULE_LIST_CATEGORY_ORDER_MAX,
+  );
+}
+
 export interface ModuleListPrefs {
   view: ModuleListView;
   order: string[];

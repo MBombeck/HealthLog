@@ -49,6 +49,7 @@ import {
   type ModuleGroupsOpen,
   type ModuleSortDir,
 } from "@/lib/module-list-prefs";
+import { mergeCategoryOrder } from "@/lib/settings/module-list-layout";
 
 import { BiomarkerManager } from "./biomarker-manager";
 import type {
@@ -134,7 +135,11 @@ export function LabsSettings() {
       />
 
       {prefs.groupBy === "category" ? (
-        <LabsCategoryOrderCard onChange={setCategoryOrder} />
+        <LabsCategoryOrderCard
+          onChange={(shown) =>
+            setCategoryOrder(mergeCategoryOrder(shown, prefs.categoryOrder))
+          }
+        />
       ) : null}
 
       {manual ? (

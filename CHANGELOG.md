@@ -31,18 +31,20 @@
   (built-in categories in a fixed order, your own panels alphabetically,
   Other last). A category that turns up later joins the end of your
   order, and Other stays last if you left it there. The order is saved
-  with your account and applied by the server, so the app shows the same
-  order. The labs list layout accepts `categoryOrder`, and
+  with your account and applied by the server, so every device that
+  groups the list shows the same order. The labs list layout accepts
+  `categoryOrder`, and
   `GET /api/labs/overview` answers `categories` in that order. (#1349)
 - **Blood ketones, and the glucose-ketone index worked out for you.**
   Ketones (beta-hydroxybutyrate, mmol/L) are a measurement of their own
   now, so a ketogenic diet no longer has to live in a custom metric with
   the index typed in by hand beside it. Choose "Blood ketones" when you
-  add a measurement and type the glucose from the same fingerstick into
-  the field below: both readings are saved together with one time, or
-  neither is. The glucose-ketone index is glucose in mmol/L divided by
-  ketones, taken from the glucose reading at the same time or, failing
-  that, the nearest one within 15 minutes. It is never stored, so it
+  add a measurement and, if the meter gave one, type the glucose from the
+  same fingerstick into the field below: both readings are saved together
+  with one time, or neither is. The glucose-ketone index is glucose in
+  mmol/L divided by ketones, for every ketone reading above zero, taken
+  from the glucose reading at the same time or, failing that, the nearest
+  one within 15 minutes. It is never stored, so it
   follows any reading you edit or delete. It shows under the chart on the
   new Ketones page, in the day view, and beside the ketones in the doctor
   report and the clinician share; the FHIR export carries the ketone
@@ -58,10 +60,12 @@
   could copy it into the unit, so a marker was created in "g/dL (calc)"
   or just "(calc)" and the next report's plain "g/dL" was refused as a
   different unit. The read now drops that note (also "calculated",
-  "computed" and the German "berechnet"), a unit that was only the note
-  counts as no unit, and a marker already saved with the note accepts
-  the plain unit. Any other text in brackets still counts as part of
-  the unit. (#1313)
+  "computed" and the German "berechnet"), a marker already saved in
+  "g/dL (calc)" accepts the plain "g/dL", and a unit that was only the
+  note counts as no unit and goes to review, so a person decides whether
+  the value really has none. A marker saved in just "(calc)" keeps that
+  unit until you change it on the marker. Any other text in brackets
+  still counts as part of the unit. (#1313)
 - **The sync feed no longer loses a reading written during a long
   import, and no longer starts over for a quiet account.** A Garmin or
   Withings import writes a batch in one transaction and stamps its
@@ -80,8 +84,8 @@
 - **Changing the calendar subscription while its link is being renewed.**
   A subscription turned off at the same moment its link was renewed could
   come back under the new link, and an option changed at that moment
-  could be lost to the new link. Turning it off now wins, and the change
-  lands on the link that stays live.
+  could be lost to the new link. Turning it off now wins whichever comes
+  first, and the change lands on the link that stays live.
 
 ## [1.47.1] — 2026-11-07
 

@@ -221,6 +221,9 @@ describe("runInboundExtraction — stated-status-only mapping", () => {
     expect(
       result.facts.map((f) => (f.data as ObservationFactData).unit),
     ).toEqual(["g/dL", null]);
+    // A unit that was only the note goes to review: no unit is a choice a
+    // person makes, not one a read makes for them.
+    expect(result.facts.map((f) => f.needsReview)).toEqual([false, true]);
   });
 
   it("stores the document's real span, not the model's echo of it", async () => {

@@ -399,9 +399,15 @@ export async function runInboundExtraction(
       // A unit of "1" is the user's explicit no-unit choice. A read that
       // states it itself goes to review rather than straight to the record,
       // so a dropped unit never passes as a dimensionless value.
+      // So does a unit column that held only a "(calc)" note: it reads as no
+      // unit, and a person decides whether the value really has none.
       needsReview:
         confidence < INBOUND_CONFIDENCE_FLOOR ||
-        (raw.type === "OBSERVATION" && isDimensionlessUnit(raw.unit)),
+        (raw.type === "OBSERVATION" &&
+          (isDimensionlessUnit(raw.unit) ||
+            (raw.unit !== null &&
+              raw.unit.trim() !== "" &&
+              observationUnit(raw.unit) === null))),
       data,
       provenance: {
         sourceText: anchor.sourceText,

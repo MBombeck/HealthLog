@@ -6,6 +6,7 @@ import {
   normaliseModuleListOrder,
   resolveModuleListLayout,
   storedModuleListLayout,
+  mergeCategoryOrder,
 } from "../module-list-layout";
 
 describe("resolveModuleListLayout", () => {
@@ -141,5 +142,17 @@ describe("storedModuleListLayout", () => {
     expect(
       storedModuleListLayout({ labs: { sortDir: "manual" }, illness: {} }),
     ).toEqual({ labs: { sortDir: "manual" } });
+  });
+});
+
+describe("mergeCategoryOrder", () => {
+  it("keeps the place of a saved category that is not on screen", () => {
+    expect(
+      mergeCategoryOrder(["lipids", "liver"], ["liver", "thyroid", "lipids"]),
+    ).toEqual(["lipids", "liver", "thyroid"]);
+  });
+
+  it("is the shown order when nothing else was saved", () => {
+    expect(mergeCategoryOrder(["b", "a"], [])).toEqual(["b", "a"]);
   });
 });
