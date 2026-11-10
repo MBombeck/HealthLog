@@ -4,6 +4,7 @@ import { MGDL_PER_MMOL } from "@/lib/glucose";
 import {
   GKI_PAIRING_WINDOW_MINUTES,
   glucoseKetoneIndex,
+  ketoneFractionDigits,
   pairGlucoseKetoneIndex,
   summariseGlucoseKetoneIndex,
   type GkiReading,
@@ -49,11 +50,23 @@ describe("pairGlucoseKetoneIndex", () => {
       glucoseId: "g1",
       at: new Date(T0).toISOString(),
       glucoseAt: new Date(T0).toISOString(),
-      // 81 / 18.0182 = 4.4954 mmol/L; / 1.2 = 3.746 -> 3.7
-      value: 3.7,
+      // 81 / 18.0182 = 4.4954 -> 4.5 mmol/L, the figure shown beside the
+      // index; 4.5 / 1.2 = 3.75 -> 3.8
+      value: 3.8,
       ketonesMmol: 1.2,
       glucoseMmol: 4.5,
     });
+  });
+
+  it("builds the index from the glucose it prints, not the unrounded one", () => {
+    // 5.2 mmol/L entered is stored as 94 mg/dL. Unrounded that is 5.217 and
+    // 17.39 over 0.3, shown as 17.4 beside "5.2 / 0.3"; the pair gives 17.3.
+    const [point] = pairGlucoseKetoneIndex(
+      [reading("k1", 0, 0.3)],
+      [reading("g1", 0, 94)],
+    );
+    expect(point?.glucoseMmol).toBe(5.2);
+    expect(point?.value).toBe(17.3);
   });
 
   it("prefers the same instant over a nearer-looking neighbour", () => {
@@ -148,6 +161,16 @@ describe("pairGlucoseKetoneIndex", () => {
   });
 });
 
+describe("ketoneFractionDigits", () => {
+  it("shows a ketone reading as recorded, one or two decimals", () => {
+    expect(ketoneFractionDigits(1.2)).toBe(1);
+    expect(ketoneFractionDigits(0.3)).toBe(1);
+    expect(ketoneFractionDigits(2)).toBe(1);
+    expect(ketoneFractionDigits(0.25)).toBe(2);
+    expect(ketoneFractionDigits(1.05)).toBe(2);
+  });
+});
+
 describe("summariseGlucoseKetoneIndex", () => {
   it("summarises the indices and is null for none", () => {
     expect(summariseGlucoseKetoneIndex([])).toBeNull();
@@ -155,14 +178,14 @@ describe("summariseGlucoseKetoneIndex", () => {
       [reading("k1", 0, 1), reading("k2", 60, 2), reading("k3", 120, 4)],
       [reading("g1", 0, 90), reading("g2", 60, 90), reading("g3", 120, 90)],
     );
-    // 90 mg/dL = 4.995 mmol/L: indices 5.0, 2.5, 1.2.
-    expect(points.map((p) => p.value)).toEqual([5, 2.5, 1.2]);
+    // 90 mg/dL = 4.995 -> 5.0 mmol/L: indices 5.0, 2.5, 1.3 (5.0 / 4 = 1.25).
+    expect(points.map((p) => p.value)).toEqual([5, 2.5, 1.3]);
     expect(summariseGlucoseKetoneIndex(points)).toEqual({
       count: 3,
       mean: 2.9,
-      min: 1.2,
+      min: 1.3,
       max: 5,
-      latest: 1.2,
+      latest: 1.3,
     });
   });
 });

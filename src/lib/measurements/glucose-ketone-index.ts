@@ -5,8 +5,9 @@
  *   GKI = glucose (mmol/L) / beta-hydroxybutyrate (mmol/L)
  *
  * Glucose is stored in mg/dL and converted with {@link MGDL_PER_MMOL}, the one
- * factor the tree uses for that conversion, so the glucose a GKI is built from
- * is the same number every glucose surface shows. The index is computed when
+ * factor the tree uses for that conversion, then rounded to the one decimal
+ * the index is shown beside, so the glucose a GKI is built from is the same
+ * number every glucose surface shows. The index is computed when
  * it is read and never stored: a stored ratio drifts the moment either reading
  * it came from is edited or deleted, which is the failure a hand-typed GKI has.
  *
@@ -49,6 +50,16 @@ export const GKI_PAIRING_WINDOW_MINUTES = 15;
  */
 export const GKI_COMPONENT_UNIT = "mmol/L";
 export const GKI_PAIRING_WINDOW_MS = GKI_PAIRING_WINDOW_MINUTES * 60_000;
+
+/**
+ * The decimals a ketone reading is shown with beside its index: as recorded,
+ * one or two. A meter that reads 0.25 must not print as 0.3, or the pair on
+ * screen no longer divides to the index beside it.
+ */
+export function ketoneFractionDigits(ketonesMmol: number): 1 | 2 {
+  const tenths = ketonesMmol * 10;
+  return Math.abs(tenths - Math.round(tenths)) < 1e-9 ? 1 : 2;
+}
 
 /** One stored reading, as the pairing needs it. */
 export interface GkiReading {
@@ -154,16 +165,20 @@ export function pairGlucoseKetoneIndex(
       }
     }
     if (best === null) continue;
-    const index = glucoseKetoneIndex(best.value, ketone.value);
-    if (index === null) continue;
+    if (glucoseKetoneIndex(best.value, ketone.value) === null) continue;
+    // The index is built from the glucose as it is shown beside it, so the
+    // printed pair divides to the printed index. A reading entered in mmol/L
+    // is stored as whole mg/dL; dividing the unrounded conversion would land
+    // a tenth away from the pair on screen.
+    const glucoseMmol = oneDecimal(best.value / MGDL_PER_MMOL);
     out.push({
       ketoneId: ketone.id,
       glucoseId: best.id,
       at: ketone.measuredAt.toISOString(),
       glucoseAt: best.measuredAt.toISOString(),
-      value: oneDecimal(index),
+      value: oneDecimal(glucoseMmol / ketone.value),
       ketonesMmol: ketone.value,
-      glucoseMmol: oneDecimal(best.value / MGDL_PER_MMOL),
+      glucoseMmol,
     });
   }
   return out;

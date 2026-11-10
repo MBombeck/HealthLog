@@ -207,11 +207,11 @@ describe("glucose-ketone index (#1367)", () => {
         glucoseMmol: p.glucoseMmol,
       })),
     ).toEqual([
-      // 81 mg/dL = 4.5 mmol/L; / 1.2 = 3.7
+      // 81 mg/dL = 4.5 mmol/L; / 1.2 = 3.75 -> 3.8
       {
         at: at(0).toISOString(),
         glucoseAt: at(0).toISOString(),
-        value: 3.7,
+        value: 3.8,
         ketonesMmol: 1.2,
         glucoseMmol: 4.5,
       },
@@ -261,7 +261,7 @@ describe("glucose-ketone index (#1367)", () => {
       };
     };
     expect(gkiBody.data.unit).toBe("ratio");
-    expect(gkiBody.data.points.map((p) => p.value)).toEqual([3.7, 2.5]);
+    expect(gkiBody.data.points.map((p) => p.value)).toEqual([3.8, 2.5]);
     expect(gkiBody.data.points[1]!.gki).toMatchObject({
       glucoseAt: at(130).toISOString(),
       glucoseMmol: 5,
@@ -301,7 +301,7 @@ describe("glucose-ketone index (#1367)", () => {
       };
     };
     expect(body.data.glucoseKetoneIndex?.map((p) => p.value)).toEqual([
-      3.7, 2.5,
+      3.8, 2.5,
     ]);
     expect(body.data.values.some((v) => v.type === "BLOOD_KETONES")).toBe(true);
   });
@@ -324,8 +324,8 @@ describe("glucose-ketone index (#1367)", () => {
       count: 2,
       latest: 2.5,
       min: 2.5,
-      max: 3.7,
-      avg: 3.1,
+      max: 3.8,
+      avg: 3.2,
     });
 
     const ketonesOnly = await collectDoctorReportData(

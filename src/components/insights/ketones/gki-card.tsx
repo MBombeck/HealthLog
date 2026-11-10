@@ -17,7 +17,10 @@ import {
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
-import { GKI_COMPONENT_UNIT } from "@/lib/measurements/glucose-ketone-index";
+import {
+  GKI_COMPONENT_UNIT,
+  ketoneFractionDigits,
+} from "@/lib/measurements/glucose-ketone-index";
 import { useGlucoseKetoneIndexSeries } from "@/lib/queries/use-glucose-ketone-index";
 import { importWithRetry } from "@/lib/retry-import";
 
@@ -78,7 +81,10 @@ export function GkiCard() {
               {t("insights.bloodKetones.gki.latest", {
                 value: fmt.number(latest.value, 1),
                 glucose: fmt.number(latest.gki.glucoseMmol, 1),
-                ketones: fmt.number(latest.gki.ketonesMmol, 1),
+                ketones: fmt.number(
+                  latest.gki.ketonesMmol,
+                  ketoneFractionDigits(latest.gki.ketonesMmol),
+                ),
                 unit: GKI_COMPONENT_UNIT,
                 date: fmt.dateTime(latest.at),
               })}
