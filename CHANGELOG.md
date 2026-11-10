@@ -4,13 +4,16 @@
 
 ### Added
 
-- **Biomarker list filtering and sorting.** The labs overview list gains
-  search, reference-range status (out of range, in range, above, below),
-  category, and date-range filtering alongside on-page sort options. Filter
-  state is synced to the URL (`?q`, `?status`, `?category`, `?from`, `?to`,
-  `?sort`) for shareable and navigable views, with local day-boundary alignment,
-  singular/few/other pluralized counts, and reactive group header counts and
-  statuses.
+- **Search and filter the labs list.** Once the list ran past a
+  screenful, finding one marker meant scrolling. The labs page now has a
+  search field (press / to jump to it) that matches a marker's name or
+  panel, and filters for the newest reading's status (out of range, in
+  range, below or above), the category, and when a marker was last
+  measured. While a filter is active every category with a match is
+  open, and its header counts only the matches. The filters are part of
+  the page address, so a filtered view survives a reload and
+  back/forward and can be shared as a link. The list keeps the sort
+  order set under Settings > Arrangement > Labs. (#1370)
 - **Choose how the calendar subscription draws a forecast.** A logged
   period of a few days next to a forecast spanning more than a week was
   hard to read, because the forecast event covered every day the period
