@@ -100,14 +100,14 @@ export function writeStoredOpen(
 }
 
 function openByDefault(
+  category: LabOverviewCategoryDto,
   mode: ModuleGroupsOpen,
-  status: LabOverviewCategoryDto["status"],
 ): boolean {
   if (mode === "expanded") return true;
   if (mode === "collapsed") return false;
-  // Consumers supply category.status for unfiltered categories, or the
-  // summarised status for filtered groups.
-  return status === "above" || status === "below";
+  // The server's status for the whole category, never a filtered summary:
+  // what a filter hides must not open or close a group.
+  return category.status === "above" || category.status === "below";
 }
 
 /**
@@ -115,16 +115,19 @@ function openByDefault(
  * category the person opened or closed by hand stays so in this browser
  * (keyed by the opaque category key, never by its label) until the choice
  * itself changes. Storage is read only after hydration and may be missing.
+ *
+ * While a filter is active every category that still has a match is open,
+ * whatever the choice or the stored toggles say, so a match is never hidden
+ * behind a closed header. A category opened or closed by hand during
+ * filtering stays so while the filter changes, is not written to storage,
+ * and the stored state returns once the filter is cleared.
  */
-export function useGroupsOpen(mode: ModuleGroupsOpen): {
-  isOpen: (
-    category: LabOverviewCategoryDto,
-    status: LabOverviewCategoryDto["status"],
-  ) => boolean;
-  toggle: (
-    category: LabOverviewCategoryDto,
-    status: LabOverviewCategoryDto["status"],
-  ) => void;
+export function useGroupsOpen(
+  mode: ModuleGroupsOpen,
+  filtering = false,
+): {
+  isOpen: (category: LabOverviewCategoryDto) => boolean;
+  toggle: (category: LabOverviewCategoryDto) => void;
 } {
   const mounted = useMounted();
   const stored = useMemo(
@@ -134,23 +137,31 @@ export function useGroupsOpen(mode: ModuleGroupsOpen): {
   const [toggled, setToggled] = useState<StoredOpen>({ mode, open: {} });
   const own = toggled.mode === mode ? toggled.open : {};
 
-  const isOpen = (
-    category: LabOverviewCategoryDto,
-    status: LabOverviewCategoryDto["status"],
-  ) =>
-    own[category.key] ??
-    stored[category.key] ??
-    openByDefault(mode, status);
+  const [filtered, setFiltered] = useState<{
+    filtering: boolean;
+    open: Record<string, boolean>;
+  }>({ filtering, open: {} });
+  if (filtered.filtering !== filtering) {
+    setFiltered({ filtering, open: {} });
+  }
+  const whileFiltering = filtered.filtering === filtering ? filtered.open : {};
 
-  const toggle = (
-    category: LabOverviewCategoryDto,
-    status: LabOverviewCategoryDto["status"],
-  ) => {
-    const next = {
-      ...stored,
-      ...own,
-      [category.key]: !isOpen(category, status),
-    };
+  const isOpen = (category: LabOverviewCategoryDto) =>
+    filtering
+      ? (whileFiltering[category.key] ?? true)
+      : (own[category.key] ??
+        stored[category.key] ??
+        openByDefault(category, mode));
+
+  const toggle = (category: LabOverviewCategoryDto) => {
+    if (filtering) {
+      setFiltered({
+        filtering,
+        open: { ...whileFiltering, [category.key]: !isOpen(category) },
+      });
+      return;
+    }
+    const next = { ...stored, ...own, [category.key]: !isOpen(category) };
     setToggled({ mode, open: next });
     writeStoredOpen(mode, next);
   };

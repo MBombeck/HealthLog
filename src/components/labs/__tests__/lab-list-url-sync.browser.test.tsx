@@ -10,6 +10,7 @@ import {
   setSearch,
 } from "../../../../tests/browser/url";
 import { LabList } from "../lab-list";
+import { readStoredOpen } from "../lab-list-groups";
 import type { LabOverviewResponse, LabResultDto } from "../types";
 import { useLabListFilters } from "../use-lab-list-filters";
 
@@ -212,11 +213,11 @@ describe("LabList stale category and group header handling", () => {
     await expect.element(groupButton.getByText("1")).toBeVisible();
   });
 
-  it("keeps flagged-mode default-open behavior consistent with visible filtered rows", async () => {
-    // overviewWithAbnormalMarker has 2 markers in Iron Panel:
-    // Iron (below) and Ferritin (in-range). Category server status is "below".
-    // When filtered to ?status=in-range, Iron is excluded and only Ferritin (in-range) remains.
-    // In flagged mode, the group should NOT be open by default because visible rows are all in-range.
+  it("keeps a flagged group open while a filter leaves only in-range rows", async () => {
+    // Iron (below) and Ferritin (in-range) share the Iron Panel, whose server
+    // status is "below". Filtering to in-range leaves Ferritin alone: the
+    // header now reads "All in range", but the group must stay open, since
+    // the counter says there is a match.
     setSearch("?status=in-range");
     const queryClient = labQueryClient();
     queryClient.setQueryData(queryKeys.moduleListLayout(), {
@@ -239,11 +240,53 @@ describe("LabList stale category and group header handling", () => {
 
     const { screen } = await renderWithApp(<LabList />, { queryClient });
 
-    // Group button reflects in-range status ("All in range") and is collapsed (aria-expanded="false")
     const groupButton = screen.getByRole("button", { name: /Iron Panel/i });
-    await expect.element(groupButton).toBeVisible();
     await expect.element(groupButton.getByText("All in range")).toBeVisible();
+    await expect.element(groupButton).toHaveAttribute("aria-expanded", "true");
+    await expect.element(screen.getByText("Ferritin")).toBeVisible();
+  });
+
+  it("opens every matching group while filtering and restores the closed state after reset", async () => {
+    setSearch("?q=ferr");
+    window.localStorage.clear();
+    const queryClient = labQueryClient();
+    queryClient.setQueryData(queryKeys.moduleListLayout(), {
+      version: 1,
+      lists: {
+        labs: {
+          view: "list",
+          order: [],
+          sortDir: "recentDesc",
+          groupBy: "category",
+          groupsOpen: "collapsed",
+          categoryOrder: [],
+        },
+      },
+    });
+    queryClient.setQueryData(
+      queryKeys.labResultsOverview("en"),
+      overviewWithAbnormalMarker,
+    );
+
+    const { screen } = await renderWithApp(<LabList />, { queryClient });
+
+    const groupButton = screen.getByRole("button", { name: /Iron Panel/i });
+    await expect.element(groupButton).toHaveAttribute("aria-expanded", "true");
+    await expect.element(screen.getByText("Ferritin")).toBeVisible();
+
+    // A toggle made while filtering holds while the filter changes...
+    await groupButton.click();
     await expect.element(groupButton).toHaveAttribute("aria-expanded", "false");
+    await screen.getByRole("combobox", { name: "Status" }).click();
+    await screen.getByRole("option", { name: "In range" }).click();
+    await expect.poll(currentSearch).toBe("?q=ferr&status=in-range");
+    await expect.element(groupButton).toHaveAttribute("aria-expanded", "false");
+
+    // ...and is dropped with the filter: "collapsed" applies again.
+    await screen.getByRole("button", { name: "Reset" }).click();
+    await expect.poll(currentSearch).toBe("");
+    await expect.element(groupButton).toHaveAttribute("aria-expanded", "false");
+    expect(readStoredOpen("collapsed")).toEqual({});
   });
 
   it("memoizes setCategoryFilter callback identity across re-renders", async () => {

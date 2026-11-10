@@ -87,12 +87,11 @@ function LabTable({
 function useGroupToggle(
   category: LabOverviewCategoryDto,
   groupsOpen: GroupsOpen,
-  status: LabOverviewCategoryDto["status"],
 ) {
   const panelId = `${useId()}-panel`;
   return {
-    open: groupsOpen.isOpen(category, status),
-    onToggle: () => groupsOpen.toggle(category, status),
+    open: groupsOpen.isOpen(category),
+    onToggle: () => groupsOpen.toggle(category),
     panelId,
   };
 }
@@ -118,7 +117,6 @@ function TableGroup({
   const { open, onToggle, panelId } = useGroupToggle(
     group.category,
     groupsOpen,
-    status,
   );
   return (
     <div className={cn(LIST_SUBGRID_CLASS, "divide-y-0")}>
@@ -186,7 +184,6 @@ function CardGroup({
   const { open, onToggle, panelId } = useGroupToggle(
     group.category,
     groupsOpen,
-    status,
   );
   return (
     <section className="space-y-4">
@@ -379,7 +376,7 @@ export function LabList({
     effectiveFilters.toDay,
   );
 
-  const groupsOpen = useGroupsOpen(prefs.groupsOpen);
+  const groupsOpen = useGroupsOpen(prefs.groupsOpen, effectiveIsFiltered);
 
   // Scrub stale category filter when categories load.
   // afterPaint protects mount writes from router history initialization.
