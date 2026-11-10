@@ -10086,7 +10086,7 @@
       "forecastStyleHint": {
         "EXACT": "Seulement les jours prévus.",
         "MARGIN": "Les jours prévus, avec en événements séparés les jours où les règles peuvent commencer plus tôt ou plus tard.",
-        "BAND": "Un seul événement couvrant tous les jours où elles peuvent tomber."
+        "BAND": "Un seul événement couvrant tous les jours où les règles peuvent tomber."
       },
       "fertile": "Fenêtre fertile",
       "fertileDescription": "Ajoute la fenêtre fertile estimée du prochain cycle. Une estimation, pas une méthode contraceptive.",

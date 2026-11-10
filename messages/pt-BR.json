@@ -10085,8 +10085,8 @@
       },
       "forecastStyleHint": {
         "EXACT": "Só os dias previstos.",
-        "MARGIN": "Os dias previstos, com os dias em que ela pode começar antes ou depois como eventos separados.",
-        "BAND": "Um único evento cobrindo todos os dias em que ela pode cair."
+        "MARGIN": "Os dias previstos, com os dias em que a menstruação pode começar antes ou depois como eventos separados.",
+        "BAND": "Um único evento cobrindo todos os dias em que a menstruação pode cair."
       },
       "fertile": "Janela fértil",
       "fertileDescription": "Adiciona a janela fértil estimada do próximo ciclo. Uma estimativa, não um método contraceptivo.",

@@ -71,7 +71,7 @@ describe("<CycleCalendarFeedCard>", () => {
     }
     expect(html).toContain('aria-describedby="cycle-feed-forecast-hint"');
     expect(html).toMatch(
-      /data-slot="cycle-feed-forecast-hint"[^>]*>Expected days, with the days it may start earlier or later as separate entries\.</,
+      /data-slot="cycle-feed-forecast-hint"[^>]*>Expected days, with the days the period may start earlier or later as separate entries\.</,
     );
 
     const band = render({
@@ -79,7 +79,9 @@ describe("<CycleCalendarFeedCard>", () => {
       projectionState: "OK",
       fertileAvailable: false,
     });
-    expect(band).toContain("One entry covering every day it may fall on.");
+    expect(band).toContain(
+      "One entry covering every day the period may fall on.",
+    );
     expect(band).not.toContain("as separate entries");
   });
 

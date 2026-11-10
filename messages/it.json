@@ -10085,8 +10085,8 @@
       },
       "forecastStyleHint": {
         "EXACT": "Solo i giorni previsti.",
-        "MARGIN": "I giorni previsti, con i giorni in cui possono iniziare prima o dopo come eventi separati.",
-        "BAND": "Un unico evento che copre tutti i giorni in cui possono cadere."
+        "MARGIN": "I giorni previsti, con i giorni in cui le mestruazioni possono iniziare prima o dopo come eventi separati.",
+        "BAND": "Un unico evento che copre tutti i giorni in cui possono cadere le mestruazioni."
       },
       "fertile": "Finestra fertile",
       "fertileDescription": "Aggiunge la finestra fertile stimata del prossimo ciclo. Una stima, non un metodo contraccettivo.",

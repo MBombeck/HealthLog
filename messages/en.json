@@ -10085,8 +10085,8 @@
       },
       "forecastStyleHint": {
         "EXACT": "Just the expected days.",
-        "MARGIN": "Expected days, with the days it may start earlier or later as separate entries.",
-        "BAND": "One entry covering every day it may fall on."
+        "MARGIN": "Expected days, with the days the period may start earlier or later as separate entries.",
+        "BAND": "One entry covering every day the period may fall on."
       },
       "fertile": "Fertile window",
       "fertileDescription": "Adds the estimated fertile window of the next cycle. An estimate, not a contraceptive method.",

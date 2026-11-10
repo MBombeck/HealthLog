@@ -10085,8 +10085,8 @@
       },
       "forecastStyleHint": {
         "EXACT": "Alleen de verwachte dagen.",
-        "MARGIN": "De verwachte dagen, met de dagen waarop ze eerder of later kan beginnen als aparte afspraken.",
-        "BAND": "Eén afspraak over alle dagen waarop ze kan vallen."
+        "MARGIN": "De verwachte dagen, met de dagen waarop de menstruatie eerder of later kan beginnen als aparte afspraken.",
+        "BAND": "Eén afspraak over alle dagen waarop de menstruatie kan vallen."
       },
       "fertile": "Vruchtbare periode",
       "fertileDescription": "Voegt de geschatte vruchtbare periode van de volgende cyclus toe. Een schatting, geen anticonceptiemethode.",

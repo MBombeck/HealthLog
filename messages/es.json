@@ -10085,8 +10085,8 @@
       },
       "forecastStyleHint": {
         "EXACT": "Solo los días previstos.",
-        "MARGIN": "Los días previstos, con los días en que puede empezar antes o después como eventos aparte.",
-        "BAND": "Un solo evento que cubre todos los días en que puede caer."
+        "MARGIN": "Los días previstos, con los días en que el periodo puede empezar antes o después como eventos aparte.",
+        "BAND": "Un solo evento que cubre todos los días en que puede caer el periodo."
       },
       "fertile": "Ventana fértil",
       "fertileDescription": "Añade la ventana fértil estimada del próximo ciclo. Una estimación, no un método anticonceptivo.",
