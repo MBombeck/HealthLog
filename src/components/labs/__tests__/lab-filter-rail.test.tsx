@@ -121,6 +121,31 @@ describe("<LabFilterRail>", () => {
     expect(extractCountText(renderCount("ru", 5))).toBe("5 биомаркеров");
   });
 
+  it("announces the result count as it changes while typing", () => {
+    const html = renderToStaticMarkup(
+      <I18nProvider initialLocale="en">
+        <LabFilterRail
+          filters={{}}
+          searchDraft="ferr"
+          onSearchChange={vi.fn()}
+          searchInputRef={{ current: null }}
+          onStatusChange={vi.fn()}
+          onCategoryChange={vi.fn()}
+          onFromDayChange={vi.fn()}
+          onToDayChange={vi.fn()}
+          onResetFilters={vi.fn()}
+          isFiltered
+          total={2}
+        />
+      </I18nProvider>,
+    );
+    const count = html.match(/<span([^>]*)>2 biomarkers<\/span>/);
+    expect(count).not.toBeNull();
+    expect(count![1]).toContain('role="status"');
+    expect(count![1]).toContain('aria-live="polite"');
+    expect(count![1]).toContain('aria-atomic="true"');
+  });
+
   it("shows reset button when isFiltered is true", () => {
     const html = renderToStaticMarkup(
       <I18nProvider initialLocale="en">
