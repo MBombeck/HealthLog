@@ -170,7 +170,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     );
   }
 
-  const live = await findLiveFeed(user.id);
+  let live = await findLiveFeed(user.id);
   if (!live) return noLiveFeed();
 
   const data = {
@@ -188,9 +188,25 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
       ? { forecastStyle: input.forecastStyle }
       : {}),
   };
-  const updated = await prisma.cycleCalendarFeed.update({
-    where: { id: live.id },
+  // Only while the feed is still the live one. A rotation that committed
+  // after the read above revoked it and copied its old options onto the new
+  // link; the change then goes to that link, once. Updating the revoked row
+  // would answer 200 with the old options left in force.
+  let written = await prisma.cycleCalendarFeed.updateMany({
+    where: { id: live.id, revokedAt: null },
     data,
+  });
+  if (written.count === 0) {
+    live = await findLiveFeed(user.id);
+    if (!live) return noLiveFeed();
+    written = await prisma.cycleCalendarFeed.updateMany({
+      where: { id: live.id, revokedAt: null },
+      data,
+    });
+    if (written.count === 0) return feedExists();
+  }
+  const updated = await prisma.cycleCalendarFeed.findUniqueOrThrow({
+    where: { id: live.id },
     select: FEED_SUMMARY_SELECT,
   });
 

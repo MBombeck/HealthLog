@@ -46,6 +46,20 @@
   counts as no unit, and a marker already saved with the note accepts
   the plain unit. Any other text in brackets still counts as part of
   the unit. (#1313)
+- **The sync feed no longer loses a reading written during a long
+  import.** A Garmin or Withings import writes a batch in one transaction
+  and stamps its readings before it commits them. When a reading logged by
+  hand committed in between and the app synced right then, the feed's
+  position moved past the import's readings, and they never reached the
+  app or Apple Health. A caught-up page of `GET /api/sync/changes` now
+  hands back a position a minute behind the present, like `start=now`
+  already does, so the next pull reads that minute again and anything
+  that committed late comes with it.
+- **Changing the calendar subscription while its link is being renewed.**
+  A subscription turned off at the same moment its link was renewed could
+  come back under the new link, and an option changed at that moment
+  could be lost to the new link. Turning it off now wins, and the change
+  lands on the link that stays live.
 
 ## [1.47.1] — 2026-11-07
 

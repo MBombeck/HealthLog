@@ -7,10 +7,11 @@
  * The forecast style is copied too: a feed minted before that option keeps
  * BAND rather than taking a new feed's default.
  * Calendars holding the old link stop updating on their next poll. The new
- * URL is returned exactly once. Two rotations racing both revoke the same
- * feed, and the second successor then meets the one-live-feed index: that
- * one gets the mint path's 409 `cycle.feed.exists`, and the winner's link
- * stands.
+ * URL is returned exactly once. Of two rotations racing, the second finds
+ * the feed already revoked (or its successor meets the one-live-feed index)
+ * and gets the mint path's 409 `cycle.feed.exists`; the winner's link
+ * stands. A subscription turned off during a rotation stays off, and an
+ * option changed during one lands on the link that stays live.
  *
  * Same gates as turning the subscription on: cookie session only, the owner or
  * the guardian of a managed profile (`requireGuardianAuth`), a fresh proof,
@@ -72,8 +73,23 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const minted = mintFeedToken();
   const rotated = await prisma
     .$transaction(async (tx) => {
-      const live = await tx.cycleCalendarFeed.findFirst({
+      const found = await tx.cycleCalendarFeed.findFirst({
         where: { userId: user.id, revokedAt: null },
+        select: { id: true },
+      });
+      if (!found) return null;
+      // Only while it is still live: a subscription turned off after the
+      // read above stays off instead of coming back under a new link.
+      const revoked = await tx.cycleCalendarFeed.updateMany({
+        where: { id: found.id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+      if (revoked.count === 0) return "raced" as const;
+      // The options are read after the revoke holds the row, so a change
+      // that committed in between is the one the new link carries, and one
+      // that comes later waits and then finds the new link.
+      const live = await tx.cycleCalendarFeed.findUniqueOrThrow({
+        where: { id: found.id },
         select: {
           id: true,
           horizonCycles: true,
@@ -82,11 +98,6 @@ export const POST = apiHandler(async (request: NextRequest) => {
           titleMode: true,
           forecastStyle: true,
         },
-      });
-      if (!live) return null;
-      await tx.cycleCalendarFeed.update({
-        where: { id: live.id },
-        data: { revokedAt: new Date() },
       });
       const created = await tx.cycleCalendarFeed.create({
         data: {

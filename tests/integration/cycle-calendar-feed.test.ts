@@ -11,6 +11,8 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { Prisma } from "@/generated/prisma/client";
+
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, switchSessionTo, truncateAllTables } from "./setup";
 
@@ -238,6 +240,73 @@ describe("turning the subscription on", () => {
     expect(statuses.every((s) => s === 201 || s === 409)).toBe(true);
     // The race was really run, not sidestepped by one finishing first.
     expect(statuses).toContain(409);
+  });
+
+  /**
+   * Run `rotate()` while `write` holds the live feed's row in an open
+   * transaction, and commit `write` only once the rotation is waiting on
+   * that row: the rotation has read the feed, and its revoke comes after
+   * the competing write whatever the scheduler does.
+   */
+  async function rotateAround(
+    userId: string,
+    write: (tx: Prisma.TransactionClient, feedId: string) => Promise<void>,
+  ): Promise<Response> {
+    const feed = await db().cycleCalendarFeed.findFirstOrThrow({
+      where: { userId, revokedAt: null },
+      select: { id: true },
+    });
+    let pending: Promise<Response> | undefined;
+    await db().$transaction(
+      async (tx) => {
+        await write(tx, feed.id);
+        pending = rotate();
+        for (let i = 0; i < 100; i++) {
+          const [{ n }] = await db().$queryRaw<{ n: number }[]>`
+            SELECT count(*)::int AS n FROM pg_stat_activity
+            WHERE datname = current_database() AND wait_event_type = 'Lock'`;
+          if (n > 0) return;
+          await new Promise((r) => setTimeout(r, 20));
+        }
+        throw new Error("the rotation never waited on the feed row");
+      },
+      { timeout: 10_000 },
+    );
+    return pending!;
+  }
+
+  it("keeps a subscription that is turned off during a rotation off", async () => {
+    const owner = await makeUser("owner");
+    await mint(owner.id);
+    const res = await rotateAround(owner.id, async (tx, feedId) => {
+      await tx.cycleCalendarFeed.update({
+        where: { id: feedId },
+        data: { revokedAt: new Date() },
+      });
+    });
+    expect(res.status).toBe(409);
+    expect(
+      await db().cycleCalendarFeed.count({
+        where: { userId: owner.id, revokedAt: null },
+      }),
+    ).toBe(0);
+  });
+
+  it("carries an option changed during a rotation onto the new link", async () => {
+    const owner = await makeUser("owner");
+    await mint(owner.id);
+    const res = await rotateAround(owner.id, async (tx, feedId) => {
+      await tx.cycleCalendarFeed.update({
+        where: { id: feedId },
+        data: { forecastStyle: "EXACT" },
+      });
+    });
+    expect(res.status).toBe(201);
+    const live = await db().cycleCalendarFeed.findFirstOrThrow({
+      where: { userId: owner.id, revokedAt: null },
+      select: { forecastStyle: true },
+    });
+    expect(live.forecastStyle).toBe("EXACT");
   });
 
   it("the partial unique index rejects a second live row written directly", async () => {
