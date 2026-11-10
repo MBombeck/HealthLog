@@ -1,3 +1,4 @@
+import type { ReferenceRangeStatusCounts } from "@/lib/labs/reference-range";
 import type { RelatedLink } from "@/lib/links/related";
 
 import type {
@@ -87,7 +88,7 @@ export interface LabOverviewCategoryDto {
   label: string;
   /** The `markers[].key` values in this category. */
   markerKeys: string[];
-  counts: { inRange: number; below: number; above: number; unknown: number };
+  counts: ReferenceRangeStatusCounts;
   status: LabResultDto["rangeStatus"];
 }
 

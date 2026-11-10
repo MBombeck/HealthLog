@@ -10699,6 +10699,22 @@
     "unit": {
       "none": "Geen eenheid",
       "noneHint": "Voor een verhouding of index zoals INR of cholesterol/HDL."
+    },
+    "filter": {
+      "searchPlaceholder": "Biomarkers zoeken…",
+      "searchLabel": "Biomarkers zoeken",
+      "clearSearch": "Zoekopdracht wissen",
+      "lastMeasured": "Laatst gemeten",
+      "statusLabel": "Status",
+      "statusAll": "Alle statussen",
+      "statusAbnormal": "Buiten bereik",
+      "categoryLabel": "Categorie",
+      "categoryAll": "Alle categorieën",
+      "markerCountOne": "{count} biomarker",
+      "markerCountFew": "{count} biomarkers",
+      "markerCountOther": "{count} biomarkers",
+      "noMatchesTitle": "Geen passende biomarkers",
+      "noMatchesDescription": "Probeer je zoekopdracht of filters aan te passen."
     }
   },
   "modules": {

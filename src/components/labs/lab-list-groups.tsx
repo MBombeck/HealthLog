@@ -5,9 +5,11 @@
  * header itself, and which categories are open.
  *
  * Everything about a category comes from the server (`categories` on
- * `GET /api/labs/overview`): its members, label, order, counts and status.
- * This module only places the already-sorted rows under them and builds the
- * status sentence from the counts; it never decides a category or a status.
+ * `GET /api/labs/overview`): its members, label, order, counts and status,
+ * which describe the full category. When no effective list filters are
+ * active, this module renders those server category counts and status;
+ * when filters narrow the visible rows, it summarizes the visible subset
+ * client-side.
  */
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
@@ -16,6 +18,7 @@ import { ScorePill } from "@/components/ui/score-pill";
 import { TagChip } from "@/components/ui/tag-chip";
 import { useMounted } from "@/hooks/use-mounted";
 import { useTranslations } from "@/lib/i18n/context";
+import { priorityReferenceRangeStatus } from "@/lib/labs/reference-range";
 import type { ModuleGroupsOpen } from "@/lib/module-list-prefs";
 import { cn } from "@/lib/utils";
 
@@ -102,6 +105,8 @@ function openByDefault(
 ): boolean {
   if (mode === "expanded") return true;
   if (mode === "collapsed") return false;
+  // The server's status for the whole category, never a filtered summary:
+  // what a filter hides must not open or close a group.
   return category.status === "above" || category.status === "below";
 }
 
@@ -110,8 +115,17 @@ function openByDefault(
  * category the person opened or closed by hand stays so in this browser
  * (keyed by the opaque category key, never by its label) until the choice
  * itself changes. Storage is read only after hydration and may be missing.
+ *
+ * While a filter is active every category that still has a match is open,
+ * whatever the choice or the stored toggles say, so a match is never hidden
+ * behind a closed header. A category opened or closed by hand during
+ * filtering stays so while the filter changes, is not written to storage,
+ * and the stored state returns once the filter is cleared.
  */
-export function useGroupsOpen(mode: ModuleGroupsOpen): {
+export function useGroupsOpen(
+  mode: ModuleGroupsOpen,
+  filtering = false,
+): {
   isOpen: (category: LabOverviewCategoryDto) => boolean;
   toggle: (category: LabOverviewCategoryDto) => void;
 } {
@@ -123,9 +137,30 @@ export function useGroupsOpen(mode: ModuleGroupsOpen): {
   const [toggled, setToggled] = useState<StoredOpen>({ mode, open: {} });
   const own = toggled.mode === mode ? toggled.open : {};
 
+  const [filtered, setFiltered] = useState<{
+    filtering: boolean;
+    open: Record<string, boolean>;
+  }>({ filtering, open: {} });
+  if (filtered.filtering !== filtering) {
+    setFiltered({ filtering, open: {} });
+  }
+  const whileFiltering = filtered.filtering === filtering ? filtered.open : {};
+
   const isOpen = (category: LabOverviewCategoryDto) =>
-    own[category.key] ?? stored[category.key] ?? openByDefault(category, mode);
+    filtering
+      ? (whileFiltering[category.key] ?? true)
+      : (own[category.key] ??
+        stored[category.key] ??
+        openByDefault(category, mode));
+
   const toggle = (category: LabOverviewCategoryDto) => {
+    if (filtering) {
+      setFiltered({
+        filtering,
+        open: { ...whileFiltering, [category.key]: !isOpen(category) },
+      });
+      return;
+    }
     const next = { ...stored, ...own, [category.key]: !isOpen(category) };
     setToggled({ mode, open: next });
     writeStoredOpen(mode, next);
@@ -133,18 +168,50 @@ export function useGroupsOpen(mode: ModuleGroupsOpen): {
   return { isOpen, toggle };
 }
 
-/** The status of a category, from the counts the server sent. */
-function GroupStatus({ category }: { category: LabOverviewCategoryDto }) {
+export interface LabGroupSummary {
+  counts: LabOverviewCategoryDto["counts"];
+  status: LabOverviewCategoryDto["status"];
+}
+
+/** Summarise counts and overall status for a list of rows. */
+export function summariseGroupRows(
+  rows: readonly MarkerRow[],
+): LabGroupSummary {
+  const counts = { inRange: 0, below: 0, above: 0, unknown: 0 };
+  for (const row of rows) {
+    const s = row.latest.rangeStatus;
+    if (s === "in-range") counts.inRange += 1;
+    else if (s === "below") counts.below += 1;
+    else if (s === "above") counts.above += 1;
+    else counts.unknown += 1;
+  }
+  const status = priorityReferenceRangeStatus(counts);
+  return { counts, status };
+}
+
+/**
+ * Group-status semantics:
+ * When filters or search are active, the group summary (both the count badge
+ * and the range status pill, e.g. "All in range" or "X of Y outside range")
+ * describes only the visible rows currently matching the filters in this
+ * group, rather than unfiltered server category totals.
+ */
+function GroupStatus({
+  counts,
+  status,
+}: {
+  counts: LabOverviewCategoryDto["counts"];
+  status: LabOverviewCategoryDto["status"];
+}) {
   const { t, tCount } = useTranslations();
-  if (category.status === "unknown") return null;
-  if (category.status === "in-range") {
+  if (status === "unknown") return null;
+  if (status === "in-range") {
     return <ScorePill tone="neutral">{t("labs.groups.allInRange")}</ScorePill>;
   }
-  const { inRange, below, above, unknown } = category.counts;
   return (
-    <ScorePill tone={category.status === "above" ? "warning" : "info"}>
-      {tCount("labs.groups.outsideCount", above + below, {
-        total: inRange + below + above + unknown,
+    <ScorePill tone={status === "above" ? "warning" : "info"}>
+      {tCount("labs.groups.outsideCount", counts.above + counts.below, {
+        total: counts.inRange + counts.below + counts.above + counts.unknown,
       })}
     </ScorePill>
   );
@@ -158,17 +225,40 @@ function GroupStatus({ category }: { category: LabOverviewCategoryDto }) {
  */
 export function LabGroupHeader({
   category,
+  rows,
   open,
   onToggle,
   panelId,
   className,
+  isFiltered = false,
+  status: statusProp,
+  summary: summaryProp,
 }: {
   category: LabOverviewCategoryDto;
+  rows: readonly MarkerRow[];
   open: boolean;
   onToggle: () => void;
   panelId: string;
   className?: string;
+  isFiltered?: boolean;
+  status?: LabOverviewCategoryDto["status"];
+  summary?: LabGroupSummary;
 }) {
+  const { counts, status } = useMemo(() => {
+    if (isFiltered) {
+      const summary = summaryProp ?? summariseGroupRows(rows);
+      return {
+        counts: summary.counts,
+        status: statusProp ?? summary.status,
+      };
+    }
+    const { inRange, below, above, unknown } = category.counts;
+    return {
+      counts: { inRange, below, above, unknown },
+      status: statusProp ?? category.status,
+    };
+  }, [category, rows, isFiltered, statusProp, summaryProp]);
+
   return (
     <h2 className={cn("min-w-0", className)}>
       <button
@@ -190,11 +280,9 @@ export function LabGroupHeader({
         <span className="text-muted-foreground min-w-0 truncate text-xs font-medium tracking-wide uppercase">
           {category.label}
         </span>
-        <TagChip className="shrink-0 tabular-nums">
-          {category.markerKeys.length}
-        </TagChip>
+        <TagChip className="shrink-0 tabular-nums">{rows.length}</TagChip>
         <span className="ml-auto shrink-0">
-          <GroupStatus category={category} />
+          <GroupStatus counts={counts} status={status} />
         </span>
       </button>
     </h2>

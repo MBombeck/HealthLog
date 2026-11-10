@@ -10699,6 +10699,22 @@
     "unit": {
       "none": "No unit",
       "noneHint": "For a ratio or an index such as INR or cholesterol/HDL."
+    },
+    "filter": {
+      "searchPlaceholder": "Search biomarkers…",
+      "searchLabel": "Search biomarkers",
+      "clearSearch": "Clear search",
+      "lastMeasured": "Last measured",
+      "statusLabel": "Status",
+      "statusAll": "All statuses",
+      "statusAbnormal": "Out of range",
+      "categoryLabel": "Category",
+      "categoryAll": "All categories",
+      "markerCountOne": "{count} biomarker",
+      "markerCountFew": "{count} biomarkers",
+      "markerCountOther": "{count} biomarkers",
+      "noMatchesTitle": "No matching biomarkers",
+      "noMatchesDescription": "Try adjusting your search query or filters."
     }
   },
   "modules": {

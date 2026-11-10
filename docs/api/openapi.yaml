@@ -77275,7 +77275,8 @@ components:
         spelling, or the localised \"Other\"). `markerKeys` names the `markers[].key` values in the category. `status`
         combines the members' newest readings: `above` when any is above its range, else `below` when any is below, else
         `in-range` when any was assessed, else `unknown`. A client renders these values and never rebuilds the category,
-        the order or the status."
+        the order or the status. A client that shows only the members matching a filter may summarise that subset by the
+        same rule; without a filter it shows `counts` and `status` as sent."
     LabOverviewCategoryCounts:
       type: object
       properties:

@@ -47,16 +47,17 @@ function reading(over: Partial<LabResultDto>): LabResultDto {
     sourceReferenceLow: null,
     sourceReferenceHigh: null,
     sourceReferenceText: null,
+    printedReferenceText: null,
     referenceOrigin: "catalog",
     referenceDivergesFromCatalog: false,
     takenAt: "2026-09-01T12:00:00.000Z",
     source: "MANUAL",
     hasNote: false,
-    rangeStatus: "in_range",
+    rangeStatus: "in-range",
     createdAt: "2026-09-01T12:00:00.000Z",
     updatedAt: "2026-09-01T12:00:00.000Z",
     ...over,
-  } as LabResultDto;
+  };
 }
 
 function renderList(

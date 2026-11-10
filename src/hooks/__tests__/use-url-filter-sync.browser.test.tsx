@@ -109,6 +109,14 @@ function FilterRail({ syncToUrl = true }: { syncToUrl?: boolean }) {
           options={SOURCES}
         />
       </FilterBar>
+      <button
+        type="button"
+        onClick={() =>
+          patchFilters({ type: "PULSE" }, { mode: "replace", afterPaint: true })
+        }
+      >
+        Defer replace type
+      </button>
     </>
   );
 }
@@ -190,6 +198,27 @@ describe("useUrlFilterSync with FilterBar", () => {
     await expectSearch("?type=WEIGHT&q=knee");
     expect(history.pushes()).toEqual([]);
     expect(history.replaces().at(-1)).toBe("?type=WEIGHT&q=knee");
+    expect(window.history.length).toBe(entries);
+  });
+
+  it("defers writing until after paint and replaces current entry without adding history entries", async () => {
+    const { screen, history } = await mount("?type=WEIGHT");
+    const entries = window.history.length;
+    (
+      screen
+        .getByRole("button", { name: "Defer replace type" })
+        .element() as HTMLButtonElement
+    ).click();
+
+    // Immediately after trigger, the write is deferred until after paint:
+    // search remains unchanged and no history write has executed yet.
+    expect(history.writes).toEqual([]);
+    expect(currentSearch()).toBe("?type=WEIGHT");
+
+    // Once painted frames flush, the replace lands without extra history entry:
+    await expectSearch("?type=PULSE");
+    expect(history.pushes()).toEqual([]);
+    expect(history.replaces()).toEqual(["?type=PULSE"]);
     expect(window.history.length).toBe(entries);
   });
 

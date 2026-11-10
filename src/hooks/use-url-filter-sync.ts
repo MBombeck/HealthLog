@@ -4,6 +4,13 @@ import { useCallback, useMemo, useState } from "react";
 
 import { setAllParams, useUrlSearch, writeUrlState } from "@/lib/url-state";
 
+export interface UrlFilterSyncOptions {
+  /** A new history entry (`push`) or the current one rewritten (`replace`). */
+  mode?: "push" | "replace";
+  /** Wait two painted frames before writing (a write made while mounting). */
+  afterPaint?: boolean;
+}
+
 /**
  * URL-owned filter state — the documents-vault pattern
  * (`src/components/documents/documents-view.tsx`), extracted so the
@@ -44,10 +51,13 @@ export function useUrlFilterSync<T>({
   filters: T;
   applyFilters: (
     next: T | ((current: T) => T),
-    mode?: "push" | "replace",
+    modeOrOptions?: "push" | "replace" | UrlFilterSyncOptions,
   ) => void;
   /** Merge `patch` into the live filters (the common facet change). */
-  patchFilters: (patch: Partial<T>, mode?: "push" | "replace") => void;
+  patchFilters: (
+    patch: Partial<T>,
+    modeOrOptions?: "push" | "replace" | UrlFilterSyncOptions,
+  ) => void;
 } {
   const params = useUrlSearch();
 
@@ -60,7 +70,14 @@ export function useUrlFilterSync<T>({
   );
 
   const applyFilters = useCallback(
-    (next: T | ((current: T) => T), mode: "push" | "replace" = "push") => {
+    (
+      next: T | ((current: T) => T),
+      modeOrOptions: "push" | "replace" | UrlFilterSyncOptions = "push",
+    ) => {
+      const options: UrlFilterSyncOptions =
+        typeof modeOrOptions === "string"
+          ? { mode: modeOrOptions }
+          : modeOrOptions;
       const resolve = (current: T): T =>
         typeof next === "function" ? (next as (c: T) => T)(current) : next;
       if (!syncToUrl) {
@@ -72,15 +89,17 @@ export function useUrlFilterSync<T>({
           const search = serialise(resolve(parse(live)));
           setAllParams(search)(live);
         },
-        { mode },
+        { mode: options.mode ?? "push", afterPaint: options.afterPaint },
       );
     },
     [syncToUrl, serialise, parse],
   );
 
   const patchFilters = useCallback(
-    (patch: Partial<T>, mode: "push" | "replace" = "push") =>
-      applyFilters((current) => ({ ...current, ...patch }), mode),
+    (
+      patch: Partial<T>,
+      modeOrOptions: "push" | "replace" | UrlFilterSyncOptions = "push",
+    ) => applyFilters((current) => ({ ...current, ...patch }), modeOrOptions),
     [applyFilters],
   );
 
