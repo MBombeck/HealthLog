@@ -98,6 +98,7 @@ const STATIC_SURFACE_MODULE = {
   // The per-night breathing-disturbance index is a sleep-page signal.
   "insights-page:breathing-disturbances": "sleep",
   "insights-page:blood-glucose": "glucose",
+  "insights-page:ketones": "glucose",
   "insights-page:workouts": "workouts",
   "insights-page:nutrients": "nutrients",
   // Medications is surface-gated by design: its data routes stay open so an
@@ -160,6 +161,8 @@ const STATIC_SURFACE_MODULE = {
   // ── Dashboard summary keys ──
   "summary:SLEEP_DURATION": "sleep",
   "summary:BLOOD_GLUCOSE": "glucose",
+  // Blood ketones sit beside glucose: same meter, same module.
+  "summary:BLOOD_KETONES": "glucose",
   "summary:CARDIO_RECOVERY": "recovery",
   // The recovery module owns the resting_hr domain (`measurement-scope.ts`),
   // so the server gates the type on it; the form and the dashboard follow.

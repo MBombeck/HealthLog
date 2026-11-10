@@ -13,6 +13,7 @@ export const MEASUREMENT_TYPE_COLORS: Record<string, string> = {
   SLEEP_DURATION: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
   ACTIVITY_STEPS: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
   BLOOD_GLUCOSE: "bg-chart-3/10 text-chart-3 dark:bg-chart-3/20",
+  BLOOD_KETONES: "bg-chart-3/10 text-chart-3 dark:bg-chart-3/20",
   TOTAL_BODY_WATER: "bg-chart-2/10 text-chart-2 dark:bg-chart-2/20",
   BONE_MASS: "bg-chart-4/10 text-chart-4 dark:bg-chart-4/20",
   OXYGEN_SATURATION: "bg-chart-5/10 text-chart-5 dark:bg-chart-5/20",

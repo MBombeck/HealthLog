@@ -813,6 +813,10 @@
     "typeSleep": "Sono",
     "typeSteps": "Passos",
     "typeBloodGlucose": "Glicemia",
+    "typeBloodKetones": "Cetonas no sangue",
+    "glucoseKetoneIndex": "Índice glicose-cetona",
+    "pairedGlucoseLabel": "Glicose da mesma medição ({unit})",
+    "pairedGlucoseHint": "Salva como uma leitura de glicose própria no mesmo horário; o índice glicose-cetona é calculado a partir do par.",
     "typeTotalBodyWater": "Água corporal total",
     "typeBoneMass": "Massa óssea",
     "typeOxygenSaturation": "Saturação de oxigênio",
@@ -4002,6 +4006,23 @@
       }
     },
     "navBloodGlucose": "Glicose",
+    "navBloodKetones": "Cetonas",
+    "bloodKetones": {
+      "title": "Cetonas no sangue",
+      "description": "Suas leituras de beta-hidroxibutirato ao longo do tempo, em {unit}.",
+      "chartTitle": "Cetonas no sangue",
+      "emptyState": {
+        "title": "Ainda não há leituras de cetonas",
+        "description": "As leituras de cetonas aparecem aqui assim que você registra uma, sozinha ou com a glicose da mesma picada.",
+        "cta": "Registrar cetonas"
+      },
+      "gki": {
+        "description": "Glicose dividida pelas cetonas, para cada leitura de cetonas com uma de glicose em até 15 minutos.",
+        "emptyTitle": "Ainda não há índice",
+        "emptyDescription": "Ele aparece quando uma leitura de cetonas tem uma de glicose feita no mesmo horário ou em até 15 minutos.",
+        "latest": "Último {value}: glicose {glucose} {unit} sobre cetonas {ketones} {unit}, {date}."
+      }
+    },
     "totalBodyWater": {
       "title": "Água Corporal Total",
       "description": "Sua água corporal total ao longo do tempo, em quilogramas.",
@@ -13687,6 +13708,10 @@
     "valuesAllFew": "Todos os {count} valores",
     "valuesAllOther": "Todos os {count} valores",
     "valuesFewer": "Menos valores",
+    "gkiPair": "Glicose {glucose} / cetonas {ketones}",
+    "gkiCountOne": "Último de {count}",
+    "gkiCountFew": "Último de {count}",
+    "gkiCountOther": "Último de {count}",
     "countEntriesOne": "{count} entrada",
     "countEntriesFew": "{count} entradas",
     "countEntriesOther": "{count} entradas",

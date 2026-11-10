@@ -29,9 +29,9 @@ import {
   type DayEvent,
   type DayEventKind,
   type DayNotable,
+  type DayResponse,
   type DayRunningItem,
   type DayRunningKind,
-  type DayValue,
 } from "@/lib/day/contract";
 import { visitKindWords } from "@/components/timeline/item-words";
 import {
@@ -62,6 +62,7 @@ import {
   WORKOUT_SPORT_KEY,
 } from "./label-keys";
 import { cycleRunningLine } from "./day-cycle-line";
+import { DayGkiTile } from "./day-gki-tile";
 import { useDayValueFormat } from "./use-day-value-format";
 
 /**
@@ -508,12 +509,14 @@ function ValueTile({
 }
 
 export function DayValues({
-  values,
+  day,
   focusTypes,
 }: {
-  values: readonly DayValue[];
+  /** The day's values and its server-derived glucose-ketone index (#1367). */
+  day: Pick<DayResponse, "values" | "glucoseKetoneIndex">;
   focusTypes: readonly string[];
 }) {
+  const { values } = day;
   const { t, tCount } = useTranslations();
   const [expanded, setExpanded] = useState(false);
   if (values.length === 0) return null;
@@ -537,6 +540,7 @@ export function DayValues({
             selected={focusKeys.has(tile.key)}
           />
         ))}
+        <DayGkiTile points={day.glucoseKetoneIndex ?? []} />
       </ul>
       {rest.length > 0 ? (
         <button

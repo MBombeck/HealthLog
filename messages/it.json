@@ -813,6 +813,10 @@
     "typeSleep": "Sonno",
     "typeSteps": "Passi",
     "typeBloodGlucose": "Glicemia",
+    "typeBloodKetones": "Chetoni nel sangue",
+    "glucoseKetoneIndex": "Indice glucosio-chetoni",
+    "pairedGlucoseLabel": "Glicemia della stessa misurazione ({unit})",
+    "pairedGlucoseHint": "Salvata come lettura di glicemia a sé con lo stesso orario; l’indice glucosio-chetoni si ricava dalla coppia.",
     "typeTotalBodyWater": "Acqua corporea totale",
     "typeBoneMass": "Massa ossea",
     "typeOxygenSaturation": "Saturazione di ossigeno",
@@ -4002,6 +4006,23 @@
       }
     },
     "navBloodGlucose": "Glucosio",
+    "navBloodKetones": "Chetoni",
+    "bloodKetones": {
+      "title": "Chetoni nel sangue",
+      "description": "Le tue letture di beta-idrossibutirrato nel tempo, in {unit}.",
+      "chartTitle": "Chetoni nel sangue",
+      "emptyState": {
+        "title": "Ancora nessuna lettura di chetoni",
+        "description": "Le letture di chetoni appaiono qui quando ne registri una, da sola o con la glicemia della stessa puntura.",
+        "cta": "Registra i chetoni"
+      },
+      "gki": {
+        "description": "Glicemia divisa per i chetoni, per ogni lettura di chetoni con una glicemia entro 15 minuti.",
+        "emptyTitle": "Ancora nessun indice",
+        "emptyDescription": "Compare quando una lettura di chetoni ha una glicemia presa allo stesso momento o entro 15 minuti.",
+        "latest": "Ultimo {value}: glicemia {glucose} {unit} su chetoni {ketones} {unit}, {date}."
+      }
+    },
     "totalBodyWater": {
       "title": "Acqua corporea totale",
       "description": "La tua acqua corporea totale nel tempo, in chilogrammi.",
@@ -13687,6 +13708,10 @@
     "valuesAllFew": "Tutti i {count} valori",
     "valuesAllOther": "Tutti i {count} valori",
     "valuesFewer": "Meno valori",
+    "gkiPair": "Glicemia {glucose} / chetoni {ketones}",
+    "gkiCountOne": "Ultimo di {count}",
+    "gkiCountFew": "Ultimo di {count}",
+    "gkiCountOther": "Ultimo di {count}",
     "countEntriesOne": "1 voce",
     "countEntriesFew": "{count} voci",
     "countEntriesOther": "{count} voci",

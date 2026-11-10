@@ -105,6 +105,9 @@ const MEASUREMENT_TYPES_WITHOUT_HK_COUNTERPART = new Set<MeasurementType>([
   // derivation as PHQ-9 / GAD-7. No HK mapping by design.
   "WHO5_SCORE",
   "SCI_SCORE",
+  // Blood ketones (#1367): HealthKit has no beta-hydroxybutyrate quantity
+  // type, so a ketone reading is typed by hand. No HK mapping by design.
+  "BLOOD_KETONES",
 ]);
 
 describe("APPLE_HEALTH_TYPE_MAP", () => {

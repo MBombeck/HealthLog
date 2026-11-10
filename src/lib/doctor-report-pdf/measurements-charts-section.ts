@@ -186,8 +186,9 @@ function groupSubHeadRow(label: string): VitalTableRow {
 }
 
 /**
- * Per-context glucose rows. Values are stored canonically in mg/dL and print
- * in the owner's unit, in the precision their readings carry.
+ * The glucose group's own rows: one per meal context, stored canonically in
+ * mg/dL and printed in the owner's unit in the precision their readings
+ * carry, then the glucose-ketone index (#1367), a ratio without a unit.
  */
 function glucoseContextTableRows(
   context: DoctorReportPdfRenderContext,
@@ -207,6 +208,17 @@ function glucoseContextTableRows(
       show(s.min),
       show(s.max),
       String(s.count),
+    ]);
+  }
+  const gki = data.glucoseKetoneIndex;
+  if (gki) {
+    rows.push([
+      t("measurements.glucoseKetoneIndex"),
+      num(gki.latest, 1),
+      num(gki.avg, 1),
+      num(gki.min, 1),
+      num(gki.max, 1),
+      String(gki.count),
     ]);
   }
   return rows;

@@ -149,6 +149,10 @@ const ALLOWED_SQL: Record<string, string> = {
     "Selects from `unnest` of the caller's type list; `measurements` is read inside `EXISTS`, one row per type at most.",
   "lib/dashboard/summary-reads.ts::1":
     "Selects from `unnest` of the type list; `measurements` is read only inside COUNT scalar subqueries, before the fold window for a type the DAY rollups cover.",
+  "lib/measurements/read-glucose-ketone-index.ts::1":
+    "Ketone readings in the window: typed off a fingerstick meter, a few a day at most. Each one is paired with a glucose reading, so the rows themselves are needed.",
+  "lib/measurements/read-glucose-ketone-index.ts::2":
+    "Glucose rows only within 15 minutes of one of those ketone readings (`EXISTS`): a handful per fingerstick even under a sensor, never the window's glucose series.",
   "lib/dashboard/summary-reads.ts::2":
     "Selects from `generate_series` of the streak window's local days; `measurements` is read inside `EXISTS`, one row per day at most.",
 };

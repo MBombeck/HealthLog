@@ -28,6 +28,7 @@ import {
 } from "./kinds";
 import { readBloodPressureSeries } from "./read-blood-pressure";
 import { readBucketedSeries, takesBucketedRead } from "./read-bucketed";
+import { readGlucoseKetoneIndexSeries } from "./read-glucose-ketone-index";
 import { readRawSeries } from "./read-raw";
 import { readSleepSeries } from "./read-sleep";
 
@@ -40,6 +41,9 @@ async function readPoints(
 ): Promise<SeriesRead> {
   if (kind === "sleep") return readSleepSeries(userId, since, days);
   if (kind === "bloodPressure") return readBloodPressureSeries(userId, since);
+  if (kind === "glucoseKetoneIndex") {
+    return readGlucoseKetoneIndexSeries(userId, since);
+  }
   if (await takesBucketedRead(userId, kind, days, since)) {
     return readBucketedSeries(userId, kind, days, since);
   }

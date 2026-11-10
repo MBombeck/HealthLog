@@ -171,6 +171,8 @@ export const measurementTypeEnum = z.enum([
   "ACUTE_TRAINING_LOAD",
   // ── resting energy (#1340), HealthKit `basalEnergyBurned` ──
   "BASAL_ENERGY_BURNED",
+  // ── blood ketones (#1367), beta-hydroxybutyrate in mmol/L ──
+  "BLOOD_KETONES",
 ]);
 
 /**

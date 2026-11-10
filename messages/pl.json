@@ -813,6 +813,10 @@
     "typeSleep": "Sen",
     "typeSteps": "Kroki",
     "typeBloodGlucose": "Glikemia",
+    "typeBloodKetones": "Ketony we krwi",
+    "glucoseKetoneIndex": "Indeks glukozowo-ketonowy",
+    "pairedGlucoseLabel": "Glukoza z tego samego pomiaru ({unit})",
+    "pairedGlucoseHint": "Zapisywana jako osobny odczyt glukozy z tą samą godziną; z tej pary obliczany jest indeks glukozowo-ketonowy.",
     "typeTotalBodyWater": "Całkowita woda w organizmie",
     "typeBoneMass": "Masa kostna",
     "typeOxygenSaturation": "Saturacja tlenem",
@@ -4002,6 +4006,23 @@
       }
     },
     "navBloodGlucose": "Glukoza",
+    "navBloodKetones": "Ketony",
+    "bloodKetones": {
+      "title": "Ketony we krwi",
+      "description": "Twoje odczyty beta-hydroksymaślanu w czasie, w {unit}.",
+      "chartTitle": "Ketony we krwi",
+      "emptyState": {
+        "title": "Brak jeszcze odczytów ketonów",
+        "description": "Odczyty ketonów pojawią się tutaj po zapisaniu jednego, osobno lub z glukozą z tego samego nakłucia.",
+        "cta": "Zapisz ketony"
+      },
+      "gki": {
+        "description": "Glukoza podzielona przez ketony, dla każdego odczytu ketonów z odczytem glukozy w ciągu 15 minut.",
+        "emptyTitle": "Brak jeszcze indeksu",
+        "emptyDescription": "Pojawi się, gdy do odczytu ketonów będzie odczyt glukozy z tej samej chwili lub w ciągu 15 minut.",
+        "latest": "Ostatnio {value}: glukoza {glucose} {unit} przez ketony {ketones} {unit}, {date}."
+      }
+    },
     "totalBodyWater": {
       "title": "Całkowita woda w organizmie",
       "description": "Twoja całkowita woda w organizmie w czasie, w kilogramach.",
@@ -13687,6 +13708,10 @@
     "valuesAllFew": "Wszystkie {count} wartości",
     "valuesAllOther": "Wszystkie {count} wartości",
     "valuesFewer": "Mniej wartości",
+    "gkiPair": "Glukoza {glucose} / ketony {ketones}",
+    "gkiCountOne": "Ostatni z {count}",
+    "gkiCountFew": "Ostatni z {count}",
+    "gkiCountOther": "Ostatni z {count}",
     "countEntriesOne": "1 wpis",
     "countEntriesFew": "{count} wpisy",
     "countEntriesOther": "{count} wpisów",

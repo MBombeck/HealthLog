@@ -8,7 +8,7 @@
         {
           "path": "kind",
           "code": "invalid_value",
-          "message": "Invalid option: expected one of \"weight\"|\"bloodPressure\"|\"pulse\"|\"bodyFat\"|\"glucose\"|\"sleep\"|\"steps\"|\"totalBodyWater\"|\"boneMass\"|\"oxygenSaturation\"|\"restingHeartRate\"|\"heartRateVariability\"|\"vo2Max\""
+          "message": "Invalid option: expected one of \"weight\"|\"bloodPressure\"|\"pulse\"|\"bodyFat\"|\"glucose\"|\"sleep\"|\"steps\"|\"totalBodyWater\"|\"boneMass\"|\"oxygenSaturation\"|\"restingHeartRate\"|\"heartRateVariability\"|\"vo2Max\"|\"ketones\"|\"glucoseKetoneIndex\""
         },
         {
           "path": "days",
@@ -39,7 +39,7 @@
           {
             "path": "kind",
             "code": "invalid_value",
-            "message": "Invalid option: expected one of \"weight\"|\"bloodPressure\"|\"pulse\"|\"bodyFat\"|\"glucose\"|\"sleep\"|\"steps\"|\"totalBodyWater\"|\"boneMass\"|\"oxygenSaturation\"|\"restingHeartRate\"|\"heartRateVariability\"|\"vo2Max\""
+            "message": "Invalid option: expected one of \"weight\"|\"bloodPressure\"|\"pulse\"|\"bodyFat\"|\"glucose\"|\"sleep\"|\"steps\"|\"totalBodyWater\"|\"boneMass\"|\"oxygenSaturation\"|\"restingHeartRate\"|\"heartRateVariability\"|\"vo2Max\"|\"ketones\"|\"glucoseKetoneIndex\""
           },
           {
             "path": "days",

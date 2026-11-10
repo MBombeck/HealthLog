@@ -813,6 +813,10 @@
     "typeSleep": "Sommeil",
     "typeSteps": "Pas",
     "typeBloodGlucose": "Glycémie",
+    "typeBloodKetones": "Cétones sanguines",
+    "glucoseKetoneIndex": "Indice glucose-cétones",
+    "pairedGlucoseLabel": "Glycémie de la même mesure ({unit})",
+    "pairedGlucoseHint": "Enregistrée comme un relevé de glycémie à la même heure ; l’indice glucose-cétones est calculé à partir de la paire.",
     "typeTotalBodyWater": "Eau corporelle totale",
     "typeBoneMass": "Masse osseuse",
     "typeOxygenSaturation": "Saturation en oxygène",
@@ -4002,6 +4006,23 @@
       }
     },
     "navBloodGlucose": "Glucose",
+    "navBloodKetones": "Cétones",
+    "bloodKetones": {
+      "title": "Cétones sanguines",
+      "description": "Vos relevés de bêta-hydroxybutyrate au fil du temps, en {unit}.",
+      "chartTitle": "Cétones sanguines",
+      "emptyState": {
+        "title": "Pas encore de relevé de cétones",
+        "description": "Les relevés de cétones apparaissent ici dès que vous en saisissez un, seul ou avec la glycémie de la même piqûre.",
+        "cta": "Enregistrer les cétones"
+      },
+      "gki": {
+        "description": "Glycémie divisée par les cétones, pour chaque relevé de cétones accompagné d’une glycémie à 15 minutes près.",
+        "emptyTitle": "Pas encore d’indice",
+        "emptyDescription": "Il apparaît dès qu’un relevé de cétones a une glycémie prise au même moment ou à 15 minutes près.",
+        "latest": "Dernier {value} : glycémie {glucose} {unit} sur cétones {ketones} {unit}, {date}."
+      }
+    },
     "totalBodyWater": {
       "title": "Eau corporelle totale",
       "description": "Votre eau corporelle totale au fil du temps, en kilogrammes.",
@@ -13687,6 +13708,10 @@
     "valuesAllFew": "Les {count} valeurs",
     "valuesAllOther": "Les {count} valeurs",
     "valuesFewer": "Moins de valeurs",
+    "gkiPair": "Glycémie {glucose} / cétones {ketones}",
+    "gkiCountOne": "Dernier sur {count}",
+    "gkiCountFew": "Dernier sur {count}",
+    "gkiCountOther": "Dernier sur {count}",
     "countEntriesOne": "{count} entrée",
     "countEntriesFew": "{count} entrées",
     "countEntriesOther": "{count} entrées",

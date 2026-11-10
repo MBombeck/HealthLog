@@ -23,6 +23,22 @@
   prevention line 109, which answers around the clock. Before, Korean
   fell through to the international set with 112, which reaches the
   police there, not an ambulance.
+- **Blood ketones, and the glucose-ketone index worked out for you.**
+  Ketones (beta-hydroxybutyrate, mmol/L) are a measurement of their own
+  now, so a ketogenic diet no longer has to live in a custom metric with
+  the index typed in by hand beside it. Choose "Blood ketones" when you
+  add a measurement and type the glucose from the same fingerstick into
+  the field below: both readings are saved together with one time, or
+  neither is. The glucose-ketone index is glucose in mmol/L divided by
+  ketones, taken from the glucose reading at the same time or, failing
+  that, the nearest one within 15 minutes. It is never stored, so it
+  follows any reading you edit or delete. It shows under the chart on the
+  new Ketones page, in the day view, and beside the ketones in the doctor
+  report and the clinician share; the FHIR export carries the ketone
+  readings under LOINC 104816-4. Values are shown as recorded, with no
+  band and no verdict. `GET /api/measurements/series` takes
+  `kind=ketones` and `kind=glucoseKetoneIndex`, and `GET /api/day/{date}`
+  carries `glucoseKetoneIndex`. Migration `0496_blood_ketones`. (#1367)
 
 ### Fixed
 

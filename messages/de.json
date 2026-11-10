@@ -813,6 +813,10 @@
     "typeSleep": "Schlaf",
     "typeSteps": "Schritte",
     "typeBloodGlucose": "Blutzucker",
+    "typeBloodKetones": "Blutketone",
+    "glucoseKetoneIndex": "Glukose-Keton-Index",
+    "pairedGlucoseLabel": "Blutzucker aus derselben Messung ({unit})",
+    "pairedGlucoseHint": "Wird als eigener Blutzuckerwert mit derselben Uhrzeit gespeichert; aus dem Paar ergibt sich der Glukose-Keton-Index.",
     "typeTotalBodyWater": "Gesamtkörperwasser",
     "typeBoneMass": "Knochenmasse",
     "typeOxygenSaturation": "Sauerstoffsättigung",
@@ -4002,6 +4006,23 @@
       }
     },
     "navBloodGlucose": "Glukose",
+    "navBloodKetones": "Ketone",
+    "bloodKetones": {
+      "title": "Blutketone",
+      "description": "Deine Beta-Hydroxybutyrat-Werte im Zeitverlauf, in {unit}.",
+      "chartTitle": "Blutketone",
+      "emptyState": {
+        "title": "Noch keine Ketonwerte",
+        "description": "Ketonwerte erscheinen hier, sobald du einen erfasst, allein oder mit dem Blutzucker aus demselben Fingerstich.",
+        "cta": "Ketone erfassen"
+      },
+      "gki": {
+        "description": "Blutzucker geteilt durch Ketone, für jeden Ketonwert mit einem Blutzuckerwert innerhalb von 15 Minuten.",
+        "emptyTitle": "Noch kein Index",
+        "emptyDescription": "Er erscheint, sobald zu einem Ketonwert ein Blutzuckerwert zur selben Zeit oder innerhalb von 15 Minuten vorliegt.",
+        "latest": "Zuletzt {value}: Blutzucker {glucose} {unit} durch Ketone {ketones} {unit}, {date}."
+      }
+    },
     "totalBodyWater": {
       "title": "Gesamtkörperwasser",
       "description": "Dein Gesamtkörperwasser im Zeitverlauf, in Kilogramm.",
@@ -13687,6 +13708,10 @@
     "valuesAllFew": "Alle {count} Werte",
     "valuesAllOther": "Alle {count} Werte",
     "valuesFewer": "Weniger Werte",
+    "gkiPair": "Blutzucker {glucose} / Ketone {ketones}",
+    "gkiCountOne": "Letzter von {count}",
+    "gkiCountFew": "Letzter von {count}",
+    "gkiCountOther": "Letzter von {count}",
     "countEntriesOne": "1 Eintrag",
     "countEntriesFew": "{count} Einträge",
     "countEntriesOther": "{count} Einträge",

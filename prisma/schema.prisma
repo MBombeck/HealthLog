@@ -1816,6 +1816,10 @@ enum MeasurementType {
   // v1.47.1 — resting energy (#1340). Its own type beside ACTIVE_ENERGY_BURNED,
   // never folded into it and never summed with it into a total.
   BASAL_ENERGY_BURNED // kcal — HealthKit `basalEnergyBurned`, the energy the body uses at rest; cumulative, daily SUM.
+  // v1.47.2 — blood ketones (#1367). Beta-hydroxybutyrate from a fingerstick
+  // meter, typed by hand. The glucose-ketone index is derived from this and
+  // BLOOD_GLUCOSE at read time and never stored.
+  BLOOD_KETONES // mmol/L — capillary or venous beta-hydroxybutyrate (BHB); spot reading, never summed.
 
   @@map("measurement_type")
 }

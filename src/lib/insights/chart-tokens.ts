@@ -29,6 +29,7 @@ export const ALLOWED_CHART_TOKENS = [
   "metric:SLEEP_DURATION",
   "metric:ACTIVITY_STEPS",
   "metric:BLOOD_GLUCOSE",
+  "metric:BLOOD_KETONES",
   "metric:TOTAL_BODY_WATER",
   "metric:BONE_MASS",
   "metric:OXYGEN_SATURATION",

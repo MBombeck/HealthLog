@@ -294,7 +294,7 @@ const UNIT_LITERAL_ALLOWLIST: Record<
     reason: "the onboarding unit picker: its options are the two units",
   },
   "components/measurements/measurement-form.tsx": {
-    lines: 11,
+    lines: 12,
     reason:
       "input parsing: canonical units of the entry table, replaced by the transform's unit at render and inverted on save",
   },
@@ -362,9 +362,9 @@ const UNIT_LITERAL_ALLOWLIST: Record<
     reason: "the legacy export endpoint's canonical storage-unit contract",
   },
   "lib/measurements/series/kinds.ts": {
-    lines: 4,
+    lines: 5,
     reason:
-      "canonical wire units; glucose is overridden to the reader's unit per request",
+      "canonical wire units; glucose is overridden to the reader's unit per request, ketones have no unit choice",
   },
   "lib/doctor-report/stat-display.ts": {
     lines: 3,
