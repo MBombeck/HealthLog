@@ -72,9 +72,9 @@
   every evening and never "today" or "overdue", and the start page
   dropped it. Such a checkup now counts from its last reading: once its
   reminder is sent it stays due, then overdue, until a reading lands or
-  it is marked done, skipped or snoozed, and while it stays open the
-  reminder comes again every N days, at most once a week, at its usual
-  hour. A first due date in the past stays overdue past its first
+  it is marked done, skipped or snoozed, and while it stays open it is
+  reminded again every N days, and never more than a week apart, at its
+  usual hour. A first due date in the past stays overdue past its first
   reminder instead of jumping ahead. A checkup that already moved on
   corrects itself at its next reminder.
   Calendar schedules that repeat within a week, such as a twice-daily
@@ -117,6 +117,12 @@
   chain checks, signatures and TLS handling. It arrives only under the APNs
   library, and HealthLog signs push requests with a token key, so none of
   that code runs; the update keeps the dependency audit clean.
+- The image carries Debian's zlib security update (DSA-6613-1, zlib1g
+  `1:1.3.dfsg+really1.3.1-1+deb13u1`), which fixes CVE-2026-85091,
+  CVE-2026-27171 and CVE-2026-76844. The 1.47.1 image was built before
+  that update and ships the earlier zlib. The refreshed `node:22-trixie-slim`
+  base does not include it yet either; the build-time `apt-get upgrade`
+  brings it in.
 
 ## [1.47.1] — 2026-11-07
 
