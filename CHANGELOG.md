@@ -17,6 +17,12 @@
   keeps whichever style it has. `PATCH /api/cycle/feed-subscription`
   accepts `forecastStyle` (`EXACT`, `MARGIN` or `BAND`) and the status
   carries it. Migration `0495_cycle_feed_forecast_style`. (#1350)
+- **Crisis contacts for South Korea.** A questionnaire answer that shows
+  the crisis card now gives a Korean reader, or anyone whose locale names
+  South Korea, the emergency number 119 and the national suicide
+  prevention line 109, which answers around the clock. Before, Korean
+  fell through to the international set with 112, which reaches the
+  police there, not an ambulance.
 
 ## [1.47.1] — 2026-11-07
 

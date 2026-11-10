@@ -179,6 +179,20 @@ const BE: CrisisResourceSet = {
 };
 
 /**
+ * South Korea (the region "kr", and Korean with no region, which is read
+ * almost only there). 119 is the emergency number for an ambulance. Since
+ * January 2024 the national suicide prevention line 109 has taken over the
+ * earlier counselling numbers and answers around the clock.
+ */
+const KR: CrisisResourceSet = {
+  emergencyNumber: "119",
+  resources: [
+    { id: "suicidePrevention109", contacts: ["109"] },
+    { id: "findahelpline", contacts: ["findahelpline.com"] },
+  ],
+};
+
+/**
  * Dutch with no region signal. The app ships one Dutch bundle, `nl`, read in
  * the Netherlands and in Flanders alike, and the account keeps no country to
  * tell them apart. Following DE_AT_CH, the set leads with 112 (the emergency
@@ -205,6 +219,7 @@ const BY_REGION: Readonly<Record<string, CrisisResourceSet>> = {
   br: BR,
   ch: CH,
   de: DE,
+  kr: KR,
   nl: NL,
   pt: PT,
   us: US,
@@ -235,7 +250,7 @@ function regionSubtag(tag: string): string | null {
  * bundle (see PT_BR_AMBIGUOUS), so it keeps the ambiguous set. The web stores
  * the app locale, which is otherwise a bare "de", "nl", "en", so it lands on
  * the combined sets: never assume Germany, the Netherlands or Brazil when the
- * region is unknown. A bare country code ("at", "ch", "us", "br", "be")
+ * region is unknown. A bare country code ("at", "ch", "us", "br", "be", "kr")
  * still resolves to that country.
  */
 export function crisisResourcesForLocale(
@@ -248,7 +263,14 @@ export function crisisResourcesForLocale(
     const byRegion = BY_REGION[region];
     if (byRegion) return byRegion;
   }
-  if (lc === "at" || lc === "ch" || lc === "us" || lc === "br" || lc === "be") {
+  if (
+    lc === "at" ||
+    lc === "ch" ||
+    lc === "us" ||
+    lc === "br" ||
+    lc === "be" ||
+    lc === "kr"
+  ) {
     return BY_REGION[lc];
   }
   const language = lc.split("-")[0];
@@ -258,5 +280,6 @@ export function crisisResourcesForLocale(
   if (language === "pt") return PT_BR_AMBIGUOUS;
   // The bare "nl" the web stores, and any other Dutch tag: both countries.
   if (language === "nl") return NL_BE;
+  if (language === "ko") return KR;
   return INTERNATIONAL;
 }
