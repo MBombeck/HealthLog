@@ -10980,7 +10980,9 @@
       "deleteTitle": "Remove own vaccine?",
       "sectionDescription": "Vaccines you added yourself because the catalogue does not list them.",
       "catalogGroup": "Catalogue"
-    }
+    },
+    "deleted": "Vaccination deleted",
+    "restoreFailed": "The vaccination could not be restored."
   },
   "illness": {
     "title": "Illness",
@@ -13492,7 +13494,9 @@
       "defaultReason": "No earlier visit with the same practice, specialty or kind.",
       "capped": "The last two years",
       "cappedReason": "The last matching visit is more than two years ago, and a report covers two years at most."
-    }
+    },
+    "deleted": "Visit deleted",
+    "restoreFailed": "The visit could not be restored."
   },
   "checkups": {
     "viewSwitchLabel": "Show checkups, visits, procedures or body sites",
@@ -13525,7 +13529,9 @@
     "deleteTitle": "Delete this entry?",
     "deleteDescription": "Your existing visits stay, and they keep this name.",
     "deleteFailed": "The entry could not be deleted.",
-    "noSpecialtyGroup": "No specialty"
+    "noSpecialtyGroup": "No specialty",
+    "deleted": "Entry deleted",
+    "restoreFailed": "The entry could not be restored."
   },
   "links": {
     "picker": {

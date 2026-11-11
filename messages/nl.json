@@ -10980,7 +10980,9 @@
       "deleteTitle": "Eigen vaccin verwijderen?",
       "sectionDescription": "Vaccins die je zelf hebt toegevoegd omdat ze niet in de catalogus staan.",
       "catalogGroup": "Catalogus"
-    }
+    },
+    "deleted": "Vaccinatie verwijderd",
+    "restoreFailed": "De vaccinatie kon niet worden teruggezet."
   },
   "illness": {
     "title": "Ziekte",
@@ -13492,7 +13494,9 @@
       "defaultReason": "Geen eerder bezoek bij dezelfde praktijk, in hetzelfde specialisme of van hetzelfde soort.",
       "capped": "De afgelopen twee jaar",
       "cappedReason": "Het laatste passende bezoek is meer dan twee jaar geleden, en een rapport beslaat hooguit twee jaar."
-    }
+    },
+    "deleted": "Bezoek verwijderd",
+    "restoreFailed": "Het bezoek kon niet worden teruggezet."
   },
   "checkups": {
     "viewSwitchLabel": "Controles, bezoeken, ingrepen of lichaamsdelen tonen",
@@ -13525,7 +13529,9 @@
     "deleteTitle": "Deze vermelding verwijderen?",
     "deleteDescription": "Je bestaande bezoeken blijven bestaan en houden deze naam.",
     "deleteFailed": "De vermelding kon niet worden verwijderd.",
-    "noSpecialtyGroup": "Geen specialisme"
+    "noSpecialtyGroup": "Geen specialisme",
+    "deleted": "Vermelding verwijderd",
+    "restoreFailed": "De vermelding kon niet worden teruggezet."
   },
   "links": {
     "picker": {

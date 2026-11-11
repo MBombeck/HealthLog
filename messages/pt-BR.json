@@ -10980,7 +10980,9 @@
       "deleteTitle": "Remover vacina própria?",
       "sectionDescription": "Vacinas que você adicionou porque o catálogo não as lista.",
       "catalogGroup": "Catálogo"
-    }
+    },
+    "deleted": "Vacina excluída",
+    "restoreFailed": "Não foi possível restaurar a vacina."
   },
   "illness": {
     "title": "Doenças",
@@ -13492,7 +13494,9 @@
       "defaultReason": "Nenhuma consulta anterior com o mesmo consultório, especialidade ou tipo.",
       "capped": "Os últimos dois anos",
       "cappedReason": "A última consulta correspondente foi há mais de dois anos, e um relatório cobre no máximo dois anos."
-    }
+    },
+    "deleted": "Consulta excluída",
+    "restoreFailed": "Não foi possível restaurar a consulta."
   },
   "checkups": {
     "viewSwitchLabel": "Mostrar check-ups, consultas, procedimentos ou locais do corpo",
@@ -13525,7 +13529,9 @@
     "deleteTitle": "Excluir esta entrada?",
     "deleteDescription": "Suas consultas existentes permanecem e mantêm este nome.",
     "deleteFailed": "Não foi possível excluir a entrada.",
-    "noSpecialtyGroup": "Sem especialidade"
+    "noSpecialtyGroup": "Sem especialidade",
+    "deleted": "Entrada excluída",
+    "restoreFailed": "Não foi possível restaurar a entrada."
   },
   "links": {
     "picker": {

@@ -10980,7 +10980,9 @@
       "deleteTitle": "Rimuovere il vaccino personale?",
       "sectionDescription": "Vaccini aggiunti da te perché il catalogo non li elenca.",
       "catalogGroup": "Catalogo"
-    }
+    },
+    "deleted": "Vaccinazione eliminata",
+    "restoreFailed": "Impossibile ripristinare la vaccinazione."
   },
   "illness": {
     "title": "Malattia",
@@ -13492,7 +13494,9 @@
       "defaultReason": "Nessuna visita precedente presso lo stesso studio, nella stessa specialità o dello stesso tipo.",
       "capped": "Gli ultimi due anni",
       "cappedReason": "L'ultima visita corrispondente risale a più di due anni fa, e un report copre al massimo due anni."
-    }
+    },
+    "deleted": "Appuntamento eliminato",
+    "restoreFailed": "Non è stato possibile ripristinare l'appuntamento."
   },
   "checkups": {
     "viewSwitchLabel": "Mostra controlli, appuntamenti, interventi o parti del corpo",
@@ -13525,7 +13529,9 @@
     "deleteTitle": "Eliminare questa voce?",
     "deleteDescription": "I tuoi appuntamenti esistenti restano e conservano questo nome.",
     "deleteFailed": "Non è stato possibile eliminare la voce.",
-    "noSpecialtyGroup": "Senza specializzazione"
+    "noSpecialtyGroup": "Senza specializzazione",
+    "deleted": "Voce eliminata",
+    "restoreFailed": "Non è stato possibile ripristinare la voce."
   },
   "links": {
     "picker": {

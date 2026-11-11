@@ -91,5 +91,14 @@ export function usePractitionerMutations() {
     onSuccess: invalidate,
   });
 
-  return { create, update, remove };
+  // The Undo of a delete. It brings the entry back, not the links the
+  // delete cleared on the visits that named it.
+  const restore = useMutation({
+    mutationKey: queryKeys.practitionerRestore(),
+    mutationFn: (id: string) =>
+      apiPost<Practitioner>(`${BASE}/${id}/restore`, {}),
+    onSuccess: invalidate,
+  });
+
+  return { create, update, remove, restore };
 }

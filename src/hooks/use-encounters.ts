@@ -19,7 +19,13 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
-import { apiDelete, apiGet, apiGetList, apiPatch } from "@/lib/api/api-fetch";
+import {
+  apiDelete,
+  apiGet,
+  apiGetList,
+  apiPatch,
+  apiPost,
+} from "@/lib/api/api-fetch";
 import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import { invalidateReminderReads } from "@/hooks/use-measurement-reminders";
 import {
@@ -192,5 +198,13 @@ export function useEncounterMutations() {
     onSuccess: invalidate,
   });
 
-  return { create, update, remove };
+  // The Undo of a delete. A restored visit re-anchors its reminder only
+  // while its date is still ahead.
+  const restore = useMutation({
+    mutationKey: queryKeys.encounterRestore(),
+    mutationFn: (id: string) => apiPost<Encounter>(`${BASE}/${id}/restore`, {}),
+    onSuccess: invalidate,
+  });
+
+  return { create, update, remove, restore };
 }

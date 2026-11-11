@@ -10980,7 +10980,9 @@
       "deleteTitle": "Usunąć własną szczepionkę?",
       "sectionDescription": "Szczepionki dodane przez Ciebie, bo nie ma ich w katalogu.",
       "catalogGroup": "Katalog"
-    }
+    },
+    "deleted": "Szczepienie usunięte",
+    "restoreFailed": "Nie udało się przywrócić szczepienia."
   },
   "illness": {
     "title": "Choroba",
@@ -13492,7 +13494,9 @@
       "defaultReason": "Brak wcześniejszej wizyty w tym samym gabinecie, tej samej specjalizacji lub tego samego rodzaju.",
       "capped": "Ostatnie dwa lata",
       "cappedReason": "Ostatnia pasująca wizyta była ponad dwa lata temu, a raport obejmuje najwyżej dwa lata."
-    }
+    },
+    "deleted": "Wizyta usunięta",
+    "restoreFailed": "Nie udało się przywrócić wizyty."
   },
   "checkups": {
     "viewSwitchLabel": "Pokaż badania profilaktyczne, wizyty, zabiegi lub miejsca na ciele",
@@ -13525,7 +13529,9 @@
     "deleteTitle": "Usunąć ten wpis?",
     "deleteDescription": "Twoje dotychczasowe wizyty pozostają i zachowują tę nazwę.",
     "deleteFailed": "Nie udało się usunąć wpisu.",
-    "noSpecialtyGroup": "Bez specjalizacji"
+    "noSpecialtyGroup": "Bez specjalizacji",
+    "deleted": "Wpis usunięty",
+    "restoreFailed": "Nie udało się przywrócić wpisu."
   },
   "links": {
     "picker": {

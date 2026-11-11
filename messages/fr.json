@@ -10980,7 +10980,9 @@
       "deleteTitle": "Retirer ce vaccin personnel ?",
       "sectionDescription": "Les vaccins que vous avez ajoutés parce que le catalogue ne les connaît pas.",
       "catalogGroup": "Catalogue"
-    }
+    },
+    "deleted": "Vaccination supprimée",
+    "restoreFailed": "La vaccination n'a pas pu être restaurée."
   },
   "illness": {
     "title": "Maladie",
@@ -13492,7 +13494,9 @@
       "defaultReason": "Aucune visite antérieure au même cabinet, dans la même spécialité ou du même type.",
       "capped": "Les deux dernières années",
       "cappedReason": "La dernière consultation correspondante date de plus de deux ans, et un rapport couvre au plus deux ans."
-    }
+    },
+    "deleted": "Rendez-vous supprimé",
+    "restoreFailed": "Le rendez-vous n'a pas pu être restauré."
   },
   "checkups": {
     "viewSwitchLabel": "Afficher les dépistages, les rendez-vous, les interventions ou les parties du corps",
@@ -13525,7 +13529,9 @@
     "deleteTitle": "Supprimer cette entrée ?",
     "deleteDescription": "Vos rendez-vous existants restent et conservent ce nom.",
     "deleteFailed": "L'entrée n'a pas pu être supprimée.",
-    "noSpecialtyGroup": "Sans spécialité"
+    "noSpecialtyGroup": "Sans spécialité",
+    "deleted": "Entrée supprimée",
+    "restoreFailed": "L'entrée n'a pas pu être restaurée."
   },
   "links": {
     "picker": {

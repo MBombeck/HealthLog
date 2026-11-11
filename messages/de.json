@@ -10980,7 +10980,9 @@
       "deleteTitle": "Eigenen Impfstoff entfernen?",
       "sectionDescription": "Selbst angelegte Impfstoffe, die der Katalog nicht kennt.",
       "catalogGroup": "Katalog"
-    }
+    },
+    "deleted": "Impfung gelöscht",
+    "restoreFailed": "Impfung konnte nicht wiederhergestellt werden."
   },
   "illness": {
     "title": "Krankheit",
@@ -13492,7 +13494,9 @@
       "defaultReason": "Kein früherer Termin bei derselben Praxis, in derselben Fachrichtung oder derselben Art.",
       "capped": "Die letzten zwei Jahre",
       "cappedReason": "Der letzte passende Termin liegt mehr als zwei Jahre zurück, und ein Bericht umfasst höchstens zwei Jahre."
-    }
+    },
+    "deleted": "Termin gelöscht",
+    "restoreFailed": "Termin konnte nicht wiederhergestellt werden."
   },
   "checkups": {
     "viewSwitchLabel": "Vorsorge, Termine, Eingriffe oder Körperstellen anzeigen",
@@ -13525,7 +13529,9 @@
     "deleteTitle": "Eintrag löschen?",
     "deleteDescription": "Deine bisherigen Termine bleiben erhalten und behalten diesen Namen.",
     "deleteFailed": "Eintrag konnte nicht gelöscht werden.",
-    "noSpecialtyGroup": "Ohne Fachrichtung"
+    "noSpecialtyGroup": "Ohne Fachrichtung",
+    "deleted": "Eintrag gelöscht",
+    "restoreFailed": "Eintrag konnte nicht wiederhergestellt werden."
   },
   "links": {
     "picker": {

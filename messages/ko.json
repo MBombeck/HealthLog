@@ -10980,7 +10980,9 @@
       "deleteTitle": "직접 추가한 백신을 삭제할까요?",
       "sectionDescription": "목록에 없어서 직접 추가한 백신이에요.",
       "catalogGroup": "목록"
-    }
+    },
+    "deleted": "예방접종 기록을 삭제했어요",
+    "restoreFailed": "예방접종 기록을 복원하지 못했어요."
   },
   "illness": {
     "title": "아픈 날",
@@ -13492,7 +13494,9 @@
       "defaultReason": "같은 병원, 진료과 또는 유형의 이전 방문이 없어요.",
       "capped": "최근 2년",
       "cappedReason": "마지막으로 일치하는 진료가 2년 이상 지났으며, 보고서는 최대 2년까지 다룹니다."
-    }
+    },
+    "deleted": "진료를 삭제했어요",
+    "restoreFailed": "진료를 복원하지 못했어요."
   },
   "checkups": {
     "viewSwitchLabel": "건강검진, 진료, 시술 또는 신체 부위 보기",
@@ -13525,7 +13529,9 @@
     "deleteTitle": "이 항목을 삭제할까요?",
     "deleteDescription": "기존 진료 기록은 그대로 남고, 이 이름도 유지돼요.",
     "deleteFailed": "항목을 삭제하지 못했어요.",
-    "noSpecialtyGroup": "진료과 없음"
+    "noSpecialtyGroup": "진료과 없음",
+    "deleted": "항목을 삭제했어요",
+    "restoreFailed": "항목을 복원하지 못했어요."
   },
   "links": {
     "picker": {

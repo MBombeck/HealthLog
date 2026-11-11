@@ -33,6 +33,7 @@
  */
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
@@ -85,7 +86,7 @@ export function EncounterSheet({
   onSaved?: (saved: Encounter) => void;
 }) {
   const { t } = useTranslations();
-  const { create, update, remove } = useEncounterMutations();
+  const { create, update, remove, restore } = useEncounterMutations();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   // Seeded once, at mount. The caller remounts this component on every open by
   // varying its `key`, so a second edit never shows the first one's values and
@@ -210,8 +211,25 @@ export function EncounterSheet({
                 <AlertDialogAction
                   variant="destructive"
                   onClick={() => {
-                    remove.mutate(encounter.id, {
-                      onSuccess: () => onOpenChange(false),
+                    const id = encounter.id;
+                    remove.mutate(id, {
+                      onSuccess: () => {
+                        onOpenChange(false);
+                        // The delete is soft. The Undo runs after this sheet
+                        // closed, so it awaits the restore itself rather than
+                        // passing callbacks a closed sheet never receives.
+                        toast.success(t("encounters.deleted"), {
+                          action: {
+                            label: t("common.undo"),
+                            onClick: () =>
+                              void restore.mutateAsync(id).catch((failure) =>
+                                showErrorToast(t("encounters.restoreFailed"), {
+                                  cause: failure,
+                                }),
+                              ),
+                          },
+                        });
+                      },
                       onError: (failure) =>
                         showErrorToast(t("encounters.deleteFailed"), {
                           cause: failure,
