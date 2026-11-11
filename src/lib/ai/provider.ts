@@ -25,6 +25,7 @@ import { isPublicUrl } from "@/lib/validations/notifications";
 import { isLocalAiHostAllowed } from "./local-host-allowlist";
 import {
   parseProviderChain,
+  PROVIDER_CHAIN_DEFAULT,
   PROVIDER_CHAIN_TYPES,
   type ProviderChainType,
 } from "./provider-chain";
@@ -810,15 +811,10 @@ async function readBoundSettings(userId: string): Promise<{
  *      from the user's saved credentials. Drop entries that have no
  *      usable credential (e.g. chain says `anthropic` but
  *      `aiAnthropicKeyEncrypted` is null).
- *   3. Returns the surviving array — possibly empty if the user has
- *      no configured providers anywhere. Caller raises 422 in that
- *      case.
- *
- * Reused by the regular insight-generate route (B5b) AND the v1.4.17
- * feedback-attribution path (B5e) — both need the same resolution
- * semantics. `resolveProvider()` keeps its single-result shape for
- * the legacy `weight-status.ts` / `mood-status.ts` / etc. consumers
- * that have not migrated to the chain runner yet.
+ *   3. Append the operator's central Codex behind the person's opt-in.
+ *   4. Still empty: the picked gateway on a chain never saved
+ *      (`servesPickedGateway`), else nothing. Every caller treats an
+ *      empty result as "no provider"; none falls back on its own.
  */
 export async function resolveProviderChain(
   userId: string,
@@ -896,102 +892,17 @@ export async function resolveProviderChain(
     }
   }
 
-  return resolved;
-}
-
-/**
- * Credential-presence subset of the `User` row that
- * `userRowHasProviderCredential` evaluates. Mirrors the columns
- * `resolveProviderChain` / `resolveProvider` read, but presence-only —
- * no decrypt, no client construction, no token refresh.
- */
-export interface ProviderCredentialRow {
-  aiProvider: string | null;
-  aiProviderChain: unknown;
-  aiAnthropicKeyEncrypted: string | null;
-  aiLocalKeyEncrypted: string | null;
-  aiOpenaiKeyEncrypted: string | null;
-  aiBaseUrl: string | null;
-  aiModel: string | null;
-  aiCompatBaseUrl: string | null;
-  aiCompatModel: string | null;
-  codexConnectionStatus: string | null;
-  codexAccessTokenEncrypted: string | null;
-  codexRefreshTokenEncrypted: string | null;
-}
-
-/**
- * Cheap, synchronous "is any provider configured?" check over an already
- * loaded credential row. Mirrors the resolution semantics of
- * `resolveProviderChain` + the legacy `resolveProvider` fallback (the
- * exact pair `generateComprehensiveInsight` uses to decide
- * `skipped: no-provider`), but evaluates credential PRESENCE only —
- * it never decrypts a key, constructs a client, or refreshes a Codex
- * token. A `true` here can still resolve to a dead provider at call
- * time (revoked key, unreachable local host); callers use it to decide
- * whether a generation is worth attempting at all, not as a liveness
- * probe.
- *
- * `adminKeyConfigured` is the presence of `appSettings.adminAiKeyEncrypted`
- * — passed in so batch callers can read it once for a whole cohort.
- */
-export function userRowHasProviderCredential(
-  row: ProviderCredentialRow,
-  adminKeyConfigured: boolean,
-  policy: ProviderCredentialPolicy = "personal",
-): boolean {
-  if (policy === "deny") return false;
-  if (policy === "operator-default") return adminKeyConfigured;
-  const codexConnected =
-    row.codexConnectionStatus === "connected" &&
-    !!row.codexAccessTokenEncrypted &&
-    !!row.codexRefreshTokenEncrypted;
-
-  const chain = parseProviderChain(row.aiProviderChain ?? null).filter(
-    (e) => e.enabled,
-  );
-  for (const entry of chain) {
-    switch (entry.providerType) {
-      case "codex":
-        if (codexConnected) return true;
-        break;
-      case "openai":
-        if (row.aiOpenaiKeyEncrypted) return true;
-        break;
-      case "anthropic":
-        if (row.aiAnthropicKeyEncrypted) return true;
-        break;
-      case "local":
-        if (row.aiBaseUrl) return true;
-        break;
-      case "openai-compatible":
-        // Presence mirrors `buildCompatProvider`: a gateway needs an address
-        // AND a model name; the key is optional.
-        if (row.aiCompatBaseUrl && (row.aiCompatModel || row.aiModel)) {
-          return true;
-        }
-        break;
-      case "admin-openai":
-        if (adminKeyConfigured) return true;
-        break;
+  if (resolved.length === 0 && userRow && servesPickedGateway(userRow)) {
+    const gateway = buildCompatProvider(userRow);
+    if (gateway) {
+      resolved.push({
+        providerType: "openai-compatible",
+        instance: bind(gateway),
+      });
     }
   }
 
-  // Legacy `resolveProvider()` fallback — only reached when the chain
-  // resolves empty. Mirrors buildUserProvider → codex → admin in order.
-  const choice = row.aiProvider?.toUpperCase();
-  if (choice === "ANTHROPIC" && row.aiAnthropicKeyEncrypted) return true;
-  if (choice === "LOCAL" && row.aiBaseUrl) return true;
-  if (
-    choice === "OPENAI_COMPATIBLE" &&
-    row.aiCompatBaseUrl &&
-    (row.aiCompatModel || row.aiModel)
-  ) {
-    return true;
-  }
-  if (choice === "OPENAI" && row.aiOpenaiKeyEncrypted) return true;
-  if ((choice === "CHATGPT_OAUTH" || !choice) && codexConnected) return true;
-  return adminKeyConfigured;
+  return resolved;
 }
 
 /**
@@ -1038,71 +949,39 @@ function appSettingsCentralCodexConnected(
  *                the Coach works server-side yet the client saw `null`.
  *   - null     — nothing configured anywhere; no provider can serve.
  *
- * Presence-only, mirroring `userRowHasProviderCredential`: it never
- * decrypts a key, builds a client, or probes liveness.
+ * Read off the first entry of the presence probe: it never decrypts a key,
+ * builds a client, or probes liveness.
  */
 export type ProviderManagedBy = "user" | "local" | "server";
 
-function resolveManagedByFromRow(
-  row: ProviderCredentialRow,
-  adminKeyConfigured: boolean,
-  policy: ProviderCredentialPolicy = "personal",
-): ProviderManagedBy | null {
-  if (policy === "deny") return null;
-  if (policy === "operator-default") {
-    return adminKeyConfigured ? "server" : null;
+/** Where the credential behind one chain entry comes from. */
+function providerOrigin(providerType: string): ProviderManagedBy {
+  if (providerType === "local") return "local";
+  if (providerType === "admin-openai" || providerType === "admin-codex") {
+    return "server";
   }
-  const codexConnected =
-    row.codexConnectionStatus === "connected" &&
-    !!row.codexAccessTokenEncrypted &&
-    !!row.codexRefreshTokenEncrypted;
+  return "user";
+}
 
-  const chain = parseProviderChain(row.aiProviderChain ?? null).filter(
-    (e) => e.enabled,
+/**
+ * What a chain that resolves empty falls back to. A saved chain is the
+ * person's own word: an entry they switched off or removed stays out, so an
+ * empty saved chain means no provider. A chain they never saved is the
+ * default one (`parseProviderChain` hands back `PROVIDER_CHAIN_DEFAULT`
+ * itself), which holds every provider a person can pick except the
+ * OpenAI-compatible gateway; so the gateway they picked under Settings, AI
+ * serves when nothing in the default chain does. Resolution and the presence
+ * probe both read this, so they cannot disagree about it.
+ */
+function servesPickedGateway(row: {
+  aiProvider: string | null;
+  aiProviderChain: unknown;
+}): boolean {
+  return (
+    parseProviderChain(row.aiProviderChain ?? null) ===
+      PROVIDER_CHAIN_DEFAULT &&
+    row.aiProvider?.toUpperCase() === "OPENAI_COMPATIBLE"
   );
-  for (const entry of chain) {
-    switch (entry.providerType) {
-      case "codex":
-        if (codexConnected) return "user";
-        break;
-      case "openai":
-        if (row.aiOpenaiKeyEncrypted) return "user";
-        break;
-      case "anthropic":
-        if (row.aiAnthropicKeyEncrypted) return "user";
-        break;
-      case "local":
-        if (row.aiBaseUrl) return "local";
-        break;
-      case "openai-compatible":
-        // The gateway is the user's own egress to an endpoint they chose,
-        // like a BYO key — not the operator's, and not presumed on-host
-        // (LiteLLM / OpenRouter are usually remote).
-        if (row.aiCompatBaseUrl && (row.aiCompatModel || row.aiModel)) {
-          return "user";
-        }
-        break;
-      case "admin-openai":
-        if (adminKeyConfigured) return "server";
-        break;
-    }
-  }
-
-  // Legacy `resolveProvider()` fallback — only reached when the chain
-  // resolves empty. Mirrors buildUserProvider → codex → admin in order.
-  const choice = row.aiProvider?.toUpperCase();
-  if (choice === "ANTHROPIC" && row.aiAnthropicKeyEncrypted) return "user";
-  if (choice === "LOCAL" && row.aiBaseUrl) return "local";
-  if (
-    choice === "OPENAI_COMPATIBLE" &&
-    row.aiCompatBaseUrl &&
-    (row.aiCompatModel || row.aiModel)
-  ) {
-    return "user";
-  }
-  if (choice === "OPENAI" && row.aiOpenaiKeyEncrypted) return "user";
-  if ((choice === "CHATGPT_OAUTH" || !choice) && codexConnected) return "user";
-  return adminKeyConfigured ? "server" : null;
 }
 
 /**
@@ -1176,8 +1055,8 @@ function entryVision(
  * `true` can still meet a dead key at call time; the generation path reports
  * that as a failed generation. It follows the chain resolution
  * (`resolveProviderChain`) entry by entry, appends the operator's central
- * Codex only behind the person's opt-in, falls back to the legacy single
- * provider only for a chain that resolves empty, and applies the credential
+ * Codex only behind the person's opt-in, takes the same empty-chain fallback
+ * (`servesPickedGateway`), and applies the credential
  * policy of the provider-work authority: a delegate's chain is empty and a
  * guardian's is the operator's key alone.
  *
@@ -1265,24 +1144,19 @@ export function probeProviderChain(
       const availableTypes: string[] = PROVIDER_CHAIN_TYPES.filter((type) =>
         type === "admin-codex" ? centralCodex : credentialPresent(type),
       );
-      if (entries.length === 0 && userRowHasProviderCredential(row, adminKey)) {
-        // The legacy single-provider fallback, tagged as the operator's slot
-        // the way every consumer of it tags it (the consent gate included).
-        entries.push(vision("admin-openai"));
+      if (
+        entries.length === 0 &&
+        servesPickedGateway(row) &&
+        credentialPresent("openai-compatible")
+      ) {
+        entries.push(vision("openai-compatible"));
       }
 
-      let managedBy = resolveManagedByFromRow(row, adminKey, policy);
-      if (
-        managedBy === null &&
-        row.useCentralCodex &&
-        appSettingsCentralCodexConnected(settings)
-      ) {
-        managedBy = "server";
-      }
       return {
         entries,
         localOcrEnabled: row.labsLocalOcrEnabled,
-        managedBy: entries.length > 0 ? managedBy : null,
+        managedBy:
+          entries.length > 0 ? providerOrigin(entries[0].providerType) : null,
         availableTypes,
         responseTimeoutSeconds: row.aiResponseTimeoutSeconds,
         operatorKeyBaseUrl: settings?.adminAiBaseUrl ?? null,
@@ -1481,18 +1355,13 @@ async function resolveProviderForTestUnbound(
 
   // Empty selection ("test my saved config" — the ai-section calls
   // /api/ai/test with an empty body): resolve via the SAME path generation
-  // uses — the first enabled+credentialed entry of `resolveProviderChain`.
-  // The legacy codex→admin fallback used to probe a different provider than
-  // generation ran (observed: test→admin-key while generation→codex), so a
-  // green test gave no signal about whether overnight generation would
-  // work. Falling through to the chain keeps the two paths in lock-step.
+  // uses — the first entry of `resolveProviderChain`. The legacy codex→admin
+  // fallback used to probe a different provider than generation ran
+  // (observed: test→admin-key while generation→codex), so a green test gave
+  // no signal about whether overnight generation would work.
   if (!provider) {
     const chain = await resolveProviderChain(userId);
     if (chain.length > 0) return chain[0].instance;
-    // Chain empty (no enabled+credentialed entry) — mirror the regular
-    // single-provider resolution one more time before giving up.
-    const legacy = await resolveProvider(userId);
-    if (legacy.type !== "none") return legacy;
     throw new AITestConfigError(422, "No AI provider configured");
   }
 

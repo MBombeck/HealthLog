@@ -153,6 +153,28 @@ describe("<GettingStartedChecklist> — rows for an established account", () => 
     };
   });
 
+  it("leaves the AI row out once the Coach and AI analysis are switched off", () => {
+    // Nothing configured, so the row would be an open to-do: the person
+    // declined AI in Settings, Modules, and the list does not ask again.
+    providerState = {
+      configured: false,
+      managedBy: null,
+      canConfigure: true,
+      responseTimeoutMs: 60_000,
+    };
+    currentUser = user({ modules: { coach: false, insights: false } });
+    expect(render()).toContain("4 of 5 done");
+    // Either one still on keeps the row.
+    currentUser = user({ modules: { coach: false, insights: true } });
+    expect(render()).toContain("4 of 6 done");
+    providerState = {
+      configured: true,
+      managedBy: "user",
+      canConfigure: true,
+      responseTimeoutMs: 60_000,
+    };
+  });
+
   it("keeps the supporting queries enabled while the card can render", () => {
     currentUser = user();
     render();

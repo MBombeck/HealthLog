@@ -72,7 +72,7 @@ import {
   runRawCompletionWithFallback,
 } from "@/lib/ai/provider-runner";
 import { spentOnFailure } from "@/lib/ai/reasoning/answerless";
-import { resolveProvider, resolveProviderChain } from "@/lib/ai/provider";
+import { resolveProviderChain } from "@/lib/ai/provider";
 import { singleUserTurn } from "@/lib/ai/types";
 
 import {
@@ -198,17 +198,13 @@ async function handleExtract(request: NextRequest): Promise<Response> {
   // surface a structured 503 — the wizard hides the overlay.
   const chain = await resolveProviderChain(userId);
   if (chain.length === 0) {
-    const legacy = await resolveProvider(userId);
-    if (legacy.type === "none") {
-      annotate({ action: { name: "medications.extract.no-provider" } });
-      throw new AiUnavailableError(
-        "medicationExtract",
-        "no_provider",
-        null,
-        MEDICATION_EXTRACT_NO_PROVIDER,
-      );
-    }
-    chain.push({ providerType: "admin-openai", instance: legacy });
+    annotate({ action: { name: "medications.extract.no-provider" } });
+    throw new AiUnavailableError(
+      "medicationExtract",
+      "no_provider",
+      null,
+      MEDICATION_EXTRACT_NO_PROVIDER,
+    );
   }
 
   // The wire. The runner may cascade through every entry, so each one is

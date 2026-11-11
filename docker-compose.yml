@@ -360,10 +360,6 @@ x-healthlog-env: &healthlog_env
   # outright; the account's list is then not read.
   CODEX_MODEL: "${CODEX_MODEL:-}"
   CODEX_MODEL_FALLBACK_CHAIN: "${CODEX_MODEL_FALLBACK_CHAIN:-}"
-  # Surfaces reviewed n-of-1 experiment outcomes in the Coach snapshot.
-  # Off by default — the read-back is the most overclaim-prone Coach
-  # surface, so it is an explicit operator opt-in. Set to "1" to enable.
-  COACH_EXPERIMENT_VERDICT: "${COACH_EXPERIMENT_VERDICT:-}"
   # Daily-briefing output-token ceiling (optional; default 2500, clamped
   # 500-8000). Raise when a verbose model's briefing JSON is cut off.
   # Listed here so an operator value in .env reaches the container (the

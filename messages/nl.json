@@ -3012,8 +3012,6 @@
     },
     "correlationRow": {
       "title": "Verbanden",
-      "experimentCta": "Probeer een experiment van 7 dagen",
-      "experimentTooltip": "Binnenkort beschikbaar",
       "emptyTitle": "Meer gegevens nodig om dit verband te zien",
       "sourceChip": "gebaseerd op {n} gekoppelde metingen ({window})",
       "sourceWindowLast30": "afgelopen 30 dagen",
@@ -5174,7 +5172,9 @@
       "connectCta": "Een apparaat koppelen",
       "logCta": "Je eerste meting vastleggen",
       "importCta": "Bestaande geschiedenis importeren",
-      "modulesCta": "Je modules kiezen"
+      "modulesCta": "Je modules kiezen",
+      "aiOptional": "AI is optioneel. Alles werkt ook zonder.",
+      "aiSetupCta": "AI instellen"
     },
     "welcomeBack": {
       "title": "Welkom terug",
@@ -5194,37 +5194,6 @@
       "allergiesLabel": "Allergieën of intoleranties",
       "allergiesPlaceholder": "bijv. penicilline, lactose",
       "privacyNote": "Versleuteld opgeslagen en alleen gebruikt om je betere context te geven. We vragen hier niet naar je medicatie. Die kun je altijd toevoegen via de pagina Medicatie."
-    },
-    "ai": {
-      "panelTitle": "Bekijk hoe inzichten eruitzien",
-      "panelIntro": "Coach, de dagelijkse briefing en de toelichting per meetwaarde zetten je eigen cijfers om in begrijpelijke taal. Zo ziet dat eruit, nog voordat je iets koppelt.",
-      "showSample": "Voorbeeldbriefing bekijken",
-      "sampleTitle": "Dagelijkse briefing",
-      "sampleTag": "Voorbeeld",
-      "sampleAriaLabel": "Voorbeeld van een dagelijkse briefing",
-      "sampleBody": "Gewicht in twee weken 1,2 kg gedaald. Rusthartslag stabiel op 58 bpm. Bloeddruk binnen het bereik op 6 van de 7 dagen; de ene hoge meting volgde op een laat, zout avondeten.",
-      "sampleCaption": "Alleen een voorbeeld, niet je eigen gegevens. Zo leest een briefing zodra inzichten aanstaan.",
-      "ladderTitle": "Drie manieren om het aan te zetten",
-      "ladderLocalTitle": "Lokaal model: AI-verzoeken blijven op je eigen netwerk",
-      "ladderLocalBody": "Verwijs HealthLog naar Ollama of LM Studio op je eigen computer. Gratis en volledig privé, de rustige standaardkeuze.",
-      "ladderByokTitle": "Je eigen sleutel gebruiken",
-      "ladderByokBody": "Gebruik je eigen OpenAI- of Anthropic-sleutel. Die draait onder je eigen account en facturering, en via de API worden je gegevens standaard niet gebruikt voor training.",
-      "ladderOauthTitle": "Inloggen met een abonnement",
-      "ladderOauthBody": "Koppel een ChatGPT-account. Geen kosten per token, maar volgens de voorwaarden voor consumenten mag inhoud voor training worden gebruikt. Het is dus een bewuste keuze, nooit de standaard voor je gezondheidsgegevens.",
-      "keylessLine": "HealthLog is ook zonder AI volledig bruikbaar. Je tegels, grafieken, trends en exports werken allemaal. AI voegt alleen de toelichting in begrijpelijke taal toe.",
-      "setupCta": "Instellen (ongeveer een minuut)",
-      "sharedKeyNote": "Deze instantie biedt al een gedeelde AI-provider, dus inzichten werken nu al voor je, zonder instellen.",
-      "offer": {
-        "title": "Deze instantie kan je samenvatting in begrijpelijke taal schrijven.",
-        "body": "De beheerder stelt een provider beschikbaar die in de afgelopen 24 uur nog werkte. Met één tik zet je de toelichting in begrijpelijke taal aan; je gegevens gaan dan naar die ene provider en naar niemand anders.",
-        "cta": "Begrijpelijke taal aanzetten",
-        "granted": "Aangezet. De eerste samenvatting verschijnt op je dashboard.",
-        "error": "Aanzetten is niet gelukt. Probeer het zo meteen nog eens."
-      },
-      "unavailable": {
-        "title": "De provider van deze instantie reageert op dit moment niet.",
-        "body": "HealthLog is ook zonder de toelichting in begrijpelijke taal volledig bruikbaar. Je kunt later onder Instellingen een eigen provider toevoegen."
-      }
     },
     "steps": {
       "who": "Voor wie dit dossier is",
@@ -11175,7 +11144,6 @@
       "title": "Plannen",
       "pageDescription": "Als-dan-plannen die je in je gesprekken met de Coach hebt afgesproken. Bevestig een voorstel om het onderdeel te maken van het geheugen van de Coach.",
       "readOnlyNote": "De Coach is nu niet beschikbaar, maar je kunt je plannen nog wel lezen en verwijderen.",
-      "proposalTitle": "Planvoorstel",
       "ifThen": "Als {cue}, dan {action}.",
       "targetPrefix": "Doel: {target}",
       "reviewPrefix": "Evaluatie: {when}",

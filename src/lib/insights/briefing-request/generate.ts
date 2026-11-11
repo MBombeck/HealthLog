@@ -5,7 +5,7 @@
  */
 import type { ProviderChainResolved } from "@/lib/ai/provider-runner";
 import { assertConsentForChain } from "@/lib/ai/consent-guard";
-import { resolveProvider, resolveProviderChain } from "@/lib/ai/provider";
+import { resolveProviderChain } from "@/lib/ai/provider";
 import { recordBriefingFailure } from "@/lib/insights/briefing-failure-marker";
 import { annotate } from "@/lib/logging/context";
 
@@ -19,10 +19,7 @@ import { buildBriefingPrompt } from "./prompt";
 /**
  * The user's full provider chain, so a hard failure on the primary (401,
  * 5xx, network) cascades to the next configured fallback rather than
- * surfacing to the dashboard. An empty chain falls back to the
- * single-provider resolution when the legacy `aiProvider` field still points
- * at something usable, so accounts that never customised the chain keep
- * working. Null when there is no provider at all.
+ * surfacing to the dashboard. Null when there is no provider at all.
  *
  * The consent gate runs on the resolved chain before anything leaves for a
  * model. Required for the operator's global key (`admin-openai`); BYOK /
@@ -33,11 +30,7 @@ export async function resolveConsentedBriefingChain(
   userId: string,
 ): Promise<ProviderChainResolved[] | null> {
   const chain = await resolveProviderChain(userId);
-  if (chain.length === 0) {
-    const legacy = await resolveProvider(userId);
-    if (legacy.type === "none") return null;
-    chain.push({ providerType: "admin-openai", instance: legacy });
-  }
+  if (chain.length === 0) return null;
   await assertConsentForChain({ userId, chain, surface: "insights" });
   return chain;
 }

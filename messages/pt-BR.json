@@ -3012,8 +3012,6 @@
     },
     "correlationRow": {
       "title": "Relações",
-      "experimentCta": "Tente um experimento de 7 dias",
-      "experimentTooltip": "Em breve",
       "emptyTitle": "Precisa de mais dados para ver esta relação",
       "sourceChip": "com base em {n} leituras pareadas ({window})",
       "sourceWindowLast30": "últimos 30 dias",
@@ -5174,7 +5172,9 @@
       "connectCta": "Conectar um dispositivo",
       "logCta": "Registrar sua primeira medição",
       "importCta": "Importar histórico existente",
-      "modulesCta": "Escolher seus módulos"
+      "modulesCta": "Escolher seus módulos",
+      "aiOptional": "A IA é opcional. Tudo funciona também sem ela.",
+      "aiSetupCta": "Configurar IA"
     },
     "welcomeBack": {
       "title": "Bem-vindo de volta",
@@ -5194,37 +5194,6 @@
       "allergiesLabel": "Alergias ou intolerâncias",
       "allergiesPlaceholder": "ex.: penicilina, lactose",
       "privacyNote": "Armazenado criptografado e usado apenas para dar melhor contexto. Não pedimos seus medicamentos aqui. Adicione-os a qualquer momento na página Medicamentos."
-    },
-    "ai": {
-      "panelTitle": "Veja como os insights ficam",
-      "panelIntro": "Coach, o briefing diário e as leituras por métrica transformam seus próprios números em linguagem simples. Aqui está a forma disso, antes de conectar qualquer coisa.",
-      "showSample": "Ver um briefing de exemplo",
-      "sampleTitle": "Briefing Diário",
-      "sampleTag": "Exemplo",
-      "sampleAriaLabel": "Exemplo de briefing diário",
-      "sampleBody": "Peso caiu 1,2 kg em duas semanas. Pulso em repouso estável em 58 bpm. Pressão arterial na faixa em 6 de 7 dias; a única leitura alta seguiu um jantar tardio e salgado.",
-      "sampleCaption": "Apenas exemplo, não seus próprios dados. É assim que um briefing lê quando os insights estão ligados.",
-      "ladderTitle": "Três formas de ligar",
-      "ladderLocalTitle": "Modelo local: solicitações de IA permanecem na sua rede",
-      "ladderLocalBody": "Aponte o HealthLog para Ollama ou LM Studio na sua própria máquina. Gratuito e totalmente privado, o padrão tranquilo.",
-      "ladderByokTitle": "Traga sua própria chave",
-      "ladderByokBody": "Use sua própria chave OpenAI ou Anthropic. Roda sob sua conta e cobrança, e o nível de API mantém seus dados fora de treinamento por padrão.",
-      "ladderOauthTitle": "Entre com uma assinatura",
-      "ladderOauthBody": "Conecte uma conta ChatGPT. Sem custo por token, mas os termos do nível consumidor podem usar conteúdo para treinamento, então é uma escolha deliberada, nunca o padrão para seus dados de saúde.",
-      "keylessLine": "O HealthLog é totalmente útil sem IA. Seus blocos, gráficos, tendências e exportações funcionam. A IA só adiciona a leitura em linguagem simples por cima.",
-      "setupCta": "Configurar (cerca de um minuto)",
-      "sharedKeyNote": "Esta instância já fornece um provedor de IA compartilhado, então os insights funcionam para você agora, sem configuração.",
-      "offer": {
-        "title": "Esta instância pode escrever seu resumo em linguagem simples.",
-        "body": "O operador fornece um provedor que funcionou pela última vez nas últimas 24 horas. Um toque liga a leitura em linguagem simples; seus dados vão para esse único provedor e para ninguém mais.",
-        "cta": "Ligar linguagem simples",
-        "granted": "Ligado. O primeiro resumo aparece no seu painel.",
-        "error": "Ligar não funcionou. Tente novamente em instantes."
-      },
-      "unavailable": {
-        "title": "O provedor desta instância não está respondendo agora.",
-        "body": "O HealthLog é totalmente útil sem a leitura em linguagem simples. Você pode adicionar um provedor próprio mais tarde nas Configurações."
-      }
     },
     "steps": {
       "who": "Para quem é este registro",
@@ -11175,7 +11144,6 @@
       "title": "Planos",
       "pageDescription": "Planos do tipo “se… então…” acordados nas suas conversas com o Coach. Confirme uma proposta para torná-la parte da memória do Coach.",
       "readOnlyNote": "O Coach não está disponível agora, mas você ainda pode ler e excluir seus planos.",
-      "proposalTitle": "Proposta de plano",
       "ifThen": "Se {cue}, então {action}.",
       "targetPrefix": "Alvo: {target}",
       "reviewPrefix": "Revisão: {when}",

@@ -3012,8 +3012,6 @@
     },
     "correlationRow": {
       "title": "Korelacje",
-      "experimentCta": "Uruchom 7-dniowy eksperyment",
-      "experimentTooltip": "Wkrótce",
       "emptyTitle": "Potrzeba więcej danych, aby pokazać tę korelację",
       "sourceChip": "na podstawie {n} sparowanych pomiarów ({window})",
       "sourceWindowLast30": "Ostatnie 30 dni",
@@ -5174,7 +5172,9 @@
       "connectCta": "Połącz urządzenie",
       "logCta": "Zapisz pierwszy pomiar",
       "importCta": "Importuj istniejącą historię",
-      "modulesCta": "Wybierz swoje moduły"
+      "modulesCta": "Wybierz swoje moduły",
+      "aiOptional": "AI jest opcjonalne. Wszystko działa także bez niego.",
+      "aiSetupCta": "Skonfiguruj AI"
     },
     "welcomeBack": {
       "title": "Witaj ponownie",
@@ -5194,37 +5194,6 @@
       "allergiesLabel": "Alergie lub nietolerancje",
       "allergiesPlaceholder": "np. penicylina, laktoza",
       "privacyNote": "Przechowywane w postaci zaszyfrowanej i używane tylko po to, by dać Ci lepszy kontekst. Nie pytamy tu o leki, dodasz je w dowolnej chwili na stronie Leki."
-    },
-    "ai": {
-      "panelTitle": "Zobacz, jak wyglądają insighty",
-      "panelIntro": "Coach, codzienny briefing i oceny dla poszczególnych metryk zamieniają Twoje własne liczby w prosty język. Oto jak to wygląda, zanim cokolwiek podłączysz.",
-      "showSample": "Zobacz przykładowy briefing",
-      "sampleTitle": "Codzienny briefing",
-      "sampleTag": "Przykład",
-      "sampleAriaLabel": "Przykładowy codzienny briefing",
-      "sampleBody": "Waga niższa o 1,2 kg w ciągu dwóch tygodni. Tętno spoczynkowe stabilne na 58 bpm. Ciśnienie w normie przez 6 z 7 dni; jedyny wysoki odczyt nastąpił po późnej, słonej kolacji.",
-      "sampleCaption": "Tylko przykład, to nie są Twoje dane. Tak czyta się briefing, gdy insighty są włączone.",
-      "ladderTitle": "Trzy sposoby, by to włączyć",
-      "ladderLocalTitle": "Model lokalny: zapytania do AI zostają w Twojej sieci",
-      "ladderLocalBody": "Skieruj HealthLog na Ollama lub LM Studio na własnej maszynie. Za darmo i w pełni prywatnie: spokojny wybór domyślny.",
-      "ladderByokTitle": "Użyj własnego klucza",
-      "ladderByokBody": "Użyj własnego klucza OpenAI lub Anthropic. Działa na Twoim koncie i rozliczeniu, a poziom API domyślnie wyklucza Twoje dane z treningu.",
-      "ladderOauthTitle": "Zaloguj się przez subskrypcję",
-      "ladderOauthBody": "Podłącz konto ChatGPT. Bez kosztu za token, ale warunki poziomu konsumenckiego mogą wykorzystywać treści do treningu, więc to świadomy wybór, nigdy domyślny dla danych o zdrowiu.",
-      "keylessLine": "HealthLog jest w pełni użyteczny bez AI. Twoje kafelki, wykresy, trendy i eksporty działają; AI dokłada tylko odczyt prostym językiem.",
-      "setupCta": "Skonfiguruj (około minuty)",
-      "sharedKeyNote": "Ta instancja udostępnia już wspólnego dostawcę AI, więc insighty działają dla Ciebie od razu, bez konfiguracji.",
-      "offer": {
-        "title": "Ta instancja potrafi już napisać twoje podsumowanie zwykłym językiem.",
-        "body": "Operator udostępnia dostawcę, który działał po raz ostatni w ciągu ostatnich 24 godzin. Jedno dotknięcie włącza zwykły język; twoje dane trafią wtedy do tego jednego dostawcy i do nikogo więcej.",
-        "cta": "Włącz zwykły język",
-        "granted": "Włączone. Pierwsze podsumowanie pojawi się na pulpicie.",
-        "error": "Włączenie się nie powiodło. Spróbuj ponownie za chwilę."
-      },
-      "unavailable": {
-        "title": "Dostawca tej instancji w tej chwili nie odpowiada.",
-        "body": "HealthLog jest w pełni użyteczny bez zwykłego języka. Później możesz dodać w ustawieniach własnego dostawcę."
-      }
     },
     "steps": {
       "who": "Dla kogo jest ta kartoteka",
@@ -11175,7 +11144,6 @@
       "title": "Plany",
       "pageDescription": "Plany typu „jeśli… to” uzgodnione w rozmowach z Coachem. Potwierdź propozycję, aby Coach ją zapamiętał.",
       "readOnlyNote": "Coach jest teraz niedostępny, ale nadal możesz czytać i usuwać swoje plany.",
-      "proposalTitle": "Propozycja planu",
       "ifThen": "Jeśli {cue}, to {action}.",
       "targetPrefix": "Cel: {target}",
       "reviewPrefix": "Przegląd: {when}",

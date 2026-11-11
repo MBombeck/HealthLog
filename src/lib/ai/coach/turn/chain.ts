@@ -3,7 +3,7 @@
  * and decide between tool retrieval and the legacy snapshot path.
  */
 import { annotate } from "@/lib/logging/context";
-import { resolveProviderChain, resolveProvider } from "@/lib/ai/provider";
+import { resolveProviderChain } from "@/lib/ai/provider";
 import { assertConsentForChain } from "@/lib/ai/consent-guard";
 
 import { streamProviderError } from "./sse";
@@ -20,20 +20,16 @@ export async function resolveTurnChain(
   // snapshot-stuffing path.
   const chain = await resolveProviderChain(userId);
   if (chain.length === 0) {
-    const legacy = await resolveProvider(userId);
-    if (legacy.type === "none") {
-      annotate({
-        action: { name: "insights.coach.noProvider" },
-      });
-      return {
-        ok: false,
-        response: streamProviderError({
-          code: "coach.provider.none",
-          reason: "no_provider",
-        }),
-      };
-    }
-    chain.push({ providerType: "admin-openai", instance: legacy });
+    annotate({
+      action: { name: "insights.coach.noProvider" },
+    });
+    return {
+      ok: false,
+      response: streamProviderError({
+        code: "coach.provider.none",
+        reason: "no_provider",
+      }),
+    };
   }
 
   // v1.12.1 — consent gate before any server-managed external egress. When

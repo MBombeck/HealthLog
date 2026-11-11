@@ -3012,8 +3012,6 @@
     },
     "correlationRow": {
       "title": "Correlazioni",
-      "experimentCta": "Avvia esperimento di 7 giorni",
-      "experimentTooltip": "In arrivo",
       "emptyTitle": "Servono più dati per mostrare questa correlazione",
       "sourceChip": "su {n} misurazioni appaiate ({window})",
       "sourceWindowLast30": "Ultimi 30 giorni",
@@ -5174,7 +5172,9 @@
       "connectCta": "Collega un dispositivo",
       "logCta": "Registra la tua prima misurazione",
       "importCta": "Importa la cronologia esistente",
-      "modulesCta": "Scegli i tuoi moduli"
+      "modulesCta": "Scegli i tuoi moduli",
+      "aiOptional": "L'IA è facoltativa. Tutto funziona anche senza.",
+      "aiSetupCta": "Configura IA"
     },
     "welcomeBack": {
       "title": "Bentornato",
@@ -5194,37 +5194,6 @@
       "allergiesLabel": "Allergie o intolleranze",
       "allergiesPlaceholder": "es. penicillina, lattosio",
       "privacyNote": "Memorizzato cifrato e usato solo per darti un contesto migliore. Qui non chiediamo i tuoi farmaci: aggiungili quando vuoi dalla pagina Farmaci."
-    },
-    "ai": {
-      "panelTitle": "Guarda come sono gli insight",
-      "panelIntro": "Coach, il briefing quotidiano e le letture per metrica traducono i tuoi numeri in linguaggio chiaro. Ecco com'è, prima di collegare qualsiasi cosa.",
-      "showSample": "Vedi un briefing di esempio",
-      "sampleTitle": "Briefing quotidiano",
-      "sampleTag": "Esempio",
-      "sampleAriaLabel": "Briefing quotidiano di esempio",
-      "sampleBody": "Peso in calo di 1,2 kg in due settimane. Battito a riposo stabile a 58 bpm. Pressione nel range in 6 giorni su 7: l'unico valore alto è arrivato dopo una cena tardiva e salata.",
-      "sampleCaption": "Solo un esempio, non i tuoi dati. Ecco come si legge un briefing quando gli insight sono attivi.",
-      "ladderTitle": "Tre modi per attivarlo",
-      "ladderLocalTitle": "Modello locale: le richieste all’IA restano nella tua rete",
-      "ladderLocalBody": "Punta HealthLog su Ollama o LM Studio sulla tua macchina. Gratis e del tutto privato: la scelta tranquilla di default.",
-      "ladderByokTitle": "Usa la tua chiave",
-      "ladderByokBody": "Usa la tua chiave OpenAI o Anthropic. Gira sul tuo account e sulla tua fatturazione, e il piano API tiene i tuoi dati fuori dall'addestramento in modo predefinito.",
-      "ladderOauthTitle": "Accedi con un abbonamento",
-      "ladderOauthBody": "Collega un account ChatGPT. Nessun costo per token, ma i termini del piano consumer possono usare i contenuti per l'addestramento, quindi è una scelta deliberata, mai l'impostazione predefinita per i tuoi dati sanitari.",
-      "keylessLine": "HealthLog è pienamente utile anche senza IA. Le tue schede, i grafici, i trend e le esportazioni funzionano tutti; l'IA aggiunge solo la lettura in linguaggio chiaro.",
-      "setupCta": "Configuralo (circa un minuto)",
-      "sharedKeyNote": "Questa istanza fornisce già un provider IA condiviso, quindi gli insight funzionano per te fin da subito, senza alcuna configurazione.",
-      "offer": {
-        "title": "Questa istanza può già scrivere il tuo riepilogo in parole semplici.",
-        "body": "Il gestore mette a disposizione un fornitore che ha funzionato nelle ultime 24 ore. Con un tocco attivi le parole semplici; i tuoi dati andranno allora a quell’unico fornitore e a nessun altro.",
-        "cta": "Attiva le parole semplici",
-        "granted": "Attivato. Il primo riepilogo comparirà sulla tua dashboard.",
-        "error": "L’attivazione non è riuscita. Riprova tra un momento."
-      },
-      "unavailable": {
-        "title": "Il fornitore di questa istanza al momento non risponde.",
-        "body": "HealthLog resta pienamente utile senza le parole semplici. Potrai aggiungere un fornitore tuo più avanti nelle impostazioni."
-      }
     },
     "steps": {
       "who": "A chi appartiene questa cartella",
@@ -11175,7 +11144,6 @@
       "title": "Piani",
       "pageDescription": "Piani «se… allora» concordati nelle conversazioni con il Coach. Conferma una proposta perché il Coach la tenga a mente.",
       "readOnlyNote": "Il Coach non è disponibile al momento, ma puoi ancora leggere ed eliminare i tuoi piani.",
-      "proposalTitle": "Proposta di piano",
       "ifThen": "Se {cue}, allora {action}.",
       "targetPrefix": "Obiettivo: {target}",
       "reviewPrefix": "Verifica: {when}",

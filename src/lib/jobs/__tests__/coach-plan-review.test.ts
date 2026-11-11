@@ -1,87 +1,49 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
-  resolvePlanMetric,
-  buildExperimentOutcome,
   planDayValue,
-  type ExperimentOutcomeInput,
+  runCoachPlanReviewTick,
 } from "@/lib/jobs/coach-plan-review";
 
-describe("resolvePlanMetric", () => {
-  it("maps common plan metric strings", () => {
-    expect(resolvePlanMetric("SLEEP")?.type).toBe("SLEEP_DURATION");
-    expect(resolvePlanMetric("blood pressure")?.type).toBe(
-      "BLOOD_PRESSURE_SYS",
+type ReviewPrisma = Parameters<typeof runCoachPlanReviewTick>[0];
+
+describe("runCoachPlanReviewTick", () => {
+  function fakePrisma(relatedPlanIds: Array<string | null>, flipped = 0) {
+    return {
+      coachReminder: {
+        findMany: vi.fn(async () =>
+          relatedPlanIds.map((relatedPlanId) => ({ relatedPlanId })),
+        ),
+      },
+      coachPlan: {
+        updateMany: vi.fn(async () => ({ count: flipped })),
+        update: vi.fn(),
+      },
+    };
+  }
+
+  it("moves the active plans behind fired reviews to reviewed, and stores no verdict", async () => {
+    const prisma = fakePrisma(["p1", "p2", "p1", null], 2);
+    const summary = await runCoachPlanReviewTick(
+      prisma as unknown as ReviewPrisma,
     );
-    expect(resolvePlanMetric("Steps")?.type).toBe("ACTIVITY_STEPS");
-    expect(resolvePlanMetric("WEIGHT")?.valence).toBe("neutral");
-    expect(resolvePlanMetric("glucose")?.valence).toBe("lower-better");
-    expect(resolvePlanMetric("HRV")?.valence).toBe("higher-better");
-  });
 
-  it("returns null for an unreadable metric", () => {
-    expect(resolvePlanMetric("mood vibes")).toBeNull();
-  });
-});
-
-const baseOutcome: ExperimentOutcomeInput = {
-  label: "sleep",
-  valence: "higher-better",
-  beforeMean: 6.0,
-  afterMean: 6.6,
-  beforeDays: 7,
-  afterDays: 7,
-  spread: 0.4,
-};
-
-describe("buildExperimentOutcome", () => {
-  it("reports an improvement as association, never proof", () => {
-    const out = buildExperimentOutcome(baseOutcome);
-    expect(out.verdict).toBe("improved");
-    expect(out.prose).toMatch(/worth keeping/i);
-    expect(out.prose).toMatch(/not proven/i);
-    expect(out.prose).not.toMatch(/\bis proven\b|it worked|cured/i);
-  });
-
-  it("does not cheerlead an adverse trend — routes to the doctor", () => {
-    const out = buildExperimentOutcome({
-      ...baseOutcome,
-      label: "systolic",
-      valence: "lower-better",
-      beforeMean: 124,
-      afterMean: 133,
-      spread: 6,
+    expect(summary).toEqual({ reviewed: 2 });
+    expect(prisma.coachPlan.updateMany).toHaveBeenCalledTimes(1);
+    expect(prisma.coachPlan.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["p1", "p2"] }, deletedAt: null, status: "active" },
+      data: { status: "reviewed" },
     });
-    expect(out.verdict).toBe("worsened");
-    expect(out.prose).toMatch(/doctor/i);
-    expect(out.prose).not.toMatch(/great job|keep it up|worked/i);
+    expect(prisma.coachPlan.update).not.toHaveBeenCalled();
   });
 
-  it("reports a null result honestly", () => {
-    const out = buildExperimentOutcome({
-      ...baseOutcome,
-      afterMean: 6.05,
-      spread: 0.4,
+  it("writes nothing when no review fired", async () => {
+    const prisma = fakePrisma([]);
+    expect(
+      await runCoachPlanReviewTick(prisma as unknown as ReviewPrisma),
+    ).toEqual({
+      reviewed: 0,
     });
-    expect(out.verdict).toBe("no_change");
-    expect(out.prose).toMatch(/no measurable change/i);
-  });
-
-  it("flags insufficient data on a thin side", () => {
-    const out = buildExperimentOutcome({ ...baseOutcome, afterDays: 1 });
-    expect(out.verdict).toBe("insufficient");
-  });
-
-  it("reports a neutral-metric change without a good/bad valence", () => {
-    const out = buildExperimentOutcome({
-      ...baseOutcome,
-      label: "weight",
-      valence: "neutral",
-      beforeMean: 82,
-      afterMean: 80,
-      spread: 1,
-    });
-    expect(out.verdict).toBe("changed");
-    expect(out.prose).toMatch(/worth noting, not proven/i);
+    expect(prisma.coachPlan.updateMany).not.toHaveBeenCalled();
   });
 });
 

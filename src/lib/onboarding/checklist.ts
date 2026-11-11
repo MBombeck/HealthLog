@@ -83,11 +83,12 @@ export interface ChecklistInputs {
    */
   insightsConfigured: boolean;
   /**
-   * Whether AI can be set up from here at all (`ai.provider.canConfigure`):
-   * false while the operator has AI switched off and inside a record
-   * somebody else owns. The AI row exists only when true. HealthLog is
-   * complete without AI, so the list never carries a to-do nobody on this
-   * screen can finish.
+   * Whether AI can be set up from here at all (`ai.provider.canConfigure`)
+   * and is still wanted: false while the operator has AI switched off, inside
+   * a record somebody else owns, and once the person switched the Coach and
+   * AI analysis off. The AI row exists only when true. HealthLog is complete
+   * without AI, so the list never carries a to-do nobody on this screen can
+   * finish or that was declined.
    */
   aiConfigurable: boolean;
   /** Dismissed item ids (per-item localStorage state). */

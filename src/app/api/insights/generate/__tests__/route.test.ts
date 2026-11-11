@@ -93,11 +93,7 @@ vi.mock("@/lib/ai/provider", async () => {
     );
   return {
     ...actual,
-    resolveProvider: vi.fn(),
-    // v1.4.16: the route consults the multi-provider chain
-    // first; the existing single-provider mocks return an empty chain
-    // so the route falls through to `resolveProvider()` and the legacy
-    // test fixtures keep behaving exactly as before.
+    // Empty unless a test hands the route a provider (`serveFrom`).
     resolveProviderChain: vi.fn(async () => []),
   };
 });
@@ -167,7 +163,7 @@ import { NextRequest } from "next/server";
 
 import { GET, POST, resolveInsightsRateLimit } from "../route";
 import { enqueueStatusRefillForUser } from "@/lib/insights/comprehensive-generate";
-import { resolveProvider } from "@/lib/ai/provider";
+import { resolveProviderChain } from "@/lib/ai/provider";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
 import { hasUsableStatusProvider } from "@/lib/insights/status-provider";
@@ -214,8 +210,17 @@ beforeEach(() => {
   });
 });
 
+type ChainEntries = Awaited<ReturnType<typeof resolveProviderChain>>;
+
+/** The chain the route resolves: one operator-key entry serving `instance`. */
+function serveFrom(instance: unknown) {
+  vi.mocked(resolveProviderChain).mockResolvedValue([
+    { providerType: "admin-openai", instance },
+  ] as unknown as ChainEntries);
+}
+
 function makeWorkingProvider() {
-  vi.mocked(resolveProvider).mockResolvedValue({
+  serveFrom({
     type: "openai",
     generateCompletion: vi.fn(async () => ({
       content: JSON.stringify({
@@ -230,7 +235,7 @@ function makeWorkingProvider() {
       providerType: "openai",
       model: "gpt-4",
     })),
-  } as unknown as Awaited<ReturnType<typeof resolveProvider>>);
+  });
 }
 
 interface ApiErrorEnvelope {
@@ -253,13 +258,12 @@ function jsonRequest(body: unknown = {}): Request {
 function makeProviderThatThrows(
   err: Error & { httpStatus?: number; bodyExcerpt?: string },
 ) {
-  vi.mocked(resolveProvider).mockResolvedValue({
+  serveFrom({
     type: "openai",
     generateCompletion: vi.fn(async () => {
       throw err;
     }),
-    // The route only calls generateCompletion; pad the type for TS.
-  } as unknown as Awaited<ReturnType<typeof resolveProvider>>);
+  });
 }
 
 describe("POST /api/insights/generate — daily token ceiling", () => {
@@ -314,7 +318,8 @@ describe("POST /api/insights/generate — a provider the health ledger benched",
       httpStatus: 401,
     });
     makeProviderThatThrows(err);
-    const provider = await vi.mocked(resolveProvider)("u-1");
+    const [{ instance: provider }] =
+      await vi.mocked(resolveProviderChain)("u-1");
     const body = JSON.stringify({ force: true });
     const request = new NextRequest("http://localhost/api/insights/generate", {
       method: "POST",
@@ -894,7 +899,7 @@ describe("GET /api/insights/generate — read-only advisor read", () => {
     expect(body.data.cached).toBe(true);
     expect(body.data.insights).toEqual(cached);
     // No completion is ever run on the read path.
-    expect(resolveProvider).not.toHaveBeenCalled();
+    expect(resolveProviderChain).not.toHaveBeenCalled();
     // A fresh cache (just now) does not trigger a warm — and the payload
     // says so, so the client never starts a convergence poll.
     expect(enqueueForceWarm).not.toHaveBeenCalled();
@@ -919,7 +924,7 @@ describe("GET /api/insights/generate — read-only advisor read", () => {
       userId: "u-1",
       locale: "en",
     });
-    expect(resolveProvider).not.toHaveBeenCalled();
+    expect(resolveProviderChain).not.toHaveBeenCalled();
     // The stale serve is honest: `revalidating: true` rides on the
     // payload so the client polls (bounded) until the warm lands.
     const body = (await res.json()) as { data: { revalidating: boolean } };
@@ -953,7 +958,7 @@ describe("GET /api/insights/generate — read-only advisor read", () => {
       userId: "u-1",
       locale: "en",
     });
-    expect(resolveProvider).not.toHaveBeenCalled();
+    expect(resolveProviderChain).not.toHaveBeenCalled();
   });
 
   it("serves a fresh cache whose tag matches the reader's language", async () => {

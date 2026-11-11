@@ -1384,8 +1384,6 @@ describe("Coach snapshot — free-text fields wrap through sanitizeForPrompt (L-
       "src/lib/ai/coach/illness-snapshot.ts",
       "src/lib/ai/coach/glp1-snapshot.ts",
       "src/lib/ai/coach/memory-snapshot.ts",
-      "src/lib/ai/coach/plans.ts",
-      "src/lib/ai/coach/facts.ts",
       "src/lib/insights/features.ts",
       "src/lib/insights/derived/adherence-storyline.ts",
     ]) {

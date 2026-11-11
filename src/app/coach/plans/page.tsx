@@ -23,6 +23,7 @@ import {
   type CoachPlanDTO,
 } from "@/hooks/use-coach-plans";
 import { useAiCapabilityAnswer } from "@/hooks/use-ai-capability";
+import { planMetricLabel } from "@/lib/ai/coach/plan-metric";
 import { useTranslations } from "@/lib/i18n/context";
 import { formatDateOrRelative } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -109,7 +110,7 @@ function CoachPlansBody({ readOnly }: { readOnly: boolean }) {
           </p>
         ) : null}
         <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-          <span className="uppercase">{plan.metric}</span>
+          <span>{planMetricLabel(plan.metric, t)}</span>
           <span>{t(`coach.plans.status.${plan.status}`)}</span>
           <span>{formatDateOrRelative(plan.updatedAt, t)}</span>
           {plan.reviewDate ? (
