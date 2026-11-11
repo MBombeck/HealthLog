@@ -29,6 +29,7 @@ export function ReminderFormSheet({
   isEdit,
   form,
   setForm,
+  dirty,
   saving,
   onClose,
   onSubmit,
@@ -37,6 +38,8 @@ export function ReminderFormSheet({
   isEdit: boolean;
   form: FormState;
   setForm: Dispatch<SetStateAction<FormState>>;
+  /** The form differs from what it opened with. */
+  dirty: boolean;
   saving: boolean;
   onClose: () => void;
   onSubmit: () => void;
@@ -48,6 +51,7 @@ export function ReminderFormSheet({
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
+      dirty={dirty}
       title={t(
         isEdit
           ? "measurementReminders.form.editTitle"

@@ -82,7 +82,8 @@ export function PractitionerSheet({
   // open, so a second edit never shows the first one's values and a create
   // after an edit starts empty — without an effect that copies props into
   // state and briefly renders the stale pair.
-  const [draft, setDraft] = useState<Draft>(() => draftFrom(practitioner));
+  const [seed] = useState<Draft>(() => draftFrom(practitioner));
+  const [draft, setDraft] = useState<Draft>(seed);
   const [error, setError] = useState<string | null>(null);
 
   const pending = create.isPending || update.isPending;
@@ -122,6 +123,7 @@ export function PractitionerSheet({
     <ResponsiveSheet
       open={open}
       onOpenChange={onOpenChange}
+      dirty={JSON.stringify(draft) !== JSON.stringify(seed)}
       title={t(
         practitioner ? "practitioners.editTitle" : "practitioners.createTitle",
       )}

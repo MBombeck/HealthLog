@@ -108,6 +108,26 @@ const STEP_ICONS = {
 
 type StepNumber = keyof typeof STEP_ICONS;
 
+/**
+ * Whether closing would lose input: what a save would send now against what
+ * it would have sent on opening. Moving between steps or schedules is not
+ * input.
+ */
+function wizardHasInput(
+  seed: WizardPayload,
+  payload: WizardPayload,
+  mode: MedicationWizardDialogProps["mode"],
+): boolean {
+  try {
+    return (
+      JSON.stringify(buildCreateBody(payload, mode)) !==
+      JSON.stringify(buildCreateBody(seed, mode))
+    );
+  } catch {
+    return true;
+  }
+}
+
 export function MedicationWizardDialog(props: MedicationWizardDialogProps) {
   // Key the inner state container on (open + mode + medication id) so
   // every open gets a fresh state tree. React unmounts the inner
@@ -139,18 +159,15 @@ function WizardDialogShell({
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const [payload, setPayload] = useState<WizardPayload>(() =>
+  const [seed] = useState<WizardPayload>(() =>
     mode === "edit" && initial
       ? hydrateWizardPayload(initial)
       : emptyWizardPayload(),
   );
-  const [step, setStep] = useState<StepNumber>(() => {
-    if (mode === "edit" && initial) {
-      const hydrated = hydrateWizardPayload(initial);
-      return landingStepForEdit(hydrated) as StepNumber;
-    }
-    return 1;
-  });
+  const [payload, setPayload] = useState<WizardPayload>(seed);
+  const [step, setStep] = useState<StepNumber>(() =>
+    mode === "edit" && initial ? (landingStepForEdit(seed) as StepNumber) : 1,
+  );
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [nlOpen, setNlOpen] = useState(false);
@@ -415,6 +432,7 @@ function WizardDialogShell({
       <ResponsiveSheet
         open={open}
         onOpenChange={onOpenChange}
+        dirty={() => wizardHasInput(seed, payload, mode)}
         title={headerTitle}
         hideHeader
         showCloseButton

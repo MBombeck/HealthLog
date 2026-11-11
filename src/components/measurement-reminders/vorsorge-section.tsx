@@ -109,6 +109,7 @@ export function VorsorgeSection({
 
   function openCreate() {
     setForm(EMPTY_FORM);
+    setInitialForm(EMPTY_FORM);
     setEditing("new");
   }
 
@@ -277,6 +278,7 @@ export function VorsorgeSection({
         isEdit={isEdit}
         form={form}
         setForm={setForm}
+        dirty={JSON.stringify(form) !== JSON.stringify(initialForm)}
         saving={saving}
         onClose={closeSheet}
         onSubmit={submit}
