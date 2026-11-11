@@ -29,11 +29,11 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { FreeTextTakeOver } from "@/components/records/free-text-take-over";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import { cn } from "@/lib/utils";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
 import { useAboutMeSaveTimeoutMs } from "@/hooks/use-ai-capability";
 
@@ -46,9 +46,6 @@ interface AboutMeData {
   coachFocus: string | null;
   fieldMaxChars: number;
 }
-
-const FIELD_CLASSES =
-  "border-input bg-background placeholder:text-muted-foreground focus-visible:border-input-focus w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none";
 
 export function ConditionsManager() {
   const { t } = useTranslations();
@@ -112,10 +109,10 @@ export function ConditionsManager() {
     return (
       <div className="space-y-1.5">
         <Label htmlFor={`records-conditions-${key}`}>{label}</Label>
-        <textarea
+        <Textarea
           id={`records-conditions-${key}`}
           data-testid={`records-conditions-${key}`}
-          className={cn(FIELD_CLASSES, "min-h-16 resize-y")}
+          className="resize-y"
           rows={2}
           value={value[key]}
           maxLength={fieldMaxChars}
