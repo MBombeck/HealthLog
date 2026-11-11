@@ -3017,8 +3017,6 @@
     },
     "correlationRow": {
       "title": "관계",
-      "experimentCta": "7일 실험 해보기",
-      "experimentTooltip": "곧 제공돼요",
       "emptyTitle": "이 관계를 보려면 데이터가 더 필요해요",
       "sourceChip": "짝지은 측정값 {n}개 기준 ({window})",
       "sourceWindowLast30": "최근 30일",

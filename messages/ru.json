@@ -3017,8 +3017,6 @@
     },
     "correlationRow": {
       "title": "Связи",
-      "experimentCta": "Попробовать 7-дневный эксперимент",
-      "experimentTooltip": "Скоро",
       "emptyTitle": "Нужно больше данных, чтобы увидеть эту связь",
       "sourceChip": "на основе {n} парных измерений ({window})",
       "sourceWindowLast30": "последние 30 дней",

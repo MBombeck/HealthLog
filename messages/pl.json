@@ -3017,8 +3017,6 @@
     },
     "correlationRow": {
       "title": "Korelacje",
-      "experimentCta": "Uruchom 7-dniowy eksperyment",
-      "experimentTooltip": "Wkrótce",
       "emptyTitle": "Potrzeba więcej danych, aby pokazać tę korelację",
       "sourceChip": "na podstawie {n} sparowanych pomiarów ({window})",
       "sourceWindowLast30": "Ostatnie 30 dni",

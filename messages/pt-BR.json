@@ -3017,8 +3017,6 @@
     },
     "correlationRow": {
       "title": "Relações",
-      "experimentCta": "Tente um experimento de 7 dias",
-      "experimentTooltip": "Em breve",
       "emptyTitle": "Precisa de mais dados para ver esta relação",
       "sourceChip": "com base em {n} leituras pareadas ({window})",
       "sourceWindowLast30": "últimos 30 dias",

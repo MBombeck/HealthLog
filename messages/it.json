@@ -3017,8 +3017,6 @@
     },
     "correlationRow": {
       "title": "Correlazioni",
-      "experimentCta": "Avvia esperimento di 7 giorni",
-      "experimentTooltip": "In arrivo",
       "emptyTitle": "Servono più dati per mostrare questa correlazione",
       "sourceChip": "su {n} misurazioni appaiate ({window})",
       "sourceWindowLast30": "Ultimi 30 giorni",

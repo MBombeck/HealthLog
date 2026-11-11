@@ -3017,8 +3017,6 @@
     },
     "correlationRow": {
       "title": "Verbanden",
-      "experimentCta": "Probeer een experiment van 7 dagen",
-      "experimentTooltip": "Binnenkort beschikbaar",
       "emptyTitle": "Meer gegevens nodig om dit verband te zien",
       "sourceChip": "gebaseerd op {n} gekoppelde metingen ({window})",
       "sourceWindowLast30": "afgelopen 30 dagen",

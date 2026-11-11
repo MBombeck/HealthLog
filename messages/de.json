@@ -3017,8 +3017,6 @@
     },
     "correlationRow": {
       "title": "Zusammenhänge",
-      "experimentCta": "7-Tage-Experiment starten",
-      "experimentTooltip": "Bald verfügbar",
       "emptyTitle": "Mehr Daten nötig, um diesen Zusammenhang zu zeigen",
       "sourceChip": "basierend auf {n} gepaarten Messungen ({window})",
       "sourceWindowLast30": "letzte 30 Tage",
