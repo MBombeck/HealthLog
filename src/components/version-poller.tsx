@@ -19,7 +19,8 @@ import { HEALTHLOG_CACHE_NAME_RE } from "@/lib/pwa/sw-cache-policy";
  * the user trips the error — typically in the middle of a
  * navigation flow.
  *
- * This component runs the check pro-actively. Every 60 s it fetches
+ * This component runs the check pro-actively. Every 60 s while the tab
+ * is in view (and once on coming back to it) it fetches
  * `/api/version` and compares the live version string against
  * `NEXT_PUBLIC_APP_VERSION` (injected from `package.json` at build
  * time by `next.config.ts`). When the live version moves ahead of
@@ -91,6 +92,19 @@ async function fetchLiveVersion(signal: AbortSignal): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Whether a tab that comes back into view checks the version now. A hidden
+ * tab skips its ticks, so the first look after a full interval away is due at
+ * once; a quick switch back and forth is not a reason to ask again.
+ */
+export function versionCheckDueOnReturn(
+  visibility: DocumentVisibilityState,
+  lastCheckedAt: number,
+  now: number,
+): boolean {
+  return visibility === "visible" && now - lastCheckedAt >= POLL_INTERVAL_MS;
 }
 
 // In-memory mirror of the session guard: under strict-privacy modes
@@ -165,8 +179,10 @@ export function VersionPoller(): null {
     if (typeof window === "undefined") return;
 
     const controller = new AbortController();
+    let lastCheckedAt = 0;
 
     async function checkOnce(): Promise<void> {
+      lastCheckedAt = Date.now();
       const live = await fetchLiveVersion(controller.signal);
       let lastReloadedFor: string | null = null;
       try {
@@ -201,16 +217,31 @@ export function VersionPoller(): null {
     }
 
     // First check 5 s after mount — gives the app a chance to settle
-    // before we surface anything. Then on the recurring interval.
-    const initial = window.setTimeout(() => void checkOnce(), 5_000);
-    const interval = window.setInterval(
-      () => void checkOnce(),
-      POLL_INTERVAL_MS,
-    );
+    // before we surface anything. Then on the recurring interval, but only
+    // while the tab is in view: a background tab asks nothing and checks
+    // once when it comes back.
+    const tick = () => {
+      if (document.visibilityState === "visible") void checkOnce();
+    };
+    const onVisibilityChange = () => {
+      if (
+        versionCheckDueOnReturn(
+          document.visibilityState,
+          lastCheckedAt,
+          Date.now(),
+        )
+      ) {
+        void checkOnce();
+      }
+    };
+    const initial = window.setTimeout(tick, 5_000);
+    const interval = window.setInterval(tick, POLL_INTERVAL_MS);
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
       window.clearTimeout(initial);
       window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       controller.abort();
     };
   }, [t]);
