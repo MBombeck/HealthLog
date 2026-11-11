@@ -16,7 +16,10 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageAuthGate } from "@/components/ui/page-auth-gate";
 import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh-indicator";
-import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import {
+  ResponsiveSheet,
+  sheetBodyHasUnsavedInput,
+} from "@/components/ui/responsive-sheet";
 import { RevealWhenSettled } from "@/components/ui/reveal-when-settled";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus } from "lucide-react";
@@ -179,6 +182,7 @@ export default function MeasurementsPage() {
           refuses. */}
       <ResponsiveSheet
         open={dialogOpen && canAddMeasurement}
+        dirty={sheetBodyHasUnsavedInput}
         onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) {

@@ -566,7 +566,7 @@ function FullBackupCard() {
             data-lpignore="true"
             data-1p-ignore="true"
             data-bwignore="true"
-            className="h-9 text-sm"
+            className="h-9"
           />
           <p className="text-muted-foreground text-xs">
             {t("settings.sections.export.cards.fullBackup.passphraseHelp")}

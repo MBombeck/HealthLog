@@ -6,9 +6,6 @@ const hookState = vi.hoisted(() => ({
   cursor: 0,
   values: [] as unknown[],
 }));
-const captureState = vi.hoisted(() => ({
-  dirty: true,
-}));
 
 // v1.36.x — the picker asks what the record allows before it offers a kind.
 // These fixtures are the caller's own record, which is every kind; the
@@ -57,29 +54,17 @@ vi.mock("@/lib/i18n/context", () => ({
   useTranslations: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock("@/components/dashboard/quick-entry-sheets", () => ({
-  sheetBodyHasUnsavedInput: () => captureState.dirty,
-}));
-
 function markedComponent(displayName: string) {
   const Component = ({ children }: { children?: ReactNode }) => children;
   Component.displayName = displayName;
   return Component;
 }
 
+const sheetBodyHasUnsavedInput = vi.hoisted(() => () => true);
+
 vi.mock("@/components/ui/responsive-sheet", () => ({
   ResponsiveSheet: markedComponent("ResponsiveSheet"),
-}));
-
-vi.mock("@/components/ui/alert-dialog", () => ({
-  AlertDialog: markedComponent("AlertDialog"),
-  AlertDialogAction: markedComponent("AlertDialogAction"),
-  AlertDialogCancel: markedComponent("AlertDialogCancel"),
-  AlertDialogContent: markedComponent("AlertDialogContent"),
-  AlertDialogDescription: markedComponent("AlertDialogDescription"),
-  AlertDialogFooter: markedComponent("AlertDialogFooter"),
-  AlertDialogHeader: markedComponent("AlertDialogHeader"),
-  AlertDialogTitle: markedComponent("AlertDialogTitle"),
+  sheetBodyHasUnsavedInput,
 }));
 
 vi.mock("@/components/dashboard/quick-entry-forms.lazy", () => ({
@@ -141,14 +126,13 @@ function formSheet(tree: ReactNode): TestElement {
   return sheets[1];
 }
 
-describe("<CapturePicker> — confirmed capture-form discard", () => {
+describe("<CapturePicker> — capture-form discard", () => {
   beforeEach(() => {
     hookState.cursor = 0;
     hookState.values.length = 0;
-    captureState.dirty = true;
   });
 
-  it("asks before discarding a dirty form and closes on confirm", () => {
+  it("hands the form sheet the dirty check, so a dismissal asks first", () => {
     let tree = renderPicker();
 
     // Choose the mood capture; the form sheet opens with the mood form.
@@ -158,18 +142,12 @@ describe("<CapturePicker> — confirmed capture-form discard", () => {
     tree = renderPicker();
     expect(formSheet(tree).props.open).toBe(true);
     expect(findMarked(tree, "MoodForm")).not.toBeNull();
+    // The sheet asks before a dismissal drops typed input
+    // (`responsive-sheet.test.tsx` pins the asking).
+    expect(formSheet(tree).props.dirty).toBe(sheetBodyHasUnsavedInput);
 
-    // A dirty dismiss must not close outright — it raises the confirm.
+    // A close the sheet lets through closes the form.
     (formSheet(tree).props.onOpenChange as (open: boolean) => void)(false);
-    tree = renderPicker();
-    const confirmDiscard = findMarked(tree, "AlertDialogAction");
-    expect(confirmDiscard).not.toBeNull();
-    // The form stays open behind the confirm.
-    expect(formSheet(tree).props.open).toBe(true);
-    expect(findMarked(tree, "MoodForm")).not.toBeNull();
-
-    // Confirming the discard closes the form.
-    (confirmDiscard?.props.onClick as () => void)();
     tree = renderPicker();
     expect(formSheet(tree).props.open).toBe(false);
     expect(findMarked(tree, "MoodForm")).toBeNull();

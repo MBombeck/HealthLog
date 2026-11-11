@@ -24,6 +24,8 @@ const ALLOWED: Record<string, string> = {
   "lib/url-state.ts": "the helper itself",
   "components/clinician/share-unlock-gate.tsx":
     "scrubs a passphrase from the fragment synchronously, before the unlock request leaves; no query state",
+  "components/ui/sheet-history.ts":
+    "a sheet's own history entry: the page's URL unchanged, never query state",
   "components/documents/vault/selection-history.ts":
     "closeDocumentSelectionHistoryEntry takes a history-shaped argument for its tests; the page passes `urlStateHistory`",
 };

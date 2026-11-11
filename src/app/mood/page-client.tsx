@@ -13,7 +13,10 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageAuthGate } from "@/components/ui/page-auth-gate";
 import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh-indicator";
-import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import {
+  ResponsiveSheet,
+  sheetBodyHasUnsavedInput,
+} from "@/components/ui/responsive-sheet";
 import { ArrowRight, Plus, Wrench } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
@@ -177,6 +180,7 @@ export default function MoodPageClient() {
       <ResponsiveSheet
         open={sheetOpen}
         onOpenChange={setSheetOpen}
+        dirty={sheetBodyHasUnsavedInput}
         title={t("dashboard.quickAddMood")}
         footer={<div ref={setFooterEl} className="flex w-full" />}
       >

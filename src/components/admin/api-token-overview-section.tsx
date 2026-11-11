@@ -5,11 +5,10 @@ import { Key, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { formatDate, formatDateTime } from "@/lib/format";
 import type { Formatters } from "@/lib/format-locale";
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -21,8 +20,9 @@ import { type ApiTokenInfo } from "./_shared";
 import { apiGet } from "@/lib/api/api-fetch";
 
 /**
- * Wraps a string in `truncate` + tooltip so a long token name /
- * username / permission cannot push the row past its bounds.
+ * Wraps a string in `truncate` + a popover so a long token name /
+ * username cannot push the row past its bounds, and a tap still shows all
+ * of it.
  *
  * v1.4.19 (4th attempt) — earlier fixes (column-hide,
  * mobile card-list, mobile-strip `no-scrollbar`) cleared every
@@ -34,11 +34,10 @@ import { apiGet } from "@/lib/api/api-fetch";
  * desktop table cells had no upper-bound on width — a long token
  * name on a 768-1024 px viewport could spill into the next column.
  *
- * Switching every potentially-long cell to a hover tooltip means
- * the visible row stays inside the card no matter what the data
- * looks like. The native `title` attribute is a graceful fallback
- * for screen readers and right-click → "view full name" on desktop;
- * the radix tooltip handles hover and keyboard focus.
+ * Truncating every potentially-long cell means the visible row stays
+ * inside the card no matter what the data looks like. The full value opens
+ * on a tap or a key (a hover tooltip never opened on a phone); `title`
+ * still shows it on hover.
  */
 function TruncatedCell({
   value,
@@ -48,16 +47,17 @@ function TruncatedCell({
   className?: string;
 }) {
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className={`block truncate ${className ?? ""}`} title={value}>
-            {value}
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>{value}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Popover>
+      <PopoverTrigger
+        className={`focus-visible:ring-ring/50 block w-full truncate rounded-sm text-left focus-visible:ring-2 focus-visible:outline-none ${className ?? ""}`}
+        title={value}
+      >
+        {value}
+      </PopoverTrigger>
+      <PopoverContent align="start" className="break-all">
+        {value}
+      </PopoverContent>
+    </Popover>
   );
 }
 

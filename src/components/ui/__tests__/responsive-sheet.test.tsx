@@ -12,14 +12,34 @@ import { renderToStaticMarkup } from "react-dom/server";
 // static markup.
 
 let mobile = false;
+// The dismissal handler the primitive hands Radix, kept to call it as Radix
+// would on a backdrop tap, Escape, a swipe or the X.
+const radix: { onOpenChange: ((open: boolean) => void) | null } = {
+  onOpenChange: null,
+};
 
 vi.mock("@/hooks/use-is-mobile", () => ({
   useIsMobile: () => mobile,
 }));
 
+vi.mock("@/components/forms/use-seeded-form-dismissal", () => ({
+  SeededFormDiscardDialog: ({ open }: { open: boolean }) =>
+    open ? <div data-slot="mock-discard" /> : null,
+}));
+
 vi.mock("@/components/ui/sheet", () => ({
-  Sheet: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
-    open ? <div data-slot="mock-sheet">{children}</div> : null,
+  Sheet: ({
+    children,
+    open,
+    onOpenChange,
+  }: {
+    children: React.ReactNode;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+  }) => {
+    radix.onOpenChange = onOpenChange;
+    return open ? <div data-slot="mock-sheet">{children}</div> : null;
+  },
   SheetContent: ({
     children,
     className,
@@ -62,8 +82,18 @@ vi.mock("@/components/ui/sheet", () => ({
 }));
 
 vi.mock("@/components/ui/dialog", () => ({
-  Dialog: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
-    open ? <div data-slot="mock-dialog">{children}</div> : null,
+  Dialog: ({
+    children,
+    open,
+    onOpenChange,
+  }: {
+    children: React.ReactNode;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+  }) => {
+    radix.onOpenChange = onOpenChange;
+    return open ? <div data-slot="mock-dialog">{children}</div> : null;
+  },
   DialogContent: ({
     children,
     className,
@@ -323,6 +353,44 @@ describe("<ResponsiveSheet>", () => {
     onOpenChange(true);
     expect(onOpenChange).toHaveBeenCalledWith(true);
   });
+});
+
+describe("<ResponsiveSheet> dismissal with unsaved input", () => {
+  function dismiss(dirty: boolean | (() => boolean) | undefined) {
+    const onOpenChange = vi.fn();
+    renderToStaticMarkup(
+      <ResponsiveSheet
+        open
+        onOpenChange={onOpenChange}
+        title="Add medication"
+        dirty={dirty}
+      >
+        <p>body</p>
+      </ResponsiveSheet>,
+    );
+    radix.onOpenChange?.(false);
+    return onOpenChange;
+  }
+
+  it.each([true, () => true])(
+    "keeps the sheet open when the form has input (%s)",
+    (dirty) => {
+      mobile = true;
+      expect(dismiss(dirty)).not.toHaveBeenCalled();
+      mobile = false;
+      expect(dismiss(dirty)).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([false, () => false, undefined])(
+    "closes at once when there is nothing to lose (%s)",
+    (dirty) => {
+      mobile = true;
+      expect(dismiss(dirty)).toHaveBeenCalledWith(false);
+      mobile = false;
+      expect(dismiss(dirty)).toHaveBeenCalledWith(false);
+    },
+  );
 });
 
 describe("keepKeyboardDownOnOpen (phone branch open focus)", () => {

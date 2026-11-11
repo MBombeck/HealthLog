@@ -211,7 +211,7 @@ export function JsonImportCard() {
           maxLength={MAX_PASTE_CHARS}
           spellCheck={false}
           placeholder='{"measurements":[…],"moodEntries":[…]}'
-          className="font-mono text-xs"
+          className="font-mono sm:pointer-fine:text-xs"
         />
         <p className="text-muted-foreground text-right text-xs tabular-nums">
           {t("settings.sections.export.import.charCount", {

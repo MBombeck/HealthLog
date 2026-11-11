@@ -149,7 +149,7 @@ export function CatalogPicker({
               />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[--radix-popover-trigger-width] p-2">
+          <PopoverContent className="w-(--radix-popover-trigger-width) max-w-none p-2">
             <Input
               value={term}
               onChange={(event) => setTerm(event.target.value)}

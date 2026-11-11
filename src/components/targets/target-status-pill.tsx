@@ -1,11 +1,10 @@
 "use client";
 
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useTranslations } from "@/lib/i18n/context";
 import { ScorePill } from "@/components/ui/score-pill";
 
@@ -185,9 +184,9 @@ export interface TargetStatusPillProps {
 }
 
 /**
- * Verbal status pill with a tooltip carrying the target range + the
- * guideline source. The pill colour is derived from the classification
- * category's semantic group; unmapped categories paint amber.
+ * Verbal status pill; a tap shows the target range + the guideline source.
+ * The pill colour is derived from the classification category's semantic
+ * group; unmapped categories paint amber.
  */
 export function TargetStatusPill({
   classification,
@@ -202,30 +201,28 @@ export function TargetStatusPill({
   const statusLabel = translateStatus(classification.category, t);
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <ScorePill
-            data-slot="target-status-pill"
-            data-status={statusGroup}
-            className={statusPillStyle}
-          >
-            {statusLabel}
-          </ScorePill>
-        </TooltipTrigger>
-        <TooltipContent>
-          {range && (
-            <p className="text-xs">
-              {t("targets.targetRangeValue", {
-                min: String(range.min),
-                max: String(range.max),
-                unit,
-              })}
-            </p>
-          )}
-          <p className="text-xs">{t("targets.sourceLabel", { source })}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Popover>
+      <PopoverTrigger className="focus-visible:ring-ring/50 inline-flex rounded-full focus-visible:ring-2 focus-visible:outline-none">
+        <ScorePill
+          data-slot="target-status-pill"
+          data-status={statusGroup}
+          className={statusPillStyle}
+        >
+          {statusLabel}
+        </ScorePill>
+      </PopoverTrigger>
+      <PopoverContent align="end">
+        {range && (
+          <p className="text-xs">
+            {t("targets.targetRangeValue", {
+              min: String(range.min),
+              max: String(range.max),
+              unit,
+            })}
+          </p>
+        )}
+        <p className="text-xs">{t("targets.sourceLabel", { source })}</p>
+      </PopoverContent>
+    </Popover>
   );
 }

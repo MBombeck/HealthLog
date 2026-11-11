@@ -3,12 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Lightbulb } from "lucide-react";
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { InfoPopover } from "@/components/ui/info-popover";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -29,7 +24,7 @@ import { detectMeasurementDiversity } from "@/lib/insights/measurement-diversity
  * inline `role="note"` block confused on the category pages (it read
  * like a data finding rather than a tip), so the nudge now renders as a
  * small `Lightbulb` glyph beside the page title. The hint text the block
- * used to show inline lives in a hover / focus Tooltip; the glyph mounts
+ * used to show inline opens on a tap (`InfoPopover`); the glyph mounts
  * only when the spread is actually lopsided, so a healthy metric shows
  * no extra affordance at all.
  *
@@ -95,26 +90,15 @@ export function MeasurementDiversityNudge({
   const triggerLabel = t("insights.subPage.diversity.trigger");
 
   return (
-    <TooltipProvider delayDuration={150}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            data-slot="measurement-diversity-nudge"
-            aria-label={triggerLabel}
-            className="text-warning hover:text-warning/80 focus-visible:ring-ring/50 -mx-2 -my-3 inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
-          >
-            <Lightbulb className="size-4" aria-hidden="true" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent
-          data-slot="measurement-diversity-nudge-body"
-          align="start"
-          className="max-w-xs leading-relaxed"
-        >
-          {message}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <InfoPopover
+      content={message}
+      label={triggerLabel}
+      icon={Lightbulb}
+      iconClassName="size-4"
+      className="text-warning hover:text-warning/80"
+      align="start"
+      triggerDataSlot="measurement-diversity-nudge"
+      bodyDataSlot="measurement-diversity-nudge-body"
+    />
   );
 }
