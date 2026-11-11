@@ -29,9 +29,9 @@ import { resolveGlucoseUnit, type GlucoseUnit } from "@/lib/glucose";
  * locale.
  *
  * Persistence mirrors the unit-system select: a change PATCHes
- * `/api/auth/me/glucose-unit` immediately and invalidates `queryKeys.authMe()`
- * plus `queryKeys.userGlucoseUnit()`, so the dashboard tiles, the glucose
- * insight page and the targets panel re-render on the next /me refetch.
+ * `/api/auth/me/glucose-unit` immediately and invalidates `queryKeys.authMe()`,
+ * so the dashboard tiles and the glucose insight page re-render on the next
+ * /me refetch.
  */
 export function GlucoseUnitSelect({
   isAuthenticated,
@@ -66,9 +66,6 @@ export function GlucoseUnitSelect({
     onSuccess: () => {
       toastWrittenOutcome("success", t("settings.dashboard.glucoseUnit.saved"));
       queryClient.invalidateQueries({ queryKey: queryKeys.authMe() });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.userGlucoseUnit(),
-      });
       setOptimistic(null);
     },
     onError: (err) => {
