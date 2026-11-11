@@ -1,28 +1,30 @@
-# migrate-demo-edge01.sh
+# migrate-demo-account.sh
 
-Copies **exactly one** user — the demo account
-`usr_demo_cf31025295714ece8d91f5af13afd76d` — from the production apps01
-Postgres to the **separate** edge01 demo Postgres. No other user's rows are
-transferred under any circumstance.
+Copies **exactly one** user, the demo account named by `DEMO_USER_ID`, from a
+source instance's Postgres to the **separate** Postgres of a demo instance. No
+other user's rows are transferred under any circumstance.
 
 > Review the script first, then run it deliberately. It performs destructive,
-> demo-scoped deletes on the edge01 demo DB, then loads the apps01 demo slice.
-> It never writes to apps01 (source is read-only).
+> demo-scoped deletes on the target demo DB, then loads the demo slice from the
+> source. It never writes to the source (read-only).
 
 ## How it connects
 
-- **Source (apps01):** SSH alias `apps-01`, container `db-pg8wggwogo8c4gc4ks0kk4ss`
-  (stable), psql `healthlog`/`healthlog`.
-- **Target (edge01):** SSH alias `edge-01`. The demo Postgres is a separate
-  Coolify resource whose container name is **not hardcoded** — the script
-  resolves it at runtime via `docker ps | grep -iE 'postgres|^db-'` and aborts
-  if it cannot pick a single match (override with `DST_DB_CONTAINER=db-xxxx`).
-  The demo **app** uuid is `ck8cs4osswg8w440gskw08w8`; match its linked
-  Postgres resource, not the docs/landing DB.
-- **Edge demo user id is resolved at runtime** by `username='demo'` (it may
-  differ from the apps01 id). The wipe phase is scoped to that resolved id; the
-  load then brings the apps01 row in, so afterwards the edge01 demo user
-  carries the apps01 canonical id.
+Everything instance-specific comes from the environment:
+
+- `DEMO_USER_ID`: the user id to copy. `PROTECT_USER_ID`: an id that must
+  never appear on the target (the operator's own account).
+- `SRC_SSH` and `SRC_DB_CONTAINER_PATTERN`: the source host's ssh alias and a
+  `grep -E` pattern for its database container; psql `healthlog`/`healthlog`.
+- `DST_SSH`: the target host's ssh alias. The demo Postgres container is
+  **not hardcoded**: the script resolves it at runtime via
+  `docker ps | grep -iE 'postgres|^db-'` and aborts if it cannot pick a single
+  match (override with `DST_DB_CONTAINER=db-xxxx`). Match the demo app's own
+  Postgres, not a docs or landing-page database on the same host.
+- **The target demo user id is resolved at runtime** by `username='demo'` (it
+  may differ from the source id). The wipe phase is scoped to that resolved id;
+  the load then brings the source row in, so afterwards the target demo user
+  carries the source's canonical id.
 
 Each table is transferred with a scoped, server-side `\copy ... TO STDOUT`
 piped host-to-host into `\copy ... FROM STDIN`, using **explicit column lists
@@ -97,9 +99,9 @@ acknowledgement).
   `*_oauth_states` / `*_connect_tickets`, telegram scheduled-deletions +
   reminder messages, clinician_share_links, provider_health) — tied to live
   credentials.
-- **Encrypted-at-rest payloads we can't decrypt on edge01:**
+- **Encrypted-at-rest payloads the target cannot decrypt:**
   `insight_narratives` and all `coach_*` (coach_conversations, coach_messages,
-  coach_facts, coach_usage). The edge01 instance does not hold the prod
+  coach_facts, coach_usage). The target does not hold the source's
   encryption key, so the AES-256-GCM ciphertext would be unreadable. The same
   reason drives NULLing `cycle_day_logs.sensitive_encrypted` /
   `notes_encrypted` while still carrying that table's plaintext cycle fields.
@@ -109,16 +111,16 @@ acknowledgement).
   import_jobs, host_metrics, feedback, recommendation_feedback, and all rollup
   tables (measurement_rollups, mood_entry_rollups, strain_trimp_cache,
   cycle_predictions) — these
-  rebuild on edge01.
+  rebuild on the target.
 - **No rows:** workouts / workout_routes / workout_samples (demo has none).
 - **Instance / global:** app_settings; global catalogues (mood_tags,
-  cycle_symptoms) — these pre-exist on edge01 and the carried link rows
+  cycle_symptoms) pre-exist on the target and the carried link rows
   reference the global ids only.
 
 ## Encryption note
 
-The edge01 demo instance is assumed **not** to share the apps01 encryption
-key. Every column whose value is AES-256-GCM ciphertext under the prod key is
+The demo instance is assumed **not** to share the source's encryption key.
+Every column whose value is AES-256-GCM ciphertext under the source key is
 either NULLed (secrets on `users`, `cycle_day_logs.*_encrypted`) or skipped
 entirely (`insight_narratives`, `coach_messages.encryptedContent`). Carrying
 that ciphertext would produce undecryptable rows that the app's fail-closed
@@ -128,38 +130,37 @@ loader would reject.
 
 The demo user is loaded with `role='ADMIN'` so the admin surfaces are
 viewable in the demo. This is **only safe because DEMO_MODE must stay ON** on
-edge01 — the proxy layer (`src/proxy.ts`) blocks every mutating request in
+the target: the proxy layer (`src/proxy.ts`) blocks every mutating request in
 demo mode, so an admin demo session can browse admin pages but cannot change
-anything. If DEMO_MODE were ever off on edge01, this admin demo account would
+anything. If DEMO_MODE were ever off on the target, this admin demo account would
 be a write-capable admin. Keep DEMO_MODE enabled.
 
 ## Safety mechanisms built into the script
 
 - `set -euo pipefail` and `ON_ERROR_STOP=1` on every psql call.
-- **Pre-flight guard (apps01):** for each carried set, a query that must
+- **Pre-flight guard (source):** for each carried set, a query that must
   return `0` foreign-owned rows — aborts on any non-zero. Includes a check
   that the demo owns **0 custom mood_tags** (so every carried
-  `mood_entry_tag_link` points at a global tag that pre-exists on edge01) plus
+  `mood_entry_tag_link` points at a global tag that pre-exists on the target) plus
   a defensive "non-global tag" link count.
-- **Scoped wipe-first (edge01):** FK-child-first deletes, every one scoped to
-  the runtime-resolved edge01 demo id. No unscoped delete anywhere. Refuses to
-  proceed if `username='demo'` on edge01 resolves to the operator id.
-- **Post-load verification (edge01):** per-table demo row counts; a hard
-  assertion that the operator id `cmlupy4tn000001rpzx1pxvz7` appears in zero
-  rows; a check that user_id-bearing carried tables hold only the demo id; and
+- **Scoped wipe-first (target):** FK-child-first deletes, every one scoped to
+  the runtime-resolved target demo id. No unscoped delete anywhere. Refuses to
+  proceed if `username='demo'` on the target resolves to the operator id.
+- **Post-load verification (target):** per-table demo row counts; a hard
+  assertion that `PROTECT_USER_ID` appears in zero rows; a check that user_id-bearing carried tables hold only the demo id; and
   a confirmation the demo user exists with `role=ADMIN`.
 
 ## Caveats / things to confirm before running
 
 - **`FOREIGN_HITS` assertion** counts _all_ non-demo rows in the carried
-  tables on edge01, not just what this run inserted. On a clean
-  single-demo-user DB it is `0`. If edge01 legitimately hosts other demo-only
+  tables on the target, not just what this run inserted. On a clean
+  single-demo-user DB it is `0`. If the target legitimately hosts other demo-only
   accounts, treat a non-zero value as a warning to inspect, not an automatic
   failure (the script prints it as a WARNING, not an abort).
-- Confirm edge01 psql credentials are `healthlog`/`healthlog` (the script
+- Confirm the target's psql credentials are `healthlog`/`healthlog` (the script
   verifies connectivity before any write; adjust `PG_USER` / `PG_DB` if the
   demo Postgres resource uses different ones).
-- The script assumes edge01's schema is at the same (or a compatible) Prisma
-  migration level as apps01. A column present on apps01 but missing on edge01
-  fails the `\copy` loudly rather than silently corrupting data — run
-  migrations on edge01 first if the two have drifted.
+- The script assumes the target's schema is at the same (or a compatible)
+  Prisma migration level as the source. A column present on the source but
+  missing on the target fails the `\copy` loudly rather than silently
+  corrupting data; run migrations on the target first if the two have drifted.

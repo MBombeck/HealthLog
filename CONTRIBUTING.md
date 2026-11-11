@@ -185,7 +185,7 @@ If you want to introduce a locale that isn't shipped (e.g. `sv`, `cs`):
 
 ### Long-term
 
-Fink covers browser editing today. It edits the files in this repository directly and keeps no copy of the translations anywhere else. If the community outgrows it, a self-hosted [Weblate](https://weblate.org/) instance remains the fallback. Tracking issue: `v1.6 — Weblate self-hosted on edge-01`.
+Fink covers browser editing today. It edits the files in this repository directly and keeps no copy of the translations anywhere else. If the community outgrows it, a self-hosted [Weblate](https://weblate.org/) instance remains the fallback.
 
 ## Code of Conduct
 

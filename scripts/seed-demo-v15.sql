@@ -1,7 +1,7 @@
 -- v1.5.0 demo seed — sliding-window, NOW()-anchored, full iOS+Withings story.
 --
 -- The pre-v1.5 demo seed shipped only WEIGHT / BLOOD_PRESSURE / PULSE /
--- BODY_FAT / SLEEP / STEPS — and the demo DB on edge-01 had drifted to
+-- BODY_FAT / SLEEP / STEPS, and the demo DB had drifted to
 -- a static snapshot whose last reading was ten days old. For the iOS
 -- public-beta cut we need a fresh picture: data through today, every
 -- type the dashboard tiles can render, a source mix that shows the
@@ -17,8 +17,8 @@
 -- falls back to live SQL (the slim rollup-tier reader) and the boot
 -- backfill repopulates on the next entrypoint sweep.
 --
--- Usage on edge-01:
---   docker exec -i agos0oo88gsgg88kcg4swosw \
+-- Usage on the demo host:
+--   docker exec -i <demo-db-container> \
 --     psql -U healthlog -d healthlog < seed-demo-v15.sql
 
 BEGIN;
