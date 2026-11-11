@@ -134,6 +134,19 @@ describe("Settings — GlucoseUnitSelect", () => {
     expect(componentSource).toMatch(/queryKey: queryKeys\.authMe\(\)/);
   });
 
+  // The targets panel takes its unit from the targets payload, not from the
+  // account, so a save that only refreshed `/me` left it on the old unit
+  // until the server cache turned over (up to ten minutes). Both ends have
+  // to let go of the old payload.
+  it("refreshes the targets payload on both ends", () => {
+    expect(componentSource).toMatch(/queryKey: queryKeys\.insightsTargets\(\)/);
+    const route = readFileSync(
+      join(process.cwd(), "src/app/api/auth/me/glucose-unit/route.ts"),
+      "utf8",
+    );
+    expect(route).toMatch(/!== next\) \{\s*invalidateUserProfile\(user\.id\);/);
+  });
+
   it("is actually mounted on the settings page", () => {
     // A control nobody can reach is the same defect as no control.
     const accountSection = readFileSync(

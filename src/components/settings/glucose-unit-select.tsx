@@ -31,7 +31,8 @@ import { resolveGlucoseUnit, type GlucoseUnit } from "@/lib/glucose";
  * Persistence mirrors the unit-system select: a change PATCHes
  * `/api/auth/me/glucose-unit` immediately and invalidates `queryKeys.authMe()`,
  * so the dashboard tiles and the glucose insight page re-render on the next
- * /me refetch.
+ * /me refetch, and `queryKeys.insightsTargets()`, whose payload states the
+ * target ranges in the unit it was built with.
  */
 export function GlucoseUnitSelect({
   isAuthenticated,
@@ -66,6 +67,7 @@ export function GlucoseUnitSelect({
     onSuccess: () => {
       toastWrittenOutcome("success", t("settings.dashboard.glucoseUnit.saved"));
       queryClient.invalidateQueries({ queryKey: queryKeys.authMe() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.insightsTargets() });
       setOptimistic(null);
     },
     onError: (err) => {

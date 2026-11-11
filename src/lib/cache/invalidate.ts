@@ -242,10 +242,11 @@ export function invalidateUserHealthScore(userId: string): void {
  * on the very next read.
  *
  * Callers: `/api/user/thresholds` PUT + DELETE, `applyProfileUpdate`
- * (only when heightCm / dateOfBirth / gender is in the update set), and
- * `/api/auth/me/source-priority` PUT. The unit-preference toggle is NOT
- * wired in: it only drives the client-side display transform, no
- * server-cached payload reads it.
+ * (only when heightCm / dateOfBirth / gender is in the update set),
+ * `/api/auth/me/source-priority` PUT, and `/api/auth/me/glucose-unit` PATCH
+ * (the targets payload states glucose in the account's unit). The
+ * unit-preference toggle is NOT wired in: it only drives the client-side
+ * display transform, no server-cached payload reads it.
  */
 export function invalidateUserProfile(userId: string): void {
   caches.insightsTargets.deleteByPrefix(userId);
