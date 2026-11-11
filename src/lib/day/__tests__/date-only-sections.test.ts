@@ -55,7 +55,8 @@ import { loadDayIndex } from "@/lib/day/day-index";
 import { loadSinceLastVisit } from "@/lib/day/visit-preparation";
 import type { DaySectionKey } from "@/lib/day/contract";
 import type { DayAccess } from "@/lib/day/sections";
-import { LANE_READERS } from "@/lib/timeline/lanes";
+import { LANE_READERS, type TimelineAccess } from "@/lib/timeline/lanes";
+import { MODULE_KEYS } from "@/lib/modules/gate";
 import { startOfLocalDayKey } from "@/lib/tz/local-day";
 import { shiftDateKey } from "@/lib/tz/format";
 
@@ -167,7 +168,13 @@ describe("the timeline", () => {
     const laneFrame = {
       userId: "u1",
       tz: TZ,
-      access: {} as never,
+      access: {
+        modules: Object.fromEntries(
+          MODULE_KEYS.map((key) => [key, true]),
+        ) as TimelineAccess["modules"],
+        domainVisible: () => true,
+        owner: true,
+      },
     };
     const doses = await LANE_READERS.vaccinations(laneFrame);
     const allergies = await LANE_READERS.allergies(laneFrame);

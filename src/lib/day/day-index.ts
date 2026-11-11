@@ -33,7 +33,11 @@ import { SCREENER_INSTRUMENTS } from "@/lib/validations/mental-health";
 import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 import { effectiveMoodTz } from "@/lib/mood/date-key";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
-import { dateOnlyKey, dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import {
+  dateOnlyKey,
+  dateOnlyWindow,
+  dayKeyAsUtcMidnight,
+} from "@/lib/tz/date-only";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { startOfLocalDayKey } from "@/lib/tz/local-day";
 
@@ -102,15 +106,8 @@ const instantWindow = (frame: IndexFrame) => ({
   lt: frame.end,
 });
 
-/**
- * The window as UTC calendar days, for a column that holds a date rather
- * than an instant (a dose date at UTC midnight, an allergy onset or a
- * document date at noon UTC). Its date part is its day in every zone.
- */
-const calendarWindow = (frame: IndexFrame) => ({
-  gte: dayKeyAsUtcMidnight(frame.from),
-  lt: dayKeyAsUtcMidnight(shiftDateKey(frame.to, 1)),
-});
+const calendarWindow = (frame: IndexFrame) =>
+  dateOnlyWindow(frame.from, frame.to);
 
 /** Mark the calendar date of every date-only value. */
 function markDates(

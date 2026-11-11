@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 344,
-  "total": 111520,
+  "count": 343,
+  "total": 111318,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -94,7 +94,6 @@
     "components/documents/document-facts-review.tsx :: DocumentFactsSection": 242,
     "components/documents/document-facts-review.tsx :: FactRow": 261,
     "components/documents/document-filter-bar.tsx :: DocumentFilterBar": 348,
-    "components/documents/document-record-links.tsx :: DocumentRecordLinks": 202,
     "components/documents/document-timeline.tsx :: DocumentTimeline": 314,
     "components/documents/documents-view.tsx :: DocumentsView": 303,
     "components/documents/sources/document-source-picker.tsx :: DocumentSourcePicker": 563,

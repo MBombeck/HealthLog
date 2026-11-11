@@ -188,10 +188,7 @@ export function DocumentRecordLinks({
   const [visitIds, setVisitIds] = useState<string[] | null>(null);
   const [doseIds, setDoseIds] = useState<string[] | null>(null);
 
-  const labels = {
-    suggested: t("links.picker.suggested"),
-    date: (iso: string) => format.date(iso),
-  };
+  const suggested = t("links.picker.suggested");
 
   const visitOptions = recordOptions(
     [...encounters.items]
@@ -205,9 +202,8 @@ export function DocumentRecordLinks({
         href: visitHref(visit.id),
       })),
     anchor,
-    labels,
+    { suggested, date: format.date },
   );
-  // A dose date is a calendar date at UTC midnight, never an instant.
   const doseOptions = recordOptions(
     (vaccinations.data?.vaccinations ?? []).map((dose) => ({
       id: dose.id,
@@ -216,7 +212,7 @@ export function DocumentRecordLinks({
       href: doseHref(dose.id),
     })),
     anchor,
-    { ...labels, date: calendarDate },
+    { suggested, date: calendarDate }, // a dose date is a calendar date
   );
 
   const showDoses = vaccinationsOn && doc.vaccinationLinks !== null;

@@ -84,7 +84,7 @@ import {
   loadLabResults,
 } from "./clinical-records";
 import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
-import { patientName } from "@/lib/account-name";
+import { PATIENT_NAME_SELECT, patientName } from "@/lib/account-name";
 import { readingsMean } from "@/lib/measurements/day-mean";
 import { loadScreenerUnvalidatedTranslations } from "./screener-translations";
 
@@ -179,9 +179,7 @@ export async function collectDoctorReportData(
   const userProfile = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      username: true,
-      displayName: true,
-      managedProfileAt: true,
+      ...PATIENT_NAME_SELECT,
       dateOfBirth: true,
       gender: true,
       heightCm: true,
@@ -189,7 +187,6 @@ export async function collectDoctorReportData(
       thresholdsJson: true,
       timezone: true,
       sourcePriorityJson: true,
-      fullName: true,
       insurerName: true,
       insurerIkNumber: true,
     },

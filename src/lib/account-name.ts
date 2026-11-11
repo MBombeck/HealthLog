@@ -12,6 +12,14 @@ export function accountName(user: {
   return displayName ? displayName : user.username;
 }
 
+/** The columns `patientName()` reads, for a Prisma `select`. */
+export const PATIENT_NAME_SELECT = {
+  username: true,
+  displayName: true,
+  fullName: true,
+  managedProfileAt: true,
+} as const;
+
 /**
  * The name a clinical document gives a person: the full name when one is
  * set, the display name next, the login last. A managed record's login is a

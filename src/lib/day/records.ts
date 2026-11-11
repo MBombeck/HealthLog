@@ -39,7 +39,11 @@ import { phaseForDate } from "@/lib/cycle/engine-adapter";
 import { LUTEAL_DEFAULT } from "@/lib/cycle/types";
 import { resolveCycleDay } from "@/lib/cycle/verdict";
 import { effectiveMoodTz } from "@/lib/mood/date-key";
-import { dateOnlyKey, dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import {
+  dateOnlyKey,
+  dateOnlyWindow,
+  dayKeyAsUtcMidnight,
+} from "@/lib/tz/date-only";
 import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { visitPath } from "@/lib/encounters/visit-links";
 import {
@@ -128,19 +132,6 @@ function event(
 /** A `@db.Date` column value as its calendar key. */
 function dateKeyOrNull(value: Date | null): string | null {
   return value ? dateOnlyKey(value) : null;
-}
-
-/**
- * The day as a window over a column that holds a date, not an instant (a
- * dose date at UTC midnight, an allergy onset or a document date at noon
- * UTC). Its date part decides the day, whatever the person's zone; the
- * local day window put a UTC-midnight dose on the previous day west of UTC.
- */
-function calendarDayWindow(day: string): { gte: Date; lt: Date } {
-  return {
-    gte: dayKeyAsUtcMidnight(day),
-    lt: dayKeyAsUtcMidnight(shiftDateKey(day, 1)),
-  };
 }
 
 /* ─── medications ─────────────────────────────────────────────────────────── */
@@ -591,7 +582,7 @@ async function allergiesPart(frame: DayFrame): Promise<SectionPart> {
     where: {
       userId: frame.userId,
       deletedAt: null,
-      onsetAt: calendarDayWindow(frame.day),
+      onsetAt: dateOnlyWindow(frame.day),
     },
     select: { id: true, substance: true, severity: true },
   });
@@ -599,8 +590,7 @@ async function allergiesPart(frame: DayFrame): Promise<SectionPart> {
     running: [],
     events: rows.map((row) =>
       event({
-        // A date without a time of day: no clock time to print.
-        at: null,
+        at: null, // a date without a time of day
         kind: "allergyOnset",
         section: "allergies",
         id: row.id,
@@ -662,7 +652,7 @@ async function vaccinationsPart(frame: DayFrame): Promise<SectionPart> {
     where: {
       userId: frame.userId,
       deletedAt: null,
-      occurredAt: calendarDayWindow(frame.day),
+      occurredAt: dateOnlyWindow(frame.day),
     },
     select: {
       id: true,
@@ -683,8 +673,7 @@ async function vaccinationsPart(frame: DayFrame): Promise<SectionPart> {
     running: [],
     events: rows.map((row) =>
       event({
-        // A dose carries a date, never a time of day.
-        at: null,
+        at: null, // a date without a time of day
         kind: "vaccination",
         section: "vaccinations",
         id: row.id,
@@ -776,7 +765,7 @@ async function checkupsPart(frame: DayFrame): Promise<SectionPart> {
 async function documentsPart(frame: DayFrame): Promise<SectionPart> {
   // A document's date is a calendar date stored at noon UTC (older rows at
   // UTC midnight). The stated report date wins over the filing date.
-  const day = calendarDayWindow(frame.day);
+  const day = dateOnlyWindow(frame.day);
   const rows = await prisma.inboundDocument.findMany({
     where: {
       userId: frame.userId,

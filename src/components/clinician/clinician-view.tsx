@@ -134,6 +134,15 @@ interface ClinicianViewProps {
   dateFormat: DateFormatPreference;
 }
 
+/**
+ * A date-only value (a date of birth, a dose date) as its calendar date in
+ * the owner's date order, the same in every zone. Read as an instant in the
+ * owner's zone it fell on the previous day west of UTC.
+ */
+function calendarDateIn(dateFormat: DateFormatPreference, locale: Locale) {
+  return (iso: string) => formatDate(iso.slice(0, 10), dateFormat, locale);
+}
+
 export function ClinicianView({
   t,
   label,
@@ -154,10 +163,6 @@ export function ClinicianView({
   // Owner hour cycle + date order ride along (issue #922).
   const fmt = makeFormatters(locale, timezone, timeFormat, dateFormat);
   const fmtDate = (iso: string) => fmt.date(new Date(iso));
-  // A date-only value (a date of birth, a dose date) is its calendar date in
-  // every zone; read as an instant it fell on the previous day west of UTC.
-  const fmtCalendarDate = (iso: string) =>
-    formatDate(iso.slice(0, 10), dateFormat, locale);
   const fmtDateTime = (iso: string) => fmt.dateTime(new Date(iso));
   // Two decimals at most, in the owner's locale: a German reader gets
   // "80,5", not the "80.5" a bare number prints.
@@ -204,7 +209,7 @@ export function ClinicianView({
               t={t}
               report={report}
               scope={scope}
-              fmtCalendarDate={fmtCalendarDate}
+              fmtCalendarDate={calendarDateIn(dateFormat, locale)}
             />
 
             {/* ── measurements ─────────────────────────────────────── */}
@@ -303,7 +308,7 @@ export function ClinicianView({
               t={t}
               report={report}
               scope={scope}
-              fmtCalendarDate={fmtCalendarDate}
+              fmtCalendarDate={calendarDateIn(dateFormat, locale)}
             />
             <AllergiesSection t={t} report={report} scope={scope} />
 

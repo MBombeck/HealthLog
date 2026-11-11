@@ -23,7 +23,11 @@ import { openText } from "@/lib/day/records";
 import { measurementTypeVisible, type DayAccess } from "@/lib/day/sections";
 import { prisma } from "@/lib/db";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
-import { dateOnlyKey, dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import {
+  dateOnlyKey,
+  dateOnlyWindow,
+  dayKeyAsUtcMidnight,
+} from "@/lib/tz/date-only";
 import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { startOfLocalDayKey } from "@/lib/tz/local-day";
 import { visitPath } from "@/lib/encounters/visit-links";
@@ -240,12 +244,7 @@ async function vaccinationChanges(w: Window): Promise<DayChange[]> {
     where: {
       userId: w.userId,
       deletedAt: null,
-      // A dose date is stored at UTC midnight: its date part is its day in
-      // every zone, so the window is UTC calendar days, not local instants.
-      occurredAt: {
-        gte: dayKeyAsUtcMidnight(w.from),
-        lt: dayKeyAsUtcMidnight(shiftDateKey(w.to, 1)),
-      },
+      occurredAt: dateOnlyWindow(w.from, w.to), // a date, not an instant
     },
     select: {
       id: true,
