@@ -19,6 +19,7 @@ vi.mock("@/lib/crypto", () => ({
 }));
 
 import { prisma } from "@/lib/db";
+import { chainWithReasoningEffort } from "../provider-chain";
 import type { ProviderWorkAuthority } from "@/lib/sharing/provider-work-authority";
 
 import {
@@ -238,16 +239,36 @@ describe("probeProviderChain", () => {
     ]);
     expect(presence.managedBy).toBe("user");
 
-    // Once the person saved a chain without it, the chain is their word.
+    // A saved chain without it says nothing about the gateway, and neither
+    // does the switched-off entry the gateway form wrote for its reasoning
+    // effort.
+    for (const aiProviderChain of [
+      [{ providerType: "local", enabled: true, priority: 1 }],
+      chainWithReasoningEffort(null, "openai-compatible", "low"),
+    ]) {
+      load(row({ ...gateway, aiProviderChain }));
+      expect(
+        (await probeProviderChain("u1", OWNER)).entries.map(
+          (e) => e.providerType,
+        ),
+      ).toEqual(["openai-compatible"]);
+    }
+
+    // Switched off in the chain, the gateway stays off.
     load(
       row({
         ...gateway,
         aiProviderChain: [
           { providerType: "local", enabled: true, priority: 1 },
+          { providerType: "openai-compatible", enabled: false, priority: 2 },
         ],
       }),
     );
     expect((await probeProviderChain("u1", OWNER)).entries).toEqual([]);
+    expect(await resolveProviderAvailability("u1")).toEqual({
+      aiAvailable: false,
+      managedBy: null,
+    });
   });
 
   it("carries the person's in-browser OCR opt-in", async () => {
