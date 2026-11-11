@@ -40,7 +40,7 @@
     {
       "name": "Add measurement",
       "short_name": "Add",
-      "url": "/measurements?add=WEIGHT&source=shortcut",
+      "url": "/measurements?add=WEIGHT",
       "icons": [
         { "src": "/logo-192.png", "sizes": "192x192", "type": "image/png" }
       ]
@@ -48,15 +48,7 @@
     {
       "name": "Today",
       "short_name": "Today",
-      "url": "/?source=shortcut",
-      "icons": [
-        { "src": "/logo-192.png", "sizes": "192x192", "type": "image/png" }
-      ]
-    },
-    {
-      "name": "Medications",
-      "short_name": "Meds",
-      "url": "/medications?source=shortcut",
+      "url": "/",
       "icons": [
         { "src": "/logo-192.png", "sizes": "192x192", "type": "image/png" }
       ]
