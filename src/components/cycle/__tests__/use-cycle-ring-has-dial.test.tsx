@@ -16,14 +16,14 @@ import { describe, expect, it } from "vitest";
 import { ApiError } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
 
-import { localYmd, useCycleRingDial } from "../use-cycle";
+import { DEFAULT_TIMEZONE, shiftDateKey, userDayKey } from "@/lib/tz/format";
 
+import { useCycleRingDial } from "../use-cycle";
+
+/** The ring's window, around today in the display zone (Berlin when unset). */
 function window(): [string, string] {
-  const from = new Date();
-  from.setDate(from.getDate() - 90);
-  const to = new Date();
-  to.setDate(to.getDate() + 180);
-  return [localYmd(from), localYmd(to)];
+  const today = userDayKey(new Date(), DEFAULT_TIMEZONE);
+  return [shiftDateKey(today, -90), shiftDateKey(today, 180)];
 }
 
 function Probe({ enabled }: { enabled: boolean }) {

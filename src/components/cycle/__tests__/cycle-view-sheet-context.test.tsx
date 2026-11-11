@@ -95,7 +95,7 @@ const idleQuery = {
 const mutationStub = { mutate: vi.fn(), isPending: false, isError: false };
 
 vi.mock("../use-cycle", () => ({
-  localYmd: () => TODAY,
+  useCycleWindow: () => ({ today: TODAY, from: TODAY, to: TODAY }),
   useCycleCalendar: () => calendarQuery,
   useCycleHistory: () => idleQuery,
   useCycleInsights: () => idleQuery,

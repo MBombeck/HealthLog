@@ -21,7 +21,8 @@ import {
   apiPatch,
   apiPost,
 } from "@/lib/api/api-fetch";
-import { useTranslations } from "@/lib/i18n/context";
+import { useDisplayTimezone, useTranslations } from "@/lib/i18n/context";
+import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { randomId } from "@/lib/random-id";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { useCalendarDate } from "@/hooks/use-calendar-date";
@@ -72,16 +73,23 @@ export interface CycleInsightsResponse {
 }
 
 /**
- * The local-timezone `YYYY-MM-DD` for a Date (default: now). Cycle day-keys
- * are tz-anchored on the server; the client must derive the key from the
- * user's wall-clock day, never from `toISOString()` (which is UTC and rolls
- * the date over near midnight).
+ * Today, and the window the cycle page, its ring and its summary card read
+ * (90 days back, 180 ahead), in the record's display zone. The server keys
+ * cycle days, "today" included, in the profile zone; the device clock put
+ * the highlighted day and the day a log lands on one apart from it when a
+ * phone sat in another zone near midnight. One window, so the three readers
+ * share one cache entry.
  */
-export function localYmd(d: Date = new Date()): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+export function useCycleWindow(): { today: string; from: string; to: string } {
+  const timeZone = useDisplayTimezone();
+  return useMemo(() => {
+    const today = userDayKey(new Date(), timeZone);
+    return {
+      today,
+      from: shiftDateKey(today, -90),
+      to: shiftDateKey(today, 180),
+    };
+  }, [timeZone]);
 }
 
 /**
@@ -115,20 +123,9 @@ export function useCycleCalendar(from: string, to: string, enabled = true) {
   });
 }
 
-/** YYYY-MM-DD for `days` from today in the local zone. */
-function localYmdFromToday(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return localYmd(d);
-}
-
-/**
- * The calendar window the cycle ring reads: the cycle page's own window, so
- * the ring, the page and the summary card share one cache entry.
- */
+/** The calendar window the cycle ring reads: the cycle page's own. */
 export function useCycleRingCalendar(enabled = true) {
-  const from = useMemo(() => localYmdFromToday(-90), []);
-  const to = useMemo(() => localYmdFromToday(180), []);
+  const { from, to } = useCycleWindow();
   return useCycleCalendar(from, to, enabled);
 }
 
