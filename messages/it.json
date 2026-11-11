@@ -986,7 +986,8 @@
     "typeStressLevel": "Livello di stress",
     "typeTrainingReadiness": "Prontezza all'allenamento",
     "typeAcuteTrainingLoad": "Carico di allenamento acuto",
-    "sourceGarmin": "Garmin"
+    "sourceGarmin": "Garmin",
+    "valueOutOfRange": "Inserisci un valore tra {min} e {max} {unit}."
   },
   "metricCatalog": {
     "title": "Cosa può monitorare HealthLog",

@@ -17,7 +17,8 @@
  *     through `readError` (server envelope `error` string, falling back
  *     to `Request failed (<status>)`), `status` carrying the HTTP code,
  *     `meta` carrying the error envelope's `meta` object when present
- *     (e.g. `meta.errorCode`).
+ *     (e.g. `meta.errorCode`), `issuePaths` the fields a 422's
+ *     `details.issues` names.
  *   - Network failures reject with the native `TypeError` from `fetch`,
  *     exactly as before — only HTTP-level failures become `ApiError`.
  *   - 401 / 403 / 429 are NOT special-cased: the wrapper throws the same
@@ -70,17 +71,24 @@ export class ApiError extends Error {
    * server). Its first characters are the error id a person reads out.
    */
   readonly requestId: string | null;
+  /**
+   * The fields a refusal's `details.issues` names (`"value"`, `"measuredAt"`),
+   * so a form can mark the one the server refused. Empty when it named none.
+   */
+  readonly issuePaths: readonly string[];
 
   constructor(
     message: string,
     status: number,
     meta?: Record<string, unknown>,
     requestId?: string | null,
+    issuePaths: readonly string[] = [],
   ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.meta = meta;
+    this.issuePaths = issuePaths;
     const fromMeta =
       typeof meta?.requestId === "string" && meta.requestId.length > 0
         ? meta.requestId
@@ -97,10 +105,20 @@ interface Envelope<T, M = Record<string, unknown>> {
 
 async function throwApiError(res: Response): Promise<never> {
   let meta: Record<string, unknown> | undefined;
+  let issuePaths: string[] = [];
   try {
-    const json = (await res.clone().json()) as { meta?: unknown };
+    const json = (await res.clone().json()) as {
+      meta?: unknown;
+      details?: { issues?: unknown };
+    };
     if (json && typeof json.meta === "object" && json.meta !== null) {
       meta = json.meta as Record<string, unknown>;
+    }
+    const issues = json?.details?.issues;
+    if (Array.isArray(issues)) {
+      issuePaths = issues.flatMap((issue: { path?: unknown }) =>
+        typeof issue?.path === "string" ? [issue.path] : [],
+      );
     }
   } catch {
     /* non-JSON body — readError supplies the fallback message */
@@ -110,6 +128,7 @@ async function throwApiError(res: Response): Promise<never> {
     res.status,
     meta,
     res.headers.get("x-request-id"),
+    issuePaths,
   );
   // A server-side failure is worth an id in the session's support info,
   // whether or not the call site ends up showing it.

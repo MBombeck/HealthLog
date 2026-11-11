@@ -986,7 +986,8 @@
     "typeStressLevel": "스트레스 수준",
     "typeTrainingReadiness": "트레이닝 준비도",
     "typeAcuteTrainingLoad": "급성 훈련 부하",
-    "sourceGarmin": "Garmin"
+    "sourceGarmin": "Garmin",
+    "valueOutOfRange": "{min}에서 {max} {unit} 사이의 값을 입력해 주세요."
   },
   "metricCatalog": {
     "title": "HealthLog가 기록할 수 있는 것",

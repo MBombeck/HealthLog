@@ -986,7 +986,8 @@
     "typeStressLevel": "Stressniveau",
     "typeTrainingReadiness": "Trainingsgereedheid",
     "typeAcuteTrainingLoad": "Acute trainingsbelasting",
-    "sourceGarmin": "Garmin"
+    "sourceGarmin": "Garmin",
+    "valueOutOfRange": "Vul een waarde in tussen {min} en {max} {unit}."
   },
   "metricCatalog": {
     "title": "Wat HealthLog kan bijhouden",

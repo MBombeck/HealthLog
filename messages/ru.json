@@ -986,7 +986,8 @@
     "typeStressLevel": "Уровень стресса",
     "typeTrainingReadiness": "Готовность к тренировке",
     "typeAcuteTrainingLoad": "Острая тренировочная нагрузка",
-    "sourceGarmin": "Garmin"
+    "sourceGarmin": "Garmin",
+    "valueOutOfRange": "Введите значение от {min} до {max} {unit}."
   },
   "metricCatalog": {
     "title": "Что умеет отслеживать HealthLog",

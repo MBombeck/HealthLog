@@ -986,7 +986,8 @@
     "typeStressLevel": "Poziom stresu",
     "typeTrainingReadiness": "Gotowość do treningu",
     "typeAcuteTrainingLoad": "Ostre obciążenie treningowe",
-    "sourceGarmin": "Garmin"
+    "sourceGarmin": "Garmin",
+    "valueOutOfRange": "Wpisz wartość od {min} do {max} {unit}."
   },
   "metricCatalog": {
     "title": "Co HealthLog potrafi śledzić",
