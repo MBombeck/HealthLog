@@ -10,9 +10,14 @@ import { MaintainershipBanner } from "@/components/i18n/maintainership-banner";
 import { LayoutCoachFab } from "@/components/insights/layout-coach-fab";
 import { LayoutCoachMount } from "@/components/insights/layout-coach-mount";
 import { TourLauncher } from "@/components/onboarding/tour-launcher";
-import { clearCachesForSessionEnd, useAuth } from "@/hooks/use-auth";
+import {
+  clearCachesForSessionEnd,
+  readWasAuthenticated,
+  useAuth,
+} from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useRecordSessionTransition } from "@/hooks/use-record-session-transition";
+import { signInHref } from "@/lib/api/read-failure";
 import { useTranslations } from "@/lib/i18n/context";
 import { CoachLaunchProvider } from "@/lib/insights/coach-launch-context";
 import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
@@ -243,27 +248,26 @@ export function AuthShell({
     window.scrollTo(0, 0);
   }, [pathname]);
 
+  // Session END on a protected page (`/api/auth/me` answered 401/403): wipe
+  // every client cache, since the QueryClient outlives navigation and health
+  // data is not user-scoped, then go to the sign-in page. Logout does the same
+  // from `useLogout`; this covers the expiry path it never runs through. No
+  // verdict (`isAuthUnknown`: offline, 5xx, no marker) never wipes: a wipe on
+  // a network failure is what used to destroy the offline caches.
+  //
+  // The target is fixed once per signed-out stretch, before the wipe clears
+  // the marker it reads (the refetch that follows runs this again). A session
+  // that ended on its own returns here after the next sign-in; a deliberate
+  // sign-out already cleared the marker, so the next person gets a bare page.
+  const signInTarget = useRef<string | null>(null);
   useEffect(() => {
+    if (isAuthenticated || isPublicPage) signInTarget.current = null;
     if (!isLoading && !isAuthenticated && !isPublicPage) {
-      // Session END (expired / invalidated cookie → `/api/auth/me` 401/403).
-      // Wipe the in-memory query cache (the cross-user guard — the
-      // QueryClient outlives the navigation on this SPA and the health-data
-      // families are not user-scoped) plus the persisted IndexedDB + SW
-      // caches, so nothing leaks to the next account on a shared browser.
-      // Logout does the same from `useLogout`; this covers the expiry path it
-      // never runs through. Best-effort; the redirect proceeds regardless.
-      //
-      // `isAuthUnknown` = the auth probe failed WITHOUT a session verdict
-      // (offline relaunch, network blip, 5xx) and no prior-session marker
-      // exists. Nothing to protect and nothing to render — send the visitor
-      // to the login gate, but never run the wipe off a non-verdict: the
-      // wipe on a network failure is exactly what used to destroy the
-      // offline caches. (With the marker present, `isAuthenticated` holds
-      // the last-known state and this branch never runs.)
-      if (!isAuthUnknown) {
-        clearCachesForSessionEnd(queryClient);
-      }
-      router.replace("/auth/login");
+      signInTarget.current ??= readWasAuthenticated()
+        ? signInHref()
+        : "/auth/login";
+      if (!isAuthUnknown) clearCachesForSessionEnd(queryClient);
+      router.replace(signInTarget.current);
     }
   }, [
     isLoading,

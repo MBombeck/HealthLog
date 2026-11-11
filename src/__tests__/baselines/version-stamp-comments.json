@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2892,
-  "total": 9220,
+  "total": 9217,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -2892,7 +2892,7 @@
     "lib/withings/sync.ts": 6,
     "lib/withings/webhook-handler.ts": 3,
     "lib/workouts/list-read.ts": 1,
-    "proxy.ts": 27,
+    "proxy.ts": 26,
     "types/analytics.ts": 8,
     "types/backups.ts": 1
   }

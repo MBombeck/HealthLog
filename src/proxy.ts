@@ -565,20 +565,17 @@ export function proxy(request: NextRequest) {
   const isSessionGatedPage = !isApiRoute && !isStaticFile && !isPublic;
   if (isSessionGatedPage) {
     if (!readSessionCookie(request.cookies)) {
-      return applyBaselineSecurityHeaders(
-        NextResponse.redirect(new URL("/auth/login", request.url)),
-      );
+      // Back here after signing in; the sign-in page re-checks `next`.
+      const signIn = new URL("/auth/login", request.url);
+      const here = `${pathname}${request.nextUrl.search}`;
+      if (here !== "/") signIn.searchParams.set("next", here);
+      return applyBaselineSecurityHeaders(NextResponse.redirect(signIn));
     }
 
-    // v1.4.22 — server-side onboarding redirect. Previously the
-    // `<AuthShell>` ran this in a post-hydration `useEffect`, so a user
-    // with `onboardingCompletedAt === null` briefly saw the dashboard
-    // flash before the redirect fired. The auth flows (login, passkey,
-    // register, /api/auth/me) keep an `hl_onboarding` cookie in sync
-    // with the DB state; the proxy reads it without a DB roundtrip so
-    // the redirect lands on the first server response. The /onboarding
-    // page itself is in PUBLIC_PATHS above, so this branch only runs
-    // for the surfaces that need to redirect away.
+    // The onboarding redirect, here so it lands on the first response with no
+    // dashboard flash. The auth flows (login, passkey, register,
+    // /api/auth/me) keep the `hl_onboarding` cookie in step with the DB, so no
+    // DB round trip; `/onboarding` itself is public above.
     const onboardingPending =
       request.cookies.get("hl_onboarding")?.value === "pending";
     // v1.4.22 — exact match the redirect

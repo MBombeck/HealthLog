@@ -5,8 +5,15 @@
  * so a session that ended without a sign-out (an expired cookie the edge sent
  * straight to the sign-in page) leaves nothing on the device for the next
  * account. It never clears on an answer that is not a verdict.
+ *
+ * On a protected page it sends the visitor to the sign-in page, carrying the
+ * page along when the session ended on its own, and not after a deliberate
+ * sign-out: the next person on the device starts from a bare sign-in page.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+import { I18nProvider } from "@/lib/i18n/context";
 
 import { authUser, renderWithApp } from "../../../../tests/browser/render";
 import { stubFetch } from "../../../../tests/browser/fetch-stub";
@@ -42,12 +49,27 @@ vi.mock("@/components/command-palette/command-palette.lazy", () => ({
 }));
 vi.mock("../global-shortcuts", () => ({ GlobalShortcuts: () => null }));
 
+import { clearCachesForSessionEnd } from "@/hooks/use-auth";
+
 import { AuthShell } from "../auth-shell";
 
 const ME = "/api/auth/me";
 
 function openAt(path: string): void {
   window.history.replaceState(null, "", path);
+}
+
+/** The tree `renderWithApp` mounts, for rendering it again. */
+function shellTree(queryClient: QueryClient) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <I18nProvider initialLocale="en">
+        <AuthShell>
+          <div data-slot="page" />
+        </AuthShell>
+      </I18nProvider>
+    </QueryClientProvider>
+  );
 }
 
 async function mountShell(user: Parameters<typeof authUser>[0] | null) {
@@ -123,5 +145,57 @@ describe("AuthShell on a sign-in page", () => {
     await mountShell(null);
     await settle();
     expect(clearOffline).not.toHaveBeenCalled();
+  });
+});
+
+describe("AuthShell on a protected page", () => {
+  /** Signed in on `path`, with the marker a confirmed session leaves. */
+  async function signedInAt(path: string) {
+    let session = true;
+    stubFetch().on("GET", ME, () =>
+      session
+        ? { data: authUser({ id: "signed-in" }) }
+        : { status: 401, error: "Unauthorized" },
+    );
+    openAt(path);
+    const view = await mountShell(null);
+    await expect
+      .poll(() => document.querySelector('[data-slot="page"]'))
+      .toBeTruthy();
+    return {
+      ...view,
+      endSession: () => {
+        session = false;
+      },
+    };
+  }
+
+  it("returns to the page after a session that ended on its own", async () => {
+    // Signed in once on this browser; the session has since expired while
+    // the cookie stayed, so the next visit gets past the edge and the
+    // account answer is the first to say so.
+    const first = await signedInAt("/");
+    first.endSession();
+    await first.screen.unmount();
+    openAt("/measurements?add=WEIGHT");
+    await mountShell(null);
+
+    await expect.poll(() => window.location.pathname).toBe("/auth/login");
+    expect(new URLSearchParams(window.location.search).get("next")).toBe(
+      "/measurements?add=WEIGHT",
+    );
+  });
+
+  it("does not carry the page past a deliberate sign-out", async () => {
+    const { screen, queryClient, endSession } =
+      await signedInAt("/medications");
+    // What the sign-out does once the server confirmed it; the navigation
+    // it starts renders the shell again, which asks for the account anew.
+    endSession();
+    clearCachesForSessionEnd(queryClient);
+    await screen.rerender(shellTree(queryClient));
+
+    await expect.poll(() => window.location.pathname).toBe("/auth/login");
+    expect(window.location.search).toBe("");
   });
 });
