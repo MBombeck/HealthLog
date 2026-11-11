@@ -16,7 +16,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 
-import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import { apiDelete, apiGet, apiPatch } from "@/lib/api/api-fetch";
 import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import { invalidateKeys, queryKeys } from "@/lib/query-keys";
 import type {
@@ -147,9 +147,12 @@ function useInvalidateSymptoms() {
 
 export function useCreateSymptomDefinition() {
   const invalidate = useInvalidateSymptoms();
+  // One key until a save lands, so a retry after a timeout is not a second
+  // symptom.
+  const post = useIdempotentPost();
   return useMutation({
     mutationFn: (input: { label: string; icon?: string | null }) =>
-      apiPost<SymptomDefinitionDTO>("/api/symptoms/definitions", input),
+      post<SymptomDefinitionDTO>("/api/symptoms/definitions", input),
     onSuccess: invalidate,
   });
 }

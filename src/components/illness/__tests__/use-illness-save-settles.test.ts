@@ -1,9 +1,11 @@
 /**
- * An episode save settles once the server stored it.
+ * An episode save settles once the server stored it, and stores it once.
  *
  * Every episode hook's `onSuccess` used to return the refresh of the illness
  * reads and the dashboard. A mutation waits for what `onSuccess` returns, so
  * the episode sheet kept its spinner until each of those reads had refetched.
+ * And a create retried after a timeout went out under a new key, so the
+ * server stored the episode twice.
  */
 import { describe, expect, it, vi } from "vitest";
 
@@ -12,6 +14,11 @@ const client = vi.hoisted(() => ({
   invalidateQueries: vi.fn(() => new Promise(() => {})),
   refetchQueries: vi.fn(() => new Promise(() => {})),
   getQueryCache: () => ({ findAll: () => [] }),
+}));
+
+vi.mock("react", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react")>()),
+  useRef: <T>(initial: T) => ({ current: initial }),
 }));
 
 vi.mock("@tanstack/react-query", () => ({
@@ -29,6 +36,7 @@ vi.mock("@/lib/api/api-fetch", () => ({
   apiDelete: vi.fn(),
 }));
 
+import { apiPost } from "@/lib/api/api-fetch";
 import {
   useCreateEpisode,
   useDeleteEpisode,
@@ -52,5 +60,28 @@ describe("episode saves", () => {
 
     expect(options.onSuccess()).toBeUndefined();
     expect(client.invalidateQueries).toHaveBeenCalled();
+  });
+});
+
+describe("creating an episode", () => {
+  it("retries under the same Idempotency-Key and starts the next one fresh", async () => {
+    const create = useCreateEpisode() as unknown as {
+      mutationFn: (input: unknown) => Promise<unknown>;
+    };
+    const post = vi.mocked(apiPost);
+    post.mockRejectedValueOnce(new TypeError("timed out"));
+    post.mockResolvedValue({ id: "e1" });
+    const keyOf = (call: number) =>
+      new Headers((post.mock.calls[call]![2] as RequestInit).headers).get(
+        "Idempotency-Key",
+      );
+
+    await expect(create.mutationFn({ name: "Flu" })).rejects.toThrow();
+    await create.mutationFn({ name: "Flu" });
+    await create.mutationFn({ name: "Cold" });
+
+    expect(keyOf(0)).toBeTruthy();
+    expect(keyOf(1)).toBe(keyOf(0));
+    expect(keyOf(2)).not.toBe(keyOf(0));
   });
 });

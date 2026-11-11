@@ -17,6 +17,7 @@ import {
   apiPatch,
   apiPost,
 } from "@/lib/api/api-fetch";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import {
   illnessDependentKeys,
   invalidateKeys,
@@ -164,9 +165,12 @@ function useInvalidateIllness() {
 /** Create an episode. */
 export function useCreateEpisode() {
   const invalidate = useInvalidateIllness();
+  // One key until a save lands, so a retry after a timeout is not a second
+  // episode.
+  const post = useIdempotentPost();
   return useMutation({
     mutationFn: (input: IllnessEpisodeCreateInput) =>
-      apiPost<IllnessEpisodeDTO>("/api/illness/episodes", input),
+      post<IllnessEpisodeDTO>("/api/illness/episodes", input),
     onSuccess: invalidate,
   });
 }

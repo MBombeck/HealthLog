@@ -31,7 +31,8 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useTranslations } from "@/lib/i18n/context";
-import { apiGetList, apiPost } from "@/lib/api/api-fetch";
+import { apiGetList } from "@/lib/api/api-fetch";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import {
   invalidateKeys,
   queryKeys,
@@ -57,9 +58,35 @@ import type {
 } from "./types";
 import { ListCapNotice } from "@/components/ui/list-cap-notice";
 
+/**
+ * The check-in's save, under one Idempotency-Key until it lands, so a second
+ * tap after a timeout replays the stored screening instead of adding one.
+ */
+function useSubmitAssessment(onSaved: (data: CreateResponse) => void) {
+  const queryClient = useQueryClient();
+  const post = useIdempotentPost();
+  return useMutation({
+    mutationFn: (body: unknown) =>
+      post<CreateResponse>("/api/mental-health/assessments", body),
+    onSuccess: (data) => {
+      onSaved(data);
+      // A screening is listed on its day, and it can satisfy a due checkup
+      // reminder, so the checkups list and the Today rail must repaint.
+      // Honest constraint: the server satisfy runs async via pg-boss, so
+      // this invalidation narrows the stale window but cannot close it — a
+      // refetch racing the job may still see the pre-satisfy row.
+      void invalidateKeys(queryClient, [
+        queryKeys.mentalHealthAssessments(),
+        queryKeys.measurementReminders(),
+        queryKeys.dayRoot(),
+      ]);
+      void refetchInactiveDailyReads(queryClient);
+    },
+  });
+}
+
 export function MentalWellbeing() {
   const { t, locale } = useTranslations();
-  const queryClient = useQueryClient();
 
   const [phase, setPhase] = useState<Phase>("choose");
   const [instrument, setInstrument] = useState<InstrumentId>("PHQ9");
@@ -94,24 +121,9 @@ export function MentalWellbeing() {
   });
   const history = historyPage?.data;
 
-  const mutation = useMutation({
-    mutationFn: (body: unknown) =>
-      apiPost<CreateResponse>("/api/mental-health/assessments", body),
-    onSuccess: (data) => {
-      setResult(data);
-      setPhase("result");
-      // A screening is listed on its day, and it can satisfy a due checkup
-      // reminder, so the checkups list and the Today rail must repaint.
-      // Honest constraint: the server satisfy runs async via pg-boss, so
-      // this invalidation narrows the stale window but cannot close it — a
-      // refetch racing the job may still see the pre-satisfy row.
-      void invalidateKeys(queryClient, [
-        queryKeys.mentalHealthAssessments(),
-        queryKeys.measurementReminders(),
-        queryKeys.dayRoot(),
-      ]);
-      void refetchInactiveDailyReads(queryClient);
-    },
+  const mutation = useSubmitAssessment((data) => {
+    setResult(data);
+    setPhase("result");
   });
 
   // Most-recent assessment per instrument for the landing's "last result" line.
