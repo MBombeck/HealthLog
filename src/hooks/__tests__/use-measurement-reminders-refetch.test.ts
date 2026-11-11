@@ -1,7 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 import { QueryClient, QueryObserver } from "@tanstack/react-query";
 
-import { invalidateReminderReads } from "@/hooks/use-measurement-reminders";
+import {
+  invalidateReminderReads,
+  putReminderRow,
+  type MeasurementReminder,
+} from "@/hooks/use-measurement-reminders";
 import { queryKeys } from "@/lib/query-keys";
 
 /**
@@ -69,5 +73,25 @@ describe("invalidateReminderReads — the Vorsorge daily-rail freshness contract
     expect(reads).toBe(2);
     unsubscribe();
     client.clear();
+  });
+});
+
+describe("putReminderRow", () => {
+  it("shows the answered row at once, so it no longer reads as due", () => {
+    const client = new QueryClient();
+    const due = {
+      id: "r1",
+      nextDueAt: "2026-11-11T08:00:00.000Z",
+    } as MeasurementReminder;
+    const other = { id: "r2" } as MeasurementReminder;
+    client.setQueryData(queryKeys.measurementReminders(), [due, other]);
+
+    const done = { ...due, nextDueAt: "2027-11-11T08:00:00.000Z" };
+    putReminderRow(client, done);
+
+    expect(client.getQueryData(queryKeys.measurementReminders())).toEqual([
+      done,
+      other,
+    ]);
   });
 });

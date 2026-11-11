@@ -115,10 +115,29 @@ export function useMeasurementReminders(enabled = true) {
   });
 }
 
+/**
+ * Write the row a satisfy, skip or snooze answered with into the cached list.
+ * The button re-enables as the call settles, and with only the refetch behind
+ * it the row still read as due, so a second tap marked it done twice.
+ */
+export function putReminderRow(
+  qc: QueryClient,
+  reminder: MeasurementReminder,
+): void {
+  qc.setQueryData<MeasurementReminder[]>(
+    queryKeys.measurementReminders(),
+    (rows) => rows?.map((row) => (row.id === reminder.id ? reminder : row)),
+  );
+}
+
 export function useMeasurementReminderMutations() {
   const qc = useQueryClient();
   // Not returned: a mutation would wait for every refetch before it settles.
   const invalidate = () => void invalidateReminderReads(qc);
+  const answered = (reminder: MeasurementReminder) => {
+    putReminderRow(qc, reminder);
+    invalidate();
+  };
 
   const create = useMutation({
     mutationKey: queryKeys.measurementReminderCreate(),
@@ -150,7 +169,7 @@ export function useMeasurementReminderMutations() {
     mutationKey: queryKeys.measurementReminderSatisfy(),
     mutationFn: (id: string) =>
       apiPost<MeasurementReminder>(`${BASE}/${id}/satisfy`),
-    onSuccess: invalidate,
+    onSuccess: answered,
   });
 
   // v1.37.20 (#223) — honest skip: the interval restarts from the skip
@@ -161,7 +180,7 @@ export function useMeasurementReminderMutations() {
       apiPost<{ skipped: boolean; reminder: MeasurementReminder }>(
         `${BASE}/${id}/skip`,
       ),
-    onSuccess: invalidate,
+    onSuccess: ({ reminder }) => answered(reminder),
   });
 
   // v1.37.20 (#223) — snooze to a calendar day; the server resolves it to
@@ -172,7 +191,7 @@ export function useMeasurementReminderMutations() {
       apiPost<{ reminder: MeasurementReminder }>(`${BASE}/${id}/snooze`, {
         until,
       }),
-    onSuccess: invalidate,
+    onSuccess: ({ reminder }) => answered(reminder),
   });
 
   return { create, update, remove, satisfy, skip, snooze };
