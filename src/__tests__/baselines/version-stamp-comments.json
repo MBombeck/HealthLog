@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2892,
-  "total": 9216,
+  "total": 9213,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -643,7 +643,7 @@
     "app/insights/walking-heart-rate/page.tsx": 1,
     "app/insights/walking-speed/page.tsx": 1,
     "app/insights/walking-steadiness/page.tsx": 1,
-    "app/insights/weight/page.tsx": 8,
+    "app/insights/weight/page.tsx": 5,
     "app/insights/workouts/page-client.tsx": 2,
     "app/insights/wrist-temperature/page.tsx": 1,
     "app/invite/[token]/__tests__/page.test.tsx": 1,

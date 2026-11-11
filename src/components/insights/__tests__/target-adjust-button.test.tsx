@@ -28,6 +28,11 @@ vi.mock("@/lib/insights/target-adjust-context", () => ({
   useTargetAdjust: () => useTargetAdjustMock(),
 }));
 
+const capabilities = { inSharedRecord: false };
+vi.mock("@/hooks/use-record-capabilities", () => ({
+  useRecordCapabilities: () => capabilities,
+}));
+
 const { TargetAdjustButton } = await import("../target-adjust-button");
 
 function render(node: React.ReactNode, locale: "en" | "de" = "en") {
@@ -51,6 +56,22 @@ describe("<TargetAdjustButton>", () => {
     });
     const html = render(<TargetAdjustButton />);
     expect(html).toBe("");
+  });
+
+  it("renders nothing inside somebody else's record", () => {
+    // The editor reads and writes the signed-in account's own targets, which
+    // the server refuses under a switch: the gear would open a dead sheet.
+    useTargetAdjustMock.mockReturnValue({
+      canAdjust: true,
+      requestAdjust: vi.fn(),
+      register: vi.fn(),
+    });
+    capabilities.inSharedRecord = true;
+    try {
+      expect(render(<TargetAdjustButton />)).toBe("");
+    } finally {
+      capabilities.inSharedRecord = false;
+    }
   });
 
   it("renders the gear once an editable target is registered", () => {

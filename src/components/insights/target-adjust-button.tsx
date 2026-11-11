@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
 import { useTargetAdjust } from "@/lib/insights/target-adjust-context";
+import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 
 /**
  * Header gear that opens the per-metric target editor.
@@ -20,6 +21,10 @@ import { useTargetAdjust } from "@/lib/insights/target-adjust-context";
  *     has registered for the page (e.g. a metric without a numeric
  *     target band, where the card paints nothing), so the header never
  *     shows a dead control;
+ *   - renders nothing inside somebody else's record: the editor loads and
+ *     saves the signed-in account's own targets (`/api/user/thresholds`),
+ *     which refuses under a switch, so the gear would open a sheet that
+ *     can do neither;
  *   - opens the primary registered target's `<TargetEditSheet>` on click.
  *
  * Sized to match `<CoachLaunchButton variant="icon">` so the gear + the
@@ -29,9 +34,11 @@ import { useTargetAdjust } from "@/lib/insights/target-adjust-context";
 export function TargetAdjustButton({ className }: { className?: string }) {
   const { t } = useTranslations();
   const adjust = useTargetAdjust();
+  const { inSharedRecord } = useRecordCapabilities();
 
-  // No provider, or no editable target registered for this page.
-  if (!adjust || !adjust.canAdjust) return null;
+  // No provider, no editable target registered for this page, or a record
+  // whose targets this editor cannot reach.
+  if (!adjust || !adjust.canAdjust || inSharedRecord) return null;
 
   // Reuse the action's existing copy ("Adjust target range" /
   // "Zielbereich anpassen") — the gear performs exactly what the old

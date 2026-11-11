@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { Ruler } from "lucide-react";
 
 import { useAuth } from "@/hooks/use-auth";
+import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
+import { apiGet } from "@/lib/api/api-fetch";
+import { queryKeys } from "@/lib/query-keys";
 import { useInsightsAnalytics } from "@/hooks/use-insights-analytics";
 import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
@@ -45,6 +49,23 @@ export default function InsightsBmiPage() {
 
   const { isEmpty } = useInsightsAnalytics("BMI");
 
+  // `useAuth()` is the person at the keyboard. Inside somebody else's record
+  // the height that decides is the record's, from the route that knows which
+  // record is on screen (the reference panel below reads the same cell).
+  const { inSharedRecord } = useRecordCapabilities();
+  const { data: targets } = useQuery({
+    queryKey: queryKeys.insightsTargets(),
+    queryFn: () =>
+      apiGet<{ profile?: { heightCm: number | null } }>(
+        "/api/insights/targets",
+      ),
+    enabled: isAuthenticated && inSharedRecord,
+  });
+  const heightCm = inSharedRecord
+    ? (targets?.profile?.heightCm ?? null)
+    : (user?.heightCm ?? null);
+  const heightKnown = !inSharedRecord || targets !== undefined;
+
   // v1.4.27 — BMI is derived from WEIGHT. When no weight readings
   // exist yet, the existing "set your height" branch can never compute
   // anything useful either; surface the empty-state CTA pointing at
@@ -75,7 +96,7 @@ export default function InsightsBmiPage() {
     );
   }
 
-  if (!user?.heightCm) {
+  if (heightKnown && !heightCm) {
     return (
       <SubPageShell
         title={t("insights.bmiSectionTitle")}
