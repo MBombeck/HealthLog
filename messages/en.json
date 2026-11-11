@@ -11155,7 +11155,6 @@
       "title": "Plans",
       "pageDescription": "If-then plans agreed in your Coach conversations. Confirm a proposal to make it part of the Coach's memory.",
       "readOnlyNote": "The Coach is not available right now, but you can still read and delete your plans.",
-      "proposalTitle": "Plan proposal",
       "ifThen": "If {cue}, then {action}.",
       "targetPrefix": "Target: {target}",
       "reviewPrefix": "Check-in: {when}",

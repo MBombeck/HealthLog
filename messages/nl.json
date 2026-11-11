@@ -11155,7 +11155,6 @@
       "title": "Plannen",
       "pageDescription": "Als-dan-plannen die je in je gesprekken met de Coach hebt afgesproken. Bevestig een voorstel om het onderdeel te maken van het geheugen van de Coach.",
       "readOnlyNote": "De Coach is nu niet beschikbaar, maar je kunt je plannen nog wel lezen en verwijderen.",
-      "proposalTitle": "Planvoorstel",
       "ifThen": "Als {cue}, dan {action}.",
       "targetPrefix": "Doel: {target}",
       "reviewPrefix": "Evaluatie: {when}",

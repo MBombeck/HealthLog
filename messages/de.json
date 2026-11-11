@@ -11155,7 +11155,6 @@
       "title": "Pläne",
       "pageDescription": "Wenn-dann-Pläne aus deinen Coach-Gesprächen. Bestätige einen Vorschlag, damit der Coach ihn sich merkt.",
       "readOnlyNote": "Der Coach ist gerade nicht verfügbar, deine Pläne kannst du aber weiter lesen und löschen.",
-      "proposalTitle": "Plan-Vorschlag",
       "ifThen": "Wenn {cue}, dann {action}.",
       "targetPrefix": "Ziel: {target}",
       "reviewPrefix": "Check-in: {when}",

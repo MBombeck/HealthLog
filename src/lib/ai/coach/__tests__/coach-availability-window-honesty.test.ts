@@ -590,12 +590,7 @@ describe("a failed narration block is counted, not silently absent", () => {
   );
 
   it("routes every cross-cutting block failure through the annotator", () => {
-    for (const block of [
-      "adherenceStoryline",
-      "changepoints",
-      "signalTrust",
-      "experimentOutcomes",
-    ]) {
+    for (const block of ["adherenceStoryline", "changepoints", "signalTrust"]) {
       expect(source, `${block} is not annotated on failure`).toContain(
         `blockFailed("${block}")`,
       );

@@ -11155,7 +11155,6 @@
       "title": "Planos",
       "pageDescription": "Planos do tipo “se… então…” acordados nas suas conversas com o Coach. Confirme uma proposta para torná-la parte da memória do Coach.",
       "readOnlyNote": "O Coach não está disponível agora, mas você ainda pode ler e excluir seus planos.",
-      "proposalTitle": "Proposta de plano",
       "ifThen": "Se {cue}, então {action}.",
       "targetPrefix": "Alvo: {target}",
       "reviewPrefix": "Revisão: {when}",

@@ -11155,7 +11155,6 @@
       "title": "계획",
       "pageDescription": "코치와의 대화에서 합의한 조건-실행 계획이에요. 제안을 확정하면 코치가 기억해요.",
       "readOnlyNote": "지금은 코치를 사용할 수 없지만 계획은 계속 읽고 삭제할 수 있습니다.",
-      "proposalTitle": "계획 제안",
       "ifThen": "만약 {cue}, 그러면 {action}.",
       "targetPrefix": "목표: {target}",
       "reviewPrefix": "점검: {when}",
