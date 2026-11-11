@@ -6377,6 +6377,7 @@
     "webPush": "브라우저 푸시",
     "webPushDescription": "HealthLog를 열어 두지 않아도 브라우저로 바로 알림을 받아요.",
     "webPushNotSupported": "이 브라우저는 푸시 알림을 지원하지 않아요.",
+    "webPushInstallFirst": "iPhone과 iPad에서는 설치한 앱에서만 푸시 알림을 받을 수 있어요. Safari에서 공유를 누른 다음 '홈 화면에 추가'를 선택하고, 홈 화면에서 HealthLog를 연 뒤 여기서 푸시 알림을 켜 주세요.",
     "webPushDenied": "푸시 알림이 차단돼 있어요. 브라우저 설정에서 허용해 주세요.",
     "webPushNotConfigured": "서버에 Web Push가 설정돼 있지 않아요.",
     "webPushSubscribe": "푸시 켜기",

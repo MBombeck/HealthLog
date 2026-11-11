@@ -6377,6 +6377,7 @@
     "webPush": "Browserpush",
     "webPushDescription": "Ontvang meldingen rechtstreeks in je browser, ook als HealthLog niet geopend is.",
     "webPushNotSupported": "Je browser ondersteunt geen pushmeldingen.",
+    "webPushInstallFirst": "Op iPhone en iPad werken pushmeldingen alleen in de geïnstalleerde app. Tik in Safari op Deel en daarna op 'Zet op beginscherm', open HealthLog vanaf het beginscherm en zet pushmeldingen hier aan.",
     "webPushDenied": "Pushmeldingen zijn geblokkeerd. Sta ze toe in de instellingen van je browser.",
     "webPushNotConfigured": "Web Push is niet geconfigureerd op de server.",
     "webPushSubscribe": "Push inschakelen",

@@ -6377,6 +6377,7 @@
     "webPush": "Push в браузере",
     "webPushDescription": "Получайте уведомления прямо в браузере, даже когда HealthLog не открыт.",
     "webPushNotSupported": "Ваш браузер не поддерживает push-уведомления.",
+    "webPushInstallFirst": "На iPhone и iPad push-уведомления работают только в установленном приложении. В Safari нажмите «Поделиться», затем «На экран „Домой“», откройте HealthLog с экрана «Домой» и включите push-уведомления здесь.",
     "webPushDenied": "Push-уведомления заблокированы. Разрешите их в настройках браузера.",
     "webPushNotConfigured": "Web Push не настроен на сервере.",
     "webPushSubscribe": "Включить push",
