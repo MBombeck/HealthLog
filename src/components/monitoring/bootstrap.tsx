@@ -1,43 +1,21 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { UmamiScript } from "@/components/monitoring/umami-script";
 import { GlitchtipReporter } from "@/components/monitoring/glitchtip-reporter";
-import { apiGet } from "@/lib/api/api-fetch";
+import type { PublicMonitoringSettings } from "@/lib/monitoring-settings";
 
-interface MonitoringSettings {
-  umamiEnabled: boolean;
-  umamiWebsiteId: string | null;
-  glitchtipEnabled: boolean;
-}
-
-export function MonitoringBootstrap() {
-  const [settings, setSettings] = useState<MonitoringSettings | null>(null);
-
-  useEffect(() => {
-    let active = true;
-
-    apiGet<MonitoringSettings | undefined>("/api/monitoring/settings", {
-      cache: "no-store",
-    })
-      .then((data) => {
-        if (!active || !data) return;
-        setSettings(data);
-      })
-      .catch(() => {
-        if (!active) return;
-        setSettings({
-          umamiEnabled: false,
-          umamiWebsiteId: null,
-          glitchtipEnabled: false,
-        });
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
+/**
+ * Mounts the operator's analytics script and error reporter. The root layout
+ * reads the instance-wide switches on the server and passes them in, so no
+ * page load asks `/api/monitoring/settings` for three values the document
+ * render already had. `null` (the key-mismatch page) mounts nothing.
+ */
+export function MonitoringBootstrap({
+  settings,
+}: {
+  settings: Pick<
+    PublicMonitoringSettings,
+    "umamiEnabled" | "umamiWebsiteId" | "glitchtipEnabled"
+  > | null;
+}) {
   if (!settings) return null;
 
   return (
