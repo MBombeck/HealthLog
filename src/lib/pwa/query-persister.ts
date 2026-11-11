@@ -1,10 +1,10 @@
 /**
- * Minimal IndexedDB-backed TanStack Query persistence (v1.18.6).
+ * Minimal IndexedDB-backed TanStack Query persistence.
  *
  * No external persister dependency: a tiny IDB key/value store plus a manual
- * dehydrate-on-cache-change / hydrate-on-boot bridge. The goal is offline
- * READ value — an installed PWA opened offline hydrates the last cached
- * dashboard/series instantly instead of painting empty skeletons forever.
+ * dehydrate-on-cache-change / hydrate-after-sign-in bridge. It is a warm
+ * start for the dashboard reads, not an offline mode: signed-in pages are
+ * never cached, so the app cannot boot without a connection.
  *
  * Safety:
  *  - Only successful (`status: "success"`) query results are persisted.
@@ -18,9 +18,10 @@
  *  - `clearPersistedQueryCache()` is called on every session END (logout AND
  *    the 401 / session-expiry redirect), so a shared device never leaks one
  *    account's cached data to the next once the session is gone.
- *  - The payload is stamped with the current user id; a restore whose stored
- *    marker doesn't match the live account discards + clears the cache rather
- *    than hydrating a foreign account's data.
+ *  - The payload is stamped with the current user id. A restore runs only
+ *    once `["auth","me"]` names the live account, and a stored owner that is
+ *    not that account discards + clears the cache rather than hydrating a
+ *    foreign account's data.
  *  - Respects the centralised queryKey factory: it reads existing query keys,
  *    it never invents new ones.
  */
@@ -166,9 +167,9 @@ function currentUserId(queryClient: QueryClient): string | null {
 }
 
 /**
- * Restore persisted query data into the client (called once before the first
- * paint of the authenticated shell). A build-version or age mismatch discards
- * the snapshot rather than hydrating a stale/foreign-schema cache.
+ * Restore persisted query data into the client once the signed-in account is
+ * known. A build-version, age or owner mismatch discards the snapshot rather
+ * than hydrating a stale, foreign-schema or foreign-account cache.
  */
 export async function restorePersistedQueryCache(
   queryClient: QueryClient,
@@ -182,6 +183,9 @@ export async function restorePersistedQueryCache(
   // saying "viewing her record" is the mis-context failure this feature is
   // built to prevent, in the one place a full reload cannot clear.
   if (isReadingSharedRecord()) return;
+  // Without a live account there is nothing to compare the owner with.
+  const liveUserId = currentUserId(queryClient);
+  if (liveUserId === null) return;
   try {
     const payload = await idbGet<PersistedPayload>();
     if (!payload) return;
@@ -193,32 +197,24 @@ export async function restorePersistedQueryCache(
       await clearPersistedQueryCache();
       return;
     }
-    // Per-account binding: if the live account is known and differs from the
-    // snapshot's stored owner, this is a different user on the same browser
-    // profile — discard + clear rather than hydrate a foreign account's data.
-    // When the live id is not yet known (auth/me not resolved at restore time)
-    // we don't gate on it; the session-end wipe is the primary guarantee and
-    // the build-version + 24 h age gates still apply.
-    const liveUserId = currentUserId(queryClient);
-    if (liveUserId !== null && payload.userId !== liveUserId) {
+    // Per-account binding: a snapshot written by anyone but the live account
+    // (or before any account was known) is another user's on the same
+    // browser profile. Discard and clear it.
+    if (payload.userId !== liveUserId) {
       await clearPersistedQueryCache();
       return;
     }
 
-    // Never clobber a query the live client already holds. `hydrate` calls
-    // `setData` per dehydrated query unconditionally, so a snapshot restored
-    // in an effect AFTER the first paint would overwrite a query the page
-    // already fetched/prefetched — replacing the fresh (post-mutation) list
-    // with the stale persisted (often empty) copy. That was the read-after-
-    // write break across dashboard/measurements/medications: the restore won
-    // the race against the in-flight fetch. Drop every dehydrated query whose
-    // key the cache already carries so restore only ever FILLS gaps, never
-    // overwrites; a query already present is by definition fresher than disk.
+    // Only fill gaps, never overwrite data the live client holds: the
+    // restore lands after the shell has mounted the page, so a query may
+    // already carry a fresh (post-mutation) answer, and that is fresher than
+    // disk. A query the page has started but not answered yet has no data
+    // and is filled; its own fetch replaces the copy when it lands.
     const cache = queryClient.getQueryCache();
     const filtered: DehydratedState = {
       ...payload.state,
       queries: payload.state.queries.filter(
-        (q) => cache.get(q.queryHash) === undefined,
+        (q) => cache.get(q.queryHash)?.state.data === undefined,
       ),
     };
     if (filtered.queries.length === 0 || !canHydrate()) return;
@@ -230,9 +226,8 @@ export async function restorePersistedQueryCache(
     // after a create/update then serves the stale pre-mutation copy. Marking
     // every restored query invalidated makes it stale-but-shown: the persisted
     // data still paints instantly, and the first mount triggers a background
-    // refetch. Online that lands fresh data within ms; offline the refetch
-    // fails and the hydrated copy stays on screen — the offline value holds.
-    // Scoped to the keys we just hydrated so we never disturb a live query.
+    // refetch that lands fresh data within ms. Scoped to the keys just
+    // hydrated so a live query is never disturbed.
     for (const dq of filtered.queries) {
       cache.get(dq.queryHash)?.invalidate();
     }

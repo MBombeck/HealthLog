@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2888,
-  "total": 9205,
+  "total": 9204,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1277,7 +1277,7 @@
     "components/onboarding/welcome-screen.tsx": 1,
     "components/profile/__tests__/height-entry-surfaces.test.tsx": 1,
     "components/profile/height-field-control.tsx": 1,
-    "components/providers.tsx": 3,
+    "components/providers.tsx": 2,
     "components/records/about-me-note-manager.tsx": 3,
     "components/records/ai-profile-inclusion-manager.tsx": 1,
     "components/records/allergy-form.tsx": 1,
