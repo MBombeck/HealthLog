@@ -25,6 +25,7 @@ import { isDashboardSnapshotEnabled } from "@/lib/dashboard/snapshot-flag";
 import { prefetchDashboardSnapshot } from "@/lib/queries/use-dashboard-snapshot";
 import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
 import { sanitizeSameOriginPath } from "@/lib/url-safety";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { formatDate } from "@/lib/format";
 import {
   InsecureTransportBanner,
@@ -265,7 +266,7 @@ export default function LoginPage() {
       // Route rejections carry the envelope error verbatim; everything
       // else (WebAuthn ceremony failures) keeps the descriptive mapping.
       if (err instanceof ApiError) {
-        setError(err.message || t("auth.loginFailed"));
+        setError(localizedApiError(err, t, "auth.loginFailed"));
       } else {
         const { key, params } = describePasskeyError(err);
         setError(t(key, params));
@@ -309,11 +310,7 @@ export default function LoginPage() {
       navigateAfterLogin();
     } catch (err) {
       if (noteRefusal(err)) return;
-      setError(
-        err instanceof ApiError && err.message
-          ? err.message
-          : t("auth.loginFailed"),
-      );
+      setError(localizedApiError(err, t, "auth.loginFailed"));
     } finally {
       setLoading(false);
     }

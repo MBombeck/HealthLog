@@ -70,3 +70,40 @@ describe("registration page, already signed in", () => {
     expect(window.location.search).toBe("?invite=hlv_x");
   });
 });
+
+describe("registration refusals", () => {
+  async function register(
+    response: Parameters<ReturnType<typeof stubFetch>["on"]>[2],
+  ) {
+    stubFetch()
+      .on("GET", "/api/auth/me", { status: 401, error: "Unauthorized" })
+      .on("POST", "/api/auth/register", response);
+    const { screen } = await renderWithApp(<RegisterPage />, { user: null });
+    await fill("#email", "new@example.com");
+    await fill("#username", "newcomer");
+    await fill("#password", "a long enough passphrase");
+    await screen.getByRole("button", { name: "Sign up" }).click();
+    return screen;
+  }
+
+  it("says the registration failed instead of the server's words", async () => {
+    const screen = await register({
+      status: 409,
+      error: "Username or email already taken",
+      meta: { errorCode: "http.conflict" },
+    });
+    await expect.element(screen.getByText("Registration failed")).toBeVisible();
+    expect(document.body.textContent).not.toContain("already taken");
+  });
+
+  it("shows the password feedback, which the server words for the reader", async () => {
+    const screen = await register({
+      status: 422,
+      error: "Füge ein oder zwei Wörter hinzu.",
+      meta: { errorCode: "http.invalid" },
+    });
+    await expect
+      .element(screen.getByText("Füge ein oder zwei Wörter hinzu."))
+      .toBeVisible();
+  });
+});
