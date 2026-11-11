@@ -142,7 +142,8 @@
     "auth": {
       "reproof": {
         "required": "Confirm your current password to change this.",
-        "failed": "That did not verify. Nothing was changed."
+        "failed": "That did not verify. Nothing was changed.",
+        "too_weak": "Confirm with your second factor or a passkey. On this account a password alone is not enough."
       },
       "missing": "Your session has ended, so nothing was changed. Sign in again to continue.",
       "passkey": {
@@ -221,6 +222,14 @@
         "too_large": "Too many workouts at once. Send fewer at a time.",
         "payload_too_large": "The workout data is too large to save in one go.",
         "source_not_permitted": "This connection may not save workouts under that source."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "No AI provider is set up, so nothing was sent to one. Set one up in the AI settings."
+      },
+      "budget": {
+        "exceeded": "Today's AI budget is used up, so nothing was sent. It renews tomorrow."
       }
     }
   },

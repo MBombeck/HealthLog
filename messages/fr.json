@@ -142,7 +142,8 @@
     "auth": {
       "reproof": {
         "required": "Confirmez votre mot de passe actuel pour modifier ceci.",
-        "failed": "La vérification a échoué. Rien n'a été modifié."
+        "failed": "La vérification a échoué. Rien n'a été modifié.",
+        "too_weak": "Confirmez avec votre second facteur ou une clé d’accès. Sur ce compte, le mot de passe seul ne suffit pas."
       },
       "missing": "Votre session a expiré, rien n'a donc été modifié. Reconnectez-vous pour continuer.",
       "passkey": {
@@ -221,6 +222,14 @@
         "too_large": "Trop d'entraînements à la fois. Envoyez-en moins à la fois.",
         "payload_too_large": "Les données d'entraînement sont trop volumineuses pour être enregistrées en une fois.",
         "source_not_permitted": "Cette connexion n'a pas le droit d'enregistrer des entraînements sous cette source."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "Aucun fournisseur d’IA n’est configuré, rien n’a donc été envoyé. Configurez-en un dans les réglages IA."
+      },
+      "budget": {
+        "exceeded": "Le budget IA du jour est épuisé, rien n’a donc été envoyé. Il se renouvelle demain."
       }
     }
   },

@@ -352,6 +352,21 @@ describe("resolveProviderForTest — empty override resolves via the chain", () 
     expect(provider.type).not.toBe("none");
     expect(provider).toBeInstanceOf(OpenAIClient);
   });
+
+  it("answers no provider, which the route names, when the chain resolves empty", async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      aiProvider: null,
+      aiModel: null,
+      aiBaseUrl: null,
+      aiAnthropicKeyEncrypted: null,
+      aiLocalKeyEncrypted: null,
+      aiOpenaiKeyEncrypted: null,
+      aiProviderChain: [{ providerType: "openai", priority: 1, enabled: true }],
+    } as never);
+
+    const provider = await resolveProviderForTest("user-123", {});
+    expect(provider.type).toBe("none");
+  });
 });
 
 describe("resolveProviderAvailability", () => {

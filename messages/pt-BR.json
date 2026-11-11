@@ -142,7 +142,8 @@
     "auth": {
       "reproof": {
         "required": "Confirme sua senha atual para alterar isto.",
-        "failed": "A verificação não foi concluída. Nada foi alterado."
+        "failed": "A verificação não foi concluída. Nada foi alterado.",
+        "too_weak": "Confirme com seu segundo fator ou uma chave de acesso. Nesta conta, só a senha não basta."
       },
       "missing": "Sua sessão terminou, então nada foi alterado. Entre novamente para continuar.",
       "passkey": {
@@ -221,6 +222,14 @@
         "too_large": "Treinos demais de uma vez. Envie menos por vez.",
         "payload_too_large": "Os dados do treino são grandes demais para salvar de uma vez.",
         "source_not_permitted": "Esta conexão não pode salvar treinos com essa origem."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "Nenhum provedor de IA está configurado, então nada foi enviado. Configure um nas configurações de IA."
+      },
+      "budget": {
+        "exceeded": "O orçamento de IA de hoje acabou, então nada foi enviado. Ele é renovado amanhã."
       }
     }
   },

@@ -142,7 +142,8 @@
     "auth": {
       "reproof": {
         "required": "Potwierdź obecne hasło, aby to zmienić.",
-        "failed": "Weryfikacja nie powiodła się. Nic nie zostało zmienione."
+        "failed": "Weryfikacja nie powiodła się. Nic nie zostało zmienione.",
+        "too_weak": "Potwierdź drugim składnikiem lub kluczem dostępu. Na tym koncie samo hasło nie wystarczy."
       },
       "missing": "Twoja sesja wygasła, więc nic nie zostało zmienione. Zaloguj się ponownie, aby kontynuować.",
       "passkey": {
@@ -221,6 +222,14 @@
         "too_large": "Za dużo treningów naraz. Wysyłaj mniej za jednym razem.",
         "payload_too_large": "Dane treningu są za duże, by zapisać je za jednym razem.",
         "source_not_permitted": "To połączenie nie może zapisywać treningów pod tym źródłem."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "Nie skonfigurowano dostawcy AI, więc nic nie zostało wysłane. Skonfiguruj go w ustawieniach AI."
+      },
+      "budget": {
+        "exceeded": "Dzisiejszy budżet AI został wykorzystany, więc nic nie zostało wysłane. Odnowi się jutro."
       }
     }
   },

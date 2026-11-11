@@ -142,7 +142,8 @@
     "auth": {
       "reproof": {
         "required": "Bevestig je huidige wachtwoord om dit te wijzigen.",
-        "failed": "De verificatie is mislukt. Er is niets gewijzigd."
+        "failed": "De verificatie is mislukt. Er is niets gewijzigd.",
+        "too_weak": "Bevestig met je tweede factor of een passkey. Voor dit account is alleen je wachtwoord niet genoeg."
       },
       "missing": "Je sessie is verlopen, dus er is niets gewijzigd. Meld je opnieuw aan om verder te gaan.",
       "passkey": {
@@ -221,6 +222,14 @@
         "too_large": "Te veel trainingen tegelijk. Stuur er minder per keer.",
         "payload_too_large": "De trainingsgegevens zijn te groot om in één keer op te slaan.",
         "source_not_permitted": "Deze koppeling mag geen trainingen onder die bron opslaan."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "Er is geen AI-provider ingesteld, dus er is niets verzonden. Stel er een in bij de AI-instellingen."
+      },
+      "budget": {
+        "exceeded": "Het AI-budget voor vandaag is op, dus er is niets verzonden. Morgen is het er weer."
       }
     }
   },

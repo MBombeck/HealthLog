@@ -142,7 +142,8 @@
     "auth": {
       "reproof": {
         "required": "Confirma tu contraseña actual para cambiar esto.",
-        "failed": "La verificación ha fallado. No se ha cambiado nada."
+        "failed": "La verificación ha fallado. No se ha cambiado nada.",
+        "too_weak": "Confírmalo con tu segundo factor o una clave de acceso. En esta cuenta no basta con la contraseña."
       },
       "missing": "Tu sesión ha caducado, así que no se ha cambiado nada. Inicia sesión de nuevo para continuar.",
       "passkey": {
@@ -221,6 +222,14 @@
         "too_large": "Demasiados entrenamientos a la vez. Envía menos cada vez.",
         "payload_too_large": "Los datos del entrenamiento son demasiado grandes para guardarlos de una vez.",
         "source_not_permitted": "Esta conexión no puede guardar entrenamientos con esa fuente."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "No hay ningún proveedor de IA configurado, así que no se ha enviado nada. Configura uno en los ajustes de IA."
+      },
+      "budget": {
+        "exceeded": "El presupuesto de IA de hoy se ha agotado, así que no se ha enviado nada. Se renueva mañana."
       }
     }
   },

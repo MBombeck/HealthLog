@@ -142,7 +142,8 @@
     "auth": {
       "reproof": {
         "required": "Conferma la password attuale per modificarlo.",
-        "failed": "La verifica non è riuscita. Non è stato modificato nulla."
+        "failed": "La verifica non è riuscita. Non è stato modificato nulla.",
+        "too_weak": "Conferma con il secondo fattore o una passkey. Per questo account la sola password non basta."
       },
       "missing": "La tua sessione è scaduta, quindi non è stato modificato nulla. Accedi di nuovo per continuare.",
       "passkey": {
@@ -221,6 +222,14 @@
         "too_large": "Troppi allenamenti in una volta. Inviane meno alla volta.",
         "payload_too_large": "I dati dell'allenamento sono troppo grandi per salvarli in una volta.",
         "source_not_permitted": "Questa connessione non può salvare allenamenti con questa fonte."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "Nessun provider di IA è configurato, quindi non è stato inviato nulla. Configurane uno nelle impostazioni IA."
+      },
+      "budget": {
+        "exceeded": "Il budget IA di oggi è esaurito, quindi non è stato inviato nulla. Si rinnova domani."
       }
     }
   },

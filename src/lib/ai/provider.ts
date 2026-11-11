@@ -1359,10 +1359,10 @@ async function resolveProviderForTestUnbound(
   // fallback used to probe a different provider than generation ran
   // (observed: test→admin-key while generation→codex), so a green test gave
   // no signal about whether overnight generation would work.
+  // Nothing resolving is the route's `ai.provider.none`, not a refused entry.
   if (!provider) {
     const chain = await resolveProviderChain(userId);
-    if (chain.length > 0) return chain[0].instance;
-    throw new AITestConfigError(422, "No AI provider configured");
+    return chain.length > 0 ? chain[0].instance : new NoProvider();
   }
 
   switch (provider) {
