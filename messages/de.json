@@ -191,6 +191,37 @@
     },
     "ai_provider": {
       "private_host": "Diese Adresse liegt in einem privaten Netz. Der Betreiber muss ihren genauen Ursprung erst in AI_PRIVATE_ORIGINS freigeben."
+    },
+    "encounter": {
+      "invalid": "Prüfe die Angaben zum Termin und versuche es erneut.",
+      "practitioner-not-found": "Diese Praxis bzw. dieser Arzt existiert nicht mehr. Wähle einen anderen Eintrag oder keinen.",
+      "reminder-not-found": "Diese Vorsorge existiert nicht mehr. Wähle eine andere oder keine.",
+      "reminder-conflict": "Ein geplanter Termin kann keine Vorsorge abschließen, denn er hat noch nicht stattgefunden."
+    },
+    "vaccination": {
+      "invalid": "Prüfe die Angaben zur Impfung und versuche es erneut.",
+      "practitioner-not-found": "Diese Praxis bzw. dieser Arzt existiert nicht mehr. Wähle einen anderen Eintrag oder keinen.",
+      "encounter-not-found": "Dieser Termin existiert nicht mehr. Wähle einen anderen oder keinen.",
+      "custom-vaccine-not-found": "Dieser Impfstoff existiert nicht mehr. Wähle ihn erneut aus der Liste.",
+      "not-found": "Diese Impfung ist nicht mehr vorhanden.",
+      "identity-required": "Eine Impfung braucht einen Namen: Wähle einen Impfstoff aus der Liste oder gib ein, was im Impfpass steht.",
+      "booster-invalid": "Prüfe die Angaben zur Auffrischung und versuche es erneut.",
+      "booster-no-antigen": "Diese Impfung nennt keinen Impfstoff aus dem Katalog, daher lässt sich keine Auffrischung planen.",
+      "booster-out-of-scope": "Deine Freigabe für diese Akte reicht nicht, um eine Auffrischung zu planen."
+    },
+    "allergy": {
+      "invalid": "Prüfe die Angaben zur Allergie und versuche es erneut."
+    },
+    "practitioner": {
+      "invalid": "Prüfe die Angaben zur Praxis bzw. zum Arzt und versuche es erneut."
+    },
+    "workout": {
+      "batch": {
+        "invalid": "Prüfe die Angaben zum Training und versuche es erneut.",
+        "too_large": "Zu viele Trainings auf einmal. Schicke weniger auf einmal.",
+        "payload_too_large": "Die Trainingsdaten sind zu groß, um sie auf einmal zu speichern.",
+        "source_not_permitted": "Diese Verbindung darf keine Trainings unter dieser Quelle speichern."
+      }
     }
   },
   "doctorReport": {

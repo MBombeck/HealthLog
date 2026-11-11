@@ -191,6 +191,37 @@
     },
     "ai_provider": {
       "private_host": "이 주소는 사설 네트워크에 있어요. 운영자가 먼저 AI_PRIVATE_ORIGINS에 정확한 출처를 허용해야 해요."
+    },
+    "encounter": {
+      "invalid": "진료 정보를 확인하고 다시 시도해 주세요.",
+      "practitioner-not-found": "이 병원 또는 의사가 더 이상 없어요. 다른 항목을 고르거나 선택하지 마세요.",
+      "reminder-not-found": "이 건강검진이 더 이상 없어요. 다른 검진을 고르거나 선택하지 마세요.",
+      "reminder-conflict": "예정된 진료는 아직 이루어지지 않았기 때문에 건강검진을 완료할 수 없어요."
+    },
+    "vaccination": {
+      "invalid": "예방접종 정보를 확인하고 다시 시도해 주세요.",
+      "practitioner-not-found": "이 병원 또는 의사가 더 이상 없어요. 다른 항목을 고르거나 선택하지 마세요.",
+      "encounter-not-found": "이 진료가 더 이상 없어요. 다른 진료를 고르거나 선택하지 마세요.",
+      "custom-vaccine-not-found": "이 백신이 더 이상 없어요. 목록에서 다시 골라 주세요.",
+      "not-found": "이 예방접종 기록은 더 이상 없어요.",
+      "identity-required": "접종에는 이름이 필요해요. 목록에서 백신을 고르거나 기록에 적힌 이름을 입력하세요.",
+      "booster-invalid": "추가 접종 정보를 확인하고 다시 시도해 주세요.",
+      "booster-no-antigen": "이 접종에는 목록의 백신이 지정되지 않아 추가 접종을 계획할 수 없어요.",
+      "booster-out-of-scope": "이 기록에 대한 권한으로는 추가 접종을 계획할 수 없어요."
+    },
+    "allergy": {
+      "invalid": "알레르기 정보를 확인하고 다시 시도해 주세요."
+    },
+    "practitioner": {
+      "invalid": "병원 또는 의사 정보를 확인하고 다시 시도해 주세요."
+    },
+    "workout": {
+      "batch": {
+        "invalid": "운동 정보를 확인하고 다시 시도해 주세요.",
+        "too_large": "한 번에 운동이 너무 많아요. 조금씩 나눠서 보내 주세요.",
+        "payload_too_large": "운동 데이터가 너무 커서 한 번에 저장할 수 없어요.",
+        "source_not_permitted": "이 연결로는 해당 출처의 운동을 저장할 수 없어요."
+      }
     }
   },
   "doctorReport": {

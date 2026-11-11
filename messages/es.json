@@ -191,6 +191,37 @@
     },
     "ai_provider": {
       "private_host": "Esta dirección está en una red privada. El operador tiene que permitir antes su origen exacto en AI_PRIVATE_ORIGINS."
+    },
+    "encounter": {
+      "invalid": "Comprueba los datos de la cita e inténtalo de nuevo.",
+      "practitioner-not-found": "Esta consulta o este médico ya no existe. Elige otro o ninguno.",
+      "reminder-not-found": "Esta revisión ya no existe. Elige otra o ninguna.",
+      "reminder-conflict": "Una cita prevista no puede cerrar una revisión, porque todavía no ha tenido lugar."
+    },
+    "vaccination": {
+      "invalid": "Comprueba los datos de la vacuna e inténtalo de nuevo.",
+      "practitioner-not-found": "Esta consulta o este médico ya no existe. Elige otro o ninguno.",
+      "encounter-not-found": "Esta cita ya no existe. Elige otra o ninguna.",
+      "custom-vaccine-not-found": "Esta vacuna ya no existe. Elígela de nuevo en la lista.",
+      "not-found": "Esta vacuna ya no está disponible.",
+      "identity-required": "Una dosis necesita un nombre: elige una vacuna de la lista o escribe lo que pone el registro.",
+      "booster-invalid": "Comprueba los datos del refuerzo e inténtalo de nuevo.",
+      "booster-no-antigen": "Esta dosis no indica ninguna vacuna del catálogo, así que no se puede planificar un refuerzo.",
+      "booster-out-of-scope": "Tu acceso a este registro no permite planificar un refuerzo."
+    },
+    "allergy": {
+      "invalid": "Comprueba los datos de la alergia e inténtalo de nuevo."
+    },
+    "practitioner": {
+      "invalid": "Comprueba los datos de la consulta o del médico e inténtalo de nuevo."
+    },
+    "workout": {
+      "batch": {
+        "invalid": "Comprueba los datos del entrenamiento e inténtalo de nuevo.",
+        "too_large": "Demasiados entrenamientos a la vez. Envía menos cada vez.",
+        "payload_too_large": "Los datos del entrenamiento son demasiado grandes para guardarlos de una vez.",
+        "source_not_permitted": "Esta conexión no puede guardar entrenamientos con esa fuente."
+      }
     }
   },
   "doctorReport": {

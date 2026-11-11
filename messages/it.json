@@ -191,6 +191,37 @@
     },
     "ai_provider": {
       "private_host": "Questo indirizzo si trova in una rete privata. L’operatore deve prima consentirne l’origine esatta in AI_PRIVATE_ORIGINS."
+    },
+    "encounter": {
+      "invalid": "Controlla i dati dell'appuntamento e riprova.",
+      "practitioner-not-found": "Questo studio o medico non esiste più. Scegline un altro o nessuno.",
+      "reminder-not-found": "Questo controllo non esiste più. Scegline un altro o nessuno.",
+      "reminder-conflict": "Un appuntamento previsto non può chiudere un controllo, perché non è ancora avvenuto."
+    },
+    "vaccination": {
+      "invalid": "Controlla i dati della vaccinazione e riprova.",
+      "practitioner-not-found": "Questo studio o medico non esiste più. Scegline un altro o nessuno.",
+      "encounter-not-found": "Questo appuntamento non esiste più. Scegline un altro o nessuno.",
+      "custom-vaccine-not-found": "Questo vaccino non esiste più. Sceglilo di nuovo dall'elenco.",
+      "not-found": "Questa vaccinazione non è più disponibile.",
+      "identity-required": "Una dose ha bisogno di un nome: scegli un vaccino dall'elenco o scrivi quello che riporta il libretto.",
+      "booster-invalid": "Controlla i dati del richiamo e riprova.",
+      "booster-no-antigen": "Questa dose non indica alcun vaccino del catalogo, quindi non si può pianificare un richiamo.",
+      "booster-out-of-scope": "Il tuo accesso a questa cartella non consente di pianificare un richiamo."
+    },
+    "allergy": {
+      "invalid": "Controlla i dati dell'allergia e riprova."
+    },
+    "practitioner": {
+      "invalid": "Controlla i dati dello studio o del medico e riprova."
+    },
+    "workout": {
+      "batch": {
+        "invalid": "Controlla i dati dell'allenamento e riprova.",
+        "too_large": "Troppi allenamenti in una volta. Inviane meno alla volta.",
+        "payload_too_large": "I dati dell'allenamento sono troppo grandi per salvarli in una volta.",
+        "source_not_permitted": "Questa connessione non può salvare allenamenti con questa fonte."
+      }
     }
   },
   "doctorReport": {
