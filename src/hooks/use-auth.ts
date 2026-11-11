@@ -536,11 +536,14 @@ export function useAuth() {
   // /auth/login and wiped every offline cache (data 7→0 entries, pages 1→0
   // in the audit measurement), making the whole offline story unreachable.
   const verdictUnknown = query.isError && isAuthVerdictUnknown(query.error);
-  const isAuthenticated =
-    !!query.data || (verdictUnknown && readWasAuthenticated());
+  // A 401/403 on a refetch ends the session although the cache still holds
+  // the last good payload: React Query keeps `data` when a refetch fails.
+  const sessionEnded = query.isError && !verdictUnknown;
+  const user = sessionEnded ? null : (query.data ?? null);
+  const isAuthenticated = !!user || (verdictUnknown && readWasAuthenticated());
 
   return {
-    user: query.data ?? null,
+    user,
     isLoading: query.isLoading,
     isAuthenticated,
     /**
@@ -550,7 +553,7 @@ export function useAuth() {
      * wipe: a wipe without a 401/403 verdict would destroy the offline
      * caches on every network blip.
      */
-    isAuthUnknown: !query.data && verdictUnknown,
+    isAuthUnknown: !user && verdictUnknown,
     error: query.error,
     refetch: query.refetch,
   };

@@ -136,6 +136,30 @@ describe("useAuth — last-known state on a non-verdict failure", () => {
   });
 });
 
+describe("useAuth — a verdict on a refetch", () => {
+  it("ends the session on a 401 although the cache still holds the account", () => {
+    store.set("healthlog-was-authenticated", "1");
+    queryState.data = { id: "u1", username: "someone" };
+    queryState.isError = true;
+    queryState.error = new ApiError("unauthorized", 401);
+
+    const auth = useAuth();
+    expect(auth.isAuthenticated).toBe(false);
+    expect(auth.user).toBeNull();
+    expect(auth.isAuthUnknown).toBe(false);
+  });
+
+  it("keeps the cached account through a network failure on a refetch", () => {
+    queryState.data = { id: "u1", username: "someone" };
+    queryState.isError = true;
+    queryState.error = new TypeError("Failed to fetch");
+
+    const auth = useAuth();
+    expect(auth.isAuthenticated).toBe(true);
+    expect(auth.user).toEqual({ id: "u1", username: "someone" });
+  });
+});
+
 describe("session-end marker lifecycle", () => {
   it("clearCachesForSessionEnd drops the marker so the next cold offline launch lands on the login gate", () => {
     store.set("healthlog-was-authenticated", "1");
