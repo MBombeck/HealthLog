@@ -5,7 +5,8 @@ import {
   getGeneralStatusSystemPrompt,
   getGeneralStatusUserPrompt,
 } from "@/lib/ai/prompts/general-status";
-import { getBpTargets } from "@/lib/analytics/bp-targets";
+import type { BpTargets } from "@/lib/analytics/bp-targets";
+import { resolveEffectiveBpTargets } from "@/lib/analytics/effective-range";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
 import { getNoKeyGeneralStatusText } from "@/lib/insights/no-key-fallbacks";
 import { measurementTypeEnum } from "@/lib/validations/measurement";
@@ -71,7 +72,10 @@ async function buildGeneralSnapshot(
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
+      heightCm: true,
       dateOfBirth: true,
+      gender: true,
+      thresholdsJson: true,
     },
   });
 
@@ -148,7 +152,10 @@ async function buildGeneralSnapshot(
   );
   const moodMean = moodSummary?.mean ?? null;
 
-  const bpTargets = getBpTargets(user?.dateOfBirth ?? null);
+  // The person's own target where one is set, the age default otherwise.
+  const bpTargets = user
+    ? resolveEffectiveBpTargets(user, user.thresholdsJson)
+    : null;
   const bpInTargetLast30Days = bpTargets
     ? bpInTargetLast30DailyPoints(dailyByType, bpTargets)
     : null;
@@ -314,7 +321,7 @@ async function readAdherenceSeries(userId: string, now: Date, userTz: string) {
  */
 function bpInTargetLast30DailyPoints(
   dailyByType: ReadonlyMap<string, ReturnType<typeof applyPayloadBudget>>,
-  bpTargets: NonNullable<ReturnType<typeof getBpTargets>>,
+  bpTargets: BpTargets,
 ): number | null {
   const sysDaily = dailyByType.get("BLOOD_PRESSURE_SYS")?.daily ?? [];
   const diaMap = new Map(

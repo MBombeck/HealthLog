@@ -422,6 +422,39 @@ describe("extractFeatures — weight target direction (#1006)", () => {
   });
 });
 
+describe("extractFeatures — blood pressure against the person's own target", () => {
+  // 135/85 on three days: above the age default's ceiling, inside a target
+  // the person's doctor agreed (up to 140/90).
+  const bpRows = [1, 2, 3].flatMap((daysAgo) => {
+    const measuredAt = new Date(Date.now() - daysAgo * DAY_MS);
+    return [
+      { ...measurementRow("BLOOD_PRESSURE_SYS", 135, daysAgo), measuredAt },
+      { ...measurementRow("BLOOD_PRESSURE_DIA", 85, daysAgo), measuredAt },
+    ];
+  });
+
+  it("counts readings inside the own target as in target", async () => {
+    prismaMock.user.findUnique.mockResolvedValue({
+      heightCm: 180,
+      dateOfBirth: new Date("1980-01-01"),
+      gender: "MALE",
+      thresholdsJson: {
+        BLOOD_PRESSURE_SYS: { min: 110, max: 140 },
+        BLOOD_PRESSURE_DIA: { min: 70, max: 90 },
+      },
+    });
+    prismaMock.measurement.findMany.mockResolvedValue(bpRows);
+    const f = await extractFeatures("user-1", false);
+    expect(f.bloodPressure?.pctInTarget).toBe(100);
+  });
+
+  it("grades against the age default when no target is stored", async () => {
+    prismaMock.measurement.findMany.mockResolvedValue(bpRows);
+    const f = await extractFeatures("user-1", false);
+    expect(f.bloodPressure?.pctInTarget).toBe(0);
+  });
+});
+
 describe("extractFeatures — v1.22 labs briefing block", () => {
   it("leaves the labs out of the briefing with the labs module off", async () => {
     labsModule.on = false;

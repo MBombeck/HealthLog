@@ -32,7 +32,6 @@ import {
   type SleepStageRow,
 } from "@/lib/analytics/sleep-night";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
-import { getBpTargets } from "@/lib/analytics/bp-targets";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
 import { READING_SPREAD } from "@/lib/stats/spread";
 import {
@@ -65,7 +64,10 @@ import type {
   RollupGranularity,
 } from "@/generated/prisma/client";
 
-import { resolveWeightTargetOverride } from "@/lib/analytics/effective-range";
+import {
+  resolveEffectiveBpTargets,
+  resolveWeightTargetOverride,
+} from "@/lib/analytics/effective-range";
 import {
   buildWeightTargetFeature,
   type WeightTargetFeature,
@@ -1174,7 +1176,8 @@ export async function extractFeatures(
     ? await resolveUserTimezone(userId)
     : DEFAULT_TIMEZONE;
 
-  const bpTargets = getBpTargets(user?.dateOfBirth ?? null);
+  const bpTargets =
+    user && resolveEffectiveBpTargets(user, user.thresholdsJson);
 
   // Compute overall data span
   const oldestMeasurement =
@@ -1287,11 +1290,8 @@ export async function extractFeatures(
         const sysVal = sysByTime.get(dia.measuredAt.getTime());
         if (sysVal === undefined) continue;
         pairedCount++;
-        // v1.4.16 — one-sided ceiling semantics with hypotension
-        // floor. See lib/analytics/bp-in-target.ts.
-        if (isBpReadingInTarget(sysVal, dia.value, bpTargets)) {
-          inTargetCount++;
-        }
+        // One-sided ceiling with a hypotension floor (`bp-in-target.ts`).
+        if (isBpReadingInTarget(sysVal, dia.value, bpTargets)) inTargetCount++;
       }
       pctInTarget =
         pairedCount > 0

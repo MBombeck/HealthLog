@@ -1,7 +1,7 @@
 {
   "$comment": "as never casts in tests, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
   "count": 523,
-  "total": 5464,
+  "total": 5459,
   "entries": {
     "__tests__/api/auth/login/mfa-branch.test.ts": 10,
     "__tests__/api/auth/mfa/verify.test.ts": 9,
@@ -385,7 +385,7 @@
     "lib/import/__tests__/record-import-route.test.ts": 1,
     "lib/insights/__tests__/background-reasoning-wire.test.ts": 2,
     "lib/insights/__tests__/biomarker-status.test.ts": 23,
-    "lib/insights/__tests__/blood-pressure-status.test.ts": 32,
+    "lib/insights/__tests__/blood-pressure-status.test.ts": 27,
     "lib/insights/__tests__/bmi-status.test.ts": 21,
     "lib/insights/__tests__/briefing-provider-budget.test.ts": 2,
     "lib/insights/__tests__/comprehensive-briefing-reroll.test.ts": 1,
