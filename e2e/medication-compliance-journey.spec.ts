@@ -466,7 +466,7 @@ test.describe("medication adherence journey", () => {
     // The 90-day ledger beside it is a view of the SCHEDULE and stops at now,
     // so a dose skipped ahead of its window is not in it. The intake history
     // is the view of what was recorded, and both gestures belong there.
-    await page.goto(`/medications/${medicationId}?tab=verlauf`);
+    await page.goto(`/medications/${medicationId}?tab=history`);
     await page
       .locator('[data-slot="medication-verlauf-view-toggle-all"]')
       .click();

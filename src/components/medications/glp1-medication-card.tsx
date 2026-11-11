@@ -174,7 +174,7 @@ interface Glp1MedicationCardProps {
   onEdit: (med: Glp1Medication) => void;
   /**
    * v1.15.18 — navigates to the medication detail page's Verlauf tab
-   * (`/medications/{id}?tab=verlauf`), mirroring the generic medication
+   * (`/medications/{id}?tab=history`), mirroring the generic medication
    * card. The parent owns the navigation.
    */
   onOpenHistory: (med: Glp1Medication) => void;

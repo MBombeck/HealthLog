@@ -111,8 +111,6 @@ describe("medication detail compliance applicability", () => {
   });
 
   it("keeps PRN compliance disabled at the query boundary", () => {
-    expect(source).toContain(
-      'enabled: activeTab === "uebersicht" && !asNeeded',
-    );
+    expect(source).toContain('enabled: activeTab === "overview" && !asNeeded');
   });
 });

@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 84,
-  "total": 93880,
+  "total": 93824,
   "entries": {
     "app/medications/page-client.tsx": 839,
     "components/charts/mood-chart.tsx": 1166,
@@ -13,7 +13,7 @@
     "components/insights/health-score-card.tsx": 1023,
     "components/insights/insights-tab-strip.tsx": 1087,
     "components/measurements/measurement-form.tsx": 815,
-    "components/medications/detail/medication-detail-tabs.tsx": 1157,
+    "components/medications/detail/medication-detail-tabs.tsx": 1129,
     "components/medications/medication-table.tsx": 853,
     "components/medications/wizard/wizard-payload.ts": 1414,
     "components/mood/mood-list.tsx": 1408,

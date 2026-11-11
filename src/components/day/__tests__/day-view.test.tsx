@@ -38,7 +38,7 @@ const DAY: DayResponse = {
       until: "2026-03-31",
       dayIndex: 64,
       dayCount: 151,
-      href: "/medications/m1?tab=verlauf",
+      href: "/medications/m1?tab=history",
     },
   ],
   values: [
