@@ -813,6 +813,10 @@
     "typeSleep": "Sonno",
     "typeSteps": "Passi",
     "typeBloodGlucose": "Glicemia",
+    "typeBloodKetones": "Chetoni nel sangue",
+    "glucoseKetoneIndex": "Indice glucosio-chetoni",
+    "pairedGlucoseLabel": "Glicemia della stessa misurazione ({unit})",
+    "pairedGlucoseHint": "Salvata come lettura di glicemia a sé con lo stesso orario; l’indice glucosio-chetoni si ricava dalla coppia.",
     "typeTotalBodyWater": "Acqua corporea totale",
     "typeBoneMass": "Massa ossea",
     "typeOxygenSaturation": "Saturazione di ossigeno",
@@ -4002,6 +4006,23 @@
       }
     },
     "navBloodGlucose": "Glucosio",
+    "navBloodKetones": "Chetoni",
+    "bloodKetones": {
+      "title": "Chetoni nel sangue",
+      "description": "Le tue letture di beta-idrossibutirrato nel tempo, in {unit}.",
+      "chartTitle": "Chetoni nel sangue",
+      "emptyState": {
+        "title": "Ancora nessuna lettura di chetoni",
+        "description": "Le letture di chetoni appaiono qui quando ne registri una, da sola o con la glicemia della stessa puntura.",
+        "cta": "Registra i chetoni"
+      },
+      "gki": {
+        "description": "Glicemia divisa per i chetoni, per ogni lettura di chetoni con una glicemia entro 15 minuti.",
+        "emptyTitle": "Ancora nessun indice",
+        "emptyDescription": "Compare quando una lettura di chetoni superiore a zero ha una glicemia presa allo stesso momento o entro 15 minuti.",
+        "latest": "Ultimo {value}: glicemia {glucose} {unit} su chetoni {ketones} {unit}, {date}."
+      }
+    },
     "totalBodyWater": {
       "title": "Acqua corporea totale",
       "description": "La tua acqua corporea totale nel tempo, in chilogrammi.",
@@ -10056,6 +10077,17 @@
         "DISCREET": "Discreto (●)",
         "DESCRIPTIVE": "Descrittivo"
       },
+      "forecasts": "Aspetto delle previsioni",
+      "forecastStyle": {
+        "EXACT": "Giorni previsti",
+        "MARGIN": "Giorni previsti e margine",
+        "BAND": "Un unico intervallo"
+      },
+      "forecastStyleHint": {
+        "EXACT": "Solo i giorni previsti.",
+        "MARGIN": "I giorni previsti, con i giorni in cui le mestruazioni possono iniziare prima o dopo come eventi separati.",
+        "BAND": "Un unico evento che copre tutti i giorni in cui possono cadere le mestruazioni."
+      },
       "fertile": "Finestra fertile",
       "fertileDescription": "Aggiunge la finestra fertile stimata del prossimo ciclo. Una stima, non un metodo contraccettivo.",
       "rotate": "Rinnova link",
@@ -10075,6 +10107,7 @@
         "periodEstimate": "Mestruazioni (stima)",
         "periodLogged": "Mestruazioni (registrate)",
         "fertileEstimate": "Finestra fertile (stima)",
+        "periodPossible": "Mestruazioni possibili",
         "likelyStart": "Inizio più probabile {date}, {band}",
         "bandOne": "±{count} giorno",
         "bandFew": "±{count} giorni",
@@ -10584,7 +10617,9 @@
       "openExpanded": "Tutte",
       "openFlagged": "Solo fuori norma",
       "openCollapsed": "Nessuna",
-      "orderWithinGroups": "L’ordine vale all’interno di ogni categoria."
+      "orderWithinGroups": "L’ordine vale all’interno di ogni categoria.",
+      "orderHeading": "Ordine delle categorie",
+      "orderDefault": "Finché non ne sposti una, le categorie predefinite seguono un ordine fisso, le tue l’ordine alfabetico e {other} viene per ultima."
     },
     "sourceRange": {
       "fromReport": "Intervallo del referto {range}",
@@ -10664,6 +10699,22 @@
     "unit": {
       "none": "Nessuna unità",
       "noneHint": "Per un rapporto o un indice come l'INR o colesterolo/HDL."
+    },
+    "filter": {
+      "searchPlaceholder": "Cerca biomarcatori…",
+      "searchLabel": "Cerca biomarcatori",
+      "clearSearch": "Cancella ricerca",
+      "lastMeasured": "Ultima misurazione",
+      "statusLabel": "Stato",
+      "statusAll": "Tutti gli stati",
+      "statusAbnormal": "Fuori intervallo",
+      "categoryLabel": "Categoria",
+      "categoryAll": "Tutte le categorie",
+      "markerCountOne": "{count} biomarcatore",
+      "markerCountFew": "{count} biomarcatori",
+      "markerCountOther": "{count} biomarcatori",
+      "noMatchesTitle": "Nessun biomarcatore trovato",
+      "noMatchesDescription": "Prova a modificare i termini di ricerca o i filtri."
     }
   },
   "modules": {
@@ -11497,6 +11548,9 @@
       },
       "zelfmoordlijn1813": {
         "name": "Zelfmoordlijn 1813 (Belgio, 24 ore su 24, gratuito, anonimo)"
+      },
+      "suicidePrevention109": {
+        "name": "Linea di prevenzione del suicidio 109 (Corea del Sud, 24 ore su 24, gratuita)"
       }
     },
     "instrumentDescription": {
@@ -13672,6 +13726,11 @@
     "valuesAllFew": "Tutti i {count} valori",
     "valuesAllOther": "Tutti i {count} valori",
     "valuesFewer": "Meno valori",
+    "gkiPair": "Glicemia {glucose} {unit} / chetoni {ketones} {unit}",
+    "gkiPairShort": "{glucose} / {ketones} {unit}",
+    "gkiCountOne": "Ultimo di {count}",
+    "gkiCountFew": "Ultimo di {count}",
+    "gkiCountOther": "Ultimo di {count}",
     "countEntriesOne": "1 voce",
     "countEntriesFew": "{count} voci",
     "countEntriesOther": "{count} voci",

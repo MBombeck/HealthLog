@@ -8,8 +8,10 @@ import { describe, it, expect } from "vitest";
 import {
   byHourTimesOfDay,
   computeReminderNextDueAt,
+  parseReminderAnchor,
   type ReminderScheduleInput,
 } from "../scheduling";
+import { relativeDueKey } from "../due-day";
 
 const TZ = "Europe/Berlin";
 
@@ -50,6 +52,26 @@ describe("computeReminderNextDueAt", () => {
     expect(due).not.toBeNull();
     // 09:00 Berlin on 2026-06-10 == 07:00Z (DST).
     expect(due!.toISOString()).toBe("2026-06-10T07:00:00.000Z");
+  });
+
+  // The create and edit routes compute `nextDueAt` with exactly this call.
+  // A first due date weeks back, never measured since, stays on that day, so
+  // the card reads it as overdue: it is not walked forward past now.
+  it("rolling, never satisfied, first due weeks back: stays on the anchor day", () => {
+    const now = new Date("2026-11-08T19:40:00Z"); // 20:40 in Berlin
+    const reminder = base({
+      intervalDays: 2,
+      notifyHour: 18,
+      anchorDate: parseReminderAnchor("2026-10-04", TZ),
+      createdAt: now,
+    });
+    const next = computeReminderNextDueAt(reminder, TZ, now);
+    // 4 October, 18:00 in Berlin (UTC+2).
+    expect(next).toEqual(new Date("2026-10-04T16:00:00Z"));
+    expect(relativeDueKey(next!.toISOString(), now.getTime(), TZ)).toEqual({
+      key: "measurementReminders.overdueByDays",
+      days: 35,
+    });
   });
 
   it("rolling, satisfied: next due is lastSatisfiedAt + N days at notify-hour", () => {

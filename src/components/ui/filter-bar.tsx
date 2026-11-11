@@ -120,8 +120,15 @@ export function FilterBar({
           </Button>
         )}
       </div>
+      {/* A polite status, so a list that filters while you type says how
+          many results are left, not only when none are. */}
       {count != null && (
-        <span className="text-muted-foreground text-sm tabular-nums">
+        <span
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="text-muted-foreground text-sm tabular-nums"
+        >
           {count}
         </span>
       )}

@@ -813,6 +813,10 @@
     "typeSleep": "Sueño",
     "typeSteps": "Pasos",
     "typeBloodGlucose": "Glucemia",
+    "typeBloodKetones": "Cetonas en sangre",
+    "glucoseKetoneIndex": "Índice glucosa-cetonas",
+    "pairedGlucoseLabel": "Glucosa de la misma medición ({unit})",
+    "pairedGlucoseHint": "Se guarda como una lectura de glucosa propia con la misma hora; el índice glucosa-cetonas se calcula a partir del par.",
     "typeTotalBodyWater": "Agua corporal total",
     "typeBoneMass": "Masa ósea",
     "typeOxygenSaturation": "Saturación de oxígeno",
@@ -4002,6 +4006,23 @@
       }
     },
     "navBloodGlucose": "Glucosa",
+    "navBloodKetones": "Cetonas",
+    "bloodKetones": {
+      "title": "Cetonas en sangre",
+      "description": "Tus lecturas de beta-hidroxibutirato en el tiempo, en {unit}.",
+      "chartTitle": "Cetonas en sangre",
+      "emptyState": {
+        "title": "Aún no hay lecturas de cetonas",
+        "description": "Las lecturas de cetonas aparecen aquí cuando registras una, sola o con la glucosa del mismo pinchazo.",
+        "cta": "Registrar cetonas"
+      },
+      "gki": {
+        "description": "Glucosa dividida por cetonas, para cada lectura de cetonas con una de glucosa en un margen de 15 minutos.",
+        "emptyTitle": "Aún no hay índice",
+        "emptyDescription": "Aparece cuando una lectura de cetonas mayor que cero tiene una de glucosa tomada a la misma hora o en un margen de 15 minutos.",
+        "latest": "Último {value}: glucosa {glucose} {unit} entre cetonas {ketones} {unit}, {date}."
+      }
+    },
     "totalBodyWater": {
       "title": "Agua corporal total",
       "description": "Tu agua corporal total en el tiempo, en kilogramos.",
@@ -10056,6 +10077,17 @@
         "DISCREET": "Discreto (●)",
         "DESCRIPTIVE": "Descriptivo"
       },
+      "forecasts": "Cómo se ven las previsiones",
+      "forecastStyle": {
+        "EXACT": "Días previstos",
+        "MARGIN": "Días previstos y margen",
+        "BAND": "Un solo intervalo"
+      },
+      "forecastStyleHint": {
+        "EXACT": "Solo los días previstos.",
+        "MARGIN": "Los días previstos, con los días en que el periodo puede empezar antes o después como eventos aparte.",
+        "BAND": "Un solo evento que cubre todos los días en que puede caer el periodo."
+      },
       "fertile": "Ventana fértil",
       "fertileDescription": "Añade la ventana fértil estimada del próximo ciclo. Una estimación, no un método anticonceptivo.",
       "rotate": "Renovar enlace",
@@ -10075,6 +10107,7 @@
         "periodEstimate": "Periodo (estimación)",
         "periodLogged": "Periodo (registrado)",
         "fertileEstimate": "Ventana fértil (estimación)",
+        "periodPossible": "Periodo posible",
         "likelyStart": "Inicio más probable {date}, {band}",
         "bandOne": "±{count} día",
         "bandFew": "±{count} días",
@@ -10584,7 +10617,9 @@
       "openExpanded": "Todas",
       "openFlagged": "Solo fuera de rango",
       "openCollapsed": "Ninguna",
-      "orderWithinGroups": "El orden se aplica dentro de cada categoría."
+      "orderWithinGroups": "El orden se aplica dentro de cada categoría.",
+      "orderHeading": "Orden de las categorías",
+      "orderDefault": "Hasta que muevas una, las categorías integradas siguen un orden fijo, las tuyas van por orden alfabético y {other} al final."
     },
     "sourceRange": {
       "fromReport": "Rango del informe {range}",
@@ -10664,6 +10699,22 @@
     "unit": {
       "none": "Sin unidad",
       "noneHint": "Para un cociente o un índice como el INR o colesterol/HDL."
+    },
+    "filter": {
+      "searchPlaceholder": "Buscar biomarcadores…",
+      "searchLabel": "Buscar biomarcadores",
+      "clearSearch": "Borrar búsqueda",
+      "lastMeasured": "Última medición",
+      "statusLabel": "Estado",
+      "statusAll": "Todos los estados",
+      "statusAbnormal": "Fuera de rango",
+      "categoryLabel": "Categoría",
+      "categoryAll": "Todas las categorías",
+      "markerCountOne": "{count} biomarcador",
+      "markerCountFew": "{count} biomarcadores",
+      "markerCountOther": "{count} biomarcadores",
+      "noMatchesTitle": "No se encontraron biomarcadores",
+      "noMatchesDescription": "Intenta cambiar los términos de búsqueda o los filtros."
     }
   },
   "modules": {
@@ -11497,6 +11548,9 @@
       },
       "zelfmoordlijn1813": {
         "name": "Zelfmoordlijn 1813 (Bélgica, 24 horas, gratuito, anónimo)"
+      },
+      "suicidePrevention109": {
+        "name": "Línea de prevención del suicidio 109 (Corea del Sur, 24 horas, gratuita)"
       }
     },
     "instrumentDescription": {
@@ -13672,6 +13726,11 @@
     "valuesAllFew": "Los {count} valores",
     "valuesAllOther": "Los {count} valores",
     "valuesFewer": "Menos valores",
+    "gkiPair": "Glucosa {glucose} {unit} / cetonas {ketones} {unit}",
+    "gkiPairShort": "{glucose} / {ketones} {unit}",
+    "gkiCountOne": "Último de {count}",
+    "gkiCountFew": "Último de {count}",
+    "gkiCountOther": "Último de {count}",
     "countEntriesOne": "1 entrada",
     "countEntriesFew": "{count} entradas",
     "countEntriesOther": "{count} entradas",

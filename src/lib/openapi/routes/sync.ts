@@ -256,7 +256,7 @@ const syncChangesQuery = z
       .literal("now")
       .optional()
       .describe(
-        "`now` answers an empty page (every domain empty, `hasMore: false`) whose `cursor` sits one minute before `serverNow` in every domain, in the same opaque format as any other page. Paging forward from it yields what changes from then on, plus anything written in that last minute (a write stamped before `serverNow` can commit after it, and is not skipped; upserts are idempotent, so a row seen twice is harmless), including `measurementMirror`, without walking the history first. Mutually exclusive with `cursor` (422). A server without it ignores the parameter and starts from the oldest row.",
+        "`now` answers an empty page (every domain empty, `hasMore: false`) whose `cursor` sits two minutes before `serverNow` in every domain, in the same opaque format as any other page. Paging forward from it yields what changes from then on, plus anything written in those two minutes (a write stamped before `serverNow` can commit after it, and is not skipped; upserts are idempotent, so a row seen twice is harmless), including `measurementMirror`, without walking the history first. Mutually exclusive with `cursor` (422). A server without it ignores the parameter and starts from the oldest row.",
       ),
     limit: z.coerce
       .number()
@@ -285,7 +285,9 @@ export const syncChangesResponse = z
       .describe("Opaque cursor to echo into the next request."),
     hasMore: z
       .boolean()
-      .describe("False once the client is caught up as of `serverNow`."),
+      .describe(
+        "False once the client is caught up as of `serverNow`. Every row domain that ran dry on a page takes a watermark two minutes before `serverNow` (on the last page of a walk, all of them), so the next pull reads rows changed in that stretch again (a write still in flight may commit a row stamped there) and a domain that stays quiet never ages its cursor past the tombstone horizon; upserts are idempotent.",
+      ),
     cursorExpired: z
       .boolean()
       .describe(

@@ -813,6 +813,10 @@
     "typeSleep": "Sleep",
     "typeSteps": "Steps",
     "typeBloodGlucose": "Blood glucose",
+    "typeBloodKetones": "Blood ketones",
+    "glucoseKetoneIndex": "Glucose-ketone index",
+    "pairedGlucoseLabel": "Glucose from the same reading ({unit})",
+    "pairedGlucoseHint": "Saved as its own glucose reading at the same time; the glucose-ketone index is worked out from the pair.",
     "typeTotalBodyWater": "Total body water",
     "typeBoneMass": "Bone mass",
     "typeOxygenSaturation": "Oxygen saturation",
@@ -4002,6 +4006,23 @@
       }
     },
     "navBloodGlucose": "Glucose",
+    "navBloodKetones": "Ketones",
+    "bloodKetones": {
+      "title": "Blood Ketones",
+      "description": "Your beta-hydroxybutyrate readings over time, in {unit}.",
+      "chartTitle": "Blood ketones",
+      "emptyState": {
+        "title": "No ketone readings yet",
+        "description": "Ketone readings appear here once you log one, on its own or with the glucose from the same fingerstick.",
+        "cta": "Log ketones"
+      },
+      "gki": {
+        "description": "Glucose divided by ketones, for each ketone reading with a glucose reading within 15 minutes.",
+        "emptyTitle": "No index yet",
+        "emptyDescription": "It appears once a ketone reading above zero has a glucose reading taken at the same time or within 15 minutes.",
+        "latest": "Latest {value}: glucose {glucose} {unit} over ketones {ketones} {unit}, {date}."
+      }
+    },
     "totalBodyWater": {
       "title": "Total Body Water",
       "description": "Your total body water over time, in kilograms.",
@@ -10056,6 +10077,17 @@
         "DISCREET": "Discreet (●)",
         "DESCRIPTIVE": "Descriptive"
       },
+      "forecasts": "How forecasts look",
+      "forecastStyle": {
+        "EXACT": "Expected days",
+        "MARGIN": "Expected days with margin",
+        "BAND": "One range"
+      },
+      "forecastStyleHint": {
+        "EXACT": "Just the expected days.",
+        "MARGIN": "Expected days, with the days the period may start earlier or later as separate entries.",
+        "BAND": "One entry covering every day the period may fall on."
+      },
       "fertile": "Fertile window",
       "fertileDescription": "Adds the estimated fertile window of the next cycle. An estimate, not a contraceptive method.",
       "rotate": "Rotate link",
@@ -10075,6 +10107,7 @@
         "periodEstimate": "Period (estimate)",
         "periodLogged": "Period (logged)",
         "fertileEstimate": "Fertile window (estimate)",
+        "periodPossible": "Period possible",
         "likelyStart": "Most likely start {date}, {band}",
         "bandOne": "±{count} day",
         "bandFew": "±{count} days",
@@ -10584,7 +10617,9 @@
       "openExpanded": "All",
       "openFlagged": "Outside range only",
       "openCollapsed": "None",
-      "orderWithinGroups": "The order applies within each category."
+      "orderWithinGroups": "The order applies within each category.",
+      "orderHeading": "Category order",
+      "orderDefault": "Until you move one, built-in categories keep a fixed order, your own follow alphabetically and {other} comes last."
     },
     "sourceRange": {
       "fromReport": "Report range {range}",
@@ -10664,6 +10699,22 @@
     "unit": {
       "none": "No unit",
       "noneHint": "For a ratio or an index such as INR or cholesterol/HDL."
+    },
+    "filter": {
+      "searchPlaceholder": "Search biomarkers…",
+      "searchLabel": "Search biomarkers",
+      "clearSearch": "Clear search",
+      "lastMeasured": "Last measured",
+      "statusLabel": "Status",
+      "statusAll": "All statuses",
+      "statusAbnormal": "Out of range",
+      "categoryLabel": "Category",
+      "categoryAll": "All categories",
+      "markerCountOne": "{count} biomarker",
+      "markerCountFew": "{count} biomarkers",
+      "markerCountOther": "{count} biomarkers",
+      "noMatchesTitle": "No matching biomarkers",
+      "noMatchesDescription": "Try adjusting your search query or filters."
     }
   },
   "modules": {
@@ -11497,6 +11548,9 @@
       },
       "zelfmoordlijn1813": {
         "name": "Zelfmoordlijn 1813 (Belgium, 24/7, free, anonymous)"
+      },
+      "suicidePrevention109": {
+        "name": "Suicide prevention line 109 (South Korea, 24/7, free)"
       }
     },
     "instrumentDescription": {
@@ -13672,6 +13726,11 @@
     "valuesAllFew": "All {count} values",
     "valuesAllOther": "All {count} values",
     "valuesFewer": "Fewer values",
+    "gkiPair": "Glucose {glucose} {unit} / ketones {ketones} {unit}",
+    "gkiPairShort": "{glucose} / {ketones} {unit}",
+    "gkiCountOne": "Latest of {count}",
+    "gkiCountFew": "Latest of {count}",
+    "gkiCountOther": "Latest of {count}",
     "countEntriesOne": "1 entry",
     "countEntriesFew": "{count} entries",
     "countEntriesOther": "{count} entries",

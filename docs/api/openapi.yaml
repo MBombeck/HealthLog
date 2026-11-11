@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.47.1
+  version: 1.47.2
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -874,7 +874,7 @@ paths:
       summary: Turn the calendar subscription on (#1350)
       description: "Mints an `hlf_` token (192-bit), stores only its HMAC, and returns the URL EXACTLY ONCE. One live
         subscription per record: a second answers 409 `cycle.feed.exists` (rotate instead). Defaults: three cycles
-        ahead, no history, no fertile window, discreet titles. Rate-limited per acting account
+        ahead, no history, no fertile window, discreet titles, `MARGIN` forecasts. Rate-limited per acting account
         (`cycle-feed:mint:<actorId>`, 10/h, shared with rotate)."
       responses:
         "201": &a13
@@ -904,7 +904,8 @@ paths:
       tags:
         - Cycle
       summary: Change the calendar subscription's options (#1350)
-      description: Field-by-field update of the options. The URL does not change; the feed's next fetch serves the new content.
+      description: Field-by-field update of the options. The URL does not change; the feed's next fetch serves the new
+        content. A change saved while the link is being replaced applies to the link that stays live.
       requestBody:
         required: true
         content:
@@ -923,6 +924,13 @@ paths:
         "403": *a10
         "404":
           description: No subscription is on (`cycle.feed.none`).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "409":
+          description: The link was replaced twice while the change was being saved (`cycle.feed.exists`); nothing changed, and
+            sending it again applies it to the link that is live now.
           content:
             application/json:
               schema:
@@ -957,9 +965,10 @@ paths:
       tags:
         - Cycle
       summary: Replace the calendar subscription's link (#1350)
-      description: "One transaction: the live link is revoked and a new one minted with the same options. Returns the new URL
-        EXACTLY ONCE. Calendars using the old link stop updating. Of two rotations racing, the one that loses answers
-        409 `cycle.feed.exists` and the winner's link stands."
+      description: "One transaction: the live link is revoked and a new one minted with the same options, the forecast style
+        included. Returns the new URL EXACTLY ONCE. Calendars using the old link stop updating. Of two rotations racing,
+        the one that loses answers 409 `cycle.feed.exists` and the winner's link stands; a rotation racing the
+        subscription being turned off answers 404 `cycle.feed.none` and the subscription stays off."
       responses:
         "201": *a13
         "401": *a14
@@ -4522,17 +4531,17 @@ paths:
         - in: query
           name: start
           schema:
-            description: "`now` answers an empty page (every domain empty, `hasMore: false`) whose `cursor` sits one minute before
+            description: "`now` answers an empty page (every domain empty, `hasMore: false`) whose `cursor` sits two minutes before
               `serverNow` in every domain, in the same opaque format as any other page. Paging forward from it yields
-              what changes from then on, plus anything written in that last minute (a write stamped before `serverNow`
+              what changes from then on, plus anything written in those two minutes (a write stamped before `serverNow`
               can commit after it, and is not skipped; upserts are idempotent, so a row seen twice is harmless),
               including `measurementMirror`, without walking the history first. Mutually exclusive with `cursor` (422).
               A server without it ignores the parameter and starts from the oldest row."
             type: string
             const: now
-          description: "`now` answers an empty page (every domain empty, `hasMore: false`) whose `cursor` sits one minute before
+          description: "`now` answers an empty page (every domain empty, `hasMore: false`) whose `cursor` sits two minutes before
             `serverNow` in every domain, in the same opaque format as any other page. Paging forward from it yields what
-            changes from then on, plus anything written in that last minute (a write stamped before `serverNow` can
+            changes from then on, plus anything written in those two minutes (a write stamped before `serverNow` can
             commit after it, and is not skipped; upserts are idempotent, so a row seen twice is harmless), including
             `measurementMirror`, without walking the history first. Mutually exclusive with `cursor` (422). A server
             without it ignores the parameter and starts from the oldest row."
@@ -4672,6 +4681,8 @@ paths:
               - restingHeartRate
               - heartRateVariability
               - vo2Max
+              - ketones
+              - glucoseKetoneIndex
           required: true
         - in: query
           name: days
@@ -4811,6 +4822,7 @@ paths:
               - TRAINING_READINESS
               - ACUTE_TRAINING_LOAD
               - BASAL_ENERGY_BURNED
+              - BLOOD_KETONES
         - in: query
           name: from
           schema:
@@ -5736,6 +5748,7 @@ paths:
               - TRAINING_READINESS
               - ACUTE_TRAINING_LOAD
               - BASAL_ENERGY_BURNED
+              - BLOOD_KETONES
             description: The metric.
           required: true
           description: The metric.
@@ -5866,6 +5879,7 @@ paths:
               - TRAINING_READINESS
               - ACUTE_TRAINING_LOAD
               - BASAL_ENERGY_BURNED
+              - BLOOD_KETONES
             description: The metric.
           required: true
           description: The metric.
@@ -16972,12 +16986,13 @@ paths:
         - MeasurementReminders
       summary: List Vorsorge reminders (v1.17.1)
       description: "Returns the owner's live (non-tombstoned) Vorsorge reminders, sorted by server-computed nextDueAt
-        ascending (nulls last). Each row carries the canonical nextDueAt the client renders without recomputing. Since
-        v1.39.2 a reminder whose cycle is longer than seven days (intervalDays > 7, an rrule whose next occurrence is
-        more than seven days out) or that has no cadence keeps its nextDueAt after its reminder is sent, with or without
-        a measurementType: it stays due, then overdue, until it is satisfied (a matching reading or lab result, or
-        completed), skipped or snoozed, and the server repeats the reminder at most once every seven local days while it
-        stays open. A reminder on a weekly or shorter cycle still rolls on to its next slot after a delivered reminder."
+        ascending (nulls last). Each row carries the canonical nextDueAt the client renders without recomputing. A
+        rolling reminder (intervalDays, any length), an rrule reminder whose next occurrence is more than seven days
+        out, and a reminder with no cadence keep their nextDueAt after their reminder is sent, with or without a
+        measurementType: they stay due, then overdue, until satisfied (a matching reading or lab result, or completed),
+        skipped or snoozed. While one stays open the server repeats the reminder every intervalDays local days for a
+        rolling reminder, capped at seven, and every seven local days otherwise. An rrule reminder that recurs within
+        seven days rolls on to its next slot after a delivered reminder."
       responses:
         "200":
           description: The owner's measurement reminders.
@@ -28732,6 +28747,12 @@ components:
           enum:
             - DISCREET
             - DESCRIPTIVE
+        forecastStyle:
+          type: string
+          enum:
+            - EXACT
+            - MARGIN
+            - BAND
       additionalProperties: false
       description: "The writable options. At least one field. `includeFertile: true` is refused (422
         `cycle.feed.fertile_goal`) unless the goal is TRYING_TO_CONCEIVE."
@@ -28767,7 +28788,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 111
+              maxItems: 112
               type: array
               items:
                 type: string
@@ -28829,7 +28850,7 @@ components:
               type: number
               const: 2
             leaves:
-              maxItems: 111
+              maxItems: 112
               type: array
               items:
                 type: string
@@ -29709,6 +29730,7 @@ components:
             - TRAINING_READINESS
             - ACUTE_TRAINING_LOAD
             - BASAL_ENERGY_BURNED
+            - BLOOD_KETONES
         value:
           type: number
         measuredAt:
@@ -31443,6 +31465,7 @@ components:
             - TRAINING_READINESS
             - ACUTE_TRAINING_LOAD
             - BASAL_ENERGY_BURNED
+            - BLOOD_KETONES
         biomarkerId:
           type: string
           minLength: 1
@@ -31942,7 +31965,7 @@ components:
           type: number
           const: 2
         leaves:
-          maxItems: 111
+          maxItems: 112
           type: array
           items:
             type: string
@@ -32587,7 +32610,7 @@ components:
               - order
         tiles:
           minItems: 1
-          maxItems: 63
+          maxItems: 64
           type: array
           items:
             type: object
@@ -32643,6 +32666,7 @@ components:
                   - audio-events
                   - daylight
                   - blood-glucose
+                  - ketones
                   - skin-temperature
                   - wrist-temperature
                   - mood
@@ -33145,6 +33169,7 @@ components:
         - TRAINING_READINESS
         - ACUTE_TRAINING_LOAD
         - BASAL_ENERGY_BURNED
+        - BLOOD_KETONES
       description: DB-stored measurement category. v1.4.23 added 7 Apple Health values (HRV, resting HR, active energy,
         flights, walking/running distance, VO2 max, body temperature).
     InsightsSettingsPutRequest:
@@ -34356,6 +34381,13 @@ components:
             - expanded
             - flagged
             - collapsed
+        categoryOrder:
+          maxItems: 200
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
       required:
         - version
         - list
@@ -37684,6 +37716,7 @@ components:
             - scoreSleep
             - scoreStress
             - scoreStrain
+            - bloodKetones
           description: Which chart's overlays are being written. Closed enum.
         prefs:
           type: object
@@ -37873,6 +37906,7 @@ components:
               - scoreSleep
               - scoreStress
               - scoreStrain
+              - bloodKetones
           additionalProperties:
             type: object
             properties:
@@ -38845,7 +38879,7 @@ components:
                 additionalProperties: false
             tiles:
               minItems: 1
-              maxItems: 63
+              maxItems: 64
               type: array
               items:
                 type: object
@@ -38901,6 +38935,7 @@ components:
                       - audio-events
                       - daylight
                       - blood-glucose
+                      - ketones
                       - skin-temperature
                       - wrist-temperature
                       - mood
@@ -41370,6 +41405,17 @@ components:
           enum:
             - DISCREET
             - DESCRIPTIVE
+        forecastStyle:
+          type: string
+          enum:
+            - EXACT
+            - MARGIN
+            - BAND
+          description: "How a forecast period is drawn. `EXACT`: one event over the predicted bleeding days from the most likely
+            start. `MARGIN`: that event, plus a separate event for the days before it the period may start on and one
+            for the days after it may still run on (each only when the band reaches that side). `BAND`: one event from
+            the earliest likely start through the last bleeding day of the latest likely start. A subscription turned on
+            before the option existed is `BAND`."
       required:
         - tokenPrefix
         - createdAt
@@ -41380,6 +41426,7 @@ components:
         - historyCycles
         - includeFertile
         - titleMode
+        - forecastStyle
       additionalProperties: false
       description: "The live calendar subscription, without its secret: never the token hash and never the URL."
     CycleFeedMinted:
@@ -42698,6 +42745,7 @@ components:
                   - TRAINING_READINESS
                   - ACUTE_TRAINING_LOAD
                   - BASAL_ENERGY_BURNED
+                  - BLOOD_KETONES
               value:
                 type: number
               valueMin:
@@ -43466,6 +43514,7 @@ components:
                             - TRAINING_READINESS
                             - ACUTE_TRAINING_LOAD
                             - BASAL_ENERGY_BURNED
+                            - BLOOD_KETONES
                         - type: "null"
                     biomarkerName:
                       anyOf:
@@ -46064,6 +46113,7 @@ components:
                   - TRAINING_READINESS
                   - ACUTE_TRAINING_LOAD
                   - BASAL_ENERGY_BURNED
+                  - BLOOD_KETONES
               dateKey:
                 type: string
                 pattern: ^\d{4}-\d{2}-\d{2}$
@@ -47264,6 +47314,7 @@ components:
                       - TRAINING_READINESS
                       - ACUTE_TRAINING_LOAD
                       - BASAL_ENERGY_BURNED
+                      - BLOOD_KETONES
                   - type: "null"
               intervalDays:
                 anyOf:
@@ -47490,6 +47541,7 @@ components:
                   - TRAINING_READINESS
                   - ACUTE_TRAINING_LOAD
                   - BASAL_ENERGY_BURNED
+                  - BLOOD_KETONES
               metricSlot:
                 type:
                   - string
@@ -50160,7 +50212,10 @@ components:
             - "null"
         hasMore:
           type: boolean
-          description: False once the client is caught up as of `serverNow`.
+          description: False once the client is caught up as of `serverNow`. Every row domain that ran dry on a page takes a
+            watermark two minutes before `serverNow` (on the last page of a walk, all of them), so the next pull reads
+            rows changed in that stretch again (a write still in flight may commit a row stamped there) and a domain
+            that stays quiet never ages its cursor past the tombstone horizon; upserts are idempotent.
         cursorExpired:
           type: boolean
           description: True when the supplied cursor predates tombstone retention, or was issued before the account's data was
@@ -51012,10 +51067,12 @@ components:
             - restingHeartRate
             - heartRateVariability
             - vo2Max
+            - ketones
+            - glucoseKetoneIndex
         unit:
           type: string
           description: Resolved unit token for `value`. `glucose` follows the user's mg/dL|mmol/L preference; `sleep` is `h`
-            (per-night time-asleep in hours).
+            (per-night time-asleep in hours); `ketones` is `mmol/L`; `glucoseKetoneIndex` is `ratio`.
         points:
           type: array
           items:
@@ -51062,6 +51119,31 @@ components:
                 type:
                   - number
                   - "null"
+              gki:
+                description: "#1367 — for `kind=glucoseKetoneIndex` only: the readings the index was computed from. `id` and `at` are
+                  the ketone reading's. Absent for every other kind."
+                type: object
+                properties:
+                  glucoseId:
+                    type: string
+                    description: The paired glucose reading's id.
+                  glucoseAt:
+                    type: string
+                    format: date-time
+                    pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+                    description: The paired glucose reading's timestamp.
+                  glucoseMmol:
+                    type: number
+                    description: The paired glucose in mmol/L, one decimal.
+                  ketonesMmol:
+                    type: number
+                    description: The ketone reading (beta-hydroxybutyrate), mmol/L.
+                required:
+                  - glucoseId
+                  - glucoseAt
+                  - glucoseMmol
+                  - ketonesMmol
+                additionalProperties: false
             required:
               - id
               - at
@@ -51119,7 +51201,10 @@ components:
         ring recording every minute; a cuff, a fingerstick meter or a few readings a night stay raw). A bucket carries
         the mean as `value` and otherwise has the shape of a reading of its kind; a `pulse` bucket also carries its
         range as `valueMin` / `valueMax`, and a `glucose` bucket is converted to the user's unit like a raw reading.
-        `stats` is always computed over the underlying readings, never over the buckets."
+        `stats` is always computed over the underlying readings, never over the buckets. `glucoseKetoneIndex` (#1367) is
+        derived at read time, never stored: one point per ketone reading above zero that has a glucose reading at the
+        same instant or, failing that, the nearest one within 15 minutes either side; value = glucose (mmol/L, from
+        mg/dL by 18.0182) / ketones (mmol/L), one decimal. Draw it as given; do not recompute it."
     TrendVerdict:
       type: object
       properties:
@@ -53805,6 +53890,7 @@ components:
             - TRAINING_READINESS
             - ACUTE_TRAINING_LOAD
             - BASAL_ENERGY_BURNED
+            - BLOOD_KETONES
         date:
           type: string
           format: date
@@ -54085,6 +54171,7 @@ components:
             - TRAINING_READINESS
             - ACUTE_TRAINING_LOAD
             - BASAL_ENERGY_BURNED
+            - BLOOD_KETONES
         from:
           type: string
           format: date
@@ -64534,7 +64621,7 @@ components:
             additionalProperties: false
         tiles:
           minItems: 1
-          maxItems: 63
+          maxItems: 64
           type: array
           items:
             type: object
@@ -64590,6 +64677,7 @@ components:
                   - audio-events
                   - daylight
                   - blood-glucose
+                  - ketones
                   - skin-temperature
                   - wrist-temperature
                   - mood
@@ -75502,6 +75590,15 @@ components:
             - collapsed
           description: 'Which labs categories start open: every one (`expanded`), only those whose `status` is `above` or `below`
             (`flagged`), or none (`collapsed`). Default "expanded". The other lists ignore it.'
+        categoryOrder:
+          type: array
+          items:
+            type: string
+          description: The person's order of the labs categories, as `categories[].key` values of `GET /api/labs/overview`. The
+            server applies it there, so a client renders `categories` as given and never sorts them itself. Keys missing
+            from the live data are ignored; a category missing from the list follows the listed ones in the default
+            order, and "other" left at the end of the list stays last. Default empty (the default order). The other
+            lists ignore it.
         saved:
           type: boolean
           description: True when the server holds a choice for this list; false means every field is a default.
@@ -75511,6 +75608,7 @@ components:
         - sortDir
         - groupBy
         - groupsOpen
+        - categoryOrder
         - saved
       additionalProperties: false
     ModuleListLayoutSavedEnvelope:
@@ -77103,8 +77201,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LabOverviewCategory"
-          description: "The list's categories in display order: catalog panels in catalog order, then the person's own panels by
-            label, then `other`."
+          description: "The list's categories in display order, already arranged for the caller: the default order is catalog
+            panels in catalog order, then the person's own panels by label, then `other`, and the caller's
+            `categoryOrder` (`PUT /api/settings/module-list-layout`, labs list) is applied over it. Render them in this
+            order."
         grouped:
           type: boolean
           description: "Whether grouping adds anything: true when there are two categories or more and at least one is not
@@ -77175,7 +77275,8 @@ components:
         spelling, or the localised \"Other\"). `markerKeys` names the `markers[].key` values in the category. `status`
         combines the members' newest readings: `above` when any is above its range, else `below` when any is below, else
         `in-range` when any was assessed, else `unknown`. A client renders these values and never rebuilds the category,
-        the order or the status."
+        the order or the status. A client that shows only the members matching a filter may summarise that subset by the
+        same rule; without a filter it shows `counts` and `status` as sent."
     LabOverviewCategoryCounts:
       type: object
       properties:
@@ -88191,6 +88292,7 @@ components:
               - scoreSleep
               - scoreStress
               - scoreStrain
+              - bloodKetones
           additionalProperties:
             type: object
             properties:
@@ -88457,6 +88559,7 @@ components:
               - scoreSleep
               - scoreStress
               - scoreStrain
+              - bloodKetones
           additionalProperties:
             type: object
             properties:
@@ -93831,6 +93934,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DayValue"
+        glucoseKetoneIndex:
+          description: "#1367 — the day's glucose-ketone index, oldest first: glucose (mmol/L) over ketones (mmol/L) for each
+            ketone reading above zero with a glucose reading at the same instant or within 15 minutes either side.
+            Computed at read time; show it as given. Absent when the day has none, when either reading type is hidden
+            from the caller, and on older servers."
+          type: array
+          items:
+            $ref: "#/components/schemas/DayGlucoseKetoneIndex"
         events:
           type: array
           items:
@@ -94034,6 +94145,43 @@ components:
         - at
         - source
         - band
+      additionalProperties: false
+    DayGlucoseKetoneIndex:
+      type: object
+      properties:
+        at:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: The ketone reading's instant.
+        value:
+          type: number
+          description: The index, to one decimal.
+        ketoneId:
+          type: string
+          description: The ketone reading's id.
+        glucoseId:
+          type: string
+          description: The paired glucose reading's id.
+        glucoseAt:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+          description: The paired glucose reading's instant.
+        ketonesMmol:
+          type: number
+          description: Beta-hydroxybutyrate, mmol/L.
+        glucoseMmol:
+          type: number
+          description: The paired glucose in mmol/L, one decimal.
+      required:
+        - at
+        - value
+        - ketoneId
+        - glucoseId
+        - glucoseAt
+        - ketonesMmol
+        - glucoseMmol
       additionalProperties: false
     DayEvent:
       type: object

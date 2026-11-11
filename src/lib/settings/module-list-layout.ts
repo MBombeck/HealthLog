@@ -14,6 +14,11 @@
  *   the list under its server-resolved categories (`"category"`) or flat
  *   (`"none"`, the default); `groupsOpen` says which categories start open:
  *   all of them, only those with a value outside its range, or none.
+ * - `categoryOrder`: only the labs list reads it, and only on the server: a
+ *   category-key allow-list `GET /api/labs/overview` applies before it
+ *   answers `categories` (`applyCategoryOrder` in
+ *   `src/lib/labs/marker-category.ts`), so every client receives the
+ *   categories already in the person's order. Same tolerance as `order`.
  *
  * Null / missing column = the defaults below. The GET never lazy-writes, and
  * the PUT stores only the fields a person has actually chosen, so a default
@@ -51,6 +56,29 @@ export type ModuleGroupsOpen = (typeof MODULE_GROUPS_OPEN)[number];
 export const MODULE_LIST_ORDER_MAX = 500;
 /** Longest id an order entry may carry (cuid and uuid fit comfortably). */
 export const MODULE_LIST_ID_MAX = 64;
+/**
+ * Longest category order a list keeps. Ten catalog panels plus "other" plus
+ * the person's own panels; a longer one is cut, never refused.
+ */
+export const MODULE_LIST_CATEGORY_ORDER_MAX = 200;
+
+/**
+ * The category order to save after a move: the categories on screen in
+ * their new order, then every saved key that is not on screen now, in its
+ * saved order. A category without readings at the moment (or one of another
+ * record a guardian arranged) keeps its place in the list instead of being
+ * dropped by a move that never showed it.
+ */
+export function mergeCategoryOrder(
+  shown: readonly string[],
+  saved: readonly string[],
+): string[] {
+  const onScreen = new Set(shown);
+  return [...shown, ...saved.filter((key) => !onScreen.has(key))].slice(
+    0,
+    MODULE_LIST_CATEGORY_ORDER_MAX,
+  );
+}
 
 export interface ModuleListPrefs {
   view: ModuleListView;
@@ -58,6 +86,7 @@ export interface ModuleListPrefs {
   sortDir: ModuleSortDir;
   groupBy: ModuleGroupBy;
   groupsOpen: ModuleGroupsOpen;
+  categoryOrder: string[];
 }
 
 export interface ModuleListPrefsEntry extends ModuleListPrefs {
@@ -76,6 +105,7 @@ const BASE_DEFAULTS: ModuleListPrefs = {
   sortDir: "recentDesc",
   groupBy: "none",
   groupsOpen: "expanded",
+  categoryOrder: [],
 };
 
 /** Labs opens on the compact list, the dense reading table (#40). */
@@ -87,7 +117,11 @@ const LIST_DEFAULTS: Record<ModuleListKey, ModuleListPrefs> = {
 
 export function moduleListDefaults(list: ModuleListKey): ModuleListPrefs {
   const defaults = LIST_DEFAULTS[list];
-  return { ...defaults, order: [...defaults.order] };
+  return {
+    ...defaults,
+    order: [...defaults.order],
+    categoryOrder: [...defaults.categoryOrder],
+  };
 }
 
 export function isModuleListView(value: unknown): value is ModuleListView {
@@ -119,7 +153,10 @@ export function isModuleGroupsOpen(value: unknown): value is ModuleGroupsOpen {
 }
 
 /** Keep string ids of a sane length, first occurrence wins, capped. */
-export function normaliseModuleListOrder(raw: unknown): string[] | null {
+export function normaliseModuleListOrder(
+  raw: unknown,
+  max: number = MODULE_LIST_ORDER_MAX,
+): string[] | null {
   if (!Array.isArray(raw)) return null;
   const seen = new Set<string>();
   const out: string[] = [];
@@ -129,7 +166,7 @@ export function normaliseModuleListOrder(raw: unknown): string[] | null {
     if (seen.has(value)) continue;
     seen.add(value);
     out.push(value);
-    if (out.length >= MODULE_LIST_ORDER_MAX) break;
+    if (out.length >= max) break;
   }
   return out;
 }
@@ -148,8 +185,13 @@ export function storedModuleListChoices(
     sortDir?: unknown;
     groupBy?: unknown;
     groupsOpen?: unknown;
+    categoryOrder?: unknown;
   };
   const order = normaliseModuleListOrder(blob.order);
+  const categoryOrder = normaliseModuleListOrder(
+    blob.categoryOrder,
+    MODULE_LIST_CATEGORY_ORDER_MAX,
+  );
   return {
     ...(isModuleListView(blob.view) ? { view: blob.view } : {}),
     ...(order !== null ? { order } : {}),
@@ -158,6 +200,7 @@ export function storedModuleListChoices(
     ...(isModuleGroupsOpen(blob.groupsOpen)
       ? { groupsOpen: blob.groupsOpen }
       : {}),
+    ...(categoryOrder !== null ? { categoryOrder } : {}),
   };
 }
 

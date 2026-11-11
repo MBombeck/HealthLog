@@ -118,13 +118,20 @@ beforeEach(() => {
 });
 
 describe("the calendar feed body", () => {
-  it.each(["DISCREET", "DESCRIPTIVE"] as const)(
-    "carries no day-log content in %s mode",
-    async (titleMode) => {
+  it.each(
+    (["DISCREET", "DESCRIPTIVE"] as const).flatMap((titleMode) =>
+      (["EXACT", "MARGIN", "BAND"] as const).map(
+        (forecastStyle) => [titleMode, forecastStyle] as const,
+      ),
+    ),
+  )(
+    "carries no day-log content in %s mode, %s forecasts",
+    async (titleMode, forecastStyle) => {
       const built = await buildCycleFeed(
         {
           ...FEED,
           titleMode,
+          forecastStyle,
           historyCycles: 12,
           horizonCycles: 6,
           includeFertile: true,
@@ -146,6 +153,7 @@ describe("the calendar feed body", () => {
       {
         ...FEED,
         titleMode: "DESCRIPTIVE",
+        forecastStyle: "MARGIN",
         historyCycles: 6,
         includeFertile: true,
       },

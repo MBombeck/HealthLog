@@ -585,6 +585,86 @@ describe("GET /api/sync/changes — multi-domain (real Postgres)", () => {
     expect(j.data.hasMore).toBe(true);
   });
 
+  it("keeps catching up when a domain has had no change since before the retention horizon", async () => {
+    // Someone who stopped logging mood months ago: the newest mood row is
+    // older than the horizon. A drained walk proved nothing changed since,
+    // so its cursor must not read as expired on the next pull.
+    const prisma = getPrismaClient();
+    await prisma.moodEntry.create({
+      data: {
+        userId: TEST_USER_ID,
+        date: "2026-01-02",
+        mood: "GUT",
+        score: 4,
+        moodLoggedAt: new Date(
+          Date.now() - (TOMBSTONE_RETENTION_DAYS + 10) * 86_400_000,
+        ),
+        updatedAt: new Date(
+          Date.now() - (TOMBSTONE_RETENTION_DAYS + 10) * 86_400_000,
+        ),
+      },
+    });
+    await seedLive(1);
+    const { GET } = await import("@/app/api/sync/changes/route");
+    const first = (await (await GET(makeRequest())).json()) as {
+      data: ChangesData;
+    };
+    expect(first.data.hasMore).toBe(false);
+    expect(first.data.changes.mood.upserts).toHaveLength(1);
+    const second = (await (
+      await GET(
+        makeRequest(`?cursor=${encodeURIComponent(first.data.cursor!)}`),
+      )
+    ).json()) as { data: ChangesData };
+    expect(second.data.cursorExpired).toBe(false);
+  });
+
+  it("delivers a late row in a domain that ran dry on an earlier page of the walk", async () => {
+    // Two measurements keep the walk going at limit=1; the mood domain runs
+    // dry on the first page. A mood row stamped before that page's mood row
+    // and committed after it still arrives before the walk ends.
+    await seedLive(2);
+    const prisma = getPrismaClient();
+    const quick = await prisma.moodEntry.create({
+      data: {
+        userId: TEST_USER_ID,
+        date: fixtureDay(1),
+        mood: "GUT",
+        score: 4,
+        moodLoggedAt: new Date(),
+      },
+    });
+    const { GET } = await import("@/app/api/sync/changes/route");
+    const page1 = (await (await GET(makeRequest("?limit=1"))).json()) as {
+      data: ChangesData;
+    };
+    expect(page1.data.hasMore).toBe(true);
+    expect(page1.data.changes.mood.upserts.map((r) => r.id)).toEqual([
+      quick.id,
+    ]);
+    const late = await prisma.moodEntry.create({
+      data: {
+        userId: TEST_USER_ID,
+        date: fixtureDay(2),
+        mood: "GUT",
+        score: 3,
+        moodLoggedAt: new Date(),
+        updatedAt: new Date(quick.updatedAt.getTime() - 1_000),
+      },
+    });
+    const seen = new Set<string>();
+    let cursor = page1.data.cursor!;
+    for (let i = 0; i < 5; i++) {
+      const page = (await (
+        await GET(makeRequest(`?limit=1&cursor=${encodeURIComponent(cursor)}`))
+      ).json()) as { data: ChangesData };
+      for (const row of page.data.changes.mood.upserts) seen.add(row.id);
+      cursor = page.data.cursor!;
+      if (!page.data.hasMore) break;
+    }
+    expect(seen).toContain(late.id);
+  });
+
   it("treats a garbage cursor as a clean initial sync", async () => {
     await seedMood(1);
     const { GET } = await import("@/app/api/sync/changes/route");

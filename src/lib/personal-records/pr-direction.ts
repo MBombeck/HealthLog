@@ -175,10 +175,11 @@ export function getPRDirection(
       if (context.weightGoal === "higher") return PersonalRecordDirection.MAX;
       return null;
 
-    // Explicitly no PersonalRecord — see comment block above.
+    // Explicitly no PersonalRecord (see above); ketones follow a clinician's plan.
     case "BLOOD_PRESSURE_SYS":
     case "BLOOD_PRESSURE_DIA":
     case "BLOOD_GLUCOSE":
+    case "BLOOD_KETONES":
     case "BODY_TEMPERATURE":
     case "SKIN_TEMPERATURE":
     case "PULSE":
@@ -267,9 +268,8 @@ export function getPRDirection(
     case "TRAINING_READINESS":
     case "ACUTE_TRAINING_LOAD":
     // v1.17.1 — Oura coverage. The Sleep Score is a nightly derived composite
-    // (like the other sleep-quality indices), and the body-temperature
-    // deviation is a homeostatic signed offset centred on 0 — neither has a
-    // goal axis, so both stay null like the rest of the derived/homeostatic set.
+    // and the body-temperature deviation a homeostatic signed offset centred
+    // on 0: neither has a goal axis, so both stay null like the set above.
     case "SLEEP_SCORE":
     case "BODY_TEMPERATURE_DEVIATION":
     // v1.19.0 — Oura resilience. An ordinal-encoded categorical band

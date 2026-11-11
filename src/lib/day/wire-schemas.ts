@@ -117,6 +117,24 @@ const dayValue = z
   })
   .meta({ id: "DayValue" });
 
+/**
+ * #1367 — one glucose-ketone index of the day, derived from a ketone reading
+ * and the glucose reading paired with it; never stored.
+ */
+const dayGlucoseKetoneIndex = z
+  .object({
+    at: instant.describe("The ketone reading's instant."),
+    value: z.number().describe("The index, to one decimal."),
+    ketoneId: z.string().describe("The ketone reading's id."),
+    glucoseId: z.string().describe("The paired glucose reading's id."),
+    glucoseAt: instant.describe("The paired glucose reading's instant."),
+    ketonesMmol: z.number().describe("Beta-hydroxybutyrate, mmol/L."),
+    glucoseMmol: z
+      .number()
+      .describe("The paired glucose in mmol/L, one decimal."),
+  })
+  .meta({ id: "DayGlucoseKetoneIndex" });
+
 const dayEvent = z
   .object({
     at: instant
@@ -232,6 +250,12 @@ export const dayResponseSchema = z
     }),
     running: z.array(dayRunningItem),
     values: z.array(dayValue),
+    glucoseKetoneIndex: z
+      .array(dayGlucoseKetoneIndex)
+      .optional()
+      .describe(
+        "#1367 — the day's glucose-ketone index, oldest first: glucose (mmol/L) over ketones (mmol/L) for each ketone reading above zero with a glucose reading at the same instant or within 15 minutes either side. Computed at read time; show it as given. Absent when the day has none, when either reading type is hidden from the caller, and on older servers.",
+      ),
     events: z.array(dayEvent),
     notable: z.array(dayNotable),
     scores: z

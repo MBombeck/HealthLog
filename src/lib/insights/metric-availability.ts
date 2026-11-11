@@ -80,6 +80,8 @@ export type InsightMetric =
   // `summaries[metric].count > 0` with no new handler branch (the
   // metric auto-lights-up the moment the first reading lands).
   | "BLOOD_GLUCOSE"
+  // #1367 — blood ketones, keyed on its MeasurementType like glucose.
+  | "BLOOD_KETONES"
   | "TOTAL_BODY_WATER"
   | "BONE_MASS"
   // Body fat percentage, keyed on its MeasurementType like the rest of the

@@ -77,7 +77,24 @@ export interface SatisfiableReminder {
   lastSatisfiedAt: Date | null;
   lastSkippedAt: Date | null;
   createdAt: Date;
+  /** Course-window end; without it a finite course reschedules forever. */
+  endsOn: Date | null;
 }
+
+/** The select a caller that narrows its read gives a satisfiable row. */
+export const SATISFIABLE_REMINDER_SELECT = {
+  id: true,
+  userId: true,
+  intervalDays: true,
+  rrule: true,
+  anchorDate: true,
+  notifyHour: true,
+  nextDueAt: true,
+  lastSatisfiedAt: true,
+  lastSkippedAt: true,
+  createdAt: true,
+  endsOn: true,
+} as const satisfies Record<keyof SatisfiableReminder, true>;
 
 export interface SatisfyResult {
   /** True when the reminder was advanced; false when the event was older
@@ -151,6 +168,7 @@ export async function satisfyReminder(
     notifyHour: reminder.notifyHour,
     lastSatisfiedAt: anchorAt,
     createdAt: reminder.createdAt,
+    endsOn: reminder.endsOn,
   };
   const nextDueAt = computeReminderNextDueAt(scheduleInput, timezone, anchorAt);
 
@@ -239,6 +257,7 @@ export async function skipReminder(
     notifyHour: reminder.notifyHour,
     lastSatisfiedAt: skippedAt,
     createdAt: reminder.createdAt,
+    endsOn: reminder.endsOn,
   };
   const nextDueAt = computeReminderNextDueAt(
     scheduleInput,

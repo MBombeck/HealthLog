@@ -6,6 +6,7 @@ import type { ReferenceRangeStatus } from "@/lib/labs/reference-range";
 
 import { ALIAS_PANEL, BIOMARKER_PANELS } from "../biomarker-catalog";
 import {
+  applyCategoryOrder,
   categoriseOverview,
   customCategoryLabel,
   customPanelSuggestions,
@@ -220,5 +221,112 @@ describe("categoriseOverview", () => {
         "en",
       ).grouped,
     ).toBe(true);
+  });
+});
+
+describe("applyCategoryOrder", () => {
+  const cats = (...keys: string[]) => keys.map((key) => ({ key }));
+  const keysOf = (list: { key: string }[]) => list.map((c) => c.key);
+
+  it("keeps the default order without a saved order", () => {
+    expect(
+      keysOf(applyCategoryOrder(cats("lipids", "thyroid", "other"), [])),
+    ).toEqual(["lipids", "thyroid", "other"]);
+  });
+
+  it("puts the listed categories first, in the listed order", () => {
+    expect(
+      keysOf(
+        applyCategoryOrder(cats("lipids", "thyroid", "liver", "other"), [
+          "liver",
+          "lipids",
+          "thyroid",
+          "other",
+        ]),
+      ),
+    ).toEqual(["liver", "lipids", "thyroid", "other"]);
+  });
+
+  it("ignores keys the data does not have", () => {
+    expect(
+      keysOf(
+        applyCategoryOrder(cats("lipids", "thyroid"), [
+          "custom:gone",
+          "thyroid",
+          "iron",
+          "lipids",
+        ]),
+      ),
+    ).toEqual(["thyroid", "lipids"]);
+  });
+
+  it("adds a category the order does not name after the listed ones, in the default order", () => {
+    expect(
+      keysOf(
+        applyCategoryOrder(cats("lipids", "glucose", "thyroid", "liver"), [
+          "thyroid",
+          "lipids",
+        ]),
+      ),
+    ).toEqual(["thyroid", "lipids", "glucose", "liver"]);
+  });
+
+  it("keeps other last when the person left it at the end", () => {
+    expect(
+      keysOf(
+        applyCategoryOrder(cats("lipids", "iron", "custom:abc", "other"), [
+          "lipids",
+          "other",
+        ]),
+      ),
+    ).toEqual(["lipids", "iron", "custom:abc", "other"]);
+  });
+
+  it("keeps other where the person moved it", () => {
+    expect(
+      keysOf(
+        applyCategoryOrder(cats("lipids", "iron", "thyroid", "other"), [
+          "other",
+          "lipids",
+          "thyroid",
+        ]),
+      ),
+    ).toEqual(["other", "lipids", "thyroid", "iron"]);
+  });
+
+  it("judges other's place among the present categories only", () => {
+    // "thyroid" is gone from the data, so "other" ends the listed block.
+    expect(
+      keysOf(
+        applyCategoryOrder(cats("lipids", "iron", "other"), [
+          "lipids",
+          "other",
+          "thyroid",
+        ]),
+      ),
+    ).toEqual(["lipids", "iron", "other"]);
+  });
+});
+
+describe("categoriseOverview with a saved category order", () => {
+  it("answers the categories in the person's order", () => {
+    const { categories, grouped } = categoriseOverview(
+      [
+        marker("bm:1", "Mystery", null),
+        marker("bm:2", "TSH", null),
+        marker("bm:3", "LDL", null),
+        marker("bm:4", "Cortisol", "Hormones"),
+      ],
+      "en",
+      ["thyroid", "other", "lipids"],
+    );
+    expect(grouped).toBe(true);
+    // Hormones is not in the order: it follows the listed categories.
+    expect(categories.map((c) => c.label)).toEqual([
+      "Thyroid",
+      "Other",
+      "Lipids",
+      "Hormones",
+    ]);
   });
 });

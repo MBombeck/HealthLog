@@ -30,6 +30,7 @@ const FEED = {
   historyCycles: 0,
   includeFertile: false,
   titleMode: "DISCREET" as const,
+  forecastStyle: "MARGIN" as const,
 };
 
 describe("<CycleCalendarFeedCard>", () => {
@@ -56,6 +57,32 @@ describe("<CycleCalendarFeedCard>", () => {
     expect(html).toContain("Not fetched yet.");
     // The fertile option exists only for a conception goal.
     expect(html).not.toContain("Fertile window");
+  });
+
+  it("offers the three forecast styles and explains the chosen one", () => {
+    const html = render({
+      feed: FEED,
+      projectionState: "OK",
+      fertileAvailable: false,
+    });
+    expect(html).toContain("How forecasts look");
+    for (const value of ["EXACT", "MARGIN", "BAND"]) {
+      expect(html).toContain(`value="${value}"`);
+    }
+    expect(html).toContain('aria-describedby="cycle-feed-forecast-hint"');
+    expect(html).toMatch(
+      /data-slot="cycle-feed-forecast-hint"[^>]*>Expected days, with the days the period may start earlier or later as separate entries\.</,
+    );
+
+    const band = render({
+      feed: { ...FEED, forecastStyle: "BAND" },
+      projectionState: "OK",
+      fertileAvailable: false,
+    });
+    expect(band).toContain(
+      "One entry covering every day the period may fall on.",
+    );
+    expect(band).not.toContain("as separate entries");
   });
 
   it("explains a shorter feed in the muted tone", () => {

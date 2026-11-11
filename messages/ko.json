@@ -813,6 +813,10 @@
     "typeSleep": "수면",
     "typeSteps": "걸음 수",
     "typeBloodGlucose": "혈당",
+    "typeBloodKetones": "혈중 케톤",
+    "glucoseKetoneIndex": "포도당-케톤 지수",
+    "pairedGlucoseLabel": "같은 측정의 혈당 ({unit})",
+    "pairedGlucoseHint": "같은 시각의 별도 혈당 기록으로 저장되고, 두 값으로 포도당-케톤 지수를 계산해요.",
     "typeTotalBodyWater": "체수분",
     "typeBoneMass": "골량",
     "typeOxygenSaturation": "산소포화도",
@@ -4002,6 +4006,23 @@
       }
     },
     "navBloodGlucose": "혈당",
+    "navBloodKetones": "케톤",
+    "bloodKetones": {
+      "title": "혈중 케톤",
+      "description": "시간에 따른 베타-하이드록시부티르산 측정값이에요({unit}).",
+      "chartTitle": "혈중 케톤",
+      "emptyState": {
+        "title": "아직 케톤 측정값이 없어요",
+        "description": "케톤을 단독으로 또는 같은 채혈의 혈당과 함께 기록하면 여기에 측정값이 나타나요.",
+        "cta": "케톤 기록"
+      },
+      "gki": {
+        "description": "15분 이내에 혈당 측정값이 있는 케톤 측정마다 혈당을 케톤으로 나눈 값이에요.",
+        "emptyTitle": "아직 지수가 없어요",
+        "emptyDescription": "0보다 큰 케톤 측정과 같은 시각이나 15분 이내에 잰 혈당이 있으면 나타나요.",
+        "latest": "최근 {value}: 혈당 {glucose} {unit} ÷ 케톤 {ketones} {unit}, {date}."
+      }
+    },
     "totalBodyWater": {
       "title": "총 체수분",
       "description": "시간에 따른 총 체수분이에요(kg).",
@@ -10056,6 +10077,17 @@
         "DISCREET": "드러나지 않게 (●)",
         "DESCRIPTIVE": "내용 표시"
       },
+      "forecasts": "예측 표시 방식",
+      "forecastStyle": {
+        "EXACT": "예상일만",
+        "MARGIN": "예상일과 여유 기간",
+        "BAND": "하나의 기간"
+      },
+      "forecastStyleHint": {
+        "EXACT": "예상되는 날만 보여줘요.",
+        "MARGIN": "예상일과 함께, 더 일찍 또는 늦게 시작할 수 있는 날을 별도 일정으로 보여줘요.",
+        "BAND": "생리가 있을 수 있는 모든 날을 하나의 일정으로 보여줘요."
+      },
       "fertile": "가임기",
       "fertileDescription": "다음 주기의 예상 가임기를 추가해요. 추정일 뿐 피임 방법이 아니에요.",
       "rotate": "링크 다시 발급",
@@ -10075,6 +10107,7 @@
         "periodEstimate": "생리 (예상)",
         "periodLogged": "생리 (기록)",
         "fertileEstimate": "가임기 (예상)",
+        "periodPossible": "생리 가능",
         "likelyStart": "가장 가능성 높은 시작일 {date}, {band}",
         "bandOne": "±{count}일",
         "bandFew": "±{count}일",
@@ -10584,7 +10617,9 @@
       "openExpanded": "모두",
       "openFlagged": "범위 밖만",
       "openCollapsed": "없음",
-      "orderWithinGroups": "순서는 각 카테고리 안에서 적용돼요."
+      "orderWithinGroups": "순서는 각 카테고리 안에서 적용돼요.",
+      "orderHeading": "카테고리 순서",
+      "orderDefault": "직접 옮기기 전에는 기본 카테고리가 정해진 순서로, 직접 만든 카테고리가 가나다순으로 이어지고 {other}가 마지막에 와요."
     },
     "sourceRange": {
       "fromReport": "결과지 범위 {range}",
@@ -10664,6 +10699,22 @@
     "unit": {
       "none": "단위 없음",
       "noneHint": "INR이나 콜레스테롤/HDL 같은 비율 또는 지수에 사용해요."
+    },
+    "filter": {
+      "searchPlaceholder": "바이오마커 검색…",
+      "searchLabel": "바이오마커 검색",
+      "clearSearch": "검색어 지우기",
+      "lastMeasured": "마지막 측정",
+      "statusLabel": "상태",
+      "statusAll": "모든 상태",
+      "statusAbnormal": "범위 벗어남",
+      "categoryLabel": "카테고리",
+      "categoryAll": "모든 카테고리",
+      "markerCountOne": "바이오마커 {count}개",
+      "markerCountFew": "바이오마커 {count}개",
+      "markerCountOther": "바이오마커 {count}개",
+      "noMatchesTitle": "일치하는 바이오마커 없음",
+      "noMatchesDescription": "검색어 또는 필터를 조정해 보세요."
     }
   },
   "modules": {
@@ -11497,6 +11548,9 @@
       },
       "zelfmoordlijn1813": {
         "name": "Zelfmoordlijn 1813 (벨기에, 24시간, 무료, 익명)"
+      },
+      "suicidePrevention109": {
+        "name": "자살예방상담전화 109 (24시간, 무료)"
       }
     },
     "instrumentDescription": {
@@ -13672,6 +13726,11 @@
     "valuesAllFew": "수치 {count}개 모두",
     "valuesAllOther": "수치 {count}개 모두",
     "valuesFewer": "수치 줄여 보기",
+    "gkiPair": "혈당 {glucose} {unit} / 케톤 {ketones} {unit}",
+    "gkiPairShort": "{glucose} / {ketones} {unit}",
+    "gkiCountOne": "{count}개 중 최근",
+    "gkiCountFew": "{count}개 중 최근",
+    "gkiCountOther": "{count}개 중 최근",
     "countEntriesOne": "기록 1개",
     "countEntriesFew": "기록 {count}개",
     "countEntriesOther": "기록 {count}개",

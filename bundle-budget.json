@@ -58,6 +58,7 @@
     "/insights/headphone-audio/page": 336,
     "/insights/health-score/page": 315,
     "/insights/hrv/page": 337,
+    "/insights/ketones/page": 339,
     "/insights/lean-body-mass/page": 336,
     "/insights/medications/page": 338,
     "/insights/mood/page": 337,

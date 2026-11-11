@@ -197,6 +197,7 @@ export const MEASUREMENT_LEAF_GROUP: Record<MeasurementType, ReportGroupId> = {
 
   // ── glucose ──
   BLOOD_GLUCOSE: "glucose",
+  BLOOD_KETONES: "glucose",
 
   // ── fenced ──
   // Mindful minutes and the State of Mind valence are mental-health
@@ -337,6 +338,7 @@ export const LEAF_MODULE: Partial<Record<ReportLeafId, ModuleKey>> = {
   INDOOR_HUMIDITY: "environment",
   // Glucose: the raw series and the derived panel.
   BLOOD_GLUCOSE: "glucose",
+  BLOOD_KETONES: "glucose",
   GLUCOSE_PANEL: "glucose",
   // The screening totals ride the mental-health module as well as being
   // fenced in the panel. Item-level answers are never a Measurement, so only

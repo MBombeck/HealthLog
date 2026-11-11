@@ -59,7 +59,10 @@ import {
   destroyedDetails,
   overwriteDetails,
 } from "@/lib/sharing/audit-details";
-import { cycleFeedOptionsPatchSchema } from "@/lib/validations/cycle-feed";
+import {
+  NEW_FEED_FORECAST_STYLE,
+  cycleFeedOptionsPatchSchema,
+} from "@/lib/validations/cycle-feed";
 
 export const GET = apiHandler(async () => {
   const auth = await requireGuardianAuth();
@@ -110,6 +113,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
       data: {
         userId: user.id,
         createdById: actor.id,
+        forecastStyle: NEW_FEED_FORECAST_STYLE,
         tokenHash: minted.hash,
         tokenPrefix: minted.prefix,
       },
@@ -166,7 +170,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     );
   }
 
-  const live = await findLiveFeed(user.id);
+  let live = await findLiveFeed(user.id);
   if (!live) return noLiveFeed();
 
   const data = {
@@ -180,10 +184,29 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
       ? { includeFertile: input.includeFertile }
       : {}),
     ...(input.titleMode !== undefined ? { titleMode: input.titleMode } : {}),
+    ...(input.forecastStyle !== undefined
+      ? { forecastStyle: input.forecastStyle }
+      : {}),
   };
-  const updated = await prisma.cycleCalendarFeed.update({
-    where: { id: live.id },
+  // Only while the feed is still the live one. A rotation that committed
+  // after the read above revoked it and copied its old options onto the new
+  // link; the change then goes to that link, once. Updating the revoked row
+  // would answer 200 with the old options left in force.
+  let written = await prisma.cycleCalendarFeed.updateMany({
+    where: { id: live.id, revokedAt: null },
     data,
+  });
+  if (written.count === 0) {
+    live = await findLiveFeed(user.id);
+    if (!live) return noLiveFeed();
+    written = await prisma.cycleCalendarFeed.updateMany({
+      where: { id: live.id, revokedAt: null },
+      data,
+    });
+    if (written.count === 0) return feedExists();
+  }
+  const updated = await prisma.cycleCalendarFeed.findUniqueOrThrow({
+    where: { id: live.id },
     select: FEED_SUMMARY_SELECT,
   });
 
@@ -197,12 +220,14 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
           historyCycles: live.historyCycles,
           includeFertile: live.includeFertile,
           titleMode: live.titleMode,
+          forecastStyle: live.forecastStyle,
         },
         after: {
           horizonCycles: updated.horizonCycles,
           historyCycles: updated.historyCycles,
           includeFertile: updated.includeFertile,
           titleMode: updated.titleMode,
+          forecastStyle: updated.forecastStyle,
         },
       }),
     },
@@ -220,25 +245,43 @@ export const DELETE = apiHandler(async () => {
   const live = await findLiveFeed(user.id);
   if (!live) return noLiveFeed();
 
-  await prisma.cycleCalendarFeed.update({
-    where: { id: live.id },
-    data: { revokedAt: new Date() },
-  });
+  // Every live feed of the record, not only the one read above, and twice:
+  // a rotation that held that row while this waited commits its successor
+  // after the first statement looked, and the second finds it. Off stays
+  // off even when the link was being renewed at the same moment.
+  const revokedAt = new Date();
+  for (let pass = 0; pass < 2; pass++) {
+    await prisma.cycleCalendarFeed.updateMany({
+      where: { userId: user.id, revokedAt: null },
+      data: { revokedAt },
+    });
+  }
   // The link stops working on the provider's next poll. What the provider
   // already copied is beyond reach, which the settings card says before the
   // link is ever made.
-  await auditLog("cycle.feed.revoke", {
-    userId: user.id,
-    details: {
-      feedId: live.id,
-      ...destroyedDetails({
-        model: "CycleCalendarFeed",
-        id: live.id,
-        label: live.tokenPrefix,
-        effectiveAt: live.createdAt,
-      }),
-    },
+  //
+  // The trail names the feeds this request revoked, read back by the one
+  // stamp both passes wrote: a racing rotation may have revoked the feed
+  // read above itself, leaving its successor as the one turned off here.
+  const revoked = await prisma.cycleCalendarFeed.findMany({
+    where: { userId: user.id, revokedAt },
+    select: { id: true, tokenPrefix: true, createdAt: true },
+    orderBy: { createdAt: "asc" },
   });
+  for (const feed of revoked) {
+    await auditLog("cycle.feed.revoke", {
+      userId: user.id,
+      details: {
+        feedId: feed.id,
+        ...destroyedDetails({
+          model: "CycleCalendarFeed",
+          id: feed.id,
+          label: feed.tokenPrefix,
+          effectiveAt: feed.createdAt,
+        }),
+      },
+    });
+  }
 
   return apiSuccess({ revoked: true });
 });

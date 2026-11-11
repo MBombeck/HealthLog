@@ -21,8 +21,30 @@
  * does not recognise is compared exactly, so an unfamiliar spelling surfaces as
  * a mismatch rather than being guessed at.
  *
+ * A lab's note that a value was calculated rather than measured (`g/dL
+ * (calc)`, `(berechnet)`) is not part of the unit and is dropped first; see
+ * `withoutLabUnitAnnotation`.
+ *
  * Pure and dependency-free.
  */
+
+/**
+ * A trailing note in brackets that says the lab calculated the value. Some
+ * reports print it in the unit column, and a read that copies the column
+ * verbatim then minted a marker in "g/dL (calc)", which refused the next
+ * report's plain "g/dL". Only these words are dropped, so a bracket that
+ * carries meaning stays and still surfaces as a mismatch.
+ */
+const CALCULATED_NOTE =
+  /\s*\((?:calc\.?|calculated|computed|berechnet|ber\.?)\)\s*$/i;
+
+/**
+ * The unit without a trailing calculated-value note, trimmed: `g/dL (calc)`
+ * reads `g/dL`, and a unit that was only the note reads `""`.
+ */
+export function withoutLabUnitAnnotation(raw: string): string {
+  return raw.replace(CALCULATED_NOTE, "").trim();
+}
 
 /** Units that may be recognised when printed entirely in capitals. */
 const SHOUTED_UNITS: ReadonlyMap<string, string> = new Map(
@@ -79,7 +101,7 @@ function foldLitre(text: string): string {
  * means the same thing, and the (trimmed) string itself otherwise.
  */
 export function normaliseLabUnit(raw: string): string {
-  const spaced = foldSpacing(raw);
+  const spaced = foldSpacing(withoutLabUnitAnnotation(raw));
 
   const hasLowercase = /[a-zµμ]/.test(spaced);
   const hasUppercase = /[A-Z]/.test(spaced);

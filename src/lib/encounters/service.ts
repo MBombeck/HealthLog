@@ -325,6 +325,7 @@ export async function resolveClosableReminder(
       lastSatisfiedAt: true,
       lastSkippedAt: true,
       createdAt: true,
+      endsOn: true,
     },
   });
   if (!row || row.userId !== userId || row.deletedAt !== null) return undefined;
@@ -340,6 +341,7 @@ export async function resolveClosableReminder(
     lastSatisfiedAt: row.lastSatisfiedAt,
     lastSkippedAt: row.lastSkippedAt,
     createdAt: row.createdAt,
+    endsOn: row.endsOn,
   };
 }
 

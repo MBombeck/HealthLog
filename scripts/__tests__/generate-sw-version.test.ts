@@ -47,25 +47,37 @@ describe("public/sw.js CACHE_VERSION wiring", () => {
   });
 });
 
+// Each test starts a fresh node process. On a busy CI runner one start
+// has taken over six seconds, past the five-second default.
+const SPAWN_TIMEOUT_MS = 30_000;
+
 describe("scripts/generate-sw-version.mjs", () => {
   afterAll(() => {
     // Don't leave the generated artefact behind for the next test run.
     if (existsSync(GENERATED_PATH)) rmSync(GENERATED_PATH);
   });
 
-  it("writes self.__APP_VERSION__ matching package.json", () => {
-    execFileSync("node", [SCRIPT_PATH], { stdio: "pipe" });
-    expect(existsSync(GENERATED_PATH)).toBe(true);
-    const pkg = JSON.parse(readFileSync(PKG_PATH, "utf8"));
-    const generated = readFileSync(GENERATED_PATH, "utf8");
-    expect(generated).toContain(`self.__APP_VERSION__ = "v${pkg.version}"`);
-  });
+  it(
+    "writes self.__APP_VERSION__ matching package.json",
+    () => {
+      execFileSync("node", [SCRIPT_PATH], { stdio: "pipe" });
+      expect(existsSync(GENERATED_PATH)).toBe(true);
+      const pkg = JSON.parse(readFileSync(PKG_PATH, "utf8"));
+      const generated = readFileSync(GENERATED_PATH, "utf8");
+      expect(generated).toContain(`self.__APP_VERSION__ = "v${pkg.version}"`);
+    },
+    SPAWN_TIMEOUT_MS,
+  );
 
-  it("re-running the script is idempotent (overwrites with same content)", () => {
-    execFileSync("node", [SCRIPT_PATH], { stdio: "pipe" });
-    const a = readFileSync(GENERATED_PATH, "utf8");
-    execFileSync("node", [SCRIPT_PATH], { stdio: "pipe" });
-    const b = readFileSync(GENERATED_PATH, "utf8");
-    expect(b).toBe(a);
-  });
+  it(
+    "re-running the script is idempotent (overwrites with same content)",
+    () => {
+      execFileSync("node", [SCRIPT_PATH], { stdio: "pipe" });
+      const a = readFileSync(GENERATED_PATH, "utf8");
+      execFileSync("node", [SCRIPT_PATH], { stdio: "pipe" });
+      const b = readFileSync(GENERATED_PATH, "utf8");
+      expect(b).toBe(a);
+    },
+    SPAWN_TIMEOUT_MS,
+  );
 });

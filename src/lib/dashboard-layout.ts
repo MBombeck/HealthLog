@@ -341,6 +341,7 @@ export const CHART_OVERLAY_KEYS = [
   "scoreSleep",
   "scoreStress",
   "scoreStrain",
+  "bloodKetones", // #1367 — the chart on the ketones page.
 ] as const;
 export type ChartOverlayKey = (typeof CHART_OVERLAY_KEYS)[number];
 

@@ -165,6 +165,31 @@ export default defineConfig({
             }),
             instances: [{ browser: "chromium" }],
             screenshotFailures: false,
+            commands: {
+              // Every test iframe is named "vitest-iframe", and the provider
+              // finds the one to act on by that name. When a page runs a
+              // second file, the first file's iframe can still be found
+              // until its detach event arrives, so the second file's first
+              // click lands in a frame that is going away ("Frame was
+              // detached"). The setup waits here until the iframe found by
+              // name is this file's own.
+              async awaitOwnFrame({ page, testPath }) {
+                const isOwn = () => {
+                  const url = page.frame("vitest-iframe")?.url();
+                  if (!url || !testPath) return false;
+                  return new URL(url).searchParams.get("iframeId") === testPath;
+                };
+                const deadline = Date.now() + 5_000;
+                while (!isOwn()) {
+                  if (Date.now() > deadline) {
+                    throw new Error(
+                      `the vitest-iframe found by name never became ${testPath}`,
+                    );
+                  }
+                  await new Promise((done) => setTimeout(done, 10));
+                }
+              },
+            },
           },
         },
       },

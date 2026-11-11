@@ -813,6 +813,10 @@
     "typeSleep": "Сон",
     "typeSteps": "Шаги",
     "typeBloodGlucose": "Глюкоза крови",
+    "typeBloodKetones": "Кетоны в крови",
+    "glucoseKetoneIndex": "Глюкозо-кетоновый индекс",
+    "pairedGlucoseLabel": "Глюкоза из того же измерения ({unit})",
+    "pairedGlucoseHint": "Сохраняется как отдельное измерение глюкозы с тем же временем; по этой паре рассчитывается глюкозо-кетоновый индекс.",
     "typeTotalBodyWater": "Общая вода в организме",
     "typeBoneMass": "Костная масса",
     "typeOxygenSaturation": "Насыщение кислородом",
@@ -4002,6 +4006,23 @@
       }
     },
     "navBloodGlucose": "Глюкоза",
+    "navBloodKetones": "Кетоны",
+    "bloodKetones": {
+      "title": "Кетоны в крови",
+      "description": "Ваши измерения бета-гидроксибутирата в динамике, в {unit}.",
+      "chartTitle": "Кетоны в крови",
+      "emptyState": {
+        "title": "Измерений кетонов пока нет",
+        "description": "Измерения кетонов появятся здесь, как только вы запишете одно, отдельно или вместе с глюкозой из того же прокола.",
+        "cta": "Записать кетоны"
+      },
+      "gki": {
+        "description": "Глюкоза, делённая на кетоны, для каждого измерения кетонов с измерением глюкозы в пределах 15 минут.",
+        "emptyTitle": "Индекса пока нет",
+        "emptyDescription": "Он появится, когда к измерению кетонов выше нуля будет измерение глюкозы в то же время или в пределах 15 минут.",
+        "latest": "Последний {value}: глюкоза {glucose} {unit} на кетоны {ketones} {unit}, {date}."
+      }
+    },
     "totalBodyWater": {
       "title": "Общая вода в организме",
       "description": "Ваша общая вода в организме в динамике, в килограммах.",
@@ -10056,6 +10077,17 @@
         "DISCREET": "Незаметно (●)",
         "DESCRIPTIVE": "Подробно"
       },
+      "forecasts": "Вид прогноза",
+      "forecastStyle": {
+        "EXACT": "Ожидаемые дни",
+        "MARGIN": "Ожидаемые дни с запасом",
+        "BAND": "Один промежуток"
+      },
+      "forecastStyleHint": {
+        "EXACT": "Только ожидаемые дни.",
+        "MARGIN": "Ожидаемые дни, а отдельными событиями дни, когда месячные могут начаться раньше или позже.",
+        "BAND": "Одно событие на все дни, на которые могут прийтись месячные."
+      },
       "fertile": "Фертильное окно",
       "fertileDescription": "Добавляет предполагаемое фертильное окно следующего цикла. Это оценка, а не метод контрацепции.",
       "rotate": "Обновить ссылку",
@@ -10075,6 +10107,7 @@
         "periodEstimate": "Месячные (оценка)",
         "periodLogged": "Месячные (записаны)",
         "fertileEstimate": "Фертильное окно (оценка)",
+        "periodPossible": "Возможны месячные",
         "likelyStart": "Наиболее вероятное начало {date}, {band}",
         "bandOne": "±{count} день",
         "bandFew": "±{count} дня",
@@ -10584,7 +10617,9 @@
       "openExpanded": "Все",
       "openFlagged": "Только вне диапазона",
       "openCollapsed": "Ни одной",
-      "orderWithinGroups": "Порядок действует внутри каждой категории."
+      "orderWithinGroups": "Порядок действует внутри каждой категории.",
+      "orderHeading": "Порядок категорий",
+      "orderDefault": "Пока вы ничего не переместили, встроенные категории идут в постоянном порядке, ваши собственные по алфавиту, а {other} в конце."
     },
     "sourceRange": {
       "fromReport": "Диапазон из отчёта {range}",
@@ -10664,6 +10699,22 @@
     "unit": {
       "none": "Без единицы",
       "noneHint": "Для коэффициента или индекса, например МНО или холестерин/ЛПВП."
+    },
+    "filter": {
+      "searchPlaceholder": "Поиск биомаркеров…",
+      "searchLabel": "Поиск биомаркеров",
+      "clearSearch": "Очистить поиск",
+      "lastMeasured": "Последнее измерение",
+      "statusLabel": "Статус",
+      "statusAll": "Все статусы",
+      "statusAbnormal": "Вне нормы",
+      "categoryLabel": "Категория",
+      "categoryAll": "Все категории",
+      "markerCountOne": "{count} биомаркер",
+      "markerCountFew": "{count} биомаркера",
+      "markerCountOther": "{count} биомаркеров",
+      "noMatchesTitle": "Биомаркеры не найдены",
+      "noMatchesDescription": "Попробуйте изменить поисковый запрос или фильтры."
     }
   },
   "modules": {
@@ -11497,6 +11548,9 @@
       },
       "zelfmoordlijn1813": {
         "name": "Zelfmoordlijn 1813 (Бельгия, круглосуточно, бесплатно, анонимно)"
+      },
+      "suicidePrevention109": {
+        "name": "Линия профилактики самоубийств 109 (Южная Корея, круглосуточно, бесплатно)"
       }
     },
     "instrumentDescription": {
@@ -13672,6 +13726,11 @@
     "valuesAllFew": "Все {count} значения",
     "valuesAllOther": "Все {count} значений",
     "valuesFewer": "Меньше значений",
+    "gkiPair": "Глюкоза {glucose} {unit} / кетоны {ketones} {unit}",
+    "gkiPairShort": "{glucose} / {ketones} {unit}",
+    "gkiCountOne": "Последний из {count}",
+    "gkiCountFew": "Последний из {count}",
+    "gkiCountOther": "Последний из {count}",
     "countEntriesOne": "{count} запись",
     "countEntriesFew": "Записей: {count}",
     "countEntriesOther": "Записей: {count}",

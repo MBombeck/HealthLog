@@ -11,6 +11,7 @@ import { z } from "zod/v4";
 import type { ZodOpenApiObject } from "zod-openapi";
 
 import {
+  cycleFeedForecastStyleEnum,
   cycleFeedOptionsPatchSchema,
   cycleFeedTitleModeEnum,
 } from "@/lib/validations/cycle-feed";
@@ -76,6 +77,9 @@ const feedSummary = z
     historyCycles: z.number().int().min(0).max(12),
     includeFertile: z.boolean(),
     titleMode: cycleFeedTitleModeEnum,
+    forecastStyle: cycleFeedForecastStyleEnum.describe(
+      "How a forecast period is drawn. `EXACT`: one event over the predicted bleeding days from the most likely start. `MARGIN`: that event, plus a separate event for the days before it the period may start on and one for the days after it may still run on (each only when the band reaches that side). `BAND`: one event from the earliest likely start through the last bleeding day of the latest likely start. A subscription turned on before the option existed is `BAND`.",
+    ),
   })
   .meta({
     id: "CycleFeedSummary",
@@ -202,7 +206,7 @@ export const cycleFeedPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Cycle"],
       summary: "Turn the calendar subscription on (#1350)",
       description:
-        "Mints an `hlf_` token (192-bit), stores only its HMAC, and returns the URL EXACTLY ONCE. One live subscription per record: a second answers 409 `cycle.feed.exists` (rotate instead). Defaults: three cycles ahead, no history, no fertile window, discreet titles. Rate-limited per acting account (`cycle-feed:mint:<actorId>`, 10/h, shared with rotate).",
+        "Mints an `hlf_` token (192-bit), stores only its HMAC, and returns the URL EXACTLY ONCE. One live subscription per record: a second answers 409 `cycle.feed.exists` (rotate instead). Defaults: three cycles ahead, no history, no fertile window, discreet titles, `MARGIN` forecasts. Rate-limited per acting account (`cycle-feed:mint:<actorId>`, 10/h, shared with rotate).",
       responses: {
         ...mintResponses,
         "409": {
@@ -215,7 +219,7 @@ export const cycleFeedPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Cycle"],
       summary: "Change the calendar subscription's options (#1350)",
       description:
-        "Field-by-field update of the options. The URL does not change; the feed's next fetch serves the new content.",
+        "Field-by-field update of the options. The URL does not change; the feed's next fetch serves the new content. A change saved while the link is being replaced applies to the link that stays live.",
       requestBody: {
         required: true,
         content: { "application/json": { schema: feedOptionsRequest } },
@@ -231,6 +235,11 @@ export const cycleFeedPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "404": {
           description: "No subscription is on (`cycle.feed.none`).",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
+        "409": {
+          description:
+            "The link was replaced twice while the change was being saved (`cycle.feed.exists`); nothing changed, and sending it again applies it to the link that is live now.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...MANAGEMENT_REFUSALS,
@@ -271,7 +280,7 @@ export const cycleFeedPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Cycle"],
       summary: "Replace the calendar subscription's link (#1350)",
       description:
-        "One transaction: the live link is revoked and a new one minted with the same options. Returns the new URL EXACTLY ONCE. Calendars using the old link stop updating. Of two rotations racing, the one that loses answers 409 `cycle.feed.exists` and the winner's link stands.",
+        "One transaction: the live link is revoked and a new one minted with the same options, the forecast style included. Returns the new URL EXACTLY ONCE. Calendars using the old link stop updating. Of two rotations racing, the one that loses answers 409 `cycle.feed.exists` and the winner's link stands; a rotation racing the subscription being turned off answers 404 `cycle.feed.none` and the subscription stays off.",
       responses: {
         ...mintResponses,
         "404": {

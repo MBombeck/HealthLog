@@ -28,6 +28,21 @@ function render(prefs: Partial<ModuleListPrefs>) {
     biomarkers: [],
     customPanels: [],
   });
+  // The server's answer, already in the person's order.
+  queryClient.setQueryData(queryKeys.labResultsOverview("en"), {
+    markers: [],
+    grouped: true,
+    categories: [
+      { key: "thyroid", label: "Thyroid" },
+      { key: "other", label: "Other" },
+      { key: "lipids", label: "Lipids" },
+    ].map((category) => ({
+      ...category,
+      markerKeys: [],
+      counts: { inRange: 0, below: 0, above: 0, unknown: 0 },
+      status: "unknown",
+    })),
+  });
   return renderToStaticMarkup(
     <QueryClientProvider client={queryClient}>
       <I18nProvider initialLocale="en">
@@ -58,6 +73,28 @@ describe("<LabsSettings> categories", () => {
     );
     expect(render({ sortDir: "manual" })).not.toContain(
       "The order applies within each category.",
+    );
+  });
+
+  it("offers the category order only while categories are on", () => {
+    expect(render({})).not.toContain('id="labs-category-order"');
+    expect(render({ groupBy: "category" })).toContain(
+      'id="labs-category-order"',
+    );
+  });
+
+  it("lists the categories as the server ordered them, under their labels", () => {
+    const html = render({ groupBy: "category" });
+    const card = html.slice(html.indexOf('id="labs-category-order"'));
+    const at = (label: string) => card.indexOf(`title="${label}"`);
+    expect(at("Thyroid")).toBeGreaterThan(-1);
+    expect(at("Thyroid")).toBeLessThan(at("Other"));
+    expect(at("Other")).toBeLessThan(at("Lipids"));
+  });
+
+  it("says how the categories are ordered until the person moves one", () => {
+    expect(render({ groupBy: "category" })).toContain(
+      "Until you move one, built-in categories keep a fixed order, your own follow alphabetically and Other comes last.",
     );
   });
 });

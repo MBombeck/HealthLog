@@ -930,7 +930,7 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   },
   "app/api/labs/overview/route.ts": {
     domain: "labs",
-    why: "The Labs list's per-marker overview of the record: the newest reading of each biomarker, its count and a short trend. The same rows and the same biomarker include as `GET /api/labs`, grouped server-side; read only.",
+    why: "The Labs list's per-marker overview of the record: the newest reading of each biomarker, its count and a short trend. The same rows and the same biomarker include as `GET /api/labs`, grouped server-side; read only. The category order it applies comes from the caller's own list layout, never the owner's, so it reveals nothing about the record.",
   },
   "app/api/biomarkers/route.ts": {
     domain: "labs",

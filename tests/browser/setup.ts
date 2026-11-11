@@ -16,6 +16,7 @@
 import "@/app/globals.css";
 
 import { afterEach, beforeAll, beforeEach, vi } from "vitest";
+import { commands } from "vitest/browser";
 
 import { loadMessages } from "@/lib/i18n/load-locale";
 
@@ -24,7 +25,16 @@ import { rememberAddress, restoreAddress } from "./url";
 
 document.documentElement.classList.add("dark");
 
+declare module "vitest/browser" {
+  interface BrowserCommands {
+    /** Waits until the provider's frame lookup finds this file's iframe. */
+    awaitOwnFrame: () => Promise<void>;
+  }
+}
+
 beforeAll(async () => {
+  // See `awaitOwnFrame` in vitest.config.mts.
+  await commands.awaitOwnFrame();
   await loadMessages("en");
 });
 

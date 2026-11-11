@@ -13,6 +13,8 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
+import type { PrismaClient } from "@/generated/prisma/client";
+
 import { satisfyReminder, skipReminder } from "../satisfy";
 
 const TZ = "Europe/Berlin";
@@ -49,7 +51,9 @@ function makePrisma(updateManyCount = 1) {
       }),
     },
   };
-  return { prisma, updates, events };
+  // The primitives touch only the two delegates above.
+  const client = prisma as unknown as PrismaClient;
+  return { prisma, client, updates, events };
 }
 
 function reminder(
@@ -66,6 +70,7 @@ function reminder(
     lastSatisfiedAt: null,
     lastSkippedAt: null,
     createdAt: new Date("2026-06-01T00:00:00Z"),
+    endsOn: null,
     ...overrides,
   };
 }
@@ -252,6 +257,59 @@ describe("satisfyReminder", () => {
     expect((updates[0].data.nextDueAt as Date).getTime()).toBeGreaterThan(
       skippedAt.getTime(),
     );
+  });
+});
+
+describe("course window", () => {
+  // A twice-daily course whose last day is 2026-06-15 (Berlin). Satisfying
+  // or skipping the final evening slot must end the course, not roll it on
+  // to an open-ended 2026-06-16 morning.
+  const course = {
+    intervalDays: null,
+    rrule: "FREQ=DAILY;BYHOUR=7,19",
+    notifyHour: 7,
+    createdAt: new Date("2026-06-13T10:00:00Z"),
+    endsOn: new Date("2026-06-15T10:00:00Z"),
+  };
+  const lastEvening = new Date("2026-06-15T17:30:00Z");
+
+  it("satisfy past the last slot leaves no next slot", async () => {
+    const { client, updates } = makePrisma();
+    const result = await satisfyReminder(
+      client,
+      reminder(course),
+      TZ,
+      lastEvening,
+      "manual",
+    );
+    expect(result.satisfied).toBe(true);
+    expect(result.nextDueAt).toBeNull();
+    expect(updates[0].data.nextDueAt).toBeNull();
+  });
+
+  it("skip past the last slot leaves no next slot", async () => {
+    const { client, updates } = makePrisma();
+    const result = await skipReminder(
+      client,
+      reminder(course),
+      TZ,
+      lastEvening,
+    );
+    expect(result.skipped).toBe(true);
+    expect(result.nextDueAt).toBeNull();
+    expect(updates[0].data.nextDueAt).toBeNull();
+  });
+
+  it("still rolls within the window", async () => {
+    const { client } = makePrisma();
+    const result = await satisfyReminder(
+      client,
+      reminder(course),
+      TZ,
+      new Date("2026-06-15T05:30:00Z"),
+      "manual",
+    );
+    expect(result.nextDueAt).toEqual(new Date("2026-06-15T17:00:00Z"));
   });
 });
 

@@ -163,7 +163,7 @@ export const labOverviewCategory = z
   .meta({
     id: "LabOverviewCategory",
     description:
-      "One category of the labs list, resolved by the server. `key` is opaque: a catalog panel key, `custom:<hash>` for the person's own panel, or `other`; it carries no user text and is stable, so a client may key collapse state on it. `label` is rendered as given (a catalog panel in the caller's locale, the person's own spelling, or the localised \"Other\"). `markerKeys` names the `markers[].key` values in the category. `status` combines the members' newest readings: `above` when any is above its range, else `below` when any is below, else `in-range` when any was assessed, else `unknown`. A client renders these values and never rebuilds the category, the order or the status.",
+      "One category of the labs list, resolved by the server. `key` is opaque: a catalog panel key, `custom:<hash>` for the person's own panel, or `other`; it carries no user text and is stable, so a client may key collapse state on it. `label` is rendered as given (a catalog panel in the caller's locale, the person's own spelling, or the localised \"Other\"). `markerKeys` names the `markers[].key` values in the category. `status` combines the members' newest readings: `above` when any is above its range, else `below` when any is below, else `in-range` when any was assessed, else `unknown`. A client renders these values and never rebuilds the category, the order or the status. A client that shows only the members matching a filter may summarise that subset by the same rule; without a filter it shows `counts` and `status` as sent.",
   });
 
 export const labOverviewResponse = z
@@ -171,7 +171,7 @@ export const labOverviewResponse = z
     markers: z.array(labOverviewMarker),
     categories: z.array(labOverviewCategory).meta({
       description:
-        "The list's categories in display order: catalog panels in catalog order, then the person's own panels by label, then `other`.",
+        "The list's categories in display order, already arranged for the caller: the default order is catalog panels in catalog order, then the person's own panels by label, then `other`, and the caller's `categoryOrder` (`PUT /api/settings/module-list-layout`, labs list) is applied over it. Render them in this order.",
     }),
     grouped: z.boolean().meta({
       description:

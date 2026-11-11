@@ -58,14 +58,15 @@ export const GET = apiHandler(async () => {
 export const PUT = apiHandler(async (request: Request) => {
   const { user } = await requireActorAuth();
 
-  // 500 ids of up to 64 characters plus the envelope.
+  // 500 ids plus 200 category keys of up to 64 characters, plus the envelope.
   const parsed = await parseJsonBody(request, moduleListLayoutPutSchema, {
-    maxBytes: 48 * 1024,
+    maxBytes: 64 * 1024,
     action: "settings.module-list-layout.validation-failed",
   });
   if (!parsed.ok) return parsed.error;
 
-  const { list, view, order, sortDir, groupBy, groupsOpen } = parsed.data;
+  const { list, view, order, sortDir, groupBy, groupsOpen, categoryOrder } =
+    parsed.data;
   // Preserve-when-absent: one stored read fills whichever field the body
   // left out, and every other list stays as stored. Only fields a person has
   // chosen are written, so a field never picked keeps following the default.
@@ -79,6 +80,7 @@ export const PUT = apiHandler(async (request: Request) => {
       ...(sortDir ? { sortDir } : {}),
       ...(groupBy ? { groupBy } : {}),
       ...(groupsOpen ? { groupsOpen } : {}),
+      ...(categoryOrder ? { categoryOrder: [...new Set(categoryOrder)] } : {}),
     };
     const next = { ...stored, [list]: nextChoices };
     await tx.user.update({
@@ -98,6 +100,7 @@ export const PUT = apiHandler(async (request: Request) => {
       groupBy: layout.lists[list].groupBy,
       groupsOpen: layout.lists[list].groupsOpen,
       orderLength: layout.lists[list].order.length,
+      categoryOrderLength: layout.lists[list].categoryOrder.length,
     },
   });
   return apiSuccess(layout);

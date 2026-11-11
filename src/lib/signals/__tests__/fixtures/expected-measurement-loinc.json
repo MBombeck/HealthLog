@@ -328,5 +328,11 @@
     "display": "Indoor relative humidity",
     "unit": "%",
     "category": "activity"
+  },
+  "BLOOD_KETONES": {
+    "loinc": "104816-4",
+    "display": "Beta hydroxybutyrate [Moles/volume] in Blood",
+    "unit": "mmol/L",
+    "category": "laboratory"
   }
 }

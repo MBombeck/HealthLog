@@ -128,6 +128,14 @@ export const measurementKeys = {
     ["measurements", "bp-time-of-day", days] as const,
 
   /**
+   * #1367 — the glucose-ketone index series
+   * (`GET /api/measurements/series?kind=glucoseKetoneIndex&days=`). Under the
+   * `["measurements"]` prefix, so a new glucose or ketone reading refreshes it.
+   */
+  glucoseKetoneIndexSeries: (days: number) =>
+    ["measurements", "glucose-ketone-index", days] as const,
+
+  /**
    * v1.8.5 — bounded recent-timestamp read powering the
    * measurement-diversity nudge on an insights category page. Keyed by
    * the page's `MeasurementType` so each metric caches its own window.

@@ -105,6 +105,10 @@ const METRIC_STATUS_MODULE_OWNERS: Partial<Record<MeasurementType, ModuleKey>> =
     STRESS_LEVEL: "recovery",
     TRAINING_READINESS: "recovery",
     CARDIO_RECOVERY: "recovery",
+    // Blood ketones are read off the same meter as fingerstick glucose and
+    // belong to the glucose module; they stay off the Coach snapshot, so the
+    // scope token cannot reach them.
+    BLOOD_KETONES: "glucose",
     // The HRV fallback type. `resolveRichMetricForUser` swaps HRV to its RMSSD
     // fallback for an account that only has ring/strap nightly RMSSD rows, so
     // leaving this unowned would have let the fallback path serve exactly the

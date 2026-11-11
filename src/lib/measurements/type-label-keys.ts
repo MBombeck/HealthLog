@@ -22,6 +22,7 @@ export const MEASUREMENT_TYPE_LABEL_KEYS: Record<MeasurementType, string> = {
   SLEEP_DURATION: "measurements.typeSleep",
   ACTIVITY_STEPS: "measurements.typeSteps",
   BLOOD_GLUCOSE: "measurements.typeBloodGlucose",
+  BLOOD_KETONES: "measurements.typeBloodKetones",
   TOTAL_BODY_WATER: "measurements.typeTotalBodyWater",
   BONE_MASS: "measurements.typeBoneMass",
   OXYGEN_SATURATION: "measurements.typeOxygenSaturation",

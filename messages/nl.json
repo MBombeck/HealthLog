@@ -813,6 +813,10 @@
     "typeSleep": "Slaap",
     "typeSteps": "Stappen",
     "typeBloodGlucose": "Bloedglucose",
+    "typeBloodKetones": "Bloedketonen",
+    "glucoseKetoneIndex": "Glucose-ketonindex",
+    "pairedGlucoseLabel": "Glucose uit dezelfde meting ({unit})",
+    "pairedGlucoseHint": "Wordt als eigen glucosemeting met hetzelfde tijdstip opgeslagen; uit het paar volgt de glucose-ketonindex.",
     "typeTotalBodyWater": "Totaal lichaamswater",
     "typeBoneMass": "Botmassa",
     "typeOxygenSaturation": "Zuurstofsaturatie",
@@ -4002,6 +4006,23 @@
       }
     },
     "navBloodGlucose": "Glucose",
+    "navBloodKetones": "Ketonen",
+    "bloodKetones": {
+      "title": "Bloedketonen",
+      "description": "Je bèta-hydroxybutyraatmetingen in de loop van de tijd, in {unit}.",
+      "chartTitle": "Bloedketonen",
+      "emptyState": {
+        "title": "Nog geen ketonmetingen",
+        "description": "Ketonmetingen verschijnen hier zodra je er een vastlegt, los of met de glucose uit dezelfde vingerprik.",
+        "cta": "Ketonen vastleggen"
+      },
+      "gki": {
+        "description": "Glucose gedeeld door ketonen, voor elke ketonmeting met een glucosemeting binnen 15 minuten.",
+        "emptyTitle": "Nog geen index",
+        "emptyDescription": "Hij verschijnt zodra een ketonmeting boven nul een glucosemeting op hetzelfde moment of binnen 15 minuten heeft.",
+        "latest": "Laatst {value}: glucose {glucose} {unit} gedeeld door ketonen {ketones} {unit}, {date}."
+      }
+    },
     "totalBodyWater": {
       "title": "Totaal lichaamswater",
       "description": "Je totale lichaamswater in de loop van de tijd, in kilogram.",
@@ -10056,6 +10077,17 @@
         "DISCREET": "Discreet (●)",
         "DESCRIPTIVE": "Beschrijvend"
       },
+      "forecasts": "Weergave van voorspellingen",
+      "forecastStyle": {
+        "EXACT": "Verwachte dagen",
+        "MARGIN": "Verwachte dagen met marge",
+        "BAND": "Eén bereik"
+      },
+      "forecastStyleHint": {
+        "EXACT": "Alleen de verwachte dagen.",
+        "MARGIN": "De verwachte dagen, met de dagen waarop de menstruatie eerder of later kan beginnen als aparte afspraken.",
+        "BAND": "Eén afspraak over alle dagen waarop de menstruatie kan vallen."
+      },
       "fertile": "Vruchtbare periode",
       "fertileDescription": "Voegt de geschatte vruchtbare periode van de volgende cyclus toe. Een schatting, geen anticonceptiemethode.",
       "rotate": "Link vernieuwen",
@@ -10075,6 +10107,7 @@
         "periodEstimate": "Menstruatie (schatting)",
         "periodLogged": "Menstruatie (geregistreerd)",
         "fertileEstimate": "Vruchtbare periode (schatting)",
+        "periodPossible": "Menstruatie mogelijk",
         "likelyStart": "Meest waarschijnlijke begin {date}, {band}",
         "bandOne": "±{count} dag",
         "bandFew": "±{count} dagen",
@@ -10584,7 +10617,9 @@
       "openExpanded": "Alle",
       "openFlagged": "Alleen buiten bereik",
       "openCollapsed": "Geen",
-      "orderWithinGroups": "De volgorde geldt binnen elke categorie."
+      "orderWithinGroups": "De volgorde geldt binnen elke categorie.",
+      "orderHeading": "Volgorde van de categorieën",
+      "orderDefault": "Tot je er een verplaatst, staan de ingebouwde categorieën in een vaste volgorde, je eigen alfabetisch daarna en {other} als laatste."
     },
     "sourceRange": {
       "fromReport": "Bereik volgens rapport: {range}",
@@ -10664,6 +10699,22 @@
     "unit": {
       "none": "Geen eenheid",
       "noneHint": "Voor een verhouding of index zoals INR of cholesterol/HDL."
+    },
+    "filter": {
+      "searchPlaceholder": "Biomarkers zoeken…",
+      "searchLabel": "Biomarkers zoeken",
+      "clearSearch": "Zoekopdracht wissen",
+      "lastMeasured": "Laatst gemeten",
+      "statusLabel": "Status",
+      "statusAll": "Alle statussen",
+      "statusAbnormal": "Buiten bereik",
+      "categoryLabel": "Categorie",
+      "categoryAll": "Alle categorieën",
+      "markerCountOne": "{count} biomarker",
+      "markerCountFew": "{count} biomarkers",
+      "markerCountOther": "{count} biomarkers",
+      "noMatchesTitle": "Geen passende biomarkers",
+      "noMatchesDescription": "Probeer je zoekopdracht of filters aan te passen."
     }
   },
   "modules": {
@@ -11497,6 +11548,9 @@
       },
       "zelfmoordlijn1813": {
         "name": "Zelfmoordlijn 1813 (België, dag en nacht, gratis, anoniem)"
+      },
+      "suicidePrevention109": {
+        "name": "Zelfmoordpreventielijn 109 (Zuid-Korea, dag en nacht, gratis)"
       }
     },
     "instrumentDescription": {
@@ -13672,6 +13726,11 @@
     "valuesAllFew": "Alle {count} waarden",
     "valuesAllOther": "Alle {count} waarden",
     "valuesFewer": "Minder waarden",
+    "gkiPair": "Glucose {glucose} {unit} / ketonen {ketones} {unit}",
+    "gkiPairShort": "{glucose} / {ketones} {unit}",
+    "gkiCountOne": "Laatste van {count}",
+    "gkiCountFew": "Laatste van {count}",
+    "gkiCountOther": "Laatste van {count}",
     "countEntriesOne": "1 registratie",
     "countEntriesFew": "{count} registraties",
     "countEntriesOther": "{count} registraties",

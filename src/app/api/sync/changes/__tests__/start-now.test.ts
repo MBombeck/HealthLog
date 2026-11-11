@@ -1,7 +1,7 @@
 /**
  * `GET /api/sync/changes?start=now` (#1339) — a cursor at the present.
  *
- * The answer is an empty page whose cursor sits a minute before `serverNow`
+ * The answer is an empty page whose cursor sits two minutes before `serverNow`
  * in every domain (a write stamped before it and committed after it is not
  * skipped), in the feed's own opaque format, and nothing is read: the point is
  * to skip the history walk, so a read here would be the bug. The database is
@@ -55,7 +55,7 @@ beforeEach(() => {
 });
 
 describe("GET /api/sync/changes?start=now", () => {
-  it("answers an empty page with a cursor a minute before serverNow in every domain", async () => {
+  it("answers an empty page with a cursor two minutes before serverNow in every domain", async () => {
     const before = Date.now();
     const res = await GET(req("?start=now"));
     const after = Date.now();
@@ -82,7 +82,7 @@ describe("GET /api/sync/changes?start=now", () => {
     expect(cursor).not.toBeNull();
     for (const domain of SYNC_DOMAINS) {
       expect(cursor![domain], domain).toEqual({
-        updatedAtMs: nowMs - 60_000,
+        updatedAtMs: nowMs - 120_000,
         id: "0",
       });
     }

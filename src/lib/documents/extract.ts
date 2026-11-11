@@ -58,6 +58,7 @@ import {
   type OcrReadSurface,
 } from "@/lib/documents/ocr-read";
 import { isDimensionlessUnit } from "@/lib/labs/dimensionless";
+import { withoutLabUnitAnnotation } from "@/lib/labs/unit-normalise";
 import { annotate } from "@/lib/logging/context";
 import {
   INBOUND_CONFIDENCE_FLOOR,
@@ -168,7 +169,7 @@ function mapFactData(raw: ExtractedFactRaw): FactData | null {
       codeSystem: system === "LOINC" ? system : null,
       value: hasNumeric ? raw.value : null,
       valueText: hasNumeric ? null : raw.valueText,
-      unit: raw.unit,
+      unit: observationUnit(raw.unit),
       referenceLow: raw.referenceLow,
       referenceHigh: raw.referenceHigh,
       referenceText: raw.referenceText,
@@ -187,6 +188,17 @@ function mapFactData(raw: ExtractedFactRaw): FactData | null {
     effectiveDate,
   };
   return data;
+}
+
+/**
+ * The printed unit without a lab's "(calc)" note, so the same marker read
+ * from two reports, one with the note and one without, lands in one unit.
+ * A unit that was only the note is no unit.
+ */
+function observationUnit(unit: string | null): string | null {
+  if (unit === null) return null;
+  const bare = withoutLabUnitAnnotation(unit);
+  return bare === "" ? null : bare;
 }
 
 /** A staged fact ready to persist (before it gets an id). */
@@ -306,7 +318,7 @@ function factKey(raw: ExtractedFactRaw, readDate: string | null): string {
     raw.label.trim().toLowerCase(),
     raw.value ?? "",
     (raw.valueText ?? "").trim().toLowerCase(),
-    (raw.unit ?? "").trim().toLowerCase(),
+    (observationUnit(raw.unit) ?? "").toLowerCase(),
     (raw.referenceText ?? "").trim().toLowerCase(),
     (raw.dose ?? "").trim().toLowerCase(),
     normaliseDate(raw.effectiveDate) ?? readDate ?? "",
@@ -381,15 +393,22 @@ export async function runInboundExtraction(
     // every fact from it is unanchored by construction.
     const anchor = anchorSourceText(raw.sourceText, args.ocrText);
     if (!anchor.anchored) unanchored += 1;
+    // The unit as it will be stored, with any "(calc)" note gone, so a
+    // "1 (calc)" is judged as the "1" it becomes.
+    const unit = observationUnit(raw.unit);
     facts.push({
       factType: raw.type,
       confidence,
       // A unit of "1" is the user's explicit no-unit choice. A read that
       // states it itself goes to review rather than straight to the record,
       // so a dropped unit never passes as a dimensionless value.
+      // So does a unit column that held only a "(calc)" note: it reads as no
+      // unit, and a person decides whether the value really has none.
       needsReview:
         confidence < INBOUND_CONFIDENCE_FLOOR ||
-        (raw.type === "OBSERVATION" && isDimensionlessUnit(raw.unit)),
+        (raw.type === "OBSERVATION" &&
+          (isDimensionlessUnit(unit) ||
+            (raw.unit !== null && raw.unit.trim() !== "" && unit === null))),
       data,
       provenance: {
         sourceText: anchor.sourceText,

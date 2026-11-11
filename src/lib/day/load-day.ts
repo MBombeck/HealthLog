@@ -29,6 +29,7 @@ import {
 import { DAY_SCORE_MEASUREMENT_TYPES, readDayScores } from "@/lib/day/scores";
 import { measurementTypeVisible, type DayAccess } from "@/lib/day/sections";
 import { readDayBands, shapeDayValues } from "@/lib/day/values";
+import { readGlucoseKetoneIndex } from "@/lib/measurements/read-glucose-ketone-index";
 import {
   resolveDayReadings,
   type DayReadings,
@@ -153,6 +154,19 @@ export async function loadDay(args: LoadDayArgs): Promise<DayResponse> {
   ]);
 
   const presentTypes = [...readings.rowsByType.keys()];
+  // The index reveals the glucose it was built from, so it needs both
+  // reading types visible, not only the ketones the day holds.
+  const gkiReadable =
+    readings.rowsByType.has("BLOOD_KETONES") &&
+    typeVisible("BLOOD_KETONES") &&
+    typeVisible("BLOOD_GLUCOSE");
+  const glucoseKetoneIndex = gkiReadable
+    ? await readGlucoseKetoneIndex({
+        userId: recordId,
+        from: dayStart,
+        to: dayEnd,
+      })
+    : [];
   const [bands, notable] =
     presentTypes.length === 0
       ? [new Map(), []]
@@ -194,6 +208,7 @@ export async function loadDay(args: LoadDayArgs): Promise<DayResponse> {
     counts: { values: values.length, entries: events.length },
     running,
     values,
+    ...(glucoseKetoneIndex.length > 0 ? { glucoseKetoneIndex } : {}),
     events,
     notable: notable.map(({ kind, type, params }) => ({ kind, type, params })),
     scores,

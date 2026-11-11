@@ -67,6 +67,7 @@ import {
 import { loadDenseMeasurementBuckets } from "./dense-buckets";
 import { summariseDenseBuckets } from "./measurement-series";
 import { emptyGlucoseClinical } from "./glucose-panel";
+import { readReportGki } from "./glucose-ketone-index";
 import { buildAdministrationLedger, buildGlp1Block } from "./medications";
 import { loadReportWorkouts } from "./workouts";
 import { loadReportMedicationEffects } from "./medication-effects";
@@ -249,9 +250,8 @@ export async function collectDoctorReportData(
           ...(rawExcluded.length > 0 ? { type: { notIn: rawExcluded } } : {}),
         },
         orderBy: { measuredAt: "asc" },
-        // Narrow select: the collector reads exactly these seven fields.
-        // The full-width read pulled every column — including the encrypted
-        // notes — across up to 730 days of rows.
+        // Narrow select: the full-width read pulled every column, encrypted
+        // notes included, across up to 730 days of rows.
         select: {
           type: true,
           value: true,
@@ -739,6 +739,7 @@ export async function collectDoctorReportData(
     glucoseStats,
     glucoseRanges,
     glucoseClinical,
+    glucoseKetoneIndex: await readReportGki(gate, stats, userId, start, end),
     glucoseUnit: resolveGlucoseUnit(userProfile?.glucoseUnit ?? null),
     bmi: gate.admits("BODY_MASS_INDEX") ? bmi : null,
     compliance: gate.admits("MEDICATION_COMPLIANCE") ? compliance : {},

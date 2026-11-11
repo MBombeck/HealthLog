@@ -121,6 +121,7 @@ export async function satisfyBoostersForDose(
       lastSatisfiedAt: true,
       lastSkippedAt: true,
       createdAt: true,
+      endsOn: true,
     },
   });
   if (reminders.length === 0) return EMPTY;
@@ -148,6 +149,7 @@ export async function satisfyBoostersForDose(
       lastSatisfiedAt: reminder.lastSatisfiedAt,
       lastSkippedAt: reminder.lastSkippedAt,
       createdAt: reminder.createdAt,
+      endsOn: reminder.endsOn,
     };
     // `satisfyReminder` types its client as the full `PrismaClient` because
     // every other caller hands it one; the only member it touches is

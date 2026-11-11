@@ -93,9 +93,10 @@ const READERS: Record<string, Reader> = {
     file: GROUPS,
     pattern: COUNTS_DESTRUCTURE("unknown"),
   },
+  // Code lines only: a comment that names `category.status` is not a reader.
   "overview:categories[].status": {
     file: GROUPS,
-    pattern: /\bcategory\.status\s*===\s*"above"/,
+    pattern: /^(?![ \t]*(?:\/\/|\/?\*)).*\bcategory\.status\b/m,
   },
   "biomarkers:customPanels[]": {
     file: FORM_PANEL,
@@ -132,8 +133,9 @@ describe("labs categories response/consumer guard", () => {
   const owned = ownedLeaves();
 
   it("walks the schemas it guards", () => {
-    // Nine category leaves, `grouped`, the panels and the adopted panel, plus
-    // the exempt marker rows; far fewer means the walk broke.
+    // Category leaves (key, label, markerKeys[], counts.*, status), `grouped`,
+    // the panels and the adopted panel, plus the exempt marker rows; far fewer
+    // means the walk broke.
     expect(owned.filter((leaf) => !isExempt(leaf)).length).toBe(
       Object.keys(READERS).length,
     );
@@ -159,8 +161,41 @@ describe("labs categories response/consumer guard", () => {
     expect(
       COUNTS_DESTRUCTURE("inRange").test("const { below } = category.counts;"),
     ).toBe(false);
+    expect(
+      READERS["overview:categories[].status"].pattern.test(
+        "category.otherStatus",
+      ),
+    ).toBe(false);
+    expect(
+      READERS["overview:categories[].status"].pattern.test(
+        "  // Consumers supply category.status for unfiltered categories.",
+      ),
+    ).toBe(false);
+    expect(
+      READERS["overview:categories[].status"].pattern.test(
+        "      status: statusProp ?? category.status,",
+      ),
+    ).toBe(true);
     expect(READERS["overview:grouped"].pattern.test("data?.groupedX")).toBe(
       false,
     );
+  });
+
+  it("guards filtered summary branch for counts and status", () => {
+    // When filters narrow the visible rows, LabGroupHeader reads `summary.counts`
+    // and `summary.status` (summarised client-side), rather than unfiltered server category totals.
+    const groupsSource = readSource(GROUPS, [
+      /\bsummary\.counts\b/,
+      /\bsummary\.status\b/,
+    ]);
+    expect(/\bsummary\.counts\b/.test(groupsSource)).toBe(true);
+    expect(/\bsummary\.status\b/.test(groupsSource)).toBe(true);
+
+    const listSource = readSource(LIST, [
+      /\bsummariseGroupRows\b/,
+      /\bsummary\?\.status\b/,
+    ]);
+    expect(/\bsummariseGroupRows\b/.test(listSource)).toBe(true);
+    expect(/\bsummary\?\.status\b/.test(listSource)).toBe(true);
   });
 });

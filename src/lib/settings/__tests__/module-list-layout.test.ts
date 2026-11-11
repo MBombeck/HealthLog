@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  MODULE_LIST_CATEGORY_ORDER_MAX,
   MODULE_LIST_ORDER_MAX,
   normaliseModuleListOrder,
   resolveModuleListLayout,
   storedModuleListLayout,
+  mergeCategoryOrder,
 } from "../module-list-layout";
 
 describe("resolveModuleListLayout", () => {
@@ -16,6 +18,7 @@ describe("resolveModuleListLayout", () => {
       sortDir: "recentDesc",
       groupBy: "none",
       groupsOpen: "expanded",
+      categoryOrder: [],
       saved: false,
     });
     expect(layout.lists.illness.view).toBe("cards");
@@ -34,6 +37,7 @@ describe("resolveModuleListLayout", () => {
       sortDir: "recentDesc",
       groupBy: "none",
       groupsOpen: "expanded",
+      categoryOrder: [],
       saved: true,
     });
     expect(layout.lists.labs.saved).toBe(false);
@@ -50,6 +54,7 @@ describe("resolveModuleListLayout", () => {
       sortDir: "recentDesc",
       groupBy: "none",
       groupsOpen: "expanded",
+      categoryOrder: [],
       saved: false,
     });
     expect(layout.lists.vorsorge.saved).toBe(false);
@@ -70,8 +75,46 @@ describe("category choices", () => {
     expect(layout.lists.illness).toMatchObject({
       groupBy: "none",
       groupsOpen: "expanded",
+      categoryOrder: [],
       saved: false,
     });
+  });
+});
+
+describe("category order", () => {
+  it("keeps a stored category order, deduplicated, and marks the list saved", () => {
+    const layout = resolveModuleListLayout({
+      labs: { categoryOrder: ["thyroid", "lipids", "thyroid", 7, "other"] },
+    });
+    expect(layout.lists.labs).toMatchObject({
+      categoryOrder: ["thyroid", "lipids", "other"],
+      saved: true,
+    });
+  });
+
+  it("drops a malformed category order and leaves the default", () => {
+    const layout = resolveModuleListLayout({
+      labs: { categoryOrder: "lipids" },
+    });
+    expect(layout.lists.labs.categoryOrder).toEqual([]);
+    expect(layout.lists.labs.saved).toBe(false);
+  });
+
+  it("caps the category order on its own limit", () => {
+    const keys = Array.from(
+      { length: MODULE_LIST_CATEGORY_ORDER_MAX + 5 },
+      (_, i) => `custom:${i}`,
+    );
+    const layout = resolveModuleListLayout({ labs: { categoryOrder: keys } });
+    expect(layout.lists.labs.categoryOrder).toHaveLength(
+      MODULE_LIST_CATEGORY_ORDER_MAX,
+    );
+  });
+
+  it("hands every list its own copy of the default", () => {
+    const layout = resolveModuleListLayout(null);
+    layout.lists.labs.categoryOrder.push("lipids");
+    expect(resolveModuleListLayout(null).lists.labs.categoryOrder).toEqual([]);
   });
 });
 
@@ -99,5 +142,17 @@ describe("storedModuleListLayout", () => {
     expect(
       storedModuleListLayout({ labs: { sortDir: "manual" }, illness: {} }),
     ).toEqual({ labs: { sortDir: "manual" } });
+  });
+});
+
+describe("mergeCategoryOrder", () => {
+  it("keeps the place of a saved category that is not on screen", () => {
+    expect(
+      mergeCategoryOrder(["lipids", "liver"], ["liver", "thyroid", "lipids"]),
+    ).toEqual(["lipids", "liver", "thyroid"]);
+  });
+
+  it("is the shown order when nothing else was saved", () => {
+    expect(mergeCategoryOrder(["b", "a"], [])).toEqual(["b", "a"]);
   });
 });
