@@ -240,7 +240,12 @@ async function vaccinationChanges(w: Window): Promise<DayChange[]> {
     where: {
       userId: w.userId,
       deletedAt: null,
-      occurredAt: { gte: w.start, lt: w.end },
+      // A dose date is stored at UTC midnight: its date part is its day in
+      // every zone, so the window is UTC calendar days, not local instants.
+      occurredAt: {
+        gte: dayKeyAsUtcMidnight(w.from),
+        lt: dayKeyAsUtcMidnight(shiftDateKey(w.to, 1)),
+      },
     },
     select: {
       id: true,
@@ -251,7 +256,7 @@ async function vaccinationChanges(w: Window): Promise<DayChange[]> {
     },
   });
   return rows.map((row) =>
-    change(userDayKey(row.occurredAt, w.tz), "vaccinations", {
+    change(dateOnlyKey(row.occurredAt), "vaccinations", {
       kind: "vaccination",
       id: row.id,
       title:

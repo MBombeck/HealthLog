@@ -102,6 +102,28 @@ const instantWindow = (frame: IndexFrame) => ({
   lt: frame.end,
 });
 
+/**
+ * The window as UTC calendar days, for a column that holds a date rather
+ * than an instant (a dose date at UTC midnight, an allergy onset or a
+ * document date at noon UTC). Its date part is its day in every zone.
+ */
+const calendarWindow = (frame: IndexFrame) => ({
+  gte: dayKeyAsUtcMidnight(frame.from),
+  lt: dayKeyAsUtcMidnight(shiftDateKey(frame.to, 1)),
+});
+
+/** Mark the calendar date of every date-only value. */
+function markDates(
+  frame: IndexFrame,
+  section: DaySectionKey,
+  dates: ReadonlyArray<Date | null>,
+): void {
+  for (const date of dates) {
+    if (date)
+      mark(frame.marks, dateOnlyKey(date), section, frame.from, frame.to);
+  }
+}
+
 /** The per-section readers of the index. */
 const INDEX_READERS: Partial<
   Record<DaySectionKey, (frame: IndexFrame) => Promise<void>>
@@ -232,11 +254,11 @@ const INDEX_READERS: Partial<
       where: {
         userId: frame.userId,
         deletedAt: null,
-        onsetAt: instantWindow(frame),
+        onsetAt: calendarWindow(frame),
       },
       select: { onsetAt: true },
     });
-    markInstants(
+    markDates(
       frame,
       "allergies",
       rows.map((r) => r.onsetAt),
@@ -278,11 +300,11 @@ const INDEX_READERS: Partial<
       where: {
         userId: frame.userId,
         deletedAt: null,
-        occurredAt: instantWindow(frame),
+        occurredAt: calendarWindow(frame),
       },
       select: { occurredAt: true },
     });
-    markInstants(
+    markDates(
       frame,
       "vaccinations",
       rows.map((r) => r.occurredAt),
@@ -305,24 +327,20 @@ const INDEX_READERS: Partial<
     );
   },
   async documents(frame) {
-    const start = dayKeyAsUtcMidnight(frame.from);
-    const end = dayKeyAsUtcMidnight(shiftDateKey(frame.to, 1));
+    const days = calendarWindow(frame);
     const rows = await prisma.inboundDocument.findMany({
       where: {
         userId: frame.userId,
         deletedAt: null,
-        OR: [
-          { reportDate: { gte: start, lt: end } },
-          { reportDate: null, documentDate: { gte: start, lt: end } },
-        ],
+        OR: [{ reportDate: days }, { reportDate: null, documentDate: days }],
       },
       select: { reportDate: true, documentDate: true },
     });
-    for (const row of rows) {
-      const date = row.reportDate ?? row.documentDate;
-      if (date)
-        mark(frame.marks, dateOnlyKey(date), "documents", frame.from, frame.to);
-    }
+    markDates(
+      frame,
+      "documents",
+      rows.map((r) => r.reportDate ?? r.documentDate),
+    );
   },
   async mood(frame) {
     const rows = await prisma.moodEntry.findMany({
