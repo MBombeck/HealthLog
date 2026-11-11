@@ -407,6 +407,34 @@ describe("persister round-trips through a fake IndexedDB", () => {
     });
   });
 
+  it("writes the dashboard snapshot without the model-written briefing", async () => {
+    installRoundTripIdb();
+    const source = new QueryClient();
+    source.setQueryData(["auth", "me"], { id: "user-a" });
+    const briefing = { headline: "Your pressure ran high this week." };
+    const briefingMemory = { recall: "Last week: steady.", forward: "Calm." };
+    source.setQueryData(["dashboard", "snapshot", "en"], {
+      weightKg: 81,
+      briefing,
+      briefingMemory,
+      briefingState: "ready",
+    });
+    await persistOnce(source);
+
+    const written = JSON.stringify(roundTripStore.get("react-query"));
+    expect(written).toContain('"weightKg":81');
+    expect(written).not.toContain(briefing.headline);
+    expect(written).not.toContain(briefingMemory.recall);
+    // The live cache keeps what the server sent.
+    expect(
+      source.getQueryData<{ briefing: unknown }>([
+        "dashboard",
+        "snapshot",
+        "en",
+      ])?.briefing,
+    ).toBe(briefing);
+  });
+
   it("discards a snapshot written before any account was known", async () => {
     installRoundTripIdb();
     await persistOnce(new QueryClient());

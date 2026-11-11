@@ -12,9 +12,11 @@
  *    dashboard-offline families off disk. This is the privacy floor: a
  *    denylist would persist every family it didn't name (cycle, mood, illness,
  *    labs, coach, insights, medications, …) in plaintext. Only the dashboard
- *    snapshot, its resolved widget layout, and the measurement daily-series —
- *    the data the dashboard needs to paint last-known values offline — are
- *    eligible. Clinical / narrative families are never written to disk.
+ *    snapshot, its resolved widget layout, and the measurement daily-series
+ *    are eligible. Clinical / narrative families are never written to disk.
+ *  - Model-written text never is either: the snapshot carries the daily
+ *    briefing and its recall line, and both are nulled before the write
+ *    (`withoutModelText`).
  *  - `clearPersistedQueryCache()` is called on every session END (logout AND
  *    the 401 / session-expiry redirect), so a shared device never leaks one
  *    account's cached data to the next once the session is gone.
@@ -57,8 +59,7 @@ const MAX_PERSIST_BYTES = 2 * 1024 * 1024; // 2 MB
 
 /**
  * Strict allowlist of the only query families written to disk — the
- * low-sensitivity reads the dashboard needs to paint last-known values when
- * opened offline. Everything else (coach, insights, illness, labs, mood,
+ * low-sensitivity reads the dashboard paints first. Everything else (coach, insights, illness, labs, mood,
  * medications, cycle, auth, admin, tokens, …) stays in memory only.
  *
  *  - `["dashboard", …]`  — the unified first-paint snapshot
@@ -79,6 +80,29 @@ const MAX_PERSIST_BYTES = 2 * 1024 * 1024; // 2 MB
  * React #418 text mismatch. Do not add it without revisiting that gate.
  */
 const PERSIST_ALLOWLIST_HEADS = ["dashboard", "chart-data"] as const;
+
+/** Snapshot fields a model may have written: the daily briefing and its recall line. */
+const MODEL_TEXT_FIELDS = ["briefing", "briefingMemory"] as const;
+
+/**
+ * The dashboard snapshot with its model-written fields nulled. The web
+ * dashboard reads the briefing from the Today digest, which is never
+ * persisted, so the restored snapshot loses nothing it paints. Returns new
+ * objects; the live cache keeps its copy.
+ */
+export function withoutModelText(
+  query: DehydratedState["queries"][number],
+): DehydratedState["queries"][number] {
+  const data = query.state.data;
+  if (query.queryKey[0] !== "dashboard" || !data || typeof data !== "object") {
+    return query;
+  }
+  const stripped: Record<string, unknown> = { ...data };
+  for (const field of MODEL_TEXT_FIELDS) {
+    if (field in stripped) stripped[field] = null;
+  }
+  return { ...query, state: { ...query.state, data: stripped } };
+}
 
 export function isPersistableKey(queryKey: readonly unknown[]): boolean {
   const head = queryKey[0];
@@ -253,10 +277,14 @@ export function startPersistingQueryCache(
     // the flush (rather than filtering keys) also means the last good snapshot
     // of the caller's own dashboard survives a switch untouched.
     if (isReadingSharedRecord()) return;
-    const state = dehydrate(queryClient, {
+    const dehydrated = dehydrate(queryClient, {
       shouldDehydrateQuery: (query) =>
         query.state.status === "success" && isPersistableKey(query.queryKey),
     });
+    const state: DehydratedState = {
+      ...dehydrated,
+      queries: dehydrated.queries.map(withoutModelText),
+    };
     const payload: PersistedPayload = {
       buildVersion,
       savedAt: Date.now(),
