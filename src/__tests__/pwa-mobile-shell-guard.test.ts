@@ -129,6 +129,16 @@ describe("the shell owns the safe area", () => {
     expect(bottomClass).not.toMatch(/(?<![\w-])bottom-/);
   });
 
+  it("the More sheet's grid scrolls inside the sheet's height cap", () => {
+    // Held sideways a phone keeps the bottom bar, and 90 dvh of a 393 px
+    // screen is shorter than the hub: the last rows sat below the edge.
+    const nav = code(read("src/components/layout/bottom-nav.tsx"));
+    const grid = nav.match(/"grid [^"]*grid-cols-2[^"]*"/)?.[0] ?? "";
+    expect(grid).toMatch(/\bmin-h-0\b/);
+    expect(grid).toMatch(/\boverflow-y-auto\b/);
+    expect(grid).toMatch(/\boverscroll-contain\b/);
+  });
+
   it("the sheet primitives name their side for those rules", () => {
     expect(read("src/components/ui/sheet.tsx")).toMatch(
       /data-sheet-side=\{side\}/,

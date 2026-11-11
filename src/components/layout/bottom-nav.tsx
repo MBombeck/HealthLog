@@ -287,8 +287,8 @@ export function BottomNav() {
               little more width on a 320 px phone; the long single-word labels
               (de "Benachrichtigungen") then have room to break onto a clean
               second line instead of clipping the last character at the tile
-              edge. */}
-          <div className="grid grid-cols-2 gap-2 px-3 pt-4 pb-4">
+              edge. It scrolls: a phone held sideways is shorter than the hub. */}
+          <div className="grid min-h-0 grid-cols-2 gap-2 overflow-y-auto overscroll-contain px-3 pt-4 pb-4">
             {moreHub.map((item) => {
               const isActive = isActiveLink(item.href);
               return (
