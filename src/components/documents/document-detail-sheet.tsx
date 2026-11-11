@@ -131,6 +131,8 @@ export function DocumentDetailSheet({
       <ResponsiveSheet
         open={open}
         onOpenChange={onOpenChange}
+        // `?doc=` is this sheet's history entry already (`use-vault-detail`).
+        historyEntry={false}
         title={title}
         description={t("documents.detail.title")}
         contentWidth="3xl"
