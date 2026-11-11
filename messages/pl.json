@@ -529,6 +529,7 @@
     "noAccount": "Nie masz jeszcze konta?",
     "hasAccount": "Masz już konto?",
     "loginFailed": "Logowanie nie powiodło się",
+    "signOutFailed": "Nie udało się wylogować. Sesja jest nadal aktywna.",
     "registerFailed": "Rejestracja nie powiodła się",
     "invitedBanner": "Otrzymano zaproszenie. Utwórz konto, nawet jeśli rejestracja jest zamknięta.",
     "alreadySignedIn": {

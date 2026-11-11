@@ -529,6 +529,7 @@
     "noAccount": "Não tem uma conta?",
     "hasAccount": "Já tem uma conta?",
     "loginFailed": "Falha no login",
+    "signOutFailed": "Não foi possível sair. Sua sessão continua ativa.",
     "registerFailed": "Falha no cadastro",
     "invitedBanner": "Você foi convidado. Crie sua conta mesmo que o cadastro esteja fechado.",
     "alreadySignedIn": {

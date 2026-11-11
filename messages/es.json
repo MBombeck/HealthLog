@@ -529,6 +529,7 @@
     "noAccount": "¿Aún no tienes cuenta?",
     "hasAccount": "¿Ya tienes cuenta?",
     "loginFailed": "No se ha podido iniciar sesión",
+    "signOutFailed": "No se pudo cerrar la sesión. Tu sesión sigue abierta.",
     "registerFailed": "No se ha podido completar el registro",
     "invitedBanner": "Te han invitado: crea tu cuenta aunque el registro esté cerrado.",
     "alreadySignedIn": {
