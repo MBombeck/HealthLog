@@ -10,6 +10,7 @@ import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
+import { unsubscribeWebPush } from "@/lib/notifications/web-push-unsubscribe";
 
 /** Convert a URL-safe base64 string to an ArrayBuffer (for VAPID key). */
 function urlBase64ToArrayBuffer(base64String: string): ArrayBuffer {
@@ -136,21 +137,7 @@ export function WebPushCard() {
     setMsgType(null);
 
     try {
-      const registration =
-        await navigator.serviceWorker.getRegistration("/sw.js");
-      if (registration) {
-        const subscription = await registration.pushManager.getSubscription();
-        if (subscription) {
-          await apiFetchRaw("/api/notifications/web-push", {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ endpoint: subscription.endpoint }),
-          });
-
-          await subscription.unsubscribe();
-        }
-      }
-
+      await unsubscribeWebPush();
       setIsSubscribed(false);
       setMsg(t("settings.webPushUnsubscribed"));
       setMsgType("success");

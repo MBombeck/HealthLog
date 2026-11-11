@@ -88,6 +88,67 @@ describe("useLogout", () => {
     expect(showErrorToast).not.toHaveBeenCalled();
   });
 
+  it("removes this browser's push subscription before the session ends", async () => {
+    // Left in place, the browser kept showing the signed-out account's
+    // medication reminders, also after someone else signed in.
+    const order: string[] = [];
+    const unsubscribe = vi.fn(async () => {
+      order.push("browser unsubscribe");
+      return true;
+    });
+    const subscription = {
+      endpoint: "https://push.example.com/send/abc",
+      unsubscribe,
+    };
+    vi.stubGlobal("window", { PushManager: class {} });
+    vi.stubGlobal("navigator", {
+      serviceWorker: {
+        getRegistration: async () => ({
+          pushManager: { getSubscription: async () => subscription },
+        }),
+      },
+    });
+    fetchMock.mockImplementation(async (url, init) => {
+      order.push(`${init?.method} ${url}`);
+      return json(200, { data: {} });
+    });
+
+    useLogout();
+    await settle(captured.options!);
+
+    expect(order).toEqual([
+      "DELETE /api/notifications/web-push",
+      "browser unsubscribe",
+      "POST /api/auth/logout",
+    ]);
+    const deleteCall = fetchMock.mock.calls[0];
+    expect(JSON.parse(String(deleteCall[1]?.body))).toEqual({
+      endpoint: subscription.endpoint,
+    });
+    expect(push).toHaveBeenCalledWith("/auth/login");
+  });
+
+  it("still signs out when removing the subscription fails", async () => {
+    vi.stubGlobal("window", { PushManager: class {} });
+    vi.stubGlobal("navigator", {
+      serviceWorker: {
+        getRegistration: async () => {
+          throw new Error("no worker");
+        },
+      },
+    });
+    fetchMock.mockResolvedValue(json(200, { data: { loggedOut: true } }));
+
+    useLogout();
+    await settle(captured.options!);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/auth/logout",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(push).toHaveBeenCalledWith("/auth/login");
+  });
+
   it("stays on the page and says so when the server refuses", async () => {
     // The demo instance answered 403 here; the page showed the sign-in form
     // while the session cookie still opened every record page.
