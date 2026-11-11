@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 import { pollAttemptCount } from "@/lib/queries/refetch-interval";
 import type { InsightResult } from "@/lib/ai/types";
 // Type-only — the runtime schemas load lazily inside `fetchAdvisor` so
@@ -429,6 +434,27 @@ export async function fetchAdvisor(
   return { payload, outcome: "fresh" };
 }
 
+/**
+ * The payload a regenerate settles against. A surface that shows no briefing
+ * (the tab strip on a metric page) has not read it, and a timed-out
+ * regenerate without a baseline takes whatever briefing the cache holds for
+ * the fresh one. So the read runs first when the cache is empty; a failed
+ * read leaves the baseline empty, as it was before.
+ */
+export async function ensureAdvisorBaseline(
+  queryClient: QueryClient,
+): Promise<void> {
+  if (queryClient.getQueryData(queryKeys.insightsAdvisor()) !== undefined) {
+    return;
+  }
+  await queryClient
+    .fetchQuery({
+      queryKey: queryKeys.insightsAdvisor(),
+      queryFn: () => fetchAdvisor(),
+    })
+    .catch(() => undefined);
+}
+
 export interface UseInsightsAdvisorResult {
   payload: InsightAdvisorPayload | null;
   isLoading: boolean;
@@ -485,7 +511,9 @@ export interface UseInsightsAdvisorResult {
  * available, whatever the caller passes: every consumer (the overview, the
  * tab strip) gets the same gate, and none can re-enable the read behind the
  * other's back. While `/me` loads the capability reads unavailable, so the
- * first paint never fires a request only to have it refused.
+ * first paint never fires a request only to have it refused. The tab strip
+ * passes `false`: it shows no briefing and only owns the regenerate button,
+ * so it reads the briefing only while its own regenerate settles.
  */
 export function useInsightsAdvisorQuery(
   enabled: boolean,
@@ -506,7 +534,9 @@ export function useInsightsAdvisorQuery(
     // outcome) so the read path can surface WHY a payload is missing
     // (`no-provider` → connect-AI hint instead of a dead regenerate CTA).
     queryFn: () => fetchAdvisor(),
-    enabled: enabled && briefing.available,
+    // A caller that shows no briefing still reads it while its own
+    // regenerate settles: the settle is decided on these polls.
+    enabled: (enabled || settling !== null) && briefing.available,
     // 24h cache window matches the server-side `insightsCachedAt` TTL.
     staleTime: 60 * 60 * 1000,
     retry: false,
@@ -556,7 +586,10 @@ export function useInsightsAdvisorQuery(
   }
 
   const mutation = useMutation({
-    mutationFn: () => fetchAdvisor({ force: true, responseTimeoutMs }),
+    mutationFn: async () => {
+      await ensureAdvisorBaseline(queryClient);
+      return fetchAdvisor({ force: true, responseTimeoutMs });
+    },
     onSuccess: (result) => {
       if (result.payload) {
         // A genuinely fresh generation landed — write it into the shared
