@@ -46,3 +46,27 @@ describe("registration page", () => {
     );
   });
 });
+
+describe("registration page, already signed in", () => {
+  it("keeps the page and says so when the server refuses the sign-out", async () => {
+    const api = stubFetch().on("POST", "/api/auth/logout", {
+      status: 403,
+      error: "Demo mode: modifications are disabled",
+      meta: { demo: true, errorCode: "demo.readOnly" },
+    });
+    window.history.replaceState(null, "", "/auth/register?invite=hlv_x");
+    const { screen, queryClient } = await renderWithApp(<RegisterPage />, {
+      user: { username: "signed-in" },
+    });
+
+    await screen.getByTestId("register-sign-out").click();
+
+    await expect
+      .element(screen.getByText("Could not sign out. You are still signed in."))
+      .toBeVisible();
+    expect(api.calls("POST", "/api/auth/logout")).toHaveLength(1);
+    // Nothing was wiped and nobody was sent anywhere: the session is alive.
+    expect(queryClient.getQueryData(queryKeys.authMe())).toBeDefined();
+    expect(window.location.search).toBe("?invite=hlv_x");
+  });
+});

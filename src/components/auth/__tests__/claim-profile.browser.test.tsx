@@ -21,11 +21,13 @@ import { recordHistory } from "../../../../tests/browser/url";
 
 const clearOffline = vi.hoisted(() => vi.fn(async () => {}));
 const loadDocument = vi.hoisted(() => vi.fn());
+const showErrorToast = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/pwa/query-persister", () => ({
   clearOfflineCachesForSessionEnd: clearOffline,
 }));
 vi.mock("@/lib/navigation/load-document", () => ({ loadDocument }));
+vi.mock("@/lib/errors/error-toast", () => ({ showErrorToast }));
 
 import { ClaimProfile } from "../claim-profile";
 
@@ -57,6 +59,7 @@ beforeEach(() => {
 afterEach(() => {
   clearOffline.mockClear();
   loadDocument.mockClear();
+  showErrorToast.mockClear();
 });
 
 async function fill(selector: string, value: string): Promise<void> {
@@ -110,5 +113,31 @@ describe("ClaimProfile", () => {
     expect(clearOffline.mock.invocationCallOrder[0]).toBeLessThan(
       loadDocument.mock.invocationCallOrder[0],
     );
+  });
+});
+
+describe("ClaimProfile, already signed in", () => {
+  it("keeps the session's page and says so when the server refuses the sign-out", async () => {
+    api.on("POST", "/api/auth/logout", {
+      status: 403,
+      error: "Demo mode: modifications are disabled",
+      meta: { demo: true, errorCode: "demo.readOnly" },
+    });
+    const { queryClient } = await renderWithApp(
+      <ClaimProfile token={TOKEN} />,
+      {
+        user: { username: "signed-in" },
+      },
+    );
+
+    await click("claim-sign-out");
+
+    await expect.poll(() => showErrorToast.mock.calls.length).toBe(1);
+    expect(showErrorToast.mock.calls[0][0]).toBe(
+      "Could not sign out. You are still signed in.",
+    );
+    expect(clearOffline).not.toHaveBeenCalled();
+    expect(queryClient.getQueryData(queryKeys.authMe())).toBeDefined();
+    expect(window.location.search).toBe("");
   });
 });

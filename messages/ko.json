@@ -529,6 +529,7 @@
     "noAccount": "계정이 없나요?",
     "hasAccount": "이미 계정이 있나요?",
     "loginFailed": "로그인 실패",
+    "signOutFailed": "로그아웃하지 못했어요. 아직 로그인되어 있어요.",
     "registerFailed": "회원가입 실패",
     "invitedBanner": "초대를 받았어요. 회원가입이 닫혀 있어도 계정을 만들 수 있어요.",
     "alreadySignedIn": {

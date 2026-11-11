@@ -14,7 +14,8 @@ import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/ui/logo";
 import { PasswordStrength } from "@/components/ui/password-strength";
 import { clearCachesForSessionEnd, useAuth } from "@/hooks/use-auth";
-import { ApiError, apiFetchRaw } from "@/lib/api/api-fetch";
+import { ApiError, apiFetch } from "@/lib/api/api-fetch";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { loadDocument } from "@/lib/navigation/load-document";
 import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
@@ -78,7 +79,7 @@ export function ClaimProfile({
   async function signOut() {
     setSigningOut(true);
     try {
-      await apiFetchRaw("/api/auth/logout", { method: "POST" });
+      await apiFetch("/api/auth/logout", { method: "POST" });
       clearCachesForSessionEnd(queryClient);
       // Back to this page with the link intact: the token only rides the URL.
       router.replace(
@@ -87,6 +88,8 @@ export function ClaimProfile({
           : "/auth/claim",
       );
       router.refresh();
+    } catch (failure) {
+      showErrorToast(t("auth.signOutFailed"), { cause: failure });
     } finally {
       setSigningOut(false);
     }
@@ -98,8 +101,7 @@ export function ClaimProfile({
       { token, username },
       {
         onSuccess: async ({ redirectTo }) => {
-          // Only the path and query of the server's answer, so a response
-          // could never send the browser off this origin.
+          // Path and query only, so an answer can never leave this origin.
           const next = new URL(redirectTo, window.location.origin);
           if (clientTransport) {
             next.searchParams.set("client_proto", clientTransport.protocol);
@@ -120,8 +122,7 @@ export function ClaimProfile({
       { token, username, email, password },
       {
         onSuccess: () => {
-          // As after any sign-in: nothing cached before belongs to this account.
-          queryClient.clear();
+          queryClient.clear(); // as after any sign-in
           router.replace("/onboarding/handover");
         },
       },

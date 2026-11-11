@@ -529,6 +529,7 @@
     "noAccount": "Nog geen account?",
     "hasAccount": "Heb je al een account?",
     "loginFailed": "Inloggen mislukt",
+    "signOutFailed": "Uitloggen is mislukt. Je bent nog steeds ingelogd.",
     "registerFailed": "Registratie mislukt",
     "invitedBanner": "Je bent uitgenodigd. Maak je account aan, ook al is registratie verder gesloten.",
     "alreadySignedIn": {

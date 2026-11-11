@@ -529,6 +529,7 @@
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?",
     "loginFailed": "Login failed",
+    "signOutFailed": "Could not sign out. You are still signed in.",
     "registerFailed": "Registration failed",
     "invitedBanner": "You have been invited. Create your account even while registration is otherwise closed.",
     "alreadySignedIn": {
