@@ -7,7 +7,11 @@ import en from "../../../../messages/en.json";
 import es from "../../../../messages/es.json";
 import fr from "../../../../messages/fr.json";
 import itCatalog from "../../../../messages/it.json";
+import ko from "../../../../messages/ko.json";
+import nl from "../../../../messages/nl.json";
 import pl from "../../../../messages/pl.json";
+import ptBR from "../../../../messages/pt-BR.json";
+import ru from "../../../../messages/ru.json";
 
 type Catalog = Record<string, unknown>;
 
@@ -157,6 +161,56 @@ describe("localizedApiError", () => {
         const sentence = localT(`apiErrors.${code}`);
         expect(sentence).not.toBe(`apiErrors.${code}`);
         expect(sentence).not.toBe(enT(`apiErrors.${code}`));
+      }
+    });
+  });
+
+  describe("the refusals of the visit, vaccination, allergy, address-book and workout saves", () => {
+    // Each of these is a code the route sends to a form that reads it through
+    // `localizedApiError`; without a sentence the form says only "could not
+    // save", which hides a fix the person can make.
+    const codes = [
+      "encounter.invalid",
+      "encounter.practitioner-not-found",
+      "encounter.reminder-not-found",
+      "encounter.reminder-conflict",
+      "vaccination.invalid",
+      "vaccination.not-found",
+      "vaccination.identity-required",
+      "vaccination.practitioner-not-found",
+      "vaccination.encounter-not-found",
+      "vaccination.custom-vaccine-not-found",
+      "vaccination.booster-invalid",
+      "vaccination.booster-no-antigen",
+      "vaccination.booster-out-of-scope",
+      "allergy.invalid",
+      "practitioner.invalid",
+      "workout.batch.invalid",
+      "workout.batch.too_large",
+      "workout.batch.payload_too_large",
+      "workout.batch.source_not_permitted",
+    ];
+
+    it.each([
+      ["de", de],
+      ["en", en],
+      ["es", es],
+      ["fr", fr],
+      ["it", itCatalog],
+      ["ko", ko],
+      ["nl", nl],
+      ["pl", pl],
+      ["pt-BR", ptBR],
+      ["ru", ru],
+    ])("has a sentence of its own for each in %s", (_, locale) => {
+      const localT = translator(locale as Catalog);
+      for (const code of codes) {
+        const error = new ApiError("raw English server prose", 422, {
+          errorCode: code,
+        });
+        expect(localizedApiError(error, localT, "common.error"), code).not.toBe(
+          localT("common.error"),
+        );
       }
     });
   });

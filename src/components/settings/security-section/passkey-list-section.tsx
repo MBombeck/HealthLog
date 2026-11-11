@@ -43,6 +43,7 @@ import {
   apiPatch,
   apiPost,
 } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { describePasskeyError } from "@/lib/passkey-errors";
 import { describeStepUp } from "./security-keys-card";
 import {
@@ -206,7 +207,7 @@ export function PasskeyListSection({
     },
     onError: (err) => {
       if (err instanceof ApiError) {
-        setMsg(err.message || t("settings.passkeyRegistrationFailed"));
+        setMsg(localizedApiError(err, t, "settings.passkeyRegistrationFailed"));
       } else {
         const { key, params } = describePasskeyError(err);
         setMsg(t(key, params));
@@ -223,7 +224,8 @@ export function PasskeyListSection({
       setMsg(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.passkeys() });
     },
-    onError: (err: Error) => setMsg(err.message),
+    onError: (err) =>
+      setMsg(localizedApiError(err, t, "settings.passkeyRenameFailed")),
   });
 
   // Removal is step-up gated: a second factor, or on a passkey-only account a
@@ -248,7 +250,11 @@ export function PasskeyListSection({
     onError: (err: Error) => {
       if (err instanceof ReproofCancelledError) return;
       setMsg(
-        describeStepUp(err, err.message, t("settings.passkeyStepUpRequired")),
+        describeStepUp(
+          err,
+          localizedApiError(err, t, "settings.passkeyRemoveFailed"),
+          t("settings.passkeyStepUpRequired"),
+        ),
       );
     },
   });

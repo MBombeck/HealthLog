@@ -58,7 +58,11 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "ai.usage.levelTooLow",
       "ai.usage.rateLimited",
     ],
-    ai_provider: ["ai_provider.invalid", "ai_provider.no_fields"],
+    ai_provider: [
+      "ai_provider.invalid",
+      "ai_provider.no_fields",
+      "ai_provider.private_host",
+    ],
     aiRuns: [
       "aiRuns.failed",
       "aiRuns.notFound",
@@ -84,6 +88,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "auth.already_authenticated",
       "auth.mfa.code_invalid",
       "auth.missing",
+      "auth.passkey.last_method",
       "auth.refresh.invalid",
       "auth.refresh.reuse",
       "auth.refresh.revoked",

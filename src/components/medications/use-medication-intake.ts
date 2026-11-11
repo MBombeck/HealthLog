@@ -281,7 +281,10 @@ export async function runLogIntake(deps: {
       body,
     );
     const eventId = created?.id;
-    await invalidateMedicationReads(queryClient);
+    // Started, not awaited: the dialog closes on this answer. A scheduled
+    // dose lands on its slot, so a stale card tapped meanwhile only repeats
+    // it.
+    void invalidateMedicationReads(queryClient);
     const message = t(
       skipped
         ? "medications.intakeToastSkipped"

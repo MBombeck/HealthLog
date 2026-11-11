@@ -144,7 +144,10 @@
         "required": "Bevestig je huidige wachtwoord om dit te wijzigen.",
         "failed": "De verificatie is mislukt. Er is niets gewijzigd."
       },
-      "missing": "Je sessie is verlopen, dus er is niets gewijzigd. Meld je opnieuw aan om verder te gaan."
+      "missing": "Je sessie is verlopen, dus er is niets gewijzigd. Meld je opnieuw aan om verder te gaan.",
+      "passkey": {
+        "last_method": "Deze passkey is je enige manier om in te loggen. Stel eerst een wachtwoord in of voeg nog een passkey toe."
+      }
     },
     "biomarkers": {
       "unit": {
@@ -185,6 +188,40 @@
       "rate_limited": "Er zijn net te veel verzoeken, dus er is niets gewijzigd. Wacht even en probeer het opnieuw.",
       "forbidden": "Je hebt hier geen toestemming voor, dus er is niets gewijzigd.",
       "invalid": "Sommige gegevens zijn niet geaccepteerd, dus er is niets gewijzigd. Controleer ze en probeer het opnieuw."
+    },
+    "ai_provider": {
+      "private_host": "Dit adres ligt in een privénetwerk. De beheerder moet de exacte origin eerst toestaan in AI_PRIVATE_ORIGINS."
+    },
+    "encounter": {
+      "invalid": "Controleer de gegevens van het bezoek en probeer het opnieuw.",
+      "practitioner-not-found": "Deze praktijk of arts bestaat niet meer. Kies een andere of geen.",
+      "reminder-not-found": "Deze controle bestaat niet meer. Kies een andere of geen.",
+      "reminder-conflict": "Een gepland bezoek kan geen controle afsluiten, want het heeft nog niet plaatsgevonden."
+    },
+    "vaccination": {
+      "invalid": "Controleer de gegevens van de vaccinatie en probeer het opnieuw.",
+      "practitioner-not-found": "Deze praktijk of arts bestaat niet meer. Kies een andere of geen.",
+      "encounter-not-found": "Dit bezoek bestaat niet meer. Kies een ander of geen.",
+      "custom-vaccine-not-found": "Dit vaccin bestaat niet meer. Kies het opnieuw uit de lijst.",
+      "not-found": "Deze vaccinatie is niet meer beschikbaar.",
+      "identity-required": "Een dosis heeft een naam nodig: kies een vaccin uit de lijst of typ wat er in het boekje staat.",
+      "booster-invalid": "Controleer de gegevens van de booster en probeer het opnieuw.",
+      "booster-no-antigen": "Deze dosis noemt geen vaccin uit de catalogus, dus er kan geen booster worden gepland.",
+      "booster-out-of-scope": "Je toegang tot dit dossier dekt het plannen van een booster niet."
+    },
+    "allergy": {
+      "invalid": "Controleer de gegevens van de allergie en probeer het opnieuw."
+    },
+    "practitioner": {
+      "invalid": "Controleer de gegevens van de praktijk of arts en probeer het opnieuw."
+    },
+    "workout": {
+      "batch": {
+        "invalid": "Controleer de gegevens van de training en probeer het opnieuw.",
+        "too_large": "Te veel trainingen tegelijk. Stuur er minder per keer.",
+        "payload_too_large": "De trainingsgegevens zijn te groot om in één keer op te slaan.",
+        "source_not_permitted": "Deze koppeling mag geen trainingen onder die bron opslaan."
+      }
     }
   },
   "doctorReport": {
@@ -1539,7 +1576,8 @@
         "gallbladderDiscomfort": "Galblaasklachten"
       },
       "deleteConfirmTitle": "Deze registratie verwijderen?",
-      "deleteConfirmBody": "Deze bijwerkingregistratie wordt definitief verwijderd."
+      "deleteConfirmBody": "Deze bijwerkingregistratie wordt definitief verwijderd.",
+      "saveError": "De registratie kon niet worden opgeslagen"
     },
     "scheduling": {
       "naturalLanguage": {
@@ -7756,7 +7794,9 @@
       "hrv": "HRV",
       "weight": "wegingen",
       "cycle": "menstruatiecyclus"
-    }
+    },
+    "passkeyRenameFailed": "De naam van de passkey kon niet worden gewijzigd.",
+    "passkeyRemoveFailed": "De passkey kon niet worden verwijderd."
   },
   "admin": {
     "title": "Beheer",

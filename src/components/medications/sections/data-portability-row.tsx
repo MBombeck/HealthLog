@@ -72,8 +72,8 @@ export function DataPortabilityRow({
         `/api/export/medications?${query}`,
         `healthlog-medication-${stamp}.csv`,
       );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+    } catch {
+      setError(t("settings.sections.export.downloadFailed"));
     } finally {
       setBusy(false);
     }

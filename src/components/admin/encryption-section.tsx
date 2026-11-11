@@ -43,8 +43,13 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
-import { getApiErrorMessage } from "./_shared";
+import {
+  ApiError,
+  apiFetchRaw,
+  apiGet,
+  throwApiError,
+} from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import {
   recentProofErrorMessage,
   throwIfReproofRequired,
@@ -133,12 +138,7 @@ export function EncryptionSection() {
           }),
         ),
       );
-      if (!res.ok) {
-        if (res.status === 401) {
-          throw new Error(t("admin.section.encryption.stepUpNeeded"));
-        }
-        throw new Error(await getApiErrorMessage(res));
-      }
+      if (!res.ok) await throwApiError(res);
       return res.json();
     },
     onSuccess: () => {
@@ -150,7 +150,9 @@ export function EncryptionSection() {
     onError: (err: Error) => {
       const message = recentProofErrorMessage(
         err,
-        err.message || t("admin.section.encryption.rotateFailed"),
+        err instanceof ApiError && err.status === 401
+          ? t("admin.section.encryption.stepUpNeeded")
+          : localizedApiError(err, t, "admin.section.encryption.rotateFailed"),
       );
       if (message === null) return;
       showErrorToast(message, { cause: err });

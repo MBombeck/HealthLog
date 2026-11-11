@@ -11,6 +11,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiDelete, apiGetList, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import {
   encounterDependentKeys,
   invalidateKeys,
@@ -70,10 +71,11 @@ export function usePractitionerMutations() {
       refetchInactiveDailyReads(qc),
     ]);
 
+  // One key for as long as the sheet that mounts this is open.
+  const post = useIdempotentPost();
   const create = useMutation({
     mutationKey: queryKeys.practitionerCreate(),
-    mutationFn: (body: PractitionerWriteBody) =>
-      apiPost<Practitioner>(BASE, body),
+    mutationFn: (body: PractitionerWriteBody) => post<Practitioner>(BASE, body),
     onSuccess: invalidate,
   });
 

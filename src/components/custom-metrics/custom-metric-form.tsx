@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import { ApiError, apiPatch } from "@/lib/api/api-fetch";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -32,6 +33,18 @@ function parseInteger(raw: string): number | null {
   if (trimmed === "") return null;
   const n = Number(trimmed);
   return Number.isInteger(n) && n >= 0 ? n : null;
+}
+
+/**
+ * Update the metric, or define a new one under one Idempotency-Key until the
+ * create lands, so a retry after a timeout is not a second metric.
+ */
+function useSaveCustomMetric(existing: CustomMetricDto | undefined) {
+  const post = useIdempotentPost();
+  return (body: unknown) =>
+    existing
+      ? apiPatch<CustomMetricDto>(`/api/custom-metrics/${existing.id}`, body)
+      : post<CustomMetricDto>("/api/custom-metrics", body);
 }
 
 interface CustomMetricFormProps {
@@ -80,6 +93,7 @@ export function CustomMetricForm({
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const save = useSaveCustomMetric(existing);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -110,12 +124,7 @@ export function CustomMetricForm({
 
     setSubmitting(true);
     try {
-      const saved = existing
-        ? await apiPatch<CustomMetricDto>(
-            `/api/custom-metrics/${existing.id}`,
-            body,
-          )
-        : await apiPost<CustomMetricDto>("/api/custom-metrics", body);
+      const saved = await save(body);
       toast.success(
         existing
           ? t("customMetrics.form.updatedToast")

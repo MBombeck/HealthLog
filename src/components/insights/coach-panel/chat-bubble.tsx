@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/lib/i18n/context";
 import { useAuth } from "@/hooks/use-auth";
+import { accountName, nameInitials } from "@/lib/account-name";
 import {
   parseChartTokens,
   tokenToMetric,
@@ -388,12 +389,10 @@ function ChatBubbleImpl({
   if (role === "user") {
     // v1.5.5 — pull the user's self-hosted avatar so the user
     // bubble matches the Coach avatar in size and visual weight.
-    // Falls back to initials when the user has not uploaded an
-    // avatar. Replaces the Gravatar leak (v1.4.22 B3).
+    // Falls back to the display name's initials, as the top bar does, when
+    // the user has not uploaded an avatar.
     const avatarUrl = user?.avatarUrl ?? null;
-    const initials = user?.username
-      ? user.username.slice(0, 2).toUpperCase()
-      : null;
+    const initials = user ? nameInitials(accountName(user)) || null : null;
     return (
       <div
         data-slot="coach-bubble-user"

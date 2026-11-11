@@ -31,8 +31,10 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import { ApiError, apiGet, apiPost } from "@/lib/api/api-fetch";
+import { apiGet, apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { RecoveryCodesPanel } from "./recovery-codes-panel";
+import { describeStepUp } from "./security-keys-card";
 import {
   ReproofCancelledError,
   recentProofErrorMessage,
@@ -57,31 +59,6 @@ interface ConfirmResult {
   enabled: boolean;
   recoveryCodes: string[];
   recoveryCodesRemaining: number;
-}
-
-/**
- * Map a step-up 401 to a clear re-login message; otherwise the raw message.
- *
- * Exported for the unit suite: this is the sentence a refused mutation leaves
- * on the card, and the card is where a person reads it.
- */
-export function describeError(
-  err: unknown,
-  fallback: string,
-  stepUpMsg: string,
-): string {
-  if (err instanceof ApiError) {
-    const code = err.meta?.errorCode;
-    if (
-      err.status === 401 &&
-      typeof code === "string" &&
-      code.startsWith("auth.stepup")
-    ) {
-      return stepUpMsg;
-    }
-    return err.message || fallback;
-  }
-  return fallback;
 }
 
 export function TotpCard({
@@ -201,9 +178,9 @@ export function TotpCard({
         setReauthOpen(true);
         return;
       }
-      const message = describeError(
+      const message = describeStepUp(
         err,
-        t("settings.security.totp.setupFailed"),
+        localizedApiError(err, t, "settings.security.totp.setupFailed"),
         t("settings.security.stepUpRequired"),
       );
       if (proof) setReauthError(message);
@@ -223,9 +200,9 @@ export function TotpCard({
     },
     onError: (err) =>
       setError(
-        describeError(
+        describeStepUp(
           err,
-          t("settings.security.totp.invalidCode"),
+          localizedApiError(err, t, "settings.security.totp.invalidCode"),
           t("settings.security.stepUpRequired"),
         ),
       ),
@@ -248,9 +225,9 @@ export function TotpCard({
     onError: (err) => {
       if (err instanceof ReproofCancelledError) return;
       setError(
-        describeError(
+        describeStepUp(
           err,
-          t("settings.security.totp.disableFailed"),
+          localizedApiError(err, t, "settings.security.totp.disableFailed"),
           t("settings.security.stepUpRequired"),
         ),
       );
@@ -274,9 +251,9 @@ export function TotpCard({
     onError: (err) => {
       if (err instanceof ReproofCancelledError) return;
       setError(
-        describeError(
+        describeStepUp(
           err,
-          t("settings.security.recovery.regenFailed"),
+          localizedApiError(err, t, "settings.security.recovery.regenFailed"),
           t("settings.security.stepUpRequired"),
         ),
       );

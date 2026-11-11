@@ -17,6 +17,7 @@ import {
   apiPatch,
   apiPost,
 } from "@/lib/api/api-fetch";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import {
   illnessDependentKeys,
   invalidateKeys,
@@ -152,18 +153,24 @@ function useInvalidateIllness() {
   // the Today digest — both unmounted from here, so the bundle invalidation
   // is paired with the forced inactive refetch. The write routes hard-evict
   // the server analytics bucket, so the refetch returns post-write context.
-  return async () => {
-    await invalidateKeys(qc, illnessDependentKeys);
-    await refetchInactiveDailyReads(qc);
+  // Not returned: a mutation waits for what `onSuccess` returns, and the
+  // sheet would stay open until every read had refetched.
+  return () => {
+    void invalidateKeys(qc, illnessDependentKeys).then(() =>
+      refetchInactiveDailyReads(qc),
+    );
   };
 }
 
 /** Create an episode. */
 export function useCreateEpisode() {
   const invalidate = useInvalidateIllness();
+  // One key until a save lands, so a retry after a timeout is not a second
+  // episode.
+  const post = useIdempotentPost();
   return useMutation({
     mutationFn: (input: IllnessEpisodeCreateInput) =>
-      apiPost<IllnessEpisodeDTO>("/api/illness/episodes", input),
+      post<IllnessEpisodeDTO>("/api/illness/episodes", input),
     onSuccess: invalidate,
   });
 }

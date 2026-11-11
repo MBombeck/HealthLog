@@ -265,6 +265,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
         return apiError(
           "Base URL points to an internal/private host. The operator must allow its exact origin on this instance via AI_PRIVATE_ORIGINS (e.g. http://ollama.lan:11434) for a self-hosted Ollama / LM Studio.",
           422,
+          { errorCode: "ai_provider.private_host" },
         );
       }
       updates.aiBaseUrl = trimmed;
@@ -289,6 +290,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
         return apiError(
           "Base URL points to an internal/private host. The operator must allow its exact origin on this instance via AI_PRIVATE_ORIGINS (e.g. http://litellm.lan:4000) for a self-hosted gateway.",
           422,
+          { errorCode: "ai_provider.private_host" },
         );
       }
       updates.aiCompatBaseUrl = trimmed;

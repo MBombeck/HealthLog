@@ -33,12 +33,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
-import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
+import { apiFetchRaw, apiGet, throwApiError } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { formatBytes } from "@/lib/format/bytes";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import type { MeasurementMaintenanceStatus } from "@/lib/jobs/measurement-maintenance-status";
 import { queryKeys } from "@/lib/query-keys";
-import { getApiErrorMessage } from "./_shared";
 
 const ENDPOINT = "/api/admin/maintenance/measurements";
 
@@ -70,7 +70,7 @@ export function MeasurementMaintenanceCard() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ vacuum: true, reindex: true }),
       });
-      if (!res.ok) throw new Error(await getApiErrorMessage(res));
+      if (!res.ok) await throwApiError(res);
       return ((await res.json()) as { data: { enqueued: boolean } }).data;
     },
     onSuccess: ({ enqueued }) => {
@@ -80,9 +80,9 @@ export function MeasurementMaintenanceCard() {
         queryKey: queryKeys.adminMeasurementMaintenance(),
       });
     },
-    onError: (err: Error) => {
+    onError: (err) => {
       showErrorToast(
-        err.message || t("admin.section.maintenance.startFailed"),
+        localizedApiError(err, t, "admin.section.maintenance.startFailed"),
         { cause: err },
       );
     },

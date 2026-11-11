@@ -26,6 +26,7 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Switch } from "@/components/ui/switch";
 import { apiPut } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import { aiInputDependentKeys, invalidateKeys } from "@/lib/query-keys";
 
@@ -97,11 +98,7 @@ export function FallbackChainCard({
     },
     onError: (e) => {
       setOk(false);
-      setMsg(
-        e instanceof Error
-          ? e.message
-          : t("settings.ai.providerChain.saveFailed"),
-      );
+      setMsg(localizedApiError(e, t, "settings.ai.providerChain.saveFailed"));
     },
   });
 

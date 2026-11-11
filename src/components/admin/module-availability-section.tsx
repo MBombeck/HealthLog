@@ -23,6 +23,7 @@ import {
 import type { ModuleKey } from "@/lib/modules/registry";
 import { SettingsToggle } from "./_shared";
 import { apiGet, apiPatch } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { InlineAction } from "@/components/ui/inline-action";
 
 /**
@@ -76,12 +77,9 @@ function useUpdateModuleAvailability() {
       toast.success(t("common.saved"));
     },
     onError: (err) => {
-      showErrorToast(
-        err instanceof Error && err.message
-          ? err.message
-          : t("admin.modules.saveError"),
-        { cause: err },
-      );
+      showErrorToast(localizedApiError(err, t, "admin.modules.saveError"), {
+        cause: err,
+      });
       client.invalidateQueries({
         queryKey: queryKeys.adminModuleAvailability(),
       });

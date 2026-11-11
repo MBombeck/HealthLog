@@ -105,6 +105,7 @@ export function useRecentProof(
         messages: () => ({
           signInAgain: t("settings.reproof.signInAgain"),
           failed: t("settings.reproof.failed"),
+          rateLimited: t("apiErrors.http.rate_limited"),
         }),
       }),
     [t],

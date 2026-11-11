@@ -144,7 +144,10 @@
         "required": "Confirmez votre mot de passe actuel pour modifier ceci.",
         "failed": "La vérification a échoué. Rien n'a été modifié."
       },
-      "missing": "Votre session a expiré, rien n'a donc été modifié. Reconnectez-vous pour continuer."
+      "missing": "Votre session a expiré, rien n'a donc été modifié. Reconnectez-vous pour continuer.",
+      "passkey": {
+        "last_method": "Cette clé d’accès est votre seul moyen de connexion. Définissez d’abord un mot de passe ou ajoutez une autre clé d’accès."
+      }
     },
     "biomarkers": {
       "unit": {
@@ -185,6 +188,40 @@
       "rate_limited": "Il y a trop de requêtes pour le moment, rien n'a donc été modifié. Patientez un instant puis réessayez.",
       "forbidden": "Vous n'avez pas l'autorisation pour cette action, rien n'a donc été modifié.",
       "invalid": "Certaines saisies n'ont pas été acceptées, rien n'a donc été modifié. Vérifiez-les puis réessayez."
+    },
+    "ai_provider": {
+      "private_host": "Cette adresse se trouve sur un réseau privé. L’opérateur doit d’abord autoriser son origine exacte dans AI_PRIVATE_ORIGINS."
+    },
+    "encounter": {
+      "invalid": "Vérifiez les informations du rendez-vous et réessayez.",
+      "practitioner-not-found": "Ce cabinet ou ce médecin n'existe plus. Choisissez-en un autre ou aucun.",
+      "reminder-not-found": "Ce dépistage n'existe plus. Choisissez-en un autre ou aucun.",
+      "reminder-conflict": "Un rendez-vous prévu ne peut pas clore un dépistage, car il n'a pas encore eu lieu."
+    },
+    "vaccination": {
+      "invalid": "Vérifiez les informations de la vaccination et réessayez.",
+      "practitioner-not-found": "Ce cabinet ou ce médecin n'existe plus. Choisissez-en un autre ou aucun.",
+      "encounter-not-found": "Ce rendez-vous n'existe plus. Choisissez-en un autre ou aucun.",
+      "custom-vaccine-not-found": "Ce vaccin n'existe plus. Choisissez-le à nouveau dans la liste.",
+      "not-found": "Cette vaccination n'est plus disponible.",
+      "identity-required": "Une dose a besoin d'un nom : choisissez un vaccin dans la liste ou saisissez ce qu'indique le carnet.",
+      "booster-invalid": "Vérifiez les informations du rappel et réessayez.",
+      "booster-no-antigen": "Cette dose ne cite aucun vaccin du catalogue, aucun rappel ne peut donc être prévu.",
+      "booster-out-of-scope": "Votre accès à ce dossier ne permet pas de prévoir un rappel."
+    },
+    "allergy": {
+      "invalid": "Vérifiez les informations de l'allergie et réessayez."
+    },
+    "practitioner": {
+      "invalid": "Vérifiez les informations du cabinet ou du médecin et réessayez."
+    },
+    "workout": {
+      "batch": {
+        "invalid": "Vérifiez les informations de l'entraînement et réessayez.",
+        "too_large": "Trop d'entraînements à la fois. Envoyez-en moins à la fois.",
+        "payload_too_large": "Les données d'entraînement sont trop volumineuses pour être enregistrées en une fois.",
+        "source_not_permitted": "Cette connexion n'a pas le droit d'enregistrer des entraînements sous cette source."
+      }
     }
   },
   "doctorReport": {
@@ -1539,7 +1576,8 @@
         "gallbladderDiscomfort": "Inconfort de la vésicule biliaire"
       },
       "deleteConfirmTitle": "Supprimer cette entrée ?",
-      "deleteConfirmBody": "Cette entrée d’effet secondaire sera définitivement supprimée."
+      "deleteConfirmBody": "Cette entrée d’effet secondaire sera définitivement supprimée.",
+      "saveError": "Impossible d'enregistrer l'entrée"
     },
     "scheduling": {
       "naturalLanguage": {
@@ -7756,7 +7794,9 @@
       "hrv": "VFC",
       "weight": "pesées",
       "cycle": "cycle menstruel"
-    }
+    },
+    "passkeyRenameFailed": "Impossible de renommer la clé d’accès.",
+    "passkeyRemoveFailed": "Impossible de supprimer la clé d’accès."
   },
   "admin": {
     "title": "Administration",

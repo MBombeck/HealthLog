@@ -83,7 +83,7 @@ export function createRecentProofFlow(deps: {
   /** Posts the proof to `/api/auth/reproof`. */
   submit: (proof: ExistingFactorProof) => Promise<unknown>;
   /** Read at the moment they are needed, so a locale switch is honoured. */
-  messages: () => { signInAgain: string; failed: string };
+  messages: () => { signInAgain: string; failed: string; rateLimited: string };
 }): RecentProofFlow {
   let waiter: { resolve: () => void; reject: () => void } | null = null;
 
@@ -127,7 +127,7 @@ export function createRecentProofFlow(deps: {
     } catch (err) {
       deps.view.setError(
         err instanceof ApiError && err.status === 429
-          ? err.message
+          ? deps.messages().rateLimited
           : deps.messages().failed,
       );
     } finally {

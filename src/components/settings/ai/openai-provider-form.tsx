@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { PasswordInput } from "@/components/ui/password-input";
 import { apiPatch } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import { aiInputDependentKeys, invalidateKeys } from "@/lib/query-keys";
 
@@ -94,7 +95,7 @@ export function OpenAIProviderForm({
     },
     onError: (e) => {
       setOk(false);
-      setMsg(e instanceof Error ? e.message : t("settings.ai.errorGeneric"));
+      setMsg(localizedApiError(e, t, "settings.ai.errorGeneric"));
     },
     onSettled: () => {
       submitInFlightRef.current = false;

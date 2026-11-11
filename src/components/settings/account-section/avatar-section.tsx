@@ -11,7 +11,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTranslations } from "@/lib/i18n/context";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { apiFetchRaw } from "@/lib/api/api-fetch";
+import { ApiError, apiFetchRaw, throwApiError } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { statusText, type StatusMessage } from "./account-section-utils";
 import { accountName, nameInitials } from "@/lib/account-name";
 
@@ -37,41 +38,38 @@ export function AvatarSection() {
         method: "POST",
         body,
       });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        if (res.status === 415)
-          throw new Error(t("settings.avatar.invalidType"));
-        if (res.status === 413) throw new Error(t("settings.avatar.tooLarge"));
-        throw new Error(json.error || t("settings.avatar.error"));
-      }
+      if (!res.ok) await throwApiError(res);
     },
     onSuccess: async () => {
       setMsgType("success");
       setMsg({ key: "settings.avatar.uploaded" });
       await refetch();
     },
-    onError: (err: Error) => {
+    onError: (err) => {
       setMsgType("error");
-      setMsg({ text: err.message });
+      setMsg(
+        err instanceof ApiError && err.status === 415
+          ? { key: "settings.avatar.invalidType" }
+          : err instanceof ApiError && err.status === 413
+            ? { key: "settings.avatar.tooLarge" }
+            : { text: localizedApiError(err, t, "settings.avatar.error") },
+      );
     },
   });
 
   const remove = useMutation({
     mutationFn: async () => {
       const res = await apiFetchRaw("/api/user/avatar", { method: "DELETE" });
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        throw new Error(json.error || t("settings.avatar.error"));
-      }
+      if (!res.ok) await throwApiError(res);
     },
     onSuccess: async () => {
       setMsgType("success");
       setMsg({ key: "settings.avatar.removed" });
       await refetch();
     },
-    onError: (err: Error) => {
+    onError: (err) => {
       setMsgType("error");
-      setMsg({ text: err.message });
+      setMsg({ text: localizedApiError(err, t, "settings.avatar.error") });
     },
   });
 

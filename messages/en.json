@@ -144,7 +144,10 @@
         "required": "Confirm your current password to change this.",
         "failed": "That did not verify. Nothing was changed."
       },
-      "missing": "Your session has ended, so nothing was changed. Sign in again to continue."
+      "missing": "Your session has ended, so nothing was changed. Sign in again to continue.",
+      "passkey": {
+        "last_method": "This passkey is your only way to sign in. Set a password or add another passkey first."
+      }
     },
     "biomarkers": {
       "unit": {
@@ -185,6 +188,40 @@
       "rate_limited": "There are too many requests just now, so nothing was changed. Wait a moment and try again.",
       "forbidden": "You don't have permission for this, so nothing was changed.",
       "invalid": "Some of the entries were not accepted, so nothing was changed. Check them and try again."
+    },
+    "ai_provider": {
+      "private_host": "This address is on a private network. The operator has to allow its exact origin in AI_PRIVATE_ORIGINS before it can be used."
+    },
+    "encounter": {
+      "invalid": "Check the visit details and try again.",
+      "practitioner-not-found": "This practice or doctor no longer exists. Choose another or none.",
+      "reminder-not-found": "This checkup no longer exists. Choose another or none.",
+      "reminder-conflict": "A planned visit cannot close a checkup, because it has not happened yet."
+    },
+    "vaccination": {
+      "invalid": "Check the vaccination details and try again.",
+      "practitioner-not-found": "This practice or doctor no longer exists. Choose another or none.",
+      "encounter-not-found": "This visit no longer exists. Choose another or none.",
+      "custom-vaccine-not-found": "This vaccine no longer exists. Choose it again from the list.",
+      "not-found": "This vaccination is no longer available.",
+      "identity-required": "A dose needs a name: pick a vaccine from the list or type what the record says.",
+      "booster-invalid": "Check the booster details and try again.",
+      "booster-no-antigen": "This dose names no vaccine from the catalogue, so no booster can be planned for it.",
+      "booster-out-of-scope": "Your access to this record does not cover planning a booster."
+    },
+    "allergy": {
+      "invalid": "Check the allergy details and try again."
+    },
+    "practitioner": {
+      "invalid": "Check the practice or doctor details and try again."
+    },
+    "workout": {
+      "batch": {
+        "invalid": "Check the workout details and try again.",
+        "too_large": "Too many workouts at once. Send fewer at a time.",
+        "payload_too_large": "The workout data is too large to save in one go.",
+        "source_not_permitted": "This connection may not save workouts under that source."
+      }
     }
   },
   "doctorReport": {
@@ -1539,7 +1576,8 @@
         "gallbladderDiscomfort": "Gallbladder discomfort"
       },
       "deleteConfirmTitle": "Delete this entry?",
-      "deleteConfirmBody": "This side-effect entry will be permanently removed."
+      "deleteConfirmBody": "This side-effect entry will be permanently removed.",
+      "saveError": "Could not save the entry"
     },
     "scheduling": {
       "naturalLanguage": {
@@ -7756,7 +7794,9 @@
       "hrv": "HRV",
       "weight": "weigh-ins",
       "cycle": "menstrual cycle"
-    }
+    },
+    "passkeyRenameFailed": "Could not rename the passkey.",
+    "passkeyRemoveFailed": "Could not remove the passkey."
   },
   "admin": {
     "title": "Administration",

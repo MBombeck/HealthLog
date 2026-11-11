@@ -45,6 +45,58 @@ export interface AttachmentPickerProps {
   onConfirm: (ids: string[]) => void;
 }
 
+/** One document in the picker: a toggle, disabled until it is indexed. */
+function PickerRow({
+  doc,
+  isSelected,
+  disabled,
+  onToggle,
+}: {
+  doc: InboundDocumentDto;
+  isSelected: boolean;
+  disabled: boolean;
+  onToggle: () => void;
+}) {
+  const { t } = useTranslations();
+  const title = doc.title ?? doc.filename ?? t("documents.card.untitled");
+  const Icon = DOCUMENT_KIND_ICONS[doc.kind];
+  return (
+    <li>
+      <button
+        type="button"
+        aria-pressed={isSelected}
+        disabled={disabled}
+        onClick={() => doc.hasContentIndex && onToggle()}
+        data-slot="coach-attachment-picker-item"
+        data-selected={isSelected ? "true" : undefined}
+        className={cn(
+          "border-border hover:bg-muted/50 flex w-full items-center gap-3 rounded-lg border p-3 text-left",
+          "focus-visible:ring-input-focus focus-visible:ring-[3px] focus-visible:outline-none",
+          isSelected && "border-primary/40 bg-primary/5",
+          disabled && "cursor-not-allowed opacity-60 hover:bg-transparent",
+        )}
+      >
+        <Icon className="text-foreground size-5 shrink-0" aria-hidden="true" />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium">{title}</span>
+          {!doc.hasContentIndex ? (
+            <span className="text-muted-foreground block text-xs">
+              {t("insights.coach.attach.pickerNotIndexed")}
+            </span>
+          ) : null}
+        </span>
+        <Check
+          className={cn(
+            "text-primary size-4 shrink-0",
+            isSelected ? "opacity-100" : "opacity-0",
+          )}
+          aria-hidden="true"
+        />
+      </button>
+    </li>
+  );
+}
+
 export function AttachmentPicker({
   open,
   onOpenChange,
@@ -107,6 +159,8 @@ export function AttachmentPicker({
   );
 
   const capReached = selected.length >= remainingSlots;
+  // More match than one page: say so, and that the search reaches the rest.
+  const cut = Boolean(list.data?.nextCursor);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -200,55 +254,28 @@ export function AttachmentPicker({
           <ul className="max-h-[50vh] space-y-1.5 overflow-y-auto overscroll-contain">
             {documents.map((doc) => {
               const isSelected = selected.includes(doc.id);
-              const selectable = doc.hasContentIndex;
-              const disabled = !selectable || (!isSelected && capReached);
-              const title =
-                doc.title ?? doc.filename ?? t("documents.card.untitled");
-              const Icon = DOCUMENT_KIND_ICONS[doc.kind];
               return (
-                <li key={doc.id}>
-                  <button
-                    type="button"
-                    aria-pressed={isSelected}
-                    disabled={disabled}
-                    onClick={() => selectable && toggle(doc.id)}
-                    data-slot="coach-attachment-picker-item"
-                    data-selected={isSelected ? "true" : undefined}
-                    className={cn(
-                      "border-border hover:bg-muted/50 flex w-full items-center gap-3 rounded-lg border p-3 text-left",
-                      "focus-visible:ring-input-focus focus-visible:ring-[3px] focus-visible:outline-none",
-                      isSelected && "border-primary/40 bg-primary/5",
-                      disabled &&
-                        "cursor-not-allowed opacity-60 hover:bg-transparent",
-                    )}
-                  >
-                    <Icon
-                      className="text-foreground size-5 shrink-0"
-                      aria-hidden="true"
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium">
-                        {title}
-                      </span>
-                      {!selectable ? (
-                        <span className="text-muted-foreground block text-xs">
-                          {t("insights.coach.attach.pickerNotIndexed")}
-                        </span>
-                      ) : null}
-                    </span>
-                    <Check
-                      className={cn(
-                        "text-primary size-4 shrink-0",
-                        isSelected ? "opacity-100" : "opacity-0",
-                      )}
-                      aria-hidden="true"
-                    />
-                  </button>
-                </li>
+                <PickerRow
+                  key={doc.id}
+                  doc={doc}
+                  isSelected={isSelected}
+                  disabled={!doc.hasContentIndex || (!isSelected && capReached)}
+                  onToggle={() => toggle(doc.id)}
+                />
               );
             })}
           </ul>
         )}
+        {cut && !list.isError ? (
+          <p
+            data-slot="coach-attachment-picker-capped"
+            className="text-muted-foreground text-xs"
+          >
+            {t("documents.picker.capped", {
+              count: String(list.data?.documents.length ?? 0),
+            })}
+          </p>
+        ) : null}
       </div>
     </ResponsiveSheet>
   );

@@ -114,9 +114,9 @@ export function useMeasurementListData({
     async (ids: string[]) => {
       try {
         await apiPost("/api/measurements/restore", { ids });
-        await invalidateKeys(queryClient, measurementDependentKeys);
-        await refetchInactiveDailyReads(queryClient);
         toast.success(t("measurements.restoredToast"));
+        void invalidateKeys(queryClient, measurementDependentKeys);
+        void refetchInactiveDailyReads(queryClient);
       } catch (failure) {
         showErrorToast(t("measurements.restoreError"), { cause: failure });
       }
@@ -154,9 +154,11 @@ export function useMeasurementListData({
       );
       return data.deleted;
     },
-    onSuccess: async (deleted, ids) => {
-      await invalidateKeys(queryClient, measurementDependentKeys);
-      await refetchInactiveDailyReads(queryClient);
+    // The refresh is started, not returned: the selection bar and the toast
+    // answer as soon as the rows are gone.
+    onSuccess: (deleted, ids) => {
+      void invalidateKeys(queryClient, measurementDependentKeys);
+      void refetchInactiveDailyReads(queryClient);
       clearSelection();
       toast.success(
         deleted === 1

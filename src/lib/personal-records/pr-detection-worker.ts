@@ -79,8 +79,8 @@ export interface DetectPersonalRecordsOptions {
    * Set when a batch ingest crosses the historical-backfill threshold
    * — a multi-year Apple Health import shouldn't fire hundreds of
    * pushes during initial sync. The flag rides through to the
-   * dispatcher; the row is still written, the badge still renders, the
-   * doctor report still picks it up.
+   * dispatcher; the row is still written and the doctor report still
+   * picks it up.
    */
   silent?: boolean;
   /**

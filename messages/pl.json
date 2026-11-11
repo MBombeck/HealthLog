@@ -144,7 +144,10 @@
         "required": "Potwierdź obecne hasło, aby to zmienić.",
         "failed": "Weryfikacja nie powiodła się. Nic nie zostało zmienione."
       },
-      "missing": "Twoja sesja wygasła, więc nic nie zostało zmienione. Zaloguj się ponownie, aby kontynuować."
+      "missing": "Twoja sesja wygasła, więc nic nie zostało zmienione. Zaloguj się ponownie, aby kontynuować.",
+      "passkey": {
+        "last_method": "Ten klucz dostępu to Twój jedyny sposób logowania. Najpierw ustaw hasło albo dodaj kolejny klucz dostępu."
+      }
     },
     "biomarkers": {
       "unit": {
@@ -185,6 +188,40 @@
       "rate_limited": "W tej chwili jest zbyt wiele zapytań, więc nic nie zostało zmienione. Zaczekaj chwilę i spróbuj ponownie.",
       "forbidden": "Nie masz do tego uprawnień, więc nic nie zostało zmienione.",
       "invalid": "Niektóre dane nie zostały przyjęte, więc nic nie zostało zmienione. Sprawdź je i spróbuj ponownie."
+    },
+    "ai_provider": {
+      "private_host": "Ten adres jest w sieci prywatnej. Operator musi najpierw dopuścić jego dokładne źródło w AI_PRIVATE_ORIGINS."
+    },
+    "encounter": {
+      "invalid": "Sprawdź dane wizyty i spróbuj ponownie.",
+      "practitioner-not-found": "Ten gabinet lub lekarz już nie istnieje. Wybierz inny albo żaden.",
+      "reminder-not-found": "To badanie już nie istnieje. Wybierz inne albo żadne.",
+      "reminder-conflict": "Zaplanowana wizyta nie może zamknąć badania, bo jeszcze się nie odbyła."
+    },
+    "vaccination": {
+      "invalid": "Sprawdź dane szczepienia i spróbuj ponownie.",
+      "practitioner-not-found": "Ten gabinet lub lekarz już nie istnieje. Wybierz inny albo żaden.",
+      "encounter-not-found": "Ta wizyta już nie istnieje. Wybierz inną albo żadną.",
+      "custom-vaccine-not-found": "Ta szczepionka już nie istnieje. Wybierz ją ponownie z listy.",
+      "not-found": "To szczepienie nie jest już dostępne.",
+      "identity-required": "Dawka potrzebuje nazwy: wybierz szczepionkę z listy albo wpisz to, co widnieje w dokumentacji.",
+      "booster-invalid": "Sprawdź dane dawki przypominającej i spróbuj ponownie.",
+      "booster-no-antigen": "Ta dawka nie wskazuje szczepionki z katalogu, więc nie da się zaplanować dawki przypominającej.",
+      "booster-out-of-scope": "Twój dostęp do tej kartoteki nie obejmuje planowania dawki przypominającej."
+    },
+    "allergy": {
+      "invalid": "Sprawdź dane alergii i spróbuj ponownie."
+    },
+    "practitioner": {
+      "invalid": "Sprawdź dane gabinetu lub lekarza i spróbuj ponownie."
+    },
+    "workout": {
+      "batch": {
+        "invalid": "Sprawdź dane treningu i spróbuj ponownie.",
+        "too_large": "Za dużo treningów naraz. Wysyłaj mniej za jednym razem.",
+        "payload_too_large": "Dane treningu są za duże, by zapisać je za jednym razem.",
+        "source_not_permitted": "To połączenie nie może zapisywać treningów pod tym źródłem."
+      }
     }
   },
   "doctorReport": {
@@ -1539,7 +1576,8 @@
         "gallbladderDiscomfort": "Dolegliwości pęcherzyka żółciowego"
       },
       "deleteConfirmTitle": "Usunąć ten wpis?",
-      "deleteConfirmBody": "Ten wpis o skutku ubocznym zostanie trwale usunięty."
+      "deleteConfirmBody": "Ten wpis o skutku ubocznym zostanie trwale usunięty.",
+      "saveError": "Nie udało się zapisać wpisu"
     },
     "scheduling": {
       "naturalLanguage": {
@@ -7756,7 +7794,9 @@
       "hrv": "HRV",
       "weight": "pomiary wagi",
       "cycle": "cykl menstruacyjny"
-    }
+    },
+    "passkeyRenameFailed": "Nie udało się zmienić nazwy klucza dostępu.",
+    "passkeyRemoveFailed": "Nie udało się usunąć klucza dostępu."
   },
   "admin": {
     "title": "Administracja",

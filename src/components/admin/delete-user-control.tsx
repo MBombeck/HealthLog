@@ -7,6 +7,7 @@ import { ConfirmButton } from "@/components/ui/confirm-button";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { apiDelete } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { formatDate } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -90,9 +91,7 @@ function DeleteUserButton({ user }: { user: AdminUser }) {
     onError: (err) => {
       const message = recentProofErrorMessage(
         err,
-        err instanceof Error && err.message
-          ? err.message
-          : t("admin.section.users.deleteUserFailed"),
+        localizedApiError(err, t, "admin.section.users.deleteUserFailed"),
       );
       if (message) showErrorToast(message, { cause: err });
     },
