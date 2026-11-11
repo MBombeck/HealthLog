@@ -244,6 +244,30 @@ function NextLastSlot({
   );
 }
 
+/**
+ * The Coach-origin and switched-off badges, shared by the card and the list
+ * view; `undefined` when neither applies, so no empty row is drawn.
+ */
+function checkupStateBadges(
+  reminder: MeasurementReminder,
+  t: (key: string) => string,
+): React.ReactNode {
+  const isCoach = reminder.origin === "COACH";
+  if (!isCoach && reminder.enabled) return undefined;
+  return (
+    <>
+      {isCoach && (
+        <Badge variant="outline">{t("measurementReminders.originCoach")}</Badge>
+      )}
+      {!reminder.enabled && (
+        <Badge variant="outline">
+          {t("measurementReminders.disabledBadge")}
+        </Badge>
+      )}
+    </>
+  );
+}
+
 /** The dense list variant of a checkup. */
 function CheckupListRow({
   reminder,
@@ -251,6 +275,7 @@ function CheckupListRow({
   categoryLabel,
   cadenceText,
   meta,
+  stateBadges,
   isLinked,
   isScreening,
   canManageMeasurements,
@@ -265,6 +290,8 @@ function CheckupListRow({
   categoryLabel: string;
   cadenceText: string | null;
   meta: React.ReactNode;
+  /** The same Coach and disabled badges the card view shows. */
+  stateBadges: React.ReactNode;
   isLinked: boolean;
   isScreening: boolean;
   canManageMeasurements: boolean;
@@ -283,6 +310,7 @@ function CheckupListRow({
             <span className="truncate font-medium">
               {resolveReminderLabel(reminder, t)}
             </span>
+            {stateBadges}
           </div>
           {/* Cadence rides on the metric line, styled like the
               metric text (no shaded pill). */}
@@ -537,7 +565,6 @@ export function VorsorgeCard({
       : reminder.rrule
         ? t("measurementReminders.cadence.custom")
         : "";
-  const isCoach = reminder.origin === "COACH";
   const isLinked = reminder.measurementType != null;
   // A screening reminder's action starts the check-in, never numeric entry.
   const isScreening = isScreeningReminderType(reminder.measurementType);
@@ -558,20 +585,7 @@ export function VorsorgeCard({
     ? `/measurements?type=${encodeURIComponent(reminder.measurementType as string)}`
     : undefined;
 
-  // Provenance and disabled badges get a row only when one applies.
-  const hasStateBadges = isCoach || !reminder.enabled;
-  const stateBadges = hasStateBadges ? (
-    <>
-      {isCoach && (
-        <Badge variant="outline">{t("measurementReminders.originCoach")}</Badge>
-      )}
-      {!reminder.enabled && (
-        <Badge variant="outline">
-          {t("measurementReminders.disabledBadge")}
-        </Badge>
-      )}
-    </>
-  ) : undefined;
+  const stateBadges = checkupStateBadges(reminder, t);
 
   const headerActions = canManageMeasurements ? (
     <CheckupMenu
@@ -643,6 +657,7 @@ export function VorsorgeCard({
           categoryLabel={categoryLabel}
           cadenceText={cadenceText}
           meta={skipSnoozeMeta}
+          stateBadges={stateBadges}
           isLinked={isLinked}
           isScreening={isScreening}
           canManageMeasurements={canManageMeasurements}
