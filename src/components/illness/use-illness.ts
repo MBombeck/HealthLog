@@ -152,9 +152,12 @@ function useInvalidateIllness() {
   // the Today digest — both unmounted from here, so the bundle invalidation
   // is paired with the forced inactive refetch. The write routes hard-evict
   // the server analytics bucket, so the refetch returns post-write context.
-  return async () => {
-    await invalidateKeys(qc, illnessDependentKeys);
-    await refetchInactiveDailyReads(qc);
+  // Not returned: a mutation waits for what `onSuccess` returns, and the
+  // sheet would stay open until every read had refetched.
+  return () => {
+    void invalidateKeys(qc, illnessDependentKeys).then(() =>
+      refetchInactiveDailyReads(qc),
+    );
   };
 }
 
