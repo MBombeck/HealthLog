@@ -3,8 +3,9 @@
 /**
  * The vault document picker sheet: a `ResponsiveSheet` (bottom sheet on
  * phones) with a debounced search over the person's own vault — the same
- * recall path as the vault page, one page (50) of matches, the search input
- * as the way to an older document — and one toggle row per document.
+ * recall path as the vault page, one page (50) of matches with a line that
+ * says when more exist, the search input as the way to an older document —
+ * and one toggle row per document.
  *
  * Two pickers used to carry this whole body as copies: linking documents to
  * an illness episode (each toggle writes at once) and choosing documents for
@@ -97,6 +98,8 @@ export function DocumentPickerSheet({
   });
 
   const documents = list.data?.documents ?? [];
+  // More match than one page: say so, and that the search reaches the rest.
+  const cut = Boolean(list.data?.nextCursor);
 
   return (
     <ResponsiveSheet
@@ -188,6 +191,16 @@ export function DocumentPickerSheet({
             })}
           </ul>
         )}
+        {cut && !list.isError ? (
+          <p
+            data-slot="document-picker-capped"
+            className="text-muted-foreground text-xs"
+          >
+            {t("documents.picker.capped", {
+              count: String(documents.length),
+            })}
+          </p>
+        ) : null}
       </div>
     </ResponsiveSheet>
   );

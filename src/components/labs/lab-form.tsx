@@ -21,7 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { apiGet, apiPost } from "@/lib/api/api-fetch";
+import { apiGet } from "@/lib/api/api-fetch";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import { localizedApiError } from "@/lib/api/localized-error";
 import {
   isUnreadableRange,
@@ -144,6 +145,7 @@ export function LabForm({
   const labNumber = useLabNumber();
   const recordName = useActiveRecordName();
   const queryClient = useQueryClient();
+  const post = useIdempotentPost();
   const formId = useId();
 
   const { data: catalog, isLoading: catalogLoading } = useQuery({
@@ -265,7 +267,7 @@ export function LabForm({
       const printed = isQualitative
         ? null
         : parseReferenceRange(sourceRange, selected?.unit);
-      const created = await apiPost<LabResultDto>("/api/labs", {
+      const created = await post<LabResultDto>("/api/labs", {
         biomarkerId,
         ...(isQualitative
           ? { valueText: qualitativeValue }

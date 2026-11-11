@@ -143,7 +143,8 @@
       "reproof": {
         "required": "Bestätige dein aktuelles Passwort, um das zu ändern.",
         "failed": "Die Bestätigung ist fehlgeschlagen. Es wurde nichts geändert."
-      }
+      },
+      "missing": "Deine Sitzung ist abgelaufen, daher wurde nichts geändert. Melde dich erneut an, um weiterzumachen."
     },
     "biomarkers": {
       "unit": {
@@ -178,6 +179,12 @@
     },
     "aiRuns": {
       "readerBusy": "Der Dokumentleser ist gerade mit anderen Aufgaben beschäftigt. Versuch es in einer Minute noch einmal."
+    },
+    "http": {
+      "unauthenticated": "Deine Sitzung ist abgelaufen, daher wurde nichts geändert. Melde dich erneut an, um weiterzumachen.",
+      "rate_limited": "Gerade gibt es zu viele Anfragen, daher wurde nichts geändert. Warte kurz und versuche es erneut.",
+      "forbidden": "Dafür fehlt dir die Berechtigung, daher wurde nichts geändert.",
+      "invalid": "Einige Angaben wurden nicht angenommen, daher wurde nichts geändert. Prüfe sie und versuche es erneut."
     }
   },
   "doctorReport": {
@@ -979,7 +986,8 @@
     "typeStressLevel": "Stresslevel",
     "typeTrainingReadiness": "Trainingsbereitschaft",
     "typeAcuteTrainingLoad": "Akute Trainingsbelastung",
-    "sourceGarmin": "Garmin"
+    "sourceGarmin": "Garmin",
+    "valueOutOfRange": "Gib einen Wert zwischen {min} und {max} {unit} ein."
   },
   "metricCatalog": {
     "title": "Was HealthLog erfassen kann",
@@ -10951,7 +10959,9 @@
       "deleteTitle": "Eigenen Impfstoff entfernen?",
       "sectionDescription": "Selbst angelegte Impfstoffe, die der Katalog nicht kennt.",
       "catalogGroup": "Katalog"
-    }
+    },
+    "deleted": "Impfung gelöscht",
+    "restoreFailed": "Impfung konnte nicht wiederhergestellt werden."
   },
   "illness": {
     "title": "Krankheit",
@@ -12460,6 +12470,9 @@
       "purgeFailed": "Das Dokument konnte nicht gelöscht werden.",
       "purgeConfirmTitle": "Dieses Dokument endgültig löschen?",
       "purgeConfirmBody": "Es wird jetzt entfernt statt am Ende der Wartezeit und lässt sich nicht wiederherstellen."
+    },
+    "picker": {
+      "capped": "Hier stehen die neuesten {count}. Ältere Dokumente findest du über die Suche."
     }
   },
   "selfDescription": {
@@ -12507,7 +12520,8 @@
       "save": "Speichern",
       "savedToast": "Eigene Metrik gespeichert",
       "updatedToast": "Eigene Metrik aktualisiert",
-      "saveError": "Eigene Metrik konnte nicht gespeichert werden"
+      "saveError": "Eigene Metrik konnte nicht gespeichert werden",
+      "nameTaken": "Es gibt bereits eine eigene Metrik mit diesem Namen."
     },
     "entry": {
       "value": "Wert",
@@ -13462,7 +13476,9 @@
       "defaultReason": "Kein früherer Termin bei derselben Praxis, in derselben Fachrichtung oder derselben Art.",
       "capped": "Die letzten zwei Jahre",
       "cappedReason": "Der letzte passende Termin liegt mehr als zwei Jahre zurück, und ein Bericht umfasst höchstens zwei Jahre."
-    }
+    },
+    "deleted": "Termin gelöscht",
+    "restoreFailed": "Termin konnte nicht wiederhergestellt werden."
   },
   "checkups": {
     "viewSwitchLabel": "Vorsorge, Termine, Eingriffe oder Körperstellen anzeigen",
@@ -13495,7 +13511,9 @@
     "deleteTitle": "Eintrag löschen?",
     "deleteDescription": "Deine bisherigen Termine bleiben erhalten und behalten diesen Namen.",
     "deleteFailed": "Eintrag konnte nicht gelöscht werden.",
-    "noSpecialtyGroup": "Ohne Fachrichtung"
+    "noSpecialtyGroup": "Ohne Fachrichtung",
+    "deleted": "Eintrag gelöscht",
+    "restoreFailed": "Eintrag konnte nicht wiederhergestellt werden."
   },
   "links": {
     "picker": {

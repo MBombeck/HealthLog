@@ -143,7 +143,8 @@
       "reproof": {
         "required": "변경하려면 현재 비밀번호를 확인하세요.",
         "failed": "확인에 실패했습니다. 아무것도 변경되지 않았습니다."
-      }
+      },
+      "missing": "세션이 만료되어 아무것도 변경되지 않았어요. 계속하려면 다시 로그인해 주세요."
     },
     "biomarkers": {
       "unit": {
@@ -178,6 +179,12 @@
     },
     "aiRuns": {
       "readerBusy": "문서 판독기가 다른 작업으로 바빠요. 1분 후에 다시 시도하세요."
+    },
+    "http": {
+      "unauthenticated": "세션이 만료되어 아무것도 변경되지 않았어요. 계속하려면 다시 로그인해 주세요.",
+      "rate_limited": "지금은 요청이 너무 많아 아무것도 변경되지 않았어요. 잠시 후 다시 시도해 주세요.",
+      "forbidden": "이 작업을 할 권한이 없어 아무것도 변경되지 않았어요.",
+      "invalid": "일부 입력값이 받아들여지지 않아 아무것도 변경되지 않았어요. 확인한 후 다시 시도해 주세요."
     }
   },
   "doctorReport": {
@@ -979,7 +986,8 @@
     "typeStressLevel": "스트레스 수준",
     "typeTrainingReadiness": "트레이닝 준비도",
     "typeAcuteTrainingLoad": "급성 훈련 부하",
-    "sourceGarmin": "Garmin"
+    "sourceGarmin": "Garmin",
+    "valueOutOfRange": "{min}에서 {max} {unit} 사이의 값을 입력해 주세요."
   },
   "metricCatalog": {
     "title": "HealthLog가 기록할 수 있는 것",
@@ -10951,7 +10959,9 @@
       "deleteTitle": "직접 추가한 백신을 삭제할까요?",
       "sectionDescription": "목록에 없어서 직접 추가한 백신이에요.",
       "catalogGroup": "목록"
-    }
+    },
+    "deleted": "예방접종 기록을 삭제했어요",
+    "restoreFailed": "예방접종 기록을 복원하지 못했어요."
   },
   "illness": {
     "title": "아픈 날",
@@ -12460,6 +12470,9 @@
       "purgeFailed": "문서를 삭제하지 못했어요.",
       "purgeConfirmTitle": "이 문서를 완전히 삭제할까요?",
       "purgeConfirmBody": "대기 기간이 끝나기 전에 지금 삭제되며 복구할 수 없습니다."
+    },
+    "picker": {
+      "capped": "최신 {count}개를 보여 줘요. 이전 문서는 검색으로 찾아 주세요."
     }
   },
   "selfDescription": {
@@ -12507,7 +12520,8 @@
       "save": "저장",
       "savedToast": "사용자 지표를 저장했어요",
       "updatedToast": "사용자 지표를 수정했어요",
-      "saveError": "사용자 지표를 저장하지 못했어요"
+      "saveError": "사용자 지표를 저장하지 못했어요",
+      "nameTaken": "이 이름의 사용자 지표가 이미 있어요."
     },
     "entry": {
       "value": "값",
@@ -13462,7 +13476,9 @@
       "defaultReason": "같은 병원, 진료과 또는 유형의 이전 방문이 없어요.",
       "capped": "최근 2년",
       "cappedReason": "마지막으로 일치하는 진료가 2년 이상 지났으며, 보고서는 최대 2년까지 다룹니다."
-    }
+    },
+    "deleted": "진료를 삭제했어요",
+    "restoreFailed": "진료를 복원하지 못했어요."
   },
   "checkups": {
     "viewSwitchLabel": "건강검진, 진료, 시술 또는 신체 부위 보기",
@@ -13495,7 +13511,9 @@
     "deleteTitle": "이 항목을 삭제할까요?",
     "deleteDescription": "기존 진료 기록은 그대로 남고, 이 이름도 유지돼요.",
     "deleteFailed": "항목을 삭제하지 못했어요.",
-    "noSpecialtyGroup": "진료과 없음"
+    "noSpecialtyGroup": "진료과 없음",
+    "deleted": "항목을 삭제했어요",
+    "restoreFailed": "항목을 복원하지 못했어요."
   },
   "links": {
     "picker": {

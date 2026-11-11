@@ -143,7 +143,8 @@
       "reproof": {
         "required": "Confirm your current password to change this.",
         "failed": "That did not verify. Nothing was changed."
-      }
+      },
+      "missing": "Your session has ended, so nothing was changed. Sign in again to continue."
     },
     "biomarkers": {
       "unit": {
@@ -178,6 +179,12 @@
     },
     "aiRuns": {
       "readerBusy": "The document reader is busy with other work. Try again in a minute."
+    },
+    "http": {
+      "unauthenticated": "Your session has ended, so nothing was changed. Sign in again to continue.",
+      "rate_limited": "There are too many requests just now, so nothing was changed. Wait a moment and try again.",
+      "forbidden": "You don't have permission for this, so nothing was changed.",
+      "invalid": "Some of the entries were not accepted, so nothing was changed. Check them and try again."
     }
   },
   "doctorReport": {
@@ -979,7 +986,8 @@
     "typeStressLevel": "Stress level",
     "typeTrainingReadiness": "Training readiness",
     "typeAcuteTrainingLoad": "Acute training load",
-    "sourceGarmin": "Garmin"
+    "sourceGarmin": "Garmin",
+    "valueOutOfRange": "Enter a value between {min} and {max} {unit}."
   },
   "metricCatalog": {
     "title": "What HealthLog can track",
@@ -10951,7 +10959,9 @@
       "deleteTitle": "Remove own vaccine?",
       "sectionDescription": "Vaccines you added yourself because the catalogue does not list them.",
       "catalogGroup": "Catalogue"
-    }
+    },
+    "deleted": "Vaccination deleted",
+    "restoreFailed": "The vaccination could not be restored."
   },
   "illness": {
     "title": "Illness",
@@ -12460,6 +12470,9 @@
       "purgeFailed": "Couldn't delete the document.",
       "purgeConfirmTitle": "Delete this document for good?",
       "purgeConfirmBody": "It is removed now instead of at the end of the waiting period, and cannot be restored."
+    },
+    "picker": {
+      "capped": "Showing the newest {count}. Search to find an older document."
     }
   },
   "selfDescription": {
@@ -12507,7 +12520,8 @@
       "save": "Save",
       "savedToast": "Custom metric saved",
       "updatedToast": "Custom metric updated",
-      "saveError": "Could not save the custom metric"
+      "saveError": "Could not save the custom metric",
+      "nameTaken": "A custom metric with this name already exists."
     },
     "entry": {
       "value": "Value",
@@ -13462,7 +13476,9 @@
       "defaultReason": "No earlier visit with the same practice, specialty or kind.",
       "capped": "The last two years",
       "cappedReason": "The last matching visit is more than two years ago, and a report covers two years at most."
-    }
+    },
+    "deleted": "Visit deleted",
+    "restoreFailed": "The visit could not be restored."
   },
   "checkups": {
     "viewSwitchLabel": "Show checkups, visits, procedures or body sites",
@@ -13495,7 +13511,9 @@
     "deleteTitle": "Delete this entry?",
     "deleteDescription": "Your existing visits stay, and they keep this name.",
     "deleteFailed": "The entry could not be deleted.",
-    "noSpecialtyGroup": "No specialty"
+    "noSpecialtyGroup": "No specialty",
+    "deleted": "Entry deleted",
+    "restoreFailed": "The entry could not be restored."
   },
   "links": {
     "picker": {

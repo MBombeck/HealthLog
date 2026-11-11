@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
-import type { QueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryObserver } from "@tanstack/react-query";
 
 import { invalidateReminderReads } from "@/hooks/use-measurement-reminders";
+import { queryKeys } from "@/lib/query-keys";
 
 /**
  * v1.32.19 — a Vorsorge reminder marked done (or created / edited / deleted)
@@ -16,6 +17,7 @@ import { invalidateReminderReads } from "@/hooks/use-measurement-reminders";
 function fakeQueryClient(): QueryClient {
   return {
     invalidateQueries: vi.fn().mockResolvedValue(undefined),
+    getQueryCache: () => ({ findAll: () => [] }),
   } as unknown as QueryClient;
 }
 
@@ -46,5 +48,26 @@ describe("invalidateReminderReads — the Vorsorge daily-rail freshness contract
     );
     expect(inactiveKeys).toContain(JSON.stringify(["dashboard", "snapshot"]));
     expect(inactiveKeys).toContain(JSON.stringify(["daily", "digest"]));
+  });
+
+  it("refetches the Today rail while it is on screen", async () => {
+    // The dashboard: the check-up tile and the Today rail are both mounted,
+    // where the inactive pass alone fetches nothing.
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    });
+    let reads = 0;
+    const observer = new QueryObserver(client, {
+      queryKey: queryKeys.dailyDigest(),
+      queryFn: async () => ++reads,
+    });
+    const unsubscribe = observer.subscribe(() => {});
+    await vi.waitFor(() => expect(reads).toBe(1));
+
+    await invalidateReminderReads(client);
+
+    expect(reads).toBe(2);
+    unsubscribe();
+    client.clear();
   });
 });

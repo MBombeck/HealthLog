@@ -143,7 +143,8 @@
       "reproof": {
         "required": "Confirmez votre mot de passe actuel pour modifier ceci.",
         "failed": "La vérification a échoué. Rien n'a été modifié."
-      }
+      },
+      "missing": "Votre session a expiré, rien n'a donc été modifié. Reconnectez-vous pour continuer."
     },
     "biomarkers": {
       "unit": {
@@ -178,6 +179,12 @@
     },
     "aiRuns": {
       "readerBusy": "Le lecteur de documents est occupé par d'autres tâches. Réessayez dans une minute."
+    },
+    "http": {
+      "unauthenticated": "Votre session a expiré, rien n'a donc été modifié. Reconnectez-vous pour continuer.",
+      "rate_limited": "Il y a trop de requêtes pour le moment, rien n'a donc été modifié. Patientez un instant puis réessayez.",
+      "forbidden": "Vous n'avez pas l'autorisation pour cette action, rien n'a donc été modifié.",
+      "invalid": "Certaines saisies n'ont pas été acceptées, rien n'a donc été modifié. Vérifiez-les puis réessayez."
     }
   },
   "doctorReport": {
@@ -979,7 +986,8 @@
     "typeStressLevel": "Niveau de stress",
     "typeTrainingReadiness": "Disponibilité à l'entraînement",
     "typeAcuteTrainingLoad": "Charge d'entraînement aiguë",
-    "sourceGarmin": "Garmin"
+    "sourceGarmin": "Garmin",
+    "valueOutOfRange": "Saisissez une valeur entre {min} et {max} {unit}."
   },
   "metricCatalog": {
     "title": "Ce que HealthLog peut suivre",
@@ -10951,7 +10959,9 @@
       "deleteTitle": "Retirer ce vaccin personnel ?",
       "sectionDescription": "Les vaccins que vous avez ajoutés parce que le catalogue ne les connaît pas.",
       "catalogGroup": "Catalogue"
-    }
+    },
+    "deleted": "Vaccination supprimée",
+    "restoreFailed": "La vaccination n'a pas pu être restaurée."
   },
   "illness": {
     "title": "Maladie",
@@ -12460,6 +12470,9 @@
       "purgeFailed": "Impossible de supprimer le document.",
       "purgeConfirmTitle": "Supprimer ce document définitivement ?",
       "purgeConfirmBody": "Il est supprimé maintenant plutôt qu'à la fin du délai d'attente et ne peut pas être restauré."
+    },
+    "picker": {
+      "capped": "Les {count} plus récents sont affichés. Utilisez la recherche pour trouver un document plus ancien."
     }
   },
   "selfDescription": {
@@ -12507,7 +12520,8 @@
       "save": "Enregistrer",
       "savedToast": "Mesure personnalisée enregistrée",
       "updatedToast": "Mesure personnalisée mise à jour",
-      "saveError": "Impossible d'enregistrer la mesure personnalisée"
+      "saveError": "Impossible d'enregistrer la mesure personnalisée",
+      "nameTaken": "Une mesure personnalisée portant ce nom existe déjà."
     },
     "entry": {
       "value": "Valeur",
@@ -13462,7 +13476,9 @@
       "defaultReason": "Aucune visite antérieure au même cabinet, dans la même spécialité ou du même type.",
       "capped": "Les deux dernières années",
       "cappedReason": "La dernière consultation correspondante date de plus de deux ans, et un rapport couvre au plus deux ans."
-    }
+    },
+    "deleted": "Rendez-vous supprimé",
+    "restoreFailed": "Le rendez-vous n'a pas pu être restauré."
   },
   "checkups": {
     "viewSwitchLabel": "Afficher les dépistages, les rendez-vous, les interventions ou les parties du corps",
@@ -13495,7 +13511,9 @@
     "deleteTitle": "Supprimer cette entrée ?",
     "deleteDescription": "Vos rendez-vous existants restent et conservent ce nom.",
     "deleteFailed": "L'entrée n'a pas pu être supprimée.",
-    "noSpecialtyGroup": "Sans spécialité"
+    "noSpecialtyGroup": "Sans spécialité",
+    "deleted": "Entrée supprimée",
+    "restoreFailed": "L'entrée n'a pas pu être restaurée."
   },
   "links": {
     "picker": {

@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { apiDelete, apiGet, apiPut } from "@/lib/api/api-fetch";
 import { formatReferenceRange } from "@/lib/labs/reference-range";
 import { useTranslations } from "@/lib/i18n/context";
-import { queryKeys } from "@/lib/query-keys";
+import { invalidateKeys, labDependentKeys, queryKeys } from "@/lib/query-keys";
 
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 
@@ -68,8 +68,7 @@ export function BiomarkerManager() {
     mutationFn: (id: string) => apiDelete(`/api/biomarkers/${id}`),
     onSuccess: () => {
       toast.success(t("labs.biomarker.deletedToast"));
-      queryClient.invalidateQueries({ queryKey: queryKeys.biomarkers() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.labResults() });
+      void invalidateKeys(queryClient, labDependentKeys);
     },
     onError: (failure) =>
       showErrorToast(t("labs.biomarker.deleteError"), { cause: failure }),
@@ -103,8 +102,7 @@ export function BiomarkerManager() {
   function afterSave() {
     setFormOpen(false);
     setEditing(null);
-    queryClient.invalidateQueries({ queryKey: queryKeys.biomarkers() });
-    queryClient.invalidateQueries({ queryKey: queryKeys.labResults() });
+    void invalidateKeys(queryClient, labDependentKeys);
   }
 
   const markers = data?.biomarkers ?? [];

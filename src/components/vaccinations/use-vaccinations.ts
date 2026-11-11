@@ -21,6 +21,7 @@ import {
   apiPatch,
   apiPost,
 } from "@/lib/api/api-fetch";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import { invalidateReminderReads } from "@/hooks/use-measurement-reminders";
 import {
   invalidateKeys,
@@ -125,16 +126,19 @@ export function useVaccination(id: string | null) {
  */
 export function useVaccinationMutations() {
   const qc = useQueryClient();
+  // Not returned: a mutation would wait for every refetch before it settles,
+  // and the sheet would stay open with its spinner until then.
   const invalidate = () =>
-    Promise.all([
+    void Promise.all([
       invalidateKeys(qc, vaccinationDependentKeys),
       invalidateReminderReads(qc),
     ]);
 
+  // One key for as long as the sheet that mounts this is open.
+  const post = useIdempotentPost();
   const create = useMutation({
     mutationKey: queryKeys.vaccinationCreate(),
-    mutationFn: (body: VaccinationWriteBody) =>
-      apiPost<Vaccination>(BASE, body),
+    mutationFn: (body: VaccinationWriteBody) => post<Vaccination>(BASE, body),
     onSuccess: invalidate,
   });
 

@@ -113,4 +113,51 @@ describe("localizedApiError", () => {
       ),
     ).toBe(translator(locale as Catalog)("measurements.saveError"));
   });
+
+  describe("a refusal the client can act on", () => {
+    const enT = translator(en as Catalog);
+
+    it.each([
+      ["an ended session", 401, "auth.missing", "Sign in again"],
+      ["a rate limit", 429, "http.rate_limited", "too many requests"],
+      ["a missing right", 403, "http.forbidden", "permission"],
+      ["a rejected entry", 422, "http.invalid", "Check them"],
+    ])("names %s instead of the save fallback", (_, status, code, text) => {
+      const error = new ApiError("raw English server prose", status, {
+        errorCode: code,
+      });
+      expect(localizedApiError(error, enT, "measurements.saveError")).toMatch(
+        new RegExp(text, "i"),
+      );
+    });
+
+    it("reads a refusal without a code by its status", () => {
+      // A reverse proxy's 429 carries no envelope at all.
+      const error = new ApiError("Request failed (429)", 429);
+      expect(localizedApiError(error, enT, "measurements.saveError")).toBe(
+        enT("apiErrors.http.rate_limited"),
+      );
+    });
+
+    it.each([
+      ["de", de],
+      ["es", es],
+      ["fr", fr],
+      ["it", itCatalog],
+      ["pl", pl],
+    ])("has its own sentence in %s", (_, locale) => {
+      const localT = translator(locale as Catalog);
+      for (const code of [
+        "auth.missing",
+        "http.unauthenticated",
+        "http.rate_limited",
+        "http.forbidden",
+        "http.invalid",
+      ]) {
+        const sentence = localT(`apiErrors.${code}`);
+        expect(sentence).not.toBe(`apiErrors.${code}`);
+        expect(sentence).not.toBe(enT(`apiErrors.${code}`));
+      }
+    });
+  });
 });

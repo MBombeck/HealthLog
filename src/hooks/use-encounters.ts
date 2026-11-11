@@ -26,6 +26,7 @@ import {
   apiPatch,
   apiPost,
 } from "@/lib/api/api-fetch";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import { invalidateReminderReads } from "@/hooks/use-measurement-reminders";
 import {
   encounterDependentKeys,
@@ -166,17 +167,20 @@ export function useEncounterMutations() {
    *
    * So the fan-out is the visit roots PLUS the reminder reads, through the same
    * helper the Vorsorge surfaces use, rather than a second sweep that could
-   * drift from it.
+   * drift from it. Not returned: a mutation would wait for every refetch
+   * before it settles, and the sheet would stay open until then.
    */
   const invalidate = () =>
-    Promise.all([
+    void Promise.all([
       invalidateKeys(qc, encounterDependentKeys),
       invalidateReminderReads(qc),
     ]);
 
+  // One key for as long as the sheet that mounts this is open.
+  const post = useIdempotentPost();
   const create = useMutation({
     mutationKey: queryKeys.encounterCreate(),
-    mutationFn: (body: EncounterWriteBody) => apiPost<Encounter>(BASE, body),
+    mutationFn: (body: EncounterWriteBody) => post<Encounter>(BASE, body),
     onSuccess: invalidate,
   });
 
@@ -194,5 +198,13 @@ export function useEncounterMutations() {
     onSuccess: invalidate,
   });
 
-  return { create, update, remove };
+  // The Undo of a delete. A restored visit re-anchors its reminder only
+  // while its date is still ahead.
+  const restore = useMutation({
+    mutationKey: queryKeys.encounterRestore(),
+    mutationFn: (id: string) => apiPost<Encounter>(`${BASE}/${id}/restore`, {}),
+    onSuccess: invalidate,
+  });
+
+  return { create, update, remove, restore };
 }

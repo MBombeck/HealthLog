@@ -393,21 +393,22 @@ describe("submit invalidation — the quick-add is a capture-picker surface, not
   );
 
   it("routes the intake submit through the blessed invalidateMedicationReads (source pin)", () => {
-    expect(componentSrc).toContain(
-      "await invalidateMedicationReads(queryClient);",
-    );
     expect(componentSrc).not.toContain(
       "invalidateKeys(queryClient, medicationDependentKeys)",
     );
-    // The submit handler pairs the blessed helper with the inline
-    // compliance-chart fan-out AFTER the intake POST landed.
+    // AFTER the intake POST landed, and after the sheet was told it is done:
+    // the save does not wait for the refetches before it closes.
     expect(componentSrc).toMatch(
-      /async function handleSubmit\([\s\S]*?apiPost[\s\S]*?await invalidateMedicationReads\(queryClient\);[\s\S]*?complianceChartInline\(\)/,
+      /async function handleSubmit\([\s\S]*?await post<[\s\S]*?onSuccess\?\.\(\);\s*(?:\/\/[^\n]*\n\s*)*void invalidateMedicationReads\(queryClient\);/,
+    );
+    // The bundle carries every inline compliance chart, so no second sweep.
+    expect(medicationDependentKeys).toContainEqual(
+      queryKeys.complianceChartInline(),
     );
   });
 
   it("forces the inactive Today hero + dashboard reads to refetch after submit", async () => {
-    // The helper the submit path awaits — asserted directly, same shape as
+    // The helper the submit path calls — asserted directly, same shape as
     // the take-all-due suite: the bundle fans out (N keys), then the two
     // daily reads are invalidated with `refetchType: "inactive"`, which is
     // what actually refetches them while unmounted.

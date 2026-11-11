@@ -143,7 +143,8 @@
       "reproof": {
         "required": "Confirme sua senha atual para alterar isto.",
         "failed": "A verificação não foi concluída. Nada foi alterado."
-      }
+      },
+      "missing": "Sua sessão terminou, então nada foi alterado. Entre novamente para continuar."
     },
     "biomarkers": {
       "unit": {
@@ -178,6 +179,12 @@
     },
     "aiRuns": {
       "readerBusy": "O leitor de documentos está ocupado com outras tarefas. Tente novamente em um minuto."
+    },
+    "http": {
+      "unauthenticated": "Sua sessão terminou, então nada foi alterado. Entre novamente para continuar.",
+      "rate_limited": "Há solicitações demais neste momento, então nada foi alterado. Aguarde um pouco e tente de novo.",
+      "forbidden": "Você não tem permissão para isso, então nada foi alterado.",
+      "invalid": "Alguns dados não foram aceitos, então nada foi alterado. Confira e tente de novo."
     }
   },
   "doctorReport": {
@@ -979,7 +986,8 @@
     "typeStressLevel": "Nível de estresse",
     "typeTrainingReadiness": "Prontidão para treinar",
     "typeAcuteTrainingLoad": "Carga de treino aguda",
-    "sourceGarmin": "Garmin"
+    "sourceGarmin": "Garmin",
+    "valueOutOfRange": "Informe um valor entre {min} e {max} {unit}."
   },
   "metricCatalog": {
     "title": "O que o HealthLog pode acompanhar",
@@ -10951,7 +10959,9 @@
       "deleteTitle": "Remover vacina própria?",
       "sectionDescription": "Vacinas que você adicionou porque o catálogo não as lista.",
       "catalogGroup": "Catálogo"
-    }
+    },
+    "deleted": "Vacina excluída",
+    "restoreFailed": "Não foi possível restaurar a vacina."
   },
   "illness": {
     "title": "Doenças",
@@ -12460,6 +12470,9 @@
       "purgeFailed": "Não foi possível excluir o documento.",
       "purgeConfirmTitle": "Excluir este documento para sempre?",
       "purgeConfirmBody": "Ele é removido agora, e não no fim do período de espera, e não pode ser restaurado."
+    },
+    "picker": {
+      "capped": "Mostrando os {count} mais recentes. Use a busca para encontrar um documento mais antigo."
     }
   },
   "selfDescription": {
@@ -12507,7 +12520,8 @@
       "save": "Salvar",
       "savedToast": "Métrica personalizada salva",
       "updatedToast": "Métrica personalizada atualizada",
-      "saveError": "Não foi possível salvar a métrica personalizada"
+      "saveError": "Não foi possível salvar a métrica personalizada",
+      "nameTaken": "Já existe uma métrica personalizada com este nome."
     },
     "entry": {
       "value": "Valor",
@@ -13462,7 +13476,9 @@
       "defaultReason": "Nenhuma consulta anterior com o mesmo consultório, especialidade ou tipo.",
       "capped": "Os últimos dois anos",
       "cappedReason": "A última consulta correspondente foi há mais de dois anos, e um relatório cobre no máximo dois anos."
-    }
+    },
+    "deleted": "Consulta excluída",
+    "restoreFailed": "Não foi possível restaurar a consulta."
   },
   "checkups": {
     "viewSwitchLabel": "Mostrar check-ups, consultas, procedimentos ou locais do corpo",
@@ -13495,7 +13511,9 @@
     "deleteTitle": "Excluir esta entrada?",
     "deleteDescription": "Suas consultas existentes permanecem e mantêm este nome.",
     "deleteFailed": "Não foi possível excluir a entrada.",
-    "noSpecialtyGroup": "Sem especialidade"
+    "noSpecialtyGroup": "Sem especialidade",
+    "deleted": "Entrada excluída",
+    "restoreFailed": "Não foi possível restaurar a entrada."
   },
   "links": {
     "picker": {

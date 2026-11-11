@@ -32,7 +32,7 @@ import { toast } from "sonner";
 import { useTranslations } from "@/lib/i18n/context";
 import { DOCUMENT_UPLOAD_PER_USER_CONCURRENCY } from "@/lib/documents/inbound-constants";
 import { randomId } from "@/lib/random-id";
-import { invalidateKeys, queryKeys } from "@/lib/query-keys";
+import { documentDependentKeys, invalidateKeys } from "@/lib/query-keys";
 import { uploadWithBusyRetry } from "./upload-busy-retry";
 import {
   parseUploadResponse,
@@ -261,7 +261,7 @@ export function useDocumentUpload(
       }
       const decision = settleDecision(result);
       removeItem(localId);
-      void invalidateKeys(queryClient, [queryKeys.documents()]);
+      void invalidateKeys(queryClient, documentDependentKeys);
       if (decision.toastDuplicate) {
         toast.info(t("documents.toast.duplicate"));
       }

@@ -16,7 +16,11 @@ import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiDelete, apiGetList } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
-import { queryKeys } from "@/lib/query-keys";
+import {
+  allergyDependentKeys,
+  invalidateKeys,
+  queryKeys,
+} from "@/lib/query-keys";
 
 import { AllergyForm } from "./allergy-form";
 import type { AllergyDTO } from "@/lib/records/dto";
@@ -59,7 +63,7 @@ export function AllergyManager({
     mutationFn: (id: string) => apiDelete(`/api/allergies/${id}`),
     onSuccess: () => {
       toast.success(t("records.allergies.deletedToast"));
-      queryClient.invalidateQueries({ queryKey: queryKeys.allergies() });
+      void invalidateKeys(queryClient, allergyDependentKeys);
     },
     onError: (failure) =>
       showErrorToast(t("records.allergies.deleteError"), { cause: failure }),
@@ -78,7 +82,7 @@ export function AllergyManager({
   function afterSave() {
     setFormOpen(false);
     setEditing(null);
-    queryClient.invalidateQueries({ queryKey: queryKeys.allergies() });
+    void invalidateKeys(queryClient, allergyDependentKeys);
   }
 
   const rows = page?.data ?? [];
