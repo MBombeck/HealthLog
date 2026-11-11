@@ -101,6 +101,61 @@ interface SerializedDoseHistoryRow {
   } | null;
 }
 
+/**
+ * The intakes a window needs: the rows anchored in it or taken in it (a late
+ * take on an older slot is an intake instant of the window), and of all the
+ * rows before it only the latest take, the anchor a rolling grid re-starts
+ * from and the last intake when none falls in the window. Earlier takes place
+ * no slot in the window. The whole history used to be read on every open, so
+ * a medication taken for years read thousands of rows to show at most a year.
+ */
+async function readWindowIntakes(
+  medicationId: string,
+  userId: string,
+  from: Date,
+) {
+  const [events, takenBefore] = await Promise.all([
+    prisma.medicationIntakeEvent.findMany({
+      where: {
+        medicationId,
+        userId,
+        deletedAt: null,
+        OR: [{ scheduledFor: { gte: from } }, { takenAt: { gte: from } }],
+      },
+      orderBy: [{ scheduledFor: "desc" }, { id: "desc" }],
+      select: {
+        id: true,
+        scheduledFor: true,
+        takenAt: true,
+        skipped: true,
+        autoMissed: true,
+        // v1.15.20 — USER_PIN rows bind by anchor in the read ledger.
+        attributionSource: true,
+        // v1.16.4 — per-intake dose override for the ledger's deviation hint.
+        doseTaken: true,
+        // v1.32.8 (iOS #64) — write provenance so the client can label how
+        // each dose was recorded (Web / API / Reminder / Import / AppleHealth).
+        source: true,
+        // v1.42.2 — the history labels an automatically recorded dose.
+        autoRecorded: true,
+      },
+    }),
+    prisma.medicationIntakeEvent.findFirst({
+      where: {
+        medicationId,
+        userId,
+        deletedAt: null,
+        skipped: false,
+        scheduledFor: { lt: from },
+        takenAt: { lt: from },
+      },
+      orderBy: [{ takenAt: "desc" }, { id: "desc" }],
+      select: { takenAt: true },
+    }),
+  ]);
+  return { events, anchorBefore: takenBefore?.takenAt ?? null };
+}
+
 export const GET = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
     const { user } = await requireAuth();
@@ -165,26 +220,7 @@ export const GET = apiHandler(
       Math.max(requestedFrom.getTime(), spanFloor.getTime()),
     );
 
-    const events = await prisma.medicationIntakeEvent.findMany({
-      where: { medicationId: id, userId: user.id, deletedAt: null },
-      orderBy: [{ scheduledFor: "desc" }, { id: "desc" }],
-      select: {
-        id: true,
-        scheduledFor: true,
-        takenAt: true,
-        skipped: true,
-        autoMissed: true,
-        // v1.15.20 — USER_PIN rows bind by anchor in the read ledger.
-        attributionSource: true,
-        // v1.16.4 — per-intake dose override for the ledger's deviation hint.
-        doseTaken: true,
-        // v1.32.8 (iOS #64) — write provenance so the client can label how
-        // each dose was recorded (Web / API / Reminder / Import / AppleHealth).
-        source: true,
-        // v1.42.2 — the history labels an automatically recorded dose.
-        autoRecorded: true,
-      },
-    });
+    const { events, anchorBefore } = await readWindowIntakes(id, user.id, from);
 
     const mapped = events.map((e) => ({
       id: e.id,
@@ -198,7 +234,10 @@ export const GET = apiHandler(
       autoRecorded: e.autoRecorded,
     }));
 
-    const lastIntakeAt = lastNonSkippedTakenAt(mapped);
+    const lastIntakeAt = lastNonSkippedTakenAt([
+      ...mapped,
+      ...(anchorBefore ? [{ takenAt: anchorBefore, skipped: false }] : []),
+    ]);
 
     // A dose may be recorded before its slot's own time: the dose window opens
     // up to two hours early, and a skip can be logged ahead. Such a row is
@@ -263,6 +302,7 @@ export const GET = apiHandler(
     const intakeInstants = mapped
       .filter((e) => !e.skipped && e.takenAt !== null && e.takenAt <= to)
       .map((e) => e.takenAt as Date)
+      .concat(anchorBefore ? [anchorBefore] : [])
       .sort((a, b) => a.getTime() - b.getTime());
 
     const groups = buildBandsForSchedulesWithEras({
