@@ -9255,7 +9255,8 @@
       "accountErasureFailedBody": "De verwijdertermijn van {username} is afgelopen, maar het wissen van het account is mislukt. Het blijft vergrendeld en wordt elk uur opnieuw geprobeerd, na de andere accounts die aan de beurt zijn. De fout staat op de kaart met mislukte taken in Beheer."
     },
     "user": {
-      "telegramTestBody": "HealthLog: verbinding geslaagd. Telegram-meldingen zijn actief."
+      "telegramTestBody": "HealthLog: verbinding geslaagd. Telegram-meldingen zijn actief.",
+      "webPushTestBody": "Zie je dit, dan komen pushmeldingen aan op dit apparaat."
     },
     "moodReminder": {
       "title": "Dagelijkse stemmingsherinnering",

@@ -66,34 +66,22 @@ const apnsTestResponse = z
 
 const webPushTestResponse = z
   .object({
-    ok: z.boolean(),
-    sent: z
-      .number()
-      .int()
-      .describe("1 on success, 0 on failure. Never more than one."),
+    ok: z
+      .boolean()
+      .describe(
+        "Whether at least one of the account's subscriptions accepted the push.",
+      ),
     latencyMs: z
       .number()
       .int()
       .optional()
-      .describe("Round-trip to the push service. Present on success only."),
-    perEndpoint: z
-      .array(
-        z.object({
-          host: z
-            .string()
-            .describe(
-              "Host of the push service the test went to — the endpoint path is a routing secret and is never returned.",
-            ),
-          status: z
-            .number()
-            .int()
-            .nullable()
-            .describe(
-              "The push service's HTTP status, or null when the attempt threw before one existed.",
-            ),
-        }),
-      )
-      .describe("One entry: only the newest subscription is tested."),
+      .describe("Time to send to every subscription. Present on success only."),
+    reason: z
+      .string()
+      .optional()
+      .describe(
+        "Why it was not, when `ok` is false. Absent on success. The sender's own classification, the same code a failed reminder records (`web_push_410_gone` when every endpoint is gone, a status-derived code otherwise).",
+      ),
   })
   .meta({ id: "WebPushTestResponse" });
 
@@ -200,10 +188,10 @@ export const notificationTransportPaths: NonNullable<
   "/api/notifications/web-push/test": {
     post: {
       tags: ["Notifications"],
-      summary: "Send a test push to the newest Web Push subscription",
+      summary: "Send a test push to every Web Push subscription",
       description:
-        "Fires one notification to the caller's MOST RECENT subscription only — a person with a phone, a tablet and a desktop registered should not get three buzzes per click. Takes no body. Rate-limited 5 per minute per user.\n\n" +
-        "Read `ok`, not the status. A push that the service rejects still answers 200, with `ok: false` and the service's own status in `perEndpoint`. Only the endpoint's HOST is reported: the full endpoint is the routing secret for that subscription, and push services embed it in their own error messages, so it is stripped before anything is logged or returned.",
+        "Fires one notification to each of the caller's subscriptions, through the same sender real reminders use, with the text in the account's language. The device the test was pressed on gets it whichever subscription is newest. Endpoints the push service reports gone (404/410) are removed, as on a real send. Takes no body. Rate-limited 5 per minute per user.\n\n" +
+        "Read `ok`, not the status. A push that every service rejects still answers 200, with `ok: false` and a `reason`. No endpoint is returned: the full endpoint is the routing secret for that subscription.",
       responses: {
         "200": {
           description:

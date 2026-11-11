@@ -9255,7 +9255,8 @@
       "accountErasureFailedBody": "Le délai de suppression de {username} est écoulé, mais l’effacement du compte a échoué. Il reste verrouillé et une nouvelle tentative a lieu chaque heure, après les autres comptes en attente. L’erreur figure dans la carte des tâches en échec, dans Administration."
     },
     "user": {
-      "telegramTestBody": "HealthLog: connexion réussie. Les notifications Telegram sont actives."
+      "telegramTestBody": "HealthLog: connexion réussie. Les notifications Telegram sont actives.",
+      "webPushTestBody": "Si vous voyez ceci, les notifications push arrivent sur cet appareil."
     },
     "moodReminder": {
       "title": "Rappel quotidien d’humeur",

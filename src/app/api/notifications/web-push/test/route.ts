@@ -3,28 +3,20 @@ import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiSuccess, apiError } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
-import { prisma } from "@/lib/db";
-import { decrypt } from "@/lib/crypto";
-import { getVapidConfig } from "@/lib/notifications/vapid-config";
+import { coerceLocale } from "@/lib/i18n/config";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { sendViaWebPush } from "@/lib/notifications/senders/web-push";
 
 export const dynamic = "force-dynamic";
 
-function hostFromEndpoint(endpoint: string): string {
-  try {
-    return new URL(endpoint).host;
-  } catch {
-    return "unknown";
-  }
-}
-
-// Strip any URL from a stringified web-push library error. Push providers (FCM,
-// Mozilla autopush, etc.) embed the full subscription endpoint into 410/404
-// error messages — that endpoint token is the routing secret, so it must never
-// land in our Wide Events.
-function redactPushError(text: string): string {
-  return text.replace(/https?:\/\/\S+/gi, "[endpoint]");
-}
-
+/**
+ * POST /api/notifications/web-push/test
+ *
+ * Sends a test push to every browser subscribed for the account, through the
+ * sender real reminders use, in the account's language. Pressing Test on one
+ * device must reach that device; the newest subscription alone did not when
+ * a person had more than one.
+ */
 export const POST = apiHandler(async (request: NextRequest) => {
   void request;
   const { user } = await requireAuth();
@@ -37,68 +29,32 @@ export const POST = apiHandler(async (request: NextRequest) => {
     });
   }
 
-  // Spec: only the most-recent subscription receives the test push. A user
-  // with phone + tablet + desktop should not get three buzzes per click.
-  const subscription = await prisma.pushSubscription.findFirst({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
+  const { t } = getServerTranslator(coerceLocale(user.locale));
+  const start = performance.now();
+  const result = await sendViaWebPush(user.id, {
+    eventType: "SYSTEM_ALERT",
+    userId: user.id,
+    title: t("notifications.admin.testNotificationTitle"),
+    message: t("notifications.user.webPushTestBody"),
+    metadata: { webPushTag: "self-test" },
   });
+  const latencyMs = Math.round(performance.now() - start);
 
-  if (!subscription) {
+  if (result.reason === "web_push_no_subscriptions") {
     return apiError("No push subscriptions registered", 422, {
       errorCode: "not_configured",
     });
   }
-
-  const config = await getVapidConfig();
-  if (!config) {
+  if (result.reason === "web_push_vapid_not_configured") {
     return apiError("VAPID keys not configured", 422, {
       errorCode: "vapid_not_configured",
     });
   }
 
-  const webpush = await import("web-push");
-  webpush.setVapidDetails(config.subject, config.publicKey, config.privateKey);
-
-  const pushPayload = JSON.stringify({
-    title: "HealthLog",
-    body: "This is a test notification from HealthLog",
-    tag: "self-test",
+  annotate({
+    meta: { web_push_test_ok: result.ok, web_push_test_reason: result.reason },
   });
-
-  const host = hostFromEndpoint(subscription.endpoint);
-  const start = performance.now();
-
-  try {
-    const p256dh = decrypt(subscription.p256dh);
-    const auth = decrypt(subscription.auth);
-
-    const result = await webpush.sendNotification(
-      { endpoint: subscription.endpoint, keys: { p256dh, auth } },
-      pushPayload,
-    );
-    const latencyMs = Math.round(performance.now() - start);
-
-    return apiSuccess({
-      ok: true,
-      sent: 1,
-      latencyMs,
-      perEndpoint: [{ host, status: result.statusCode ?? 201 }],
-    });
-  } catch (err: unknown) {
-    const status = (err as { statusCode?: number }).statusCode ?? null;
-    const message = redactPushError((err as Error).message ?? "").slice(0, 200);
-    annotate({
-      meta: {
-        web_push_test_status: status,
-        web_push_test_host: host,
-        web_push_test_error: message,
-      },
-    });
-    return apiSuccess({
-      ok: false,
-      sent: 0,
-      perEndpoint: [{ host, status }],
-    });
-  }
+  return apiSuccess(
+    result.ok ? { ok: true, latencyMs } : { ok: false, reason: result.reason },
+  );
 });

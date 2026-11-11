@@ -9255,7 +9255,8 @@
       "accountErasureFailedBody": "Il periodo di eliminazione di {username} è terminato, ma la cancellazione dell’account non è riuscita. Resta bloccato e viene ritentata ogni ora, dopo gli altri account in scadenza. L’errore è nella scheda dei job non riusciti in Administration."
     },
     "user": {
-      "telegramTestBody": "HealthLog: connessione riuscita. Le notifiche Telegram sono attive."
+      "telegramTestBody": "HealthLog: connessione riuscita. Le notifiche Telegram sono attive.",
+      "webPushTestBody": "Se vedi questo messaggio, le notifiche push arrivano su questo dispositivo."
     },
     "moodReminder": {
       "title": "Promemoria quotidiano dell’umore",

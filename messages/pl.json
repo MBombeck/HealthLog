@@ -9255,7 +9255,8 @@
       "accountErasureFailedBody": "Okres usuwania konta {username} minął, ale usunięcie konta się nie powiodło. Konto pozostaje zablokowane, a próba jest ponawiana co godzinę, po innych kontach do usunięcia. Błąd widać na karcie nieudanych zadań w Administracja."
     },
     "user": {
-      "telegramTestBody": "HealthLog: połączenie udane. Powiadomienia Telegram są aktywne."
+      "telegramTestBody": "HealthLog: połączenie udane. Powiadomienia Telegram są aktywne.",
+      "webPushTestBody": "Jeśli to widzisz, powiadomienia push docierają na to urządzenie."
     },
     "moodReminder": {
       "title": "Codzienne przypomnienie o nastroju",

@@ -9255,7 +9255,8 @@
       "accountErasureFailedBody": "O prazo de exclusão de {username} terminou, mas apagar a conta falhou. Ela continua bloqueada e uma nova tentativa é feita a cada hora, depois das outras contas pendentes. O erro aparece no cartão de tarefas com falha em Administração."
     },
     "user": {
-      "telegramTestBody": "HealthLog: conexão bem-sucedida. As notificações do Telegram estão ativas."
+      "telegramTestBody": "HealthLog: conexão bem-sucedida. As notificações do Telegram estão ativas.",
+      "webPushTestBody": "Se você está vendo isto, as notificações push chegam a este dispositivo."
     },
     "moodReminder": {
       "title": "Lembrete diário de humor",

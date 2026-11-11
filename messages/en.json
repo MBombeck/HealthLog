@@ -9255,7 +9255,8 @@
       "accountErasureFailedBody": "The deletion window of {username} has ended, but erasing the account failed. It stays locked and is tried again every hour, after the other accounts due. The failing jobs card in Administration has the error."
     },
     "user": {
-      "telegramTestBody": "HealthLog: connection successful. Telegram notifications are active."
+      "telegramTestBody": "HealthLog: connection successful. Telegram notifications are active.",
+      "webPushTestBody": "If you can see this, push notifications reach this device."
     },
     "moodReminder": {
       "title": "Daily mood reminder",

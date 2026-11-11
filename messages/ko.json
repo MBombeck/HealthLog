@@ -9255,7 +9255,8 @@
       "accountErasureFailedBody": "{username} 계정의 삭제 유예 기간이 끝났지만 계정을 지우지 못했어요. 계정은 계속 잠겨 있고, 삭제할 다른 계정들 다음으로 매시간 다시 시도해요. 오류는 관리자 화면의 실패한 작업 카드에서 볼 수 있어요."
     },
     "user": {
-      "telegramTestBody": "HealthLog: 연결에 성공했어요. Telegram 알림이 켜져 있어요."
+      "telegramTestBody": "HealthLog: 연결에 성공했어요. Telegram 알림이 켜져 있어요.",
+      "webPushTestBody": "이 알림이 보이면 이 기기에서 푸시 알림을 받을 수 있어요."
     },
     "moodReminder": {
       "title": "매일 기분 알림",

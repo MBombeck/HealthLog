@@ -9255,7 +9255,8 @@
       "accountErasureFailedBody": "El plazo de eliminación de {username} ha terminado, pero no se pudo borrar la cuenta. Sigue bloqueada y se vuelve a intentar cada hora, después de las demás cuentas pendientes. El error aparece en la tarjeta de tareas fallidas de Administration."
     },
     "user": {
-      "telegramTestBody": "HealthLog: conexión correcta. Las notificaciones de Telegram están activas."
+      "telegramTestBody": "HealthLog: conexión correcta. Las notificaciones de Telegram están activas.",
+      "webPushTestBody": "Si ves esto, las notificaciones push llegan a este dispositivo."
     },
     "moodReminder": {
       "title": "Recordatorio diario de ánimo",

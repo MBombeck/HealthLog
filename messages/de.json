@@ -9255,7 +9255,8 @@
       "accountErasureFailedBody": "Die Löschfrist von {username} ist abgelaufen, aber das Löschen des Kontos ist fehlgeschlagen. Es bleibt gesperrt und wird jede Stunde erneut versucht, nach den anderen fälligen Konten. Den Fehler zeigt die Karte der fehlgeschlagenen Jobs unter Administration."
     },
     "user": {
-      "telegramTestBody": "HealthLog: Verbindung hergestellt. Telegram-Benachrichtigungen sind aktiv."
+      "telegramTestBody": "HealthLog: Verbindung hergestellt. Telegram-Benachrichtigungen sind aktiv.",
+      "webPushTestBody": "Wenn du das siehst, kommen Push-Benachrichtigungen auf diesem Gerät an."
     },
     "moodReminder": {
       "title": "Tägliche Stimmungs-Erinnerung",
