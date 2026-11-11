@@ -24,8 +24,10 @@ import { prisma } from "@/lib/db";
 import { loadBaselineProfile } from "@/lib/insights/derived";
 import { computeCoincidentDeviation } from "@/lib/insights/derived/coincident-deviation";
 import { buildExtendedChangepointSignals } from "@/lib/insights/derived/changepoint";
-import { resolveModuleMap } from "@/lib/modules/gate";
+import { MODULE_KEYS, resolveModuleMap } from "@/lib/modules/gate";
 import { summariseHealthStatus } from "@/lib/insights/health-status";
+import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
+import { DEFAULT_TIMEZONE, userDayKey } from "@/lib/tz/format";
 
 export const dynamic = "force-dynamic";
 
@@ -39,36 +41,56 @@ export const GET = apiHandler(async () => {
     return apiError("Too many analytics requests. Please retry later.", 429);
   }
 
+  // Both engines walk every vital over up to 180 days, so the answer goes
+  // through the analytics cell its sibling reads use. Measurement and mood
+  // writes sweep the record's cells; the reader's day and the switched-off
+  // modules are part of the key, so a new day or a module switch never serves
+  // the other answer.
+  const modules = await resolveModuleMap(user.id);
+  const modulesOff = MODULE_KEYS.filter((key) => modules[key] === false);
   const now = new Date();
-  const profile = await loadBaselineProfile(prisma, user.id);
-
-  const coincident = await computeCoincidentDeviation(user.id, profile, {
-    tz: user.timezone,
-    now,
-  });
-  // v1.44 — the wider scan: every vital with a stable daily level over 180
-  // days, a metric whose module is off left unread.
-  const shifts = await buildExtendedChangepointSignals(
-    user.id,
-    now,
-    await resolveModuleMap(user.id),
+  const day = userDayKey(now, user.timezone ?? DEFAULT_TIMEZONE);
+  const body = await cachedSwr(
+    caches.analytics as ServerCache<HealthStatusBody>,
+    `${user.id}|health-status|${day}|off:${modulesOff.join(",")}`,
+    () => buildHealthStatus(user.id, user.timezone, now, modules),
+    annotate,
   );
-
-  const vitals = coincident.status === "ok" ? coincident.value.vitals : [];
-  const summary = summariseHealthStatus(vitals, shifts);
 
   annotate({
     action: { name: "insights.health-status.read" },
     meta: {
-      deviations: summary.deviations.length,
-      shifts: summary.shifts.length,
+      deviations: body.deviations.length,
+      shifts: body.shifts.length,
     },
   });
 
-  return apiSuccess({
+  return apiSuccess(body);
+});
+
+type HealthStatusBody = Awaited<ReturnType<typeof buildHealthStatus>>;
+
+async function buildHealthStatus(
+  userId: string,
+  timezone: string | undefined,
+  now: Date,
+  modules: Awaited<ReturnType<typeof resolveModuleMap>>,
+) {
+  const profile = await loadBaselineProfile(prisma, userId);
+  const coincident = await computeCoincidentDeviation(userId, profile, {
+    tz: timezone,
+    now,
+  });
+  // v1.44 — the wider scan: every vital with a stable daily level over 180
+  // days, a metric whose module is off left unread.
+  const shifts = await buildExtendedChangepointSignals(userId, now, modules);
+
+  const vitals = coincident.status === "ok" ? coincident.value.vitals : [];
+  const summary = summariseHealthStatus(vitals, shifts);
+  return {
     present: summary.present,
     deviations: summary.deviations,
     shifts: summary.shifts,
     generatedAt: now.toISOString(),
-  });
-});
+  };
+}
