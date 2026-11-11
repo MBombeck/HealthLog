@@ -24,7 +24,10 @@ import type {
   ReadinessSignal,
   RecoveryReadiness,
 } from "@/components/admin/use-recovery-readiness";
-import { READINESS_FIX_PATHS } from "@/lib/recovery/readiness-model";
+import {
+  READINESS_FIX_PATHS,
+  READINESS_SIGNALS,
+} from "@/lib/recovery/readiness-model";
 import { primeLocales } from "@/__tests__/helpers/prime-locales";
 
 primeLocales("de");
@@ -97,6 +100,23 @@ function row(html: string, id: string): string {
 }
 
 describe("RecoveryReadinessCard", () => {
+  it("holds one row per signal while it loads, so the cards below stay put", () => {
+    // A read that has not answered: no data, no error.
+    const client = new QueryClient();
+    const html = renderToStaticMarkup(
+      <QueryClientProvider client={client}>
+        <I18nProvider initialLocale="en">
+          <RecoveryReadinessCard />
+        </I18nProvider>
+      </QueryClientProvider>,
+    );
+    const start = html.indexOf('data-testid="recovery-readiness-loading"');
+    expect(start).toBeGreaterThan(-1);
+    expect(html.slice(start).match(/<li/g)?.length).toBe(
+      READINESS_SIGNALS.length,
+    );
+  });
+
   it("renders every signal with its state and sentence", () => {
     pathname.current = "/admin";
     const html = render(READINESS);
