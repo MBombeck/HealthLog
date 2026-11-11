@@ -342,7 +342,6 @@ export function AuthShell({
     return (
       <div className="flex min-h-dvh flex-col pt-[env(safe-area-inset-top,0px)] pr-[env(safe-area-inset-right,0px)] pb-[env(safe-area-inset-bottom,0px)] pl-[env(safe-area-inset-left,0px)]">
         {demoMode ? <DemoBanner /> : null}
-        <MaintainershipBanner />
         <main
           id="main-content"
           className="flex flex-1 items-center justify-center px-4 py-6"
