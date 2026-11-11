@@ -215,7 +215,7 @@ describe("the customise shortcut is withheld inside somebody else's record", () 
       export function Page() {
         const { inSharedRecord } = useRecordCapabilities();
         const wrench = !inSharedRecord ? (
-          <Link href="/settings/layout/vorsorge">Customise</Link>
+          <Link href="/settings/layout/checkups">Customise</Link>
         ) : null;
         return wrench;
       }

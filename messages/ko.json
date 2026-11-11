@@ -5627,7 +5627,7 @@
           "title": "아픈 날 일지",
           "description": "목록 보기와 에피소드 순서."
         },
-        "vorsorge": {
+        "checkups": {
           "title": "건강검진",
           "description": "목록 보기와 알림 순서."
         },
@@ -6052,7 +6052,7 @@
           "moduleSettingsDescription": "순서와 보기 외의 설정은 모듈의 페이지에 있습니다."
         }
       },
-      "gesundheitsakte": {
+      "health-record": {
         "title": "건강 기록",
         "subtitle": "임상의에게 바로 건넬 수 있는 완전한 건강 기록을 내보내요."
       },

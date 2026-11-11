@@ -5627,7 +5627,7 @@
           "title": "Ziektedagboek",
           "description": "Lijstweergave en volgorde van episodes."
         },
-        "vorsorge": {
+        "checkups": {
           "title": "Preventieve controles",
           "description": "Lijstweergave en volgorde van herinneringen."
         },
@@ -6052,7 +6052,7 @@
           "moduleSettingsDescription": "Al het andere staat op de pagina van de module onder Modules."
         }
       },
-      "gesundheitsakte": {
+      "health-record": {
         "title": "Gezondheidsdossier",
         "subtitle": "Exporteer een volledig gezondheidsdossier dat klaar is voor je zorgverlener."
       },

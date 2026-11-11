@@ -230,7 +230,19 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/settings/vorsorge",
-        destination: "/settings/layout/vorsorge",
+        destination: "/settings/layout/checkups",
+        permanent: true,
+      },
+      // The health record and checkups pages had German addresses in every
+      // language; the English ones replace them, and the old ones redirect.
+      {
+        source: "/settings/gesundheitsakte",
+        destination: "/settings/health-record",
+        permanent: true,
+      },
+      {
+        source: "/settings/layout/vorsorge",
+        destination: "/settings/layout/checkups",
         permanent: true,
       },
       // v1.25.7 — clinician share links fold into the Gesundheitsakte section
@@ -238,7 +250,7 @@ const nextConfig: NextConfig = {
       // to the anchor there.
       {
         source: "/settings/sharing",
-        destination: "/settings/gesundheitsakte#sharing",
+        destination: "/settings/health-record#sharing",
         permanent: true,
       },
       // v1.22.0 — the preventive-care surface moved from the German slug

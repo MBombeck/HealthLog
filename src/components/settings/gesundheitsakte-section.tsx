@@ -20,7 +20,7 @@
  * "Freigabe" section) folds in here as a labelled "Sharing" group below the
  * export panel: a time-boxed read-only link is a sharing face of the SAME
  * health record. `/settings/sharing` 301-redirects to
- * `/settings/gesundheitsakte#sharing`. The backing model, the
+ * `/settings/health-record#sharing`. The backing model, the
  * `/api/share-links` routes, and the public `/c/[token]` view are unchanged.
  */
 

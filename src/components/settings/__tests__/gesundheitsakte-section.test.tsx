@@ -10,7 +10,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
-  usePathname: () => "/settings/gesundheitsakte",
+  usePathname: () => "/settings/health-record",
 }));
 
 vi.mock("@tanstack/react-query", () => ({
@@ -43,19 +43,19 @@ describe("<GesundheitsakteSection> — SSR smoke", () => {
     // v1.18.6 — the visible heading (with the historic id) comes from
     // the shared frame the route wraps the section in.
     const html = render(
-      <SettingsSectionFrame slug="gesundheitsakte">
+      <SettingsSectionFrame slug="health-record">
         <GesundheitsakteSection />
       </SettingsSectionFrame>,
     );
-    expect(html).toContain('id="settings-section-gesundheitsakte-title"');
+    expect(html).toContain('id="settings-section-health-record-title"');
     expect(html).toContain('data-testid="health-record-export-panel"');
     // Raw key never leaks past i18n.
-    expect(html).not.toContain("settings.sections.gesundheitsakte.");
+    expect(html).not.toContain("settings.sections.health-record.");
   });
 
   it("German locale resolves without leaking the raw key", () => {
     const html = render(<GesundheitsakteSection />, "de");
     expect(html).toContain('data-testid="health-record-export-panel"');
-    expect(html).not.toContain("settings.sections.gesundheitsakte.");
+    expect(html).not.toContain("settings.sections.health-record.");
   });
 });

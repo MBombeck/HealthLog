@@ -5627,7 +5627,7 @@
           "title": "Illness journal",
           "description": "List view and episode order."
         },
-        "vorsorge": {
+        "checkups": {
           "title": "Checkups",
           "description": "List view and reminder order."
         },
@@ -6052,7 +6052,7 @@
           "moduleSettingsDescription": "Everything beyond order and view lives on the module's page under Modules."
         }
       },
-      "gesundheitsakte": {
+      "health-record": {
         "title": "Health record",
         "subtitle": "Export a complete, clinician-ready health record."
       },

@@ -120,7 +120,7 @@ describe("SETTINGS_SECTION_SLUGS", () => {
     // 301-redirects to `/settings/notifications`.
     // v1.18.0 — `modules` ("Was du trackst") sits right after `account` as
     // the single front door for enabling/disabling secondary domains.
-    // v1.18.0 — `gesundheitsakte` (the full health-record export) lifts
+    // v1.18.0 — `health-record` (the full health-record export) lifts
     // out of Export & Import into its own top-level entry, before `export`;
     // `coach` gathers the Coach preference cards out of the AI section and
     // sits right after `ai`.
@@ -133,7 +133,7 @@ describe("SETTINGS_SECTION_SLUGS", () => {
     // first-class sections, right after `mood` (the three were standalone
     // `ModuleSettingsFrame` pages).
     // v1.18.7 — `sharing` (clinician share links) sits directly after
-    // `gesundheitsakte`, before `export`: minting a read-only link to the
+    // `health-record`, before `export`: minting a read-only link to the
     // health record belongs next to the health-record export.
     expect([...SETTINGS_SECTION_SLUGS]).toEqual([
       "account",
@@ -164,7 +164,7 @@ describe("SETTINGS_SECTION_SLUGS", () => {
       "coach",
       "api",
       "mcp",
-      "gesundheitsakte",
+      "health-record",
       "export",
       "advanced",
       // v1.23 — "Data & Privacy" assembles the export / deletion / retention /
@@ -246,7 +246,7 @@ describe("<SettingsShell>", () => {
       api: "connections",
       mcp: "connections",
       export: "data",
-      gesundheitsakte: "data",
+      "health-record": "data",
       privacy: "data",
       advanced: "data",
       about: "system",
@@ -397,16 +397,16 @@ describe("<SettingsShell>", () => {
     // reachable. The server-side `/api/export/health-record` route remains
     // the hard enforcement of the opt-out.
     expect(renderShell({ active: "account" })).toContain(
-      'href="/settings/gesundheitsakte"',
+      'href="/settings/health-record"',
     );
     expect(renderShell({ active: "account", modules: {} })).toContain(
-      'href="/settings/gesundheitsakte"',
+      'href="/settings/health-record"',
     );
     const optedOut = renderShell({
       active: "account",
       modules: { doctorReport: false },
     });
-    expect(optedOut).toContain('href="/settings/gesundheitsakte"');
+    expect(optedOut).toContain('href="/settings/health-record"');
   });
 
   describe("inside somebody else's record", () => {
@@ -507,7 +507,7 @@ describe("<SettingsShell>", () => {
     // form so we don't accidentally match a parser that double-escapes.
     expect(html).toContain("API &amp; tokens");
     // v1.18.0 — the health record is its own top-level entry.
-    expect(html).toContain('href="/settings/gesundheitsakte"');
+    expect(html).toContain('href="/settings/health-record"');
     expect(html).toContain("Health record");
     // v1.4.16: the consolidated Export section is a top-level
     // entry in the sidebar; the link must be present in both locales.

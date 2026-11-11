@@ -5627,7 +5627,7 @@
           "title": "Dziennik chorób",
           "description": "Widok listy i kolejność epizodów."
         },
-        "vorsorge": {
+        "checkups": {
           "title": "Badania kontrolne",
           "description": "Widok listy i kolejność przypomnień."
         },
@@ -6052,7 +6052,7 @@
           "moduleSettingsDescription": "Wszystko poza kolejnością i widokiem jest na stronie modułu w Modułach."
         }
       },
-      "gesundheitsakte": {
+      "health-record": {
         "title": "Dokumentacja zdrowotna",
         "subtitle": "Eksportuj kompletną dokumentację zdrowotną gotową dla lekarza."
       },

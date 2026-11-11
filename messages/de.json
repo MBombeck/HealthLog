@@ -5627,7 +5627,7 @@
           "title": "Krankheitstagebuch",
           "description": "Listenansicht und Reihenfolge der Episoden."
         },
-        "vorsorge": {
+        "checkups": {
           "title": "Vorsorge",
           "description": "Listenansicht und Reihenfolge der Erinnerungen."
         },
@@ -6052,7 +6052,7 @@
           "moduleSettingsDescription": "Alles außer Reihenfolge und Ansicht findest du auf der Seite des Moduls unter Module."
         }
       },
-      "gesundheitsakte": {
+      "health-record": {
         "title": "Gesundheitsakte",
         "subtitle": "Exportiere eine vollständige, arzttaugliche Gesundheitsakte."
       },

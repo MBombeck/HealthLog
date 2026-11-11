@@ -200,7 +200,7 @@ export function VorsorgeSection({
       className="min-h-11 min-w-11 sm:min-h-9 sm:min-w-9"
     >
       <Link
-        href="/settings/layout/vorsorge"
+        href="/settings/layout/checkups"
         aria-label={t("measurementReminders.customize")}
         title={t("measurementReminders.customize")}
       >

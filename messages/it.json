@@ -5627,7 +5627,7 @@
           "title": "Diario delle malattie",
           "description": "Vista elenco e ordine degli episodi."
         },
-        "vorsorge": {
+        "checkups": {
           "title": "Controlli",
           "description": "Vista elenco e ordine dei promemoria."
         },
@@ -6052,7 +6052,7 @@
           "moduleSettingsDescription": "Tutto il resto è nella pagina del modulo, in Moduli."
         }
       },
-      "gesundheitsakte": {
+      "health-record": {
         "title": "Cartella clinica",
         "subtitle": "Esporta una cartella clinica completa, pronta per il medico."
       },

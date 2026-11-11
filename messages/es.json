@@ -5627,7 +5627,7 @@
           "title": "Diario de enfermedades",
           "description": "Vista de lista y orden de episodios."
         },
-        "vorsorge": {
+        "checkups": {
           "title": "Revisiones",
           "description": "Vista de lista y orden de recordatorios."
         },
@@ -6052,7 +6052,7 @@
           "moduleSettingsDescription": "Todo lo demás está en la página del módulo, en Módulos."
         }
       },
-      "gesundheitsakte": {
+      "health-record": {
         "title": "Historial médico",
         "subtitle": "Exporta un historial de salud completo, listo para el médico."
       },

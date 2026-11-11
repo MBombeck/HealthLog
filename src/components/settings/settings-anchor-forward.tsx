@@ -41,7 +41,7 @@ export const SETTINGS_ANCHOR_FORWARDS: Readonly<
   "/settings/layout/medications": {
     "injection-sites": "/settings/modules/medications#injection-sites",
   },
-  "/settings/layout/vorsorge": {
+  "/settings/layout/checkups": {
     "screening-hints": "/settings/anamnesis#screening-hints",
     "vorsorge-reminders": "/settings/notifications#vorsorge-reminders",
   },

@@ -5627,7 +5627,7 @@
           "title": "Journal des maladies",
           "description": "Vue en liste et ordre des épisodes."
         },
-        "vorsorge": {
+        "checkups": {
           "title": "Examens",
           "description": "Vue en liste et ordre des rappels."
         },
@@ -6052,7 +6052,7 @@
           "moduleSettingsDescription": "Tout le reste se trouve sur la page du module, dans Modules."
         }
       },
-      "gesundheitsakte": {
+      "health-record": {
         "title": "Dossier médical",
         "subtitle": "Exportez un dossier de santé complet, prêt pour le médecin."
       },

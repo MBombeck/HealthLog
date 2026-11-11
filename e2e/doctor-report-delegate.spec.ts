@@ -8,7 +8,7 @@
  * record the delegate may only read, 200 inside the one it manages.
  *
  * The UI half proves something narrower, and the file says so rather than
- * implying the route's boundary twice. `/settings/gesundheitsakte` is a
+ * implying the route's boundary twice. `/settings/health-record` is a
  * PERSONAL destination: inside SOMEBODY ELSE's record the shell answers it with
  * the "not part of shared access" panel at every adult grant level — READ,
  * WRITE and MANAGE alike — so the export card is never rendered for a delegate
@@ -149,7 +149,7 @@ async function leaveRecord(page: Page): Promise<void> {
  * card was never offered.
  */
 async function openGesundheitsakte(page: Page): Promise<void> {
-  await page.goto("/settings/gesundheitsakte", {
+  await page.goto("/settings/health-record", {
     waitUntil: "domcontentloaded",
   });
   await expect(

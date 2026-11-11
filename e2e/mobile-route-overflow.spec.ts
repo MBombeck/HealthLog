@@ -92,7 +92,7 @@ const DYNAMIC_ROUTES: Record<string, Resolver> = {
       "labs",
       "illness",
       "documents",
-      "vorsorge",
+      "checkups",
     ].map((group) => `/settings/layout/${group}`),
   "/settings/modules/[module]": async () =>
     MODULE_SETTINGS_PAGE_IDS.map((module) => `/settings/modules/${module}`),
