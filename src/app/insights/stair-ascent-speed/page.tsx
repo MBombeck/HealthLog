@@ -25,7 +25,6 @@ export default function InsightsStairAscentSpeedPage() {
       yAxisUnit="m/s"
       emptyStateIcon={<Gauge className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any stair-ascent-speed data yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

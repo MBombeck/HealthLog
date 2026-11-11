@@ -70,7 +70,7 @@ export default function InsightsSchlafPage() {
               </Link>
             </Button>
           }
-          coachPrefill="I don't have any sleep data yet. Why does sleep tracking matter, and what should I know before I connect a source?"
+          coachPrefill={t("insights.emptyState.sleep.coachPrefill")}
         />
       </SubPageShell>
     );

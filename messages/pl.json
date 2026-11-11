@@ -3516,7 +3516,8 @@
       "emptyState": {
         "title": "Brak wartości HRV",
         "description": "Wartości HRV pojawią się tutaj, gdy Apple Watch (lub zgodne urządzenie Withings) zsynchronizuje pomiary nocne."
-      }
+      },
+      "coachPrefill": "Nie zapisałem jeszcze danych HRV. Co mówi mi zmienność rytmu serca i jak ją rejestrować?"
     },
     "restingHr": {
       "title": "Tętno spoczynkowe",
@@ -3535,7 +3536,8 @@
       "emptyState": {
         "title": "Brak próbek SpO₂",
         "description": "Próbki SpO₂ trafią tutaj, gdy zgodne wearable (Apple Watch, Withings ScanWatch) wykona pomiar."
-      }
+      },
+      "coachPrefill": "Nie zapisałem jeszcze saturacji tlenu. Co mówi mi SpO₂ i do jakiego zakresu powinienem dążyć?"
     },
     "bodyTemperature": {
       "title": "Temperatura ciała",
@@ -3545,7 +3547,8 @@
         "title": "Brak temperatury ciała",
         "description": "Zarejestruj pomiar lub pozwól wearable zsynchronizować jeden, a trend pojawi się tutaj.",
         "cta": "Zarejestruj temperaturę ciała"
-      }
+      },
+      "coachPrefill": "Nie zapisałem jeszcze temperatury ciała. Jaki zakres jest prawidłowy i co powinienem zrobić, gdy od niego odbiega?"
     },
     "steps": {
       "title": "Kroki",
@@ -3554,7 +3557,8 @@
       "emptyState": {
         "title": "Brak danych o krokach",
         "description": "Dzienne sumy kroków pojawią się tutaj, gdy Apple Zdrowie lub urządzenie aktywności zsynchronizuje pełny dzień."
-      }
+      },
+      "coachPrefill": "Nie zapisałem jeszcze kroków. Jaki dzienny cel kroków jest rozsądny i jak więcej chodzenia pomaga mojemu zdrowiu?"
     },
     "activeEnergy": {
       "title": "Energia czynna",
@@ -3563,7 +3567,8 @@
       "emptyState": {
         "title": "Brak danych o energii czynnej",
         "description": "Sumy energii czynnej pojawią się tutaj, gdy Apple Zdrowie lub urządzenie Withings zsynchronizuje pełny dzień."
-      }
+      },
+      "coachPrefill": "Nie zapisałem jeszcze energii czynnej. Jaki dzienny cel jest rozsądny i jak ma się on do łącznej liczby kalorii?"
     },
     "subPage": {
       "loadError": "Nie udało się teraz wczytać tej metryki.",
@@ -3658,7 +3663,8 @@
       "valuesBack": "Powrót do Insights",
       "valuesBackToMetric": "Powrót do {metric}",
       "scoresBack": "Powrót do Insights",
-      "ecgDescription": "Zapisy EKG jednoodprowadzeniowe z Twojego urządzenia, każdy z wynikiem samego urządzenia."
+      "ecgDescription": "Zapisy EKG jednoodprowadzeniowe z Twojego urządzenia, każdy z wynikiem samego urządzenia.",
+      "emptyCoachPrefill": "{metric}: nie zapisałem tu jeszcze niczego. Co ten wskaźnik mówi o moim zdrowiu i jak mogę go poprawić?"
     },
     "units": {
       "steps": "kroki",
@@ -3758,27 +3764,32 @@
       "bloodPressure": {
         "title": "Brak pomiarów ciśnienia krwi",
         "description": "Zarejestruj pomiar ciśnienia, a pojawi się tu trend, udział w zakresie docelowym i klasyfikacja WHO.",
-        "cta": "Zarejestruj ciśnienie"
+        "cta": "Zarejestruj ciśnienie",
+        "coachPrefill": "Nie zapisałem jeszcze ciśnienia krwi. Dlaczego ma ono znaczenie i co powinienem wiedzieć, zanim zacznę?"
       },
       "weight": {
         "title": "Brak pomiarów wagi",
         "description": "Zarejestruj wagę, a trend, średnia krocząca i zakres docelowy pojawią się automatycznie.",
-        "cta": "Zarejestruj wagę"
+        "cta": "Zarejestruj wagę",
+        "coachPrefill": "Nie zapisałem jeszcze masy ciała. Dlaczego ma ona znaczenie i co powinienem wiedzieć, zanim zacznę ją śledzić?"
       },
       "pulse": {
         "title": "Brak pomiarów tętna",
         "description": "Zarejestruj tętno, a w tym widoku pojawi się tętno spoczynkowe, HRV i VO₂ max.",
-        "cta": "Zarejestruj tętno"
+        "cta": "Zarejestruj tętno",
+        "coachPrefill": "Nie zapisałem jeszcze tętna spoczynkowego. Dlaczego ma ono znaczenie i co powinienem wiedzieć, zanim zacznę?"
       },
       "bmi": {
         "title": "BMI jeszcze nie obliczone",
         "description": "Po wpisaniu wzrostu i co najmniej jednej wagi pojawi się tu trend BMI z zakresami WHO.",
-        "cta": "Zarejestruj wagę"
+        "cta": "Zarejestruj wagę",
+        "coachPrefill": "Nie zapisałem jeszcze masy ciała. Dlaczego BMI ma dla mnie znaczenie i co powinienem wiedzieć, zanim zacznę je śledzić?"
       },
       "mood": {
         "title": "Brak wpisów nastroju",
         "description": "Zarejestruj nastrój, a pojawi się trend, pasmo stabilności i korelacje.",
-        "cta": "Zarejestruj nastrój"
+        "cta": "Zarejestruj nastrój",
+        "coachPrefill": "Nie zapisałem jeszcze nastroju. Dlaczego warto go śledzić i jak powinienem zacząć?"
       },
       "medication": {
         "title": "Brak skonfigurowanych leków",
@@ -3788,7 +3799,8 @@
       "sleep": {
         "title": "Brak danych o śnie",
         "description": "Gdy pojawią się dane o śnie (ręcznie lub przez Withings / Apple Health), wyświetli się tu rozkład faz na noc.",
-        "cta": "Połącz źródło"
+        "cta": "Połącz źródło",
+        "coachPrefill": "Nie mam jeszcze danych o śnie. Dlaczego warto śledzić sen i co powinienem wiedzieć, zanim podłączę źródło?"
       }
     },
     "navWorkouts": "Treningi",
@@ -3798,7 +3810,8 @@
       "description": "Ostatnie biegi, jazdy, marsze i treningi siłowe, zdeduplikowane między Apple Watch a Withings.",
       "emptyState": {
         "title": "Brak treningów",
-        "description": "Treningi trafiają tu z Apple Zdrowie na iPhonie i z Withings. Możesz też wpisać trening ręcznie."
+        "description": "Treningi trafiają tu z Apple Zdrowie na iPhonie i z Withings. Możesz też wpisać trening ręcznie.",
+        "coachPrefill": "Nie zapisałem jeszcze treningów. Dlaczego warto je śledzić i na czym powinienem się najpierw skupić?"
       },
       "detail": {
         "backToList": "Powrót do treningów",
@@ -4678,7 +4691,8 @@
       "emptyState": {
         "title": "Brak danych o upadkach",
         "description": "Wykryte upadki pojawią się tutaj, gdy Apple Health się zsynchronizuje. Celem jest brak upadków."
-      }
+      },
+      "coachPrefill": "Nie zapisałem jeszcze danych o upadkach. Co ten wskaźnik mówi o moim zdrowiu i jak mogę zmniejszyć ryzyko upadku?"
     },
     "navFalls": "Upadki",
     "sixMinuteWalk": {

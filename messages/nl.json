@@ -3516,7 +3516,8 @@
       "emptyState": {
         "title": "Nog geen HRV-metingen",
         "description": "HRV-metingen verschijnen hier zodra Apple Watch (of een compatibel Withings-apparaat) nachtelijke metingen begint te synchroniseren."
-      }
+      },
+      "coachPrefill": "Ik heb nog geen HRV-gegevens vastgelegd. Wat zegt hartslagvariabiliteit me, en hoe leg ik die vast?"
     },
     "restingHr": {
       "title": "Rusthartslag",
@@ -3535,7 +3536,8 @@
       "emptyState": {
         "title": "Nog geen SpO₂-metingen",
         "description": "SpO₂-metingen verschijnen hier zodra een compatibele wearable (Apple Watch, Withings ScanWatch) een meting vastlegt."
-      }
+      },
+      "coachPrefill": "Ik heb nog geen zuurstofverzadiging vastgelegd. Wat zegt SpO₂ me, en naar welk bereik moet ik streven?"
     },
     "bodyTemperature": {
       "title": "Lichaamstemperatuur",
@@ -3545,7 +3547,8 @@
         "title": "Nog geen lichaamstemperatuur",
         "description": "Leg een temperatuurmeting vast of laat je wearable er een synchroniseren, dan verschijnt de trend hier.",
         "cta": "Lichaamstemperatuur vastleggen"
-      }
+      },
+      "coachPrefill": "Ik heb nog geen lichaamstemperatuur vastgelegd. Wat is het gezonde bereik, en wat moet ik doen als die afwijkt?"
     },
     "steps": {
       "title": "Stappen",
@@ -3554,7 +3557,8 @@
       "emptyState": {
         "title": "Nog geen stappengegevens",
         "description": "Dagtotalen van je stappen verschijnen hier zodra Apple Health of een activiteitsapparaat een volledige dag beweging synchroniseert."
-      }
+      },
+      "coachPrefill": "Ik heb nog geen stappen vastgelegd. Wat is een redelijk dagelijks stappendoel, en hoe helpt meer lopen mijn gezondheid?"
     },
     "activeEnergy": {
       "title": "Actieve energie",
@@ -3563,7 +3567,8 @@
       "emptyState": {
         "title": "Nog geen gegevens over actieve energie",
         "description": "Dagtotalen van actieve energie verschijnen hier zodra Apple Health of een Withings-activiteitsapparaat een volledige dag beweging synchroniseert."
-      }
+      },
+      "coachPrefill": "Ik heb nog geen actieve energie vastgelegd. Wat is een redelijk dagdoel, en hoe verhoudt het zich tot het totale aantal calorieën?"
     },
     "subPage": {
       "loadError": "Deze meetwaarde kan nu niet worden geladen.",
@@ -3658,7 +3663,8 @@
       "valuesBack": "Terug naar inzichten",
       "valuesBackToMetric": "Terug naar {metric}",
       "scoresBack": "Terug naar inzichten",
-      "ecgDescription": "Eenkanaals-ECG-opnamen van je apparaat, elk met de eigen uitslag van het apparaat."
+      "ecgDescription": "Eenkanaals-ECG-opnamen van je apparaat, elk met de eigen uitslag van het apparaat.",
+      "emptyCoachPrefill": "{metric}: ik heb hier nog niets vastgelegd. Wat zegt deze waarde over mijn gezondheid, en hoe verbeter ik die?"
     },
     "units": {
       "steps": "stappen",
@@ -3758,27 +3764,32 @@
       "bloodPressure": {
         "title": "Nog geen bloeddrukmetingen",
         "description": "Leg een bloeddrukmeting vast, dan verschijnen hier de trendgrafiek, het aandeel binnen het bereik en de WHO-classificatie.",
-        "cta": "Bloeddruk vastleggen"
+        "cta": "Bloeddruk vastleggen",
+        "coachPrefill": "Ik heb nog geen bloeddruk vastgelegd. Waarom is die belangrijk, en wat moet ik weten voordat ik begin?"
       },
       "weight": {
         "title": "Nog geen gewichtsmetingen",
         "description": "Leg je gewicht vast, dan verschijnen de trend, het voortschrijdend gemiddelde en de doelzone automatisch.",
-        "cta": "Gewicht vastleggen"
+        "cta": "Gewicht vastleggen",
+        "coachPrefill": "Ik heb nog geen gewicht vastgelegd. Waarom is dat belangrijk, en wat moet ik weten voordat ik het ga bijhouden?"
       },
       "pulse": {
         "title": "Nog geen hartslagmetingen",
         "description": "Leg een hartslagmeting vast, dan verschijnen rusthartslag, HRV en VO₂max in deze weergave.",
-        "cta": "Hartslag vastleggen"
+        "cta": "Hartslag vastleggen",
+        "coachPrefill": "Ik heb nog geen rustpols vastgelegd. Waarom is die belangrijk, en wat moet ik weten voordat ik begin?"
       },
       "bmi": {
         "title": "BMI nog niet berekend",
         "description": "Zodra je lengte en minstens één gewichtsmeting bekend zijn, verschijnt hier de BMI-trend met de WHO-zones.",
-        "cta": "Gewicht vastleggen"
+        "cta": "Gewicht vastleggen",
+        "coachPrefill": "Ik heb nog geen gewicht vastgelegd. Waarom is BMI belangrijk voor mij, en wat moet ik weten voordat ik het ga bijhouden?"
       },
       "mood": {
         "title": "Nog geen stemmingsregistraties",
         "description": "Leg je stemming vast, dan verschijnen de trend, de stabiliteitszone en de correlaties.",
-        "cta": "Stemming vastleggen"
+        "cta": "Stemming vastleggen",
+        "coachPrefill": "Ik heb nog geen stemming vastgelegd. Waarom is stemming bijhouden belangrijk, en hoe begin ik?"
       },
       "medication": {
         "title": "Nog geen medicatie ingesteld",
@@ -3788,7 +3799,8 @@
       "sleep": {
         "title": "Nog geen slaapregistraties",
         "description": "Zodra er slaapgegevens binnenkomen (handmatig of via Withings / Apple Health), verschijnt hier de verdeling over slaapfasen per nacht.",
-        "cta": "Bron koppelen"
+        "cta": "Bron koppelen",
+        "coachPrefill": "Ik heb nog geen slaapgegevens. Waarom is slaap bijhouden belangrijk, en wat moet ik weten voordat ik een bron koppel?"
       }
     },
     "navWorkouts": "Workouts",
@@ -3798,7 +3810,8 @@
       "description": "Recente hardloop-, fiets-, wandel- en krachttrainingen, ontdubbeld over bronnen van Apple Watch en Withings.",
       "emptyState": {
         "title": "Nog geen workouts",
-        "description": "Workouts worden gesynchroniseerd vanuit Apple Health op je iPhone en vanuit Withings. Je kunt er ook zelf een vastleggen."
+        "description": "Workouts worden gesynchroniseerd vanuit Apple Health op je iPhone en vanuit Withings. Je kunt er ook zelf een vastleggen.",
+        "coachPrefill": "Ik heb nog geen workouts vastgelegd. Waarom is bijhouden belangrijk, en waar moet ik me eerst op richten?"
       },
       "detail": {
         "backToList": "Terug naar workouts",
@@ -4678,7 +4691,8 @@
       "emptyState": {
         "title": "Nog geen valgegevens",
         "description": "Gedetecteerde valpartijen verschijnen hier zodra Apple Health synchroniseert. Geen valpartijen is het doel."
-      }
+      },
+      "coachPrefill": "Ik heb nog geen valgegevens vastgelegd. Wat zegt deze waarde over mijn gezondheid, en hoe verklein ik mijn valrisico?"
     },
     "navFalls": "Valpartijen",
     "sixMinuteWalk": {

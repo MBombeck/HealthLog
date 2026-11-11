@@ -40,7 +40,7 @@ export default function InsightsStepsPage() {
       emptyStateIcon={<Footprints className="size-6" />}
       emptyStateCtaType={null}
       captureType="ACTIVITY_STEPS"
-      coachPrefill="I haven't logged any steps yet. What's a reasonable daily step target, and how does walking more help my health?"
+      coachPrefill={t("insights.steps.coachPrefill")}
       afterChart={
         calendarVisible ? (
           <CrossLinkCard
