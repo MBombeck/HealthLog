@@ -62,8 +62,9 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: () => {}, replace: () => {} }),
 }));
 
+const auth = vi.hoisted(() => ({ modules: {} as Record<string, boolean> }));
 vi.mock("@/hooks/use-auth", () => ({
-  useAuth: () => ({ user: { id: "u1" } }),
+  useAuth: () => ({ user: { id: "u1", modules: auth.modules } }),
 }));
 
 /**
@@ -152,6 +153,13 @@ describe("<DoneScreen> AI panel", () => {
     expect(html).not.toContain('data-slot="onboarding-ai-panel"');
     expect(html).toContain('data-slot="onboarding-open-dashboard"');
     providerState.canConfigure = true;
+  });
+
+  it("leaves the panel out once the Coach and AI analysis are switched off", () => {
+    auth.modules = { coach: false, insights: false };
+    aiProviderState.data = undefined;
+    expect(render()).not.toContain('data-slot="onboarding-ai-panel"');
+    auth.modules = {};
   });
 
   it("keeps every exit so the panel is fully skippable", () => {

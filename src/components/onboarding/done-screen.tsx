@@ -28,6 +28,7 @@ import { setTourReferrer } from "@/components/onboarding/tour-launcher";
 import { queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
 import { useGrantAiConsent } from "@/hooks/use-grant-ai-consent";
+import { hasOptedOutOfAi } from "@/lib/ai/capabilities/types";
 import { useTranslations } from "@/lib/i18n/context";
 import { markChecklistExpanded } from "@/lib/onboarding/checklist-storage";
 import type { OnboardingStateDto } from "@/lib/onboarding/needs";
@@ -133,10 +134,12 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
   // The panel is one optional offer, shown only while this person could set
   // AI up here: `provider.canConfigure` is false while the operator has AI
   // switched off and inside a record somebody else owns. HealthLog is
-  // complete without it, so with nothing to offer the screen simply goes
-  // from "done" to the exits.
+  // complete without it, so with nothing to offer (or once the person
+  // switched the Coach and AI analysis off) the screen simply goes from
+  // "done" to the exits.
   const providerState = useAiProviderState();
-  const showAiPanel = providerState.canConfigure;
+  const showAiPanel =
+    providerState.canConfigure && !hasOptedOutOfAi(user?.modules);
   const { data: aiProvider } = useQuery<AiProviderStatus>({
     queryKey: queryKeys.userAiProvider(),
     queryFn: async () => {

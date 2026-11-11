@@ -13,6 +13,7 @@ import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { useAiProviderState } from "@/hooks/use-ai-capability";
 import { useAuth } from "@/hooks/use-auth";
 import { useMounted } from "@/hooks/use-mounted";
+import { hasOptedOutOfAi } from "@/lib/ai/capabilities/types";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
@@ -26,8 +27,9 @@ import { useTranslations } from "@/lib/i18n/context";
  * It shows only while no provider is configured AND the person could set one
  * up here (`provider.canConfigure`: false inside somebody else's record and
  * while the operator has AI switched off, where the hint would point at a
- * setting nobody on this screen can change). Dismissing it is remembered per
- * viewer in this browser; the hint stays gone on both surfaces.
+ * setting nobody on this screen can change) AND they have not switched both
+ * the Coach and AI analysis off (`hasOptedOutOfAi`). Dismissing it is
+ * remembered per viewer in this browser; the hint stays gone on both surfaces.
  */
 const AI_SETUP_HINT_STORAGE_PREFIX = "healthlog.ai-setup-hint.dismissed";
 
@@ -63,6 +65,7 @@ export function AiSetupHint({
   const viewerId = user?.id ?? null;
   if (!mounted || viewerId === null) return null;
   if (provider.configured || !provider.canConfigure) return null;
+  if (hasOptedOutOfAi(user?.modules)) return null;
   if (dismissedNow || readDismissed(viewerId)) return null;
 
   const dismiss = () => {
