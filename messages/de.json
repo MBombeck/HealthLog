@@ -144,7 +144,10 @@
         "required": "Bestätige dein aktuelles Passwort, um das zu ändern.",
         "failed": "Die Bestätigung ist fehlgeschlagen. Es wurde nichts geändert."
       },
-      "missing": "Deine Sitzung ist abgelaufen, daher wurde nichts geändert. Melde dich erneut an, um weiterzumachen."
+      "missing": "Deine Sitzung ist abgelaufen, daher wurde nichts geändert. Melde dich erneut an, um weiterzumachen.",
+      "passkey": {
+        "last_method": "Dieser Passkey ist deine einzige Anmeldemöglichkeit. Lege zuerst ein Passwort fest oder füge einen weiteren Passkey hinzu."
+      }
     },
     "biomarkers": {
       "unit": {
@@ -185,6 +188,9 @@
       "rate_limited": "Gerade gibt es zu viele Anfragen, daher wurde nichts geändert. Warte kurz und versuche es erneut.",
       "forbidden": "Dafür fehlt dir die Berechtigung, daher wurde nichts geändert.",
       "invalid": "Einige Angaben wurden nicht angenommen, daher wurde nichts geändert. Prüfe sie und versuche es erneut."
+    },
+    "ai_provider": {
+      "private_host": "Diese Adresse liegt in einem privaten Netz. Der Betreiber muss ihren genauen Ursprung erst in AI_PRIVATE_ORIGINS freigeben."
     }
   },
   "doctorReport": {
@@ -1539,7 +1545,8 @@
         "gallbladderDiscomfort": "Gallenblasen-Beschwerden"
       },
       "deleteConfirmTitle": "Eintrag löschen?",
-      "deleteConfirmBody": "Dieser Nebenwirkungs-Eintrag wird dauerhaft entfernt."
+      "deleteConfirmBody": "Dieser Nebenwirkungs-Eintrag wird dauerhaft entfernt.",
+      "saveError": "Eintrag konnte nicht gespeichert werden"
     },
     "scheduling": {
       "naturalLanguage": {
@@ -7756,7 +7763,9 @@
       "hrv": "HRV",
       "weight": "Wiegungen",
       "cycle": "Menstruationszyklus"
-    }
+    },
+    "passkeyRenameFailed": "Der Passkey konnte nicht umbenannt werden.",
+    "passkeyRemoveFailed": "Der Passkey konnte nicht entfernt werden."
   },
   "admin": {
     "title": "Administration",

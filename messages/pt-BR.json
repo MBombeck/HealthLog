@@ -144,7 +144,10 @@
         "required": "Confirme sua senha atual para alterar isto.",
         "failed": "A verificação não foi concluída. Nada foi alterado."
       },
-      "missing": "Sua sessão terminou, então nada foi alterado. Entre novamente para continuar."
+      "missing": "Sua sessão terminou, então nada foi alterado. Entre novamente para continuar.",
+      "passkey": {
+        "last_method": "Esta chave de acesso é sua única forma de entrar. Defina uma senha ou adicione outra chave de acesso primeiro."
+      }
     },
     "biomarkers": {
       "unit": {
@@ -185,6 +188,9 @@
       "rate_limited": "Há solicitações demais neste momento, então nada foi alterado. Aguarde um pouco e tente de novo.",
       "forbidden": "Você não tem permissão para isso, então nada foi alterado.",
       "invalid": "Alguns dados não foram aceitos, então nada foi alterado. Confira e tente de novo."
+    },
+    "ai_provider": {
+      "private_host": "Este endereço está em uma rede privada. O operador precisa primeiro permitir a origem exata em AI_PRIVATE_ORIGINS."
     }
   },
   "doctorReport": {
@@ -1539,7 +1545,8 @@
         "gallbladderDiscomfort": "Desconforto na vesícula"
       },
       "deleteConfirmTitle": "Excluir esta entrada?",
-      "deleteConfirmBody": "Esta entrada de efeito colateral será removida permanentemente."
+      "deleteConfirmBody": "Esta entrada de efeito colateral será removida permanentemente.",
+      "saveError": "Não foi possível salvar a entrada"
     },
     "scheduling": {
       "naturalLanguage": {
@@ -7756,7 +7763,9 @@
       "hrv": "VFC",
       "weight": "pesagens",
       "cycle": "ciclo menstrual"
-    }
+    },
+    "passkeyRenameFailed": "Não foi possível renomear a chave de acesso.",
+    "passkeyRemoveFailed": "Não foi possível remover a chave de acesso."
   },
   "admin": {
     "title": "Administração",

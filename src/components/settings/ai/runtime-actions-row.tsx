@@ -17,6 +17,7 @@ import { apiFetchRaw, apiPut } from "@/lib/api/api-fetch";
 import { formatDateTime } from "@/lib/format";
 import { useAiCapability } from "@/hooks/use-ai-capability";
 import { useTranslations } from "@/lib/i18n/context";
+import { translateCodeOrNull } from "@/lib/i18n/translate-code";
 
 import {
   localiseTestReason,
@@ -83,7 +84,6 @@ export function RuntimeActionsRow({
           reason?: string;
           httpStatus?: number | null;
         } | null;
-        error?: string | null;
       };
       try {
         json = await res.json();
@@ -102,7 +102,12 @@ export function RuntimeActionsRow({
           typeof code === "string" && code.startsWith("assistant.disabled.")
             ? t("settings.ai.operatorOff.testRefused")
             : t("settings.ai.testFailedShort", {
-                message: json.error ?? `HTTP ${res.status}`,
+                message:
+                  translateCodeOrNull(
+                    t,
+                    "apiErrors",
+                    typeof code === "string" ? code : null,
+                  ) ?? `HTTP ${res.status}`,
               }),
         );
         return;
@@ -131,12 +136,10 @@ export function RuntimeActionsRow({
           model: json.data?.model ?? "",
         }),
       );
-    } catch (e) {
+    } catch {
       setTestOk(false);
       setTestMsg(
-        t("settings.ai.testFailedShort", {
-          message: e instanceof Error ? e.message : "fetch error",
-        }),
+        t("settings.ai.testFailedShort", { message: t("common.networkError") }),
       );
     } finally {
       setTesting(false);

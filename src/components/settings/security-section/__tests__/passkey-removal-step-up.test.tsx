@@ -12,8 +12,9 @@
  *   1. a step-up refusal renders the card's sentence, not the server's prose,
  *   2. the mfa_not_enrolled arm maps too — both codes mean "the gate stopped
  *      you", and handling only the first falls through to raw English,
- *   3. an ordinary failure still shows its own message rather than being
- *      swallowed by the step-up sentence,
+ *   3. any other refusal gets the caller's sentence (its catalogue sentence
+ *      through `localizedApiError`), not the step-up one and not the server's
+ *      prose,
  *   4. the sentence resolves in more than one locale,
  *   5. the sentence names a recovery that always exists. A refusal that names
  *      its proofs (`meta.methods`) opens the re-proof dialog instead and never
@@ -65,14 +66,15 @@ describe("passkey removal — the step-up refusal a person sees", () => {
     ).toBe(STEP_UP_SENTENCE);
   });
 
-  it("leaves an ordinary refusal saying its own thing", () => {
+  it("leaves any other refusal to the caller's sentence, never the server's", () => {
     const lastMethod = new ApiError(
-      "Cannot delete — at least one authentication method must remain",
+      "Cannot delete. At least one authentication method must remain",
       400,
+      { errorCode: "auth.passkey.last_method" },
     );
 
-    expect(describeStepUp(lastMethod, "fallback", STEP_UP_SENTENCE)).toContain(
-      "at least one authentication method",
+    expect(describeStepUp(lastMethod, "fallback", STEP_UP_SENTENCE)).toBe(
+      "fallback",
     );
   });
 

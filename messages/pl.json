@@ -144,7 +144,10 @@
         "required": "Potwierdź obecne hasło, aby to zmienić.",
         "failed": "Weryfikacja nie powiodła się. Nic nie zostało zmienione."
       },
-      "missing": "Twoja sesja wygasła, więc nic nie zostało zmienione. Zaloguj się ponownie, aby kontynuować."
+      "missing": "Twoja sesja wygasła, więc nic nie zostało zmienione. Zaloguj się ponownie, aby kontynuować.",
+      "passkey": {
+        "last_method": "Ten klucz dostępu to Twój jedyny sposób logowania. Najpierw ustaw hasło albo dodaj kolejny klucz dostępu."
+      }
     },
     "biomarkers": {
       "unit": {
@@ -185,6 +188,9 @@
       "rate_limited": "W tej chwili jest zbyt wiele zapytań, więc nic nie zostało zmienione. Zaczekaj chwilę i spróbuj ponownie.",
       "forbidden": "Nie masz do tego uprawnień, więc nic nie zostało zmienione.",
       "invalid": "Niektóre dane nie zostały przyjęte, więc nic nie zostało zmienione. Sprawdź je i spróbuj ponownie."
+    },
+    "ai_provider": {
+      "private_host": "Ten adres jest w sieci prywatnej. Operator musi najpierw dopuścić jego dokładne źródło w AI_PRIVATE_ORIGINS."
     }
   },
   "doctorReport": {
@@ -1539,7 +1545,8 @@
         "gallbladderDiscomfort": "Dolegliwości pęcherzyka żółciowego"
       },
       "deleteConfirmTitle": "Usunąć ten wpis?",
-      "deleteConfirmBody": "Ten wpis o skutku ubocznym zostanie trwale usunięty."
+      "deleteConfirmBody": "Ten wpis o skutku ubocznym zostanie trwale usunięty.",
+      "saveError": "Nie udało się zapisać wpisu"
     },
     "scheduling": {
       "naturalLanguage": {
@@ -7756,7 +7763,9 @@
       "hrv": "HRV",
       "weight": "pomiary wagi",
       "cycle": "cykl menstruacyjny"
-    }
+    },
+    "passkeyRenameFailed": "Nie udało się zmienić nazwy klucza dostępu.",
+    "passkeyRemoveFailed": "Nie udało się usunąć klucza dostępu."
   },
   "admin": {
     "title": "Administracja",

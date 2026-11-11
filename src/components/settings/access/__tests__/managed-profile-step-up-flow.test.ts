@@ -146,7 +146,11 @@ function dialog(): Dialog {
     },
     // The same call `useRecentProof` makes.
     submit: (proof) => apiPost("/api/auth/reproof", proof),
-    messages: () => ({ signInAgain: "sign in again", failed: "failed" }),
+    messages: () => ({
+      signInAgain: "sign in again",
+      failed: "failed",
+      rateLimited: "rate limited",
+    }),
   });
   return d;
 }

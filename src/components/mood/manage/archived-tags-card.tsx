@@ -19,6 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ApiError, apiDelete, apiPatch } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import { moodTagIcon } from "../mood-tag-icons";
 import {
@@ -74,10 +75,9 @@ export function ArchivedTagsCard({ catalog }: ArchivedTagsCardProps) {
       if (err instanceof ApiError && err.status === 422) {
         showErrorToast(t("mood.manage.tagLimitReached"), { cause: err });
       } else {
-        showErrorToast(
-          err instanceof ApiError ? err.message : t("common.error"),
-          { cause: err },
-        );
+        showErrorToast(localizedApiError(err, t, "common.error"), {
+          cause: err,
+        });
       }
     } finally {
       void invalidateMoodTagCaches(queryClient);
@@ -94,10 +94,7 @@ export function ArchivedTagsCard({ catalog }: ArchivedTagsCardProps) {
       toast.success(t("mood.manage.purged"));
     } catch (err) {
       rollback();
-      showErrorToast(
-        err instanceof ApiError ? err.message : t("common.error"),
-        { cause: err },
-      );
+      showErrorToast(localizedApiError(err, t, "common.error"), { cause: err });
     } finally {
       void invalidateMoodTagCaches(queryClient);
     }

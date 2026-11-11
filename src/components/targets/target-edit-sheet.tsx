@@ -25,6 +25,7 @@ import {
 import { resolveGlucoseUnit } from "@/lib/glucose";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import { apiDelete, apiGet, apiPut } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 
 /**
  * Per-metric target editor, mounted inline on the Insights metric
@@ -258,10 +259,9 @@ function TargetEditSheetBody({
       onOpenChange(false);
     },
     onError: (err) =>
-      showErrorToast(
-        err instanceof Error ? err.message : t("targets.edit.saveError"),
-        { cause: err },
-      ),
+      showErrorToast(localizedApiError(err, t, "targets.edit.saveError"), {
+        cause: err,
+      }),
   });
 
   const resetMutation = useMutation({

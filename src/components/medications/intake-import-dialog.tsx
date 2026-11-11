@@ -38,11 +38,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/lib/i18n/context";
 import { invalidateMedicationReads } from "@/lib/query-keys";
-import { ApiError, apiPost } from "@/lib/api/api-fetch";
-import {
-  MedicationIntakeImportError,
-  waitForMedicationIntakeImport,
-} from "@/lib/medications/intake-import-poll";
+import { apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
+import { waitForMedicationIntakeImport } from "@/lib/medications/intake-import-poll";
 
 export interface IntakeImportDialogProps {
   medicationId: string | null;
@@ -132,19 +130,12 @@ export function IntakeImportDialog({
         // import dialog on the detail page).
         void invalidateMedicationReads(queryClient);
       } catch (err) {
-        if (err instanceof MedicationIntakeImportError) {
-          setResult({
-            kind: "notice",
-            tone: "error",
-            text: t("medications.importFailed"),
-          });
-          return;
-        }
-        if (!(err instanceof ApiError)) throw err;
+        // A refusal reads through the API catalogue; a failed job's reason is
+        // the worker's English, so it reads as the plain failure.
         setResult({
           kind: "notice",
           tone: "error",
-          text: err.message || t("medications.importFailed"),
+          text: localizedApiError(err, t, "medications.importFailed"),
         });
       }
     } catch (err) {

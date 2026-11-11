@@ -47,7 +47,10 @@
  *     sites that need the `Response` itself — blob downloads, SSE
  *     streams, manual status branching. No `.ok` check, no unwrap, and
  *     deliberately NO default timeout: the Coach chat stream and other
- *     long-lived responses ride this path with their own signals.
+ *     long-lived responses ride this path with their own signals. A
+ *     caller that finds the raw `Response` refused passes it to
+ *     `throwApiError`, so the refusal reaches its handler as the same
+ *     `ApiError` the verb helpers throw.
  */
 
 import { randomId } from "@/lib/random-id";
@@ -103,7 +106,8 @@ interface Envelope<T, M = Record<string, unknown>> {
   meta?: M;
 }
 
-async function throwApiError(res: Response): Promise<never> {
+/** Throw the `ApiError` for a refused raw `Response` (see `apiFetchRaw`). */
+export async function throwApiError(res: Response): Promise<never> {
   let meta: Record<string, unknown> | undefined;
   let issuePaths: string[] = [];
   try {

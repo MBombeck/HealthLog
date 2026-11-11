@@ -144,7 +144,10 @@
         "required": "Conferma la password attuale per modificarlo.",
         "failed": "La verifica non è riuscita. Non è stato modificato nulla."
       },
-      "missing": "La tua sessione è scaduta, quindi non è stato modificato nulla. Accedi di nuovo per continuare."
+      "missing": "La tua sessione è scaduta, quindi non è stato modificato nulla. Accedi di nuovo per continuare.",
+      "passkey": {
+        "last_method": "Questa passkey è il tuo unico modo per accedere. Imposta prima una password o aggiungi un’altra passkey."
+      }
     },
     "biomarkers": {
       "unit": {
@@ -185,6 +188,9 @@
       "rate_limited": "Ci sono troppe richieste in questo momento, quindi non è stato modificato nulla. Attendi un attimo e riprova.",
       "forbidden": "Non hai l'autorizzazione per farlo, quindi non è stato modificato nulla.",
       "invalid": "Alcuni dati non sono stati accettati, quindi non è stato modificato nulla. Controllali e riprova."
+    },
+    "ai_provider": {
+      "private_host": "Questo indirizzo si trova in una rete privata. L’operatore deve prima consentirne l’origine esatta in AI_PRIVATE_ORIGINS."
     }
   },
   "doctorReport": {
@@ -1539,7 +1545,8 @@
         "gallbladderDiscomfort": "Fastidio alla cistifellea"
       },
       "deleteConfirmTitle": "Eliminare questa voce?",
-      "deleteConfirmBody": "Questa voce di effetto collaterale verrà rimossa definitivamente."
+      "deleteConfirmBody": "Questa voce di effetto collaterale verrà rimossa definitivamente.",
+      "saveError": "Impossibile salvare la voce"
     },
     "scheduling": {
       "naturalLanguage": {
@@ -7756,7 +7763,9 @@
       "hrv": "HRV",
       "weight": "pesate",
       "cycle": "ciclo mestruale"
-    }
+    },
+    "passkeyRenameFailed": "Impossibile rinominare la passkey.",
+    "passkeyRemoveFailed": "Impossibile rimuovere la passkey."
   },
   "admin": {
     "title": "Administration",

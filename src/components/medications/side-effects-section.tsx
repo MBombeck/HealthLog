@@ -49,6 +49,7 @@ import {
 } from "@/lib/medications/side-effects/taxonomy";
 import { MedicationDetailSection } from "@/components/medications/medication-detail-section";
 import { apiDelete, apiGetList, apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { queryKeys } from "@/lib/query-keys";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -291,7 +292,9 @@ export function SideEffectsSection({ medicationId }: SideEffectsSectionProps) {
           setOpen(false);
         },
         onError: (err) => {
-          setFormError(err instanceof Error ? err.message : String(err));
+          setFormError(
+            localizedApiError(err, t, "medications.sideEffects.saveError"),
+          );
         },
       },
     );

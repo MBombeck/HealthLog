@@ -32,7 +32,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
-import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
+import {
+  ApiError,
+  apiFetchRaw,
+  apiGet,
+  throwApiError,
+} from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -77,23 +83,7 @@ export function PulseDayMeanCard() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action }),
       });
-      if (!res.ok) {
-        let code: string | undefined;
-        try {
-          const body = (await res.json()) as { meta?: { errorCode?: string } };
-          code = body.meta?.errorCode;
-        } catch {
-          // No envelope: the generic message below.
-        }
-        // The route's two refusals each have their own message.
-        throw new Error(
-          code === "maintenance.pulseDayMean.busy"
-            ? t("admin.section.pulseDayMean.error.busy")
-            : code === "maintenance.pulseDayMean.dryRunRequired"
-              ? t("admin.section.pulseDayMean.error.dryRunRequired")
-              : t("admin.section.pulseDayMean.error.generic"),
-        );
-      }
+      if (!res.ok) await throwApiError(res);
       const { enqueued } = (
         (await res.json()) as { data: { enqueued: boolean } }
       ).data;
@@ -117,8 +107,21 @@ export function PulseDayMeanCard() {
         queryKey: queryKeys.adminPulseDayMean(),
       });
     },
-    onError: (err: Error) => {
-      showErrorToast(err.message, { cause: err });
+    // The route's two refusals each have their own message.
+    onError: (err) => {
+      const code = err instanceof ApiError ? err.meta?.errorCode : undefined;
+      showErrorToast(
+        code === "maintenance.pulseDayMean.busy"
+          ? t("admin.section.pulseDayMean.error.busy")
+          : code === "maintenance.pulseDayMean.dryRunRequired"
+            ? t("admin.section.pulseDayMean.error.dryRunRequired")
+            : localizedApiError(
+                err,
+                t,
+                "admin.section.pulseDayMean.error.generic",
+              ),
+        { cause: err },
+      );
     },
   });
 

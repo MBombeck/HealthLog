@@ -144,7 +144,10 @@
         "required": "변경하려면 현재 비밀번호를 확인하세요.",
         "failed": "확인에 실패했습니다. 아무것도 변경되지 않았습니다."
       },
-      "missing": "세션이 만료되어 아무것도 변경되지 않았어요. 계속하려면 다시 로그인해 주세요."
+      "missing": "세션이 만료되어 아무것도 변경되지 않았어요. 계속하려면 다시 로그인해 주세요.",
+      "passkey": {
+        "last_method": "이 패스키가 유일한 로그인 수단이에요. 먼저 비밀번호를 설정하거나 패스키를 하나 더 추가하세요."
+      }
     },
     "biomarkers": {
       "unit": {
@@ -185,6 +188,9 @@
       "rate_limited": "지금은 요청이 너무 많아 아무것도 변경되지 않았어요. 잠시 후 다시 시도해 주세요.",
       "forbidden": "이 작업을 할 권한이 없어 아무것도 변경되지 않았어요.",
       "invalid": "일부 입력값이 받아들여지지 않아 아무것도 변경되지 않았어요. 확인한 후 다시 시도해 주세요."
+    },
+    "ai_provider": {
+      "private_host": "이 주소는 사설 네트워크에 있어요. 운영자가 먼저 AI_PRIVATE_ORIGINS에 정확한 출처를 허용해야 해요."
     }
   },
   "doctorReport": {
@@ -1539,7 +1545,8 @@
         "gallbladderDiscomfort": "담낭 불편감"
       },
       "deleteConfirmTitle": "이 기록을 삭제할까요?",
-      "deleteConfirmBody": "이 부작용 기록이 영구히 삭제돼요."
+      "deleteConfirmBody": "이 부작용 기록이 영구히 삭제돼요.",
+      "saveError": "기록을 저장하지 못했어요"
     },
     "scheduling": {
       "naturalLanguage": {
@@ -7756,7 +7763,9 @@
       "hrv": "HRV",
       "weight": "체중 측정",
       "cycle": "생리 주기"
-    }
+    },
+    "passkeyRenameFailed": "패스키 이름을 변경하지 못했어요.",
+    "passkeyRemoveFailed": "패스키를 삭제하지 못했어요."
   },
   "admin": {
     "title": "관리자",

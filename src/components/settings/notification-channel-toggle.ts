@@ -15,33 +15,46 @@ import {
 } from "@tanstack/react-query";
 
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
-import { apiFetchRaw } from "@/lib/api/api-fetch";
+import { ApiError, apiFetchRaw, throwApiError } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
+import { translateCodeOrNull } from "@/lib/i18n/translate-code";
 
 interface EnabledSettings {
   enabled: boolean;
 }
 
+/**
+ * A refused channel save in the reader's language. The private-origin policy
+ * reads like the test button's verdict; anything else goes through the API
+ * catalogue, and a request that never reached the server (offline, a dropped
+ * connection) reads as the plain "could not save". Never the server's prose.
+ */
+export function channelSaveError(
+  err: unknown,
+  t: (key: string) => string,
+): string {
+  const code = err instanceof ApiError ? err.meta?.errorCode : undefined;
+  return (
+    translateCodeOrNull(
+      t,
+      "settings.testConnection.errors",
+      typeof code === "string" ? code : null,
+    ) ?? localizedApiError(err, t, "settings.savingError")
+  );
+}
+
 export async function persistChannelEnabled(
   endpoint: string,
   enabled: boolean,
-  fallbackError: string,
 ): Promise<void> {
-  // A request that never reaches the server (offline, a dropped connection)
-  // is a refused change like any other.
   const response = await apiFetchRaw(endpoint, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ enabled }),
-  }).catch(() => null);
-
-  if (!response?.ok) {
-    const json = (await response?.json().catch(() => null)) as {
-      error?: string;
-    } | null;
-    throw new Error(json?.error || fallbackError);
-  }
+  });
+  if (!response.ok) await throwApiError(response);
 }
 
 export function optimisticallySetChannelEnabled<T extends EnabledSettings>(
@@ -75,8 +88,7 @@ export function useChannelEnabledToggle<T extends EnabledSettings>(
   const { t } = useTranslations();
   const queryClient = useQueryClient();
   return useMutation<void, Error, boolean, T | undefined>({
-    mutationFn: (enabled) =>
-      persistChannelEnabled(endpoint, enabled, t("settings.savingError")),
+    mutationFn: (enabled) => persistChannelEnabled(endpoint, enabled),
     onMutate: async (enabled) => {
       await queryClient.cancelQueries({ queryKey });
       return optimisticallySetChannelEnabled<T>(queryClient, queryKey, enabled);
@@ -86,7 +98,7 @@ export function useChannelEnabledToggle<T extends EnabledSettings>(
     },
     onError: (err, _enabled, previous) => {
       rollbackChannelEnabled(queryClient, queryKey, previous);
-      showErrorToast(err.message, { cause: err });
+      showErrorToast(channelSaveError(err, t), { cause: err });
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey });
