@@ -52,6 +52,14 @@
       "icons": [
         { "src": "/logo-192.png", "sizes": "192x192", "type": "image/png" }
       ]
+    },
+    {
+      "name": "Medications",
+      "short_name": "Meds",
+      "url": "/medications",
+      "icons": [
+        { "src": "/logo-192.png", "sizes": "192x192", "type": "image/png" }
+      ]
     }
   ]
 }

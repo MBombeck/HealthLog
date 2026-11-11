@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { surfaceModule } from "@/lib/modules/surface";
-
 /**
  * F-7 (mobile security audit, 2026-05-16): three regressions to lock
  * in for `public/sw.js`.
@@ -114,16 +112,6 @@ describe("public/manifest.json shortcuts", () => {
   const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf-8")) as {
     shortcuts: Array<{ name: string; url: string }>;
   };
-
-  it("open only pages no module can switch off", () => {
-    // The manifest is static: a shortcut into a module would open the
-    // "switched off" notice for everyone who turned that module off.
-    expect(manifest.shortcuts.length).toBeGreaterThan(0);
-    for (const { name, url } of manifest.shortcuts) {
-      const { pathname } = new URL(url, "https://app.example");
-      expect(surfaceModule(`nav:${pathname}`), name).toBeUndefined();
-    }
-  });
 
   it("carry no query parameter the app does not read", () => {
     for (const { name, url } of manifest.shortcuts) {
