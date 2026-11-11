@@ -33,6 +33,7 @@ vi.mock("@/components/ui/responsive-sheet", () => ({
     open: boolean;
     children: React.ReactNode;
   }) => (open ? <section>{children}</section> : null),
+  sheetBodyHasUnsavedInput: () => false,
 }));
 
 vi.mock("@/components/dashboard/quick-entry-forms.lazy", () => ({
