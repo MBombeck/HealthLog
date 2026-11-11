@@ -47,7 +47,10 @@ vi.mock("@/components/symptoms/symptoms-section", () => ({
   SymptomsSection: () => null,
 }));
 vi.mock("../new-episode-sheet", () => ({ NewEpisodeSheet: () => null }));
-vi.mock("../log-day-sheet", () => ({ LogDaySheet: () => null }));
+vi.mock("../log-day-sheet", () => ({
+  LogDaySheet: () => null,
+  useLastLoggableDay: (today: string) => today,
+}));
 vi.mock("@/components/day/day-link", () => ({
   DAY_LINK_SLOT: "{date}",
   DayLinkStated: ({ children }: { children: React.ReactNode }) => children,
