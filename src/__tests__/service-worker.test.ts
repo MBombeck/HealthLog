@@ -158,8 +158,8 @@ function bootServiceWorker(): SwHarness {
       navPreload.enabled = true;
     },
   };
-  // v1.18.4 — push-handler fakes: a notification store the `getNotifications`
-  // / `showNotification` calls read/write, and a Badging-API spy.
+  // Push-handler fakes: the notifications `showNotification` shows, and a
+  // Badging-API spy.
   const shown: Array<{ title: string; tag?: string; closed: boolean }> = [];
   const badge = { value: undefined as number | undefined, cleared: false };
   const selfObj = {
@@ -180,14 +180,6 @@ function bootServiceWorker(): SwHarness {
       showNotification: async (title: string, opts: { tag?: string }) => {
         shown.push({ title, tag: opts?.tag, closed: false });
       },
-      getNotifications: async ({ tag }: { tag?: string }) =>
-        shown
-          .filter((n) => !n.closed && (tag === undefined || n.tag === tag))
-          .map((n) => ({
-            close: () => {
-              n.closed = true;
-            },
-          })),
     },
     navigator: {
       setAppBadge: (n: number) => {
@@ -1080,7 +1072,7 @@ describe("sw.js — trimCache", () => {
   });
 });
 
-// ── push handler (v1.18.4: clear-on-taken tag close + app badge) ─────────────
+// ── push handler ─────────────────────────────────────────────────────────────
 async function dispatchPush(harness: SwHarness, data: unknown): Promise<void> {
   let settled: Promise<unknown> = Promise.resolve();
   harness.listeners.get("push")!({
@@ -1116,37 +1108,5 @@ describe("sw.js — push handler", () => {
     expect(shown).toHaveLength(1);
     expect(shown[0].tag).toBe(tag);
     expect(badge.value).toBe(3);
-  });
-
-  it("a type:clear push closes the matching-tag notification (no new one) and updates the badge", async () => {
-    const harness = bootServiceWorker();
-    const { shown, badge } = swFakes(harness);
-    const tag = "med:med-1:2026-06-18T07:00:00.000Z";
-
-    await dispatchPush(harness, { title: "dose", tag, badge: 1 });
-    expect(shown.filter((n) => !n.closed)).toHaveLength(1);
-
-    await dispatchPush(harness, { type: "clear", tag, badge: 0 });
-
-    // The pending reminder for that slot is closed; no new notification shown.
-    expect(shown).toHaveLength(1);
-    expect(shown[0].closed).toBe(true);
-    // badge: 0 clears the app badge.
-    expect(badge.cleared).toBe(true);
-  });
-
-  it("a type:clear push only closes its own slot's tag", async () => {
-    const harness = bootServiceWorker();
-    const { shown } = swFakes(harness);
-
-    await dispatchPush(harness, { title: "a", tag: "med:a:t1" });
-    await dispatchPush(harness, { title: "b", tag: "med:b:t2" });
-
-    await dispatchPush(harness, { type: "clear", tag: "med:a:t1" });
-
-    const a = shown.find((n) => n.tag === "med:a:t1")!;
-    const b = shown.find((n) => n.tag === "med:b:t2")!;
-    expect(a.closed).toBe(true);
-    expect(b.closed).toBe(false);
   });
 });

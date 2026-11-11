@@ -530,27 +530,6 @@ self.addEventListener("push", (event) => {
     payload = { title: "HealthLog", body: event.data.text() };
   }
 
-  // v1.18.4 — `type:"clear"` is the PWA equivalent of ending an iOS Live
-  // Activity: the server sends it when a dose is logged so the still-pending
-  // dose-due reminder for that slot is closed here (matched on its stable
-  // `tag`), and the app badge re-reflects the outstanding-dose count. No new
-  // notification is shown.
-  if (payload && payload.type === "clear") {
-    event.waitUntil(
-      (async () => {
-        const tagToClear = payload.tag;
-        if (tagToClear) {
-          const matches = await self.registration.getNotifications({
-            tag: tagToClear,
-          });
-          for (const n of matches) n.close();
-        }
-        applyAppBadge(payload.badge);
-      })(),
-    );
-    return;
-  }
-
   const {
     title = "HealthLog",
     body = "",
