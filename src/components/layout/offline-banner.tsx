@@ -2,37 +2,28 @@
 
 import { useEffect, useState } from "react";
 import { WifiOff } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { useTranslations } from "@/lib/i18n/context";
-import { queryKeys } from "@/lib/query-keys";
+import { isOfflineNavigationClick } from "@/lib/pwa/offline-navigation";
 
 /**
- * v1.4.43 — slim banner that surfaces "you're offline" while
- * `navigator.onLine` reads false. The PWA service worker already
- * serves the read paths from cache (`public/sw.js`), but pre-fix a
- * user toggling airplane mode mid-form-fill saw blank tiles and no
- * explanation. This banner closes the explanation gap.
+ * The strip that says the connection is down, and the guard that keeps the
+ * open page while it is.
  *
- * Mount strategy: rendered once at the top of `<AuthShell>` so every
- * authenticated route inherits it. The component is mount-time SSR-
- * safe — it never paints during the initial server render (the
- * `online`/`offline` window events only fire client-side); a `useEffect`
- * subscribes to the events once and toggles the visible state from
- * there. Honours `prefers-reduced-motion` via the absence of any
- * animation.
+ * Signed-in pages are never cached, so a navigation without a connection ends
+ * on the service worker's offline page and drops the page that was still
+ * readable. While the browser is offline, a tap on a link to another page of
+ * the app stays where it is and repeats the hint in a toast.
  *
- * Copy lives in `messages/*.json` under `offlineBanner.message`; all
- * six locales ship today.
+ * Rendered once at the top of `<AuthShell>`. Hidden during SSR and the first
+ * client render (no hydration mismatch); the effect reads `navigator.onLine`
+ * after mount.
  */
 export function OfflineBanner() {
   const { t } = useTranslations();
-  const queryClient = useQueryClient();
-  // Initialise to `true` so the banner stays hidden during SSR + the
-  // first client render. The effect below flips it true/false after
-  // mount based on `navigator.onLine`. (We do NOT read navigator on
-  // the very first render to keep the SSR markup hydration-stable.)
   const [isOnline, setIsOnline] = useState(true);
+  const stayOnPage = t("offlineBanner.stayOnPage");
 
   useEffect(() => {
     function handleOnline() {
@@ -41,17 +32,10 @@ export function OfflineBanner() {
     function handleOffline() {
       setIsOnline(false);
     }
-    // Subscribe to the live transition events; both handlers route
-    // through the React setState pathway via the listener callback
-    // rather than a synchronous in-effect setState so the strict
-    // `react-hooks/set-state-in-effect` rule stays happy.
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
-    // Sync the initial state from `navigator.onLine` — deferred to a
-    // microtask so React sees this as an external-system bridge
-    // rather than a render-cascade setState. The legacy in-effect
-    // setState path tripped the strict lint rule, the queueMicrotask
-    // shape is the documented escape hatch.
+    // Deferred so the initial read is an external-system bridge, not a
+    // synchronous setState in the effect body.
     queueMicrotask(() => {
       if (typeof navigator !== "undefined" && navigator.onLine === false) {
         setIsOnline(false);
@@ -63,18 +47,21 @@ export function OfflineBanner() {
     };
   }, []);
 
-  if (isOnline) return null;
+  useEffect(() => {
+    // Capture phase on `window`: runs before React's handlers on the
+    // document, so `next/link` sees the prevented default and stays put.
+    function keepOpenPage(event: MouseEvent) {
+      if (!isOfflineNavigationClick(event, window.location, navigator.onLine)) {
+        return;
+      }
+      event.preventDefault();
+      toast(stayOnPage, { id: "offline-navigation" });
+    }
+    window.addEventListener("click", keepOpenPage, true);
+    return () => window.removeEventListener("click", keepOpenPage, true);
+  }, [stayOnPage]);
 
-  // v1.18.6 — when an offline install is showing last-synced data (the SW's
-  // allowlisted read cache + the IndexedDB query persister hydrated the
-  // dashboard snapshot), say so honestly rather than implying a blank screen.
-  // v1.21.3 (b) — the snapshot cell is now locale-keyed, so match on the
-  // `["dashboard","snapshot"]` PREFIX (`getQueriesData`) rather than the
-  // exact zero-arg slot — any hydrated locale's snapshot proves cached data
-  // is present.
-  const hasCachedData = queryClient
-    .getQueriesData({ queryKey: queryKeys.dashboardSnapshot() })
-    .some(([, data]) => data != null);
+  if (isOnline) return null;
 
   return (
     <div
@@ -85,8 +72,7 @@ export function OfflineBanner() {
     >
       <WifiOff className="size-3.5 shrink-0" aria-hidden="true" />
       <span className="text-center">
-        {t("offlineBanner.message")}
-        {hasCachedData ? ` ${t("offlineBanner.showingCached")}` : ""}
+        {t("offlineBanner.message")} {stayOnPage}
       </span>
     </div>
   );

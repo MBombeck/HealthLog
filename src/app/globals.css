@@ -725,6 +725,16 @@ body,
   }
 
   /*
+   * The installed iOS app runs with `black-translucent` (`layout.tsx`), which
+   * always draws the clock and battery in white. Over the light theme's card
+   * colour they disappear, so the light theme paints the strip in its dark
+   * ink instead.
+   */
+  :root.light .shell-safe-area {
+    background-image: linear-gradient(var(--foreground), var(--foreground));
+  }
+
+  /*
    * The on-screen keyboard. iOS Safari, and Chrome on Android by default,
    * shrink only the visual viewport when the keyboard opens: everything
    * `position: fixed` stays anchored to the layout viewport, so a bottom sheet

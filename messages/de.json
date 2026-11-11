@@ -452,7 +452,7 @@
   "offlineBanner": {
     "message": "Keine Verbindung: Änderungen können erst gespeichert werden, wenn du wieder online bist.",
     "saveFailed": "Speichern fehlgeschlagen, du bist offline. Bitte versuche es erneut, sobald du wieder online bist.",
-    "showingCached": "Zeigt deine zuletzt synchronisierten Daten."
+    "stayOnPage": "Diese Seite bleibt lesbar, andere Seiten öffnen sich, sobald du wieder online bist."
   },
   "demoBanner": {
     "message": "Demo-Modus: Änderungen werden nicht gespeichert."

@@ -452,7 +452,7 @@
   "offlineBanner": {
     "message": "Geen verbinding: wijzigingen kunnen pas worden opgeslagen als je weer online bent.",
     "saveFailed": "Opslaan is mislukt, je bent offline. Probeer het opnieuw zodra je weer online bent.",
-    "showingCached": "Je laatst gesynchroniseerde gegevens worden getoond."
+    "stayOnPage": "Deze pagina blijft leesbaar; andere pagina's openen zodra je weer online bent."
   },
   "demoBanner": {
     "message": "Demomodus: wijzigingen worden niet opgeslagen."

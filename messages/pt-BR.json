@@ -452,7 +452,7 @@
   "offlineBanner": {
     "message": "Sem conexão: as alterações não podem ser salvas até você voltar a ficar online.",
     "saveFailed": "Não foi possível salvar, você está offline. Tente novamente quando voltar a ficar online.",
-    "showingCached": "Mostrando seus últimos dados sincronizados."
+    "stayOnPage": "Esta página continua legível; as outras abrem quando você voltar a ficar online."
   },
   "demoBanner": {
     "message": "Modo demonstração: as alterações não são salvas."

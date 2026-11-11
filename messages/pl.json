@@ -452,7 +452,7 @@
   "offlineBanner": {
     "message": "Brak połączenia: zmian nie można zapisać, dopóki nie wrócisz online.",
     "saveFailed": "Nie udało się zapisać, jesteś offline. Spróbuj ponownie, gdy wrócisz online.",
-    "showingCached": "Wyświetlane są ostatnio zsynchronizowane dane."
+    "stayOnPage": "Ta strona pozostaje czytelna, inne otworzą się, gdy wrócisz online."
   },
   "demoBanner": {
     "message": "Tryb demo: zmiany nie są zapisywane."

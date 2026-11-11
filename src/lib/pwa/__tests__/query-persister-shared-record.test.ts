@@ -133,8 +133,13 @@ afterEach(() => {
   }
 });
 
+/** A client signed in as the caller: the persister binds to that account. */
 function appClient(): QueryClient {
-  return new QueryClient({ defaultOptions: QUERY_CLIENT_DEFAULT_OPTIONS });
+  const client = new QueryClient({
+    defaultOptions: QUERY_CLIENT_DEFAULT_OPTIONS,
+  });
+  client.setQueryData(queryKeys.authMe(), { id: "acct-delegate" });
+  return client;
 }
 
 describe("persisting while inside another record", () => {
@@ -207,7 +212,13 @@ describe("restoring while inside another record", () => {
     // hash already makes a snapshot written in one record unreadable in
     // another; asserting only that would be a check that cannot fail for the
     // control it names. This one counts what landed in the cache, so removing
-    // the guard leaves exactly one entry here and turns it red.
-    expect(reader.getQueryCache().getAll()).toHaveLength(0);
+    // the guard leaves exactly one entry here and turns it red. The only
+    // entry is the reader's own `/api/auth/me`.
+    expect(
+      reader
+        .getQueryCache()
+        .getAll()
+        .map((q) => q.queryKey[0]),
+    ).toEqual(["auth"]);
   });
 });

@@ -452,7 +452,7 @@
   "offlineBanner": {
     "message": "Pas de connexion : les modifications ne peuvent pas être enregistrées tant que vous n'êtes pas de nouveau en ligne.",
     "saveFailed": "Enregistrement impossible : vous êtes hors ligne. Réessayez une fois de nouveau en ligne.",
-    "showingCached": "Affichage de vos dernières données synchronisées."
+    "stayOnPage": "Cette page reste lisible ; les autres s'ouvriront dès que vous serez de nouveau en ligne."
   },
   "demoBanner": {
     "message": "Mode démo : les modifications ne sont pas enregistrées."
