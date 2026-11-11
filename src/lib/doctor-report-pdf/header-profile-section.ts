@@ -16,6 +16,7 @@ export function buildHeaderProfileSection(
     t,
     num,
     fmtDate,
+    fmtCalendarDate,
     now,
     insuranceNumber,
     margin,
@@ -68,7 +69,7 @@ export function buildHeaderProfileSection(
   }
   if (data.patient.dateOfBirth) {
     patientInfo.push(
-      `${t("doctorReport.dateOfBirth")}: ${fmtDate(data.patient.dateOfBirth)}`,
+      `${t("doctorReport.dateOfBirth")}: ${fmtCalendarDate(data.patient.dateOfBirth)}`,
     );
   }
   if (data.patient.gender) {

@@ -72,6 +72,7 @@ function render(
       | "selection"
       | "timeFormat"
       | "dateFormat"
+      | "timezone"
     >
   >,
 ) {
@@ -500,6 +501,23 @@ describe("<ClinicianView>", () => {
     expect(html).not.toContain("<iframe");
     expect(html).not.toContain('<img src="/c/hls_tok/d/doc-b"');
     expect(html).toContain("Referral letter");
+  });
+
+  it("prints the date of birth on its own day west of UTC", () => {
+    const html = render(
+      makeReport({
+        patient: {
+          name: "A. Patient",
+          // Stored at UTC midnight: 13 May, 20:00 in New York.
+          dateOfBirth: "1960-05-14T00:00:00.000Z",
+          gender: null,
+          heightCm: null,
+        },
+      }),
+      { timezone: "America/New_York", locale: "en" },
+    );
+    expect(html).toContain("05/14/1960");
+    expect(html).not.toContain("05/13/1960");
   });
 });
 

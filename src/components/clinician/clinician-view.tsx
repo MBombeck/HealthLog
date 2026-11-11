@@ -30,6 +30,7 @@
  * document list in `./documents-list`, the downloads in `./download-actions`.
  */
 import type { DoctorReportData } from "@/lib/doctor-report-data";
+import { formatDate } from "@/lib/date-format";
 import { formatLabValue, type LabNumberFormat } from "@/lib/labs/format-value";
 import {
   makeFormatters,
@@ -153,6 +154,10 @@ export function ClinicianView({
   // Owner hour cycle + date order ride along (issue #922).
   const fmt = makeFormatters(locale, timezone, timeFormat, dateFormat);
   const fmtDate = (iso: string) => fmt.date(new Date(iso));
+  // A date-only value (a date of birth, a dose date) is its calendar date in
+  // every zone; read as an instant it fell on the previous day west of UTC.
+  const fmtCalendarDate = (iso: string) =>
+    formatDate(iso.slice(0, 10), dateFormat, locale);
   const fmtDateTime = (iso: string) => fmt.dateTime(new Date(iso));
   // Two decimals at most, in the owner's locale: a German reader gets
   // "80,5", not the "80.5" a bare number prints.
@@ -199,7 +204,7 @@ export function ClinicianView({
               t={t}
               report={report}
               scope={scope}
-              fmtDate={fmtDate}
+              fmtCalendarDate={fmtCalendarDate}
             />
 
             {/* ── measurements ─────────────────────────────────────── */}

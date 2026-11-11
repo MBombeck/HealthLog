@@ -1176,6 +1176,31 @@ describe("doctor report — the user's date order", () => {
     );
     expect(text).toContain("05/03/2026");
   });
+
+  it("prints the date of birth on its own day west of UTC", async () => {
+    const { t } = getServerTranslator("en");
+    const text = await extractText(
+      renderDoctorReportPdfBytes(
+        makeData({
+          patient: {
+            ...makeData().patient,
+            // Stored at UTC midnight: 13 May, 20:00 in New York.
+            dateOfBirth: "1960-05-14T00:00:00.000Z",
+          },
+        }),
+        {
+          t,
+          locale: "en",
+          now: FIXED_NOW,
+          userTz: "America/New_York",
+          timeFormat: "AUTO",
+          dateFormat: "AUTO",
+        },
+      ),
+    );
+    expect(text).toContain("05/14/1960");
+    expect(text).not.toContain("05/13/1960");
+  });
 });
 
 // ── script coverage ── the report is read in every shipped locale and carries
