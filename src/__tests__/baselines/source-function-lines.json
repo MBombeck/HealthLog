@@ -184,7 +184,6 @@
     "components/provenance/source-provenance-view.tsx :: SourceProvenanceView": 363,
     "components/records/allergy-form.tsx :: AllergyForm": 225,
     "components/records/audit-c-panel.tsx :: AuditCPanel": 285,
-    "components/records/free-text-take-over.tsx :: FreeTextTakeOver": 201,
     "components/records/life-circumstances-manager.tsx :: SectionBody": 472,
     "components/settings/about-section.tsx :: AboutSection": 236,
     "components/settings/access/grant-invite-card.tsx :: GrantInviteCard": 311,

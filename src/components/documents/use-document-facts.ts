@@ -13,7 +13,11 @@
  * approve/reject decisions the person made; a fact without a decision stays
  * pending on the server.
  */
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 
 import { resolveAiRun, useAiRunPhase } from "@/hooks/use-ai-run";
 import { apiPatch, apiPost } from "@/lib/api/api-fetch";
@@ -21,7 +25,15 @@ import type {
   AiRunAccepted,
   DocumentExtractRunResult,
 } from "@/lib/documents/ai-runs/types";
-import { invalidateKeys, queryKeys } from "@/lib/query-keys";
+import {
+  documentDependentKeys,
+  illnessDependentKeys,
+  invalidateKeys,
+  labDependentKeys,
+  medicationDependentKeys,
+  queryKeys,
+  refetchInactiveDailyReads,
+} from "@/lib/query-keys";
 import type {
   ExtractedFactDto,
   InboundFactEdit,
@@ -102,10 +114,31 @@ export function useEditFact() {
 }
 
 /**
+ * Every read a confirm can touch: the medications, conditions and lab values
+ * it creates, with what derives from them, and the document itself (status
+ * and fact states). A new medication or condition also reaches the dashboard
+ * and the Today digest, which are unmounted while the person reviews.
+ */
+export function invalidateConfirmedFactReads(
+  queryClient: QueryClient,
+  documentId: string,
+) {
+  return Promise.all([
+    invalidateKeys(queryClient, [
+      ...medicationDependentKeys,
+      ...illnessDependentKeys,
+      ...labDependentKeys,
+      ...documentDependentKeys,
+      queryKeys.inboundDocument(documentId),
+    ]),
+    refetchInactiveDailyReads(queryClient),
+  ]);
+}
+
+/**
  * Commit the review decisions. Approved facts land in their structured
  * stores (labs / conditions / medications) through the server's existing
- * field-by-field commit; rejected facts are discarded. Invalidates every
- * read the commit can touch, plus the document itself (status + fact states).
+ * field-by-field commit; rejected facts are discarded.
  */
 export function useConfirmFacts() {
   const queryClient = useQueryClient();
@@ -127,15 +160,7 @@ export function useConfirmFacts() {
         `/api/documents/inbound/${documentId}/confirm`,
         { decisions },
       ),
-    onSuccess: (_data, { documentId }) => {
-      void invalidateKeys(queryClient, [
-        queryKeys.inboundDocument(documentId),
-        queryKeys.documents(),
-        queryKeys.labResults(),
-        queryKeys.biomarkers(),
-        queryKeys.illness(),
-        queryKeys.medications(),
-      ]);
-    },
+    onSuccess: (_data, { documentId }) =>
+      void invalidateConfirmedFactReads(queryClient, documentId),
   });
 }
