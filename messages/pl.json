@@ -1673,7 +1673,7 @@
         "step1": {
           "title": "Jak nazywa się lek?",
           "subline": "Dokładnie tak, jak na opakowaniu.",
-          "label": "Name",
+          "label": "Nazwa",
           "placeholder": "np. Ramipryl",
           "short": "Nazwa"
         },
@@ -10999,7 +10999,7 @@
       "notePlaceholder": "Jak minął dzień (zaszyfrowane).",
       "severityFor": "Nasilenie: {symptom}",
       "saveError": "Nie udało się zapisać dnia. Spróbuj ponownie.",
-      "day": "Day"
+      "day": "Dzień"
     },
     "impact": {
       "0": "Pełna sprawność",
@@ -11088,14 +11088,14 @@
       "RESTING_HEART_RATE": "Spoczynkowe tętno",
       "HEART_RATE_VARIABILITY": "Zmienność rytmu serca",
       "HRV_RMSSD": "HRV (RMSSD)",
-      "RECOVERY_SCORE": "Recovery",
+      "RECOVERY_SCORE": "Regeneracja",
       "OXYGEN_SATURATION": "Saturacja tlenem",
       "BODY_TEMPERATURE": "Temperatura ciała",
       "RESPIRATORY_RATE": "Częstość oddechów",
       "BLOOD_PRESSURE_SYS": "Ciśnienie skurczowe",
       "BLOOD_PRESSURE_DIA": "Ciśnienie rozkurczowe",
-      "PULSE": "Pulse",
-      "WEIGHT": "Weight",
+      "PULSE": "Tętno",
+      "WEIGHT": "Waga",
       "FUNCTIONAL_IMPACT": "Wpływ na funkcjonowanie"
     },
     "listLoadError": "Nie udało się załadować epizodów."

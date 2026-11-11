@@ -1673,7 +1673,7 @@
         "step1": {
           "title": "¿Cómo se llama el medicamento?",
           "subline": "Exactamente como aparece en la caja.",
-          "label": "Name",
+          "label": "Nombre",
           "placeholder": "p. ej. Ramipril",
           "short": "Nombre"
         },
@@ -10999,7 +10999,7 @@
       "notePlaceholder": "Cómo te sentiste hoy (cifrado).",
       "severityFor": "Gravedad de {symptom}",
       "saveError": "No se pudo guardar el día. Inténtalo de nuevo.",
-      "day": "Day"
+      "day": "Día"
     },
     "impact": {
       "0": "Plenamente funcional",
@@ -11088,14 +11088,14 @@
       "RESTING_HEART_RATE": "Frecuencia cardíaca en reposo",
       "HEART_RATE_VARIABILITY": "Variabilidad de la frecuencia cardíaca",
       "HRV_RMSSD": "VFC (RMSSD)",
-      "RECOVERY_SCORE": "Recovery",
+      "RECOVERY_SCORE": "Recuperación",
       "OXYGEN_SATURATION": "Saturación de oxígeno",
       "BODY_TEMPERATURE": "Temperatura corporal",
       "RESPIRATORY_RATE": "Frecuencia respiratoria",
       "BLOOD_PRESSURE_SYS": "Presión arterial sistólica",
       "BLOOD_PRESSURE_DIA": "Presión arterial diastólica",
-      "PULSE": "Pulse",
-      "WEIGHT": "Weight",
+      "PULSE": "Pulso",
+      "WEIGHT": "Peso",
       "FUNCTIONAL_IMPACT": "Impacto funcional"
     },
     "listLoadError": "No se pudieron cargar tus episodios."
