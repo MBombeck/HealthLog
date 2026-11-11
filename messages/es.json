@@ -1518,7 +1518,6 @@
     "glp1NextInjectionToday": "hoy",
     "glp1NextInjectionTomorrow": "mañana",
     "glp1RotationSuggested": "Sugerido: {site}",
-    "glp1LogSideEffect": "Registrar efecto secundario",
     "sideEffects": {
       "section": "Efectos secundarios",
       "addCta": "Registrar",
@@ -1712,7 +1711,7 @@
         "step1": {
           "title": "¿Cómo se llama el medicamento?",
           "subline": "Exactamente como aparece en la caja.",
-          "label": "Name",
+          "label": "Nombre",
           "placeholder": "p. ej. Ramipril",
           "short": "Nombre"
         },
@@ -5680,7 +5679,7 @@
           "title": "Diario de enfermedades",
           "description": "Vista de lista y orden de episodios."
         },
-        "vorsorge": {
+        "checkups": {
           "title": "Revisiones",
           "description": "Vista de lista y orden de recordatorios."
         },
@@ -6105,7 +6104,7 @@
           "moduleSettingsDescription": "Todo lo demás está en la página del módulo, en Módulos."
         }
       },
-      "gesundheitsakte": {
+      "health-record": {
         "title": "Historial médico",
         "subtitle": "Exporta un historial de salud completo, listo para el médico."
       },
@@ -10210,6 +10209,7 @@
       "BLOOD_PRESSURE_SYS": "Presión arterial",
       "PULSE": "Pulso",
       "BLOOD_GLUCOSE": "Glucosa en sangre",
+      "BLOOD_KETONES": "Cetonas en sangre",
       "OXYGEN_SATURATION": "Saturación de oxígeno",
       "BODY_FAT": "Grasa corporal",
       "BODY_TEMPERATURE": "Temperatura corporal",
@@ -11054,7 +11054,7 @@
       "notePlaceholder": "Cómo te sentiste hoy (cifrado).",
       "severityFor": "Gravedad de {symptom}",
       "saveError": "No se pudo guardar el día. Inténtalo de nuevo.",
-      "day": "Day"
+      "day": "Día"
     },
     "impact": {
       "0": "Plenamente funcional",
@@ -11143,14 +11143,14 @@
       "RESTING_HEART_RATE": "Frecuencia cardíaca en reposo",
       "HEART_RATE_VARIABILITY": "Variabilidad de la frecuencia cardíaca",
       "HRV_RMSSD": "VFC (RMSSD)",
-      "RECOVERY_SCORE": "Recovery",
+      "RECOVERY_SCORE": "Recuperación",
       "OXYGEN_SATURATION": "Saturación de oxígeno",
       "BODY_TEMPERATURE": "Temperatura corporal",
       "RESPIRATORY_RATE": "Frecuencia respiratoria",
       "BLOOD_PRESSURE_SYS": "Presión arterial sistólica",
       "BLOOD_PRESSURE_DIA": "Presión arterial diastólica",
-      "PULSE": "Pulse",
-      "WEIGHT": "Weight",
+      "PULSE": "Pulso",
+      "WEIGHT": "Peso",
       "FUNCTIONAL_IMPACT": "Impacto funcional"
     },
     "listLoadError": "No se pudieron cargar tus episodios."

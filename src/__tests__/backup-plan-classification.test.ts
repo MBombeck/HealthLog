@@ -10,7 +10,23 @@ import {
   NOT_IN_BACKUP_MODELS,
   RAW_SQL_TABLES,
 } from "@/lib/export/backup-plan";
-import { backupVerdict } from "@/lib/export/backup-verdict";
+
+type BackupVerdict = "BACKED_UP" | "DERIVED" | "NOT_IN_BACKUP" | "AUTH";
+
+/**
+ * The verdict for a model, or `null` when the schema carries a model the plan
+ * has never ruled on. The guard below turns that `null` into a failing test:
+ * a new model gets a decision, not a default.
+ */
+function backupVerdict(model: string): BackupVerdict | null {
+  if ((BACKED_UP_MODELS as readonly string[]).includes(model)) {
+    return "BACKED_UP";
+  }
+  if (model in DERIVED_MODELS) return "DERIVED";
+  if (model in NOT_IN_BACKUP_MODELS) return "NOT_IN_BACKUP";
+  if (AUTH_MODELS_OUT_OF_SCOPE.includes(model)) return "AUTH";
+  return null;
+}
 
 /**
  * Every model in the schema has a written verdict about the backup.

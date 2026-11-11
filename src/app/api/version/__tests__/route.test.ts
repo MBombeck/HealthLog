@@ -44,7 +44,10 @@ describe("GET /api/version", () => {
     );
     expect(body.data.license).toBe("PolyForm-Noncommercial-1.0.0");
     expect(body.data.repository).toContain("github.com");
-    expect(body.data.changelog).toContain("CHANGELOG");
+    // The release notes, not the multi-megabyte CHANGELOG.md.
+    expect(body.data.changelog).toBe(
+      "https://github.com/MBombeck/HealthLog/releases",
+    );
     expect(body.data.docs).toContain("docs.healthlog.dev");
   });
 

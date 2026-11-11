@@ -257,8 +257,8 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   // Not module-gated: the health record is a flagship export, and its only
   // entry point must not vanish behind the `doctorReport` opt-out.
   {
-    slug: "gesundheitsakte",
-    titleKey: "settings.sections.gesundheitsakte.title",
+    slug: "health-record",
+    titleKey: "settings.sections.health-record.title",
     icon: FileHeart,
     group: "data",
   },

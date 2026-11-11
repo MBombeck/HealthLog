@@ -14,7 +14,7 @@ import { STORAGE_STATE_PATH } from "./setup/global-setup";
  *   2. The import surfaces (v1.15.7, issue #281) render: the Apple Health
  *      and generic-JSON cards.
  *   3. The full health-record export panel lives on its own top-level
- *      `/settings/gesundheitsakte` section (v1.18.0 S5) — including the
+ *      `/settings/health-record` section (v1.18.0 S5) — including the
  *      "included data" disclosure, which a first run opens and which stays
  *      operable in both directions.
  *   4. The scope picker mounts twice on that page (the export panel and the
@@ -45,7 +45,7 @@ async function openGesundheitsakte(page: Page): Promise<void> {
       response.request().method() === "GET" &&
       new URL(response.url()).pathname === "/api/share-links",
   );
-  await page.goto("/settings/gesundheitsakte", {
+  await page.goto("/settings/health-record", {
     waitUntil: "domcontentloaded",
   });
   await boundaryHydrated;
@@ -57,7 +57,7 @@ test.describe("Settings → Export & Import", () => {
   test("renders all export surfaces with stable testids", async ({ page }) => {
     await page.goto("/settings/export", { waitUntil: "domcontentloaded" });
     // v1.18.0 — the full health-record export moved to its own
-    // `/settings/gesundheitsakte` section. The Export & Import page keeps
+    // `/settings/health-record` section. The Export & Import page keeps
     // the four CSV/backup tiles with the `export-card-*` shape.
     for (const id of [
       "export-card-measurements-csv",
@@ -250,7 +250,7 @@ test.describe("Settings → Export & Import", () => {
     page,
   }) => {
     // The disclosure that fronts the scope picker on
-    // `/settings/gesundheitsakte`. An account with no saved selection is a
+    // `/settings/health-record`. An account with no saved selection is a
     // first run, and a first run opens it: that is the only place the standard
     // template is applied, and a template hidden behind a closed disclosure
     // would be opt-out wearing a hat.

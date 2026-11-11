@@ -1,6 +1,6 @@
 # Building a native client against HealthLog
 
-Working notes for anyone building a client app (Android, iOS, CLI, anything else) against the HealthLog server, with or without AI tooling. Everything in here is a rule we actually follow between the server and the iOS app, written down so a second client does not have to rediscover it. Pair it with `CLAUDE.md` (server-side conventions) and `docs/api/openapi.yaml` (the wire contract).
+Working notes for anyone building a client app (Android, iOS, CLI, anything else) against the HealthLog server. Everything in here is a rule we actually follow between the server and the iOS app, written down so a second client does not have to rediscover it. Pair it with [`CONTRIBUTING.md`](../CONTRIBUTING.md) (server-side conventions) and `docs/api/openapi.yaml` (the wire contract).
 
 ## The contract, and where truth lives
 
@@ -43,7 +43,7 @@ The corollary: if a resolved value you need is missing from a payload, the fix i
 
 ## Ground rules for the repo itself
 
-The voice-and-privacy rules from `CLAUDE.md` apply to any repo under the project, including a client repo: commit messages and public text carry no tooling attribution and no assistant vocabulary, no real names of users or reporters, and no live health figures, ever. Fixtures use invented data. If an AI tool wrote part of a change, the human who commits it has read it and stands behind it; the git history knows only authors.
+The privacy rules apply to any repo under the project, including a client repo: commit messages and public text carry no real names of users or reporters and no live health figures, ever. Fixtures use invented data. Whoever commits a change has read it and stands behind it.
 
 Secrets never appear in code, fixtures, or examples, not even placeholder-shaped real ones. Anything user-identifying stays out of logs on the client just as it does on the server.
 

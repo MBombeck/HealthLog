@@ -1518,7 +1518,6 @@
     "glp1NextInjectionToday": "oggi",
     "glp1NextInjectionTomorrow": "domani",
     "glp1RotationSuggested": "Suggerita: {site}",
-    "glp1LogSideEffect": "Registra effetto collaterale",
     "sideEffects": {
       "section": "Effetti collaterali",
       "addCta": "Registra",
@@ -1712,7 +1711,7 @@
         "step1": {
           "title": "Come si chiama il farmaco?",
           "subline": "Esattamente come riportato sulla confezione.",
-          "label": "Name",
+          "label": "Nome",
           "placeholder": "ad es. Ramipril",
           "short": "Nome"
         },
@@ -5680,7 +5679,7 @@
           "title": "Diario delle malattie",
           "description": "Vista elenco e ordine degli episodi."
         },
-        "vorsorge": {
+        "checkups": {
           "title": "Controlli",
           "description": "Vista elenco e ordine dei promemoria."
         },
@@ -6105,7 +6104,7 @@
           "moduleSettingsDescription": "Tutto il resto è nella pagina del modulo, in Moduli."
         }
       },
-      "gesundheitsakte": {
+      "health-record": {
         "title": "Cartella clinica",
         "subtitle": "Esporta una cartella clinica completa, pronta per il medico."
       },
@@ -10210,6 +10209,7 @@
       "BLOOD_PRESSURE_SYS": "Pressione sanguigna",
       "PULSE": "Battito",
       "BLOOD_GLUCOSE": "Glicemia",
+      "BLOOD_KETONES": "Chetoni nel sangue",
       "OXYGEN_SATURATION": "Saturazione di ossigeno",
       "BODY_FAT": "Grasso corporeo",
       "BODY_TEMPERATURE": "Temperatura corporea",
@@ -11054,7 +11054,7 @@
       "notePlaceholder": "Com'è andata la giornata (cifrato).",
       "severityFor": "Intensità di {symptom}",
       "saveError": "Impossibile salvare la giornata. Riprova.",
-      "day": "Day"
+      "day": "Giorno"
     },
     "impact": {
       "0": "Pienamente funzionale",
@@ -11143,14 +11143,14 @@
       "RESTING_HEART_RATE": "Frequenza cardiaca a riposo",
       "HEART_RATE_VARIABILITY": "Variabilità della frequenza cardiaca",
       "HRV_RMSSD": "HRV (RMSSD)",
-      "RECOVERY_SCORE": "Recovery",
+      "RECOVERY_SCORE": "Recupero",
       "OXYGEN_SATURATION": "Saturazione di ossigeno",
       "BODY_TEMPERATURE": "Temperatura corporea",
       "RESPIRATORY_RATE": "Frequenza respiratoria",
       "BLOOD_PRESSURE_SYS": "Pressione arteriosa sistolica",
       "BLOOD_PRESSURE_DIA": "Pressione arteriosa diastolica",
-      "PULSE": "Pulse",
-      "WEIGHT": "Weight",
+      "PULSE": "Polso",
+      "WEIGHT": "Peso",
       "FUNCTIONAL_IMPACT": "Impatto funzionale"
     },
     "listLoadError": "Impossibile caricare gli episodi."

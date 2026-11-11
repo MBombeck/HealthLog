@@ -34,6 +34,7 @@ import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { resolveGlucoseUnit, type GlucoseUnit } from "@/lib/glucose";
 import { glucoseUnitPatchSchema } from "@/lib/validations/user-prefs";
 import { refreshTextsAfterUnitChange } from "@/lib/insights/unit-change-refresh";
+import { invalidateUserProfile } from "@/lib/cache/invalidate";
 
 export const dynamic = "force-dynamic";
 
@@ -103,9 +104,11 @@ export const PATCH = apiHandler(async (req: Request) => {
     },
   });
 
-  // The status notes and narratives quote glucose in this unit; re-warm
-  // them so today's stored text does not keep the old one.
+  // The targets payload and the status notes and narratives carry glucose in
+  // this unit: evict the cached payloads and re-warm today's stored text so
+  // neither keeps the old one.
   if (resolveGlucoseUnit(previous?.glucoseUnit) !== next) {
+    invalidateUserProfile(user.id);
     void refreshTextsAfterUnitChange(user.id);
   }
 

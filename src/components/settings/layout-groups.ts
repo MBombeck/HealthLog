@@ -99,9 +99,10 @@ export const LAYOUT_GROUPS: ReadonlyArray<LayoutGroup> = [
     Body: DocumentsSection,
   },
   {
-    id: "vorsorge",
-    titleKey: "settings.sections.layout.vorsorge.title",
-    descriptionKey: "settings.sections.layout.vorsorge.description",
+    // The address read `vorsorge` in every language; that one redirects.
+    id: "checkups",
+    titleKey: "settings.sections.layout.checkups.title",
+    descriptionKey: "settings.sections.layout.checkups.description",
     Body: VorsorgeSection,
   },
 ];

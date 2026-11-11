@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 #
-# migrate-demo-edge01.sh — copy EXACTLY ONE user (the demo account) from the
-# production apps01 Postgres to the SEPARATE edge01 demo Postgres.
+# migrate-demo-account.sh: copy EXACTLY ONE user (the demo account) from the
+# source Postgres to the SEPARATE target demo Postgres.
 #
 # ============================================================================
 # WHAT THIS SCRIPT DOES (and the isolation guarantees it makes)
 # ============================================================================
 #
 # It transfers a single, demo-scoped slice of health data so the public demo
-# instance on edge01 shows a realistic-looking account WITHOUT carrying any
+# instance on the target shows a realistic-looking account WITHOUT carrying any
 # real-operator data. The ONLY user copied is:
 #
 #     $DEMO_USER_ID   (the single demo account, supplied via env)
@@ -26,7 +26,7 @@
 #   3. No secret / credential column is transferred. The users SELECT NULLs
 #      every encrypted / token / integration-secret column explicitly. The
 #      cycle-day-log SELECT NULLs the two app-encrypted columns (they are
-#      keyed to the prod encryption key, which is NOT present on edge01).
+#      keyed to the prod encryption key, which is NOT present on the target).
 #
 # The transfer mechanism per table is a scoped server-side COPY piped
 # host-to-host:
@@ -42,12 +42,12 @@
 #   - an added/dropped column on either side fails loudly rather than
 #     silently shifting data into the wrong column.
 #
-# Tables load in FK-parent-first order. The edge01 demo rows are wiped first
-# (FK-child-first), scoped to the edge01 demo user id resolved at runtime.
+# Tables load in FK-parent-first order. The target demo rows are wiped first
+# (FK-child-first), scoped to the target demo user id resolved at runtime.
 #
 # THIS SCRIPT IS FOR REVIEW. Read it, then run it deliberately. It performs
-# DESTRUCTIVE deletes on the edge01 demo DB (scoped to the demo user) followed
-# by inserts. It NEVER writes to apps01 (source is read-only).
+# DESTRUCTIVE deletes on the target demo DB (scoped to the demo user) followed
+# by inserts. It NEVER writes to the source (source is read-only).
 #
 # ----------------------------------------------------------------------------
 # EXCLUDED ENTIRELY (intentionally NOT copied)
@@ -59,16 +59,16 @@
 #     fitbit_connections, all *_oauth_states / *_connect_tickets,
 #     telegram_scheduled_deletions, telegram_reminder_messages,
 #     clinician_share_links, provider_health.
-#   - Encrypted-at-rest payloads we cannot decrypt on edge01:
+#   - Encrypted-at-rest payloads we cannot decrypt on the target:
 #     insight_narratives, coach_messages (coach_* entirely).
 #   - Coach: coach_conversations, coach_messages, coach_facts, coach_usage.
 #   - Ops / transient / regenerable: idempotency_keys, rate_limits,
 #     data_backups, import_jobs, host_metrics, feedback,
 #     recommendation_feedback, all rollup tables (measurement_rollups,
-#     mood_entry_rollups, strain_trimp_cache, cycle_predictions) — these REGENERATE on edge01.
+#     mood_entry_rollups, strain_trimp_cache, cycle_predictions) — these REGENERATE on the target.
 #   - workouts / workout_routes / workout_samples — demo has none.
 #   - app_settings — instance-level, not user data.
-#   - Global catalogues (mood_tags, cycle_symptoms) — pre-exist on edge01;
+#   - Global catalogues (mood_tags, cycle_symptoms) — pre-exist on the target;
 #     carried link rows reference these GLOBAL ids only (see guards below).
 #
 set -euo pipefail
@@ -129,21 +129,21 @@ psql_src() {
 # so psql_dst is defined after resolution.
 
 echo "=============================================================="
-echo " HealthLog demo-user migration  apps01 -> edge01"
+echo " HealthLog demo-user migration  source -> target"
 echo " demo user : $DEMO_USER_ID"
 echo " src host  : $SRC_SSH  (container $SRC_DB_CONTAINER)"
 echo " dst host  : $DST_SSH  (container resolved below)"
 echo "=============================================================="
 
 # ============================================================================
-# RESOLVE the edge01 demo DB container (NOT hardcoded — it is a separate
+# RESOLVE the target demo DB container (NOT hardcoded — it is a separate
 # Coolify Postgres resource whose container name can change on redeploy).
 # ============================================================================
 echo
 if [[ -n "${DST_DB_CONTAINER:-}" ]]; then
   echo "## Using DST_DB_CONTAINER from env: $DST_DB_CONTAINER"
 else
-  echo "## Resolving edge01 demo Postgres container ..."
+  echo "## Resolving target demo Postgres container ..."
   DST_DB_CONTAINER="$(ssh "$DST_SSH" "docker ps --format '{{.Names}}' | grep -iE 'postgres|^db-' || true")"
   echo "candidate containers on $DST_SSH:"
   echo "$DST_DB_CONTAINER" | sed 's/^/    /'
@@ -159,7 +159,7 @@ else
   DST_DB_CONTAINER="$(printf '%s\n' "$DST_DB_CONTAINER" | head -n1)"
 fi
 readonly DST_DB_CONTAINER
-echo "resolved edge01 demo DB container: $DST_DB_CONTAINER"
+echo "resolved target demo DB container: $DST_DB_CONTAINER"
 
 # Confirm the psql user/db actually work on the resolved container before we
 # touch anything (fail fast on a wrong container guess).
@@ -167,31 +167,31 @@ psql_dst() {
   # Usage: psql_dst "<sql>"
   ssh "$DST_SSH" "docker exec -i $DST_DB_CONTAINER psql -X -v ON_ERROR_STOP=1 -U $PG_USER -d $PG_DB $*"
 }
-echo "## Verifying edge01 DB connectivity ..."
+echo "## Verifying target DB connectivity ..."
 psql_dst "-c 'SELECT current_database(), current_user;'"
 
 # ============================================================================
-# RESOLVE the edge01 demo user id (it MAY differ from the apps01 id!).
-# We resolve by username='demo'. After this migration the edge01 demo user
-# will carry the apps01 canonical id (we delete the old row + load the apps01
-# row). Scope EVERY wipe to whatever the edge01 id is right now.
+# RESOLVE the target demo user id (it MAY differ from the source id!).
+# We resolve by username='demo'. After this migration the target demo user
+# will carry the source canonical id (we delete the old row + load the source
+# row). Scope EVERY wipe to whatever the target id is right now.
 # ============================================================================
 echo
-echo "## Resolving edge01 demo user id (by username='demo') ..."
-EDGE_DEMO_ID="$(psql_dst "-tA -c \"SELECT id FROM users WHERE username = 'demo';\"" | tr -d '[:space:]')"
-if [[ -z "$EDGE_DEMO_ID" ]]; then
-  echo "note: no existing demo user on edge01 (username='demo') — wipe phase is a no-op."
+echo "## Resolving target demo user id (by username='demo') ..."
+TARGET_DEMO_ID="$(psql_dst "-tA -c \"SELECT id FROM users WHERE username = 'demo';\"" | tr -d '[:space:]')"
+if [[ -z "$TARGET_DEMO_ID" ]]; then
+  echo "note: no existing demo user on the target (username='demo') — wipe phase is a no-op."
 else
-  echo "edge01 existing demo user id: $EDGE_DEMO_ID"
-  if [[ "$EDGE_DEMO_ID" == "$REAL_USER_ID" ]]; then
-    echo "ABORT: edge01 username='demo' resolves to the REAL operator id. Refusing."
+  echo "existing target demo user id: $TARGET_DEMO_ID"
+  if [[ "$TARGET_DEMO_ID" == "$REAL_USER_ID" ]]; then
+    echo "ABORT: target username='demo' resolves to the REAL operator id. Refusing."
     exit 1
   fi
 fi
-readonly EDGE_DEMO_ID
+readonly TARGET_DEMO_ID
 
 # ============================================================================
-# PRE-FLIGHT GUARD (on apps01 source): assert every carried set is demo-only.
+# PRE-FLIGHT GUARD (on the source): assert every carried set is demo-only.
 # Each query MUST return 0. A non-zero result means a scope predicate is wrong
 # and we would leak another user's rows — ABORT immediately.
 # ============================================================================
@@ -243,13 +243,13 @@ preflight "mood_entry_tag_links(join)" \
 
 # GUARD: mood_entry_tag_links must reference ONLY global mood_tags (user_id IS
 # NULL on the tag). The demo is asserted to have 0 custom mood_tags; if a link
-# referenced a per-user tag id, the FK would break on edge01 (that tag row is
+# referenced a per-user tag id, the FK would break on the target (that tag row is
 # not carried). Custom-tag count MUST be 0.
 DEMO_CUSTOM_MOODTAGS="$(psql_src "-tA -c \"SELECT count(*) FROM mood_tags WHERE user_id = '$DEMO_USER_ID';\"" | tr -d '[:space:]')"
 echo "    demo custom mood_tags = $DEMO_CUSTOM_MOODTAGS (must be 0 — all links point to GLOBAL tags)"
 if [[ "$DEMO_CUSTOM_MOODTAGS" != "0" ]]; then
   echo "ABORT: demo user owns $DEMO_CUSTOM_MOODTAGS custom mood_tags. mood_entry_tag_links"
-  echo "       would reference non-global tag ids that are NOT carried -> FK break on edge01."
+  echo "       would reference non-global tag ids that are NOT carried -> FK break on the target."
   echo "       Carry mood_tags (user-scoped) before mood_entry_tag_links, or skip the links."
   exit 1
 fi
@@ -260,55 +260,55 @@ preflight "mood_entry_tag_links(non-global tag)" \
 echo "## PRE-FLIGHT guard passed — every carried set is demo-only."
 
 # ============================================================================
-# WIPE-FIRST on edge01 (idempotent, demo-scoped ONLY). FK-child-first order.
-# Every DELETE is scoped to the resolved edge01 demo user id ($EDGE_DEMO_ID)
+# WIPE-FIRST on the target (idempotent, demo-scoped ONLY). FK-child-first order.
+# Every DELETE is scoped to the resolved target demo user id ($TARGET_DEMO_ID)
 # or via a join back to it. NEVER an unscoped DELETE. Skipped entirely if no
 # existing demo user was found.
 # ============================================================================
 echo
-if [[ -n "$EDGE_DEMO_ID" ]]; then
-  echo "## WIPE edge01 demo rows (scoped to $EDGE_DEMO_ID), FK-child-first ..."
-  # NOTE: edge01 FKs are ON DELETE CASCADE for most child rows; the explicit
+if [[ -n "$TARGET_DEMO_ID" ]]; then
+  echo "## WIPE target demo rows (scoped to $TARGET_DEMO_ID), FK-child-first ..."
+  # NOTE: target FKs are ON DELETE CASCADE for most child rows; the explicit
   # child-first deletes below are belt-and-braces (some child tables hang off
   # medications/mood_entries, not the user) and keep the operation transparent.
   psql_dst <<SQL
 \set ON_ERROR_STOP on
 BEGIN;
 -- join-scoped children of the demo's medications
-DELETE FROM reminder_phase_configs       WHERE medication_id IN (SELECT id FROM medications      WHERE user_id = '$EDGE_DEMO_ID');
-DELETE FROM medication_inventory_events  WHERE medication_id IN (SELECT id FROM medications      WHERE user_id = '$EDGE_DEMO_ID');
-DELETE FROM medication_dose_changes      WHERE medication_id IN (SELECT id FROM medications      WHERE user_id = '$EDGE_DEMO_ID');
-DELETE FROM medication_schedules         WHERE medication_id IN (SELECT id FROM medications      WHERE user_id = '$EDGE_DEMO_ID');
+DELETE FROM reminder_phase_configs       WHERE medication_id IN (SELECT id FROM medications      WHERE user_id = '$TARGET_DEMO_ID');
+DELETE FROM medication_inventory_events  WHERE medication_id IN (SELECT id FROM medications      WHERE user_id = '$TARGET_DEMO_ID');
+DELETE FROM medication_dose_changes      WHERE medication_id IN (SELECT id FROM medications      WHERE user_id = '$TARGET_DEMO_ID');
+DELETE FROM medication_schedules         WHERE medication_id IN (SELECT id FROM medications      WHERE user_id = '$TARGET_DEMO_ID');
 -- join-scoped children of the demo's mood_entries / cycle_day_logs
-DELETE FROM mood_entry_tag_links         WHERE mood_entry_id IN (SELECT id FROM mood_entries     WHERE user_id = '$EDGE_DEMO_ID');
-DELETE FROM cycle_symptom_links          WHERE day_log_id    IN (SELECT id FROM cycle_day_logs   WHERE user_id = '$EDGE_DEMO_ID');
+DELETE FROM mood_entry_tag_links         WHERE mood_entry_id IN (SELECT id FROM mood_entries     WHERE user_id = '$TARGET_DEMO_ID');
+DELETE FROM cycle_symptom_links          WHERE day_log_id    IN (SELECT id FROM cycle_day_logs   WHERE user_id = '$TARGET_DEMO_ID');
 -- user_id-scoped tables
-DELETE FROM medication_inventory_items   WHERE user_id = '$EDGE_DEMO_ID';
-DELETE FROM medication_side_effects      WHERE user_id = '$EDGE_DEMO_ID';
-DELETE FROM medication_intake_events     WHERE user_id = '$EDGE_DEMO_ID';
-DELETE FROM medications                  WHERE user_id = '$EDGE_DEMO_ID';
-DELETE FROM mood_entries                 WHERE user_id = '$EDGE_DEMO_ID';
-DELETE FROM cycle_day_logs               WHERE user_id = '$EDGE_DEMO_ID';
-DELETE FROM menstrual_cycles             WHERE user_id = '$EDGE_DEMO_ID';
-DELETE FROM cycle_profiles               WHERE user_id = '$EDGE_DEMO_ID';
-DELETE FROM personal_records             WHERE user_id = '$EDGE_DEMO_ID';
-DELETE FROM user_achievements            WHERE user_id = '$EDGE_DEMO_ID';
-DELETE FROM consent_receipts             WHERE user_id = '$EDGE_DEMO_ID';
-DELETE FROM audit_logs                   WHERE user_id = '$EDGE_DEMO_ID';
+DELETE FROM medication_inventory_items   WHERE user_id = '$TARGET_DEMO_ID';
+DELETE FROM medication_side_effects      WHERE user_id = '$TARGET_DEMO_ID';
+DELETE FROM medication_intake_events     WHERE user_id = '$TARGET_DEMO_ID';
+DELETE FROM medications                  WHERE user_id = '$TARGET_DEMO_ID';
+DELETE FROM mood_entries                 WHERE user_id = '$TARGET_DEMO_ID';
+DELETE FROM cycle_day_logs               WHERE user_id = '$TARGET_DEMO_ID';
+DELETE FROM menstrual_cycles             WHERE user_id = '$TARGET_DEMO_ID';
+DELETE FROM cycle_profiles               WHERE user_id = '$TARGET_DEMO_ID';
+DELETE FROM personal_records             WHERE user_id = '$TARGET_DEMO_ID';
+DELETE FROM user_achievements            WHERE user_id = '$TARGET_DEMO_ID';
+DELETE FROM consent_receipts             WHERE user_id = '$TARGET_DEMO_ID';
+DELETE FROM audit_logs                   WHERE user_id = '$TARGET_DEMO_ID';
 -- regenerable / transient tables that may carry FK rows blocking the user delete
-DELETE FROM measurement_rollups          WHERE user_id = '$EDGE_DEMO_ID';
-DELETE FROM mood_entry_rollups           WHERE user_id = '$EDGE_DEMO_ID';
-DELETE FROM strain_trimp_cache           WHERE user_id = '$EDGE_DEMO_ID';
-DELETE FROM cycle_predictions            WHERE user_id = '$EDGE_DEMO_ID';
-DELETE FROM measurements                 WHERE user_id = '$EDGE_DEMO_ID';
+DELETE FROM measurement_rollups          WHERE user_id = '$TARGET_DEMO_ID';
+DELETE FROM mood_entry_rollups           WHERE user_id = '$TARGET_DEMO_ID';
+DELETE FROM strain_trimp_cache           WHERE user_id = '$TARGET_DEMO_ID';
+DELETE FROM cycle_predictions            WHERE user_id = '$TARGET_DEMO_ID';
+DELETE FROM measurements                 WHERE user_id = '$TARGET_DEMO_ID';
 -- finally the user row itself (any remaining ON DELETE CASCADE children of
 -- the EXCLUDED set — sessions, tokens, etc. — go with it).
-DELETE FROM users                        WHERE id = '$EDGE_DEMO_ID';
+DELETE FROM users                        WHERE id = '$TARGET_DEMO_ID';
 COMMIT;
 SQL
   echo "## WIPE complete."
 else
-  echo "## WIPE skipped — no existing edge01 demo user."
+  echo "## WIPE skipped — no existing target demo user."
 fi
 
 # ============================================================================
@@ -403,7 +403,7 @@ readonly MENSTRUAL_CYCLE_COLS="id, user_id, start_date, end_date, period_end_dat
   sync_version, deleted_at, created_at, updated_at"
 
 # cycle_day_logs — NULL the two app-encrypted columns (keyed to prod key,
-# absent on edge01). Carry the plaintext cycle fields.
+# absent on the target). Carry the plaintext cycle fields.
 readonly CYCLE_DAY_LOG_COLS="id, user_id, date, cycle_id, flow, intermenstrual_bleeding,
   basal_body_temp_c, ovulation_test, cervical_mucus, sexual_activity, protected_sex,
   pregnancy_test, progesterone_test, contraceptive, sensitive_encrypted, notes_encrypted,
@@ -472,7 +472,7 @@ copy_table() {
         -c \"\\copy $table($dst_cols) FROM STDIN (FORMAT csv, HEADER false)\""
   local n
   n="$(psql_dst "-tA -c \"SELECT count(*) FROM $table;\"" | tr -d '[:space:]' || echo '?')"
-  echo "   loaded; edge01 $table total rows now: $n"
+  echo "   loaded; target $table total rows now: $n"
 }
 
 # ============================================================================
@@ -509,7 +509,7 @@ PW_OK="$(printf '%s\n' \
   | ssh "$DST_SSH" "docker exec -i $DST_DB_CONTAINER \
       psql -X -tA -v ON_ERROR_STOP=1 -U $PG_USER -d $PG_DB" | tr -d '[:space:]')"
 if [[ "$PW_OK" != "1" ]]; then
-  echo "ABORT/FAIL: demo password_hash on edge01 is not the published literal (matched rows: $PW_OK)."
+  echo "ABORT/FAIL: demo password_hash on the target is not the published literal (matched rows: $PW_OK)."
   echo "            The demo login would be broken. Fix before serving the demo."
   exit 1
 fi
@@ -598,7 +598,7 @@ copy_table "audit_logs" "$AUDIT_LOG_COLS" \
   "audit_logs WHERE user_id = '$DEMO_USER_ID' AND action LIKE 'insights.%'" "$AUDIT_LOG_COLS"
 
 # ============================================================================
-# POST-LOAD VERIFICATION (on edge01).
+# POST-LOAD VERIFICATION (on the target).
 #   - per-table demo-user row counts (informational),
 #   - HARD assertion: the REAL operator id appears in NO carried table,
 #   - HARD assertion: every user_id-bearing carried table contains ONLY the
@@ -606,7 +606,7 @@ copy_table "audit_logs" "$AUDIT_LOG_COLS" \
 # ============================================================================
 echo
 echo "=============================================================="
-echo "## POST-LOAD verification on edge01"
+echo "## POST-LOAD verification on the target"
 echo "=============================================================="
 
 echo
@@ -657,7 +657,7 @@ REAL_HITS="$(psql_dst "-tA -c \"
 \"" | tr -d '[:space:]')"
 echo "    real-id occurrences across carried tables = $REAL_HITS"
 if [[ "$REAL_HITS" != "0" ]]; then
-  echo "ABORT/FAIL: operator id present in $REAL_HITS rows on edge01. Investigate immediately."
+  echo "ABORT/FAIL: operator id present in $REAL_HITS rows on the target. Investigate immediately."
   exit 1
 fi
 
@@ -680,22 +680,22 @@ FOREIGN_HITS="$(psql_dst "-tA -c \"
   + (SELECT count(*) FROM audit_logs               WHERE user_id <> '$DEMO_USER_ID');
 \"" | tr -d '[:space:]')"
 echo "    non-demo user_id rows across carried tables = $FOREIGN_HITS"
-echo "    NOTE: this counts EVERY non-demo row in these tables on edge01, not just"
+echo "    NOTE: this counts EVERY non-demo row in these tables on the target, not just"
 echo "          what this script loaded. On a clean demo DB it should be 0. If the"
-echo "          edge01 demo DB legitimately holds other demo-only accounts, scope"
+echo "          target demo DB legitimately holds other demo-only accounts, scope"
 echo "          this assertion to the rows this run inserted before treating >0 as fatal."
 if [[ "$FOREIGN_HITS" != "0" ]]; then
-  echo "WARNING: $FOREIGN_HITS non-demo rows exist in carried tables on edge01."
+  echo "WARNING: $FOREIGN_HITS non-demo rows exist in carried tables on the target."
   echo "         Inspect before serving the demo (see note above)."
 fi
 
 echo
-echo "HARD assertion 3: the demo user exists on edge01 with role=ADMIN and the apps01 id."
+echo "HARD assertion 3: the demo user exists on the target with role=ADMIN and the source id."
 psql_dst "-c \"SELECT id, username, role, telegram_enabled FROM users WHERE id = '$DEMO_USER_ID';\""
 
 echo
 echo "=============================================================="
 echo " DONE. Review the counts above. Demo user is role=ADMIN; the"
-echo " app's DEMO_MODE must remain ON on edge01 so all mutations are"
+echo " app's DEMO_MODE must remain ON on the target so all mutations are"
 echo " blocked at the proxy layer while admin pages stay viewable."
 echo "=============================================================="

@@ -1518,7 +1518,6 @@
     "glp1NextInjectionToday": "hoje",
     "glp1NextInjectionTomorrow": "amanhã",
     "glp1RotationSuggested": "Próximo recomendado: {site}",
-    "glp1LogSideEffect": "Registrar efeito colateral",
     "sideEffects": {
       "section": "Efeitos colaterais",
       "addCta": "Registrar",
@@ -5680,7 +5679,7 @@
           "title": "Diário de doenças",
           "description": "Visualização em lista e ordem dos episódios."
         },
-        "vorsorge": {
+        "checkups": {
           "title": "Check-ups",
           "description": "Visualização em lista e ordem dos lembretes."
         },
@@ -6105,7 +6104,7 @@
           "moduleSettingsDescription": "Tudo além da ordem e da visualização fica na página do módulo, em Módulos."
         }
       },
-      "gesundheitsakte": {
+      "health-record": {
         "title": "Registro de saúde",
         "subtitle": "Exporte um registro de saúde completo, pronto para o clínico."
       },
@@ -10210,6 +10209,7 @@
       "BLOOD_PRESSURE_SYS": "Pressão arterial",
       "PULSE": "Pulso",
       "BLOOD_GLUCOSE": "Glicemia",
+      "BLOOD_KETONES": "Cetonas no sangue",
       "OXYGEN_SATURATION": "Saturação de oxigênio",
       "BODY_FAT": "Gordura corporal",
       "BODY_TEMPERATURE": "Temperatura corporal",

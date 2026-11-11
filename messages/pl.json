@@ -1518,7 +1518,6 @@
     "glp1NextInjectionToday": "dziś",
     "glp1NextInjectionTomorrow": "jutro",
     "glp1RotationSuggested": "Sugerowane: {site}",
-    "glp1LogSideEffect": "Zapisz działanie niepożądane",
     "sideEffects": {
       "section": "Skutki uboczne",
       "addCta": "Dodaj",
@@ -1712,7 +1711,7 @@
         "step1": {
           "title": "Jak nazywa się lek?",
           "subline": "Dokładnie tak, jak na opakowaniu.",
-          "label": "Name",
+          "label": "Nazwa",
           "placeholder": "np. Ramipryl",
           "short": "Nazwa"
         },
@@ -5680,7 +5679,7 @@
           "title": "Dziennik chorób",
           "description": "Widok listy i kolejność epizodów."
         },
-        "vorsorge": {
+        "checkups": {
           "title": "Badania kontrolne",
           "description": "Widok listy i kolejność przypomnień."
         },
@@ -6105,7 +6104,7 @@
           "moduleSettingsDescription": "Wszystko poza kolejnością i widokiem jest na stronie modułu w Modułach."
         }
       },
-      "gesundheitsakte": {
+      "health-record": {
         "title": "Dokumentacja zdrowotna",
         "subtitle": "Eksportuj kompletną dokumentację zdrowotną gotową dla lekarza."
       },
@@ -10210,6 +10209,7 @@
       "BLOOD_PRESSURE_SYS": "Ciśnienie krwi",
       "PULSE": "Tętno",
       "BLOOD_GLUCOSE": "Glukoza we krwi",
+      "BLOOD_KETONES": "Ketony we krwi",
       "OXYGEN_SATURATION": "Saturacja tlenem",
       "BODY_FAT": "Tkanka tłuszczowa",
       "BODY_TEMPERATURE": "Temperatura ciała",
@@ -11054,7 +11054,7 @@
       "notePlaceholder": "Jak minął dzień (zaszyfrowane).",
       "severityFor": "Nasilenie: {symptom}",
       "saveError": "Nie udało się zapisać dnia. Spróbuj ponownie.",
-      "day": "Day"
+      "day": "Dzień"
     },
     "impact": {
       "0": "Pełna sprawność",
@@ -11143,14 +11143,14 @@
       "RESTING_HEART_RATE": "Spoczynkowe tętno",
       "HEART_RATE_VARIABILITY": "Zmienność rytmu serca",
       "HRV_RMSSD": "HRV (RMSSD)",
-      "RECOVERY_SCORE": "Recovery",
+      "RECOVERY_SCORE": "Regeneracja",
       "OXYGEN_SATURATION": "Saturacja tlenem",
       "BODY_TEMPERATURE": "Temperatura ciała",
       "RESPIRATORY_RATE": "Częstość oddechów",
       "BLOOD_PRESSURE_SYS": "Ciśnienie skurczowe",
       "BLOOD_PRESSURE_DIA": "Ciśnienie rozkurczowe",
-      "PULSE": "Pulse",
-      "WEIGHT": "Weight",
+      "PULSE": "Tętno",
+      "WEIGHT": "Waga",
       "FUNCTIONAL_IMPACT": "Wpływ na funkcjonowanie"
     },
     "listLoadError": "Nie udało się załadować epizodów."

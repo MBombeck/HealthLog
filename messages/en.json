@@ -1518,7 +1518,6 @@
     "glp1NextInjectionToday": "today",
     "glp1NextInjectionTomorrow": "tomorrow",
     "glp1RotationSuggested": "Recommended next: {site}",
-    "glp1LogSideEffect": "Log side effect",
     "sideEffects": {
       "section": "Side effects",
       "addCta": "Log",
@@ -5680,7 +5679,7 @@
           "title": "Illness journal",
           "description": "List view and episode order."
         },
-        "vorsorge": {
+        "checkups": {
           "title": "Checkups",
           "description": "List view and reminder order."
         },
@@ -6105,7 +6104,7 @@
           "moduleSettingsDescription": "Everything beyond order and view lives on the module's page under Modules."
         }
       },
-      "gesundheitsakte": {
+      "health-record": {
         "title": "Health record",
         "subtitle": "Export a complete, clinician-ready health record."
       },
@@ -10210,6 +10209,7 @@
       "BLOOD_PRESSURE_SYS": "Blood pressure",
       "PULSE": "Pulse",
       "BLOOD_GLUCOSE": "Blood glucose",
+      "BLOOD_KETONES": "Blood ketones",
       "OXYGEN_SATURATION": "Oxygen saturation",
       "BODY_FAT": "Body fat",
       "BODY_TEMPERATURE": "Body temperature",

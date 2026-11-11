@@ -247,7 +247,7 @@ async function openReportPanel(page: Page): Promise<void> {
       response.request().method() === "GET" &&
       new URL(response.url()).pathname === "/api/share-links",
   );
-  await page.goto("/settings/gesundheitsakte", {
+  await page.goto("/settings/health-record", {
     waitUntil: "domcontentloaded",
   });
   await boundaryHydrated;

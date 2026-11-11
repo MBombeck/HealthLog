@@ -21,10 +21,8 @@
  *
  * The default `eventType` is `SYSTEM_ALERT` — the only event type that
  * predates F21 outside of the medication-reminder lane. Callers that
- * need a different event type pass it explicitly; the `channel` option
- * is reserved for a future per-channel routing pass and is currently
- * a no-op (the dispatcher fans the message across every enabled
- * channel as before).
+ * need a different event type pass it explicitly. The dispatcher fans
+ * the message across every enabled channel.
  *
  * v1.4.28 (R1.2 H5) — the locale lookup previously fired
  * `prisma.user.findUnique` on every call. A 30-second TTL LRU keyed on
@@ -50,13 +48,6 @@ interface DispatchLocalisedOptions {
   titleKey: string;
   messageKey: string;
   params?: Record<string, string | number>;
-  /**
-   * Per-channel routing is forward-compat scaffolding. Today the
-   * dispatcher fans out across every enabled channel for the user; the
-   * option is accepted so call-sites can declare intent without
-   * needing a second helper later.
-   */
-  channel?: "telegram" | "email";
   /** Event type for preference gating. Defaults to SYSTEM_ALERT. */
   eventType?: EventType;
   /** Channel-specific extras forwarded to the dispatcher metadata. */
@@ -162,13 +153,6 @@ export async function dispatchLocalisedNotification(
     );
   }
 
-  // `channel` is accepted for future per-channel routing; today it
-  // is silently passed through. Suppress unused-var lint by referencing
-  // it on the metadata if present.
-  const metadata = opts.channel
-    ? { ...(opts.metadata ?? {}), preferredChannel: opts.channel }
-    : opts.metadata;
-
   await dispatchNotification({
     eventType: opts.eventType ?? "SYSTEM_ALERT",
     userId: opts.userId,
@@ -177,7 +161,7 @@ export async function dispatchLocalisedNotification(
     title,
     message,
     renderForRecipient,
-    metadata,
+    metadata: opts.metadata,
     managedFanoutEvent: opts.managedFanoutEvent,
     urgent: opts.urgent,
   });

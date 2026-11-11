@@ -17,7 +17,7 @@
  * so a provider-less / sparse account costs only the context build.
  *
  * Recurring pg-boss task — never runs inside an HTTP request, never shells out
- * to `tsx` (CLAUDE.md DO-NOTs).
+ * to `tsx` (the production image has none).
  */
 import { ACTIVE_ACCOUNT } from "@/lib/account-deletion/active-account";
 import type { PrismaClient } from "@/generated/prisma/client";

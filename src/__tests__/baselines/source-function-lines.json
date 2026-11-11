@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 336,
-  "total": 109328,
+  "total": 109312,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -145,10 +145,10 @@
     "components/measurement-reminders/vorsorge-section.tsx :: VorsorgeSection": 352,
     "components/measurements/measurement-form.tsx :: MeasurementForm": 496,
     "components/medications/detail/efficacy/efficacy-chart.tsx :: EfficacyChart": 361,
-    "components/medications/detail/medication-detail-tabs.tsx :: MedicationDetailTabs": 767,
+    "components/medications/detail/medication-detail-tabs.tsx :: MedicationDetailTabs": 760,
     "components/medications/dose-history-add-dialog.tsx :: LedgerAddDialog": 221,
     "components/medications/dose-strength-curve.tsx :: DoseStrengthCurve": 266,
-    "components/medications/glp1-medication-card.tsx :: Glp1MedicationCard": 405,
+    "components/medications/glp1-medication-card.tsx :: Glp1MedicationCard": 396,
     "components/medications/injection-site-picker.tsx :: InjectionSitePicker": 287,
     "components/medications/intake-history-list-v2.tsx :: IntakeHistoryListV2": 403,
     "components/medications/intake-import-dialog.tsx :: IntakeImportDialog": 201,

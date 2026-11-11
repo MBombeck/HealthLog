@@ -28,7 +28,7 @@ const LAYOUT_CHILD_SLUGS = new Set([
   "mood",
   "labs",
   "illness",
-  "vorsorge",
+  "checkups",
 ]);
 
 export function SettingsSectionFrame({

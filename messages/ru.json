@@ -1518,7 +1518,6 @@
     "glp1NextInjectionToday": "сегодня",
     "glp1NextInjectionTomorrow": "завтра",
     "glp1RotationSuggested": "Рекомендуется следующее: {site}",
-    "glp1LogSideEffect": "Записать побочный эффект",
     "sideEffects": {
       "section": "Побочные эффекты",
       "addCta": "Записать",
@@ -5680,7 +5679,7 @@
           "title": "Дневник болезней",
           "description": "Вид списка и порядок эпизодов."
         },
-        "vorsorge": {
+        "checkups": {
           "title": "Профилактика",
           "description": "Вид списка и порядок напоминаний."
         },
@@ -6105,7 +6104,7 @@
           "moduleSettingsDescription": "Всё, кроме порядка и вида, настраивается на странице модуля в разделе «Модули»."
         }
       },
-      "gesundheitsakte": {
+      "health-record": {
         "title": "Медицинская карта",
         "subtitle": "Экспортируйте полную медицинскую карту, готовую для врача."
       },
@@ -10210,6 +10209,7 @@
       "BLOOD_PRESSURE_SYS": "АД",
       "PULSE": "Пульс",
       "BLOOD_GLUCOSE": "Глюкоза крови",
+      "BLOOD_KETONES": "Кетоны крови",
       "OXYGEN_SATURATION": "Насыщение кислородом",
       "BODY_FAT": "Процент жировой массы",
       "BODY_TEMPERATURE": "Температура тела",

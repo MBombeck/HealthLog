@@ -30,7 +30,7 @@ import { canReadBodySites } from "@/hooks/use-body-sites";
 
 import { IllnessCorrelationCard } from "./illness-correlation-card";
 import { IllnessDayTimeline } from "./illness-day-timeline";
-import { LogDaySheet } from "./log-day-sheet";
+import { LogDaySheet, useLastLoggableDay } from "./log-day-sheet";
 import { NewEpisodeSheet } from "./new-episode-sheet";
 import { EpisodeMenu } from "./episode-menu";
 import { useIllnessEpisode, useResolveEpisode } from "./use-illness";
@@ -66,6 +66,7 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
   const [logOpen, setLogOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const today = todayLocal();
+  const logLastDay = useLastLoggableDay(today, episode?.resolvedAt);
 
   if (isError) {
     return (
@@ -226,7 +227,7 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
             open={logOpen}
             onOpenChange={setLogOpen}
             episodeId={episode.id}
-            date={today}
+            date={logLastDay}
             onsetDate={episode.onsetAt.slice(0, 10)}
           />
           <NewEpisodeSheet

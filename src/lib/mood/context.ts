@@ -10,7 +10,7 @@
  * both directions.
  *
  * Everything is built field by field from the parsed body. Nothing is spread
- * from a request (`CLAUDE.md`, no mass assignment), and the two multi-select
+ * from a request (no mass assignment), and the two multi-select
  * lists go through the vocabulary module's encoder rather than a local
  * `JSON.stringify`.
  */

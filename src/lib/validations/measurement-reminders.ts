@@ -45,6 +45,8 @@ export const measurementReminderTypeEnum = z
     "BLOOD_PRESSURE_SYS",
     "PULSE",
     "BLOOD_GLUCOSE",
+    // Ketones come off the same fingerstick meter as glucose.
+    "BLOOD_KETONES",
     "OXYGEN_SATURATION",
     "BODY_TEMPERATURE",
     // Body composition (one scale reading produces the whole family)

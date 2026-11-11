@@ -21,7 +21,7 @@ export default function IntakeHistoryRedirectPage({
   const router = useRouter();
 
   useEffect(() => {
-    router.replace(`/medications/${id}?tab=verlauf`);
+    router.replace(`/medications/${id}?tab=history`);
   }, [id, router]);
 
   return (

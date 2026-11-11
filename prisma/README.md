@@ -23,6 +23,6 @@ Number a new migration with the next free prefix. The production entrypoint runs
 
 - Encryption is fail-closed: `*Encrypted` columns are written through `@/lib/crypto` (AES-256-GCM, versioned key ids); never store plaintext in an encrypted column. Key rotation is `scripts/rotate-encryption-key.ts` + `docs/ops/encryption-key-rotation.md`.
 - The generated client under `src/generated/prisma` is build output — do not edit it.
-- Schema-touching changes that affect the API surface must regenerate `docs/api/openapi.yaml` (see [`../CLAUDE.md`](../CLAUDE.md)).
+- Schema-touching changes that affect the API surface must regenerate `docs/api/openapi.yaml` (`pnpm openapi:generate`; CI fails on drift).
 
 Related: [`../src/lib/README.md`](../src/lib/README.md) (`db.ts`, `rollups/`), [`../docs/ops/`](../docs/ops/) (migrations + backup runbooks).

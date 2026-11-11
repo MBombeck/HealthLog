@@ -22,6 +22,7 @@ describe("measurementReminderTypeEnum (V3 — completeness)", () => {
         "BLOOD_PRESSURE_SYS",
         "PULSE",
         "BLOOD_GLUCOSE",
+        "BLOOD_KETONES",
         "OXYGEN_SATURATION",
         "BODY_TEMPERATURE",
         // Body composition

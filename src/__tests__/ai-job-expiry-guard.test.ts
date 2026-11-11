@@ -51,7 +51,7 @@ import {
   stripComments,
   walkSourceFiles,
 } from "./helpers/source-files";
-import { QUEUE_RUNTIME, type QueueRuntime } from "@/lib/jobs/queue-runtime";
+import { QUEUE_RUNTIME, type QueueRuntime } from "./helpers/queue-runtime";
 import {
   COMPLETION_CEILING_MS,
   COMPREHENSIVE_WARM_CEILING_MS,

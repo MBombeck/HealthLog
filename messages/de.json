@@ -774,7 +774,7 @@
     "moveUp": "Nach oben",
     "moveDown": "Nach unten",
     "layoutTileColumn": "Kachel",
-    "layoutChartColumn": "Chart",
+    "layoutChartColumn": "Diagramm",
     "layoutNativeOnlyTitle": "In der mobilen App sichtbar",
     "layoutNativeOnlyHint": "Diese Widgets zeichnet die mobile App, nicht diese Seite. Sie liegen im selben gespeicherten Layout, hier wird ihre Sichtbarkeit gesetzt.",
     "dragHandle": "Zum Verschieben ziehen",
@@ -1518,7 +1518,6 @@
     "glp1NextInjectionToday": "heute",
     "glp1NextInjectionTomorrow": "morgen",
     "glp1RotationSuggested": "Empfohlen: {site}",
-    "glp1LogSideEffect": "Nebenwirkung loggen",
     "sideEffects": {
       "section": "Nebenwirkungen",
       "addCta": "Erfassen",
@@ -5680,7 +5679,7 @@
           "title": "Krankheitstagebuch",
           "description": "Listenansicht und Reihenfolge der Episoden."
         },
-        "vorsorge": {
+        "checkups": {
           "title": "Vorsorge",
           "description": "Listenansicht und Reihenfolge der Erinnerungen."
         },
@@ -6105,7 +6104,7 @@
           "moduleSettingsDescription": "Alles außer Reihenfolge und Ansicht findest du auf der Seite des Moduls unter Module."
         }
       },
-      "gesundheitsakte": {
+      "health-record": {
         "title": "Gesundheitsakte",
         "subtitle": "Exportiere eine vollständige, arzttaugliche Gesundheitsakte."
       },
@@ -10210,6 +10209,7 @@
       "BLOOD_PRESSURE_SYS": "Blutdruck",
       "PULSE": "Puls",
       "BLOOD_GLUCOSE": "Blutzucker",
+      "BLOOD_KETONES": "Blutketone",
       "OXYGEN_SATURATION": "Sauerstoffsättigung",
       "BODY_FAT": "Körperfett",
       "BODY_TEMPERATURE": "Körpertemperatur",
@@ -11054,7 +11054,7 @@
       "notePlaceholder": "Wie sich der Tag anfühlte (verschlüsselt).",
       "severityFor": "Stärke für {symptom}",
       "saveError": "Der Tag konnte nicht gespeichert werden. Bitte erneut versuchen.",
-      "day": "Day"
+      "day": "Tag"
     },
     "impact": {
       "0": "Voll belastbar",
@@ -11143,14 +11143,14 @@
       "RESTING_HEART_RATE": "Ruheherzfrequenz",
       "HEART_RATE_VARIABILITY": "Herzfrequenzvariabilität",
       "HRV_RMSSD": "HRV (RMSSD)",
-      "RECOVERY_SCORE": "Recovery",
+      "RECOVERY_SCORE": "Erholung",
       "OXYGEN_SATURATION": "Sauerstoffsättigung",
       "BODY_TEMPERATURE": "Körpertemperatur",
       "RESPIRATORY_RATE": "Atemfrequenz",
       "BLOOD_PRESSURE_SYS": "Systolischer Blutdruck",
       "BLOOD_PRESSURE_DIA": "Diastolischer Blutdruck",
-      "PULSE": "Pulse",
-      "WEIGHT": "Weight",
+      "PULSE": "Puls",
+      "WEIGHT": "Gewicht",
       "FUNCTIONAL_IMPACT": "Funktionelle Beeinträchtigung"
     },
     "listLoadError": "Episoden konnten nicht geladen werden."

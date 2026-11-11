@@ -1518,7 +1518,6 @@
     "glp1NextInjectionToday": "vandaag",
     "glp1NextInjectionTomorrow": "morgen",
     "glp1RotationSuggested": "Volgende aanbevolen plek: {site}",
-    "glp1LogSideEffect": "Bijwerking vastleggen",
     "sideEffects": {
       "section": "Bijwerkingen",
       "addCta": "Vastleggen",
@@ -5680,7 +5679,7 @@
           "title": "Ziektedagboek",
           "description": "Lijstweergave en volgorde van episodes."
         },
-        "vorsorge": {
+        "checkups": {
           "title": "Preventieve controles",
           "description": "Lijstweergave en volgorde van herinneringen."
         },
@@ -6105,7 +6104,7 @@
           "moduleSettingsDescription": "Al het andere staat op de pagina van de module onder Modules."
         }
       },
-      "gesundheitsakte": {
+      "health-record": {
         "title": "Gezondheidsdossier",
         "subtitle": "Exporteer een volledig gezondheidsdossier dat klaar is voor je zorgverlener."
       },
@@ -10210,6 +10209,7 @@
       "BLOOD_PRESSURE_SYS": "Bloeddruk",
       "PULSE": "Hartslag",
       "BLOOD_GLUCOSE": "Bloedglucose",
+      "BLOOD_KETONES": "Bloedketonen",
       "OXYGEN_SATURATION": "Zuurstofsaturatie",
       "BODY_FAT": "Vetpercentage",
       "BODY_TEMPERATURE": "Lichaamstemperatuur",

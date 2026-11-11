@@ -621,7 +621,7 @@ export async function runMedicationLowStockTick(
                 // the service-worker payload's click target. Lands on
                 // the detail page's Bestand (supply) tab, the surface
                 // the alert is about.
-                url: `/medications/${med.id}?tab=bestand`,
+                url: `/medications/${med.id}?tab=supply`,
               },
             });
             if (!outcome.dispatched) {

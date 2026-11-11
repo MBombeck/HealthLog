@@ -321,7 +321,7 @@ export function SinceLastVisit({
             className="min-h-11 sm:min-h-9"
           >
             <Link
-              href={`/settings/gesundheitsakte?reportFrom=${fromDay}&reportTo=${nextDay < today ? nextDay : today}`}
+              href={`/settings/health-record?reportFrom=${fromDay}&reportTo=${nextDay < today ? nextDay : today}`}
               data-slot="since-last-visit-report"
             >
               <FileText className="size-4" aria-hidden="true" />

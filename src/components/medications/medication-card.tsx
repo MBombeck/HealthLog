@@ -147,7 +147,7 @@ interface MedicationCardProps {
   onEdit: (med: Medication) => void;
   /**
    * v1.15.18 — navigates to the medication detail page's Verlauf tab
-   * (`/medications/{id}?tab=verlauf`). The parent owns the navigation.
+   * (`/medications/{id}?tab=history`). The parent owns the navigation.
    */
   onOpenHistory: (med: Medication) => void;
   /**

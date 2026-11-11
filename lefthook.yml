@@ -16,13 +16,7 @@
 # Per project policy (`--no-verify` is banned), prefer fixing the
 # finding over bypassing the hook.
 
-# Commit-message guard: the project voice rule (CLAUDE.md, "Voice and
-# privacy") states that commits are authored by the maintainer's git
-# identity alone and carry no tooling co-author trailer or session link.
-# Editors and CLIs add those trailers by default, and a message that
-# picks one up is only removable from the object store by a history
-# rewrite — so the check belongs here, before the commit exists, not in
-# a review pass afterwards.
+# Reject tool attribution trailers.
 commit-msg:
   commands:
     no-tooling-trailer:

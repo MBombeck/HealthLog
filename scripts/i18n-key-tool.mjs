@@ -1,5 +1,5 @@
 /**
- * One-shot helper for a text sweep across the six locale bundles.
+ * One-shot helper for a text sweep across every locale bundle.
  *
  *   node scripts/i18n-key-tool.mjs drop  <dotted.key> [...]
  *   node scripts/i18n-key-tool.mjs set   <locale> <dotted.key> <value>

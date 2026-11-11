@@ -30,4 +30,4 @@ The server and runtime toolkit. Everything that is not a page, component, or rou
 
 ## Conventions
 
-Kebab-case filenames. See [`../../CLAUDE.md`](../../CLAUDE.md) "Code conventions" and "Security-relevant patterns"; the critical-files map there cites the exact entry points. Most modules carry tests in a sibling `__tests__/`.
+Kebab-case filenames. Most modules carry tests in a sibling `__tests__/`.

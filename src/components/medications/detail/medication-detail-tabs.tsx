@@ -6,12 +6,12 @@
  * Promotes the detail page from a read-only history view to the
  * canonical home for ONE medication. The modal `<AdvancedSettingsSheet>`
  * is dissolved into the Erweitert tab (no more five-card stack in a
- * sheet) and the separate `/history` route folds into the Verlauf tab
- * (the route now redirects to `?tab=verlauf`).
+ * sheet) and the separate `/history` route folds into the history tab
+ * (the route now redirects to `?tab=history`).
  *
  * Tab state lives in the URL (`?tab=<slug>`), so a tab is deep-linkable,
  * survives reload, and is reachable from the medications-list card kebab
- * (History→verlauf). The kebab's Edit arrives as `?edit=1`, which opens
+ * (History). The kebab's Edit arrives as `?edit=1`, which opens
  * the wizard in edit mode on top of the landing tab. Slugs are ASCII /
  * locale-independent; the visible labels are i18n.
  *
@@ -20,7 +20,7 @@
  * switch + the reminder grace), and Übersicht grew from a lone
  * compliance bar into the status landing surface (next due dose,
  * reminder state, supply runway — each with a jump link into its owner
- * tab). Stale `?tab=erinnerung` deep-links land on Zeitplan.
+ * tab). Stale `?tab=erinnerung` deep-links land on the schedule tab.
  *
  * Only the active tab body mounts (Radix `Tabs` default) so inactive tabs
  * do not fetch. The hero stays above the tabs as the always-visible
@@ -106,6 +106,12 @@ import { MedicationRelatedSection } from "@/components/medications/detail/medica
 import type { RelatedLink } from "@/lib/links/related";
 import { InlineAction } from "@/components/ui/inline-action";
 import { EmptyState } from "@/components/ui/empty-state";
+import {
+  resolveTabSlug,
+  TAB_LABEL_KEYS,
+  TAB_SLUGS,
+  type TabSlug,
+} from "@/components/medications/detail/tab-slugs";
 
 // v1.15.20 — Recharts stays out of the detail page's initial bundle:
 // both chart bodies load through `next/dynamic` (client-only) with the
@@ -202,20 +208,6 @@ export interface MedicationDetailSnapshot {
   related?: RelatedLink[];
 }
 
-// Slugs are ASCII / locale-independent so the URL stays stable across
-// locales; the visible labels resolve through i18n. The list drives both
-// the tab strip render and the `?tab=` round-trip validation.
-const TAB_SLUGS = [
-  "uebersicht",
-  "wirkung",
-  "zeitplan",
-  "bestand",
-  "verlauf",
-  "injektion",
-  "erweitert",
-] as const;
-type TabSlug = (typeof TAB_SLUGS)[number];
-
 /**
  * Tabs whose entire content is owner-only work: the schedule editor and its
  * plan history, the supply ledger, the external-token row, and the advanced
@@ -225,10 +217,10 @@ type TabSlug = (typeof TAB_SLUGS)[number];
 const OWNER_ONLY_TABS: ReadonlySet<TabSlug> = new Set([
   // Schedule times are a MANAGE route, but the tab also carries the reminder
   // and notification settings, which resolve the caller.
-  "zeitplan",
+  "schedule",
   // Phase config, export and the per-medication tokens (a credential
   // surface, never delegated) resolve the caller.
-  "erweitert",
+  "advanced",
 ]);
 
 /**
@@ -237,20 +229,7 @@ const OWNER_ONLY_TABS: ReadonlySet<TabSlug> = new Set([
  * is one; the three above are not, because each mixes in a route that
  * resolves the caller and would 403 under a switch.
  */
-const MANAGE_TABS: ReadonlySet<TabSlug> = new Set(["bestand"]);
-
-/**
- * Legacy slugs that point at a dissolved tab. The Erinnerung tab folded
- * into Zeitplan in v1.15.20; old deep-links keep landing on the surface
- * that now owns the reminder controls instead of falling back to the
- * landing tab.
- */
-const LEGACY_TAB_SLUGS: Record<string, TabSlug> = {
-  erinnerung: "zeitplan",
-  // The API tab folded back into Erweitert in v1.42: two tabs for the
-  // rarely-opened owner settings made a strip that could not fit a phone.
-  api: "erweitert",
-};
+const MANAGE_TABS: ReadonlySet<TabSlug> = new Set(["supply"]);
 
 function snapshotToWizardPayload(
   med: MedicationDetailSnapshot,
@@ -364,26 +343,26 @@ export function MedicationDetailTabs({
 
   // Only the active tab body mounts, but the tab REGISTRY must agree with
   // whatever `?tab=` carries — Injektion is absent for non-injectable
-  // medications, so a stale `?tab=injektion` deep-link falls back to the
+  // medications, so a stale `?tab=injection` deep-link falls back to the
   // landing tab instead of rendering an empty surface.
   // v1.16.11 — an as-needed medication has no schedule and never
   // reminds, so the Zeitplan tab (times editor + reminder card +
   // plan-history) does not apply and is dropped from the registry; a
-  // stale `?tab=zeitplan` deep-link falls back to the landing tab.
+  // stale `?tab=schedule` deep-link falls back to the landing tab.
   // v1.36.x — four tabs are nothing BUT owner work: the schedule editor, the
   // supply ledger, the external-token row and the advanced surface that holds
   // the wizard, the import and the destructive zone. None of it is delegated,
   // so inside somebody else's record they leave the registry entirely rather
   // than opening onto controls the server refuses — which also means a stale
-  // `?tab=erweitert` deep link lands on the landing tab, the same way an
+  // `?tab=advanced` deep link lands on the landing tab, the same way an
   // inapplicable tab already does.
   const availableTabs = useMemo<TabSlug[]>(
     () =>
       TAB_SLUGS.filter(
         (slug) =>
-          (slug !== "injektion" || isInjectable) &&
-          (slug !== "zeitplan" || !asNeeded) &&
-          (slug !== "wirkung" || hasEfficacyTarget) &&
+          (slug !== "injection" || isInjectable) &&
+          (slug !== "schedule" || !asNeeded) &&
+          (slug !== "effect" || hasEfficacyTarget) &&
           (!inSharedRecord || !OWNER_ONLY_TABS.has(slug)) &&
           (canManageMedications || !MANAGE_TABS.has(slug)),
       ),
@@ -396,14 +375,7 @@ export function MedicationDetailTabs({
     ],
   );
 
-  const requestedRaw = searchParams?.get("tab");
-  const requested = (
-    requestedRaw && requestedRaw in LEGACY_TAB_SLUGS
-      ? LEGACY_TAB_SLUGS[requestedRaw]
-      : requestedRaw
-  ) as TabSlug | null;
-  const activeTab: TabSlug =
-    requested && availableTabs.includes(requested) ? requested : "uebersicht";
+  const activeTab = resolveTabSlug(searchParams?.get("tab"), availableTabs);
 
   useEffect(() => {
     if (shouldOpenEditFromUrl) {
@@ -438,7 +410,7 @@ export function MedicationDetailTabs({
     },
     // v1.16.11 — no compliance read for an as-needed medication (the
     // section is hidden; there is no rate to fetch).
-    enabled: activeTab === "uebersicht" && !asNeeded,
+    enabled: activeTab === "overview" && !asNeeded,
     staleTime: 30_000,
   });
 
@@ -468,7 +440,7 @@ export function MedicationDetailTabs({
         return null;
       }
     },
-    enabled: activeTab === "uebersicht",
+    enabled: activeTab === "overview",
     staleTime: 30_000,
   });
 
@@ -549,7 +521,7 @@ export function MedicationDetailTabs({
               value={slug}
               data-slot={`medication-tab-${slug}`}
             >
-              {t(`medications.detail.tabs.${slug}`)}
+              {t(TAB_LABEL_KEYS[slug])}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -558,7 +530,7 @@ export function MedicationDetailTabs({
             reminder state and supply runway (each with a jump link into
             its owner tab), then the compliance readout. All values come
             from data the page already holds — no new endpoints. */}
-        <TabsContent value="uebersicht" className="space-y-6 pt-2">
+        <TabsContent value="overview" className="space-y-6 pt-2">
           <MedicationDetailSection
             titleId="medication-uebersicht-status-heading"
             title={t("medications.detail.uebersicht.statusTitle")}
@@ -583,7 +555,7 @@ export function MedicationDetailTabs({
                     ? t("medications.detail.uebersicht.jumpToVerlauf")
                     : t("medications.detail.uebersicht.jumpToZeitplan")
                 }
-                onJump={() => onTabChange(asNeeded ? "verlauf" : "zeitplan")}
+                onJump={() => onTabChange(asNeeded ? "history" : "schedule")}
                 dataSlot="uebersicht-next-dose"
               />
               {/* v1.16.11 — as-needed never reminds; the row would only
@@ -597,7 +569,7 @@ export function MedicationDetailTabs({
                       : t("medications.detail.uebersicht.reminderOff")
                   }
                   jumpLabel={t("medications.detail.uebersicht.jumpToZeitplan")}
-                  onJump={() => onTabChange("zeitplan")}
+                  onJump={() => onTabChange("schedule")}
                   dataSlot="uebersicht-reminder"
                 />
               )}
@@ -639,7 +611,7 @@ export function MedicationDetailTabs({
                     </>
                   }
                   jumpLabel={t("medications.detail.uebersicht.jumpToBestand")}
-                  onJump={() => onTabChange("bestand")}
+                  onJump={() => onTabChange("supply")}
                   dataSlot="uebersicht-supply"
                 />
               )}
@@ -692,10 +664,10 @@ export function MedicationDetailTabs({
             with a before/after comparison + adherence lane. Strictly
             descriptive; hidden for one-shot + no-target medications. */}
         {hasEfficacyTarget && (
-          <TabsContent value="wirkung" className="space-y-6 pt-2">
+          <TabsContent value="effect" className="space-y-6 pt-2">
             <EfficacyTab
               medicationId={id}
-              active={activeTab === "wirkung"}
+              active={activeTab === "effect"}
               isGlp1={isGlp1}
               medicationName={medication.name}
               medicationDose={medication.dose}
@@ -708,7 +680,7 @@ export function MedicationDetailTabs({
             notifications switch + the reminder grace, folded in from the
             dissolved Erinnerung tab). Cadence-kind stays structural (the
             hero's "Vollständig bearbeiten"). */}
-        <TabsContent value="zeitplan" className="space-y-6 pt-2">
+        <TabsContent value="schedule" className="space-y-6 pt-2">
           {/* v1.39.1 (#1033) — the intake-tracking switch leads the tab:
               it decides whether the times below are a dose plan or a
               record. */}
@@ -827,7 +799,7 @@ export function MedicationDetailTabs({
         </TabsContent>
 
         {/* BESTAND — inventory readout + register / correct flows. */}
-        <TabsContent value="bestand" className="space-y-4 pt-2">
+        <TabsContent value="supply" className="space-y-4 pt-2">
           <InventorySection
             medicationId={id}
             dosesPerUnit={medication.dosesPerUnit}
@@ -841,7 +813,7 @@ export function MedicationDetailTabs({
             optimistic recompute, edit/add (incl. the late-take "diesem
             Slot zuordnen?" nudge). CSV import lives under Erweitert →
             Daten (the DataPortabilityRow), not in this header. */}
-        <TabsContent value="verlauf" className="space-y-6 pt-2">
+        <TabsContent value="history" className="space-y-6 pt-2">
           <div className="flex justify-end">
             <Segmented
               mode="toggle"
@@ -887,7 +859,7 @@ export function MedicationDetailTabs({
             side-effect log; the body-map + adherence detail land next
             wave. */}
         {isInjectable && (
-          <TabsContent value="injektion" className="space-y-6 pt-2">
+          <TabsContent value="injection" className="space-y-6 pt-2">
             {/* Dose-escalation plan: completed + planned titration steps
                 with a "you are here" marker. Renders for every injectable
                 route (not GLP-1-only) since titration is a property of the
@@ -916,7 +888,7 @@ export function MedicationDetailTabs({
         {/* ERWEITERT — Lifecycle → Daten → external API → Gefahrenzone.
             The API tab folded back in here (v1.42); its group stays
             collapsed like the other two, and the danger zone stays last. */}
-        <TabsContent value="erweitert" className="space-y-4 pt-2">
+        <TabsContent value="advanced" className="space-y-4 pt-2">
           <SettingsGroup
             label={t("medications.detail.erweitert.group.lifecycle")}
             dataSlot="erweitert-group-lifecycle"
