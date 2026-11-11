@@ -204,21 +204,50 @@ describe("probeProviderChain", () => {
     expect(presence.managedBy).toBe("server");
   });
 
-  it("falls back to the legacy single provider only for an empty chain", async () => {
-    // A chain whose only entry is switched off resolves empty.
+  it("finds nothing on a saved chain whose entries are all switched off", async () => {
+    // The person picked Anthropic, then switched it off in their chain, and
+    // the operator has a key: neither may serve behind the switch.
     load(
       row({
         aiProviderChain: [
           { providerType: "anthropic", enabled: false, priority: 0 },
+          { providerType: "admin-openai", enabled: false, priority: 1 },
         ],
         aiProvider: "ANTHROPIC",
         aiAnthropicKeyEncrypted: "enc",
       }),
+      settings({ adminAiKeyEncrypted: "enc" }),
     );
     const presence = await probeProviderChain("u1", OWNER);
+    expect(presence.entries).toEqual([]);
+    expect(presence.managedBy).toBeNull();
+  });
+
+  it("serves the picked gateway on a chain never saved, under its own name", async () => {
+    // The default chain has no gateway entry, so the gateway the person picked
+    // is what serves them.
+    const gateway = {
+      aiProvider: "OPENAI_COMPATIBLE",
+      aiCompatBaseUrl: "https://gateway.example/v1",
+      aiCompatModel: "llama-3",
+    };
+    load(row(gateway));
+    const presence = await probeProviderChain("u1", OWNER);
     expect(presence.entries.map((e) => e.providerType)).toEqual([
-      "admin-openai",
+      "openai-compatible",
     ]);
+    expect(presence.managedBy).toBe("user");
+
+    // Once the person saved a chain without it, the chain is their word.
+    load(
+      row({
+        ...gateway,
+        aiProviderChain: [
+          { providerType: "local", enabled: true, priority: 1 },
+        ],
+      }),
+    );
+    expect((await probeProviderChain("u1", OWNER)).entries).toEqual([]);
   });
 
   it("carries the person's in-browser OCR opt-in", async () => {

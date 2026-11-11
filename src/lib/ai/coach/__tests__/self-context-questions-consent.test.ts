@@ -214,9 +214,9 @@ describe("deriveClarifyingQuestions — server-managed consent gate", () => {
     expect(provider.generateCompletion).not.toHaveBeenCalled();
   });
 
-  it("refuses when the legacy single-provider fallback serves the request", async () => {
-    // Empty chain → `resolveProvider` fallback, which is tagged `admin-openai`
-    // because an admin-key `OpenAIClient` is indistinguishable from a BYOK one.
+  it("sends nothing on an empty chain, even where the single-provider resolver has one", async () => {
+    // The chain is the person's switches; an empty one means no provider. The
+    // single-provider resolver ignores those switches, so it must not be asked.
     providerMocks.resolveProviderChain.mockResolvedValue([]);
     providerMocks.resolveProvider.mockResolvedValue(provider);
 

@@ -51,7 +51,6 @@ vi.mock("@/lib/ai/coach/budget", () => ({
 }));
 
 vi.mock("@/lib/ai/provider", () => ({
-  resolveProvider: vi.fn(async () => ({ type: "none" })),
   resolveProviderChain: vi.fn(async () => []),
 }));
 
@@ -82,7 +81,7 @@ import {
   reconcileSpend,
   resolveDailyCap,
 } from "@/lib/ai/coach/budget";
-import { resolveProvider, resolveProviderChain } from "@/lib/ai/provider";
+import { resolveProviderChain } from "@/lib/ai/provider";
 import {
   runRawCompletionWithFallback,
   AllProvidersFailedError,
@@ -382,9 +381,6 @@ describe("POST /api/medications/extract — validation + provider errors", () =>
   it("returns 503 when no provider is configured for the user", async () => {
     vi.mocked(requireAuth).mockResolvedValue(AUTH_OK as never);
     vi.mocked(resolveProviderChain).mockResolvedValueOnce([]);
-    vi.mocked(resolveProvider).mockResolvedValueOnce({
-      type: "none",
-    } as never);
 
     // The status stays 503 (a shipped client may branch on it) and gains the
     // code that says what it means.

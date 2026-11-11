@@ -58,7 +58,7 @@ export interface ProviderEntryPresence {
  * operator's key alone.
  */
 export interface ProviderPresence {
-  /** Usable entries in chain order, the central Codex and legacy fallback included. */
+  /** Usable entries in chain order, the central Codex and the picked gateway included. */
   entries: readonly ProviderEntryPresence[];
   /** The person's in-browser OCR opt-in, which lets a text-only provider read a document. */
   localOcrEnabled: boolean;

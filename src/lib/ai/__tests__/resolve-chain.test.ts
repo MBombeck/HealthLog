@@ -168,4 +168,66 @@ describe("resolveProviderChain", () => {
     const chain = await resolveProviderChain("user-1");
     expect(chain).toEqual([]);
   });
+
+  it("stays empty on a saved chain with every entry switched off", async () => {
+    // Only the local model on, its address missing; the person's own key and
+    // the operator's key are both switched off. Nothing may serve behind those
+    // switches, however the record's single provider field reads.
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+      aiProvider: "OPENAI",
+      aiModel: null,
+      aiBaseUrl: null,
+      aiAnthropicKeyEncrypted: null,
+      aiLocalKeyEncrypted: null,
+      aiOpenaiKeyEncrypted: "enc-openai",
+      aiProviderChain: [
+        { providerType: "local", priority: 1, enabled: true },
+        { providerType: "openai", priority: 2, enabled: false },
+        { providerType: "admin-openai", priority: 3, enabled: false },
+      ],
+    } as never);
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
+      adminAiKeyEncrypted: "enc-admin",
+      adminAiModel: "gpt-4o-mini",
+      adminAiBaseUrl: "https://api.openai.com/v1",
+    } as never);
+
+    expect(await resolveProviderChain("user-1")).toEqual([]);
+  });
+
+  it("serves the picked gateway, under its own name, on a chain never saved", async () => {
+    const gatewayRow = {
+      aiProvider: "OPENAI_COMPATIBLE",
+      aiModel: null,
+      aiBaseUrl: null,
+      aiAnthropicKeyEncrypted: null,
+      aiLocalKeyEncrypted: null,
+      aiOpenaiKeyEncrypted: null,
+      aiCompatBaseUrl: "https://gateway.example/v1",
+      aiCompatKeyEncrypted: null,
+      aiCompatModel: "llama-3",
+      role: "USER",
+    };
+    vi.mocked(prisma.user.findUnique)
+      .mockResolvedValueOnce({ ...gatewayRow, aiProviderChain: null } as never)
+      .mockResolvedValueOnce({
+        codexAccessTokenEncrypted: null,
+        codexRefreshTokenEncrypted: null,
+        codexTokenExpiresAt: null,
+        codexConnectionStatus: "disconnected",
+      } as never);
+    vi.mocked(prisma.appSettings.findUnique).mockResolvedValue({
+      adminAiKeyEncrypted: null,
+    } as never);
+
+    const chain = await resolveProviderChain("user-1");
+    expect(chain.map((c) => c.providerType)).toEqual(["openai-compatible"]);
+
+    // A saved chain without the gateway is the person's word.
+    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
+      ...gatewayRow,
+      aiProviderChain: [{ providerType: "local", priority: 1, enabled: true }],
+    } as never);
+    expect(await resolveProviderChain("user-1")).toEqual([]);
+  });
 });
