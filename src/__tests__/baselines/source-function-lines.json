@@ -70,7 +70,7 @@
     "components/charts/medication-compliance-chart.tsx :: MedicationComplianceChart": 543,
     "components/charts/mood-chart.tsx :: MoodChart": 896,
     "components/charts/mood-heatmap.tsx :: MoodHeatmap": 296,
-    "components/charts/trend-card.tsx :: TrendCard": 365,
+    "components/charts/trend-card.tsx :: TrendCard": 351,
     "components/clinician/clinician-view.tsx :: ClinicianView": 223,
     "components/command-palette/command-palette.tsx :: PaletteBody": 333,
     "components/custom-metrics/custom-metric-chart.tsx :: CustomMetricChart": 231,

@@ -12,7 +12,7 @@ import {
  * so the Targets card and the Insights reference panel render the
  * identical pill from the same server-emitted classification category.
  * These tests pin the category → semantic-group mapping (which drives
- * the pill colour) and the rendered label + range/source tooltip.
+ * the pill colour) and the rendered label + range/source popover.
  */
 
 function render(props: Parameters<typeof TargetStatusPill>[0]) {
@@ -61,8 +61,9 @@ describe("<TargetStatusPill>", () => {
     expect(html).toContain('data-slot="target-status-pill"');
     expect(html).toContain('data-status="in"');
     expect(html).toContain("Optimal");
-    // The tooltip trigger is the pill itself; the range/source content
-    // lives behind a closed Radix tooltip and is not in static markup.
+    // The pill sits in a button that opens the range and source on a tap;
+    // the popover is closed, so its content is not in static markup.
+    expect(html).toMatch(/<button type="button"[^>]*aria-haspopup="dialog"/);
     expect(html).toContain('data-state="closed"');
   });
 

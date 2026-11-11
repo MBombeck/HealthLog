@@ -85,16 +85,17 @@ describe("<RangeBar>", () => {
     expect(marker).toBeLessThan(100 - EDGE_PADDING_PERCENT);
   });
 
-  it("makes the marker focusable with a text alternative for the value + range (2026-07-17 a11y audit M1)", () => {
+  it("makes the marker a button named with the value + range, so a tap or a key opens its numbers", () => {
     const html = render({
       value: 72,
       min: 60,
       max: 100,
       unit: "bpm",
     });
-    expect(html).toContain('tabindex="0"');
-    expect(html).toContain('role="img"');
-    expect(html).toContain('aria-label="Current: 72 bpm');
+    expect(html).toMatch(
+      /<button type="button" aria-label="Current: 72 bpm[^"]*"/,
+    );
+    expect(html).toContain('aria-haspopup="dialog"');
   });
 
   it("prints value, bounds and delta in the reader's number format", () => {

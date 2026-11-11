@@ -4,11 +4,10 @@ import { ArrowDown, ArrowRight, ArrowUp, Minus } from "lucide-react";
 import type { TrendSlope } from "@/lib/analytics/trends";
 import { cn } from "@/lib/utils";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import type { ComparisonBaseline } from "@/lib/dashboard-layout";
 import {
@@ -23,6 +22,43 @@ interface SecondaryMetric {
   latest: number | null;
   avg7: number | null;
   avg30: number | null;
+}
+
+/**
+ * An average whose colour has a meaning: a tap shows what the colour says.
+ * The tile is a link to the metric's page, and this tap opens the hint, not
+ * the page.
+ */
+function HintedValue({
+  hint,
+  className,
+  children,
+}: {
+  hint: React.ReactNode;
+  className: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className="contents"
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      }}
+    >
+      <Popover>
+        <PopoverTrigger
+          className={cn(
+            "focus-visible:ring-ring/50 rounded-sm underline decoration-dotted underline-offset-2 focus-visible:ring-2 focus-visible:outline-none",
+            className,
+          )}
+        >
+          {children}
+        </PopoverTrigger>
+        <PopoverContent className="space-y-1">{hint}</PopoverContent>
+      </Popover>
+    </span>
+  );
 }
 
 interface TrendCardProps {
@@ -389,90 +425,76 @@ export function TrendCard({
           </span>
         )}
       </div>
-      <TooltipProvider>
-        {/* v1.4.29 — sub-row pair clips rather than wraps at `<sm`
+      {/* v1.4.29 — sub-row pair clips rather than wraps at `<sm`
             so a narrow tile cannot grow vertically beyond the
             140-px contract. `sm:` releases back to the original
             wrap behaviour. */}
-        <div className="text-muted-foreground mt-auto flex min-w-0 flex-nowrap items-baseline gap-x-3 overflow-hidden pt-1 text-xs leading-snug sm:flex-wrap sm:gap-y-1">
-          <span className="max-w-full min-w-0 [overflow-wrap:anywhere]">
-            {t(avg7LabelKey)}:{" "}
-            {avg7Hint ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span
-                    className={cn(
-                      "font-medium [overflow-wrap:anywhere] tabular-nums",
-                      avg7ColorClass,
-                    )}
-                  >
-                    {avg7 !== null ? renderPair(avg7, secondary?.avg7) : "—"}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent className="bg-muted border-border text-foreground">
-                  <div className="space-y-1 text-xs">{avg7Hint}</div>
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <span
-                className={cn(
-                  "font-medium [overflow-wrap:anywhere] tabular-nums",
-                  avg7ColorClass,
-                )}
-              >
-                {avg7 !== null ? renderPair(avg7, secondary?.avg7) : "—"}
-              </span>
-            )}
-            {trend7Delta != null && (
-              <span
-                className={cn(
-                  "ml-1 font-medium [overflow-wrap:anywhere] tabular-nums",
-                  deltaColor,
-                )}
-                data-slot="trend7-delta"
-                aria-label={`7-day trend ${formatDelta(trend7Delta)}`}
-              >
-                ({formatDelta(trend7Delta)})
-              </span>
-            )}
-          </span>
-          <span className="max-w-full min-w-0 [overflow-wrap:anywhere]">
-            {t("charts.avg30dShort")}:{" "}
-            {avg30Hint ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span
-                    className={cn(
-                      "font-medium [overflow-wrap:anywhere] tabular-nums",
-                      avg30ColorClass,
-                    )}
-                  >
-                    {avg30 !== null ? renderPair(avg30, secondary?.avg30) : "—"}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent className="bg-muted border-border text-foreground">
-                  <div className="space-y-1 text-xs">{avg30Hint}</div>
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <span
-                className={cn(
-                  "font-medium [overflow-wrap:anywhere] tabular-nums",
-                  avg30ColorClass,
-                )}
-              >
-                {avg30 !== null ? renderPair(avg30, secondary?.avg30) : "—"}
-              </span>
-            )}
-          </span>
-          {/* v1.4.28 — the all-time third sub-value retired
+      <div className="text-muted-foreground mt-auto flex min-w-0 flex-nowrap items-baseline gap-x-3 overflow-hidden pt-1 text-xs leading-snug sm:flex-wrap sm:gap-y-1">
+        <span className="max-w-full min-w-0 [overflow-wrap:anywhere]">
+          {t(avg7LabelKey)}:{" "}
+          {avg7Hint ? (
+            <HintedValue
+              hint={avg7Hint}
+              className={cn(
+                "font-medium [overflow-wrap:anywhere] tabular-nums",
+                avg7ColorClass,
+              )}
+            >
+              {avg7 !== null ? renderPair(avg7, secondary?.avg7) : "—"}
+            </HintedValue>
+          ) : (
+            <span
+              className={cn(
+                "font-medium [overflow-wrap:anywhere] tabular-nums",
+                avg7ColorClass,
+              )}
+            >
+              {avg7 !== null ? renderPair(avg7, secondary?.avg7) : "—"}
+            </span>
+          )}
+          {trend7Delta != null && (
+            <span
+              className={cn(
+                "ml-1 font-medium [overflow-wrap:anywhere] tabular-nums",
+                deltaColor,
+              )}
+              data-slot="trend7-delta"
+              aria-label={`7-day trend ${formatDelta(trend7Delta)}`}
+            >
+              ({formatDelta(trend7Delta)})
+            </span>
+          )}
+        </span>
+        <span className="max-w-full min-w-0 [overflow-wrap:anywhere]">
+          {t("charts.avg30dShort")}:{" "}
+          {avg30Hint ? (
+            <HintedValue
+              hint={avg30Hint}
+              className={cn(
+                "font-medium [overflow-wrap:anywhere] tabular-nums",
+                avg30ColorClass,
+              )}
+            >
+              {avg30 !== null ? renderPair(avg30, secondary?.avg30) : "—"}
+            </HintedValue>
+          ) : (
+            <span
+              className={cn(
+                "font-medium [overflow-wrap:anywhere] tabular-nums",
+                avg30ColorClass,
+              )}
+            >
+              {avg30 !== null ? renderPair(avg30, secondary?.avg30) : "—"}
+            </span>
+          )}
+        </span>
+        {/* v1.4.28 — the all-time third sub-value retired
               alongside the `avgAllTime*` props. The BD-Zielbereich
               tile was the only consumer; the same number stays
               visible on the Insights blood-pressure target panel with
               full context. Every dashboard tile now ships the same two
               sub-rows. */}
-        </div>
-      </TooltipProvider>
+      </div>
     </TrendTile>
   );
 }

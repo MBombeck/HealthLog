@@ -1,18 +1,17 @@
 "use client";
 
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 
 /**
  * A horizontal range bar with green/yellow/red zones showing where
- * the current value falls relative to a target range. The marker dot
- * carries a tooltip with the current value + the target range + a
- * delta sentence (e.g. "6 mmHg above target band").
+ * the current value falls relative to a target range. A tap on the marker
+ * dot shows the current value + the target range + a delta sentence (e.g.
+ * "6 mmHg above target band").
  *
  * Behaviour is unchanged from the v1.4.22 inline version; only the
  * file boundary moves.
@@ -43,6 +42,15 @@ export interface RangeBarProps {
  * same number the component clamps with, instead of a copy that can drift.
  */
 export const EDGE_PADDING_PERCENT = 4;
+
+/**
+ * The bar can sit in a list row that is itself a link: a tap on the marker
+ * or its popover opens the popover, not the row.
+ */
+function keepTapInside(event: React.MouseEvent) {
+  event.preventDefault();
+  event.stopPropagation();
+}
 
 export function RangeBar({
   value,
@@ -147,11 +155,7 @@ export function RangeBar({
         : t("targets.aboveTarget", { delta: fmt.number(delta, 1), unit })
       : t("targets.inTarget");
 
-  // The marker's value + range live only in a
-  // hover-only Radix tooltip on a non-focusable `<div>`. Reusing the same
-  // three strings the tooltip already shows as one text alternative closes
-  // 1.1.1 (no separate copy to drift) — `tabIndex` below makes the trigger
-  // focusable, which is all Radix needs to also open the tooltip on focus.
+  // The same three strings the popover shows, as the marker's name.
   const markerAriaLabel = [
     t("targets.currentValue", { value: show(value), unit }),
     t("targets.targetRangeValue", { min: show(min), max: show(max), unit }),
@@ -209,13 +213,12 @@ export function RangeBar({
             width: `${greenEnd - greenStart}%`,
           }}
         />
-        {/* Current value marker with tooltip */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div
-                role="img"
-                tabIndex={0}
+        {/* Current value marker; a tap shows its numbers. */}
+        <span className="contents" onClick={keepTapInside}>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
                 aria-label={markerAriaLabel}
                 className={`focus-visible:ring-ring absolute top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-pointer rounded-full shadow-sm focus-visible:ring-2 focus-visible:outline-none ${
                   compact ? "h-5 w-1 border" : "h-5 w-5 border-2"
@@ -226,8 +229,8 @@ export function RangeBar({
                   borderColor: markerColor,
                 }}
               />
-            </TooltipTrigger>
-            <TooltipContent>
+            </PopoverTrigger>
+            <PopoverContent>
               <p className="text-xs font-medium">
                 {t("targets.currentValue", { value: show(value), unit })}
               </p>
@@ -239,9 +242,9 @@ export function RangeBar({
                 })}
               </p>
               <p className="text-xs font-medium">{deltaText}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+            </PopoverContent>
+          </Popover>
+        </span>
       </div>
       <div
         className={`text-muted-foreground relative ${
