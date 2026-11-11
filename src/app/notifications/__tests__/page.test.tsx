@@ -143,8 +143,8 @@ describe("NotificationsPage", () => {
         },
       ],
       preferences: [],
-      eventTypes: ["MOOD_REMINDER", "PERSONAL_RECORD"],
-      eventDefaults: { MOOD_REMINDER: true, PERSONAL_RECORD: false },
+      eventTypes: ["MOOD_REMINDER", "DAILY_BRIEFING"],
+      eventDefaults: { MOOD_REMINDER: true, DAILY_BRIEFING: false },
     };
     const html = render();
     const state = (label: string) =>
@@ -152,10 +152,10 @@ describe("NotificationsPage", () => {
         `aria-label="${label} - Telegram"[^>]*data-state="(checked|unchecked)"|data-state="(checked|unchecked)"[^>]*aria-label="${label} - Telegram"`,
       ).exec(html);
     const mood = state("Mood reminder");
-    const record = state("Personal record");
+    const briefing = state("Daily briefing");
     expect(mood, "mood switch rendered").not.toBeNull();
     expect(mood?.[1] ?? mood?.[2]).toBe("checked");
-    expect(record?.[1] ?? record?.[2]).toBe("unchecked");
+    expect(briefing?.[1] ?? briefing?.[2]).toBe("unchecked");
   });
 
   it("a stored row still wins over the default", () => {

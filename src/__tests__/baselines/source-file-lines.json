@@ -82,7 +82,7 @@
     "lib/search/search-records.ts": 996,
     "lib/sharing/grants.ts": 806,
     "lib/support/report.ts": 903,
-    "lib/telegram-webhook-handlers.ts": 1341,
+    "lib/telegram-webhook-handlers.ts": 1313,
     "lib/validations/inbound-documents.ts": 1018,
     "lib/withings/sync-sleep.ts": 884,
     "lib/withings/sync.ts": 933,

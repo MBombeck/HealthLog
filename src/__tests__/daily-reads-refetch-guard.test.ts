@@ -234,7 +234,6 @@ describe("daily-reads refetch guard", () => {
     const routedThroughHelper = [
       "components/medications/take-all-due.ts",
       "components/medications/intake-edit-dialog.tsx",
-      "components/medications/intake-history-editable.tsx",
       "components/medications/intake-import-dialog.tsx",
       "components/medications/sections/destructive-zone-section.tsx",
       "components/medications/use-medication-intake.ts",

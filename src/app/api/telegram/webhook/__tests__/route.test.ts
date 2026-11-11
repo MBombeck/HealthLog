@@ -97,6 +97,8 @@ vi.mock("@/lib/medications/dose-day-refresh", () => ({
   refreshDoseSlot: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@/lib/modules/gate", () => ({ isModuleEnabled: vi.fn() }));
+
 import { POST, GET } from "../route";
 import { prisma } from "@/lib/db";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
@@ -112,6 +114,7 @@ import {
 } from "@/lib/mood/create-from-telegram";
 import { scheduleTelegramAutoDelete } from "@/lib/telegram-cleanup";
 import { satisfyReminder } from "@/lib/measurement-reminders/satisfy";
+import { isModuleEnabled } from "@/lib/modules/gate";
 
 const ORIGINAL_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 
@@ -134,6 +137,7 @@ const MEDICATION = { id: "med-1", name: "Ramipril" };
 function wireMedicationFindFirst(
   schedules: unknown[] = [],
   scheduleRevisions: unknown[] = [],
+  medication: Record<string, unknown> = MEDICATION,
 ) {
   vi.mocked(prisma.medication.findFirst).mockImplementation(((args: {
     select?: Record<string, unknown>;
@@ -149,7 +153,7 @@ function wireMedicationFindFirst(
         scheduleRevisions,
       });
     }
-    return Promise.resolve(MEDICATION);
+    return Promise.resolve(medication);
   }) as never);
 }
 
@@ -162,6 +166,7 @@ beforeEach(() => {
     resetAt: Date.now() + 60_000,
   } as never);
   vi.mocked(prisma.user.findFirst).mockResolvedValue(TG_USER as never);
+  vi.mocked(isModuleEnabled).mockResolvedValue(true);
   wireMedicationFindFirst();
   vi.mocked(prisma.medication.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.medication.update).mockResolvedValue({} as never);
@@ -1234,5 +1239,88 @@ describe("POST /api/telegram/webhook — record-only medications", () => {
       active: true,
       trackIntake: true,
     });
+  });
+});
+
+/**
+ * With the Medications module switched off the bot offers no dose and books
+ * none: the web shows no medication surface and the reminder jobs are
+ * silent, so a reminder button left in the chat, the /add list and the
+ * "taken" keyword do nothing either.
+ */
+describe("POST /api/telegram/webhook — Medications module off", () => {
+  function textUpdate(text: string) {
+    return {
+      update_id: 400,
+      message: { message_id: 40, text, chat: { id: 7777 }, from: { id: 7777 } },
+    };
+  }
+
+  beforeEach(() => {
+    vi.mocked(isModuleEnabled).mockResolvedValue(false);
+  });
+
+  it.each(["taken:med-1", "skip:med-1", "add:med-1"])(
+    "the %s button books nothing",
+    async (data) => {
+      const res = await POST(tgRequest(callbackUpdate(data)));
+      expect(res.status).toBe(200);
+      expect(isModuleEnabled).toHaveBeenCalledWith("user-1", "medications");
+      expect(prisma.medicationIntakeEvent.create).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    },
+  );
+
+  it("the snooze button snoozes nothing", async () => {
+    await POST(tgRequest(callbackUpdate("snooze:med-1:60")));
+    expect(prisma.medication.update).not.toHaveBeenCalled();
+    expect(vi.mocked(answerTelegramCallbackQuery).mock.calls[0][2]).toMatch(
+      /not found/i,
+    );
+  });
+
+  it("/add offers nothing", async () => {
+    await POST(tgRequest(textUpdate("/add")));
+    expect(prisma.medication.findMany).not.toHaveBeenCalled();
+    expect(vi.mocked(sendTelegramMessage).mock.calls[0][2]).toMatch(
+      /no active medications/i,
+    );
+  });
+
+  it("the 'taken' keyword records nothing", async () => {
+    await POST(tgRequest(textUpdate("taken Ramipril")));
+    expect(prisma.medicationIntakeEvent.create).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * A reminder button left in the chat takes no dose for a course that has
+ * since ended, which would also take a unit off the stock. The list side is
+ * pinned in `src/lib/__tests__/telegram-dose-medications.test.ts`.
+ */
+describe("POST /api/telegram/webhook — ended course", () => {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const ENDED = {
+    ...MEDICATION,
+    dose: "5 mg",
+    startsOn: new Date(Date.now() - 20 * DAY_MS),
+    endsOn: new Date(Date.now() - 3 * DAY_MS),
+    endedAt: null,
+  };
+  it("the taken button on an ended course books nothing", async () => {
+    wireMedicationFindFirst([], [], ENDED);
+    await POST(tgRequest(callbackUpdate("taken:med-1")));
+    expect(prisma.medicationIntakeEvent.create).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(vi.mocked(answerTelegramCallbackQuery).mock.calls[0][2]).toMatch(
+      /not found or inactive/i,
+    );
+  });
+
+  it("the skip button on an ended course books nothing", async () => {
+    wireMedicationFindFirst([], [], ENDED);
+    await POST(tgRequest(callbackUpdate("skip:med-1")));
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 });

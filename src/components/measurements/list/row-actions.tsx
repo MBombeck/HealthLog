@@ -44,9 +44,21 @@ export function rowState(m: Measurement, rows: MeasurementRowContext) {
 }
 
 /**
+ * A score the server computes (recovery, strain, stress) offers neither
+ * edit nor delete: its value is the engine's, the server refuses a changed
+ * one on save, and the edit sheet has nothing of the person's to correct.
+ * Readings from a device or a provider keep both: the server takes a note or
+ * time edit on them, and a wrong scale reading has to be removable.
+ */
+export function isServerComputed(m: Pick<Measurement, "source">): boolean {
+  return m.source === "COMPUTED";
+}
+
+/**
  * A row's controls: the chevron into a day's or night's samples for a
- * grouped row; edit (owner only) and delete for a reading. The table's
- * buttons are 40 px, the phone list's the large icon size.
+ * grouped row; edit (owner only) and delete for a reading, neither for a
+ * computed score. The table's buttons are 40 px, the phone list's the large
+ * icon size.
  */
 export function MeasurementRowActions({
   m,
@@ -85,7 +97,7 @@ export function MeasurementRowActions({
         className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
       />
     </Button>
-  ) : (
+  ) : isServerComputed(m) ? null : (
     <>
       {canManage && (
         <Button

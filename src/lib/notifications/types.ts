@@ -2,9 +2,8 @@ import type { Locale } from "@/lib/i18n/config";
 import type { NotificationQuickAction } from "@/lib/notifications/action-token";
 
 /**
- * Notification system type definitions.
- * Channels: Telegram, ntfy, Web Push
- * Events: medication reminders, anomalies, compliance, etc.
+ * Notification system type definitions: the channels a notification travels
+ * on and the event types it can carry.
  */
 
 export const CHANNEL_TYPES = [
@@ -30,13 +29,12 @@ export type ChannelType = (typeof CHANNEL_TYPES)[number];
 
 export const EVENT_TYPES = [
   "MEDICATION_REMINDER",
+  // The next three and PERSONAL_RECORD are never sent; see
+  // `UNSENT_EVENT_TYPES`.
   "MEASUREMENT_ANOMALY",
   "COMPLIANCE_LOW",
   "WITHINGS_SYNC_FAILED",
   "SYSTEM_ALERT",
-  // v1.4.25 — PR detection. Default OFF (see DEFAULT_EVENT_PREFS
-  // below) so a multi-year Apple Health backfill doesn't fire hundreds
-  // of pushes during initial sync.
   "PERSONAL_RECORD",
   // v0.5.4 ios-coord — daily mood-reminder nudge. Default OFF on the
   // per-event policy (see DEFAULT_EVENT_PREFS) and additionally gated
@@ -112,8 +110,7 @@ export const EVENT_TYPES = [
   // a deterministic floor). It is a nudge, NEVER the anomaly channel: it is
   // dispatched non-urgent, fired at most once per user per local day (the
   // `push_attempts` ledger is the frequency anchor), and only inside a local
-  // morning window, so a concerning reading always stays on
-  // `MEASUREMENT_ANOMALY` and this never bypasses Focus.
+  // morning window, so it never bypasses Focus.
   "DAILY_BRIEFING",
   // v1.36.x — somebody with a write grant on this record marked one of the
   // owner's doses. The only notification a delegated write produces: every
@@ -154,11 +151,9 @@ export type ManagedGuardianFanoutEvent =
  * exists. The dispatcher reads this to decide whether to fire on a
  * channel that has never been explicitly toggled for the event.
  *
- * Every event defaults to ON (the original opt-out model) EXCEPT
- * `PERSONAL_RECORD`: PRs are silent by default and require the user
- * to explicitly enable them in `/settings/notifications`. Rationale —
- * a fresh iOS install backfilling years of HealthKit history would
- * otherwise saturate the user's lock-screen on first launch.
+ * Events default to ON (the original opt-out model); the ones that
+ * default OFF say why beside their entry. The entries for
+ * `UNSENT_EVENT_TYPES` decide nothing, since nothing dispatches them.
  */
 export const EVENT_DEFAULT_ENABLED: Record<EventType, boolean> = {
   MEDICATION_REMINDER: true,
@@ -229,11 +224,38 @@ export const EVENT_DEFAULT_ENABLED: Record<EventType, boolean> = {
 /** Event types only an admin is ever sent, and only an admin is shown. */
 export const ADMIN_ONLY_EVENT_TYPES: readonly EventType[] = ["BACKUP_HEALTH"];
 
+/**
+ * Event types nothing sends. They stay in `EVENT_TYPES` because the
+ * preference write and stored preference rows still name them, but nobody is
+ * shown a switch for them and they carry no tap target: a switch for an event
+ * nobody emits would switch nothing. Withings failures reach admins as
+ * `SYSTEM_ALERT`.
+ */
+export const UNSENT_EVENT_TYPES = [
+  "MEASUREMENT_ANOMALY",
+  "COMPLIANCE_LOW",
+  "WITHINGS_SYNC_FAILED",
+  "PERSONAL_RECORD",
+] as const satisfies readonly EventType[];
+
+/** The event types something sends. */
+export type SentEventType = Exclude<
+  EventType,
+  (typeof UNSENT_EVENT_TYPES)[number]
+>;
+
+export function isSentEventType(type: string): type is SentEventType {
+  return (
+    (EVENT_TYPES as readonly string[]).includes(type) &&
+    !(UNSENT_EVENT_TYPES as readonly string[]).includes(type)
+  );
+}
+
 /** The event types a person with `role` can receive, in matrix order. */
-export function eventTypesForRole(role: string): EventType[] {
-  return role === "ADMIN"
-    ? [...EVENT_TYPES]
-    : EVENT_TYPES.filter((type) => !ADMIN_ONLY_EVENT_TYPES.includes(type));
+export function eventTypesForRole(role: string): SentEventType[] {
+  return EVENT_TYPES.filter(isSentEventType).filter(
+    (type) => role === "ADMIN" || !ADMIN_ONLY_EVENT_TYPES.includes(type),
+  );
 }
 
 export const CHANNEL_TYPE_LABELS: Record<ChannelType, string> = {

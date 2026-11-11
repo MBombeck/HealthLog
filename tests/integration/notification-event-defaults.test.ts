@@ -131,3 +131,49 @@ describe("event defaults: the matrix shows what delivery does", () => {
     );
   });
 });
+
+describe("events nothing sends", () => {
+  it("are listed for nobody, and their stored rows are not served", async () => {
+    const userId = await seedAccount(false);
+    const prisma = getPrismaClient();
+    const channel = await prisma.notificationChannel.findFirstOrThrow({
+      where: { userId },
+    });
+    // Rows written while the four switches were still offered.
+    await prisma.notificationPreference.createMany({
+      data: [
+        { channelId: channel.id, eventType: "PERSONAL_RECORD", enabled: true },
+        {
+          channelId: channel.id,
+          eventType: "MEASUREMENT_ANOMALY",
+          enabled: false,
+        },
+        {
+          channelId: channel.id,
+          eventType: "MEDICATION_REMINDER",
+          enabled: false,
+        },
+      ],
+    });
+
+    const { GET } = await import("@/app/api/notifications/preferences/route");
+    const res = await GET();
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: {
+        eventTypes: string[];
+        preferences: { eventType: string; enabled: boolean }[];
+      };
+    };
+    const { UNSENT_EVENT_TYPES } = await import("@/lib/notifications/types");
+    for (const unsent of UNSENT_EVENT_TYPES) {
+      expect(body.data.eventTypes).not.toContain(unsent);
+    }
+    expect(body.data.preferences).toEqual([
+      expect.objectContaining({
+        eventType: "MEDICATION_REMINDER",
+        enabled: false,
+      }),
+    ]);
+  });
+});

@@ -84,20 +84,25 @@ export const GET = apiHandler(async () => {
     globallyEnabled: globalToggles[ch.type] ?? true,
   }));
 
+  // Admin-only events (backup health) are listed for admins only, and an
+  // event nothing sends is listed for nobody: a switch for either would
+  // switch nothing. A stored row for an unlisted event stays in the table and
+  // is not served.
+  const eventTypes: string[] = eventTypesForRole(user.role);
   const preferences = channels.flatMap((ch) =>
-    ch.preferences.map((p) => ({
-      channelId: p.channelId,
-      eventType: p.eventType,
-      enabled: p.enabled,
-    })),
+    ch.preferences
+      .filter((p) => eventTypes.includes(p.eventType))
+      .map((p) => ({
+        channelId: p.channelId,
+        eventType: p.eventType,
+        enabled: p.enabled,
+      })),
   );
 
   return apiSuccess({
     channels: channelData,
     preferences,
-    // Admin-only events (backup health) are listed for admins only: nobody
-    // else is ever sent one, so a switch for it would switch nothing.
-    eventTypes: eventTypesForRole(user.role),
+    eventTypes,
     // What an event does on a channel with no stored row, resolved for this
     // account by the same function the dispatcher asks. A client renders a
     // switch without a row from this map, never from its own copy of the

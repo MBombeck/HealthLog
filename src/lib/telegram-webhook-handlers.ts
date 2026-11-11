@@ -37,10 +37,12 @@ import {
   isTelegramCapturableType,
   logTelegramMeasurement,
 } from "@/lib/measurements/create-from-telegram";
-// v1.39.1 (#1033) — every Telegram path that offers, records or snoozes a
-// dose (the /add list, the "taken" keyword, the reminder buttons) leaves a
-// medication kept as a record out, as the web and the today list do.
-import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
+// Every Telegram path that offers, records or snoozes a dose resolves the
+// medication here: tracked, active, course not ended, Medications module on.
+import {
+  findTelegramDoseMedication,
+  listTelegramDoseMedications,
+} from "@/lib/telegram-dose-medications";
 import { GREETING_WORDS, HELP_WORDS } from "@/lib/telegram-bare-words";
 
 /**
@@ -264,9 +266,8 @@ async function markMedicationTaken(
   reminderRef?: { chatId: string; messageId: number },
 ): Promise<{ ok: boolean; message: string; medicationName?: string }> {
   const { t } = getServerTranslator(locale);
-  const medication = await prisma.medication.findFirst({
-    where: { id: medicationId, userId, active: true, ...TRACKED_INTAKE_WHERE },
-    select: { id: true, name: true },
+  const medication = await findTelegramDoseMedication(userId, userTz, {
+    id: medicationId,
   });
   if (!medication) {
     return { ok: false, message: t("telegram.errorMedicationInactive") };
@@ -481,15 +482,11 @@ export async function handleCallback(update: TelegramUpdate) {
       return;
     }
 
-    const medication = await prisma.medication.findFirst({
-      where: {
-        id: medicationId,
-        userId: user.id,
-        active: true,
-        ...TRACKED_INTAKE_WHERE,
-      },
-      select: { id: true, name: true },
-    });
+    const medication = await findTelegramDoseMedication(
+      user.id,
+      user.timezone,
+      { id: medicationId },
+    );
     if (!medication) {
       await answerTelegramCallbackQuery(
         botToken,
@@ -528,15 +525,11 @@ export async function handleCallback(update: TelegramUpdate) {
       return;
     }
 
-    const medication = await prisma.medication.findFirst({
-      where: {
-        id: medicationId,
-        userId: user.id,
-        active: true,
-        ...TRACKED_INTAKE_WHERE,
-      },
-      select: { id: true, name: true },
-    });
+    const medication = await findTelegramDoseMedication(
+      user.id,
+      user.timezone,
+      { id: medicationId },
+    );
     if (!medication) {
       await answerTelegramCallbackQuery(
         botToken,
@@ -1155,11 +1148,7 @@ export async function handleTextMessage(update: TelegramUpdate) {
 
   if (/^\/add\b/i.test(text)) {
     const userMsgId = message?.message_id;
-    const meds = await prisma.medication.findMany({
-      where: { userId: user.id, active: true, ...TRACKED_INTAKE_WHERE },
-      select: { id: true, name: true, dose: true },
-      orderBy: [{ name: "asc" }, { id: "asc" }],
-    });
+    const meds = await listTelegramDoseMedications(user.id, user.timezone);
 
     if (meds.length === 0) {
       const resp = await sendTelegramMessage(
@@ -1260,23 +1249,12 @@ export async function handleTextMessage(update: TelegramUpdate) {
 
   let medicationId: string | null = null;
   if (nameInput) {
-    const med = await prisma.medication.findFirst({
-      where: {
-        userId: user.id,
-        active: true,
-        ...TRACKED_INTAKE_WHERE,
-        name: { equals: nameInput, mode: "insensitive" },
-      },
-      select: { id: true },
+    const med = await findTelegramDoseMedication(user.id, user.timezone, {
+      name: { equals: nameInput, mode: "insensitive" },
     });
     medicationId = med?.id ?? null;
   } else {
-    const meds = await prisma.medication.findMany({
-      where: { userId: user.id, active: true, ...TRACKED_INTAKE_WHERE },
-      select: { id: true, name: true },
-      orderBy: [{ name: "asc" }, { id: "asc" }],
-      take: 2,
-    });
+    const meds = await listTelegramDoseMedications(user.id, user.timezone);
     if (meds.length === 1) {
       medicationId = meds[0].id;
     } else {

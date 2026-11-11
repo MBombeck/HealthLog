@@ -13,29 +13,30 @@
  *  - Webhook  → `url` in the body (absolute URL)
  *  - Email    → a link line under the body (absolute URL)
  *
- * The map is typed `Record<EventType, …>`, so a new event type without a
- * target does not compile, and `tap-target.test.ts` walks `EVENT_TYPES` so a
- * target that stops resolving fails there too.
+ * The map is typed `Record<SentEventType, …>`, so a new event type without a
+ * target does not compile, and `tap-target.test.ts` walks the sent event
+ * types so a target that stops resolving fails there too. An event type
+ * nothing sends (`UNSENT_EVENT_TYPES`) has no entry and resolves to no target.
  *
  * A producer may name a more precise path in `metadata.url` (the low-stock
  * alert opens the medication's stock tab, the Coach nudge opens its own
  * conversation). That override is accepted only as a same-origin path, so a
  * value that names another host can never become a click target.
  */
-import type { EventType, NotificationPayload } from "@/lib/notifications/types";
+import type {
+  EventType,
+  NotificationPayload,
+  SentEventType,
+} from "@/lib/notifications/types";
 import { isManagedGuardianDelivery } from "@/lib/notifications/managed-delivery";
 
 /**
  * The default in-app path per event type. `null` means the event is never
  * shown to the user (a silent background push), so it carries no target.
  */
-export const NOTIFICATION_TAP_PATHS: Record<EventType, string | null> = {
+export const NOTIFICATION_TAP_PATHS: Record<SentEventType, string | null> = {
   MEDICATION_REMINDER: "/medications",
-  MEASUREMENT_ANOMALY: "/measurements",
-  COMPLIANCE_LOW: "/insights/medications",
-  WITHINGS_SYNC_FAILED: "/settings/integrations",
   SYSTEM_ALERT: "/",
-  PERSONAL_RECORD: "/achievements",
   // `?add=1` opens the mood entry sheet on the first paint, and only in the
   // recipient's own record: a session switched into another record opens the
   // page without the sheet (`src/app/mood/page-client.tsx`). No other target
@@ -97,7 +98,9 @@ export function resolveTapPath(
     "eventType" | "metadata" | "discreet" | "recordUserId" | "recipientUserId"
   >,
 ): string | null {
-  const fallback = NOTIFICATION_TAP_PATHS[payload.eventType];
+  const paths: Partial<Record<EventType, string | null>> =
+    NOTIFICATION_TAP_PATHS;
+  const fallback = paths[payload.eventType];
   if (fallback === null || fallback === undefined) return null;
   if (isManagedGuardianDelivery(payload)) return NEUTRAL_TAP_PATH;
   if (payload.discreet) return NEUTRAL_TAP_PATH;

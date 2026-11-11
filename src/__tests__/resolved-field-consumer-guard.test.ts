@@ -444,12 +444,10 @@ const V143_FIELDS: ResolvedFieldEntry[] = [
   {
     field: "GET /api/personal-records benchmark",
     props: ["awards.ts#benchmark"],
-    readers: [
-      {
-        file: "src/components/insights/personal-record-badge.tsx",
-        pattern: /fresh\.benchmark/,
-      },
-    ],
+    iosOnly: {
+      reason:
+        "the band was added for the native records screen (ios #116 item 5); no web surface reads `/api/personal-records` since the never-mounted badge that did was deleted",
+    },
   },
   {
     field: "GET /api/mood/insights patterns",

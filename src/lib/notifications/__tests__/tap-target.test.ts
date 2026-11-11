@@ -1,9 +1,9 @@
 /**
  * The event → tap-target map and its resolver.
  *
- * Walks `EVENT_TYPES` rather than the map's own keys, so an event type added
- * to the union without a decision about where it leads fails here (the
- * `Record<EventType, …>` type already refuses to compile without one; this
+ * Walks the sent event types rather than the map's own keys, so an event type
+ * added to the union without a decision about where it leads fails here (the
+ * `Record<SentEventType, …>` type already refuses to compile without one; this
  * pins that every entry is also a usable path).
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -19,6 +19,8 @@ import { buildNtfyMessage } from "@/lib/notifications/senders/ntfy";
 import { buildWebhookBody } from "@/lib/notifications/senders/webhook";
 import {
   EVENT_TYPES,
+  UNSENT_EVENT_TYPES,
+  isSentEventType,
   type EventType,
   type NotificationPayload,
 } from "@/lib/notifications/types";
@@ -35,6 +37,8 @@ import {
 /** Events never shown to the user, so they carry no target. */
 const SILENT: ReadonlySet<EventType> = new Set(["MEDICATION_INTAKE_SYNC"]);
 
+const SENT = EVENT_TYPES.filter(isSentEventType);
+
 const ORIGINAL = {
   APP_URL: process.env.APP_URL,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
@@ -48,9 +52,9 @@ afterEach(() => {
 });
 
 describe("NOTIFICATION_TAP_PATHS", () => {
-  it("names a target for every event type", () => {
-    expect(EVENT_TYPES.length).toBeGreaterThan(0);
-    for (const eventType of EVENT_TYPES) {
+  it("names a target for every sent event type", () => {
+    expect(SENT.length).toBeGreaterThan(0);
+    for (const eventType of SENT) {
       expect(
         Object.prototype.hasOwnProperty.call(NOTIFICATION_TAP_PATHS, eventType),
         `${eventType} has no tap target`,
@@ -68,16 +72,19 @@ describe("NOTIFICATION_TAP_PATHS", () => {
   it("keeps the targets the issue names", () => {
     expect(NOTIFICATION_TAP_PATHS.MOOD_REMINDER).toBe("/mood?add=1");
     expect(NOTIFICATION_TAP_PATHS.DAILY_BRIEFING).toBe("/");
-    expect(NOTIFICATION_TAP_PATHS.WITHINGS_SYNC_FAILED).toBe(
-      "/settings/integrations",
-    );
     expect(NOTIFICATION_TAP_PATHS.MEDICATION_REMINDER).toBe("/medications");
   });
 
-  it("has no entry for an event type outside the union", () => {
+  it("has no entry for an event type outside the sent set", () => {
     expect(Object.keys(NOTIFICATION_TAP_PATHS).sort()).toEqual(
-      [...EVENT_TYPES].sort(),
+      [...SENT].sort(),
     );
+  });
+
+  it("gives an event nothing sends no target", () => {
+    for (const eventType of UNSENT_EVENT_TYPES) {
+      expect(resolveTapPath({ eventType }), eventType).toBeNull();
+    }
   });
 });
 
@@ -212,7 +219,7 @@ describe("tap target on every kind and channel", () => {
   it.each(variants)("$name", async ({ extra, neutral }) => {
     process.env.APP_URL = "https://health.example";
     let checked = 0;
-    for (const eventType of EVENT_TYPES) {
+    for (const eventType of SENT) {
       const payload = await withDeliveryLinks(
         { userId: "u1", title: "t", message: "m", eventType, ...extra },
         "guardian-1",
@@ -244,6 +251,6 @@ describe("tap target on every kind and channel", () => {
       ).toBe(url);
       checked += 1;
     }
-    expect(checked).toBe(EVENT_TYPES.length - SILENT.size);
+    expect(checked).toBe(SENT.length - SILENT.size);
   });
 });

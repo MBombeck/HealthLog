@@ -284,9 +284,6 @@ const PINNED_AFFORDANCES: Record<
     "toast.success": 4,
   },
   "src/components/medications/intake-edit-dialog.tsx": { "toast.success": 1 },
-  "src/components/medications/intake-history-editable.tsx": {
-    "toast.success": 2,
-  },
   "src/components/medications/intake-history-list-v2.tsx": {
     "text-success": 1,
   },

@@ -1955,7 +1955,6 @@
       },
       "intake": {
         "title": "Innamegeschiedenis",
-        "importButton": "Importeren",
         "rowActions": {
           "openMenu": "Rijacties openen",
           "edit": "Bewerken",
@@ -1965,14 +1964,7 @@
           "rowToggleLabel": "Rij selecteren"
         },
         "bulkDelete": {
-          "selectionCount": "{count} registraties geselecteerd",
-          "deleteButton": "Selectie verwijderen",
-          "cancelButton": "Annuleren",
-          "confirmTitle": "Geselecteerde registraties verwijderen?",
-          "confirmBody": "{count} registraties worden definitief verwijderd. Het medicijn zelf blijft bestaan.",
-          "confirmAction": "Verwijderen",
-          "toast": "Selectie verwijderd",
-          "failed": "De selectie kon niet worden verwijderd."
+          "cancelButton": "Annuleren"
         },
         "edit": {
           "dialogTitle": "Inname bewerken",
@@ -2846,11 +2838,6 @@
     "bmiEmptyTitle": "Stel je lengte in om je BMI te zien",
     "bmiEmptyDescription": "Voor de BMI is je lengte nodig. Voeg die toe onder Instellingen → Account.",
     "bmiEmptyAction": "Accountinstellingen openen",
-    "personalRecord": {
-      "badge": "PR",
-      "tooltip": "Persoonlijk record: {value} {unit} op {date}",
-      "benchmark": "Gebruikelijk op die leeftijd: {low} tot {high} {unit} ({source})"
-    },
     "loadError": "Inzichten kunnen niet worden geladen",
     "heroPersonalBaseline": "Op basis van je afgelopen 90 dagen",
     "heroRegenerating": "Opnieuw genereren",
@@ -9314,16 +9301,8 @@
     },
     "eventMedicationReminder": "Medicatieherinnering",
     "eventMedicationReminderDesc": "Wordt verstuurd op elk gepland innamemoment.",
-    "eventMeasurementAnomaly": "Ongebruikelijke meting",
-    "eventMeasurementAnomalyDesc": "Wordt verstuurd als een meetwaarde ver buiten je gebruikelijke bereik ligt.",
-    "eventComplianceLow": "Lage therapietrouw",
-    "eventComplianceLowDesc": "Wordt verstuurd als je therapietrouw over de afgelopen dagen onder 80% zakt.",
-    "eventWithingsSyncFailed": "Withings-synchronisatie mislukt",
-    "eventWithingsSyncFailedDesc": "Wordt verstuurd als de Withings-synchronisatie meerdere keren achter elkaar mislukt.",
     "eventSystemAlert": "Systeembericht",
     "eventSystemAlertDesc": "Algemene berichten van de HealthLog-server, bijv. onderhoudsvensters of opmerkingen over je account.",
-    "eventPersonalRecord": "Persoonlijk record",
-    "eventPersonalRecordDesc": "Wordt verstuurd als een meetwaarde je vorige beste overtreft.",
     "eventMoodReminder": "Stemmingsherinnering",
     "eventMoodReminderDesc": "Dagelijks seintje om je huidige stemming vast te leggen.",
     "eventCyclePeriodSoon": "Menstruatie op komst",

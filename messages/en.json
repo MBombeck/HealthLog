@@ -1955,7 +1955,6 @@
       },
       "intake": {
         "title": "Intake history",
-        "importButton": "Import",
         "rowActions": {
           "openMenu": "Open row actions",
           "edit": "Edit",
@@ -1965,14 +1964,7 @@
           "rowToggleLabel": "Select row"
         },
         "bulkDelete": {
-          "selectionCount": "{count} entries selected",
-          "deleteButton": "Delete selection",
-          "cancelButton": "Cancel",
-          "confirmTitle": "Delete the selected entries?",
-          "confirmBody": "{count} entries will be removed permanently. The medication itself stays.",
-          "confirmAction": "Delete",
-          "toast": "Selection deleted",
-          "failed": "Could not delete the selection."
+          "cancelButton": "Cancel"
         },
         "edit": {
           "dialogTitle": "Edit intake",
@@ -2846,11 +2838,6 @@
     "bmiEmptyTitle": "Set your height to see BMI",
     "bmiEmptyDescription": "BMI needs your height. Add it under Settings → Account.",
     "bmiEmptyAction": "Open account settings",
-    "personalRecord": {
-      "badge": "PR",
-      "tooltip": "Personal record: {value} {unit} on {date}",
-      "benchmark": "Typical at that age: {low} to {high} {unit} ({source})"
-    },
     "loadError": "Failed to load insights",
     "heroPersonalBaseline": "Based on your last 90 days",
     "heroRegenerating": "Regenerating",
@@ -9314,16 +9301,8 @@
     },
     "eventMedicationReminder": "Medication reminder",
     "eventMedicationReminderDesc": "Sent at each scheduled dose time.",
-    "eventMeasurementAnomaly": "Unusual measurement",
-    "eventMeasurementAnomalyDesc": "Sent when a reading is well outside your usual range.",
-    "eventComplianceLow": "Low adherence",
-    "eventComplianceLowDesc": "Sent when your adherence over the last few days drops below 80 %.",
-    "eventWithingsSyncFailed": "Withings sync failed",
-    "eventWithingsSyncFailedDesc": "Sent when Withings synchronisation fails multiple attempts in a row.",
     "eventSystemAlert": "System notice",
     "eventSystemAlertDesc": "General messages from the HealthLog server, e.g. maintenance windows or account notes.",
-    "eventPersonalRecord": "Personal record",
-    "eventPersonalRecordDesc": "Sent when a reading beats your previous best.",
     "eventMoodReminder": "Mood reminder",
     "eventMoodReminderDesc": "Daily nudge to log your current mood.",
     "eventCyclePeriodSoon": "Period coming up",

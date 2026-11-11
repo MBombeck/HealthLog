@@ -1955,7 +1955,6 @@
       },
       "intake": {
         "title": "Einnahmeverlauf",
-        "importButton": "Importieren",
         "rowActions": {
           "openMenu": "Zeilen-Aktionen öffnen",
           "edit": "Bearbeiten",
@@ -1965,14 +1964,7 @@
           "rowToggleLabel": "Zeile auswählen"
         },
         "bulkDelete": {
-          "selectionCount": "{count} Einträge ausgewählt",
-          "deleteButton": "Auswahl löschen",
-          "cancelButton": "Abbrechen",
-          "confirmTitle": "Ausgewählte Einträge löschen?",
-          "confirmBody": "{count} Einträge werden dauerhaft entfernt. Das Medikament bleibt.",
-          "confirmAction": "Löschen",
-          "toast": "Auswahl gelöscht",
-          "failed": "Auswahl konnte nicht gelöscht werden."
+          "cancelButton": "Abbrechen"
         },
         "edit": {
           "dialogTitle": "Einnahme bearbeiten",
@@ -2846,11 +2838,6 @@
     "bmiEmptyAction": "Account-Einstellungen öffnen",
     "noAnalysisYet": "Noch keine Einschätzung vorhanden.",
     "assessmentPreparing": "Einschätzung wird vorbereitet…",
-    "personalRecord": {
-      "badge": "PR",
-      "tooltip": "Persönlicher Rekord: {value} {unit} am {date}",
-      "benchmark": "Typisch in dem Alter: {low} bis {high} {unit} ({source})"
-    },
     "loadError": "Insights konnten nicht geladen werden",
     "heroPersonalBaseline": "Basierend auf deinen letzten 90 Tagen",
     "heroRegenerating": "Wird generiert",
@@ -9314,16 +9301,8 @@
     },
     "eventMedicationReminder": "Medikamenten-Erinnerung",
     "eventMedicationReminderDesc": "Wird zu jeder geplanten Einnahmezeit gesendet.",
-    "eventMeasurementAnomaly": "Auffälliger Messwert",
-    "eventMeasurementAnomalyDesc": "Wird gesendet, wenn ein Wert deutlich außerhalb deines üblichen Bereichs liegt.",
-    "eventComplianceLow": "Niedrige Therapietreue",
-    "eventComplianceLowDesc": "Wird gesendet, wenn deine Therapietreue in den letzten Tagen unter 80 % fällt.",
-    "eventWithingsSyncFailed": "Withings-Sync fehlgeschlagen",
-    "eventWithingsSyncFailedDesc": "Wird gesendet, wenn die Withings-Synchronisierung mehrere Versuche in Folge scheitert.",
     "eventSystemAlert": "Systemmeldung",
     "eventSystemAlertDesc": "Allgemeine Mitteilungen vom HealthLog-Server, etwa Wartungsfenster oder Konto-Hinweise.",
-    "eventPersonalRecord": "Persönlicher Rekord",
-    "eventPersonalRecordDesc": "Wird gesendet, wenn ein Messwert deine bisherige Bestmarke übertrifft.",
     "eventMoodReminder": "Stimmungs-Erinnerung",
     "eventMoodReminderDesc": "Tägliche Erinnerung, deine aktuelle Stimmung zu protokollieren.",
     "eventCyclePeriodSoon": "Periode steht bevor",

@@ -1955,7 +1955,6 @@
       },
       "intake": {
         "title": "복용 기록",
-        "importButton": "불러오기",
         "rowActions": {
           "openMenu": "행 작업 열기",
           "edit": "편집",
@@ -1965,14 +1964,7 @@
           "rowToggleLabel": "행 선택"
         },
         "bulkDelete": {
-          "selectionCount": "{count}개 항목 선택됨",
-          "deleteButton": "선택 항목 삭제",
-          "cancelButton": "취소",
-          "confirmTitle": "선택한 항목을 삭제할까요?",
-          "confirmBody": "{count}개 항목이 영구히 삭제돼요. 약 자체는 그대로 남아요.",
-          "confirmAction": "삭제",
-          "toast": "선택 항목을 삭제했어요",
-          "failed": "선택 항목을 삭제하지 못했어요."
+          "cancelButton": "취소"
         },
         "edit": {
           "dialogTitle": "복용 기록 편집",
@@ -2846,11 +2838,6 @@
     "bmiEmptyTitle": "BMI를 보려면 키를 입력해 주세요",
     "bmiEmptyDescription": "BMI에는 키가 필요해요. 설정 → 계정에서 추가해 주세요.",
     "bmiEmptyAction": "계정 설정 열기",
-    "personalRecord": {
-      "badge": "신기록",
-      "tooltip": "개인 최고 기록: {date} {value}{unit}",
-      "benchmark": "그 나이의 일반적인 범위: {low}~{high} {unit} ({source})"
-    },
     "loadError": "인사이트를 불러오지 못했어요",
     "heroPersonalBaseline": "최근 90일 기준",
     "heroRegenerating": "다시 생성 중",
@@ -9314,16 +9301,8 @@
     },
     "eventMedicationReminder": "복약 알림",
     "eventMedicationReminderDesc": "예정된 복용 시각마다 보내요.",
-    "eventMeasurementAnomaly": "이상 측정값",
-    "eventMeasurementAnomalyDesc": "측정값이 평소 범위를 크게 벗어나면 보내요.",
-    "eventComplianceLow": "낮은 복약 순응도",
-    "eventComplianceLowDesc": "최근 며칠 복약 순응도가 80% 아래로 떨어지면 보내요.",
-    "eventWithingsSyncFailed": "Withings 동기화 실패",
-    "eventWithingsSyncFailedDesc": "Withings 동기화가 여러 번 연달아 실패하면 보내요.",
     "eventSystemAlert": "시스템 공지",
     "eventSystemAlertDesc": "HealthLog 서버에서 오는 일반 메시지예요. 예를 들어 점검 시간이나 계정 안내.",
-    "eventPersonalRecord": "개인 기록",
-    "eventPersonalRecordDesc": "측정값이 이전 최고 기록을 넘으면 보내요.",
     "eventMoodReminder": "기분 알림",
     "eventMoodReminderDesc": "지금 기분을 기록하도록 매일 가볍게 알려줘요.",
     "eventCyclePeriodSoon": "생리 예정",
