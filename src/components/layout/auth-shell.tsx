@@ -15,6 +15,7 @@ import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useRecordSessionTransition } from "@/hooks/use-record-session-transition";
 import { useTranslations } from "@/lib/i18n/context";
 import { CoachLaunchProvider } from "@/lib/insights/coach-launch-context";
+import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
 // The leaf module, not the `@/lib/record-settings` barrel. This shell wraps
 // every authenticated route, and the barrel also re-exports the managed
 // settings-patch schemas — so one destination predicate that reads a slug
@@ -76,6 +77,32 @@ const PUBLIC_PATHS = [
   // `/invite/`.
   "/claim/",
 ];
+
+/**
+ * A session that ended without passing through the shell's session-end wipe
+ * (an expired cookie the edge sent straight to the sign-in page, a sign-in
+ * page opened directly) left the previous account's offline copies on this
+ * device. Clear them on every `/auth/*` page once the server has said there is
+ * no session, before anyone signs in. Once per signed-out stretch, and never
+ * on an answer that is not a verdict (offline, 5xx).
+ */
+function useSignInPageOfflineWipe(pathname: string): void {
+  const { isAuthenticated, isAuthUnknown, isLoading } = useAuth();
+  const cleared = useRef(false);
+  useEffect(() => {
+    if (isAuthenticated) {
+      cleared.current = false;
+    } else if (
+      !isLoading &&
+      !isAuthUnknown &&
+      pathname.startsWith("/auth/") &&
+      !cleared.current
+    ) {
+      cleared.current = true;
+      void clearOfflineCachesForSessionEnd();
+    }
+  }, [isLoading, isAuthenticated, isAuthUnknown, pathname]);
+}
 
 export function AuthShell({
   children,
@@ -223,9 +250,8 @@ export function AuthShell({
       // QueryClient outlives the navigation on this SPA and the health-data
       // families are not user-scoped) plus the persisted IndexedDB + SW
       // caches, so nothing leaks to the next account on a shared browser.
-      // Logout does the same from `useLogout`; this covers the expiry path
-      // logout never runs through. Best-effort; the redirect proceeds
-      // regardless.
+      // Logout does the same from `useLogout`; this covers the expiry path it
+      // never runs through. Best-effort; the redirect proceeds regardless.
       //
       // `isAuthUnknown` = the auth probe failed WITHOUT a session verdict
       // (offline relaunch, network blip, 5xx) and no prior-session marker
@@ -247,6 +273,7 @@ export function AuthShell({
     router,
     queryClient,
   ]);
+  useSignInPageOfflineWipe(pathname);
 
   // Redirect non-admins away from /admin
   useEffect(() => {

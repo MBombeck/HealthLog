@@ -17,12 +17,12 @@ import { clearCachesForSessionEnd, useAuth } from "@/hooks/use-auth";
 import { ApiError, apiFetchRaw } from "@/lib/api/api-fetch";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { loadDocument } from "@/lib/navigation/load-document";
+import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
 import {
   useClaimProfile,
   useClaimProfileSso,
   useProfileClaimPreview,
 } from "@/lib/queries/use-profile-claim";
-import { queryKeys } from "@/lib/query-keys";
 
 /**
  * v1.42 (#959) — the person a managed profile describes takes it over as
@@ -97,7 +97,7 @@ export function ClaimProfile({
     claimSso.mutate(
       { token, username },
       {
-        onSuccess: ({ redirectTo }) => {
+        onSuccess: async ({ redirectTo }) => {
           // Only the path and query of the server's answer, so a response
           // could never send the browser off this origin.
           const next = new URL(redirectTo, window.location.origin);
@@ -105,6 +105,8 @@ export function ClaimProfile({
             next.searchParams.set("client_proto", clientTransport.protocol);
             next.searchParams.set("client_host", clientTransport.host);
           }
+          // The session starts on the way back; the last account's copies go first.
+          await clearOfflineCachesForSessionEnd();
           loadDocument(`${next.pathname}${next.search}`);
         },
       },
@@ -117,11 +119,9 @@ export function ClaimProfile({
     claim.mutate(
       { token, username, email, password },
       {
-        onSuccess: async () => {
-          queryClient.removeQueries({
-            queryKey: queryKeys.profileClaimPreview(),
-          });
-          await queryClient.invalidateQueries({ queryKey: queryKeys.auth() });
+        onSuccess: () => {
+          // As after any sign-in: nothing cached before belongs to this account.
+          queryClient.clear();
           router.push("/onboarding/handover");
         },
       },

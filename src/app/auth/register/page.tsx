@@ -12,7 +12,6 @@ import { Label } from "@/components/ui/label";
 import { PasswordStrength } from "@/components/ui/password-strength";
 import { useTranslations } from "@/lib/i18n/context";
 import { detectBrowserTimezone } from "@/lib/tz/format";
-import { queryKeys } from "@/lib/query-keys";
 import { ApiError, apiFetchRaw, apiPost } from "@/lib/api/api-fetch";
 import { clearCachesForSessionEnd, useAuth } from "@/hooks/use-auth";
 
@@ -74,7 +73,7 @@ export default function RegisterPage() {
         ...(inviteToken ? { inviteToken } : {}),
       });
 
-      await queryClient.invalidateQueries({ queryKey: queryKeys.auth() });
+      queryClient.clear(); // nothing cached before belongs to the new account
       router.push("/");
     } catch (err) {
       setError(
