@@ -51,7 +51,9 @@ export function CoachFeedbackSection() {
   const fmt = useFormatters();
 
   const query = useQuery({
-    queryKey: queryKeys.adminCoachFeedback(),
+    // The same read as the AI quality section beside it, so one request
+    // serves both cards.
+    queryKey: queryKeys.adminAiQuality(),
     queryFn: async () => {
       const data = await apiGet<{ summary: FeedbackSummary | null } | null>(
         "/api/admin/ai-quality",

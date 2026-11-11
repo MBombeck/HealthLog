@@ -19,6 +19,7 @@ vi.mock("@tanstack/react-query", () => ({
 }));
 
 import { I18nProvider } from "@/lib/i18n/context";
+import { AiQualitySection } from "../ai-quality-section";
 import { CoachFeedbackSection } from "../coach-feedback-section";
 
 function render() {
@@ -136,5 +137,27 @@ describe("CoachFeedbackSection", () => {
       expect(html).toContain("bg-card");
       expect(html).toContain("rounded-xl");
     }
+  });
+});
+
+describe("the Coach admin page's two quality cards", () => {
+  it("read one cache cell, so the page asks for the summary once", () => {
+    useQueryMock.mockReset().mockReturnValue({
+      isLoading: true,
+      isError: false,
+      data: null,
+    });
+    renderToStaticMarkup(
+      <I18nProvider initialLocale="en">
+        <AiQualitySection />
+        <CoachFeedbackSection />
+      </I18nProvider>,
+    );
+
+    const keys = useQueryMock.mock.calls.map(
+      ([options]) => (options as { queryKey: unknown }).queryKey,
+    );
+    expect(keys).toHaveLength(2);
+    expect(keys[1]).toEqual(keys[0]);
   });
 });
