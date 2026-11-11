@@ -17,7 +17,11 @@ import {
 } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/api-fetch";
-import { queryKeys, refetchInactiveDailyReads } from "@/lib/query-keys";
+import {
+  invalidateKeys,
+  queryKeys,
+  refetchInactiveDailyReads,
+} from "@/lib/query-keys";
 
 /**
  * v1.32.19 — the read fan-out every Vorsorge reminder mutation runs on
@@ -31,11 +35,21 @@ import { queryKeys, refetchInactiveDailyReads } from "@/lib/query-keys";
  * (`refetchOnMount: false`) — the reminder lingered on the Today rail until
  * the 120 s poll. Force the inactive daily reads to refetch alongside the
  * reminders invalidation so the rail clears at once, the same freshness
- * contract the medication intake surfaces use.
+ * contract the medication intake surfaces use. The inactive pass fetches
+ * nothing for a read that is on screen, though: marked done from the
+ * dashboard tile, the check-up stayed due on the Today rail above it. So
+ * the two daily reads are invalidated the ordinary way as well, which
+ * refetches them where they are mounted. A check-up marked done is also
+ * listed on its day.
  */
 export function invalidateReminderReads(qc: QueryClient): Promise<unknown> {
   return Promise.all([
-    qc.invalidateQueries({ queryKey: queryKeys.measurementReminders() }),
+    invalidateKeys(qc, [
+      queryKeys.measurementReminders(),
+      queryKeys.dailyDigest(),
+      queryKeys.dashboardSnapshot(),
+      queryKeys.dayRoot(),
+    ]),
     refetchInactiveDailyReads(qc),
   ]);
 }
