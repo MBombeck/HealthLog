@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { CycleCalendar } from "../cycle-calendar";
+import { CycleCalendar, CycleCalendarSkeleton } from "../cycle-calendar";
 import { I18nProvider } from "@/lib/i18n/context";
 import type { CalendarDay } from "../types";
 
@@ -241,4 +241,21 @@ describe("<CycleCalendar>", () => {
       expect(cell).not.toContain("data-intercourse");
     });
   });
+});
+
+describe("CycleCalendarSkeleton", () => {
+  // November 2026 starts on a Sunday and spans six weeks; February 2027
+  // starts on a Monday and spans four.
+  for (const today of ["2026-11-11", "2027-02-10"]) {
+    it(`holds as many weeks as the month it stands in for (${today})`, () => {
+      const calendar = render(<CycleCalendar days={[]} today={today} />);
+      const skeleton = render(<CycleCalendarSkeleton today={today} />);
+
+      // Every row but the weekday header is one week.
+      const weeks = (calendar.match(/role="row"/g)?.length ?? 0) - 1;
+      const cells = skeleton.match(/aspect-square/g)?.length ?? 0;
+      expect(weeks).toBeGreaterThan(3);
+      expect(cells).toBe(weeks * 7);
+    });
+  }
 });

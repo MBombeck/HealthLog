@@ -3554,7 +3554,8 @@
       "emptyState": {
         "title": "No HRV samples yet",
         "description": "HRV samples land here once Apple Watch (or a compatible Withings device) starts syncing nightly readings."
-      }
+      },
+      "coachPrefill": "I haven't logged any HRV data yet. What does heart-rate variability tell me, and how do I capture it?"
     },
     "restingHr": {
       "title": "Resting heart rate",
@@ -3573,7 +3574,8 @@
       "emptyState": {
         "title": "No SpO₂ samples yet",
         "description": "SpO₂ samples land here once a compatible wearable (Apple Watch, Withings ScanWatch) captures a reading."
-      }
+      },
+      "coachPrefill": "I haven't logged any oxygen-saturation data yet. What does SpO₂ tell me, and what range should I aim for?"
     },
     "bodyTemperature": {
       "title": "Body temperature",
@@ -3583,7 +3585,8 @@
         "title": "No body temperature yet",
         "description": "Log a body-temperature reading or let your wearable sync one, and the trend will appear here.",
         "cta": "Log body temperature"
-      }
+      },
+      "coachPrefill": "I haven't logged any body temperature yet. What's the healthy range, and what should I do if it drifts?"
     },
     "steps": {
       "title": "Steps",
@@ -3592,7 +3595,8 @@
       "emptyState": {
         "title": "No step data yet",
         "description": "Daily step totals appear here once Apple Health or an activity device syncs a day's worth of movement."
-      }
+      },
+      "coachPrefill": "I haven't logged any steps yet. What's a reasonable daily step target, and how does walking more help my health?"
     },
     "activeEnergy": {
       "title": "Active energy",
@@ -3601,7 +3605,8 @@
       "emptyState": {
         "title": "No active-energy data yet",
         "description": "Active-energy totals land here once Apple Health or a Withings activity device syncs a day's worth of movement."
-      }
+      },
+      "coachPrefill": "I haven't logged any active energy yet. What's a reasonable daily target, and how does it compare to total calories?"
     },
     "subPage": {
       "loadError": "Could not load this metric right now.",
@@ -3696,7 +3701,8 @@
       "valuesBack": "Back to insights",
       "valuesBackToMetric": "Back to {metric}",
       "scoresBack": "Back to insights",
-      "ecgDescription": "Single-lead ECG recordings from your device, each with the device's own result."
+      "ecgDescription": "Single-lead ECG recordings from your device, each with the device's own result.",
+      "emptyCoachPrefill": "{metric}: I haven't logged anything here yet. What does this metric tell me about my health, and how do I improve it?"
     },
     "units": {
       "steps": "steps",
@@ -3796,27 +3802,32 @@
       "bloodPressure": {
         "title": "No blood pressure entries yet",
         "description": "Log a blood pressure reading and the trend chart, in-range share, and WHO classification will appear here.",
-        "cta": "Log blood pressure"
+        "cta": "Log blood pressure",
+        "coachPrefill": "I haven't recorded any blood pressure yet. Why does it matter, and what should I know before I start?"
       },
       "weight": {
         "title": "No weight entries yet",
         "description": "Log a weight and the trend, moving average, and target band will appear automatically.",
-        "cta": "Log weight"
+        "cta": "Log weight",
+        "coachPrefill": "I haven't recorded any weight yet. Why does it matter, and what should I know before I start tracking?"
       },
       "pulse": {
         "title": "No pulse entries yet",
         "description": "Log a pulse reading and resting pulse, HRV and VO₂ max will appear in this view.",
-        "cta": "Log pulse"
+        "cta": "Log pulse",
+        "coachPrefill": "I haven't recorded any resting pulse yet. Why does it matter, and what should I know before I start?"
       },
       "bmi": {
         "title": "BMI not yet computed",
         "description": "Once height and at least one weight entry are present, the BMI trend with WHO zones will appear here.",
-        "cta": "Log weight"
+        "cta": "Log weight",
+        "coachPrefill": "I haven't recorded any weight yet. Why does BMI matter for me, and what should I know before I start tracking it?"
       },
       "mood": {
         "title": "No mood entries yet",
         "description": "Log a mood entry and the trend, stability band and correlations will appear.",
-        "cta": "Log mood"
+        "cta": "Log mood",
+        "coachPrefill": "I haven't logged any mood entries yet. Why does mood tracking matter, and how should I start?"
       },
       "medication": {
         "title": "No medications set up yet",
@@ -3826,7 +3837,8 @@
       "sleep": {
         "title": "No sleep entries yet",
         "description": "Once sleep data lands (manual or via Withings / Apple Health), the per-night stage breakdown will appear here.",
-        "cta": "Connect a source"
+        "cta": "Connect a source",
+        "coachPrefill": "I don't have any sleep data yet. Why does sleep tracking matter, and what should I know before I connect a source?"
       }
     },
     "navWorkouts": "Workouts",
@@ -3836,7 +3848,8 @@
       "description": "Recent runs, rides, walks and strength sessions, deduped across Apple Watch and Withings sources.",
       "emptyState": {
         "title": "No workouts yet",
-        "description": "Workouts sync from Apple Health on your iPhone and from Withings. You can also log one by hand."
+        "description": "Workouts sync from Apple Health on your iPhone and from Withings. You can also log one by hand.",
+        "coachPrefill": "I haven't logged any workouts yet. Why does tracking them matter, and what should I focus on first?"
       },
       "detail": {
         "backToList": "Back to workouts",
@@ -4716,7 +4729,8 @@
       "emptyState": {
         "title": "No fall data yet",
         "description": "Detected falls appear here once Apple Health syncs. No falls is the goal."
-      }
+      },
+      "coachPrefill": "I haven't logged any fall data yet. What does this metric tell me about my health, and how do I lower my fall risk?"
     },
     "navFalls": "Falls",
     "sixMinuteWalk": {

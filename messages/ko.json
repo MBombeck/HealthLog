@@ -3554,7 +3554,8 @@
       "emptyState": {
         "title": "아직 심박변이도 기록이 없어요",
         "description": "Apple Watch(또는 호환 Withings 기기)가 밤마다 측정값을 동기화하기 시작하면 심박변이도 기록이 여기에 쌓여요."
-      }
+      },
+      "coachPrefill": "아직 심박변이도 데이터를 기록한 적이 없어요. 심박변이도는 무엇을 알려주고, 어떻게 측정하나요?"
     },
     "restingHr": {
       "title": "안정 시 심박수",
@@ -3573,7 +3574,8 @@
       "emptyState": {
         "title": "아직 SpO₂ 기록이 없어요",
         "description": "호환 웨어러블(Apple Watch, Withings ScanWatch)이 측정하면 SpO₂ 기록이 여기에 쌓여요."
-      }
+      },
+      "coachPrefill": "아직 산소포화도를 기록한 적이 없어요. SpO₂는 무엇을 알려주고, 어느 범위를 목표로 해야 하나요?"
     },
     "bodyTemperature": {
       "title": "체온",
@@ -3583,7 +3585,8 @@
         "title": "아직 체온 기록이 없어요",
         "description": "체온을 기록하거나 웨어러블이 동기화하면 여기에 추이가 나타나요.",
         "cta": "체온 기록"
-      }
+      },
+      "coachPrefill": "아직 체온을 기록한 적이 없어요. 건강한 범위는 어느 정도이고, 벗어나면 어떻게 해야 하나요?"
     },
     "steps": {
       "title": "걸음 수",
@@ -3592,7 +3595,8 @@
       "emptyState": {
         "title": "아직 걸음 수 데이터가 없어요",
         "description": "Apple Health나 활동 기기가 하루치 움직임을 동기화하면 여기에 하루 걸음 수가 나타나요."
-      }
+      },
+      "coachPrefill": "아직 걸음 수를 기록한 적이 없어요. 적당한 하루 걸음 목표는 얼마이고, 더 많이 걸으면 건강에 어떻게 도움이 되나요?"
     },
     "activeEnergy": {
       "title": "활동 에너지",
@@ -3601,7 +3605,8 @@
       "emptyState": {
         "title": "아직 활동 에너지 데이터가 없어요",
         "description": "Apple Health나 Withings 활동 기기가 하루치 움직임을 동기화하면 여기에 활동 에너지 합계가 나타나요."
-      }
+      },
+      "coachPrefill": "아직 활동 에너지를 기록한 적이 없어요. 적당한 하루 목표는 얼마이고, 총 칼로리와는 어떻게 비교되나요?"
     },
     "subPage": {
       "loadError": "지금은 이 지표를 불러오지 못했어요.",
@@ -3696,7 +3701,8 @@
       "valuesBack": "인사이트로 돌아가기",
       "valuesBackToMetric": "돌아가기: {metric}",
       "scoresBack": "인사이트로 돌아가기",
-      "ecgDescription": "기기에서 기록한 단일 유도 ECG로, 각각 기기가 낸 결과가 함께 있어요."
+      "ecgDescription": "기기에서 기록한 단일 유도 ECG로, 각각 기기가 낸 결과가 함께 있어요.",
+      "emptyCoachPrefill": "{metric}: 아직 여기에 기록한 게 없어요. 이 지표는 내 건강에 대해 무엇을 알려주고, 어떻게 개선하나요?"
     },
     "units": {
       "steps": "걸음",
@@ -3796,27 +3802,32 @@
       "bloodPressure": {
         "title": "아직 혈압 기록이 없어요",
         "description": "혈압을 기록하면 추이 차트, 정상 범위 비율, WHO 분류가 여기에 나타나요.",
-        "cta": "혈압 기록"
+        "cta": "혈압 기록",
+        "coachPrefill": "아직 혈압을 기록한 적이 없어요. 혈압이 왜 중요하고, 시작하기 전에 무엇을 알아야 하나요?"
       },
       "weight": {
         "title": "아직 체중 기록이 없어요",
         "description": "체중을 기록하면 추이, 이동 평균, 목표 구간이 자동으로 나타나요.",
-        "cta": "체중 기록"
+        "cta": "체중 기록",
+        "coachPrefill": "아직 체중을 기록한 적이 없어요. 체중이 왜 중요하고, 기록을 시작하기 전에 무엇을 알아야 하나요?"
       },
       "pulse": {
         "title": "아직 맥박 기록이 없어요",
         "description": "맥박을 기록하면 안정 시 맥박, 심박변이도, VO₂ max가 이 화면에 나타나요.",
-        "cta": "맥박 기록"
+        "cta": "맥박 기록",
+        "coachPrefill": "아직 안정 시 맥박을 기록한 적이 없어요. 맥박이 왜 중요하고, 시작하기 전에 무엇을 알아야 하나요?"
       },
       "bmi": {
         "title": "아직 BMI를 계산하지 못했어요",
         "description": "키와 체중 기록이 하나 이상 있으면 WHO 구간과 함께 BMI 추이가 여기에 나타나요.",
-        "cta": "체중 기록"
+        "cta": "체중 기록",
+        "coachPrefill": "아직 체중을 기록한 적이 없어요. BMI가 내게 왜 중요하고, 기록을 시작하기 전에 무엇을 알아야 하나요?"
       },
       "mood": {
         "title": "아직 기분 기록이 없어요",
         "description": "기분을 기록하면 추이, 안정성 구간, 상관관계가 나타나요.",
-        "cta": "기분 기록"
+        "cta": "기분 기록",
+        "coachPrefill": "아직 기분을 기록한 적이 없어요. 기분 기록이 왜 중요하고, 어떻게 시작하면 좋을까요?"
       },
       "medication": {
         "title": "아직 등록한 약이 없어요",
@@ -3826,7 +3837,8 @@
       "sleep": {
         "title": "아직 수면 기록이 없어요",
         "description": "수면 데이터가 들어오면(직접 기록하거나 Withings / Apple Health를 통해) 밤별 단계 구성이 여기에 나타나요.",
-        "cta": "소스 연결"
+        "cta": "소스 연결",
+        "coachPrefill": "아직 수면 데이터가 없어요. 수면 기록이 왜 중요하고, 데이터 소스를 연결하기 전에 무엇을 알아야 하나요?"
       }
     },
     "navWorkouts": "운동",
@@ -3836,7 +3848,8 @@
       "description": "최근 달리기, 자전거, 걷기, 근력 운동 세션이에요. Apple Watch와 Withings 소스 사이 중복은 정리했어요.",
       "emptyState": {
         "title": "아직 운동 기록이 없어요",
-        "description": "운동은 iPhone의 Apple Health와 Withings에서 동기화돼요. 직접 기록할 수도 있어요."
+        "description": "운동은 iPhone의 Apple Health와 Withings에서 동기화돼요. 직접 기록할 수도 있어요.",
+        "coachPrefill": "아직 운동을 기록한 적이 없어요. 운동 기록이 왜 중요하고, 무엇부터 신경 써야 하나요?"
       },
       "detail": {
         "backToList": "운동으로 돌아가기",
@@ -4716,7 +4729,8 @@
       "emptyState": {
         "title": "아직 낙상 데이터가 없어요",
         "description": "Apple Health가 동기화하면 감지된 낙상이 여기에 표시돼요. 낙상이 없는 게 가장 좋아요."
-      }
+      },
+      "coachPrefill": "아직 낙상 데이터를 기록한 적이 없어요. 이 지표는 내 건강에 대해 무엇을 알려주고, 낙상 위험은 어떻게 줄이나요?"
     },
     "navFalls": "낙상",
     "sixMinuteWalk": {

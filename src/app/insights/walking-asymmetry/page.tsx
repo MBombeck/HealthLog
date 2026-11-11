@@ -26,7 +26,6 @@ export default function InsightsGangasymmetriePage() {
       yAxisUnit="%"
       emptyStateIcon={<Footprints className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any walking asymmetry yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

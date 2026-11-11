@@ -24,7 +24,6 @@ export default function InsightsMuskelmassePage() {
       color="var(--chart-1)"
       emptyStateIcon={<Dumbbell className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any muscle mass yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

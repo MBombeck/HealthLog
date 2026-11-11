@@ -3554,7 +3554,8 @@
       "emptyState": {
         "title": "Noch keine HRV-Werte",
         "description": "HRV-Werte erscheinen hier, sobald die Apple Watch (oder ein kompatibles Withings-Gerät) nächtliche Messungen synchronisiert."
-      }
+      },
+      "coachPrefill": "Ich habe noch keine HRV-Daten erfasst. Was sagt mir die Herzfrequenzvariabilität, und wie erfasse ich sie?"
     },
     "restingHr": {
       "title": "Ruhepuls",
@@ -3573,7 +3574,8 @@
       "emptyState": {
         "title": "Noch keine SpO₂-Werte",
         "description": "SpO₂-Werte erscheinen, sobald ein kompatibles Wearable (Apple Watch, Withings ScanWatch) eine Messung erfasst."
-      }
+      },
+      "coachPrefill": "Ich habe noch keine Sauerstoffsättigung erfasst. Was sagt mir die SpO₂, und welchen Bereich sollte ich anstreben?"
     },
     "bodyTemperature": {
       "title": "Körpertemperatur",
@@ -3583,7 +3585,8 @@
         "title": "Noch keine Körpertemperatur",
         "description": "Erfasse eine Körpertemperatur oder lass dein Wearable einen Wert synchronisieren. Der Verlauf erscheint dann hier.",
         "cta": "Körpertemperatur erfassen"
-      }
+      },
+      "coachPrefill": "Ich habe noch keine Körpertemperatur erfasst. Was ist der gesunde Bereich, und was sollte ich tun, wenn sie abweicht?"
     },
     "steps": {
       "title": "Schritte",
@@ -3592,7 +3595,8 @@
       "emptyState": {
         "title": "Noch keine Schrittdaten",
         "description": "Tägliche Schritt-Summen erscheinen hier, sobald Apple Health oder ein Aktivitätsgerät einen Tagesumfang synchronisiert."
-      }
+      },
+      "coachPrefill": "Ich habe noch keine Schritte erfasst. Was ist ein sinnvolles tägliches Schrittziel, und wie hilft mehr Gehen meiner Gesundheit?"
     },
     "activeEnergy": {
       "title": "Aktive Energie",
@@ -3601,7 +3605,8 @@
       "emptyState": {
         "title": "Noch keine Aktive-Energie-Werte",
         "description": "Aktive-Energie-Summen erscheinen hier, sobald Apple Health oder ein Withings-Aktivitätsgerät einen Tagesumfang synchronisiert."
-      }
+      },
+      "coachPrefill": "Ich habe noch keine aktive Energie erfasst. Was ist ein sinnvolles Tagesziel, und wie verhält es sich zum gesamten Kalorienverbrauch?"
     },
     "subPage": {
       "loadError": "Diese Messgröße konnte gerade nicht geladen werden.",
@@ -3696,7 +3701,8 @@
       "valuesBack": "Zurück zu Insights",
       "valuesBackToMetric": "Zurück zu {metric}",
       "scoresBack": "Zurück zu Insights",
-      "ecgDescription": "Einkanal-EKG-Aufzeichnungen deines Geräts, jeweils mit dem Ergebnis des Geräts."
+      "ecgDescription": "Einkanal-EKG-Aufzeichnungen deines Geräts, jeweils mit dem Ergebnis des Geräts.",
+      "emptyCoachPrefill": "{metric}: Ich habe hier noch nichts erfasst. Was sagt dieser Wert über meine Gesundheit aus, und wie verbessere ich ihn?"
     },
     "units": {
       "steps": "Schritte",
@@ -3796,27 +3802,32 @@
       "bloodPressure": {
         "title": "Noch keine Blutdruckwerte",
         "description": "Sobald du Blutdruck loggst, erscheinen hier Trend, Zielbereichs-Anteil und WHO-Klassifizierung.",
-        "cta": "Blutdruck loggen"
+        "cta": "Blutdruck loggen",
+        "coachPrefill": "Ich habe noch keinen Blutdruck erfasst. Warum ist er wichtig, und was sollte ich wissen, bevor ich anfange?"
       },
       "weight": {
         "title": "Noch keine Gewichtswerte",
         "description": "Logge ein Gewicht, und Verlauf, gleitender Durchschnitt und Zielbereich erscheinen automatisch.",
-        "cta": "Gewicht loggen"
+        "cta": "Gewicht loggen",
+        "coachPrefill": "Ich habe noch kein Gewicht erfasst. Warum ist es wichtig, und was sollte ich wissen, bevor ich mit dem Erfassen anfange?"
       },
       "pulse": {
         "title": "Noch keine Pulswerte",
         "description": "Logge einen Puls, dann erscheinen Ruhepuls, HRV und VO₂ max in dieser Ansicht.",
-        "cta": "Puls loggen"
+        "cta": "Puls loggen",
+        "coachPrefill": "Ich habe noch keinen Ruhepuls erfasst. Warum ist er wichtig, und was sollte ich wissen, bevor ich anfange?"
       },
       "bmi": {
         "title": "BMI noch nicht berechnet",
         "description": "Sobald Größe und mindestens ein Gewichtswert vorliegen, erscheint hier der BMI-Verlauf samt WHO-Zonen.",
-        "cta": "Gewicht loggen"
+        "cta": "Gewicht loggen",
+        "coachPrefill": "Ich habe noch kein Gewicht erfasst. Warum ist der BMI für mich wichtig, und was sollte ich wissen, bevor ich ihn verfolge?"
       },
       "mood": {
         "title": "Noch keine Stimmungseinträge",
         "description": "Logge eine Stimmung, dann erscheinen Verlauf, Stabilitätsband und Korrelationen.",
-        "cta": "Stimmung loggen"
+        "cta": "Stimmung loggen",
+        "coachPrefill": "Ich habe noch keine Stimmung erfasst. Warum lohnt es sich, die Stimmung zu erfassen, und wie fange ich am besten an?"
       },
       "medication": {
         "title": "Noch keine Medikamente angelegt",
@@ -3826,7 +3837,8 @@
       "sleep": {
         "title": "Noch keine Schlafwerte",
         "description": "Sobald Schlafdaten vorliegen (manuell oder via Withings / Apple Health), erscheint hier der nächtliche Stadien-Verlauf.",
-        "cta": "Quelle verbinden"
+        "cta": "Quelle verbinden",
+        "coachPrefill": "Ich habe noch keine Schlafdaten. Warum lohnt es sich, Schlaf zu erfassen, und was sollte ich wissen, bevor ich eine Quelle verbinde?"
       }
     },
     "navWorkouts": "Workouts",
@@ -3836,7 +3848,8 @@
       "description": "Letzte Läufe, Touren, Spaziergänge und Krafteinheiten, quellenübergreifend entdoppelt zwischen Apple Watch und Withings.",
       "emptyState": {
         "title": "Noch keine Workouts",
-        "description": "Workouts kommen per Apple Health vom iPhone und von Withings. Du kannst eins auch von Hand erfassen."
+        "description": "Workouts kommen per Apple Health vom iPhone und von Withings. Du kannst eins auch von Hand erfassen.",
+        "coachPrefill": "Ich habe noch keine Workouts erfasst. Warum lohnt es sich, sie zu erfassen, und worauf sollte ich mich zuerst konzentrieren?"
       },
       "detail": {
         "backToList": "Zurück zu Workouts",
@@ -4716,7 +4729,8 @@
       "emptyState": {
         "title": "Noch keine Sturzdaten",
         "description": "Erkannte Stürze erscheinen hier, sobald Apple Health synchronisiert. Keine Stürze ist das Ziel."
-      }
+      },
+      "coachPrefill": "Ich habe noch keine Sturzdaten erfasst. Was sagt dieser Wert über meine Gesundheit aus, und wie senke ich mein Sturzrisiko?"
     },
     "navFalls": "Stürze",
     "sixMinuteWalk": {

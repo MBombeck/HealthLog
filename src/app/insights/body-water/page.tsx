@@ -25,7 +25,6 @@ export default function InsightsKoerperwasserPage() {
       emptyStateIcon={<Droplet className="size-6" />}
       emptyStateCtaType={null}
       captureType="TOTAL_BODY_WATER"
-      coachPrefill="I haven't logged any total body water yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

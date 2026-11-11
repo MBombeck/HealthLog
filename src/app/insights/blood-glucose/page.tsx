@@ -60,7 +60,6 @@ export default function InsightsBlutzuckerPage() {
       captureType="BLOOD_GLUCOSE"
       targetSummarySlug="blood-glucose"
       afterChart={<GlucoseClinicalPanel />}
-      coachPrefill="I haven't logged any blood glucose yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

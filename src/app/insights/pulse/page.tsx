@@ -115,7 +115,7 @@ export default function InsightsPulsPage() {
               </Link>
             </Button>
           }
-          coachPrefill="I haven't recorded any resting pulse yet. Why does it matter, and what should I know before I start?"
+          coachPrefill={t("insights.emptyState.pulse.coachPrefill")}
         />
       </SubPageShell>
     );

@@ -3,6 +3,7 @@
 import { Wind } from "lucide-react";
 
 import { HealthKitMetricPage } from "@/components/insights/healthkit-metric-page";
+import { useTranslations } from "@/lib/i18n/context";
 import { buildOxygenSaturationBands } from "@/lib/analytics/value-bands";
 import { useOwnTargetRange } from "@/lib/queries/use-own-target-range";
 
@@ -20,6 +21,7 @@ import { useOwnTargetRange } from "@/lib/queries/use-own-target-range";
  * `/targets`, and the clinical bands otherwise.
  */
 export default function InsightsOxygenSaturationPage() {
+  const { t } = useTranslations();
   const ownRange = useOwnTargetRange("OXYGEN_SATURATION");
   return (
     <HealthKitMetricPage
@@ -38,7 +40,7 @@ export default function InsightsOxygenSaturationPage() {
       emptyStateIcon={<Wind className="size-6" />}
       emptyStateCtaType={null}
       captureType="OXYGEN_SATURATION"
-      coachPrefill="I haven't logged any oxygen-saturation data yet. What does SpO₂ tell me, and what range should I aim for?"
+      coachPrefill={t("insights.oxygenSaturation.coachPrefill")}
     />
   );
 }

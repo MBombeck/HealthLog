@@ -24,12 +24,12 @@ import { useEcgList } from "@/components/insights/use-ecg-list";
 /**
  * v1.4.25 — client shell for `src/app/insights/layout.tsx`.
  *
- * Owns the advisor query so the regenerate button on the sticky tab
- * strip works from every Insights surface (mother + the seven sub-
- * pages). TanStack Query dedup keeps the cost negligible: the mother
- * page's own `useInsightsAdvisorQuery` consumer shares the same
- * `queryKeys.insightsAdvisor()` key, so the two consumers reuse the
- * same cache entry without extra network traffic.
+ * Owns the regenerate button on the sticky tab strip, so it works from
+ * every Insights surface. The strip shows no briefing, so the shell does
+ * not read it: the overview's own `useInsightsAdvisorQuery` does, and the
+ * shell's hook reads it only while its regenerate settles. Every metric
+ * page used to send the briefing read (and load the schema chunk that
+ * parses it) for a button.
  *
  * v1.4.27 — also owns the analytics + comprehensive reads that
  * power the tab-strip availability gate. The analytics consumer goes
@@ -55,8 +55,8 @@ interface ComprehensivePayload {
 
 export function InsightsLayoutShell({ children }: { children: ReactNode }) {
   const { isAuthenticated, user } = useAuth();
-  // The briefing read and the regenerate button follow the `briefing`
-  // capability on `/api/auth/me`: the server resolves the operator's switch,
+  // The regenerate button follows the `briefing` capability on
+  // `/api/auth/me`: the server resolves the operator's switch,
   // the person's AI analysis opt-out, provider presence and consent into one
   // answer, and the strip offers regenerate only while that answer is yes.
   // Unavailable while `/me` loads, so nothing fires before the answer lands.
@@ -68,7 +68,7 @@ export function InsightsLayoutShell({ children }: { children: ReactNode }) {
   const mounted = useMounted();
   const advisorEnabled = mounted && isAuthenticated && briefing.available;
 
-  const advisor = useInsightsAdvisorQuery(advisorEnabled);
+  const advisor = useInsightsAdvisorQuery(false);
 
   // Shared analytics fetch — the layout shell only reads
   // `summaries[METRIC].count` for the tab-strip availability gate, so

@@ -3,6 +3,7 @@
 import { PersonStanding } from "lucide-react";
 
 import { HealthKitMetricPage } from "@/components/insights/healthkit-metric-page";
+import { useTranslations } from "@/lib/i18n/context";
 
 /**
  * v1.10.0 — `/insights/falls`.
@@ -11,6 +12,7 @@ import { HealthKitMetricPage } from "@/components/insights/healthkit-metric-page
  * better. The series arrives from Apple Health sync — no manual-entry CTA.
  */
 export default function InsightsFallsPage() {
+  const { t } = useTranslations();
   return (
     <HealthKitMetricPage
       measurementType="FALL_COUNT"
@@ -23,7 +25,7 @@ export default function InsightsFallsPage() {
       unitKey="insights.units.falls"
       emptyStateIcon={<PersonStanding className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any fall data yet. What does this metric tell me about my health, and how do I lower my fall risk?"
+      coachPrefill={t("insights.falls.coachPrefill")}
     />
   );
 }

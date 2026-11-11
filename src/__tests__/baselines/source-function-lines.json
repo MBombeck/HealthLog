@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 336,
-  "total": 109345,
+  "total": 109328,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -27,7 +27,7 @@
     "app/api/mcp/oauth/token/route.ts :: POST": 250,
     "app/api/mcp/oauth/token/route.ts :: POST > withBackgroundEvent(arg)": 248,
     "app/api/measurement-reminders/[id]/route.ts :: apiHandler(arg) #2": 239,
-    "app/api/medications/[id]/dose-history/route.ts :: apiHandler(arg)": 256,
+    "app/api/medications/[id]/dose-history/route.ts :: apiHandler(arg)": 241,
     "app/api/medications/[id]/inventory/[itemId]/route.ts :: apiHandler(arg)": 204,
     "app/api/medications/[id]/schedule-revisions/[revisionId]/route.ts :: apiHandler(arg)": 250,
     "app/api/mental-health/assessments/route.ts :: postAssessment": 249,
@@ -80,7 +80,7 @@
     "components/cycle/bbt-chart.tsx :: BbtChart": 244,
     "components/cycle/cycle-calendar.tsx :: CycleCalendar": 292,
     "components/cycle/cycle-settings.tsx :: CycleSettings": 228,
-    "components/cycle/cycle-view.tsx :: CycleView": 405,
+    "components/cycle/cycle-view.tsx :: CycleView": 403,
     "components/cycle/log-day-sheet.tsx :: LogDaySheet": 753,
     "components/daily/today-hero.tsx :: TodayHero": 488,
     "components/dashboard/dashboard-header.tsx :: DashboardHeader": 215,

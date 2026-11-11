@@ -26,7 +26,6 @@ export default function InsightsPulswellengeschwindigkeitPage() {
       yAxisUnit="m/s"
       emptyStateIcon={<Activity className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any pulse wave velocity yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

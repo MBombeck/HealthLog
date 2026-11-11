@@ -25,8 +25,12 @@
  * component and the unit test can share them without pulling Prisma.
  */
 import type { MeasurementType } from "@/generated/prisma/client";
+import { cachedSwr, caches, type ServerCache } from "@/lib/cache/server-cache";
 import { prisma } from "@/lib/db";
 import type { Locale } from "@/lib/i18n/config";
+import { annotate } from "@/lib/logging/context";
+import { resolveModuleMap } from "@/lib/modules/gate";
+import { MODULE_KEYS } from "@/lib/modules/registry";
 import {
   loadBaselineProfile,
   computeVitalsBaseline,
@@ -42,7 +46,10 @@ import {
   isFromToday,
 } from "@/lib/insights/measurement-freshness";
 import { userDayKey } from "@/lib/tz/format";
-import { readCoachCorrelations } from "@/lib/ai/coach/tools/correlations-read";
+import {
+  readCoachCorrelations,
+  type CoachCorrelationDriver,
+} from "@/lib/ai/coach/tools/correlations-read";
 import {
   humaniseType,
   placeAgainstBand,
@@ -86,6 +93,34 @@ function latestDay(
     latestDate: day,
     latestIsToday: isFromToday(dayKeyAgeInDays(day, userDayKey(now, tz))),
   };
+}
+
+/**
+ * The discovered drivers, through the analytics cache. The scan covers every
+ * channel over 180 days and does not depend on the metric, so without the cell
+ * each metric page paid the whole scan again for the one line it picks. Same
+ * cell contract as `/api/insights/correlations`: measurement, mood, medication,
+ * illness, custom-metric and pattern writes sweep the `${userId}|` prefix, and
+ * the switched-off modules are part of the key. A failed read is not cached.
+ */
+async function readDrivers(
+  userId: string,
+  locale: Locale,
+): Promise<CoachCorrelationDriver[] | null> {
+  const modules = await resolveModuleMap(userId);
+  const modulesOff = MODULE_KEYS.filter((key) => modules[key] === false);
+  return cachedSwr(
+    caches.analytics as ServerCache<CoachCorrelationDriver[] | null>,
+    `${userId}|coach-read-drivers|${locale}|off:${modulesOff.join(",")}`,
+    async () => {
+      const result = await readCoachCorrelations(userId, locale);
+      if (result.reason === "retrieval_failed") {
+        throw new Error("coach read correlations failed");
+      }
+      return result.drivers ?? null;
+    },
+    annotate,
+  );
 }
 
 /** Trailing window the band engine reads; the day-mean placement matches it. */
@@ -165,13 +200,11 @@ export async function buildCoachReadStrip(
   const now = opts.now ?? new Date();
   const profile = await loadBaselineProfile(prisma, userId);
 
-  const [baselineDerived, latest, correlations] = await Promise.all([
+  const [baselineDerived, latest, drivers] = await Promise.all([
     computeVitalsBaseline(userId, profile, { type, now }),
     readLatestValue(userId, type),
     // Line 2 is best-effort: a correlation failure must never sink the band.
-    readCoachCorrelations(userId, locale).catch(
-      () => ({ present: false }) as const,
-    ),
+    readDrivers(userId, locale).catch(() => null),
   ]);
 
   let baseline: CoachReadBaseline | null = null;
@@ -207,11 +240,8 @@ export async function buildCoachReadStrip(
   }
 
   const driver = ((): CoachReadDriver | null => {
-    if (!("drivers" in correlations) || !correlations.drivers) return null;
-    const picked = pickDriverForMetric(
-      correlations.drivers,
-      humaniseType(type),
-    );
+    if (!drivers) return null;
+    const picked = pickDriverForMetric(drivers, humaniseType(type));
     if (!picked) return null;
     return {
       note: picked.note,

@@ -19,7 +19,7 @@ import { NextRequest } from "next/server";
 vi.mock("@/lib/db", () => ({
   prisma: {
     medication: { findUnique: vi.fn() },
-    medicationIntakeEvent: { findMany: vi.fn() },
+    medicationIntakeEvent: { findMany: vi.fn(), findFirst: vi.fn() },
   },
 }));
 
@@ -566,4 +566,75 @@ describe("GET /api/medications/[id]/dose-history — slots before creation (#102
       }
     });
   }
+});
+
+/**
+ * The history reads the window's rows, not every intake the medication ever
+ * had: for a medication taken for years each open of the tab read thousands
+ * of rows to show at most a year. Of the rows before the window only the
+ * latest take is read, because a rolling grid re-starts from it.
+ */
+describe("GET /api/medications/[id]/dose-history — the read is bounded to the window", () => {
+  const FROM = new Date("2026-06-01T00:00:00Z");
+  const TO = new Date("2026-06-15T00:00:00Z");
+  const windowQuery = `?from=${encodeURIComponent(FROM.toISOString())}&to=${encodeURIComponent(TO.toISOString())}`;
+
+  it("asks only for rows anchored or taken in the window", async () => {
+    await GET(getReq(windowQuery), ROUTE_PARAMS);
+
+    const where = vi.mocked(prisma.medicationIntakeEvent.findMany).mock
+      .calls[0][0]?.where;
+    expect(where).toMatchObject({
+      OR: [{ scheduledFor: { gte: FROM } }, { takenAt: { gte: FROM } }],
+    });
+    const before = vi.mocked(prisma.medicationIntakeEvent.findFirst).mock
+      .calls[0][0];
+    expect(before?.where).toMatchObject({
+      skipped: false,
+      scheduledFor: { lt: FROM },
+      takenAt: { lt: FROM },
+    });
+  });
+
+  it("re-starts a rolling grid from the latest take before the window", async () => {
+    vi.mocked(prisma.medication.findUnique).mockResolvedValue({
+      id: "med-1",
+      startsOn: null,
+      endsOn: null,
+      oneShot: false,
+      createdAt: new Date("2026-01-01T00:00:00Z"),
+      schedules: [
+        {
+          id: "sched-1",
+          windowStart: "08:00",
+          windowEnd: "08:00",
+          daysOfWeek: null,
+          timesOfDay: ["08:00"],
+          reminderGraceMinutes: null,
+          rrule: null,
+          rollingIntervalDays: 7,
+          scheduleType: "SCHEDULED",
+          cyclicOnWeeks: null,
+          cyclicOffWeeks: null,
+        },
+      ],
+    } as never);
+    // Taken four days before the window opens, nothing since: the next dose
+    // was due inside the window and reads as missed there.
+    vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValue({
+      takenAt: new Date("2026-05-28T06:00:00Z"),
+    } as never);
+
+    const res = await GET(getReq(windowQuery), ROUTE_PARAMS);
+    expect(res.status).toBe(200);
+    const rows = (await res.json()).data.rows as Array<{
+      at: string;
+      kind: string;
+      status: string;
+    }>;
+
+    expect(rows.map((r) => [r.at.slice(0, 10), r.kind, r.status])).toEqual([
+      ["2026-06-04", "slot", "missed"],
+    ]);
+  });
 });

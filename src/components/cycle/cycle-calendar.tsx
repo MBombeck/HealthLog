@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslations } from "@/lib/i18n/context";
 import { resolveIntlLocale } from "@/lib/format-locale";
 import type { Locale } from "@/lib/i18n/config";
@@ -63,6 +64,43 @@ function ymd(d: Date): string {
 /** 0=Mon … 6=Sun (Monday-first grid). */
 function mondayIndex(d: Date): number {
   return (d.getDay() + 6) % 7;
+}
+
+/**
+ * The calendar's frame while the page's read is in flight: the month header
+ * and the weeks of `today`'s month in the grid's own cell size, so the card
+ * keeps the height the month takes instead of growing from a line of text.
+ * The loading text stays for screen readers.
+ */
+export function CycleCalendarSkeleton({ today }: { today: string }) {
+  const { t } = useTranslations();
+  const [y, m] = today.split("-").map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const weeks = Math.ceil(
+    (mondayIndex(new Date(y, m - 1, 1)) + daysInMonth) / 7,
+  );
+  return (
+    <div data-slot="cycle-calendar-skeleton">
+      <span className="sr-only">{t("cycle.calendar.loading")}</span>
+      <div aria-hidden="true" className="space-y-3">
+        <div className="flex items-center justify-between">
+          <Skeleton className="size-10 rounded-md pointer-coarse:min-h-11 pointer-coarse:min-w-11" />
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="size-10 rounded-md pointer-coarse:min-h-11 pointer-coarse:min-w-11" />
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {Array.from({ length: 7 }, (_, i) => (
+            <div key={`weekday-${i}`} className="text-2xs pb-1">
+              &nbsp;
+            </div>
+          ))}
+          {Array.from({ length: weeks * 7 }, (_, i) => (
+            <Skeleton key={i} className="aspect-square min-h-11 rounded-lg" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 type Translate = ReturnType<typeof useTranslations>["t"];

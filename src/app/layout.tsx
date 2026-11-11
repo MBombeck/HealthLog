@@ -8,6 +8,7 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { AuthShell } from "@/components/layout/auth-shell";
 import { MonitoringBootstrap } from "@/components/monitoring/bootstrap";
+import { getPublicMonitoringSettings } from "@/lib/monitoring-settings";
 import { WebVitalsReporter } from "@/components/monitoring/web-vitals-reporter";
 import { resolveInitialLocale } from "@/lib/i18n/resolve-initial-locale";
 import { isKeyMismatch } from "@/lib/boot/key-mismatch-state";
@@ -86,7 +87,12 @@ export default async function RootLayout({
       ? ((await headers()).get("x-nonce") ?? undefined)
       : undefined;
 
-  const initialLocale = await resolveInitialLocale();
+  // The monitoring switches ride the document render instead of a request
+  // from every page load; the key-mismatch page reads no data.
+  const [initialLocale, monitoring] = await Promise.all([
+    resolveInitialLocale(),
+    isKeyMismatch() ? null : getPublicMonitoringSettings(),
+  ]);
 
   return (
     <html lang={initialLocale} suppressHydrationWarning>
@@ -139,7 +145,15 @@ export default async function RootLayout({
           <KeyMismatchPage locale={initialLocale} />
         ) : (
           <Providers initialLocale={initialLocale}>
-            <MonitoringBootstrap />
+            <MonitoringBootstrap
+              settings={
+                monitoring && {
+                  umamiEnabled: monitoring.umamiEnabled,
+                  umamiWebsiteId: monitoring.umamiWebsiteId,
+                  glitchtipEnabled: monitoring.glitchtipEnabled,
+                }
+              }
+            />
             <WebVitalsReporter />
             {/* `DEMO_MODE` is a server-only env var; the proxy uses it to
               block mutations. Resolve it here (server component) and

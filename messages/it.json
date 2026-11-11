@@ -3554,7 +3554,8 @@
       "emptyState": {
         "title": "Ancora nessun valore HRV",
         "description": "I valori HRV appariranno qui non appena Apple Watch (o un dispositivo Withings compatibile) sincronizza le misurazioni notturne."
-      }
+      },
+      "coachPrefill": "Non ho ancora registrato dati HRV. Cosa mi dice la variabilità della frequenza cardiaca e come la rilevo?"
     },
     "restingHr": {
       "title": "FC a riposo",
@@ -3573,7 +3574,8 @@
       "emptyState": {
         "title": "Ancora nessun campione SpO₂",
         "description": "I campioni SpO₂ appariranno qui non appena un wearable compatibile (Apple Watch, Withings ScanWatch) cattura una lettura."
-      }
+      },
+      "coachPrefill": "Non ho ancora registrato la saturazione di ossigeno. Cosa mi dice la SpO₂ e a quale intervallo dovrei puntare?"
     },
     "bodyTemperature": {
       "title": "Temperatura corporea",
@@ -3583,7 +3585,8 @@
         "title": "Ancora nessuna temperatura corporea",
         "description": "Registra una misura o lascia che il tuo wearable ne sincronizzi una: l'andamento apparirà qui.",
         "cta": "Registra temperatura corporea"
-      }
+      },
+      "coachPrefill": "Non ho ancora registrato la temperatura corporea. Qual è l’intervallo sano e cosa dovrei fare se si discosta?"
     },
     "steps": {
       "title": "Passi",
@@ -3592,7 +3595,8 @@
       "emptyState": {
         "title": "Ancora nessun dato sui passi",
         "description": "I totali giornalieri dei passi appariranno qui non appena Apple Salute o un dispositivo di attività sincronizza un'intera giornata."
-      }
+      },
+      "coachPrefill": "Non ho ancora registrato passi. Qual è un obiettivo giornaliero di passi ragionevole e in che modo camminare di più aiuta la mia salute?"
     },
     "activeEnergy": {
       "title": "Energia attiva",
@@ -3601,7 +3605,8 @@
       "emptyState": {
         "title": "Ancora nessun dato di energia attiva",
         "description": "I totali di energia attiva appariranno qui non appena Apple Salute o un dispositivo di attività Withings sincronizza un'intera giornata."
-      }
+      },
+      "coachPrefill": "Non ho ancora registrato energia attiva. Qual è un obiettivo giornaliero ragionevole e come si confronta con le calorie totali?"
     },
     "subPage": {
       "loadError": "Impossibile caricare questa metrica al momento.",
@@ -3696,7 +3701,8 @@
       "valuesBack": "Torna a Insights",
       "valuesBackToMetric": "Torna a {metric}",
       "scoresBack": "Torna a Insights",
-      "ecgDescription": "Registrazioni ECG a singola derivazione dal tuo dispositivo, ciascuna con il risultato del dispositivo."
+      "ecgDescription": "Registrazioni ECG a singola derivazione dal tuo dispositivo, ciascuna con il risultato del dispositivo.",
+      "emptyCoachPrefill": "{metric}: non ho ancora registrato nulla qui. Cosa dice questo valore sulla mia salute e come lo miglioro?"
     },
     "units": {
       "steps": "passi",
@@ -3796,27 +3802,32 @@
       "bloodPressure": {
         "title": "Nessuna misurazione della pressione",
         "description": "Registra una misurazione e qui appariranno l'andamento, la percentuale in target e la classificazione OMS.",
-        "cta": "Registra pressione"
+        "cta": "Registra pressione",
+        "coachPrefill": "Non ho ancora registrato la pressione arteriosa. Perché è importante e cosa dovrei sapere prima di iniziare?"
       },
       "weight": {
         "title": "Nessuna misurazione del peso",
         "description": "Registra un peso: andamento, media mobile e fascia obiettivo appariranno automaticamente.",
-        "cta": "Registra peso"
+        "cta": "Registra peso",
+        "coachPrefill": "Non ho ancora registrato il peso. Perché è importante e cosa dovrei sapere prima di iniziare a monitorarlo?"
       },
       "pulse": {
         "title": "Nessuna misurazione del polso",
         "description": "Registra una misurazione: polso a riposo, HRV e VO₂ max appariranno in questa vista.",
-        "cta": "Registra polso"
+        "cta": "Registra polso",
+        "coachPrefill": "Non ho ancora registrato il polso a riposo. Perché è importante e cosa dovrei sapere prima di iniziare?"
       },
       "bmi": {
         "title": "BMI non ancora calcolato",
         "description": "Una volta inseriti altezza e almeno un peso, qui apparirà l'andamento del BMI con le zone OMS.",
-        "cta": "Registra peso"
+        "cta": "Registra peso",
+        "coachPrefill": "Non ho ancora registrato il peso. Perché il BMI conta per me e cosa dovrei sapere prima di iniziare a monitorarlo?"
       },
       "mood": {
         "title": "Nessuna voce d'umore",
         "description": "Registra un umore: appariranno andamento, fascia di stabilità e correlazioni.",
-        "cta": "Registra umore"
+        "cta": "Registra umore",
+        "coachPrefill": "Non ho ancora registrato l’umore. Perché conta monitorarlo e come dovrei iniziare?"
       },
       "medication": {
         "title": "Nessun farmaco configurato",
@@ -3826,7 +3837,8 @@
       "sleep": {
         "title": "Nessuna voce di sonno",
         "description": "Quando saranno disponibili dati sul sonno (manuale o tramite Withings / Apple Health), qui apparirà la suddivisione per fase.",
-        "cta": "Collega una fonte"
+        "cta": "Collega una fonte",
+        "coachPrefill": "Non ho ancora dati sul sonno. Perché conta monitorare il sonno e cosa dovrei sapere prima di collegare una fonte?"
       }
     },
     "navWorkouts": "Allenamenti",
@@ -3836,7 +3848,8 @@
       "description": "Corse, uscite in bici, camminate e sessioni di forza recenti, deduplicati tra Apple Watch e Withings.",
       "emptyState": {
         "title": "Nessun allenamento",
-        "description": "Gli allenamenti arrivano da Salute di Apple sull'iPhone e da Withings. Puoi anche registrarne uno a mano."
+        "description": "Gli allenamenti arrivano da Salute di Apple sull'iPhone e da Withings. Puoi anche registrarne uno a mano.",
+        "coachPrefill": "Non ho ancora registrato allenamenti. Perché conta monitorarli e su cosa dovrei concentrarmi per primo?"
       },
       "detail": {
         "backToList": "Torna agli allenamenti",
@@ -4716,7 +4729,8 @@
       "emptyState": {
         "title": "Nessun dato sulle cadute",
         "description": "Le cadute rilevate compaiono qui quando Apple Health si sincronizza. Nessuna caduta è l'obiettivo."
-      }
+      },
+      "coachPrefill": "Non ho ancora registrato dati sulle cadute. Cosa dice questo valore sulla mia salute e come riduco il rischio di cadute?"
     },
     "navFalls": "Cadute",
     "sixMinuteWalk": {
