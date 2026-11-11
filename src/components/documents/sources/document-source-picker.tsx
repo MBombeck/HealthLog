@@ -71,7 +71,11 @@ import {
   type DocumentSourceTagDto,
 } from "@/lib/documents/sources/types";
 import { useTranslations } from "@/lib/i18n/context";
-import { invalidateKeys, queryKeys } from "@/lib/query-keys";
+import {
+  documentDependentKeys,
+  invalidateKeys,
+  queryKeys,
+} from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 import type { InboundDocumentKindValue } from "@/lib/validations/inbound-documents";
 
@@ -317,7 +321,7 @@ export function DocumentSourcePicker({
     // The vault, its pickers and the record's own lists read documents
     // through the `["documents"]` prefix; the picker's states through its own.
     void invalidateKeys(queryClient, [
-      queryKeys.documents(),
+      ...documentDependentKeys,
       queryKeys.documentSources(),
     ]);
     if (handed.length > 0) onImported?.(handed);

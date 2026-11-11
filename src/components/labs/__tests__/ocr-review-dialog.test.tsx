@@ -91,7 +91,6 @@ function render(
           mode={options.mode ?? "vision"}
           pdfSupported={options.pdfSupported ?? true}
           consentRequired={options.consentRequired}
-          onCommitted={() => {}}
         />
       </I18nProvider>
     </QueryClientProvider>,

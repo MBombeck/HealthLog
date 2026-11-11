@@ -10,7 +10,11 @@ import { ApiError, apiGetList, apiPost } from "@/lib/api/api-fetch";
 import { DOCUMENT_BULK_MAX_IDS } from "@/lib/documents/inbound-constants";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
-import { invalidateKeys, queryKeys } from "@/lib/query-keys";
+import {
+  documentDependentKeys,
+  invalidateKeys,
+  queryKeys,
+} from "@/lib/query-keys";
 import type {
   DeletedDocumentListDto,
   DocumentBulkResultDto,
@@ -21,7 +25,8 @@ import type {
  * document back (one at a time, or all through the bulk route); "Delete now"
  * removes one for good ahead of the grace window. Every write invalidates the
  * `["documents"]` prefix, so the vault, its usage figures and this list repaint
- * together.
+ * together, and the day and timeline roots, which place a document on its
+ * date.
  */
 export function useRecentlyDeleted({ enabled }: { enabled: boolean }) {
   const { t } = useTranslations();
@@ -36,7 +41,7 @@ export function useRecentlyDeleted({ enabled }: { enabled: boolean }) {
   });
 
   const refresh = useCallback(
-    () => void invalidateKeys(queryClient, [queryKeys.documents()]),
+    () => void invalidateKeys(queryClient, documentDependentKeys),
     [queryClient],
   );
 

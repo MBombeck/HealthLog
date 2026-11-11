@@ -24,7 +24,11 @@ import { useUnitDisplay } from "@/hooks/use-unit-display";
 import { ApiError, apiPost } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import { getQuantityTransform } from "@/lib/measurements/display-transform";
-import { queryKeys, refetchInactiveDailyReads } from "@/lib/query-keys";
+import {
+  invalidateKeys,
+  refetchInactiveDailyReads,
+  workoutDependentKeys,
+} from "@/lib/query-keys";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import {
   buildManualWorkoutEntry,
@@ -105,11 +109,10 @@ export async function saveManualWorkout(
   if (status !== "inserted" && status !== "duplicate" && status !== "updated") {
     throw new Error(`workout entry not stored: ${status ?? "unknown"}`);
   }
-  // The list, the dashboard tile and every detail read sit under this
-  // prefix. The form also opens from the capture picker on any page, where
-  // the Today hero (which names a workout that just landed) and the dashboard
-  // snapshot are unmounted, so those two are refetched outright.
-  await queryClient.invalidateQueries({ queryKey: queryKeys.workouts() });
+  // The form also opens from the capture picker on any page, where the
+  // Today hero and the dashboard snapshot are unmounted, so those two are
+  // refetched outright.
+  await invalidateKeys(queryClient, workoutDependentKeys);
   await refetchInactiveDailyReads(queryClient);
   return status;
 }

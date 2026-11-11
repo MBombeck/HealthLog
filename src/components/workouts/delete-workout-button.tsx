@@ -20,7 +20,12 @@ import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { apiDelete } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
-import { queryKeys, refetchInactiveDailyReads } from "@/lib/query-keys";
+import {
+  invalidateKeys,
+  queryKeys,
+  refetchInactiveDailyReads,
+  workoutDependentKeys,
+} from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 
 /**
@@ -38,8 +43,8 @@ export function canDeleteWorkout(
 
 /**
  * Delete, then drop the deleted detail from the cache and refresh the rest of
- * the workout reads (list, dashboard tile) and the two daily reads the route
- * evicted server-side. The detail is removed rather than invalidated, so
+ * the workout reads (list, dashboard tile, the day and the timeline) and the
+ * two daily reads the route evicted server-side. The detail is removed rather than invalidated, so
  * nothing refetches a row that no longer exists.
  */
 export async function deleteManualWorkout(
@@ -48,7 +53,7 @@ export async function deleteManualWorkout(
 ): Promise<void> {
   await apiDelete(`/api/workouts/${encodeURIComponent(id)}`);
   queryClient.removeQueries({ queryKey: queryKeys.workoutDetail(id) });
-  await queryClient.invalidateQueries({ queryKey: queryKeys.workouts() });
+  await invalidateKeys(queryClient, workoutDependentKeys);
   await refetchInactiveDailyReads(queryClient);
 }
 

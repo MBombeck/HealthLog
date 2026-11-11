@@ -7,7 +7,8 @@
  * helpers on their own:
  *
  *   1. the save posts ONE entry to `POST /api/workouts/batch`, MANUAL, with
- *      the form's external id, and refreshes the workout reads;
+ *      the form's external id, and refreshes the workout reads, the day and
+ *      the timeline;
  *   2. a `duplicate` (a second tap) is a success, a `skipped` entry is not;
  *   3. delete is offered for a hand-entered workout in one's own record only,
  *      and calls `DELETE /api/workouts/{id}`.
@@ -44,7 +45,14 @@ function fakeClient() {
   return {
     invalidateQueries: vi.fn().mockResolvedValue(undefined),
     removeQueries: vi.fn(),
+    getQueryCache: () => ({ findAll: () => [] }),
   };
+}
+
+function invalidatedKeys(client: ReturnType<typeof fakeClient>): string[] {
+  return client.invalidateQueries.mock.calls.map(([arg]) =>
+    JSON.stringify((arg as { queryKey: unknown }).queryKey),
+  );
 }
 
 let fetchSpy: ReturnType<typeof vi.spyOn>;
@@ -80,7 +88,7 @@ describe("saveManualWorkout — the wire", () => {
     expect(body.workouts[0].externalId).toBe(ENTRY.externalId);
   });
 
-  it("refreshes every workout read, and the daily reads", async () => {
+  it("refreshes every workout read, the daily reads, the day and the timeline", async () => {
     fetchSpy.mockResolvedValue(
       envelope({ entries: [{ index: 0, status: "inserted" }] }),
     );
@@ -88,12 +96,13 @@ describe("saveManualWorkout — the wire", () => {
 
     await saveManualWorkout(ENTRY, client as unknown as QueryClient);
 
-    const keys = client.invalidateQueries.mock.calls.map(([arg]) =>
-      JSON.stringify((arg as { queryKey: unknown }).queryKey),
-    );
+    const keys = invalidatedKeys(client);
     expect(keys).toContain(JSON.stringify(queryKeys.workouts()));
     expect(keys).toContain(JSON.stringify(queryKeys.dailyDigest()));
     expect(keys).toContain(JSON.stringify(queryKeys.dashboardSnapshot()));
+    // "Capture for this day" saves into an open day view.
+    expect(keys).toContain(JSON.stringify(queryKeys.dayRoot()));
+    expect(keys).toContain(JSON.stringify(queryKeys.timelineRoot()));
   });
 
   it("treats a duplicate (the same form submitted twice) as saved", async () => {
@@ -177,8 +186,9 @@ describe("delete — a hand-entered workout in one's own record only", () => {
     expect(client.removeQueries).toHaveBeenCalledWith({
       queryKey: queryKeys.workoutDetail("w-1"),
     });
-    expect(client.invalidateQueries).toHaveBeenCalledWith({
-      queryKey: queryKeys.workouts(),
-    });
+    const keys = invalidatedKeys(client);
+    expect(keys).toContain(JSON.stringify(queryKeys.workouts()));
+    expect(keys).toContain(JSON.stringify(queryKeys.dayRoot()));
+    expect(keys).toContain(JSON.stringify(queryKeys.timelineRoot()));
   });
 });

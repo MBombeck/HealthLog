@@ -25,7 +25,7 @@ import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { TagChip } from "@/components/ui/tag-chip";
 import { apiPost } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
-import { queryKeys } from "@/lib/query-keys";
+import { invalidateKeys, labDependentKeys } from "@/lib/query-keys";
 
 import type { BiomarkerDto, BiomarkerMergeResultDto } from "./types";
 import { labUnitLabel } from "@/lib/labs/dimensionless";
@@ -79,8 +79,7 @@ export function BiomarkerMergeSheet({
           name: result.target.name,
         }),
       );
-      queryClient.invalidateQueries({ queryKey: queryKeys.biomarkers() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.labResults() });
+      void invalidateKeys(queryClient, labDependentKeys);
       reset();
       onOpenChange(false);
     },

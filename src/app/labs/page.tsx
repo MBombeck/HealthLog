@@ -37,7 +37,7 @@ import { useMounted } from "@/hooks/use-mounted";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { useTranslations } from "@/lib/i18n/context";
-import { queryKeys } from "@/lib/query-keys";
+import { invalidateKeys, labDependentKeys, queryKeys } from "@/lib/query-keys";
 import { apiGet } from "@/lib/api/api-fetch";
 import type { LabResultListResponse } from "@/components/labs/types";
 import {
@@ -231,18 +231,14 @@ export default function LabsPage() {
           footerSlot={addFooterEl}
           onSuccess={() => {
             setDialogOpen(false);
-            queryClient.invalidateQueries({
-              queryKey: queryKeys.labResults(),
-            });
+            void invalidateKeys(queryClient, labDependentKeys);
           }}
           // v1.30.1 — "Save & add another" keeps the sheet open; the
           // form clears the reading itself, this callback just refreshes
           // the list underneath so the just-saved row is there once the
           // user is done and closes the sheet.
           onSavedKeepOpen={() => {
-            queryClient.invalidateQueries({
-              queryKey: queryKeys.labResults(),
-            });
+            void invalidateKeys(queryClient, labDependentKeys);
           }}
           onCancel={() => setDialogOpen(false)}
         />
@@ -255,14 +251,6 @@ export default function LabsPage() {
           mode={ocrCapability.data.mode}
           pdfSupported={ocrCapability.data.pdfSupported}
           consentRequired={labsOcr.reason === "consent_required"}
-          onCommitted={() => {
-            queryClient.invalidateQueries({
-              queryKey: queryKeys.labResults(),
-            });
-            queryClient.invalidateQueries({
-              queryKey: queryKeys.biomarkers(),
-            });
-          }}
         />
       ) : null}
 

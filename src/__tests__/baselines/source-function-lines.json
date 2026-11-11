@@ -45,7 +45,7 @@
     "app/insights/catalog/page.tsx :: MetricCatalogPage": 204,
     "app/insights/medications/page.tsx :: InsightsMedikamentePage": 265,
     "app/insights/page-client.tsx :: InsightsPageClient": 375,
-    "app/labs/page.tsx :: LabsPage": 228,
+    "app/labs/page.tsx :: LabsPage": 216,
     "app/medications/page-client.tsx :: MedicationsPageClient": 590,
     "app/notifications/page.tsx :: NotificationsPage": 327,
     "components/activity/activity-calendar-card.tsx :: ActivityCalendarCard": 470,

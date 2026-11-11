@@ -32,7 +32,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useTranslations } from "@/lib/i18n/context";
 import { apiGetList, apiPost } from "@/lib/api/api-fetch";
-import { queryKeys, refetchInactiveDailyReads } from "@/lib/query-keys";
+import {
+  invalidateKeys,
+  queryKeys,
+  refetchInactiveDailyReads,
+} from "@/lib/query-keys";
 import { INSTRUMENTS, INSTRUMENT_ORDER } from "@/lib/mental-health/instruments";
 import { PageHeader } from "@/components/ui/page-header";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
@@ -96,17 +100,16 @@ export function MentalWellbeing() {
     onSuccess: (data) => {
       setResult(data);
       setPhase("result");
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.mentalHealthAssessments(),
-      });
-      // A completed screening can satisfy a due checkup reminder, so the
-      // checkups list and the Today rail must repaint. Honest constraint:
-      // the server satisfy runs async via pg-boss, so this invalidation
-      // narrows the stale window but cannot close it — a refetch racing
-      // the job may still see the pre-satisfy row until the next tick.
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.measurementReminders(),
-      });
+      // A screening is listed on its day, and it can satisfy a due checkup
+      // reminder, so the checkups list and the Today rail must repaint.
+      // Honest constraint: the server satisfy runs async via pg-boss, so
+      // this invalidation narrows the stale window but cannot close it — a
+      // refetch racing the job may still see the pre-satisfy row.
+      void invalidateKeys(queryClient, [
+        queryKeys.mentalHealthAssessments(),
+        queryKeys.measurementReminders(),
+        queryKeys.dayRoot(),
+      ]);
       void refetchInactiveDailyReads(queryClient);
     },
   });

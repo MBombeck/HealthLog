@@ -6,9 +6,15 @@
  * Reads unwrap the envelope through `apiGet`; every key comes from the
  * factory (`queryKeys.symptom*`, under the `["illness"]` root). Every write
  * evicts the whole illness tree, because the episode detail lists the
- * occurrences filed against it and the definition summaries count them.
+ * occurrences filed against it and the definition summaries count them, and
+ * the day and timeline roots, which show each occurrence.
  */
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/api-fetch";
 import { invalidateKeys, queryKeys } from "@/lib/query-keys";
@@ -118,9 +124,22 @@ export function useSymptomEvents(
   });
 }
 
+/**
+ * What a symptom write reaches: the illness tree its keys live under, and the
+ * day and the timeline, which list every occurrence. Nothing on the dashboard
+ * or the Today digest reads symptoms.
+ */
+export function invalidateSymptomReads(qc: QueryClient) {
+  return invalidateKeys(qc, [
+    queryKeys.illness(),
+    queryKeys.dayRoot(),
+    queryKeys.timelineRoot(),
+  ]);
+}
+
 function useInvalidateSymptoms() {
   const qc = useQueryClient();
-  return () => invalidateKeys(qc, [queryKeys.illness()]);
+  return () => invalidateSymptomReads(qc);
 }
 
 export function useCreateSymptomDefinition() {

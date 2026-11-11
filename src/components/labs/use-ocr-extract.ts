@@ -29,7 +29,9 @@ import type { AiRunAccepted } from "@/lib/documents/ai-runs/types";
 import { ocrImageToText } from "@/lib/labs/local-ocr";
 import {
   aiInputDependentKeys,
+  documentDependentKeys,
   invalidateKeys,
+  labDependentKeys,
   queryKeys,
 } from "@/lib/query-keys";
 import type {
@@ -259,12 +261,11 @@ export function useOcrCommit() {
       });
     },
     onSuccess: (_result, { file }) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.labResults() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.biomarkers() });
-      // A scan filed into the vault adds a document — refresh its lists.
-      if (file) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.documents() });
-      }
+      // A scan filed into the vault adds a document as well.
+      void invalidateKeys(queryClient, [
+        ...labDependentKeys,
+        ...(file ? documentDependentKeys : []),
+      ]);
     },
   });
 }
