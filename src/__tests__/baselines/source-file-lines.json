@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 84,
-  "total": 93880,
+  "total": 93834,
   "entries": {
     "app/medications/page-client.tsx": 839,
     "components/charts/mood-chart.tsx": 1166,
@@ -25,7 +25,7 @@
     "lib/ai/coach/coach-prose-grounding.ts": 1091,
     "lib/ai/coach/persistence.ts": 1218,
     "lib/ai/coach/results/metric-table-tool.ts": 1102,
-    "lib/ai/coach/snapshot.ts": 1346,
+    "lib/ai/coach/snapshot.ts": 1331,
     "lib/ai/coach/stream-events.ts": 811,
     "lib/ai/coach/types.ts": 1008,
     "lib/ai/codex-client.ts": 907,
@@ -41,7 +41,7 @@
     "lib/daily/today-overview.ts": 838,
     "lib/dashboard-layout.ts": 977,
     "lib/dashboard/snapshot.ts": 1550,
-    "lib/day/records.ts": 1174,
+    "lib/day/records.ts": 1172,
     "lib/export/backup-plan.ts": 838,
     "lib/export/coach-backup.ts": 1070,
     "lib/export/profile-backup.ts": 1019,
@@ -86,6 +86,6 @@
     "lib/validations/inbound-documents.ts": 1018,
     "lib/withings/sync-sleep.ts": 884,
     "lib/withings/sync.ts": 933,
-    "proxy.ts": 846
+    "proxy.ts": 845
   }
 }
