@@ -45,7 +45,7 @@ test.describe("offline, with the service worker", () => {
       await expect(page.locator('[data-slot="offline-banner"]')).toBeVisible();
 
       // A tap on the dashboard link stays on the open page.
-      await page.locator('a[href="/"]').first().click();
+      await page.locator('a[href="/"]:visible').first().click();
       await expect(
         page
           .locator("[data-sonner-toast]")
