@@ -44,6 +44,23 @@ import {
 } from "@/lib/notifications/delivery-identity";
 
 /**
+ * Sender outcomes that mean there was nobody to send to: no browser
+ * subscribed, no iPhone paired, no address, or a transport the operator has
+ * not set up. The sender writes a `skipped` ledger row. The channel has not
+ * failed, so these leave its failure counter alone; counted as failures,
+ * turning push off on the last device would switch the channel off for good
+ * after five reminders.
+ */
+const NO_RECIPIENT_REASONS: ReadonlySet<string> = new Set([
+  "web_push_no_subscriptions",
+  "web_push_vapid_not_configured",
+  "apns_no_devices",
+  "apns_not_configured",
+  "email_no_recipient",
+  "email_not_configured",
+]);
+
+/**
  * Dispatch a notification to all enabled channels for a user.
  * Best-effort: logs errors but never throws.
  *
@@ -57,6 +74,8 @@ import {
  *  6. Call the appropriate sender — which now returns a `SendOutcome` so
  *     the dispatcher can classify hard rejects (410, blocked-by-user) vs
  *     soft errors (5xx, 429, network) and update channel state accordingly.
+ *     A send that had nobody to go to (`NO_RECIPIENT_REASONS`) changes no
+ *     channel state.
  *
  * Also handles legacy Telegram config stored on the User model by
  * auto-migrating it to a NotificationChannel record on first dispatch.
@@ -352,9 +371,14 @@ export async function dispatchNotification(
         continue;
       }
 
+      const ref = {
+        id: channel.id,
+        userId: channel.userId,
+        type: channel.type as ChannelType,
+      };
       try {
         const prepared = prepareChannelSend(
-          channel.type as ChannelType,
+          ref.type,
           channel.config,
           delivery.recipientUserId,
           recipientPayload,
@@ -402,39 +426,28 @@ export async function dispatchNotification(
           }
         }
         if (outcome.ok) {
-          await recordChannelSuccess({
-            id: channel.id,
-            userId: channel.userId,
-            type: channel.type as ChannelType,
-          });
+          await recordChannelSuccess(ref);
           channelsSucceeded += 1;
           continue;
         }
 
-        if (outcome.hardReject) {
-          await recordChannelHardReject(
-            {
-              id: channel.id,
-              userId: channel.userId,
-              type: channel.type as ChannelType,
-            },
-            outcome,
+        if (outcome.reason && NO_RECIPIENT_REASONS.has(outcome.reason)) {
+          getEvent()?.addMeta(
+            `notification_skip_${channel.type.toLowerCase()}_no_recipient`,
+            outcome.reason,
           );
+          continue;
+        }
+
+        if (outcome.hardReject) {
+          await recordChannelHardReject(ref, outcome);
           getEvent()?.addWarning(
             `Notification channel ${channel.type} auto-disabled: ${outcome.reason}`,
           );
           continue;
         }
 
-        const result = await recordChannelTransientFailure(
-          {
-            id: channel.id,
-            userId: channel.userId,
-            type: channel.type as ChannelType,
-          },
-          outcome,
-          now,
-        );
+        const result = await recordChannelTransientFailure(ref, outcome, now);
         getEvent()?.addWarning(
           `Notification dispatch failed for channel ${channel.type}: ${outcome.reason}` +
             (result.autoDisabled ? " (auto-disabled after 5 failures)" : ""),
@@ -445,11 +458,7 @@ export async function dispatchNotification(
         // be no-throw, this is defence-in-depth.)
         const message = err instanceof Error ? err.message : String(err);
         await recordChannelTransientFailure(
-          {
-            id: channel.id,
-            userId: channel.userId,
-            type: channel.type as ChannelType,
-          },
+          ref,
           { reason: "sender_threw", message },
           now,
         );

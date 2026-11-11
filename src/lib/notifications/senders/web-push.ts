@@ -24,9 +24,10 @@ import { isSafeAppPath } from "@/lib/notifications/tap-target";
  *    permanent reject (410/404) and the channel can no longer succeed.
  *    The 410 subscriptions themselves are deleted from the DB regardless,
  *    so a hard-channel-reject means the user has zero devices left.
- *  - `hardReject: false` for any 5xx, 429, fetch failure, or
- *    "no subscriptions at all" (treated as soft so the user can re-pair
- *    a device without the channel staying auto-disabled forever).
+ *  - `hardReject: false` for any 5xx, 429 or fetch failure.
+ *  - `reason: "web_push_no_subscriptions"` (or `_vapid_not_configured`) when
+ *    there is nothing to send to; the dispatcher leaves the channel state
+ *    alone for those.
  */
 export async function sendViaWebPush(
   userId: string,
@@ -65,10 +66,8 @@ export async function sendViaWebPush(
     });
 
     if (!subscriptions.length) {
-      // No devices registered yet — not a hard channel reject. The user
-      // may simply not have hit "Subscribe" on this browser. Counting
-      // this as a give-up signal would lock the user out of the channel
-      // they just configured. Treat it as a soft "no recipient" instead.
+      // No browser subscribed (never, or push was turned off on the last
+      // one). Nothing failed; the dispatcher books this as a skip.
       recordPushAttemptForPayload(payload, userId, {
         userId,
         channel: "WEB_PUSH",

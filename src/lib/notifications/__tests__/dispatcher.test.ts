@@ -207,6 +207,47 @@ describe("dispatchNotification — soft reject (web-push 429)", () => {
   });
 });
 
+describe("dispatchNotification — nobody to send to", () => {
+  // Turning push off on the last browser deletes its subscription and leaves
+  // the channel on. Counted as failures, the next five reminders switched the
+  // channel off for good, and subscribing again later did not bring it back.
+  it.each([
+    ["WEB_PUSH", "web_push_no_subscriptions"],
+    ["WEB_PUSH", "web_push_vapid_not_configured"],
+    ["APNS", "apns_no_devices"],
+    ["APNS", "apns_not_configured"],
+  ] as const)(
+    "%s answering %s leaves the channel state alone",
+    async (type, reason) => {
+      vi.mocked(prisma.notificationChannel.findMany).mockResolvedValueOnce([
+        {
+          ...makeChannel({ type, consecutiveFailures: 4 }),
+          createdAt: new Date(0),
+          updatedAt: new Date(0),
+          disabledReason: null,
+          lastSuccessAt: null,
+          lastFailureAt: null,
+          lastFailureReason: null,
+        },
+      ]);
+      const sender = type === "APNS" ? sendViaApnsMock : sendViaWebPushMock;
+      sender.mockResolvedValueOnce({ ok: false, hardReject: false, reason });
+
+      const outcome = await dispatchNotification({
+        eventType: "MEDICATION_REMINDER",
+        userId: "u-1",
+        title: "t",
+        message: "m",
+      });
+
+      expect(sender).toHaveBeenCalledTimes(1);
+      expect(outcome.dispatched).toBe(false);
+      expect(prisma.notificationChannel.update).not.toHaveBeenCalled();
+      expect(auditLog).not.toHaveBeenCalled();
+    },
+  );
+});
+
 describe("dispatchNotification — bounded APNs fallback", () => {
   it("continues to the next channel after an APNs timeout", async () => {
     vi.mocked(prisma.notificationChannel.findMany).mockResolvedValueOnce([
