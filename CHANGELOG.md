@@ -87,9 +87,9 @@
   "computed" and the German "berechnet"), a marker already saved in
   "g/dL (calc)" accepts the plain "g/dL", and a unit that was only the
   note counts as no unit and goes to review, so a person decides whether
-  the value really has none. A marker saved in just "(calc)" keeps that
-  unit until you change it on the marker. Any other text in brackets
-  still counts as part of the unit. (#1313)
+  the value really has none. A marker already saved in just "(calc)"
+  keeps that unit. Any other text in brackets still counts as part of
+  the unit. (#1313)
 - **The sync feed no longer loses a reading written during a long
   import, and no longer starts over for a quiet account.** A Garmin or
   Withings import writes a batch in one transaction and stamps its
