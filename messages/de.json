@@ -10155,6 +10155,7 @@
       "BLOOD_PRESSURE_SYS": "Blutdruck",
       "PULSE": "Puls",
       "BLOOD_GLUCOSE": "Blutzucker",
+      "BLOOD_KETONES": "Blutketone",
       "OXYGEN_SATURATION": "Sauerstoffsättigung",
       "BODY_FAT": "Körperfett",
       "BODY_TEMPERATURE": "Körpertemperatur",

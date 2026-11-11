@@ -10155,6 +10155,7 @@
       "BLOOD_PRESSURE_SYS": "Blood pressure",
       "PULSE": "Pulse",
       "BLOOD_GLUCOSE": "Blood glucose",
+      "BLOOD_KETONES": "Blood ketones",
       "OXYGEN_SATURATION": "Oxygen saturation",
       "BODY_FAT": "Body fat",
       "BODY_TEMPERATURE": "Body temperature",

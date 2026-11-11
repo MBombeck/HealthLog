@@ -10155,6 +10155,7 @@
       "BLOOD_PRESSURE_SYS": "АД",
       "PULSE": "Пульс",
       "BLOOD_GLUCOSE": "Глюкоза крови",
+      "BLOOD_KETONES": "Кетоны крови",
       "OXYGEN_SATURATION": "Насыщение кислородом",
       "BODY_FAT": "Процент жировой массы",
       "BODY_TEMPERATURE": "Температура тела",

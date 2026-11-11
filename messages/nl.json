@@ -10155,6 +10155,7 @@
       "BLOOD_PRESSURE_SYS": "Bloeddruk",
       "PULSE": "Hartslag",
       "BLOOD_GLUCOSE": "Bloedglucose",
+      "BLOOD_KETONES": "Bloedketonen",
       "OXYGEN_SATURATION": "Zuurstofsaturatie",
       "BODY_FAT": "Vetpercentage",
       "BODY_TEMPERATURE": "Lichaamstemperatuur",

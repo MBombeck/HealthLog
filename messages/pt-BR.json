@@ -10155,6 +10155,7 @@
       "BLOOD_PRESSURE_SYS": "Pressão arterial",
       "PULSE": "Pulso",
       "BLOOD_GLUCOSE": "Glicemia",
+      "BLOOD_KETONES": "Cetonas no sangue",
       "OXYGEN_SATURATION": "Saturação de oxigênio",
       "BODY_FAT": "Gordura corporal",
       "BODY_TEMPERATURE": "Temperatura corporal",

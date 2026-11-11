@@ -16,6 +16,7 @@ export const TYPE_GROUPS = [
       "BLOOD_PRESSURE_SYS",
       "PULSE",
       "BLOOD_GLUCOSE",
+      "BLOOD_KETONES",
       "OXYGEN_SATURATION",
       "BODY_TEMPERATURE",
     ],

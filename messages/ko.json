@@ -10155,6 +10155,7 @@
       "BLOOD_PRESSURE_SYS": "혈압",
       "PULSE": "맥박",
       "BLOOD_GLUCOSE": "혈당",
+      "BLOOD_KETONES": "혈중 케톤",
       "OXYGEN_SATURATION": "산소포화도",
       "BODY_FAT": "체지방",
       "BODY_TEMPERATURE": "체온",
