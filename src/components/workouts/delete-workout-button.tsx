@@ -53,8 +53,8 @@ export async function deleteManualWorkout(
 ): Promise<void> {
   await apiDelete(`/api/workouts/${encodeURIComponent(id)}`);
   queryClient.removeQueries({ queryKey: queryKeys.workoutDetail(id) });
-  await invalidateKeys(queryClient, workoutDependentKeys);
-  await refetchInactiveDailyReads(queryClient);
+  void invalidateKeys(queryClient, workoutDependentKeys);
+  void refetchInactiveDailyReads(queryClient);
 }
 
 /**

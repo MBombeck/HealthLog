@@ -127,15 +127,15 @@ export function useMeasurementEdit({
     }) => {
       await apiPut(`/api/measurements/${id}`, { value, measuredAt, notes });
     },
-    onSuccess: async () => {
-      await invalidateKeys(queryClient, measurementDependentKeys);
-      await refetchInactiveDailyReads(queryClient);
+    onSuccess: () => {
       setEditSeed({
         value: editValue,
         measuredAt: editMeasuredAt,
         notes: editNotes,
       });
       dismissEdit();
+      void invalidateKeys(queryClient, measurementDependentKeys);
+      void refetchInactiveDailyReads(queryClient);
     },
     onError: (err) => {
       // A 409 names its reason in `meta.errorCode`: the edit collides with

@@ -235,13 +235,6 @@ export function MedicationIntakeQuickAdd({
       );
       const eventId = created?.id;
 
-      await invalidateMedicationReads(queryClient);
-      // Fan-out to every inline compliance chart key (one per medication)
-      // so the detail-page tile refreshes when the user re-enters it.
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.complianceChartInline(),
-      });
-
       // v1.36.x — the shared decision, not a fourth copy of it. This surface
       // was left out of the collapse that took the other three: it offered a
       // delegate an Undo hitting `DELETE /api/medications/{id}/intake/{id}`,
@@ -272,6 +265,9 @@ export function MedicationIntakeQuickAdd({
         toast.success(t("common.saved"));
       }
       onSuccess?.();
+      // The dose is stored; the sheet does not wait for the refetches. The
+      // bundle covers every inline compliance chart as well.
+      void invalidateMedicationReads(queryClient);
     } catch (err) {
       setError(
         err instanceof ApiError && err.message

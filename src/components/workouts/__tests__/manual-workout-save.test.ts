@@ -105,6 +105,22 @@ describe("saveManualWorkout — the wire", () => {
     expect(keys).toContain(JSON.stringify(queryKeys.timelineRoot()));
   });
 
+  it("returns once the entry is stored, without waiting for the refetches", async () => {
+    // The sheet closes on this answer; on a slow connection the reads it
+    // refreshes can take seconds, and the person would watch a spinner.
+    fetchSpy.mockResolvedValue(
+      envelope({ entries: [{ index: 0, status: "inserted" }] }),
+    );
+    const client = {
+      ...fakeClient(),
+      invalidateQueries: vi.fn(() => new Promise(() => {})),
+    };
+
+    await expect(
+      saveManualWorkout(ENTRY, client as unknown as QueryClient),
+    ).resolves.toBe("inserted");
+  });
+
   it("treats a duplicate (the same form submitted twice) as saved", async () => {
     fetchSpy.mockResolvedValue(
       envelope({ entries: [{ index: 0, status: "duplicate" }] }),

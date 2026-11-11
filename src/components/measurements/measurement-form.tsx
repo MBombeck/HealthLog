@@ -528,8 +528,6 @@ export function MeasurementForm({
       setPulse("");
       setPairedGlucose("");
       setNotes("");
-      await invalidateKeys(queryClient, measurementDependentKeys);
-      await refetchInactiveDailyReads(queryClient);
       // v1.36.x — a delegate's receipt names the record. "Saved" alone is
       // the one confirmation somebody acting for another person does not
       // need, and the reading has just left their own history for good.
@@ -544,6 +542,10 @@ export function MeasurementForm({
           : undefined,
       );
       onSuccess?.();
+      // The reading is stored; the sheet does not wait for every read that
+      // shows it to come back.
+      void invalidateKeys(queryClient, measurementDependentKeys);
+      void refetchInactiveDailyReads(queryClient);
     } catch (err) {
       setError(localizedApiError(err, t, "measurements.saveError"));
     } finally {

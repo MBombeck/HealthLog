@@ -257,13 +257,13 @@ export function MoodForm({
       if (tagKeys.length > 0) recordUse(tagKeys);
       resetForm();
       setMoreTagsOpen(false);
-      await invalidateKeys(queryClient, moodDependentKeys);
-      await refetchInactiveDailyReads(queryClient);
       toast.success(t("common.saved"));
       // The entry landed, but a tag picked here may have been archived or
       // deleted elsewhere since the picker loaded; the server says so.
       if (droppedAnyLinkKeys(saved)) toast.warning(t("mood.tagsNotSaved"));
       onSuccess?.();
+      void invalidateKeys(queryClient, moodDependentKeys);
+      void refetchInactiveDailyReads(queryClient);
     } catch (err) {
       setError(localizedApiError(err, t, "mood.saveError"));
     } finally {

@@ -125,8 +125,10 @@ export function useVaccination(id: string | null) {
  */
 export function useVaccinationMutations() {
   const qc = useQueryClient();
+  // Not returned: a mutation would wait for every refetch before it settles,
+  // and the sheet would stay open with its spinner until then.
   const invalidate = () =>
-    Promise.all([
+    void Promise.all([
       invalidateKeys(qc, vaccinationDependentKeys),
       invalidateReminderReads(qc),
     ]);

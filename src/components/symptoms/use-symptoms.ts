@@ -137,9 +137,11 @@ export function invalidateSymptomReads(qc: QueryClient) {
   ]);
 }
 
+// Not returned, so a save reports as soon as it lands rather than after
+// every read it touches has refetched.
 function useInvalidateSymptoms() {
   const qc = useQueryClient();
-  return () => invalidateSymptomReads(qc);
+  return () => void invalidateSymptomReads(qc);
 }
 
 export function useCreateSymptomDefinition() {

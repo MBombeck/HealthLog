@@ -94,7 +94,8 @@ interface BatchResult {
 export type ManualWorkoutSaveOutcome = "inserted" | "duplicate" | "updated";
 
 /**
- * Post the entry and refresh what shows workouts. A `duplicate` is a success:
+ * Post the entry and start refreshing what shows workouts; the caller reports
+ * the save without waiting for those reads. A `duplicate` is a success:
  * the same form already landed this session (a second tap, a retry), so the
  * row exists exactly once. A `skipped` entry was refused and throws.
  */
@@ -112,8 +113,8 @@ export async function saveManualWorkout(
   // The form also opens from the capture picker on any page, where the
   // Today hero and the dashboard snapshot are unmounted, so those two are
   // refetched outright.
-  await invalidateKeys(queryClient, workoutDependentKeys);
-  await refetchInactiveDailyReads(queryClient);
+  void invalidateKeys(queryClient, workoutDependentKeys);
+  void refetchInactiveDailyReads(queryClient);
   return status;
 }
 

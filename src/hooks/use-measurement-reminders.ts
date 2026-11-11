@@ -117,7 +117,8 @@ export function useMeasurementReminders(enabled = true) {
 
 export function useMeasurementReminderMutations() {
   const qc = useQueryClient();
-  const invalidate = () => invalidateReminderReads(qc);
+  // Not returned: a mutation would wait for every refetch before it settles.
+  const invalidate = () => void invalidateReminderReads(qc);
 
   const create = useMutation({
     mutationKey: queryKeys.measurementReminderCreate(),
