@@ -73,8 +73,10 @@ export function useLifeEvents(enabled = true) {
 
 export function useLifeEventMutations() {
   const qc = useQueryClient();
+  // Not returned, so the sheet closes without waiting for the timeline to
+  // refetch.
   const invalidate = () =>
-    invalidateKeys(qc, [queryKeys.timelineRoot(), queryKeys.dayRoot()]);
+    void invalidateKeys(qc, [queryKeys.timelineRoot(), queryKeys.dayRoot()]);
 
   // One key until a save lands, so a retry after a timeout is not a second
   // event.
