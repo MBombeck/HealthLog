@@ -138,7 +138,7 @@
     "components/labs/lab-history-list.tsx :: LabHistoryList": 534,
     "components/labs/ocr-review-dialog.tsx :: OcrReviewDialog": 359,
     "components/labs/ocr-row-editor.tsx :: OcrRowEditor": 378,
-    "components/layout/auth-shell.tsx :: AuthShell": 518,
+    "components/layout/auth-shell.tsx :: AuthShell": 484,
     "components/layout/bottom-nav.tsx :: BottomNav": 262,
     "components/layout/capture-picker.tsx :: CapturePicker": 235,
     "components/layout/sidebar-nav.tsx :: SidebarNav": 356,

@@ -84,6 +84,66 @@ const PUBLIC_PATHS = [
 ];
 
 /**
+ * `<main id="main-content">` is the app shell's one scroller and stays mounted
+ * across routes, so its offset would carry from page to page, and the
+ * browser's own restoration on Back moves only the document, never `<main>`.
+ * A forward navigation starts at the top; Back and Forward return to the
+ * offset that entry was left at.
+ */
+function useShellScrollMemory(pathname: string): void {
+  // Recorded while scrolling: once the pathname has changed, `<main>` holds
+  // the next page and the offset is gone.
+  const offsets = useRef(new Map<string, number>());
+  // Set by `popstate` for the entry it lands on, taken by the next render.
+  const restore = useRef<{ url: string; top: number } | null>(null);
+  useEffect(() => {
+    const here = () => `${location.pathname}${location.search}`;
+    const remember = (event: Event) => {
+      const el = event.target;
+      if (el instanceof HTMLElement && el.id === "main-content") {
+        offsets.current.set(here(), el.scrollTop);
+      }
+    };
+    const recall = () => {
+      restore.current = { url: here(), top: offsets.current.get(here()) ?? 0 };
+    };
+    const capture = { capture: true, passive: true } as const;
+    document.addEventListener("scroll", remember, capture);
+    window.addEventListener("popstate", recall);
+    return () => {
+      document.removeEventListener("scroll", remember, capture);
+      window.removeEventListener("popstate", recall);
+    };
+  }, []);
+
+  useEffect(() => {
+    const target = restore.current;
+    restore.current = null;
+    const main = document.getElementById("main-content");
+    if (target?.url !== `${location.pathname}${location.search}`) {
+      if (main) main.scrollTop = 0;
+      // The body-scrolled shells (sign-in, setup, legal pages) scroll the
+      // document instead.
+      window.scrollTo(0, 0);
+      return;
+    }
+    if (!main) return;
+    // A list still painting its skeleton is shorter than the offset; keep
+    // trying until it has the height, for at most a second.
+    const until = performance.now() + 1000;
+    let frame = 0;
+    const apply = () => {
+      main.scrollTop = target.top;
+      if (main.scrollTop < target.top - 1 && performance.now() < until) {
+        frame = requestAnimationFrame(apply);
+      }
+    };
+    apply();
+    return () => cancelAnimationFrame(frame);
+  }, [pathname]);
+}
+
+/**
  * A session that ended without passing through the shell's session-end wipe
  * (an expired cookie the edge sent straight to the sign-in page, a sign-in
  * page opened directly) left the previous account's offline copies on this
@@ -213,40 +273,7 @@ export function AuthShell({
     isBodyScrolled ? "body" : rendersAppShell ? "shell" : null,
   );
 
-  // v1.25.1 — the authenticated shell keeps `<main id="main-content">`
-  // mounted across every route change, so its scroll offset survives
-  // navigation: scroll down in one section (e.g. Settings → Sources
-  // Priority), hop to another, and the new view opens already scrolled.
-  // Reset the scroll container to the top on every forward navigation.
-  // A back/forward navigation skips the reset so the browser's own scroll
-  // restoration stands: `popstate` arms a one-shot skip for the single
-  // pathname change it triggers, and a macrotask clears the flag so it can
-  // never get stuck on a later forward navigation.
-  const skipNextScrollReset = useRef(false);
-  useEffect(() => {
-    const armSkip = () => {
-      skipNextScrollReset.current = true;
-      setTimeout(() => {
-        skipNextScrollReset.current = false;
-      }, 0);
-    };
-    window.addEventListener("popstate", armSkip);
-    return () => window.removeEventListener("popstate", armSkip);
-  }, []);
-
-  useEffect(() => {
-    if (skipNextScrollReset.current) {
-      skipNextScrollReset.current = false;
-      return;
-    }
-    const main = document.getElementById("main-content");
-    if (main) {
-      main.scrollTop = 0;
-    }
-    // Fallback for the body-scrolled shells (login / onboarding / standalone
-    // legal pages) where the document, not `<main>`, owns the scroll.
-    window.scrollTo(0, 0);
-  }, [pathname]);
+  useShellScrollMemory(pathname);
 
   // Session END on a protected page (`/api/auth/me` answered 401/403): wipe
   // every client cache, since the QueryClient outlives navigation and health
