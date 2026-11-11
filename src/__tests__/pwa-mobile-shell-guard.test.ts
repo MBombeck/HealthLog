@@ -139,6 +139,14 @@ describe("the shell owns the safe area", () => {
     expect(grid).toMatch(/\boverscroll-contain\b/);
   });
 
+  it("the onboarding tour's bottom card clears the home indicator", () => {
+    const tour = code(read("src/components/onboarding/tour.tsx"));
+    const card = tour.match(/"[^"]*absolute inset-x-2 [^"]*"/)?.[0] ?? "";
+    expect(card).toMatch(
+      /\bbottom-\[calc\(env\(safe-area-inset-bottom,0px\)\+0\.5rem\)\]/,
+    );
+  });
+
   it("the sheet primitives name their side for those rules", () => {
     expect(read("src/components/ui/sheet.tsx")).toMatch(
       /data-sheet-side=\{side\}/,
