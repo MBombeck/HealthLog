@@ -6,7 +6,7 @@ import {
   COMPREHENSIVE_WARM_CEILING_MS,
   comprehensiveWarmBudgetMs,
 } from "../model-time";
-import { QUEUE_RUNTIME } from "../queue-runtime";
+import { QUEUE_RUNTIME } from "@/__tests__/helpers/queue-runtime";
 import { COMPREHENSIVE_MODEL_CALLS } from "@/lib/ai/ai-budgets";
 import { AI_RESPONSE_TIMEOUT_MAX_SECONDS } from "@/lib/ai/effective-timeout";
 import type { GenerateOutcome } from "@/lib/insights/comprehensive-generate";
