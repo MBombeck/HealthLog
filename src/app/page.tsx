@@ -102,6 +102,19 @@ export default async function DashboardPage() {
       const queryClient = new QueryClient();
       queryClient.setQueryData(queryKeys.dashboardSnapshot(locale), wireBody);
       queryClient.setQueryData(queryKeys.dashboardWidgets(), wireBody.layout);
+      // The mood chart's series rides the mood tile (same engine as
+      // `/api/mood/analytics`); seeded with readings only, where the tile's
+      // summary is the route's.
+      const mood = (
+        wireBody.tiles as
+          { mood?: { entries: unknown[]; summary: unknown } } | undefined
+      )?.mood;
+      if (mood?.summary && mood.entries.length > 0) {
+        queryClient.setQueryData(queryKeys.moodAnalytics(), {
+          entries: mood.entries,
+          summary: mood.summary,
+        });
+      }
 
       // Above-the-fold prefetch runs ONLY in snapshot mode: legacy mode derives
       // its chart-type list from analytics queries the RSC did not run, so there

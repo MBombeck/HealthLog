@@ -143,6 +143,46 @@ describe("useDashboardSnapshot — auto-refresh on an open page", () => {
     await (opts.queryFn as () => Promise<unknown>)();
     expect(setQueryDataMock).not.toHaveBeenCalled();
   });
+
+  it("seeds the mood chart's series from the mood tile, so the chart asks for nothing", async () => {
+    const entries = [{ date: "2026-11-10", score: 4, samples: 1 }];
+    const summary = { count: 1, latest: 4 };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        envelopeResponse({
+          layout: { widgets: [] },
+          tiles: { mood: { entries, summary } },
+        }),
+      ),
+    );
+    getQueryDataMock.mockReturnValue(undefined);
+    useDashboardSnapshot();
+    await (lastOpts().queryFn as () => Promise<unknown>)();
+    expect(setQueryDataMock).toHaveBeenCalledWith(queryKeys.moodAnalytics(), {
+      entries,
+      summary,
+    });
+  });
+
+  it("leaves the mood chart to its own read when the tile has no readings", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        envelopeResponse({
+          layout: { widgets: [] },
+          tiles: { mood: { entries: [], summary: null } },
+        }),
+      ),
+    );
+    getQueryDataMock.mockReturnValue(undefined);
+    useDashboardSnapshot();
+    await (lastOpts().queryFn as () => Promise<unknown>)();
+    expect(setQueryDataMock).not.toHaveBeenCalledWith(
+      queryKeys.moodAnalytics(),
+      expect.anything(),
+    );
+  });
 });
 
 describe("prefetchDashboardSnapshot — hydration-safe promise handoff", () => {
