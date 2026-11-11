@@ -56,7 +56,7 @@ export function PatientIdentitySection({
   fmtDate: (iso: string) => string;
 }) {
   const patient = report.patient;
-  const name = patient.fullName ?? patient.username ?? null;
+  const name = patient.name;
   const genderKey = patient.gender
     ? GENDER_LABEL_KEYS[patient.gender]
     : undefined;

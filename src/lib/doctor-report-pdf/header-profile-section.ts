@@ -62,12 +62,9 @@ export function buildHeaderProfileSection(
   doc.setFontSize(9);
   doc.setTextColor(80, 80, 80);
   const patientInfo: string[] = [];
-  // v1.7.0 — prefer the legal full name on the cover; fall back to the
-  // username when no full name is set (collapses exactly like the
-  // practice name when neither is present).
-  const patientName = data.patient.fullName ?? data.patient.username ?? null;
-  if (patientName) {
-    patientInfo.push(`${t("doctorReport.patient")}: ${patientName}`);
+  // Collapses like the practice name when the record has no name to print.
+  if (data.patient.name) {
+    patientInfo.push(`${t("doctorReport.patient")}: ${data.patient.name}`);
   }
   if (data.patient.dateOfBirth) {
     patientInfo.push(

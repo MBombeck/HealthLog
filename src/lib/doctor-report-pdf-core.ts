@@ -164,7 +164,7 @@ export function buildDoctorReportPdfDocument(
     title: t("doctorReport.title"),
     subject: t("doctorReport.subtitle"),
     creator: "HealthLog",
-    author: data.patient.fullName ?? data.patient.username ?? "HealthLog",
+    author: data.patient.name ?? "HealthLog",
   });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();

@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2892,
-  "total": 9220,
+  "total": 9216,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1963,10 +1963,10 @@
     "lib/doctor-report-helpers.ts": 1,
     "lib/doctor-report-pdf-core.ts": 4,
     "lib/doctor-report-pdf/clinical-records-notes-section.ts": 6,
-    "lib/doctor-report-pdf/header-profile-section.ts": 3,
+    "lib/doctor-report-pdf/header-profile-section.ts": 2,
     "lib/doctor-report-pdf/measurements-charts-section.ts": 3,
     "lib/doctor-report-pdf/medication-mood-wellness-section.ts": 7,
-    "lib/doctor-report-types.ts": 21,
+    "lib/doctor-report-types.ts": 20,
     "lib/doctor-report/__tests__/leaf-gating-sweep.test.ts": 1,
     "lib/doctor-report/clinical-records.ts": 2,
     "lib/doctor-report/collect.ts": 4,

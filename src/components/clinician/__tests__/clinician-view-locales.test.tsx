@@ -42,11 +42,10 @@ const FULL_RECORD = {
     end: "2026-01-31T00:00:00.000Z",
   },
   patient: {
-    username: "shared-account",
+    name: "A. Patient",
     dateOfBirth: "1980-01-01T00:00:00.000Z",
     gender: "FEMALE",
     heightCm: 170,
-    fullName: "A. Patient",
   },
   practiceName: null,
   measurements: {},

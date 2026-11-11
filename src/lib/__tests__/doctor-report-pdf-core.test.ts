@@ -27,7 +27,7 @@ function makeData(overrides?: Partial<DoctorReportData>): DoctorReportData {
       end: "2026-05-03T12:00:00.000Z",
     },
     patient: {
-      username: "testuser",
+      name: "testuser",
       dateOfBirth: "1985-06-15T00:00:00.000Z",
       gender: "MALE",
       heightCm: 182,
@@ -1003,12 +1003,11 @@ describe("doctor-report emergency first page", () => {
 });
 
 describe("extracted doctor-report section boundaries", () => {
-  it("header/profile prefers the legal name and renders insurance identity", async () => {
+  it("header/profile prints the resolved name and renders insurance identity", async () => {
     const data = makeData({
       patient: {
         ...makeData().patient,
-        fullName: "Ada Lovelace",
-        username: "ignored-handle",
+        name: "Ada Lovelace",
         insurerName: "Example Health",
       },
     });
@@ -1022,7 +1021,6 @@ describe("extracted doctor-report section boundaries", () => {
     });
     const text = await extractText(bytes);
     expect(text).toContain("Ada Lovelace");
-    expect(text).not.toContain("ignored-handle");
     expect(text).toContain("Example Health");
     expect(text).toContain("A123456789");
   });

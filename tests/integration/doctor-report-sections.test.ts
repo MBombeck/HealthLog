@@ -314,7 +314,7 @@ describe("doctor-report — per-section toggles", () => {
     expect(data.labResults).toBeNull();
     expect(data.allergies).toBeNull();
     expect(data.familyHistory).toBeNull();
-    expect(data.patient.username).toBeNull();
+    expect(data.patient.name).toBeNull();
     expect(data.patient.insurerName).toBeNull();
   });
 });

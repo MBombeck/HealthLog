@@ -73,8 +73,7 @@ function reportFixture(
       end: "2026-06-27T00:00:00.000Z",
     },
     patient: {
-      username: "tester",
-      fullName: "A Person",
+      name: "A Person",
       dateOfBirth: "1990-01-01",
       gender: "female",
       heightCm: 170,
@@ -213,8 +212,7 @@ describe("doctor_visit_summary — grounding + structure", () => {
         .text,
     );
     const patient = data.patient as Record<string, unknown>;
-    expect(patient).not.toHaveProperty("fullName");
-    expect(patient).not.toHaveProperty("username");
+    expect(patient).not.toHaveProperty("name");
     expect(patient.dateOfBirth).toBe("1990-01-01");
   });
 });

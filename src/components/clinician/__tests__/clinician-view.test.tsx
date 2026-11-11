@@ -27,7 +27,7 @@ function makeReport(
       end: "2026-01-31T00:00:00.000Z",
     },
     patient: {
-      username: "tester",
+      name: "tester",
       dateOfBirth: null,
       gender: null,
       heightCm: null,
