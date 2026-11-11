@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.47.2] — 2026-11-11
+
 ### Added
 
 - **Search and filter the labs list.** Once the list ran past a
