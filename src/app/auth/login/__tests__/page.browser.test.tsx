@@ -3,12 +3,19 @@
  *
  * Single sign-on leaves the page for the identity provider and the session
  * starts on the way back, so the previous account's offline copies have to
- * be gone before the page is left.
+ * be gone before the page is left. A sign-in that stays in the app replaces
+ * the sign-in page in the history, so Back does not show the form again.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { stubFetch } from "../../../../../tests/browser/fetch-stub";
+import { page } from "vitest/browser";
+
+import {
+  stubFetch,
+  type FetchStub,
+} from "../../../../../tests/browser/fetch-stub";
 import { renderWithApp } from "../../../../../tests/browser/render";
+import { recordHistory } from "../../../../../tests/browser/url";
 
 const clearOffline = vi.hoisted(() => vi.fn(async () => {}));
 const loadDocument = vi.hoisted(() => vi.fn());
@@ -20,8 +27,10 @@ vi.mock("@/lib/navigation/load-document", () => ({ loadDocument }));
 
 import LoginPage from "../page";
 
+let api: FetchStub;
+
 beforeEach(() => {
-  stubFetch()
+  api = stubFetch()
     .on("GET", "/api/auth/registration-status", {
       data: { registrationEnabled: false, sessionCookieSecure: false },
     })
@@ -48,5 +57,25 @@ describe("sign-in page, single sign-on", () => {
     expect(clearOffline.mock.invocationCallOrder[0]).toBeLessThan(
       loadDocument.mock.invocationCallOrder[0],
     );
+  });
+});
+
+describe("sign-in page, password", () => {
+  it("replaces itself with the page asked for", async () => {
+    api.on("POST", "/api/auth/login", { data: { id: "signed-in" } });
+    window.history.replaceState(null, "", "/auth/login?next=%2Fmood%3Fadd%3D1");
+    const history = recordHistory();
+    const { screen } = await renderWithApp(<LoginPage />, { user: null });
+
+    await screen.getByTestId("login-use-password").click();
+    await screen.getByTestId("login-email").fill("someone");
+    await page
+      .elementLocator(document.querySelector("#password")!)
+      .fill("a long enough passphrase");
+    await screen.getByTestId("login-password-submit").click();
+
+    await expect.poll(() => window.location.pathname).toBe("/mood");
+    expect(window.location.search).toBe("?add=1");
+    expect(history.pushes()).toEqual([]);
   });
 });

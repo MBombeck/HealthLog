@@ -2,9 +2,10 @@
  * Taking over a managed profile, driven by the claim page's buttons.
  *
  * Both ways in start a session for a different account than whatever this
- * browser held before: the password claim stays in the single-page app and
- * starts from an empty cache, the single-sign-on claim leaves for the
- * identity provider and clears the offline copies before it goes.
+ * browser held before: the password claim stays in the single-page app,
+ * starts from an empty cache and replaces the claim page in the history; the
+ * single-sign-on claim leaves for the identity provider and clears the
+ * offline copies before it goes.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { page } from "vitest/browser";
@@ -16,6 +17,7 @@ import {
   type FetchStub,
 } from "../../../../tests/browser/fetch-stub";
 import { renderWithApp } from "../../../../tests/browser/render";
+import { recordHistory } from "../../../../tests/browser/url";
 
 const clearOffline = vi.hoisted(() => vi.fn(async () => {}));
 const loadDocument = vi.hoisted(() => vi.fn());
@@ -70,6 +72,7 @@ async function click(slot: string): Promise<void> {
 
 describe("ClaimProfile", () => {
   it("starts the claimed account from an empty cache", async () => {
+    const history = recordHistory();
     const { queryClient } = await renderWithApp(
       <ClaimProfile token={TOKEN} />,
       {
@@ -87,6 +90,7 @@ describe("ClaimProfile", () => {
       .poll(() => window.location.pathname)
       .toBe("/onboarding/handover");
     expect(api.calls("POST", "/api/auth/claim")).toHaveLength(1);
+    expect(history.pushes()).toEqual([]);
     expect(queryClient.getQueryData(queryKeys.dashboardSnapshot())).toBe(
       undefined,
     );

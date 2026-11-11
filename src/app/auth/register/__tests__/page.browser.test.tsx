@@ -3,7 +3,8 @@
  *
  * A new account starts from an empty cache, like every other sign-in: the
  * client cache outlives the navigation, and nothing read before the account
- * existed belongs to it.
+ * existed belongs to it. The app replaces the page in the history, so Back
+ * does not show the form again.
  */
 import { describe, expect, it } from "vitest";
 import { page } from "vitest/browser";
@@ -12,6 +13,7 @@ import { queryKeys } from "@/lib/query-keys";
 
 import { stubFetch } from "../../../../../tests/browser/fetch-stub";
 import { renderWithApp } from "../../../../../tests/browser/render";
+import { recordHistory } from "../../../../../tests/browser/url";
 import RegisterPage from "../page";
 
 async function fill(selector: string, value: string): Promise<void> {
@@ -24,6 +26,7 @@ describe("registration page", () => {
       .on("GET", "/api/auth/me", { status: 401, error: "Unauthorized" })
       .on("POST", "/api/auth/register", { data: { id: "new-account" } });
     window.history.replaceState(null, "", "/auth/register");
+    const history = recordHistory();
     const { screen, queryClient } = await renderWithApp(<RegisterPage />, {
       user: null,
     });
@@ -37,6 +40,7 @@ describe("registration page", () => {
 
     await expect.poll(() => window.location.pathname).toBe("/");
     expect(api.calls("POST", "/api/auth/register")).toHaveLength(1);
+    expect(history.pushes()).toEqual([]);
     expect(queryClient.getQueryData(queryKeys.dashboardSnapshot())).toBe(
       undefined,
     );

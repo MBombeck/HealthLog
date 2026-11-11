@@ -122,7 +122,7 @@ export function ClaimProfile({
         onSuccess: () => {
           // As after any sign-in: nothing cached before belongs to this account.
           queryClient.clear();
-          router.push("/onboarding/handover");
+          router.replace("/onboarding/handover");
         },
       },
     );

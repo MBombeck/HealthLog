@@ -74,7 +74,7 @@ export default function RegisterPage() {
       });
 
       queryClient.clear(); // nothing cached before belongs to the new account
-      router.push("/");
+      router.replace("/");
     } catch (err) {
       setError(
         err instanceof ApiError && err.message

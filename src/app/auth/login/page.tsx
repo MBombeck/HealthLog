@@ -236,7 +236,7 @@ export default function LoginPage() {
     if (target === "/" && isDashboardSnapshotEnabled()) {
       prefetchDashboardSnapshot(queryClient);
     }
-    router.push(target);
+    router.replace(target);
   }
 
   async function handlePasskeyLogin() {
