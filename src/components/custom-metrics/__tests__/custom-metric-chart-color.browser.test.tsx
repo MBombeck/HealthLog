@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { renderWithApp } from "../../../../tests/browser/render";
 import { CustomMetricChart } from "../custom-metric-chart";
+import type { CustomMetricEntryDto } from "../types";
 
 /**
  * The line takes the series colour it is given (the GKI draws in a chart
@@ -10,13 +11,14 @@ import { CustomMetricChart } from "../custom-metric-chart";
  */
 
 const NOW = Date.now();
-const ENTRIES = [3, 2, 1].map((daysAgo, i) => ({
+const ENTRIES: CustomMetricEntryDto[] = [3, 2, 1].map((daysAgo, i) => ({
   id: `e${i}`,
   customMetricId: "",
   value: 2 + i,
   unit: "",
   measuredAt: new Date(NOW - daysAgo * 86_400_000).toISOString(),
   note: null,
+  createdAt: new Date(NOW).toISOString(),
 }));
 
 async function lineStroke(color?: string): Promise<string | null> {
@@ -28,7 +30,7 @@ async function lineStroke(color?: string): Promise<string | null> {
         targetLow={null}
         targetHigh={null}
         decimals={1}
-        entries={ENTRIES as never}
+        entries={ENTRIES}
         {...(color ? { color } : {})}
       />
     </div>,

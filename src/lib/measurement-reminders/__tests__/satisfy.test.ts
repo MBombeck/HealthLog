@@ -13,6 +13,8 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
+import type { PrismaClient } from "@/generated/prisma/client";
+
 import { satisfyReminder, skipReminder } from "../satisfy";
 
 const TZ = "Europe/Berlin";
@@ -49,7 +51,9 @@ function makePrisma(updateManyCount = 1) {
       }),
     },
   };
-  return { prisma, updates, events };
+  // The primitives touch only the two delegates above.
+  const client = prisma as unknown as PrismaClient;
+  return { prisma, client, updates, events };
 }
 
 function reminder(
@@ -270,9 +274,9 @@ describe("course window", () => {
   const lastEvening = new Date("2026-06-15T17:30:00Z");
 
   it("satisfy past the last slot leaves no next slot", async () => {
-    const { prisma, updates } = makePrisma();
+    const { client, updates } = makePrisma();
     const result = await satisfyReminder(
-      prisma as never,
+      client,
       reminder(course),
       TZ,
       lastEvening,
@@ -284,9 +288,9 @@ describe("course window", () => {
   });
 
   it("skip past the last slot leaves no next slot", async () => {
-    const { prisma, updates } = makePrisma();
+    const { client, updates } = makePrisma();
     const result = await skipReminder(
-      prisma as never,
+      client,
       reminder(course),
       TZ,
       lastEvening,
@@ -297,9 +301,9 @@ describe("course window", () => {
   });
 
   it("still rolls within the window", async () => {
-    const { prisma } = makePrisma();
+    const { client } = makePrisma();
     const result = await satisfyReminder(
-      prisma as never,
+      client,
       reminder(course),
       TZ,
       new Date("2026-06-15T05:30:00Z"),

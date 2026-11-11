@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { locales } from "@/lib/i18n/config";
+import { locales, type Locale } from "@/lib/i18n/config";
 
 /**
  * The GKI tile sits in a two-column grid, about 150 px of text wide at phone
@@ -20,13 +20,13 @@ const POINT = {
   glucoseMmol: 12.5,
 };
 
-async function render(locale: string) {
+async function render(locale: Locale) {
   const { I18nProvider } = await import("@/lib/i18n/context");
   const { DayGkiTile } = await import("../day-gki-tile");
   const messages = (await import(`../../../../messages/${locale}.json`))
     .default;
   return renderToStaticMarkup(
-    <I18nProvider initialLocale={locale as never} initialMessages={messages}>
+    <I18nProvider initialLocale={locale} initialMessages={messages}>
       <DayGkiTile points={[POINT]} />
     </I18nProvider>,
   );

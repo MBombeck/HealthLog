@@ -297,6 +297,7 @@ describe("turning the subscription on", () => {
   it("keeps a subscription off when it is turned off while a rotation commits", async () => {
     const owner = await makeUser("owner");
     await mint(owner.id);
+    let successorId = "";
     // The rotation holds the live row (revoked, successor written, not yet
     // committed) while the turn-off waits on it.
     const res = await rotateAround(
@@ -306,7 +307,7 @@ describe("turning the subscription on", () => {
           where: { id: feedId },
           data: { revokedAt: new Date() },
         });
-        await tx.cycleCalendarFeed.create({
+        const successor = await tx.cycleCalendarFeed.create({
           data: {
             userId: owner.id,
             createdById: owner.id,
@@ -314,6 +315,7 @@ describe("turning the subscription on", () => {
             tokenPrefix: "hlf_successor",
           },
         });
+        successorId = successor.id;
       },
       () => manage("DELETE"),
     );
@@ -323,6 +325,17 @@ describe("turning the subscription on", () => {
         where: { userId: owner.id, revokedAt: null },
       }),
     ).toBe(0);
+    // The rotation revoked the feed DELETE read first; the one this request
+    // turned off is the successor, and the trail says so.
+    const revokes = await db().auditLog.findMany({
+      where: { action: "cycle.feed.revoke", userId: owner.id },
+      select: { details: true },
+    });
+    expect(
+      revokes.map(
+        (r) => (JSON.parse(r.details ?? "{}") as { feedId?: string }).feedId,
+      ),
+    ).toEqual([successorId]);
   });
 
   it("carries an option changed during a rotation onto the new link", async () => {
