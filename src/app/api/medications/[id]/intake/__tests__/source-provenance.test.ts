@@ -45,8 +45,13 @@ vi.mock("@/lib/db", () => ({
       update: vi.fn(),
     },
     auditLog: { create: vi.fn() },
+    pushSubscription: { findMany: vi.fn() },
     $transaction: vi.fn(),
   },
+}));
+
+vi.mock("@/lib/notifications/vapid-config", () => ({
+  getVapidConfig: vi.fn(),
 }));
 
 vi.mock("@/lib/idempotency", () => ({
@@ -94,15 +99,6 @@ vi.mock("@/lib/notifications/medication-intake-sync", () => ({
   queueMedicationIntakeSync: vi.fn(),
 }));
 
-// The route dispatches the PWA clear fire-and-forget after a recorded dose;
-// both halves are mocked so the test asserts the dispatch, not web-push.
-vi.mock("@/lib/notifications/web-push-clear", () => ({
-  dispatchMedicationIntakeWebClear: vi.fn().mockResolvedValue(undefined),
-}));
-vi.mock("@/lib/medications/outstanding-doses", () => ({
-  countOutstandingDosesToday: vi.fn(),
-}));
-
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
 vi.mock("@/lib/auth/bearer", () => ({ resolveBearerToken: vi.fn() }));
 vi.mock("@/lib/auth/audit", () => ({
@@ -127,8 +123,7 @@ import { POST } from "../route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { resolveBearerToken } from "@/lib/auth/bearer";
-import { dispatchMedicationIntakeWebClear } from "@/lib/notifications/web-push-clear";
-import { countOutstandingDosesToday } from "@/lib/medications/outstanding-doses";
+import { getVapidConfig } from "@/lib/notifications/vapid-config";
 
 const USER = {
   id: "user-1",
@@ -210,30 +205,33 @@ describe("POST intake — transport-derived source (iOS #64)", () => {
     expect(createdSource()).toBe("API");
   });
 
-  it("closes the pending dose-due web reminder after a recorded intake", async () => {
-    // Before this route dispatched the clear, an iOS offline drain (which
-    // replays free intakes through exactly this endpoint) left the web
-    // dose-due reminder and the app badge standing after the dose landed.
+  it("sends no Web Push of its own for a recorded dose", async () => {
+    // A push that shows no notification gets the subscription revoked by
+    // Safari after a few. The reminder already on screen stays until it is
+    // tapped or replaced by the next one for the same slot.
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(countOutstandingDosesToday).mockResolvedValue(3);
+    vi.mocked(getVapidConfig).mockResolvedValue({
+      subject: "mailto:ops@example.com",
+      publicKey: "pub",
+      privateKey: "priv",
+    });
+    vi.mocked(prisma.pushSubscription.findMany).mockResolvedValue([
+      {
+        id: "s1",
+        userId: USER.id,
+        endpoint: "https://push.example.com/x",
+        p256dh: "a",
+        auth: "b",
+        userAgent: null,
+        createdAt: new Date(0),
+      },
+    ]);
 
     const res = await POST(postReq({}), ROUTE_PARAMS);
     expect(res.status).toBe(201);
 
-    // Fire-and-forget: the dispatch runs detached from the response.
-    await expect
-      .poll(
-        () => vi.mocked(dispatchMedicationIntakeWebClear).mock.calls.length,
-        { timeout: 2_000, interval: 25 },
-      )
-      .toBe(1);
-    expect(
-      vi.mocked(dispatchMedicationIntakeWebClear).mock.calls[0][0],
-    ).toMatchObject({
-      userId: "user-1",
-      medicationId: "med-1",
-      badgeCount: 3,
-    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(prisma.pushSubscription.findMany).not.toHaveBeenCalled();
   });
 
   it("ignores a client-supplied `source` in the body (no mass assignment)", async () => {

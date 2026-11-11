@@ -529,6 +529,7 @@
     "noAccount": "Não tem uma conta?",
     "hasAccount": "Já tem uma conta?",
     "loginFailed": "Falha no login",
+    "signOutFailed": "Não foi possível sair. Sua sessão continua ativa.",
     "registerFailed": "Falha no cadastro",
     "invitedBanner": "Você foi convidado. Crie sua conta mesmo que o cadastro esteja fechado.",
     "alreadySignedIn": {
@@ -6376,6 +6377,7 @@
     "webPush": "Push do navegador",
     "webPushDescription": "Receba notificações diretamente no navegador, mesmo quando o HealthLog não estiver aberto.",
     "webPushNotSupported": "Seu navegador não oferece suporte a notificações push.",
+    "webPushInstallFirst": "No iPhone e no iPad, as notificações push só funcionam no app instalado. No Safari, toque em Compartilhar e depois em “Adicionar à Tela de Início”, abra o HealthLog pela Tela de Início e ative as notificações push aqui.",
     "webPushDenied": "As notificações push estão bloqueadas. Permita-as nas configurações do navegador.",
     "webPushNotConfigured": "O Web Push não está configurado no servidor.",
     "webPushSubscribe": "Ativar push",
@@ -9253,7 +9255,8 @@
       "accountErasureFailedBody": "O prazo de exclusão de {username} terminou, mas apagar a conta falhou. Ela continua bloqueada e uma nova tentativa é feita a cada hora, depois das outras contas pendentes. O erro aparece no cartão de tarefas com falha em Administração."
     },
     "user": {
-      "telegramTestBody": "HealthLog: conexão bem-sucedida. As notificações do Telegram estão ativas."
+      "telegramTestBody": "HealthLog: conexão bem-sucedida. As notificações do Telegram estão ativas.",
+      "webPushTestBody": "Se você está vendo isto, as notificações push chegam a este dispositivo."
     },
     "moodReminder": {
       "title": "Lembrete diário de humor",

@@ -9,7 +9,7 @@ import {
 import { useRouter } from "next/navigation";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { queryKeys } from "@/lib/query-keys";
-import { apiGet, apiFetchRaw, ApiError } from "@/lib/api/api-fetch";
+import { apiGet, apiFetch, ApiError } from "@/lib/api/api-fetch";
 import { adoptRecordFenceState } from "@/lib/api/record-fence";
 import { retryOnceOnTransientError } from "@/lib/queries/retry-transient";
 import { useMounted } from "@/hooks/use-mounted";
@@ -30,6 +30,7 @@ import type { TourProgress } from "@/lib/onboarding/tour-progress";
 import { clearLastDay } from "@/lib/day/last-day";
 import { clearCoachDeleteJournal } from "@/lib/ai/coach/delete-journal";
 import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
+import { unsubscribeWebPush } from "@/lib/notifications/web-push-unsubscribe";
 import {
   setRecordScope,
   setRefusedRecordScope,
@@ -649,15 +650,18 @@ export function useLogout() {
 
   return useMutation({
     mutationFn: async () => {
-      await apiFetchRaw("/api/auth/logout", { method: "POST" });
+      // Before the session ends: the server row can only be removed while
+      // it is still valid. A failure here does not block signing out.
+      await unsubscribeWebPush().catch(() => undefined);
+      // Throws on any non-2xx answer: a refused sign-out leaves the session
+      // alive, and showing the sign-in page then would claim otherwise.
+      await apiFetch("/api/auth/logout", { method: "POST" });
     },
     onSuccess: () => {
       clearCachesForSessionEnd(queryClient);
       router.push("/auth/login");
     },
-    // v1.16.4 — a network-failed logout used to do nothing at all (the
-    // menu closed, the session stayed); a toast names the failure.
     onError: (failure) =>
-      showErrorToast(t("common.networkError"), { cause: failure }),
+      showErrorToast(t("auth.signOutFailed"), { cause: failure }),
   });
 }

@@ -347,6 +347,8 @@ const REGISTRY: DestructiveEntry[] = [
           "This is the off half of a notification channel toggle. Re-subscribing from the same control recreates the row, nothing the person authored is stored in it, and the browser permission survives. Gating it would put a dialog on a switch.",
       },
     ],
+    undetected:
+      "No detector sees it. The DELETE goes out from `unsubscribeWebPush` in `lib/notifications/web-push-unsubscribe.ts`, which sign-out calls too, and `lib/` is an excluded root. Registered by hand.",
   },
 
   // ── Measurements, mood, labs, illness — the undo-and-restore surfaces ────

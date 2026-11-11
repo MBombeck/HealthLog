@@ -46,9 +46,8 @@ vi.mock("@/lib/logging/transports", async (importOriginal) => {
   };
 });
 
-// The tails the route starts without awaiting them (the cross-device push,
-// the web-push dose clear with its badge count), recorded instead of run
-// (see `effectRecorder`).
+// The tail the route starts without awaiting it (the cross-device push),
+// recorded instead of run (see `effectRecorder`).
 vi.mock(
   "@/lib/notifications/medication-intake-sync",
   async (importOriginal) => {
@@ -65,31 +64,6 @@ vi.mock(
     };
   },
 );
-vi.mock("@/lib/notifications/web-push-clear", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("@/lib/notifications/web-push-clear")>();
-  const { effectRecorder } = await import("../../../kit/parity");
-  return {
-    ...actual,
-    dispatchMedicationIntakeWebClearBulk: async (...args: unknown[]) => {
-      effectRecorder.record("dispatchMedicationIntakeWebClearBulk", args);
-    },
-  };
-});
-vi.mock("@/lib/medications/outstanding-doses", async (importOriginal) => {
-  const actual =
-    await importOriginal<
-      typeof import("@/lib/medications/outstanding-doses")
-    >();
-  const { effectRecorder } = await import("../../../kit/parity");
-  return {
-    ...actual,
-    countOutstandingDosesToday: async (...args: unknown[]) => {
-      effectRecorder.record("countOutstandingDosesToday", args);
-      return 2;
-    },
-  };
-});
 
 const prisma = getPrismaClient();
 const NOW = new Date("2026-10-15T12:00:00.000Z");

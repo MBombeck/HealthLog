@@ -529,6 +529,7 @@
     "noAccount": "Non hai ancora un account?",
     "hasAccount": "Hai già un account?",
     "loginFailed": "Accesso non riuscito",
+    "signOutFailed": "Non è stato possibile uscire. La sessione è ancora attiva.",
     "registerFailed": "Registrazione non riuscita",
     "invitedBanner": "Sei stato invitato: crea il tuo account anche se la registrazione è chiusa.",
     "alreadySignedIn": {
@@ -6376,6 +6377,7 @@
     "webPush": "Push del browser",
     "webPushDescription": "Ricevi notifiche direttamente nel browser, anche quando HealthLog non è aperto.",
     "webPushNotSupported": "Il tuo browser non supporta le notifiche push.",
+    "webPushInstallFirst": "Su iPhone e iPad le notifiche push funzionano solo nell'app installata. In Safari tocca Condividi, poi «Aggiungi alla schermata Home», apri HealthLog dalla schermata Home e attiva qui le notifiche push.",
     "webPushDenied": "Le notifiche push sono bloccate. Consentile nelle impostazioni del browser.",
     "webPushNotConfigured": "Web Push non è configurato sul server.",
     "webPushSubscribe": "Attiva push",
@@ -9253,7 +9255,8 @@
       "accountErasureFailedBody": "Il periodo di eliminazione di {username} è terminato, ma la cancellazione dell’account non è riuscita. Resta bloccato e viene ritentata ogni ora, dopo gli altri account in scadenza. L’errore è nella scheda dei job non riusciti in Administration."
     },
     "user": {
-      "telegramTestBody": "HealthLog: connessione riuscita. Le notifiche Telegram sono attive."
+      "telegramTestBody": "HealthLog: connessione riuscita. Le notifiche Telegram sono attive.",
+      "webPushTestBody": "Se vedi questo messaggio, le notifiche push arrivano su questo dispositivo."
     },
     "moodReminder": {
       "title": "Promemoria quotidiano dell’umore",

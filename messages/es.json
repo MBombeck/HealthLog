@@ -529,6 +529,7 @@
     "noAccount": "¿Aún no tienes cuenta?",
     "hasAccount": "¿Ya tienes cuenta?",
     "loginFailed": "No se ha podido iniciar sesión",
+    "signOutFailed": "No se pudo cerrar la sesión. Tu sesión sigue abierta.",
     "registerFailed": "No se ha podido completar el registro",
     "invitedBanner": "Te han invitado: crea tu cuenta aunque el registro esté cerrado.",
     "alreadySignedIn": {
@@ -6376,6 +6377,7 @@
     "webPush": "Push del navegador",
     "webPushDescription": "Recibe notificaciones directamente en tu navegador, incluso cuando HealthLog no está abierto.",
     "webPushNotSupported": "Tu navegador no admite notificaciones push.",
+    "webPushInstallFirst": "En iPhone y iPad, las notificaciones push solo funcionan en la app instalada. En Safari, toca Compartir y luego «Añadir a pantalla de inicio», abre HealthLog desde la pantalla de inicio y activa las notificaciones push aquí.",
     "webPushDenied": "Las notificaciones push están bloqueadas. Permítelas en los ajustes de tu navegador.",
     "webPushNotConfigured": "Web Push no está configurado en el servidor.",
     "webPushSubscribe": "Activar push",
@@ -9253,7 +9255,8 @@
       "accountErasureFailedBody": "El plazo de eliminación de {username} ha terminado, pero no se pudo borrar la cuenta. Sigue bloqueada y se vuelve a intentar cada hora, después de las demás cuentas pendientes. El error aparece en la tarjeta de tareas fallidas de Administration."
     },
     "user": {
-      "telegramTestBody": "HealthLog: conexión correcta. Las notificaciones de Telegram están activas."
+      "telegramTestBody": "HealthLog: conexión correcta. Las notificaciones de Telegram están activas.",
+      "webPushTestBody": "Si ves esto, las notificaciones push llegan a este dispositivo."
     },
     "moodReminder": {
       "title": "Recordatorio diario de ánimo",

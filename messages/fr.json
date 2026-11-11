@@ -529,6 +529,7 @@
     "noAccount": "Pas encore de compte ?",
     "hasAccount": "Déjà un compte ?",
     "loginFailed": "Échec de la connexion",
+    "signOutFailed": "La déconnexion a échoué. Votre session est toujours ouverte.",
     "registerFailed": "Échec de l’inscription",
     "invitedBanner": "Vous avez été invité. Créez votre compte même si les inscriptions sont fermées.",
     "alreadySignedIn": {
@@ -6376,6 +6377,7 @@
     "webPush": "Push navigateur",
     "webPushDescription": "Recevez des notifications directement dans votre navigateur, même lorsque HealthLog n’est pas ouvert.",
     "webPushNotSupported": "Votre navigateur ne prend pas en charge les notifications push.",
+    "webPushInstallFirst": "Sur iPhone et iPad, les notifications push ne fonctionnent que dans l'app installée. Dans Safari, touchez Partager puis « Sur l'écran d'accueil », ouvrez HealthLog depuis l'écran d'accueil et activez les notifications push ici.",
     "webPushDenied": "Les notifications push sont bloquées. Autorisez-les dans les réglages de votre navigateur.",
     "webPushNotConfigured": "Web Push n’est pas configuré sur le serveur.",
     "webPushSubscribe": "Activer le push",
@@ -9253,7 +9255,8 @@
       "accountErasureFailedBody": "Le délai de suppression de {username} est écoulé, mais l’effacement du compte a échoué. Il reste verrouillé et une nouvelle tentative a lieu chaque heure, après les autres comptes en attente. L’erreur figure dans la carte des tâches en échec, dans Administration."
     },
     "user": {
-      "telegramTestBody": "HealthLog: connexion réussie. Les notifications Telegram sont actives."
+      "telegramTestBody": "HealthLog: connexion réussie. Les notifications Telegram sont actives.",
+      "webPushTestBody": "Si vous voyez ceci, les notifications push arrivent sur cet appareil."
     },
     "moodReminder": {
       "title": "Rappel quotidien d’humeur",

@@ -529,6 +529,7 @@
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?",
     "loginFailed": "Login failed",
+    "signOutFailed": "Could not sign out. You are still signed in.",
     "registerFailed": "Registration failed",
     "invitedBanner": "You have been invited. Create your account even while registration is otherwise closed.",
     "alreadySignedIn": {
@@ -6376,6 +6377,7 @@
     "webPush": "Browser Push",
     "webPushDescription": "Receive notifications directly in your browser, even when HealthLog is not open.",
     "webPushNotSupported": "Your browser does not support push notifications.",
+    "webPushInstallFirst": "On iPhone and iPad, push notifications only work in the installed app. In Safari, tap Share, then Add to Home Screen, open HealthLog from the Home Screen and turn on push here.",
     "webPushDenied": "Push notifications are blocked. Allow them in your browser settings.",
     "webPushNotConfigured": "Web Push is not configured on the server.",
     "webPushSubscribe": "Enable push",
@@ -9253,7 +9255,8 @@
       "accountErasureFailedBody": "The deletion window of {username} has ended, but erasing the account failed. It stays locked and is tried again every hour, after the other accounts due. The failing jobs card in Administration has the error."
     },
     "user": {
-      "telegramTestBody": "HealthLog: connection successful. Telegram notifications are active."
+      "telegramTestBody": "HealthLog: connection successful. Telegram notifications are active.",
+      "webPushTestBody": "If you can see this, push notifications reach this device."
     },
     "moodReminder": {
       "title": "Daily mood reminder",

@@ -529,6 +529,7 @@
     "noAccount": "계정이 없나요?",
     "hasAccount": "이미 계정이 있나요?",
     "loginFailed": "로그인 실패",
+    "signOutFailed": "로그아웃하지 못했어요. 아직 로그인되어 있어요.",
     "registerFailed": "회원가입 실패",
     "invitedBanner": "초대를 받았어요. 회원가입이 닫혀 있어도 계정을 만들 수 있어요.",
     "alreadySignedIn": {
@@ -6376,6 +6377,7 @@
     "webPush": "브라우저 푸시",
     "webPushDescription": "HealthLog를 열어 두지 않아도 브라우저로 바로 알림을 받아요.",
     "webPushNotSupported": "이 브라우저는 푸시 알림을 지원하지 않아요.",
+    "webPushInstallFirst": "iPhone과 iPad에서는 설치한 앱에서만 푸시 알림을 받을 수 있어요. Safari에서 공유를 누른 다음 '홈 화면에 추가'를 선택하고, 홈 화면에서 HealthLog를 연 뒤 여기서 푸시 알림을 켜 주세요.",
     "webPushDenied": "푸시 알림이 차단돼 있어요. 브라우저 설정에서 허용해 주세요.",
     "webPushNotConfigured": "서버에 Web Push가 설정돼 있지 않아요.",
     "webPushSubscribe": "푸시 켜기",
@@ -9253,7 +9255,8 @@
       "accountErasureFailedBody": "{username} 계정의 삭제 유예 기간이 끝났지만 계정을 지우지 못했어요. 계정은 계속 잠겨 있고, 삭제할 다른 계정들 다음으로 매시간 다시 시도해요. 오류는 관리자 화면의 실패한 작업 카드에서 볼 수 있어요."
     },
     "user": {
-      "telegramTestBody": "HealthLog: 연결에 성공했어요. Telegram 알림이 켜져 있어요."
+      "telegramTestBody": "HealthLog: 연결에 성공했어요. Telegram 알림이 켜져 있어요.",
+      "webPushTestBody": "이 알림이 보이면 이 기기에서 푸시 알림을 받을 수 있어요."
     },
     "moodReminder": {
       "title": "매일 기분 알림",

@@ -31,9 +31,15 @@ vi.mock("@/lib/db", () => ({
     // asserting the validation refusals they were written for.
     appSettings: { findUnique: vi.fn() },
     pushSubscription: { upsert: vi.fn(), deleteMany: vi.fn() },
-    notificationChannel: { findFirst: vi.fn(), create: vi.fn() },
+    notificationChannel: {
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
   },
 }));
+
+vi.mock("@/lib/auth/audit", () => ({ auditLog: vi.fn() }));
 
 vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
@@ -42,11 +48,44 @@ vi.mock("@/lib/logging/context", () => ({
 
 vi.mock("@/lib/crypto", () => ({ encrypt: (v: string) => `enc(${v})` }));
 
+import type {
+  NotificationChannel,
+  PushSubscription,
+} from "@/generated/prisma/client";
 import { POST, DELETE } from "../route";
 import { requireAuth } from "@/lib/api-handler";
 import { prisma } from "@/lib/db";
 
 const USER = { id: "user-1", username: "u" };
+
+const STORED_SUBSCRIPTION: PushSubscription = {
+  id: "sub-1",
+  userId: USER.id,
+  endpoint: "https://fcm.googleapis.com/fcm/send/abcdef-routing-secret",
+  p256dh: "enc(BPkey)",
+  auth: "enc(authsecret)",
+  userAgent: null,
+  createdAt: new Date(0),
+};
+
+function channelRow(over: Partial<NotificationChannel>): NotificationChannel {
+  return {
+    id: "ch-1",
+    userId: USER.id,
+    type: "WEB_PUSH",
+    enabled: true,
+    config: "enc({})",
+    createdAt: new Date(0),
+    updatedAt: new Date(0),
+    disabledReason: null,
+    consecutiveFailures: 0,
+    lastSuccessAt: null,
+    lastFailureAt: null,
+    lastFailureReason: null,
+    nextRetryAt: null,
+    ...over,
+  };
+}
 
 /** A well-formed subscription, for the cases that should succeed. */
 const GOOD = {
@@ -136,6 +175,58 @@ describe("POST /api/notifications/web-push — the subscribe refusal", () => {
 
     expect(res.status).toBe(200);
     expect(prisma.pushSubscription.upsert).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("POST /api/notifications/web-push — the channel it delivers through", () => {
+  // The channel is switched off when the last browser's endpoint answers 410
+  // (the app was removed from the Home Screen, site data was cleared) or after
+  // five failed sends. Subscribing again must switch it back on: before, the
+  // subscription was stored, the test push arrived and no reminder ever did.
+  it("switches a disabled channel back on", async () => {
+    const disabled = channelRow({
+      enabled: false,
+      disabledReason: "web_push_410_gone",
+      consecutiveFailures: 1,
+    });
+    vi.mocked(prisma.pushSubscription.upsert).mockResolvedValue(
+      STORED_SUBSCRIPTION,
+    );
+    vi.mocked(prisma.notificationChannel.findFirst).mockResolvedValue(disabled);
+    vi.mocked(prisma.notificationChannel.update).mockResolvedValue({
+      ...disabled,
+      enabled: true,
+      disabledReason: null,
+      consecutiveFailures: 0,
+    });
+
+    const res = await (POST as unknown as Handler)(req(GOOD));
+
+    expect(res.status).toBe(200);
+    expect(prisma.notificationChannel.update).toHaveBeenCalledWith({
+      where: { id: "ch-1" },
+      data: expect.objectContaining({
+        enabled: true,
+        disabledReason: null,
+        consecutiveFailures: 0,
+      }),
+    });
+    expect(prisma.notificationChannel.create).not.toHaveBeenCalled();
+  });
+
+  it("leaves an enabled channel as it is", async () => {
+    vi.mocked(prisma.pushSubscription.upsert).mockResolvedValue(
+      STORED_SUBSCRIPTION,
+    );
+    vi.mocked(prisma.notificationChannel.findFirst).mockResolvedValue(
+      channelRow({}),
+    );
+
+    const res = await (POST as unknown as Handler)(req(GOOD));
+
+    expect(res.status).toBe(200);
+    expect(prisma.notificationChannel.update).not.toHaveBeenCalled();
+    expect(prisma.notificationChannel.create).not.toHaveBeenCalled();
   });
 });
 

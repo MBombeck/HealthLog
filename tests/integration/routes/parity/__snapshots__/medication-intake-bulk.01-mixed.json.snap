@@ -167,52 +167,6 @@
           "originDeviceToken": null
         }
       ]
-    },
-    {
-      "effect": "countOutstandingDosesToday",
-      "args": [
-        "<id:10>",
-        "UTC"
-      ]
-    },
-    {
-      "effect": "dispatchMedicationIntakeWebClearBulk",
-      "args": [
-        {
-          "userId": "<id:10>",
-          "slots": [
-            {
-              "medicationId": "<id:11>",
-              "scheduledFor": "2026-10-15T08:00:00.000Z"
-            },
-            {
-              "medicationId": "<id:11>",
-              "scheduledFor": "2026-10-13T08:00:00.000Z"
-            },
-            {
-              "medicationId": "<id:11>",
-              "scheduledFor": "2026-10-15T20:00:00.000Z"
-            },
-            {
-              "medicationId": "<id:11>",
-              "scheduledFor": "2026-10-16T08:00:00.000Z"
-            },
-            {
-              "medicationId": "<id:12>",
-              "scheduledFor": "2026-10-15T10:00:00.000Z"
-            },
-            {
-              "medicationId": "<id:9>",
-              "scheduledFor": "2026-10-15T09:00:00.000Z"
-            },
-            {
-              "medicationId": "<id:9>",
-              "scheduledFor": "2026-10-14T09:30:00.000Z"
-            }
-          ],
-          "badgeCount": 2
-        }
-      ]
     }
   ],
   "stored": {
@@ -253,7 +207,7 @@
         "updatedAt": "<updatedAt>"
       },
       {
-        "id": "<id:12>",
+        "id": "<id:11>",
         "userId": "<id:10>",
         "name": "As-needed pen",
         "dose": "10mg",
@@ -291,7 +245,7 @@
         "updatedAt": "<updatedAt>"
       },
       {
-        "id": "<id:13>",
+        "id": "<id:12>",
         "userId": "<id:10>",
         "name": "Record only",
         "dose": "10mg",
@@ -326,7 +280,7 @@
         "updatedAt": "<updatedAt>"
       },
       {
-        "id": "<id:11>",
+        "id": "<id:13>",
         "userId": "<id:10>",
         "name": "Twice daily",
         "dose": "10mg",
@@ -364,7 +318,7 @@
     "schedules": [
       {
         "id": "<id:14>",
-        "medicationId": "<id:13>",
+        "medicationId": "<id:12>",
         "windowStart": "07:00",
         "windowEnd": "08:00",
         "label": null,
@@ -384,7 +338,7 @@
       },
       {
         "id": "<id:15>",
-        "medicationId": "<id:11>",
+        "medicationId": "<id:13>",
         "windowStart": "08:00",
         "windowEnd": "10:00",
         "label": null,
@@ -424,7 +378,7 @@
       },
       {
         "id": "<id:17>",
-        "medicationId": "<id:11>",
+        "medicationId": "<id:13>",
         "windowStart": "20:00",
         "windowEnd": "22:00",
         "label": null,
@@ -450,7 +404,7 @@
       {
         "id": "<id:2>",
         "userId": "<id:10>",
-        "medicationId": "<id:11>",
+        "medicationId": "<id:13>",
         "scheduledFor": "2026-10-13T08:00:00.000Z",
         "takenAt": "2026-10-13T11:00:00.000Z",
         "skipped": false,
@@ -518,7 +472,7 @@
       {
         "id": "<id:4>",
         "userId": "<id:10>",
-        "medicationId": "<id:11>",
+        "medicationId": "<id:13>",
         "scheduledFor": "2026-10-14T20:00:00.000Z",
         "takenAt": "2026-10-14T20:05:00.000Z",
         "skipped": false,
@@ -539,7 +493,7 @@
       {
         "id": "<id:1>",
         "userId": "<id:10>",
-        "medicationId": "<id:11>",
+        "medicationId": "<id:13>",
         "scheduledFor": "2026-10-15T08:00:00.000Z",
         "takenAt": "2026-10-15T08:30:00.000Z",
         "skipped": false,
@@ -586,7 +540,7 @@
       {
         "id": "<id:6>",
         "userId": "<id:10>",
-        "medicationId": "<id:12>",
+        "medicationId": "<id:11>",
         "scheduledFor": "2026-10-15T10:00:00.000Z",
         "takenAt": null,
         "skipped": true,
@@ -607,7 +561,7 @@
       {
         "id": "<id:3>",
         "userId": "<id:10>",
-        "medicationId": "<id:11>",
+        "medicationId": "<id:13>",
         "scheduledFor": "2026-10-15T20:00:00.000Z",
         "takenAt": null,
         "skipped": true,
@@ -628,7 +582,7 @@
       {
         "id": "<id:5>",
         "userId": "<id:10>",
-        "medicationId": "<id:11>",
+        "medicationId": "<id:13>",
         "scheduledFor": "2026-10-16T08:00:00.000Z",
         "takenAt": null,
         "skipped": false,
@@ -652,7 +606,7 @@
       {
         "id": "<id:18>",
         "userId": "<id:10>",
-        "medicationId": "<id:11>",
+        "medicationId": "<id:13>",
         "state": "IN_USE",
         "containerType": "OTHER",
         "unitsTotal": "30",

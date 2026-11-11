@@ -529,6 +529,7 @@
     "noAccount": "Nog geen account?",
     "hasAccount": "Heb je al een account?",
     "loginFailed": "Inloggen mislukt",
+    "signOutFailed": "Uitloggen is mislukt. Je bent nog steeds ingelogd.",
     "registerFailed": "Registratie mislukt",
     "invitedBanner": "Je bent uitgenodigd. Maak je account aan, ook al is registratie verder gesloten.",
     "alreadySignedIn": {
@@ -6376,6 +6377,7 @@
     "webPush": "Browserpush",
     "webPushDescription": "Ontvang meldingen rechtstreeks in je browser, ook als HealthLog niet geopend is.",
     "webPushNotSupported": "Je browser ondersteunt geen pushmeldingen.",
+    "webPushInstallFirst": "Op iPhone en iPad werken pushmeldingen alleen in de geïnstalleerde app. Tik in Safari op Deel en daarna op 'Zet op beginscherm', open HealthLog vanaf het beginscherm en zet pushmeldingen hier aan.",
     "webPushDenied": "Pushmeldingen zijn geblokkeerd. Sta ze toe in de instellingen van je browser.",
     "webPushNotConfigured": "Web Push is niet geconfigureerd op de server.",
     "webPushSubscribe": "Push inschakelen",
@@ -9253,7 +9255,8 @@
       "accountErasureFailedBody": "De verwijdertermijn van {username} is afgelopen, maar het wissen van het account is mislukt. Het blijft vergrendeld en wordt elk uur opnieuw geprobeerd, na de andere accounts die aan de beurt zijn. De fout staat op de kaart met mislukte taken in Beheer."
     },
     "user": {
-      "telegramTestBody": "HealthLog: verbinding geslaagd. Telegram-meldingen zijn actief."
+      "telegramTestBody": "HealthLog: verbinding geslaagd. Telegram-meldingen zijn actief.",
+      "webPushTestBody": "Zie je dit, dan komen pushmeldingen aan op dit apparaat."
     },
     "moodReminder": {
       "title": "Dagelijkse stemmingsherinnering",

@@ -529,6 +529,7 @@
     "noAccount": "Noch kein Konto?",
     "hasAccount": "Bereits ein Konto?",
     "loginFailed": "Anmeldung fehlgeschlagen",
+    "signOutFailed": "Abmelden hat nicht geklappt. Du bist weiterhin angemeldet.",
     "registerFailed": "Registrierung fehlgeschlagen",
     "invitedBanner": "Du wurdest eingeladen. Erstelle dein Konto, auch wenn die Registrierung sonst geschlossen ist.",
     "alreadySignedIn": {
@@ -6376,6 +6377,7 @@
     "webPush": "Browser-Push",
     "webPushDescription": "Erhalte Benachrichtigungen direkt im Browser, auch wenn HealthLog nicht geöffnet ist.",
     "webPushNotSupported": "Dein Browser unterstützt keine Push-Benachrichtigungen.",
+    "webPushInstallFirst": "Auf iPhone und iPad funktionieren Push-Benachrichtigungen nur in der installierten App. Tippe in Safari auf Teilen und dann auf „Zum Home-Bildschirm“, öffne HealthLog vom Home-Bildschirm aus und schalte Push hier ein.",
     "webPushDenied": "Push-Benachrichtigungen wurden blockiert. Erlaube sie in den Browser-Einstellungen.",
     "webPushNotConfigured": "Web Push ist serverseitig nicht konfiguriert.",
     "webPushSubscribe": "Push aktivieren",
@@ -9253,7 +9255,8 @@
       "accountErasureFailedBody": "Die Löschfrist von {username} ist abgelaufen, aber das Löschen des Kontos ist fehlgeschlagen. Es bleibt gesperrt und wird jede Stunde erneut versucht, nach den anderen fälligen Konten. Den Fehler zeigt die Karte der fehlgeschlagenen Jobs unter Administration."
     },
     "user": {
-      "telegramTestBody": "HealthLog: Verbindung hergestellt. Telegram-Benachrichtigungen sind aktiv."
+      "telegramTestBody": "HealthLog: Verbindung hergestellt. Telegram-Benachrichtigungen sind aktiv.",
+      "webPushTestBody": "Wenn du das siehst, kommen Push-Benachrichtigungen auf diesem Gerät an."
     },
     "moodReminder": {
       "title": "Tägliche Stimmungs-Erinnerung",
