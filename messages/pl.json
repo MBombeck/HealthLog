@@ -1955,7 +1955,6 @@
       },
       "intake": {
         "title": "Historia przyjęć",
-        "importButton": "Importuj",
         "rowActions": {
           "openMenu": "Otwórz akcje wiersza",
           "edit": "Edytuj",
@@ -1965,14 +1964,7 @@
           "rowToggleLabel": "Zaznacz wiersz"
         },
         "bulkDelete": {
-          "selectionCount": "{count} wpisów zaznaczono",
-          "deleteButton": "Usuń zaznaczone",
-          "cancelButton": "Anuluj",
-          "confirmTitle": "Usunąć zaznaczone wpisy?",
-          "confirmBody": "{count} wpisów zostanie trwale usuniętych. Sam lek pozostaje.",
-          "confirmAction": "Usuń",
-          "toast": "Zaznaczone usunięto",
-          "failed": "Nie udało się usunąć zaznaczonych."
+          "cancelButton": "Anuluj"
         },
         "edit": {
           "dialogTitle": "Edytuj przyjęcie",
@@ -2846,11 +2838,6 @@
     "bmiEmptyTitle": "Dodaj wzrost, aby obliczyć BMI",
     "bmiEmptyDescription": "BMI wymaga twojego wzrostu. Zapisz go w Ustawieniach → Konto.",
     "bmiEmptyAction": "Otwórz ustawienia konta",
-    "personalRecord": {
-      "badge": "PR",
-      "tooltip": "Rekord osobisty: {value} {unit} dnia {date}",
-      "benchmark": "Typowo w tym wieku: od {low} do {high} {unit} ({source})"
-    },
     "loadError": "Nie udało się załadować analiz",
     "heroPersonalBaseline": "Na podstawie ostatnich 90 dni",
     "heroRegenerating": "Generowanie",

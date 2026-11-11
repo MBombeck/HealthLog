@@ -1955,7 +1955,6 @@
       },
       "intake": {
         "title": "Histórico de tomadas",
-        "importButton": "Importar",
         "rowActions": {
           "openMenu": "Abrir ações da linha",
           "edit": "Editar",
@@ -1965,14 +1964,7 @@
           "rowToggleLabel": "Selecionar linha"
         },
         "bulkDelete": {
-          "selectionCount": "{count} entradas selecionadas",
-          "deleteButton": "Excluir seleção",
-          "cancelButton": "Cancelar",
-          "confirmTitle": "Excluir as entradas selecionadas?",
-          "confirmBody": "{count} entradas serão removidas permanentemente. O medicamento em si permanece.",
-          "confirmAction": "Excluir",
-          "toast": "Seleção excluída",
-          "failed": "Não foi possível excluir a seleção."
+          "cancelButton": "Cancelar"
         },
         "edit": {
           "dialogTitle": "Editar tomada",
@@ -2846,11 +2838,6 @@
     "bmiEmptyTitle": "Defina sua altura para ver o IMC",
     "bmiEmptyDescription": "O IMC precisa da sua altura. Adicione-a em Configurações → Conta.",
     "bmiEmptyAction": "Abrir configurações da conta",
-    "personalRecord": {
-      "badge": "Recorde",
-      "tooltip": "Recorde pessoal: {value} {unit} em {date}",
-      "benchmark": "Típico nessa idade: {low} a {high} {unit} ({source})"
-    },
     "loadError": "Falha ao carregar os insights",
     "heroPersonalBaseline": "Com base nos seus últimos 90 dias",
     "heroRegenerating": "Regenerando",

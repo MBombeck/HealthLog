@@ -1955,7 +1955,6 @@
       },
       "intake": {
         "title": "Historial de tomas",
-        "importButton": "Importar",
         "rowActions": {
           "openMenu": "Abrir acciones de la fila",
           "edit": "Editar",
@@ -1965,14 +1964,7 @@
           "rowToggleLabel": "Seleccionar fila"
         },
         "bulkDelete": {
-          "selectionCount": "{count} entradas seleccionadas",
-          "deleteButton": "Eliminar selección",
-          "cancelButton": "Cancelar",
-          "confirmTitle": "¿Eliminar las entradas seleccionadas?",
-          "confirmBody": "Se eliminarán {count} entradas de forma permanente. El medicamento se conserva.",
-          "confirmAction": "Eliminar",
-          "toast": "Selección eliminada",
-          "failed": "No se pudo eliminar la selección."
+          "cancelButton": "Cancelar"
         },
         "edit": {
           "dialogTitle": "Editar toma",
@@ -2846,11 +2838,6 @@
     "bmiEmptyTitle": "Añade tu altura para calcular el IMC",
     "bmiEmptyDescription": "El IMC necesita tu altura. Guárdala en Ajustes → Cuenta.",
     "bmiEmptyAction": "Abrir ajustes de cuenta",
-    "personalRecord": {
-      "badge": "PR",
-      "tooltip": "Récord personal: {value} {unit} el {date}",
-      "benchmark": "Lo típico a esa edad: de {low} a {high} {unit} ({source})"
-    },
     "loadError": "No se han podido cargar los análisis",
     "heroPersonalBaseline": "Basado en tus últimos 90 días",
     "heroRegenerating": "Generando",

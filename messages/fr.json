@@ -1955,7 +1955,6 @@
       },
       "intake": {
         "title": "Historique des prises",
-        "importButton": "Importer",
         "rowActions": {
           "openMenu": "Ouvrir les actions de la ligne",
           "edit": "Modifier",
@@ -1965,14 +1964,7 @@
           "rowToggleLabel": "Sélectionner la ligne"
         },
         "bulkDelete": {
-          "selectionCount": "{count} entrées sélectionnées",
-          "deleteButton": "Supprimer la sélection",
-          "cancelButton": "Annuler",
-          "confirmTitle": "Supprimer les entrées sélectionnées ?",
-          "confirmBody": "{count} entrées seront supprimées définitivement. Le médicament est conservé.",
-          "confirmAction": "Supprimer",
-          "toast": "Sélection supprimée",
-          "failed": "Impossible de supprimer la sélection."
+          "cancelButton": "Annuler"
         },
         "edit": {
           "dialogTitle": "Modifier la prise",
@@ -2846,11 +2838,6 @@
     "bmiEmptyTitle": "Ajoutez votre taille pour l’IMC",
     "bmiEmptyDescription": "L’IMC nécessite votre taille. Renseignez-la dans Paramètres → Compte.",
     "bmiEmptyAction": "Ouvrir les paramètres du compte",
-    "personalRecord": {
-      "badge": "PR",
-      "tooltip": "Record personnel : {value} {unit} le {date}",
-      "benchmark": "Valeur typique à cet âge : de {low} à {high} {unit} ({source})"
-    },
     "loadError": "Impossible de charger les analyses",
     "heroPersonalBaseline": "Basé sur vos 90 derniers jours",
     "heroRegenerating": "Génération en cours",

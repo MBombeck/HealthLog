@@ -1955,7 +1955,6 @@
       },
       "intake": {
         "title": "История приёма",
-        "importButton": "Импорт",
         "rowActions": {
           "openMenu": "Открыть действия строки",
           "edit": "Изменить",
@@ -1965,14 +1964,7 @@
           "rowToggleLabel": "Выбрать строку"
         },
         "bulkDelete": {
-          "selectionCount": "Выбрано записей: {count}",
-          "deleteButton": "Удалить выбранное",
-          "cancelButton": "Отмена",
-          "confirmTitle": "Удалить выбранные записи?",
-          "confirmBody": "Записи ({count}) будут удалены навсегда. Само лекарство останется.",
-          "confirmAction": "Удалить",
-          "toast": "Выбранное удалено",
-          "failed": "Не удалось удалить выбранное."
+          "cancelButton": "Отмена"
         },
         "edit": {
           "dialogTitle": "Изменить приём",
@@ -2846,11 +2838,6 @@
     "bmiEmptyTitle": "Укажите рост, чтобы увидеть ИМТ",
     "bmiEmptyDescription": "Для ИМТ нужен ваш рост. Добавьте его в разделе «Настройки» → «Аккаунт».",
     "bmiEmptyAction": "Открыть настройки аккаунта",
-    "personalRecord": {
-      "badge": "Рекорд",
-      "tooltip": "Личный рекорд: {value} {unit} {date}",
-      "benchmark": "Типично в этом возрасте: {low} до {high} {unit} ({source})"
-    },
     "loadError": "Не удалось загрузить аналитику",
     "heroPersonalBaseline": "На основе ваших последних 90 дней",
     "heroRegenerating": "Обновление",

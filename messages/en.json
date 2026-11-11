@@ -1955,7 +1955,6 @@
       },
       "intake": {
         "title": "Intake history",
-        "importButton": "Import",
         "rowActions": {
           "openMenu": "Open row actions",
           "edit": "Edit",
@@ -1965,14 +1964,7 @@
           "rowToggleLabel": "Select row"
         },
         "bulkDelete": {
-          "selectionCount": "{count} entries selected",
-          "deleteButton": "Delete selection",
-          "cancelButton": "Cancel",
-          "confirmTitle": "Delete the selected entries?",
-          "confirmBody": "{count} entries will be removed permanently. The medication itself stays.",
-          "confirmAction": "Delete",
-          "toast": "Selection deleted",
-          "failed": "Could not delete the selection."
+          "cancelButton": "Cancel"
         },
         "edit": {
           "dialogTitle": "Edit intake",
@@ -2846,11 +2838,6 @@
     "bmiEmptyTitle": "Set your height to see BMI",
     "bmiEmptyDescription": "BMI needs your height. Add it under Settings → Account.",
     "bmiEmptyAction": "Open account settings",
-    "personalRecord": {
-      "badge": "PR",
-      "tooltip": "Personal record: {value} {unit} on {date}",
-      "benchmark": "Typical at that age: {low} to {high} {unit} ({source})"
-    },
     "loadError": "Failed to load insights",
     "heroPersonalBaseline": "Based on your last 90 days",
     "heroRegenerating": "Regenerating",

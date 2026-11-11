@@ -1955,7 +1955,6 @@
       },
       "intake": {
         "title": "Storico delle assunzioni",
-        "importButton": "Importa",
         "rowActions": {
           "openMenu": "Apri azioni della riga",
           "edit": "Modifica",
@@ -1965,14 +1964,7 @@
           "rowToggleLabel": "Seleziona riga"
         },
         "bulkDelete": {
-          "selectionCount": "{count} voci selezionate",
-          "deleteButton": "Elimina selezione",
-          "cancelButton": "Annulla",
-          "confirmTitle": "Eliminare le voci selezionate?",
-          "confirmBody": "{count} voci verranno rimosse definitivamente. Il farmaco resta.",
-          "confirmAction": "Elimina",
-          "toast": "Selezione eliminata",
-          "failed": "Impossibile eliminare la selezione."
+          "cancelButton": "Annulla"
         },
         "edit": {
           "dialogTitle": "Modifica assunzione",
@@ -2846,11 +2838,6 @@
     "bmiEmptyTitle": "Aggiungi l’altezza per il BMI",
     "bmiEmptyDescription": "Per il BMI serve la tua altezza. Salvala in Impostazioni → Account.",
     "bmiEmptyAction": "Apri impostazioni account",
-    "personalRecord": {
-      "badge": "PR",
-      "tooltip": "Record personale: {value} {unit} il {date}",
-      "benchmark": "Tipico a quell’età: da {low} a {high} {unit} ({source})"
-    },
     "loadError": "Impossibile caricare le analisi",
     "heroPersonalBaseline": "Basato sugli ultimi 90 giorni",
     "heroRegenerating": "Generazione in corso",

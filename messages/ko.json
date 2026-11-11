@@ -1955,7 +1955,6 @@
       },
       "intake": {
         "title": "복용 기록",
-        "importButton": "불러오기",
         "rowActions": {
           "openMenu": "행 작업 열기",
           "edit": "편집",
@@ -1965,14 +1964,7 @@
           "rowToggleLabel": "행 선택"
         },
         "bulkDelete": {
-          "selectionCount": "{count}개 항목 선택됨",
-          "deleteButton": "선택 항목 삭제",
-          "cancelButton": "취소",
-          "confirmTitle": "선택한 항목을 삭제할까요?",
-          "confirmBody": "{count}개 항목이 영구히 삭제돼요. 약 자체는 그대로 남아요.",
-          "confirmAction": "삭제",
-          "toast": "선택 항목을 삭제했어요",
-          "failed": "선택 항목을 삭제하지 못했어요."
+          "cancelButton": "취소"
         },
         "edit": {
           "dialogTitle": "복용 기록 편집",
@@ -2846,11 +2838,6 @@
     "bmiEmptyTitle": "BMI를 보려면 키를 입력해 주세요",
     "bmiEmptyDescription": "BMI에는 키가 필요해요. 설정 → 계정에서 추가해 주세요.",
     "bmiEmptyAction": "계정 설정 열기",
-    "personalRecord": {
-      "badge": "신기록",
-      "tooltip": "개인 최고 기록: {date} {value}{unit}",
-      "benchmark": "그 나이의 일반적인 범위: {low}~{high} {unit} ({source})"
-    },
     "loadError": "인사이트를 불러오지 못했어요",
     "heroPersonalBaseline": "최근 90일 기준",
     "heroRegenerating": "다시 생성 중",
