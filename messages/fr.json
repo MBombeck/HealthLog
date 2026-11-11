@@ -1481,7 +1481,6 @@
     "glp1NextInjectionToday": "aujourd’hui",
     "glp1NextInjectionTomorrow": "demain",
     "glp1RotationSuggested": "Conseillé : {site}",
-    "glp1LogSideEffect": "Consigner un effet secondaire",
     "sideEffects": {
       "section": "Effets secondaires",
       "addCta": "Consigner",

@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2881,
-  "total": 9188,
+  "total": 9185,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1128,7 +1128,7 @@
     "components/medications/__tests__/inventory-section-actions.test.tsx": 1,
     "components/medications/__tests__/inventory-section-summary.test.tsx": 2,
     "components/medications/__tests__/log-injection-site-dialog.test.tsx": 1,
-    "components/medications/__tests__/medication-card-glp1.test.tsx": 14,
+    "components/medications/__tests__/medication-card-glp1.test.tsx": 12,
     "components/medications/__tests__/medication-card-header.test.tsx": 1,
     "components/medications/__tests__/medication-card-next-due.test.tsx": 4,
     "components/medications/__tests__/medication-card-symmetry.test.tsx": 4,
@@ -1165,7 +1165,7 @@
     "components/medications/log-injection-site-dialog.tsx": 2,
     "components/medications/log-intake-dialog.tsx": 4,
     "components/medications/medication-card-header.tsx": 5,
-    "components/medications/medication-card-menu.tsx": 3,
+    "components/medications/medication-card-menu.tsx": 2,
     "components/medications/medication-card.tsx": 37,
     "components/medications/medication-categories-sheet.tsx": 1,
     "components/medications/medication-category-add-row.tsx": 1,

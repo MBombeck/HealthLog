@@ -1481,7 +1481,6 @@
     "glp1NextInjectionToday": "today",
     "glp1NextInjectionTomorrow": "tomorrow",
     "glp1RotationSuggested": "Recommended next: {site}",
-    "glp1LogSideEffect": "Log side effect",
     "sideEffects": {
       "section": "Side effects",
       "addCta": "Log",

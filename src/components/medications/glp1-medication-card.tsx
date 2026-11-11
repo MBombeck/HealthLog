@@ -178,7 +178,6 @@ interface Glp1MedicationCardProps {
    * card. The parent owns the navigation.
    */
   onOpenHistory: (med: Glp1Medication) => void;
-  onLogSideEffect?: (med: Glp1Medication) => void;
   /**
    * v1.29.x — briefly ringed when this card is the Today digest's "Log
    * dose" deep-link target (`/medications?highlight=<id>`).
@@ -215,7 +214,6 @@ export function Glp1MedicationCard({
   medication,
   onEdit,
   onOpenHistory,
-  onLogSideEffect,
   highlighted = false,
 }: Glp1MedicationCardProps) {
   const queryClient = useQueryClient();
@@ -478,19 +476,11 @@ export function Glp1MedicationCard({
   // The four former header icon-buttons (open / edit / history /
   // advanced) collapse into a SINGLE overflow menu so the GLP-1 card
   // stays symmetric with the generic medication card. The card header
-  // itself links to the detail page (the former chevron target). The
-  // optional side-effect quick-log would fold in as a last menu item
-  // when `onLogSideEffect` is wired, but the medications list page does
-  // not wire it — side-effect logging lives on the detail page's
-  // SideEffectsSection — so the menu renders the same items as the
-  // generic card.
+  // itself links to the detail page (the former chevron target).
   const headerActions = (
     <MedicationCardMenu
       onEdit={() => onEdit(medication)}
       onOpenHistory={() => onOpenHistory(medication)}
-      onLogSideEffect={
-        onLogSideEffect ? () => onLogSideEffect(medication) : undefined
-      }
     />
   );
 

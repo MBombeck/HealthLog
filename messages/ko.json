@@ -1481,7 +1481,6 @@
     "glp1NextInjectionToday": "오늘",
     "glp1NextInjectionTomorrow": "내일",
     "glp1RotationSuggested": "다음 추천 부위: {site}",
-    "glp1LogSideEffect": "부작용 기록",
     "sideEffects": {
       "section": "부작용",
       "addCta": "기록",

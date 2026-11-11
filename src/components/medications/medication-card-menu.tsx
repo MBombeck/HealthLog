@@ -14,13 +14,8 @@
  * target as the name tap); the structural wizard lives under the detail
  * page's Erweitert → Lebenszyklus row.
  *
- * The optional `onLogSideEffect` slot exists for the GLP-1 card to fold a
- * "Log side effect" item into the SAME menu, but it is NOT wired on the
- * medications list page — both card variants there receive only the
- * edit / history / advanced handlers, so the item never renders. Side-
- * effect logging lives on the detail page's `<SideEffectsSection>`. When
- * the slot is left undefined the two card variants stay byte-symmetric in
- * the header (one kebab, identical items).
+ * Side-effect logging lives on the detail page's `<SideEffectsSection>`, so
+ * the two card variants carry the same menu (one kebab, identical items).
  *
  * The trigger is a 44px ghost icon-button (WCAG 2.5.5); every
  * `DropdownMenuItem` already carries `min-h-11` from the shadcn
@@ -33,14 +28,13 @@
  */
 
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
-import { History, MoreVertical, Pencil, Stethoscope } from "lucide-react";
+import { History, MoreVertical, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTranslations } from "@/lib/i18n/context";
@@ -48,25 +42,19 @@ import { useTranslations } from "@/lib/i18n/context";
 export interface MedicationCardMenuProps {
   onEdit: () => void;
   onOpenHistory: () => void;
-  /** GLP-1-only: folds the side-effect quick-log into the same menu. */
-  onLogSideEffect?: () => void;
 }
 
 export function MedicationCardMenu({
   onEdit,
   onOpenHistory,
-  onLogSideEffect,
 }: MedicationCardMenuProps) {
   const { t } = useTranslations();
-  // v1.36.x — noting a side effect is an admitted delegated write; editing the
-  // medication and opening its history editor are not. When nothing in the
-  // menu survives, the trigger goes with it rather than opening onto an empty
-  // sheet. The card itself is untouched: no wash, no badge, no colour change.
-  const { canWriteDomain, canManageDomain } = useRecordCapabilities();
-  const canAddSideEffect = canWriteDomain("medications");
-  const canManageMedications = canManageDomain("medications");
-  const showSideEffect = onLogSideEffect != null && canAddSideEffect;
-  if (!canManageMedications && !showSideEffect) return null;
+  // Editing the medication and opening its history editor are owner work, not
+  // delegated writes. Without either, the trigger goes too rather than opening
+  // onto an empty menu. The card itself is untouched: no wash, no badge, no
+  // colour change.
+  const { canManageDomain } = useRecordCapabilities();
+  if (!canManageDomain("medications")) return null;
 
   return (
     <DropdownMenu>
@@ -89,27 +77,14 @@ export function MedicationCardMenu({
         className="w-56"
         data-slot="medication-card-menu"
       >
-        {canManageMedications && (
-          <>
-            <DropdownMenuItem onClick={onEdit}>
-              <Pencil className="mr-2 h-4 w-4" />
-              {t("common.edit")}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onOpenHistory}>
-              <History className="mr-2 h-4 w-4" />
-              {t("medications.detail.header.historyLabel")}
-            </DropdownMenuItem>
-          </>
-        )}
-        {showSideEffect && onLogSideEffect && (
-          <>
-            {canManageMedications && <DropdownMenuSeparator />}
-            <DropdownMenuItem onClick={onLogSideEffect}>
-              <Stethoscope className="mr-2 h-4 w-4" />
-              {t("medications.glp1LogSideEffect")}
-            </DropdownMenuItem>
-          </>
-        )}
+        <DropdownMenuItem onClick={onEdit}>
+          <Pencil className="mr-2 h-4 w-4" />
+          {t("common.edit")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onOpenHistory}>
+          <History className="mr-2 h-4 w-4" />
+          {t("medications.detail.header.historyLabel")}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

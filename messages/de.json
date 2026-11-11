@@ -1481,7 +1481,6 @@
     "glp1NextInjectionToday": "heute",
     "glp1NextInjectionTomorrow": "morgen",
     "glp1RotationSuggested": "Empfohlen: {site}",
-    "glp1LogSideEffect": "Nebenwirkung loggen",
     "sideEffects": {
       "section": "Nebenwirkungen",
       "addCta": "Erfassen",

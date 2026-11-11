@@ -1481,7 +1481,6 @@
     "glp1NextInjectionToday": "dziś",
     "glp1NextInjectionTomorrow": "jutro",
     "glp1RotationSuggested": "Sugerowane: {site}",
-    "glp1LogSideEffect": "Zapisz działanie niepożądane",
     "sideEffects": {
       "section": "Skutki uboczne",
       "addCta": "Dodaj",

@@ -1481,7 +1481,6 @@
     "glp1NextInjectionToday": "oggi",
     "glp1NextInjectionTomorrow": "domani",
     "glp1RotationSuggested": "Suggerita: {site}",
-    "glp1LogSideEffect": "Registra effetto collaterale",
     "sideEffects": {
       "section": "Effetti collaterali",
       "addCta": "Registra",

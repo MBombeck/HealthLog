@@ -1481,7 +1481,6 @@
     "glp1NextInjectionToday": "vandaag",
     "glp1NextInjectionTomorrow": "morgen",
     "glp1RotationSuggested": "Volgende aanbevolen plek: {site}",
-    "glp1LogSideEffect": "Bijwerking vastleggen",
     "sideEffects": {
       "section": "Bijwerkingen",
       "addCta": "Vastleggen",

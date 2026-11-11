@@ -1481,7 +1481,6 @@
     "glp1NextInjectionToday": "сегодня",
     "glp1NextInjectionTomorrow": "завтра",
     "glp1RotationSuggested": "Рекомендуется следующее: {site}",
-    "glp1LogSideEffect": "Записать побочный эффект",
     "sideEffects": {
       "section": "Побочные эффекты",
       "addCta": "Записать",
