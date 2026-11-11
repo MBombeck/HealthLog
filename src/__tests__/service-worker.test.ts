@@ -1110,3 +1110,101 @@ describe("sw.js — push handler", () => {
     expect(badge.value).toBe(3);
   });
 });
+
+// ── notification tap ─────────────────────────────────────────────────────────
+interface FakeWindow {
+  url: string;
+  focused: number;
+  navigatedTo: string[];
+  focus: () => Promise<FakeWindow>;
+  navigate: (url: string) => Promise<FakeWindow>;
+}
+
+function fakeWindow(path: string, navigateFails = false): FakeWindow {
+  const win: FakeWindow = {
+    url: `${ORIGIN}${path}`,
+    focused: 0,
+    navigatedTo: [],
+    focus: async () => {
+      win.focused += 1;
+      return win;
+    },
+    navigate: async (url: string) => {
+      if (navigateFails) throw new TypeError("not controlled");
+      win.navigatedTo.push(url);
+      return win;
+    },
+  };
+  return win;
+}
+
+async function tapNotification(
+  harness: SwHarness,
+  windows: FakeWindow[],
+  url: string,
+): Promise<string[]> {
+  const opened: string[] = [];
+  (harness.context.self as { clients: unknown }).clients = {
+    claim: async () => {},
+    matchAll: async () => windows,
+    openWindow: async (target: string) => {
+      opened.push(target);
+      return null;
+    },
+  };
+  let settled: Promise<unknown> = Promise.resolve();
+  harness.listeners.get("notificationclick")!({
+    notification: { close: () => {}, data: { url } },
+    waitUntil: (p: Promise<unknown>) => {
+      settled = p;
+    },
+  });
+  await settled;
+  return opened;
+}
+
+describe("sw.js — notification tap", () => {
+  it("only focuses a window that is already on the target", async () => {
+    const harness = bootServiceWorker();
+    const win = fakeWindow("/medications");
+
+    const opened = await tapNotification(harness, [win], "/medications");
+
+    expect(win.focused).toBe(1);
+    expect(win.navigatedTo).toEqual([]);
+    expect(opened).toEqual([]);
+  });
+
+  it("prefers the window on the target over the first one", async () => {
+    const harness = bootServiceWorker();
+    const other = fakeWindow("/");
+    const there = fakeWindow("/mood?add=1");
+
+    await tapNotification(harness, [other, there], "/mood?add=1");
+
+    expect(there.focused).toBe(1);
+    expect(other.focused).toBe(0);
+    expect(other.navigatedTo).toEqual([]);
+  });
+
+  it("focuses and navigates a window that is elsewhere", async () => {
+    const harness = bootServiceWorker();
+    const win = fakeWindow("/");
+
+    const opened = await tapNotification(harness, [win], "/medications");
+
+    expect(win.focused).toBe(1);
+    expect(win.navigatedTo).toEqual(["/medications"]);
+    expect(opened).toEqual([]);
+  });
+
+  it("opens a window when none is open or navigating fails", async () => {
+    const harness = bootServiceWorker();
+    expect(await tapNotification(harness, [], "/medications")).toEqual([
+      "/medications",
+    ]);
+    expect(
+      await tapNotification(harness, [fakeWindow("/", true)], "/medications"),
+    ).toEqual(["/medications"]);
+  });
+});

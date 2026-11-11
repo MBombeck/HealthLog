@@ -580,17 +580,25 @@ self.addEventListener("notificationclick", (event) => {
     safeUrl = "/";
   }
 
+  const target = new URL(safeUrl, self.location.origin).href;
   event.waitUntil(
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList) => {
-        for (const client of clientList) {
-          if (client.url.includes(self.location.origin) && "focus" in client) {
-            client.navigate(safeUrl);
-            return client.focus();
-          }
-        }
-        return self.clients.openWindow(safeUrl);
+        const windows = clientList.filter(
+          (c) => c.url.startsWith(self.location.origin + "/") && "focus" in c,
+        );
+        // A window already on the target only needs focus: navigating it
+        // would reload the app and drop whatever is open there.
+        const there = windows.find((c) => c.url === target);
+        if (there) return there.focus();
+        const client = windows[0];
+        if (!client) return self.clients.openWindow(safeUrl);
+        // Focus first, while the tap still counts as user activation.
+        return client
+          .focus()
+          .then(() => client.navigate(safeUrl))
+          .catch(() => self.clients.openWindow(safeUrl));
       }),
   );
 });
