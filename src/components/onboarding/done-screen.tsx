@@ -2,10 +2,8 @@
 
 import { useAiProviderState } from "@/hooks/use-ai-capability";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { showErrorToast } from "@/lib/errors/error-toast";
 import {
   CheckCircle2,
   Compass,
@@ -13,42 +11,21 @@ import {
   PlusCircle,
   Plug,
   Settings2,
-  Sparkles,
   UserPlus,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { MedicalDisclaimer } from "@/components/common/medical-disclaimer";
-import { SampleBriefingCard } from "@/components/onboarding/sample-briefing-card";
 import { StepHeading } from "@/components/onboarding/step-heading";
 import { useOnboardingAnswer } from "@/components/onboarding/use-onboarding-flow";
 import { useAuth } from "@/hooks/use-auth";
 import { useAccountSwitch } from "@/hooks/use-account-switch";
 import { setTourReferrer } from "@/components/onboarding/tour-launcher";
-import { queryKeys } from "@/lib/query-keys";
-import { apiGet } from "@/lib/api/api-fetch";
-import { useGrantAiConsent } from "@/hooks/use-grant-ai-consent";
 import { hasOptedOutOfAi } from "@/lib/ai/capabilities/types";
 import { useTranslations } from "@/lib/i18n/context";
 import { markChecklistExpanded } from "@/lib/onboarding/checklist-storage";
 import type { OnboardingStateDto } from "@/lib/onboarding/needs";
 import { accountLabel } from "@/lib/sharing/account-access-view";
 import { InlineAction } from "@/components/ui/inline-action";
-
-interface AiProviderStatus {
-  /** Origin of the provider that would serve this user, if any. */
-  managedBy?: "user" | "local" | "server" | null;
-  /**
-   * v1.38.19 — the instance-wide tri-state. Fail closed for the
-   * offer: neither `unhealthy` nor `unknown` earns one. Only `unhealthy` is
-   * a verdict this screen may state out loud.
-   */
-  serverProviderHealth?: "healthy" | "unhealthy" | "unknown";
-  /** Whether the shared provider may honestly be offered in one tap. */
-  serverProviderOffer?: boolean;
-  /** Whether this user already holds an active `ai_full` / `ai_coach` receipt. */
-  serverProviderConsent?: boolean;
-}
 
 /**
  * v1.39 — the setup flow's exit.
@@ -69,18 +46,14 @@ interface AiProviderStatus {
  * is presentational: the module map was derived on confirm, the cookie
  * cleared there too.
  *
- * The AI panel leads with the payoff (a static, clearly-labelled SAMPLE
- * briefing — no model call, no egress, no consent), then the honest
- * local-first ladder and the "useful without AI" release valve. Value-first,
- * never a gate: every exit below stays, and setup is a single optional
- * deep-link.
+ * AI gets one line with a link to Settings, AI, and no more: HealthLog is
+ * complete without it, and the hint on Insights is where it is offered.
  */
 
 export function DoneScreen({ state }: { state: OnboardingStateDto }) {
   const { t } = useTranslations();
   const router = useRouter();
   const { user } = useAuth();
-  const [sampleOpen, setSampleOpen] = useState(false);
   const answer = useOnboardingAnswer();
   const accountSwitch = useAccountSwitch();
 
@@ -116,87 +89,15 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
     router.push("/");
   }
 
-  // ── v1.38.19 — the shared provider, offered only when it works ──
-  //
-  // This block used to be one line: `managedBy === "server"` painted a note
-  // reading "insights work for you right now — no setup needed". Both halves
-  // were wrong. `managedBy` is a PRESENCE read — it knows the operator
-  // configured a key, never that the key answers — and "no setup needed"
-  // skipped the consent receipt `consent-guard.ts` demands before any health
-  // data reaches `admin-openai` / `admin-codex`, so the person who believed
-  // the note walked into a `consent.ai.required` refusal on their first
-  // briefing. On 2026-09-11 the operator's own instance was answering HTTP
-  // 500 from its OAuth proxy while this note kept promising otherwise.
-  //
-  // The server decides now, and the four branches below only READ it. The
-  // rest of the panel — sample, ladder, the "fully useful without AI" line,
-  // the setup link — is identical in every branch; nothing here is a gate.
-  // The panel is one optional offer, shown only while this person could set
-  // AI up here: `provider.canConfigure` is false while the operator has AI
-  // switched off and inside a record somebody else owns. HealthLog is
-  // complete without it, so with nothing to offer (or once the person
-  // switched the Coach and AI analysis off) the screen simply goes from
-  // "done" to the exits.
-  const providerState = useAiProviderState();
-  const showAiPanel =
-    providerState.canConfigure && !hasOptedOutOfAi(user?.modules);
-  const { data: aiProvider } = useQuery<AiProviderStatus>({
-    queryKey: queryKeys.userAiProvider(),
-    queryFn: async () => {
-      return apiGet("/api/user/ai-provider");
-    },
-    enabled: !!user && showAiPanel,
-  });
-
-  // The tap's own outcome, held locally so the line changes the moment the
-  // receipt is minted rather than a refetch later.
-  const [justGranted, setJustGranted] = useState(false);
-  // The tap on the offer is the consent act; the hook sends the explicit
-  // confirmation the server requires before it records one.
-  const grantConsent = useGrantAiConsent();
-  function agreeToSharedProvider() {
-    grantConsent.mutate(undefined, {
-      onSuccess: () => setJustGranted(true),
-      onError: (failure) => {
-        // The button stays. A failed grant is a failed grant; the screen
-        // must not read as though consent were on file.
-        showErrorToast(t("onboarding.ai.offer.error"), { cause: failure });
-      },
-    });
-  }
-
-  const operatorProvides = aiProvider?.managedBy === "server";
-  const sharedHealth = aiProvider?.serverProviderHealth;
-  const consentOnFile =
-    justGranted || aiProvider?.serverProviderConsent === true;
-  const offerShared =
-    operatorProvides &&
-    !consentOnFile &&
-    aiProvider?.serverProviderOffer === true;
-  // A receipt on file is a fact about the ACCOUNT; it says nothing about
-  // whether the provider works. This line used to promise "insights work for
-  // you right now" on the strength of the receipt alone, so somebody who had
-  // just consented was told a dead provider was serving them — the same
-  // unmeasured claim as the offer's, made at the other end of the panel. The
-  // positive sentence is now earned by health as well, and a consented
-  // account on a broken provider reads the same honest note as anybody else.
-  const sharedKeyNote =
-    operatorProvides && consentOnFile && sharedHealth === "healthy";
-  // Only a health verdict somebody EARNED paints the "not answering" card —
-  // `unhealthy`, which means the provider was tried and the last thing that
-  // happened was a failure. `unknown` is not that verdict: it is an empty
-  // ledger, which is the state of every instance until its first AI call and
-  // therefore the most common way through this screen. It falls to the
-  // neutral panel, as does every other non-health reason the offer is
-  // withheld (the assistant surfaces switched off, a managed profile whose
-  // provider is the operator's by definition). The neutral panel claims
-  // nothing either way, which is the only honest thing to say about a state
-  // nobody measured.
-  const sharedUnavailable =
-    operatorProvides &&
-    !sharedKeyNote &&
-    !offerShared &&
-    sharedHealth === "unhealthy";
+  // One quiet line, only while this person could set AI up here, has no
+  // provider yet and has not switched the Coach and AI analysis off: the same
+  // rule as the Insights hint, which stays the one place that invites. With
+  // nothing to offer the screen goes from "done" straight to the exits.
+  const provider = useAiProviderState();
+  const showAiLine =
+    !provider.configured &&
+    provider.canConfigure &&
+    !hasOptedOutOfAi(user?.modules);
 
   return (
     <section
@@ -221,169 +122,16 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
         </p>
       </div>
 
-      {/* v1.28 — the flagship AI value, made reachable at the one screen
-          every fresh user passes through. The daily briefing / Coach need
-          a provider the rest of onboarding never provisions, so this
-          leads with the payoff (a static, clearly-labelled SAMPLE
-          briefing — no model call, no egress, no consent), then the
-          honest local-first ladder and the "useful without AI" release
-          valve. Value-first, never a gate: the three exits below stay,
-          and setup is a single optional deep-link. */}
-      {showAiPanel ? (
-        <section
-          aria-labelledby="onboarding-ai-panel-title"
-          data-slot="onboarding-ai-panel"
-          /* Which of the four variants the panel SETTLED on, and absent until
-           it has settled. The panel itself is unconditional and paints
-           immediately, so without this an assertion that a variant is absent
-           passes on a status that has simply not arrived yet. The value is
-           the same tri-state decision made once, above. */
-          data-ai-state={
-            aiProvider === undefined
-              ? undefined
-              : sharedKeyNote
-                ? "consent"
-                : offerShared
-                  ? "offer"
-                  : sharedUnavailable
-                    ? "unavailable"
-                    : "neutral"
-          }
-          className="border-border bg-card mx-auto flex w-full max-w-md flex-col gap-4 rounded-xl border p-4 text-left md:p-6"
+      {showAiLine ? (
+        <p
+          data-slot="onboarding-ai-line"
+          className="text-muted-foreground max-w-md text-sm"
         >
-          <header className="flex items-start gap-3">
-            <span
-              aria-hidden="true"
-              className="from-primary to-brand-pink flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br"
-            >
-              <Sparkles className="text-background size-4" />
-            </span>
-            <div className="space-y-1">
-              <h2
-                id="onboarding-ai-panel-title"
-                className="text-foreground text-base font-semibold tracking-tight"
-              >
-                {t("onboarding.ai.panelTitle")}
-              </h2>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                {t("onboarding.ai.panelIntro")}
-              </p>
-            </div>
-          </header>
-
-          {sampleOpen ? (
-            <SampleBriefingCard />
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full"
-              data-slot="onboarding-ai-show-sample"
-              onClick={() => setSampleOpen(true)}
-            >
-              {t("onboarding.ai.showSample")}
-            </Button>
-          )}
-
-          {sharedKeyNote ? (
-            <p
-              data-slot="onboarding-ai-shared-key"
-              className="text-foreground bg-primary/5 border-primary/20 rounded-lg border px-3 py-2 text-sm leading-relaxed"
-            >
-              {justGranted
-                ? t("onboarding.ai.offer.granted")
-                : t("onboarding.ai.sharedKeyNote")}
-            </p>
-          ) : null}
-
-          {offerShared ? (
-            <div
-              data-slot="onboarding-ai-offer"
-              className="border-primary/20 bg-primary/5 space-y-2.5 rounded-lg border px-3 py-3"
-            >
-              <p className="text-foreground text-sm font-medium">
-                {t("onboarding.ai.offer.title")}
-              </p>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                {t("onboarding.ai.offer.body")}
-              </p>
-              <Button
-                type="button"
-                size="sm"
-                className="min-h-9 w-full"
-                data-slot="onboarding-ai-offer-grant"
-                disabled={grantConsent.isPending}
-                onClick={agreeToSharedProvider}
-              >
-                {t("onboarding.ai.offer.cta")}
-              </Button>
-            </div>
-          ) : null}
-
-          {sharedUnavailable ? (
-            <div
-              data-slot="onboarding-ai-unavailable"
-              className="border-border bg-muted/40 space-y-1 rounded-lg border px-3 py-3"
-            >
-              <p className="text-foreground text-sm font-medium">
-                {t("onboarding.ai.unavailable.title")}
-              </p>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                {t("onboarding.ai.unavailable.body")}
-              </p>
-            </div>
-          ) : null}
-
-          <div className="space-y-2.5">
-            <p className="text-foreground text-sm font-medium">
-              {t("onboarding.ai.ladderTitle")}
-            </p>
-            <ul className="space-y-2.5">
-              {/* Local first — the calm, private default — then BYOK, then
-                the subscription/OAuth path with its training caveat. Same
-                ordering + vendor-blind framing as the shipped document-
-                provider governance. */}
-              <li className="space-y-0.5">
-                <p className="text-foreground text-sm font-medium">
-                  {t("onboarding.ai.ladderLocalTitle")}
-                </p>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {t("onboarding.ai.ladderLocalBody")}
-                </p>
-              </li>
-              <li className="space-y-0.5">
-                <p className="text-foreground text-sm font-medium">
-                  {t("onboarding.ai.ladderByokTitle")}
-                </p>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {t("onboarding.ai.ladderByokBody")}
-                </p>
-              </li>
-              <li className="space-y-0.5">
-                <p className="text-foreground text-sm font-medium">
-                  {t("onboarding.ai.ladderOauthTitle")}
-                </p>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {t("onboarding.ai.ladderOauthBody")}
-                </p>
-              </li>
-            </ul>
-          </div>
-
-          <p
-            data-slot="onboarding-ai-keyless"
-            className="text-foreground text-sm leading-relaxed"
-          >
-            {t("onboarding.ai.keylessLine")}
-          </p>
-
-          <MedicalDisclaimer variant="dataPosture" />
-
-          <InlineAction asChild size="sm" className="font-medium underline">
-            <Link href="/settings/ai">{t("onboarding.ai.setupCta")}</Link>
+          {t("onboarding.done.aiOptional")}{" "}
+          <InlineAction asChild size="sm" className="underline">
+            <Link href="/settings/ai">{t("onboarding.done.aiSetupCta")}</Link>
           </InlineAction>
-        </section>
+        </p>
       ) : null}
 
       <div className="flex w-full max-w-xs flex-col gap-2">

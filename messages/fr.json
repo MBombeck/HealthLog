@@ -5177,7 +5177,9 @@
       "connectCta": "Connecter un appareil",
       "logCta": "Enregistrez votre première mesure",
       "importCta": "Importer un historique existant",
-      "modulesCta": "Choisir vos modules"
+      "modulesCta": "Choisir vos modules",
+      "aiOptional": "L'IA est facultative. Tout fonctionne aussi sans elle.",
+      "aiSetupCta": "Configurer l'IA"
     },
     "welcomeBack": {
       "title": "Bon retour",
@@ -5197,37 +5199,6 @@
       "allergiesLabel": "Allergies ou intolérances",
       "allergiesPlaceholder": "p. ex. pénicilline, lactose",
       "privacyNote": "Stocké chiffré et utilisé uniquement pour un meilleur contexte. Nous ne demandons pas vos médicaments ici : ajoutez-les quand vous voulez depuis la page Médicaments."
-    },
-    "ai": {
-      "panelTitle": "Voyez à quoi ressemblent les insights",
-      "panelIntro": "Coach, le briefing quotidien et les lectures par mesure traduisent vos propres chiffres en langage clair. Voici l'idée, avant de connecter quoi que ce soit.",
-      "showSample": "Voir un exemple de briefing",
-      "sampleTitle": "Briefing quotidien",
-      "sampleTag": "Exemple",
-      "sampleAriaLabel": "Exemple de briefing quotidien",
-      "sampleBody": "Poids en baisse de 1,2 kg en deux semaines. Pouls au repos stable à 58 bpm. Tension dans la plage 6 jours sur 7 ; la seule valeur élevée a suivi un dîner tardif et salé.",
-      "sampleCaption": "Exemple uniquement, pas vos données. Voilà à quoi ressemble un briefing une fois les insights activés.",
-      "ladderTitle": "Trois façons de l'activer",
-      "ladderLocalTitle": "Modèle local : les requêtes d’IA restent sur votre réseau",
-      "ladderLocalBody": "Pointez HealthLog vers Ollama ou LM Studio sur votre propre machine. Gratuit et totalement privé, le choix calme par défaut.",
-      "ladderByokTitle": "Apportez votre clé",
-      "ladderByokBody": "Utilisez votre propre clé OpenAI ou Anthropic. Elle fonctionne avec votre compte et votre facturation, et le niveau API exclut vos données de l'entraînement par défaut.",
-      "ladderOauthTitle": "Connectez-vous avec un abonnement",
-      "ladderOauthBody": "Reliez un compte ChatGPT, sans coût par jeton, mais les conditions du niveau grand public peuvent utiliser le contenu pour l'entraînement : c'est donc un choix délibéré, jamais l'option par défaut pour vos données de santé.",
-      "keylessLine": "HealthLog est pleinement utile sans IA. Vos tuiles, graphiques, tendances et exports fonctionnent tous ; l'IA n'ajoute que la lecture en langage clair par-dessus.",
-      "setupCta": "Configurez-le (environ une minute)",
-      "sharedKeyNote": "Cette instance fournit déjà un fournisseur d'IA partagé : les insights fonctionnent pour vous dès maintenant, aucune configuration nécessaire.",
-      "offer": {
-        "title": "Cette instance peut rédiger votre résumé en langage clair.",
-        "body": "L’exploitant met à disposition un fournisseur qui a fonctionné au cours des dernières 24 heures. Une seule touche active le langage clair ; vos données partent alors vers ce seul fournisseur et vers personne d’autre.",
-        "cta": "Activer le langage clair",
-        "granted": "Activé. Le premier résumé apparaîtra sur votre tableau de bord.",
-        "error": "L’activation n’a pas abouti. Réessayez dans un instant."
-      },
-      "unavailable": {
-        "title": "Le fournisseur de cette instance ne répond pas pour le moment.",
-        "body": "HealthLog reste pleinement utile sans le langage clair. Vous pourrez ajouter votre propre fournisseur plus tard dans les paramètres."
-      }
     },
     "steps": {
       "who": "À qui appartient ce dossier",

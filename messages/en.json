@@ -5177,7 +5177,9 @@
       "connectCta": "Connect a device",
       "logCta": "Log your first measurement",
       "importCta": "Import existing history",
-      "modulesCta": "Choose your modules"
+      "modulesCta": "Choose your modules",
+      "aiOptional": "AI is optional. Everything here works without it.",
+      "aiSetupCta": "Set up AI"
     },
     "welcomeBack": {
       "title": "Welcome back",
@@ -5197,37 +5199,6 @@
       "allergiesLabel": "Allergies or intolerances",
       "allergiesPlaceholder": "e.g. penicillin, lactose",
       "privacyNote": "Stored encrypted and used only to give you better context. We don't ask for your medications here. Add those anytime from the Medications page."
-    },
-    "ai": {
-      "panelTitle": "See what insights look like",
-      "panelIntro": "Coach, the daily briefing and the per-metric reads turn your own numbers into plain language. Here's the shape of it, before you connect anything.",
-      "showSample": "See a sample briefing",
-      "sampleTitle": "Daily Briefing",
-      "sampleTag": "Example",
-      "sampleAriaLabel": "Example daily briefing",
-      "sampleBody": "Weight down 1.2 kg over two weeks. Resting pulse steady at 58 bpm. Blood pressure in range on 6 of 7 days; the one high reading followed a late, salty dinner.",
-      "sampleCaption": "Example only, not your own data. This is what a briefing reads like once insights are on.",
-      "ladderTitle": "Three ways to turn it on",
-      "ladderLocalTitle": "Local model: AI requests stay on your network",
-      "ladderLocalBody": "Point HealthLog at Ollama or LM Studio on your own machine. Free and fully private, the calm default.",
-      "ladderByokTitle": "Bring your own key",
-      "ladderByokBody": "Use your own OpenAI or Anthropic key. It runs under your account and billing, and the API tier keeps your data out of training by default.",
-      "ladderOauthTitle": "Sign in with a subscription",
-      "ladderOauthBody": "Connect a ChatGPT account. No per-token cost, but the consumer tier's terms may use content for training, so it's a deliberate choice, never the default for your health data.",
-      "keylessLine": "HealthLog is fully useful without AI. Your tiles, charts, trends and exports all work. AI only adds the plain-language read on top.",
-      "setupCta": "Set it up (about a minute)",
-      "sharedKeyNote": "This instance already provides a shared AI provider, so insights work for you right now, no setup needed.",
-      "offer": {
-        "title": "This instance can write your summary in plain language.",
-        "body": "The operator provides a provider that last worked within the past 24 hours. One tap turns the plain-language read on; your data then goes to that one provider and to nobody else.",
-        "cta": "Turn on plain language",
-        "granted": "Turned on. The first summary appears on your dashboard.",
-        "error": "Turning it on did not work. Give it another try in a moment."
-      },
-      "unavailable": {
-        "title": "This instance’s provider is not answering right now.",
-        "body": "HealthLog is fully useful without the plain-language read. You can add a provider of your own later under Settings."
-      }
     },
     "steps": {
       "who": "Who this record is for",

@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
-  "count": 2892,
-  "total": 9217,
+  "count": 2891,
+  "total": 9215,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1257,7 +1257,6 @@
     "components/onboarding/__tests__/anamnesis-card.test.tsx": 1,
     "components/onboarding/__tests__/confirm-failure-recovery.test.ts": 1,
     "components/onboarding/__tests__/confirm-screen.test.tsx": 1,
-    "components/onboarding/__tests__/done-screen.test.tsx": 1,
     "components/onboarding/__tests__/first-result-screen.test.tsx": 2,
     "components/onboarding/__tests__/getting-started-checklist.test.tsx": 1,
     "components/onboarding/__tests__/question-screen.test.tsx": 1,
@@ -1268,7 +1267,7 @@
     "components/onboarding/baseline-fields.tsx": 1,
     "components/onboarding/baseline-form.tsx": 3,
     "components/onboarding/confirm-screen.tsx": 5,
-    "components/onboarding/done-screen.tsx": 2,
+    "components/onboarding/done-screen.tsx": 1,
     "components/onboarding/first-result-screen.tsx": 3,
     "components/onboarding/getting-started-checklist.tsx": 13,
     "components/onboarding/onboarding-shell.tsx": 1,

@@ -5177,7 +5177,9 @@
       "connectCta": "Conectar un dispositivo",
       "logCta": "Registra tu primera medición",
       "importCta": "Importar historial existente",
-      "modulesCta": "Elige tus módulos"
+      "modulesCta": "Elige tus módulos",
+      "aiOptional": "La IA es opcional. Todo funciona también sin ella.",
+      "aiSetupCta": "Configurar IA"
     },
     "welcomeBack": {
       "title": "Bienvenido de nuevo",
@@ -5197,37 +5199,6 @@
       "allergiesLabel": "Alergias o intolerancias",
       "allergiesPlaceholder": "p. ej. penicilina, lactosa",
       "privacyNote": "Se almacena cifrado y solo se usa para darte mejor contexto. Aquí no te pedimos tu medicación: puedes añadirla cuando quieras desde la página de Medicación."
-    },
-    "ai": {
-      "panelTitle": "Mira cómo son los insights",
-      "panelIntro": "Coach, el resumen diario y las lecturas por métrica convierten tus propios números en lenguaje claro. Así se ve, antes de conectar nada.",
-      "showSample": "Ver un resumen de ejemplo",
-      "sampleTitle": "Resumen diario",
-      "sampleTag": "Ejemplo",
-      "sampleAriaLabel": "Resumen diario de ejemplo",
-      "sampleBody": "Peso 1,2 kg menos en dos semanas. Pulso en reposo estable en 58 lpm. Tensión dentro del rango 6 de 7 días; la única lectura alta llegó tras una cena tardía y salada.",
-      "sampleCaption": "Solo un ejemplo, no son tus datos. Así se lee un resumen cuando los insights están activos.",
-      "ladderTitle": "Tres formas de activarlo",
-      "ladderLocalTitle": "Modelo local: las solicitudes de IA no salen de tu red",
-      "ladderLocalBody": "Apunta HealthLog a Ollama o LM Studio en tu propia máquina. Gratis y totalmente privado: la opción tranquila por defecto.",
-      "ladderByokTitle": "Usa tu propia clave",
-      "ladderByokBody": "Usa tu propia clave de OpenAI o Anthropic. Funciona con tu cuenta y facturación, y el nivel de API mantiene tus datos fuera del entrenamiento por defecto.",
-      "ladderOauthTitle": "Inicia sesión con una suscripción",
-      "ladderOauthBody": "Conecta una cuenta de ChatGPT. Sin coste por token, pero los términos del nivel de consumo pueden usar el contenido para entrenamiento, así que es una elección deliberada, nunca la opción por defecto para tus datos de salud.",
-      "keylessLine": "HealthLog es plenamente útil sin IA. Tus paneles, gráficos, tendencias y exportaciones funcionan; la IA solo añade la lectura en lenguaje claro por encima.",
-      "setupCta": "Configúralo (un minuto aprox.)",
-      "sharedKeyNote": "Esta instancia ya ofrece un proveedor de IA compartido, así que los insights funcionan para ti ahora mismo, sin configuración.",
-      "offer": {
-        "title": "Esta instancia ya puede escribir tu resumen en lenguaje claro.",
-        "body": "El operador ofrece un proveedor que funcionó por última vez en las últimas 24 horas. Con un toque activas el lenguaje claro; tus datos irán entonces a ese único proveedor y a nadie más.",
-        "cta": "Activar el lenguaje claro",
-        "granted": "Activado. El primer resumen aparecerá en tu panel.",
-        "error": "No se pudo activar. Vuelve a intentarlo en un momento."
-      },
-      "unavailable": {
-        "title": "El proveedor de esta instancia no responde en este momento.",
-        "body": "HealthLog es plenamente útil sin el lenguaje claro. Más adelante puedes añadir tu propio proveedor en los ajustes."
-      }
     },
     "steps": {
       "who": "Para quién es este registro",

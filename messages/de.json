@@ -5177,7 +5177,9 @@
       "connectCta": "Gerät verbinden",
       "logCta": "Ersten Wert eintragen",
       "importCta": "Bestehende Daten importieren",
-      "modulesCta": "Module auswählen"
+      "modulesCta": "Module auswählen",
+      "aiOptional": "KI ist optional. Alles hier funktioniert auch ohne.",
+      "aiSetupCta": "KI einrichten"
     },
     "welcomeBack": {
       "title": "Willkommen zurück",
@@ -5197,37 +5199,6 @@
       "allergiesLabel": "Allergien oder Unverträglichkeiten",
       "allergiesPlaceholder": "z. B. Penicillin, Laktose",
       "privacyNote": "Verschlüsselt gespeichert und nur für besseren Kontext genutzt. Medikamente fragen wir hier nicht ab, die kannst du jederzeit auf der Medikamenten-Seite ergänzen."
-    },
-    "ai": {
-      "panelTitle": "So sehen Insights aus",
-      "panelIntro": "Coach, das tägliche Briefing und die Einschätzungen je Messwert übersetzen deine eigenen Zahlen in Klartext. So sieht das aus, bevor du irgendetwas verbindest.",
-      "showSample": "Beispiel-Briefing ansehen",
-      "sampleTitle": "Tägliches Briefing",
-      "sampleTag": "Beispiel",
-      "sampleAriaLabel": "Beispielhaftes tägliches Briefing",
-      "sampleBody": "Gewicht in zwei Wochen um 1,2 kg gesunken. Ruhepuls stabil bei 58 bpm. Blutdruck an 6 von 7 Tagen im Zielbereich; der einzige hohe Wert folgte auf ein spätes, salziges Abendessen.",
-      "sampleCaption": "Nur ein Beispiel, nicht deine eigenen Daten. So liest sich ein Briefing, sobald Insights aktiv sind.",
-      "ladderTitle": "Drei Wege, es zu aktivieren",
-      "ladderLocalTitle": "Lokales Modell: KI-Anfragen bleiben in deinem Netzwerk",
-      "ladderLocalBody": "Richte HealthLog auf Ollama oder LM Studio auf deinem eigenen Rechner aus. Kostenlos und vollständig privat, der ruhige Standard.",
-      "ladderByokTitle": "Eigenen Schlüssel verwenden",
-      "ladderByokBody": "Nutze deinen eigenen OpenAI- oder Anthropic-Schlüssel. Er läuft über dein Konto und deine Abrechnung, und die API-Stufe hält deine Daten standardmäßig aus dem Training heraus.",
-      "ladderOauthTitle": "Mit einem Abo anmelden",
-      "ladderOauthBody": "Verbinde ein ChatGPT-Konto: keine Kosten pro Token, aber die Bedingungen der Verbraucherstufe können Inhalte fürs Training nutzen. Deshalb eine bewusste Wahl, nie der Standard für deine Gesundheitsdaten.",
-      "keylessLine": "HealthLog ist auch ohne KI vollständig nutzbar. Deine Kacheln, Diagramme, Trends und Exporte funktionieren alle. KI ergänzt nur den Klartext obendrauf.",
-      "setupCta": "Einrichten (etwa eine Minute)",
-      "sharedKeyNote": "Diese Instanz stellt bereits einen gemeinsamen KI-Anbieter bereit, deshalb funktionieren Insights für dich sofort, keine Einrichtung nötig.",
-      "offer": {
-        "title": "Die Zusammenfassung dieser Instanz ist bereit.",
-        "body": "Der Betreiber stellt einen Anbieter bereit, der zuletzt innerhalb der letzten 24 Stunden funktioniert hat. Mit einem Tipp schaltest du den Klartext ein; deine Daten gehen dann an diesen einen Anbieter, an niemanden sonst.",
-        "cta": "Klartext einschalten",
-        "granted": "Eingeschaltet. Die erste Zusammenfassung erscheint auf dem Dashboard.",
-        "error": "Das Einschalten hat nicht geklappt. Versuch es gleich noch einmal."
-      },
-      "unavailable": {
-        "title": "Der Anbieter dieser Instanz antwortet gerade nicht.",
-        "body": "HealthLog funktioniert ohne Klartext vollständig. Du kannst später in den Einstellungen einen eigenen Anbieter hinterlegen."
-      }
     },
     "steps": {
       "who": "Für wen diese Akte ist",

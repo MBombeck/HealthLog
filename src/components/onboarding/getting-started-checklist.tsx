@@ -263,11 +263,9 @@ export function GettingStartedChecklist() {
     enabled: checklistRelevant,
   });
 
-  // The AI row reads the provider state `/api/auth/me` already carries:
-  // present only while AI can be set up from here (`canConfigure`) and the
-  // person has not switched the Coach and AI analysis off, done once any
-  // provider is configured (a personal key, a local model, an OAuth sign-in or
-  // the operator's shared key). No request of its own.
+  // The AI row reads `/api/auth/me`: present while AI can be set up here and
+  // is still wanted (`canConfigure`, `hasOptedOutOfAi`), done once any
+  // provider is configured. No request of its own.
   const aiProvider = useAiProviderState();
 
   // v1.5: skip these two fetches once the card can't render at
