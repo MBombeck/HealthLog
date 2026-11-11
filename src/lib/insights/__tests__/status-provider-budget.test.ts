@@ -167,22 +167,6 @@ describe("runStatusCompletion — capability at the wire", () => {
     expect(ledgerTotal).toBe(0);
   });
 
-  it("sends nothing on an empty chain, whatever the single-provider resolver holds", async () => {
-    // The chain carries the person's provider switches; an empty one is no
-    // provider, never a quiet hop to one they switched off.
-    resolveProviderChain.mockResolvedValue([]);
-    resolveProvider.mockResolvedValue({ type: "admin-key" });
-
-    const outcome = await runStatusCompletion(
-      completionArgs({ capability: "statusText" }) as never,
-    );
-
-    expect(outcome).toEqual({ kind: "none", reason: "no_provider" });
-    expect(resolveProvider).not.toHaveBeenCalled();
-    expect(runRawCompletionWithFallback).not.toHaveBeenCalled();
-    expect(ledgerTotal).toBe(0);
-  });
-
   it("re-checks exactly the resolved chain and refuses before any budget or provider work", async () => {
     resolveProviderChain.mockResolvedValue([
       { providerType: "anthropic", instance: {} },
@@ -240,9 +224,13 @@ describe("runStatusCompletion — capability at the wire", () => {
   });
 
   it("returns none with reason no_provider when the chain is empty", async () => {
+    // The chain carries the person's provider switches; an empty one is no
+    // provider, never a quiet hop to the single-provider resolver's pick.
     resolveProviderChain.mockResolvedValue([]);
+    resolveProvider.mockResolvedValue({ type: "admin-key" });
     const outcome = await runStatusCompletion(completionArgs() as never);
     expect(outcome).toEqual({ kind: "none", reason: "no_provider" });
+    expect(resolveProvider).not.toHaveBeenCalled();
     expect(runRawCompletionWithFallback).not.toHaveBeenCalled();
   });
 });

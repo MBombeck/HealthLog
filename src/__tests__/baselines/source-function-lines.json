@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 344,
-  "total": 111520,
+  "count": 343,
+  "total": 111236,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -287,7 +287,7 @@
     "lib/import/labs-csv.ts :: importLabsCsv": 307,
     "lib/import/labs-csv.ts :: importLabsCsv > flush": 229,
     "lib/insights/comprehensive-aggregator.ts :: buildFromRollups": 217,
-    "lib/insights/comprehensive-generate.ts :: generateComprehensiveInsight": 876,
+    "lib/insights/comprehensive-generate.ts :: generateComprehensiveInsight": 872,
     "lib/insights/features.ts :: extractFeatures": 796,
     "lib/insights/mood-aggregates.ts :: fetchMoodAggregates": 246,
     "lib/insights/status-provider.ts :: runStatusCompletion": 215,

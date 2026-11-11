@@ -1,7 +1,7 @@
 {
   "$comment": "as never casts in tests, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
   "count": 523,
-  "total": 5475,
+  "total": 5464,
   "entries": {
     "__tests__/api/auth/login/mfa-branch.test.ts": 10,
     "__tests__/api/auth/mfa/verify.test.ts": 9,
@@ -196,7 +196,7 @@
     "app/api/medications/[id]/intake/import/__tests__/route.test.ts": 9,
     "app/api/medications/[id]/schedule-revisions/__tests__/route.test.ts": 24,
     "app/api/medications/compliance/__tests__/route.test.ts": 10,
-    "app/api/medications/extract/__tests__/route.test.ts": 38,
+    "app/api/medications/extract/__tests__/route.test.ts": 37,
     "app/api/medications/intake/__tests__/route.test.ts": 59,
     "app/api/medications/intake/bulk/__tests__/dose-arrival-scope.test.ts": 9,
     "app/api/medications/intake/bulk/__tests__/route.test.ts": 68,
@@ -300,7 +300,7 @@
     "lib/ai/__tests__/provider-reasoning-effort.test.ts": 5,
     "lib/ai/__tests__/provider-response-timeout.test.ts": 2,
     "lib/ai/__tests__/provider.test.ts": 35,
-    "lib/ai/__tests__/resolve-chain.test.ts": 12,
+    "lib/ai/__tests__/resolve-chain.test.ts": 2,
     "lib/ai/__tests__/server-provider-health.test.ts": 1,
     "lib/ai/capabilities/__tests__/egress.test.ts": 1,
     "lib/ai/capabilities/__tests__/gate.test.ts": 1,
