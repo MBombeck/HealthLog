@@ -49,6 +49,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import { useEncounterMutations, type Encounter } from "@/hooks/use-encounters";
 import {
@@ -128,8 +129,7 @@ export function EncounterSheet({
       onSaved?.(saved);
       onOpenChange(false);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : t("encounters.saveFailed");
+      const message = localizedApiError(err, t, "encounters.saveFailed");
       setError(message);
       showErrorToast(message, { cause: err });
     }

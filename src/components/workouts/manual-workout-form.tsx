@@ -21,7 +21,8 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
-import { ApiError, apiPost } from "@/lib/api/api-fetch";
+import { apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import { getQuantityTransform } from "@/lib/measurements/display-transform";
 import {
@@ -232,9 +233,7 @@ export function ManualWorkoutForm({
       onSuccess?.();
     } catch (err) {
       setSaveError(
-        err instanceof ApiError && err.message
-          ? err.message
-          : t("insights.workouts.manual.saveError"),
+        localizedApiError(err, t, "insights.workouts.manual.saveError"),
       );
     } finally {
       setSaving(false);

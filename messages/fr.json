@@ -12536,7 +12536,8 @@
       "save": "Enregistrer",
       "savedToast": "Mesure personnalisée enregistrée",
       "updatedToast": "Mesure personnalisée mise à jour",
-      "saveError": "Impossible d'enregistrer la mesure personnalisée"
+      "saveError": "Impossible d'enregistrer la mesure personnalisée",
+      "nameTaken": "Une mesure personnalisée portant ce nom existe déjà."
     },
     "entry": {
       "value": "Valeur",

@@ -12536,7 +12536,8 @@
       "save": "Salvar",
       "savedToast": "Métrica personalizada salva",
       "updatedToast": "Métrica personalizada atualizada",
-      "saveError": "Não foi possível salvar a métrica personalizada"
+      "saveError": "Não foi possível salvar a métrica personalizada",
+      "nameTaken": "Já existe uma métrica personalizada com este nome."
     },
     "entry": {
       "value": "Valor",

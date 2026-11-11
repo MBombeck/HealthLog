@@ -12536,7 +12536,8 @@
       "save": "Zapisz",
       "savedToast": "Zapisano metrykę własną",
       "updatedToast": "Zaktualizowano metrykę własną",
-      "saveError": "Nie udało się zapisać metryki własnej"
+      "saveError": "Nie udało się zapisać metryki własnej",
+      "nameTaken": "Metryka własna o tej nazwie już istnieje."
     },
     "entry": {
       "value": "Wartość",

@@ -12536,7 +12536,8 @@
       "save": "Opslaan",
       "savedToast": "Eigen meting opgeslagen",
       "updatedToast": "Eigen meting bijgewerkt",
-      "saveError": "De eigen meting kon niet worden opgeslagen"
+      "saveError": "De eigen meting kon niet worden opgeslagen",
+      "nameTaken": "Er bestaat al een eigen meting met deze naam."
     },
     "entry": {
       "value": "Waarde",

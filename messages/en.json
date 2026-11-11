@@ -12536,7 +12536,8 @@
       "save": "Save",
       "savedToast": "Custom metric saved",
       "updatedToast": "Custom metric updated",
-      "saveError": "Could not save the custom metric"
+      "saveError": "Could not save the custom metric",
+      "nameTaken": "A custom metric with this name already exists."
     },
     "entry": {
       "value": "Value",

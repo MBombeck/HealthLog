@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 
 import type { CustomMetricDto } from "./types";
@@ -122,11 +123,11 @@ export function CustomMetricForm({
       );
       onSuccess?.(saved);
     } catch (err) {
-      const message =
-        err instanceof ApiError
-          ? err.message
-          : t("customMetrics.form.saveError");
-      setError(message);
+      setError(
+        err instanceof ApiError && err.status === 409
+          ? t("customMetrics.form.nameTaken")
+          : localizedApiError(err, t, "customMetrics.form.saveError"),
+      );
     } finally {
       setSubmitting(false);
     }

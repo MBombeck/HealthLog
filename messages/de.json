@@ -12536,7 +12536,8 @@
       "save": "Speichern",
       "savedToast": "Eigene Metrik gespeichert",
       "updatedToast": "Eigene Metrik aktualisiert",
-      "saveError": "Eigene Metrik konnte nicht gespeichert werden"
+      "saveError": "Eigene Metrik konnte nicht gespeichert werden",
+      "nameTaken": "Es gibt bereits eine eigene Metrik mit diesem Namen."
     },
     "entry": {
       "value": "Wert",

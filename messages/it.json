@@ -12536,7 +12536,8 @@
       "save": "Salva",
       "savedToast": "Metrica personalizzata salvata",
       "updatedToast": "Metrica personalizzata aggiornata",
-      "saveError": "Impossibile salvare la metrica personalizzata"
+      "saveError": "Impossibile salvare la metrica personalizzata",
+      "nameTaken": "Esiste già una metrica personalizzata con questo nome."
     },
     "entry": {
       "value": "Valore",

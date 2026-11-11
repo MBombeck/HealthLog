@@ -11,7 +11,8 @@ import { DateTimeField } from "@/components/ui/date-time-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError, apiPost } from "@/lib/api/api-fetch";
+import { apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -99,11 +100,7 @@ export function CustomMetricEntryForm({
       });
       onSuccess?.();
     } catch (err) {
-      const message =
-        err instanceof ApiError
-          ? err.message
-          : t("customMetrics.entry.saveError");
-      setError(message);
+      setError(localizedApiError(err, t, "customMetrics.entry.saveError"));
     } finally {
       setSubmitting(false);
     }

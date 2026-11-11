@@ -36,6 +36,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import { RelatedRecordsBlock } from "@/components/links/related-records";
 import type { RelatedLink } from "@/lib/links/related";
@@ -99,8 +100,7 @@ export function VaccinationSheet({
         onCreated?.(created);
       }
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : t("vaccinations.saveFailed");
+      const message = localizedApiError(err, t, "vaccinations.saveFailed");
       setError(message);
       showErrorToast(message, { cause: err });
     }

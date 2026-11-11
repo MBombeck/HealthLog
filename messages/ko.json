@@ -12536,7 +12536,8 @@
       "save": "저장",
       "savedToast": "사용자 지표를 저장했어요",
       "updatedToast": "사용자 지표를 수정했어요",
-      "saveError": "사용자 지표를 저장하지 못했어요"
+      "saveError": "사용자 지표를 저장하지 못했어요",
+      "nameTaken": "이 이름의 사용자 지표가 이미 있어요."
     },
     "entry": {
       "value": "값",

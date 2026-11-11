@@ -27,7 +27,8 @@ import {
 } from "@/lib/medications/default-medication";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveRecordName } from "@/hooks/use-record-capabilities";
-import { ApiError, apiGet, apiPost } from "@/lib/api/api-fetch";
+import { apiGet, apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import {
   intakeToastOptions,
   runUndoIntake,
@@ -270,9 +271,11 @@ export function MedicationIntakeQuickAdd({
       void invalidateMedicationReads(queryClient);
     } catch (err) {
       setError(
-        err instanceof ApiError && err.message
-          ? err.message
-          : t("dashboard.medicationIntakeQuickAdd.saveError"),
+        localizedApiError(
+          err,
+          t,
+          "dashboard.medicationIntakeQuickAdd.saveError",
+        ),
       );
     } finally {
       setLoading(false);
