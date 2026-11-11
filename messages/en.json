@@ -452,7 +452,7 @@
   "offlineBanner": {
     "message": "No connection: changes can't be saved until you're back online.",
     "saveFailed": "Couldn't save, you're offline. Please try again once you're back online.",
-    "showingCached": "Showing your last synced data."
+    "stayOnPage": "This page stays readable; other pages open once you're back online."
   },
   "demoBanner": {
     "message": "Demo mode: changes are not saved."

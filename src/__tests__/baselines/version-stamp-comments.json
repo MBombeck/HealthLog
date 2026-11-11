@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
-  "count": 2890,
-  "total": 9211,
+  "count": 2888,
+  "total": 9205,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -1092,7 +1092,6 @@
     "components/layout/__tests__/capture-picker-discard.test.tsx": 1,
     "components/layout/__tests__/capture-picker.test.tsx": 1,
     "components/layout/__tests__/nav-model.test.ts": 7,
-    "components/layout/__tests__/offline-banner.test.tsx": 3,
     "components/layout/__tests__/shared-record-chrome.test.tsx": 1,
     "components/layout/__tests__/sidebar-nav.test.tsx": 3,
     "components/layout/account-switcher-menu.tsx": 1,
@@ -1100,7 +1099,6 @@
     "components/layout/bottom-nav.tsx": 8,
     "components/layout/capture-picker.tsx": 5,
     "components/layout/nav-model.ts": 17,
-    "components/layout/offline-banner.tsx": 3,
     "components/layout/record-session-fence-bridge.tsx": 1,
     "components/layout/shared-record-banner.tsx": 1,
     "components/layout/shared-record-grant-loss-bridge.tsx": 1,

@@ -452,7 +452,7 @@
   "offlineBanner": {
     "message": "Sin conexión: los cambios no se pueden guardar hasta que vuelvas a estar en línea.",
     "saveFailed": "No se pudo guardar porque estás sin conexión. Inténtalo de nuevo cuando vuelvas a estar en línea.",
-    "showingCached": "Mostrando tus últimos datos sincronizados."
+    "stayOnPage": "Esta página se puede seguir leyendo; las demás se abrirán cuando vuelvas a estar en línea."
   },
   "demoBanner": {
     "message": "Modo demo: los cambios no se guardan."
