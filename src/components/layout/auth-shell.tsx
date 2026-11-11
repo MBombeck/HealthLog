@@ -10,11 +10,17 @@ import { MaintainershipBanner } from "@/components/i18n/maintainership-banner";
 import { LayoutCoachFab } from "@/components/insights/layout-coach-fab";
 import { LayoutCoachMount } from "@/components/insights/layout-coach-mount";
 import { TourLauncher } from "@/components/onboarding/tour-launcher";
-import { clearCachesForSessionEnd, useAuth } from "@/hooks/use-auth";
+import {
+  clearCachesForSessionEnd,
+  readWasAuthenticated,
+  useAuth,
+} from "@/hooks/use-auth";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useRecordSessionTransition } from "@/hooks/use-record-session-transition";
+import { signInHref } from "@/lib/api/read-failure";
 import { useTranslations } from "@/lib/i18n/context";
 import { CoachLaunchProvider } from "@/lib/insights/coach-launch-context";
+import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
 // The leaf module, not the `@/lib/record-settings` barrel. This shell wraps
 // every authenticated route, and the barrel also re-exports the managed
 // settings-patch schemas — so one destination predicate that reads a slug
@@ -76,6 +82,92 @@ const PUBLIC_PATHS = [
   // `/invite/`.
   "/claim/",
 ];
+
+/**
+ * `<main id="main-content">` is the app shell's one scroller and stays mounted
+ * across routes, so its offset would carry from page to page, and the
+ * browser's own restoration on Back moves only the document, never `<main>`.
+ * A forward navigation starts at the top; Back and Forward return to the
+ * offset that entry was left at.
+ */
+function useShellScrollMemory(pathname: string): void {
+  // Recorded while scrolling: once the pathname has changed, `<main>` holds
+  // the next page and the offset is gone.
+  const offsets = useRef(new Map<string, number>());
+  // Set by `popstate` for the entry it lands on, taken by the next render.
+  const restore = useRef<{ url: string; top: number } | null>(null);
+  useEffect(() => {
+    const here = () => `${location.pathname}${location.search}`;
+    const remember = (event: Event) => {
+      const el = event.target;
+      if (el instanceof HTMLElement && el.id === "main-content") {
+        offsets.current.set(here(), el.scrollTop);
+      }
+    };
+    const recall = () => {
+      restore.current = { url: here(), top: offsets.current.get(here()) ?? 0 };
+    };
+    const capture = { capture: true, passive: true } as const;
+    document.addEventListener("scroll", remember, capture);
+    window.addEventListener("popstate", recall);
+    return () => {
+      document.removeEventListener("scroll", remember, capture);
+      window.removeEventListener("popstate", recall);
+    };
+  }, []);
+
+  useEffect(() => {
+    const target = restore.current;
+    restore.current = null;
+    const main = document.getElementById("main-content");
+    if (target?.url !== `${location.pathname}${location.search}`) {
+      if (main) main.scrollTop = 0;
+      // The body-scrolled shells (sign-in, setup, legal pages) scroll the
+      // document instead.
+      window.scrollTo(0, 0);
+      return;
+    }
+    if (!main) return;
+    // A list still painting its skeleton is shorter than the offset; keep
+    // trying until it has the height, for at most a second.
+    const until = performance.now() + 1000;
+    let frame = 0;
+    const apply = () => {
+      main.scrollTop = target.top;
+      if (main.scrollTop < target.top - 1 && performance.now() < until) {
+        frame = requestAnimationFrame(apply);
+      }
+    };
+    apply();
+    return () => cancelAnimationFrame(frame);
+  }, [pathname]);
+}
+
+/**
+ * A session that ended without passing through the shell's session-end wipe
+ * (an expired cookie the edge sent straight to the sign-in page, a sign-in
+ * page opened directly) left the previous account's offline copies on this
+ * device. Clear them on every `/auth/*` page once the server has said there is
+ * no session, before anyone signs in. Once per signed-out stretch, and never
+ * on an answer that is not a verdict (offline, 5xx).
+ */
+function useSignInPageOfflineWipe(pathname: string): void {
+  const { isAuthenticated, isAuthUnknown, isLoading } = useAuth();
+  const cleared = useRef(false);
+  useEffect(() => {
+    if (isAuthenticated) {
+      cleared.current = false;
+    } else if (
+      !isLoading &&
+      !isAuthUnknown &&
+      pathname.startsWith("/auth/") &&
+      !cleared.current
+    ) {
+      cleared.current = true;
+      void clearOfflineCachesForSessionEnd();
+    }
+  }, [isLoading, isAuthenticated, isAuthUnknown, pathname]);
+}
 
 export function AuthShell({
   children,
@@ -181,63 +273,28 @@ export function AuthShell({
     isBodyScrolled ? "body" : rendersAppShell ? "shell" : null,
   );
 
-  // v1.25.1 — the authenticated shell keeps `<main id="main-content">`
-  // mounted across every route change, so its scroll offset survives
-  // navigation: scroll down in one section (e.g. Settings → Sources
-  // Priority), hop to another, and the new view opens already scrolled.
-  // Reset the scroll container to the top on every forward navigation.
-  // A back/forward navigation skips the reset so the browser's own scroll
-  // restoration stands: `popstate` arms a one-shot skip for the single
-  // pathname change it triggers, and a macrotask clears the flag so it can
-  // never get stuck on a later forward navigation.
-  const skipNextScrollReset = useRef(false);
-  useEffect(() => {
-    const armSkip = () => {
-      skipNextScrollReset.current = true;
-      setTimeout(() => {
-        skipNextScrollReset.current = false;
-      }, 0);
-    };
-    window.addEventListener("popstate", armSkip);
-    return () => window.removeEventListener("popstate", armSkip);
-  }, []);
+  useShellScrollMemory(pathname);
 
+  // Session END on a protected page (`/api/auth/me` answered 401/403): wipe
+  // every client cache, since the QueryClient outlives navigation and health
+  // data is not user-scoped, then go to the sign-in page. Logout does the same
+  // from `useLogout`; this covers the expiry path it never runs through. No
+  // verdict (`isAuthUnknown`: offline, 5xx, no marker) never wipes: a wipe on
+  // a network failure is what used to destroy the offline caches.
+  //
+  // The target is fixed once per signed-out stretch, before the wipe clears
+  // the marker it reads (the refetch that follows runs this again). A session
+  // that ended on its own returns here after the next sign-in; a deliberate
+  // sign-out already cleared the marker, so the next person gets a bare page.
+  const signInTarget = useRef<string | null>(null);
   useEffect(() => {
-    if (skipNextScrollReset.current) {
-      skipNextScrollReset.current = false;
-      return;
-    }
-    const main = document.getElementById("main-content");
-    if (main) {
-      main.scrollTop = 0;
-    }
-    // Fallback for the body-scrolled shells (login / onboarding / standalone
-    // legal pages) where the document, not `<main>`, owns the scroll.
-    window.scrollTo(0, 0);
-  }, [pathname]);
-
-  useEffect(() => {
+    if (isAuthenticated || isPublicPage) signInTarget.current = null;
     if (!isLoading && !isAuthenticated && !isPublicPage) {
-      // Session END (expired / invalidated cookie → `/api/auth/me` 401/403).
-      // Wipe the in-memory query cache (the cross-user guard — the
-      // QueryClient outlives the navigation on this SPA and the health-data
-      // families are not user-scoped) plus the persisted IndexedDB + SW
-      // caches, so nothing leaks to the next account on a shared browser.
-      // Logout does the same from `useLogout`; this covers the expiry path
-      // logout never runs through. Best-effort; the redirect proceeds
-      // regardless.
-      //
-      // `isAuthUnknown` = the auth probe failed WITHOUT a session verdict
-      // (offline relaunch, network blip, 5xx) and no prior-session marker
-      // exists. Nothing to protect and nothing to render — send the visitor
-      // to the login gate, but never run the wipe off a non-verdict: the
-      // wipe on a network failure is exactly what used to destroy the
-      // offline caches. (With the marker present, `isAuthenticated` holds
-      // the last-known state and this branch never runs.)
-      if (!isAuthUnknown) {
-        clearCachesForSessionEnd(queryClient);
-      }
-      router.replace("/auth/login");
+      signInTarget.current ??= readWasAuthenticated()
+        ? signInHref()
+        : "/auth/login";
+      if (!isAuthUnknown) clearCachesForSessionEnd(queryClient);
+      router.replace(signInTarget.current);
     }
   }, [
     isLoading,
@@ -247,6 +304,7 @@ export function AuthShell({
     router,
     queryClient,
   ]);
+  useSignInPageOfflineWipe(pathname);
 
   // Redirect non-admins away from /admin
   useEffect(() => {
@@ -284,7 +342,6 @@ export function AuthShell({
     return (
       <div className="flex min-h-dvh flex-col pt-[env(safe-area-inset-top,0px)] pr-[env(safe-area-inset-right,0px)] pb-[env(safe-area-inset-bottom,0px)] pl-[env(safe-area-inset-left,0px)]">
         {demoMode ? <DemoBanner /> : null}
-        <MaintainershipBanner />
         <main
           id="main-content"
           className="flex flex-1 items-center justify-center px-4 py-6"

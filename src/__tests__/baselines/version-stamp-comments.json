@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2885,
-  "total": 9198,
+  "total": 9193,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -136,7 +136,7 @@
     "app/api/auth/codex/device-start/route.ts": 1,
     "app/api/auth/login/__tests__/native-token.test.ts": 2,
     "app/api/auth/login/__tests__/route.test.ts": 1,
-    "app/api/auth/login/route.ts": 5,
+    "app/api/auth/login/route.ts": 4,
     "app/api/auth/me/coach-prefs/route.ts": 7,
     "app/api/auth/me/cycle-prefs/route.ts": 1,
     "app/api/auth/me/devices/[id]/route.ts": 3,
@@ -556,7 +556,7 @@
     "app/api/workouts/route.ts": 2,
     "app/auth/claim/page.tsx": 1,
     "app/auth/login/page.tsx": 5,
-    "app/auth/register/page.tsx": 4,
+    "app/auth/register/page.tsx": 3,
     "app/c/[token]/__tests__/page.test.tsx": 2,
     "app/c/[token]/d/[id]/__tests__/route.test.ts": 1,
     "app/c/[token]/d/[id]/route.ts": 1,
@@ -1094,7 +1094,7 @@
     "components/layout/__tests__/shared-record-chrome.test.tsx": 1,
     "components/layout/__tests__/sidebar-nav.test.tsx": 3,
     "components/layout/account-switcher-menu.tsx": 1,
-    "components/layout/auth-shell.tsx": 14,
+    "components/layout/auth-shell.tsx": 13,
     "components/layout/bottom-nav.tsx": 8,
     "components/layout/capture-picker.tsx": 5,
     "components/layout/nav-model.ts": 17,
@@ -2885,7 +2885,7 @@
     "lib/withings/sync.ts": 6,
     "lib/withings/webhook-handler.ts": 3,
     "lib/workouts/list-read.ts": 1,
-    "proxy.ts": 27,
+    "proxy.ts": 25,
     "types/analytics.ts": 8,
     "types/backups.ts": 1
   }

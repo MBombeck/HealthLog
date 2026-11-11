@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 84,
-  "total": 94047,
+  "total": 94006,
   "entries": {
     "app/medications/page-client.tsx": 839,
     "components/charts/mood-chart.tsx": 1166,
@@ -12,7 +12,7 @@
     "components/insights/derived/vitals-dashboard.tsx": 1033,
     "components/insights/health-score-card.tsx": 1023,
     "components/insights/insights-tab-strip.tsx": 1087,
-    "components/measurements/measurement-form.tsx": 815,
+    "components/measurements/measurement-form.tsx": 812,
     "components/medications/detail/medication-detail-tabs.tsx": 1157,
     "components/medications/medication-table.tsx": 853,
     "components/medications/wizard/wizard-payload.ts": 1414,
@@ -82,7 +82,7 @@
     "lib/search/search-records.ts": 996,
     "lib/sharing/grants.ts": 806,
     "lib/support/report.ts": 903,
-    "lib/telegram-webhook-handlers.ts": 1341,
+    "lib/telegram-webhook-handlers.ts": 1335,
     "lib/validations/inbound-documents.ts": 1018,
     "lib/withings/sync-sleep.ts": 884,
     "lib/withings/sync.ts": 933,

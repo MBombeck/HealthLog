@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslations } from "@/lib/i18n/context";
 import { ApiError, apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { currentClientTransport } from "@/lib/auth/client-transport";
 
 /** The server's refusal for a page whose sign-in cookie cannot stick. */
@@ -73,9 +74,7 @@ export function MfaLoginStep({
         err instanceof ApiError &&
           err.meta?.errorCode === INSECURE_TRANSPORT_CODE
           ? t("auth.insecureTransport.title")
-          : err instanceof ApiError && err.message
-            ? err.message
-            : t("auth.mfa.verifyFailed"),
+          : localizedApiError(err, t, "auth.mfa.verifyFailed"),
       );
     } finally {
       setLoading(false);
@@ -102,7 +101,7 @@ export function MfaLoginStep({
       onSuccess();
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message || t("auth.mfa.verifyFailed"));
+        setError(localizedApiError(err, t, "auth.mfa.verifyFailed"));
       } else {
         const { key, params } = describePasskeyError(err);
         setError(t(key, params));
