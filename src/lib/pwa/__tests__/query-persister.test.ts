@@ -98,7 +98,7 @@ describe("session-end CacheStorage cleanup", () => {
     }
   });
 
-  it("deletes current and legacy HealthLog static/page/data caches only", async () => {
+  it("deletes current and legacy HealthLog page and data caches only", async () => {
     const cacheNames = [
       "healthlog-static-v1.34.0",
       "healthlog-static-v1.15.20",
@@ -124,9 +124,11 @@ describe("session-end CacheStorage cleanup", () => {
       .soft(deleted.sort())
       .toEqual(
         cacheNames
-          .filter((name) => /^healthlog-(?:static|pages|data)-/.test(name))
+          .filter((name) => /^healthlog-(?:pages|data)-/.test(name))
           .sort(),
       );
+    // The static cache holds catalogs and icons, nothing of an account.
+    expect(deleted).not.toContain("healthlog-static-v1.34.0");
     expect(deleted).not.toContain("unrelated-app-static-v7");
     expect(deleted).not.toContain("workbox-precache-healthlog");
   });

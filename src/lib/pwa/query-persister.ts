@@ -36,10 +36,7 @@ import {
 import { trackBackgroundTask } from "@/lib/logging/background-tasks";
 import { queryKeys } from "@/lib/query-keys";
 import { isReadingSharedRecord } from "@/lib/query-keys/record-scope";
-// Session-end cleanup removes every current/legacy HealthLog cache family
-// while leaving unrelated CacheStorage namespaces on the same origin
-// untouched; the name contract is shared with `public/sw.js`.
-import { HEALTHLOG_CACHE_NAME_RE } from "@/lib/pwa/sw-cache-policy";
+import { ACCOUNT_CACHE_NAME_RE } from "@/lib/pwa/sw-cache-policy";
 
 const DB_NAME = "healthlog-query-cache";
 const STORE = "kv";
@@ -335,9 +332,11 @@ export async function clearPersistedQueryCache(): Promise<void> {
 
 /**
  * Wipe every client-side cache that can hold one account's data: the
- * IndexedDB query snapshot and the worker's caches, including the API caches
- * older releases left behind. The single call for a session END (logout or
- * 401 / expiry redirect). Best-effort across the board.
+ * IndexedDB query snapshot, the worker's page cache and the API caches older
+ * releases left behind, current and legacy versions alike. The static cache
+ * (catalogs, icons) holds nothing of an account and stays, so a sign-in does
+ * not download the locale catalog again. The single call for a session END
+ * (logout or 401 / expiry redirect) and at sign-in. Best-effort.
  */
 export async function clearOfflineCachesForSessionEnd(): Promise<void> {
   await clearPersistedQueryCache();
@@ -346,7 +345,7 @@ export async function clearOfflineCachesForSessionEnd(): Promise<void> {
       const keys = await caches.keys();
       await Promise.all(
         keys
-          .filter((k) => HEALTHLOG_CACHE_NAME_RE.test(k))
+          .filter((k) => ACCOUNT_CACHE_NAME_RE.test(k))
           .map((k) => caches.delete(k)),
       );
     } catch {
