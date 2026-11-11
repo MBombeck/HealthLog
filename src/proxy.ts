@@ -183,6 +183,11 @@ const DEMO_MUTATION_ALLOWLIST: ReadonlyArray<{ path: string; method: string }> =
     { path: "/api/auth/login", method: "POST" },
     { path: "/api/auth/passkey/login-options", method: "POST" },
     { path: "/api/auth/passkey/login-verify", method: "POST" },
+    // Each touches only this visitor: the session, the language cookie (the
+    // route leaves the shared row alone under DEMO_MODE), a metrics log line.
+    { path: "/api/auth/logout", method: "POST" },
+    { path: "/api/auth/me/locale", method: "PUT" },
+    { path: "/api/internal/web-vitals", method: "POST" },
     // Chart display-pref toggles above the charts (dashboard + insights):
     { path: "/api/dashboard/chart-overlay-prefs", method: "PUT" },
     { path: "/api/dashboard/widgets", method: "PUT" },
@@ -231,8 +236,7 @@ const DEMO_MUTATION_ALLOWLIST: ReadonlyArray<{ path: string; method: string }> =
     // The per-profile routes (`/api/managed-profiles/{id}`, its guardians)
     // are different paths and stay closed too.
     { path: "/api/auth/profile", method: "PUT" },
-    // v1.42.2 — the record search is a read that travels as a POST so the
-    // query stays out of URLs and access logs. It writes nothing.
+    // The record search: a read sent as a POST to keep the query out of logs.
     { path: "/api/search", method: "POST" },
   ];
 
@@ -473,7 +477,7 @@ export function proxy(request: NextRequest) {
     );
   }
 
-  // Demo mode: block all mutations except login
+  // Demo mode: block every mutation outside the allowlist.
   if (process.env.DEMO_MODE === "true") {
     const method = request.method.toUpperCase();
     const isMutation =

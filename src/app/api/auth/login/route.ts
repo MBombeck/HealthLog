@@ -38,13 +38,13 @@ export const POST = apiHandler(async (request: NextRequest) => {
     });
   }
 
-  // v1.4.43 — `checkAuthSurfaceRateLimit` swaps to a tighter
-  // global bucket when the trust chain is misconfigured; otherwise it
-  // is byte-equivalent to the previous per-IP `auth:login:{ip}` key.
+  // Per IP, or one tighter shared bucket when the trust chain is
+  // misconfigured. A demo publishes its one account, and a class or an
+  // office behind one address tries it together: 5 locked them out.
   const rl = await checkAuthSurfaceRateLimit(
     request,
     "auth:login",
-    5,
+    process.env.DEMO_MODE === "true" ? 30 : 5,
     15 * 60 * 1000,
   );
   const ip = rl.ip ?? "unknown";
