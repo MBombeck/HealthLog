@@ -17,7 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { apiPost, apiPut } from "@/lib/api/api-fetch";
+import { apiPut } from "@/lib/api/api-fetch";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import { localizedApiError } from "@/lib/api/localized-error";
 import {
   allergyCategoryEnum,
@@ -67,6 +68,7 @@ export function AllergyForm({
   footerSlot,
 }: AllergyFormProps) {
   const { t } = useTranslations();
+  const post = useIdempotentPost();
   const formId = useId();
 
   const [substance, setSubstance] = useState(existing?.substance ?? "");
@@ -106,7 +108,7 @@ export function AllergyForm({
     try {
       const saved = existing
         ? await apiPut<AllergyDTO>(`/api/allergies/${existing.id}`, body)
-        : await apiPost<AllergyDTO>("/api/allergies", body);
+        : await post<AllergyDTO>("/api/allergies", body);
       toast.success(
         existing
           ? t("records.allergies.form.updatedToast")

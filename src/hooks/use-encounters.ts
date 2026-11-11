@@ -19,13 +19,8 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 
-import {
-  apiDelete,
-  apiGet,
-  apiGetList,
-  apiPatch,
-  apiPost,
-} from "@/lib/api/api-fetch";
+import { apiDelete, apiGet, apiGetList, apiPatch } from "@/lib/api/api-fetch";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import { invalidateReminderReads } from "@/hooks/use-measurement-reminders";
 import {
   encounterDependentKeys,
@@ -175,9 +170,11 @@ export function useEncounterMutations() {
       invalidateReminderReads(qc),
     ]);
 
+  // One key for as long as the sheet that mounts this is open.
+  const post = useIdempotentPost();
   const create = useMutation({
     mutationKey: queryKeys.encounterCreate(),
-    mutationFn: (body: EncounterWriteBody) => apiPost<Encounter>(BASE, body),
+    mutationFn: (body: EncounterWriteBody) => post<Encounter>(BASE, body),
     onSuccess: invalidate,
   });
 

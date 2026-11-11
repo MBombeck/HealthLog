@@ -399,7 +399,7 @@ describe("submit invalidation — the quick-add is a capture-picker surface, not
     // AFTER the intake POST landed, and after the sheet was told it is done:
     // the save does not wait for the refetches before it closes.
     expect(componentSrc).toMatch(
-      /async function handleSubmit\([\s\S]*?apiPost[\s\S]*?onSuccess\?\.\(\);\s*(?:\/\/[^\n]*\n\s*)*void invalidateMedicationReads\(queryClient\);/,
+      /async function handleSubmit\([\s\S]*?await post<[\s\S]*?onSuccess\?\.\(\);\s*(?:\/\/[^\n]*\n\s*)*void invalidateMedicationReads\(queryClient\);/,
     );
     // The bundle carries every inline compliance chart, so no second sweep.
     expect(medicationDependentKeys).toContainEqual(

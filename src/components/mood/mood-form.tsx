@@ -42,8 +42,8 @@ import {
   moodDependentKeys,
   refetchInactiveDailyReads,
 } from "@/lib/query-keys";
-import { apiPost } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import { SheetSection, SheetSectionCount } from "@/components/ui/sheet-section";
 import { MoodTagPicker } from "./mood-tag-picker";
 import {
@@ -125,6 +125,7 @@ export function MoodForm({
 }: MoodFormProps) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
+  const post = useIdempotentPost();
 
   const [mood, setMood] = useState("");
   const { getRadioProps: getMoodRadioProps } = useRovingRadioGroup({
@@ -236,7 +237,7 @@ export function MoodForm({
 
       const trimmedNote = note.trim();
 
-      const saved = await apiPost<DroppedLinkKeysWire>("/api/mood-entries", {
+      const saved = await post<DroppedLinkKeysWire>("/api/mood-entries", {
         mood,
         tags: tags.length > 0 ? tags : undefined,
         tagKeys: tagKeys.length > 0 ? tagKeys : undefined,

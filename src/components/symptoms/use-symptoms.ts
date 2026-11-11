@@ -17,6 +17,7 @@ import {
 } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import { invalidateKeys, queryKeys } from "@/lib/query-keys";
 import type {
   SymptomDefinitionDTO,
@@ -184,11 +185,13 @@ export function useDeleteSymptomDefinition() {
   });
 }
 
+/** Under one key for as long as the entry form that mounts it is open. */
 export function useLogSymptomEvent() {
   const invalidate = useInvalidateSymptoms();
+  const post = useIdempotentPost();
   return useMutation({
     mutationFn: (input: SymptomEventCreateInput) =>
-      apiPost<SymptomEventDTO>("/api/symptoms/events", input),
+      post<SymptomEventDTO>("/api/symptoms/events", input),
     onSuccess: invalidate,
   });
 }

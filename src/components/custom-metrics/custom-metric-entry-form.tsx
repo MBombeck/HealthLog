@@ -11,8 +11,8 @@ import { DateTimeField } from "@/components/ui/date-time-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { apiPost } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -56,6 +56,7 @@ export function CustomMetricEntryForm({
   const { t } = useTranslations();
   const formId = useId();
   const queryClient = useQueryClient();
+  const post = useIdempotentPost();
 
   const [value, setValue] = useState("");
   const [measuredAt, setMeasuredAt] = useState(() => nowLocal());
@@ -86,7 +87,7 @@ export function CustomMetricEntryForm({
 
     setSubmitting(true);
     try {
-      await apiPost<CustomMetricEntryDto>(
+      await post<CustomMetricEntryDto>(
         `/api/custom-metrics/${customMetricId}/entries`,
         body,
       );

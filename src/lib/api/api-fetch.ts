@@ -262,12 +262,11 @@ export function apiGet<T = unknown>(
  * Attach a per-call `Idempotency-Key` unless the caller already set one.
  *
  * Every `apiHandler` route accepts the header, and the write routes
- * wrapped in `withIdempotency` dedupe on it — but almost no client call
- * site sent one, so a transport-level replay of a create (a retried
- * request, a re-sent form submission) could land a duplicate dose or
- * vaccination and shift every derived series. Minting the key here
- * protects every `apiPost` / `apiPatch` surface at once; a caller with a
- * real natural key still wins by setting the header itself.
+ * wrapped in `withIdempotency` dedupe on it. A key minted per call covers a
+ * transport-level replay of that one request. A second tap on Save is a
+ * new call and gets a new key, so a create form sends one key for as long
+ * as it is open (`useIdempotentPost`); a caller that sets the header
+ * itself always wins.
  */
 function withDefaultIdempotencyKey(init: RequestInit): RequestInit {
   const headers = new Headers(init.headers);

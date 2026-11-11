@@ -27,7 +27,8 @@ import {
 } from "@/lib/medications/default-medication";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveRecordName } from "@/hooks/use-record-capabilities";
-import { apiGet, apiPost } from "@/lib/api/api-fetch";
+import { apiGet } from "@/lib/api/api-fetch";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import { localizedApiError } from "@/lib/api/localized-error";
 import {
   intakeToastOptions,
@@ -119,6 +120,7 @@ export function MedicationIntakeQuickAdd({
 }: MedicationIntakeQuickAddProps) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
+  const post = useIdempotentPost();
   // v1.16.9 — the auto-pick reasons in the PROFILE timezone (the same
   // source the cards use); Berlin stays the last-resort fallback so
   // logged-out mounts behave unchanged.
@@ -226,7 +228,7 @@ export function MedicationIntakeQuickAdd({
       // v1.30.1 — the route returns the created event
       // (`apiSuccess(event, 201)`), same shape the card's take/skip path
       // already reads; the id drives the new Undo action below.
-      const created = await apiPost<{ id?: string } | undefined>(
+      const created = await post<{ id?: string } | undefined>(
         `/api/medications/${medicationId}/intake`,
         {
           takenAt: timestamp,
