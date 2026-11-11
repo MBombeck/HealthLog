@@ -13,6 +13,7 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { statusText, type StatusMessage } from "./account-section-utils";
+import { accountName, nameInitials } from "@/lib/account-name";
 
 // Accepted upload types + byte cap mirror the server contract in
 // `src/app/api/user/avatar/route.ts` so the client rejects an obvious
@@ -20,14 +21,6 @@ import { statusText, type StatusMessage } from "./account-section-utils";
 // magic-byte sniff — this is a UX shortcut, not the security boundary.
 const ACCEPTED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const AVATAR_MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
-
-function getAvatarInitials(name: string): string {
-  return name
-    .split(/[\s._-]+/)
-    .slice(0, 2)
-    .map((s) => s[0]?.toUpperCase() ?? "")
-    .join("");
-}
 
 export function AvatarSection() {
   const { t } = useTranslations();
@@ -123,9 +116,9 @@ export function AvatarSection() {
       </p>
       <div className="flex items-center gap-4">
         <Avatar className="size-16">
-          {avatarUrl && <AvatarImage src={avatarUrl} alt={user.username} />}
+          {avatarUrl && <AvatarImage src={avatarUrl} alt={accountName(user)} />}
           <AvatarFallback className="text-base">
-            {getAvatarInitials(user.username)}
+            {nameInitials(accountName(user))}
           </AvatarFallback>
         </Avatar>
         <div className="flex flex-wrap gap-2">
