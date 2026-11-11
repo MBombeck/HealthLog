@@ -12,11 +12,22 @@ describe("selectWeightBandRange", () => {
   it("builds the WHO band from the record's height", () => {
     const range = selectWeightBandRange({
       targets: [
-        { type: "WEIGHT", range: { min: 25.8, max: 34.7 }, source: "WHO BMI" },
+        { type: "WEIGHT", range: { min: 59.9, max: 81 }, source: "WHO BMI" },
       ],
-      profile: { heightCm: 118 },
+      profile: { heightCm: 180 },
     });
-    expect(range).toEqual(buildWeightRangeFromHeight(118));
+    expect(range).toEqual(buildWeightRangeFromHeight(180));
+  });
+
+  it("paints no adult band behind a child's weights", () => {
+    // A 118 cm child: the server names no WHO range for a record under 18,
+    // where the adult band read a normal 21 kg as underweight.
+    expect(
+      selectWeightBandRange({
+        targets: [{ type: "WEIGHT", range: null, source: "WHO BMI" }],
+        profile: { heightCm: 118 },
+      }),
+    ).toBeNull();
   });
 
   it("paints the record's own target with the override wings", () => {

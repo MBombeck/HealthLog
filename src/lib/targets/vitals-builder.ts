@@ -74,6 +74,13 @@ interface VitalTargetsInput {
    * names a category, not a goal. Absent or `null` keeps the age band.
    */
   bpTargetOverride?: BloodPressureTargetRange | null;
+  /**
+   * Whether the adult WHO weight and BMI cut-offs apply. No band here knows a
+   * child's age yet, so for a record under 18, or a managed one with no date
+   * of birth, the weight card keeps only the record's own target, the BMI
+   * card names no band, and neither names a category. Absent means they do.
+   */
+  adultBands?: boolean;
 }
 
 export interface VitalTargetsResult {
@@ -170,6 +177,7 @@ export function buildVitalTargets({
   now,
   weightTargetOverride,
   bpTargetOverride = null,
+  adultBands = true,
 }: VitalTargetsInput): VitalTargetsResult {
   const targets: TargetItem[] = [];
   const consistencyClock = { timezone, now };
@@ -181,10 +189,11 @@ export function buildVitalTargets({
   // v1.34 — a user-set target outranks the WHO BMI band. The BMI
   // classification below stays WHO-derived either way: it names which BMI
   // category a reading falls in, which is a reference fact and not a goal.
+  const whoHeightCm = adultBands ? heightCm : null;
   const weightRange =
-    weightTargetOverride ?? (heightCm ? getWeightRange(heightCm) : null);
+    weightTargetOverride ?? (whoHeightCm ? getWeightRange(whoHeightCm) : null);
   let weightClassification: TargetItem["classification"] = null;
-  if (latestByType.WEIGHT != null && heightCm) {
+  if (latestByType.WEIGHT != null && whoHeightCm) {
     const heightM = heightCm / 100;
     const classification = classifyBMI(
       latestByType.WEIGHT / (heightM * heightM),
@@ -389,14 +398,14 @@ export function buildVitalTargets({
         ? Math.round((averageWeight / heightSquared) * 10) / 10
         : null;
     let bmiClassification: TargetItem["classification"] = null;
-    if (currentBmi != null) {
+    if (currentBmi != null && adultBands) {
       const classification = classifyBMI(currentBmi);
       bmiClassification = {
         category: classification.category,
         color: classification.color,
       };
     }
-    const bmiRange = { min: 18.5, max: 24.9 };
+    const bmiRange = adultBands ? { min: 18.5, max: 24.9 } : null;
     targets.push({
       type: "BMI",
       label: "BMI",

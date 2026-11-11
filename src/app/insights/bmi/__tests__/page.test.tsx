@@ -23,6 +23,7 @@ const state = {
   viewerHeight: null as number | null,
   inSharedRecord: true,
   recordHeight: 118 as number | null,
+  bmiRange: { min: 18.5, max: 24.9 } as { min: number; max: number } | null,
 };
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({
@@ -41,7 +42,10 @@ vi.mock("@tanstack/react-query", () => ({
     data:
       enabled === false
         ? undefined
-        : { profile: { heightCm: state.recordHeight } },
+        : {
+            targets: [{ type: "BMI", range: state.bmiRange }],
+            profile: { heightCm: state.recordHeight },
+          },
   }),
 }));
 
@@ -61,6 +65,7 @@ describe("/insights/bmi height gate", () => {
     state.viewerHeight = null;
     state.inSharedRecord = true;
     state.recordHeight = 118;
+    state.bmiRange = { min: 18.5, max: 24.9 };
   });
 
   it("reads the record's height inside somebody else's record", () => {
@@ -76,5 +81,21 @@ describe("/insights/bmi height gate", () => {
     expect(asksForHeight()).toBe(false);
     state.viewerHeight = null;
     expect(asksForHeight()).toBe(true);
+  });
+
+  it("draws the adult bands only where the record's BMI range is named", () => {
+    const chartBands = () => {
+      renderToStaticMarkup(<InsightsBmiPage />);
+      const { children } = shellProps.mock.calls.at(-1)![0] as {
+        children: Array<{ props?: { valueBands?: unknown } }>;
+      };
+      return children.find(
+        (child) => child?.props && "valueBands" in child.props,
+      )?.props?.valueBands;
+    };
+    expect(chartBands()).toBeDefined();
+    // A child's record: the server names no BMI range.
+    state.bmiRange = null;
+    expect(chartBands()).toBeUndefined();
   });
 });

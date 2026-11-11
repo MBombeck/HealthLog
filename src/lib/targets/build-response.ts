@@ -116,6 +116,7 @@ export async function buildTargetsResponse(user: AuthedUser) {
         select: {
           heightCm: true,
           dateOfBirth: true,
+          managedProfileAt: true,
           gender: true,
           glucoseUnit: true,
           hasDiabetes: true,
@@ -274,6 +275,7 @@ export async function buildTargetsResponse(user: AuthedUser) {
     average30ByType,
     heightCm,
     age,
+    adultBands: age != null ? age >= 18 : dbUser?.managedProfileAt == null,
     gender,
     timezone,
     now,
