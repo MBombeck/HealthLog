@@ -99,6 +99,9 @@ vi.mock("@/lib/notifications/dispatcher", () => ({
 }));
 vi.mock("@/lib/crypto", () => ({ decrypt: vi.fn(() => "token") }));
 vi.mock("@/lib/telegram", () => ({ deleteMessage: vi.fn() }));
+vi.mock("@/lib/modules/gate", () => ({
+  isModuleEnabled: vi.fn().mockResolvedValue(true),
+}));
 vi.mock("@/lib/notifications/reminder-dedup", () => ({
   claimNotificationEvent: vi.fn().mockResolvedValue(true),
   medicationReminderDedupKey: vi.fn(() => "dedup-key"),
@@ -110,6 +113,7 @@ import {
   nextSlotHeldBySnooze,
 } from "@/lib/jobs/reminder/medication-reminder-check";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
+import { isModuleEnabled } from "@/lib/modules/gate";
 
 function medicationWithSchedule(
   schedule: Record<string, unknown>,
@@ -858,6 +862,26 @@ describe("issue #664 — exact occurrence identity survives local midnight", () 
         }),
       }),
     );
+  });
+
+  it("with the Medications module off, neither reminds nor mints the missed row", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-29T02:30:00.000Z")); // 04:30 Jul 29
+    const medication = crossMidnightMedication("Europe/Berlin");
+    prismaMock.medication.findMany.mockResolvedValue([
+      medication,
+      { ...medication, id: "medication-2" },
+    ]);
+    setIntakeEvents([]);
+    vi.mocked(isModuleEnabled).mockResolvedValueOnce(false);
+
+    await handleReminderCheck([]);
+
+    // One read for the owner, not one per medication or slot.
+    expect(isModuleEnabled).toHaveBeenCalledTimes(1);
+    expect(isModuleEnabled).toHaveBeenCalledWith("user-1", "medications");
+    expect(prismaMock.medicationIntakeEvent.create).not.toHaveBeenCalled();
+    expect(dispatchNotification).not.toHaveBeenCalled();
   });
 
   it("does not mint a second missed row for a dose taken just before midnight", async () => {

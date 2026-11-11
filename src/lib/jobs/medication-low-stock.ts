@@ -52,7 +52,11 @@
  * follows the COACH_NUDGE posture (server-only, prefs-gated).
  *
  * Inactive / paused medications are skipped: nothing consumes their
- * stock, so their runway is not falling.
+ * stock, so their runway is not falling. So is a medication whose course has
+ * ended on the person's clock; a course that has not started yet still warns,
+ * since its stock is about to be needed. And so is every medication of a
+ * person who switched the Medications module off, as the mood reminder does
+ * for the Mood module.
  *
  * As-needed (PRN) medications have no cadence and so no runway in days.
  * Once the runway math stopped counting a PRN schedule as a daily dose,
@@ -86,6 +90,12 @@ import { coerceLocale, type Locale } from "@/lib/i18n/config";
 import { resolveJobLocale } from "@/lib/i18n/job-locale";
 import { annotate, getEvent } from "@/lib/logging/context";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
+import { isModuleEnabled } from "@/lib/modules/gate";
+import {
+  MEDICATION_WINDOW_SELECT,
+  courseStatusAt,
+} from "@/lib/medications/course-window";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 
 /**
  * An as-needed medication warns when this many doses or fewer are left: no
@@ -93,9 +103,23 @@ import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
  */
 export const AS_NEEDED_LOW_STOCK_DOSES = 2;
 
+/**
+ * A medication whose stock the pass watches: active, unpaused, with intake
+ * tracked (#1033, no dose consumes the stock of one kept as a record) and
+ * with tracked inventory (any container ever registered).
+ */
+const WATCHED_MEDICATION_WHERE = {
+  active: true,
+  pausedAt: null,
+  ...TRACKED_INTAKE_WHERE,
+  inventoryItems: { some: {} },
+};
+
 export interface MedicationLowStockSummary {
   usersScanned: number;
   skippedThresholdOff: number;
+  skippedModuleDisabled: number;
+  skippedCourseEnded: number;
   medicationsEvaluated: number;
   notified: number;
   rearmed: number;
@@ -376,6 +400,8 @@ export async function runMedicationLowStockTick(
   const summary: MedicationLowStockSummary = {
     usersScanned: 0,
     skippedThresholdOff: 0,
+    skippedModuleDisabled: 0,
+    skippedCourseEnded: 0,
     medicationsEvaluated: 0,
     notified: 0,
     rearmed: 0,
@@ -389,22 +415,10 @@ export async function runMedicationLowStockTick(
   const notifiedMeta: LowStockEventMeta[] = [];
   const skippedMeta: LowStockEventMeta[] = [];
 
-  // Only users who own at least one ACTIVE, unpaused medication with
-  // tracked inventory (any container ever registered) are candidates.
+  // Only users who own at least one watched medication are candidates.
   const users = await prisma.user.findMany({
-    where: activeAccount({
-      medications: {
-        some: {
-          active: true,
-          pausedAt: null,
-          // v1.39.1 (#1033) — no low-stock notice for a medication with
-          // intake tracking off: no dose consumes its stock.
-          ...TRACKED_INTAKE_WHERE,
-          inventoryItems: { some: {} },
-        },
-      },
-    }),
-    select: { id: true, locale: true, notificationPrefs: true },
+    where: activeAccount({ medications: { some: WATCHED_MEDICATION_WHERE } }),
+    select: { id: true, locale: true, timezone: true, notificationPrefs: true },
   });
 
   for (const user of users) {
@@ -418,15 +432,15 @@ export async function runMedicationLowStockTick(
         summary.skippedThresholdOff += 1;
         continue;
       }
+      // After the threshold, so the module read runs only for users the
+      // alert is on for.
+      if (!(await isModuleEnabled(user.id, "medications"))) {
+        summary.skippedModuleDisabled += 1;
+        continue;
+      }
 
       const medications = await prisma.medication.findMany({
-        where: {
-          userId: user.id,
-          active: true,
-          pausedAt: null,
-          ...TRACKED_INTAKE_WHERE,
-          inventoryItems: { some: {} },
-        },
+        where: { userId: user.id, ...WATCHED_MEDICATION_WHERE },
         select: {
           id: true,
           name: true,
@@ -436,6 +450,7 @@ export async function runMedicationLowStockTick(
           reorderLeadDays: true,
           lowStockNotifiedAt: true,
           lowStockNotifiedThresholdDays: true,
+          ...MEDICATION_WINDOW_SELECT,
           inventoryItems: {
             select: { state: true, unitsTotal: true, unitsRemaining: true },
           },
@@ -458,7 +473,13 @@ export async function runMedicationLowStockTick(
         },
       });
 
+      const timeZone = user.timezone || DEFAULT_TIMEZONE;
       for (const med of medications) {
+        // Nothing consumes the stock of an ended course any more.
+        if (courseStatusAt(med, now, timeZone) === "ENDED") {
+          summary.skippedCourseEnded += 1;
+          continue;
+        }
         summary.medicationsEvaluated += 1;
 
         // Decimal → number for the per-slot units so the runway math and

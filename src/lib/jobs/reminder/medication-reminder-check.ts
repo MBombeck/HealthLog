@@ -47,6 +47,8 @@ import {
 } from "@/lib/medications/scheduling/live-era";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
+import { isModuleEnabled } from "@/lib/modules/gate";
+import { getEvent } from "@/lib/logging/context";
 
 export interface ReminderCheckPayload {
   triggeredAt: string;
@@ -65,9 +67,15 @@ const getUserTodayBounds = getUserTodayBoundsUtil;
  * a record, so it is excluded explicitly: no reminder on any channel and no
  * missed-dose placeholder (#1033). And none whose account is pending
  * deletion: that record is frozen until it is erased or given back.
+ *
+ * Nor any of a person who switched the Medications module off: no reminder
+ * and no missed-dose placeholder while it is off, as the mood reminder does
+ * for the Mood module. One module read per owner per tick.
  */
-function loadRemindableMedications(prisma: ReturnType<typeof getWorkerPrisma>) {
-  return prisma.medication.findMany({
+async function loadRemindableMedications(
+  prisma: ReturnType<typeof getWorkerPrisma>,
+) {
+  const medications = await prisma.medication.findMany({
     where: {
       active: true,
       asNeeded: false,
@@ -89,6 +97,17 @@ function loadRemindableMedications(prisma: ReturnType<typeof getWorkerPrisma>) {
       },
     },
   });
+  const moduleOff = new Set<string>();
+  for (const userId of new Set(medications.map((med) => med.user.id))) {
+    if (!(await isModuleEnabled(userId, "medications"))) moduleOff.add(userId);
+  }
+  if (moduleOff.size > 0) {
+    getEvent()?.addMeta(
+      "medication_reminder.skipped_module_disabled",
+      moduleOff.size,
+    );
+  }
+  return medications.filter((med) => !moduleOff.has(med.user.id));
 }
 
 /**
