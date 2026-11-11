@@ -3,6 +3,7 @@ import {
   isNoonUtcAnchor,
   dateOnlyAtNoonUtc,
   dateOnlyKey,
+  dateOnlyWindow,
   dayKeyAsUtcMidnight,
   isCalendarDateKey,
   isDateOnlyKey,
@@ -58,5 +59,17 @@ describe("isNoonUtcAnchor", () => {
     expect(isNoonUtcAnchor(new Date("2025-10-04T12:00:01.000Z"))).toBe(false);
     expect(isNoonUtcAnchor(new Date("2025-10-04T00:00:00.000Z"))).toBe(false);
     expect(isNoonUtcAnchor(new Date("2025-10-04T20:30:00.000Z"))).toBe(false);
+  });
+});
+
+describe("dateOnlyWindow", () => {
+  it("spans UTC midnight to the next UTC midnight, both days included", () => {
+    expect(dateOnlyWindow("2026-11-11")).toEqual({
+      gte: new Date("2026-11-11T00:00:00.000Z"),
+      lt: new Date("2026-11-12T00:00:00.000Z"),
+    });
+    expect(dateOnlyWindow("2026-12-31", "2027-01-01").lt).toEqual(
+      new Date("2027-01-02T00:00:00.000Z"),
+    );
   });
 });

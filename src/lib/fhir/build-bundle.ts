@@ -315,7 +315,7 @@ export function buildFhirDocumentBundle(
   // v1.9.0 — when the aggregator capped the administration set, disclose
   // it in the narrative so the export is honest: it carries the
   // most-recent N of M acted intakes, the oldest having been omitted.
-  const displayName = data.patient.fullName ?? data.patient.username ?? null;
+  const displayName = data.patient.name;
   const truncation = data.medicationAdministrationsTruncation;
   const narrativeText = [
     `Health record for ${escapeXml(displayName ?? "patient")}.`,

@@ -37,6 +37,7 @@ import {
   type EntityLinkOption,
 } from "@/components/links/entity-link-picker";
 import { useVaultDocumentOptions } from "@/components/links/vault-document-options";
+import { useCalendarDate } from "@/hooks/use-calendar-date";
 import {
   pickerPivot,
   useLinkPickerPages,
@@ -133,6 +134,7 @@ export function RelatedRecordsList({
 }) {
   const { t } = useTranslations();
   const format = useFormatters();
+  const calendarDate = useCalendarDate();
   const rows = (related ?? []).filter((row) => !omitKinds.includes(row.kind));
   if (rows.length === 0) return null;
   return (
@@ -142,7 +144,12 @@ export function RelatedRecordsList({
         const via = viaText(t, row.via);
         const meta = [
           kindText(t, row.kind),
-          row.date ? format.date(row.date) : null,
+          row.date
+            ? // A dose date is a calendar date at UTC midnight.
+              row.kind === "vaccination"
+              ? calendarDate(row.date)
+              : format.date(row.date)
+            : null,
           via,
         ]
           .filter(Boolean)
@@ -381,7 +388,7 @@ function MedicationPicker({ selected, onChange, known }: PickerProps) {
 
 function DosePicker({ selected, onChange, anchor, known }: PickerProps) {
   const { t } = useTranslations();
-  const format = useFormatters();
+  const calendarDate = useCalendarDate();
   const doses = useVaccinations(null, true);
   const options = recordOptions(
     (doses.data?.vaccinations ?? []).map((dose) => ({
@@ -393,10 +400,7 @@ function DosePicker({ selected, onChange, anchor, known }: PickerProps) {
       href: `/vaccinations?dose=${encodeURIComponent(dose.id)}`,
     })),
     anchor,
-    {
-      suggested: t("links.picker.suggested"),
-      date: (iso: string) => format.date(iso),
-    },
+    { suggested: t("links.picker.suggested"), date: calendarDate },
   );
   return (
     <EntityLinkPicker

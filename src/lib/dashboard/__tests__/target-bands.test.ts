@@ -10,10 +10,11 @@ import { describe, it, expect } from "vitest";
 
 import { buildTargetBands } from "../snapshot";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
+import { METRIC_BOUNDS } from "@/lib/analytics/effective-range";
 import {
   buildTrafficLightBands,
   buildTrafficRange,
-  buildWeightBandsFromHeight,
+  buildBandsFromTrafficRange,
   buildWeightRangeFromHeight,
   getBodyFatTargetRange,
 } from "@/lib/analytics/value-bands";
@@ -38,8 +39,8 @@ function clientBands(profile: {
     ? buildWeightRangeFromHeight(profile.heightCm)
     : null;
   const weightBands = profile.heightCm
-    ? buildWeightBandsFromHeight(profile.heightCm, {
-        lowerBound: 30,
+    ? buildBandsFromTrafficRange(buildWeightRangeFromHeight(profile.heightCm), {
+        lowerBound: METRIC_BOUNDS.WEIGHT.min,
         upperBound: 250,
       })
     : null;

@@ -27,6 +27,12 @@ describe("classifyBmi (WHO)", () => {
   it("obese ≥ 30 (red)", () => {
     expect(classifyBmi(31)).toEqual({ category: "obese", band: "red" });
   });
+  it("puts each WHO cut-off in the upper category, every obesity grade obese", () => {
+    expect(classifyBmi(18.5).category).toBe("normal");
+    expect(classifyBmi(25).category).toBe("overweight");
+    expect(classifyBmi(30).category).toBe("obese");
+    expect(classifyBmi(45)).toEqual({ category: "obese", band: "red" });
+  });
 });
 
 describe("computeBmi", () => {

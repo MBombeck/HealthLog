@@ -32,8 +32,7 @@ function renderPatientLines(gender: string | null): string[] {
     doc,
     data: {
       patient: {
-        username: "testuser",
-        fullName: null,
+        name: "testuser",
         dateOfBirth: null,
         gender,
         heightCm: null,

@@ -27,7 +27,7 @@
  *      68.04 kg, not 68.03885550000001.
  *   3. Rules 1 + 2 compose back to the typed number: 150 lb → 68.04 kg
  *      → 150 lb. Save-then-reopen is stable.
- *   4. Guardrails round INWARD (min up, max down). A naive round of the
+ *   4. Guardrails round INWARD (min up, max down). A naive round of a
  *      30 kg floor gives 66.1 lb, which inverts to 29.98 kg and the
  *      server rejects it. Ceiling it to 66.2 lb inverts to 30.03 kg and
  *      passes.
@@ -205,8 +205,8 @@ export function resolveTargetUnitAdapter(
       applyDisplayTransformDelta(canonicalDelta, transform),
     // A guardrail is not a rendered value — it is the window a typed
     // number is checked against, and it has to round INWARD (rule 4).
-    // That needs the UNROUNDED edge: the shared helper would round 30 kg
-    // to 66.1 lb first and the ceiling below would then be a no-op on an
+    // That needs the UNROUNDED edge: the shared helper would round a 30 kg
+    // floor to 66.1 lb first and the ceiling below would then be a no-op on an
     // edge that already inverts to 29.98 kg.
     bounds: (canonical) => ({
       min: ceilTo(

@@ -204,7 +204,7 @@ async function allergiesLane(frame: LaneFrame): Promise<LaneRead> {
         item({
           id: r.id,
           kind: "allergy",
-          start: userDayKey(r.onsetAt, frame.tz),
+          start: dateOnlyKey(r.onsetAt),
           end: null,
           open: r.status === "ACTIVE",
           label: r.substance,
@@ -388,7 +388,7 @@ async function vaccinationsLane(frame: LaneFrame): Promise<LaneRead> {
       item({
         id: r.id,
         kind: "vaccination",
-        start: userDayKey(r.occurredAt, frame.tz),
+        start: dateOnlyKey(r.occurredAt),
         end: null,
         open: false,
         label: r.vaccineName ?? r.customVaccine?.name ?? r.antigenSlug ?? "",

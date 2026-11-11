@@ -98,3 +98,19 @@ export function dateOnlyKey(value: Date): string {
 export function dayKeyAsUtcMidnight(key: string): Date {
   return new Date(`${key}T00:00:00.000Z`);
 }
+
+/**
+ * The window over a date-only column that holds the calendar days `fromKey`
+ * to `toKey`, both included: UTC midnight to the next UTC midnight, so both
+ * anchors (midnight and noon UTC) fall on their own date. A date-only value
+ * read through a person's local-day window sat on the evening before west of
+ * UTC.
+ */
+export function dateOnlyWindow(
+  fromKey: string,
+  toKey: string = fromKey,
+): { gte: Date; lt: Date } {
+  const lt = dayKeyAsUtcMidnight(toKey);
+  lt.setUTCDate(lt.getUTCDate() + 1);
+  return { gte: dayKeyAsUtcMidnight(fromKey), lt };
+}

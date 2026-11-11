@@ -28,6 +28,9 @@
 import type { Prisma } from "@/generated/prisma/client";
 
 import { computeReminderNextDueAt } from "@/lib/measurement-reminders/scheduling";
+import { dateOnlyKey } from "@/lib/tz/date-only";
+import { shiftDateKey } from "@/lib/tz/format";
+import { startOfLocalDayKey } from "@/lib/tz/local-day";
 import {
   componentsForDose,
   loadCustomVaccineLookup,
@@ -111,10 +114,13 @@ export async function mintOrReanchorBooster(
   // dose date plus the interval — a never-satisfied rolling reminder is due at
   // its anchor, and the dose date itself is not when the next shot is due. Once
   // the person logs that next dose, `satisfyReminder` re-anchors on the satisfy
-  // instant and this anchor no longer matters.
-  const DAY_MS = 24 * 60 * 60 * 1000;
-  const anchorDate = new Date(
-    record.occurredAt.getTime() + intervalDays * DAY_MS,
+  // instant and this anchor no longer matters. The dose date is a calendar
+  // date at UTC midnight, so the interval counts from its date part to the
+  // start of that day in the person's zone, where adding days to the stored
+  // instant fell on the evening before west of UTC.
+  const anchorDate = startOfLocalDayKey(
+    shiftDateKey(dateOnlyKey(record.occurredAt), intervalDays),
+    timezone,
   );
   const nextDueAt = computeReminderNextDueAt(
     {

@@ -74,7 +74,7 @@ const REPORT_FIXTURE = {
     start: "2026-03-29T00:00:00.000Z",
     end: "2026-06-27T00:00:00.000Z",
   },
-  patient: { username: "tester" },
+  patient: { name: "tester" },
   stats: { WEIGHT: { avg: 80, min: 79, max: 82, count: 30, latest: 80 } },
   compliance: {},
   medications: [],

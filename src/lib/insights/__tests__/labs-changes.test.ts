@@ -27,6 +27,7 @@ function row(
     sourceHigh?: number | null;
     sourceText?: string | null;
     biomarkerId?: string | null;
+    sourceValue?: number | null;
   } = {},
 ): LabChangeRow {
   return {
@@ -34,6 +35,7 @@ function row(
     biomarkerId: opts.biomarkerId ?? null,
     unit: opts.unit ?? "mg/dL",
     value,
+    sourceValue: opts.sourceValue ?? null,
     referenceLow: opts.low ?? null,
     referenceHigh: opts.high ?? null,
     sourceReferenceLow: opts.sourceLow ?? null,
@@ -177,6 +179,53 @@ describe("summariseLabChanges", () => {
       NOW,
     );
     expect(out.present).toBe(false);
+  });
+
+  it("calls a small change in a small value a change", () => {
+    // Two decimals for every analyte rounded this delta to 0: "no change"
+    // for a TSH that more than doubled.
+    const out = summariseLabChanges(
+      [
+        row("TSH", 0.009, "2026-06-01", { unit: "mIU/L" }),
+        row("TSH", 0.004, "2026-03-01", { unit: "mIU/L" }),
+      ],
+      NOW,
+    );
+    expect(out.changes).toEqual([
+      expect.objectContaining({ delta: 0.005, direction: "up" }),
+    ]);
+  });
+
+  it("reads a converted value at the precision its report printed", () => {
+    // 104.83 nmol/L converted to ng/mL is 41.999198717948715.
+    const out = summariseLabChanges(
+      [
+        row("Vitamin D", 41.999198717948715, "2026-06-01", {
+          unit: "ng/mL",
+          sourceValue: 104.83,
+        }),
+        row("Vitamin D", 30, "2026-03-01", { unit: "ng/mL" }),
+      ],
+      NOW,
+    );
+    expect(out.changes).toEqual([
+      expect.objectContaining({
+        latest: 41.999,
+        previous: 30,
+        delta: 11.999,
+        direction: "up",
+      }),
+    ]);
+  });
+
+  it("still calls an unchanged reading flat", () => {
+    const out = summariseLabChanges(
+      [row("LDL", 130, "2026-06-01"), row("LDL", 130, "2026-03-01")],
+      NOW,
+    );
+    expect(out.changes).toEqual([
+      expect.objectContaining({ delta: 0, direction: "flat" }),
+    ]);
   });
 
   it("reports no delta across two units", () => {

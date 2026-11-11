@@ -17,7 +17,7 @@ function makeData(overrides?: Partial<DoctorReportData>): DoctorReportData {
       end: "2026-05-03T12:00:00.000Z",
     },
     patient: {
-      username: "sample-user",
+      name: "sample-user",
       dateOfBirth: "1985-06-15T00:00:00.000Z",
       gender: "MALE",
       heightCm: 182,

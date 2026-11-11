@@ -97,7 +97,7 @@ function report(): DoctorReportData {
       end: "2026-01-31T00:00:00.000Z",
     },
     patient: {
-      username: null,
+      name: null,
       dateOfBirth: null,
       gender: null,
       heightCm: null,

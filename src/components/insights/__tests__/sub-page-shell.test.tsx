@@ -10,6 +10,12 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/insights/weight",
 }));
 
+// The target gear asks whether this is somebody else's record; the shell
+// renders here without the session it would read that from.
+vi.mock("@/hooks/use-record-capabilities", () => ({
+  useRecordCapabilities: () => ({ inSharedRecord: false }),
+}));
+
 /**
  * v1.4.25 — `<SubPageShell>` unit tests.
  *

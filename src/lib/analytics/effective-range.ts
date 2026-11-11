@@ -15,6 +15,7 @@
  * consistently.
  */
 
+import { VALUE_RANGES } from "@/lib/measurements/value-ranges";
 import { binaryReferenceSex } from "@/lib/profile/sex";
 import { getBpTargets, type BpTargets } from "./bp-targets";
 import {
@@ -65,7 +66,10 @@ export const METRIC_BOUNDS: Record<
   ThresholdMetric,
   { min: number; max: number; unit: string }
 > = {
-  WEIGHT: { min: 30, max: 300, unit: "kg" },
+  // The floor is the measurement floor: a target refused for a weight the
+  // record can hold (a child's 20 kg under a 30 kg floor) left a guardian
+  // with nothing but "please check your entries".
+  WEIGHT: { min: VALUE_RANGES.WEIGHT.min, max: 300, unit: "kg" },
   BLOOD_PRESSURE_SYS: { min: 80, max: 220, unit: "mmHg" },
   BLOOD_PRESSURE_DIA: { min: 40, max: 140, unit: "mmHg" },
   PULSE: { min: 30, max: 220, unit: "bpm" },

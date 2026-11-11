@@ -31,6 +31,7 @@ import {
 } from "./format-locale";
 import type { Locale } from "./i18n/config";
 import { isValidTimezone } from "./tz/format";
+import { formatDate } from "./date-format";
 import type { DoctorReportData } from "./doctor-report-data";
 import { buildEmergencyFirstPageSection } from "./doctor-report-pdf/emergency-first-page-section";
 import { buildHeaderProfileSection } from "./doctor-report-pdf/header-profile-section";
@@ -146,6 +147,8 @@ export function buildDoctorReportPdfDocument(
   const num = (value: number, decimals = 1) =>
     formatters.number(value, decimals);
   const fmtDate = (iso: string) => formatters.date(iso);
+  const fmtCalendarDate = (iso: string) =>
+    formatDate(iso.slice(0, 10), dateFormat, locale);
   const footerTz =
     userTz && isValidTimezone(userTz) ? userTz : DEFAULT_TIMEZONE;
 
@@ -164,7 +167,7 @@ export function buildDoctorReportPdfDocument(
     title: t("doctorReport.title"),
     subject: t("doctorReport.subtitle"),
     creator: "HealthLog",
-    author: data.patient.fullName ?? data.patient.username ?? "HealthLog",
+    author: data.patient.name ?? "HealthLog",
   });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -187,6 +190,7 @@ export function buildDoctorReportPdfDocument(
     t,
     num,
     fmtDate,
+    fmtCalendarDate,
     dateShort: formatters.dateShort,
     dateTime: formatters.dateTime,
     now,
