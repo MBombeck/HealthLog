@@ -12491,6 +12491,9 @@
       "purgeFailed": "Não foi possível excluir o documento.",
       "purgeConfirmTitle": "Excluir este documento para sempre?",
       "purgeConfirmBody": "Ele é removido agora, e não no fim do período de espera, e não pode ser restaurado."
+    },
+    "picker": {
+      "capped": "Mostrando os {count} mais recentes. Use a busca para encontrar um documento mais antigo."
     }
   },
   "selfDescription": {

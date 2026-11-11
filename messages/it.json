@@ -12491,6 +12491,9 @@
       "purgeFailed": "Impossibile eliminare il documento.",
       "purgeConfirmTitle": "Eliminare definitivamente questo documento?",
       "purgeConfirmBody": "Viene rimosso ora anziché alla fine del periodo di attesa e non può essere ripristinato."
+    },
+    "picker": {
+      "capped": "Sono mostrati i {count} più recenti. Usa la ricerca per trovare un documento più vecchio."
     }
   },
   "selfDescription": {

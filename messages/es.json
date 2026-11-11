@@ -12491,6 +12491,9 @@
       "purgeFailed": "No se pudo eliminar el documento.",
       "purgeConfirmTitle": "¿Eliminar este documento definitivamente?",
       "purgeConfirmBody": "Se elimina ahora en lugar de al final del periodo de espera y no se puede restaurar."
+    },
+    "picker": {
+      "capped": "Se muestran los {count} más recientes. Usa la búsqueda para encontrar un documento más antiguo."
     }
   },
   "selfDescription": {

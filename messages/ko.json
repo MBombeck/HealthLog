@@ -12491,6 +12491,9 @@
       "purgeFailed": "문서를 삭제하지 못했어요.",
       "purgeConfirmTitle": "이 문서를 완전히 삭제할까요?",
       "purgeConfirmBody": "대기 기간이 끝나기 전에 지금 삭제되며 복구할 수 없습니다."
+    },
+    "picker": {
+      "capped": "최신 {count}개를 보여 줘요. 이전 문서는 검색으로 찾아 주세요."
     }
   },
   "selfDescription": {

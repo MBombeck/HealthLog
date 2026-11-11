@@ -83,7 +83,7 @@ const ALLOWLIST: readonly Allowed[] = [
     file: "components/documents/document-picker-sheet.tsx",
     limit: 50,
     reason:
-      "Search-backed picker (episode links and share links): the query narrows the whole document vault server-side.",
+      "Search-backed picker (episode links and share links): the query narrows the whole document vault server-side, and a cut list says so and points to the search.",
   },
   {
     file: "hooks/use-mood-day.ts",

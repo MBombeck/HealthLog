@@ -12491,6 +12491,9 @@
       "purgeFailed": "Das Dokument konnte nicht gelöscht werden.",
       "purgeConfirmTitle": "Dieses Dokument endgültig löschen?",
       "purgeConfirmBody": "Es wird jetzt entfernt statt am Ende der Wartezeit und lässt sich nicht wiederherstellen."
+    },
+    "picker": {
+      "capped": "Hier stehen die neuesten {count}. Ältere Dokumente findest du über die Suche."
     }
   },
   "selfDescription": {

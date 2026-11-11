@@ -12491,6 +12491,9 @@
       "purgeFailed": "Couldn't delete the document.",
       "purgeConfirmTitle": "Delete this document for good?",
       "purgeConfirmBody": "It is removed now instead of at the end of the waiting period, and cannot be restored."
+    },
+    "picker": {
+      "capped": "Showing the newest {count}. Search to find an older document."
     }
   },
   "selfDescription": {

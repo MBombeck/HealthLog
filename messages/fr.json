@@ -12491,6 +12491,9 @@
       "purgeFailed": "Impossible de supprimer le document.",
       "purgeConfirmTitle": "Supprimer ce document définitivement ?",
       "purgeConfirmBody": "Il est supprimé maintenant plutôt qu'à la fin du délai d'attente et ne peut pas être restauré."
+    },
+    "picker": {
+      "capped": "Les {count} plus récents sont affichés. Utilisez la recherche pour trouver un document plus ancien."
     }
   },
   "selfDescription": {

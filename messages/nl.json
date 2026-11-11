@@ -12491,6 +12491,9 @@
       "purgeFailed": "Het document kon niet worden verwijderd.",
       "purgeConfirmTitle": "Dit document definitief verwijderen?",
       "purgeConfirmBody": "Het wordt nu verwijderd in plaats van aan het einde van de wachttijd en kan niet worden hersteld."
+    },
+    "picker": {
+      "capped": "De nieuwste {count} staan hier. Zoek om een ouder document te vinden."
     }
   },
   "selfDescription": {

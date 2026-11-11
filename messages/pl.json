@@ -12491,6 +12491,9 @@
       "purgeFailed": "Nie udało się usunąć dokumentu.",
       "purgeConfirmTitle": "Usunąć ten dokument na stałe?",
       "purgeConfirmBody": "Zostanie usunięty teraz zamiast po okresie oczekiwania i nie będzie można go przywrócić."
+    },
+    "picker": {
+      "capped": "Widać {count} najnowszych. Starszy dokument znajdziesz przez wyszukiwanie."
     }
   },
   "selfDescription": {
