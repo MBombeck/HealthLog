@@ -143,7 +143,8 @@
       "reproof": {
         "required": "Confirmez votre mot de passe actuel pour modifier ceci.",
         "failed": "La vérification a échoué. Rien n'a été modifié."
-      }
+      },
+      "missing": "Votre session a expiré, rien n'a donc été modifié. Reconnectez-vous pour continuer."
     },
     "biomarkers": {
       "unit": {
@@ -178,6 +179,12 @@
     },
     "aiRuns": {
       "readerBusy": "Le lecteur de documents est occupé par d'autres tâches. Réessayez dans une minute."
+    },
+    "http": {
+      "unauthenticated": "Votre session a expiré, rien n'a donc été modifié. Reconnectez-vous pour continuer.",
+      "rate_limited": "Il y a trop de requêtes pour le moment, rien n'a donc été modifié. Patientez un instant puis réessayez.",
+      "forbidden": "Vous n'avez pas l'autorisation pour cette action, rien n'a donc été modifié.",
+      "invalid": "Certaines saisies n'ont pas été acceptées, rien n'a donc été modifié. Vérifiez-les puis réessayez."
     }
   },
   "doctorReport": {

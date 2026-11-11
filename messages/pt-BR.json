@@ -143,7 +143,8 @@
       "reproof": {
         "required": "Confirme sua senha atual para alterar isto.",
         "failed": "A verificação não foi concluída. Nada foi alterado."
-      }
+      },
+      "missing": "Sua sessão terminou, então nada foi alterado. Entre novamente para continuar."
     },
     "biomarkers": {
       "unit": {
@@ -178,6 +179,12 @@
     },
     "aiRuns": {
       "readerBusy": "O leitor de documentos está ocupado com outras tarefas. Tente novamente em um minuto."
+    },
+    "http": {
+      "unauthenticated": "Sua sessão terminou, então nada foi alterado. Entre novamente para continuar.",
+      "rate_limited": "Há solicitações demais neste momento, então nada foi alterado. Aguarde um pouco e tente de novo.",
+      "forbidden": "Você não tem permissão para isso, então nada foi alterado.",
+      "invalid": "Alguns dados não foram aceitos, então nada foi alterado. Confira e tente de novo."
     }
   },
   "doctorReport": {

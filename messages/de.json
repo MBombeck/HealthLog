@@ -143,7 +143,8 @@
       "reproof": {
         "required": "Bestätige dein aktuelles Passwort, um das zu ändern.",
         "failed": "Die Bestätigung ist fehlgeschlagen. Es wurde nichts geändert."
-      }
+      },
+      "missing": "Deine Sitzung ist abgelaufen, daher wurde nichts geändert. Melde dich erneut an, um weiterzumachen."
     },
     "biomarkers": {
       "unit": {
@@ -178,6 +179,12 @@
     },
     "aiRuns": {
       "readerBusy": "Der Dokumentleser ist gerade mit anderen Aufgaben beschäftigt. Versuch es in einer Minute noch einmal."
+    },
+    "http": {
+      "unauthenticated": "Deine Sitzung ist abgelaufen, daher wurde nichts geändert. Melde dich erneut an, um weiterzumachen.",
+      "rate_limited": "Gerade gibt es zu viele Anfragen, daher wurde nichts geändert. Warte kurz und versuche es erneut.",
+      "forbidden": "Dafür fehlt dir die Berechtigung, daher wurde nichts geändert.",
+      "invalid": "Einige Angaben wurden nicht angenommen, daher wurde nichts geändert. Prüfe sie und versuche es erneut."
     }
   },
   "doctorReport": {

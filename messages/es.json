@@ -143,7 +143,8 @@
       "reproof": {
         "required": "Confirma tu contraseña actual para cambiar esto.",
         "failed": "La verificación ha fallado. No se ha cambiado nada."
-      }
+      },
+      "missing": "Tu sesión ha caducado, así que no se ha cambiado nada. Inicia sesión de nuevo para continuar."
     },
     "biomarkers": {
       "unit": {
@@ -178,6 +179,12 @@
     },
     "aiRuns": {
       "readerBusy": "El lector de documentos está ocupado con otras tareas. Inténtalo de nuevo en un minuto."
+    },
+    "http": {
+      "unauthenticated": "Tu sesión ha caducado, así que no se ha cambiado nada. Inicia sesión de nuevo para continuar.",
+      "rate_limited": "Hay demasiadas solicitudes ahora mismo, así que no se ha cambiado nada. Espera un momento y vuelve a intentarlo.",
+      "forbidden": "No tienes permiso para esto, así que no se ha cambiado nada.",
+      "invalid": "Algunos datos no se aceptaron, así que no se ha cambiado nada. Revísalos y vuelve a intentarlo."
     }
   },
   "doctorReport": {

@@ -143,7 +143,8 @@
       "reproof": {
         "required": "Bevestig je huidige wachtwoord om dit te wijzigen.",
         "failed": "De verificatie is mislukt. Er is niets gewijzigd."
-      }
+      },
+      "missing": "Je sessie is verlopen, dus er is niets gewijzigd. Meld je opnieuw aan om verder te gaan."
     },
     "biomarkers": {
       "unit": {
@@ -178,6 +179,12 @@
     },
     "aiRuns": {
       "readerBusy": "De documentlezer is met ander werk bezig. Probeer het over een minuut opnieuw."
+    },
+    "http": {
+      "unauthenticated": "Je sessie is verlopen, dus er is niets gewijzigd. Meld je opnieuw aan om verder te gaan.",
+      "rate_limited": "Er zijn net te veel verzoeken, dus er is niets gewijzigd. Wacht even en probeer het opnieuw.",
+      "forbidden": "Je hebt hier geen toestemming voor, dus er is niets gewijzigd.",
+      "invalid": "Sommige gegevens zijn niet geaccepteerd, dus er is niets gewijzigd. Controleer ze en probeer het opnieuw."
     }
   },
   "doctorReport": {

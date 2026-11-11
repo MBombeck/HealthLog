@@ -143,7 +143,8 @@
       "reproof": {
         "required": "Conferma la password attuale per modificarlo.",
         "failed": "La verifica non è riuscita. Non è stato modificato nulla."
-      }
+      },
+      "missing": "La tua sessione è scaduta, quindi non è stato modificato nulla. Accedi di nuovo per continuare."
     },
     "biomarkers": {
       "unit": {
@@ -178,6 +179,12 @@
     },
     "aiRuns": {
       "readerBusy": "Il lettore di documenti è occupato con altre attività. Riprova tra un minuto."
+    },
+    "http": {
+      "unauthenticated": "La tua sessione è scaduta, quindi non è stato modificato nulla. Accedi di nuovo per continuare.",
+      "rate_limited": "Ci sono troppe richieste in questo momento, quindi non è stato modificato nulla. Attendi un attimo e riprova.",
+      "forbidden": "Non hai l'autorizzazione per farlo, quindi non è stato modificato nulla.",
+      "invalid": "Alcuni dati non sono stati accettati, quindi non è stato modificato nulla. Controllali e riprova."
     }
   },
   "doctorReport": {

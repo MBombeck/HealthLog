@@ -143,7 +143,8 @@
       "reproof": {
         "required": "Potwierdź obecne hasło, aby to zmienić.",
         "failed": "Weryfikacja nie powiodła się. Nic nie zostało zmienione."
-      }
+      },
+      "missing": "Twoja sesja wygasła, więc nic nie zostało zmienione. Zaloguj się ponownie, aby kontynuować."
     },
     "biomarkers": {
       "unit": {
@@ -178,6 +179,12 @@
     },
     "aiRuns": {
       "readerBusy": "Czytnik dokumentów jest zajęty innymi zadaniami. Spróbuj ponownie za minutę."
+    },
+    "http": {
+      "unauthenticated": "Twoja sesja wygasła, więc nic nie zostało zmienione. Zaloguj się ponownie, aby kontynuować.",
+      "rate_limited": "W tej chwili jest zbyt wiele zapytań, więc nic nie zostało zmienione. Zaczekaj chwilę i spróbuj ponownie.",
+      "forbidden": "Nie masz do tego uprawnień, więc nic nie zostało zmienione.",
+      "invalid": "Niektóre dane nie zostały przyjęte, więc nic nie zostało zmienione. Sprawdź je i spróbuj ponownie."
     }
   },
   "doctorReport": {
