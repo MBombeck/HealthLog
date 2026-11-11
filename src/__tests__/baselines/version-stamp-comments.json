@@ -2606,7 +2606,7 @@
     "lib/notifications/senders/telegram.ts": 4,
     "lib/notifications/senders/web-push.ts": 5,
     "lib/notifications/senders/webhook.ts": 1,
-    "lib/notifications/types.ts": 21,
+    "lib/notifications/types.ts": 20,
     "lib/notifications/web-push-clear.ts": 1,
     "lib/nutrients/__tests__/catalog.test.ts": 1,
     "lib/nutrients/catalog.ts": 8,

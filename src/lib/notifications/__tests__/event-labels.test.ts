@@ -1,7 +1,8 @@
 /**
  * Every event type the /notifications matrix renders has words to render.
  *
- * The matrix builds its rows from `EVENT_TYPES` and derives each row's label
+ * The matrix builds its rows from the event list the preferences read serves
+ * (`eventTypesForRole`) and derives each row's label
  * and description key from the event name, so a new event type silently gets a
  * row whether or not anybody wrote the two strings for it. That is not a
  * theory: `SECURITY_ALERT` shipped in v1.23 and rendered the raw key
@@ -20,7 +21,10 @@
 import { describe, expect, it } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { EVENT_TYPES } from "@/lib/notifications/types";
+import {
+  UNSENT_EVENT_TYPES,
+  eventTypesForRole,
+} from "@/lib/notifications/types";
 import {
   eventDescriptionTranslationKey,
   eventTranslationKey,
@@ -60,14 +64,16 @@ describe("notification event labels", () => {
     );
   });
 
-  it("has a label and a description for every event type, in every locale", () => {
+  it("has a label and a description for every listed event type, in every locale", () => {
     expect(LOCALES.length).toBeGreaterThanOrEqual(6);
-    expect(EVENT_TYPES.length).toBeGreaterThan(10);
+    // ADMIN sees the widest list: every event that has a switch at all.
+    const listed = eventTypesForRole("ADMIN");
+    expect(listed.length).toBeGreaterThan(10);
 
     const missing: string[] = [];
     for (const locale of LOCALES) {
       const root = bundle(locale);
-      for (const eventType of EVENT_TYPES) {
+      for (const eventType of listed) {
         for (const key of [
           eventTranslationKey(eventType),
           eventDescriptionTranslationKey(eventType),
@@ -81,6 +87,24 @@ describe("notification event labels", () => {
     }
 
     expect(missing).toEqual([]);
+  });
+
+  it("keeps no label for an event nothing sends", () => {
+    const leftover: string[] = [];
+    for (const locale of LOCALES) {
+      const root = bundle(locale);
+      for (const eventType of UNSENT_EVENT_TYPES) {
+        for (const key of [
+          eventTranslationKey(eventType),
+          eventDescriptionTranslationKey(eventType),
+        ]) {
+          if (resolve(root, key) !== undefined) {
+            leftover.push(`${locale} still has ${key}`);
+          }
+        }
+      }
+    }
+    expect(leftover).toEqual([]);
   });
 });
 
