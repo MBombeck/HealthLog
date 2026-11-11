@@ -42,4 +42,4 @@ typecheck.
 
 ## Conventions
 
-See [`../CLAUDE.md`](../CLAUDE.md) "Tests and commands" + "Self-hosting gotchas". Operator runbooks that drive these scripts live in [`../docs/ops/`](../docs/ops/).
+Operator runbooks that drive these scripts live in [`../docs/ops/`](../docs/ops/).

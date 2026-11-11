@@ -22,8 +22,7 @@
  * that file does, or is listed below by file and function with the reason
  * its rows cannot reach a prompt. A new reader fails here until it does one
  * of those. The data routes are not in scope: a module decides what a model
- * is given, not what the owner can read (`CLAUDE.md`, "An AI capability
- * gates model work").
+ * is given, not what the owner can read.
  *
  * The check is per read, not per file. It used to ask whether a file that
  * reads the table mentions the gate anywhere, so one ungated read in a file

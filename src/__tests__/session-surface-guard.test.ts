@@ -43,7 +43,7 @@ const SRC = join(process.cwd(), "src");
  * Every non-test `.ts` / `.tsx` under `src/app/`, which is the whole of the
  * request-handling tree: API routes, RSC pages, layouts, route handlers.
  * The generated Prisma client is excluded by construction (it is not under
- * `app/`) and never read — see CLAUDE.md.
+ * `app/`) and never read.
  */
 function appFiles(): string[] {
   return walkSourceFiles(SRC, { floor: 3000 })

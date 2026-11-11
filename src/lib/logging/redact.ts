@@ -150,7 +150,7 @@ export function redactSecrets(input: string): string {
       // calendar-feed link (#1350).
       // Same boundary-aware shape as the `sk-` rule. The
       // idempotency replay-cache already rejects bodies containing
-      // these prefixes (CLAUDE.md headless-client-API patterns); this
+      // these prefixes; this
       // is the matching egress guard for log/error surfaces.
       .replace(/(^|[^A-Za-z0-9])hl[kpresvf]_[A-Fa-f0-9]{32,}/g, "$1[REDACTED]")
       // v1.22.0 — the MCP OAuth bridge artifacts: the authorization code

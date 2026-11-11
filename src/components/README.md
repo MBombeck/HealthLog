@@ -21,4 +21,4 @@ React components. The UI primitives are shadcn/ui (new-york style, zinc base) ov
 
 ## Conventions
 
-Kebab-case filenames; React component exports stay PascalCase regardless. (A handful of PascalCase-filename outliers under `medications/` + `onboarding/` are pre-existing drift, noted in [`../../CLAUDE.md`](../../CLAUDE.md).) Every `t()` call needs a matching key in `messages/en.json` — guarded by `i18n-call-site-coverage.test.ts`. Data reads go through TanStack Query with keys from `@/lib/query-keys` and unwrap `(await res.json()).data`. Tests live in [`__tests__/`](__tests__/).
+Kebab-case filenames; React component exports stay PascalCase regardless. Every `t()` call needs a matching key in `messages/en.json` — guarded by `i18n-call-site-coverage.test.ts`. Data reads go through TanStack Query with keys from `@/lib/query-keys` and unwrap `(await res.json()).data`. Tests live in [`__tests__/`](__tests__/).

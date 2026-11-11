@@ -3,8 +3,7 @@
  * (PHQ-9 / GAD-7; v1.27.9 adds WHO-5 + SCI). The item answers are small
  * integers whose ceiling is instrument-specific (PHQ/GAD 0–3, SCI 0–4,
  * WHO-5 0–5); the array length must match the instrument. `userId` is NEVER
- * a body field — it is narrowed from the session in the handler (CLAUDE.md
- * convention).
+ * a body field — it is narrowed from the session in the handler.
  */
 import { z } from "zod/v4";
 import {

@@ -161,7 +161,7 @@ const BARE_REQUIRE_AUTH_FLOOR = 200;
  * omits the three routes under `src/app/.well-known/` — three request handlers
  * that a glob-based sweep reports as if they did not exist. Leg (a) pins one of
  * them by name so this cannot quietly regress. Names only; nothing under
- * `generated/` is ever read (CLAUDE.md).
+ * `generated/` is ever read.
  */
 function allPaths(): string[] {
   return readdirSync(SRC, { recursive: true })

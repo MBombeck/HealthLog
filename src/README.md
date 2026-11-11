@@ -23,4 +23,4 @@ client → src/proxy.ts → src/app/<route>/route.ts → src/lib/api-handler.ts 
 
 ## Conventions
 
-See [`../CLAUDE.md`](../CLAUDE.md) for the full set. The load-bearing ones: RSC by default (`"use client"` only when a hook/state/browser API needs it); every API route wraps `apiHandler` and parses its body with Zod `safeParse`; `userId` is always narrowed from session or Bearer, never accepted as a body field; TanStack Query keys come only from `src/lib/query-keys/`; outbound HTTP goes through `src/lib/safe-fetch.ts`.
+The load-bearing ones: RSC by default (`"use client"` only when a hook/state/browser API needs it); every API route wraps `apiHandler` and parses its body with Zod `safeParse`; `userId` is always narrowed from session or Bearer, never accepted as a body field; TanStack Query keys come only from `src/lib/query-keys/`; outbound HTTP goes through `src/lib/safe-fetch.ts`.
