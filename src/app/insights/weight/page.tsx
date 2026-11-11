@@ -23,6 +23,7 @@ import { MetricCorrelationCard } from "@/components/insights/metric-correlation-
 import { MeasurementDiversityNudge } from "@/components/insights/measurement-diversity-nudge";
 import { MetricTargetSummary } from "@/components/insights/metric-target-summary";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
+import { METRIC_BOUNDS } from "@/lib/analytics/effective-range";
 import { buildBandsFromTrafficRange } from "@/lib/analytics/value-bands";
 import { selectWeightBandRange, type WeightTargetsSlice } from "./weight-band";
 
@@ -131,7 +132,7 @@ export default function InsightsGewichtPage() {
   const weightRange = selectWeightBandRange(targets ?? null);
   const weightBands = weightRange
     ? buildBandsFromTrafficRange(weightRange, {
-        lowerBound: 30,
+        lowerBound: METRIC_BOUNDS.WEIGHT.min,
         upperBound: 250,
       })
     : undefined;

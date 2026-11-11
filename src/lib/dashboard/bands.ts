@@ -32,6 +32,7 @@ import {
 import { binaryReferenceSex, type ProfileSex } from "@/lib/profile/sex";
 import {
   getEffectiveRange,
+  METRIC_BOUNDS,
   resolveEffectiveBpTargets,
   resolveThresholdOverride,
   type ThresholdMetric,
@@ -136,7 +137,7 @@ export function buildDashboardBands(profile: {
     (profile.heightCm ? buildWeightRangeFromHeight(profile.heightCm) : null);
   const weightBands = weightRange
     ? buildBandsFromTrafficRange(weightRange, {
-        lowerBound: 30,
+        lowerBound: METRIC_BOUNDS.WEIGHT.min,
         upperBound: 250,
       })
     : null;
