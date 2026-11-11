@@ -22,9 +22,9 @@
  * signal's headline without a figure in it, "your score is ready", or the
  * honest all-clear — never a reading, a dose or the score itself, since the
  * push lands on a locked phone). It is dispatched NON-URGENT, so it never escalates to a
- * Focus-bypassing / time-sensitive delivery — a concerning reading always stays
- * on `MEASUREMENT_ANOMALY`, never here. It fires ONLY inside a local morning
- * window, which is the quiet-hours guarantee for this nudge.
+ * Focus-bypassing / time-sensitive delivery, and a concerning reading is never
+ * pushed through it. It fires ONLY inside a local morning window, which is the
+ * quiet-hours guarantee for this nudge.
  */
 import { SESSION_USER_SELECT, type SessionUser } from "@/lib/auth/session-user";
 import type { PrismaClient } from "@/generated/prisma/client";
