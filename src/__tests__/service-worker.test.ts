@@ -548,15 +548,6 @@ describe("sw.js — networkFirst offline fallback", () => {
     expect(await res.text()).toBe("current shell");
   });
 
-  it("falls back to the current-version precached shell when the page cache misses", async () => {
-    const harness = bootServiceWorker();
-    const statics = await harness.cacheStorage.open(CURRENT_STATIC_CACHE);
-    await statics.addAll(["/"]);
-
-    const res = await dispatchNavigationFetch(harness, "/");
-    expect(await res.text()).toBe("precached:/");
-  });
-
   it("consumes the navigation-preload response instead of re-fetching", async () => {
     const harness = bootServiceWorker();
     let fetchCalls = 0;

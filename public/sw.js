@@ -74,13 +74,7 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(STATIC_CACHE)
-      .then(async (cache) => {
-        // An updated worker can reuse the same release-scoped cache when its
-        // source changes without a version bump. Remove a root document left
-        // by the previous worker before adding the safe public asset set.
-        await cache.delete("/");
-        await cache.addAll(PRECACHE_URLS);
-      })
+      .then((cache) => cache.addAll(PRECACHE_URLS))
       .then(() => self.skipWaiting()),
   );
 });
@@ -383,14 +377,11 @@ async function retireFromForeignOrigin() {
 }
 
 /**
- * Network-first: try network (preferring the navigation-preload response
- * when the browser already started it), fall back to cache.
- *
- * The offline fallback only serves a shell cached under the CURRENT
- * `CACHE_VERSION` cache names. The previous global `caches.match()` could
- * resolve from a stale pre-update cache in the activation gap and serve a
- * shell whose `/_next/static/*` chunk graph no longer exists
- * (`ChunkLoadError` on the first lazy navigation).
+ * Network-first for pages: the navigation-preload response when the browser
+ * already started it, else a fetch. Without a connection, a page from this
+ * release's page cache (only public pages are there), else the offline page.
+ * The lookup is scoped to this release's cache name: a page from an older
+ * release would reference chunks that no longer exist.
  */
 async function networkFirst(event, cacheName) {
   const { request } = event;
@@ -417,28 +408,8 @@ async function networkFirst(event, cacheName) {
     }
     return response;
   } catch {
-    // Version-scoped fallback: the page cache first, then the precached
-    // app shell — both names embed CACHE_VERSION, so a stale shell from a
-    // previous release can never be served here.
-    const pageCache = await caches.open(cacheName);
-    const cachedPage = await pageCache.match(request);
+    const cachedPage = await (await caches.open(cacheName)).match(request);
     if (cachedPage) return cachedPage;
-    const staticCache = await caches.open(STATIC_CACHE);
-    const precached = await staticCache.match(request);
-    if (precached) return precached;
-
-    // Offline fallback. F-7 (mobile security audit, 2026-05-16): the
-    // previous fallback rendered hard-coded German body copy, which is
-    // wrong for any en/* user reaching it offline. The replacement is
-    // language-neutral — wordmark + the universally understood
-    // "Offline" token + a generic retry hint expressed as an icon
-    // (the round-trip arrow), so the page does the right thing in any
-    // locale without shipping a translation bundle into the worker.
-    //
-    // v1.42 — the arrow is a real control now (a link to the same URL,
-    // 64 px), the page reloads by itself as soon as the connection is
-    // back, it follows the device's light or dark scheme, and it keeps
-    // clear of the notch and home indicator of an installed app.
     return new Response(OFFLINE_PAGE, {
       status: 503,
       headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -446,6 +417,9 @@ async function networkFirst(event, cacheName) {
   }
 }
 
+// Language-neutral, because the worker ships no catalog: the wordmark, the
+// word "Offline" and a 64 px retry link. It reloads itself when the
+// connection returns, follows the device scheme and keeps clear of the notch.
 const OFFLINE_PAGE =
   '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark light"><title>HealthLog — Offline</title><style>' +
   ":root{--bg:#282a36;--fg:#f8f8f2;--accent:#bd93f9;--muted:#a4a9c9;color-scheme:dark}" +
