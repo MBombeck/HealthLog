@@ -18,6 +18,7 @@ import {
   COURSES_COMPLIANCE_SELECT,
   SCHEDULE_COMPLIANCE_SELECT,
 } from "@/lib/analytics/compliance";
+import { ageInYears } from "@/lib/tz/date-only";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import pLimit from "p-limit";
 import type { MeasurementType } from "@/generated/prisma/client";
@@ -55,19 +56,6 @@ import {
 
 import type { User } from "@/generated/prisma/client";
 import { TRACKED_INTAKE_WHERE } from "@/lib/medications/intake-tracking";
-
-function getAge(dateOfBirth: Date): number {
-  const today = new Date();
-  let age = today.getFullYear() - dateOfBirth.getFullYear();
-  const monthDiff = today.getMonth() - dateOfBirth.getMonth();
-  if (
-    monthDiff < 0 ||
-    (monthDiff === 0 && today.getDate() < dateOfBirth.getDate())
-  ) {
-    age--;
-  }
-  return age;
-}
 
 /**
  * The authenticated-user shape the builder reads directly. The profile
@@ -256,7 +244,7 @@ export async function buildTargetsResponse(user: AuthedUser) {
 
   const now = new Date();
 
-  const age = dbUser?.dateOfBirth ? getAge(new Date(dbUser.dateOfBirth)) : null;
+  const age = ageInYears(dbUser?.dateOfBirth ?? null, timezone, now);
   const gender = toProfileSex(dbUser?.gender);
   const heightCm = dbUser?.heightCm ?? null;
   const latestByType: TargetValueByType = {};
