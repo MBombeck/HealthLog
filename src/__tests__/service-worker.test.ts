@@ -1,19 +1,20 @@
 /**
- * v1.15.20 — service-worker cache behaviour, evaluated in a `vm` sandbox.
+ * Service-worker behaviour, evaluated in a `vm` sandbox.
  *
  * `public/sw.js` is plain script (no module system), so the test boots it
  * inside a vm context with a fake CacheStorage and dispatches the captured
- * event listeners. Four behaviours are pinned:
+ * event listeners. Pinned here:
  *
- *   1. cache write and trim failures never replace a successful network
- *      response for API, navigation, or static-asset requests;
- *   2. the offline HTML fallback only serves a shell cached under the
- *      CURRENT `CACHE_VERSION` cache names (a stale pre-update shell would
- *      reference a chunk graph that no longer exists);
- *   3. `activate` enables navigation preload and `networkFirst` consumes
- *      `event.preloadResponse` when the browser supplies it;
- *   4. `trimCache` reads the key list once and deletes the excess prefix
- *      in a single pass (the previous loop re-fetched all keys per delete).
+ *   1. API requests and `/_next/static/` chunks go to the network untouched,
+ *      and nothing of them lands in CacheStorage;
+ *   2. cache write and trim failures never replace a successful network
+ *      response for navigation or static-asset requests;
+ *   3. the offline HTML fallback only serves a page cached under the
+ *      CURRENT `CACHE_VERSION` cache names;
+ *   4. `activate` deletes every other HealthLog cache, enables navigation
+ *      preload, and `networkFirst` consumes `event.preloadResponse`;
+ *   5. `trimCache` reads the key list once and deletes the excess prefix
+ *      in a single pass.
  *
  * A HealthLog page response carries the `X-HealthLog-Page` marker the proxy
  * sets, so the navigation fixtures below build pages with `healthlogPage()`.
@@ -41,7 +42,10 @@ const FALLBACK_VERSION = /\/\* @sw-version-fallback \*\/\s*"(v[^"]*)"/.exec(
 )![1];
 const CURRENT_PAGE_CACHE = `healthlog-pages-${FALLBACK_VERSION}`;
 const CURRENT_STATIC_CACHE = `healthlog-static-${FALLBACK_VERSION}`;
-const CURRENT_DATA_CACHE = `healthlog-data-${FALLBACK_VERSION}`;
+// The API cache older releases kept, under the current version's name.
+const LEGACY_DATA_CACHE = `healthlog-data-${FALLBACK_VERSION}`;
+// A cache-first static asset: the locale catalog boot script.
+const CATALOG = "/i18n/en.js?v=abc123";
 
 const PAGE_MARKER = "X-HealthLog-Page";
 
@@ -277,18 +281,6 @@ function dispatchNavigationFetch(
   return captured;
 }
 
-function dispatchApiFetch(harness: SwHarness, path: string): Promise<Response> {
-  let captured: Promise<Response> | null = null;
-  harness.listeners.get("fetch")!({
-    request: new Request(`${ORIGIN}${path}`),
-    respondWith: (p: Promise<Response>) => {
-      captured = p;
-    },
-  });
-  if (!captured) throw new Error("fetch handler did not respond");
-  return captured;
-}
-
 function dispatchAssetFetch(
   harness: SwHarness,
   path: string,
@@ -386,43 +378,37 @@ describe("sw.js — one-shot auth navigations", () => {
     await dispatchAuthNavigation(harness, url).response;
     await Promise.all(harness.lifetimePromises);
 
-    const pages = await harness.cacheStorage.open(CURRENT_PAGE_CACHE);
-    expect(await pages.match(`${ORIGIN}${url}`)).toBeUndefined();
-    const data = await harness.cacheStorage.open(CURRENT_DATA_CACHE);
-    expect(await data.match(`${ORIGIN}${url}`)).toBeUndefined();
+    expect(await harness.cacheStorage.match(`${ORIGIN}${url}`)).toBeUndefined();
+  });
+});
+
+describe("sw.js — what stays off the device", () => {
+  it.each([
+    "/api/dashboard/snapshot",
+    "/api/measurements?type=WEIGHT",
+    "/api/medications",
+    "/api/daily/digest",
+    "/api/version",
+    "/_next/static/chunks/app.js",
+  ])("leaves %s to the network and stores nothing", async (path) => {
+    const harness = bootServiceWorker();
+    let fetchCalls = 0;
+    harness.context.fetch = async () => {
+      fetchCalls += 1;
+      return new Response(JSON.stringify({ data: { weightKg: 80 } }));
+    };
+
+    const { responded } = dispatchAnyFetch(harness, path);
+    await Promise.all(harness.lifetimePromises);
+
+    // Declined: the browser fetches it itself, the worker never sees the body.
+    expect(responded).toBe(false);
+    expect(fetchCalls).toBe(0);
+    expect(harness.cacheStorage.stores.size).toBe(0);
   });
 });
 
 describe("sw.js — best-effort cache writes", () => {
-  it("returns the original successful API response when cache.put rejects", async () => {
-    const harness = bootServiceWorker();
-    const dataCache = await harness.cacheStorage.open(CURRENT_DATA_CACHE);
-    dataCache.putError = new Error("CacheStorage quota exceeded");
-    const networkResponse = new Response(
-      JSON.stringify({ data: { weightKg: 80 }, error: null }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "X-Network-Response": "original",
-        },
-      },
-    );
-    harness.context.fetch = async () => networkResponse;
-
-    const response = await dispatchApiFetch(
-      harness,
-      "/api/measurements?type=WEIGHT",
-    );
-
-    expect(response).toBe(networkResponse);
-    expect(response.status).toBe(200);
-    expect(response.headers.get("X-Network-Response")).toBe("original");
-    expect(await response.text()).toBe(
-      JSON.stringify({ data: { weightKg: 80 }, error: null }),
-    );
-  });
-
   it("returns the original successful navigation response when cache.put rejects", async () => {
     const harness = bootServiceWorker();
     const pageCache = await harness.cacheStorage.open(CURRENT_PAGE_CACHE);
@@ -477,39 +463,16 @@ describe("sw.js — best-effort cache writes", () => {
     const harness = bootServiceWorker();
     const staticCache = await harness.cacheStorage.open(CURRENT_STATIC_CACHE);
     staticCache.putError = new Error("CacheStorage quota exceeded");
-    const networkResponse = new Response("immutable chunk", {
+    const networkResponse = new Response("immutable catalog", {
       headers: { "X-Network-Response": "original" },
     });
     harness.context.fetch = async () => networkResponse;
 
-    const response = await dispatchAssetFetch(
-      harness,
-      "/_next/static/chunks/app.js",
-    );
+    const response = await dispatchAssetFetch(harness, CATALOG);
 
     expect(response).toBe(networkResponse);
     expect(response.headers.get("X-Network-Response")).toBe("original");
-    expect(await response.text()).toBe("immutable chunk");
-  });
-
-  it("returns the original successful API response when cache trimming rejects", async () => {
-    const harness = bootServiceWorker();
-    const dataCache = await harness.cacheStorage.open(CURRENT_DATA_CACHE);
-    dataCache.keysError = new Error("CacheStorage keys unavailable");
-    const networkResponse = new Response(
-      JSON.stringify({ data: { weightKg: 80 }, error: null }),
-      { headers: { "Content-Type": "application/json" } },
-    );
-    harness.context.fetch = async () => networkResponse;
-
-    const response = await dispatchApiFetch(harness, "/api/measurements");
-
-    expect(response).toBe(networkResponse);
-    expect(response.status).toBe(200);
-    expect(await response.text()).toBe(
-      JSON.stringify({ data: { weightKg: 80 }, error: null }),
-    );
-    expect(dataCache.keysCalls).toBe(1);
+    expect(await response.text()).toBe("immutable catalog");
   });
 });
 
@@ -519,13 +482,16 @@ describe("sw.js — activate", () => {
     const stale = await harness.cacheStorage.open("healthlog-pages-v0.0.1");
     await stale.put(`${ORIGIN}/`, new Response("stale shell"));
     await harness.cacheStorage.open(CURRENT_PAGE_CACHE);
+    // API answers an older worker kept, under this version's name and an old one.
+    await harness.cacheStorage.open(LEGACY_DATA_CACHE);
+    await harness.cacheStorage.open("healthlog-data-v0.0.1");
+    await harness.cacheStorage.open("next-app-runtime");
 
     await dispatchActivate(harness);
 
-    expect(harness.cacheStorage.stores.has("healthlog-pages-v0.0.1")).toBe(
-      false,
+    expect([...harness.cacheStorage.stores.keys()].sort()).toEqual(
+      [CURRENT_PAGE_CACHE, "next-app-runtime"].sort(),
     );
-    expect(harness.cacheStorage.stores.has(CURRENT_PAGE_CACHE)).toBe(true);
     expect(harness.navPreload.enabled).toBe(true);
   });
 });
@@ -734,10 +700,7 @@ const foreignHtml = () =>
 
 async function seedHealthlogCaches(harness: SwHarness): Promise<void> {
   const statics = await harness.cacheStorage.open(CURRENT_STATIC_CACHE);
-  await statics.put(
-    `${ORIGIN}/_next/static/chunks/app.js`,
-    new Response("healthlog chunk"),
-  );
+  await statics.put(`${ORIGIN}${CATALOG}`, new Response("healthlog catalog"));
   const pages = await harness.cacheStorage.open(CURRENT_PAGE_CACHE);
   await pages.put(`${ORIGIN}/`, healthlogPage("healthlog shell"));
   const legacy = await harness.cacheStorage.open("healthlog-data-v0.0.1");
@@ -759,9 +722,9 @@ describe("sw.js — foreign origin (#847)", () => {
     expect(await res.text()).toBe("fresh shell");
     expect(harness.unregisterCalls.count).toBe(0);
     expect(harness.cacheStorage.stores.has(CURRENT_STATIC_CACHE)).toBe(true);
-    const asset = dispatchAnyFetch(harness, "/_next/static/chunks/app.js");
+    const asset = dispatchAnyFetch(harness, CATALOG);
     expect(asset.responded).toBe(true);
-    expect(await (await asset.response!).text()).toBe("healthlog chunk");
+    expect(await (await asset.response!).text()).toBe("healthlog catalog");
   });
 
   it("retires when the page lacks the marker and the version probe finds another app's HTML", async () => {
@@ -775,9 +738,7 @@ describe("sw.js — foreign origin (#847)", () => {
     // The other app's page is returned untouched, and the worker declines
     // requests at once, before the probe has answered.
     expect(res).toBe(foreignPage);
-    expect(
-      dispatchAnyFetch(harness, "/_next/static/chunks/app.js").responded,
-    ).toBe(false);
+    expect(dispatchAnyFetch(harness, CATALOG).responded).toBe(false);
 
     await Promise.all(harness.lifetimePromises);
 
@@ -790,9 +751,7 @@ describe("sw.js — foreign origin (#847)", () => {
 
     // Still declining after the retire: static, HTML and API all go to the
     // network through the browser.
-    expect(
-      dispatchAnyFetch(harness, "/_next/static/chunks/app.js").responded,
-    ).toBe(false);
+    expect(dispatchAnyFetch(harness, CATALOG).responded).toBe(false);
     expect(
       dispatchAnyFetch(harness, "/about", { accept: "text/html" }).responded,
     ).toBe(false);
@@ -877,10 +836,10 @@ describe("sw.js — foreign origin (#847)", () => {
 
     expect(harness.unregisterCalls.count).toBe(0);
     expect(harness.cacheStorage.stores.has(CURRENT_STATIC_CACHE)).toBe(true);
-    // Normal service resumed: the cached chunk is served cache-first again.
-    const asset = dispatchAnyFetch(harness, "/_next/static/chunks/app.js");
+    // Normal service resumed: the cached catalog is served cache-first again.
+    const asset = dispatchAnyFetch(harness, CATALOG);
     expect(asset.responded).toBe(true);
-    expect(await (await asset.response!).text()).toBe("healthlog chunk");
+    expect(await (await asset.response!).text()).toBe("healthlog catalog");
   });
 
   it.each([
@@ -905,9 +864,7 @@ describe("sw.js — foreign origin (#847)", () => {
 
       expect(harness.unregisterCalls.count).toBe(0);
       expect(harness.cacheStorage.stores.has(CURRENT_STATIC_CACHE)).toBe(true);
-      expect(
-        dispatchAnyFetch(harness, "/_next/static/chunks/app.js").responded,
-      ).toBe(true);
+      expect(dispatchAnyFetch(harness, CATALOG).responded).toBe(true);
     },
   );
 
@@ -970,9 +927,7 @@ describe("sw.js — foreign origin (#847)", () => {
     expect([...harness.cacheStorage.stores.keys()]).toEqual([
       "next-app-runtime",
     ]);
-    expect(
-      dispatchAnyFetch(harness, "/_next/static/chunks/app.js").responded,
-    ).toBe(false);
+    expect(dispatchAnyFetch(harness, CATALOG).responded).toBe(false);
     expect(
       dispatchAnyFetch(harness, "/about", { accept: "text/html" }).responded,
     ).toBe(false);
@@ -1056,9 +1011,7 @@ describe("sw.js — foreign origin (#847)", () => {
 
     expect(res).toBe(response);
     expect(harness.unregisterCalls.count).toBe(0);
-    expect(
-      dispatchAnyFetch(harness, "/_next/static/chunks/app.js").responded,
-    ).toBe(true);
+    expect(dispatchAnyFetch(harness, CATALOG).responded).toBe(true);
   });
 
   it("does not treat an opaque redirect (a signed-out HealthLog page) as foreign", async () => {

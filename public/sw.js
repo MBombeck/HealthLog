@@ -39,28 +39,12 @@ const CACHE_VERSION =
   /* @sw-version-fallback */ "v1.47.2";
 const STATIC_CACHE = `healthlog-static-${CACHE_VERSION}`;
 const PAGE_CACHE = `healthlog-pages-${CACHE_VERSION}`;
-// v1.18.6 — read-only data cache for a curated allowlist of safe GET `/api/*`
-// reads. Network-first: online callers always get the fresh server response
-// (and the cache is refreshed behind it), so a read-after-write never serves a
-// stale pre-mutation list. Offline (the network fetch throws) the LAST cached
-// dashboard/series is served instead of empty skeletons forever.
-//
-// v1.18.6.x — reverted from stale-while-revalidate, which served the cached
-// pre-mutation copy first and only revalidated in the background, so a list
-// read straight after a create/update showed the old (or empty) data until the
-// next paint. Network-first restores read-after-write freshness while keeping
-// the offline fallback.
-const DATA_CACHE = `healthlog-data-${CACHE_VERSION}`;
-// Keep this ownership contract aligned with
-// `clearOfflineCachesForSessionEnd()` in `query-persister.ts`. Cache cleanup
-// must cover every current/legacy HealthLog cache without deleting unrelated
-// CacheStorage namespaces owned by another app on the same origin.
+// Every HealthLog cache, current and legacy, and nothing another app on the
+// origin owns. `data` stays in the pattern so caches from releases that still
+// kept API reads are deleted on activate. Same pattern as
+// `HEALTHLOG_CACHE_NAME_RE` in `src/lib/pwa/sw-cache-policy.ts`.
 const HEALTHLOG_CACHE_NAME_RE = /^healthlog-(?:static|pages|data)-/;
-const CURRENT_HEALTHLOG_CACHES = new Set([
-  STATIC_CACHE,
-  PAGE_CACHE,
-  DATA_CACHE,
-]);
+const CURRENT_HEALTHLOG_CACHES = new Set([STATIC_CACHE, PAGE_CACHE]);
 // Presence marker `src/proxy.ts` sets on every HealthLog page response. See
 // `isForeignNavigationResponse` for why the worker needs it and the proxy for
 // why it carries no version. Keep the name in lockstep with
@@ -78,58 +62,6 @@ let foreignOrigin = false;
 let foreignOriginCheck = null;
 const MAX_STATIC_ENTRIES = 150;
 const MAX_PAGE_ENTRIES = 30;
-const MAX_DATA_ENTRIES = 60;
-
-// Safe-GET read allowlist. ONLY idempotent reads that render the core views
-// and carry NO secret-shaped body. Auth, mutations and token endpoints are
-// never listed — and `isCacheableApiResponse` is a second, body-level guard
-// (mirrors the idempotency cache's `hlk_`/`hlr_`/`sk-` refusal) so a future
-// endpoint that slipped onto the list can still never persist a secret.
-// Matched by exact path or `<path>/` / `<path>?` prefix.
-// v1.18.6 — AI/clinical narrative surfaces (`/api/insights`, `/api/analytics`)
-// are deliberately NOT cached: `/api/insights` prefix-matched the Coach chat
-// endpoint into the disk cache, and neither belongs on a self-hosted health
-// PWA's durable storage. Only the dashboard snapshot, the widget layout, the
-// measurement reads (incl. the batched daily series), the medication reads,
-// and the version probe are eligible.
-const API_READ_ALLOWLIST = [
-  "/api/dashboard/snapshot",
-  // v1.37.20 — daily digest: the Today rail's offline read. Keep in
-  // lockstep with src/lib/pwa/sw-cache-policy.ts.
-  "/api/daily/digest",
-  "/api/dashboard/widgets",
-  "/api/measurements",
-  "/api/medications",
-  "/api/version",
-];
-
-// Defence in depth: even an allowlisted path is refused if its pathname looks
-// like an auth/token/secret surface.
-const API_DENY_RE = /\/(auth|tokens?|sessions?|login|password|webauthn)(\/|$|\?)/i;
-
-function isAllowlistedApiRead(pathname) {
-  if (API_DENY_RE.test(pathname)) return false;
-  return API_READ_ALLOWLIST.some(
-    (p) =>
-      pathname === p ||
-      pathname.startsWith(p + "/") ||
-      pathname.startsWith(p + "?"),
-  );
-}
-
-// Body-level secret refusal: never persist a body carrying a token/secret-
-// shaped pattern even if the path was allowlisted by mistake.
-const SECRET_BODY_RE = /(hlk_|hlr_|sk-)[A-Za-z0-9_-]/;
-
-function isCacheableApiResponse(response, bodyText) {
-  if (!response || !response.ok) return false;
-  const cacheControl = response.headers.get("Cache-Control") || "";
-  if (/no-store/i.test(cacheControl)) return false;
-  if (typeof bodyText === "string" && SECRET_BODY_RE.test(bodyText)) {
-    return false;
-  }
-  return true;
-}
 
 // Public immutable assets to precache on install. Never include `/`: installing
 // while signed in would fetch the authenticated Dashboard document with the
@@ -213,22 +145,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // API calls. Allowlisted safe GET reads use network-first so the installed
-  // PWA always renders fresh server data online (and falls back to the last
-  // cached copy only when the network fails); everything else (auth,
-  // mutations, anything not on the list) stays network-only.
-  if (url.pathname.startsWith("/api/")) {
-    if (isAllowlistedApiRead(url.pathname)) {
-      event.respondWith(networkFirstApi(request));
-    }
-    return;
-  }
-
-  // Next.js static assets — cache-first (immutable hashed filenames)
-  if (url.pathname.startsWith("/_next/static/")) {
-    event.respondWith(cacheFirst(request, STATIC_CACHE));
-    return;
-  }
+  // Every other API request goes to the network untouched: no API answer is
+  // kept on this device.
+  if (url.pathname.startsWith("/api/")) return;
 
   // Locale-catalog boot script — cache-first. The URL is versioned by the
   // catalogs' content hash (`/i18n/<locale>?v=<hash>`, `next.config.ts`),
@@ -276,60 +195,6 @@ async function cacheFirst(request, cacheName) {
 }
 
 /**
- * Network-first for allowlisted safe GET `/api/*` reads.
- *
- * Always tries the network first so an online caller gets the fresh server
- * response — critical for read-after-write: a list fetched straight after a
- * create/update must reflect the mutation, not a stale pre-mutation copy. On a
- * cacheable response the data cache is refreshed behind it. Only when the
- * network fails (offline) is the last cached copy served; with neither, a JSON
- * 503 lets the client's TanStack Query cache / IndexedDB persister supply data.
- *
- * Caching is gated twice: `isAllowlistedApiRead` already filtered the path,
- * and `isCacheableApiResponse` inspects the actual body so a `no-store` or
- * secret-shaped (`hlk_`/`hlr_`/`sk-`) response is never persisted — the same
- * refusal discipline the idempotency cache uses.
- */
-async function networkFirstApi(request) {
-
-  try {
-    const response = await fetch(request);
-    // Read the body once to body-screen it, then reconstruct a fresh Response
-    // so both the cache.put and the return value have an unconsumed body.
-    const bodyText = await response
-      .clone()
-      .text()
-      .catch(() => undefined);
-    if (isCacheableApiResponse(response, bodyText)) {
-      await bestEffortCacheWrite(
-        DATA_CACHE,
-        request,
-        new Response(bodyText, {
-          status: response.status,
-          statusText: response.statusText,
-          headers: response.headers,
-        }),
-        MAX_DATA_ENTRIES,
-      );
-    }
-    return response;
-  } catch {
-    // Network failed (offline) — serve the last cached copy if we have one.
-    const cache = await caches.open(DATA_CACHE);
-    const cached = await cache.match(request);
-    if (cached) return cached;
-
-    return new Response(
-      JSON.stringify({ data: null, error: "offline", meta: { offline: true } }),
-      {
-        status: 503,
-        headers: { "Content-Type": "application/json; charset=utf-8" },
-      },
-    );
-  }
-}
-
-/**
  * Privacy gate for the navigation page cache. Most app routes are
  * client-fetch-only shells with no server-rendered PII (health JSON loads
  * over `/api/*`, which is network-only here), so caching their HTML is
@@ -348,8 +213,7 @@ async function networkFirstApi(request) {
  * account's record into the HTML. Only the public pages (sign-in, legal)
  * land in this cache, so a navigation to an app page without a connection
  * gets the offline page below, never somebody's cached record. A page that
- * is already open keeps working offline from the cached chunks and the
- * allowlisted data reads.
+ * is already open keeps what it has in memory.
  */
 function isCacheableNavigation(request, response) {
   const cacheControl = response.headers.get("Cache-Control") || "";
@@ -369,9 +233,9 @@ function isCacheableNavigation(request, response) {
  * The worker is registered with scope `/` because HealthLog serves everything
  * from `/`. When HealthLog is stopped and a different app starts on the same
  * origin (the usual case is `localhost:3000` on a developer machine), this
- * worker kept answering: `/_next/static/*` is cache-first, so the other app
- * ran on HealthLog's cached chunks, and the only way out was unregistering by
- * hand in the browser's developer tools.
+ * worker kept answering from HealthLog's caches (chunks, at the time), and
+ * the only way out was unregistering by hand in the browser's developer
+ * tools.
  *
  * Only a response that positively looks like another app counts:
  *

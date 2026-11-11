@@ -339,9 +339,9 @@ export async function clearPersistedQueryCache(): Promise<void> {
 }
 
 /**
- * Wipe every client-side cache that can hold one account's health data: the
- * IndexedDB query snapshot, the SW offline read-data cache, and the SW page
- * cache (cached navigation HTML). The single call for a session END (logout or
+ * Wipe every client-side cache that can hold one account's data: the
+ * IndexedDB query snapshot and the worker's caches, including the API caches
+ * older releases left behind. The single call for a session END (logout or
  * 401 / expiry redirect). Best-effort across the board.
  */
 export async function clearOfflineCachesForSessionEnd(): Promise<void> {
@@ -361,23 +361,15 @@ export async function clearOfflineCachesForSessionEnd(): Promise<void> {
 }
 
 /**
- * v1.36.0 — the same wipe, before a record switch in either direction.
+ * The same wipe, before a record switch in either direction.
  *
- * Deliberately the same bytes as the session-end wipe rather than a narrower
- * one, and deliberately named for the act that calls it.
+ * The full page reload the switch performs clears the in-memory cache; the
+ * IndexedDB snapshot survives it and holds the dashboard the browser was last
+ * looking at. Without this call the first paint after the switch could show
+ * the previous record's numbers under a banner naming the new one.
  *
- * The full page reload the switch performs clears the in-memory cache; these
- * two layers are the ones that survive it. The IndexedDB snapshot holds the
- * dashboard the browser was last looking at, and the service worker's
- * `healthlog-data-*` cache answers `/api/…` reads from disk on a
- * stale-while-revalidate branch — so without this call, the first paint after
- * switching into a record can be the previous record's numbers, served by the
- * worker, under a banner naming the new one. Nothing about the page's own code
- * would be wrong; the answer would just come from somewhere the page does not
- * control.
- *
- * Run it BEFORE the reload and await it. A wipe racing the navigation is a
- * wipe that sometimes does not happen, and "sometimes" is the whole failure.
+ * Run it BEFORE the reload and await it: a wipe racing the navigation
+ * sometimes does not happen.
  */
 export async function clearOfflineCachesForRecordSwitch(): Promise<void> {
   await clearOfflineCachesForSessionEnd();
