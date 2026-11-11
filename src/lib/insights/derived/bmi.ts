@@ -26,6 +26,10 @@
 import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import {
+  classifyBMI,
+  type BmiClassification,
+} from "@/lib/analytics/classifications";
+import {
   buildInsufficient,
   buildOk,
   deriveCoverage,
@@ -63,15 +67,32 @@ export interface BmiValue {
   series: number[];
 }
 
-/** WHO category + band for a BMI value. Pure. */
+const CATEGORY_OF: Readonly<Record<string, BmiCategory>> = {
+  Underweight: "underweight",
+  Normal: "normal",
+  Overweight: "overweight",
+};
+
+const BAND_OF: Readonly<Record<BmiClassification["severity"], BmiBand>> = {
+  normal: "green",
+  warning: "yellow",
+  danger: "red",
+};
+
+/**
+ * WHO category + band for a BMI value, in this payload's vocabulary. The
+ * cut-offs are `classifyBMI`'s, so the derived card and the targets panel
+ * cannot disagree about where a reading falls. Pure.
+ */
 export function classifyBmi(bmi: number): {
   category: BmiCategory;
   band: BmiBand;
 } {
-  if (bmi < 18.5) return { category: "underweight", band: "yellow" };
-  if (bmi < 25) return { category: "normal", band: "green" };
-  if (bmi < 30) return { category: "overweight", band: "yellow" };
-  return { category: "obese", band: "red" };
+  const { category, severity } = classifyBMI(bmi);
+  return {
+    category: CATEGORY_OF[category] ?? "obese",
+    band: BAND_OF[severity],
+  };
 }
 
 /**
