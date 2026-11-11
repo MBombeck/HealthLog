@@ -23,8 +23,17 @@ export function buildClinicalRecordsNotesSection(
   context: DoctorReportPdfRenderContext,
   state: DoctorReportPdfCursorState,
 ): DoctorReportPdfCursorState {
-  const { doc, data, t, num, fmtDate, margin, tableBottomMargin, ensureSpace } =
-    context;
+  const {
+    doc,
+    data,
+    t,
+    num,
+    fmtDate,
+    fmtCalendarDate,
+    margin,
+    tableBottomMargin,
+    ensureSpace,
+  } = context;
   let y = state.y;
 
   // v1.17.1 — structured lab-results section. Populated when the `labs`
@@ -422,7 +431,8 @@ export function buildClinicalRecordsNotesSection(
     };
 
     const immunizationRows = data.immunizations.map((row) => [
-      fmtDate(row.occurredAt),
+      // A dose date is a calendar date at UTC midnight, never an instant.
+      fmtCalendarDate(row.occurredAt),
       row.antigenSlug
         ? t(`vaccinations.catalog.${row.antigenSlug}`)
         : (row.vaccineName ?? "—"),

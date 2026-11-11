@@ -303,7 +303,7 @@ export function ClinicianView({
               t={t}
               report={report}
               scope={scope}
-              fmtDate={fmtDate}
+              fmtCalendarDate={fmtCalendarDate}
             />
             <AllergiesSection t={t} report={report} scope={scope} />
 

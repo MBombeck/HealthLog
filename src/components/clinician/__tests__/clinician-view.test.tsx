@@ -519,6 +519,28 @@ describe("<ClinicianView>", () => {
     expect(html).toContain("05/14/1960");
     expect(html).not.toContain("05/13/1960");
   });
+
+  it("dates a vaccination on its own day west of UTC", () => {
+    const html = render(
+      makeReport({
+        immunizations: [
+          {
+            // A dose date at UTC midnight: the evening before in New York.
+            occurredAt: "2026-04-11T00:00:00.000Z",
+            antigenSlug: null,
+            vaccineName: "Influenza",
+            lotNumber: null,
+            site: null,
+            practitionerName: null,
+            series: [],
+          },
+        ],
+      }),
+      { timezone: "America/New_York", locale: "en" },
+    );
+    expect(html).toContain("04/11/2026");
+    expect(html).not.toContain("04/10/2026");
+  });
 });
 
 /**

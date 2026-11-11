@@ -1201,6 +1201,38 @@ describe("doctor report — the user's date order", () => {
     expect(text).toContain("05/14/1960");
     expect(text).not.toContain("05/13/1960");
   });
+
+  it("dates a vaccination on its own day west of UTC", async () => {
+    const { t } = getServerTranslator("en");
+    const text = await extractText(
+      renderDoctorReportPdfBytes(
+        makeData({
+          immunizations: [
+            {
+              // A dose date at UTC midnight: 10 April, 20:00 in New York.
+              occurredAt: "2026-04-11T00:00:00.000Z",
+              antigenSlug: null,
+              vaccineName: "Influenza",
+              lotNumber: null,
+              site: null,
+              practitionerName: null,
+              series: [],
+            },
+          ],
+        }),
+        {
+          t,
+          locale: "en",
+          now: FIXED_NOW,
+          userTz: "America/New_York",
+          timeFormat: "AUTO",
+          dateFormat: "AUTO",
+        },
+      ),
+    );
+    expect(text).toContain("04/11/2026");
+    expect(text).not.toContain("04/10/2026");
+  });
 });
 
 // ── script coverage ── the report is read in every shipped locale and carries

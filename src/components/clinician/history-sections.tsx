@@ -302,12 +302,13 @@ export function ImmunizationsSection({
   t,
   report,
   scope,
-  fmtDate,
+  fmtCalendarDate,
 }: {
   t: Translate;
   report: DoctorReportData;
   scope: LeafScope;
-  fmtDate: (iso: string) => string;
+  /** A dose date is a calendar date at UTC midnight, never an instant. */
+  fmtCalendarDate: (iso: string) => string;
 }) {
   const doses = report.immunizations ?? [];
 
@@ -342,7 +343,7 @@ export function ImmunizationsSection({
               : (dose.vaccineName ?? "—")
           }
           value={compose([
-            fmtDate(dose.occurredAt),
+            fmtCalendarDate(dose.occurredAt),
             doseDisplay(dose.series),
             dose.lotNumber
               ? `${t("doctorReport.immunizationsColLot")} ${dose.lotNumber}`
