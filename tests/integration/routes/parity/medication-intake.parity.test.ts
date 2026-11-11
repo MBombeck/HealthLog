@@ -48,8 +48,8 @@ vi.mock("@/lib/logging/transports", async (importOriginal) => {
 });
 
 // The tails the route starts without awaiting them (the cross-device push,
-// the web-push dose clear with its badge count, the owner's notification of a
-// delegated dose), recorded instead of run (see `effectRecorder`).
+// the owner's notification of a delegated dose), recorded instead of run (see
+// `effectRecorder`).
 vi.mock(
   "@/lib/notifications/medication-intake-sync",
   async (importOriginal) => {
@@ -66,31 +66,6 @@ vi.mock(
     };
   },
 );
-vi.mock("@/lib/notifications/web-push-clear", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("@/lib/notifications/web-push-clear")>();
-  const { effectRecorder } = await import("../../../kit/parity");
-  return {
-    ...actual,
-    dispatchMedicationIntakeWebClear: async (...args: unknown[]) => {
-      effectRecorder.record("dispatchMedicationIntakeWebClear", args);
-    },
-  };
-});
-vi.mock("@/lib/medications/outstanding-doses", async (importOriginal) => {
-  const actual =
-    await importOriginal<
-      typeof import("@/lib/medications/outstanding-doses")
-    >();
-  const { effectRecorder } = await import("../../../kit/parity");
-  return {
-    ...actual,
-    countOutstandingDosesToday: async (...args: unknown[]) => {
-      effectRecorder.record("countOutstandingDosesToday", args);
-      return 2;
-    },
-  };
-});
 vi.mock("@/lib/notifications/delegated-intake", async (importOriginal) => {
   const actual =
     await importOriginal<

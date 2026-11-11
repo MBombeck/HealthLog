@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 344,
-  "total": 111520,
+  "total": 111507,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -331,7 +331,7 @@
     "lib/multipart/stream-to-disk.ts :: streamMultipartToDisk": 272,
     "lib/notifications/dispatcher.ts :: dispatchNotification": 378,
     "lib/notifications/senders/apns.ts :: sendViaApns": 299,
-    "lib/notifications/senders/web-push.ts :: sendViaWebPush": 268,
+    "lib/notifications/senders/web-push.ts :: sendViaWebPush": 255,
     "lib/personal-records/pr-detection-worker.ts :: detectPersonalRecordsForUser": 239,
     "lib/personal-records/pr-direction.ts :: getPRDirection": 208,
     "lib/record-activity/activity-verb.ts :: recordActivityVerbLine": 261,

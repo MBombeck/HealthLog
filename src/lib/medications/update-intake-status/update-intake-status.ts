@@ -19,9 +19,7 @@ import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import { restoreForIntake } from "@/lib/medications/inventory/consumption";
 import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
-import { dispatchMedicationIntakeWebClear } from "@/lib/notifications/web-push-clear";
 import { notifyDelegatedIntake } from "@/lib/notifications/delegated-intake";
-import { countOutstandingDosesToday } from "@/lib/medications/outstanding-doses";
 import {
   refuseDelegatedChange,
   refusesUntrackedIntake,
@@ -95,7 +93,7 @@ async function recordAfterUpdate(
   data: IntakeStatusUpdate,
   updated: UpdatedRow | null,
   userTzForHook: string,
-): Promise<Date | undefined> {
+): Promise<void> {
   const { user, existing } = ctx;
   const { intakeId, status } = data;
   await auditLog("medications.intake.update", {
@@ -135,15 +133,12 @@ async function recordAfterUpdate(
       tz: userTzForHook,
     });
   }
-  return movedTo;
 }
 
 /** The tails that never affect the response. */
 function startTails(
   ctx: StatusContext,
   status: IntakeStatusUpdate["status"],
-  movedTo: Date | undefined,
-  userTzForHook: string,
 ): void {
   const { user, existing } = ctx;
   // (#22) — silent cross-device intake sync. Wake the user's OTHER
@@ -156,27 +151,6 @@ function startTails(
     userId: user.id,
     originDeviceToken: ctx.originDeviceToken,
   });
-
-  // PWA-only equivalent of the Live Activity end: when a dose is
-  // resolved (taken / skipped), push a `type:"clear"` to the user's Web Push
-  // subscriptions so the still-pending dose-due reminder for this slot is
-  // closed by the service worker (matched on the stable slot tag) and the app
-  // badge re-reflects the outstanding-dose count. A snooze leaves the dose
-  // outstanding, so it neither clears the reminder nor changes the badge.
-  if (status === "taken" || status === "skipped") {
-    void (async () => {
-      const badgeCount = await countOutstandingDosesToday(
-        user.id,
-        userTzForHook,
-      );
-      await dispatchMedicationIntakeWebClear({
-        userId: user.id,
-        medicationId: existing.medicationId,
-        scheduledFor: (movedTo ?? existing.scheduledFor).toISOString(),
-        badgeCount,
-      });
-    })();
-  }
 
   // "Somebody else marked your dose". The helper refuses on self and
   // on a snooze, resolves both names itself, and never throws.
@@ -243,8 +217,8 @@ export async function updateIntakeStatus(
     updated = await applySkipOrSnooze(ctx, data);
   }
 
-  const movedTo = await recordAfterUpdate(ctx, data, updated, userTzForHook);
-  startTails(ctx, status, movedTo, userTzForHook);
+  await recordAfterUpdate(ctx, data, updated, userTzForHook);
+  startTails(ctx, status);
 
   return { kind: "updated", row: updated };
 }
