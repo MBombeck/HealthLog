@@ -195,25 +195,13 @@ async function cacheFirst(request, cacheName) {
 }
 
 /**
- * Privacy gate for the navigation page cache. Most app routes are
- * client-fetch-only shells with no server-rendered PII (health JSON loads
- * over `/api/*`, which is network-only here), so caching their HTML is
- * safe. Two carve-outs:
- *
- *   1. A `Cache-Control: no-store` response opts itself out — the
- *      principled, future-proof rule for any current/future server RSC
- *      that renders user data and sets the header.
- *   2. `/c/*` (the clinician-share view) renders health values + wellness
- *      scores straight into the HTML and emits `no-store`; the explicit
- *      path skip is belt-and-braces so a revoked share can never linger in
- *      CacheStorage and render back offline.
- *
- * In practice rule 1 covers every signed-in page: `src/proxy.ts` pins
- * `private, no-store` on all of them, because several server-prefetch one
- * account's record into the HTML. Only the public pages (sign-in, legal)
- * land in this cache, so a navigation to an app page without a connection
- * gets the offline page below, never somebody's cached record. A page that
- * is already open keeps what it has in memory.
+ * Which navigation responses may land in the page cache. Signed-in pages
+ * never do: the proxy sends them `private, no-store` because some carry one
+ * account's record in the HTML. Two paths are skipped by name as well: the
+ * clinician share view `/c/*` (no-store too; a revoked share must never
+ * render back offline) and `/onboarding/*`. What is left are the public
+ * pages (sign-in, legal), so a navigation to an app page without a
+ * connection gets the offline page, never somebody's cached record.
  */
 function isCacheableNavigation(request, response) {
   const cacheControl = response.headers.get("Cache-Control") || "";
@@ -221,6 +209,11 @@ function isCacheableNavigation(request, response) {
   try {
     const { pathname } = new URL(request.url);
     if (pathname === "/c" || pathname.startsWith("/c/")) return false;
+    // Public to the proxy, so not no-store, but rendered for a signed-in
+    // account during its setup.
+    if (pathname === "/onboarding" || pathname.startsWith("/onboarding/")) {
+      return false;
+    }
   } catch {
     // Unparseable URL — fall through; the no-store check already ran.
   }

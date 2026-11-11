@@ -622,6 +622,22 @@ describe("sw.js — networkFirst privacy gate", () => {
     expect(await pages.match(`${ORIGIN}/c/hls_abc123`)).toBeUndefined();
   });
 
+  it.each(["/onboarding", "/onboarding/who"])(
+    "does not cache the signed-in onboarding page %s",
+    async (path) => {
+      const harness = bootServiceWorker();
+      harness.context.fetch = async () => healthlogPage("onboarding step");
+
+      const res = await dispatchNavigationFetch(harness, path);
+      expect(await res.clone().text()).toBe("onboarding step");
+      await Promise.all(harness.lifetimePromises);
+
+      expect(
+        await harness.cacheStorage.match(`${ORIGIN}${path}`),
+      ).toBeUndefined();
+    },
+  );
+
   it("still caches an ordinary navigation response", async () => {
     const harness = bootServiceWorker();
     harness.context.fetch = async () => healthlogPage("app shell");
