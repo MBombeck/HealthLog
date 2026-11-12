@@ -626,10 +626,10 @@ export function useAccountOnceMounted(): AuthUser | null {
  * former explicit `setQueryData(null)` + `invalidateQueries(["auth"])`.
  *
  * Then `clearOfflineCachesForSessionEnd()` wipes the persisted layers — the
- * IndexedDB query snapshot, the SW offline read-data cache (`healthlog-data-*`),
- * and the SW page cache (`healthlog-pages-*`, cached navigation HTML). The static
- * cache (hashed chunks, icons) carries no PII and stays intact to avoid a
- * needless re-download. Best-effort; never blocks the redirect.
+ * IndexedDB query snapshot, the SW page cache (`healthlog-pages-*`, cached
+ * navigation HTML) and any API cache an older worker left (`healthlog-data-*`).
+ * The static cache (catalogs, icons, fonts, images) carries no PII and stays
+ * intact to avoid a needless re-download. Best-effort; never blocks the redirect.
  */
 export function clearCachesForSessionEnd(queryClient: QueryClient): void {
   queryClient.clear();

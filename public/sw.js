@@ -1,7 +1,7 @@
 /**
  * HealthLog service worker: Web Push, a page cache for public pages, and a
- * static cache for catalogs and icons. API answers and app chunks are never
- * stored here.
+ * static cache for catalogs, icons, fonts and images. API answers and app
+ * chunks are never stored here.
  */
 
 // Cache names carry the release, so `activate` drops every older cache. The
@@ -28,7 +28,7 @@ const CURRENT_HEALTHLOG_CACHES = new Set([STATIC_CACHE, PAGE_CACHE]);
 // Set by `src/proxy.ts` on every HealthLog page; same name as there.
 const HEALTHLOG_PAGE_MARKER_HEADER = "X-HealthLog-Page";
 // While set, the fetch handler declines every request. Set when a page looks
-// like another app, cleared when `confirmForeignOrigin` finds HealthLog.
+// like another app, cleared unless the probe confirms another app.
 let foreignOrigin = false;
 // One confirmation at a time, shared by a burst of navigations.
 let foreignOriginCheck = null;
