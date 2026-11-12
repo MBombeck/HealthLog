@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2876,
-  "total": 9164,
+  "total": 9161,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -925,7 +925,7 @@
     "components/insights/coach-panel/guided-questions-card.tsx": 1,
     "components/insights/coach-panel/guided-questions-machine.ts": 2,
     "components/insights/coach-panel/memory-note.tsx": 1,
-    "components/insights/coach-panel/message-thread.tsx": 31,
+    "components/insights/coach-panel/message-thread.tsx": 28,
     "components/insights/coach-panel/method-line.tsx": 1,
     "components/insights/coach-panel/mobile-rail-tray.tsx": 2,
     "components/insights/coach-panel/read-aloud.tsx": 8,

@@ -640,27 +640,25 @@ export function MessageThread({
           one scroll container. */}
       <div
         data-slot="coach-message-thread-frame"
-        className="relative flex min-h-0 flex-1 flex-col"
+        className="@container/coach-thread relative flex min-h-0 flex-1 flex-col"
       >
         <div
           ref={scrollerRef}
           data-slot="coach-message-thread"
           className={cn(
-            // v1.18.6.1 — `min-h-0 flex-1` (not `h-full`) so the scroll region
-            // resolves its height from the flex parent rather than a 100%-of-auto
-            // chain that let the thread grow instead of scroll.
-            // v1.18.7 — calmer vertical rhythm (gap-6) and more generous top/
-            // bottom breathing room so the conversation reads like a document,
-            // not a chat log packed against the chrome.
+            // `min-h-0 flex-1`, not `h-full`: the region takes its height from
+            // the flex parent, so the thread scrolls instead of growing.
             "flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4 py-6 sm:px-6",
-            // v1.18.6 v1.18.7 — on the wide page surface an edge-to-
-            // edge thread sprawled the prose past a readable measure. Centre the
-            // content on a narrower, calmer Claude/ChatGPT-like column
-            // (`max-w-2xl`) via an `mx-auto` inner gutter; the scrollbar still
-            // rides the surface edge. The drawer surface is already narrow, so
-            // the cap only bites on the wide page surface.
+            // A readable measure on the wide page; the scrollbar stays on the
+            // surface edge.
             "[&>*]:mx-auto [&>*]:w-full [&>*]:max-w-2xl",
             "scroll-smooth",
+            // Every surface with a thread floats New conversation over its
+            // bottom edge while the composer fills the column (`NewChatFab`),
+            // so the last message keeps the button's height free, as the
+            // shell clears the Coach button. The button moves beside a 54rem
+            // composer, which the column is at 57rem with its padding.
+            "pb-20 @min-[57rem]/coach-thread:pb-6",
           )}
         >
           {[
