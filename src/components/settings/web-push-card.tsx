@@ -211,11 +211,12 @@ export function WebPushCard() {
 
       {(!loading && unsupported) || (!loading && isDenied) || msg ? (
         <div className="space-y-4">
-          {!loading && unsupported ? (
+          {!loading && unsupported === "install" ? (
+            // Steps to follow: content, not meta.
+            <p className="text-sm">{t("settings.webPushInstallFirst")}</p>
+          ) : !loading && unsupported ? (
             <p className="text-muted-foreground text-sm">
-              {unsupported === "install"
-                ? t("settings.webPushInstallFirst")
-                : t("settings.webPushNotSupported")}
+              {t("settings.webPushNotSupported")}
             </p>
           ) : !loading && isDenied ? (
             <p className="text-destructive text-sm">

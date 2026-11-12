@@ -6408,7 +6408,7 @@
     "webPush": "Push del navegador",
     "webPushDescription": "Recibe notificaciones directamente en tu navegador, incluso cuando HealthLog no está abierto.",
     "webPushNotSupported": "Tu navegador no admite notificaciones push.",
-    "webPushInstallFirst": "En iPhone y iPad, las notificaciones push solo funcionan en la app instalada. En Safari, toca Compartir y luego «Añadir a pantalla de inicio», abre HealthLog desde la pantalla de inicio y activa las notificaciones push aquí.",
+    "webPushInstallFirst": "En iPhone y iPad, las notificaciones push solo funcionan en la app instalada. En Safari, toca Compartir y luego «Añadir a pantalla de inicio», abre HealthLog desde la pantalla de inicio y toca aquí «Activar push».",
     "webPushDenied": "Las notificaciones push están bloqueadas. Permítelas en los ajustes de tu navegador.",
     "webPushNotConfigured": "Web Push no está configurado en el servidor.",
     "webPushSubscribe": "Activar push",
