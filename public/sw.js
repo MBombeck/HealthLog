@@ -68,9 +68,11 @@ self.addEventListener("activate", (event) => {
       self.registration.navigationPreload
         ? self.registration.navigationPreload.enable()
         : Promise.resolve(),
-      clearLeftoverAppBadge(),
     ]).then(() => self.clients.claim()),
   );
+  // Not part of the activation: a browser that never settles the badge call
+  // must not keep the worker from taking over its pages.
+  clearLeftoverAppBadge();
 });
 
 self.addEventListener("fetch", (event) => {
@@ -354,7 +356,7 @@ async function trimCache(cacheName, maxEntries) {
 }
 
 // Earlier releases set a dose count on the app icon; nothing sends one now,
-// so clear what they left. Never fails the activation.
+// so clear what they left. Best effort, outside the activation.
 async function clearLeftoverAppBadge() {
   try {
     await self.navigator?.clearAppBadge?.();
