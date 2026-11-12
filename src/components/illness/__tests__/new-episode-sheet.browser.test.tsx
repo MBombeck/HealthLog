@@ -16,6 +16,7 @@ import { storeTimezone } from "@/lib/timezone-mirror";
 import {
   stubFetch,
   type FetchStub,
+  type Responder,
 } from "../../../../tests/browser/fetch-stub";
 import { renderWithApp } from "../../../../tests/browser/render";
 import { NewEpisodeSheet } from "../new-episode-sheet";
@@ -41,6 +42,25 @@ function assertAllowedRequests(allowed: string[]) {
   for (const entry of actual) {
     expect(allowed).toContain(entry);
   }
+}
+
+function queuedPatch(labels: string[]): {
+  respond: Responder;
+  release: (index: number) => void;
+} {
+  const releases: Array<() => void> = [];
+  return {
+    respond: async (request) => {
+      const index = labels.length;
+      const label = (request.body as { label: string }).label;
+      labels.push(label);
+      await new Promise<void>((resolve) => {
+        releases[index] = resolve;
+      });
+      return { data: null };
+    },
+    release: (index) => releases[index]?.(),
+  };
 }
 
 function SheetHarness({
@@ -347,9 +367,9 @@ describe("<NewEpisodeSheet> save lifecycle in browser", () => {
     const nameInput = screen.getByLabelText("Name");
     await nameInput.fill("Fresh session draft");
 
-    // Reopened session is not blocked by the hanging request; Save is enabled immediately
+    // Reopening cannot bypass the previous mutation's pending state.
     const saveButtonReopened = screen.getByRole("button", { name: "Save" });
-    await expect.element(saveButtonReopened).toBeEnabled();
+    await expect.element(saveButtonReopened).toBeDisabled();
 
     // Settle the old request via resolve
     patch.release({
@@ -426,9 +446,9 @@ describe("<NewEpisodeSheet> save lifecycle in browser", () => {
     const nameInput = screen.getByLabelText("Name");
     await nameInput.fill("Fresh session draft");
 
-    // Reopened session is not blocked by hanging request
+    // Reopening cannot bypass the previous mutation's pending state.
     const saveButtonReopened = screen.getByRole("button", { name: "Save" });
-    await expect.element(saveButtonReopened).toBeEnabled();
+    await expect.element(saveButtonReopened).toBeDisabled();
 
     // Settle the old request via reject (server error)
     patch.release({
@@ -452,7 +472,80 @@ describe("<NewEpisodeSheet> save lifecycle in browser", () => {
     ]);
   });
 
-  it("allows reopened sheet to save while previous request hangs, and stale settlement does not abort newer save", async () => {
+  it("serializes updates across separate sheet instances even when the later response settles first", async () => {
+    const episode: IllnessEpisodeDTO = {
+      id: "ep-edit-scoped-queue",
+      label: "Original label",
+      type: "OTHER",
+      lifecycle: "ACUTE",
+      onsetAt: "2026-11-05T12:00:00.000Z",
+      resolvedAt: null,
+      parentConditionId: null,
+      note: null,
+      bodySite: null,
+      laterality: null,
+      createdAt: "2026-11-05T12:00:00.000Z",
+      updatedAt: "2026-11-05T12:00:00.000Z",
+    };
+    const savedLabels: string[] = [];
+    const patches = queuedPatch(savedLabels);
+    api.on("PATCH", `/api/illness/episodes/${episode.id}`, patches.respond);
+    const first = await renderWithApp(
+      <NewEpisodeSheet
+        open={true}
+        onOpenChange={() => {}}
+        today="2026-11-10"
+        editEpisode={episode}
+      />,
+    );
+    await first.screen.getByRole("button", { name: "Save" }).click();
+    await expect
+      .poll(
+        () => api.calls("PATCH", `/api/illness/episodes/${episode.id}`).length,
+      )
+      .toBe(1);
+
+    // Unmount the mutation observer while its request is still in flight.
+    await first.screen.unmount();
+    const second = await renderWithApp(
+      <NewEpisodeSheet
+        open={true}
+        onOpenChange={() => {}}
+        today="2026-11-10"
+        editEpisode={{ ...episode, label: "Newer label" }}
+      />,
+      { queryClient: first.queryClient },
+    );
+    await second.screen.getByRole("button", { name: "Save" }).click();
+    await expect
+      .element(second.screen.getByRole("button", { name: "Save" }))
+      .toBeDisabled();
+    expect(
+      api.calls("PATCH", `/api/illness/episodes/${episode.id}`),
+    ).toHaveLength(1);
+
+    // The second response cannot make its PATCH overtake the first request.
+    patches.release(1);
+    await expect
+      .poll(
+        () => api.calls("PATCH", `/api/illness/episodes/${episode.id}`).length,
+      )
+      .toBe(1);
+    patches.release(0);
+    await expect.poll(() => savedLabels.at(-1)).toBe("Newer label");
+    expect(
+      api.calls("PATCH", `/api/illness/episodes/${episode.id}`),
+    ).toHaveLength(2);
+  });
+
+  it("serializes updates saved before and after reopening the same episode", async () => {
+    const savedLabels: string[] = [];
+    const patches = queuedPatch(savedLabels);
+    api.on(
+      "PATCH",
+      "/api/illness/episodes/ep-edit-concurrent-1",
+      patches.respond,
+    );
     const editEpisode: IllnessEpisodeDTO = {
       id: "ep-edit-concurrent-1",
       label: "Persistent Cough",
@@ -467,12 +560,6 @@ describe("<NewEpisodeSheet> save lifecycle in browser", () => {
       createdAt: "2026-11-05T12:00:00.000Z",
       updatedAt: "2026-11-05T12:00:00.000Z",
     };
-
-    // Stale patch 1 is deferred (hangs)
-    const patch1 = api.deferred(
-      "PATCH",
-      `/api/illness/episodes/${editEpisode.id}`,
-    );
 
     const { screen } = await renderWithApp(
       <SheetHarness editEpisode={editEpisode} />,
@@ -502,51 +589,31 @@ describe("<NewEpisodeSheet> save lifecycle in browser", () => {
     const nameInput = screen.getByLabelText("Name");
     await nameInput.fill("Updated Cough Draft");
 
-    // Reopened sheet is enabled and can save even while PATCH 1 is still hanging
+    // Reopening cannot unlock an overlapping update, even before its query
+    // mutation has rehydrated the local pending state.
     const saveButton = screen.getByRole("button", { name: "Save" });
-    await expect.element(saveButton).toBeEnabled();
+    await expect.element(saveButton).toBeDisabled();
+    (saveButton.element() as HTMLButtonElement).click();
+    expect(
+      api.calls("PATCH", `/api/illness/episodes/${editEpisode.id}`),
+    ).toHaveLength(1);
 
-    // Prepare response for second save
-    const patch2 = api.deferred(
+    patches.release(0);
+
+    // The old response cannot close the reopened sheet or remove its draft.
+    await expect.element(reopenedDialog).toBeVisible();
+    await expect.element(nameInput).toHaveValue("Updated Cough Draft");
+    await expect.element(saveButton).toBeEnabled();
+    await saveButton.click();
+    patches.release(1);
+    await expect.element(reopenedDialog).not.toBeInTheDocument();
+    await expect.poll(() => savedLabels.at(-1)).toBe("Updated Cough Draft");
+
+    const patchCalls = api.calls(
       "PATCH",
       `/api/illness/episodes/${editEpisode.id}`,
     );
-
-    // Save the new session
-    await saveButton.click();
-    await expect
-      .poll(
-        () =>
-          api.calls("PATCH", `/api/illness/episodes/${editEpisode.id}`).length,
-      )
-      .toBe(2);
-
-    // Save button is disabled for new in-flight save (duplicate submit protection)
-    await expect.element(saveButton).toBeDisabled();
-
-    // Now old stale PATCH 1 resolves
-    patch1.release({
-      status: 200,
-      data: { ...editEpisode, label: "Stale Label" },
-    });
-
-    // Verifying stale PATCH 1 settlement does NOT close or reset newer in-flight save
-    await expect.element(reopenedDialog).toBeVisible();
-    await expect.element(saveButton).toBeDisabled();
-    await expect.element(screen.getByRole("alert")).not.toBeInTheDocument();
-
-    // Release PATCH 2 successfully
-    patch2.release({
-      status: 200,
-      data: { ...editEpisode, label: "Updated Cough Draft" },
-    });
-
-    // Reopened sheet closes cleanly once its own save settles
-    await expect.element(reopenedDialog).not.toBeInTheDocument();
-
-    expect(
-      api.calls("PATCH", `/api/illness/episodes/${editEpisode.id}`),
-    ).toHaveLength(2);
+    expect(patchCalls).toHaveLength(2);
     assertAllowedRequests([
       "GET /api/illness/episodes",
       "GET /api/body-sites",

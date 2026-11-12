@@ -39,7 +39,7 @@ export interface StubResponse {
   meta?: Record<string, unknown>;
 }
 
-type Responder = (
+export type Responder = (
   request: RecordedRequest,
 ) => StubResponse | Promise<StubResponse>;
 

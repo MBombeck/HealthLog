@@ -47,8 +47,11 @@ export function useEpisodeSave({
   values: EpisodeSaveValues;
 }) {
   const create = useCreateEpisode();
-  const update = useUpdateEpisode();
+  const update = useUpdateEpisode(editEpisode?.id ?? "");
   const isEdit = editEpisode !== undefined;
+  // Session resets clear only this session's flag, never the mutation's own
+  // pending state: a close/reopen must not unlock an overlapping update.
+  const mutationPending = create.isPending || update.isPending;
   const [isSaving, setIsSaving] = useState(false);
   // Duplicate-submit guard within the same session render tick
   const savingGenerationRef = useRef<number | null>(null);
@@ -148,6 +151,7 @@ export function useEpisodeSave({
     if (
       savingGenerationRef.current === generationRef.current ||
       isSaving ||
+      mutationPending ||
       label.trim() === "" ||
       trimmedOnset === "" ||
       endBeforeStart
@@ -186,7 +190,7 @@ export function useEpisodeSave({
         laterality,
       };
       if (isEdit && editEpisode) {
-        await update.mutateAsync({ id: editEpisode.id, input: payload });
+        await update.mutateAsync(payload);
       } else {
         await create.mutateAsync(payload);
       }
@@ -210,7 +214,7 @@ export function useEpisodeSave({
   }
 
   return {
-    pending: isSaving,
+    pending: isSaving || mutationPending,
     saveError,
     sessionTimezone,
     todayInSession,

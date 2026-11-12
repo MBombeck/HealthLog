@@ -24,6 +24,8 @@ export const illnessKeys = {
     term: string,
   ) => ["illness", "episodes-picker", direction, pivot ?? "", term] as const,
   illnessEpisode: (id: string) => ["illness", "episode", id] as const,
+  illnessEpisodeUpdate: (id: string) =>
+    ["illness", "episode", id, "update"] as const,
   illnessDayLog: (episodeId: string, date: string) =>
     ["illness", "day-log", episodeId, date] as const,
   /**

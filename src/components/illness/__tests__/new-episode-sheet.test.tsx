@@ -640,11 +640,8 @@ describe("NewEpisodeSheet — blank and whitespace onset date prevention", () =>
     expect(mockUpdateMutateAsync).toHaveBeenCalledTimes(1);
     expect(mockUpdateMutateAsync).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: mockEpisodeInTokyo.id,
-        input: expect.objectContaining({
-          label: "Morning Headache",
-          onsetAt: mockEpisodeInTokyo.onsetAt,
-        }),
+        label: "Morning Headache",
+        onsetAt: mockEpisodeInTokyo.onsetAt,
       }),
     );
   });
@@ -684,14 +681,11 @@ describe("NewEpisodeSheet — blank and whitespace onset date prevention", () =>
       expect(mockUpdateMutateAsync).toHaveBeenCalledTimes(1);
       expect(mockUpdateMutateAsync).toHaveBeenCalledWith(
         expect.objectContaining({
-          id: mockEpisodeInTokyo.id,
-          input: expect.objectContaining({
-            label: "Morning Headache",
-            onsetAt: mockEpisodeInTokyo.onsetAt,
-            // Nov 10 2026 in session timezone Asia/Tokyo at local noon is 2026-11-10T03:00:00.000Z
-            // (rather than America/Los_Angeles which would be 2026-11-10T20:00:00.000Z)
-            resolvedAt: "2026-11-10T03:00:00.000Z",
-          }),
+          label: "Morning Headache",
+          onsetAt: mockEpisodeInTokyo.onsetAt,
+          // Nov 10 2026 in session timezone Asia/Tokyo at local noon is 2026-11-10T03:00:00.000Z
+          // (rather than America/Los_Angeles which would be 2026-11-10T20:00:00.000Z)
+          resolvedAt: "2026-11-10T03:00:00.000Z",
         }),
       );
     } finally {
@@ -739,10 +733,7 @@ describe("NewEpisodeSheet — blank and whitespace onset date prevention", () =>
       expect(mockUpdateMutateAsync).toHaveBeenCalledTimes(1);
       expect(mockUpdateMutateAsync).toHaveBeenCalledWith(
         expect.objectContaining({
-          id: mockEpisodeInTokyo.id,
-          input: expect.objectContaining({
-            onsetAt: "2026-11-10T15:01:00.000Z",
-          }),
+          onsetAt: "2026-11-10T15:01:00.000Z",
         }),
       );
     } finally {
@@ -782,12 +773,9 @@ describe("NewEpisodeSheet — blank and whitespace onset date prevention", () =>
     expect(mockUpdateMutateAsync).toHaveBeenCalledTimes(1);
     expect(mockUpdateMutateAsync).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: episodeWithBothDates.id,
-        input: expect.objectContaining({
-          label: episodeWithBothDates.label,
-          onsetAt: episodeWithBothDates.onsetAt,
-          resolvedAt: episodeWithBothDates.resolvedAt,
-        }),
+        label: episodeWithBothDates.label,
+        onsetAt: episodeWithBothDates.onsetAt,
+        resolvedAt: episodeWithBothDates.resolvedAt,
       }),
     );
   });
@@ -816,11 +804,8 @@ describe("NewEpisodeSheet — blank and whitespace onset date prevention", () =>
     // Nov 8 2026 in Asia/Tokyo at local noon is 2026-11-08T03:00:00.000Z
     expect(mockUpdateMutateAsync).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: mockEpisodeInTokyo.id,
-        input: expect.objectContaining({
-          label: "Morning Headache",
-          onsetAt: "2026-11-08T03:00:00.000Z",
-        }),
+        label: "Morning Headache",
+        onsetAt: "2026-11-08T03:00:00.000Z",
       }),
     );
   });
@@ -868,11 +853,8 @@ describe("NewEpisodeSheet — blank and whitespace onset date prevention", () =>
       // and chronologically earlier, so it is clamped up to onsetAt.
       expect(mockUpdateMutateAsync).toHaveBeenCalledWith(
         expect.objectContaining({
-          id: existingEpisode.id,
-          input: expect.objectContaining({
-            onsetAt: "2026-11-11T00:00:00.000Z",
-            resolvedAt: "2026-11-11T00:00:00.000Z",
-          }),
+          onsetAt: "2026-11-11T00:00:00.000Z",
+          resolvedAt: "2026-11-11T00:00:00.000Z",
         }),
       );
     } finally {
@@ -931,11 +913,8 @@ describe("NewEpisodeSheet — blank and whitespace onset date prevention", () =>
     expect(mockUpdateMutateAsync).toHaveBeenCalledTimes(1);
     expect(mockUpdateMutateAsync).toHaveBeenCalledWith(
       expect.objectContaining({
-        id: mockEpisodeInTokyo.id,
-        input: expect.objectContaining({
-          label: "Morning Headache",
-          resolvedAt: null,
-        }),
+        label: "Morning Headache",
+        resolvedAt: null,
       }),
     );
   });
@@ -1627,7 +1606,7 @@ describe("NewEpisodeSheet — blank and whitespace onset date prevention", () =>
     expect(htmlAfterSettles).not.toContain('role="alert"');
   });
 
-  it("allows newly reopened sheet to save and close cleanly while an earlier save is still hanging", async () => {
+  it("keeps an earlier mutation pending across close/reopen and allows the next save after it settles", async () => {
     mockCreateMutateAsync.mockClear();
     mockUpdateMutateAsync.mockClear();
 
@@ -1636,7 +1615,13 @@ describe("NewEpisodeSheet — blank and whitespace onset date prevention", () =>
       resolveStaleSave = resolve;
     });
 
-    mockUpdateMutateAsync.mockImplementationOnce(() => stalePromise);
+    mockUpdateMutateAsync.mockImplementationOnce(() => {
+      mockUpdateState.isPending = true;
+      return stalePromise.then((value) => {
+        mockUpdateState.isPending = false;
+        return value;
+      });
+    });
 
     let isOpen = true;
     const onOpenChangeMock = vi.fn((next: boolean) => {
@@ -1666,21 +1651,21 @@ describe("NewEpisodeSheet — blank and whitespace onset date prevention", () =>
     runner.getHtml();
     expect(isOpen).toBe(true);
 
-    // Verify Save button is NOT disabled despite stale save still pending
-    expect(getSaveButton().props.disabled).toBe(false);
+    // Closing the sheet must not unlock a second overlapping update.
+    expect(getSaveButton().props.disabled).toBe(true);
+    await getSaveButton().props.onClick?.();
+    expect(mockUpdateMutateAsync).toHaveBeenCalledTimes(1);
 
-    // 4. In the reopened session, user clicks Save again
+    // 4. Once the earlier mutation settles, the reopened sheet can save.
+    resolveStaleSave({});
+    await staleSavePromise;
+    runner.getHtml();
+    expect(getSaveButton().props.disabled).toBe(false);
     mockUpdateMutateAsync.mockResolvedValueOnce({});
     const newSavePromise = getSaveButton().props.onClick?.();
     expect(mockUpdateMutateAsync).toHaveBeenCalledTimes(2);
 
     await newSavePromise;
-
-    // Proves new save succeeds and requests closure
     expect(onOpenChangeMock).toHaveBeenLastCalledWith(false);
-
-    // 5. Finally stale save resolves — does not re-open or error
-    resolveStaleSave({});
-    await staleSavePromise;
   });
 });

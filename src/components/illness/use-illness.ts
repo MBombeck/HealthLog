@@ -176,16 +176,15 @@ export function useCreateEpisode() {
 }
 
 /** Edit an episode (partial). */
-export function useUpdateEpisode() {
+export function useUpdateEpisode(id: string) {
   const invalidate = useInvalidateIllness();
   return useMutation({
-    mutationFn: ({
-      id,
-      input,
-    }: {
-      id: string;
-      input: IllnessEpisodeUpdateInput;
-    }) => apiPatch<IllnessEpisodeDTO>(`/api/illness/episodes/${id}`, input),
+    mutationKey: queryKeys.illnessEpisodeUpdate(id),
+    // One queue per episode: a later write cannot finish before an earlier
+    // one, even when its originating form has already unmounted.
+    scope: { id: `illness-episode-update-${id}` },
+    mutationFn: (input: IllnessEpisodeUpdateInput) =>
+      apiPatch<IllnessEpisodeDTO>(`/api/illness/episodes/${id}`, input),
     onSuccess: invalidate,
   });
 }
