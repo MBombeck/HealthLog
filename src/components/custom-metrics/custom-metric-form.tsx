@@ -132,8 +132,10 @@ export function CustomMetricForm({
       );
       onSuccess?.(saved);
     } catch (err) {
+      // By its code: a 409 can also be the first save still running.
       setError(
-        err instanceof ApiError && err.status === 409
+        err instanceof ApiError &&
+          err.meta?.errorCode === "customMetric.name_taken"
           ? t("customMetrics.form.nameTaken")
           : localizedApiError(err, t, "customMetrics.form.saveError"),
       );

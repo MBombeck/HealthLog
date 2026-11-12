@@ -134,6 +134,9 @@ describe("POST /api/custom-metrics", () => {
 
     const res = await POST(postReq({ name: "Grip strength", unit: "kg" }));
     expect(res.status).toBe(409);
+    // The form names the clash by this code: a 409 without it can be the
+    // first save still running under the same key.
+    expect((await res.json()).meta.errorCode).toBe("customMetric.name_taken");
     expect(prisma.customMetric.create).not.toHaveBeenCalled();
   });
 
