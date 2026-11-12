@@ -12,7 +12,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { sheetHistoryOwnsPopstate } from "@/components/ui/sheet-history";
 import { useTranslations } from "@/lib/i18n/context";
 
 type CloseRequest = () => void;
@@ -348,9 +347,6 @@ export function useSeededFormDismissal<T>({
     });
     historyTraversalGuardRef.current = historyTraversalGuard;
     const handlePopState = (event: PopStateEvent) => {
-      // A Back that closes a sheet over the form is the sheet's to answer;
-      // whichever capture listener was added first hears it first.
-      if (sheetHistoryOwnsPopstate()) return;
       historyTraversalGuard.handlePopState(event);
     };
 
