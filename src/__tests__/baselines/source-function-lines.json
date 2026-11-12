@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 336,
-  "total": 109298,
+  "total": 109290,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -332,7 +332,7 @@
     "lib/support/report.ts :: collectSupportReportFacts": 332,
     "lib/targets/build-response.ts :: buildTargetsResponse": 332,
     "lib/targets/vitals-builder.ts :: buildVitalTargets": 326,
-    "lib/telegram-webhook-handlers.ts :: handleCallback": 590,
+    "lib/telegram-webhook-handlers.ts :: handleCallback": 582,
     "lib/telegram-webhook-handlers.ts :: handleTextMessage": 322,
     "lib/withings/sync-activity.ts :: syncUserActivity": 377,
     "lib/withings/sync-ecg.ts :: syncUserEcg": 202,
