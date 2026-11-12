@@ -14,7 +14,7 @@ interface LogoutOptions {
 }
 
 const captured: { options: LogoutOptions | null } = { options: null };
-const push = vi.fn();
+const replace = vi.fn();
 const clear = vi.fn();
 const showErrorToast = vi.fn();
 
@@ -27,7 +27,7 @@ vi.mock("@tanstack/react-query", () => ({
   },
 }));
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push, replace: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), replace }),
 }));
 vi.mock("@/lib/i18n/context", () => ({
   useTranslations: () => ({ t: (key: string) => key }),
@@ -73,7 +73,7 @@ afterEach(() => {
 });
 
 describe("useLogout", () => {
-  it("clears the caches and opens the sign-in page once the server signed out", async () => {
+  it("clears the caches and replaces the page with the sign-in page once the server signed out", async () => {
     fetchMock.mockResolvedValue(json(200, { data: { loggedOut: true } }));
 
     useLogout();
@@ -84,7 +84,7 @@ describe("useLogout", () => {
       expect.objectContaining({ method: "POST" }),
     );
     expect(clear).toHaveBeenCalledTimes(1);
-    expect(push).toHaveBeenCalledWith("/auth/login");
+    expect(replace).toHaveBeenCalledWith("/auth/login");
     expect(showErrorToast).not.toHaveBeenCalled();
   });
 
@@ -137,7 +137,7 @@ describe("useLogout", () => {
     expect(JSON.parse(String(deleteCall[1]?.body))).toEqual({
       endpoint: subscription.endpoint,
     });
-    expect(push).toHaveBeenCalledWith("/auth/login");
+    expect(replace).toHaveBeenCalledWith("/auth/login");
   });
 
   it("keeps push working when the server refuses the sign-out", async () => {
@@ -180,7 +180,7 @@ describe("useLogout", () => {
       "/api/auth/logout",
       expect.objectContaining({ method: "POST" }),
     );
-    expect(push).toHaveBeenCalledWith("/auth/login");
+    expect(replace).toHaveBeenCalledWith("/auth/login");
   });
 
   it("stays on the page and says so when the server refuses", async () => {
@@ -191,7 +191,7 @@ describe("useLogout", () => {
     useLogout();
     await settle(captured.options!);
 
-    expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
     expect(clear).not.toHaveBeenCalled();
     expect(showErrorToast).toHaveBeenCalledWith(
       "auth.signOutFailed",

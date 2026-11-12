@@ -672,7 +672,9 @@ export function useLogout() {
     mutationFn: signOutRequest,
     onSuccess: () => {
       clearCachesForSessionEnd(queryClient);
-      router.push("/auth/login");
+      // Replace, so Back does not reopen the last page signed out, and the
+      // next sign-in on this device is not sent there.
+      router.replace("/auth/login");
     },
     onError: (failure) =>
       showErrorToast(t("auth.signOutFailed"), { cause: failure }),
