@@ -252,9 +252,10 @@ failed read never falls through to "no data yet".
   input that browsers keep guessing wrong.
 - API-token and AI-provider key inputs use `autoComplete="new-password"`
   so the browser does not fill in the account password.
-- Password-change and passkey screens carry a hidden
-  `<input type="text" name="username" autoComplete="username" value={user.email} readOnly tabIndex={-1}>`
-  so password managers attribute saved credentials correctly.
+- A password form with no visible username field can carry a hidden
+  `<input type="text" name="username" autoComplete="username" readOnly tabIndex={-1}>`
+  so a password manager files the new password under the right account.
+  The password-change form in Settings has none.
 
 ### 4.5 Test buttons (every integration)
 
