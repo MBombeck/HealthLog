@@ -6,7 +6,7 @@
  * optional encrypted note. Retrospective-only — no prediction UI, no
  * diagnosis prompt. Neutral palette throughout.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Button } from "@/components/ui/button";
@@ -21,17 +21,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useTranslations } from "@/lib/i18n/context";
+import { useDisplayTimezone, useTranslations } from "@/lib/i18n/context";
 import {
   BodySiteFields,
   type BodySiteSideValue,
 } from "@/components/body-sites/body-site-fields";
+import { todayKeyInZone } from "@/components/day/day-url";
+import { getUserTodayBounds } from "@/lib/tz/local-day";
 
 import {
   useCreateEpisode,
   useIllnessEpisodes,
   useUpdateEpisode,
 } from "./use-illness";
+import { resolveEpisodeInstant, toLocalDateKey } from "./dates";
 import type { IllnessEpisodeDTO, IllnessLifecycle, IllnessType } from "./types";
 
 const TYPES: IllnessType[] = [
@@ -57,13 +60,19 @@ const PARENTABLE: IllnessLifecycle[] = ["FLARE", "RECURRING"];
 const NONE = "__none__";
 
 /** What the form opens with: the edited episode, or a new one from today. */
-function episodeForm(episode: IllnessEpisodeDTO | undefined, today: string) {
+function episodeForm(
+  episode: IllnessEpisodeDTO | undefined,
+  today: string,
+  timeZone: string,
+) {
   return {
     label: episode?.label ?? "",
     type: episode?.type ?? ("INFECTION" as IllnessType),
     lifecycle: episode?.lifecycle ?? ("ACUTE" as IllnessLifecycle),
-    onset: episode ? episode.onsetAt.slice(0, 10) : today,
-    resolved: episode?.resolvedAt ? episode.resolvedAt.slice(0, 10) : "",
+    onset: episode ? toLocalDateKey(episode.onsetAt, timeZone) : today,
+    resolved: episode?.resolvedAt
+      ? toLocalDateKey(episode.resolvedAt, timeZone)
+      : "",
     parentId: episode?.parentConditionId ?? NONE,
     note: episode?.note ?? "",
     bodySite: episode?.bodySite ?? "",
@@ -86,6 +95,7 @@ export function NewEpisodeSheet({
   editEpisode,
 }: NewEpisodeSheetProps) {
   const { t } = useTranslations();
+  const timeZone = useDisplayTimezone();
   const create = useCreateEpisode();
   const update = useUpdateEpisode();
   const isEdit = editEpisode !== undefined;
@@ -98,30 +108,74 @@ export function NewEpisodeSheet({
     (e) => e.id !== editEpisode?.id,
   );
 
-  const [label, setLabel] = useState("");
-  const [type, setType] = useState<IllnessType>("INFECTION");
-  const [lifecycle, setLifecycle] = useState<IllnessLifecycle>("ACUTE");
-  const [onset, setOnset] = useState(today);
+  const [label, setLabel] = useState(editEpisode?.label ?? "");
+  const [type, setType] = useState<IllnessType>(
+    editEpisode?.type ?? "INFECTION",
+  );
+  const [lifecycle, setLifecycle] = useState<IllnessLifecycle>(
+    editEpisode?.lifecycle ?? "ACUTE",
+  );
+  const [sessionTimezone, setSessionTimezone] = useState(timeZone);
+  const [todayInSession, setTodayInSession] = useState(() =>
+    todayKeyInZone(timeZone),
+  );
+  const [onset, setOnset] = useState(
+    editEpisode ? toLocalDateKey(editEpisode.onsetAt, timeZone) : today,
+  );
   // Resolved/end date — "" means the episode is still ongoing (open-ended).
   // Backdating both onset and this end date lets a whole past episode be
   // recorded after the fact.
-  const [resolved, setResolved] = useState("");
-  const [parentId, setParentId] = useState<string>(NONE);
-  const [note, setNote] = useState("");
+  const [resolved, setResolved] = useState(
+    editEpisode?.resolvedAt
+      ? toLocalDateKey(editEpisode.resolvedAt, timeZone)
+      : "",
+  );
+  const [parentId, setParentId] = useState<string>(
+    editEpisode?.parentConditionId ?? NONE,
+  );
+  const [note, setNote] = useState(editEpisode?.note ?? "");
   // v1.39.2 — where on the body. Offered on every type: an injury or a joint
   // condition is the usual case, but nothing about a type rules a site out.
-  const [bodySite, setBodySite] = useState("");
-  const [laterality, setLaterality] = useState<BodySiteSideValue>(null);
+  const [bodySite, setBodySite] = useState(editEpisode?.bodySite ?? "");
+  const [laterality, setLaterality] = useState<BodySiteSideValue>(
+    editEpisode?.laterality ?? null,
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    function scheduleMidnight() {
+      const now = new Date();
+      const bounds = getUserTodayBounds(now, sessionTimezone);
+      const delay = Math.max(0, bounds.end.getTime() + 1 - now.getTime());
+      timer = setTimeout(() => {
+        setTodayInSession(todayKeyInZone(sessionTimezone));
+        scheduleMidnight();
+      }, delay);
+    }
+
+    scheduleMidnight();
+    return () => {
+      if (timer !== undefined) {
+        clearTimeout(timer);
+      }
+    };
+  }, [open, sessionTimezone]);
 
   // Reset / hydrate the form each time the sheet opens — adjusted during
   // render keyed on the open transition (React's recommended alternative to a
   // setState-in-effect).
   const [wasOpen, setWasOpen] = useState(false);
-  const [seed, setSeed] = useState(() => episodeForm(editEpisode, today));
+  const [seed, setSeed] = useState(() =>
+    episodeForm(editEpisode, today, timeZone),
+  );
   if (open && !wasOpen) {
-    const next = episodeForm(editEpisode, today);
+    const next = episodeForm(editEpisode, today, timeZone);
     setWasOpen(true);
     setSeed(next);
+    setSessionTimezone(timeZone);
+    setTodayInSession(todayKeyInZone(timeZone));
     setLabel(next.label);
     setType(next.type);
     setLifecycle(next.lifecycle);
@@ -149,36 +203,53 @@ export function NewEpisodeSheet({
 
   const showParent = PARENTABLE.includes(lifecycle);
 
+  const trimmedOnset = onset.trim();
+  const trimmedResolved = resolved.trim();
+
   // The end date can never precede the start; the field is min-bounded to the
   // onset, and this guard belts-and-braces the same invariant the server holds.
-  const endBeforeStart = resolved !== "" && resolved < onset;
+  const endBeforeStart =
+    trimmedResolved !== "" &&
+    trimmedOnset !== "" &&
+    trimmedResolved < trimmedOnset;
 
   async function handleSave() {
-    if (label.trim() === "" || endBeforeStart) return;
-    const onsetAt = new Date(`${onset}T12:00:00`).toISOString();
-    // "" ⇒ ongoing (null clears any stored end). Anchor to local noon so the
-    // UTC instant lands on the intended calendar day regardless of offset.
+    if (
+      pending ||
+      label.trim() === "" ||
+      trimmedOnset === "" ||
+      endBeforeStart
+    ) {
+      return;
+    }
+    const now = new Date();
+    const today = todayKeyInZone(sessionTimezone, now);
+    // When editing an existing episode, preserve its exact stored onset/resolved instants
+    // when their selected calendar dates are unchanged in the active display timezone.
+    const onsetAt = resolveEpisodeInstant({
+      date: trimmedOnset,
+      storedInstant: editEpisode?.onsetAt,
+      today,
+      now,
+      timeZone: sessionTimezone,
+    });
     const resolvedAt =
-      resolved === "" ? null : new Date(`${resolved}T12:00:00`).toISOString();
-    const parentConditionId = showParent && parentId !== NONE ? parentId : null;
-    try {
-      if (isEdit && editEpisode) {
-        await update.mutateAsync({
-          id: editEpisode.id,
-          input: {
-            label: label.trim(),
-            type,
-            lifecycle,
-            onsetAt,
-            resolvedAt,
-            parentConditionId,
-            note: note.trim() === "" ? null : note,
-            bodySite: bodySite.trim() || null,
-            laterality,
-          },
-        });
-      } else {
-        await create.mutateAsync({
+      trimmedResolved === ""
+        ? null
+        : resolveEpisodeInstant({
+            date: trimmedResolved,
+            storedInstant: editEpisode?.resolvedAt,
+            today,
+            now,
+            timeZone: sessionTimezone,
+          });
+    const parentConditionId =
+      showParent && parentId !== NONE ? parentId : null;
+
+    if (isEdit && editEpisode) {
+      await update.mutateAsync({
+        id: editEpisode.id,
+        input: {
           label: label.trim(),
           type,
           lifecycle,
@@ -188,12 +259,22 @@ export function NewEpisodeSheet({
           note: note.trim() === "" ? null : note,
           bodySite: bodySite.trim() || null,
           laterality,
-        });
-      }
-      onOpenChange(false);
-    } catch {
-      // Keep the sheet open; the error strip reports it.
+        },
+      });
+    } else {
+      await create.mutateAsync({
+        label: label.trim(),
+        type,
+        lifecycle,
+        onsetAt,
+        resolvedAt,
+        parentConditionId,
+        note: note.trim() === "" ? null : note,
+        bodySite: bodySite.trim() || null,
+        laterality,
+      });
     }
+    onOpenChange(false);
   }
 
   return (
@@ -212,7 +293,12 @@ export function NewEpisodeSheet({
           </Button>
           <Button
             onClick={handleSave}
-            disabled={pending || label.trim() === "" || endBeforeStart}
+            disabled={
+              pending ||
+              label.trim() === "" ||
+              trimmedOnset === "" ||
+              endBeforeStart
+            }
           >
             {t("common.save")}
           </Button>
@@ -303,7 +389,7 @@ export function NewEpisodeSheet({
           <DateField
             id="illness-onset"
             value={onset}
-            max={today}
+            max={todayInSession}
             onChange={setOnset}
             className="max-w-44"
           />
@@ -315,12 +401,12 @@ export function NewEpisodeSheet({
             <DateField
               id="illness-resolved"
               value={resolved}
-              min={onset}
-              max={today}
+              min={trimmedOnset}
+              max={todayInSession}
               onChange={setResolved}
               className="max-w-44"
             />
-            {resolved !== "" ? (
+            {trimmedResolved !== "" ? (
               <Button
                 type="button"
                 variant="ghost"
