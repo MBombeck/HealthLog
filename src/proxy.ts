@@ -175,8 +175,8 @@ function isPublicPath(pathname: string): boolean {
  * a unit toggle and a date of birth, and it is why free text, anything that
  * reaches an AI prompt, and anything creating a second record are refused.
  *
- * This whole block only runs under `DEMO_MODE=true`, so production (apps01)
- * is unaffected by construction.
+ * This whole block only runs under `DEMO_MODE=true`, so production is
+ * unaffected by construction.
  */
 const DEMO_MUTATION_ALLOWLIST: ReadonlyArray<{ path: string; method: string }> =
   [

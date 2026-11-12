@@ -221,7 +221,7 @@ async function enterSharedRecord(page: Page): Promise<void> {
 }
 
 /**
- * Swap the context's pinned locale for one HealthLog ships as an AI-initial
+ * Swap the context's pinned locale for one HealthLog ships as a machine
  * translation, so the maintainership strip has a reason to paint.
  *
  * The page is parked on `about:blank` for the swap. `I18nProvider` mirrors its

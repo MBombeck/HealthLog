@@ -137,7 +137,7 @@ test.describe("/admin/api-tokens mobile no-overflow", () => {
           data: [
             {
               id: "tok1",
-              name: "iOS auto-login 2026-05-05T19:42:11Z device-AABBCCDDEEFF-marathon",
+              name: "iOS auto-login 2026-05-05T19:42:11Z device-AABBCCDDEEFF-long-name",
               permissions: [
                 "measurements:write:audit:legacy:extended",
                 "medications:read",

@@ -28,16 +28,16 @@
 
 ## Checklist
 
-- [ ] Targets the `main` branch (trunk-based — see [CONTRIBUTING.md](../CONTRIBUTING.md))
+- [ ] Targets the `main` branch (trunk-based, see [CONTRIBUTING.md](../CONTRIBUTING.md))
 - [ ] `pnpm typecheck` passes locally
 - [ ] `pnpm lint` passes locally
 - [ ] `pnpm test` passes locally
 - [ ] `pnpm format:check` passes locally
 - [ ] `pnpm build` passes locally
-- [ ] User-facing strings go through `t("key")` with both `messages/en.json` and `messages/de.json` updated
+- [ ] User-facing strings go through `t("key")`, with the key in all ten `messages/*.json` files
 - [ ] No secrets, personal data, or maintainer-name references in committed files
 - [ ] Updated `CHANGELOG.md` if user-visible
-- [ ] Updated `docs/audit/` or `docs.healthlog.dev` if behavior or self-hosting docs change
+- [ ] Updated `docs/` or `docs.healthlog.dev` if behaviour or self-hosting steps change
 
 ## Linked issues
 

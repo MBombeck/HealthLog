@@ -1032,7 +1032,7 @@ export function buildSystemPromptWithReferences(
   const refs = selectReferencesForMetrics(metrics);
   if (refs.length === 0) return base;
 
-  // v1.4.25 — AI-initial locales (FR/ES/IT/PL) ride the EN sources
+  // v1.4.25 — machine-translated locales (FR/ES/IT/PL) ride the EN sources
   // block. The "title" field is the EN title; the model is told to
   // surface the citation id, not to translate the source title, so this
   // is safe — citation labels in the UI use the contract id (lowercase,
@@ -1107,7 +1107,7 @@ export const OUT_OF_SCOPE_REFUSAL_DE = {
  * from the safety-contract matrix so the summary copy stays in sync
  * with the prompt body that taught the model to emit it. The EN /
  * DE constants above remain authoritative for their locales — these
- * helpers cover the AI-initial locales.
+ * helpers cover the machine-translated locales.
  */
 export const OUT_OF_SCOPE_REFUSAL_FR = buildOutOfScopeRefusal("fr");
 export const OUT_OF_SCOPE_REFUSAL_ES = buildOutOfScopeRefusal("es");

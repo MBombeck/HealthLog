@@ -8,7 +8,7 @@ import type { Locale } from "@/lib/i18n/config";
 /**
  * v1.4.25 — <MaintainershipBanner> contract:
  *  1. Renders nothing on maintained locales (DE / EN).
- *  2. Renders a notice strip on AI-initial locales (FR / ES / IT / PL).
+ *  2. Renders a notice strip on machine-translated locales (FR / ES / IT / PL).
  *  3. The notice carries a GitHub-issue CTA so feedback has a clear
  *     home.
  *
@@ -61,7 +61,7 @@ describe("<MaintainershipBanner>", () => {
   // documents that the strip is NOT painted before the first effect
   // runs — exactly the contract that prevents the flash-of-banner
   // problem.
-  it("paints nothing in the SSR pass for AI-initial locales", () => {
+  it("paints nothing in the SSR pass for machine-translated locales", () => {
     for (const locale of ["fr", "es", "it", "pl"] as const) {
       const html = ssr(locale);
       expect(html).not.toContain("maintainership-banner");

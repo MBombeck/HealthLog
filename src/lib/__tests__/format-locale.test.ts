@@ -31,7 +31,7 @@ describe("parseLocaleFromAcceptLanguage", () => {
     expect(parseLocaleFromAcceptLanguage("*")).toBe("en");
   });
 
-  // v1.4.25 — the four AI-initial locales added in this release.
+  // v1.4.25 — the four machine-translated locales added in this release.
   // Each maps via the same primary-tag prefix match the DE branch uses.
   it("returns the matching tag for FR / ES / IT / PL", () => {
     expect(parseLocaleFromAcceptLanguage("fr-FR,fr;q=0.9")).toBe("fr");

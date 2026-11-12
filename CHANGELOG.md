@@ -19279,9 +19279,8 @@ NOT NULL`) is the defence-in-depth backstop.
 - **DE+EN bilingual CHANGELOG entries (v1.4.14 + v1.4.15)
   normalised to English-only.** Per the English-only voice
   rule.
-- **`CLAUDE.md` filename retired** so the filename is no longer
-  AI-vendor-specific; `CONTRIBUTING.md` reference updated.
-  `AGENTS.md` stays for multi-agent compatibility.
+- **Maintainer notes renamed**; the `CONTRIBUTING.md` reference is
+  updated.
 
 ### Deferred to v1.4.23
 
@@ -20599,8 +20598,8 @@ token '<', "<!DOCTYPE "`. 401/403 from the provider now map to 422,
 - **Repo-internal docs synced for v1.4.** README adds the
   Multi-tenant ready and Test connection buttons feature blocks, the
   API reference table includes the eleven new v1.4 endpoints, and
-  the model count is corrected to 26 (RefreshToken). AGENTS.md and
-  CLAUDE.md reflect the per-route `/settings/[section]` layout and
+  the model count is corrected to 26 (RefreshToken). The maintainer
+  notes reflect the per-route `/settings/[section]` layout and
   the per-section admin layout. `docs/api/openapi.yaml` documents
   the new endpoints (version, refresh, refresh/revoke,
   status-overview, backup/test, the five test-connection probes).
@@ -21157,7 +21156,7 @@ timeout: 30s })` so in-flight handlers finish instead of being killed.
   - `.env.example` now points at the in-container hostname `db:5432` (was `localhost:5432`, which never resolves inside the app container).
 - **Documentation**:
   - `package.json` synced to 1.2.0 (was lagging on 1.1.0).
-  - `CLAUDE.md` and `AGENTS.md` corrected to 23 models (the `Feedback` model added in v1.2 was missing from the count).
+  - The maintainer notes are corrected to 23 models (the `Feedback` model added in v1.2 was missing from the count).
   - `README.md` Quick Start gives a realistic time estimate, generates the four secrets in one block straight into `.env`, and points reverse-proxy users at the docs.
 
 ### Added — Tooling & Supply Chain

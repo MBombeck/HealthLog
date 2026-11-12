@@ -1,12 +1,12 @@
 name: Translation feedback
-description: Report a wording, grammar, or register problem in HealthLog's community-maintained locales (FR / ES / IT / PL / KO / NL / PT-BR).
+description: Report a wording, grammar, or register problem in HealthLog's community-reviewed locales (FR / ES / IT / PL / KO / NL / PT-BR / RU).
 title: "[Translation] "
 labels: ["i18n", "translation-feedback"]
 body:
   - type: markdown
     attributes:
       value: |
-        HealthLog ships German and English as maintainer-curated translations. French, Spanish, Italian, Polish, Korean, Dutch, and Brazilian Portuguese ship as **AI-initial, community-maintained translations** — the prose passes the locale-integrity test (full key parity, no empty values) but has not been hand-reviewed for register or regional vocabulary.
+        HealthLog ships German and English as maintainer-curated translations. French, Spanish, Italian, Polish, Korean, Dutch, Brazilian Portuguese and Russian started as machine-translated first drafts and are reviewed by the community. They pass the locale-integrity test (full key parity, no empty values), but not every line has been read by a native speaker for register or regional vocabulary.
 
         This template captures concrete fixes you would like to see. Phrasing nuance, regional vocabulary (e.g. "Tú" vs "Usted"), gendered forms, and domain-specific health terms are all in scope. The maintainer applies fixes during the regular release cycle.
 
@@ -23,6 +23,7 @@ body:
         - Korean (ko)
         - Dutch (nl)
         - Brazilian Portuguese (pt-BR)
+        - Russian (ru)
         - Other (specify under "Surface")
     validations:
       required: true
