@@ -79,6 +79,12 @@ export class ApiError extends Error {
    * so a form can mark the one the server refused. Empty when it named none.
    */
   readonly issuePaths: readonly string[];
+  /**
+   * The idempotency layer's "a request under this key is still running" (a
+   * 409 with `X-Idempotent-Replay: false`): nothing was decided, and a retry
+   * under the same key replays the first request's answer.
+   */
+  readonly inFlight: boolean;
 
   constructor(
     message: string,
@@ -86,12 +92,14 @@ export class ApiError extends Error {
     meta?: Record<string, unknown>,
     requestId?: string | null,
     issuePaths: readonly string[] = [],
+    inFlight = false,
   ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.meta = meta;
     this.issuePaths = issuePaths;
+    this.inFlight = inFlight;
     const fromMeta =
       typeof meta?.requestId === "string" && meta.requestId.length > 0
         ? meta.requestId
@@ -133,6 +141,7 @@ export async function throwApiError(res: Response): Promise<never> {
     meta,
     res.headers.get("x-request-id"),
     issuePaths,
+    res.status === 409 && res.headers.get("x-idempotent-replay") === "false",
   );
   // A server-side failure is worth an id in the session's support info,
   // whether or not the call site ends up showing it.

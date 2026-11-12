@@ -422,7 +422,7 @@ describe("extractFeatures — weight target direction (#1006)", () => {
   });
 });
 
-describe("extractFeatures — blood pressure against the person's own target", () => {
+describe("extractFeatures: blood pressure against the person's own target", () => {
   // 135/85 on three days: above the age default's ceiling, inside a target
   // the person's doctor agreed (up to 140/90).
   const bpRows = [1, 2, 3].flatMap((daysAgo) => {

@@ -142,11 +142,15 @@
     "auth": {
       "reproof": {
         "required": "Confirmez votre mot de passe actuel pour modifier ceci.",
-        "failed": "La vérification a échoué. Rien n'a été modifié."
+        "failed": "La vérification a échoué. Rien n'a été modifié.",
+        "too_weak": "Confirmez avec votre second facteur ou une clé d’accès. Sur ce compte, le mot de passe seul ne suffit pas."
       },
       "missing": "Votre session a expiré, rien n'a donc été modifié. Reconnectez-vous pour continuer.",
       "passkey": {
         "last_method": "Cette clé d’accès est votre seul moyen de connexion. Définissez d’abord un mot de passe ou ajoutez une autre clé d’accès."
+      },
+      "mfa": {
+        "already_active": "Une application d'authentification est déjà configurée pour ce compte. Désactivez-la d'abord pour en configurer une nouvelle."
       }
     },
     "biomarkers": {
@@ -218,9 +222,17 @@
     "workout": {
       "batch": {
         "invalid": "Vérifiez les informations de l'entraînement et réessayez.",
-        "too_large": "Trop d'entraînements à la fois. Envoyez-en moins à la fois.",
+        "too_large": "Trop d'entraînements à la fois. Envoyez-les par lots plus petits.",
         "payload_too_large": "Les données d'entraînement sont trop volumineuses pour être enregistrées en une fois.",
         "source_not_permitted": "Cette connexion n'a pas le droit d'enregistrer des entraînements sous cette source."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "Aucun fournisseur d’IA n’est configuré, rien n’a donc été envoyé. Configurez-en un dans les réglages IA."
+      },
+      "budget": {
+        "exceeded": "Le budget IA du jour est épuisé, rien n’a donc été envoyé. Il se renouvelle demain."
       }
     }
   },
@@ -1024,7 +1036,8 @@
     "typeTrainingReadiness": "Disponibilité à l'entraînement",
     "typeAcuteTrainingLoad": "Charge d'entraînement aiguë",
     "sourceGarmin": "Garmin",
-    "valueOutOfRange": "Saisissez une valeur entre {min} et {max} {unit}."
+    "valueOutOfRange": "Saisissez une valeur entre {min} et {max} {unit}.",
+    "valueOutOfRangeNoUnit": "Saisissez une valeur entre {min} et {max}."
   },
   "metricCatalog": {
     "title": "Ce que HealthLog peut suivre",
@@ -5959,6 +5972,7 @@
             "inProgress": "Un import d'historique est déjà en cours. Attendez qu'il se termine.",
             "workerUnavailable": "Le service d'arrière-plan est indisponible, rien n'a été importé.",
             "failed": "L'import a échoué. Rien n'a été écrit.",
+            "stillRunning": "L'import prend plus de temps que d'habitude et peut encore aboutir. Revenez voir vos prises dans quelques minutes.",
             "columnsHeading": "Ce que devient chaque colonne",
             "jsonOnly": "JSON uniquement",
             "previewLine": "{rows} lignes lues, {queued} seraient importées, {refused} refusées",
@@ -12494,7 +12508,8 @@
       "purgeConfirmBody": "Il est supprimé maintenant plutôt qu'à la fin du délai d'attente et ne peut pas être restauré."
     },
     "picker": {
-      "capped": "Les {count} plus récents sont affichés. Utilisez la recherche pour trouver un document plus ancien."
+      "capped": "Les {count} plus récents sont affichés. Utilisez la recherche pour trouver un document plus ancien.",
+      "cappedSearching": "Les {count} résultats les plus récents sont affichés. Affinez la recherche pour en trouver un plus ancien."
     }
   },
   "selfDescription": {

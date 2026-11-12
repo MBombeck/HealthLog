@@ -142,11 +142,15 @@
     "auth": {
       "reproof": {
         "required": "Potwierdź obecne hasło, aby to zmienić.",
-        "failed": "Weryfikacja nie powiodła się. Nic nie zostało zmienione."
+        "failed": "Weryfikacja nie powiodła się. Nic nie zostało zmienione.",
+        "too_weak": "Potwierdź drugim składnikiem lub kluczem dostępu. Na tym koncie samo hasło nie wystarczy."
       },
       "missing": "Twoja sesja wygasła, więc nic nie zostało zmienione. Zaloguj się ponownie, aby kontynuować.",
       "passkey": {
         "last_method": "Ten klucz dostępu to Twój jedyny sposób logowania. Najpierw ustaw hasło albo dodaj kolejny klucz dostępu."
+      },
+      "mfa": {
+        "already_active": "To konto ma już skonfigurowaną aplikację uwierzytelniającą. Najpierw ją wyłącz, aby skonfigurować nową."
       }
     },
     "biomarkers": {
@@ -194,17 +198,17 @@
     },
     "encounter": {
       "invalid": "Sprawdź dane wizyty i spróbuj ponownie.",
-      "practitioner-not-found": "Ten gabinet lub lekarz już nie istnieje. Wybierz inny albo żaden.",
-      "reminder-not-found": "To badanie już nie istnieje. Wybierz inne albo żadne.",
+      "practitioner-not-found": "Ten gabinet lub lekarz już nie istnieje. Wybierz inny wpis albo „Nie podano”.",
+      "reminder-not-found": "To badanie już nie istnieje. Wybierz inne albo pozostaw pole puste.",
       "reminder-conflict": "Zaplanowana wizyta nie może zamknąć badania, bo jeszcze się nie odbyła."
     },
     "vaccination": {
       "invalid": "Sprawdź dane szczepienia i spróbuj ponownie.",
-      "practitioner-not-found": "Ten gabinet lub lekarz już nie istnieje. Wybierz inny albo żaden.",
-      "encounter-not-found": "Ta wizyta już nie istnieje. Wybierz inną albo żadną.",
+      "practitioner-not-found": "Ten gabinet lub lekarz już nie istnieje. Wybierz inny wpis albo „Nie podano”.",
+      "encounter-not-found": "Ta wizyta już nie istnieje. Wybierz inną albo pozostaw pole puste.",
       "custom-vaccine-not-found": "Ta szczepionka już nie istnieje. Wybierz ją ponownie z listy.",
       "not-found": "To szczepienie nie jest już dostępne.",
-      "identity-required": "Dawka potrzebuje nazwy: wybierz szczepionkę z listy albo wpisz to, co widnieje w dokumentacji.",
+      "identity-required": "Dawka potrzebuje nazwy: wybierz szczepionkę z listy albo wpisz to, co podano w karcie szczepień.",
       "booster-invalid": "Sprawdź dane dawki przypominającej i spróbuj ponownie.",
       "booster-no-antigen": "Ta dawka nie wskazuje szczepionki z katalogu, więc nie da się zaplanować dawki przypominającej.",
       "booster-out-of-scope": "Twój dostęp do tej kartoteki nie obejmuje planowania dawki przypominającej."
@@ -221,6 +225,14 @@
         "too_large": "Za dużo treningów naraz. Wysyłaj mniej za jednym razem.",
         "payload_too_large": "Dane treningu są za duże, by zapisać je za jednym razem.",
         "source_not_permitted": "To połączenie nie może zapisywać treningów pod tym źródłem."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "Nie skonfigurowano dostawcy AI, więc nic nie zostało wysłane. Skonfiguruj go w ustawieniach AI."
+      },
+      "budget": {
+        "exceeded": "Dzisiejszy budżet AI został wykorzystany, więc nic nie zostało wysłane. Odnowi się jutro."
       }
     }
   },
@@ -1024,7 +1036,8 @@
     "typeTrainingReadiness": "Gotowość do treningu",
     "typeAcuteTrainingLoad": "Ostre obciążenie treningowe",
     "sourceGarmin": "Garmin",
-    "valueOutOfRange": "Wpisz wartość od {min} do {max} {unit}."
+    "valueOutOfRange": "Wpisz wartość od {min} do {max} {unit}.",
+    "valueOutOfRangeNoUnit": "Wpisz wartość od {min} do {max}."
   },
   "metricCatalog": {
     "title": "Co HealthLog potrafi śledzić",
@@ -5959,6 +5972,7 @@
             "inProgress": "Import historii dawek już trwa. Poczekaj, aż się zakończy.",
             "workerUnavailable": "Proces w tle jest niedostępny, więc nic nie zostało zaimportowane.",
             "failed": "Import nie udał się. Nic nie zostało zapisane.",
+            "stillRunning": "Import trwa dłużej niż zwykle i może się jeszcze zakończyć. Sprawdź swoje dawki ponownie za kilka minut.",
             "columnsHeading": "Co się dzieje z każdą kolumną",
             "jsonOnly": "tylko JSON",
             "previewLine": "Odczytane wiersze: {rows}, do zaimportowania: {queued}, odrzucone: {refused}",
@@ -12494,7 +12508,8 @@
       "purgeConfirmBody": "Zostanie usunięty teraz zamiast po okresie oczekiwania i nie będzie można go przywrócić."
     },
     "picker": {
-      "capped": "Widać {count} najnowszych. Starszy dokument znajdziesz przez wyszukiwanie."
+      "capped": "Widać {count} najnowszych. Starszy dokument znajdziesz przez wyszukiwanie.",
+      "cappedSearching": "Widać {count} najnowszych wyników. Zawęź wyszukiwanie, aby znaleźć starszy."
     }
   },
   "selfDescription": {

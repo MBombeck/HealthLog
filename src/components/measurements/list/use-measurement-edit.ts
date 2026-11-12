@@ -103,20 +103,20 @@ export function editValueRange(
 type Translate = ReturnType<typeof useTranslations>["t"];
 
 /** The sentence for a value outside its band, in the unit the input shows. */
-function outOfRangeMessage(
+export function outOfRangeMessage(
   display: Pick<MeasurementRowDisplay, "rowDisplay">,
   measurement: Measurement,
   t: Translate,
   formatNumber: (value: number) => string,
 ): string {
   const range = editValueRange(display, measurement);
-  return range
-    ? t("measurements.valueOutOfRange", {
-        min: formatNumber(range.min),
-        max: formatNumber(range.max),
-        unit: range.unit,
-      })
-    : t("measurements.invalidValue");
+  if (!range) return t("measurements.invalidValue");
+  const bounds = { min: formatNumber(range.min), max: formatNumber(range.max) };
+  // A score, rating, count or ratio has no unit label, which left a space
+  // before the full stop.
+  return range.unit
+    ? t("measurements.valueOutOfRange", { ...bounds, unit: range.unit })
+    : t("measurements.valueOutOfRangeNoUnit", bounds);
 }
 
 /**

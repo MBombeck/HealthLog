@@ -56,15 +56,21 @@ export default function InsightsBmiPage() {
   const { data: targets } = useQuery({
     queryKey: queryKeys.insightsTargets(),
     queryFn: () =>
-      apiGet<{ profile?: { heightCm: number | null } }>(
-        "/api/insights/targets",
-      ),
-    enabled: isAuthenticated && inSharedRecord,
+      apiGet<{
+        targets: ReadonlyArray<{ type: string; range: unknown }>;
+        profile?: { heightCm: number | null };
+      }>("/api/insights/targets"),
+    enabled: isAuthenticated,
   });
   const heightCm = inSharedRecord
     ? (targets?.profile?.heightCm ?? null)
     : (user?.heightCm ?? null);
   const heightKnown = !inSharedRecord || targets !== undefined;
+  // The adult bands only where the server names the BMI range: it names none
+  // for a child's record, which they do not describe.
+  const bmiBands = targets?.targets.find((entry) => entry.type === "BMI")?.range
+    ? BMI_BANDS
+    : undefined;
 
   // v1.4.27 — BMI is derived from WEIGHT. When no weight readings
   // exist yet, the existing "set your height" branch can never compute
@@ -140,7 +146,7 @@ export default function InsightsBmiPage() {
         colors={["var(--chart-5)"]}
         unit="kg/m²"
         valueMode="bmi"
-        valueBands={BMI_BANDS}
+        valueBands={bmiBands}
         compareBaseline={compareBaseline}
         userTimezone={user?.timezone}
         showDataTable

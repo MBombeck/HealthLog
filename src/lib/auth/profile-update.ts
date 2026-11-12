@@ -7,7 +7,9 @@ import { optionalDisplayNameSchema } from "@/lib/validations/display-name";
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { profileSchema } from "@/lib/validations/auth";
+import { dateOfBirthForStorage } from "@/lib/tz/date-only";
 import { isValidTimezone } from "@/lib/tz/format";
+import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { encrypt } from "@/lib/crypto";
 import {
   invalidateUserMedications,
@@ -185,6 +187,21 @@ export interface ApplyProfileError {
    * iOS contract already expects from other write routes.
    */
   issues?: SanitisedZodIssue[];
+}
+
+/**
+ * The date of birth to store: the owner's calendar day (the iOS app sends an
+ * instant, read in the zone this request sets or the stored one), null to
+ * clear, and undefined, which leaves the column alone, for a string that
+ * names no date.
+ */
+async function storedDateOfBirth(
+  userId: string,
+  data: Partial<ExtendedProfileInput>,
+): Promise<Date | null | undefined> {
+  if (!data.dateOfBirth) return null;
+  const timezone = data.timezone ?? (await resolveUserTimezone(userId));
+  return dateOfBirthForStorage(data.dateOfBirth, timezone) ?? undefined;
 }
 
 /**
@@ -434,7 +451,7 @@ export async function applyProfileUpdate(
   if (data.email !== undefined) updates.email = normalizedEmail;
   if (data.heightCm !== undefined) updates.heightCm = data.heightCm ?? null;
   if (data.dateOfBirth !== undefined) {
-    updates.dateOfBirth = data.dateOfBirth ? new Date(data.dateOfBirth) : null;
+    updates.dateOfBirth = await storedDateOfBirth(userId, data);
   }
   if (data.gender !== undefined) updates.gender = data.gender;
   if (data.displayName !== undefined) {

@@ -22,6 +22,7 @@ import {
 } from "@/lib/query-keys";
 
 import { PAGE_SIZE, isGroupedRow, type Measurement } from "./list-model";
+import { isServerComputed } from "./row-actions";
 import type { MeasurementListFilters } from "./use-measurement-list-filters";
 
 /**
@@ -178,9 +179,10 @@ export function useMeasurementListData({
   });
 
   // Synthetic day and night rows collapse many raw rows behind a `dayKey`
-  // and are not individually deletable, so they are not selectable.
+  // and are not individually deletable, and a computed score is rewritten
+  // by the server, so neither is selectable.
   const pageIds = (data?.measurements ?? [])
-    .filter((m) => !isGroupedRow(m))
+    .filter((m) => !isGroupedRow(m) && !isServerComputed(m))
     .map((m) => m.id);
   const selectAll = selectAllState(selectedIds, pageIds);
   const selectedOnPage = selectedCountOnPage(selectedIds, pageIds);

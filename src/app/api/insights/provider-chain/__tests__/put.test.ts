@@ -238,6 +238,48 @@ describe("PUT /api/insights/provider-chain", () => {
       ]);
     });
 
+    it("drops the effort of a gateway the person switches off", async () => {
+      // A disabled gateway entry with an effort is the gateway form's holder,
+      // which the picked gateway still serves behind; a switch-off is not.
+      storedChain([
+        {
+          providerType: "openai-compatible",
+          priority: 1,
+          enabled: true,
+          reasoningEffort: "low",
+        },
+      ]);
+      await put([{ providerType: "openai-compatible", enabled: false }]);
+      expect(persisted()).toEqual([
+        { providerType: "openai-compatible", priority: 1, enabled: false },
+      ]);
+    });
+
+    it("keeps the holder's effort when the chain is saved around it", async () => {
+      storedChain([
+        { providerType: "local", priority: 1, enabled: true },
+        {
+          providerType: "openai-compatible",
+          priority: 2,
+          enabled: false,
+          reasoningEffort: "low",
+        },
+      ]);
+      await put([
+        { providerType: "openai-compatible", enabled: false },
+        { providerType: "local", enabled: true },
+      ]);
+      expect(persisted()).toEqual([
+        {
+          providerType: "openai-compatible",
+          priority: 1,
+          enabled: false,
+          reasoningEffort: "low",
+        },
+        { providerType: "local", priority: 2, enabled: true },
+      ]);
+    });
+
     it("clears it on null", async () => {
       storedChain([
         {

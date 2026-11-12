@@ -111,7 +111,9 @@ export const PATCH = apiHandler(
         select: { id: true },
       });
       if (clash) {
-        return apiError("A custom metric with this name already exists", 409);
+        return apiError("A custom metric with this name already exists", 409, {
+          errorCode: "customMetric.name_taken",
+        });
       }
     }
 

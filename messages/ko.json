@@ -142,11 +142,15 @@
     "auth": {
       "reproof": {
         "required": "변경하려면 현재 비밀번호를 확인하세요.",
-        "failed": "확인에 실패했습니다. 아무것도 변경되지 않았습니다."
+        "failed": "확인에 실패했습니다. 아무것도 변경되지 않았습니다.",
+        "too_weak": "2단계 인증 수단이나 패스키로 확인하세요. 이 계정에서는 비밀번호만으로는 충분하지 않아요."
       },
       "missing": "세션이 만료되어 아무것도 변경되지 않았어요. 계속하려면 다시 로그인해 주세요.",
       "passkey": {
         "last_method": "이 패스키가 유일한 로그인 수단이에요. 먼저 비밀번호를 설정하거나 패스키를 하나 더 추가하세요."
+      },
+      "mfa": {
+        "already_active": "이 계정에는 이미 인증 앱이 설정되어 있어요. 새로 설정하려면 먼저 해제하세요."
       }
     },
     "biomarkers": {
@@ -194,14 +198,14 @@
     },
     "encounter": {
       "invalid": "진료 정보를 확인하고 다시 시도해 주세요.",
-      "practitioner-not-found": "이 병원 또는 의사가 더 이상 없어요. 다른 항목을 고르거나 선택하지 마세요.",
-      "reminder-not-found": "이 건강검진이 더 이상 없어요. 다른 검진을 고르거나 선택하지 마세요.",
+      "practitioner-not-found": "이 병원 또는 의사가 더 이상 없어요. 다른 항목을 고르거나 '지정 안 함'을 선택해 주세요.",
+      "reminder-not-found": "이 건강검진이 더 이상 없어요. 다른 검진을 고르거나 선택을 비워 두세요.",
       "reminder-conflict": "예정된 진료는 아직 이루어지지 않았기 때문에 건강검진을 완료할 수 없어요."
     },
     "vaccination": {
       "invalid": "예방접종 정보를 확인하고 다시 시도해 주세요.",
-      "practitioner-not-found": "이 병원 또는 의사가 더 이상 없어요. 다른 항목을 고르거나 선택하지 마세요.",
-      "encounter-not-found": "이 진료가 더 이상 없어요. 다른 진료를 고르거나 선택하지 마세요.",
+      "practitioner-not-found": "이 병원 또는 의사가 더 이상 없어요. 다른 항목을 고르거나 '지정 안 함'을 선택해 주세요.",
+      "encounter-not-found": "이 진료가 더 이상 없어요. 다른 진료를 고르거나 선택을 비워 두세요.",
       "custom-vaccine-not-found": "이 백신이 더 이상 없어요. 목록에서 다시 골라 주세요.",
       "not-found": "이 예방접종 기록은 더 이상 없어요.",
       "identity-required": "접종에는 이름이 필요해요. 목록에서 백신을 고르거나 기록에 적힌 이름을 입력하세요.",
@@ -221,6 +225,14 @@
         "too_large": "한 번에 운동이 너무 많아요. 조금씩 나눠서 보내 주세요.",
         "payload_too_large": "운동 데이터가 너무 커서 한 번에 저장할 수 없어요.",
         "source_not_permitted": "이 연결로는 해당 출처의 운동을 저장할 수 없어요."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "설정된 AI 제공자가 없어 아무것도 보내지 않았어요. AI 설정에서 하나를 설정하세요."
+      },
+      "budget": {
+        "exceeded": "오늘의 AI 예산을 모두 사용해서 아무것도 보내지 않았어요. 내일 다시 채워져요."
       }
     }
   },
@@ -1024,7 +1036,8 @@
     "typeTrainingReadiness": "트레이닝 준비도",
     "typeAcuteTrainingLoad": "급성 훈련 부하",
     "sourceGarmin": "Garmin",
-    "valueOutOfRange": "{min}에서 {max} {unit} 사이의 값을 입력해 주세요."
+    "valueOutOfRange": "{min}에서 {max} {unit} 사이의 값을 입력해 주세요.",
+    "valueOutOfRangeNoUnit": "{min}에서 {max} 사이의 값을 입력해 주세요."
   },
   "metricCatalog": {
     "title": "HealthLog가 기록할 수 있는 것",
@@ -5959,6 +5972,7 @@
             "inProgress": "복용 이력 불러오기가 이미 진행 중이에요. 끝날 때까지 기다려 주세요.",
             "workerUnavailable": "백그라운드 작업자를 쓸 수 없어서 아무것도 불러오지 못했어요.",
             "failed": "불러오지 못했어요. 아무것도 저장되지 않았어요.",
+            "stillRunning": "불러오기가 평소보다 오래 걸리고 있어요. 아직 끝날 수 있으니 몇 분 뒤에 복용 기록을 다시 확인해 주세요.",
             "columnsHeading": "각 열의 역할",
             "jsonOnly": "JSON 전용",
             "previewLine": "읽은 행 {rows}개, 불러올 행 {queued}개, 거부된 행 {refused}개",
@@ -12494,7 +12508,8 @@
       "purgeConfirmBody": "대기 기간이 끝나기 전에 지금 삭제되며 복구할 수 없습니다."
     },
     "picker": {
-      "capped": "최신 {count}개를 보여 줘요. 이전 문서는 검색으로 찾아 주세요."
+      "capped": "최신 {count}개를 보여 줘요. 이전 문서는 검색으로 찾아 주세요.",
+      "cappedSearching": "최근 검색 결과 {count}개를 보여 줘요. 이전 문서는 검색어를 좁혀서 찾아 주세요."
     }
   },
   "selfDescription": {

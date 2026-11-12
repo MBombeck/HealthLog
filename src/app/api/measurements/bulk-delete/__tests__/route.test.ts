@@ -156,6 +156,18 @@ describe("POST /api/measurements/bulk-delete", () => {
     });
   });
 
+  it("leaves a computed score out of the selection it deletes", async () => {
+    // The read is scoped like the write, so a computed row never reaches it.
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.measurement.updateMany).mockResolvedValue({ count: 0 });
+
+    await POST(postReq({ ids: ["score-1"] }));
+
+    expect(
+      vi.mocked(prisma.measurement.findMany).mock.calls[0][0]?.where,
+    ).toMatchObject({ source: { not: "COMPUTED" } });
+  });
+
   it("collapses the rollup recompute to the unique (type, day) set, not per-row", async () => {
     // 4 deleted rows: 2× WEIGHT on the same UTC day, 1× WEIGHT next day,
     // 1× PULSE same day as the first → 3 distinct (type, day) keys.

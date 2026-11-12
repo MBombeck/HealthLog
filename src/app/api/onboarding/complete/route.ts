@@ -29,6 +29,8 @@ import { readManagedProfileForGuardian } from "@/lib/managed-profiles/lifecycle"
 import { writeRecordModulePreferences } from "@/lib/record-settings/modules";
 import { NextRequest } from "next/server";
 import { onboardingCompleteSchema } from "@/lib/validations/onboarding";
+import { dateOfBirthForStorage } from "@/lib/tz/date-only";
+import { resolveStoredTimezone } from "@/lib/tz/resolver";
 
 /**
  * Complete the onboarding flow. Saves optional profile data and marks
@@ -84,10 +86,12 @@ export const POST = apiHandler(async (request: NextRequest) => {
   }
 
   if (result.data.dateOfBirth) {
-    const dob = new Date(result.data.dateOfBirth);
-    if (!isNaN(dob.getTime())) {
-      data.dateOfBirth = dob;
-    }
+    // The calendar day in the owner's zone: the iOS app sends an instant.
+    const dob = dateOfBirthForStorage(
+      result.data.dateOfBirth,
+      await resolveStoredTimezone(user.timezone),
+    );
+    if (dob) data.dateOfBirth = dob;
   }
 
   if (result.data.gender) {

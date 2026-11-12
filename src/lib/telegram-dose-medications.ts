@@ -40,10 +40,10 @@ function courseEnded(
     endedAt: Date | null;
   },
   timeZone: string | null,
+  at: Date = new Date(),
 ): boolean {
   return (
-    courseStatusAt(medication, new Date(), timeZone || DEFAULT_TIMEZONE) ===
-    "ENDED"
+    courseStatusAt(medication, at, timeZone || DEFAULT_TIMEZONE) === "ENDED"
   );
 }
 
@@ -61,16 +61,24 @@ export async function listTelegramDoseMedications(
   return medications.filter((m) => !courseEnded(m, timeZone));
 }
 
-/** The one medication `where` names, or null when the bot may not act on it. */
+/**
+ * The medication `where` names, or null when the bot may not act on it. A
+ * name can match an ended course beside the current one, so the course is
+ * judged on every match. `at` is the moment the dose is for: a reminder's
+ * button books its own slot, so the last evening dose of a course can still
+ * be confirmed after midnight.
+ */
 export async function findTelegramDoseMedication(
   userId: string,
   timeZone: string | null,
   where: Prisma.MedicationWhereInput,
+  at: Date = new Date(),
 ) {
   if (!(await isModuleEnabled(userId, "medications"))) return null;
-  const medication = await prisma.medication.findFirst({
+  const medications = await prisma.medication.findMany({
     where: { ...where, userId, active: true, ...TRACKED_INTAKE_WHERE },
     select: DOSE_MEDICATION_SELECT,
+    orderBy: { id: "asc" },
   });
-  return medication && !courseEnded(medication, timeZone) ? medication : null;
+  return medications.find((m) => !courseEnded(m, timeZone, at)) ?? null;
 }

@@ -77,6 +77,17 @@ function metricFields(existing: CustomMetricDto | undefined) {
 }
 
 /**
+ * The sentence for a refused save. A name clash is read by its code: a 409
+ * can also be the first save still running under the same key.
+ */
+function saveRefusal(err: unknown, t: (key: string) => string): string {
+  return err instanceof ApiError &&
+    err.meta?.errorCode === "customMetric.name_taken"
+    ? t("customMetrics.form.nameTaken")
+    : localizedApiError(err, t, "customMetrics.form.saveError");
+}
+
+/**
  * v1.25.5 — define or edit a custom metric.
  *
  * A metric is the feature's reusable definition: free-text name + unit, an
@@ -150,11 +161,7 @@ export function CustomMetricForm({
       );
       onSuccess?.(saved);
     } catch (err) {
-      setError(
-        err instanceof ApiError && err.status === 409
-          ? t("customMetrics.form.nameTaken")
-          : localizedApiError(err, t, "customMetrics.form.saveError"),
-      );
+      setError(saveRefusal(err, t));
     } finally {
       setSubmitting(false);
     }

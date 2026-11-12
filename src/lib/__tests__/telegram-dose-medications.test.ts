@@ -77,12 +77,12 @@ describe("listTelegramDoseMedications", () => {
 
 describe("findTelegramDoseMedication", () => {
   it("resolves a current course", async () => {
-    db.findFirst.mockResolvedValue(CHRONIC);
+    db.findMany.mockResolvedValue([CHRONIC]);
     const found = await findTelegramDoseMedication("user-1", null, {
       id: "chronic",
     });
     expect(found?.id).toBe("chronic");
-    expect(db.findFirst).toHaveBeenCalledWith(
+    expect(db.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
           id: "chronic",
@@ -95,7 +95,7 @@ describe("findTelegramDoseMedication", () => {
   });
 
   it("refuses an ended course", async () => {
-    db.findFirst.mockResolvedValue(ENDED_NOW);
+    db.findMany.mockResolvedValue([ENDED_NOW]);
     expect(
       await findTelegramDoseMedication("user-1", "Europe/Berlin", {
         id: "ended-now",
@@ -103,11 +103,31 @@ describe("findTelegramDoseMedication", () => {
     ).toBeNull();
   });
 
+  it("finds the current course beside an ended one of the same name", async () => {
+    db.findMany.mockResolvedValue([ENDED, CHRONIC]);
+    const found = await findTelegramDoseMedication("user-1", "Europe/Berlin", {
+      name: { equals: "ramipril", mode: "insensitive" },
+    });
+    expect(found?.id).toBe("chronic");
+  });
+
+  it("judges the course at the dose's own slot", async () => {
+    // The last evening dose, confirmed after midnight once the course ended.
+    db.findMany.mockResolvedValue([ENDED_NOW]);
+    const found = await findTelegramDoseMedication(
+      "user-1",
+      "Europe/Berlin",
+      { id: "ended-now" },
+      new Date(Date.now() - 3 * 60 * 60 * 1000),
+    );
+    expect(found?.id).toBe("ended-now");
+  });
+
   it("refuses everything with the Medications module off", async () => {
     db.moduleOn.mockResolvedValue(false);
     expect(
       await findTelegramDoseMedication("user-1", null, { id: "chronic" }),
     ).toBeNull();
-    expect(db.findFirst).not.toHaveBeenCalled();
+    expect(db.findMany).not.toHaveBeenCalled();
   });
 });
