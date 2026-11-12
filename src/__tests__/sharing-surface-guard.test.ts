@@ -1553,7 +1553,7 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   },
   "app/api/insights/targets/route.ts": {
     domain: "record",
-    why: "The record's resolved targets. Reached only through this module's MANAGE arm; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
+    why: "The record's resolved targets: the bands and reference ranges the dashboard snapshot already paints on the whole-record grant, read the same way, with no provider on the path. GET only; nothing is written here.",
   },
   "app/api/insights/ecg/route.ts": {
     domain: "record",
@@ -2099,11 +2099,6 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     conditions: [],
     why: "A score's daily course, read from the same rows the score pages and the day view read. Deterministic, no provider, nothing enqueued.",
   },
-  "app/api/insights/targets/route.ts": {
-    domain: "record",
-    conditions: [],
-    why: "The record's resolved targets.",
-  },
   "app/api/insights/ecg/route.ts": {
     domain: "record",
     conditions: [],
@@ -2305,7 +2300,7 @@ const ACTOR_ROUTES: Record<string, string> = {
  * make, or a managed profile's guardian's, never an adult record's delegate's.
  * 276 -> 278.
  */
-const FROZEN_ENTRY_COUNT = 278;
+const FROZEN_ENTRY_COUNT = 277;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

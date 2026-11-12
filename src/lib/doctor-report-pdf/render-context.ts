@@ -22,6 +22,12 @@ export interface DoctorReportPdfRenderContext {
   t: DoctorReportTranslator;
   num: DoctorReportNumberFormatter;
   fmtDate: (iso: string) => string;
+  /**
+   * A date-only value (a date of birth, a dose date): its calendar date, the
+   * same in every zone. `fmtDate` reads an instant in the report zone, which
+   * put a UTC-midnight date on the previous day west of UTC.
+   */
+  fmtCalendarDate: (iso: string) => string;
   dateShort: (iso: string) => string;
   dateTime: (date: Date) => string;
   now: Date;

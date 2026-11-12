@@ -130,6 +130,8 @@ function seed() {
   rows.userUnique = [
     {
       username: "owner",
+      displayName: null,
+      managedProfileAt: null,
       dateOfBirth: new Date("1980-05-05T00:00:00.000Z"),
       gender: "OTHER",
       heightCm: 180,
@@ -328,7 +330,7 @@ describe("per-leaf gating sweep", () => {
       0,
     );
     expect(Object.keys(allPayload.compliance).length).toBeGreaterThan(0);
-    expect(allPayload.patient.username).toBe("owner");
+    expect(allPayload.patient.name).toBe("Owner Name");
     expect(allPayload.patient.insurerName).toBe("Sample Insurer");
     expect(allPayload.bmi).not.toBeNull();
     expect(Object.keys(allPayload.glucoseStats).length).toBeGreaterThan(0);
@@ -457,6 +459,76 @@ describe("the derived figures ride their own leaf", () => {
   });
 });
 
+describe("the name the report prints", () => {
+  const identity = selectionFromLeaves(["PATIENT_IDENTITY"]);
+  const asUser = (fields: Record<string, unknown>) => {
+    rows.userUnique = [{ ...(rows.userUnique[0] as object), ...fields }];
+  };
+
+  it("names a managed record by its display name, never its generated login", async () => {
+    asUser({
+      username: "managed-3f9a0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f",
+      displayName: "Robin",
+      fullName: null,
+      managedProfileAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    const payload = await collectDoctorReportData("u1", RANGE, identity, {
+      moduleMap: moduleMap(),
+    });
+    expect(payload.patient.name).toBe("Robin");
+  });
+
+  it("prints no name for a managed record that has none", async () => {
+    asUser({
+      username: "managed-3f9a0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f",
+      displayName: null,
+      fullName: null,
+      managedProfileAt: new Date("2026-01-01T00:00:00.000Z"),
+    });
+    const payload = await collectDoctorReportData("u1", RANGE, identity, {
+      moduleMap: moduleMap(),
+    });
+    expect(payload.patient.name).toBeNull();
+  });
+
+  it("prefers the display name over the login on an own account", async () => {
+    asUser({ username: "owner", displayName: "Jane Doe", fullName: null });
+    const payload = await collectDoctorReportData("u1", RANGE, identity, {
+      moduleMap: moduleMap(),
+    });
+    expect(payload.patient.name).toBe("Jane Doe");
+  });
+});
+
+describe("the date of birth the report prints", () => {
+  const identity = selectionFromLeaves(["PATIENT_IDENTITY"]);
+  const born = async (dateOfBirth: Date, timezone: string) => {
+    rows.userUnique = [
+      { ...(rows.userUnique[0] as object), dateOfBirth, timezone },
+    ];
+    const payload = await collectDoctorReportData("u1", RANGE, identity, {
+      moduleMap: moduleMap(),
+    });
+    return payload.patient.dateOfBirth;
+  };
+
+  it("prints a date stored at UTC midnight as that date in every zone", async () => {
+    const stored = new Date("1960-05-14T00:00:00.000Z");
+    expect(await born(stored, "Pacific/Honolulu")).toBe("1960-05-14");
+    expect(await born(stored, "Pacific/Tongatapu")).toBe("1960-05-14");
+  });
+
+  it("prints an instant from the iOS app as its date in the owner's zone", async () => {
+    // 14 May entered at 00:30 in Berlin, and at 20:00 in Honolulu.
+    expect(
+      await born(new Date("1960-05-13T23:30:00.000Z"), "Europe/Berlin"),
+    ).toBe("1960-05-14");
+    expect(
+      await born(new Date("1960-05-15T06:00:00.000Z"), "Pacific/Honolulu"),
+    ).toBe("1960-05-14");
+  });
+});
+
 describe("fail-closed exclusion", () => {
   it("excludes a measurement type the catalogue does not know", () => {
     const gate = resolveReportGate(
@@ -571,7 +643,7 @@ describe("the empty selection serves nothing", () => {
       selectionFromLeaves([]),
       { moduleMap: moduleMap() },
     );
-    expect(payload.patient.username).toBeNull();
+    expect(payload.patient.name).toBeNull();
     expect(payload.patient.insurerName).toBeNull();
     expect(payload.labResults).toBeNull();
     expect(payload.allergies).toBeNull();

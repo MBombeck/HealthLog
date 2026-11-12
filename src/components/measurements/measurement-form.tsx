@@ -33,8 +33,8 @@ import {
   measurementDependentKeys,
   refetchInactiveDailyReads,
 } from "@/lib/query-keys";
-import { apiPost } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import { MEASUREMENT_NOTES_MAX_LENGTH } from "@/lib/measurements/notes-limit";
 import {
   getLastUsedMeasurementType,
@@ -327,6 +327,7 @@ export function MeasurementForm({
   const { t } = useTranslations();
   const recordName = useActiveRecordName();
   const queryClient = useQueryClient();
+  const post = useIdempotentPost();
   const unitDisplay = useUnitDisplay();
   const { user } = useAuth();
   // Glucose is its own display axis, separate from metric/imperial: it is
@@ -448,7 +449,7 @@ export function MeasurementForm({
           });
         }
 
-        await apiPost("/api/measurements", batch);
+        await post("/api/measurements", batch);
       } else if (isKetoneMode) {
         // One fingerstick, posted as one transaction (`ketone-fingerstick.ts`).
         const batch = ketoneFingerstickBatch({
@@ -463,7 +464,7 @@ export function MeasurementForm({
           setError(t("measurements.saveError"));
           return;
         }
-        await apiPost("/api/measurements", batch);
+        await post("/api/measurements", batch);
       } else {
         // Single measurement. Canonical storage stays SI: an imperial user
         // types in lb / in / °F and we invert to the canonical unit at the
@@ -508,7 +509,7 @@ export function MeasurementForm({
               : inverted;
         }
         canonicalValue = entryValueToCanonical(type, canonicalValue);
-        await apiPost("/api/measurements", {
+        await post("/api/measurements", {
           type,
           value: canonicalValue,
           measuredAt: timestamp,
@@ -528,8 +529,6 @@ export function MeasurementForm({
       setPulse("");
       setPairedGlucose("");
       setNotes("");
-      await invalidateKeys(queryClient, measurementDependentKeys);
-      await refetchInactiveDailyReads(queryClient);
       // v1.36.x — a delegate's receipt names the record. "Saved" alone is
       // the one confirmation somebody acting for another person does not
       // need, and the reading has just left their own history for good.
@@ -544,6 +543,10 @@ export function MeasurementForm({
           : undefined,
       );
       onSuccess?.();
+      // The reading is stored; the sheet does not wait for every read that
+      // shows it to come back.
+      void invalidateKeys(queryClient, measurementDependentKeys);
+      void refetchInactiveDailyReads(queryClient);
     } catch (err) {
       setError(localizedApiError(err, t, "measurements.saveError"));
     } finally {

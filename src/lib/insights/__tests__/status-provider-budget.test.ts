@@ -224,9 +224,13 @@ describe("runStatusCompletion — capability at the wire", () => {
   });
 
   it("returns none with reason no_provider when the chain is empty", async () => {
+    // The chain carries the person's provider switches; an empty one is no
+    // provider, never a quiet hop to the single-provider resolver's pick.
     resolveProviderChain.mockResolvedValue([]);
+    resolveProvider.mockResolvedValue({ type: "admin-key" });
     const outcome = await runStatusCompletion(completionArgs() as never);
     expect(outcome).toEqual({ kind: "none", reason: "no_provider" });
+    expect(resolveProvider).not.toHaveBeenCalled();
     expect(runRawCompletionWithFallback).not.toHaveBeenCalled();
   });
 });

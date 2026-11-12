@@ -47,6 +47,13 @@ import {
 } from "@/lib/medications/scheduling/live-era";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
+import { isModuleEnabled } from "@/lib/modules/gate";
+import { getEvent } from "@/lib/logging/context";
+import {
+  makeFormatters,
+  type DateFormatPreference,
+  type TimeFormatPreference,
+} from "@/lib/format-locale";
 
 export interface ReminderCheckPayload {
   triggeredAt: string;
@@ -65,9 +72,15 @@ const getUserTodayBounds = getUserTodayBoundsUtil;
  * a record, so it is excluded explicitly: no reminder on any channel and no
  * missed-dose placeholder (#1033). And none whose account is pending
  * deletion: that record is frozen until it is erased or given back.
+ *
+ * Nor any of a person who switched the Medications module off: no reminder
+ * and no missed-dose placeholder while it is off, as the mood reminder does
+ * for the Mood module. One module read per owner per tick.
  */
-function loadRemindableMedications(prisma: ReturnType<typeof getWorkerPrisma>) {
-  return prisma.medication.findMany({
+async function loadRemindableMedications(
+  prisma: ReturnType<typeof getWorkerPrisma>,
+) {
+  const medications = await prisma.medication.findMany({
     where: {
       active: true,
       asNeeded: false,
@@ -85,10 +98,45 @@ function loadRemindableMedications(prisma: ReturnType<typeof getWorkerPrisma>) {
           // Used to localise the reminder title / message / keyboard
           // labels per user. Null falls back to the app default.
           locale: true,
+          // How the slot time is spelled (`slotClock`).
+          timeFormat: true,
+          dateFormat: true,
         },
       },
     },
   });
+  const moduleOff = new Set<string>();
+  for (const userId of new Set(medications.map((med) => med.user.id))) {
+    if (!(await isModuleEnabled(userId, "medications"))) moduleOff.add(userId);
+  }
+  if (moduleOff.size > 0) {
+    getEvent()?.addMeta(
+      "medication_reminder.skipped_module_disabled",
+      moduleOff.size,
+    );
+  }
+  return medications.filter((med) => !moduleOff.has(med.user.id));
+}
+
+/**
+ * The slot's clock time as the person reads it everywhere else in the app:
+ * their hour cycle, through the same formatter as the medication card. AUTO
+ * follows the message's language, so an `en` reminder reads "08:00 PM" where
+ * a `de` one reads "20:00". The slot's instant is formatted in the person's
+ * zone; the bare `HH:mm` would be read in the server's.
+ */
+export function slotClock(
+  slot: Date,
+  timeZone: string,
+  person: {
+    timeFormat: TimeFormatPreference;
+    dateFormat: DateFormatPreference;
+  },
+): (locale: Locale) => string {
+  return (locale) =>
+    makeFormatters(locale, timeZone, person.timeFormat, person.dateFormat).time(
+      slot,
+    );
 }
 
 /**
@@ -594,7 +642,7 @@ export async function handleReminderCheck(
             }
 
             const doseInfo = schedule.dose ?? med.dose;
-            const timeWindow = `${slotTime}`;
+            const timeWindow = slotClock(slotScheduledFor, userTz, med.user);
 
             // RED phase: create missed intake event for this slot.
             if (currentPhase === "RED") {
@@ -644,7 +692,7 @@ export async function handleReminderCheck(
                 currentPhase,
                 med.name,
                 doseInfo,
-                timeWindow,
+                timeWindow(recipientLocale),
                 Math.ceil(minutesToEnd),
                 recipientLocale,
               );
@@ -653,7 +701,7 @@ export async function handleReminderCheck(
                   currentPhase,
                   med.name,
                   doseInfo,
-                  timeWindow,
+                  timeWindow(locale),
                   Math.ceil(minutesToEnd),
                   locale,
                 );

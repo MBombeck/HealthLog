@@ -1,17 +1,10 @@
-import {
-  probeProviderPresence,
-  resolveProvider,
-  resolveProviderChain,
-} from "@/lib/ai/provider";
+import { probeProviderPresence, resolveProviderChain } from "@/lib/ai/provider";
 import { aiCapabilityForRecord } from "@/lib/ai/capabilities/gate";
 import type {
   AiCapabilityKey,
   AiUnavailableReason,
 } from "@/lib/ai/capabilities/types";
-import {
-  runRawCompletionWithFallback,
-  type ProviderChainResolved,
-} from "@/lib/ai/provider-runner";
+import { runRawCompletionWithFallback } from "@/lib/ai/provider-runner";
 import { spentOnFailure } from "@/lib/ai/reasoning/answerless";
 import { aiEgressRefusal } from "@/lib/ai/capabilities/egress";
 import { annotate } from "@/lib/logging/context";
@@ -73,9 +66,8 @@ export function statusRunBoundMs(effectiveTimeoutMs: number): number {
  * but-slow generations into the generic fallback.
  *
  * This helper mirrors the Coach (`chat/route.ts`): resolve the user's
- * provider chain, fall back to the legacy single provider when the chain
- * is empty, and run `runRawCompletionWithFallback` so a degraded provider
- * cascades to the next. The whole thing is still wrapped in
+ * provider chain and run `runRawCompletionWithFallback` so a degraded
+ * provider cascades to the next. The whole thing is still wrapped in
  * `withTimeout` (`statusRunBoundMs`) so a total stall cannot hold the job —
  * but a timeout / error is reported as a transient miss (the caller serves
  * the fallback without persisting it), never as the day's cached assessment.
@@ -139,23 +131,6 @@ interface RunStatusCompletionArgs {
 }
 
 /**
- * Resolve the provider chain for `userId`, falling back to the legacy
- * single provider. Returns `null` when the user has no usable provider
- * anywhere (the caller surfaces the no-key fallback with
- * `hasProvider:false`).
- */
-async function resolveStatusChain(
-  userId: string,
-): Promise<ProviderChainResolved[] | null> {
-  const chain = await resolveProviderChain(userId);
-  if (chain.length > 0) return chain;
-
-  const legacy = await resolveProvider(userId);
-  if (legacy.type === "none") return null;
-  return [{ providerType: "admin-openai", instance: legacy }];
-}
-
-/**
  * Whether any configured provider could serve text for `userId`: the one
  * presence probe (`probeProviderPresence`). No client construction, no token
  * refresh, no network.
@@ -192,8 +167,8 @@ export async function runStatusCompletion(
     return { kind: "none", reason };
   }
 
-  const chain = await resolveStatusChain(userId);
-  if (chain === null) {
+  const chain = await resolveProviderChain(userId);
+  if (chain.length === 0) {
     return { kind: "none", reason: "no_provider" };
   }
 

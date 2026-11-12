@@ -17,6 +17,7 @@ import { Segmented } from "@/components/ui/segmented";
 import { Input } from "@/components/ui/input";
 import { useTranslations } from "@/lib/i18n/context";
 import { ApiError, apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { describePasskeyError } from "@/lib/passkey-errors";
 
 export type ReauthMethod =
@@ -171,7 +172,7 @@ export function ExistingFactorReauthDialog({
       onProof({ method, challengeId: begun.challengeId, credential });
     } catch (err) {
       if (err instanceof ApiError) {
-        setAssertionError(err.message);
+        setAssertionError(localizedApiError(err, t, "settings.reproof.failed"));
       } else {
         const { key, params } = describePasskeyError(err);
         setAssertionError(t(key, params));

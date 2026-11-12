@@ -271,9 +271,7 @@ async function allergiesLane(frame: Frame) {
   const detail = { key: "allergies", params: { count: rows.length } };
   const dated = rows.filter((r) => r.onsetAt !== null);
   if (dated.length > 0) {
-    const since = dated
-      .map((r) => userDayKey(r.onsetAt as Date, frame.tz))
-      .sort()[0];
+    const since = dated.map((r) => dateOnlyKey(r.onsetAt as Date)).sort()[0];
     return lane("carries", rows.length, since, { detail });
   }
   // Undated allergies are standing items, not a shortcoming: no gap.
@@ -351,7 +349,7 @@ async function vaccinationsLane(frame: Frame) {
       gaps: [gap("vaccinationsEmpty", 0, "/vaccinations")],
     });
   }
-  return lane("carries", count, userDayKey(first.occurredAt, frame.tz), {
+  return lane("carries", count, dateOnlyKey(first.occurredAt), {
     detail: { key: "vaccinations", params: { count } },
   });
 }

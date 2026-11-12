@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import type { useRecentProof } from "@/components/settings/security-section/use-recent-proof";
 import { ReproofCancelledError } from "@/components/settings/security-section/use-recent-proof";
 import { ApiError, apiGet, apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import type {
   MissingBackupSection,
@@ -188,9 +189,7 @@ export function useBackupRestores(
       }
       setRefusedSections([]);
       showErrorToast(
-        err instanceof Error && err.message
-          ? err.message
-          : t("admin.section.backups.restoreFailed"),
+        localizedApiError(err, t, "admin.section.backups.restoreFailed"),
         { cause: err },
       );
     },

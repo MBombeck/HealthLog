@@ -142,7 +142,15 @@
     "auth": {
       "reproof": {
         "required": "Bestätige dein aktuelles Passwort, um das zu ändern.",
-        "failed": "Die Bestätigung ist fehlgeschlagen. Es wurde nichts geändert."
+        "failed": "Die Bestätigung ist fehlgeschlagen. Es wurde nichts geändert.",
+        "too_weak": "Bestätige mit deinem zweiten Faktor oder einem Passkey. Bei diesem Konto reicht das Passwort allein nicht."
+      },
+      "missing": "Deine Sitzung ist abgelaufen, daher wurde nichts geändert. Melde dich erneut an, um weiterzumachen.",
+      "passkey": {
+        "last_method": "Dieser Passkey ist deine einzige Anmeldemöglichkeit. Lege zuerst ein Passwort fest oder füge einen weiteren Passkey hinzu."
+      },
+      "mfa": {
+        "already_active": "Für dieses Konto ist bereits eine Authenticator-App eingerichtet. Deaktiviere sie zuerst, um eine neue einzurichten."
       }
     },
     "biomarkers": {
@@ -178,6 +186,54 @@
     },
     "aiRuns": {
       "readerBusy": "Der Dokumentleser ist gerade mit anderen Aufgaben beschäftigt. Versuch es in einer Minute noch einmal."
+    },
+    "http": {
+      "unauthenticated": "Deine Sitzung ist abgelaufen, daher wurde nichts geändert. Melde dich erneut an, um weiterzumachen.",
+      "rate_limited": "Gerade gibt es zu viele Anfragen, daher wurde nichts geändert. Warte kurz und versuche es erneut.",
+      "forbidden": "Dafür fehlt dir die Berechtigung, daher wurde nichts geändert.",
+      "invalid": "Einige Angaben wurden nicht angenommen, daher wurde nichts geändert. Prüfe sie und versuche es erneut."
+    },
+    "ai_provider": {
+      "private_host": "Diese Adresse liegt in einem privaten Netz. Der Betreiber muss ihren genauen Ursprung erst in AI_PRIVATE_ORIGINS freigeben."
+    },
+    "encounter": {
+      "invalid": "Prüfe die Angaben zum Termin und versuche es erneut.",
+      "practitioner-not-found": "Diese Praxis bzw. dieser Arzt existiert nicht mehr. Wähle einen anderen Eintrag oder keinen.",
+      "reminder-not-found": "Diese Vorsorge existiert nicht mehr. Wähle eine andere oder keine.",
+      "reminder-conflict": "Ein geplanter Termin kann keine Vorsorge abschließen, denn er hat noch nicht stattgefunden."
+    },
+    "vaccination": {
+      "invalid": "Prüfe die Angaben zur Impfung und versuche es erneut.",
+      "practitioner-not-found": "Diese Praxis bzw. dieser Arzt existiert nicht mehr. Wähle einen anderen Eintrag oder keinen.",
+      "encounter-not-found": "Dieser Termin existiert nicht mehr. Wähle einen anderen oder keinen.",
+      "custom-vaccine-not-found": "Dieser Impfstoff existiert nicht mehr. Wähle ihn erneut aus der Liste.",
+      "not-found": "Diese Impfung ist nicht mehr vorhanden.",
+      "identity-required": "Eine Impfung braucht einen Namen: Wähle einen Impfstoff aus der Liste oder gib ein, was im Impfpass steht.",
+      "booster-invalid": "Prüfe die Angaben zur Auffrischung und versuche es erneut.",
+      "booster-no-antigen": "Diese Impfung nennt keinen Impfstoff aus dem Katalog, daher lässt sich keine Auffrischung planen.",
+      "booster-out-of-scope": "Deine Freigabe für diese Akte reicht nicht, um eine Auffrischung zu planen."
+    },
+    "allergy": {
+      "invalid": "Prüfe die Angaben zur Allergie und versuche es erneut."
+    },
+    "practitioner": {
+      "invalid": "Prüfe die Angaben zur Praxis bzw. zum Arzt und versuche es erneut."
+    },
+    "workout": {
+      "batch": {
+        "invalid": "Prüfe die Angaben zum Training und versuche es erneut.",
+        "too_large": "Zu viele Trainings auf einmal. Schicke sie in kleineren Paketen.",
+        "payload_too_large": "Die Trainingsdaten sind zu groß, um sie auf einmal zu speichern.",
+        "source_not_permitted": "Diese Verbindung darf keine Trainings unter dieser Quelle speichern."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "Es ist kein KI-Anbieter eingerichtet, daher wurde nichts gesendet. Richte einen in den KI-Einstellungen ein."
+      },
+      "budget": {
+        "exceeded": "Das KI-Budget für heute ist aufgebraucht, daher wurde nichts gesendet. Morgen steht es wieder bereit."
+      }
     }
   },
   "doctorReport": {
@@ -979,7 +1035,9 @@
     "typeStressLevel": "Stresslevel",
     "typeTrainingReadiness": "Trainingsbereitschaft",
     "typeAcuteTrainingLoad": "Akute Trainingsbelastung",
-    "sourceGarmin": "Garmin"
+    "sourceGarmin": "Garmin",
+    "valueOutOfRange": "Gib einen Wert zwischen {min} und {max} {unit} ein.",
+    "valueOutOfRangeNoUnit": "Gib einen Wert zwischen {min} und {max} ein."
   },
   "metricCatalog": {
     "title": "Was HealthLog erfassen kann",
@@ -1531,7 +1589,8 @@
         "gallbladderDiscomfort": "Gallenblasen-Beschwerden"
       },
       "deleteConfirmTitle": "Eintrag löschen?",
-      "deleteConfirmBody": "Dieser Nebenwirkungs-Eintrag wird dauerhaft entfernt."
+      "deleteConfirmBody": "Dieser Nebenwirkungs-Eintrag wird dauerhaft entfernt.",
+      "saveError": "Eintrag konnte nicht gespeichert werden"
     },
     "scheduling": {
       "naturalLanguage": {
@@ -1955,7 +2014,6 @@
       },
       "intake": {
         "title": "Einnahmeverlauf",
-        "importButton": "Importieren",
         "rowActions": {
           "openMenu": "Zeilen-Aktionen öffnen",
           "edit": "Bearbeiten",
@@ -1965,14 +2023,7 @@
           "rowToggleLabel": "Zeile auswählen"
         },
         "bulkDelete": {
-          "selectionCount": "{count} Einträge ausgewählt",
-          "deleteButton": "Auswahl löschen",
-          "cancelButton": "Abbrechen",
-          "confirmTitle": "Ausgewählte Einträge löschen?",
-          "confirmBody": "{count} Einträge werden dauerhaft entfernt. Das Medikament bleibt.",
-          "confirmAction": "Löschen",
-          "toast": "Auswahl gelöscht",
-          "failed": "Auswahl konnte nicht gelöscht werden."
+          "cancelButton": "Abbrechen"
         },
         "edit": {
           "dialogTitle": "Einnahme bearbeiten",
@@ -2846,11 +2897,6 @@
     "bmiEmptyAction": "Account-Einstellungen öffnen",
     "noAnalysisYet": "Noch keine Einschätzung vorhanden.",
     "assessmentPreparing": "Einschätzung wird vorbereitet…",
-    "personalRecord": {
-      "badge": "PR",
-      "tooltip": "Persönlicher Rekord: {value} {unit} am {date}",
-      "benchmark": "Typisch in dem Alter: {low} bis {high} {unit} ({source})"
-    },
     "loadError": "Insights konnten nicht geladen werden",
     "heroPersonalBaseline": "Basierend auf deinen letzten 90 Tagen",
     "heroRegenerating": "Wird generiert",
@@ -3017,8 +3063,6 @@
     },
     "correlationRow": {
       "title": "Zusammenhänge",
-      "experimentCta": "7-Tage-Experiment starten",
-      "experimentTooltip": "Bald verfügbar",
       "emptyTitle": "Mehr Daten nötig, um diesen Zusammenhang zu zeigen",
       "sourceChip": "basierend auf {n} gepaarten Messungen ({window})",
       "sourceWindowLast30": "letzte 30 Tage",
@@ -5179,7 +5223,9 @@
       "connectCta": "Gerät verbinden",
       "logCta": "Ersten Wert eintragen",
       "importCta": "Bestehende Daten importieren",
-      "modulesCta": "Module auswählen"
+      "modulesCta": "Module auswählen",
+      "aiOptional": "KI ist optional. Alles hier funktioniert auch ohne.",
+      "aiSetupCta": "KI einrichten"
     },
     "welcomeBack": {
       "title": "Willkommen zurück",
@@ -5199,37 +5245,6 @@
       "allergiesLabel": "Allergien oder Unverträglichkeiten",
       "allergiesPlaceholder": "z. B. Penicillin, Laktose",
       "privacyNote": "Verschlüsselt gespeichert und nur für besseren Kontext genutzt. Medikamente fragen wir hier nicht ab, die kannst du jederzeit auf der Medikamenten-Seite ergänzen."
-    },
-    "ai": {
-      "panelTitle": "So sehen Insights aus",
-      "panelIntro": "Coach, das tägliche Briefing und die Einschätzungen je Messwert übersetzen deine eigenen Zahlen in Klartext. So sieht das aus, bevor du irgendetwas verbindest.",
-      "showSample": "Beispiel-Briefing ansehen",
-      "sampleTitle": "Tägliches Briefing",
-      "sampleTag": "Beispiel",
-      "sampleAriaLabel": "Beispielhaftes tägliches Briefing",
-      "sampleBody": "Gewicht in zwei Wochen um 1,2 kg gesunken. Ruhepuls stabil bei 58 bpm. Blutdruck an 6 von 7 Tagen im Zielbereich; der einzige hohe Wert folgte auf ein spätes, salziges Abendessen.",
-      "sampleCaption": "Nur ein Beispiel, nicht deine eigenen Daten. So liest sich ein Briefing, sobald Insights aktiv sind.",
-      "ladderTitle": "Drei Wege, es zu aktivieren",
-      "ladderLocalTitle": "Lokales Modell: KI-Anfragen bleiben in deinem Netzwerk",
-      "ladderLocalBody": "Richte HealthLog auf Ollama oder LM Studio auf deinem eigenen Rechner aus. Kostenlos und vollständig privat, der ruhige Standard.",
-      "ladderByokTitle": "Eigenen Schlüssel verwenden",
-      "ladderByokBody": "Nutze deinen eigenen OpenAI- oder Anthropic-Schlüssel. Er läuft über dein Konto und deine Abrechnung, und die API-Stufe hält deine Daten standardmäßig aus dem Training heraus.",
-      "ladderOauthTitle": "Mit einem Abo anmelden",
-      "ladderOauthBody": "Verbinde ein ChatGPT-Konto: keine Kosten pro Token, aber die Bedingungen der Verbraucherstufe können Inhalte fürs Training nutzen. Deshalb eine bewusste Wahl, nie der Standard für deine Gesundheitsdaten.",
-      "keylessLine": "HealthLog ist auch ohne KI vollständig nutzbar. Deine Kacheln, Diagramme, Trends und Exporte funktionieren alle. KI ergänzt nur den Klartext obendrauf.",
-      "setupCta": "Einrichten (etwa eine Minute)",
-      "sharedKeyNote": "Diese Instanz stellt bereits einen gemeinsamen KI-Anbieter bereit, deshalb funktionieren Insights für dich sofort, keine Einrichtung nötig.",
-      "offer": {
-        "title": "Die Zusammenfassung dieser Instanz ist bereit.",
-        "body": "Der Betreiber stellt einen Anbieter bereit, der zuletzt innerhalb der letzten 24 Stunden funktioniert hat. Mit einem Tipp schaltest du den Klartext ein; deine Daten gehen dann an diesen einen Anbieter, an niemanden sonst.",
-        "cta": "Klartext einschalten",
-        "granted": "Eingeschaltet. Die erste Zusammenfassung erscheint auf dem Dashboard.",
-        "error": "Das Einschalten hat nicht geklappt. Versuch es gleich noch einmal."
-      },
-      "unavailable": {
-        "title": "Der Anbieter dieser Instanz antwortet gerade nicht.",
-        "body": "HealthLog funktioniert ohne Klartext vollständig. Du kannst später in den Einstellungen einen eigenen Anbieter hinterlegen."
-      }
     },
     "steps": {
       "who": "Für wen diese Akte ist",
@@ -5944,6 +5959,7 @@
             "inProgress": "Ein Import des Einnahmeverlaufs läuft bereits. Auf sein Ende warten.",
             "workerUnavailable": "Der Hintergrunddienst ist nicht verfügbar, es wurde nichts importiert.",
             "failed": "Der Import ist fehlgeschlagen. Es wurde nichts geschrieben.",
+            "stillRunning": "Der Import dauert länger als üblich und kann noch fertig werden. Sieh dir deine Einnahmen in ein paar Minuten noch einmal an.",
             "columnsHeading": "Was mit jeder Spalte passiert",
             "jsonOnly": "nur JSON",
             "previewLine": "{rows} Zeilen gelesen, {queued} würden importiert, {refused} abgewiesen",
@@ -7792,7 +7808,9 @@
       "hrv": "HRV",
       "weight": "Wiegungen",
       "cycle": "Menstruationszyklus"
-    }
+    },
+    "passkeyRenameFailed": "Der Passkey konnte nicht umbenannt werden.",
+    "passkeyRemoveFailed": "Der Passkey konnte nicht entfernt werden."
   },
   "admin": {
     "title": "Administration",
@@ -9314,16 +9332,8 @@
     },
     "eventMedicationReminder": "Medikamenten-Erinnerung",
     "eventMedicationReminderDesc": "Wird zu jeder geplanten Einnahmezeit gesendet.",
-    "eventMeasurementAnomaly": "Auffälliger Messwert",
-    "eventMeasurementAnomalyDesc": "Wird gesendet, wenn ein Wert deutlich außerhalb deines üblichen Bereichs liegt.",
-    "eventComplianceLow": "Niedrige Therapietreue",
-    "eventComplianceLowDesc": "Wird gesendet, wenn deine Therapietreue in den letzten Tagen unter 80 % fällt.",
-    "eventWithingsSyncFailed": "Withings-Sync fehlgeschlagen",
-    "eventWithingsSyncFailedDesc": "Wird gesendet, wenn die Withings-Synchronisierung mehrere Versuche in Folge scheitert.",
     "eventSystemAlert": "Systemmeldung",
     "eventSystemAlertDesc": "Allgemeine Mitteilungen vom HealthLog-Server, etwa Wartungsfenster oder Konto-Hinweise.",
-    "eventPersonalRecord": "Persönlicher Rekord",
-    "eventPersonalRecordDesc": "Wird gesendet, wenn ein Messwert deine bisherige Bestmarke übertrifft.",
     "eventMoodReminder": "Stimmungs-Erinnerung",
     "eventMoodReminderDesc": "Tägliche Erinnerung, deine aktuelle Stimmung zu protokollieren.",
     "eventCyclePeriodSoon": "Periode steht bevor",
@@ -10972,7 +10982,9 @@
       "deleteTitle": "Eigenen Impfstoff entfernen?",
       "sectionDescription": "Selbst angelegte Impfstoffe, die der Katalog nicht kennt.",
       "catalogGroup": "Katalog"
-    }
+    },
+    "deleted": "Impfung gelöscht",
+    "restoreFailed": "Impfung konnte nicht wiederhergestellt werden."
   },
   "illness": {
     "title": "Krankheit",
@@ -11186,7 +11198,6 @@
       "title": "Pläne",
       "pageDescription": "Wenn-dann-Pläne aus deinen Coach-Gesprächen. Bestätige einen Vorschlag, damit der Coach ihn sich merkt.",
       "readOnlyNote": "Der Coach ist gerade nicht verfügbar, deine Pläne kannst du aber weiter lesen und löschen.",
-      "proposalTitle": "Plan-Vorschlag",
       "ifThen": "Wenn {cue}, dann {action}.",
       "targetPrefix": "Ziel: {target}",
       "reviewPrefix": "Check-in: {when}",
@@ -12481,6 +12492,10 @@
       "purgeFailed": "Das Dokument konnte nicht gelöscht werden.",
       "purgeConfirmTitle": "Dieses Dokument endgültig löschen?",
       "purgeConfirmBody": "Es wird jetzt entfernt statt am Ende der Wartezeit und lässt sich nicht wiederherstellen."
+    },
+    "picker": {
+      "capped": "Hier stehen die neuesten {count}. Ältere Dokumente findest du über die Suche.",
+      "cappedSearching": "Hier stehen die neuesten {count} Treffer. Ältere findest du mit einer genaueren Suche."
     }
   },
   "selfDescription": {
@@ -12528,7 +12543,8 @@
       "save": "Speichern",
       "savedToast": "Eigene Metrik gespeichert",
       "updatedToast": "Eigene Metrik aktualisiert",
-      "saveError": "Eigene Metrik konnte nicht gespeichert werden"
+      "saveError": "Eigene Metrik konnte nicht gespeichert werden",
+      "nameTaken": "Es gibt bereits eine eigene Metrik mit diesem Namen."
     },
     "entry": {
       "value": "Wert",
@@ -13483,7 +13499,9 @@
       "defaultReason": "Kein früherer Termin bei derselben Praxis, in derselben Fachrichtung oder derselben Art.",
       "capped": "Die letzten zwei Jahre",
       "cappedReason": "Der letzte passende Termin liegt mehr als zwei Jahre zurück, und ein Bericht umfasst höchstens zwei Jahre."
-    }
+    },
+    "deleted": "Termin gelöscht",
+    "restoreFailed": "Termin konnte nicht wiederhergestellt werden."
   },
   "checkups": {
     "viewSwitchLabel": "Vorsorge, Termine, Eingriffe oder Körperstellen anzeigen",
@@ -13516,7 +13534,9 @@
     "deleteTitle": "Eintrag löschen?",
     "deleteDescription": "Deine bisherigen Termine bleiben erhalten und behalten diesen Namen.",
     "deleteFailed": "Eintrag konnte nicht gelöscht werden.",
-    "noSpecialtyGroup": "Ohne Fachrichtung"
+    "noSpecialtyGroup": "Ohne Fachrichtung",
+    "deleted": "Eintrag gelöscht",
+    "restoreFailed": "Eintrag konnte nicht wiederhergestellt werden."
   },
   "links": {
     "picker": {

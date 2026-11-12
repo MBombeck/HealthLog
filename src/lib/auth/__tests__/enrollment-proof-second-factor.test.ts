@@ -9,6 +9,7 @@
  * account only possession of a factor counts now; the account without one is
  * unchanged.
  */
+import type { NextRequest } from "next/server";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/db", () => ({
@@ -246,6 +247,20 @@ describe("POST /api/auth/passkey/register-options", () => {
     );
     expect(res.status).toBe(200);
     expect(refundRateLimit).toHaveBeenCalledWith("auth:step-up:user-1");
+  });
+
+  it("names a mistyped password as a failed proof, not an ended session", async () => {
+    vi.mocked(requireCookieAuth).mockResolvedValue({
+      user: stored(PLAIN),
+      session: { id: "sess-1" },
+    } as unknown as Awaited<ReturnType<typeof requireCookieAuth>>);
+    vi.mocked(verifyPassword).mockResolvedValue(false);
+    const res = await PASSKEY_REGISTER_OPTIONS(
+      passkeyReq({ method: "password", password: "typo" }) as NextRequest,
+    );
+    expect(res.status).toBe(401);
+    expect((await res.json()).meta.errorCode).toBe("auth.reproof.failed");
+    expect(createRegistrationOptions).not.toHaveBeenCalled();
   });
 });
 

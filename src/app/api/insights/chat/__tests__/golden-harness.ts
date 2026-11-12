@@ -119,7 +119,6 @@ export const m = {
   resolveServerLocale: vi.fn(),
   runStreamingRawCompletionWithFallback: vi.fn(),
   resolveProviderChain: vi.fn(),
-  resolveProvider: vi.fn(),
   assertConsentForChain: vi.fn(),
   appendMessage: vi.fn(),
   createConversation: vi.fn(),
@@ -201,7 +200,6 @@ export function resetGolden(): void {
   m.resolveProviderChain.mockResolvedValue([
     { providerType: "anthropic", instance: {} },
   ]);
-  m.resolveProvider.mockResolvedValue({ type: "none" });
   m.assertConsentForChain.mockImplementation(
     async (args: { chain: Array<{ providerType: string }> }) => {
       record("assertConsentForChain", {

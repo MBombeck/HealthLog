@@ -61,10 +61,15 @@ vi.mock("@/hooks/use-auth", () => ({
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { MeasurementList } from "../measurement-list";
+import type { Measurement } from "../list/list-model";
 import type { UnitDisplay } from "@/hooks/use-unit-display";
 import { convertGlucose, toCanonicalMgdl } from "@/lib/glucose";
 import { getUnitForType } from "@/lib/measurements/unit-map";
-import { editSeedValue, storedValueFor } from "../list/use-measurement-edit";
+import {
+  editSeedValue,
+  outOfRangeMessage,
+  storedValueFor,
+} from "../list/use-measurement-edit";
 import { rowDisplayFor } from "../list/use-measurement-row-display";
 
 /** A metric reader on the given glucose unit, as the list's row display. */
@@ -138,5 +143,37 @@ describe("MeasurementList — blood-glucose display unit", () => {
     expect(display.editsConvertedGlucose(glucose(95.48))).toBe(false);
     expect(editSeedValue(display, glucose(95.48))).toBe(95.48);
     expect(storedValueFor(display, glucose(95.48), 95.48)).toBe(95.48);
+  });
+});
+
+describe("the out-of-range sentence", () => {
+  const t = ((key: string, params?: Record<string, unknown>) =>
+    `${key} ${JSON.stringify(params)}`) as unknown as Parameters<
+    typeof outOfRangeMessage
+  >[2];
+  const reading = (type: string, unit: string): Measurement => ({
+    id: "m1",
+    type,
+    value: 1,
+    unit,
+    source: "MANUAL",
+    measuredAt: "2026-11-10T12:00:00.000Z",
+    notes: null,
+  });
+  const shows = (unit: string) => ({
+    rowDisplay: (m: { value: number }) => ({ value: m.value, unit }),
+  });
+
+  it("names the unit where the type has one", () => {
+    expect(
+      outOfRangeMessage(shows("kg"), reading("WEIGHT", "kg"), t, String),
+    ).toMatch(/^measurements\.valueOutOfRange \{.*"unit":"kg"/);
+  });
+
+  it("leaves the unit out for a score, which has no label", () => {
+    // "Enter a value between 0 and 10 ." read with a space before the stop.
+    expect(
+      outOfRangeMessage(shows(""), reading("PAIN_NRS", "score"), t, String),
+    ).toBe('measurements.valueOutOfRangeNoUnit {"min":"0","max":"10"}');
   });
 });

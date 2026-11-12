@@ -76,7 +76,7 @@ const notificationPreferencesResponse = z
     eventTypes: z
       .array(z.string())
       .describe(
-        "Every event category the server knows, in declaration order — the list a client renders rows for.",
+        "The event categories this account is shown a switch for, in declaration order: the list a client renders rows for. A category nothing sends is not listed, and `preferences` carries no stored row for it.",
       ),
     eventDefaults: z
       .record(eventTypeEnum, z.boolean())
@@ -87,7 +87,7 @@ const notificationPreferencesResponse = z
   .meta({
     id: "NotificationPreferencesResponse",
     description:
-      "The caller's notification channels, their stored per-event overrides, and the full event vocabulary.",
+      "The caller's notification channels, their stored per-event overrides, and the event categories they can switch.",
   });
 
 const notificationPreferenceRequest = notificationPreferenceSchema.meta({

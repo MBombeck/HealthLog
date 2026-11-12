@@ -17,7 +17,7 @@ import {
 } from "@/lib/ai/capabilities/refusal";
 import { PICK_DECIDED_REASONS } from "@/lib/ai/capabilities/types";
 import type { ProviderChainResolved } from "@/lib/ai/provider-runner";
-import { resolveProvider, resolveProviderChain } from "@/lib/ai/provider";
+import { resolveProviderChain } from "@/lib/ai/provider";
 import { chainEntryReadsImages } from "@/lib/ai/codex-slug-chain";
 import { RASTERIZATION_AVAILABLE } from "@/lib/documents/rasterize-pdf";
 import { prisma } from "@/lib/db";
@@ -82,8 +82,9 @@ export interface VisionProviderPick {
 /**
  * Resolve the user's provider chain and find the first entry that can read
  * images. Returns the whole chain (the consent gate needs it) plus the chosen
- * vision entry (or null). Mirrors the Coach's chain-then-legacy fallback so a
- * user served only by the operator's admin key is still covered.
+ * vision entry (or null). The chain is the one every model call resolves, so a
+ * user served only by the operator's admin key is covered through its
+ * `admin-openai` entry.
  */
 export async function resolveVisionProvider(
   userId: string,
@@ -108,14 +109,6 @@ export async function resolveVisionProvider(
   };
 
   const resolvedChain = await resolveProviderChain(userId);
-  if (resolvedChain.length === 0) {
-    // Mirror the Coach: fall back to the legacy single-provider resolution and
-    // tag it as the admin-managed entry the consent gate recognises.
-    const legacy = await resolveProvider(userId);
-    if (legacy.type !== "none") {
-      resolvedChain.push({ providerType: "admin-openai", instance: legacy });
-    }
-  }
 
   // Apply the caller's reorder (document class demotes external providers below
   // local) before picking; labs passes no reorder → identity.
@@ -157,12 +150,6 @@ export async function resolveTextProvider(
   // The text-mode structuring pass needs no vision — any configured provider in
   // the main chain can structure the OCR'd text.
   const resolvedChain = await resolveProviderChain(userId);
-  if (resolvedChain.length === 0) {
-    const legacy = await resolveProvider(userId);
-    if (legacy.type !== "none") {
-      resolvedChain.push({ providerType: "admin-openai", instance: legacy });
-    }
-  }
   const chain = options?.reorder
     ? options.reorder(resolvedChain)
     : resolvedChain;

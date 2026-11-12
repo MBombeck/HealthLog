@@ -27,7 +27,7 @@
  *
  * Mutation check: drop either `onSettled` and the wiring case goes red; drop
  * an `open=` binding and the controlled case goes red; return `err.message`
- * from `describeError`'s step-up arm and the sentence case goes red.
+ * from `describeStepUp`'s step-up arm and the sentence case goes red.
  */
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
@@ -38,7 +38,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ApiError } from "@/lib/api/api-fetch";
 import { I18nProvider } from "@/lib/i18n/context";
 import en from "@/../messages/en.json";
-import { describeError, TotpCard } from "../totp-card";
+import { describeStepUp } from "../security-keys-card";
+import { TotpCard } from "../totp-card";
 
 const STEP_UP_SENTENCE = en.settings.security.stepUpRequired;
 
@@ -81,7 +82,7 @@ describe("<TotpCard> — a refused mutation", () => {
       { errorCode: "auth.stepup.required" },
     );
 
-    const shown = describeError(refusal, "fallback", STEP_UP_SENTENCE);
+    const shown = describeStepUp(refusal, "fallback", STEP_UP_SENTENCE);
 
     expect(shown).toBe(STEP_UP_SENTENCE);
     expect(shown).not.toContain("second-factor verification required");

@@ -100,10 +100,9 @@ export function buildWeightRangeFromHeight(heightCm: number): TrafficRange {
  */
 export function buildBandsFromTrafficRange(
   range: TrafficRange,
-  options: { lowerBound?: number; upperBound?: number } = {},
+  options: { lowerBound: number; upperBound: number },
 ): ValueBand[] {
-  const lowerBound = options.lowerBound ?? 30;
-  const upperBound = options.upperBound ?? 250;
+  const { lowerBound, upperBound } = options;
 
   return [
     {
@@ -137,16 +136,6 @@ export function buildBandsFromTrafficRange(
       opacity: 0.16,
     },
   ].filter((band) => band.max > band.min);
-}
-
-export function buildWeightBandsFromHeight(
-  heightCm: number,
-  options: { lowerBound?: number; upperBound?: number } = {},
-): ValueBand[] {
-  return buildBandsFromTrafficRange(
-    buildWeightRangeFromHeight(heightCm),
-    options,
-  );
 }
 
 /**

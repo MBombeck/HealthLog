@@ -14,7 +14,6 @@
       "action": null,
       "meta": null,
       "warnings": [
-        "ai: a stored provider key could not be opened",
         "ai: a stored provider key could not be opened"
       ],
       "error": null

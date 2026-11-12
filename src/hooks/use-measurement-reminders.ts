@@ -17,7 +17,11 @@ import {
 } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/api-fetch";
-import { queryKeys, refetchInactiveDailyReads } from "@/lib/query-keys";
+import {
+  invalidateKeys,
+  queryKeys,
+  refetchInactiveDailyReads,
+} from "@/lib/query-keys";
 
 /**
  * v1.32.19 — the read fan-out every Vorsorge reminder mutation runs on
@@ -31,11 +35,21 @@ import { queryKeys, refetchInactiveDailyReads } from "@/lib/query-keys";
  * (`refetchOnMount: false`) — the reminder lingered on the Today rail until
  * the 120 s poll. Force the inactive daily reads to refetch alongside the
  * reminders invalidation so the rail clears at once, the same freshness
- * contract the medication intake surfaces use.
+ * contract the medication intake surfaces use. The inactive pass fetches
+ * nothing for a read that is on screen, though: marked done from the
+ * dashboard tile, the check-up stayed due on the Today rail above it. So
+ * the two daily reads are invalidated the ordinary way as well, which
+ * refetches them where they are mounted. A check-up marked done is also
+ * listed on its day.
  */
 export function invalidateReminderReads(qc: QueryClient): Promise<unknown> {
   return Promise.all([
-    qc.invalidateQueries({ queryKey: queryKeys.measurementReminders() }),
+    invalidateKeys(qc, [
+      queryKeys.measurementReminders(),
+      queryKeys.dailyDigest(),
+      queryKeys.dashboardSnapshot(),
+      queryKeys.dayRoot(),
+    ]),
     refetchInactiveDailyReads(qc),
   ]);
 }
@@ -101,9 +115,29 @@ export function useMeasurementReminders(enabled = true) {
   });
 }
 
+/**
+ * Write the row a satisfy, skip or snooze answered with into the cached list.
+ * The button re-enables as the call settles, and with only the refetch behind
+ * it the row still read as due, so a second tap marked it done twice.
+ */
+export function putReminderRow(
+  qc: QueryClient,
+  reminder: MeasurementReminder,
+): void {
+  qc.setQueryData<MeasurementReminder[]>(
+    queryKeys.measurementReminders(),
+    (rows) => rows?.map((row) => (row.id === reminder.id ? reminder : row)),
+  );
+}
+
 export function useMeasurementReminderMutations() {
   const qc = useQueryClient();
-  const invalidate = () => invalidateReminderReads(qc);
+  // Not returned: a mutation would wait for every refetch before it settles.
+  const invalidate = () => void invalidateReminderReads(qc);
+  const answered = (reminder: MeasurementReminder) => {
+    putReminderRow(qc, reminder);
+    invalidate();
+  };
 
   const create = useMutation({
     mutationKey: queryKeys.measurementReminderCreate(),
@@ -135,7 +169,7 @@ export function useMeasurementReminderMutations() {
     mutationKey: queryKeys.measurementReminderSatisfy(),
     mutationFn: (id: string) =>
       apiPost<MeasurementReminder>(`${BASE}/${id}/satisfy`),
-    onSuccess: invalidate,
+    onSuccess: answered,
   });
 
   // v1.37.20 (#223) — honest skip: the interval restarts from the skip
@@ -146,7 +180,7 @@ export function useMeasurementReminderMutations() {
       apiPost<{ skipped: boolean; reminder: MeasurementReminder }>(
         `${BASE}/${id}/skip`,
       ),
-    onSuccess: invalidate,
+    onSuccess: ({ reminder }) => answered(reminder),
   });
 
   // v1.37.20 (#223) — snooze to a calendar day; the server resolves it to
@@ -157,7 +191,7 @@ export function useMeasurementReminderMutations() {
       apiPost<{ reminder: MeasurementReminder }>(`${BASE}/${id}/snooze`, {
         until,
       }),
-    onSuccess: invalidate,
+    onSuccess: ({ reminder }) => answered(reminder),
   });
 
   return { create, update, remove, satisfy, skip, snooze };

@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import Link from "next/link";
 import { ArrowRight, Droplets } from "lucide-react";
 
@@ -8,7 +7,11 @@ import { useTranslations } from "@/lib/i18n/context";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { CyclePhaseHeadline } from "./cycle-phase-crosstab";
 import { PHASE_HUE } from "./phase-tokens";
-import { localYmd, useCycleCalendar, useCycleInsights } from "./use-cycle";
+import {
+  useCycleCalendar,
+  useCycleInsights,
+  useCycleWindow,
+} from "./use-cycle";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 /**
@@ -37,20 +40,12 @@ import { QueryErrorRow } from "@/components/ui/query-error-row";
  * a broken or empty-framed state on the overview.
  */
 
-/** YYYY-MM-DD for `n` days from now in the local tz (shares `localYmd`). */
-function shiftToday(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return localYmd(d);
-}
-
 export function CycleInsightSummaryCard() {
   const { t } = useTranslations();
 
   // Mirror the cycle-view window so the cache key is shared (no extra request
   // when the user later opens the cycle page in the same session).
-  const from = useMemo(() => shiftToday(-90), []);
-  const to = useMemo(() => shiftToday(180), []);
+  const { from, to } = useCycleWindow();
 
   const calendar = useCycleCalendar(from, to);
   const insights = useCycleInsights();

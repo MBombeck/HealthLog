@@ -69,11 +69,10 @@ function makeData(overrides?: Partial<DoctorReportData>): DoctorReportData {
       end: "2026-05-03T12:00:00.000Z",
     },
     patient: {
-      username: "sample-user",
+      name: "Sample Patient",
       dateOfBirth: "1985-06-15T00:00:00.000Z",
       gender: "MALE",
       heightCm: 182,
-      fullName: "Sample Patient",
       insurerName: "Example Insurer",
     },
     practiceName: null,
@@ -181,11 +180,10 @@ describe("buildFhirDocumentBundle", () => {
     const bundle = buildFhirDocumentBundle(
       makeData({
         patient: {
-          username: "sample-user",
+          name: "Sample Patient",
           dateOfBirth: "1985-06-15T00:00:00.000Z",
           gender: "MALE",
           heightCm: 182,
-          fullName: "Sample Patient",
           insurerName: "Example Insurer",
           insurerIkNumber: "101234567",
         },
@@ -215,11 +213,10 @@ describe("buildFhirDocumentBundle", () => {
     const bundle = buildFhirDocumentBundle(
       makeData({
         patient: {
-          username: "sample-user",
+          name: "Sample Patient",
           dateOfBirth: null,
           gender: null,
           heightCm: null,
-          fullName: "Sample Patient",
           insurerName: "Example Insurer",
           insurerIkNumber: "101234567",
         },
@@ -238,11 +235,10 @@ describe("buildFhirDocumentBundle", () => {
     const bundle = buildFhirDocumentBundle(
       makeData({
         patient: {
-          username: "sample-user",
+          name: "Sample Patient",
           dateOfBirth: null,
           gender: null,
           heightCm: null,
-          fullName: "Sample Patient",
           insurerName: "Example Insurer",
           // no insurerIkNumber
         },
@@ -262,11 +258,10 @@ describe("buildFhirDocumentBundle", () => {
     const bundle = buildFhirDocumentBundle(
       makeData({
         patient: {
-          username: "sample-user",
+          name: "Sample Patient",
           dateOfBirth: null,
           gender: null,
           heightCm: null,
-          fullName: "Sample Patient",
           insurerName: "Example Insurer",
           insurerIkNumber: "101234567",
         },
@@ -284,11 +279,10 @@ describe("buildFhirDocumentBundle", () => {
     const bundle = buildFhirDocumentBundle(
       makeData({
         patient: {
-          username: "sample-user",
+          name: "Sample Patient",
           dateOfBirth: null,
           gender: null,
           heightCm: null,
-          fullName: "Sample Patient",
           // neither insurerName nor insurerIkNumber
         },
       }),
@@ -303,11 +297,10 @@ describe("buildFhirDocumentBundle", () => {
     const bundle = buildFhirDocumentBundle(
       makeData({
         patient: {
-          username: "sample-user",
+          name: "Sample Patient",
           dateOfBirth: null,
           gender: null,
           heightCm: null,
-          fullName: "Sample Patient",
           // neither insurerName nor insurerIkNumber — just a bare KVNR.
         },
       }),

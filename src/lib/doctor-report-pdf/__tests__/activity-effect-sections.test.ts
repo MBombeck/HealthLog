@@ -97,7 +97,7 @@ function data(overrides: Partial<DoctorReportData> = {}): DoctorReportData {
       end: "2026-05-03T12:00:00.000Z",
     },
     patient: {
-      username: null,
+      name: null,
       dateOfBirth: null,
       gender: null,
       heightCm: null,

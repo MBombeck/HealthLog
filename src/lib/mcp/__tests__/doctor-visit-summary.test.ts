@@ -29,7 +29,7 @@ function payload(overrides: Partial<DoctorReportData> = {}): DoctorReportData {
       end: "2026-04-01T00:00:00.000Z",
     },
     patient: {
-      username: null,
+      name: null,
       dateOfBirth: null,
       gender: null,
       heightCm: null,

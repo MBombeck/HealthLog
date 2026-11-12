@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import type { useRecentProof } from "@/components/settings/security-section/use-recent-proof";
 import { ReproofCancelledError } from "@/components/settings/security-section/use-recent-proof";
 import { ApiError, apiFetch, apiGet } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -167,9 +168,7 @@ export function useBackupUpload(
         return;
       }
       showErrorToast(
-        err instanceof Error && err.message
-          ? err.message
-          : t("admin.section.backups.uploadFailed"),
+        localizedApiError(err, t, "admin.section.backups.uploadFailed"),
         { cause: err },
       );
     },

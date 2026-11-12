@@ -5,7 +5,8 @@ import {
   getBloodPressureUserPrompt,
 } from "@/lib/ai/prompts/blood-pressure";
 import { computeSteadyRun } from "@/lib/insights/assessment-context";
-import { getBpTargets } from "@/lib/analytics/bp-targets";
+import type { BpTargets } from "@/lib/analytics/bp-targets";
+import { resolveEffectiveBpTargets } from "@/lib/analytics/effective-range";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
 import {
   significantPearsonCorrelation,
@@ -131,14 +132,21 @@ async function buildBloodPressureSnapshot(
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
+      heightCm: true,
       dateOfBirth: true,
+      gender: true,
+      thresholdsJson: true,
     },
   });
 
   const { measurements, now, weightSeries, sysSeries, diaSeries } =
     await readBpChannels(userId, userTz);
 
-  const bpTargets = getBpTargets(user?.dateOfBirth ?? null);
+  // The person's own target where one is set, the age default otherwise:
+  // the same band the chart and the dashboard tile paint.
+  const bpTargets = user
+    ? resolveEffectiveBpTargets(user, user.thresholdsJson)
+    : null;
   const { pairedBloodPressure, bpInTargetPctLast30DailyPoints } =
     pairBloodPressure(sysSeries.daily, diaSeries.daily, bpTargets, now, userTz);
 
@@ -387,7 +395,7 @@ async function readBpChannels(userId: string, userTz: string) {
 function pairBloodPressure(
   sysDaily: DailyBucket[],
   diaDaily: DailyBucket[],
-  bpTargets: ReturnType<typeof getBpTargets>,
+  bpTargets: BpTargets | null,
   now: Date,
   userTz: string,
 ) {

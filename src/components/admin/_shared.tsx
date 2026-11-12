@@ -12,6 +12,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { PasswordInput as SharedPasswordInput } from "@/components/ui/password-input";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 
 /**
  * Re-export the canonical password input so admin sections have access to
@@ -323,27 +324,11 @@ export function useUpdateSettings() {
       toast.success(t("common.saved"));
     },
     onError: (err) => {
-      showErrorToast(
-        err instanceof Error && err.message
-          ? err.message
-          : t("admin.settingsSaveError"),
-        { cause: err },
-      );
+      showErrorToast(localizedApiError(err, t, "admin.settingsSaveError"), {
+        cause: err,
+      });
     },
   });
-}
-
-export async function getApiErrorMessage(response: Response): Promise<string> {
-  const fallback = `HTTP ${response.status}`;
-  try {
-    const json = (await response.json()) as { error?: string };
-    if (typeof json?.error === "string" && json.error.trim().length > 0) {
-      return json.error;
-    }
-  } catch {
-    return fallback;
-  }
-  return fallback;
 }
 
 /**

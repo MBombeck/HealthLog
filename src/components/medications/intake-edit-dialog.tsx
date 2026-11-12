@@ -130,12 +130,14 @@ function IntakeEditDialogBody({
         body.takenAt = null;
       }
       await apiPut(`/api/medications/${medicationId}/intake/${event.id}`, body);
-      // Editing today's dose (un-skip, retime) changes its due/taken state —
-      // route through the blessed helper so the Today hero + dashboard clear
-      // at once even when they are unmounted behind the detail page.
-      await invalidateMedicationReads(queryClient);
       toast.success(t("medications.detail.intake.edit.savedToast"));
       onClose();
+      // Editing today's dose (un-skip, retime) changes its due/taken state —
+      // route through the blessed helper so the Today hero + dashboard clear
+      // at once even when they are unmounted behind the detail page. Started,
+      // not awaited: the edit names one row, so nothing here can be sent twice
+      // while the reads catch up.
+      void invalidateMedicationReads(queryClient);
     } catch (failure) {
       showErrorToast(t("medications.detail.intake.edit.failed"), {
         cause: failure,

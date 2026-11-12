@@ -14,6 +14,8 @@
  * migration.
  */
 
+import { userDayKey } from "./format";
+
 const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/u;
 
 /** True for a strict `YYYY-MM-DD` string. */
@@ -86,6 +88,58 @@ export function dateOnlyKey(value: Date): string {
 }
 
 /**
+ * The calendar date a stored date of birth names, in its owner's `timezone`.
+ *
+ * The web and the managed profiles store the date as a date-only anchor (UTC
+ * midnight, or noon), read by its date. The iOS app sent the instant its date
+ * picker returned, which names the day it falls on in the owner's zone: a
+ * Berlin entry of 14 May made at half past midnight is 23:30 UTC on 13 May,
+ * and read by its UTC date it printed the day before.
+ */
+export function dateOfBirthKey(value: Date, timezone: string): string {
+  const anchored =
+    value.getUTCHours() % 12 === 0 &&
+    value.getUTCMinutes() === 0 &&
+    value.getUTCSeconds() === 0 &&
+    value.getUTCMilliseconds() === 0;
+  return anchored ? dateOnlyKey(value) : userDayKey(value, timezone);
+}
+
+/**
+ * A date of birth as a client sends it (`YYYY-MM-DD`, or an instant from the
+ * iOS app) as it is stored: its calendar date, read the way
+ * {@link dateOfBirthKey} reads a stored value, at noon UTC. Noon keeps the
+ * date wherever a client reads the stored instant back in its own zone from
+ * UTC-11 to UTC+11, where UTC midnight is the evening before everywhere
+ * west of UTC. Null when the string names no date.
+ */
+export function dateOfBirthForStorage(
+  raw: string,
+  timezone: string,
+): Date | null {
+  if (isDateOnlyKey(raw)) {
+    return isCalendarDateKey(raw) ? dateOnlyAtNoonUtc(raw) : null;
+  }
+  const instant = new Date(raw);
+  if (Number.isNaN(instant.getTime())) return null;
+  return dateOnlyAtNoonUtc(dateOfBirthKey(instant, timezone));
+}
+
+/** Whole years of age on `now` in the owner's `timezone`; null when unknown. */
+export function ageInYears(
+  dateOfBirth: Date | null,
+  timezone: string,
+  now: Date = new Date(),
+): number | null {
+  if (!dateOfBirth) return null;
+  const [by, bm, bd] = dateOfBirthKey(dateOfBirth, timezone)
+    .split("-")
+    .map(Number);
+  const [ty, tm, td] = userDayKey(now, timezone).split("-").map(Number);
+  return ty - by - (tm < bm || (tm === bm && td < bd) ? 1 : 0);
+}
+
+/**
  * Calendar date `key` as UTC midnight. A LABEL, never the instant the day
  * began for anyone: it is how a `@db.Date` column holds a date (Prisma reads
  * and writes those as UTC midnight), how the day rollups key `bucketStart`,
@@ -97,4 +151,20 @@ export function dateOnlyKey(value: Date): string {
  */
 export function dayKeyAsUtcMidnight(key: string): Date {
   return new Date(`${key}T00:00:00.000Z`);
+}
+
+/**
+ * The window over a date-only column that holds the calendar days `fromKey`
+ * to `toKey`, both included: UTC midnight to the next UTC midnight, so both
+ * anchors (midnight and noon UTC) fall on their own date. A date-only value
+ * read through a person's local-day window sat on the evening before west of
+ * UTC.
+ */
+export function dateOnlyWindow(
+  fromKey: string,
+  toKey: string = fromKey,
+): { gte: Date; lt: Date } {
+  const lt = dayKeyAsUtcMidnight(toKey);
+  lt.setUTCDate(lt.getUTCDate() + 1);
+  return { gte: dayKeyAsUtcMidnight(fromKey), lt };
 }

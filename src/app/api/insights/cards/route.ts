@@ -19,7 +19,7 @@ import { prisma } from "@/lib/db";
 import { summarize, type DataPoint } from "@/lib/analytics/trends";
 import { probeRollupCoverage } from "@/lib/rollups/measurement-coverage";
 import { readDayMeanSeries } from "@/lib/insights/derived/baseline";
-import { getBpTargets } from "@/lib/analytics/bp-targets";
+import { resolveEffectiveBpTargets } from "@/lib/analytics/effective-range";
 import { isBpReadingInTarget } from "@/lib/analytics/bp-in-target";
 import {
   generateAlerts,
@@ -72,6 +72,17 @@ interface InsightCard {
 
 export const dynamic = "force-dynamic";
 
+/**
+ * The profile fields BMI and the BP band read: the person's own BP target
+ * where one is set, the age default otherwise.
+ */
+const PROFILE_SELECT = {
+  heightCm: true,
+  dateOfBirth: true,
+  gender: true,
+  thresholdsJson: true,
+} as const;
+
 export const GET = apiHandler(async () => {
   // v1.37.0 — MANAGE-level read: computed over the whole record, with no
   // provider anywhere on the path.
@@ -85,7 +96,7 @@ export const GET = apiHandler(async () => {
     await Promise.all([
       prisma.user.findUnique({
         where: { id: user.id },
-        select: { heightCm: true, dateOfBirth: true },
+        select: PROFILE_SELECT,
       }),
       // WEIGHT + BP are manual entries (low volume, and BP needs exact-
       // timestamp pairing below for `bpPctInTarget`), so a bounded raw read
@@ -168,14 +179,14 @@ export const GET = apiHandler(async () => {
   }
 
   let bpPctInTarget: number | null = null;
-  const bpTargets = getBpTargets(dbUser?.dateOfBirth ?? null);
+  const bpTargets =
+    dbUser && resolveEffectiveBpTargets(dbUser, dbUser.thresholdsJson);
   if (bpTargets) {
     const sysData = byType("BLOOD_PRESSURE_SYS");
     const diaData = byType("BLOOD_PRESSURE_DIA");
     const pairs = pairByTimestamp(sysData, diaData, 5 * 60_000);
     if (pairs.length > 0) {
-      // v1.4.16 — one-sided ceiling semantics with hypotension
-      // floor. See lib/analytics/bp-in-target.ts.
+      // One-sided ceiling with a hypotension floor (`bp-in-target.ts`).
       const inTarget = pairs.filter((p) =>
         isBpReadingInTarget(p.a, p.b, bpTargets),
       ).length;

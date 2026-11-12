@@ -80,17 +80,20 @@ export interface DoctorReportData {
    */
   period: { days: number; since: string; start: string; end: string };
   patient: {
-    username: string | null;
+    /**
+     * The name the cover, the PDF metadata, the FHIR Patient and the share
+     * page print, resolved once by `patientName()`: full name, display name,
+     * login, never a managed record's generated handle. Null prints no line.
+     */
+    name: string | null;
+    /** The calendar date, `YYYY-MM-DD` (`dateOfBirthKey`). */
     dateOfBirth: string | null;
     gender: string | null;
     heightCm: number | null;
-    // v1.7.0 — optional patient-identity fields for the export cover +
-    // FHIR Patient. `fullName` + `insurerName` are plaintext columns; the
-    // KVNR is NOT carried here (it's encrypted at rest and decrypted by
-    // the route, then handed to the builders separately). Optional in the
-    // type so pre-v1.7.0 fixtures that omit them still typecheck — the
-    // renderer treats absent and null identically.
-    fullName?: string | null;
+    // `insurerName` is a plaintext column; the KVNR is NOT carried here (it's
+    // encrypted at rest and decrypted by the route, then handed to the
+    // builders separately). Optional so fixtures that omit it still
+    // typecheck; the renderer treats absent and null identically.
     insurerName?: string | null;
     // v1.8.6 — German insurer institution number (IKNR), plaintext. Carried
     // here for the FHIR `Coverage` payor Organization identifier. Optional

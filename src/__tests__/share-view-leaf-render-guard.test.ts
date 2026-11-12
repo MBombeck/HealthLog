@@ -59,7 +59,7 @@ function emptyReport(): DoctorReportData {
       end: "2026-01-31T00:00:00.000Z",
     },
     patient: {
-      username: null,
+      name: null,
       dateOfBirth: null,
       gender: null,
       heightCm: null,
@@ -156,11 +156,10 @@ const DISPOSITIONS: Record<StructuredLeafId, Disposition> = {
     kind: "rendered",
     data: {
       patient: {
-        username: "shared-account",
+        name: "A. Patient",
         dateOfBirth: "1979-04-02T00:00:00.000Z",
         gender: "FEMALE",
         heightCm: 171,
-        fullName: "A. Patient",
       },
     },
     marker: "A. Patient",

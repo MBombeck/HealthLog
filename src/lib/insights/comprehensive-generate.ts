@@ -91,7 +91,7 @@ import { Prisma as PrismaSql } from "@/generated/prisma/client";
 import { dayWeightedRowsSql, windowMeanSql } from "@/lib/measurements/day-mean";
 import { usesHourlyMeanDay } from "@/lib/measurements/day-statistic";
 import { insightResultSchema, type InsightResult } from "@/lib/ai/types";
-import { resolveProvider, resolveProviderChain } from "@/lib/ai/provider";
+import { resolveProviderChain } from "@/lib/ai/provider";
 import { AllProvidersFailedError } from "@/lib/ai/provider-runner";
 import {
   BriefingBudgetExceededError,
@@ -864,11 +864,7 @@ export async function generateComprehensiveInsight(
 
   const chain = await resolveProviderChain(userId);
   if (chain.length === 0) {
-    const legacy = await resolveProvider(userId);
-    if (legacy.type === "none") {
-      return { status: "skipped", reason: "no-provider" };
-    }
-    chain.push({ providerType: "admin-openai", instance: legacy });
+    return { status: "skipped", reason: "no-provider" };
   }
 
   // The wire re-check for exactly this chain (`aiEgressRefusal`): the

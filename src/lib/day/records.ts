@@ -39,7 +39,11 @@ import { phaseForDate } from "@/lib/cycle/engine-adapter";
 import { LUTEAL_DEFAULT } from "@/lib/cycle/types";
 import { resolveCycleDay } from "@/lib/cycle/verdict";
 import { effectiveMoodTz } from "@/lib/mood/date-key";
-import { dateOnlyKey, dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import {
+  dateOnlyKey,
+  dateOnlyWindow,
+  dayKeyAsUtcMidnight,
+} from "@/lib/tz/date-only";
 import { daysBetweenDateKeys, shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { visitPath } from "@/lib/encounters/visit-links";
 import {
@@ -578,15 +582,15 @@ async function allergiesPart(frame: DayFrame): Promise<SectionPart> {
     where: {
       userId: frame.userId,
       deletedAt: null,
-      onsetAt: { gte: frame.dayStart, lt: frame.dayEnd },
+      onsetAt: dateOnlyWindow(frame.day),
     },
-    select: { id: true, substance: true, onsetAt: true, severity: true },
+    select: { id: true, substance: true, severity: true },
   });
   return {
     running: [],
     events: rows.map((row) =>
       event({
-        at: row.onsetAt ? row.onsetAt.toISOString() : null,
+        at: null, // a date without a time of day
         kind: "allergyOnset",
         section: "allergies",
         id: row.id,
@@ -648,11 +652,10 @@ async function vaccinationsPart(frame: DayFrame): Promise<SectionPart> {
     where: {
       userId: frame.userId,
       deletedAt: null,
-      occurredAt: { gte: frame.dayStart, lt: frame.dayEnd },
+      occurredAt: dateOnlyWindow(frame.day),
     },
     select: {
       id: true,
-      occurredAt: true,
       vaccineName: true,
       antigenSlug: true,
       doseNumber: true,
@@ -670,7 +673,7 @@ async function vaccinationsPart(frame: DayFrame): Promise<SectionPart> {
     running: [],
     events: rows.map((row) =>
       event({
-        at: row.occurredAt.toISOString(),
+        at: null, // a date without a time of day
         kind: "vaccination",
         section: "vaccinations",
         id: row.id,
@@ -761,18 +764,13 @@ async function checkupsPart(frame: DayFrame): Promise<SectionPart> {
 
 async function documentsPart(frame: DayFrame): Promise<SectionPart> {
   // A document's date is a calendar date stored at noon UTC (older rows at
-  // UTC midnight): both anchors fall inside this UTC calendar day, and the
-  // date key decides. The stated report date wins over the filing date.
-  const start = dayKeyAsUtcMidnight(frame.day);
-  const end = dayKeyAsUtcMidnight(shiftDateKey(frame.day, 1));
+  // UTC midnight). The stated report date wins over the filing date.
+  const day = dateOnlyWindow(frame.day);
   const rows = await prisma.inboundDocument.findMany({
     where: {
       userId: frame.userId,
       deletedAt: null,
-      OR: [
-        { reportDate: { gte: start, lt: end } },
-        { reportDate: null, documentDate: { gte: start, lt: end } },
-      ],
+      OR: [{ reportDate: day }, { reportDate: null, documentDate: day }],
     },
     select: {
       id: true,

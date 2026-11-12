@@ -23,6 +23,7 @@ import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { useAdminSettings, useUpdateSettings } from "./_shared";
 import { apiGet, apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import {
   describeChannelTestFailures,
   type ChannelTestResult,
@@ -163,9 +164,7 @@ export function RemindersSection() {
     },
     onError: (error) => {
       showErrorToast(
-        error instanceof Error
-          ? error.message
-          : t("admin.notificationTestFailed"),
+        localizedApiError(error, t, "admin.notificationTestFailed"),
         { cause: error },
       );
     },
@@ -201,10 +200,9 @@ export function RemindersSection() {
       toast.success(data?.message ?? t("admin.reminderCheckSuccess"));
     },
     onError: (error) => {
-      showErrorToast(
-        error instanceof Error ? error.message : t("admin.reminderCheckFailed"),
-        { cause: error },
-      );
+      showErrorToast(localizedApiError(error, t, "admin.reminderCheckFailed"), {
+        cause: error,
+      });
     },
   });
 

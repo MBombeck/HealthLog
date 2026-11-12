@@ -60,6 +60,7 @@ import {
   apiPost,
   apiPut,
 } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import {
   readUpdatedAtToken,
   withBaseToken,
@@ -175,10 +176,7 @@ export function TagGroupsCard({ catalog }: TagGroupsCardProps) {
         toast.message(t("common.conflictReloaded"));
         return false;
       }
-      showErrorToast(
-        err instanceof ApiError ? err.message : t("common.error"),
-        { cause: err },
-      );
+      showErrorToast(localizedApiError(err, t, "common.error"), { cause: err });
       return false;
     } finally {
       void invalidateMoodTagCaches(queryClient);
@@ -359,10 +357,9 @@ export function TagGroupsCard({ catalog }: TagGroupsCardProps) {
                     );
                     toast.success(t("mood.manage.groupDeleted"));
                   } catch (err) {
-                    showErrorToast(
-                      err instanceof ApiError ? err.message : t("common.error"),
-                      { cause: err },
-                    );
+                    showErrorToast(localizedApiError(err, t, "common.error"), {
+                      cause: err,
+                    });
                   } finally {
                     void invalidateMoodTagCaches(queryClient);
                   }
@@ -562,10 +559,9 @@ function GroupEditorSheet({
       if (err instanceof ApiError && err.status === 422) {
         showErrorToast(t("mood.manage.groupLimitReached"), { cause: err });
       } else {
-        showErrorToast(
-          err instanceof ApiError ? err.message : t("common.error"),
-          { cause: err },
-        );
+        showErrorToast(localizedApiError(err, t, "common.error"), {
+          cause: err,
+        });
       }
     } finally {
       setSaving(false);

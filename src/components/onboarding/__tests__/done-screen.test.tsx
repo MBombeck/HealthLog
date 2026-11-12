@@ -4,79 +4,44 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { I18nProvider } from "@/lib/i18n/context";
 
 /**
- * The elevated done-screen AI panel must lead with value and gate nothing:
- * it shows the local-first ladder and the honest "useful without AI" line,
- * yet the three original exits (connect / log / dashboard) stay intact, so
- * a keyless user is never stranded. The shared-key note only appears when
- * the deployment's provider serves the user (`managedBy === "server"`).
+ * The setup flow's exit. AI gets one quiet line with a link to Settings, AI,
+ * and only while it could be set up here and is still wanted; the exits
+ * (dashboard, tour, connect, log) are there either way.
  */
-
-const aiProviderState = vi.hoisted(() => ({
-  data: undefined as
-    | {
-        managedBy?: string | null;
-        serverProviderHealth?: string;
-        serverProviderOffer?: boolean;
-        serverProviderConsent?: boolean;
-      }
-    | undefined,
-}));
-
-/**
- * The consent grant is a mutation, and this suite renders to static markup
- * (the house convention — there is no jsdom in this repo), so the click
- * itself cannot be dispatched. What IS worth proving is the request the
- * button would send, so every `useMutation` registration is captured here
- * and its `mutationFn` invoked directly.
- */
-const mutations = vi.hoisted(
-  () =>
-    [] as Array<{
-      mutationKey?: readonly unknown[];
-      mutationFn?: () => Promise<unknown>;
-    }>,
-);
 
 vi.mock("@tanstack/react-query", () => ({
-  useQuery: () => ({ data: aiProviderState.data }),
-  useMutation: (options?: {
-    mutationKey?: readonly unknown[];
-    mutationFn?: () => Promise<unknown>;
-  }) => {
-    if (options) mutations.push(options);
-    return { mutate: () => {}, mutateAsync: async () => {}, isPending: false };
-  },
+  useMutation: () => ({
+    mutate: () => {},
+    mutateAsync: async () => {},
+    isPending: false,
+  }),
   useQueryClient: () => ({ invalidateQueries: async () => {} }),
 }));
-
-const apiPost = vi.hoisted(() => vi.fn());
-vi.mock("@/lib/api/api-fetch", async (importOriginal) => ({
-  ...(await importOriginal<Record<string, unknown>>()),
-  apiPost,
-}));
-
-const toastError = vi.hoisted(() => vi.fn());
-vi.mock("sonner", () => ({ toast: { error: toastError } }));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: () => {}, replace: () => {} }),
 }));
 
+const auth = vi.hoisted(() => ({ modules: {} as Record<string, boolean> }));
 vi.mock("@/hooks/use-auth", () => ({
-  useAuth: () => ({ user: { id: "u1" } }),
+  useAuth: () => ({ user: { id: "u1", modules: auth.modules } }),
 }));
 
-/**
- * `ai.provider.canConfigure` from `/api/auth/me`: the panel is one optional
- * offer, shown only while AI can be set up from here.
- */
-const providerState = vi.hoisted(() => ({ canConfigure: true }));
+/** `ai.provider` from `/api/auth/me`. */
+const providerState = vi.hoisted(() => ({
+  configured: false,
+  canConfigure: true,
+}));
 vi.mock("@/hooks/use-ai-capability", () => ({
   useAiProviderState: () => ({
-    configured: false,
+    configured: providerState.configured,
     managedBy: null,
     canConfigure: providerState.canConfigure,
   }),
+}));
+
+vi.mock("@/components/onboarding/use-onboarding-flow", () => ({
+  useOnboardingAnswer: () => ({ mutate: () => {} }),
 }));
 
 vi.mock("@/hooks/use-account-switch", () => ({
@@ -128,34 +93,64 @@ function render(recordTarget?: OnboardingStateDto["needs"]["recordTarget"]) {
   );
 }
 
-describe("<DoneScreen> AI panel", () => {
-  it("leads with the value-first panel and the local-first ladder", () => {
-    aiProviderState.data = undefined;
+function withState(
+  next: Partial<typeof providerState>,
+  modules: Record<string, boolean>,
+  run: () => void,
+) {
+  const before = { ...providerState };
+  Object.assign(providerState, next);
+  auth.modules = modules;
+  try {
+    run();
+  } finally {
+    Object.assign(providerState, before);
+    auth.modules = {};
+  }
+}
+
+describe("<DoneScreen> AI line", () => {
+  it("is one line with a link to Settings, AI, and nothing more", () => {
     const html = render();
-    expect(html).toContain('data-slot="onboarding-ai-panel"');
-    // Local model is surfaced first (the calm private default).
-    expect(html).toContain("AI requests stay on your network");
-    // The honest release valve is present and prominent.
-    expect(html).toContain('data-slot="onboarding-ai-keyless"');
-    expect(html).toContain("fully useful without AI");
-    // Setup is a single optional deep-link, not a gate.
-    expect(html).toContain('href="/settings/ai"');
+    const line = html.match(
+      /<p[^>]*data-slot="onboarding-ai-line"[^>]*>([\s\S]*?)<\/p>/,
+    );
+    expect(line).not.toBeNull();
+    expect(line![1]).toContain("AI is optional");
+    // Body copy, not meta: the line is read, so it is not muted.
+    expect(line![0]).not.toContain("text-muted-foreground");
+    // One way on, the link, and no one-tap offer beside it.
+    expect(html.split('href="/settings/ai"')).toHaveLength(2);
+    expect(line![1]).not.toContain("<button");
   });
 
-  it("leaves the panel out when AI cannot be set up here", () => {
+  it("is left out when AI cannot be set up here", () => {
     // The operator switched AI off, or the record belongs to somebody else.
-    // HealthLog is complete without AI, so the screen goes from "done"
-    // straight to the exits.
-    providerState.canConfigure = false;
-    aiProviderState.data = undefined;
-    const html = render();
-    expect(html).not.toContain('data-slot="onboarding-ai-panel"');
-    expect(html).toContain('data-slot="onboarding-open-dashboard"');
-    providerState.canConfigure = true;
+    withState({ canConfigure: false }, {}, () => {
+      const html = render();
+      expect(html).not.toContain('data-slot="onboarding-ai-line"');
+      expect(html).toContain('data-slot="onboarding-open-dashboard"');
+    });
   });
 
-  it("keeps every exit so the panel is fully skippable", () => {
-    aiProviderState.data = undefined;
+  it("is left out once a provider is configured", () => {
+    withState({ configured: true }, {}, () => {
+      expect(render()).not.toContain('data-slot="onboarding-ai-line"');
+    });
+  });
+
+  it("is left out once the Coach and AI analysis are switched off", () => {
+    withState({}, { coach: false, insights: false }, () => {
+      expect(render()).not.toContain('data-slot="onboarding-ai-line"');
+    });
+    withState({}, { coach: false, insights: true }, () => {
+      expect(render()).toContain('data-slot="onboarding-ai-line"');
+    });
+  });
+});
+
+describe("<DoneScreen> exits", () => {
+  it("keeps every exit", () => {
     const html = render();
     expect(html).toContain('href="/settings/integrations"');
     expect(html).toContain('href="/measurements"');
@@ -163,229 +158,11 @@ describe("<DoneScreen> AI panel", () => {
   });
 
   it("offers the tour rather than launching it", () => {
-    aiProviderState.data = undefined;
     expect(render()).toContain('data-slot="onboarding-take-tour"');
   });
 
   it("offers the managed profile only to an answer that asked for it later", () => {
-    aiProviderState.data = undefined;
     expect(render("both")).toContain('href="/settings/access"');
     expect(render("me")).not.toContain('href="/settings/access"');
-  });
-});
-
-/**
- * v1.38.19 — the shared provider, offered only when it works.
- *
- * The card used to read `managedBy === "server"` and promise that insights
- * "work for you right now". That is a presence read: it knew a key was
- * configured, never that it worked, and it said nothing about the consent
- * receipt the egress actually needs — so a fresh account followed the
- * promise straight into a `consent.ai.required` refusal. On 2026-09-11 the
- * operator's own instance was answering HTTP 500 while the screen kept
- * making that promise.
- *
- * Four variants now, and only one of them has a button.
- */
-function grantMutation() {
-  return mutations.find((m) =>
-    (m.mutationKey ?? []).some(
-      (part) => typeof part === "string" && part.includes("consent"),
-    ),
-  );
-}
-
-describe("<DoneScreen> shared-provider offer", () => {
-  it("offers one tap when the server says the provider is known to work", () => {
-    aiProviderState.data = {
-      managedBy: "server",
-      serverProviderHealth: "healthy",
-      serverProviderOffer: true,
-      serverProviderConsent: false,
-    };
-    const html = render();
-    expect(html).toContain('data-ai-state="offer"');
-    expect(html).toContain('data-slot="onboarding-ai-offer"');
-    expect(html).toContain('data-slot="onboarding-ai-offer-grant"');
-    // The unproven promise is gone from this branch.
-    expect(html).not.toContain('data-slot="onboarding-ai-shared-key"');
-    expect(html).not.toContain('data-slot="onboarding-ai-unavailable"');
-  });
-
-  it("says the provider is not answering only when a failure earned it", () => {
-    aiProviderState.data = {
-      managedBy: "server",
-      serverProviderHealth: "unhealthy",
-      serverProviderOffer: false,
-      serverProviderConsent: false,
-    };
-    const html = render();
-    expect(html).toContain('data-ai-state="unavailable"');
-    expect(html).toContain('data-slot="onboarding-ai-unavailable"');
-    expect(html).not.toContain('data-slot="onboarding-ai-offer-grant"');
-    expect(html).not.toContain('data-slot="onboarding-ai-shared-key"');
-    // The rest of the panel is untouched in every branch.
-    expect(html).toContain('data-slot="onboarding-ai-keyless"');
-    expect(html).toContain('href="/settings/ai"');
-  });
-
-  it("claims nothing either way when nobody has measured the provider", () => {
-    // `unknown` is an empty `provider_health` table — the state of every
-    // instance until its first AI call, and the most common way through this
-    // screen. Saying "not answering" there is a claim about something nobody
-    // measured, which is the one thing this panel exists not to do.
-    aiProviderState.data = {
-      managedBy: "server",
-      serverProviderHealth: "unknown",
-      serverProviderOffer: false,
-      serverProviderConsent: false,
-    };
-    const html = render();
-    expect(html).toContain('data-ai-state="neutral"');
-    expect(html).not.toContain('data-slot="onboarding-ai-unavailable"');
-    expect(html).not.toContain('data-slot="onboarding-ai-offer-grant"');
-    expect(html).not.toContain('data-slot="onboarding-ai-shared-key"');
-    // The neutral panel is the whole panel, minus any claim about a provider.
-    expect(html).toContain('data-slot="onboarding-ai-keyless"');
-    expect(html).toContain('href="/settings/ai"');
-  });
-
-  it("keeps the shared-key note for the one state it was ever true of", () => {
-    aiProviderState.data = {
-      managedBy: "server",
-      serverProviderHealth: "healthy",
-      serverProviderOffer: false,
-      serverProviderConsent: true,
-    };
-    const html = render();
-    expect(html).toContain('data-ai-state="consent"');
-    expect(html).toContain('data-slot="onboarding-ai-shared-key"');
-    expect(html).not.toContain('data-slot="onboarding-ai-offer-grant"');
-    expect(html).not.toContain('data-slot="onboarding-ai-unavailable"');
-  });
-
-  it("leaves a user with their own provider the setup link and nothing else", () => {
-    aiProviderState.data = {
-      managedBy: "user",
-      serverProviderHealth: "healthy",
-      serverProviderOffer: false,
-      serverProviderConsent: false,
-    };
-    const html = render();
-    expect(html).not.toContain('data-slot="onboarding-ai-offer"');
-    expect(html).not.toContain('data-slot="onboarding-ai-unavailable"');
-    expect(html).not.toContain('data-slot="onboarding-ai-shared-key"');
-    expect(html).toContain('href="/settings/ai"');
-  });
-
-  it("says nothing at all while the status is still in flight", () => {
-    aiProviderState.data = undefined;
-    const html = render();
-    // Not even the settled marker: the question is genuinely unanswered.
-    expect(html).not.toContain("data-ai-state");
-    expect(html).not.toContain('data-slot="onboarding-ai-offer"');
-    expect(html).not.toContain('data-slot="onboarding-ai-unavailable"');
-  });
-
-  /**
-   * The whole decision table, in one place.
-   *
-   * Three arms the screen can be in — the offer is available, the offer is
-   * withheld for a reason that is not health (the assistant surfaces switched
-   * off, a managed profile), a receipt is already on file — crossed with the
-   * three health states. The point of the cross is that HEALTH decides the
-   * claim in every arm: the consent arm used to promise "insights work for
-   * you right now" without reading health at all, which told somebody who had
-   * consented that a dead provider was working. That is the same unmeasured
-   * claim as the `unknown` case at the other end of the panel.
-   */
-  const TABLE = [
-    { arm: "offerable", consent: false, health: "healthy", state: "offer" },
-    {
-      arm: "offerable",
-      consent: false,
-      health: "unhealthy",
-      state: "unavailable",
-    },
-    { arm: "offerable", consent: false, health: "unknown", state: "neutral" },
-    { arm: "withheld", consent: false, health: "healthy", state: "neutral" },
-    {
-      arm: "withheld",
-      consent: false,
-      health: "unhealthy",
-      state: "unavailable",
-    },
-    { arm: "withheld", consent: false, health: "unknown", state: "neutral" },
-    { arm: "consented", consent: true, health: "healthy", state: "consent" },
-    {
-      arm: "consented",
-      consent: true,
-      health: "unhealthy",
-      state: "unavailable",
-    },
-    { arm: "consented", consent: true, health: "unknown", state: "neutral" },
-  ] as const;
-
-  it.each(TABLE)(
-    "settles on $state when the offer is $arm and the provider is $health",
-    ({ arm, consent, health, state }) => {
-      aiProviderState.data = {
-        managedBy: "server",
-        serverProviderHealth: health,
-        // The server only ever offers on `healthy`, and never with a receipt
-        // on file; the withheld arm is the flags-off / managed-profile case.
-        serverProviderOffer: arm === "offerable" && health === "healthy",
-        serverProviderConsent: consent,
-      };
-      const html = render();
-      expect(html).toContain(`data-ai-state="${state}"`);
-      // The positive sentence appears in exactly one of the nine cells.
-      expect(html.includes('data-slot="onboarding-ai-shared-key"')).toBe(
-        state === "consent",
-      );
-      expect(html.includes('data-slot="onboarding-ai-unavailable"')).toBe(
-        state === "unavailable",
-      );
-      expect(html.includes('data-slot="onboarding-ai-offer-grant"')).toBe(
-        state === "offer",
-      );
-      // The rest of the panel is untouched in every cell.
-      expect(html).toContain('data-slot="onboarding-ai-keyless"');
-      expect(html).toContain('href="/settings/ai"');
-    },
-  );
-
-  it("grants only with the explicit confirmation the server requires", async () => {
-    mutations.length = 0;
-    apiPost.mockReset();
-    apiPost.mockResolvedValue({ minted: true, kind: "ai_full" });
-    aiProviderState.data = {
-      managedBy: "server",
-      serverProviderHealth: "healthy",
-      serverProviderOffer: true,
-      serverProviderConsent: false,
-    };
-    render();
-    const grant = grantMutation();
-    expect(grant).toBeDefined();
-    await grant!.mutationFn!();
-    expect(apiPost).toHaveBeenCalledWith("/api/consent/ai/web", {
-      confirm: true,
-    });
-  });
-
-  it("a refused grant throws rather than reporting a consent nobody recorded", async () => {
-    mutations.length = 0;
-    apiPost.mockReset();
-    apiPost.mockRejectedValue(new Error("429"));
-    aiProviderState.data = {
-      managedBy: "server",
-      serverProviderHealth: "healthy",
-      serverProviderOffer: true,
-      serverProviderConsent: false,
-    };
-    render();
-    const grant = grantMutation();
-    await expect(grant!.mutationFn!()).rejects.toThrow();
   });
 });

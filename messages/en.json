@@ -142,7 +142,15 @@
     "auth": {
       "reproof": {
         "required": "Confirm your current password to change this.",
-        "failed": "That did not verify. Nothing was changed."
+        "failed": "That did not verify. Nothing was changed.",
+        "too_weak": "Confirm with your second factor or a passkey. On this account a password alone is not enough."
+      },
+      "missing": "Your session has ended, so nothing was changed. Sign in again to continue.",
+      "passkey": {
+        "last_method": "This passkey is your only way to sign in. Set a password or add another passkey first."
+      },
+      "mfa": {
+        "already_active": "An authenticator app is already set up for this account. Disable it first to set up a new one."
       }
     },
     "biomarkers": {
@@ -178,6 +186,54 @@
     },
     "aiRuns": {
       "readerBusy": "The document reader is busy with other work. Try again in a minute."
+    },
+    "http": {
+      "unauthenticated": "Your session has ended, so nothing was changed. Sign in again to continue.",
+      "rate_limited": "There are too many requests just now, so nothing was changed. Wait a moment and try again.",
+      "forbidden": "You don't have permission for this, so nothing was changed.",
+      "invalid": "Some of the entries were not accepted, so nothing was changed. Check them and try again."
+    },
+    "ai_provider": {
+      "private_host": "This address is on a private network. The operator has to allow its exact origin in AI_PRIVATE_ORIGINS before it can be used."
+    },
+    "encounter": {
+      "invalid": "Check the visit details and try again.",
+      "practitioner-not-found": "This practice or doctor no longer exists. Choose another or none.",
+      "reminder-not-found": "This checkup no longer exists. Choose another or none.",
+      "reminder-conflict": "A planned visit cannot close a checkup, because it has not happened yet."
+    },
+    "vaccination": {
+      "invalid": "Check the vaccination details and try again.",
+      "practitioner-not-found": "This practice or doctor no longer exists. Choose another or none.",
+      "encounter-not-found": "This visit no longer exists. Choose another or none.",
+      "custom-vaccine-not-found": "This vaccine no longer exists. Choose it again from the list.",
+      "not-found": "This vaccination is no longer available.",
+      "identity-required": "A dose needs a name: pick a vaccine from the list or type the name on your vaccination card.",
+      "booster-invalid": "Check the booster details and try again.",
+      "booster-no-antigen": "This dose names no vaccine from the catalogue, so no booster can be planned for it.",
+      "booster-out-of-scope": "Your access to this record does not cover planning a booster."
+    },
+    "allergy": {
+      "invalid": "Check the allergy details and try again."
+    },
+    "practitioner": {
+      "invalid": "Check the practice or doctor details and try again."
+    },
+    "workout": {
+      "batch": {
+        "invalid": "Check the workout details and try again.",
+        "too_large": "Too many workouts at once. Send them in smaller batches.",
+        "payload_too_large": "The workout data is too large to save in one go.",
+        "source_not_permitted": "This connection may not save workouts under that source."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "No AI provider is set up, so nothing was sent to one. Set one up in the AI settings."
+      },
+      "budget": {
+        "exceeded": "Today's AI budget is used up, so nothing was sent. It renews tomorrow."
+      }
     }
   },
   "doctorReport": {
@@ -979,7 +1035,9 @@
     "typeStressLevel": "Stress level",
     "typeTrainingReadiness": "Training readiness",
     "typeAcuteTrainingLoad": "Acute training load",
-    "sourceGarmin": "Garmin"
+    "sourceGarmin": "Garmin",
+    "valueOutOfRange": "Enter a value between {min} and {max} {unit}.",
+    "valueOutOfRangeNoUnit": "Enter a value between {min} and {max}."
   },
   "metricCatalog": {
     "title": "What HealthLog can track",
@@ -1531,7 +1589,8 @@
         "gallbladderDiscomfort": "Gallbladder discomfort"
       },
       "deleteConfirmTitle": "Delete this entry?",
-      "deleteConfirmBody": "This side-effect entry will be permanently removed."
+      "deleteConfirmBody": "This side-effect entry will be permanently removed.",
+      "saveError": "Could not save the entry"
     },
     "scheduling": {
       "naturalLanguage": {
@@ -1955,7 +2014,6 @@
       },
       "intake": {
         "title": "Intake history",
-        "importButton": "Import",
         "rowActions": {
           "openMenu": "Open row actions",
           "edit": "Edit",
@@ -1965,14 +2023,7 @@
           "rowToggleLabel": "Select row"
         },
         "bulkDelete": {
-          "selectionCount": "{count} entries selected",
-          "deleteButton": "Delete selection",
-          "cancelButton": "Cancel",
-          "confirmTitle": "Delete the selected entries?",
-          "confirmBody": "{count} entries will be removed permanently. The medication itself stays.",
-          "confirmAction": "Delete",
-          "toast": "Selection deleted",
-          "failed": "Could not delete the selection."
+          "cancelButton": "Cancel"
         },
         "edit": {
           "dialogTitle": "Edit intake",
@@ -2846,11 +2897,6 @@
     "bmiEmptyTitle": "Set your height to see BMI",
     "bmiEmptyDescription": "BMI needs your height. Add it under Settings → Account.",
     "bmiEmptyAction": "Open account settings",
-    "personalRecord": {
-      "badge": "PR",
-      "tooltip": "Personal record: {value} {unit} on {date}",
-      "benchmark": "Typical at that age: {low} to {high} {unit} ({source})"
-    },
     "loadError": "Failed to load insights",
     "heroPersonalBaseline": "Based on your last 90 days",
     "heroRegenerating": "Regenerating",
@@ -3017,8 +3063,6 @@
     },
     "correlationRow": {
       "title": "Relationships",
-      "experimentCta": "Try a 7-day experiment",
-      "experimentTooltip": "Coming soon",
       "emptyTitle": "Need more data to see this relationship",
       "sourceChip": "based on {n} paired readings ({window})",
       "sourceWindowLast30": "last 30 days",
@@ -5179,7 +5223,9 @@
       "connectCta": "Connect a device",
       "logCta": "Log your first measurement",
       "importCta": "Import existing history",
-      "modulesCta": "Choose your modules"
+      "modulesCta": "Choose your modules",
+      "aiOptional": "AI is optional. Everything here works without it.",
+      "aiSetupCta": "Set up AI"
     },
     "welcomeBack": {
       "title": "Welcome back",
@@ -5199,37 +5245,6 @@
       "allergiesLabel": "Allergies or intolerances",
       "allergiesPlaceholder": "e.g. penicillin, lactose",
       "privacyNote": "Stored encrypted and used only to give you better context. We don't ask for your medications here. Add those anytime from the Medications page."
-    },
-    "ai": {
-      "panelTitle": "See what insights look like",
-      "panelIntro": "Coach, the daily briefing and the per-metric reads turn your own numbers into plain language. Here's the shape of it, before you connect anything.",
-      "showSample": "See a sample briefing",
-      "sampleTitle": "Daily Briefing",
-      "sampleTag": "Example",
-      "sampleAriaLabel": "Example daily briefing",
-      "sampleBody": "Weight down 1.2 kg over two weeks. Resting pulse steady at 58 bpm. Blood pressure in range on 6 of 7 days; the one high reading followed a late, salty dinner.",
-      "sampleCaption": "Example only, not your own data. This is what a briefing reads like once insights are on.",
-      "ladderTitle": "Three ways to turn it on",
-      "ladderLocalTitle": "Local model: AI requests stay on your network",
-      "ladderLocalBody": "Point HealthLog at Ollama or LM Studio on your own machine. Free and fully private, the calm default.",
-      "ladderByokTitle": "Bring your own key",
-      "ladderByokBody": "Use your own OpenAI or Anthropic key. It runs under your account and billing, and the API tier keeps your data out of training by default.",
-      "ladderOauthTitle": "Sign in with a subscription",
-      "ladderOauthBody": "Connect a ChatGPT account. No per-token cost, but the consumer tier's terms may use content for training, so it's a deliberate choice, never the default for your health data.",
-      "keylessLine": "HealthLog is fully useful without AI. Your tiles, charts, trends and exports all work. AI only adds the plain-language read on top.",
-      "setupCta": "Set it up (about a minute)",
-      "sharedKeyNote": "This instance already provides a shared AI provider, so insights work for you right now, no setup needed.",
-      "offer": {
-        "title": "This instance can write your summary in plain language.",
-        "body": "The operator provides a provider that last worked within the past 24 hours. One tap turns the plain-language read on; your data then goes to that one provider and to nobody else.",
-        "cta": "Turn on plain language",
-        "granted": "Turned on. The first summary appears on your dashboard.",
-        "error": "Turning it on did not work. Give it another try in a moment."
-      },
-      "unavailable": {
-        "title": "This instance’s provider is not answering right now.",
-        "body": "HealthLog is fully useful without the plain-language read. You can add a provider of your own later under Settings."
-      }
     },
     "steps": {
       "who": "Who this record is for",
@@ -5944,6 +5959,7 @@
             "inProgress": "A dose-history import is already running. Wait for it to finish.",
             "workerUnavailable": "The background worker is not available, so nothing was imported.",
             "failed": "The import failed. Nothing was written.",
+            "stillRunning": "The import is taking longer than usual and may still finish. Look at your doses again in a few minutes.",
             "columnsHeading": "What each column does",
             "jsonOnly": "JSON only",
             "previewLine": "{rows} rows read, {queued} would be imported, {refused} refused",
@@ -7792,7 +7808,9 @@
       "hrv": "HRV",
       "weight": "weigh-ins",
       "cycle": "menstrual cycle"
-    }
+    },
+    "passkeyRenameFailed": "Could not rename the passkey.",
+    "passkeyRemoveFailed": "Could not remove the passkey."
   },
   "admin": {
     "title": "Administration",
@@ -9314,16 +9332,8 @@
     },
     "eventMedicationReminder": "Medication reminder",
     "eventMedicationReminderDesc": "Sent at each scheduled dose time.",
-    "eventMeasurementAnomaly": "Unusual measurement",
-    "eventMeasurementAnomalyDesc": "Sent when a reading is well outside your usual range.",
-    "eventComplianceLow": "Low adherence",
-    "eventComplianceLowDesc": "Sent when your adherence over the last few days drops below 80 %.",
-    "eventWithingsSyncFailed": "Withings sync failed",
-    "eventWithingsSyncFailedDesc": "Sent when Withings synchronisation fails multiple attempts in a row.",
     "eventSystemAlert": "System notice",
     "eventSystemAlertDesc": "General messages from the HealthLog server, e.g. maintenance windows or account notes.",
-    "eventPersonalRecord": "Personal record",
-    "eventPersonalRecordDesc": "Sent when a reading beats your previous best.",
     "eventMoodReminder": "Mood reminder",
     "eventMoodReminderDesc": "Daily nudge to log your current mood.",
     "eventCyclePeriodSoon": "Period coming up",
@@ -10972,7 +10982,9 @@
       "deleteTitle": "Remove own vaccine?",
       "sectionDescription": "Vaccines you added yourself because the catalogue does not list them.",
       "catalogGroup": "Catalogue"
-    }
+    },
+    "deleted": "Vaccination deleted",
+    "restoreFailed": "The vaccination could not be restored."
   },
   "illness": {
     "title": "Illness",
@@ -11186,7 +11198,6 @@
       "title": "Plans",
       "pageDescription": "If-then plans agreed in your Coach conversations. Confirm a proposal to make it part of the Coach's memory.",
       "readOnlyNote": "The Coach is not available right now, but you can still read and delete your plans.",
-      "proposalTitle": "Plan proposal",
       "ifThen": "If {cue}, then {action}.",
       "targetPrefix": "Target: {target}",
       "reviewPrefix": "Check-in: {when}",
@@ -12481,6 +12492,10 @@
       "purgeFailed": "Couldn't delete the document.",
       "purgeConfirmTitle": "Delete this document for good?",
       "purgeConfirmBody": "It is removed now instead of at the end of the waiting period, and cannot be restored."
+    },
+    "picker": {
+      "capped": "Showing the newest {count}. Search to find an older document.",
+      "cappedSearching": "Showing the newest {count} matches. Narrow the search to find an older one."
     }
   },
   "selfDescription": {
@@ -12528,7 +12543,8 @@
       "save": "Save",
       "savedToast": "Custom metric saved",
       "updatedToast": "Custom metric updated",
-      "saveError": "Could not save the custom metric"
+      "saveError": "Could not save the custom metric",
+      "nameTaken": "A custom metric with this name already exists."
     },
     "entry": {
       "value": "Value",
@@ -13483,7 +13499,9 @@
       "defaultReason": "No earlier visit with the same practice, specialty or kind.",
       "capped": "The last two years",
       "cappedReason": "The last matching visit is more than two years ago, and a report covers two years at most."
-    }
+    },
+    "deleted": "Visit deleted",
+    "restoreFailed": "The visit could not be restored."
   },
   "checkups": {
     "viewSwitchLabel": "Show checkups, visits, procedures or body sites",
@@ -13516,7 +13534,9 @@
     "deleteTitle": "Delete this entry?",
     "deleteDescription": "Your existing visits stay, and they keep this name.",
     "deleteFailed": "The entry could not be deleted.",
-    "noSpecialtyGroup": "No specialty"
+    "noSpecialtyGroup": "No specialty",
+    "deleted": "Entry deleted",
+    "restoreFailed": "The entry could not be restored."
   },
   "links": {
     "picker": {

@@ -46,7 +46,8 @@ import { REMINDERS_INJECT_TOP_N } from "./reminders";
 /**
  * App-side closed status enum (NOT a DB enum — matches the schema column).
  * v1.22 (W9, C2) adds the n-of-1 experiment lifecycle: `review_due` (the review
- * date passed) and `reviewed` (the read-back outcome was generated + stored).
+ * date passed) and `reviewed` (the review reminder fired and the plan left the
+ * standing group).
  */
 export const COACH_PLAN_STATUSES = [
   "proposed",
@@ -400,68 +401,6 @@ export async function extractAndStorePlanProposals(
   });
 
   return { status: "stored", count: toStore.length };
-}
-
-// ---------------------------------------------------------------------------
-// v1.22 — n-of-1 experiment outcome read-back block
-// ---------------------------------------------------------------------------
-
-/** How recent a reviewed experiment stays in the snapshot read-back block. */
-const EXPERIMENT_OUTCOME_RECALL_DAYS = 30;
-/** Max reviewed outcomes carried into the snapshot. */
-const EXPERIMENT_OUTCOME_TOP_N = 3;
-const EXPERIMENT_OUTCOME_RECALL_MS =
-  EXPERIMENT_OUTCOME_RECALL_DAYS * 86_400_000;
-
-/** One reviewed experiment as the snapshot read-back block carries it. */
-export interface ExperimentOutcomeEntry {
-  metric: string;
-  /** The grounded, association-only read-back prose (decrypted). */
-  outcome: string;
-}
-
-interface ReviewedPlanRow {
-  metric: string;
-  outcomeEncrypted: Uint8Array | null;
-  updatedAt: Date;
-}
-
-/**
- * Build the experiment-outcome read-back block: recently-`reviewed` plans whose
- * `outcomeEncrypted` carries a grounded result, decrypted fault-isolated. This
- * is the C2 read-back surface; the caller (`snapshot.ts`) attaches it ONLY when
- * the experiment-verdict flag is on, so the user-visible read-back stays gated
- * until its live B0 cases clear. Returns `null` when nothing recent qualifies.
- */
-export async function buildExperimentOutcomeBlock(
-  userId: string,
-  opts?: { prisma?: PrismaLike; now?: Date },
-): Promise<{ experiments: ExperimentOutcomeEntry[] } | null> {
-  const db = opts?.prisma ?? prisma;
-  const now = opts?.now ?? new Date();
-  const since = new Date(now.getTime() - EXPERIMENT_OUTCOME_RECALL_MS);
-
-  const rows = (await db.coachPlan.findMany({
-    where: {
-      userId,
-      deletedAt: null,
-      status: "reviewed",
-      outcomeEncrypted: { not: null },
-      updatedAt: { gte: since },
-    },
-    orderBy: [{ updatedAt: "desc" }],
-    take: EXPERIMENT_OUTCOME_TOP_N,
-    select: { metric: true, outcomeEncrypted: true, updatedAt: true },
-  })) as ReviewedPlanRow[];
-
-  const experiments: ExperimentOutcomeEntry[] = [];
-  for (const r of rows) {
-    const outcome = decryptOrNull(r.outcomeEncrypted);
-    if (outcome === null) continue;
-    experiments.push({ metric: r.metric, outcome });
-  }
-  if (experiments.length === 0) return null;
-  return { experiments };
 }
 
 // ---------------------------------------------------------------------------

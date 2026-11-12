@@ -48,7 +48,8 @@ import {
   medicationDependentKeys,
   queryKeys,
 } from "@/lib/query-keys";
-import { ApiError, apiGet, apiPut } from "@/lib/api/api-fetch";
+import { apiGet, apiPut } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 
 type PhaseMode = "MINUTES" | "PERCENT";
@@ -229,9 +230,7 @@ function PhaseConfigForm({
       onClose();
     } catch (err) {
       showErrorToast(
-        err instanceof ApiError && err.message
-          ? err.message
-          : t("medications.detail.phases.saveFailed"),
+        localizedApiError(err, t, "medications.detail.phases.saveFailed"),
         { cause: err },
       );
     } finally {

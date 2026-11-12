@@ -28,7 +28,8 @@ import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
-import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
+import { apiDelete, apiGet, apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 import {
@@ -66,21 +67,20 @@ export function CentralCodexSection() {
   async function handleConnect() {
     setDevicePolling(true);
     try {
-      const res = await apiFetchRaw("/api/admin/central-codex/device-start", {
-        method: "POST",
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || t("admin.centralCodex.error"));
+      const data = await apiPost<{
+        userCode: string;
+        verificationUrl: string;
+        intervalSeconds: number;
+      }>("/api/admin/central-codex/device-start");
       setDeviceCode({
-        userCode: json.data.userCode,
-        verificationUrl: json.data.verificationUrl,
-        intervalSeconds: json.data.intervalSeconds,
+        userCode: data.userCode,
+        verificationUrl: data.verificationUrl,
+        intervalSeconds: data.intervalSeconds,
       });
     } catch (err) {
-      showErrorToast(
-        err instanceof Error ? err.message : t("admin.centralCodex.error"),
-        { cause: err },
-      );
+      showErrorToast(localizedApiError(err, t, "admin.centralCodex.error"), {
+        cause: err,
+      });
       setDevicePolling(false);
     }
   }
@@ -92,15 +92,11 @@ export function CentralCodexSection() {
 
     async function tick() {
       try {
-        const res = await apiFetchRaw("/api/admin/central-codex/device-poll", {
-          method: "POST",
-        });
-        const json = await res.json();
+        const data = await apiPost<{ status?: string } | null>(
+          "/api/admin/central-codex/device-poll",
+        );
         if (cancelled) return;
-        if (!res.ok) {
-          throw new Error(json.error || t("admin.centralCodex.error"));
-        }
-        if (json.data?.status === "connected") {
+        if (data?.status === "connected") {
           setDeviceCode(null);
           setDevicePolling(false);
           toast.success(t("admin.centralCodex.connected"));
@@ -113,10 +109,9 @@ export function CentralCodexSection() {
         if (!cancelled) setTimeout(tick, intervalMs);
       } catch (err) {
         if (cancelled) return;
-        showErrorToast(
-          err instanceof Error ? err.message : t("admin.centralCodex.error"),
-          { cause: err },
-        );
+        showErrorToast(localizedApiError(err, t, "admin.centralCodex.error"), {
+          cause: err,
+        });
         setDeviceCode(null);
         setDevicePolling(false);
       }
@@ -133,23 +128,16 @@ export function CentralCodexSection() {
   async function handleDisconnect() {
     setDisconnecting(true);
     try {
-      const res = await apiFetchRaw("/api/admin/central-codex", {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.error || t("admin.centralCodex.error"));
-      }
+      await apiDelete("/api/admin/central-codex");
       toast.success(t("admin.centralCodex.disconnected"));
       queryClient.invalidateQueries({
         queryKey: queryKeys.adminCentralCodex(),
       });
       void invalidateKeys(queryClient, aiInputDependentKeys);
     } catch (err) {
-      showErrorToast(
-        err instanceof Error ? err.message : t("admin.centralCodex.error"),
-        { cause: err },
-      );
+      showErrorToast(localizedApiError(err, t, "admin.centralCodex.error"), {
+        cause: err,
+      });
     } finally {
       setDisconnecting(false);
     }

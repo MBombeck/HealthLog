@@ -99,6 +99,28 @@ beforeEach(() => {
   vi.mocked(prisma.$queryRaw).mockResolvedValue([] as never);
 });
 
+/** The record row and the readings one generation reads, nothing else on file. */
+function seed(
+  records: Array<{ type: string; value: number; measuredAt: Date }>,
+  user: Record<string, unknown> = { dateOfBirth: null },
+) {
+  vi.mocked(prisma.user.findUnique).mockResolvedValue(user as never);
+  vi.mocked(prisma.measurement.findMany).mockResolvedValue(records as never);
+  vi.mocked(prisma.medication.findMany).mockResolvedValue([] as never);
+  vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
+    [] as never,
+  );
+  vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
+}
+
+/** The snapshot the model was handed, parsed out of the user prompt. */
+async function snapshotFor() {
+  const captured: { userPrompt: string | null } = { userPrompt: null };
+  stubCompletion('{"summary":"OK"}', captured);
+  await generateBloodPressureStatusForUser("user-1", { locale: "en" });
+  return JSON.parse(captured.userPrompt!.match(/\{[\s\S]*\}/)![0]);
+}
+
 describe("generateBloodPressureStatusForUser — graded payload", () => {
   it("emits a graded {recent, weekly, monthly} per-metric series, not the full daily array", async () => {
     const now = new Date();
@@ -121,23 +143,8 @@ describe("generateBloodPressureStatusForUser — graded payload", () => {
       });
     }
 
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      dateOfBirth: null,
-    } as never);
-    vi.mocked(prisma.measurement.findMany).mockResolvedValue(records as never);
-    vi.mocked(prisma.medication.findMany).mockResolvedValue([] as never);
-    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
-      [] as never,
-    );
-    vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
-
-    const captured: { userPrompt: string | null } = { userPrompt: null };
-    stubCompletion('{"summary":"OK"}', captured);
-
-    await generateBloodPressureStatusForUser("user-1", { locale: "en" });
-
-    const match = captured.userPrompt!.match(/\{[\s\S]*\}/);
-    const snapshot = JSON.parse(match![0]);
+    seed(records);
+    const snapshot = await snapshotFor();
 
     const sys = snapshot.bloodPressure.systolic.series;
     expect(sys).toHaveProperty("recent");
@@ -170,18 +177,10 @@ describe("generateBloodPressureStatusForUser — graded payload", () => {
 
 describe("generateBloodPressureStatusForUser — timeout/error never persists", () => {
   it("serves the fallback without writing a cache row on timeout", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      dateOfBirth: null,
-    } as never);
-    vi.mocked(prisma.measurement.findMany).mockResolvedValue([
+    seed([
       { type: "BLOOD_PRESSURE_SYS", value: 132, measuredAt: new Date() },
       { type: "BLOOD_PRESSURE_DIA", value: 84, measuredAt: new Date() },
-    ] as never);
-    vi.mocked(prisma.medication.findMany).mockResolvedValue([] as never);
-    vi.mocked(prisma.medicationIntakeEvent.findMany).mockResolvedValue(
-      [] as never,
-    );
-    vi.mocked(prisma.moodEntry.findMany).mockResolvedValue([] as never);
+    ]);
 
     vi.mocked(runStatusCompletion).mockResolvedValue({
       kind: "timeout",
@@ -344,5 +343,38 @@ describe("generateBloodPressureStatusForUser — no rate without an expectation"
     const names = snapshot.bpMedications.map((m: { name: string }) => m.name);
     expect(names).not.toContain("Unscheduled");
     expect(names).toContain("Amlodipine");
+  });
+});
+
+describe("generateBloodPressureStatusForUser and the person's own target", () => {
+  const readings = [1, 2, 3].flatMap((daysAgo) => {
+    const measuredAt = new Date(Date.now() - daysAgo * dayMs);
+    return [
+      { type: "BLOOD_PRESSURE_SYS", value: 135, measuredAt },
+      { type: "BLOOD_PRESSURE_DIA", value: 85, measuredAt },
+    ];
+  });
+
+  it("hands the model the own target and the share of days inside it", async () => {
+    seed(readings, {
+      heightCm: 180,
+      dateOfBirth: new Date("1980-01-01"),
+      gender: "MALE",
+      thresholdsJson: {
+        BLOOD_PRESSURE_SYS: { min: 110, max: 140 },
+        BLOOD_PRESSURE_DIA: { min: 70, max: 90 },
+      },
+    });
+    const targets = (await snapshotFor()).bloodPressure.targets;
+    expect(targets.systolic).toEqual({ min: 110, max: 140 });
+    expect(targets.diastolic).toEqual({ min: 70, max: 90 });
+    expect(targets.inTargetPctLast30DailyPoints).toBe(100);
+  });
+
+  it("falls back to the age default without one", async () => {
+    seed(readings, { dateOfBirth: new Date("1980-01-01") });
+    const targets = (await snapshotFor()).bloodPressure.targets;
+    expect(targets.systolic.max).toBeLessThan(135);
+    expect(targets.inTargetPctLast30DailyPoints).toBe(0);
   });
 });

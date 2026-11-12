@@ -36,11 +36,10 @@ function makeData(overrides?: Partial<DoctorReportData>): DoctorReportData {
       end: "2026-05-03T12:00:00.000Z",
     },
     patient: {
-      username: "sample-user",
+      name: "Sample Patient",
       dateOfBirth: "1985-06-15T00:00:00.000Z",
       gender: "MALE",
       heightCm: 182,
-      fullName: "Sample Patient",
       insurerName: "Example Insurer",
       insurerIkNumber: "101234567",
     },
@@ -286,7 +285,7 @@ describe("document Bundle — identity and resolvability", () => {
       fullBundle(),
       fullBundle({
         patient: {
-          username: "u",
+          name: "u",
           dateOfBirth: null,
           gender: null,
           heightCm: null,
@@ -375,7 +374,7 @@ describe("Patient.gender", () => {
     for (const [stored, expected] of cases) {
       const bundle = fullBundle({
         patient: {
-          username: "u",
+          name: "u",
           dateOfBirth: null,
           gender: stored,
           heightCm: null,

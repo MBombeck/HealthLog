@@ -41,7 +41,8 @@ import { queryKeys } from "@/lib/query-keys";
 import { type AdminUser, PasswordInput } from "./_shared";
 import { PendingDeletionControls } from "./pending-deletion-controls";
 import { DeleteUserControl } from "./delete-user-control";
-import { apiGet, apiPost, apiPut } from "@/lib/api/api-fetch";
+import { ApiError, apiGet, apiPost, apiPut } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import {
   recentProofErrorMessage,
   useRecentProof,
@@ -109,12 +110,9 @@ export function UserManagementSection() {
       toast.success(t("common.saved"));
     },
     onError: (err) => {
-      showErrorToast(
-        err instanceof Error && err.message
-          ? err.message
-          : t("admin.settingsSaveError"),
-        { cause: err },
-      );
+      showErrorToast(localizedApiError(err, t, "admin.settingsSaveError"), {
+        cause: err,
+      });
     },
   });
 
@@ -132,8 +130,17 @@ export function UserManagementSection() {
       setResetMsg(t("admin.passwordReset"));
       setResetPassword("");
     },
-    onError: (err: Error) => {
-      setResetMsg(recentProofErrorMessage(err, err.message));
+    // The server words its password verdict (too weak, found in a breach) in
+    // the account's language; any other refusal reads through the catalogue.
+    onError: (err) => {
+      setResetMsg(
+        recentProofErrorMessage(
+          err,
+          err instanceof ApiError && err.status === 422
+            ? err.message
+            : localizedApiError(err, t, "common.error"),
+        ),
+      );
     },
   });
 
@@ -156,9 +163,7 @@ export function UserManagementSection() {
     },
     onError: (err) => {
       showErrorToast(
-        err instanceof Error && err.message
-          ? err.message
-          : t("admin.section.users.forceLogoutFailed"),
+        localizedApiError(err, t, "admin.section.users.forceLogoutFailed"),
         { cause: err },
       );
     },
@@ -560,7 +565,11 @@ export function UserManagementSection() {
             </div>
             {updateUser.isError && (
               <p className="text-destructive text-sm">
-                {(updateUser.error as Error).message}
+                {localizedApiError(
+                  updateUser.error,
+                  t,
+                  "admin.settingsSaveError",
+                )}
               </p>
             )}
             <SettingsCardActions>

@@ -19,7 +19,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useChartOverlayPrefs } from "@/hooks/use-chart-overlay-prefs";
-import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useViewportWidth } from "@/hooks/use-viewport-width";
 import { axisTickUnitSuffix } from "@/lib/charts/axis-unit";
 import { makeBucketLabelFormatters } from "@/lib/charts/bucket-label";
@@ -61,6 +60,7 @@ import {
   useHealthChartLabels,
   useHealthChartOverlays,
 } from "./health-chart/use-health-chart-overlays";
+import { useBmiDivisor } from "./health-chart/use-bmi-divisor";
 import { useHealthChartSeries } from "./health-chart/use-health-chart-series";
 import { useHealthChartView } from "./health-chart/use-health-chart-view";
 import { resolveMiniRangePoints } from "./mini-window";
@@ -157,15 +157,7 @@ export function HealthChart({
   // Viewport-aware tick density: 4 to 10 labels, whatever the point count.
   const viewportWidth = useViewportWidth();
 
-  // `useAuth()` is the person at the keyboard, and under a switch that is the
-  // delegate: dividing the owner's weights by the delegate's height squared
-  // gives a plausible BMI that is somebody else's. Inside a shared record the
-  // chart draws no BMI rather than a wrong one.
-  const { inSharedRecord } = useRecordCapabilities();
-  const bmiDivisor =
-    valueMode === "bmi" && !inSharedRecord && user?.heightCm
-      ? (user.heightCm / 100) ** 2
-      : null;
+  const bmiDivisor = useBmiDivisor(valueMode);
 
   const { data, isLoading, isError, error, isPlaceholderData, refetch } =
     useHealthChartSeries({

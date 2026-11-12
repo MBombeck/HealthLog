@@ -244,8 +244,7 @@ export function TourLauncher({ ready = true }: TourLauncherProps) {
   // v1.4.47 — clock reading for the 24 h auto-launch gate. The
   // useState lazy-initialiser runs once at mount; subsequent re-renders
   // reuse the same value. This keeps the render path pure (React's
-  // purity linter rejects a bare `Date.now()` reference in render) and
-  // matches the established pattern in `personal-record-badge.tsx`:
+  // purity linter rejects a bare `Date.now()` reference in render):
   // capture the clock at a stable boundary, then derive freshness from
   // it. The launcher only consults this value once per (user, flag)
   // tuple via the `decidedFor` guard, so a mount that takes ten

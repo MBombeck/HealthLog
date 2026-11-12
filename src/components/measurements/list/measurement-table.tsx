@@ -23,6 +23,7 @@ import { MEASUREMENT_TYPE_COLORS as TYPE_COLORS } from "../measurement-list-meta
 import { DayDrillDown, SleepNightCaption } from "./day-drill-down";
 import {
   MeasurementRowActions,
+  isServerComputed,
   rowState,
   typeLabel,
   type MeasurementRowContext,
@@ -154,8 +155,9 @@ function MeasurementTableRow({
         data-display-unit={isGrouped ? m.unit : rowDisplay(m).unit}
       >
         <TableCell className="pl-4">
-          {/* A grouped row is not individually deletable: no checkbox. */}
-          {!isGrouped && canManage && (
+          {/* A grouped row is not individually deletable, and a computed score
+              is the server's to rewrite: no checkbox for either. */}
+          {!isGrouped && !isServerComputed(m) && canManage && (
             <Checkbox
               checked={isSelected}
               onCheckedChange={() => onToggleRow(m.id)}

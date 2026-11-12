@@ -21,10 +21,15 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
-import { ApiError, apiPost } from "@/lib/api/api-fetch";
+import { apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import { getQuantityTransform } from "@/lib/measurements/display-transform";
-import { queryKeys, refetchInactiveDailyReads } from "@/lib/query-keys";
+import {
+  invalidateKeys,
+  refetchInactiveDailyReads,
+  workoutDependentKeys,
+} from "@/lib/query-keys";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import {
   buildManualWorkoutEntry,
@@ -90,7 +95,8 @@ interface BatchResult {
 export type ManualWorkoutSaveOutcome = "inserted" | "duplicate" | "updated";
 
 /**
- * Post the entry and refresh what shows workouts. A `duplicate` is a success:
+ * Post the entry and start refreshing what shows workouts; the caller reports
+ * the save without waiting for those reads. A `duplicate` is a success:
  * the same form already landed this session (a second tap, a retry), so the
  * row exists exactly once. A `skipped` entry was refused and throws.
  */
@@ -105,12 +111,11 @@ export async function saveManualWorkout(
   if (status !== "inserted" && status !== "duplicate" && status !== "updated") {
     throw new Error(`workout entry not stored: ${status ?? "unknown"}`);
   }
-  // The list, the dashboard tile and every detail read sit under this
-  // prefix. The form also opens from the capture picker on any page, where
-  // the Today hero (which names a workout that just landed) and the dashboard
-  // snapshot are unmounted, so those two are refetched outright.
-  await queryClient.invalidateQueries({ queryKey: queryKeys.workouts() });
-  await refetchInactiveDailyReads(queryClient);
+  // The form also opens from the capture picker on any page, where the
+  // Today hero and the dashboard snapshot are unmounted, so those two are
+  // refetched outright.
+  void invalidateKeys(queryClient, workoutDependentKeys);
+  void refetchInactiveDailyReads(queryClient);
   return status;
 }
 
@@ -228,9 +233,7 @@ export function ManualWorkoutForm({
       onSuccess?.();
     } catch (err) {
       setSaveError(
-        err instanceof ApiError && err.message
-          ? err.message
-          : t("insights.workouts.manual.saveError"),
+        localizedApiError(err, t, "insights.workouts.manual.saveError"),
       );
     } finally {
       setSaving(false);

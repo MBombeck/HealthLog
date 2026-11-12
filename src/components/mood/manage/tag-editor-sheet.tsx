@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { ApiError, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { MoodTagIconPicker } from "../mood-tag-icon-picker";
@@ -144,10 +145,9 @@ export function TagEditorSheet({
       if (err instanceof ApiError && err.status === 422) {
         showErrorToast(t("mood.manage.tagLimitReached"), { cause: err });
       } else {
-        showErrorToast(
-          err instanceof ApiError ? err.message : t("common.error"),
-          { cause: err },
-        );
+        showErrorToast(localizedApiError(err, t, "common.error"), {
+          cause: err,
+        });
       }
     } finally {
       setSaving(false);

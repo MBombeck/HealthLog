@@ -35,6 +35,8 @@ import {
   questionsToPassBeforeConfirm,
 } from "@/lib/onboarding/wizard-steps";
 
+const NO_BASELINE = { heightCm: null, dateOfBirth: null, gender: null };
+
 /**
  * v1.39 — the confirm screen.
  *
@@ -334,11 +336,7 @@ export function ConfirmScreen({
       ) : (
         <BaselineForm
           backHref={back ? screenHref(back) : undefined}
-          initial={{
-            heightCm: user?.heightCm ?? null,
-            dateOfBirth: user?.dateOfBirth ?? null,
-            gender: user?.gender ?? null,
-          }}
+          initial={user ?? NO_BASELINE}
           onConfirmed={finish}
           confirming={finishing}
           demoMode={demoMode}

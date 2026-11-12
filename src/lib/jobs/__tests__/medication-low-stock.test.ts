@@ -7,7 +7,10 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@/lib/modules/gate", () => ({ isModuleEnabled: vi.fn() }));
+
 import type { PrismaClient } from "@/generated/prisma/client";
+import { isModuleEnabled } from "@/lib/modules/gate";
 import {
   buildLowStockPayload,
   decideLowStockAction,
@@ -280,6 +283,7 @@ describe("runMedicationLowStockTick", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(isModuleEnabled).mockResolvedValue(true);
   });
 
   it("notifies a below-threshold medication and stamps the crossing", async () => {
@@ -424,6 +428,56 @@ describe("runMedicationLowStockTick", () => {
     expect(summary.skippedThresholdOff).toBe(1);
     expect(prisma.medication.findMany).not.toHaveBeenCalled();
     expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  it("the Medications module switched off skips the user without reading medications", async () => {
+    vi.mocked(isModuleEnabled).mockResolvedValue(false);
+    const dispatch = okDispatch();
+    const prisma = prismaMock({
+      users: [userRow()],
+      medications: [medRow()],
+    });
+
+    const summary = await runMedicationLowStockTick(
+      prisma as unknown as PrismaClient,
+      now,
+      { dispatch },
+    );
+
+    expect(isModuleEnabled).toHaveBeenCalledWith("user-1", "medications");
+    expect(summary.skippedModuleDisabled).toBe(1);
+    expect(prisma.medication.findMany).not.toHaveBeenCalled();
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  it("skips a medication whose course has ended, keeps one not yet started", async () => {
+    const dispatch = okDispatch();
+    const prisma = prismaMock({
+      users: [{ ...userRow(), timezone: "Europe/Berlin" }],
+      medications: [
+        medRow({ id: "med-ended", endsOn: daysAgo(3), startsOn: daysAgo(13) }),
+        medRow({ id: "med-ended-today", endsOn: now, endedAt: daysAgo(0.01) }),
+        medRow({
+          id: "med-upcoming",
+          startsOn: new Date(now.getTime() + 3 * MS_PER_DAY),
+        }),
+      ],
+    });
+
+    const summary = await runMedicationLowStockTick(
+      prisma as unknown as PrismaClient,
+      now,
+      { dispatch },
+    );
+
+    expect(summary.skippedCourseEnded).toBe(2);
+    expect(summary.notified).toBe(1);
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({ medicationId: "med-upcoming" }),
+      }),
+    );
   });
 
   it("a schedule-less medication never notifies (no runway derivable)", async () => {

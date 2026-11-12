@@ -27,7 +27,7 @@ function makeReport(
       end: "2026-01-31T00:00:00.000Z",
     },
     patient: {
-      username: "tester",
+      name: "tester",
       dateOfBirth: null,
       gender: null,
       heightCm: null,
@@ -72,6 +72,7 @@ function render(
       | "selection"
       | "timeFormat"
       | "dateFormat"
+      | "timezone"
     >
   >,
 ) {
@@ -500,6 +501,45 @@ describe("<ClinicianView>", () => {
     expect(html).not.toContain("<iframe");
     expect(html).not.toContain('<img src="/c/hls_tok/d/doc-b"');
     expect(html).toContain("Referral letter");
+  });
+
+  it("prints the date of birth on its own day west of UTC", () => {
+    const html = render(
+      makeReport({
+        patient: {
+          name: "A. Patient",
+          // Stored at UTC midnight: 13 May, 20:00 in New York.
+          dateOfBirth: "1960-05-14T00:00:00.000Z",
+          gender: null,
+          heightCm: null,
+        },
+      }),
+      { timezone: "America/New_York", locale: "en" },
+    );
+    expect(html).toContain("05/14/1960");
+    expect(html).not.toContain("05/13/1960");
+  });
+
+  it("dates a vaccination on its own day west of UTC", () => {
+    const html = render(
+      makeReport({
+        immunizations: [
+          {
+            // A dose date at UTC midnight: the evening before in New York.
+            occurredAt: "2026-04-11T00:00:00.000Z",
+            antigenSlug: null,
+            vaccineName: "Influenza",
+            lotNumber: null,
+            site: null,
+            practitionerName: null,
+            series: [],
+          },
+        ],
+      }),
+      { timezone: "America/New_York", locale: "en" },
+    );
+    expect(html).toContain("04/11/2026");
+    expect(html).not.toContain("04/10/2026");
   });
 });
 

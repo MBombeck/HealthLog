@@ -1,12 +1,16 @@
 import { QueryClient } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/lib/api/api-fetch", () => ({
+vi.mock("@/lib/api/api-fetch", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/api-fetch")>()),
   apiFetchRaw: vi.fn(),
 }));
 
-import { apiFetchRaw } from "@/lib/api/api-fetch";
+import { ApiError, apiFetchRaw } from "@/lib/api/api-fetch";
+import en from "@/../messages/en.json";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
 import {
+  channelSaveError,
   optimisticallySetChannelEnabled,
   persistChannelEnabled,
   rollbackChannelEnabled,
@@ -27,7 +31,7 @@ describe("notification channel enable-only mutation", () => {
       new Response(JSON.stringify({ data: { saved: true } }), { status: 200 }),
     );
 
-    await persistChannelEnabled(endpoint, true, "save failed");
+    await persistChannelEnabled(endpoint, true);
 
     expect(apiFetchRaw).toHaveBeenCalledWith(endpoint, {
       method: "PUT",
@@ -87,7 +91,33 @@ describe("notification channel enable-only mutation", () => {
     );
 
     await expect(
-      persistChannelEnabled("/api/settings/ntfy", true, "save failed"),
+      persistChannelEnabled("/api/settings/ntfy", true),
     ).rejects.toThrow("Stored configuration is missing");
+  });
+});
+
+describe("the sentence a refused channel save leaves", () => {
+  const { t } = getServerTranslator("en");
+
+  it("names the private-origin policy like the test button does", () => {
+    const refusal = new ApiError("Private network target", 422, {
+      errorCode: "private_origin_not_approved",
+    });
+    expect(channelSaveError(refusal, t)).toBe(
+      en.settings.testConnection.errors.private_origin_not_approved,
+    );
+  });
+
+  it("reads any other refusal through the catalogue, never as the server's prose", () => {
+    const refusal = new ApiError("Stored configuration is missing", 422, {
+      errorCode: "http.invalid",
+    });
+    expect(channelSaveError(refusal, t)).toBe(en.apiErrors.http.invalid);
+  });
+
+  it("says could not save when the request never reached the server", () => {
+    expect(channelSaveError(new TypeError("Failed to fetch"), t)).toBe(
+      en.settings.savingError,
+    );
   });
 });

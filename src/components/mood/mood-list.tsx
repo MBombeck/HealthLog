@@ -383,9 +383,9 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
     async (ids: string[]) => {
       try {
         await apiPost("/api/mood-entries/restore", { ids });
-        await invalidateKeys(queryClient, moodDependentKeys);
-        await refetchInactiveDailyReads(queryClient);
         toast.success(t("mood.restoredToast"));
+        void invalidateKeys(queryClient, moodDependentKeys);
+        void refetchInactiveDailyReads(queryClient);
       } catch (failure) {
         showErrorToast(t("mood.restoreError"), { cause: failure });
       }
@@ -425,9 +425,9 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
       );
       return data.deleted;
     },
-    onSuccess: async (deleted, ids) => {
-      await invalidateKeys(queryClient, moodDependentKeys);
-      await refetchInactiveDailyReads(queryClient);
+    onSuccess: (deleted, ids) => {
+      void invalidateKeys(queryClient, moodDependentKeys);
+      void refetchInactiveDailyReads(queryClient);
       clearSelection();
       toast.success(
         deleted === 1
@@ -506,12 +506,12 @@ export function MoodList({ onAddFirst, onEmptyChange }: MoodListProps = {}) {
         moodLoggedAt,
       });
     },
-    onSuccess: async (saved) => {
+    onSuccess: (saved) => {
       // A tag picked in the dialog may have been archived or deleted
       // elsewhere since it opened; the server names what it did not store.
       if (droppedAnyLinkKeys(saved)) toast.warning(t("mood.tagsNotSaved"));
-      await invalidateKeys(queryClient, moodDependentKeys);
-      await refetchInactiveDailyReads(queryClient);
+      void invalidateKeys(queryClient, moodDependentKeys);
+      void refetchInactiveDailyReads(queryClient);
       setEditSeed({
         mood: editMood,
         tagsInput: editTagsInput,

@@ -45,8 +45,9 @@ const REGISTRY = "lib/measurements/display-transform.ts";
 /**
  * The one module allowed to import the unrounded escape hatch. The target
  * adapter needs the unrounded pound edge of a canonical guardrail so it can
- * round it INWARD — rounding to the nearest tenth first gives 66.1 lb for the
- * 30 kg floor, which inverts to 29.98 kg and the server rejects it.
+ * round it INWARD: rounding to the nearest tenth first can put the pound
+ * edge outside the kilogram window, and the server rejects what converts
+ * back from it.
  */
 const UNROUNDED_IMPORTERS = ["lib/targets/target-unit-display.ts"];
 

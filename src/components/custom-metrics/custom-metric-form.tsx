@@ -10,7 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import { ApiError, apiPatch } from "@/lib/api/api-fetch";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 
 import type { CustomMetricDto } from "./types";
@@ -33,6 +35,18 @@ function parseInteger(raw: string): number | null {
   return Number.isInteger(n) && n >= 0 ? n : null;
 }
 
+/**
+ * Update the metric, or define a new one under one Idempotency-Key until the
+ * create lands, so a retry after a timeout is not a second metric.
+ */
+function useSaveCustomMetric(existing: CustomMetricDto | undefined) {
+  const post = useIdempotentPost();
+  return (body: unknown) =>
+    existing
+      ? apiPatch<CustomMetricDto>(`/api/custom-metrics/${existing.id}`, body)
+      : post<CustomMetricDto>("/api/custom-metrics", body);
+}
+
 interface CustomMetricFormProps {
   /** When set the form edits this metric; otherwise it defines a new one. */
   existing?: CustomMetricDto;
@@ -44,6 +58,17 @@ interface CustomMetricFormProps {
    * bottom-sheet branch can sticky-pin it.
    */
   footerSlot?: HTMLElement | null;
+}
+
+/**
+ * The sentence for a refused save. A name clash is read by its code: a 409
+ * can also be the first save still running under the same key.
+ */
+function saveRefusal(err: unknown, t: (key: string) => string): string {
+  return err instanceof ApiError &&
+    err.meta?.errorCode === "customMetric.name_taken"
+    ? t("customMetrics.form.nameTaken")
+    : localizedApiError(err, t, "customMetrics.form.saveError");
 }
 
 /**
@@ -79,6 +104,7 @@ export function CustomMetricForm({
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const save = useSaveCustomMetric(existing);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -109,12 +135,7 @@ export function CustomMetricForm({
 
     setSubmitting(true);
     try {
-      const saved = existing
-        ? await apiPatch<CustomMetricDto>(
-            `/api/custom-metrics/${existing.id}`,
-            body,
-          )
-        : await apiPost<CustomMetricDto>("/api/custom-metrics", body);
+      const saved = await save(body);
       toast.success(
         existing
           ? t("customMetrics.form.updatedToast")
@@ -122,11 +143,7 @@ export function CustomMetricForm({
       );
       onSuccess?.(saved);
     } catch (err) {
-      const message =
-        err instanceof ApiError
-          ? err.message
-          : t("customMetrics.form.saveError");
-      setError(message);
+      setError(saveRefusal(err, t));
     } finally {
       setSubmitting(false);
     }

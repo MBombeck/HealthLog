@@ -11,6 +11,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiDelete, apiGetList, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import {
   encounterDependentKeys,
   invalidateKeys,
@@ -62,17 +63,19 @@ export function usePractitionerMutations() {
   const qc = useQueryClient();
   // Renaming a practice changes the label a rail appointment renders under,
   // and the daily reads are unmounted from the address book — pair the
-  // bundle invalidation with the forced inactive refetch.
+  // bundle invalidation with the forced inactive refetch. Not returned, so the
+  // sheet closes without waiting for the refetches.
   const invalidate = () =>
-    Promise.all([
+    void Promise.all([
       invalidateKeys(qc, encounterDependentKeys),
       refetchInactiveDailyReads(qc),
     ]);
 
+  // One key for as long as the sheet that mounts this is open.
+  const post = useIdempotentPost();
   const create = useMutation({
     mutationKey: queryKeys.practitionerCreate(),
-    mutationFn: (body: PractitionerWriteBody) =>
-      apiPost<Practitioner>(BASE, body),
+    mutationFn: (body: PractitionerWriteBody) => post<Practitioner>(BASE, body),
     onSuccess: invalidate,
   });
 
@@ -90,5 +93,14 @@ export function usePractitionerMutations() {
     onSuccess: invalidate,
   });
 
-  return { create, update, remove };
+  // The Undo of a delete. It brings the entry back, not the links the
+  // delete cleared on the visits that named it.
+  const restore = useMutation({
+    mutationKey: queryKeys.practitionerRestore(),
+    mutationFn: (id: string) =>
+      apiPost<Practitioner>(`${BASE}/${id}/restore`, {}),
+    onSuccess: invalidate,
+  });
+
+  return { create, update, remove, restore };
 }

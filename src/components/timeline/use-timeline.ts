@@ -10,7 +10,8 @@
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import { apiDelete, apiGet, apiPatch } from "@/lib/api/api-fetch";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import type {
   LifeEventCreateInput,
   LifeEventDTO,
@@ -72,12 +73,17 @@ export function useLifeEvents(enabled = true) {
 
 export function useLifeEventMutations() {
   const qc = useQueryClient();
+  // Not returned, so the sheet closes without waiting for the timeline to
+  // refetch.
   const invalidate = () =>
-    invalidateKeys(qc, [queryKeys.timelineRoot(), queryKeys.dayRoot()]);
+    void invalidateKeys(qc, [queryKeys.timelineRoot(), queryKeys.dayRoot()]);
 
+  // One key until a save lands, so a retry after a timeout is not a second
+  // event.
+  const post = useIdempotentPost();
   const create = useMutation({
     mutationFn: (body: LifeEventCreateInput) =>
-      apiPost<LifeEventDTO>("/api/life-events", body),
+      post<LifeEventDTO>("/api/life-events", body),
     onSuccess: invalidate,
   });
   const update = useMutation({

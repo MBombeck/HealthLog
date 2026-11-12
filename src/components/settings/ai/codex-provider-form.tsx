@@ -12,7 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { ConfirmButton } from "@/components/ui/confirm-button";
-import { apiFetchRaw } from "@/lib/api/api-fetch";
+import { apiDelete, apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { formatDateTime } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 import { aiInputDependentKeys, invalidateKeys } from "@/lib/query-keys";
@@ -77,18 +78,18 @@ export function CodexProviderForm({
     setMsg(null);
     setDevicePolling(true);
     try {
-      const res = await apiFetchRaw("/api/auth/codex/device-start", {
-        method: "POST",
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || t("settings.savingError"));
+      const data = await apiPost<{
+        userCode: string;
+        verificationUrl: string;
+        intervalSeconds: number;
+      }>("/api/auth/codex/device-start");
       setDeviceCode({
-        userCode: json.data.userCode,
-        verificationUrl: json.data.verificationUrl,
-        intervalSeconds: json.data.intervalSeconds,
+        userCode: data.userCode,
+        verificationUrl: data.verificationUrl,
+        intervalSeconds: data.intervalSeconds,
       });
     } catch (err) {
-      setMsg(err instanceof Error ? err.message : t("settings.savingError"));
+      setMsg(localizedApiError(err, t, "settings.codexConnectionFailed"));
       setMsgType("error");
       setDevicePolling(false);
     }
@@ -101,15 +102,11 @@ export function CodexProviderForm({
 
     async function tick() {
       try {
-        const res = await apiFetchRaw("/api/auth/codex/device-poll", {
-          method: "POST",
-        });
-        const json = await res.json();
+        const data = await apiPost<{ status?: string } | null>(
+          "/api/auth/codex/device-poll",
+        );
         if (cancelled) return;
-        if (!res.ok) {
-          throw new Error(json.error || t("settings.savingError"));
-        }
-        if (json.data?.status === "connected") {
+        if (data?.status === "connected") {
           setDeviceCode(null);
           setDevicePolling(false);
           setMsg(t("settings.codexConnected"));
@@ -120,7 +117,7 @@ export function CodexProviderForm({
         if (!cancelled) setTimeout(tick, intervalMs);
       } catch (err) {
         if (cancelled) return;
-        setMsg(err instanceof Error ? err.message : t("settings.savingError"));
+        setMsg(localizedApiError(err, t, "settings.codexConnectionFailed"));
         setMsgType("error");
         setDeviceCode(null);
         setDevicePolling(false);
@@ -144,18 +141,12 @@ export function CodexProviderForm({
     setDisconnecting(true);
     setMsg(null);
     try {
-      const res = await apiFetchRaw("/api/auth/codex/disconnect", {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.error);
-      }
+      await apiDelete("/api/auth/codex/disconnect");
       setMsg(t("settings.codexDisconnected"));
       setMsgType("success");
       void invalidateKeys(queryClient, aiInputDependentKeys);
     } catch (err) {
-      setMsg(err instanceof Error ? err.message : t("settings.savingError"));
+      setMsg(localizedApiError(err, t, "settings.savingError"));
       setMsgType("error");
     } finally {
       setDisconnecting(false);

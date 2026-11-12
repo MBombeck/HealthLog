@@ -45,8 +45,6 @@ import { buildGlp1SnapshotBlock } from "./glp1-snapshot";
 import { buildDerivedSnapshotBlock } from "./derived-snapshot";
 import { buildCorrelationsSnapshotBlock } from "./correlations-snapshot";
 import { buildCoachMemoryBlock } from "./memory-snapshot";
-import { buildExperimentOutcomeBlock } from "./plans";
-import { experimentVerdictEnabled } from "./experiment-flag";
 import { buildAdherenceStoryline } from "@/lib/insights/derived/adherence-storyline";
 import { buildChangepointSignals } from "@/lib/insights/derived/changepoint";
 import { buildSignalTrust } from "@/lib/insights/derived/signal-trust";
@@ -964,11 +962,9 @@ async function buildCoachSnapshotImpl(
   }
 
   // ── v1.22 (W9) — adherence storyline (B5), changepoints (C1), signal-trust
-  // (C3), experiment read-back (C2, flag-gated). Best-effort + fault-isolated;
-  // tiny descriptive objects attached WITHOUT a cluster registration (like
-  // illness/labs/scope, the budget degrader never sheds them). The C2 read-back
-  // is attached ONLY when the operator flag is on — the user-visible experiment
-  // verdict stays gated until its live B0 cases clear.
+  // (C3). Best-effort + fault-isolated; tiny descriptive objects attached
+  // WITHOUT a cluster registration (like illness/labs/scope, the budget
+  // degrader never sheds them).
   // These cross-cutting narrations belong on the BROAD Coach turn, not on a
   // narrowed single-source snapshot (the F1 tool builds + metric-page contexts
   // pass an explicit `scope.sources`). Skipping them there keeps a scoped read
@@ -976,43 +972,32 @@ async function buildCoachSnapshotImpl(
   const isExplicitlyScoped =
     Array.isArray(scope?.sources) && scope.sources.length > 0;
   // Each of these reads its own fixed window; one that reaches past the
-  // lookback limit is left out. The experiment read-back compares against a
-  // baseline from before the plan began, of no fixed length, so any limit
-  // leaves it out.
-  const [adherenceStoryline, changepoints, signalTrust, experimentOutcomes] =
-    isExplicitlyScoped
-      ? [null, null, null, null]
-      : await Promise.all([
-          excludesMedications ||
-          !fitsReach(ADHERENCE_STORYLINE_HORIZON_DAYS, reach)
-            ? Promise.resolve(null)
-            : buildAdherenceStoryline(userId, userTz, now).catch(
-                blockFailed("adherenceStoryline"),
-              ),
-          fitsReach(CHANGEPOINT_WINDOW_DAYS, reach)
-            ? buildChangepointSignals(userId, now).catch(
-                blockFailed("changepoints"),
-              )
-            : Promise.resolve(null),
-          fitsReach(SIGNAL_TRUST_WINDOW_DAYS, reach)
-            ? buildSignalTrust(userId, userTz, now).catch(
-                blockFailed("signalTrust"),
-              )
-            : Promise.resolve(null),
-          experimentVerdictEnabled() && !bounded
-            ? buildExperimentOutcomeBlock(userId, { now }).catch(
-                blockFailed("experimentOutcomes"),
-              )
-            : Promise.resolve(null),
-        ]);
+  // lookback limit is left out.
+  const [adherenceStoryline, changepoints, signalTrust] = isExplicitlyScoped
+    ? [null, null, null]
+    : await Promise.all([
+        excludesMedications ||
+        !fitsReach(ADHERENCE_STORYLINE_HORIZON_DAYS, reach)
+          ? Promise.resolve(null)
+          : buildAdherenceStoryline(userId, userTz, now).catch(
+              blockFailed("adherenceStoryline"),
+            ),
+        fitsReach(CHANGEPOINT_WINDOW_DAYS, reach)
+          ? buildChangepointSignals(userId, now).catch(
+              blockFailed("changepoints"),
+            )
+          : Promise.resolve(null),
+        fitsReach(SIGNAL_TRUST_WINDOW_DAYS, reach)
+          ? buildSignalTrust(userId, userTz, now).catch(
+              blockFailed("signalTrust"),
+            )
+          : Promise.resolve(null),
+      ]);
   if (adherenceStoryline) snapshot.adherenceStoryline = adherenceStoryline;
   if (changepoints && changepoints.length > 0) {
     snapshot.changepoints = changepoints;
   }
   if (signalTrust) snapshot.signalTrust = signalTrust;
-  if (experimentOutcomes) {
-    snapshot.experimentOutcomes = experimentOutcomes.experiments;
-  }
 
   if (Object.keys(snapshot).length === 0) {
     metrics.add("general");

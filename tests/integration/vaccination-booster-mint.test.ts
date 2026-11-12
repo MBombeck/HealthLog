@@ -18,6 +18,8 @@ process.env.ENCRYPTION_KEY ??=
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
 import { POST as createVaccination } from "@/app/api/vaccinations/route";
+import { dateOnlyKey } from "@/lib/tz/date-only";
+import { startOfLocalDayKey } from "@/lib/tz/local-day";
 import { POST as mintBooster } from "@/app/api/vaccinations/[id]/booster/route";
 import { GET as listReminders } from "@/app/api/measurement-reminders/route";
 
@@ -221,7 +223,10 @@ describe("the whole activity-aware loop, through real routes", () => {
     const after = await prisma.measurementReminder.findUniqueOrThrow({
       where: { id: reminderId },
     });
-    expect(after.lastSatisfiedAt?.toISOString()).toBe(occurredAt.toISOString());
+    // The start of the dose's calendar day in the person's zone.
+    expect(after.lastSatisfiedAt).toEqual(
+      startOfLocalDayKey(dateOnlyKey(occurredAt), "Europe/Berlin"),
+    );
     expect(after.nextDueAt!.getTime()).toBeGreaterThan(
       before.nextDueAt!.getTime(),
     );

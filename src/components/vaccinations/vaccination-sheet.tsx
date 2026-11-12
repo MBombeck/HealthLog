@@ -20,6 +20,7 @@
  */
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
@@ -36,6 +37,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import { RelatedRecordsBlock } from "@/components/links/related-records";
 import type { RelatedLink } from "@/lib/links/related";
@@ -68,7 +70,7 @@ export function VaccinationSheet({
   onCreated?: (created: Vaccination) => void;
 }) {
   const { t } = useTranslations();
-  const { create, update, remove } = useVaccinationMutations();
+  const { create, update, remove, restore } = useVaccinationMutations();
   // The list row carries no document links; the detail read does. Until it
   // answers, the draft's links stay "untouched" and Save leaves them alone.
   const detail = useVaccination(vaccination?.id ?? null);
@@ -99,8 +101,7 @@ export function VaccinationSheet({
         onCreated?.(created);
       }
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : t("vaccinations.saveFailed");
+      const message = localizedApiError(err, t, "vaccinations.saveFailed");
       setError(message);
       showErrorToast(message, { cause: err });
     }
@@ -198,8 +199,28 @@ export function VaccinationSheet({
                 <AlertDialogAction
                   variant="destructive"
                   onClick={() => {
-                    remove.mutate(vaccination.id, {
-                      onSuccess: () => onOpenChange(false),
+                    const id = vaccination.id;
+                    remove.mutate(id, {
+                      onSuccess: () => {
+                        onOpenChange(false);
+                        // The delete is soft. The Undo runs after this sheet
+                        // closed, so it awaits the restore itself rather than
+                        // passing callbacks a closed sheet never receives.
+                        toast.success(t("vaccinations.deleted"), {
+                          action: {
+                            label: t("common.undo"),
+                            onClick: () =>
+                              void restore.mutateAsync(id).catch((failure) =>
+                                showErrorToast(
+                                  t("vaccinations.restoreFailed"),
+                                  {
+                                    cause: failure,
+                                  },
+                                ),
+                              ),
+                          },
+                        });
+                      },
                       onError: (failure) =>
                         showErrorToast(t("vaccinations.deleteFailed"), {
                           cause: failure,

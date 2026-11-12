@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { formatDate } from "@/lib/format";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -41,9 +42,7 @@ export function PendingDeletionControls({ user }: { user: AdminUser }) {
     },
     onError: (err) => {
       showErrorToast(
-        err instanceof Error && err.message
-          ? err.message
-          : t("admin.section.users.undoDeletionFailed"),
+        localizedApiError(err, t, "admin.section.users.undoDeletionFailed"),
         { cause: err },
       );
     },

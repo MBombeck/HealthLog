@@ -142,7 +142,6 @@ export function OcrReviewDialog({
   mode,
   pdfSupported,
   consentRequired = false,
-  onCommitted,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -155,7 +154,6 @@ export function OcrReviewDialog({
    * granted `/api/auth/me` refreshes and the picker appears.
    */
   consentRequired?: boolean;
-  onCommitted: () => void;
 }) {
   const { t } = useTranslations();
   const pickerId = useId();
@@ -335,7 +333,6 @@ export function OcrReviewDialog({
                       })
                   : t("labs.ocr.savedEmptyToast"),
           );
-          onCommitted();
           handleClose(false);
         },
         onError: (failure) =>

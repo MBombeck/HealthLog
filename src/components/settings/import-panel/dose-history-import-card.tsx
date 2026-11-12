@@ -32,7 +32,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
 import { useTranslations } from "@/lib/i18n/context";
 import {
-  MedicationIntakeImportError,
+  MedicationIntakeImportTimeout,
   waitForMedicationIntakeImport,
 } from "@/lib/medications/intake-import-poll";
 import { invalidateMedicationReads } from "@/lib/query-keys";
@@ -94,6 +94,17 @@ function useFatalMessage(): (code: string | undefined) => string {
 function looksLikeJson(text: string): boolean {
   const head = text.trimStart().charAt(0);
   return head === "[" || head === "{";
+}
+
+/**
+ * The sentence for an import that did not report a result. A failed run or
+ * a transport failure wrote nothing; a job still running when the watch gave
+ * up may still write, so it must not read as nothing written.
+ */
+function importFailureKey(err: unknown): string {
+  return err instanceof MedicationIntakeImportTimeout
+    ? "settings.sections.export.import.doseHistory.stillRunning"
+    : "settings.sections.export.import.doseHistory.failed";
 }
 
 export function DoseHistoryImportCard() {
@@ -195,14 +206,10 @@ export function DoseHistoryImportCard() {
       });
       void invalidateMedicationReads(queryClient);
     } catch (err) {
-      // A failed job carries a sanitised reason; anything else is a transport
-      // failure with nothing to add. Either way the run did not write, and the
-      // card says so rather than leaving the last verdict on screen.
-      setError(
-        err instanceof MedicationIntakeImportError && err.message.length > 0
-          ? err.message
-          : t("settings.sections.export.import.doseHistory.failed"),
-      );
+      // A failed job's reason is the worker's English and adds nothing;
+      // anything else is a transport failure. The card says what that means
+      // rather than leaving the last verdict on screen.
+      setError(t(importFailureKey(err)));
       setVerdict(null);
     } finally {
       setBusy(false);

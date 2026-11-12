@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { AI_BUDGETS } from "@/lib/ai/ai-budgets";
 import { PROVIDER_DEFAULT_TIMEOUT_MS } from "@/lib/ai/effective-timeout";
 import { apiPatch } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import { aiInputDependentKeys, invalidateKeys } from "@/lib/query-keys";
 
@@ -68,17 +69,7 @@ export function ResponseTimeoutCard({
   }
 
   const saveMutation = useMutation({
-    mutationFn: async () => {
-      const trimmed = value.trim();
-      const responseTimeoutSeconds = trimmed === "" ? null : Number(trimmed);
-      if (
-        responseTimeoutSeconds !== null &&
-        (!Number.isInteger(responseTimeoutSeconds) ||
-          responseTimeoutSeconds < 10 ||
-          responseTimeoutSeconds > 600)
-      ) {
-        throw new Error(t("settings.ai.responseTimeoutInvalid"));
-      }
+    mutationFn: async (responseTimeoutSeconds: number | null) => {
       await apiPatch("/api/user/ai-provider", { responseTimeoutSeconds });
     },
     onSuccess: () => {
@@ -88,7 +79,7 @@ export function ResponseTimeoutCard({
     },
     onError: (e) => {
       setOk(false);
-      setMsg(e instanceof Error ? e.message : t("settings.ai.errorGeneric"));
+      setMsg(localizedApiError(e, t, "settings.ai.errorGeneric"));
     },
     onSettled: () => {
       submitInFlightRef.current = false;
@@ -98,8 +89,20 @@ export function ResponseTimeoutCard({
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitInFlightRef.current || saveMutation.isPending) return;
+    const trimmed = value.trim();
+    const responseTimeoutSeconds = trimmed === "" ? null : Number(trimmed);
+    if (
+      responseTimeoutSeconds !== null &&
+      (!Number.isInteger(responseTimeoutSeconds) ||
+        responseTimeoutSeconds < 10 ||
+        responseTimeoutSeconds > 600)
+    ) {
+      setOk(false);
+      setMsg(t("settings.ai.responseTimeoutInvalid"));
+      return;
+    }
     submitInFlightRef.current = true;
-    saveMutation.mutate();
+    saveMutation.mutate(responseTimeoutSeconds);
   }
 
   return (

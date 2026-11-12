@@ -32,10 +32,8 @@
  */
 import {
   hasAnyConfiguredProvider,
-  resolveProvider,
   resolveProviderChain,
 } from "@/lib/ai/provider";
-import type { ProviderChainResolved } from "@/lib/ai/provider-runner";
 import { aiEgressRefusal } from "@/lib/ai/capabilities/egress";
 import { singleUserTurn } from "@/lib/ai/types";
 import {
@@ -155,27 +153,6 @@ export function buildPrompts(
 }
 
 /**
- * Resolve the chain that will serve this generation, so the consent gate and
- * the daily cap both see the SAME provider set the call will actually use.
- * Mirrors `resolveStatusChain` in `@/lib/insights/status-provider`: the chain
- * first, then the legacy single provider tagged `admin-openai` — the
- * conservative tag, because `resolveProvider`'s admin fallback returns a bare
- * `OpenAIClient` that is indistinguishable from a BYOK key at the instance
- * level. Tagging it as server-managed makes the gate fail closed. Returns null
- * when nothing can serve.
- */
-async function resolveQuestionsChain(
-  userId: string,
-): Promise<ProviderChainResolved[] | null> {
-  const chain = await resolveProviderChain(userId);
-  if (chain.length > 0) return chain;
-
-  const legacy = await resolveProvider(userId);
-  if (legacy.type === "none") return null;
-  return [{ providerType: "admin-openai", instance: legacy }];
-}
-
-/**
  * Derive the pending questions for a freshly saved self-context.
  * Never throws — every failure path lands on the deterministic
  * fallback so the PUT route stays robust.
@@ -208,8 +185,8 @@ export async function deriveClarifyingQuestions(
   try {
     if (!(await hasAnyConfiguredProvider(userId))) return fallback();
 
-    const chain = await resolveQuestionsChain(userId);
-    if (chain === null) return fallback();
+    const chain = await resolveProviderChain(userId);
+    if (chain.length === 0) return fallback();
 
     // The wire re-check — BEFORE the snapshot is built, let alone sent. The
     // capability table's `aboutMeQuestions` row decides which receipts cover

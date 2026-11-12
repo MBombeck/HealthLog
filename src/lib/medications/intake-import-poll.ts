@@ -29,6 +29,14 @@ export class MedicationIntakeImportError extends Error {
   }
 }
 
+/** The job did not settle while the client watched; it may still write. */
+export class MedicationIntakeImportTimeout extends MedicationIntakeImportError {
+  constructor() {
+    super("Medication intake import timed out");
+    this.name = "MedicationIntakeImportTimeout";
+  }
+}
+
 const waitForNextPoll = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 1_000));
 
@@ -52,5 +60,5 @@ export async function waitForMedicationIntakeImport(
     if (attempt + 1 < maxAttempts) await wait();
   }
 
-  throw new MedicationIntakeImportError("Medication intake import timed out");
+  throw new MedicationIntakeImportTimeout();
 }

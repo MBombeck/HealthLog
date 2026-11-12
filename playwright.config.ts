@@ -279,13 +279,6 @@ export default defineConfig({
         "setup-flow-a11y.spec.ts",
         "setup-flow-connect.spec.ts",
         "setup-flow-locale-overflow.spec.ts",
-        // The shared-provider offer journey states INSTANCE-wide facts to
-        // reason about: it writes the operator key into `app_settings` and
-        // replaces every `provider_health` row for both shared tags, then
-        // puts both back. Serial mode only orders tests inside one file, so
-        // a second project would hold and clear that state underneath the
-        // first — and underneath any other spec that reads AI availability.
-        "onboarding-ai-offer.spec.ts",
         // The delegated-writes journey invites, accepts and revokes between
         // its own two accounts. A second project would send a second invitation
         // between the same pair while the first is live, and meet the 409.

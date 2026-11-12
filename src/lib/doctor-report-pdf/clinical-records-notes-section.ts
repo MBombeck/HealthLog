@@ -422,7 +422,7 @@ export function buildClinicalRecordsNotesSection(
     };
 
     const immunizationRows = data.immunizations.map((row) => [
-      fmtDate(row.occurredAt),
+      context.fmtCalendarDate(row.occurredAt),
       row.antigenSlug
         ? t(`vaccinations.catalog.${row.antigenSlug}`)
         : (row.vaccineName ?? "—"),

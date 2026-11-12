@@ -95,10 +95,9 @@ type DialogError =
   | { kind: "budget" }
   | { kind: "consent" }
   | { kind: "unavailable" }
-  | { kind: "network"; message?: string };
+  | { kind: "network" };
 
 interface ExtractFailureBody {
-  error?: string | null;
   meta?: { errorCode?: unknown } | null;
 }
 
@@ -127,7 +126,7 @@ export function classifyExtractFailure(
   }
   if (status === 429) return { kind: "rateLimit" };
   if (status === 503) return { kind: "noProvider" };
-  return { kind: "network", message: body?.error ?? undefined };
+  return { kind: "network" };
 }
 
 const MAX_TEXT_LENGTH = 2000;
@@ -200,7 +199,7 @@ export function NaturalLanguageExtractor({
         error: string | null;
       };
       if (body.error || !body.data) {
-        setError({ kind: "network", message: body.error ?? undefined });
+        setError({ kind: "network" });
         return;
       }
       onPrefill(body.data);
@@ -214,10 +213,7 @@ export function NaturalLanguageExtractor({
         // Caller dismissed the dialog mid-flight; do not surface.
         return;
       }
-      setError({
-        kind: "network",
-        message: err instanceof Error ? err.message : undefined,
-      });
+      setError({ kind: "network" });
     } finally {
       setBusy(false);
       abortRef.current = null;

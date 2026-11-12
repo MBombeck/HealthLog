@@ -27,7 +27,9 @@ import {
 } from "@/lib/medications/default-medication";
 import { useAuth } from "@/hooks/use-auth";
 import { useActiveRecordName } from "@/hooks/use-record-capabilities";
-import { ApiError, apiGet, apiPost } from "@/lib/api/api-fetch";
+import { apiGet } from "@/lib/api/api-fetch";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
+import { localizedApiError } from "@/lib/api/localized-error";
 import {
   intakeToastOptions,
   runUndoIntake,
@@ -118,6 +120,7 @@ export function MedicationIntakeQuickAdd({
 }: MedicationIntakeQuickAddProps) {
   const { t } = useTranslations();
   const queryClient = useQueryClient();
+  const post = useIdempotentPost();
   // v1.16.9 — the auto-pick reasons in the PROFILE timezone (the same
   // source the cards use); Berlin stays the last-resort fallback so
   // logged-out mounts behave unchanged.
@@ -225,7 +228,7 @@ export function MedicationIntakeQuickAdd({
       // v1.30.1 — the route returns the created event
       // (`apiSuccess(event, 201)`), same shape the card's take/skip path
       // already reads; the id drives the new Undo action below.
-      const created = await apiPost<{ id?: string } | undefined>(
+      const created = await post<{ id?: string } | undefined>(
         `/api/medications/${medicationId}/intake`,
         {
           takenAt: timestamp,
@@ -234,13 +237,6 @@ export function MedicationIntakeQuickAdd({
         },
       );
       const eventId = created?.id;
-
-      await invalidateMedicationReads(queryClient);
-      // Fan-out to every inline compliance chart key (one per medication)
-      // so the detail-page tile refreshes when the user re-enters it.
-      await queryClient.invalidateQueries({
-        queryKey: queryKeys.complianceChartInline(),
-      });
 
       // v1.36.x — the shared decision, not a fourth copy of it. This surface
       // was left out of the collapse that took the other three: it offered a
@@ -272,11 +268,16 @@ export function MedicationIntakeQuickAdd({
         toast.success(t("common.saved"));
       }
       onSuccess?.();
+      // The dose is stored; the sheet does not wait for the refetches. The
+      // bundle covers every inline compliance chart as well.
+      void invalidateMedicationReads(queryClient);
     } catch (err) {
       setError(
-        err instanceof ApiError && err.message
-          ? err.message
-          : t("dashboard.medicationIntakeQuickAdd.saveError"),
+        localizedApiError(
+          err,
+          t,
+          "dashboard.medicationIntakeQuickAdd.saveError",
+        ),
       );
     } finally {
       setLoading(false);

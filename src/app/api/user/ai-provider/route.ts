@@ -16,6 +16,7 @@ import {
   providerWorkAuthorityForRecord,
 } from "@/lib/sharing/provider-work-authority";
 import { annotate } from "@/lib/logging/context";
+import type { z } from "zod/v4";
 import { aiProviderPatchSchema } from "@/lib/validations/ai-provider";
 import {
   chainWithReasoningEffort,
@@ -191,6 +192,51 @@ export const GET = apiHandler(async () => {
   });
 });
 
+/**
+ * #1126 — the chain to write after the Local or gateway form set its entry's
+ * reasoning effort, or undefined when nothing changed. Stored on the entry in
+ * `aiProviderChain` rather than in a column of their own, so the setting is
+ * per entry and a chain can mix a thinking model with one that does not know
+ * the field. See `chainWithReasoningEffort` for how a default chain, or a
+ * provider absent from the chain, holds the value.
+ */
+async function chainAfterReasoningSave(
+  userId: string,
+  body: Pick<
+    z.infer<typeof aiProviderPatchSchema>,
+    "localReasoningEffort" | "compatReasoningEffort"
+  >,
+  pickedNow: unknown,
+): Promise<unknown> {
+  const current = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { aiProviderChain: true, aiProvider: true },
+  });
+  let chain: unknown = current?.aiProviderChain ?? null;
+  if (body.localReasoningEffort !== undefined) {
+    chain = chainWithReasoningEffort(chain, "local", body.localReasoningEffort);
+  }
+  if (body.compatReasoningEffort !== undefined) {
+    // Saving the gateway form picks the gateway, so its entry is on: a
+    // disabled one read as the person switching off what they had just picked.
+    const picked = pickedNow !== undefined ? pickedNow : current?.aiProvider;
+    chain = chainWithReasoningEffort(
+      chain,
+      "openai-compatible",
+      body.compatReasoningEffort,
+      String(picked ?? "").toUpperCase() === "OPENAI_COMPATIBLE",
+    );
+  }
+  // Written only when it changed: restating Default on a chain that was
+  // never customised must not freeze today's default chain into the row.
+  const before = serializeProviderChain(
+    parseProviderChain(current?.aiProviderChain ?? null),
+  );
+  return serializeProviderChain(parseProviderChain(chain)) !== before
+    ? chain
+    : undefined;
+}
+
 export const PATCH = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
   annotate({ action: { name: "user.ai-provider.update" } });
@@ -265,6 +311,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
         return apiError(
           "Base URL points to an internal/private host. The operator must allow its exact origin on this instance via AI_PRIVATE_ORIGINS (e.g. http://ollama.lan:11434) for a self-hosted Ollama / LM Studio.",
           422,
+          { errorCode: "ai_provider.private_host" },
         );
       }
       updates.aiBaseUrl = trimmed;
@@ -289,6 +336,7 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
         return apiError(
           "Base URL points to an internal/private host. The operator must allow its exact origin on this instance via AI_PRIVATE_ORIGINS (e.g. http://litellm.lan:4000) for a self-hosted gateway.",
           422,
+          { errorCode: "ai_provider.private_host" },
         );
       }
       updates.aiCompatBaseUrl = trimmed;
@@ -335,42 +383,16 @@ export const PATCH = apiHandler(async (request: NextRequest) => {
     updates.aiResponseTimeoutSeconds = body.responseTimeoutSeconds;
   }
 
-  // ── #1126 — reasoning settings of the Local and gateway entries ──
-  // Stored on the entry in `aiProviderChain` rather than in a column of their
-  // own, so the setting is per entry and a chain can mix a thinking model with
-  // one that does not know the field. See `chainWithReasoningEffort` for how a
-  // default chain, or a provider absent from the chain, holds the value.
   const reasoningTouched =
     body.localReasoningEffort !== undefined ||
     body.compatReasoningEffort !== undefined;
   if (reasoningTouched) {
-    const current = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { aiProviderChain: true },
-    });
-    let chain: unknown = current?.aiProviderChain ?? null;
-    if (body.localReasoningEffort !== undefined) {
-      chain = chainWithReasoningEffort(
-        chain,
-        "local",
-        body.localReasoningEffort,
-      );
-    }
-    if (body.compatReasoningEffort !== undefined) {
-      chain = chainWithReasoningEffort(
-        chain,
-        "openai-compatible",
-        body.compatReasoningEffort,
-      );
-    }
-    // Written only when it changed: restating Default on a chain that was
-    // never customised must not freeze today's default chain into the row.
-    const before = serializeProviderChain(
-      parseProviderChain(current?.aiProviderChain ?? null),
+    const chain = await chainAfterReasoningSave(
+      user.id,
+      body,
+      updates.aiProvider,
     );
-    if (serializeProviderChain(parseProviderChain(chain)) !== before) {
-      updates.aiProviderChain = chain;
-    }
+    if (chain !== undefined) updates.aiProviderChain = chain;
   }
 
   if (Object.keys(updates).length === 0 && !reasoningTouched) {

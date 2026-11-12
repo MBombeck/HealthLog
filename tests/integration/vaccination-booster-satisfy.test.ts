@@ -24,6 +24,8 @@ process.env.ENCRYPTION_KEY ??=
   "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
 import { POST as createVaccination } from "@/app/api/vaccinations/route";
+import { dateOnlyKey } from "@/lib/tz/date-only";
+import { startOfLocalDayKey } from "@/lib/tz/local-day";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
 import { getPrismaClient, truncateAllTables } from "./setup";
@@ -132,7 +134,10 @@ describe("a dose satisfies the boosters it answers", () => {
     expect(res.status, JSON.stringify(await res.clone().json())).toBe(201);
 
     const after = await reminderById(reminder.id);
-    expect(after.lastSatisfiedAt?.toISOString()).toBe(occurredAt.toISOString());
+    // The start of the dose's calendar day in the person's zone.
+    expect(after.lastSatisfiedAt).toEqual(
+      startOfLocalDayKey(dateOnlyKey(occurredAt), "Europe/Berlin"),
+    );
     // Re-anchored from the satisfy instant, so the next one lands roughly ten
     // years out rather than staying on the date it was already overdue on.
     expect(after.nextDueAt).not.toBeNull();

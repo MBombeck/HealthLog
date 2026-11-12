@@ -16,7 +16,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ApiError, apiPost, apiPut } from "@/lib/api/api-fetch";
+import { apiPost, apiPut } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { familyRelationshipEnum } from "@/lib/validations/family-history";
 import { useTranslations } from "@/lib/i18n/context";
 
@@ -99,10 +100,11 @@ export function FamilyHistoryForm({
       );
       onSuccess?.(saved);
     } catch (err) {
-      const message =
-        err instanceof ApiError
-          ? err.message
-          : t("records.family.form.saveError");
+      const message = localizedApiError(
+        err,
+        t,
+        "records.family.form.saveError",
+      );
       setError(message);
     } finally {
       setSubmitting(false);

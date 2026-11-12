@@ -142,7 +142,15 @@
     "auth": {
       "reproof": {
         "required": "Confirme sua senha atual para alterar isto.",
-        "failed": "A verificação não foi concluída. Nada foi alterado."
+        "failed": "A verificação não foi concluída. Nada foi alterado.",
+        "too_weak": "Confirme com seu segundo fator ou uma chave de acesso. Nesta conta, só a senha não basta."
+      },
+      "missing": "Sua sessão terminou, então nada foi alterado. Entre novamente para continuar.",
+      "passkey": {
+        "last_method": "Esta chave de acesso é sua única forma de entrar. Defina uma senha ou adicione outra chave de acesso primeiro."
+      },
+      "mfa": {
+        "already_active": "Esta conta já tem um aplicativo autenticador configurado. Desative-o primeiro para configurar um novo."
       }
     },
     "biomarkers": {
@@ -178,6 +186,54 @@
     },
     "aiRuns": {
       "readerBusy": "O leitor de documentos está ocupado com outras tarefas. Tente novamente em um minuto."
+    },
+    "http": {
+      "unauthenticated": "Sua sessão terminou, então nada foi alterado. Entre novamente para continuar.",
+      "rate_limited": "Há solicitações demais neste momento, então nada foi alterado. Aguarde um pouco e tente de novo.",
+      "forbidden": "Você não tem permissão para isso, então nada foi alterado.",
+      "invalid": "Alguns dados não foram aceitos, então nada foi alterado. Confira e tente de novo."
+    },
+    "ai_provider": {
+      "private_host": "Este endereço está em uma rede privada. O operador precisa primeiro permitir a origem exata em AI_PRIVATE_ORIGINS."
+    },
+    "encounter": {
+      "invalid": "Verifique os dados da consulta e tente novamente.",
+      "practitioner-not-found": "Esta clínica ou médico não existe mais. Escolha outro ou nenhum.",
+      "reminder-not-found": "Este check-up não existe mais. Escolha outro ou nenhum.",
+      "reminder-conflict": "Uma consulta planejada não pode fechar um check-up, porque ainda não aconteceu."
+    },
+    "vaccination": {
+      "invalid": "Verifique os dados da vacina e tente novamente.",
+      "practitioner-not-found": "Esta clínica ou médico não existe mais. Escolha outro ou nenhum.",
+      "encounter-not-found": "Esta consulta não existe mais. Escolha outra ou nenhuma.",
+      "custom-vaccine-not-found": "Esta vacina não existe mais. Escolha-a novamente na lista.",
+      "not-found": "Esta vacina não está mais disponível.",
+      "identity-required": "Uma dose precisa de um nome: escolha uma vacina da lista ou digite o que consta no registro.",
+      "booster-invalid": "Verifique os dados do reforço e tente novamente.",
+      "booster-no-antigen": "Esta dose não indica nenhuma vacina do catálogo, então não é possível planejar um reforço.",
+      "booster-out-of-scope": "Seu acesso a este registro não permite planejar um reforço."
+    },
+    "allergy": {
+      "invalid": "Verifique os dados da alergia e tente novamente."
+    },
+    "practitioner": {
+      "invalid": "Verifique os dados da clínica ou do médico e tente novamente."
+    },
+    "workout": {
+      "batch": {
+        "invalid": "Verifique os dados do treino e tente novamente.",
+        "too_large": "Treinos demais de uma vez. Envie menos por vez.",
+        "payload_too_large": "Os dados do treino são grandes demais para salvar de uma vez.",
+        "source_not_permitted": "Esta conexão não pode salvar treinos com essa origem."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "Nenhum provedor de IA está configurado, então nada foi enviado. Configure um nas configurações de IA."
+      },
+      "budget": {
+        "exceeded": "O orçamento de IA de hoje acabou, então nada foi enviado. Ele é renovado amanhã."
+      }
     }
   },
   "doctorReport": {
@@ -979,7 +1035,9 @@
     "typeStressLevel": "Nível de estresse",
     "typeTrainingReadiness": "Prontidão para treinar",
     "typeAcuteTrainingLoad": "Carga de treino aguda",
-    "sourceGarmin": "Garmin"
+    "sourceGarmin": "Garmin",
+    "valueOutOfRange": "Informe um valor entre {min} e {max} {unit}.",
+    "valueOutOfRangeNoUnit": "Informe um valor entre {min} e {max}."
   },
   "metricCatalog": {
     "title": "O que o HealthLog pode acompanhar",
@@ -1531,7 +1589,8 @@
         "gallbladderDiscomfort": "Desconforto na vesícula"
       },
       "deleteConfirmTitle": "Excluir esta entrada?",
-      "deleteConfirmBody": "Esta entrada de efeito colateral será removida permanentemente."
+      "deleteConfirmBody": "Esta entrada de efeito colateral será removida permanentemente.",
+      "saveError": "Não foi possível salvar a entrada"
     },
     "scheduling": {
       "naturalLanguage": {
@@ -1955,7 +2014,6 @@
       },
       "intake": {
         "title": "Histórico de tomadas",
-        "importButton": "Importar",
         "rowActions": {
           "openMenu": "Abrir ações da linha",
           "edit": "Editar",
@@ -1965,14 +2023,7 @@
           "rowToggleLabel": "Selecionar linha"
         },
         "bulkDelete": {
-          "selectionCount": "{count} entradas selecionadas",
-          "deleteButton": "Excluir seleção",
-          "cancelButton": "Cancelar",
-          "confirmTitle": "Excluir as entradas selecionadas?",
-          "confirmBody": "{count} entradas serão removidas permanentemente. O medicamento em si permanece.",
-          "confirmAction": "Excluir",
-          "toast": "Seleção excluída",
-          "failed": "Não foi possível excluir a seleção."
+          "cancelButton": "Cancelar"
         },
         "edit": {
           "dialogTitle": "Editar tomada",
@@ -2846,11 +2897,6 @@
     "bmiEmptyTitle": "Defina sua altura para ver o IMC",
     "bmiEmptyDescription": "O IMC precisa da sua altura. Adicione-a em Configurações → Conta.",
     "bmiEmptyAction": "Abrir configurações da conta",
-    "personalRecord": {
-      "badge": "Recorde",
-      "tooltip": "Recorde pessoal: {value} {unit} em {date}",
-      "benchmark": "Típico nessa idade: {low} a {high} {unit} ({source})"
-    },
     "loadError": "Falha ao carregar os insights",
     "heroPersonalBaseline": "Com base nos seus últimos 90 dias",
     "heroRegenerating": "Regenerando",
@@ -3017,8 +3063,6 @@
     },
     "correlationRow": {
       "title": "Relações",
-      "experimentCta": "Tente um experimento de 7 dias",
-      "experimentTooltip": "Em breve",
       "emptyTitle": "Precisa de mais dados para ver esta relação",
       "sourceChip": "com base em {n} leituras pareadas ({window})",
       "sourceWindowLast30": "últimos 30 dias",
@@ -5179,7 +5223,9 @@
       "connectCta": "Conectar um dispositivo",
       "logCta": "Registrar sua primeira medição",
       "importCta": "Importar histórico existente",
-      "modulesCta": "Escolher seus módulos"
+      "modulesCta": "Escolher seus módulos",
+      "aiOptional": "A IA é opcional. Tudo funciona também sem ela.",
+      "aiSetupCta": "Configurar IA"
     },
     "welcomeBack": {
       "title": "Bem-vindo de volta",
@@ -5199,37 +5245,6 @@
       "allergiesLabel": "Alergias ou intolerâncias",
       "allergiesPlaceholder": "ex.: penicilina, lactose",
       "privacyNote": "Armazenado criptografado e usado apenas para dar melhor contexto. Não pedimos seus medicamentos aqui. Adicione-os a qualquer momento na página Medicamentos."
-    },
-    "ai": {
-      "panelTitle": "Veja como os insights ficam",
-      "panelIntro": "Coach, o briefing diário e as leituras por métrica transformam seus próprios números em linguagem simples. Aqui está a forma disso, antes de conectar qualquer coisa.",
-      "showSample": "Ver um briefing de exemplo",
-      "sampleTitle": "Briefing Diário",
-      "sampleTag": "Exemplo",
-      "sampleAriaLabel": "Exemplo de briefing diário",
-      "sampleBody": "Peso caiu 1,2 kg em duas semanas. Pulso em repouso estável em 58 bpm. Pressão arterial na faixa em 6 de 7 dias; a única leitura alta seguiu um jantar tardio e salgado.",
-      "sampleCaption": "Apenas exemplo, não seus próprios dados. É assim que um briefing lê quando os insights estão ligados.",
-      "ladderTitle": "Três formas de ligar",
-      "ladderLocalTitle": "Modelo local: solicitações de IA permanecem na sua rede",
-      "ladderLocalBody": "Aponte o HealthLog para Ollama ou LM Studio na sua própria máquina. Gratuito e totalmente privado, o padrão tranquilo.",
-      "ladderByokTitle": "Traga sua própria chave",
-      "ladderByokBody": "Use sua própria chave OpenAI ou Anthropic. Roda sob sua conta e cobrança, e o nível de API mantém seus dados fora de treinamento por padrão.",
-      "ladderOauthTitle": "Entre com uma assinatura",
-      "ladderOauthBody": "Conecte uma conta ChatGPT. Sem custo por token, mas os termos do nível consumidor podem usar conteúdo para treinamento, então é uma escolha deliberada, nunca o padrão para seus dados de saúde.",
-      "keylessLine": "O HealthLog é totalmente útil sem IA. Seus blocos, gráficos, tendências e exportações funcionam. A IA só adiciona a leitura em linguagem simples por cima.",
-      "setupCta": "Configurar (cerca de um minuto)",
-      "sharedKeyNote": "Esta instância já fornece um provedor de IA compartilhado, então os insights funcionam para você agora, sem configuração.",
-      "offer": {
-        "title": "Esta instância pode escrever seu resumo em linguagem simples.",
-        "body": "O operador fornece um provedor que funcionou pela última vez nas últimas 24 horas. Um toque liga a leitura em linguagem simples; seus dados vão para esse único provedor e para ninguém mais.",
-        "cta": "Ligar linguagem simples",
-        "granted": "Ligado. O primeiro resumo aparece no seu painel.",
-        "error": "Ligar não funcionou. Tente novamente em instantes."
-      },
-      "unavailable": {
-        "title": "O provedor desta instância não está respondendo agora.",
-        "body": "O HealthLog é totalmente útil sem a leitura em linguagem simples. Você pode adicionar um provedor próprio mais tarde nas Configurações."
-      }
     },
     "steps": {
       "who": "Para quem é este registro",
@@ -5944,6 +5959,7 @@
             "inProgress": "Uma importação de histórico de doses já está em andamento. Espere ela terminar.",
             "workerUnavailable": "O worker em segundo plano não está disponível, então nada foi importado.",
             "failed": "A importação falhou. Nada foi gravado.",
+            "stillRunning": "A importação está demorando mais que o normal e ainda pode terminar. Confira suas doses de novo em alguns minutos.",
             "columnsHeading": "O que cada coluna faz",
             "jsonOnly": "Somente JSON",
             "previewLine": "{rows} linhas lidas, {queued} seriam importadas, {refused} recusadas",
@@ -7792,7 +7808,9 @@
       "hrv": "VFC",
       "weight": "pesagens",
       "cycle": "ciclo menstrual"
-    }
+    },
+    "passkeyRenameFailed": "Não foi possível renomear a chave de acesso.",
+    "passkeyRemoveFailed": "Não foi possível remover a chave de acesso."
   },
   "admin": {
     "title": "Administração",
@@ -9314,16 +9332,8 @@
     },
     "eventMedicationReminder": "Lembrete de medicamento",
     "eventMedicationReminderDesc": "Enviado em cada horário programado de dose.",
-    "eventMeasurementAnomaly": "Medição incomum",
-    "eventMeasurementAnomalyDesc": "Enviado quando uma leitura está bem fora da sua faixa habitual.",
-    "eventComplianceLow": "Adesão baixa",
-    "eventComplianceLowDesc": "Enviado quando sua adesão nos últimos dias cai abaixo de 80%.",
-    "eventWithingsSyncFailed": "Falha na sincronização do Withings",
-    "eventWithingsSyncFailedDesc": "Enviado quando a sincronização do Withings falha várias tentativas seguidas.",
     "eventSystemAlert": "Aviso do sistema",
     "eventSystemAlertDesc": "Mensagens gerais do servidor do HealthLog, como janelas de manutenção ou notas da conta.",
-    "eventPersonalRecord": "Recorde pessoal",
-    "eventPersonalRecordDesc": "Enviado quando uma leitura supera seu recorde anterior.",
     "eventMoodReminder": "Lembrete de humor",
     "eventMoodReminderDesc": "Lembrete diário para registrar seu humor atual.",
     "eventCyclePeriodSoon": "Menstruação se aproximando",
@@ -10972,7 +10982,9 @@
       "deleteTitle": "Remover vacina própria?",
       "sectionDescription": "Vacinas que você adicionou porque o catálogo não as lista.",
       "catalogGroup": "Catálogo"
-    }
+    },
+    "deleted": "Vacina excluída",
+    "restoreFailed": "Não foi possível restaurar a vacina."
   },
   "illness": {
     "title": "Doenças",
@@ -11186,7 +11198,6 @@
       "title": "Planos",
       "pageDescription": "Planos do tipo “se… então…” acordados nas suas conversas com o Coach. Confirme uma proposta para torná-la parte da memória do Coach.",
       "readOnlyNote": "O Coach não está disponível agora, mas você ainda pode ler e excluir seus planos.",
-      "proposalTitle": "Proposta de plano",
       "ifThen": "Se {cue}, então {action}.",
       "targetPrefix": "Alvo: {target}",
       "reviewPrefix": "Revisão: {when}",
@@ -12481,6 +12492,10 @@
       "purgeFailed": "Não foi possível excluir o documento.",
       "purgeConfirmTitle": "Excluir este documento para sempre?",
       "purgeConfirmBody": "Ele é removido agora, e não no fim do período de espera, e não pode ser restaurado."
+    },
+    "picker": {
+      "capped": "Mostrando os {count} mais recentes. Use a busca para encontrar um documento mais antigo.",
+      "cappedSearching": "Mostrando os {count} resultados mais recentes. Refine a busca para encontrar um mais antigo."
     }
   },
   "selfDescription": {
@@ -12528,7 +12543,8 @@
       "save": "Salvar",
       "savedToast": "Métrica personalizada salva",
       "updatedToast": "Métrica personalizada atualizada",
-      "saveError": "Não foi possível salvar a métrica personalizada"
+      "saveError": "Não foi possível salvar a métrica personalizada",
+      "nameTaken": "Já existe uma métrica personalizada com este nome."
     },
     "entry": {
       "value": "Valor",
@@ -13410,7 +13426,7 @@
     "created": "Consulta salva",
     "updated": "Consulta atualizada",
     "saveFailed": "Não foi possível salvar a consulta.",
-    "checkupNotClosed": "Consulta salva. O check permanece aberto; seu acesso não cobre isso.",
+    "checkupNotClosed": "Consulta salva. O check-up permanece aberto; seu acesso não cobre isso.",
     "status": {
       "planned": "Planejada",
       "done": "Comparecida",
@@ -13483,7 +13499,9 @@
       "defaultReason": "Nenhuma consulta anterior com o mesmo consultório, especialidade ou tipo.",
       "capped": "Os últimos dois anos",
       "cappedReason": "A última consulta correspondente foi há mais de dois anos, e um relatório cobre no máximo dois anos."
-    }
+    },
+    "deleted": "Consulta excluída",
+    "restoreFailed": "Não foi possível restaurar a consulta."
   },
   "checkups": {
     "viewSwitchLabel": "Mostrar check-ups, consultas, procedimentos ou locais do corpo",
@@ -13516,7 +13534,9 @@
     "deleteTitle": "Excluir esta entrada?",
     "deleteDescription": "Suas consultas existentes permanecem e mantêm este nome.",
     "deleteFailed": "Não foi possível excluir a entrada.",
-    "noSpecialtyGroup": "Sem especialidade"
+    "noSpecialtyGroup": "Sem especialidade",
+    "deleted": "Entrada excluída",
+    "restoreFailed": "Não foi possível restaurar a entrada."
   },
   "links": {
     "picker": {

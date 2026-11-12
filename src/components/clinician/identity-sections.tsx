@@ -48,15 +48,15 @@ export function PatientIdentitySection({
   t,
   report,
   scope,
-  fmtDate,
+  fmtCalendarDate,
 }: {
   t: Translate;
   report: DoctorReportData;
   scope: LeafScope;
-  fmtDate: (iso: string) => string;
+  fmtCalendarDate: (iso: string) => string;
 }) {
   const patient = report.patient;
-  const name = patient.fullName ?? patient.username ?? null;
+  const name = patient.name;
   const genderKey = patient.gender
     ? GENDER_LABEL_KEYS[patient.gender]
     : undefined;
@@ -67,7 +67,7 @@ export function PatientIdentitySection({
   if (patient.dateOfBirth) {
     rows.push({
       label: t("doctorReport.dateOfBirth"),
-      value: fmtDate(patient.dateOfBirth),
+      value: fmtCalendarDate(patient.dateOfBirth),
     });
   }
   if (genderKey) {
