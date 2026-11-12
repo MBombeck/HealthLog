@@ -8,6 +8,7 @@
 import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import {
+  NO_RECIPIENT_COOLDOWN_MS,
   nextRetryAt,
   shouldAutoDisableAfterTransient,
   type SendOutcome,
@@ -127,6 +128,26 @@ export async function recordChannelTransientFailure(
     data: { nextRetryAt: retryAt },
   });
   return { autoDisabled: false, nextRetryAt: retryAt };
+}
+
+/**
+ * Record a send that had nobody to go to. Not a failure: the counter stays
+ * where it is. The reason is kept, so the status screen says why nothing
+ * arrives, and the channel rests for `NO_RECIPIENT_COOLDOWN_MS`.
+ */
+export async function recordChannelNoRecipient(
+  channel: ChannelRef,
+  reason: string,
+  now: Date = new Date(),
+): Promise<void> {
+  await prisma.notificationChannel.update({
+    where: { id: channel.id },
+    data: {
+      lastFailureAt: now,
+      lastFailureReason: reason,
+      nextRetryAt: new Date(now.getTime() + NO_RECIPIENT_COOLDOWN_MS),
+    },
+  });
 }
 
 /**

@@ -17,6 +17,7 @@ vi.mock("@/lib/db", () => ({
     $transaction: vi.fn(),
     notificationChannel: {
       upsert: vi.fn(),
+      updateMany: vi.fn(),
     },
     auditLog: {
       create: vi.fn(),
@@ -89,6 +90,9 @@ beforeEach(() => {
   vi.mocked(prisma.notificationChannel.upsert).mockResolvedValue({
     id: "ch-1",
   } as never);
+  vi.mocked(prisma.notificationChannel.updateMany).mockResolvedValue({
+    count: 0,
+  });
   vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
   // `resetAllMocks` strips the top-level `.mockResolvedValue(...)`
   // declaration too, so re-arm the rate-limit success path here.
@@ -217,6 +221,29 @@ describe("POST /api/devices", () => {
     };
     expect(args.data.apnsToken).toBe("deadbeef".repeat(8));
     expect(args.data.apnsEnvironment).toBe("sandbox");
+  });
+
+  it("ends a pause that was waiting for a paired iPhone", async () => {
+    // A reminder with no iPhone paired rests the APNs channel for an hour;
+    // pairing one must not leave the next reminder waiting it out.
+    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
+    const res = await POST(
+      req({
+        token: "abcd1234efgh5678",
+        bundleId: "io.healthlog.app",
+        apnsToken: "deadbeef".repeat(8),
+        apnsEnvironment: "sandbox",
+      }),
+    );
+    expect(res.status).toBe(201);
+    expect(prisma.notificationChannel.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId: "user-1",
+        type: "APNS",
+        lastFailureReason: "apns_no_devices",
+      },
+      data: { nextRetryAt: null, lastFailureReason: null },
+    });
   });
 
   it("rejects re-registration of an apnsToken owned by another user with 409", async () => {

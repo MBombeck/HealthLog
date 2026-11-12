@@ -272,6 +272,15 @@ export const POST = apiHandler(async (request: NextRequest) => {
         },
         update: {},
       });
+      // The iPhone a no-device pause was waiting for: deliver at once.
+      await tx.notificationChannel.updateMany({
+        where: {
+          userId: user.id,
+          type: "APNS",
+          lastFailureReason: "apns_no_devices",
+        },
+        data: { nextRetryAt: null, lastFailureReason: null },
+      });
     }
 
     return { id: device.id };

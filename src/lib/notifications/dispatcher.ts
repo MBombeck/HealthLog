@@ -20,6 +20,7 @@ import type { SendOutcome } from "@/lib/notifications/retry-policy";
 import {
   isChannelInCooldown,
   recordChannelHardReject,
+  recordChannelNoRecipient,
   recordChannelSuccess,
   recordChannelTransientFailure,
 } from "@/lib/notifications/channel-state";
@@ -49,7 +50,8 @@ import {
  * not set up. The sender writes a `skipped` ledger row. The channel has not
  * failed, so these leave its failure counter alone; counted as failures,
  * turning push off on the last device would switch the channel off for good
- * after five reminders.
+ * after five reminders. The channel rests for a while instead
+ * (`recordChannelNoRecipient`), and the send does not count as an attempt.
  */
 const NO_RECIPIENT_REASONS: ReadonlySet<string> = new Set([
   "web_push_no_subscriptions",
@@ -74,8 +76,8 @@ const NO_RECIPIENT_REASONS: ReadonlySet<string> = new Set([
  *  6. Call the appropriate sender — which now returns a `SendOutcome` so
  *     the dispatcher can classify hard rejects (410, blocked-by-user) vs
  *     soft errors (5xx, 429, network) and update channel state accordingly.
- *     A send that had nobody to go to (`NO_RECIPIENT_REASONS`) changes no
- *     channel state.
+ *     A send that had nobody to go to (`NO_RECIPIENT_REASONS`) pauses the
+ *     channel without counting a failure.
  *
  * Also handles legacy Telegram config stored on the User model by
  * auto-migrating it to a NotificationChannel record on first dispatch.
@@ -432,6 +434,10 @@ export async function dispatchNotification(
         }
 
         if (outcome.reason && NO_RECIPIENT_REASONS.has(outcome.reason)) {
+          // Nothing went anywhere: a caller that reads an attempt as "the
+          // alert was announced" must not read this one so.
+          channelsAttempted -= 1;
+          await recordChannelNoRecipient(ref, outcome.reason, now);
           getEvent()?.addMeta(
             `notification_skip_${channel.type.toLowerCase()}_no_recipient`,
             outcome.reason,
