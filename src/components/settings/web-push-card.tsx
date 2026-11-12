@@ -38,6 +38,27 @@ export function needsHomeScreen(): boolean {
   return appleTouch && !window.matchMedia("(display-mode: standalone)").matches;
 }
 
+/**
+ * Store this browser's subscription for the signed-in account. Also run for a
+ * subscription the browser already holds, so a row the server lost or gave
+ * to another account on this browser comes back, and a channel switched off
+ * by failed sends is turned on again.
+ */
+function saveSubscription(subscription: PushSubscription): Promise<Response> {
+  const subJson = subscription.toJSON();
+  return apiFetchRaw("/api/notifications/web-push", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      endpoint: subJson.endpoint,
+      keys: {
+        p256dh: subJson.keys?.p256dh ?? "",
+        auth: subJson.keys?.auth ?? "",
+      },
+    }),
+  });
+}
+
 type Unsupported = "browser" | "install" | null;
 
 export function WebPushCard() {
@@ -73,6 +94,7 @@ export function WebPushCard() {
         if (registration) {
           const subscription = await registration.pushManager.getSubscription();
           setIsSubscribed(!!subscription);
+          if (subscription) void saveSubscription(subscription).catch(() => {});
         }
       } catch {
         // Ignore errors during check
@@ -111,20 +133,7 @@ export function WebPushCard() {
         applicationServerKey: urlBase64ToArrayBuffer(vapidPublicKey),
       });
 
-      const subJson = subscription.toJSON();
-
-      const res = await apiFetchRaw("/api/notifications/web-push", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          endpoint: subJson.endpoint,
-          keys: {
-            p256dh: subJson.keys?.p256dh ?? "",
-            auth: subJson.keys?.auth ?? "",
-          },
-        }),
-      });
-
+      const res = await saveSubscription(subscription);
       if (res.ok) {
         setIsSubscribed(true);
         setMsg(t("settings.webPushSubscribed"));
