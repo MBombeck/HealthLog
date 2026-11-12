@@ -23,6 +23,9 @@ interface FakeEl {
   parentElement: FakeEl | null;
   overflowY: string;
   own?: boolean;
+  /** Radix's `data-state` on the sheet content. */
+  state?: "open" | "closed";
+  getAttribute: (name: string) => string | null;
   closest: (selector: string) => FakeEl | null;
   getAnimations: () => Animation[];
   setPointerCapture: (id: number) => void;
@@ -39,6 +42,8 @@ function fake(partial: Partial<FakeEl> = {}): FakeEl {
     parentElement: null,
     overflowY: "visible",
     closest: () => (node.own ? node : null),
+    getAttribute: (name) =>
+      name === "data-state" ? (node.state ?? null) : null,
     getAnimations: () => [],
     setPointerCapture: vi.fn(),
     querySelector: () => null,
@@ -171,6 +176,29 @@ describe("createSheetDrag", () => {
     expect(Number(s.overlay.style.opacity)).toBeCloseTo(1 - 140 / 400, 6);
     expect(s.controller.swallowClick()).toBe(true);
     expect(s.controller.swallowClick()).toBe(false);
+  });
+
+  it("returns to its rest when a guarded sheet stays open after the swipe", () => {
+    const s = setup();
+    // The owner asks about unsaved input instead of closing.
+    s.content.state = "open";
+    s.drag(s.header, 140, { stepMs: 40, restMs: 200 });
+    expect(s.onClose).toHaveBeenCalledTimes(1);
+    expect(s.content.style.transform).toBe("translate3d(0, 140px, 0)");
+
+    s.flushFrames();
+    expect(s.content.style.transform).toBe("translate3d(0, 0px, 0)");
+    expect(s.overlay.style.opacity).toBe("1");
+    s.timers.forEach((run) => run());
+    expect(s.content.style.transform).toBe("");
+  });
+
+  it("leaves a closing sheet where it was let go", () => {
+    const s = setup();
+    s.content.state = "closed";
+    s.drag(s.header, 140, { stepMs: 40, restMs: 200 });
+    s.flushFrames();
+    expect(s.content.style.transform).toBe("translate3d(0, 140px, 0)");
   });
 
   it("lets its own close through: the swallowed click comes after it", () => {

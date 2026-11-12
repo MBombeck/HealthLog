@@ -354,6 +354,13 @@ export function createSheetDrag(
         // Before the swallow is armed: the close is itself a click.
         options.onClose();
         swallow = true;
+        // A sheet holding unsaved input asks first and stays open meanwhile;
+        // put it back where it rests rather than where it was let go.
+        frame(() => {
+          if (options.content()?.getAttribute("data-state") === "open") {
+            settleTo(g, options.snap());
+          }
+        });
         return;
       }
       swallow = true;

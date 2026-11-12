@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 336,
-  "total": 109378,
+  "total": 109385,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -231,7 +231,7 @@
     "components/vaccinations/custom-vaccine-sheet.tsx :: CustomVaccineSheet": 246,
     "components/vaccinations/vaccination-form.tsx :: VaccinationForm": 218,
     "components/workouts/manual-workout-form.tsx :: ManualWorkoutForm": 321,
-    "hooks/use-sheet-drag.ts :: createSheetDrag": 312,
+    "hooks/use-sheet-drag.ts :: createSheetDrag": 319,
     "lib/activity/calendar-math.ts :: buildActivityCalendar": 204,
     "lib/ai/anthropic-client.ts :: generateCompletion": 294,
     "lib/ai/coach/cycle-snapshot.ts :: buildCycleSnapshotBlock": 202,
