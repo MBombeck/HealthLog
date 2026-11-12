@@ -26,7 +26,13 @@ import { URL_STATE_EVENT } from "@/lib/url-state";
  *     sheet) replaces that entry, so Back from the new page returns to the
  *     page, not to a sheet entry nobody shows any more.
  *   - A replace of a sheet's entry keeps the sheet's mark: the router
- *     rewrites the current entry on every update.
+ *     rewrites the current entry on every update. A write that carries the
+ *     mark of a sheet that has closed (the router copying an entry it read
+ *     before our Back landed) loses it, or the entry would read as a sheet's
+ *     and the next close would step one Back too far.
+ *
+ * A sheet's entry starts as a copy of the page entry's state, so landing
+ * on the page entry gives it back its own keys (an open day's, the vault's).
  *
  * A sheet whose open state already lives in the URL (the vault's `?doc=`)
  * has its own entry and opts out (`ResponsiveSheet historyEntry={false}`).
@@ -74,6 +80,12 @@ export interface SheetHistory {
    * entry is gone by then, and `restore` puts it back.
    */
   open(onBack: () => void): SheetHistoryEntry;
+  /**
+   * Whether the popstate being dispatched is ours: a Back we asked for, or
+   * one that lands on a sheet's entry or right below the first sheet. Asked
+   * by other capture listeners, which may hear it before we do.
+   */
+  ownsPopstate(): boolean;
 }
 
 interface Layer {
@@ -106,6 +118,14 @@ function samePage(a: string, b: string): boolean {
   const left = new URL(a);
   const right = new URL(b, a);
   return left.pathname === right.pathname && left.search === right.search;
+}
+
+/** `data` without the mark of a sheet that is no longer open. */
+function withoutDeadMark(data: unknown, open: readonly Layer[]): unknown {
+  const id = markOf(data);
+  return id === undefined || open.some((layer) => layer.id === id)
+    ? data
+    : withMark(data, undefined);
 }
 
 let sequence = 0;
@@ -149,16 +169,14 @@ export function createSheetHistory(host: SheetHistoryHost): SheetHistory {
   function install() {
     if (installed) return;
     installed = true;
-    const below = {
-      push: history.pushState,
-      replace: history.replaceState,
-    };
+    const below = { push: history.pushState, replace: history.replaceState };
     push = (data, unused, url) => {
       if (ours) return below.push.call(history, data, unused, url);
       if (ownBacks > 0) {
         held.push(() => push.call(history, data, unused, url));
         return;
       }
+      data = withoutDeadMark(data, layers);
       const current = layerOf(markOf(history.state));
       if (current && url != null && !samePage(location.href, String(url))) {
         below.replace.call(history, data, unused, url);
@@ -172,6 +190,7 @@ export function createSheetHistory(host: SheetHistoryHost): SheetHistory {
         held.push(() => replace.call(history, data, unused, url));
         return;
       }
+      data = withoutDeadMark(data, layers);
       const id = markOf(history.state);
       const keep = layerOf(id) && markOf(data) === undefined;
       below.replace.call(
@@ -264,11 +283,15 @@ export function createSheetHistory(host: SheetHistoryHost): SheetHistory {
     }
     if (!layers.includes(layer)) return;
     layer.baseHref = location.href;
-    write("push", withMark(null, layer.id));
+    write("push", withMark(history.state, layer.id));
     snapshot();
   }
 
   return {
+    ownsPopstate: () =>
+      ownBacks > 0 ||
+      layerOf(markOf(history.state)) !== undefined ||
+      (layers.length > 0 && location.href === layers[0].baseHref),
     open(onBack) {
       install();
       sequence += 1;
@@ -313,4 +336,9 @@ export function sheetHistory(): SheetHistory | null {
   if (typeof window === "undefined") return null;
   shared ??= createSheetHistory(window as unknown as SheetHistoryHost);
   return shared;
+}
+
+/** Whether the popstate under way belongs to an open or closing sheet. */
+export function sheetHistoryOwnsPopstate(): boolean {
+  return shared?.ownsPopstate() ?? false;
 }
