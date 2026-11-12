@@ -79,26 +79,55 @@ function fractionAfterMilliseconds(instant: string): string {
   return FRACTION_AFTER_MILLISECONDS.exec(instant)?.[1] ?? "";
 }
 
+/**
+ * Consistent instant comparison across string/Date representations, supporting
+ * mixed timezone offsets and sub-millisecond precision.
+ * Returns negative if a < b, positive if a > b, 0 if equal.
+ */
+export function compareEpisodeInstants(
+  a: string | Date,
+  b: string | Date,
+): number {
+  const aStr = typeof a === "string" ? a : a.toISOString();
+  const bStr = typeof b === "string" ? b : b.toISOString();
+  const aMs = Date.parse(aStr);
+  const bMs = Date.parse(bStr);
+  if (Number.isNaN(aMs) || Number.isNaN(bMs)) {
+    return Number.isNaN(aMs) && Number.isNaN(bMs)
+      ? 0
+      : Number.isNaN(aMs)
+        ? -1
+        : 1;
+  }
+  if (aMs !== bMs) {
+    return aMs < bMs ? -1 : 1;
+  }
+  const extraAFraction = fractionAfterMilliseconds(aStr);
+  const extraBFraction = fractionAfterMilliseconds(bStr);
+  const maxLen = Math.max(extraAFraction.length, extraBFraction.length);
+  const aPadded = extraAFraction.padEnd(maxLen, "0");
+  const bPadded = extraBFraction.padEnd(maxLen, "0");
+  if (aPadded < bPadded) return -1;
+  if (aPadded > bPadded) return 1;
+  return 0;
+}
+
+/**
+ * Returns true if resolvedAt is chronologically earlier than onsetAt (invalid window).
+ */
+export function isEpisodeWindowInverted(
+  onsetAt: string | Date,
+  resolvedAt: string | Date,
+): boolean {
+  return compareEpisodeInstants(resolvedAt, onsetAt) < 0;
+}
+
 export function refineEpisodeWindow(
   v: { onsetAt?: string; resolvedAt?: string | null },
   ctx: z.RefinementCtx,
 ): void {
   if (v.resolvedAt && v.onsetAt) {
-    const onsetMs = Date.parse(v.onsetAt);
-    const resolvedMs = Date.parse(v.resolvedAt);
-    const extraOnsetFraction = fractionAfterMilliseconds(v.onsetAt).padEnd(
-      fractionAfterMilliseconds(v.resolvedAt).length,
-      "0",
-    );
-    const extraResolvedFraction = fractionAfterMilliseconds(
-      v.resolvedAt,
-    ).padEnd(extraOnsetFraction.length, "0");
-    if (
-      !Number.isNaN(onsetMs) &&
-      !Number.isNaN(resolvedMs) &&
-      (resolvedMs < onsetMs ||
-        (resolvedMs === onsetMs && extraResolvedFraction < extraOnsetFraction))
-    ) {
+    if (isEpisodeWindowInverted(v.onsetAt, v.resolvedAt)) {
       ctx.addIssue({
         code: "custom",
         path: ["resolvedAt"],

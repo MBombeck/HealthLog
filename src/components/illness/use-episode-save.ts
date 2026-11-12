@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { todayKeyInZone } from "@/components/day/day-url";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { getUserTodayBounds } from "@/lib/tz/local-day";
 
 import { resolveEpisodeWindow } from "./dates";
@@ -46,8 +47,9 @@ export function useEpisodeSave({
   timeZone: string;
   values: EpisodeSaveValues;
 }) {
+  const effectiveTimezone = timeZone || DEFAULT_TIMEZONE;
   const create = useCreateEpisode();
-  const update = useUpdateEpisode(editEpisode?.id ?? "");
+  const update = useUpdateEpisode(editEpisode?.id);
   const isEdit = editEpisode !== undefined;
   // Session resets clear only this session's flag, never the mutation's own
   // pending state: a close/reopen must not unlock an overlapping update.
@@ -64,9 +66,9 @@ export function useEpisodeSave({
   const [saveError, setSaveError] = useState(false);
   // The timezone the open sheet serializes in. Snapshotted when the sheet opens so a
   // profile change mid-save cannot move the dates under the request that is in flight.
-  const [sessionTimezone, setSessionTimezone] = useState(timeZone);
+  const [sessionTimezone, setSessionTimezone] = useState(effectiveTimezone);
   const [todayInSession, setTodayInSession] = useState(() =>
-    todayKeyInZone(timeZone),
+    todayKeyInZone(effectiveTimezone),
   );
 
   const { label, type, lifecycle, onset, resolved, parentId, note } = values;
@@ -91,8 +93,8 @@ export function useEpisodeSave({
     setWasOpen(true);
     setSaveError(false);
     setIsSaving(false);
-    setSessionTimezone(timeZone);
-    setTodayInSession(todayKeyInZone(timeZone));
+    setSessionTimezone(effectiveTimezone);
+    setTodayInSession(todayKeyInZone(effectiveTimezone));
   } else if (!open && wasOpen) {
     setWasOpen(false);
     setSaveError(false);

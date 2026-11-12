@@ -175,16 +175,38 @@ export function useCreateEpisode() {
   });
 }
 
+export type IllnessEpisodeUpdateMutationInput =
+  IllnessEpisodeUpdateInput | { id: string; input: IllnessEpisodeUpdateInput };
+
 /** Edit an episode (partial). */
-export function useUpdateEpisode(id: string) {
+export function useUpdateEpisode(id?: string) {
   const invalidate = useInvalidateIllness();
   return useMutation({
-    mutationKey: queryKeys.illnessEpisodeUpdate(id),
-    // One queue per episode: a later write cannot finish before an earlier
-    // one, even when its originating form has already unmounted.
-    scope: { id: `illness-episode-update-${id}` },
-    mutationFn: (input: IllnessEpisodeUpdateInput) =>
-      apiPatch<IllnessEpisodeDTO>(`/api/illness/episodes/${id}`, input),
+    ...(id
+      ? {
+          mutationKey: queryKeys.illnessEpisodeUpdate(id),
+          // One queue per episode: a later write cannot finish before an earlier
+          // one, even when its originating form has already unmounted.
+          scope: { id: `illness-episode-update-${id}` },
+        }
+      : {}),
+    mutationFn: (arg: IllnessEpisodeUpdateMutationInput) => {
+      const isLegacyPayload =
+        typeof arg === "object" &&
+        arg !== null &&
+        "id" in arg &&
+        "input" in arg;
+      const targetId = isLegacyPayload
+        ? (arg as { id: string; input: IllnessEpisodeUpdateInput }).id
+        : id;
+      const targetInput = isLegacyPayload
+        ? (arg as { id: string; input: IllnessEpisodeUpdateInput }).input
+        : (arg as IllnessEpisodeUpdateInput);
+      return apiPatch<IllnessEpisodeDTO>(
+        `/api/illness/episodes/${targetId}`,
+        targetInput,
+      );
+    },
     onSuccess: invalidate,
   });
 }

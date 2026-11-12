@@ -25,6 +25,7 @@ import {
 
 import {
   resolveEpisodeInstant,
+  resolveEpisodeWindow,
   serializeEpisodeDate,
   toLocalDateKey,
 } from "../dates";
@@ -732,5 +733,32 @@ describe("resolveEpisodeInstant", () => {
       timeZone: "UTC",
     });
     expect(toLocalDateKey(resultNull, "UTC")).toBe("2026-11-08");
+  });
+});
+
+describe("resolveEpisodeWindow", () => {
+  it("clamps resolvedAt to onsetAt when stored resolvedAt is earlier in the day on the same date and onset is changed to today before local noon", () => {
+    const today = "2026-11-10";
+    const now = new Date("2026-11-10T09:30:00.000Z");
+    const timeZone = "UTC";
+
+    // Stored episode onset was 2 days ago, and resolved earlier today at 08:00 UTC
+    const storedOnset = "2026-11-08T12:00:00.000Z";
+    const storedResolved = "2026-11-10T08:00:00.000Z";
+
+    // Onset is changed to today (2026-11-10) before local noon, while resolved remains on the same day (2026-11-10)
+    const result = resolveEpisodeWindow({
+      onset: "2026-11-10",
+      resolved: "2026-11-10",
+      storedOnset,
+      storedResolved,
+      today,
+      now,
+      timeZone,
+    });
+
+    // Onset serializes to now (09:30 UTC); stored resolved (08:00 UTC) on the same date is clamped up to onsetAt
+    expect(result.onsetAt).toBe(now.toISOString());
+    expect(result.resolvedAt).toBe(result.onsetAt);
   });
 });

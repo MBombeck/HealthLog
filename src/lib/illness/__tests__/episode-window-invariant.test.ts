@@ -8,8 +8,10 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  compareEpisodeInstants,
   illnessEpisodeCreateSchema,
   illnessEpisodeUpdateSchema,
+  isEpisodeWindowInverted,
   refineEpisodeWindow,
 } from "@/lib/validations/illness";
 import { ENTRY_INSTANT_CLOCK_SKEW_MS } from "@/lib/validations/entry-instant";
@@ -472,5 +474,41 @@ describe("refineEpisodeWindow shared helper", () => {
     refineEpisodeWindow({ resolvedAt: AFTER }, ctx);
     refineEpisodeWindow({}, ctx);
     expect(issues).toHaveLength(0);
+  });
+});
+
+describe("compareEpisodeInstants & isEpisodeWindowInverted", () => {
+  it("orders mixed Date and string representations consistently", () => {
+    const d1 = new Date("2026-01-10T12:00:00.123Z");
+    const d2 = new Date("2026-01-10T12:00:00.124Z");
+
+    expect(compareEpisodeInstants(d1, d2)).toBe(-1);
+    expect(compareEpisodeInstants(d2, d1)).toBe(1);
+    expect(compareEpisodeInstants(d1, d1)).toBe(0);
+
+    // Date vs string
+    expect(compareEpisodeInstants(d1, "2026-01-10T12:00:00.123000Z")).toBe(0);
+    expect(compareEpisodeInstants(d1, "2026-01-10T12:00:00.123800Z")).toBe(-1);
+    expect(compareEpisodeInstants("2026-01-10T12:00:00.123800Z", d1)).toBe(1);
+  });
+
+  it("detects inverted window with sub-millisecond precision", () => {
+    // onset at 12:00:00.123800Z, resolved at 12:00:00.123200Z (both 123ms in Date)
+    const onsetSubMs = "2026-01-10T12:00:00.123800Z";
+    const resolvedSubMs = "2026-01-10T12:00:00.123200Z";
+
+    expect(isEpisodeWindowInverted(onsetSubMs, resolvedSubMs)).toBe(true);
+    expect(isEpisodeWindowInverted(resolvedSubMs, onsetSubMs)).toBe(false);
+
+    // Stored Date with millisecond precision vs wire string with sub-milliseconds
+    const storedResolvedDate = new Date("2026-01-10T12:00:00.123Z");
+    // onset is later than stored resolved within the same millisecond
+    expect(isEpisodeWindowInverted(onsetSubMs, storedResolvedDate)).toBe(true);
+
+    // Equal timestamps are not inverted
+    expect(isEpisodeWindowInverted(onsetSubMs, onsetSubMs)).toBe(false);
+    expect(
+      isEpisodeWindowInverted(storedResolvedDate, storedResolvedDate),
+    ).toBe(false);
   });
 });

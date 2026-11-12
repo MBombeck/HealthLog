@@ -19,7 +19,10 @@ import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { requireIllnessEnabled } from "@/lib/illness/gate";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
-import { illnessEpisodeUpdateSchema } from "@/lib/validations/illness";
+import {
+  illnessEpisodeUpdateSchema,
+  isEpisodeWindowInverted,
+} from "@/lib/validations/illness";
 import { toIllnessEpisodeDTO } from "@/lib/illness/dto";
 import type { Prisma } from "@/generated/prisma/client";
 import { withRelated } from "@/lib/links/related";
@@ -104,14 +107,13 @@ export const PATCH = apiHandler(
     // one instant is validated against the stored value (the schema already
     // catches a both-in-body inversion).
     const mergedOnset =
-      entry.onsetAt !== undefined ? new Date(entry.onsetAt) : existing.onsetAt;
+      entry.onsetAt !== undefined ? entry.onsetAt : existing.onsetAt;
     const mergedResolved =
-      entry.resolvedAt !== undefined
-        ? entry.resolvedAt
-          ? new Date(entry.resolvedAt)
-          : null
-        : existing.resolvedAt;
-    if (mergedResolved && mergedResolved < mergedOnset) {
+      entry.resolvedAt !== undefined ? entry.resolvedAt : existing.resolvedAt;
+    if (
+      mergedResolved &&
+      isEpisodeWindowInverted(mergedOnset, mergedResolved)
+    ) {
       return apiError("resolvedAt must be on or after onsetAt", 422, {
         errorCode: "illness.episode.invalid-window",
       });

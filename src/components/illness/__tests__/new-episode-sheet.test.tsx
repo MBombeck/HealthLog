@@ -741,6 +741,37 @@ describe("NewEpisodeSheet — blank and whitespace onset date prevention", () =>
     }
   });
 
+  it("falls back to DEFAULT_TIMEZONE without throwing when display timezone is empty", async () => {
+    mockDisplayTimezone = "";
+    mockCreateMutateAsync.mockClear();
+
+    let runner!: ReturnType<typeof renderInteractive>;
+    expect(() => {
+      runner = renderInteractive(() => (
+        <NewEpisodeSheet
+          open={true}
+          onOpenChange={() => {}}
+          today="2026-11-10"
+        />
+      ));
+    }).not.toThrow();
+
+    const nameInput = getInputElement("illness-label");
+    nameInput.props.onChange?.({ target: { value: "Cold" } });
+    runner.getHtml();
+
+    const saveButton = getSaveButton();
+    expect(saveButton.props.disabled).toBe(false);
+
+    await saveButton.props.onClick?.();
+    expect(mockCreateMutateAsync).toHaveBeenCalledTimes(1);
+    expect(mockCreateMutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        label: "Cold",
+      }),
+    );
+  });
+
   it("preserves both exact stored onsetAt and resolvedAt timestamps on no-op edit when calendar dates are unchanged", async () => {
     mockUpdateMutateAsync.mockClear();
     mockCreateMutateAsync.mockClear();
