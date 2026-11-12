@@ -1033,7 +1033,8 @@
     "typeTrainingReadiness": "Trainingsgereedheid",
     "typeAcuteTrainingLoad": "Acute trainingsbelasting",
     "sourceGarmin": "Garmin",
-    "valueOutOfRange": "Vul een waarde in tussen {min} en {max} {unit}."
+    "valueOutOfRange": "Vul een waarde in tussen {min} en {max} {unit}.",
+    "valueOutOfRangeNoUnit": "Vul een waarde in tussen {min} en {max}."
   },
   "metricCatalog": {
     "title": "Wat HealthLog kan bijhouden",

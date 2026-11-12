@@ -1033,7 +1033,8 @@
     "typeTrainingReadiness": "Gotowość do treningu",
     "typeAcuteTrainingLoad": "Ostre obciążenie treningowe",
     "sourceGarmin": "Garmin",
-    "valueOutOfRange": "Wpisz wartość od {min} do {max} {unit}."
+    "valueOutOfRange": "Wpisz wartość od {min} do {max} {unit}.",
+    "valueOutOfRangeNoUnit": "Wpisz wartość od {min} do {max}."
   },
   "metricCatalog": {
     "title": "Co HealthLog potrafi śledzić",

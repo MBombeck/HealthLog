@@ -1033,7 +1033,8 @@
     "typeTrainingReadiness": "Disponibilité à l'entraînement",
     "typeAcuteTrainingLoad": "Charge d'entraînement aiguë",
     "sourceGarmin": "Garmin",
-    "valueOutOfRange": "Saisissez une valeur entre {min} et {max} {unit}."
+    "valueOutOfRange": "Saisissez une valeur entre {min} et {max} {unit}.",
+    "valueOutOfRangeNoUnit": "Saisissez une valeur entre {min} et {max}."
   },
   "metricCatalog": {
     "title": "Ce que HealthLog peut suivre",

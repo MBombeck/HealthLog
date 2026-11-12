@@ -1033,7 +1033,8 @@
     "typeTrainingReadiness": "Training readiness",
     "typeAcuteTrainingLoad": "Acute training load",
     "sourceGarmin": "Garmin",
-    "valueOutOfRange": "Enter a value between {min} and {max} {unit}."
+    "valueOutOfRange": "Enter a value between {min} and {max} {unit}.",
+    "valueOutOfRangeNoUnit": "Enter a value between {min} and {max}."
   },
   "metricCatalog": {
     "title": "What HealthLog can track",
