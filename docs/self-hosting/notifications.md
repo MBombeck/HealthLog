@@ -111,17 +111,9 @@ v1.18.4:
 - **Reminders.** Medication doses, mood check-ins, and any other event
   the user has enabled, delivered to the installed app even when it is
   closed.
-- **Taken → clears the reminder.** When you log a dose, the server sends
-  a silent `type:"clear"` push that closes the still-pending dose-due
-  reminder for that slot (matched on its stable tag) without showing a
-  new notification (`public/sw.js`). This is the PWA equivalent of ending
-  an iOS Live Activity.
-- **An app badge for outstanding doses.** The icon on the Home Screen
-  carries a server-authoritative count of doses still due; logging a dose
-  decrements it, and a count of zero clears the badge. The count is
-  computed on the server and reflected by the service worker via the
-  Badging API (`navigator.setAppBadge`), feature-detected — engines
-  without it (most desktop Firefox, older Safari) silently no-op.
+- **A reminder stays until you act on it.** It stays on screen until it
+  is tapped or dismissed, or until the next reminder for the same dose
+  replaces it.
 
 ### iPhone — Add to Home Screen first
 
@@ -141,11 +133,11 @@ permission, and push works.
 
 ### The inherent limit
 
-The installed PWA gets reminders, the taken-clears behaviour, and the app
-badge — but it **cannot** show a native iOS lock-screen Live Activity
-widget. That single feature rides Apple Push Notification service and is
-only available through a native iOS build with APNs. Reminders themselves
-arrive on both paths; only the Live Activity is APNs-exclusive.
+The installed PWA gets reminders, but it **cannot** show a native iOS
+lock-screen Live Activity widget. That single feature rides Apple Push
+Notification service and is only available through a native iOS build with
+APNs. Reminders themselves arrive on both paths; only the Live Activity is
+APNs-exclusive.
 
 ## Telegram
 
@@ -586,14 +578,14 @@ it registers for the mood reminder.
 
 ## Which channel should I pick?
 
-| Your setup                                        | Recommended channel                                                                                                                                                                    |
-| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PWA on Android or desktop                         | **Web Push** — generate a VAPID keypair, subscribe, done.                                                                                                                              |
-| PWA on an iPhone                                  | **Web Push**, but install the PWA via _Add to Home Screen_ first (iOS 16.4+). Reminders, taken-clears, and the app badge all work; the lock-screen Live Activity needs a native build. |
-| You want the native iOS lock-screen Live Activity | Build and sign **your own** iOS app under your own Apple account and wire up **APNs** (paid), with Web Push as a fallback for any non-iOS device.                                      |
-| Headless / no browser, or you live in chat        | **Telegram** or **ntfy** — neither needs a browser, both are free. ntfy is the most self-host-native; Telegram adds inline reminder action buttons.                                    |
-| You already run an automation hub                 | **Webhook** — POST every event to your own URL and route it however you like.                                                                                                          |
-| You want reminders in your inbox                  | **Email** — set the SMTP transport once as the operator; users add their address.                                                                                                      |
+| Your setup                                        | Recommended channel                                                                                                                                 |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PWA on Android or desktop                         | **Web Push** — generate a VAPID keypair, subscribe, done.                                                                                           |
+| PWA on an iPhone                                  | **Web Push**, but install the PWA via _Add to Home Screen_ first (iOS 16.4+). Reminders work; the lock-screen Live Activity needs a native build.   |
+| You want the native iOS lock-screen Live Activity | Build and sign **your own** iOS app under your own Apple account and wire up **APNs** (paid), with Web Push as a fallback for any non-iOS device.   |
+| Headless / no browser, or you live in chat        | **Telegram** or **ntfy** — neither needs a browser, both are free. ntfy is the most self-host-native; Telegram adds inline reminder action buttons. |
+| You already run an automation hub                 | **Webhook** — POST every event to your own URL and route it however you like.                                                                       |
+| You want reminders in your inbox                  | **Email** — set the SMTP transport once as the operator; users add their address.                                                                   |
 
 Mixing channels is fine and common — e.g. Web Push on the laptop and
 ntfy on the phone. Each user configures their own set from

@@ -68,6 +68,7 @@ self.addEventListener("activate", (event) => {
       self.registration.navigationPreload
         ? self.registration.navigationPreload.enable()
         : Promise.resolve(),
+      clearLeftoverAppBadge(),
     ]).then(() => self.clients.claim()),
   );
 });
@@ -352,20 +353,13 @@ async function trimCache(cacheName, maxEntries) {
   }
 }
 
-// The outstanding-dose count on the app icon, where the Badging API exists.
-// 0 clears it; anything that is not a number leaves it alone.
-function applyAppBadge(count) {
-  if (typeof count !== "number" || !isFinite(count)) return;
+// Earlier releases set a dose count on the app icon; nothing sends one now,
+// so clear what they left. Never fails the activation.
+async function clearLeftoverAppBadge() {
   try {
-    if (count > 0) {
-      if (typeof self.navigator?.setAppBadge === "function") {
-        self.navigator.setAppBadge(count);
-      }
-    } else if (typeof self.navigator?.clearAppBadge === "function") {
-      self.navigator.clearAppBadge();
-    }
+    await self.navigator?.clearAppBadge?.();
   } catch {
-    // Never let the badge break the push handler.
+    // Optional.
   }
 }
 
@@ -384,25 +378,21 @@ self.addEventListener("push", (event) => {
     body = "",
     tag = "default",
     url = "/",
-    badge,
     requireInteraction = false,
   } = payload;
 
   event.waitUntil(
-    Promise.all([
-      self.registration.showNotification(title, {
-        body,
-        tag,
-        // A re-sent reminder with the same tag alerts again.
-        renotify: true,
-        // Set by the sender for urgent events, where the browser honours it.
-        requireInteraction: requireInteraction === true,
-        icon: "/logo-192.png",
-        badge: "/logo-192.png",
-        data: { url },
-      }),
-      Promise.resolve(applyAppBadge(badge)),
-    ]),
+    self.registration.showNotification(title, {
+      body,
+      tag,
+      // A re-sent reminder with the same tag alerts again.
+      renotify: true,
+      // Set by the sender for urgent events, where the browser honours it.
+      requireInteraction: requireInteraction === true,
+      icon: "/logo-192.png",
+      badge: "/logo-192.png",
+      data: { url },
+    }),
   );
 });
 
