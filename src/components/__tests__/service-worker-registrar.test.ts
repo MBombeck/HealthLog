@@ -8,7 +8,10 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { shouldRegisterServiceWorker } from "../service-worker-registrar";
+import {
+  clearLeftoverAppBadge,
+  shouldRegisterServiceWorker,
+} from "../service-worker-registrar";
 
 describe("shouldRegisterServiceWorker", () => {
   it("registers in production with window + serviceWorker support", () => {
@@ -27,5 +30,39 @@ describe("shouldRegisterServiceWorker", () => {
 
   it("does not register when serviceWorker is unsupported", () => {
     expect(shouldRegisterServiceWorker("production", true, false)).toBe(false);
+  });
+});
+
+describe("clearLeftoverAppBadge", () => {
+  function fakeWindow(standalone: boolean, hasApi = true) {
+    const calls = { cleared: 0 };
+    const win = {
+      matchMedia: () => ({ matches: standalone }),
+      navigator: hasApi
+        ? {
+            clearAppBadge: async () => {
+              calls.cleared += 1;
+            },
+          }
+        : {},
+    } as unknown as Window;
+    return { win, calls };
+  }
+
+  it("clears the icon badge in the installed app", () => {
+    const { win, calls } = fakeWindow(true);
+    clearLeftoverAppBadge(win);
+    expect(calls.cleared).toBe(1);
+  });
+
+  it("leaves a browser tab alone", () => {
+    const { win, calls } = fakeWindow(false);
+    clearLeftoverAppBadge(win);
+    expect(calls.cleared).toBe(0);
+  });
+
+  it("does nothing where the badge API does not exist", () => {
+    const { win } = fakeWindow(true, false);
+    expect(() => clearLeftoverAppBadge(win)).not.toThrow();
   });
 });

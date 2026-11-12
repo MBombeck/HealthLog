@@ -226,8 +226,13 @@ describe("POST /api/auth/register — first-admin atomicity (M1)", () => {
 
     const res = await postPathThrough(validBody);
     expect(res.status).toBe(409);
-    const body = (await res.json()) as { error: string };
+    const body = (await res.json()) as {
+      error: string;
+      meta?: { errorCode?: string };
+    };
     expect(body.error).toBe("Username or email already taken");
+    // The code the registration page turns into "already in use".
+    expect(body.meta?.errorCode).toBe("auth.register.taken");
   });
 });
 

@@ -151,7 +151,12 @@
       },
       "mfa": {
         "already_active": "Per questo account è già configurata un'app di autenticazione. Disattivala prima di configurarne una nuova."
-      }
+      },
+      "register": {
+        "taken": "Questo nome utente o indirizzo e-mail è già in uso.",
+        "invite_invalid": "Questo invito non è più valido. Chiedi un nuovo link alla persona che ti ha invitato."
+      },
+      "already_authenticated": "Hai già effettuato l’accesso. Prima esci, poi riprova."
     },
     "biomarkers": {
       "unit": {
@@ -234,7 +239,17 @@
       "budget": {
         "exceeded": "Il budget IA di oggi è esaurito, quindi non è stato inviato nulla. Si rinnova domani."
       }
-    }
+    },
+    "passkey": {
+      "unknown": "Questa passkey non è registrata qui. Accedi in un altro modo.",
+      "challenge": {
+        "expired": "L’accesso ha richiesto troppo tempo o è già stato usato. Riprova."
+      },
+      "response": {
+        "invalid": "Non è stato possibile leggere la risposta della passkey. Riprova."
+      }
+    },
+    "oidc_only": "Questo server consente solo il single sign-on. Continua invece con il tuo provider di identità."
   },
   "doctorReport": {
     "title": "Rapporto sanitario",
@@ -506,9 +521,9 @@
     "backToDashboard": "Torna alla dashboard"
   },
   "offlineBanner": {
-    "message": "Nessuna connessione: le modifiche non possono essere salvate finché non torni online.",
+    "message": "Nessuna connessione: le modifiche non possono essere salvate.",
     "saveFailed": "Impossibile salvare: sei offline. Riprova quando torni online.",
-    "showingCached": "Vengono mostrati i tuoi ultimi dati sincronizzati."
+    "stayOnPage": "Questa pagina resta leggibile; le altre si aprono quando torni online."
   },
   "demoBanner": {
     "message": "Modalità demo: le modifiche non vengono salvate."
@@ -585,6 +600,7 @@
     "noAccount": "Non hai ancora un account?",
     "hasAccount": "Hai già un account?",
     "loginFailed": "Accesso non riuscito",
+    "signOutFailed": "Non è stato possibile uscire. La sessione è ancora attiva.",
     "registerFailed": "Registrazione non riuscita",
     "invitedBanner": "Sei stato invitato: crea il tuo account anche se la registrazione è chiusa.",
     "alreadySignedIn": {
@@ -668,7 +684,6 @@
       "submit": "Prendi in carico",
       "submitting": "Presa in carico…",
       "errorTaken": "Questo nome utente o indirizzo email è già in uso.",
-      "errorRateLimit": "Troppi tentativi. Attendi qualche minuto e riprova.",
       "errorFailed": "Non ha funzionato. Riprova tra un momento.",
       "errorOffline": "Il server non è stato raggiunto. Controlla la connessione e riprova.",
       "ssoContinue": "Continua con {provider}",
@@ -690,7 +705,8 @@
       "toLogin": "Vai all’accesso"
     },
     "deletionPending": "Questo account verrà eliminato il {date} ed è bloccato fino ad allora. Un amministratore di questo server può annullare l’eliminazione prima di quella data.",
-    "deletionPendingNoDate": "Questo account è in attesa di eliminazione ed è bloccato. Un amministratore di questo server può annullare l’eliminazione finché non è completata."
+    "deletionPendingNoDate": "Questo account è in attesa di eliminazione ed è bloccato. Un amministratore di questo server può annullare l’eliminazione finché non è completata.",
+    "signInRateLimited": "Troppi tentativi. Attendi qualche minuto e riprova."
   },
   "dashboard": {
     "title": "Cruscotto",
@@ -6392,6 +6408,7 @@
     "webPush": "Push del browser",
     "webPushDescription": "Ricevi notifiche direttamente nel browser, anche quando HealthLog non è aperto.",
     "webPushNotSupported": "Il tuo browser non supporta le notifiche push.",
+    "webPushInstallFirst": "Su iPhone e iPad le notifiche push funzionano solo nell'app installata. In Safari tocca Condividi, poi «Aggiungi alla schermata Home», apri HealthLog dalla schermata Home e tocca qui «Attiva push».",
     "webPushDenied": "Le notifiche push sono bloccate. Consentile nelle impostazioni del browser.",
     "webPushNotConfigured": "Web Push non è configurato sul server.",
     "webPushSubscribe": "Attiva push",
@@ -9271,7 +9288,9 @@
       "accountErasureFailedBody": "Il periodo di eliminazione di {username} è terminato, ma la cancellazione dell’account non è riuscita. Resta bloccato e viene ritentata ogni ora, dopo gli altri account in scadenza. L’errore è nella scheda dei job non riusciti in Administration."
     },
     "user": {
-      "telegramTestBody": "HealthLog: connessione riuscita. Le notifiche Telegram sono attive."
+      "telegramTestBody": "HealthLog: connessione riuscita. Le notifiche Telegram sono attive.",
+      "webPushTestBody": "Se vedi questo messaggio, le notifiche push arrivano su questo dispositivo.",
+      "webPushTestTitle": "Notifica di prova di HealthLog"
     },
     "moodReminder": {
       "title": "Promemoria quotidiano dell’umore",

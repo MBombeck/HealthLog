@@ -10,6 +10,10 @@ import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
+import {
+  saveWebPushSubscription,
+  unsubscribeWebPush,
+} from "@/lib/notifications/web-push-subscription";
 
 /** Convert a URL-safe base64 string to an ArrayBuffer (for VAPID key). */
 function urlBase64ToArrayBuffer(base64String: string): ArrayBuffer {
@@ -24,10 +28,25 @@ function urlBase64ToArrayBuffer(base64String: string): ArrayBuffer {
   return buffer;
 }
 
+/**
+ * iPhone and iPad offer Web Push only to HealthLog opened from the Home
+ * Screen; in a Safari tab the API is missing. iPadOS Safari reports itself
+ * as a Mac, so a Mac with a touch screen counts too.
+ */
+export function needsHomeScreen(): boolean {
+  const ua = navigator.userAgent;
+  const appleTouch =
+    /iPhone|iPad|iPod/.test(ua) ||
+    (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  return appleTouch && !window.matchMedia("(display-mode: standalone)").matches;
+}
+
+type Unsupported = "browser" | "install" | null;
+
 export function WebPushCard() {
   const { t } = useTranslations();
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isSupported, setIsSupported] = useState(true);
+  const [unsupported, setUnsupported] = useState<Unsupported>(null);
   const [isDenied, setIsDenied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -40,7 +59,7 @@ export function WebPushCard() {
     // the effect body is rejected.
     async function checkSubscription() {
       if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-        setIsSupported(false);
+        setUnsupported(needsHomeScreen() ? "install" : "browser");
         setLoading(false);
         return;
       }
@@ -57,6 +76,11 @@ export function WebPushCard() {
         if (registration) {
           const subscription = await registration.pushManager.getSubscription();
           setIsSubscribed(!!subscription);
+          // Sent again on every open: the server may have lost the row or
+          // switched the channel off, and the browser cannot tell.
+          if (subscription) {
+            void saveWebPushSubscription(subscription).catch(() => null);
+          }
         }
       } catch {
         // Ignore errors during check
@@ -95,20 +119,7 @@ export function WebPushCard() {
         applicationServerKey: urlBase64ToArrayBuffer(vapidPublicKey),
       });
 
-      const subJson = subscription.toJSON();
-
-      const res = await apiFetchRaw("/api/notifications/web-push", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          endpoint: subJson.endpoint,
-          keys: {
-            p256dh: subJson.keys?.p256dh ?? "",
-            auth: subJson.keys?.auth ?? "",
-          },
-        }),
-      });
-
+      const res = await saveWebPushSubscription(subscription);
       if (res.ok) {
         setIsSubscribed(true);
         setMsg(t("settings.webPushSubscribed"));
@@ -136,21 +147,7 @@ export function WebPushCard() {
     setMsgType(null);
 
     try {
-      const registration =
-        await navigator.serviceWorker.getRegistration("/sw.js");
-      if (registration) {
-        const subscription = await registration.pushManager.getSubscription();
-        if (subscription) {
-          await apiFetchRaw("/api/notifications/web-push", {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ endpoint: subscription.endpoint }),
-          });
-
-          await subscription.unsubscribe();
-        }
-      }
-
+      await unsubscribeWebPush();
       setIsSubscribed(false);
       setMsg(t("settings.webPushUnsubscribed"));
       setMsgType("success");
@@ -169,7 +166,7 @@ export function WebPushCard() {
   // carries a status badge.
   const cardAction = loading ? (
     <Loader2 className="text-muted-foreground h-4 w-4 animate-spin motion-reduce:animate-none" />
-  ) : !isSupported || isDenied ? null : (
+  ) : unsupported || isDenied ? null : (
     <SettingsCardActions>
       {isSubscribed && (
         <TestConnectionButton endpoint="/api/notifications/web-push/test" />
@@ -212,9 +209,12 @@ export function WebPushCard() {
         description={t("settings.webPushDescription")}
       />
 
-      {(!loading && !isSupported) || (!loading && isDenied) || msg ? (
+      {(!loading && unsupported) || (!loading && isDenied) || msg ? (
         <div className="space-y-4">
-          {!loading && !isSupported ? (
+          {!loading && unsupported === "install" ? (
+            // Steps to follow: content, not meta.
+            <p className="text-sm">{t("settings.webPushInstallFirst")}</p>
+          ) : !loading && unsupported ? (
             <p className="text-muted-foreground text-sm">
               {t("settings.webPushNotSupported")}
             </p>

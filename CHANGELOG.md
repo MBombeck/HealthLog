@@ -2,6 +2,91 @@
 
 ## [Unreleased]
 
+## [1.47.4] — 2026-11-12
+
+### Fixed
+
+- **Web Push comes back when you turn it on again.** After a reinstall of
+  the Home Screen app, cleared site data, or turning push off on your
+  last device, the push channel switched itself off for good. Turning
+  push on again stored the browser and sent a test push, but no reminder
+  ever followed. Subscribing now turns the channel back on and clears
+  earlier failures, opening the push settings repairs a lost
+  subscription, and migration `0497_reenable_subscribed_web_push_channels`
+  turns push back on for every account that has a subscribed browser but
+  was switched off this way. A channel that has nobody to send to (no
+  browser, no paired iPhone, no mail server) now pauses for an hour and
+  says why on the status screen instead of counting failures.
+- **No more invisible push for every recorded dose.** Logging a dose sent
+  a silent push to every browser to close the reminder. Safari does not
+  allow silent pushes and could switch push off for the iPhone app
+  without a word. A reminder already on screen now stays until you
+  dismiss it or the next one replaces it, and the dose count earlier
+  releases left on the Home Screen icon is cleared.
+- **Signing out signs this device out of push too.** The browser kept
+  receiving the signed-out account's medication reminders, also after
+  someone else signed in. Every sign-out button now removes this
+  browser's subscription once the server confirmed the sign-out, and a
+  browser only carries the reminders of the account that subscribed it
+  last. If signing out fails, the app stays where it is and says you are
+  still signed in, instead of showing the sign-in page.
+- **A shared browser no longer shows the previous account's data.** The
+  dashboard snapshot is restored only once the signed-in account is
+  known and is its owner, the sign-in pages clear the previous account's
+  copies as soon as the server confirms there is no session, and single
+  sign-on and the profile take-over clear them too. The daily briefing
+  text is no longer written to the browser's storage.
+- **Offline, the open page stays.** Without a connection, a tap on a tab
+  or a link ended on the bare offline page, although the banner promised
+  your last synced data. The page you have open now stays readable, and
+  a note says other pages open once you are back online; the banner and
+  the README say exactly that. The service worker no longer stores API
+  answers on the device, and answers older releases stored are deleted
+  on update.
+- **Links arrive where they pointed.** A Home Screen shortcut, a
+  notification or a bookmark opened while signed out takes you to that
+  page after you sign in. After you sign out yourself, the next sign-in
+  starts from the dashboard, and Back no longer reopens the page you
+  left.
+- **Back works as expected.** Back after signing in, registering or
+  taking over a profile no longer shows the form you just sent, and Back
+  from a detail page returns to where you were in the list.
+- **Sign-in errors say what happened, in your language.** A wrong
+  password or code says the sign-in failed, a lockout says to wait a few
+  minutes, and registration says when a username or address is taken or
+  an invitation is no longer valid. Passkey and single-sign-on refusals
+  say what went wrong.
+- **The iPhone push hint.** In Safari on iPhone and iPad the push
+  settings now tell you to add HealthLog to your Home Screen first,
+  instead of saying push is not supported. The test push reaches every
+  device you subscribed, in your language, and says why it failed.
+- **A 401 or 403 from a proxy or firewall in front of HealthLog no longer
+  signs you out.** An account that expires while the app is open now ends
+  the session, so the next save does not fail with "sign in again".
+- Tapping a reminder while the app already shows that page no longer
+  reloads the app, and setup pages seen while signed in stay out of the
+  offline page cache. Single sign-on starts even when the browser's
+  storage answers slowly.
+- The clock and battery of the installed iPhone app are readable again in
+  the light theme.
+
+### Changed
+
+- **Demo instances.** Visitors can sign out, each visitor's language stays
+  in their own browser instead of the shared account, refused language
+  and timing requests no longer show up on every page, and a demo allows
+  30 password sign-ins per 15 minutes per address. Other instances keep
+  their limits.
+- The "machine translated" notice no longer appears on the sign-in,
+  registration and profile take-over pages.
+- The service worker file is half its former size.
+
+### Migration
+
+- `0497_reenable_subscribed_web_push_channels` turns Web Push back on for
+  accounts whose channel was switched off by failed sends while a browser
+  is still subscribed. A channel you switched off yourself stays off.
+
 ## [1.47.3] — 2026-11-12
 
 ### Changed

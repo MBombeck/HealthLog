@@ -24,7 +24,9 @@ import { OIDC_MFA_COOKIE, OIDC_MFA_COOKIE_PATH } from "@/lib/auth/oidc-cookie";
 import { isDashboardSnapshotEnabled } from "@/lib/dashboard/snapshot-flag";
 import { prefetchDashboardSnapshot } from "@/lib/queries/use-dashboard-snapshot";
 import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
+import { clearOfflineCachesBeforeLeaving } from "@/lib/pwa/clear-before-leaving";
 import { sanitizeSameOriginPath } from "@/lib/url-safety";
+import { localizedSignInError } from "@/lib/api/localized-error";
 import { formatDate } from "@/lib/format";
 import {
   InsecureTransportBanner,
@@ -176,12 +178,14 @@ export default function LoginPage() {
     staleTime: 60 * 1000,
   });
 
-  function handleOidcLogin() {
+  async function handleOidcLogin() {
     const params = new URLSearchParams({ next: getRedirectTarget() });
     if (clientTransport) {
       params.set("client_proto", clientTransport.protocol);
       params.set("client_host", clientTransport.host);
     }
+    // The session starts on the way back; the last account's copies go first.
+    await clearOfflineCachesBeforeLeaving();
     loadDocument(`/api/auth/oidc/login?${params}`);
   }
 
@@ -226,21 +230,15 @@ export default function LoginPage() {
     // stale `["auth","me"]`, so the shell refetches it fresh on mount and the
     // former explicit `invalidateQueries({ queryKey: auth() })` is redundant.
     queryClient.clear();
-    // Belt-and-suspenders to match the session-END wipe (logout / 401-expiry):
-    // also drop the OFFLINE layers — the IndexedDB query snapshot and the SW
-    // data/page caches — so a previous account's persisted dashboard never
-    // lingers on disk for the new session. The restore is already per-account
-    // bound, but a fresh login on a shared browser should leave nothing of the
-    // prior account behind. Order is clear → prefetch → navigate: the wipe is
-    // started here (best-effort, like logout) before the prefetch warms THIS
-    // user's data, and the persister's 1 s debounce gives the single IDB delete
-    // ample headroom to land before the new snapshot is written.
+    // The offline layers too, as at every session end. Started before the
+    // prefetch; the persister's 1 s debounce lets the delete land before the
+    // new account's snapshot is written.
     void clearOfflineCachesForSessionEnd();
     const target = getRedirectTarget();
     if (target === "/" && isDashboardSnapshotEnabled()) {
       prefetchDashboardSnapshot(queryClient);
     }
-    router.push(target);
+    router.replace(target);
   }
 
   async function handlePasskeyLogin() {
@@ -266,10 +264,10 @@ export default function LoginPage() {
       navigateAfterLogin();
     } catch (err) {
       if (noteRefusal(err)) return;
-      // Route rejections carry the envelope error verbatim; everything
-      // else (WebAuthn ceremony failures) keeps the descriptive mapping.
+      // A route's refusal is named by its code; a WebAuthn ceremony failure
+      // keeps the descriptive mapping.
       if (err instanceof ApiError) {
-        setError(err.message || t("auth.loginFailed"));
+        setError(localizedSignInError(err, t, "auth.loginFailed"));
       } else {
         const { key, params } = describePasskeyError(err);
         setError(t(key, params));
@@ -313,11 +311,7 @@ export default function LoginPage() {
       navigateAfterLogin();
     } catch (err) {
       if (noteRefusal(err)) return;
-      setError(
-        err instanceof ApiError && err.message
-          ? err.message
-          : t("auth.loginFailed"),
-      );
+      setError(localizedSignInError(err, t, "auth.loginFailed"));
     } finally {
       setLoading(false);
     }
@@ -464,7 +458,7 @@ export default function LoginPage() {
             <InsecureTransportBanner verdict={verdict} />
             {oidcStatus?.enabled && (
               <Button
-                onClick={handleOidcLogin}
+                onClick={() => void handleOidcLogin()}
                 variant={oidcStatus.only ? "default" : "outline"}
                 className="min-h-11 w-full"
                 size="lg"

@@ -6,8 +6,11 @@
  * soft reject" rules unit-testable and audit-loggable in one place.
  */
 import { prisma } from "@/lib/db";
+import type { Prisma } from "@/generated/prisma/client";
 import { auditLog } from "@/lib/auth/audit";
+import { getEvent } from "@/lib/logging/context";
 import {
+  NO_RECIPIENT_COOLDOWN_MS,
   nextRetryAt,
   shouldAutoDisableAfterTransient,
   type SendOutcome,
@@ -127,6 +130,41 @@ export async function recordChannelTransientFailure(
     data: { nextRetryAt: retryAt },
   });
   return { autoDisabled: false, nextRetryAt: retryAt };
+}
+
+/**
+ * Record a send that had nobody to go to. Not a failure: the counter stays
+ * where it is. The reason is kept, so the status screen says why nothing
+ * arrives, and the channel rests for `NO_RECIPIENT_COOLDOWN_MS`.
+ */
+export async function recordChannelNoRecipient(
+  channel: ChannelRef,
+  reason: string,
+  now: Date = new Date(),
+): Promise<void> {
+  getEvent()?.addMeta(
+    `notification_skip_${channel.type.toLowerCase()}_no_recipient`,
+    reason,
+  );
+  await prisma.notificationChannel.update({
+    where: { id: channel.id },
+    data: {
+      lastFailureAt: now,
+      lastFailureReason: reason,
+      nextRetryAt: new Date(now.getTime() + NO_RECIPIENT_COOLDOWN_MS),
+    },
+  });
+}
+
+/** Pairing an iPhone ends a rest that was waiting for one. */
+export async function endApnsNoDeviceRest(
+  db: Pick<Prisma.TransactionClient, "notificationChannel">,
+  userId: string,
+): Promise<void> {
+  await db.notificationChannel.updateMany({
+    where: { userId, type: "APNS", lastFailureReason: "apns_no_devices" },
+    data: { nextRetryAt: null, lastFailureReason: null },
+  });
 }
 
 /**

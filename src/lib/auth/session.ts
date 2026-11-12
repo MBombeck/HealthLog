@@ -430,12 +430,18 @@ export async function getSession(): Promise<{
     // already had, and it is coherent: that browser is showing the older
     // language too, because the cookie outranks the column on its first
     // paint as well.
-    void prisma.user
-      .update({
-        where: { id: session.user.id },
-        data: { locale: cookieLocale },
-      })
-      .catch(() => {});
+    //
+    // A demo is one account every visitor shares: there the language stays
+    // in this visitor's cookie and never reaches the row the next visitor
+    // starts from.
+    if (process.env.DEMO_MODE !== "true") {
+      void prisma.user
+        .update({
+          where: { id: session.user.id },
+          data: { locale: cookieLocale },
+        })
+        .catch(() => {});
+    }
     // Keep THIS request coherent — a handler resolving the locale from the
     // returned row must not answer with the value we just replaced.
     session.user.locale = cookieLocale;

@@ -11,8 +11,8 @@
  *
  * `web-push`'s `sendNotification` dials with its own internal `https.request`,
  * which bypasses `safeFetch` entirely and therefore bypasses the pinned
- * dispatcher. Both senders now sign and encrypt via `generateRequestDetails`
- * — identical VAPID + payload handling — and dial through `safeFetch` with
+ * dispatcher. The sender signs and encrypts via `generateRequestDetails`
+ * — identical VAPID + payload handling — and dials through `safeFetch` with
  * `requirePublicHost: true`.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -76,7 +76,6 @@ vi.mock("web-push", () => ({
 }));
 
 import { sendViaWebPush } from "../senders/web-push";
-import { dispatchMedicationIntakeWebClear } from "../web-push-clear";
 
 const SUB = {
   id: "s1",
@@ -132,17 +131,5 @@ describe("sendViaWebPush egress", () => {
     expect(deleteManyMock).toHaveBeenCalledWith({
       where: { id: { in: ["s1"] } },
     });
-  });
-});
-
-describe("dispatchMedicationIntakeWebClear egress", () => {
-  it("dials through safeFetch with requirePublicHost too", async () => {
-    await dispatchMedicationIntakeWebClear({
-      userId: "user-1",
-      medicationId: "med-1",
-      scheduledFor: "2026-06-18T07:00:00.000Z",
-    });
-    expect(safeFetchMock).toHaveBeenCalledTimes(1);
-    expect(optsOfFirstCall()?.requirePublicHost).toBe(true);
   });
 });

@@ -107,3 +107,15 @@ describe("public/manifest.json PWA identity hygiene (F-7, 2026-05-16)", () => {
     expect(manifest.start_url).toBe("/");
   });
 });
+
+describe("public/manifest.json shortcuts", () => {
+  const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf-8")) as {
+    shortcuts: Array<{ name: string; url: string }>;
+  };
+
+  it("carry no query parameter the app does not read", () => {
+    for (const { name, url } of manifest.shortcuts) {
+      expect(url, name).not.toContain("source=");
+    }
+  });
+});

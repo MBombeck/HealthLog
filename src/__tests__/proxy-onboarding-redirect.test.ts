@@ -82,7 +82,7 @@ describe("proxy.ts onboarding redirect (v1.4.22 C4)", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("location")).toBeNull();
     const anonymous = proxy(makeRequest("/insights"));
-    expect(anonymous.headers.get("location")).toMatch(/\/auth\/login$/);
+    expect(anonymous.headers.get("location")).toMatch(/\/auth\/login(\?|$)/);
   });
 
   it("passes through when hl_onboarding cookie is absent (completed users)", () => {
@@ -123,7 +123,7 @@ describe("proxy.ts onboarding redirect (v1.4.22 C4)", () => {
     // were still in place it would short-circuit through public-path
     // handling and 200 instead.
     expect([307, 308]).toContain(res.status);
-    expect(res.headers.get("location")).toMatch(/\/auth\/login$/);
+    expect(res.headers.get("location")).toMatch(/\/auth\/login(\?|$)/);
   });
 
   it("still treats subroutes /onboarding/<x> as the onboarding surface", () => {

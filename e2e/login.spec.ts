@@ -118,7 +118,8 @@ test.describe("login page", () => {
     await page.getByTestId("login-password-submit").click();
 
     expect((await answer).status()).toBe(401);
-    await expect(page.getByText("Invalid credentials")).toBeVisible();
+    // The page says it in its own words, not the server's.
+    await expect(page.getByText("Login failed")).toBeVisible();
     await expect(page).toHaveURL(/\/auth\/login/);
     expect(
       (await context.cookies()).some((c) => c.name === SESSION_COOKIE),

@@ -23,8 +23,6 @@ import {
 import { reconcileOneShotState } from "@/lib/medications/lifecycle";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
 import { queueMedicationIntakeSync } from "@/lib/notifications/medication-intake-sync";
-import { dispatchMedicationIntakeWebClear } from "@/lib/notifications/web-push-clear";
-import { countOutstandingDosesToday } from "@/lib/medications/outstanding-doses";
 import { notifyDelegatedIntake } from "@/lib/notifications/delegated-intake";
 import { refreshDoseSlot } from "@/lib/medications/dose-day-refresh";
 import {
@@ -203,11 +201,7 @@ async function recordAfterWrite(
 }
 
 /** The tails that never affect the response. */
-function startTails(
-  ctx: RecordIntakeContext,
-  skipped: boolean,
-  event: WrittenIntake["event"],
-): void {
+function startTails(ctx: RecordIntakeContext, skipped: boolean): void {
   const { user, medicationId: id } = ctx;
   // (#22) — silent cross-device intake sync: wake the user's OTHER iOS
   // devices so a running Live Activity / widget reconciles this dose.
@@ -216,22 +210,6 @@ function startTails(
     userId: user.id,
     originDeviceToken: ctx.originDeviceToken,
   });
-
-  // PWA counterpart of the sync wake above: a dose resolved here (taken or
-  // skipped) closes the still-pending dose-due Web Push reminder for the
-  // slot and refreshes the app badge. The other intake routes have carried
-  // this since v1.18.4; this route is the replay target of the iOS offline
-  // queue, so a drained dose must clear the web reminder the same way.
-  // Best-effort, fire-and-forget — the canonical row is already persisted.
-  void (async () => {
-    const badgeCount = await countOutstandingDosesToday(user.id, user.timezone);
-    await dispatchMedicationIntakeWebClear({
-      userId: user.id,
-      medicationId: id,
-      scheduledFor: event.scheduledFor.toISOString(),
-      badgeCount,
-    });
-  })();
 
   // "Somebody else marked your dose". This route has no snooze arm,
   // so the state is whichever of the two markings the payload carried. The
@@ -304,7 +282,7 @@ export async function recordIntake(
 
   await settleInventory(ctx, skipped, written);
   await recordAfterWrite(ctx, skipped, written.event);
-  startTails(ctx, skipped, written.event);
+  startTails(ctx, skipped);
 
   return { kind: "recorded", event: written.event };
 }

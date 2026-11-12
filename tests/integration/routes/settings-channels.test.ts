@@ -1060,4 +1060,25 @@ describe("the operator's instance-wide channel switches", () => {
     expect(decrypt(subscriptions[0].auth)).toBe(SUBSCRIPTION.keys.auth);
     expect((await channel(user.id, "WEB_PUSH"))?.enabled).toBe(true);
   });
+
+  it("hands a browser's subscription to the account that subscribed it last", async () => {
+    await switchGlobal({ webPushGlobal: true });
+    const before = await makeUser();
+    const after = await makeUser();
+    for (const user of [before, after]) {
+      const res = await callRoute(subscribeWebPush, {
+        method: "POST",
+        route: "/api/notifications/web-push",
+        body: SUBSCRIPTION,
+        auth: await makeSession(user),
+      });
+      expect(res.status).toBe(200);
+    }
+
+    const rows = await prisma.pushSubscription.findMany({
+      where: { endpoint: SUBSCRIPTION.endpoint },
+      select: { userId: true },
+    });
+    expect(rows).toEqual([{ userId: after.id }]);
+  });
 });

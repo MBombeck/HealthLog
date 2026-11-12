@@ -12,9 +12,13 @@ import { Label } from "@/components/ui/label";
 import { PasswordStrength } from "@/components/ui/password-strength";
 import { useTranslations } from "@/lib/i18n/context";
 import { detectBrowserTimezone } from "@/lib/tz/format";
-import { queryKeys } from "@/lib/query-keys";
-import { ApiError, apiFetchRaw, apiPost } from "@/lib/api/api-fetch";
-import { clearCachesForSessionEnd, useAuth } from "@/hooks/use-auth";
+import { ApiError, apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
+import {
+  clearCachesForSessionEnd,
+  signOutRequest,
+  useAuth,
+} from "@/hooks/use-auth";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -60,11 +64,8 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // v1.4.25 — ship the browser-detected timezone with the
-      // signup payload. Server validates against the IANA list and
-      // falls back to the admin server-default if the value is
-      // bogus, so a tampered or proxied request can never poison
-      // the user's stored zone.
+      // The server checks the zone against the IANA list and falls back to
+      // its default, so a tampered value never reaches the account.
       const timezone = detectBrowserTimezone();
       await apiPost("/api/auth/register", {
         email,
@@ -74,13 +75,14 @@ export default function RegisterPage() {
         ...(inviteToken ? { inviteToken } : {}),
       });
 
-      await queryClient.invalidateQueries({ queryKey: queryKeys.auth() });
-      router.push("/");
+      queryClient.clear(); // nothing cached before belongs to the new account
+      router.replace("/");
     } catch (err) {
+      // A 422 says what to fix (the password feedback comes localized).
       setError(
-        err instanceof ApiError && err.message
+        err instanceof ApiError && err.status === 422 && err.message
           ? err.message
-          : t("auth.registerFailed"),
+          : localizedApiError(err, t, "auth.registerFailed"),
       );
     } finally {
       setLoading(false);
@@ -91,7 +93,7 @@ export default function RegisterPage() {
     setError(null);
     setSigningOut(true);
     try {
-      await apiFetchRaw("/api/auth/logout", { method: "POST" });
+      await signOutRequest();
       // Same session-end wipe the shell and the menu do: the QueryClient
       // outlives the navigation on this SPA and the health-data families are
       // not user-scoped, so nothing may survive into the next account.
@@ -106,7 +108,7 @@ export default function RegisterPage() {
       );
       router.refresh();
     } catch {
-      setError(t("common.networkError"));
+      setError(t("auth.signOutFailed"));
     } finally {
       setSigningOut(false);
     }

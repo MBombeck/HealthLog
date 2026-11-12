@@ -50,28 +50,6 @@
           "originDeviceToken": null
         }
       ]
-    },
-    {
-      "effect": "countOutstandingDosesToday",
-      "args": [
-        "<id:3>",
-        "UTC"
-      ]
-    },
-    {
-      "effect": "dispatchMedicationIntakeWebClearBulk",
-      "args": [
-        {
-          "userId": "<id:3>",
-          "slots": [
-            {
-              "medicationId": "<id:2>",
-              "scheduledFor": "2026-10-13T09:00:00.000Z"
-            }
-          ],
-          "badgeCount": 2
-        }
-      ]
     }
   ],
   "stored": {

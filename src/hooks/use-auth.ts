@@ -9,7 +9,7 @@ import {
 import { useRouter } from "next/navigation";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { queryKeys } from "@/lib/query-keys";
-import { apiGet, apiFetchRaw, ApiError } from "@/lib/api/api-fetch";
+import { apiGet, apiFetch, ApiError } from "@/lib/api/api-fetch";
 import { adoptRecordFenceState } from "@/lib/api/record-fence";
 import { retryOnceOnTransientError } from "@/lib/queries/retry-transient";
 import { useMounted } from "@/hooks/use-mounted";
@@ -30,6 +30,7 @@ import type { TourProgress } from "@/lib/onboarding/tour-progress";
 import { clearLastDay } from "@/lib/day/last-day";
 import { clearCoachDeleteJournal } from "@/lib/ai/coach/delete-journal";
 import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
+import { signOutWithoutWebPush } from "@/lib/notifications/web-push-subscription";
 import {
   setRecordScope,
   setRefusedRecordScope,
@@ -337,18 +338,22 @@ function clearWasAuthenticated(): void {
  * True when an `/api/auth/me` failure carries NO verdict on the session —
  * a network-level failure (fetch `TypeError` offline, abort/timeout), the
  * service worker's synthetic 503 offline envelope (`meta.offline`), the
- * browser reporting itself offline, or a server-side 5xx. None of these mean
- * "logged out"; only an explicit 401/403 does. Treating them as session end
- * used to redirect an offline relaunch to /auth/login and wipe the offline
- * caches — destroying exactly the installed-PWA-opened-offline scenario the
- * SW + query persister exist for.
+ * browser reporting itself offline, a server-side 5xx, or a 401/403 that
+ * HealthLog did not write. None of these mean "logged out"; only HealthLog's
+ * own 401/403 does. Treating them as session end used to redirect an offline
+ * relaunch to /auth/login and wipe the offline caches — destroying exactly
+ * the installed-PWA-opened-offline scenario the SW + query persister exist
+ * for.
  */
 export function isAuthVerdictUnknown(error: unknown): boolean {
   if (error instanceof ApiError) {
     // 5xx (incl. the SW's synthetic 503 with `meta.offline: true`) and any
-    // other non-auth status: the server never ruled on the session. Only an
-    // explicit 401/403 is a verdict.
-    return error.status !== 401 && error.status !== 403;
+    // other non-auth status: the server never ruled on the session.
+    if (error.status !== 401 && error.status !== 403) return true;
+    // HealthLog's error envelope always names a code. A 401/403 without one
+    // comes from something in front of the instance (a forward-auth proxy,
+    // a firewall), which says nothing about this session.
+    return typeof error.meta?.errorCode !== "string";
   }
   // Everything below the HTTP layer is transport-level by construction:
   // fetch `TypeError` (offline / DNS / connection refused), `AbortError` /
@@ -527,7 +532,7 @@ export function useAuth() {
   });
 
   // v1.27.x offline fix — classify a failed `/api/auth/me` before acting on
-  // it. Only an explicit 401/403 means "session ended"; a network-level
+  // it. Only HealthLog's own 401/403 means "session ended"; a network-level
   // failure (offline relaunch, SW 503 offline envelope, timeout) or a 5xx
   // carries no verdict, so the hook holds the LAST-KNOWN auth state (the
   // localStorage marker) instead of flipping to unauthenticated. Pre-fix, an
@@ -535,11 +540,15 @@ export function useAuth() {
   // /auth/login and wiped every offline cache (data 7→0 entries, pages 1→0
   // in the audit measurement), making the whole offline story unreachable.
   const verdictUnknown = query.isError && isAuthVerdictUnknown(query.error);
-  const isAuthenticated =
-    !!query.data || (verdictUnknown && readWasAuthenticated());
+  // HealthLog's 401/403 on a refetch ends the session although the cache
+  // still holds the last good payload: React Query keeps `data` when a
+  // refetch fails.
+  const sessionEnded = query.isError && !verdictUnknown;
+  const user = sessionEnded ? null : (query.data ?? null);
+  const isAuthenticated = !!user || (verdictUnknown && readWasAuthenticated());
 
   return {
-    user: query.data ?? null,
+    user,
     isLoading: query.isLoading,
     isAuthenticated,
     /**
@@ -549,7 +558,7 @@ export function useAuth() {
      * wipe: a wipe without a 401/403 verdict would destroy the offline
      * caches on every network blip.
      */
-    isAuthUnknown: !query.data && verdictUnknown,
+    isAuthUnknown: !user && verdictUnknown,
     error: query.error,
     refetch: query.refetch,
   };
@@ -617,10 +626,10 @@ export function useAccountOnceMounted(): AuthUser | null {
  * former explicit `setQueryData(null)` + `invalidateQueries(["auth"])`.
  *
  * Then `clearOfflineCachesForSessionEnd()` wipes the persisted layers — the
- * IndexedDB query snapshot, the SW offline read-data cache (`healthlog-data-*`),
- * and the SW page cache (`healthlog-pages-*`, cached navigation HTML). The static
- * cache (hashed chunks, icons) carries no PII and stays intact to avoid a
- * needless re-download. Best-effort; never blocks the redirect.
+ * IndexedDB query snapshot, the SW page cache (`healthlog-pages-*`, cached
+ * navigation HTML) and any API cache an older worker left (`healthlog-data-*`).
+ * The static cache (catalogs, icons, fonts, images) carries no PII and stays
+ * intact to avoid a needless re-download. Best-effort; never blocks the redirect.
  */
 export function clearCachesForSessionEnd(queryClient: QueryClient): void {
   queryClient.clear();
@@ -642,22 +651,32 @@ export function clearCachesForSessionEnd(queryClient: QueryClient): void {
   void clearOfflineCachesForSessionEnd();
 }
 
+/**
+ * End the session on the server, for every sign-out button. Takes this
+ * browser's push subscription with it. Throws on any non-2xx answer: a
+ * refused sign-out leaves the session alive, and showing the sign-in page
+ * then would claim otherwise.
+ */
+export function signOutRequest(): Promise<void> {
+  return signOutWithoutWebPush(() =>
+    apiFetch("/api/auth/logout", { method: "POST" }),
+  );
+}
+
 export function useLogout() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const { t } = useTranslations();
 
   return useMutation({
-    mutationFn: async () => {
-      await apiFetchRaw("/api/auth/logout", { method: "POST" });
-    },
+    mutationFn: signOutRequest,
     onSuccess: () => {
       clearCachesForSessionEnd(queryClient);
-      router.push("/auth/login");
+      // Replace, so Back does not reopen the last page signed out, and the
+      // next sign-in on this device is not sent there.
+      router.replace("/auth/login");
     },
-    // v1.16.4 — a network-failed logout used to do nothing at all (the
-    // menu closed, the session stayed); a toast names the failure.
     onError: (failure) =>
-      showErrorToast(t("common.networkError"), { cause: failure }),
+      showErrorToast(t("auth.signOutFailed"), { cause: failure }),
   });
 }

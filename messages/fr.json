@@ -151,7 +151,12 @@
       },
       "mfa": {
         "already_active": "Une application d'authentification est déjà configurée pour ce compte. Désactivez-la d'abord pour en configurer une nouvelle."
-      }
+      },
+      "register": {
+        "taken": "Ce nom d’utilisateur ou cette adresse e-mail est déjà utilisé.",
+        "invite_invalid": "Cette invitation n’est plus valable. Demandez un nouveau lien à la personne qui vous a invité."
+      },
+      "already_authenticated": "Vous êtes déjà connecté. Déconnectez-vous d’abord, puis réessayez."
     },
     "biomarkers": {
       "unit": {
@@ -234,7 +239,17 @@
       "budget": {
         "exceeded": "Le budget IA du jour est épuisé, rien n’a donc été envoyé. Il se renouvelle demain."
       }
-    }
+    },
+    "passkey": {
+      "unknown": "Cette passkey n’est pas enregistrée ici. Connectez-vous d’une autre manière.",
+      "challenge": {
+        "expired": "La connexion a pris trop de temps ou a déjà été utilisée. Réessayez."
+      },
+      "response": {
+        "invalid": "La réponse de la passkey n’a pas pu être lue. Réessayez."
+      }
+    },
+    "oidc_only": "Ce serveur n’autorise que l’authentification unique. Continuez plutôt avec votre fournisseur d’identité."
   },
   "doctorReport": {
     "title": "Rapport de santé",
@@ -506,9 +521,9 @@
     "backToDashboard": "Retour au tableau de bord"
   },
   "offlineBanner": {
-    "message": "Pas de connexion : les modifications ne peuvent pas être enregistrées tant que vous n'êtes pas de nouveau en ligne.",
+    "message": "Pas de connexion : les modifications ne peuvent pas être enregistrées.",
     "saveFailed": "Enregistrement impossible : vous êtes hors ligne. Réessayez une fois de nouveau en ligne.",
-    "showingCached": "Affichage de vos dernières données synchronisées."
+    "stayOnPage": "Cette page reste lisible ; les autres s'ouvriront dès que vous serez de nouveau en ligne."
   },
   "demoBanner": {
     "message": "Mode démo : les modifications ne sont pas enregistrées."
@@ -585,6 +600,7 @@
     "noAccount": "Pas encore de compte ?",
     "hasAccount": "Déjà un compte ?",
     "loginFailed": "Échec de la connexion",
+    "signOutFailed": "La déconnexion a échoué. Votre session est toujours ouverte.",
     "registerFailed": "Échec de l’inscription",
     "invitedBanner": "Vous avez été invité. Créez votre compte même si les inscriptions sont fermées.",
     "alreadySignedIn": {
@@ -668,7 +684,6 @@
       "submit": "Reprendre",
       "submitting": "Reprise en cours…",
       "errorTaken": "Ce nom d'utilisateur ou cette adresse e-mail est déjà utilisé.",
-      "errorRateLimit": "Trop de tentatives. Attendez quelques minutes puis réessayez.",
       "errorFailed": "Cela n'a pas fonctionné. Réessayez dans un instant.",
       "errorOffline": "Le serveur n'a pas été atteint. Vérifiez votre connexion et réessayez.",
       "ssoContinue": "Continuer avec {provider}",
@@ -690,7 +705,8 @@
       "toLogin": "Aller à la connexion"
     },
     "deletionPending": "Ce compte sera supprimé le {date} et reste verrouillé d’ici là. Un administrateur de ce serveur peut annuler la suppression avant cette date.",
-    "deletionPendingNoDate": "Ce compte est programmé pour suppression et il est verrouillé. Un administrateur de ce serveur peut annuler la suppression tant qu’elle n’est pas terminée."
+    "deletionPendingNoDate": "Ce compte est programmé pour suppression et il est verrouillé. Un administrateur de ce serveur peut annuler la suppression tant qu’elle n’est pas terminée.",
+    "signInRateLimited": "Trop de tentatives. Attendez quelques minutes puis réessayez."
   },
   "dashboard": {
     "title": "Tableau de bord",
@@ -6392,6 +6408,7 @@
     "webPush": "Push navigateur",
     "webPushDescription": "Recevez des notifications directement dans votre navigateur, même lorsque HealthLog n’est pas ouvert.",
     "webPushNotSupported": "Votre navigateur ne prend pas en charge les notifications push.",
+    "webPushInstallFirst": "Sur iPhone et iPad, les notifications push ne fonctionnent que dans l’app installée. Dans Safari, touchez Partager puis « Sur l’écran d’accueil », ouvrez HealthLog depuis l’écran d’accueil et touchez ici « Activer le push ».",
     "webPushDenied": "Les notifications push sont bloquées. Autorisez-les dans les réglages de votre navigateur.",
     "webPushNotConfigured": "Web Push n’est pas configuré sur le serveur.",
     "webPushSubscribe": "Activer le push",
@@ -9271,7 +9288,9 @@
       "accountErasureFailedBody": "Le délai de suppression de {username} est écoulé, mais l’effacement du compte a échoué. Il reste verrouillé et une nouvelle tentative a lieu chaque heure, après les autres comptes en attente. L’erreur figure dans la carte des tâches en échec, dans Administration."
     },
     "user": {
-      "telegramTestBody": "HealthLog: connexion réussie. Les notifications Telegram sont actives."
+      "telegramTestBody": "HealthLog: connexion réussie. Les notifications Telegram sont actives.",
+      "webPushTestBody": "Si vous voyez ceci, les notifications push arrivent sur cet appareil.",
+      "webPushTestTitle": "Notification de test HealthLog"
     },
     "moodReminder": {
       "title": "Rappel quotidien d’humeur",

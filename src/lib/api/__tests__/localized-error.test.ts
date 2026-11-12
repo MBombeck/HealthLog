@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { ApiError } from "../api-fetch";
-import { localizedApiError } from "../localized-error";
+import { localizedApiError, localizedSignInError } from "../localized-error";
 import de from "../../../../messages/de.json";
 import en from "../../../../messages/en.json";
 import es from "../../../../messages/es.json";
@@ -232,5 +232,84 @@ describe("localizedApiError", () => {
         );
       }
     });
+  });
+});
+
+describe("localizedSignInError", () => {
+  const enT = translator(en as Catalog);
+
+  it("reads a wrong password or code as the step's failure, not an ended session", () => {
+    const error = new ApiError("Invalid credentials", 401, {
+      errorCode: "http.unauthenticated",
+    });
+    expect(localizedSignInError(error, enT, "auth.loginFailed")).toBe(
+      "Login failed",
+    );
+  });
+
+  it.each([
+    ["de", de],
+    ["en", en],
+    ["es", es],
+    ["fr", fr],
+    ["it", itCatalog],
+    ["ko", ko],
+    ["nl", nl],
+    ["pl", pl],
+    ["pt-BR", ptBR],
+    ["ru", ru],
+  ])("reads a lockout as one in %s", (_, locale) => {
+    const localT = translator(locale as Catalog);
+    const error = new ApiError("Too many login attempts", 429, {
+      errorCode: "http.rate_limited",
+    });
+    const sentence = localizedSignInError(error, localT, "auth.loginFailed");
+    expect(sentence).toBe(localT("auth.signInRateLimited"));
+    expect(sentence).not.toBe("auth.signInRateLimited");
+  });
+
+  it.each([
+    ["de", de],
+    ["en", en],
+    ["es", es],
+    ["fr", fr],
+    ["it", itCatalog],
+    ["ko", ko],
+    ["nl", nl],
+    ["pl", pl],
+    ["pt-BR", ptBR],
+    ["ru", ru],
+  ])(
+    "names the passkey, single sign-on and registration refusals in %s",
+    (_, locale) => {
+      const localT = translator(locale as Catalog);
+      for (const [status, code] of [
+        [401, "passkey.challenge.expired"],
+        [404, "passkey.unknown"],
+        [422, "passkey.response.invalid"],
+        [403, "oidc_only"],
+        [409, "auth.already_authenticated"],
+        [409, "auth.register.taken"],
+        [403, "auth.register.invite_invalid"],
+      ] as const) {
+        const error = new ApiError("raw English server prose", status, {
+          errorCode: code,
+        });
+        expect(
+          localizedSignInError(error, localT, "auth.loginFailed"),
+          code,
+        ).toBe(localT(`apiErrors.${code}`));
+        expect(localT(`apiErrors.${code}`), code).not.toBe(`apiErrors.${code}`);
+      }
+    },
+  );
+
+  it("keeps the sentence of a code the step names itself", () => {
+    const error = new ApiError("raw English server prose", 401, {
+      errorCode: "auth.reproof.failed",
+    });
+    expect(localizedSignInError(error, enT, "auth.loginFailed")).toMatch(
+      /did not verify/,
+    );
   });
 });

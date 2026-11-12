@@ -151,7 +151,12 @@
       },
       "mfa": {
         "already_active": "이 계정에는 이미 인증 앱이 설정되어 있어요. 새로 설정하려면 먼저 해제하세요."
-      }
+      },
+      "register": {
+        "taken": "이미 사용 중인 사용자명 또는 이메일 주소예요.",
+        "invite_invalid": "이 초대는 더 이상 유효하지 않아요. 초대한 분께 새 링크를 요청해 주세요."
+      },
+      "already_authenticated": "이미 로그인되어 있어요. 먼저 로그아웃한 다음 다시 시도해 주세요."
     },
     "biomarkers": {
       "unit": {
@@ -234,7 +239,17 @@
       "budget": {
         "exceeded": "오늘의 AI 예산을 모두 사용해서 아무것도 보내지 않았어요. 내일 다시 채워져요."
       }
-    }
+    },
+    "passkey": {
+      "unknown": "이 패스키는 여기에 등록되어 있지 않아요. 다른 방법으로 로그인해 주세요.",
+      "challenge": {
+        "expired": "로그인이 너무 오래 걸렸거나 이미 사용되었어요. 다시 시도해 주세요."
+      },
+      "response": {
+        "invalid": "패스키의 응답을 읽을 수 없어요. 다시 시도해 주세요."
+      }
+    },
+    "oidc_only": "이 서버는 통합 로그인(SSO)만 허용해요. 대신 ID 공급자로 계속해 주세요."
   },
   "doctorReport": {
     "title": "건강 리포트",
@@ -506,9 +521,9 @@
     "backToDashboard": "대시보드로 돌아가기"
   },
   "offlineBanner": {
-    "message": "연결이 없어요. 온라인으로 돌아올 때까지 저장할 수 없어요.",
+    "message": "연결이 없어요. 지금은 저장할 수 없어요.",
     "saveFailed": "저장하지 못했어요. 오프라인 상태예요. 온라인으로 돌아온 뒤 다시 시도해 주세요.",
-    "showingCached": "마지막으로 동기화한 데이터를 보여주고 있어요."
+    "stayOnPage": "이 페이지는 계속 볼 수 있어요. 다른 페이지는 온라인으로 돌아오면 열려요."
   },
   "demoBanner": {
     "message": "데모 모드: 변경 내용은 저장되지 않아요."
@@ -585,6 +600,7 @@
     "noAccount": "계정이 없나요?",
     "hasAccount": "이미 계정이 있나요?",
     "loginFailed": "로그인 실패",
+    "signOutFailed": "로그아웃하지 못했어요. 아직 로그인되어 있어요.",
     "registerFailed": "회원가입 실패",
     "invitedBanner": "초대를 받았어요. 회원가입이 닫혀 있어도 계정을 만들 수 있어요.",
     "alreadySignedIn": {
@@ -668,7 +684,6 @@
       "submit": "넘겨받기",
       "submitting": "넘겨받는 중…",
       "errorTaken": "이미 사용 중인 사용자 이름 또는 이메일 주소입니다.",
-      "errorRateLimit": "시도 횟수가 너무 많습니다. 몇 분 후 다시 시도하세요.",
       "errorFailed": "처리하지 못했습니다. 잠시 후 다시 시도하세요.",
       "errorOffline": "서버에 연결하지 못했습니다. 연결을 확인하고 다시 시도하세요.",
       "ssoContinue": "{provider}(으)로 계속",
@@ -690,7 +705,8 @@
       "toLogin": "로그인으로 이동"
     },
     "deletionPending": "이 계정은 {date}에 삭제될 예정이며 그때까지 잠겨 있어요. 그 전에는 이 서버의 관리자가 삭제를 취소할 수 있어요.",
-    "deletionPendingNoDate": "이 계정은 삭제 예정이라 잠겨 있어요. 삭제가 끝나기 전까지는 이 서버의 관리자가 취소할 수 있어요."
+    "deletionPendingNoDate": "이 계정은 삭제 예정이라 잠겨 있어요. 삭제가 끝나기 전까지는 이 서버의 관리자가 취소할 수 있어요.",
+    "signInRateLimited": "시도 횟수가 너무 많아요. 몇 분 후 다시 시도해 주세요."
   },
   "dashboard": {
     "title": "대시보드",
@@ -6392,6 +6408,7 @@
     "webPush": "브라우저 푸시",
     "webPushDescription": "HealthLog를 열어 두지 않아도 브라우저로 바로 알림을 받아요.",
     "webPushNotSupported": "이 브라우저는 푸시 알림을 지원하지 않아요.",
+    "webPushInstallFirst": "iPhone과 iPad에서는 설치한 앱에서만 푸시 알림을 받을 수 있어요. Safari에서 공유를 누른 다음 '홈 화면에 추가'를 선택하고, 홈 화면에서 HealthLog를 연 뒤 여기서 '푸시 켜기'를 눌러 주세요.",
     "webPushDenied": "푸시 알림이 차단돼 있어요. 브라우저 설정에서 허용해 주세요.",
     "webPushNotConfigured": "서버에 Web Push가 설정돼 있지 않아요.",
     "webPushSubscribe": "푸시 켜기",
@@ -9271,7 +9288,9 @@
       "accountErasureFailedBody": "{username} 계정의 삭제 유예 기간이 끝났지만 계정을 지우지 못했어요. 계정은 계속 잠겨 있고, 삭제할 다른 계정들 다음으로 매시간 다시 시도해요. 오류는 관리자 화면의 실패한 작업 카드에서 볼 수 있어요."
     },
     "user": {
-      "telegramTestBody": "HealthLog: 연결에 성공했어요. Telegram 알림이 켜져 있어요."
+      "telegramTestBody": "HealthLog: 연결에 성공했어요. Telegram 알림이 켜져 있어요.",
+      "webPushTestBody": "이 알림이 보이면 이 기기에서 푸시 알림을 받을 수 있어요.",
+      "webPushTestTitle": "HealthLog 테스트 알림"
     },
     "moodReminder": {
       "title": "매일 기분 알림",

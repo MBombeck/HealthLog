@@ -66,8 +66,10 @@ export const PUT = apiHandler(async (request: NextRequest) => {
   }
 
   // Idempotent: skip the write (and the annotation noise) when the column
-  // already matches — the mount-time backfill fires on every page load.
-  if (user.locale !== locale) {
+  // already matches — the mount-time backfill fires on every page load. A
+  // demo is one account every visitor shares, so there the choice stays in
+  // this visitor's cookie and never reaches the row the next visitor reads.
+  if (user.locale !== locale && process.env.DEMO_MODE !== "true") {
     await prisma.user.update({
       where: { id: user.id },
       data: { locale },
