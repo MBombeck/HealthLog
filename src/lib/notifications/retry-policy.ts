@@ -77,6 +77,14 @@ export const BACKOFF_SCHEDULE_MS: readonly number[] = Object.freeze([
 export const MAX_CONSECUTIVE_FAILURES = 5;
 
 /**
+ * How long a channel rests after a send that had nobody to go to (no
+ * browser subscribed, no iPhone paired, a transport the operator has not set
+ * up). The jobs that retry until delivered would otherwise ask again every
+ * minute. Subscribing or pairing ends the rest at once.
+ */
+export const NO_RECIPIENT_COOLDOWN_MS = 60 * 60 * 1_000;
+
+/**
  * Given the new `consecutiveFailures` value (1, 2, …) AFTER incrementing,
  * return the wall-clock time when a retry is allowed. Returns null once the
  * counter crosses `MAX_CONSECUTIVE_FAILURES` (caller must auto-disable).

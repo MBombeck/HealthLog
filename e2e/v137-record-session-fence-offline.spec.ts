@@ -5,18 +5,19 @@ import { FENCE_OFFLINE_STORAGE_STATE_PATH } from "./setup/test-helpers";
 
 /**
  * FENCE-AC-07: no record's API answers are kept in CacheStorage, before or
- * after a record switch.
+ * after a record switch, and the one per-account layer on disk, the IndexedDB
+ * dashboard snapshot, still belongs to the caller inside another record.
  *
  * Runs in the `chromium-service-worker` project with the worker allowed and
  * no route mocks, because the claim is about what the worker itself stores.
  * The worker passes every `/api/` request to the network and keeps none of
- * them; the only per-account layer on disk is the IndexedDB snapshot, which
- * refuses to write or restore inside another record (unit-tested in
- * `query-persister-shared-record.test.ts`).
+ * them. The snapshot refuses to write or restore inside another record
+ * (unit-tested in `query-persister-shared-record.test.ts`); here it is read
+ * off the disk after the record's pages were opened.
  *
- * The positive control is the page cache: the worker is running and storing
- * something (public pages, catalogs, icons), so "no API entry" is not the
- * same sentence as "the worker did nothing".
+ * The positive control is the static cache (install precache): it proves the
+ * worker installed and that the cache read works, so "no API entry" is not
+ * the same sentence as "the read saw nothing".
  */
 
 /** Pages whose reads used to be kept on disk. Visited, so the reads are the app's own. */
@@ -101,6 +102,41 @@ async function cacheState(page: Page) {
   });
 }
 
+/**
+ * The owner the IndexedDB dashboard snapshot records, or `absent`. Opens the
+ * store the way the app does, so a database this read creates has the shape
+ * the app expects.
+ */
+async function snapshotOwner(page: Page): Promise<string | null | "absent"> {
+  return page.evaluate(
+    () =>
+      new Promise<string | null | "absent">((resolve) => {
+        const request = indexedDB.open("healthlog-query-cache", 1);
+        request.onupgradeneeded = () => {
+          request.result.createObjectStore("kv");
+        };
+        request.onerror = () => resolve("absent");
+        request.onsuccess = () => {
+          const db = request.result;
+          const read = db
+            .transaction("kv", "readonly")
+            .objectStore("kv")
+            .get("react-query");
+          read.onsuccess = () => {
+            db.close();
+            const payload = read.result as
+              { userId?: string | null } | undefined;
+            resolve(payload ? (payload.userId ?? null) : "absent");
+          };
+          read.onerror = () => {
+            db.close();
+            resolve("absent");
+          };
+        };
+      }),
+  );
+}
+
 test.describe.serial("FENCE-AC-07 record-fence disk layers", () => {
   test("FENCE-AC-07 no record's API answers are kept on disk across a switch", async ({
     browser,
@@ -141,7 +177,7 @@ test.describe.serial("FENCE-AC-07 record-fence disk layers", () => {
         await expectShellReady(page);
       }
 
-      // POSITIVE CONTROL: the worker controls the page and keeps something.
+      // POSITIVE CONTROL: the install precache is there and readable.
       await expect
         .poll(async () => (await cacheState(page)).entries, {
           timeout: 15_000,
@@ -151,6 +187,14 @@ test.describe.serial("FENCE-AC-07 record-fence disk layers", () => {
       expect(own.apiEntries).toEqual([]);
       expect(own.names.filter((n) => n.startsWith("healthlog-data-"))).toEqual(
         [],
+      );
+      const ownId = await page.evaluate(
+        async () =>
+          (
+            (await (await fetch("/api/auth/me")).json()) as {
+              data: { id: string };
+            }
+          ).data.id,
       );
 
       await enterRecord(page);
@@ -167,6 +211,9 @@ test.describe.serial("FENCE-AC-07 record-fence disk layers", () => {
       expect(
         inside.names.filter((n) => n.startsWith("healthlog-data-")),
       ).toEqual([]);
+      // Inside the record nothing is written, so the snapshot is either
+      // missing or the caller's own from before the switch.
+      expect(["absent", ownId]).toContain(await snapshotOwner(page));
     } finally {
       // Hand the shared session back to its own record; see the note in
       // `v137-record-session-fence.spec.ts`.

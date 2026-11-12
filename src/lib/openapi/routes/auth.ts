@@ -2301,12 +2301,12 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         "403": {
           description:
-            "Refused before any work. Either the operator runs `OIDC_ONLY=true` (`meta.errorCode` = `oidc_only`), or self-registration is closed and the request carried no invite, or the invite it carried was invalid, expired or exhausted. The three are distinguishable by prose but not by code.",
+            "Refused before any work. Either the operator runs `OIDC_ONLY=true` (`meta.errorCode` = `oidc_only`), or self-registration is closed and the request carried no invite, or the invite it carried was invalid, expired or exhausted (`auth.register.invite_invalid`).",
           content: { "application/json": { schema: errorEnvelope } },
         },
         "409": {
           description:
-            "The email or the username is taken. Deliberately one message for both, so this is not an account-existence oracle. Also the answer when two concurrent signups race past the pre-check and the database unique index catches the second.",
+            "The email or the username is taken (`auth.register.taken`). Deliberately one message and one code for both, so this is not an account-existence oracle. Also the answer when two concurrent signups race past the pre-check and the database unique index catches the second. `auth.already_authenticated` when the request carries a signed-in session.",
           content: { "application/json": { schema: errorEnvelope } },
         },
         ...stdResponses,

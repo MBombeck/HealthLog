@@ -98,9 +98,18 @@ export const POST = apiHandler(async (request: NextRequest) => {
     },
   });
 
-  // Ensure an enabled WEB_PUSH channel. A channel switched off because the
-  // last browser's endpoint died (410) or failed five times stays off until
-  // something turns it back on, and a new subscription is exactly that.
+  // An endpoint is one browser, and the account that subscribed it last owns
+  // it. A row another account left (a session that ended without a sign-out)
+  // would keep showing that account's reminders to whoever uses it now.
+  await prisma.pushSubscription.deleteMany({
+    where: { endpoint, userId: { not: user.id } },
+  });
+
+  // Ensure an enabled WEB_PUSH channel that is not waiting out a cooldown. A
+  // channel switched off because the last browser's endpoint died (410) or
+  // failed five times stays off until something turns it back on, and a new
+  // subscription is exactly that. Failures counted before it would switch it
+  // off again after a single later one.
   const existingChannel = await prisma.notificationChannel.findFirst({
     where: { userId: user.id, type: "WEB_PUSH" },
   });
@@ -114,7 +123,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
         config: encrypt(JSON.stringify({})),
       },
     });
-  } else if (!existingChannel.enabled) {
+  } else if (
+    !existingChannel.enabled ||
+    existingChannel.consecutiveFailures > 0 ||
+    existingChannel.nextRetryAt !== null
+  ) {
     await reEnableChannel({
       id: existingChannel.id,
       userId: existingChannel.userId,

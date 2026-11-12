@@ -52,7 +52,7 @@ describe("claimErrorKey", () => {
       "auth.claim.signedInTitle",
     ],
     [new ApiError("x", 403, {}), "auth.claim.oidcOnly"],
-    [new ApiError("x", 429, {}), "auth.claim.errorRateLimit"],
+    [new ApiError("x", 429, {}), "auth.signInRateLimited"],
     [new ApiError("x", 500, {}), "auth.claim.errorFailed"],
     [new Error("offline"), "auth.claim.errorOffline"],
   ])("maps %o", (err, key) => {

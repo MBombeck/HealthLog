@@ -214,6 +214,37 @@ describe("POST /api/notifications/web-push — the channel it delivers through",
     expect(prisma.notificationChannel.create).not.toHaveBeenCalled();
   });
 
+  it("clears failures and a cooldown left on an enabled channel", async () => {
+    // Four failed sends before the new subscription: one more transient
+    // failure would have switched the channel off, and the cooldown skipped
+    // every reminder until it ran out.
+    const strained = channelRow({
+      consecutiveFailures: 4,
+      nextRetryAt: new Date(Date.now() + 2 * 3_600_000),
+      lastFailureReason: "web_push_no_subscriptions",
+    });
+    vi.mocked(prisma.pushSubscription.upsert).mockResolvedValue(
+      STORED_SUBSCRIPTION,
+    );
+    vi.mocked(prisma.notificationChannel.findFirst).mockResolvedValue(strained);
+    vi.mocked(prisma.notificationChannel.update).mockResolvedValue(
+      channelRow({}),
+    );
+
+    const res = await (POST as unknown as Handler)(req(GOOD));
+
+    expect(res.status).toBe(200);
+    expect(prisma.notificationChannel.update).toHaveBeenCalledWith({
+      where: { id: "ch-1" },
+      data: expect.objectContaining({
+        enabled: true,
+        consecutiveFailures: 0,
+        nextRetryAt: null,
+        lastFailureReason: null,
+      }),
+    });
+  });
+
   it("leaves an enabled channel as it is", async () => {
     vi.mocked(prisma.pushSubscription.upsert).mockResolvedValue(
       STORED_SUBSCRIPTION,
@@ -227,6 +258,26 @@ describe("POST /api/notifications/web-push — the channel it delivers through",
     expect(res.status).toBe(200);
     expect(prisma.notificationChannel.update).not.toHaveBeenCalled();
     expect(prisma.notificationChannel.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/notifications/web-push — one account per browser", () => {
+  it("removes another account's row for the same browser", async () => {
+    // A session that ended without a sign-out left the previous account's
+    // row on this endpoint; its reminders kept arriving for the next person.
+    vi.mocked(prisma.pushSubscription.upsert).mockResolvedValue(
+      STORED_SUBSCRIPTION,
+    );
+    vi.mocked(prisma.notificationChannel.findFirst).mockResolvedValue(
+      channelRow({}),
+    );
+
+    const res = await (POST as unknown as Handler)(req(GOOD));
+
+    expect(res.status).toBe(200);
+    expect(prisma.pushSubscription.deleteMany).toHaveBeenCalledWith({
+      where: { endpoint: GOOD.endpoint, userId: { not: USER.id } },
+    });
   });
 });
 

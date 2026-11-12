@@ -113,4 +113,34 @@ describe("AuthShell scroll position", () => {
       .toBeTruthy();
     await expect.poll(() => main().scrollTop).toBe(1500);
   });
+
+  it("stops pulling back once the person scrolls on a list that is still loading", async () => {
+    stubFetch();
+    window.history.replaceState(null, "", "/labs");
+    await renderWithApp(
+      <AuthShell>
+        <Page />
+      </AuthShell>,
+      { user: { id: "signed-in" } },
+    );
+    await expect
+      .poll(() => document.querySelector("[data-loaded]"))
+      .toBeTruthy();
+    main().scrollTop = 1500;
+    await nextFrames();
+    await openPage("/labs/biomarker-1");
+
+    window.history.back();
+    await expect
+      .poll(() => document.querySelector('[data-path="/labs"]'))
+      .toBeTruthy();
+    // While the list is still its short skeleton, the person scrolls.
+    window.dispatchEvent(new WheelEvent("wheel", { deltaY: -100 }));
+    await expect
+      .poll(() => document.querySelector("[data-loaded]"))
+      .toBeTruthy();
+    await nextFrames();
+
+    expect(main().scrollTop).toBe(0);
+  });
 });

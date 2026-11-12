@@ -151,7 +151,12 @@
       },
       "mfa": {
         "already_active": "Voor dit account is al een authenticator-app ingesteld. Schakel die eerst uit om een nieuwe in te stellen."
-      }
+      },
+      "register": {
+        "taken": "Deze gebruikersnaam of dit e-mailadres is al in gebruik.",
+        "invite_invalid": "Deze uitnodiging is niet meer geldig. Vraag de persoon die je heeft uitgenodigd om een nieuwe link."
+      },
+      "already_authenticated": "Je bent al ingelogd. Log eerst uit en probeer het dan opnieuw."
     },
     "biomarkers": {
       "unit": {
@@ -234,7 +239,17 @@
       "budget": {
         "exceeded": "Het AI-budget voor vandaag is op, dus er is niets verzonden. Morgen is het er weer."
       }
-    }
+    },
+    "passkey": {
+      "unknown": "Deze passkey is hier niet geregistreerd. Log op een andere manier in.",
+      "challenge": {
+        "expired": "Het inloggen duurde te lang of is al gebruikt. Probeer het opnieuw."
+      },
+      "response": {
+        "invalid": "Het antwoord van de passkey kon niet worden gelezen. Probeer het opnieuw."
+      }
+    },
+    "oidc_only": "Deze server staat alleen single sign-on toe. Ga in plaats daarvan verder met je identiteitsprovider."
   },
   "doctorReport": {
     "title": "Gezondheidsrapport",
@@ -506,7 +521,7 @@
     "backToDashboard": "Terug naar het dashboard"
   },
   "offlineBanner": {
-    "message": "Geen verbinding: wijzigingen kunnen pas worden opgeslagen als je weer online bent.",
+    "message": "Geen verbinding: wijzigingen kunnen niet worden opgeslagen.",
     "saveFailed": "Opslaan is mislukt, je bent offline. Probeer het opnieuw zodra je weer online bent.",
     "stayOnPage": "Deze pagina blijft leesbaar; andere pagina's openen zodra je weer online bent."
   },
@@ -669,7 +684,6 @@
       "submit": "Overnemen",
       "submitting": "Overnemen…",
       "errorTaken": "Die gebruikersnaam of dat e-mailadres is al in gebruik.",
-      "errorRateLimit": "Te veel pogingen. Wacht een paar minuten en probeer het opnieuw.",
       "errorFailed": "Dat is niet gelukt. Probeer het zo opnieuw.",
       "errorOffline": "De server is niet bereikt. Controleer je verbinding en probeer het opnieuw.",
       "ssoContinue": "Doorgaan met {provider}",
@@ -691,7 +705,8 @@
       "toLogin": "Naar inloggen"
     },
     "deletionPending": "Dit account wordt op {date} verwijderd en is tot dan vergrendeld. Een beheerder van deze server kan de verwijdering vóór die datum ongedaan maken.",
-    "deletionPendingNoDate": "Dit account staat gepland voor verwijdering en is vergrendeld. Een beheerder van deze server kan de verwijdering ongedaan maken tot die voltooid is."
+    "deletionPendingNoDate": "Dit account staat gepland voor verwijdering en is vergrendeld. Een beheerder van deze server kan de verwijdering ongedaan maken tot die voltooid is.",
+    "signInRateLimited": "Te veel pogingen. Wacht een paar minuten en probeer het opnieuw."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -6393,7 +6408,7 @@
     "webPush": "Browserpush",
     "webPushDescription": "Ontvang meldingen rechtstreeks in je browser, ook als HealthLog niet geopend is.",
     "webPushNotSupported": "Je browser ondersteunt geen pushmeldingen.",
-    "webPushInstallFirst": "Op iPhone en iPad werken pushmeldingen alleen in de geïnstalleerde app. Tik in Safari op Deel en daarna op 'Zet op beginscherm', open HealthLog vanaf het beginscherm en zet pushmeldingen hier aan.",
+    "webPushInstallFirst": "Op iPhone en iPad werken pushmeldingen alleen in de geïnstalleerde app. Tik in Safari op Deel en daarna op 'Zet op beginscherm', open HealthLog vanaf het beginscherm en tik hier op 'Push inschakelen'.",
     "webPushDenied": "Pushmeldingen zijn geblokkeerd. Sta ze toe in de instellingen van je browser.",
     "webPushNotConfigured": "Web Push is niet geconfigureerd op de server.",
     "webPushSubscribe": "Push inschakelen",
@@ -9274,7 +9289,8 @@
     },
     "user": {
       "telegramTestBody": "HealthLog: verbinding geslaagd. Telegram-meldingen zijn actief.",
-      "webPushTestBody": "Zie je dit, dan komen pushmeldingen aan op dit apparaat."
+      "webPushTestBody": "Zie je dit, dan komen pushmeldingen aan op dit apparaat.",
+      "webPushTestTitle": "Testmelding van HealthLog"
     },
     "moodReminder": {
       "title": "Dagelijkse stemmingsherinnering",

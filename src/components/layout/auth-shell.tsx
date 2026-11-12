@@ -129,17 +129,24 @@ function useShellScrollMemory(pathname: string): void {
     }
     if (!main) return;
     // A list still painting its skeleton is shorter than the offset; keep
-    // trying until it has the height, for at most a second.
-    const until = performance.now() + 1000;
+    // trying until it has the height, for at most three seconds, and stop as
+    // soon as the person scrolls themselves.
+    const until = performance.now() + 3000;
     let frame = 0;
+    const stop = () => cancelAnimationFrame(frame);
+    const inputs = ["wheel", "touchstart", "keydown", "pointerdown"];
     const apply = () => {
       main.scrollTop = target.top;
       if (main.scrollTop < target.top - 1 && performance.now() < until) {
         frame = requestAnimationFrame(apply);
       }
     };
+    for (const type of inputs) window.addEventListener(type, stop, true);
     apply();
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      stop();
+      for (const type of inputs) window.removeEventListener(type, stop, true);
+    };
   }, [pathname]);
 }
 
@@ -337,10 +344,10 @@ export function AuthShell({
     // `min-h-dvh`, not `h-dvh`: a phone held sideways is ~390 px tall, and
     // a sign-in form that is taller than a fixed-height box centres out of
     // it at the top, where nothing can scroll back to it. A minimum lets the
-    // box grow and the document scroll. The safe-area padding keeps the form
-    // off the status bar and the home indicator in an installed app.
+    // box grow and the document scroll. The safe-area band (painted behind
+    // the status bar, see globals.css) and padding keep the form clear.
     return (
-      <div className="flex min-h-dvh flex-col pt-[env(safe-area-inset-top,0px)] pr-[env(safe-area-inset-right,0px)] pb-[env(safe-area-inset-bottom,0px)] pl-[env(safe-area-inset-left,0px)]">
+      <div className="shell-safe-area flex min-h-dvh flex-col pb-[env(safe-area-inset-bottom,0px)]">
         {demoMode ? <DemoBanner /> : null}
         <main
           id="main-content"
@@ -412,7 +419,7 @@ export function AuthShell({
         {showUnlockNotifier && user?.id ? (
           <AchievementUnlockNotifier userId={user.id} />
         ) : null}
-        <div className="flex min-h-dvh flex-col pt-[env(safe-area-inset-top,0px)] pr-[env(safe-area-inset-right,0px)] pl-[env(safe-area-inset-left,0px)]">
+        <div className="shell-safe-area flex min-h-dvh flex-col">
           <MaintainershipBanner />
           <div className="flex flex-1 items-center justify-center px-4 py-8">
             {children}

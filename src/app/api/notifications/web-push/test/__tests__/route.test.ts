@@ -134,7 +134,7 @@ describe("POST /api/notifications/web-push/test", () => {
     }
     expect(payloadsSent()).toEqual([
       expect.objectContaining({
-        title: "HealthLog Test-Benachrichtigung",
+        title: "Test-Benachrichtigung von HealthLog",
         body: "Wenn du das siehst, kommen Push-Benachrichtigungen auf diesem Gerät an.",
         tag: "self-test",
       }),
@@ -181,6 +181,21 @@ describe("POST /api/notifications/web-push/test", () => {
 
     expect(res.status).toBe(200);
     expect(JSON.parse(text).data.ok).toBe(false);
+    // What the Test button reads to say why.
+    expect(JSON.parse(text).meta.errorCode).toBe("upstream_rejected");
     expect(text).not.toMatch(/phone-secret|laptop-secret/);
+  });
+
+  it("tells a push service that never answered apart from one that refused", async () => {
+    mocks.safeFetch.mockRejectedValue(new TypeError("fetch failed"));
+
+    const res = await post();
+    const body = (await res.json()) as {
+      data: { ok: boolean };
+      meta?: { errorCode?: string };
+    };
+
+    expect(body.data.ok).toBe(false);
+    expect(body.meta?.errorCode).toBe("connection_failed");
   });
 });

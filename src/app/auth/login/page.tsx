@@ -24,8 +24,9 @@ import { OIDC_MFA_COOKIE, OIDC_MFA_COOKIE_PATH } from "@/lib/auth/oidc-cookie";
 import { isDashboardSnapshotEnabled } from "@/lib/dashboard/snapshot-flag";
 import { prefetchDashboardSnapshot } from "@/lib/queries/use-dashboard-snapshot";
 import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
+import { clearOfflineCachesBeforeLeaving } from "@/lib/pwa/clear-before-leaving";
 import { sanitizeSameOriginPath } from "@/lib/url-safety";
-import { localizedApiError } from "@/lib/api/localized-error";
+import { localizedSignInError } from "@/lib/api/localized-error";
 import { formatDate } from "@/lib/format";
 import {
   InsecureTransportBanner,
@@ -184,7 +185,7 @@ export default function LoginPage() {
       params.set("client_host", clientTransport.host);
     }
     // The session starts on the way back; the last account's copies go first.
-    await clearOfflineCachesForSessionEnd();
+    await clearOfflineCachesBeforeLeaving();
     loadDocument(`/api/auth/oidc/login?${params}`);
   }
 
@@ -263,10 +264,10 @@ export default function LoginPage() {
       navigateAfterLogin();
     } catch (err) {
       if (noteRefusal(err)) return;
-      // Route rejections carry the envelope error verbatim; everything
-      // else (WebAuthn ceremony failures) keeps the descriptive mapping.
+      // A route's refusal is named by its code; a WebAuthn ceremony failure
+      // keeps the descriptive mapping.
       if (err instanceof ApiError) {
-        setError(localizedApiError(err, t, "auth.loginFailed"));
+        setError(localizedSignInError(err, t, "auth.loginFailed"));
       } else {
         const { key, params } = describePasskeyError(err);
         setError(t(key, params));
@@ -310,7 +311,7 @@ export default function LoginPage() {
       navigateAfterLogin();
     } catch (err) {
       if (noteRefusal(err)) return;
-      setError(localizedApiError(err, t, "auth.loginFailed"));
+      setError(localizedSignInError(err, t, "auth.loginFailed"));
     } finally {
       setLoading(false);
     }

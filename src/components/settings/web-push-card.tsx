@@ -10,7 +10,10 @@ import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
-import { unsubscribeWebPush } from "@/lib/notifications/web-push-unsubscribe";
+import {
+  saveWebPushSubscription,
+  unsubscribeWebPush,
+} from "@/lib/notifications/web-push-subscription";
 
 /** Convert a URL-safe base64 string to an ArrayBuffer (for VAPID key). */
 function urlBase64ToArrayBuffer(base64String: string): ArrayBuffer {
@@ -73,6 +76,11 @@ export function WebPushCard() {
         if (registration) {
           const subscription = await registration.pushManager.getSubscription();
           setIsSubscribed(!!subscription);
+          // Sent again on every open: the server may have lost the row or
+          // switched the channel off, and the browser cannot tell.
+          if (subscription) {
+            void saveWebPushSubscription(subscription).catch(() => null);
+          }
         }
       } catch {
         // Ignore errors during check
@@ -111,20 +119,7 @@ export function WebPushCard() {
         applicationServerKey: urlBase64ToArrayBuffer(vapidPublicKey),
       });
 
-      const subJson = subscription.toJSON();
-
-      const res = await apiFetchRaw("/api/notifications/web-push", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          endpoint: subJson.endpoint,
-          keys: {
-            p256dh: subJson.keys?.p256dh ?? "",
-            auth: subJson.keys?.auth ?? "",
-          },
-        }),
-      });
-
+      const res = await saveWebPushSubscription(subscription);
       if (res.ok) {
         setIsSubscribed(true);
         setMsg(t("settings.webPushSubscribed"));
@@ -216,11 +211,12 @@ export function WebPushCard() {
 
       {(!loading && unsupported) || (!loading && isDenied) || msg ? (
         <div className="space-y-4">
-          {!loading && unsupported ? (
+          {!loading && unsupported === "install" ? (
+            // Steps to follow: content, not meta.
+            <p className="text-sm">{t("settings.webPushInstallFirst")}</p>
+          ) : !loading && unsupported ? (
             <p className="text-muted-foreground text-sm">
-              {unsupported === "install"
-                ? t("settings.webPushInstallFirst")
-                : t("settings.webPushNotSupported")}
+              {t("settings.webPushNotSupported")}
             </p>
           ) : !loading && isDenied ? (
             <p className="text-destructive text-sm">

@@ -12,9 +12,13 @@ import { Label } from "@/components/ui/label";
 import { PasswordStrength } from "@/components/ui/password-strength";
 import { useTranslations } from "@/lib/i18n/context";
 import { detectBrowserTimezone } from "@/lib/tz/format";
-import { ApiError, apiFetch, apiPost } from "@/lib/api/api-fetch";
+import { ApiError, apiPost } from "@/lib/api/api-fetch";
 import { localizedApiError } from "@/lib/api/localized-error";
-import { clearCachesForSessionEnd, useAuth } from "@/hooks/use-auth";
+import {
+  clearCachesForSessionEnd,
+  signOutRequest,
+  useAuth,
+} from "@/hooks/use-auth";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -89,7 +93,7 @@ export default function RegisterPage() {
     setError(null);
     setSigningOut(true);
     try {
-      await apiFetch("/api/auth/logout", { method: "POST" });
+      await signOutRequest();
       // Same session-end wipe the shell and the menu do: the QueryClient
       // outlives the navigation on this SPA and the health-data families are
       // not user-scoped, so nothing may survive into the next account.

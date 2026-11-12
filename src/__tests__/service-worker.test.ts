@@ -158,10 +158,9 @@ function bootServiceWorker(): SwHarness {
       navPreload.enabled = true;
     },
   };
-  // Push-handler fakes: the notifications `showNotification` shows, and a
-  // Badging-API spy.
+  // The notifications `showNotification` shows, and a Badging-API spy.
   const shown: Array<{ title: string; tag?: string; closed: boolean }> = [];
-  const badge = { value: undefined as number | undefined, cleared: false };
+  const badge = { cleared: false };
   const selfObj = {
     addEventListener: (type: string, fn: (event: unknown) => void) => {
       listeners.set(type, fn);
@@ -182,12 +181,8 @@ function bootServiceWorker(): SwHarness {
       },
     },
     navigator: {
-      setAppBadge: (n: number) => {
-        badge.value = n;
-      },
-      clearAppBadge: () => {
+      clearAppBadge: async () => {
         badge.cleared = true;
-        badge.value = undefined;
       },
     },
     location: { origin: ORIGIN },
@@ -485,6 +480,15 @@ describe("sw.js — activate", () => {
       [CURRENT_PAGE_CACHE, "next-app-runtime"].sort(),
     );
     expect(harness.navPreload.enabled).toBe(true);
+  });
+
+  it("clears the dose count an earlier release left on the app icon", async () => {
+    const harness = bootServiceWorker();
+    const { badge } = swFakes(harness);
+
+    await dispatchActivate(harness);
+
+    expect(badge.cleared).toBe(true);
   });
 });
 
@@ -1094,27 +1098,25 @@ async function dispatchPush(harness: SwHarness, data: unknown): Promise<void> {
 function swFakes(harness: SwHarness) {
   const selfObj = harness.context.self as unknown as {
     __shown: Array<{ title: string; tag?: string; closed: boolean }>;
-    __badge: { value: number | undefined; cleared: boolean };
+    __badge: { cleared: boolean };
   };
   return { shown: selfObj.__shown, badge: selfObj.__badge };
 }
 
 describe("sw.js — push handler", () => {
-  it("shows a reminder with its stable tag and sets the app badge", async () => {
+  it("shows a reminder with its stable tag", async () => {
     const harness = bootServiceWorker();
-    const { shown, badge } = swFakes(harness);
+    const { shown } = swFakes(harness);
     const tag = "med:med-1:2026-06-18T07:00:00.000Z";
 
     await dispatchPush(harness, {
       title: "Time for your dose",
       body: "Ramipril 5mg",
       tag,
-      badge: 3,
     });
 
     expect(shown).toHaveLength(1);
     expect(shown[0].tag).toBe(tag);
-    expect(badge.value).toBe(3);
   });
 });
 

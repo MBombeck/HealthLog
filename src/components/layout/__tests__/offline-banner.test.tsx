@@ -46,17 +46,18 @@ describe("<OfflineBanner>", () => {
   it("ships the EN copy for `offlineBanner.message`", () => {
     // The copy must not over-promise auto-save: offline mutations now
     // fail fast (networkMode "always") rather than queue, so the banner states
-    // the honest thing.
+    // the honest thing. "Once you're back online" is said by the sentence
+    // after it, once.
     const en = loadMessages("en");
     expect(en.offlineBanner.message).toBe(
-      "No connection: changes can't be saved until you're back online.",
+      "No connection: changes can't be saved.",
     );
   });
 
   it("ships the DE copy for `offlineBanner.message`", () => {
     const de = loadMessages("de");
     expect(de.offlineBanner.message).toBe(
-      "Keine Verbindung: Änderungen können erst gespeichert werden, wenn du wieder online bist.",
+      "Keine Verbindung: Änderungen können nicht gespeichert werden.",
     );
   });
 

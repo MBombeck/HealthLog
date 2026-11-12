@@ -151,7 +151,12 @@
       },
       "mfa": {
         "already_active": "To konto ma już skonfigurowaną aplikację uwierzytelniającą. Najpierw ją wyłącz, aby skonfigurować nową."
-      }
+      },
+      "register": {
+        "taken": "Ta nazwa użytkownika lub adres e-mail jest już zajęty.",
+        "invite_invalid": "To zaproszenie jest już nieważne. Poproś osobę, która cię zaprosiła, o nowy link."
+      },
+      "already_authenticated": "Masz już zalogowaną sesję. Najpierw się wyloguj, a potem spróbuj ponownie."
     },
     "biomarkers": {
       "unit": {
@@ -234,7 +239,17 @@
       "budget": {
         "exceeded": "Dzisiejszy budżet AI został wykorzystany, więc nic nie zostało wysłane. Odnowi się jutro."
       }
-    }
+    },
+    "passkey": {
+      "unknown": "Ten passkey nie jest tu zarejestrowany. Zaloguj się w inny sposób.",
+      "challenge": {
+        "expired": "Logowanie trwało zbyt długo lub zostało już użyte. Spróbuj ponownie."
+      },
+      "response": {
+        "invalid": "Nie udało się odczytać odpowiedzi passkey. Spróbuj ponownie."
+      }
+    },
+    "oidc_only": "Ten serwer pozwala tylko na logowanie jednokrotne (SSO). Kontynuuj u swojego dostawcy tożsamości."
   },
   "doctorReport": {
     "title": "Raport zdrowotny",
@@ -506,7 +521,7 @@
     "backToDashboard": "Powrót do panelu"
   },
   "offlineBanner": {
-    "message": "Brak połączenia: zmian nie można zapisać, dopóki nie wrócisz online.",
+    "message": "Brak połączenia: nie można zapisać zmian.",
     "saveFailed": "Nie udało się zapisać, jesteś offline. Spróbuj ponownie, gdy wrócisz online.",
     "stayOnPage": "Ta strona pozostaje czytelna, inne otworzą się, gdy wrócisz online."
   },
@@ -669,7 +684,6 @@
       "submit": "Przejmij",
       "submitting": "Przejmowanie…",
       "errorTaken": "Ta nazwa użytkownika lub adres e-mail jest już zajęty.",
-      "errorRateLimit": "Zbyt wiele prób. Odczekaj kilka minut i spróbuj ponownie.",
       "errorFailed": "Nie udało się. Spróbuj ponownie za chwilę.",
       "errorOffline": "Nie udało się połączyć z serwerem. Sprawdź połączenie i spróbuj ponownie.",
       "ssoContinue": "Kontynuuj przez {provider}",
@@ -691,7 +705,8 @@
       "toLogin": "Przejdź do logowania"
     },
     "deletionPending": "To konto zostanie usunięte {date} i do tego czasu jest zablokowane. Administrator tego serwera może cofnąć usunięcie przed tą datą.",
-    "deletionPendingNoDate": "To konto czeka na usunięcie i jest zablokowane. Administrator tego serwera może cofnąć usunięcie, dopóki się nie zakończy."
+    "deletionPendingNoDate": "To konto czeka na usunięcie i jest zablokowane. Administrator tego serwera może cofnąć usunięcie, dopóki się nie zakończy.",
+    "signInRateLimited": "Zbyt wiele prób. Odczekaj kilka minut i spróbuj ponownie."
   },
   "dashboard": {
     "title": "Pulpit",
@@ -6393,7 +6408,7 @@
     "webPush": "Push przeglądarki",
     "webPushDescription": "Otrzymuj powiadomienia bezpośrednio w przeglądarce, nawet gdy HealthLog nie jest otwarty.",
     "webPushNotSupported": "Twoja przeglądarka nie obsługuje powiadomień push.",
-    "webPushInstallFirst": "Na iPhonie i iPadzie powiadomienia push działają tylko w zainstalowanej aplikacji. W Safari stuknij Udostępnij, potem „Do ekranu początkowego”, otwórz HealthLog z ekranu początkowego i włącz tutaj powiadomienia push.",
+    "webPushInstallFirst": "Na iPhonie i iPadzie powiadomienia push działają tylko w zainstalowanej aplikacji. W Safari stuknij Udostępnij, potem „Do ekranu początkowego”, otwórz HealthLog z ekranu początkowego i stuknij tutaj „Włącz push”.",
     "webPushDenied": "Powiadomienia push są zablokowane. Zezwól na nie w ustawieniach przeglądarki.",
     "webPushNotConfigured": "Web Push nie jest skonfigurowany na serwerze.",
     "webPushSubscribe": "Włącz push",
@@ -9274,7 +9289,8 @@
     },
     "user": {
       "telegramTestBody": "HealthLog: połączenie udane. Powiadomienia Telegram są aktywne.",
-      "webPushTestBody": "Jeśli to widzisz, powiadomienia push docierają na to urządzenie."
+      "webPushTestBody": "Jeśli to widzisz, powiadomienia push docierają na to urządzenie.",
+      "webPushTestTitle": "Powiadomienie testowe HealthLog"
     },
     "moodReminder": {
       "title": "Codzienne przypomnienie o nastroju",

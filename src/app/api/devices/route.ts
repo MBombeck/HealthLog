@@ -31,6 +31,7 @@ import { prisma } from "@/lib/db";
 import { auditLog } from "@/lib/auth/audit";
 import { encrypt } from "@/lib/crypto";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { endApnsNoDeviceRest } from "@/lib/notifications/channel-state";
 
 const deviceSchema = z
   .object({
@@ -86,15 +87,14 @@ const deviceSchema = z
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user } = await requireAuth();
 
-  // Per-user rate cap on device registration. The handler returns a
-  // distinct 409 (`apns_token_owned_by_other_user` /
-  // `token_owned_by_other_user`) when an `apnsToken` is already
-  // bound to a different account — useful for the legitimate
-  // cross-user-hijack guard, but it also means an authenticated user
-  // could enumerate token ownership across accounts unboundedly. 20
-  // device-mutations per 15 minutes is well outside any realistic
-  // client behaviour (the iOS app registers once on login + on token
-  // rotation; not 20× / window) while capping enumeration cost.
+  // Per-user rate cap on device registration. The handler returns a distinct
+  // 409 (`apns_token_owned_by_other_user` / `token_owned_by_other_user`) when
+  // an `apnsToken` is already bound to a different account — useful for the
+  // legitimate cross-user-hijack guard, but it also means an authenticated
+  // user could enumerate token ownership across accounts unboundedly. 20
+  // device-mutations per 15 minutes is well outside any realistic client
+  // behaviour (the iOS app registers once on login + on token rotation; not
+  // 20× / window) while capping enumeration cost.
   const rl = await checkRateLimit(
     `devices:register:${user.id}`,
     20,
@@ -272,6 +272,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
         },
         update: {},
       });
+      await endApnsNoDeviceRest(tx, user.id);
     }
 
     return { id: device.id };
