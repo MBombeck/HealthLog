@@ -338,18 +338,22 @@ function clearWasAuthenticated(): void {
  * True when an `/api/auth/me` failure carries NO verdict on the session —
  * a network-level failure (fetch `TypeError` offline, abort/timeout), the
  * service worker's synthetic 503 offline envelope (`meta.offline`), the
- * browser reporting itself offline, or a server-side 5xx. None of these mean
- * "logged out"; only an explicit 401/403 does. Treating them as session end
- * used to redirect an offline relaunch to /auth/login and wipe the offline
- * caches — destroying exactly the installed-PWA-opened-offline scenario the
- * SW + query persister exist for.
+ * browser reporting itself offline, a server-side 5xx, or a 401/403 that
+ * HealthLog did not write. None of these mean "logged out"; only HealthLog's
+ * own 401/403 does. Treating them as session end used to redirect an offline
+ * relaunch to /auth/login and wipe the offline caches — destroying exactly
+ * the installed-PWA-opened-offline scenario the SW + query persister exist
+ * for.
  */
 export function isAuthVerdictUnknown(error: unknown): boolean {
   if (error instanceof ApiError) {
     // 5xx (incl. the SW's synthetic 503 with `meta.offline: true`) and any
-    // other non-auth status: the server never ruled on the session. Only an
-    // explicit 401/403 is a verdict.
-    return error.status !== 401 && error.status !== 403;
+    // other non-auth status: the server never ruled on the session.
+    if (error.status !== 401 && error.status !== 403) return true;
+    // HealthLog's error envelope always names a code. A 401/403 without one
+    // comes from something in front of the instance (a forward-auth proxy,
+    // a firewall), which says nothing about this session.
+    return typeof error.meta?.errorCode !== "string";
   }
   // Everything below the HTTP layer is transport-level by construction:
   // fetch `TypeError` (offline / DNS / connection refused), `AbortError` /
@@ -528,7 +532,7 @@ export function useAuth() {
   });
 
   // v1.27.x offline fix — classify a failed `/api/auth/me` before acting on
-  // it. Only an explicit 401/403 means "session ended"; a network-level
+  // it. Only HealthLog's own 401/403 means "session ended"; a network-level
   // failure (offline relaunch, SW 503 offline envelope, timeout) or a 5xx
   // carries no verdict, so the hook holds the LAST-KNOWN auth state (the
   // localStorage marker) instead of flipping to unauthenticated. Pre-fix, an
@@ -536,8 +540,9 @@ export function useAuth() {
   // /auth/login and wiped every offline cache (data 7→0 entries, pages 1→0
   // in the audit measurement), making the whole offline story unreachable.
   const verdictUnknown = query.isError && isAuthVerdictUnknown(query.error);
-  // A 401/403 on a refetch ends the session although the cache still holds
-  // the last good payload: React Query keeps `data` when a refetch fails.
+  // HealthLog's 401/403 on a refetch ends the session although the cache
+  // still holds the last good payload: React Query keeps `data` when a
+  // refetch fails.
   const sessionEnded = query.isError && !verdictUnknown;
   const user = sessionEnded ? null : (query.data ?? null);
   const isAuthenticated = !!user || (verdictUnknown && readWasAuthenticated());

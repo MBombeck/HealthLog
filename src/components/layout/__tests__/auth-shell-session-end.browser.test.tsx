@@ -72,6 +72,13 @@ function shellTree(queryClient: QueryClient) {
   );
 }
 
+/** HealthLog's answer once there is no session; it always names a code. */
+const SIGNED_OUT = {
+  status: 401,
+  error: "Unauthorized",
+  meta: { errorCode: "auth.missing" },
+};
+
 async function mountShell(user: Parameters<typeof authUser>[0] | null) {
   return renderWithApp(
     <AuthShell>
@@ -91,10 +98,7 @@ afterEach(() => {
 
 describe("AuthShell on a sign-in page", () => {
   it("clears the offline copies once the server says there is no session", async () => {
-    const fetchStub = stubFetch().on("GET", ME, {
-      status: 401,
-      error: "Unauthorized",
-    });
+    const fetchStub = stubFetch().on("GET", ME, SIGNED_OUT);
     openAt("/auth/login");
     const { queryClient } = await mountShell(null);
 
@@ -108,7 +112,7 @@ describe("AuthShell on a sign-in page", () => {
   });
 
   it("does the same on the profile take-over page", async () => {
-    stubFetch().on("GET", ME, { status: 401, error: "Unauthorized" });
+    stubFetch().on("GET", ME, SIGNED_OUT);
     openAt("/auth/claim");
     await mountShell(null);
     await expect.poll(() => clearOffline.mock.calls.length).toBe(1);
@@ -139,8 +143,22 @@ describe("AuthShell on a sign-in page", () => {
     expect(clearOffline).not.toHaveBeenCalled();
   });
 
+  it("leaves them alone for a 401 from something in front of the server", async () => {
+    // A forward-auth proxy or a firewall answers with its own page, which
+    // names no HealthLog code and says nothing about this session.
+    const fetchStub = stubFetch().on("GET", ME, {
+      status: 401,
+      error: "Unauthorized",
+    });
+    openAt("/auth/login");
+    await mountShell(null);
+    await expect.poll(() => fetchStub.calls("GET", ME).length).toBe(1);
+    await settle();
+    expect(clearOffline).not.toHaveBeenCalled();
+  });
+
   it("does not clear on a public page outside the sign-in flow", async () => {
-    stubFetch().on("GET", ME, { status: 401, error: "Unauthorized" });
+    stubFetch().on("GET", ME, SIGNED_OUT);
     openAt("/about");
     await mountShell(null);
     await settle();
@@ -153,9 +171,7 @@ describe("AuthShell on a protected page", () => {
   async function signedInAt(path: string) {
     let session = true;
     stubFetch().on("GET", ME, () =>
-      session
-        ? { data: authUser({ id: "signed-in" }) }
-        : { status: 401, error: "Unauthorized" },
+      session ? { data: authUser({ id: "signed-in" }) } : SIGNED_OUT,
     );
     openAt(path);
     const view = await mountShell(null);

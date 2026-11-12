@@ -55,6 +55,11 @@ import {
   useAuth,
 } from "../use-auth";
 
+/** What `/api/auth/me` answers once the session is gone. */
+const SESSION_GONE = new ApiError("Unauthorized", 401, {
+  errorCode: "auth.missing",
+});
+
 // Node test env has no localStorage — back it with a Map.
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -97,9 +102,20 @@ describe("isAuthVerdictUnknown — failure classification", () => {
     expect(isAuthVerdictUnknown(new ApiError("boom", 500))).toBe(true);
   });
 
-  it("treats 401 and 403 as the real session-end verdict", () => {
-    expect(isAuthVerdictUnknown(new ApiError("unauthorized", 401))).toBe(false);
-    expect(isAuthVerdictUnknown(new ApiError("forbidden", 403))).toBe(false);
+  it("treats HealthLog's 401 and 403 as the real session-end verdict", () => {
+    expect(isAuthVerdictUnknown(SESSION_GONE)).toBe(false);
+    expect(
+      isAuthVerdictUnknown(
+        new ApiError("forbidden", 403, { errorCode: "http.forbidden" }),
+      ),
+    ).toBe(false);
+  });
+
+  it("treats a 401 or 403 without HealthLog's envelope as no verdict", () => {
+    // A forward-auth proxy or a firewall in front of the instance answers
+    // with its own page; the session behind it may be fine.
+    expect(isAuthVerdictUnknown(new ApiError("Unauthorized", 401))).toBe(true);
+    expect(isAuthVerdictUnknown(new ApiError("Forbidden", 403))).toBe(true);
   });
 });
 
@@ -128,7 +144,7 @@ describe("useAuth — last-known state on a non-verdict failure", () => {
   it("reads a true 401 as session end — wipe and redirect may proceed", () => {
     store.set("healthlog-was-authenticated", "1");
     queryState.isError = true;
-    queryState.error = new ApiError("unauthorized", 401);
+    queryState.error = SESSION_GONE;
 
     const auth = useAuth();
     expect(auth.isAuthenticated).toBe(false);
@@ -141,12 +157,22 @@ describe("useAuth — a verdict on a refetch", () => {
     store.set("healthlog-was-authenticated", "1");
     queryState.data = { id: "u1", username: "someone" };
     queryState.isError = true;
-    queryState.error = new ApiError("unauthorized", 401);
+    queryState.error = SESSION_GONE;
 
     const auth = useAuth();
     expect(auth.isAuthenticated).toBe(false);
     expect(auth.user).toBeNull();
     expect(auth.isAuthUnknown).toBe(false);
+  });
+
+  it("keeps the cached account through a 401 from something in front of the server", () => {
+    queryState.data = { id: "u1", username: "someone" };
+    queryState.isError = true;
+    queryState.error = new ApiError("Unauthorized", 401);
+
+    const auth = useAuth();
+    expect(auth.isAuthenticated).toBe(true);
+    expect(auth.user).toEqual({ id: "u1", username: "someone" });
   });
 
   it("keeps the cached account through a network failure on a refetch", () => {
