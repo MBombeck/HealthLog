@@ -66,14 +66,6 @@ next-env.d.ts
 # COPY target always exists.
 /assets/geolite2/*.mmdb
 
-# Local workspace files, never committed
-/docs/superpowers/
-.claude/
-.cursor/
-.codex/
-.aider*
-.mcp.json
-
 # Internal working notes (per-release reports, backlog, iOS coordination).
 # Everything user-facing lives in README, CHANGELOG and docs/.
 /.planning/
