@@ -194,7 +194,7 @@ export function buildVitalTargets({
     weightTargetOverride ?? (whoHeightCm ? getWeightRange(whoHeightCm) : null);
   let weightClassification: TargetItem["classification"] = null;
   if (latestByType.WEIGHT != null && whoHeightCm) {
-    const heightM = heightCm / 100;
+    const heightM = whoHeightCm / 100;
     const classification = classifyBMI(
       latestByType.WEIGHT / (heightM * heightM),
     );
