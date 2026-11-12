@@ -1,5 +1,5 @@
 /**
- * GET /api/insights/presence — which Insights pages have something to show.
+ * GET /api/insights/presence: which Insights pages have something to show.
  *
  * The tab strip on every Insights page gates its pills on this answer alone:
  * the reading count per measurement type, and whether the record has mood
