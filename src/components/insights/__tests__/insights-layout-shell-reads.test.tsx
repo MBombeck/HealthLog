@@ -6,6 +6,10 @@ import { renderToStaticMarkup } from "react-dom/server";
  * on the tab strip but shows no briefing, so it must not read the briefing
  * on entry: on a metric page that read was a request (and the schema chunk
  * that parses its answer) for a button. The button itself stays.
+ *
+ * The strip's pills are gated on one small presence read and the saved
+ * layout. The overview read, a workouts page and the ECG list it used to
+ * send on every page for four flags are gone.
  */
 
 const queries: Array<{ queryKey: readonly unknown[]; enabled?: boolean }> = [];
@@ -29,23 +33,12 @@ vi.mock("@/hooks/use-ai-capability", () => ({
   useAiCapability: () => ({ available: true }),
   useAiProviderState: () => ({ responseTimeoutMs: null }),
 }));
-vi.mock("@/hooks/use-surface-visible", () => ({
-  useSurfaceVisible: () => true,
-}));
-vi.mock("@/hooks/use-workouts", () => ({
-  useWorkouts: () => ({ data: undefined }),
-}));
-vi.mock("@/lib/queries/use-analytics-query", () => ({
-  useAnalyticsQuery: () => ({ data: undefined }),
-}));
+const layoutReads: unknown[] = [];
 vi.mock("@/hooks/use-insights-layout", () => ({
-  useInsightsLayoutQuery: () => ({
-    layout: { tiles: [] },
-    isSuccess: false,
-  }),
-}));
-vi.mock("@/components/insights/use-ecg-list", () => ({
-  useEcgList: () => ({ data: undefined }),
+  useInsightsLayoutQuery: (enabled: unknown) => {
+    layoutReads.push(enabled);
+    return { layout: { tiles: [] }, isSuccess: false };
+  },
 }));
 vi.mock("@/components/insights/insights-tab-strip", () => ({
   InsightsTabStrip: (props: { onRegenerate?: unknown }) => {
@@ -72,5 +65,21 @@ describe("InsightsLayoutShell — what it reads on entry", () => {
     expect(advisor).toHaveLength(1);
     expect(advisor[0].enabled).toBe(false);
     expect(typeof stripProps[0]?.onRegenerate).toBe("function");
+  });
+
+  it("reads the presence answer and the layout, nothing else", () => {
+    queries.length = 0;
+    layoutReads.length = 0;
+    renderToStaticMarkup(
+      <InsightsLayoutShell>
+        <div />
+      </InsightsLayoutShell>,
+    );
+
+    const sent = queries
+      .filter((q) => q.enabled !== false)
+      .map((q) => JSON.stringify(q.queryKey));
+    expect(sent).toEqual([JSON.stringify(queryKeys.insightsPresence())]);
+    expect(layoutReads).toEqual([true]);
   });
 });

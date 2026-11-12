@@ -3,8 +3,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 /**
  * The monitoring switches come from the root layout's render, not from a
- * request every page load sent to `/api/monitoring/settings` for three
- * instance-wide values. The first render already mounts what they turn on.
+ * request on every page load for three instance-wide values. The first
+ * render already mounts what they turn on.
  */
 
 const apiGet = vi.fn();

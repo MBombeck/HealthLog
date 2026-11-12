@@ -304,20 +304,6 @@ function smallFields(
 }
 
 describe("no field call site goes under 16 px on a touch screen", () => {
-  /**
-   * Call sites still under 16 px, fixed by a change of their own. An entry
-   * that stops matching fails, so the list only shrinks.
-   */
-  const OPEN: Readonly<Record<string, string>> = {
-    "components/settings/coach-memory-section.tsx":
-      "/settings/coach memory editor",
-    "components/settings/access/managed-profile-handover.tsx":
-      "read-only handover link field",
-    "components/cycle/cycle-settings.tsx": "raw cycle-length number field",
-    "components/command-palette/command-palette.tsx":
-      "search field shrinks at `md:` without `pointer-fine:`",
-  };
-
   const scan = productionSources()
     .filter((rel) => rel.endsWith(".tsx"))
     .map((rel) => ({ rel, ...smallFields(rel, readSrc(rel)) }));
@@ -349,13 +335,6 @@ describe("no field call site goes under 16 px on a touch screen", () => {
   });
 
   it("no typed-into field sets a size under 16 px outside a fine pointer", () => {
-    const offenders = scan
-      .filter((file) => !(file.rel in OPEN))
-      .flatMap((file) => file.small);
-    expect(offenders).toEqual([]);
-  });
-
-  it.each(Object.keys(OPEN))("%s is still open", (rel) => {
-    expect(scan.find((file) => file.rel === rel)?.small ?? []).not.toEqual([]);
+    expect(scan.flatMap((file) => file.small)).toEqual([]);
   });
 });

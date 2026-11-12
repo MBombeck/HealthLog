@@ -212,10 +212,22 @@ function TargetEditSheetBody({
   // Display values: user-edited string (if any) wins, otherwise we
   // surface the freshest seeded value derived from the
   // `thresholdsData` query + the parent-provided `initialRange`.
-  const displayMin = minStr ?? String(primary.min);
-  const displayMax = maxStr ?? String(primary.max);
-  const displayDiaMin = diaMinStr ?? (secondary ? String(secondary.min) : "");
-  const displayDiaMax = diaMaxStr ?? (secondary ? String(secondary.max) : "");
+  const seeded = {
+    min: String(primary.min),
+    max: String(primary.max),
+    diaMin: secondary ? String(secondary.min) : "",
+    diaMax: secondary ? String(secondary.max) : "",
+  };
+  const displayMin = minStr ?? seeded.min;
+  const displayMax = maxStr ?? seeded.max;
+  const displayDiaMin = diaMinStr ?? seeded.diaMin;
+  const displayDiaMax = diaMaxStr ?? seeded.diaMax;
+  // A bound typed away from its seed; a dismissal then asks first.
+  const dirty =
+    displayMin !== seeded.min ||
+    displayMax !== seeded.max ||
+    displayDiaMin !== seeded.diaMin ||
+    displayDiaMax !== seeded.diaMax;
 
   // Focus management — the first input gets focus when the sheet
   // opens, matching the Dashboard chart cog's open-on-focus pattern.
@@ -412,6 +424,7 @@ function TargetEditSheetBody({
     <ResponsiveSheet
       open
       onOpenChange={onOpenChange}
+      dirty={dirty}
       title={t("targets.edit.title", { metric: targetLabel })}
       description={
         isDerivedMetric

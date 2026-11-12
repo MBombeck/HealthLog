@@ -10,7 +10,7 @@
  * capture picker's sheet, which hands it a footer slot so the actions sit in
  * the sheet's sticky footer like every other quick entry.
  */
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Loader2, Lock, Plus, Trash2, X } from "lucide-react";
 
@@ -65,6 +65,8 @@ export interface LifeEventFormProps {
   onCancel?: () => void;
   /** Where the action row goes; inline when absent. */
   footerSlot?: HTMLElement | null;
+  /** Whether the fields differ from what the form opened with. */
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 function CategoryChips({
@@ -208,6 +210,7 @@ export function LifeEventForm({
   onSuccess,
   onCancel,
   footerSlot,
+  onDirtyChange,
 }: LifeEventFormProps) {
   const { t } = useTranslations();
   const ids = {
@@ -219,9 +222,14 @@ export function LifeEventForm({
     note: useId(),
   };
   const today = todayKeyIn(undefined);
-  const [draft, setDraft] = useState<LifeEventDraft>(() =>
+  const [seed] = useState<LifeEventDraft>(() =>
     event ? draftFromEvent(event) : emptyDraft(defaultDate ?? today),
   );
+  const [draft, setDraft] = useState<LifeEventDraft>(seed);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(seed);
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
   const [errors, setErrors] = useState<LifeEventDraftErrors>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const { create, update, remove } = useLifeEventMutations();

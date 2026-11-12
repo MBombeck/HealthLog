@@ -22,6 +22,7 @@ import {
 import {
   insightsCardsResponse,
   insightsComprehensiveResponse,
+  insightsPresenceResponse,
   metricStatusQuery,
   metricStatusResponse,
   biomarkerAssessmentQuery,
@@ -117,6 +118,29 @@ export const insightsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 insightsComprehensiveResponse,
                 "InsightsComprehensiveResponseEnvelope",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+        ...recordRefusal(),
+      },
+    },
+  },
+  "/api/insights/presence": {
+    get: {
+      tags: ["Insights"],
+      summary: "Which Insights pages have data",
+      description:
+        "What the Insights tab strip gates its pills on, for the record on screen: the reading count per measurement type (after the record's module switches) and whether the record has mood entries in the last 90 days, a tracked scheduled medication, workouts and ECG recordings. A flag whose module is off is false. Counts and flags only; each page reads its own data. No provider is called and no AI switch refuses it. Delegable at MANAGE level over the whole record. Cookie or Bearer auth.",
+      responses: {
+        "200": {
+          description: "The presence answer.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                insightsPresenceResponse,
+                "InsightsPresenceEnvelope",
               ),
             },
           },

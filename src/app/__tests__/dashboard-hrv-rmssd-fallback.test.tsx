@@ -284,12 +284,9 @@ describe("the tile the user actually sees", () => {
 describe("the gate reaches every feed, not just the default one", () => {
   it("strips the recovery-owned series from a summaries slice", () => {
     // `gateSummariesByModules` moved out of the snapshot builder, where it
-    // was private, so `/api/analytics` can apply the SAME filter. With
-    // `NEXT_PUBLIC_DASHBOARD_SNAPSHOT=false` that route feeds the tiles, and
-    // it filtered nothing at all — so recovery-off plus RMSSD-only still
-    // painted the tile, on the exact path the helper's docblock promised it
-    // could not. A gate that only holds on one feed is only as strong as a
-    // rollout flag.
+    // was private, so `/api/analytics` can apply the SAME filter: that route
+    // filtered nothing at all, so recovery-off plus RMSSD-only still reached
+    // every reader of the slice.
     const summaries = {
       HEART_RATE_VARIABILITY: summary(9, 55),
       HRV_RMSSD: summary(30, 42),

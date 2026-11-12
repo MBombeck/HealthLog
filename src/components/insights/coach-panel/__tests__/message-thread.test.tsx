@@ -252,6 +252,16 @@ describe("<MessageThread>", () => {
     );
   });
 
+  it("keeps the floating New conversation button's height free below the last message", () => {
+    const html = render(<MessageThread conversation={baseConversation} />);
+    const scroller =
+      html.match(/<div[^>]*data-slot="coach-message-thread"[^>]*>/)?.[0] ?? "";
+
+    expect(scroller).toContain("pb-20");
+    // Back to the plain gutter once the button sits beside the composer.
+    expect(scroller).toContain("@min-[57rem]/coach-thread:pb-6");
+  });
+
   it("folds an older message's provenance into the thought-process row, never a raw key", () => {
     const html = render(<MessageThread conversation={baseConversation} />);
     expect(html).toContain('data-slot="coach-turn-steps-done"');

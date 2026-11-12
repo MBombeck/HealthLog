@@ -1691,6 +1691,36 @@ export const ecgListResponse = z
       "Metadata-only ECG recording list. Never carries the waveform — the per-recording strip is fetched on demand from GET /api/insights/ecg/{id}. Read-only; no LLM call. Reflects only the device's own classification, never a HealthLog interpretation.",
   });
 
+export const insightsPresenceResponse = z
+  .object({
+    metrics: z
+      .record(z.string(), z.object({ count: z.number().int() }))
+      .describe(
+        "Keyed by `MeasurementType`: the reading count of every type with at least one reading, after the record's module switches. The same counts `GET /api/analytics?slice=summaries` reports.",
+      ),
+    hasMood: z
+      .boolean()
+      .describe(
+        "A mood entry in the last 90 days. False while the mood module is off.",
+      ),
+    hasMedication: z
+      .boolean()
+      .describe(
+        "An active medication with a schedule whose intake is tracked. False while the medications module is off.",
+      ),
+    hasWorkouts: z
+      .boolean()
+      .describe(
+        "At least one workout. False while the workouts module is off.",
+      ),
+    hasEcgRecordings: z.boolean().describe("At least one ECG recording."),
+  })
+  .meta({
+    id: "InsightsPresence",
+    description:
+      "Which Insights pages have something to show for the record: what the tab strip gates its pills on. Counts and flags only, no values.",
+  });
+
 export const ecgDetailQuery = z
   .object({
     full: z

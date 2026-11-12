@@ -701,8 +701,10 @@ export function LogDaySheet({
     ? `${date}:${dayLog.isSuccess ? "loaded" : "loading"}`
     : null;
   const [lastFormKey, setLastFormKey] = useState<string | null>(null);
+  const [seed, setSeed] = useState<string | null>(null);
   if (open && formKey !== lastFormKey && !dayLog.isLoading) {
     setLastFormKey(formKey);
+    setSeed(null);
     setRowId(dto?.id ?? null);
     setFlow((dto?.flow ?? null) as FlowLevel | null);
     setIntermenstrual(dto?.intermenstrualBleeding ?? false);
@@ -788,6 +790,10 @@ export function LogDaySheet({
     note,
     symptoms,
   };
+  // The form as hydrated, for the dismissal guard (a Map reads as `{}`).
+  const snapshot = JSON.stringify([formState, [...symptoms].sort()]);
+  if (hydrated && seed === null) setSeed(snapshot);
+  const dirty = hydrated && seed !== null && seed !== snapshot;
 
   const saveState = dayLogSaveState({ hydrated, rowId, form: formState });
   const currentRowId = saveState.rowId;
@@ -860,6 +866,7 @@ export function LogDaySheet({
     <ResponsiveSheet
       open={open}
       onOpenChange={onOpenChange}
+      dirty={dirty}
       // The target date IS the title. Every button below writes to it and
       // nothing else on the surface says which day it is.
       title={

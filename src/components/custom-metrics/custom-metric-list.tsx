@@ -46,6 +46,7 @@ export function CustomMetricList() {
   const router = useRouter();
   const [addOpen, setAddOpen] = useState(false);
   const [addFooterEl, setAddFooterEl] = useState<HTMLDivElement | null>(null);
+  const [addDirty, setAddDirty] = useState(false);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: queryKeys.customMetrics(),
@@ -154,6 +155,7 @@ export function CustomMetricList() {
       <ResponsiveSheet
         open={addOpen}
         onOpenChange={setAddOpen}
+        dirty={addDirty}
         title={t("customMetrics.defineTitle")}
         description={t("customMetrics.defineDescription")}
         footer={
@@ -164,6 +166,7 @@ export function CustomMetricList() {
           footerSlot={addFooterEl}
           onSuccess={afterAdd}
           onCancel={() => setAddOpen(false)}
+          onDirtyChange={setAddDirty}
         />
       </ResponsiveSheet>
     </section>

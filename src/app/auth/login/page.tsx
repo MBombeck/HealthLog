@@ -21,7 +21,6 @@ import {
 } from "@/lib/api/api-fetch";
 import { MfaLoginStep, type MfaMethod } from "@/components/auth/mfa-login-step";
 import { OIDC_MFA_COOKIE, OIDC_MFA_COOKIE_PATH } from "@/lib/auth/oidc-cookie";
-import { isDashboardSnapshotEnabled } from "@/lib/dashboard/snapshot-flag";
 import { prefetchDashboardSnapshot } from "@/lib/queries/use-dashboard-snapshot";
 import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
 import { sanitizeSameOriginPath } from "@/lib/url-safety";
@@ -237,9 +236,7 @@ export default function LoginPage() {
     // ample headroom to land before the new snapshot is written.
     void clearOfflineCachesForSessionEnd();
     const target = getRedirectTarget();
-    if (target === "/" && isDashboardSnapshotEnabled()) {
-      prefetchDashboardSnapshot(queryClient);
-    }
+    if (target === "/") prefetchDashboardSnapshot(queryClient);
     router.push(target);
   }
 
