@@ -179,9 +179,6 @@ export function CapturePicker({
   // sheet that is already open. See `admittedCaptureKind`.
   const openKind = admittedCaptureKind(kind, offered);
   const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
-  // v1.30.1 — mirrors `QuickEntrySheets`' `confirmDiscardOpen`: hold a
-  // dismiss attempt here instead of closing outright when the form
-  // body carries unsaved input.
 
   function chooseKind(next: CaptureKind) {
     if (!offered.includes(next)) return;

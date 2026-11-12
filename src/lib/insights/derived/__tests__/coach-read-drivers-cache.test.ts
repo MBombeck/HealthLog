@@ -61,7 +61,7 @@ beforeEach(() => {
   resolveModuleMap.mockReset().mockResolvedValue({});
 });
 
-describe("coach read — the pattern scan behind the strip", () => {
+describe("coach read: the pattern scan behind the strip", () => {
   it("scans once for two metric pages and picks each page's own driver", async () => {
     const sleep = await strip("SLEEP_DURATION");
     const pulse = await strip("PULSE");

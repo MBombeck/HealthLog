@@ -84,7 +84,7 @@
     "components/cycle/log-day-sheet.tsx :: LogDaySheet": 760,
     "components/daily/today-hero.tsx :: TodayHero": 488,
     "components/dashboard/dashboard-header.tsx :: DashboardHeader": 215,
-    "components/dashboard/medication-intake-quick-add.tsx :: MedicationIntakeQuickAdd": 383,
+    "components/dashboard/medication-intake-quick-add.tsx :: MedicationIntakeQuickAdd": 384,
     "components/day/day-layer.tsx :: DayLayer": 358,
     "components/day/day-view.tsx :: DayView": 309,
     "components/documents/document-ai-section.tsx :: DocumentAiSection": 262,

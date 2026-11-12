@@ -258,8 +258,10 @@ describe("<MessageThread>", () => {
       html.match(/<div[^>]*data-slot="coach-message-thread"[^>]*>/)?.[0] ?? "";
 
     expect(scroller).toContain("pb-20");
-    // Back to the plain gutter once the button sits beside the composer.
+    // Back to the plain gutter once the button sits beside the composer,
+    // and while the keyboard hides it.
     expect(scroller).toContain("@min-[57rem]/coach-thread:pb-6");
+    expect(scroller).toContain("keyboard-open:pb-6");
   });
 
   it("folds an older message's provenance into the thought-process row, never a raw key", () => {

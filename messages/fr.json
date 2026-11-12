@@ -764,7 +764,7 @@
       "noneActionableCta": "Ouvrir les médicaments"
     },
     "quickEntryDiscard": {
-      "title": "Abandonner cette saisie ?",
+      "title": "Abandonner les modifications ?",
       "description": "Vous avez des données non enregistrées. Fermer le formulaire et perdre ce que vous avez saisi ?",
       "confirm": "Abandonner",
       "cancel": "Continuer la saisie"
@@ -3624,7 +3624,7 @@
         "title": "Aucune donnée de pas",
         "description": "Les totaux de pas quotidiens apparaîtront ici dès qu'Apple Santé ou un appareil d'activité synchronise une journée complète."
       },
-      "coachPrefill": "Je n’ai pas encore enregistré de pas. Quel objectif quotidien de pas est raisonnable, et en quoi marcher davantage aide-t-il ma santé ?"
+      "coachPrefill": "Je n’ai pas encore enregistré de pas. Quel objectif quotidien de pas est raisonnable, et en quoi le fait de marcher davantage aide-t-il ma santé ?"
     },
     "activeEnergy": {
       "title": "Énergie active",
@@ -7071,7 +7071,7 @@
       "builtAtLabel": "Compilé",
       "license": "Licence",
       "repository": "Code source",
-      "changelog": "Changelog",
+      "changelog": "Notes de version",
       "docs": "Documentation",
       "credits": "Crédits et attributions de données",
       "linksHeading": "Sources et documentation",

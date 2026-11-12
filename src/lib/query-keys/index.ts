@@ -364,10 +364,12 @@ export const vaccinationDependentKeys = [
  * digest names a workout that just arrived and the write evicts the server's
  * daily caches, so the daily reads ride along; pair call sites with
  * `refetchInactiveDailyReads`, because both are unmounted wherever the form
- * opens outside the dashboard.
+ * opens outside the dashboard. The Insights tab strip shows the Workouts
+ * pill from the presence read.
  */
 export const workoutDependentKeys = [
   queryKeys.workouts(),
+  queryKeys.insightsPresence(),
   queryKeys.dashboardSnapshot(),
   queryKeys.dailyDigest(),
   queryKeys.dayRoot(),

@@ -49,8 +49,9 @@ export const REASONING_JOB_TIMEOUT_MS = 90_000;
  * a thinking model whose first answer was reasoning alone timed out in the
  * middle of the repeat that would have answered, and a slow local model the
  * person had given 300 s or more per call never landed its note (#1274).
- * Every caller is a background job; the job expiries in `queue-runtime.ts`
- * sit above this at the largest setting.
+ * Every caller is a background job whose queue expiry sits above this at the
+ * largest setting (the queue table in `src/__tests__/helpers/queue-runtime.ts`
+ * holds it there).
  */
 export function statusRunBoundMs(effectiveTimeoutMs: number): number {
   return effectiveTimeoutMs * STATUS_MODEL_CALLS;

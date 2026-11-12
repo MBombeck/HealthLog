@@ -90,7 +90,7 @@ export function BiomarkerAliases({
                 {canEdit ? (
                   <button
                     type="button"
-                    className="hover:text-foreground text-muted-foreground focus-visible:ring-ring/50 relative -my-1 -me-1 inline-flex size-6 items-center justify-center rounded-full after:absolute after:-inset-2.5 focus-visible:ring-[3px] focus-visible:outline-none"
+                    className="hover:text-foreground text-muted-foreground focus-visible:ring-ring/50 relative -my-1 -me-1 inline-flex size-6 items-center justify-center rounded-full after:absolute after:-inset-x-1 after:-inset-y-2.5 focus-visible:ring-[3px] focus-visible:outline-none"
                     onClick={() =>
                       save.mutate(aliases.filter((a) => a !== alias))
                     }

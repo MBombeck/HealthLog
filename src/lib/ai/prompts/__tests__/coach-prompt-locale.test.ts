@@ -18,7 +18,7 @@ import { loadSafetyContracts } from "@/lib/ai/prompts/safety-contracts";
 const NATIVE_LOCALES = ["fr", "es", "it", "pl"] as const;
 
 /**
- * v1.4.25 — each AI-initial locale (FR / ES / IT / PL) now gets a
+ * v1.4.25 — each machine-translated locale (FR / ES / IT / PL) now gets a
  * native system prompt assembled from the safety-contract matrix
  * instead of riding the EN body with a one-line footer.
  *
@@ -34,7 +34,7 @@ const NATIVE_LOCALES = ["fr", "es", "it", "pl"] as const;
  *   9. The reply-language directive lives at the foot of the prompt.
  */
 
-describe("getCoachSystemPrompt — native AI-initial locales", () => {
+describe("getCoachSystemPrompt — native machine-translated locales", () => {
   it.each(NATIVE_LOCALES)(
     "%s produces a non-empty native prompt embedding PROMPT_VERSION",
     (locale) => {
@@ -140,7 +140,7 @@ describe("getCoachSystemPrompt — native AI-initial locales", () => {
   });
 });
 
-describe("getStrictInsightsSystemPrompt — native AI-initial locales", () => {
+describe("getStrictInsightsSystemPrompt — native machine-translated locales", () => {
   it.each(NATIVE_LOCALES)(
     "%s produces a non-empty native Insights prompt",
     (locale) => {

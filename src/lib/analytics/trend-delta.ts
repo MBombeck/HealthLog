@@ -17,9 +17,8 @@
  * v1.4.16: fall back to slope30 (projected onto 7 days) when
  * slope7 is unavailable. Some metrics (mood, sleep) have <2 entries
  * within the trailing 7-day window for users who don't log daily,
- * which used to surface as a missing delta on the dashboard tile —
- * the maintainer's complaint: "Bei Stimmung wird zum Beispiel kein Trend in
- * Zahlen dargestellt." A 30-day slope still answers the question
+ * which used to surface as a missing delta on the dashboard tile: mood
+ * showed no trend figure at all. A 30-day slope still answers the question
  * "is this metric drifting up or down?" — we just project it onto
  * a 7-day window for label consistency. Returning `null` is reserved
  * for the truly insufficient case where neither slope is available.

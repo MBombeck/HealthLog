@@ -100,8 +100,9 @@ function latestDay(
  * channel over 180 days and does not depend on the metric, so without the cell
  * each metric page paid the whole scan again for the one line it picks. Same
  * cell contract as `/api/insights/correlations`: measurement, mood, medication,
- * illness, custom-metric and pattern writes sweep the `${userId}|` prefix, and
- * the switched-off modules are part of the key. A failed read is not cached.
+ * illness, nutrient, custom-metric and pattern writes sweep the `${userId}|`
+ * prefix, and the switched-off modules are part of the key. A failed read is
+ * not cached.
  */
 async function readDrivers(
   userId: string,

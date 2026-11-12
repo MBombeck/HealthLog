@@ -122,6 +122,20 @@ describe("module→data ownership table", () => {
     expect(moduleForMeasurementType("CARDIO_LOAD")).toBe("workouts");
     expect(moduleForMeasurementType("ANS_CHARGE")).toBe("recovery");
     expect(moduleForMeasurementType("CARDIO_RECOVERY")).toBe("recovery");
+    expect(moduleForMeasurementType("BLOOD_KETONES")).toBe("glucose");
+  });
+
+  it("gives every module-owned checkup type the module the checkup job gates on", () => {
+    // The checkup job reads this table; a screening checkup must fall silent
+    // with the mental-health module, a ketone one with Glucose.
+    for (const type of [
+      "PHQ9_SCORE",
+      "GAD7_SCORE",
+      "WHO5_SCORE",
+      "SCI_SCORE",
+    ] as const) {
+      expect(moduleForMeasurementType(type), type).toBe("mentalHealth");
+    }
   });
 
   it("leaves the core clinical figures unowned on purpose", () => {

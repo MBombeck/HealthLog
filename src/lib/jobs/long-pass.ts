@@ -1,8 +1,8 @@
 /**
  * The binding for a queue whose job can outlast pg-boss's default expiry.
  *
- * Three things together make a long job safe, and `queue-runtime.ts` names
- * every queue that needs them:
+ * Three things together make a long job safe, and the queue table in
+ * `src/__tests__/helpers/queue-runtime.ts` names every queue that needs them:
  *
  *   1. An explicit `expireInSeconds` on every send and schedule, so pg-boss
  *      does not declare the job dead at fifteen minutes while it is working.

@@ -169,9 +169,12 @@ export function keepKeyboardDownOnOpen(event: Event): void {
 /**
  * The fallback dirty check for an add form that keeps its state inside the
  * sheet body: any text field with a value, a checkbox or radio moved off its
- * default, a chosen `role="radio"` (the mood faces) or a Select that is open.
- * The date and time fields are skipped, because the forms fill them with
- * "now". An edit form starts filled and has to say for itself whether
+ * default, a slider moved off unanswered, a chosen `role="radio"` (the mood
+ * faces) or a Select that is open. The date and time fields are skipped,
+ * because the forms fill them with "now", and so is the input a slider keeps
+ * for its form. A field the form fills itself names that value in
+ * `data-seed` (a controlled input's `defaultValue` follows its value, so it
+ * cannot say). An edit form starts filled and has to say for itself whether
  * anything changed.
  */
 export function sheetBodyHasUnsavedInput(body: HTMLElement | null): boolean {
@@ -181,7 +184,11 @@ export function sheetBodyHasUnsavedInput(body: HTMLElement | null): boolean {
   );
   for (const field of fields) {
     if (field.disabled || field.type === "hidden") continue;
-    if (field.closest('[data-slot="date-field"], [data-slot="time-field"]')) {
+    if (
+      field.closest(
+        '[data-slot="date-field"], [data-slot="time-field"], [data-slot="slider"]',
+      )
+    ) {
       continue;
     }
     if (field.type === "checkbox" || field.type === "radio") {
@@ -189,7 +196,12 @@ export function sheetBodyHasUnsavedInput(body: HTMLElement | null): boolean {
       if (box.checked !== box.defaultChecked) return true;
       continue;
     }
-    if (field.value.trim() !== "") return true;
+    if (field.value.trim() !== (field.dataset.seed ?? "").trim()) return true;
+  }
+  if (
+    body.querySelector('[data-slot="slider-field"]:not([data-unset])') !== null
+  ) {
+    return true;
   }
   // Mood faces start with none chosen, so any chosen one is input.
   if (body.querySelector('[role="radio"][aria-checked="true"]') !== null) {
@@ -235,9 +247,10 @@ function useSheetDismissal({
   };
 
   const handleBack = React.useEffectEvent(() => {
-    if (hasUnsavedInput()) {
+    // Back while the question is open answers it with "keep editing".
+    if (asking || hasUnsavedInput()) {
       entryRef.current?.restore();
-      setAsking(true);
+      setAsking(!asking);
       return;
     }
     countBack();

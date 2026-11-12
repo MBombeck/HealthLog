@@ -171,7 +171,7 @@ describe("generateAlerts", () => {
   });
 });
 
-// v1.4 marathon — closes the body-fat ACE drift identified in the
+// v1.4: closes the body-fat ACE drift identified in the
 // medical-truthfulness audit. Below-essential is now a danger band,
 // "Essential" is the warning band proper, and the labels match ACE.
 describe("classifyBodyFat (ACE bands)", () => {

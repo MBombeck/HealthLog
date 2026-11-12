@@ -164,27 +164,30 @@ describe("runReminderSatisfyForUser", () => {
     expect(updates[0].data.lastSatisfiedAt).toEqual(takenAt);
   });
 
-  it("produces no engine activity for a disabled module", async () => {
-    const { prisma, updates } = makePrisma({
-      reminders: [reminderRow({ measurementType: "BLOOD_GLUCOSE" })],
-      measurement: { measuredAt: new Date("2026-06-14T18:00:00Z") },
-    });
-    const isModuleEnabled = vi.fn(async () => false);
+  it.each(["BLOOD_GLUCOSE", "BLOOD_KETONES"] as const)(
+    "produces no engine activity for a %s reminder while Glucose is off",
+    async (measurementType) => {
+      const { prisma, updates } = makePrisma({
+        reminders: [reminderRow({ measurementType })],
+        measurement: { measuredAt: new Date("2026-06-14T18:00:00Z") },
+      });
+      const isModuleEnabled = vi.fn(async () => false);
 
-    const summary = await runReminderSatisfyForUser(
-      prisma as never,
-      "u1",
-      new Date(),
-      { isModuleEnabled },
-    );
+      const summary = await runReminderSatisfyForUser(
+        prisma as never,
+        "u1",
+        new Date(),
+        { isModuleEnabled },
+      );
 
-    expect(summary.skippedModuleDisabled).toBe(1);
-    expect(summary.satisfied).toBe(0);
-    expect(isModuleEnabled).toHaveBeenCalledWith("u1", "glucose");
-    expect(updates).toHaveLength(0);
-    // The matcher never runs for a gated reminder.
-    expect(prisma.measurement.findFirst).not.toHaveBeenCalled();
-  });
+      expect(summary.skippedModuleDisabled).toBe(1);
+      expect(summary.satisfied).toBe(0);
+      expect(isModuleEnabled).toHaveBeenCalledWith("u1", "glucose");
+      expect(updates).toHaveLength(0);
+      // The matcher never runs for a gated reminder.
+      expect(prisma.measurement.findFirst).not.toHaveBeenCalled();
+    },
+  );
 
   it("satisfies a screening reminder from the server-written score row (v1.27.6)", async () => {
     // A completed PHQ-9 check-in writes a COMPUTED PHQ9_SCORE measurement;

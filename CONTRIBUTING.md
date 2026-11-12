@@ -70,7 +70,7 @@ pnpm typecheck && pnpm lint && pnpm test && pnpm format:check && pnpm build
 ## Code Conventions
 
 - **TypeScript strict mode** -- avoid `any`. Where it's truly unavoidable (e.g. variadic Next.js handler signatures in `src/lib/api-handler.ts`), document the reason inline.
-- **English-default UI** -- the default locale is English. German is user-selectable. Code, comments, commit messages, and docs are English. All user-facing strings go through `t("key")` with translations in both `messages/en.json` and `messages/de.json`. The `i18n-locale-integrity.test.ts` suite blocks merges if keys drift between locales or duplicate at any nesting depth.
+- **English-default UI**: the default locale is English, and nine more languages are user-selectable. Code, comments, commit messages, and docs are English. All user-facing strings go through `t("key")`, with the key in every `messages/*.json`. The `i18n-locale-integrity.test.ts` suite blocks merges if keys drift between locales or duplicate at any nesting depth.
 - **API responses** follow the `{ data, error }` envelope via `apiSuccess()` / `apiError()` in `src/lib/api-response.ts`. Wrap every route handler in `apiHandler()` (`src/lib/api-handler.ts`) for error handling, structured Wide-Event logging, and `x-request-id` propagation.
 - **Zod v4** (`import { ... } from "zod/v4"`) for input validation in API routes and forms.
 - **shadcn/ui** components (new-york style) for UI primitives.

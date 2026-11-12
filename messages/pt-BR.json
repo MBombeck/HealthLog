@@ -764,7 +764,7 @@
       "noneActionableCta": "Abrir medicamentos"
     },
     "quickEntryDiscard": {
-      "title": "Descartar esta entrada?",
+      "title": "Descartar as alterações?",
       "description": "Você tem entrada não salva. Fechar o formulário e perder o que digitou?",
       "confirm": "Descartar",
       "cancel": "Continuar editando"
@@ -7071,7 +7071,7 @@
       "builtAtLabel": "Compilado em",
       "license": "Licença",
       "repository": "Código-fonte",
-      "changelog": "Changelog",
+      "changelog": "Notas de versão",
       "docs": "Documentação",
       "credits": "Créditos e atribuições de dados",
       "linksHeading": "Fontes e documentação",

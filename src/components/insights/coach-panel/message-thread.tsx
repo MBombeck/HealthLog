@@ -657,8 +657,9 @@ export function MessageThread({
             // bottom edge while the composer fills the column (`NewChatFab`),
             // so the last message keeps the button's height free, as the
             // shell clears the Coach button. The button moves beside a 54rem
-            // composer, which the column is at 57rem with its padding.
-            "pb-20 @min-[57rem]/coach-thread:pb-6",
+            // composer, which the column is at 57rem with its padding, and
+            // hides while the keyboard is up.
+            "keyboard-open:pb-6 pb-20 @min-[57rem]/coach-thread:pb-6",
           )}
         >
           {[

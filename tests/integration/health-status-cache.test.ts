@@ -90,7 +90,7 @@ beforeEach(async () => {
   __resetAllCachesForTests();
 });
 
-describe("GET /api/insights/health-status — the cached answer", () => {
+describe("GET /api/insights/health-status: the cached answer", () => {
   it("serves the second open from the cell", async () => {
     const { user, auth } = await signedInWithFortnight();
     const first = await readHealthStatus(auth);

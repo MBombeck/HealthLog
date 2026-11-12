@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 import { invalidateSymptomReads } from "@/components/symptoms/use-symptoms";
 import {
   allergyDependentKeys,
+  invalidateKeys,
   cycleDependentKeys,
   documentDependentKeys,
   encounterDependentKeys,
@@ -46,6 +47,20 @@ describe("record writes reach the day view and the timeline", () => {
       expect(bundle).toContainEqual(queryKeys.timelineRoot());
     },
   );
+
+  it("a workout write marks the Insights presence read stale", async () => {
+    // The Workouts pill appears with the first workout and goes with the
+    // last; the presence read otherwise stays fresh for five minutes.
+    const client = new QueryClient();
+    client.setQueryData(queryKeys.insightsPresence(), { hasWorkouts: false });
+
+    await invalidateKeys(client, workoutDependentKeys);
+
+    expect(
+      client.getQueryState(queryKeys.insightsPresence())?.isInvalidated,
+    ).toBe(true);
+    client.clear();
+  });
 
   it("a symptom write marks an open day and the timeline stale", async () => {
     const client = new QueryClient();

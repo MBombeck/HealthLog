@@ -47,7 +47,7 @@ vi.mock("@/lib/idempotency", () => ({
 }));
 vi.mock("@/lib/logging/transports", () => ({ emitIfSampled: vi.fn() }));
 vi.mock("@/lib/cache/invalidate", () => ({
-  invalidateUserDashboardSnapshot: vi.fn(),
+  invalidateUserHealthContext: vi.fn(),
 }));
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({ get: () => null })),
@@ -65,7 +65,7 @@ import { getSession } from "@/lib/auth/session";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { auditLog } from "@/lib/auth/audit";
-import { invalidateUserDashboardSnapshot } from "@/lib/cache/invalidate";
+import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { nutrientEntryResultSchema } from "@/lib/validations/nutrients";
 
 const SESSION_OK = {
@@ -317,10 +317,11 @@ describe("POST /api/nutrients/batch — write semantics", () => {
     expect(prisma.nutrientIntakeDay.update).not.toHaveBeenCalled();
   });
 
-  // v1.30.3 — a landed row must evict the dashboard snapshot so
-  // the water/nutrient tile reflects the new total on the very next read,
-  // matching the manual water POST's own posture (`nutrients/water/route.ts`).
-  it("evicts the dashboard snapshot when a row lands", async () => {
+  // v1.30.3 — a landed row must evict the record's analytics cells so
+  // the water/nutrient tile and the correlation scan reflect the new total
+  // on the very next read, matching the manual water POST's own posture
+  // (`nutrients/water/route.ts`).
+  it("evicts the analytics cells when a row lands", async () => {
     const day = recentDay();
     const res = await POST(
       postReq({
@@ -328,11 +329,11 @@ describe("POST /api/nutrients/batch — write semantics", () => {
       }),
     );
     expect(res.status).toBe(200);
-    expect(invalidateUserDashboardSnapshot).toHaveBeenCalledTimes(1);
-    expect(invalidateUserDashboardSnapshot).toHaveBeenCalledWith("user-1");
+    expect(invalidateUserHealthContext).toHaveBeenCalledTimes(1);
+    expect(invalidateUserHealthContext).toHaveBeenCalledWith("user-1");
   });
 
-  it("does NOT evict the dashboard snapshot when nothing lands (every entry skipped)", async () => {
+  it("does NOT evict the analytics cells when nothing lands (every entry skipped)", async () => {
     const res = await POST(
       postReq({
         entries: [
@@ -348,7 +349,7 @@ describe("POST /api/nutrients/batch — write semantics", () => {
     const body = (await res.json()) as BatchResponse;
     expect(body.data.inserted).toBe(0);
     expect(body.data.updated).toBe(0);
-    expect(invalidateUserDashboardSnapshot).not.toHaveBeenCalled();
+    expect(invalidateUserHealthContext).not.toHaveBeenCalled();
   });
 
   it("reports updated (never duplicate) when the composite key already exists", async () => {

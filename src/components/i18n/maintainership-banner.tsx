@@ -6,11 +6,11 @@ import { isMaintainedLocale, type Locale } from "@/lib/i18n/config";
 import { useTranslations } from "@/lib/i18n/context";
 
 /**
- * v1.4.25 — notice strip for AI-initial locales.
+ * v1.4.25 — notice strip for machine-translated locales.
  *
  * HealthLog ships German + English as maintainer-curated translations
  * (the maintainer owns both bodies). French, Spanish, Italian
- * and Polish ship as AI-initial translations — they pass the
+ * and Polish ship as machine translations — they pass the
  * locale-integrity test (full key parity, no empty values, no TODOs)
  * but the prose has not been hand-reviewed for register, regional
  * vocabulary, or domain-specific nuance.
@@ -18,7 +18,7 @@ import { useTranslations } from "@/lib/i18n/context";
  * This banner renders ONLY on non-maintained locales (FR/ES/IT/PL/KO
  * today) and surfaces a small, dismissible strip at the top of the
  * authenticated app shell. It tells the user the translation is
- * AI-maintained and links to the GitHub translation-feedback issue
+ * machine-translated and links to the GitHub translation-feedback issue
  * template so they can contribute fixes back.
  *
  * Dismissal is persisted to localStorage per-locale so a user who

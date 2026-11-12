@@ -764,7 +764,7 @@
       "noneActionableCta": "Medicatie openen"
     },
     "quickEntryDiscard": {
-      "title": "Deze invoer weggooien?",
+      "title": "Wijzigingen weggooien?",
       "description": "Je hebt niet-opgeslagen invoer. Het formulier sluiten en verliezen wat je hebt getypt?",
       "confirm": "Weggooien",
       "cancel": "Verder bewerken"
@@ -3843,7 +3843,7 @@
         "title": "Nog geen hartslagmetingen",
         "description": "Leg een hartslagmeting vast, dan verschijnen rusthartslag, HRV en VO₂max in deze weergave.",
         "cta": "Hartslag vastleggen",
-        "coachPrefill": "Ik heb nog geen rustpols vastgelegd. Waarom is die belangrijk, en wat moet ik weten voordat ik begin?"
+        "coachPrefill": "Ik heb nog geen rusthartslag vastgelegd. Waarom is die belangrijk, en wat moet ik weten voordat ik begin?"
       },
       "bmi": {
         "title": "BMI nog niet berekend",
@@ -7071,7 +7071,7 @@
       "builtAtLabel": "Gebouwd",
       "license": "Licentie",
       "repository": "Broncode",
-      "changelog": "Wijzigingslogboek",
+      "changelog": "Releasenotes",
       "docs": "Documentatie",
       "credits": "Credits en bronvermeldingen",
       "linksHeading": "Bronnen en documentatie",

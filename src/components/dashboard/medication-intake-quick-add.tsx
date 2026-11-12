@@ -451,6 +451,7 @@ export function MedicationIntakeQuickAdd({
           id="medication-intake-dose"
           data-testid="medication-intake-quick-add-dose"
           value={dose}
+          data-seed={selectedMedication?.dose ?? ""}
           onChange={(e) => setDoseOverride(e.target.value)}
           maxLength={50}
           placeholder={

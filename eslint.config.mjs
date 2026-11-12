@@ -13,15 +13,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // v1.31.4 — ignore local tool worktrees so a worktree on another
-    // commit cannot poison `pnpm lint` locally.
-    // CI never sees these paths; the rules protect the dev environment.
-    // `.wt-*` is the convention actually in use; the two names below predate
-    // it. Without the first pattern `pnpm lint` walks every worktree in the
-    // root, which is both slow and exactly the poisoning this list prevents.
-    ".wt-*/**",
-    ".claude/**",
-    ".worktrees/**",
+    // Hidden top-level folders hold local worktrees and caches, and no
+    // tracked code lives in one (`.github` and `.githooks` hold no JS or
+    // TS). Without this `pnpm lint` walks every worktree on another commit
+    // in the root, which is both slow and poisons the result.
+    ".*/**",
     // The project-local ESLint rule plugin is CommonJS (require/module
     // .exports) by ESLint convention; it is not application source and
     // is not linted by the app's TypeScript ruleset.

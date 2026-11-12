@@ -430,7 +430,7 @@ export function ShareLinkCreateForm({
                           prev.filter((d) => d.id !== doc.id),
                         )
                       }
-                      className="hover:bg-background/80 focus-visible:ring-ring/50 relative flex size-5 shrink-0 items-center justify-center rounded-full after:absolute after:-inset-3 focus-visible:ring-[3px] focus-visible:outline-none"
+                      className="hover:bg-background/80 focus-visible:ring-ring/50 relative flex size-5 shrink-0 items-center justify-center rounded-full after:absolute after:-inset-x-1 after:-inset-y-3 focus-visible:ring-[3px] focus-visible:outline-none"
                       aria-label={t("settings.sharing.attachRemove", {
                         title: doc.title,
                       })}

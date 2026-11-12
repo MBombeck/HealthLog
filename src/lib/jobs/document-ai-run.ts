@@ -18,11 +18,11 @@
  *   4. runs the same body the synchronous route runs, and stores the result
  *      or the failure the route would have answered with.
  *
- * The queue is `long` (`queue-runtime.ts`): a read at the longest response
- * setting outlasts pg-boss's fifteen-minute default. Each job runs under the
- * lock `lockedPass` takes per run, and is sent with `retryLimit: 0`: a run
- * the worker lost is failed by the reaper and asked for again by the person,
- * never re-run behind their back.
+ * The queue is `long` (`src/__tests__/helpers/queue-runtime.ts`): a read at
+ * the longest response setting outlasts pg-boss's fifteen-minute default.
+ * Each job runs under the lock `lockedPass` takes per run, and is sent with
+ * `retryLimit: 0`: a run the worker lost is failed by the reaper and asked
+ * for again by the person, never re-run behind their back.
  *
  * The queue MUST be registered in the maintenance registrar
  * (`src/lib/jobs/reminder/register-maintenance.ts`) so pg-boss provisions it.
