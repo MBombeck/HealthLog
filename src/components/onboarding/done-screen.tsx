@@ -123,10 +123,7 @@ export function DoneScreen({ state }: { state: OnboardingStateDto }) {
       </div>
 
       {showAiLine ? (
-        <p
-          data-slot="onboarding-ai-line"
-          className="text-muted-foreground max-w-md text-sm"
-        >
+        <p data-slot="onboarding-ai-line" className="max-w-md text-sm">
           {t("onboarding.done.aiOptional")}{" "}
           <InlineAction asChild size="sm" className="underline">
             <Link href="/settings/ai">{t("onboarding.done.aiSetupCta")}</Link>
