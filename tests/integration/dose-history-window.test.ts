@@ -8,7 +8,7 @@
  * a rolling medication last taken before the window shows the dose that fell
  * due inside it. All data invented.
  */
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GET as getDoseHistory } from "@/app/api/medications/[id]/dose-history/route";
 
@@ -112,6 +112,15 @@ describe("the dose history of a window", () => {
     expect(shortLedger.filter((r) => r[2] === "taken_on_time")).toEqual(
       inWindow.map((day) => [day, "slot", "taken_on_time"]),
     );
-    expect(await ledger(auth, long.id)).toEqual(shortLedger);
+    // The same ledger from the window's rows alone: reading every intake
+    // also answers it, after a year of rows.
+    const read = vi.spyOn(prisma.medicationIntakeEvent, "findMany");
+    try {
+      expect(await ledger(auth, long.id)).toEqual(shortLedger);
+      const rows = await Promise.all(read.mock.results.map((r) => r.value));
+      expect(rows.flat()).toHaveLength(inWindow.length);
+    } finally {
+      read.mockRestore();
+    }
   });
 });
