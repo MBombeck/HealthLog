@@ -102,7 +102,7 @@ describe("applyProfileUpdate date of birth", () => {
     // the zone resolver caches per account.
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       timezone: "Pacific/Tongatapu",
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
     await applyProfileUpdate("user-tonga", {
       dateOfBirth: "2012-05-13T20:30:00Z",
     });

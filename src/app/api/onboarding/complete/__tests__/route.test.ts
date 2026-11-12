@@ -94,7 +94,7 @@ describe("POST /api/onboarding/complete", () => {
     vi.mocked(getSession).mockResolvedValue({
       ...SESSION_OK,
       user: { ...SESSION_OK.user, timezone: "Europe/Berlin" },
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof getSession>>);
     // 14 May picked at 00:30 in Berlin.
     const res = await POST(req({ dateOfBirth: "1960-05-13T23:30:00Z" }));
     expect(res.status).toBe(200);

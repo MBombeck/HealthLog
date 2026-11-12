@@ -479,7 +479,7 @@ describe("Telegram webhook — callback dispatch", () => {
   });
 
   it("rejects 'taken' for an inactive medication and acks with the localised error", async () => {
-    vi.mocked(prisma.medication.findMany).mockResolvedValueOnce([] as never);
+    vi.mocked(prisma.medication.findMany).mockResolvedValueOnce([]);
     const res = await POST(tgRequest(callbackUpdate("taken:med-1")));
     expect(res.status).toBe(200);
 
@@ -497,7 +497,7 @@ describe("Telegram webhook — callback dispatch", () => {
   });
 
   it("'snooze' for a missing medication acks with medicationNotFound (no update)", async () => {
-    vi.mocked(prisma.medication.findMany).mockResolvedValueOnce([] as never);
+    vi.mocked(prisma.medication.findMany).mockResolvedValueOnce([]);
     const res = await POST(tgRequest(callbackUpdate("snooze:med-X:60")));
     expect(res.status).toBe(200);
     expect(prisma.medication.update).not.toHaveBeenCalled();
@@ -652,7 +652,7 @@ describe("Telegram webhook — text-message dispatch", () => {
   });
 
   it("/add with no active medications replies with the 'no active' message", async () => {
-    vi.mocked(prisma.medication.findMany).mockResolvedValueOnce([] as never);
+    vi.mocked(prisma.medication.findMany).mockResolvedValueOnce([]);
     const res = await POST(
       tgRequest({
         update_id: 203,
@@ -769,7 +769,7 @@ describe("Telegram webhook — text-message dispatch", () => {
 
   it("'taken UnknownMed' replies with the medication-not-found message and writes nothing", async () => {
     // The lookup by name finds nothing.
-    vi.mocked(prisma.medication.findMany).mockResolvedValueOnce([] as never);
+    vi.mocked(prisma.medication.findMany).mockResolvedValueOnce([]);
 
     const res = await POST(
       tgRequest({

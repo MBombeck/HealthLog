@@ -362,7 +362,7 @@ describe("resolveProviderForTest — empty override resolves via the chain", () 
       aiLocalKeyEncrypted: null,
       aiOpenaiKeyEncrypted: null,
       aiProviderChain: [{ providerType: "openai", priority: 1, enabled: true }],
-    } as never);
+    } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
 
     const provider = await resolveProviderForTest("user-123", {});
     expect(provider.type).toBe("none");

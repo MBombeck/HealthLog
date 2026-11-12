@@ -230,9 +230,7 @@ describe("resolveProviderChain and the picked gateway", () => {
 
   /** Serve `chain` as the record's saved chain; Codex is not connected. */
   async function resolveWith(chain: unknown) {
-    vi.mocked(prisma.user.findUnique).mockImplementation((async (args: {
-      select?: Record<string, unknown>;
-    }) =>
+    const read = async (args: { select?: Record<string, unknown> }) =>
       args.select?.codexAccessTokenEncrypted
         ? {
             codexAccessTokenEncrypted: null,
@@ -240,7 +238,10 @@ describe("resolveProviderChain and the picked gateway", () => {
             codexTokenExpiresAt: null,
             codexConnectionStatus: "disconnected",
           }
-        : { ...gatewayRow, aiProviderChain: chain }) as never);
+        : { ...gatewayRow, aiProviderChain: chain };
+    vi.mocked(prisma.user.findUnique).mockImplementation(
+      read as unknown as typeof prisma.user.findUnique,
+    );
     operator({ adminAiKeyEncrypted: null });
     return (await resolveProviderChain("user-1")).map((c) => c.providerType);
   }

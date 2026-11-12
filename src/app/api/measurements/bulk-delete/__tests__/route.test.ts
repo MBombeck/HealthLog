@@ -158,10 +158,8 @@ describe("POST /api/measurements/bulk-delete", () => {
 
   it("leaves a computed score out of the selection it deletes", async () => {
     // The read is scoped like the write, so a computed row never reaches it.
-    vi.mocked(prisma.measurement.findMany).mockResolvedValue([] as never);
-    vi.mocked(prisma.measurement.updateMany).mockResolvedValue({
-      count: 0,
-    } as never);
+    vi.mocked(prisma.measurement.findMany).mockResolvedValue([]);
+    vi.mocked(prisma.measurement.updateMany).mockResolvedValue({ count: 0 });
 
     await POST(postReq({ ids: ["score-1"] }));
 

@@ -61,6 +61,7 @@ vi.mock("@/hooks/use-auth", () => ({
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { MeasurementList } from "../measurement-list";
+import type { Measurement } from "../list/list-model";
 import type { UnitDisplay } from "@/hooks/use-unit-display";
 import { convertGlucose, toCanonicalMgdl } from "@/lib/glucose";
 import { getUnitForType } from "@/lib/measurements/unit-map";
@@ -150,8 +151,15 @@ describe("the out-of-range sentence", () => {
     `${key} ${JSON.stringify(params)}`) as unknown as Parameters<
     typeof outOfRangeMessage
   >[2];
-  const reading = (type: string, unit: string) =>
-    ({ id: "m1", type, value: 1, unit, source: "MANUAL" }) as never;
+  const reading = (type: string, unit: string): Measurement => ({
+    id: "m1",
+    type,
+    value: 1,
+    unit,
+    source: "MANUAL",
+    measuredAt: "2026-11-10T12:00:00.000Z",
+    notes: null,
+  });
   const shows = (unit: string) => ({
     rowDisplay: (m: { value: number }) => ({ value: m.value, unit }),
   });
