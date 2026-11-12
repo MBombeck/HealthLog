@@ -2,6 +2,134 @@
 
 ## [Unreleased]
 
+## [1.47.3] — 2026-11-12
+
+### Changed
+
+- **AI uses only the providers you left switched on.** When the provider
+  order saved under Settings > AI could not answer (say only a local
+  model was on and it was unreachable), several features quietly fell
+  back to the ChatGPT sign-in or to the operator's server key: the
+  briefing, the status notes, document reading and the Coach among
+  them. They now report that no provider is available, like the rest of
+  the app already did, and the cost lands where you expect it. An
+  account that never saved a provider order works as before, and the
+  OpenAI-compatible gateway you picked still answers unless you switched
+  it off in the order. If you run an instance and your people rely on
+  the server key, have them keep it switched on in their provider order.
+  The connection test now says "No AI provider configured" in that case
+  instead of a confusing validation message.
+- **Turning AI off also ends the invitations to set it up.** With both
+  the Coach and AI analysis switched off, the "set up AI" hint, the
+  checklist row and the mention on the last setup screen no longer
+  appear. That setup screen now carries one line pointing to
+  Settings > AI instead of a large panel.
+- **Blood pressure and resting pulse are judged against your own
+  target.** The charts have followed a target you set since #1261, but
+  the status notes, the overview, the morning briefing and the Coach
+  still compared your readings with the age standard. They now use your
+  target when you set one, and the age standard otherwise.
+- **Coach plans show their metric by name.** A plan card read a raw key
+  such as `WEIGHT`; it now names the measurement in your language. The
+  nightly review still moves a finished plan to "Reviewed", but no
+  longer works out a verdict that no screen showed. The
+  `COACH_EXPERIMENT_VERDICT` setting is gone; remove it from your
+  environment if you set it.
+- **The notification settings list only what HealthLog sends.**
+  "Unusual measurement", "Low adherence", "Withings sync failed" and
+  "Personal record" had switches, three of them on by default, but
+  nothing ever sent them. They are gone from the list. A failed Withings
+  sync still reaches admins as a system alert.
+
+### Fixed
+
+- **New entries show up in the day view and on the timeline right
+  away.** Symptoms, workouts, lab results, allergies, documents and
+  questionnaires appeared there only after a reload, also when added
+  through "Capture for this day". Confirming facts from a document and
+  turning free-text conditions or allergies into entries now update the
+  dashboard, Today, the day view and the timeline at once, and a
+  check-up marked done leaves the Today rail immediately.
+- **Forms close as soon as the entry is stored.** Saving a measurement,
+  a mood, a workout, a dose, a vaccination, a visit, a symptom, an
+  illness episode or a life event kept the sheet open with emptied
+  fields and a spinner until every chart had reloaded. It now closes
+  right away and the charts catch up behind it. Bulk deletes and their
+  Undo do the same.
+- **Tapping Save again after a timeout no longer stores the entry
+  twice.** Each opened form now sends the same request key until it is
+  saved, so the server recognises a repeat.
+- **Errors say what went wrong, in your language.** An expired session,
+  a rate limit, a missing permission or a rejected value now say so
+  instead of "could not be saved", and many places that showed
+  the server's English text, among them the settings, mood tags,
+  medications, the Coach model picker and the admin pages, now show a
+  translated sentence. The measurement edit sheet marks an implausible
+  value on its field and names the accepted range in your unit. The
+  visit, vaccination, allergy, address-book and workout forms name the
+  actual problem, such as a removed doctor or a dose without a name. A
+  mistyped password while adding a passkey says so, instead of claiming
+  the session had ended.
+- **Undo after deleting a vaccination, a visit or an address-book
+  entry.** The toast now offers it, like it does for illness episodes,
+  also when you delete two entries in a row.
+- **A check-up marked done cannot be marked twice.** A quick second tap
+  on "Done", "Skip" or "Snooze" stored a second entry.
+- **A managed person's health record carries their name.** The PDF,
+  its properties, the FHIR export and the share link showed the
+  technical login `managed-…` when no full name was stored. They now use
+  the display name, and so does an own account's report when no full
+  name is set. Initials in settings and in the Coach chat follow the
+  display name too.
+- **Dates without a time land on their own day west of UTC.** For
+  people in the Americas the date of birth on the health record and the
+  share page showed the day before, and vaccinations sat on the previous
+  day in the day view, the calendar dots, the timeline, the visit
+  preparation, the health record and the share page; the first booster
+  reminder came a day early, also when a logged dose moved an existing
+  booster reminder. All of them now read the date as a date, and a date
+  of birth entered in the iPhone app is stored as a plain date too, so
+  it no longer depends on the hour it was typed.
+  The day view also stops inventing a clock time (01:00 or 13:00) for
+  vaccinations and allergy onsets.
+- **Weight and BMI in someone else's record use that record.** In a
+  shared or managed record, the weight chart shaded the viewer's target
+  or a band from the viewer's height, the BMI page and chart checked the
+  viewer's height, and the target gear opened an editor that could not
+  save there. They now use the record on screen, and the gear is hidden
+  where it cannot work. Someone with read access to a record now sees
+  its weight band as well. The adult weight and BMI bands are no longer
+  drawn on a child's record, since they do not apply to children; the
+  values and charts stay. A weight target below 30 kg is accepted, so a
+  guardian can set one for a child.
+- **"What changed since your last panel" sees small changes.** A move
+  from 0.004 to 0.009 read "no change", and some values printed with
+  fifteen decimals. Changes are now compared at the precision the lab
+  printed and shown in your language's notation.
+- **The Medications module switched off means quiet.** Dose reminders,
+  missed-dose entries, low-stock alerts and the Telegram medication
+  commands kept running with the module off. They now wait until it is
+  switched back on, and nothing is lost meanwhile. A medication whose
+  course has ended no longer triggers low-stock alerts, and the Telegram
+  bot no longer offers it or records a dose for it. When two medications
+  share a name, the bot now picks the running one.
+- **Medication reminders show the time in your 12- or 24-hour
+  setting.**
+- **Computed scores no longer offer edit and delete.** Recovery, strain
+  and other computed rows in the measurement list showed a pencil that
+  led to an empty form and a bin, and "select all" swept them into a bulk
+  delete. They are now left out of both.
+- **The cycle page takes "today" from your profile's time zone**, like
+  the rest of the app, instead of from the device.
+- **The document pickers say when they show only the newest 50**, and
+  that search finds older ones.
+
+### Removed
+
+- The disabled "Try a 7-day experiment" button on correlation cards,
+  which never did anything.
+- Three components nothing rendered, and their strings.
+
 ## [1.47.2] — 2026-11-11
 
 ### Added
