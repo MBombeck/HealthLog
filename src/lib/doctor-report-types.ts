@@ -86,6 +86,7 @@ export interface DoctorReportData {
      * login, never a managed record's generated handle. Null prints no line.
      */
     name: string | null;
+    /** The calendar date, `YYYY-MM-DD` (`dateOfBirthKey`). */
     dateOfBirth: string | null;
     gender: string | null;
     heightCm: number | null;

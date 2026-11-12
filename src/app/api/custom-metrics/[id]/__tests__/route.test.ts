@@ -225,6 +225,7 @@ describe("PATCH /api/custom-metrics/[id]", () => {
 
     const res = await PATCH(patchReq({ name: "Other" }), params("cm-1"));
     expect(res.status).toBe(409);
+    expect((await res.json()).meta.errorCode).toBe("customMetric.name_taken");
     expect(prisma.customMetric.update).not.toHaveBeenCalled();
   });
 });

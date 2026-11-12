@@ -45,7 +45,7 @@ const REGISTRY = "lib/measurements/display-transform.ts";
 /**
  * The one module allowed to import the unrounded escape hatch. The target
  * adapter needs the unrounded pound edge of a canonical guardrail so it can
- * round it INWARD — rounding to the nearest tenth first can put the pound
+ * round it INWARD: rounding to the nearest tenth first can put the pound
  * edge outside the kilogram window, and the server rejects what converts
  * back from it.
  */

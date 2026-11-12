@@ -13,6 +13,7 @@ import {
 import { NextRequest } from "next/server";
 import { apiHandler, requireCookieAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
+import { REPROOF_FAILED_CODE } from "@/lib/auth/existing-factor-proof";
 
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user, session } = await requireCookieAuth();
@@ -40,7 +41,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
     (freshSession.mfaVerifiedAt &&
       freshSession.mfaVerifiedAt.getTime() < Date.now() - 5 * 60 * 1000)
   ) {
-    return apiError("Fresh reauthentication proof required", 401);
+    return apiError("Fresh reauthentication proof required", 401, {
+      errorCode: REPROOF_FAILED_CODE,
+    });
   }
 
   const claim = await consumeRegistrationChallenge({
@@ -49,12 +52,11 @@ export const POST = apiHandler(async (request: NextRequest) => {
     sessionId: session.id,
   });
   if (!claim.ok) {
-    return apiError(
-      claim.reason === "wrong_context"
-        ? "Fresh reauthentication proof required"
-        : "Registration challenge invalid or expired",
-      claim.reason === "wrong_context" ? 401 : 400,
-    );
+    return claim.reason === "wrong_context"
+      ? apiError("Fresh reauthentication proof required", 401, {
+          errorCode: REPROOF_FAILED_CODE,
+        })
+      : apiError("Registration challenge invalid or expired", 400);
   }
 
   let verification;

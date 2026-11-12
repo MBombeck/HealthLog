@@ -100,7 +100,9 @@ async function postCustomMetric(request: NextRequest) {
     select: { id: true, deletedAt: true },
   });
   if (existing && existing.deletedAt === null) {
-    return apiError("A custom metric with this name already exists", 409);
+    return apiError("A custom metric with this name already exists", 409, {
+      errorCode: "customMetric.name_taken",
+    });
   }
 
   // Field-by-field assignment — never spread `parsed.data`.

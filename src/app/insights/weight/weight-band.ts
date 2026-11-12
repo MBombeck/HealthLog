@@ -24,14 +24,16 @@ export interface WeightTargetsSlice {
  * record's own target and height, and the reference panel under the chart
  * reads the same payload. The record's own target (`source: "Custom"`) gets
  * the wings `getEffectiveRange` gives every override; otherwise the band is
- * the height-derived WHO one, and with neither there is none.
+ * the height-derived WHO one. Where the server names no range there is none:
+ * no target and no height, or a child's record, which the adult WHO band does
+ * not describe.
  */
 export function selectWeightBandRange(
   data: WeightTargetsSlice | null,
 ): TrafficRange | null {
-  if (!data) return null;
-  const weight = data.targets.find((entry) => entry.type === "WEIGHT");
-  if (weight?.source === "Custom" && weight.range) {
+  const weight = data?.targets.find((entry) => entry.type === "WEIGHT");
+  if (!data || !weight?.range) return null;
+  if (weight.source === "Custom") {
     return getEffectiveRange(
       "WEIGHT",
       { heightCm: null, dateOfBirth: null, gender: null },

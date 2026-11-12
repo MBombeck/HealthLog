@@ -46,15 +46,17 @@ import { PractitionerSheet } from "./practitioner-sheet";
 
 /**
  * Delete an entry, with an Undo: the delete is soft, and the restore brings
- * the entry back.
+ * the entry back. Each delete answers on its own promise: the callbacks
+ * `mutate` takes fire for the latest call only, so of two quick deletes only
+ * the second offered an Undo.
  */
 export function deleteWithUndo(
   { remove, restore }: ReturnType<typeof usePractitionerMutations>,
   id: string,
   t: (key: string) => string,
 ) {
-  remove.mutate(id, {
-    onSuccess: () =>
+  remove.mutateAsync(id).then(
+    () =>
       toast.success(t("practitioners.deleted"), {
         action: {
           label: t("common.undo"),
@@ -66,9 +68,9 @@ export function deleteWithUndo(
             ),
         },
       }),
-    onError: (failure) =>
+    (failure) =>
       showErrorToast(t("practitioners.deleteFailed"), { cause: failure }),
-  });
+  );
 }
 
 export function PractitionerList({ enabled = true }: { enabled?: boolean }) {

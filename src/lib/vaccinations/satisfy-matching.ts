@@ -52,6 +52,8 @@ import {
   satisfyReminder,
   type SatisfiableReminder,
 } from "@/lib/measurement-reminders/satisfy";
+import { dateOnlyKey } from "@/lib/tz/date-only";
+import { startOfLocalDayKey } from "@/lib/tz/local-day";
 import {
   componentsForDose,
   loadCustomVaccineLookup,
@@ -136,6 +138,10 @@ export async function satisfyBoostersForDose(
     return byAntigen !== 0 ? byAntigen : a.id.localeCompare(b.id);
   });
 
+  // The dose date is a calendar date at UTC midnight, the evening before west
+  // of UTC; the reminder engine reads an instant in the person's zone, so it
+  // gets the start of that day there, as the booster mint does.
+  const satisfiedAt = startOfLocalDayKey(dateOnlyKey(occurredAt), timezone);
   const satisfiedReminderIds: string[] = [];
   for (const reminder of ordered) {
     const row: SatisfiableReminder = {
@@ -160,7 +166,7 @@ export async function satisfyBoostersForDose(
       tx as unknown as PrismaClient,
       row,
       timezone,
-      occurredAt,
+      satisfiedAt,
       "vaccination",
     );
     if (result.satisfied) satisfiedReminderIds.push(reminder.id);

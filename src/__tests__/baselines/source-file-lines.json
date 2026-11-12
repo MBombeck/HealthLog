@@ -1,12 +1,12 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 84,
-  "total": 93834,
+  "total": 93833,
   "entries": {
     "app/medications/page-client.tsx": 839,
     "components/charts/mood-chart.tsx": 1166,
     "components/cycle/log-day-sheet.tsx": 1639,
-    "components/insights/coach-panel/chat-bubble.tsx": 822,
+    "components/insights/coach-panel/chat-bubble.tsx": 821,
     "components/insights/coach-panel/coach-conversation.tsx": 1278,
     "components/insights/coach-panel/use-coach.ts": 1486,
     "components/insights/derived/vitals-dashboard.tsx": 1033,
@@ -82,7 +82,7 @@
     "lib/search/search-records.ts": 996,
     "lib/sharing/grants.ts": 806,
     "lib/support/report.ts": 903,
-    "lib/telegram-webhook-handlers.ts": 1313,
+    "lib/telegram-webhook-handlers.ts": 1319,
     "lib/validations/inbound-documents.ts": 1018,
     "lib/withings/sync-sleep.ts": 884,
     "lib/withings/sync.ts": 933,

@@ -25,7 +25,6 @@ import { isPublicUrl } from "@/lib/validations/notifications";
 import { isLocalAiHostAllowed } from "./local-host-allowlist";
 import {
   parseProviderChain,
-  PROVIDER_CHAIN_DEFAULT,
   PROVIDER_CHAIN_TYPES,
   type ProviderChainType,
 } from "./provider-chain";
@@ -712,7 +711,7 @@ async function resolveAdminCodexProvider(): Promise<AIProvider | null> {
 }
 
 /**
- * Resolve the AI provider for a given user.
+ * Test-only, ignoring the chain's switches: use `resolveProviderChain`.
  *
  * Priority:
  *   1. User selected ANTHROPIC / LOCAL with valid creds → that provider.
@@ -812,7 +811,7 @@ async function readBoundSettings(userId: string): Promise<{
  *      usable credential (e.g. chain says `anthropic` but
  *      `aiAnthropicKeyEncrypted` is null).
  *   3. Append the operator's central Codex behind the person's opt-in.
- *   4. Still empty: the picked gateway on a chain never saved
+ *   4. Still empty: the picked gateway, unless the chain switched it off
  *      (`servesPickedGateway`), else nothing. Every caller treats an
  *      empty result as "no provider"; none falls back on its own.
  */
@@ -841,7 +840,7 @@ export async function resolveProviderChain(
       aiResponseTimeoutSeconds: true,
     },
   });
-  // See `resolveProvider`: every instance carries the record's settings.
+  // Every instance carries the record's timeout and reasoning effort.
   const bind = (provider: AIProvider): AIProvider =>
     bindReasoningEffort(
       bindResponseTimeout(provider, userRow?.aiResponseTimeoutSeconds),
@@ -964,24 +963,25 @@ function providerOrigin(providerType: string): ProviderManagedBy {
 }
 
 /**
- * What a chain that resolves empty falls back to. A saved chain is the
- * person's own word: an entry they switched off or removed stays out, so an
- * empty saved chain means no provider. A chain they never saved is the
- * default one (`parseProviderChain` hands back `PROVIDER_CHAIN_DEFAULT`
- * itself), which holds every provider a person can pick except the
- * OpenAI-compatible gateway; so the gateway they picked under Settings, AI
- * serves when nothing in the default chain does. Resolution and the presence
- * probe both read this, so they cannot disagree about it.
+ * What a chain that resolves empty falls back to: the OpenAI-compatible
+ * gateway picked under Settings, AI, unless the chain switched it off. The
+ * default chain has no entry for the gateway, so a chain never saved, reset
+ * to the default, or reordered without it says nothing about the gateway.
+ * Nor does a disabled gateway entry that carries a reasoning effort: that is
+ * the holder the gateway form wrote for the setting
+ * (`chainWithReasoningEffort`), not a switch somebody turned off; the chain
+ * editor drops the effort of a gateway it switches off. Resolution and the
+ * presence probe both read this, so they cannot disagree about it.
  */
 function servesPickedGateway(row: {
   aiProvider: string | null;
   aiProviderChain: unknown;
 }): boolean {
-  return (
-    parseProviderChain(row.aiProviderChain ?? null) ===
-      PROVIDER_CHAIN_DEFAULT &&
-    row.aiProvider?.toUpperCase() === "OPENAI_COMPATIBLE"
+  if (row.aiProvider?.toUpperCase() !== "OPENAI_COMPATIBLE") return false;
+  const gateway = parseProviderChain(row.aiProviderChain ?? null).find(
+    (entry) => entry.providerType === "openai-compatible",
   );
+  return !gateway || gateway.enabled || gateway.reasoningEffort !== undefined;
 }
 
 /**
@@ -1355,14 +1355,14 @@ async function resolveProviderForTestUnbound(
 
   // Empty selection ("test my saved config" — the ai-section calls
   // /api/ai/test with an empty body): resolve via the SAME path generation
-  // uses — the first entry of `resolveProviderChain`. The legacy codex→admin
+  // uses, the first entry of `resolveProviderChain`. The legacy codex→admin
   // fallback used to probe a different provider than generation ran
   // (observed: test→admin-key while generation→codex), so a green test gave
   // no signal about whether overnight generation would work.
+  // Nothing resolving is the route's `ai.provider.none`, not a refused entry.
   if (!provider) {
     const chain = await resolveProviderChain(userId);
-    if (chain.length > 0) return chain[0].instance;
-    throw new AITestConfigError(422, "No AI provider configured");
+    return chain.length > 0 ? chain[0].instance : new NoProvider();
   }
 
   switch (provider) {

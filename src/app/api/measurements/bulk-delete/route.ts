@@ -81,9 +81,17 @@ async function postBulkDelete(request: NextRequest): Promise<Response> {
   // other half and the cuff's pulse, `bloodPressureSiblings`) into the same
   // statement, so the shared `deletedAt` lets the restore route bring the
   // reading back whole.
+  //
+  // A computed score (recovery, strain, stress) is skipped: the server
+  // rewrites it from its inputs, and a tombstone kept the recompute out.
   const { affected, count } = await prisma.$transaction(async (tx) => {
     const selected = await tx.measurement.findMany({
-      where: { id: { in: ids }, userId: user.id, deletedAt: null },
+      where: {
+        id: { in: ids },
+        userId: user.id,
+        deletedAt: null,
+        source: { not: "COMPUTED" },
+      },
       select: { id: true, type: true, source: true, measuredAt: true },
     });
     const siblings = await bloodPressureSiblings(tx, user.id, selected, "live");

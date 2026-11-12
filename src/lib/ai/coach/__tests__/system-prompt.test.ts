@@ -336,3 +336,17 @@ describe("getCoachSystemPrompt — native locales name the reader's unit", () =>
     },
   );
 });
+
+describe("the plan review rule", () => {
+  // A reviewed plan has no progress line, so the rule must not leave the
+  // model a result to make up.
+  it.each([
+    ["en", "Without one you have no result: ask how it went"],
+    ["de", "Ohne Fortschrittszeile hast du kein Ergebnis"],
+  ] as const)(
+    "names no result without a progress line (%s)",
+    (locale, rule) => {
+      expect(getCoachSystemPrompt(locale)).toContain(rule);
+    },
+  );
+});

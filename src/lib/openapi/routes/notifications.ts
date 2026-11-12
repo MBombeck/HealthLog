@@ -76,7 +76,7 @@ const notificationPreferencesResponse = z
     eventTypes: z
       .array(z.string())
       .describe(
-        "The event categories this account is shown a switch for, in declaration order — the list a client renders rows for. A category nothing sends is not listed, and `preferences` carries no stored row for it.",
+        "The event categories this account is shown a switch for, in declaration order: the list a client renders rows for. A category nothing sends is not listed, and `preferences` carries no stored row for it.",
       ),
     eventDefaults: z
       .record(eventTypeEnum, z.boolean())

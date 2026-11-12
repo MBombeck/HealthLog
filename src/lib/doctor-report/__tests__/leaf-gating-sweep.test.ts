@@ -500,6 +500,35 @@ describe("the name the report prints", () => {
   });
 });
 
+describe("the date of birth the report prints", () => {
+  const identity = selectionFromLeaves(["PATIENT_IDENTITY"]);
+  const born = async (dateOfBirth: Date, timezone: string) => {
+    rows.userUnique = [
+      { ...(rows.userUnique[0] as object), dateOfBirth, timezone },
+    ];
+    const payload = await collectDoctorReportData("u1", RANGE, identity, {
+      moduleMap: moduleMap(),
+    });
+    return payload.patient.dateOfBirth;
+  };
+
+  it("prints a date stored at UTC midnight as that date in every zone", async () => {
+    const stored = new Date("1960-05-14T00:00:00.000Z");
+    expect(await born(stored, "Pacific/Honolulu")).toBe("1960-05-14");
+    expect(await born(stored, "Pacific/Tongatapu")).toBe("1960-05-14");
+  });
+
+  it("prints an instant from the iOS app as its date in the owner's zone", async () => {
+    // 14 May entered at 00:30 in Berlin, and at 20:00 in Honolulu.
+    expect(
+      await born(new Date("1960-05-13T23:30:00.000Z"), "Europe/Berlin"),
+    ).toBe("1960-05-14");
+    expect(
+      await born(new Date("1960-05-15T06:00:00.000Z"), "Pacific/Honolulu"),
+    ).toBe("1960-05-14");
+  });
+});
+
 describe("fail-closed exclusion", () => {
   it("excludes a measurement type the catalogue does not know", () => {
     const gate = resolveReportGate(

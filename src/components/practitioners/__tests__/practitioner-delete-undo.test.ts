@@ -4,6 +4,7 @@
  * The delete now confirms with an Undo that calls the restore.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { MutationObserver, QueryClient } from "@tanstack/react-query";
 
 const toastSuccess = vi.hoisted(() => vi.fn());
 const errorToast = vi.hoisted(() => vi.fn());
@@ -16,13 +17,9 @@ type Mutations = Parameters<typeof deleteWithUndo>[0];
 
 const t = (key: string) => key;
 
-function mutations(restoreResult: Promise<unknown>) {
-  const remove = {
-    mutate: vi.fn((_id: string, options: { onSuccess?: () => void }) =>
-      options.onSuccess?.(),
-    ),
-  };
-  const restore = { mutateAsync: vi.fn(() => restoreResult) };
+function mutations(restoreResult: () => Promise<unknown>) {
+  const remove = { mutateAsync: vi.fn(async () => ({ deleted: true })) };
+  const restore = { mutateAsync: vi.fn(restoreResult) };
   return { remove, restore, all: { remove, restore } as unknown as Mutations };
 }
 
@@ -33,11 +30,12 @@ beforeEach(() => {
 
 describe("deleteWithUndo", () => {
   it("confirms the delete with an Undo that restores the entry", async () => {
-    const m = mutations(Promise.resolve({ id: "p1" }));
+    const m = mutations(async () => ({ id: "p1" }));
 
     deleteWithUndo(m.all, "p1", t);
 
-    expect(m.remove.mutate).toHaveBeenCalledWith("p1", expect.anything());
+    expect(m.remove.mutateAsync).toHaveBeenCalledWith("p1");
+    await vi.waitFor(() => expect(toastSuccess).toHaveBeenCalled());
     const [message, options] = toastSuccess.mock.calls[0]!;
     expect(message).toBe("practitioners.deleted");
     expect(options.action.label).toBe("common.undo");
@@ -48,9 +46,12 @@ describe("deleteWithUndo", () => {
   });
 
   it("says so when the restore fails", async () => {
-    const m = mutations(Promise.reject(new Error("offline")));
+    const m = mutations(async () => {
+      throw new Error("offline");
+    });
 
     deleteWithUndo(m.all, "p1", t);
+    await vi.waitFor(() => expect(toastSuccess).toHaveBeenCalled());
     toastSuccess.mock.calls[0]![1].action.onClick();
 
     await vi.waitFor(() =>
@@ -59,5 +60,27 @@ describe("deleteWithUndo", () => {
         expect.anything(),
       ),
     );
+  });
+
+  it("offers an Undo for each of two quick deletes", async () => {
+    // One mutation observer for the list, as `useMutation` keeps it: the
+    // callbacks of an earlier `mutate` are dropped once a later one starts.
+    const observer = new MutationObserver(new QueryClient(), {
+      mutationFn: async (id: string) => ({ id }),
+    });
+    const remove = {
+      mutate: (id: string, options?: object) =>
+        void observer.mutate(id, options).catch(() => undefined),
+      mutateAsync: (id: string) => observer.mutate(id),
+    };
+    const restore = { mutateAsync: vi.fn(async () => ({})) };
+    const all = { remove, restore } as unknown as Mutations;
+
+    deleteWithUndo(all, "p1", t);
+    deleteWithUndo(all, "p2", t);
+
+    await vi.waitFor(() => expect(toastSuccess).toHaveBeenCalledTimes(2));
+    for (const call of toastSuccess.mock.calls) call[1].action.onClick();
+    expect(restore.mutateAsync.mock.calls).toEqual([["p1"], ["p2"]]);
   });
 });

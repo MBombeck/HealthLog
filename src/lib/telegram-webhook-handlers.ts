@@ -266,9 +266,24 @@ async function markMedicationTaken(
   reminderRef?: { chatId: string; messageId: number },
 ): Promise<{ ok: boolean; message: string; medicationName?: string }> {
   const { t } = getServerTranslator(locale);
-  const medication = await findTelegramDoseMedication(userId, userTz, {
-    id: medicationId,
-  });
+  const tz = userTz || DEFAULT_TIMEZONE;
+  // The reminder's own slot, when the message names one: the course is
+  // judged on that dose, not on the moment of the tap.
+  const reminderSlot = reminderRef
+    ? await resolveReminderSlot({
+        userId,
+        medicationId,
+        userTz: tz,
+        chatId: reminderRef.chatId,
+        messageId: reminderRef.messageId,
+      })
+    : null;
+  const medication = await findTelegramDoseMedication(
+    userId,
+    userTz,
+    { id: medicationId },
+    reminderSlot ?? undefined,
+  );
   if (!medication) {
     return { ok: false, message: t("telegram.errorMedicationInactive") };
   }
@@ -281,7 +296,6 @@ async function markMedicationTaken(
   let scheduledFor: Date | null = null;
   if (!existing) {
     const takenAt = new Date();
-    const tz = userTz || DEFAULT_TIMEZONE;
 
     // v1.16.9 — converge onto the slot's canonical row instead of bare-
     // creating a second row anchored at `now`. The old shape left the
@@ -289,15 +303,7 @@ async function markMedicationTaken(
     // and compliance punished a dose the user explicitly confirmed.
     // Prefer the reminder's own slot (the message names the dose it fired
     // for); fall back to band attribution on the tap instant.
-    let canonicalSlot: Date | null = reminderRef
-      ? await resolveReminderSlot({
-          userId,
-          medicationId: medication.id,
-          userTz: tz,
-          chatId: reminderRef.chatId,
-          messageId: reminderRef.messageId,
-        })
-      : null;
+    let canonicalSlot: Date | null = reminderSlot;
     if (canonicalSlot === null) {
       const attribution = await resolveSlotForWriteByBand({
         userId,

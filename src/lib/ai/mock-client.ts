@@ -18,8 +18,8 @@ import { reasoningTitleOf } from "./reasoning/support";
  * never hit the network.
  *
  * The mock is exported from `src/lib/ai/` so any test can import it,
- * but it is NOT registered in `resolveProvider()` — the production
- * path must never reach it.
+ * but no provider resolver returns it: the production path must never
+ * reach it.
  */
 export interface MockAIProviderOptions {
   /** Provider tag returned in `CompletionResult.providerType`. Defaults to "local". */

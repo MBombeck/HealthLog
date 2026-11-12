@@ -142,11 +142,15 @@
     "auth": {
       "reproof": {
         "required": "Confirme sua senha atual para alterar isto.",
-        "failed": "A verificação não foi concluída. Nada foi alterado."
+        "failed": "A verificação não foi concluída. Nada foi alterado.",
+        "too_weak": "Confirme com seu segundo fator ou uma chave de acesso. Nesta conta, só a senha não basta."
       },
       "missing": "Sua sessão terminou, então nada foi alterado. Entre novamente para continuar.",
       "passkey": {
         "last_method": "Esta chave de acesso é sua única forma de entrar. Defina uma senha ou adicione outra chave de acesso primeiro."
+      },
+      "mfa": {
+        "already_active": "Esta conta já tem um aplicativo autenticador configurado. Desative-o primeiro para configurar um novo."
       }
     },
     "biomarkers": {
@@ -195,8 +199,8 @@
     "encounter": {
       "invalid": "Verifique os dados da consulta e tente novamente.",
       "practitioner-not-found": "Esta clínica ou médico não existe mais. Escolha outro ou nenhum.",
-      "reminder-not-found": "Este check não existe mais. Escolha outro ou nenhum.",
-      "reminder-conflict": "Uma consulta planejada não pode fechar um check, porque ainda não aconteceu."
+      "reminder-not-found": "Este check-up não existe mais. Escolha outro ou nenhum.",
+      "reminder-conflict": "Uma consulta planejada não pode fechar um check-up, porque ainda não aconteceu."
     },
     "vaccination": {
       "invalid": "Verifique os dados da vacina e tente novamente.",
@@ -221,6 +225,14 @@
         "too_large": "Treinos demais de uma vez. Envie menos por vez.",
         "payload_too_large": "Os dados do treino são grandes demais para salvar de uma vez.",
         "source_not_permitted": "Esta conexão não pode salvar treinos com essa origem."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "Nenhum provedor de IA está configurado, então nada foi enviado. Configure um nas configurações de IA."
+      },
+      "budget": {
+        "exceeded": "O orçamento de IA de hoje acabou, então nada foi enviado. Ele é renovado amanhã."
       }
     }
   },
@@ -1024,7 +1036,8 @@
     "typeTrainingReadiness": "Prontidão para treinar",
     "typeAcuteTrainingLoad": "Carga de treino aguda",
     "sourceGarmin": "Garmin",
-    "valueOutOfRange": "Informe um valor entre {min} e {max} {unit}."
+    "valueOutOfRange": "Informe um valor entre {min} e {max} {unit}.",
+    "valueOutOfRangeNoUnit": "Informe um valor entre {min} e {max}."
   },
   "metricCatalog": {
     "title": "O que o HealthLog pode acompanhar",
@@ -5946,6 +5959,7 @@
             "inProgress": "Uma importação de histórico de doses já está em andamento. Espere ela terminar.",
             "workerUnavailable": "O worker em segundo plano não está disponível, então nada foi importado.",
             "failed": "A importação falhou. Nada foi gravado.",
+            "stillRunning": "A importação está demorando mais que o normal e ainda pode terminar. Confira suas doses de novo em alguns minutos.",
             "columnsHeading": "O que cada coluna faz",
             "jsonOnly": "Somente JSON",
             "previewLine": "{rows} linhas lidas, {queued} seriam importadas, {refused} recusadas",
@@ -12480,7 +12494,8 @@
       "purgeConfirmBody": "Ele é removido agora, e não no fim do período de espera, e não pode ser restaurado."
     },
     "picker": {
-      "capped": "Mostrando os {count} mais recentes. Use a busca para encontrar um documento mais antigo."
+      "capped": "Mostrando os {count} mais recentes. Use a busca para encontrar um documento mais antigo.",
+      "cappedSearching": "Mostrando os {count} resultados mais recentes. Refine a busca para encontrar um mais antigo."
     }
   },
   "selfDescription": {
@@ -13411,7 +13426,7 @@
     "created": "Consulta salva",
     "updated": "Consulta atualizada",
     "saveFailed": "Não foi possível salvar a consulta.",
-    "checkupNotClosed": "Consulta salva. O check permanece aberto; seu acesso não cobre isso.",
+    "checkupNotClosed": "Consulta salva. O check-up permanece aberto; seu acesso não cobre isso.",
     "status": {
       "planned": "Planejada",
       "done": "Comparecida",

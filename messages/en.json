@@ -142,11 +142,15 @@
     "auth": {
       "reproof": {
         "required": "Confirm your current password to change this.",
-        "failed": "That did not verify. Nothing was changed."
+        "failed": "That did not verify. Nothing was changed.",
+        "too_weak": "Confirm with your second factor or a passkey. On this account a password alone is not enough."
       },
       "missing": "Your session has ended, so nothing was changed. Sign in again to continue.",
       "passkey": {
         "last_method": "This passkey is your only way to sign in. Set a password or add another passkey first."
+      },
+      "mfa": {
+        "already_active": "An authenticator app is already set up for this account. Disable it first to set up a new one."
       }
     },
     "biomarkers": {
@@ -204,7 +208,7 @@
       "encounter-not-found": "This visit no longer exists. Choose another or none.",
       "custom-vaccine-not-found": "This vaccine no longer exists. Choose it again from the list.",
       "not-found": "This vaccination is no longer available.",
-      "identity-required": "A dose needs a name: pick a vaccine from the list or type what the record says.",
+      "identity-required": "A dose needs a name: pick a vaccine from the list or type the name on your vaccination card.",
       "booster-invalid": "Check the booster details and try again.",
       "booster-no-antigen": "This dose names no vaccine from the catalogue, so no booster can be planned for it.",
       "booster-out-of-scope": "Your access to this record does not cover planning a booster."
@@ -218,9 +222,17 @@
     "workout": {
       "batch": {
         "invalid": "Check the workout details and try again.",
-        "too_large": "Too many workouts at once. Send fewer at a time.",
+        "too_large": "Too many workouts at once. Send them in smaller batches.",
         "payload_too_large": "The workout data is too large to save in one go.",
         "source_not_permitted": "This connection may not save workouts under that source."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "No AI provider is set up, so nothing was sent to one. Set one up in the AI settings."
+      },
+      "budget": {
+        "exceeded": "Today's AI budget is used up, so nothing was sent. It renews tomorrow."
       }
     }
   },
@@ -1024,7 +1036,8 @@
     "typeTrainingReadiness": "Training readiness",
     "typeAcuteTrainingLoad": "Acute training load",
     "sourceGarmin": "Garmin",
-    "valueOutOfRange": "Enter a value between {min} and {max} {unit}."
+    "valueOutOfRange": "Enter a value between {min} and {max} {unit}.",
+    "valueOutOfRangeNoUnit": "Enter a value between {min} and {max}."
   },
   "metricCatalog": {
     "title": "What HealthLog can track",
@@ -5946,6 +5959,7 @@
             "inProgress": "A dose-history import is already running. Wait for it to finish.",
             "workerUnavailable": "The background worker is not available, so nothing was imported.",
             "failed": "The import failed. Nothing was written.",
+            "stillRunning": "The import is taking longer than usual and may still finish. Look at your doses again in a few minutes.",
             "columnsHeading": "What each column does",
             "jsonOnly": "JSON only",
             "previewLine": "{rows} rows read, {queued} would be imported, {refused} refused",
@@ -12480,7 +12494,8 @@
       "purgeConfirmBody": "It is removed now instead of at the end of the waiting period, and cannot be restored."
     },
     "picker": {
-      "capped": "Showing the newest {count}. Search to find an older document."
+      "capped": "Showing the newest {count}. Search to find an older document.",
+      "cappedSearching": "Showing the newest {count} matches. Narrow the search to find an older one."
     }
   },
   "selfDescription": {

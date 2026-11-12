@@ -118,18 +118,28 @@ export const PUT = apiHandler(async (request: NextRequest) => {
     where: { id: user.id },
     select: { aiProviderChain: true },
   });
+  const storedChain = parseProviderChain(stored?.aiProviderChain ?? null);
   const storedEffort = new Map(
-    parseProviderChain(stored?.aiProviderChain ?? null).map((e) => [
-      e.providerType,
-      e.reasoningEffort ?? null,
-    ]),
+    storedChain.map((e) => [e.providerType, e.reasoningEffort ?? null]),
   );
+  // A disabled gateway entry with an effort is the holder the gateway form
+  // writes, which the picked gateway still serves behind
+  // (`servesPickedGateway`). Switching the gateway off here is the person's
+  // word, so its effort goes with the switch.
+  const gatewayWasOn =
+    storedChain.find((e) => e.providerType === "openai-compatible")?.enabled !==
+    false;
   const normalised = parsed.data.chain.map((entry, idx) => {
-    const reasoningEffort = isReasoningProviderType(entry.providerType)
-      ? entry.reasoningEffort === undefined
-        ? (storedEffort.get(entry.providerType) ?? null)
-        : entry.reasoningEffort
-      : null;
+    const switchedOff =
+      entry.providerType === "openai-compatible" &&
+      !entry.enabled &&
+      gatewayWasOn;
+    const reasoningEffort =
+      !isReasoningProviderType(entry.providerType) || switchedOff
+        ? null
+        : entry.reasoningEffort === undefined
+          ? (storedEffort.get(entry.providerType) ?? null)
+          : entry.reasoningEffort;
     return {
       providerType: entry.providerType,
       priority: idx + 1,

@@ -127,8 +127,8 @@ export const LOCAL_MODEL_PRESETS = [
 export const CUSTOM_MODEL_SENTINEL = "__custom__";
 
 /**
- * Map UI provider tag → the `aiProvider` enum understood by the
- * legacy single-result `resolveProvider()` resolver. `codex` and
+ * Map UI provider tag → the stored `aiProvider` enum, the provider picked
+ * under Settings, AI. `codex` and
  * `admin-openai` aren't user-level provider columns (they're handled
  * by Codex OAuth + admin-key fallback), so they map to null and the
  * legacy column is left blank.

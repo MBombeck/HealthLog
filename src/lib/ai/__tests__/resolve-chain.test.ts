@@ -17,6 +17,10 @@ vi.mock("@/lib/ai/codex-oauth", () => ({
 }));
 
 import { resolveProviderChain } from "../provider";
+import {
+  chainWithReasoningEffort,
+  PROVIDER_CHAIN_DEFAULT,
+} from "../provider-chain";
 import { prisma } from "@/lib/db";
 import { decryptCodexCreds } from "@/lib/ai/codex-oauth";
 
@@ -207,41 +211,67 @@ describe("resolveProviderChain", () => {
 
     expect(await resolveProviderChain("user-1")).toEqual([]);
   });
+});
 
-  it("serves the picked gateway, under its own name, on a chain never saved", async () => {
-    const gatewayRow = {
-      aiProvider: "OPENAI_COMPATIBLE",
-      aiModel: null,
-      aiBaseUrl: null,
-      aiAnthropicKeyEncrypted: null,
-      aiLocalKeyEncrypted: null,
-      aiOpenaiKeyEncrypted: null,
-      aiCompatBaseUrl: "https://gateway.example/v1",
-      aiCompatKeyEncrypted: null,
-      aiCompatModel: "llama-3",
-      role: "USER",
-    };
-    userRows(
-      { ...gatewayRow, aiProviderChain: null },
-      {
-        codexAccessTokenEncrypted: null,
-        codexRefreshTokenEncrypted: null,
-        codexTokenExpiresAt: null,
-        codexConnectionStatus: "disconnected",
-      },
+describe("resolveProviderChain and the picked gateway", () => {
+  const gatewayRow = {
+    aiProvider: "OPENAI_COMPATIBLE",
+    aiModel: null,
+    aiBaseUrl: null,
+    aiAnthropicKeyEncrypted: null,
+    aiLocalKeyEncrypted: null,
+    aiOpenaiKeyEncrypted: null,
+    aiCompatBaseUrl: "https://gateway.example/v1",
+    aiCompatKeyEncrypted: null,
+    aiCompatModel: "llama-3",
+    role: "USER",
+  };
+  const DEFAULT_SAVED = PROVIDER_CHAIN_DEFAULT.map((entry) => ({ ...entry }));
+
+  /** Serve `chain` as the record's saved chain; Codex is not connected. */
+  async function resolveWith(chain: unknown) {
+    const read = async (args: { select?: Record<string, unknown> }) =>
+      args.select?.codexAccessTokenEncrypted
+        ? {
+            codexAccessTokenEncrypted: null,
+            codexRefreshTokenEncrypted: null,
+            codexTokenExpiresAt: null,
+            codexConnectionStatus: "disconnected",
+          }
+        : { ...gatewayRow, aiProviderChain: chain };
+    vi.mocked(prisma.user.findUnique).mockImplementation(
+      read as unknown as typeof prisma.user.findUnique,
     );
-    operator({
-      adminAiKeyEncrypted: null,
-    });
+    operator({ adminAiKeyEncrypted: null });
+    return (await resolveProviderChain("user-1")).map((c) => c.providerType);
+  }
 
-    const chain = await resolveProviderChain("user-1");
-    expect(chain.map((c) => c.providerType)).toEqual(["openai-compatible"]);
+  it.each([
+    ["never saved", null],
+    ["saved with the default content", DEFAULT_SAVED],
+    [
+      "reset to the default and saved",
+      JSON.parse(JSON.stringify(DEFAULT_SAVED)),
+    ],
+    ["reordered without the gateway", [...DEFAULT_SAVED].reverse()],
+    [
+      "holding a reasoning effort the gateway form wrote switched off",
+      chainWithReasoningEffort(null, "openai-compatible", "low"),
+    ],
+    [
+      "holding a reasoning effort the gateway form writes now",
+      chainWithReasoningEffort(null, "openai-compatible", "low", true),
+    ],
+  ])("serves the gateway on a chain %s", async (_case, chain) => {
+    expect(await resolveWith(chain)).toEqual(["openai-compatible"]);
+  });
 
-    // A saved chain without the gateway is the person's word.
-    userRows({
-      ...gatewayRow,
-      aiProviderChain: [{ providerType: "local", priority: 1, enabled: true }],
-    });
-    expect(await resolveProviderChain("user-1")).toEqual([]);
+  it("serves nothing once the person switched the gateway off in the chain", async () => {
+    expect(
+      await resolveWith([
+        ...DEFAULT_SAVED,
+        { providerType: "openai-compatible", priority: 6, enabled: false },
+      ]),
+    ).toEqual([]);
   });
 });

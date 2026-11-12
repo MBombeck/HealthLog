@@ -142,11 +142,15 @@
     "auth": {
       "reproof": {
         "required": "Bestätige dein aktuelles Passwort, um das zu ändern.",
-        "failed": "Die Bestätigung ist fehlgeschlagen. Es wurde nichts geändert."
+        "failed": "Die Bestätigung ist fehlgeschlagen. Es wurde nichts geändert.",
+        "too_weak": "Bestätige mit deinem zweiten Faktor oder einem Passkey. Bei diesem Konto reicht das Passwort allein nicht."
       },
       "missing": "Deine Sitzung ist abgelaufen, daher wurde nichts geändert. Melde dich erneut an, um weiterzumachen.",
       "passkey": {
         "last_method": "Dieser Passkey ist deine einzige Anmeldemöglichkeit. Lege zuerst ein Passwort fest oder füge einen weiteren Passkey hinzu."
+      },
+      "mfa": {
+        "already_active": "Für dieses Konto ist bereits eine Authenticator-App eingerichtet. Deaktiviere sie zuerst, um eine neue einzurichten."
       }
     },
     "biomarkers": {
@@ -218,9 +222,17 @@
     "workout": {
       "batch": {
         "invalid": "Prüfe die Angaben zum Training und versuche es erneut.",
-        "too_large": "Zu viele Trainings auf einmal. Schicke weniger auf einmal.",
+        "too_large": "Zu viele Trainings auf einmal. Schicke sie in kleineren Paketen.",
         "payload_too_large": "Die Trainingsdaten sind zu groß, um sie auf einmal zu speichern.",
         "source_not_permitted": "Diese Verbindung darf keine Trainings unter dieser Quelle speichern."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "Es ist kein KI-Anbieter eingerichtet, daher wurde nichts gesendet. Richte einen in den KI-Einstellungen ein."
+      },
+      "budget": {
+        "exceeded": "Das KI-Budget für heute ist aufgebraucht, daher wurde nichts gesendet. Morgen steht es wieder bereit."
       }
     }
   },
@@ -1024,7 +1036,8 @@
     "typeTrainingReadiness": "Trainingsbereitschaft",
     "typeAcuteTrainingLoad": "Akute Trainingsbelastung",
     "sourceGarmin": "Garmin",
-    "valueOutOfRange": "Gib einen Wert zwischen {min} und {max} {unit} ein."
+    "valueOutOfRange": "Gib einen Wert zwischen {min} und {max} {unit} ein.",
+    "valueOutOfRangeNoUnit": "Gib einen Wert zwischen {min} und {max} ein."
   },
   "metricCatalog": {
     "title": "Was HealthLog erfassen kann",
@@ -5946,6 +5959,7 @@
             "inProgress": "Ein Import des Einnahmeverlaufs läuft bereits. Auf sein Ende warten.",
             "workerUnavailable": "Der Hintergrunddienst ist nicht verfügbar, es wurde nichts importiert.",
             "failed": "Der Import ist fehlgeschlagen. Es wurde nichts geschrieben.",
+            "stillRunning": "Der Import dauert länger als üblich und kann noch fertig werden. Sieh dir deine Einnahmen in ein paar Minuten noch einmal an.",
             "columnsHeading": "Was mit jeder Spalte passiert",
             "jsonOnly": "nur JSON",
             "previewLine": "{rows} Zeilen gelesen, {queued} würden importiert, {refused} abgewiesen",
@@ -12480,7 +12494,8 @@
       "purgeConfirmBody": "Es wird jetzt entfernt statt am Ende der Wartezeit und lässt sich nicht wiederherstellen."
     },
     "picker": {
-      "capped": "Hier stehen die neuesten {count}. Ältere Dokumente findest du über die Suche."
+      "capped": "Hier stehen die neuesten {count}. Ältere Dokumente findest du über die Suche.",
+      "cappedSearching": "Hier stehen die neuesten {count} Treffer. Ältere findest du mit einer genaueren Suche."
     }
   },
   "selfDescription": {

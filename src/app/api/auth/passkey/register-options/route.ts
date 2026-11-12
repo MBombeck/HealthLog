@@ -6,6 +6,7 @@ import {
 import { createMfaAuthenticationOptions } from "@/lib/auth/mfa/webauthn";
 import {
   RECENT_PROOF_MAX_AGE_MS,
+  REPROOF_FAILED_CODE,
   REPROOF_REQUIRED_CODE,
   isSecondFactorProof,
   recordReproofFailure,
@@ -29,8 +30,12 @@ import { apiHandler, requireCookieAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { stepUpMintSchema } from "@/lib/validations/step-up";
 
+// A wrong or missing proof, not an ended session: the code keeps the web from
+// reading the bare 401 as "sign in again".
 const proofRequired = () =>
-  apiError("Fresh existing-factor proof required", 401);
+  apiError("Fresh existing-factor proof required", 401, {
+    errorCode: REPROOF_FAILED_CODE,
+  });
 
 export const POST = apiHandler(async (request: NextRequest) => {
   const { user, session } = await requireCookieAuth();

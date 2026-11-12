@@ -7240,8 +7240,8 @@ model CoachFact {
 // `status` is an APP-SIDE closed enum (NOT a DB enum, to keep the migration
 // purely additive): proposed | active | met | abandoned | review_due | reviewed.
 // The last two are the v1.22 (W9, C2) n-of-1 experiment lifecycle: an
-// "experiment" is just a CoachPlan with a reviewDate; when the review fires and
-// the read-back is generated, `outcomeEncrypted` carries the grounded result.
+// "experiment" is just a CoachPlan with a reviewDate; the review only moves the
+// status. `outcomeEncrypted` is no longer written or read (see the column).
 model CoachPlan {
   id                   String    @id @default(cuid())
   userId               String    @map("user_id")
@@ -7260,9 +7260,10 @@ model CoachPlan {
   status               String    @default("proposed")
   // Optional review checkpoint the Coach can recall ("how did this go by …").
   reviewDate           DateTime? @map("review_date")
-  // v1.22 (W9, C2) — the n-of-1 read-back prose, grounded in the user's own
-  // before/after numbers and encrypted at rest like the cue/action. Written
-  // once when an experiment's review is processed; surfaced behind a flag.
+  // v1.22 (W9, C2) — the n-of-1 read-back prose an experiment's review used
+  // to write, encrypted at rest like the cue/action. Nothing writes or reads
+  // it now; older rows stay, rotated with the key and carried by the backup.
+  /// @internal: kept for rows written before the review stopped writing it.
   outcomeEncrypted     Bytes?    @map("outcome_encrypted")
   // Provenance — nullable so a future manual-entry surface can leave it null.
   sourceConversationId String?   @map("source_conversation_id")

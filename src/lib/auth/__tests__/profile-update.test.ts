@@ -71,6 +71,55 @@ describe("applyProfileUpdate locale", () => {
   );
 });
 
+describe("applyProfileUpdate date of birth", () => {
+  const writtenDateOfBirth = () =>
+    (
+      vi.mocked(prisma.user.update).mock.calls[0]![0]!.data as {
+        dateOfBirth?: Date | null;
+      }
+    ).dateOfBirth;
+
+  it("stores a typed date as that calendar date", async () => {
+    await applyProfileUpdate(USER_ID, { dateOfBirth: "2012-05-14" });
+    expect(writtenDateOfBirth()?.toISOString()).toBe(
+      "2012-05-14T12:00:00.000Z",
+    );
+  });
+
+  it("stores an instant from the iOS app as its day in the zone the request sets", async () => {
+    // 14 May picked at 20:00 in Honolulu (UTC-10).
+    await applyProfileUpdate(USER_ID, {
+      dateOfBirth: "2012-05-15T06:00:00Z",
+      timezone: "Pacific/Honolulu",
+    });
+    expect(writtenDateOfBirth()?.toISOString()).toBe(
+      "2012-05-14T12:00:00.000Z",
+    );
+  });
+
+  it("reads an instant in the stored zone when the request sets none", async () => {
+    // 14 May picked at 09:30 in Nuku'alofa (UTC+13). A user id of its own:
+    // the zone resolver caches per account.
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      timezone: "Pacific/Tongatapu",
+    } as unknown as Awaited<ReturnType<typeof prisma.user.findUnique>>);
+    await applyProfileUpdate("user-tonga", {
+      dateOfBirth: "2012-05-13T20:30:00Z",
+    });
+    expect(writtenDateOfBirth()?.toISOString()).toBe(
+      "2012-05-14T12:00:00.000Z",
+    );
+  });
+
+  it("clears on null and leaves the column alone for a string that names no date", async () => {
+    await applyProfileUpdate(USER_ID, { dateOfBirth: null });
+    expect(writtenDateOfBirth()).toBeNull();
+    vi.mocked(prisma.user.update).mockClear();
+    await applyProfileUpdate(USER_ID, { dateOfBirth: "2012-02-30" });
+    expect(writtenDateOfBirth()).toBeUndefined();
+  });
+});
+
 describe("applyProfileUpdate timezone validation", () => {
   it("accepts a valid IANA zone", async () => {
     const result = await applyProfileUpdate(USER_ID, {

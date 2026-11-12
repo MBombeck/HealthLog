@@ -117,11 +117,11 @@ describe("<DoneScreen> AI line", () => {
     );
     expect(line).not.toBeNull();
     expect(line![1]).toContain("AI is optional");
-    expect(line![1]).toContain('href="/settings/ai"');
-    // No sample briefing, no provider ladder, no one-tap offer.
-    expect(html).not.toContain("Example");
-    expect(html).not.toContain("Three ways to turn it on");
-    expect(html).not.toMatch(/<button[^>]*>[^<]*Turn on/);
+    // Body copy, not meta: the line is read, so it is not muted.
+    expect(line![0]).not.toContain("text-muted-foreground");
+    // One way on, the link, and no one-tap offer beside it.
+    expect(html.split('href="/settings/ai"')).toHaveLength(2);
+    expect(line![1]).not.toContain("<button");
   });
 
   it("is left out when AI cannot be set up here", () => {

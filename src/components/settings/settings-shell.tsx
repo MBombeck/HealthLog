@@ -356,6 +356,20 @@ function deriveActiveSlug(
   return isSettingsSectionSlug(candidate) ? candidate : "account";
 }
 
+/**
+ * The module map the section list reads, the sidebar's. A managed record has
+ * no Settings, AI to list its Coach settings (its data scope, its switch), so
+ * there the Coach entry follows the module switch alone, not whether the
+ * record's Coach can answer yet.
+ */
+function useSectionModules() {
+  const { user } = useAuth();
+  const navModules = useNavModules();
+  return user?.accountAccess?.active?.recordKind === "managed"
+    ? user.modules
+    : navModules;
+}
+
 export function SettingsShell({
   active,
   heading,
@@ -391,7 +405,7 @@ export function SettingsShell({
   // effect (which the lint rule flags as a cascading render), and no risk of
   // the two passes disagreeing.
   const hydrated = useMounted();
-  const modules = useNavModules();
+  const modules = useSectionModules();
   const activeRecord = user?.accountAccess?.active ?? null;
   const allVisibleSections = SETTINGS_SECTIONS.filter(
     (section) =>

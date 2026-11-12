@@ -751,6 +751,24 @@ describe("PATCH /api/user/ai-provider — reasoning setting (#1126)", () => {
     ]);
   });
 
+  it("switches the gateway's entry on when the gateway form saves it as the pick", async () => {
+    // The disabled holder above, written for a picked gateway, read as the
+    // person switching off the provider they had just picked.
+    storedChain(null);
+    await patch(
+      patchRequest({
+        provider: "OPENAI_COMPATIBLE",
+        compatReasoningEffort: "low",
+      }),
+    );
+    const chain = written()?.aiProviderChain as Array<{
+      providerType: string;
+    }>;
+    expect(
+      chain.find((e) => e.providerType === "openai-compatible"),
+    ).toMatchObject({ enabled: true, reasoningEffort: "low" });
+  });
+
   it("does not touch the chain when Default is restated on a default chain", async () => {
     storedChain(null);
     await patch(

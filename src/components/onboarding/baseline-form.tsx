@@ -9,6 +9,8 @@ import {
   type BaselineFieldErrors,
 } from "@/components/onboarding/baseline-fields";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
+import { dateOfBirthKey } from "@/lib/tz/date-only";
+import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import {
   resolveHeightUnitAdapter,
   type HeightDraft,
@@ -59,6 +61,8 @@ interface BaselineInitialValues {
   heightCm: number | null;
   dateOfBirth: string | null;
   gender: string | null;
+  /** The owner's zone, which a date of birth from the iOS app is read in. */
+  timezone?: string;
 }
 
 interface BaselineFormState {
@@ -133,8 +137,12 @@ export function BaselineForm({
   const [form, setForm] = useState<BaselineFormState>(() => ({
     displayName: "",
     height: heightAdapter.toDraft(initial.heightCm),
-    // The payload's ISO instant, as the date field's YYYY-MM-DD.
-    dateOfBirth: initial.dateOfBirth ? initial.dateOfBirth.slice(0, 10) : "",
+    dateOfBirth: initial.dateOfBirth
+      ? dateOfBirthKey(
+          new Date(initial.dateOfBirth),
+          initial.timezone ?? DEFAULT_TIMEZONE,
+        )
+      : "",
     gender: initial.gender ?? "",
   }));
   const [saving, setSaving] = useState(false);

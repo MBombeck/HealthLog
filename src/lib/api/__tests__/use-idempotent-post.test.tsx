@@ -63,6 +63,53 @@ describe("useIdempotentPost", () => {
     expect(keyOf(1)).not.toBe(keyOf(0));
   });
 
+  it("takes a new key once the server refused the entry", async () => {
+    // The refusal is stored under the key, so the corrected retry under it
+    // ran unprotected and an unchanged one replayed the refusal.
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ data: null, error: "Name taken", meta: {} }),
+          { status: 409, headers: { "Content-Type": "application/json" } },
+        ),
+      )
+      .mockResolvedValueOnce(stored());
+    const post = openForm();
+
+    await expect(
+      post("/api/custom-metrics", { name: "Steps" }),
+    ).rejects.toThrow();
+    await post("/api/custom-metrics", { name: "Steps" });
+
+    expect(keyOf(1)).not.toBe(keyOf(0));
+  });
+
+  it("keeps the key while the first request is still running", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: null,
+            error: "A request with this Idempotency-Key is already in progress",
+          }),
+          {
+            status: 409,
+            headers: {
+              "Content-Type": "application/json",
+              "X-Idempotent-Replay": "false",
+            },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(stored());
+    const post = openForm();
+
+    await expect(post("/api/mood-entries", { mood: "GOOD" })).rejects.toThrow();
+    await post("/api/mood-entries", { mood: "GOOD" });
+
+    expect(keyOf(1)).toBe(keyOf(0));
+  });
+
   it("keeps a header the caller set", async () => {
     fetchMock.mockResolvedValueOnce(stored());
     const post = openForm();

@@ -52,7 +52,7 @@ import {
 } from "./account-section-utils";
 import { AvatarSection } from "./avatar-section";
 import { SetupCard } from "./setup-card";
-import { dateOnlyKey } from "@/lib/tz/date-only";
+import { dateOfBirthKey } from "@/lib/tz/date-only";
 import { translateCodeOrNull } from "@/lib/i18n/translate-code";
 
 export { resolveInitialTimezone } from "./account-section-utils";
@@ -149,7 +149,7 @@ export function AccountSection() {
       displayName: user.displayName ?? "",
       height: heightAdapter.toDraft(user.heightCm),
       dateOfBirth: user.dateOfBirth
-        ? dateOnlyKey(new Date(user.dateOfBirth))
+        ? dateOfBirthKey(new Date(user.dateOfBirth), user.timezone)
         : "",
       gender: user.gender ?? "",
       fullName: user.fullName ?? "",

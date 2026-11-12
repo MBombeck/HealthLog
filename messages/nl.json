@@ -142,11 +142,15 @@
     "auth": {
       "reproof": {
         "required": "Bevestig je huidige wachtwoord om dit te wijzigen.",
-        "failed": "De verificatie is mislukt. Er is niets gewijzigd."
+        "failed": "De verificatie is mislukt. Er is niets gewijzigd.",
+        "too_weak": "Bevestig met je tweede factor of een passkey. Voor dit account is alleen je wachtwoord niet genoeg."
       },
       "missing": "Je sessie is verlopen, dus er is niets gewijzigd. Meld je opnieuw aan om verder te gaan.",
       "passkey": {
         "last_method": "Deze passkey is je enige manier om in te loggen. Stel eerst een wachtwoord in of voeg nog een passkey toe."
+      },
+      "mfa": {
+        "already_active": "Voor dit account is al een authenticator-app ingesteld. Schakel die eerst uit om een nieuwe in te stellen."
       }
     },
     "biomarkers": {
@@ -204,7 +208,7 @@
       "encounter-not-found": "Dit bezoek bestaat niet meer. Kies een ander of geen.",
       "custom-vaccine-not-found": "Dit vaccin bestaat niet meer. Kies het opnieuw uit de lijst.",
       "not-found": "Deze vaccinatie is niet meer beschikbaar.",
-      "identity-required": "Een dosis heeft een naam nodig: kies een vaccin uit de lijst of typ wat er in het boekje staat.",
+      "identity-required": "Een dosis heeft een naam nodig: kies een vaccin uit de lijst of typ wat er op je vaccinatiebewijs staat.",
       "booster-invalid": "Controleer de gegevens van de booster en probeer het opnieuw.",
       "booster-no-antigen": "Deze dosis noemt geen vaccin uit de catalogus, dus er kan geen booster worden gepland.",
       "booster-out-of-scope": "Je toegang tot dit dossier dekt het plannen van een booster niet."
@@ -221,6 +225,14 @@
         "too_large": "Te veel trainingen tegelijk. Stuur er minder per keer.",
         "payload_too_large": "De trainingsgegevens zijn te groot om in één keer op te slaan.",
         "source_not_permitted": "Deze koppeling mag geen trainingen onder die bron opslaan."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "Er is geen AI-provider ingesteld, dus er is niets verzonden. Stel er een in bij de AI-instellingen."
+      },
+      "budget": {
+        "exceeded": "Het AI-budget voor vandaag is op, dus er is niets verzonden. Morgen is het er weer."
       }
     }
   },
@@ -1024,7 +1036,8 @@
     "typeTrainingReadiness": "Trainingsgereedheid",
     "typeAcuteTrainingLoad": "Acute trainingsbelasting",
     "sourceGarmin": "Garmin",
-    "valueOutOfRange": "Vul een waarde in tussen {min} en {max} {unit}."
+    "valueOutOfRange": "Vul een waarde in tussen {min} en {max} {unit}.",
+    "valueOutOfRangeNoUnit": "Vul een waarde in tussen {min} en {max}."
   },
   "metricCatalog": {
     "title": "Wat HealthLog kan bijhouden",
@@ -5946,6 +5959,7 @@
             "inProgress": "Er loopt al een import van doseringsgeschiedenis. Wacht tot die klaar is.",
             "workerUnavailable": "De achtergrondverwerking is niet beschikbaar, dus er is niets geïmporteerd.",
             "failed": "De import is mislukt. Er is niets opgeslagen.",
+            "stillRunning": "De import duurt langer dan normaal en kan nog afronden. Kijk over een paar minuten opnieuw naar je innames.",
             "columnsHeading": "Wat elke kolom doet",
             "jsonOnly": "Alleen JSON",
             "previewLine": "{rows} rijen gelezen, {queued} zouden worden geïmporteerd, {refused} geweigerd",
@@ -12480,7 +12494,8 @@
       "purgeConfirmBody": "Het wordt nu verwijderd in plaats van aan het einde van de wachttijd en kan niet worden hersteld."
     },
     "picker": {
-      "capped": "De nieuwste {count} staan hier. Zoek om een ouder document te vinden."
+      "capped": "De nieuwste {count} staan hier. Zoek om een ouder document te vinden.",
+      "cappedSearching": "De nieuwste {count} resultaten staan hier. Verfijn de zoekopdracht om een ouder document te vinden."
     }
   },
   "selfDescription": {
