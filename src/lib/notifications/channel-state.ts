@@ -6,7 +6,9 @@
  * soft reject" rules unit-testable and audit-loggable in one place.
  */
 import { prisma } from "@/lib/db";
+import type { Prisma } from "@/generated/prisma/client";
 import { auditLog } from "@/lib/auth/audit";
+import { getEvent } from "@/lib/logging/context";
 import {
   NO_RECIPIENT_COOLDOWN_MS,
   nextRetryAt,
@@ -140,6 +142,10 @@ export async function recordChannelNoRecipient(
   reason: string,
   now: Date = new Date(),
 ): Promise<void> {
+  getEvent()?.addMeta(
+    `notification_skip_${channel.type.toLowerCase()}_no_recipient`,
+    reason,
+  );
   await prisma.notificationChannel.update({
     where: { id: channel.id },
     data: {
@@ -147,6 +153,17 @@ export async function recordChannelNoRecipient(
       lastFailureReason: reason,
       nextRetryAt: new Date(now.getTime() + NO_RECIPIENT_COOLDOWN_MS),
     },
+  });
+}
+
+/** Pairing an iPhone ends a rest that was waiting for one. */
+export async function endApnsNoDeviceRest(
+  db: Pick<Prisma.TransactionClient, "notificationChannel">,
+  userId: string,
+): Promise<void> {
+  await db.notificationChannel.updateMany({
+    where: { userId, type: "APNS", lastFailureReason: "apns_no_devices" },
+    data: { nextRetryAt: null, lastFailureReason: null },
   });
 }
 

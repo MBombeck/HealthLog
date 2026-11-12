@@ -344,10 +344,8 @@ export function AuthShell({
     // `min-h-dvh`, not `h-dvh`: a phone held sideways is ~390 px tall, and
     // a sign-in form that is taller than a fixed-height box centres out of
     // it at the top, where nothing can scroll back to it. A minimum lets the
-    // box grow and the document scroll. The safe-area padding keeps the form
-    // off the status bar and the home indicator in an installed app, and
-    // `shell-safe-area` paints the strip behind the status bar so its white
-    // clock stays readable in the light theme, as in the signed-in shell.
+    // box grow and the document scroll. The safe-area band (painted behind
+    // the status bar, see globals.css) and padding keep the form clear.
     return (
       <div className="shell-safe-area flex min-h-dvh flex-col pb-[env(safe-area-inset-bottom,0px)]">
         {demoMode ? <DemoBanner /> : null}

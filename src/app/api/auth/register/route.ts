@@ -24,6 +24,10 @@ import {
 } from "@/lib/tz/resolver";
 import { isOidcOnly } from "@/lib/auth/oidc";
 
+// One code for a taken username and a taken address, like the one message.
+const TAKEN = { errorCode: "auth.register.taken" };
+const INVITE_INVALID = { errorCode: "auth.register.invite_invalid" };
+
 export const POST = apiHandler(async (request: NextRequest) => {
   // OIDC_ONLY must block self-registration too — otherwise anyone can
   // self-provision a fresh password account and bypass the operator's
@@ -144,9 +148,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     prisma.user.findUnique({ where: { username } }),
   ]);
   if (existingEmail || existingUsername) {
-    return apiError("Username or email already taken", 409, {
-      errorCode: "auth.register.taken",
-    });
+    return apiError("Username or email already taken", 409, TAKEN);
   }
 
   // Validate password strength (locale-aware feedback)
@@ -198,9 +200,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
         },
       });
       if (!registrationEnabled) {
-        return apiError("Invalid or expired invite", 403, {
-          errorCode: "auth.register.invite_invalid",
-        });
+        return apiError("Invalid or expired invite", 403, INVITE_INVALID);
       }
     }
   }
@@ -253,9 +253,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
     });
 
   if (user === null) {
-    return apiError("Username or email already taken", 409, {
-      errorCode: "auth.register.taken",
-    });
+    return apiError("Username or email already taken", 409, TAKEN);
   }
 
   // Create session immediately. v1.4.22 W5 reconcile (Sr-H1) —

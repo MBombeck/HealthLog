@@ -434,14 +434,8 @@ export async function dispatchNotification(
         }
 
         if (outcome.reason && NO_RECIPIENT_REASONS.has(outcome.reason)) {
-          // Nothing went anywhere: a caller that reads an attempt as "the
-          // alert was announced" must not read this one so.
-          channelsAttempted -= 1;
+          channelsAttempted -= 1; // nothing went anywhere
           await recordChannelNoRecipient(ref, outcome.reason, now);
-          getEvent()?.addMeta(
-            `notification_skip_${channel.type.toLowerCase()}_no_recipient`,
-            outcome.reason,
-          );
           continue;
         }
 
