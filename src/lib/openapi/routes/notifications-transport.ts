@@ -191,7 +191,7 @@ export const notificationTransportPaths: NonNullable<
       summary: "Send a test push to every Web Push subscription",
       description:
         "Fires one notification to each of the caller's subscriptions, through the same sender real reminders use, with the text in the account's language. The device the test was pressed on gets it whichever subscription is newest. Endpoints the push service reports gone (404/410) are removed, as on a real send. Takes no body. Rate-limited 5 per minute per user.\n\n" +
-        "Read `ok`, not the status. A push that every service rejects still answers 200, with `ok: false` and a `reason`. No endpoint is returned: the full endpoint is the routing secret for that subscription.",
+        "Read `ok`, not the status. A push that every service rejects still answers 200, with `ok: false`, a `reason`, and `meta.errorCode`: `upstream_rejected`, or `connection_failed` when no push service answered. No endpoint is returned: the full endpoint is the routing secret for that subscription.",
       responses: {
         "200": {
           description:

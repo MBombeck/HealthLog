@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
-import { apiSuccess, apiError } from "@/lib/api-response";
+import { apiSuccess, apiSuccessWithMeta, apiError } from "@/lib/api-response";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { annotate } from "@/lib/logging/context";
 import { coerceLocale } from "@/lib/i18n/config";
@@ -34,7 +34,7 @@ export const POST = apiHandler(async (request: NextRequest) => {
   const result = await sendViaWebPush(user.id, {
     eventType: "SYSTEM_ALERT",
     userId: user.id,
-    title: t("notifications.admin.testNotificationTitle"),
+    title: t("notifications.user.webPushTestTitle"),
     message: t("notifications.user.webPushTestBody"),
     metadata: { webPushTag: "self-test" },
   });
@@ -54,7 +54,15 @@ export const POST = apiHandler(async (request: NextRequest) => {
   annotate({
     meta: { web_push_test_ok: result.ok, web_push_test_reason: result.reason },
   });
-  return apiSuccess(
-    result.ok ? { ok: true, latencyMs } : { ok: false, reason: result.reason },
+  if (result.ok) return apiSuccess({ ok: true, latencyMs });
+  // The Test button says what went wrong from `meta.errorCode`, like every
+  // other channel's test; `reason` is the sender's own code.
+  return apiSuccessWithMeta(
+    { ok: false, reason: result.reason },
+    {
+      errorCode: result.reason?.endsWith("_network_error")
+        ? "connection_failed"
+        : "upstream_rejected",
+    },
   );
 });

@@ -9289,7 +9289,8 @@
     },
     "user": {
       "telegramTestBody": "HealthLog: 연결에 성공했어요. Telegram 알림이 켜져 있어요.",
-      "webPushTestBody": "이 알림이 보이면 이 기기에서 푸시 알림을 받을 수 있어요."
+      "webPushTestBody": "이 알림이 보이면 이 기기에서 푸시 알림을 받을 수 있어요.",
+      "webPushTestTitle": "HealthLog 테스트 알림"
     },
     "moodReminder": {
       "title": "매일 기분 알림",

@@ -9289,7 +9289,8 @@
     },
     "user": {
       "telegramTestBody": "HealthLog: connection successful. Telegram notifications are active.",
-      "webPushTestBody": "If you can see this, push notifications reach this device."
+      "webPushTestBody": "If you can see this, push notifications reach this device.",
+      "webPushTestTitle": "HealthLog test notification"
     },
     "moodReminder": {
       "title": "Daily mood reminder",
