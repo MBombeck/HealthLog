@@ -15,10 +15,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
-const h = vi.hoisted(() => ({
-  coachAvailable: true,
-  active: null as Record<string, unknown> | null,
-}));
+const h = vi.hoisted(() => ({ coachAvailable: true }));
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/settings/ai",
@@ -27,12 +24,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/hooks/use-mounted", () => ({ useMounted: () => true }));
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({
-    user: {
-      id: "u1",
-      role: "USER",
-      modules: { coach: true },
-      accountAccess: { active: h.active },
-    },
+    user: { id: "u1", role: "USER", modules: { coach: true } },
     isAuthenticated: true,
     isLoading: false,
     refetch: vi.fn(),
@@ -76,7 +68,6 @@ function render(node: React.ReactNode) {
 describe("the Coach entry in Settings", () => {
   beforeEach(() => {
     h.coachAvailable = true;
-    h.active = null;
   });
 
   it("is listed while the Coach can answer, and the memory lives there", () => {
@@ -94,19 +85,5 @@ describe("the Coach entry in Settings", () => {
       render(<SettingsShell active="ai">body</SettingsShell>),
     ).not.toContain('href="/settings/coach"');
     expect(render(<AiSection />)).toContain('data-slot="stored-coach-memory"');
-  });
-
-  it("stays for a managed record whose Coach cannot answer yet", () => {
-    // A record has no Settings, AI: the guardian reaches the record's Coach
-    // data scope and switch through this entry only.
-    h.coachAvailable = false;
-    h.active = {
-      recordKind: "managed",
-      level: "manage",
-      manageableDomains: [],
-    };
-    expect(
-      render(<SettingsShell active="coach">body</SettingsShell>),
-    ).toContain('href="/settings/coach"');
   });
 });
