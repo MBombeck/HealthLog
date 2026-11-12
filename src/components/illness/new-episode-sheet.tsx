@@ -56,6 +56,21 @@ const PARENTABLE: IllnessLifecycle[] = ["FLARE", "RECURRING"];
 
 const NONE = "__none__";
 
+/** What the form opens with: the edited episode, or a new one from today. */
+function episodeForm(episode: IllnessEpisodeDTO | undefined, today: string) {
+  return {
+    label: episode?.label ?? "",
+    type: episode?.type ?? ("INFECTION" as IllnessType),
+    lifecycle: episode?.lifecycle ?? ("ACUTE" as IllnessLifecycle),
+    onset: episode ? episode.onsetAt.slice(0, 10) : today,
+    resolved: episode?.resolvedAt ? episode.resolvedAt.slice(0, 10) : "",
+    parentId: episode?.parentConditionId ?? NONE,
+    note: episode?.note ?? "",
+    bodySite: episode?.bodySite ?? "",
+    laterality: (episode?.laterality ?? null) as BodySiteSideValue,
+  };
+}
+
 interface NewEpisodeSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -102,22 +117,35 @@ export function NewEpisodeSheet({
   // render keyed on the open transition (React's recommended alternative to a
   // setState-in-effect).
   const [wasOpen, setWasOpen] = useState(false);
+  const [seed, setSeed] = useState(() => episodeForm(editEpisode, today));
   if (open && !wasOpen) {
+    const next = episodeForm(editEpisode, today);
     setWasOpen(true);
-    setLabel(editEpisode?.label ?? "");
-    setType(editEpisode?.type ?? "INFECTION");
-    setLifecycle(editEpisode?.lifecycle ?? "ACUTE");
-    setOnset(editEpisode ? editEpisode.onsetAt.slice(0, 10) : today);
-    setResolved(
-      editEpisode?.resolvedAt ? editEpisode.resolvedAt.slice(0, 10) : "",
-    );
-    setParentId(editEpisode?.parentConditionId ?? NONE);
-    setNote(editEpisode?.note ?? "");
-    setBodySite(editEpisode?.bodySite ?? "");
-    setLaterality(editEpisode?.laterality ?? null);
+    setSeed(next);
+    setLabel(next.label);
+    setType(next.type);
+    setLifecycle(next.lifecycle);
+    setOnset(next.onset);
+    setResolved(next.resolved);
+    setParentId(next.parentId);
+    setNote(next.note);
+    setBodySite(next.bodySite);
+    setLaterality(next.laterality);
   } else if (!open && wasOpen) {
     setWasOpen(false);
   }
+  const form = {
+    label,
+    type,
+    lifecycle,
+    onset,
+    resolved,
+    parentId,
+    note,
+    bodySite,
+    laterality,
+  };
+  const dirty = JSON.stringify(form) !== JSON.stringify(seed);
 
   const showParent = PARENTABLE.includes(lifecycle);
 
@@ -172,6 +200,7 @@ export function NewEpisodeSheet({
     <ResponsiveSheet
       open={open}
       onOpenChange={onOpenChange}
+      dirty={dirty}
       title={isEdit ? t("illness.edit.title") : t("illness.new.title")}
       description={
         isEdit ? t("illness.edit.description") : t("illness.new.description")

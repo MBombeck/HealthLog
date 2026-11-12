@@ -97,12 +97,17 @@ export function TagEditorSheet({
   // so the field state seeds fresh from props on every open — no
   // re-seeding effect needed.
   const isEdit = tag !== undefined;
-  const [label, setLabel] = useState(tag?.label ?? "");
-  const [icon, setIcon] = useState<string | null>(tag?.icon ?? "Tag");
-  const [groupKey, setGroupKey] = useState(
-    tag?.groupKey ?? initialGroupKey ?? "custom",
-  );
+  const [seed] = useState(() => ({
+    label: tag?.label ?? "",
+    icon: tag?.icon ?? "Tag",
+    groupKey: tag?.groupKey ?? initialGroupKey ?? "custom",
+  }));
+  const [label, setLabel] = useState(seed.label);
+  const [icon, setIcon] = useState<string | null>(seed.icon);
+  const [groupKey, setGroupKey] = useState(seed.groupKey);
   const [saving, setSaving] = useState(false);
+  const dirty =
+    JSON.stringify({ label, icon, groupKey }) !== JSON.stringify(seed);
 
   const trimmed = label.trim();
   const valid = trimmed.length > 0 && trimmed.length <= LABEL_MAX_LENGTH;
@@ -158,6 +163,7 @@ export function TagEditorSheet({
     <ResponsiveSheet
       open={open}
       onOpenChange={onOpenChange}
+      dirty={dirty}
       title={isEdit ? t("common.edit") : t("mood.manage.newTag")}
       footer={
         <>

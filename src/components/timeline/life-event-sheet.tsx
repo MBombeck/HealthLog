@@ -3,7 +3,8 @@
 /**
  * The timeline's own life-event sheet (v1.42, #613): add from the header
  * button or a readiness link, edit from a life event in the chronicle or the
- * selection bar. A bottom sheet on a phone, a dialog above.
+ * selection bar. A bottom sheet on a phone, a dialog above. A dismissal
+ * asks first once the form differs from what it opened with.
  */
 import { useState } from "react";
 
@@ -24,11 +25,13 @@ export function LifeEventSheet({
 }) {
   const { t } = useTranslations();
   const [footer, setFooter] = useState<HTMLDivElement | null>(null);
+  const [formDirty, setFormDirty] = useState(false);
   const close = () => onOpenChange(false);
   return (
     <ResponsiveSheet
       open={open}
       onOpenChange={onOpenChange}
+      dirty={formDirty}
       title={event ? t("lifeEvents.edit") : t("lifeEvents.title")}
       contentWidth="lg"
       footer={<div ref={setFooter} className="flex w-full" />}
@@ -41,6 +44,7 @@ export function LifeEventSheet({
           onSuccess={close}
           onCancel={close}
           footerSlot={footer}
+          onDirtyChange={setFormDirty}
         />
       )}
     </ResponsiveSheet>

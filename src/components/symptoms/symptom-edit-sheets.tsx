@@ -78,6 +78,11 @@ export function EditSymptomEventSheet({
   // a link the list cannot show (a deleted episode, the list still loading)
   // is left alone rather than silently dropped.
   const initialEpisodeId = effectiveEpisodeId(event.episodeId, episodeOptions);
+  const dirty =
+    intensity !== event.intensity ||
+    occurredAt !== toLocalValue(event.occurredAt) ||
+    note !== (event.note ?? "") ||
+    linkedEpisodeId !== initialEpisodeId;
   const low = t("symptoms.entry.anchorLow");
   const high = t("symptoms.entry.anchorHigh");
 
@@ -107,6 +112,7 @@ export function EditSymptomEventSheet({
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
+      dirty={dirty}
       title={t("symptoms.section.editEventTitle", { symptom: label })}
       footer={
         <>
@@ -222,6 +228,10 @@ export function EditSymptomDefinitionSheet({
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
+      dirty={
+        label !== (definition.label ?? "") ||
+        icon !== (definition.icon ?? "Tag")
+      }
       title={t("symptoms.section.editSymptomTitle")}
       footer={
         <>
