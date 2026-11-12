@@ -129,17 +129,24 @@ function useShellScrollMemory(pathname: string): void {
     }
     if (!main) return;
     // A list still painting its skeleton is shorter than the offset; keep
-    // trying until it has the height, for at most a second.
-    const until = performance.now() + 1000;
+    // trying until it has the height, for at most three seconds, and stop as
+    // soon as the person scrolls themselves.
+    const until = performance.now() + 3000;
     let frame = 0;
+    const stop = () => cancelAnimationFrame(frame);
+    const inputs = ["wheel", "touchstart", "keydown", "pointerdown"];
     const apply = () => {
       main.scrollTop = target.top;
       if (main.scrollTop < target.top - 1 && performance.now() < until) {
         frame = requestAnimationFrame(apply);
       }
     };
+    for (const type of inputs) window.addEventListener(type, stop, true);
     apply();
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      stop();
+      for (const type of inputs) window.removeEventListener(type, stop, true);
+    };
   }, [pathname]);
 }
 
