@@ -9,11 +9,16 @@ async function browserSubscription(): Promise<PushSubscription | null> {
   return (await registration?.pushManager.getSubscription()) ?? null;
 }
 
+/**
+ * Bounded: on a connection that is up but carries nothing, sign-out would
+ * otherwise wait out the browser's own timeout before it even starts.
+ */
 function deleteServerRow(subscription: PushSubscription): Promise<Response> {
   return apiFetchRaw("/api/notifications/web-push", {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ endpoint: subscription.endpoint }),
+    signal: AbortSignal.timeout(5_000),
   });
 }
 

@@ -137,6 +137,8 @@ describe("useLogout", () => {
     expect(JSON.parse(String(deleteCall[1]?.body))).toEqual({
       endpoint: subscription.endpoint,
     });
+    // A connection that carries nothing must not hold the sign-out.
+    expect(deleteCall[1]?.signal).toBeInstanceOf(AbortSignal);
     expect(replace).toHaveBeenCalledWith("/auth/login");
   });
 
