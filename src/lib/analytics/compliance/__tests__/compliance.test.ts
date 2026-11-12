@@ -2933,7 +2933,7 @@ describe("tallyComplianceFromLedger — the unified % keystone", () => {
   });
 
   it("an off-schedule (ad-hoc) take is EXCLUDED + leaves its slot missed", () => {
-    // The maintainer's case: 07:00 dose logged at 11:29 → outside the band → ad-hoc;
+    // The reported case: 07:00 dose logged at 11:29 → outside the band → ad-hoc;
     // the 07:00 slot is missed; the 19:00 slot is also missed (untouched).
     const events = [
       { scheduledFor: at(7, 0), takenAt: at(11, 29), skipped: false },

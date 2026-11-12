@@ -163,7 +163,7 @@ describe("POST /api/ingest/medication — 422 multi-issue (v1.4.43 W6)", () => {
 });
 
 describe("POST /api/ingest/medication — slot attribution + convergence (v1.16.9)", () => {
-  // The maintainer's live bug: a daily 09:00 med, the worker pre-minted the
+  // The bug as it was seen: a daily 09:00 med, the worker pre-minted the
   // pending REMINDER row at 09:00 Berlin, the user ingested the take at
   // 08:42 Berlin via the external API. The bare create anchored a SECOND
   // row at 08:42 and left the 09:00 pending row open — reminder kept

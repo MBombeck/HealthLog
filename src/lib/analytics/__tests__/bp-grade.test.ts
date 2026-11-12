@@ -1,8 +1,8 @@
 /**
  * v1.15.12 — unit pins for the graded BP pillar score.
  *
- * The maintainer's apps01 profile (under-65 ceiling 129/79, avg 134/87)
- * is the canonical regression: the binary all-time in-target rate read
+ * A profile averaging 134/87 against the under-65 ceiling of 129/79 is the
+ * canonical regression: the binary all-time in-target rate read
  * ~10-16/100; the graded score must land in the borderline-stage-1 band
  * (low-to-mid 50s), not in the catastrophic band.
  */
@@ -16,7 +16,7 @@ import {
 } from "../bp-grade";
 import type { BpTargets } from "../bp-targets";
 
-// Under-65 ESH band — the maintainer's age band.
+// Under-65 ESH band.
 const UNDER65: BpTargets = {
   sysLow: 120,
   sysHigh: 129,
@@ -34,7 +34,7 @@ function bpScore(input: { sys: number; dia: number; target: BpTargets }) {
 }
 
 describe("gradeBpScore", () => {
-  it("grades the maintainer's 134/87 into the borderline band [45,60]", () => {
+  it("grades 134/87 into the borderline band [45,60]", () => {
     const score = bpScore({ sys: 134, dia: 87, target: UNDER65 });
     expect(score).toBeGreaterThanOrEqual(45);
     expect(score).toBeLessThanOrEqual(60);
@@ -145,7 +145,7 @@ describe("gradeBpScore", () => {
     ).toBeGreaterThanOrEqual(0);
   });
 
-  it("preserves the audit fairness anchors (134/87 → 57, 165/105 → 22)", () => {
+  it("preserves the fairness anchors (134/87 → 57, 165/105 → 22)", () => {
     expect(bpScore({ sys: 134, dia: 87, target: UNDER65 })).toBe(57);
     expect(bpScore({ sys: 165, dia: 105, target: UNDER65 })).toBe(22);
   });

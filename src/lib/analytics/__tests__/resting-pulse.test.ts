@@ -1,7 +1,7 @@
 /**
  * v1.15.12 — unit pins for resting-pulse estimation.
  *
- * The canonical regression (the maintainer's apps01 profile): a day with
+ * The canonical regression: a day with
  * ~500 high workout PULSE samples + ~10 resting reads must NOT classify
  * the day as a resting-HR excursion. A user with clean
  * RESTING_HEART_RATE (~72) reads healthy.

@@ -128,9 +128,9 @@ describe("isLegacyInsightPayload()", () => {
     expect(isLegacyInsightPayload({ summary: "x" })).toBe(false);
   });
 
-  it("returns true for the v1.4.14 pre-strict-schema shape (the maintainer's prod blob)", () => {
-    // The actual cached blob that crashed /insights for the live tenant on
-    // 2026-05-10. No `summary`, no `recommendations[]` — just the
+  it("returns true for the v1.4.14 pre-strict-schema shape", () => {
+    // A cached blob of this shape crashed /insights after the schema
+    // change. No `summary`, no `recommendations[]` — just the
     // pre-v1.4.16 `{changed, stable, drivers, nextSteps, confidence,
     // limitations}` shape. The route's `safeParse` failed and fell
     // through to the raw blob, so the rich card got `summary ===

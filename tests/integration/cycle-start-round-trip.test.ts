@@ -127,7 +127,7 @@ async function startPeriod(date: string): Promise<Response> {
   );
 }
 
-/** The three months of history the maintainer's record carried. */
+/** Three months of history, the shape the bug needed. */
 async function seedHistory(): Promise<void> {
   await startPeriod("2026-05-04");
   await startPeriod("2026-06-01");
