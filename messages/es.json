@@ -205,7 +205,7 @@
       "encounter-not-found": "Esta cita ya no existe. Elige otra o ninguna.",
       "custom-vaccine-not-found": "Esta vacuna ya no existe. Elígela de nuevo en la lista.",
       "not-found": "Esta vacuna ya no está disponible.",
-      "identity-required": "Una dosis necesita un nombre: elige una vacuna de la lista o escribe lo que pone el registro.",
+      "identity-required": "Una dosis necesita un nombre: elige una vacuna de la lista o escribe lo que figura en la cartilla.",
       "booster-invalid": "Comprueba los datos del refuerzo e inténtalo de nuevo.",
       "booster-no-antigen": "Esta dosis no indica ninguna vacuna del catálogo, así que no se puede planificar un refuerzo.",
       "booster-out-of-scope": "Tu acceso a este registro no permite planificar un refuerzo."

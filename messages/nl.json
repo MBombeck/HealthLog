@@ -205,7 +205,7 @@
       "encounter-not-found": "Dit bezoek bestaat niet meer. Kies een ander of geen.",
       "custom-vaccine-not-found": "Dit vaccin bestaat niet meer. Kies het opnieuw uit de lijst.",
       "not-found": "Deze vaccinatie is niet meer beschikbaar.",
-      "identity-required": "Een dosis heeft een naam nodig: kies een vaccin uit de lijst of typ wat er in het boekje staat.",
+      "identity-required": "Een dosis heeft een naam nodig: kies een vaccin uit de lijst of typ wat er op je vaccinatiebewijs staat.",
       "booster-invalid": "Controleer de gegevens van de booster en probeer het opnieuw.",
       "booster-no-antigen": "Deze dosis noemt geen vaccin uit de catalogus, dus er kan geen booster worden gepland.",
       "booster-out-of-scope": "Je toegang tot dit dossier dekt het plannen van een booster niet."

@@ -196,8 +196,8 @@
     "encounter": {
       "invalid": "Verifique os dados da consulta e tente novamente.",
       "practitioner-not-found": "Esta clínica ou médico não existe mais. Escolha outro ou nenhum.",
-      "reminder-not-found": "Este check não existe mais. Escolha outro ou nenhum.",
-      "reminder-conflict": "Uma consulta planejada não pode fechar um check, porque ainda não aconteceu."
+      "reminder-not-found": "Este check-up não existe mais. Escolha outro ou nenhum.",
+      "reminder-conflict": "Uma consulta planejada não pode fechar um check-up, porque ainda não aconteceu."
     },
     "vaccination": {
       "invalid": "Verifique os dados da vacina e tente novamente.",
@@ -13421,7 +13421,7 @@
     "created": "Consulta salva",
     "updated": "Consulta atualizada",
     "saveFailed": "Não foi possível salvar a consulta.",
-    "checkupNotClosed": "Consulta salva. O check permanece aberto; seu acesso não cobre isso.",
+    "checkupNotClosed": "Consulta salva. O check-up permanece aberto; seu acesso não cobre isso.",
     "status": {
       "planned": "Planejada",
       "done": "Comparecida",

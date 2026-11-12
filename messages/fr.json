@@ -219,7 +219,7 @@
     "workout": {
       "batch": {
         "invalid": "Vérifiez les informations de l'entraînement et réessayez.",
-        "too_large": "Trop d'entraînements à la fois. Envoyez-en moins à la fois.",
+        "too_large": "Trop d'entraînements à la fois. Envoyez-les par lots plus petits.",
         "payload_too_large": "Les données d'entraînement sont trop volumineuses pour être enregistrées en une fois.",
         "source_not_permitted": "Cette connexion n'a pas le droit d'enregistrer des entraînements sous cette source."
       }

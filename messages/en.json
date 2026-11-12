@@ -205,7 +205,7 @@
       "encounter-not-found": "This visit no longer exists. Choose another or none.",
       "custom-vaccine-not-found": "This vaccine no longer exists. Choose it again from the list.",
       "not-found": "This vaccination is no longer available.",
-      "identity-required": "A dose needs a name: pick a vaccine from the list or type what the record says.",
+      "identity-required": "A dose needs a name: pick a vaccine from the list or type the name on your vaccination card.",
       "booster-invalid": "Check the booster details and try again.",
       "booster-no-antigen": "This dose names no vaccine from the catalogue, so no booster can be planned for it.",
       "booster-out-of-scope": "Your access to this record does not cover planning a booster."
@@ -219,7 +219,7 @@
     "workout": {
       "batch": {
         "invalid": "Check the workout details and try again.",
-        "too_large": "Too many workouts at once. Send fewer at a time.",
+        "too_large": "Too many workouts at once. Send them in smaller batches.",
         "payload_too_large": "The workout data is too large to save in one go.",
         "source_not_permitted": "This connection may not save workouts under that source."
       }
