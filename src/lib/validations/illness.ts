@@ -69,9 +69,16 @@ const laterality = lateralityEnum.nullable().optional();
  * For create, `onsetAt` defaults to "now" server-side when omitted, so the invariant
  * only bites when BOTH instants are supplied (the inverted-window case). For update,
  * a partial edit touching only one instant is validated against the stored row in the
- * route. Instants are compared as parsed timestamps to correctly support mixed Z/offset
- * forms and fractional seconds.
+ * route. Milliseconds establish the order for mixed Z/offset forms; the
+ * remaining fraction is compared lexically because Date truncates finer precision.
  */
+const FRACTION_AFTER_MILLISECONDS =
+  /T\d{2}:\d{2}:\d{2}\.\d{3}(\d*)(?:Z|[+-]\d{2}:\d{2})$/;
+
+function fractionAfterMilliseconds(instant: string): string {
+  return FRACTION_AFTER_MILLISECONDS.exec(instant)?.[1] ?? "";
+}
+
 export function refineEpisodeWindow(
   v: { onsetAt?: string; resolvedAt?: string | null },
   ctx: z.RefinementCtx,
@@ -79,10 +86,18 @@ export function refineEpisodeWindow(
   if (v.resolvedAt && v.onsetAt) {
     const onsetMs = Date.parse(v.onsetAt);
     const resolvedMs = Date.parse(v.resolvedAt);
+    const extraOnsetFraction = fractionAfterMilliseconds(v.onsetAt).padEnd(
+      fractionAfterMilliseconds(v.resolvedAt).length,
+      "0",
+    );
+    const extraResolvedFraction = fractionAfterMilliseconds(
+      v.resolvedAt,
+    ).padEnd(extraOnsetFraction.length, "0");
     if (
       !Number.isNaN(onsetMs) &&
       !Number.isNaN(resolvedMs) &&
-      resolvedMs < onsetMs
+      (resolvedMs < onsetMs ||
+        (resolvedMs === onsetMs && extraResolvedFraction < extraOnsetFraction))
     ) {
       ctx.addIssue({
         code: "custom",

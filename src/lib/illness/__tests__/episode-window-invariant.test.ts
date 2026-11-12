@@ -329,6 +329,38 @@ describe("parsed instant comparison — mixed Z/offset forms and fractional seco
     }
   });
 
+  it("compares fractional seconds beyond Date's millisecond precision (create & update)", () => {
+    const onsetAt = "2026-01-10T12:00:00.0009Z";
+    const createOut = illnessEpisodeCreateSchema.safeParse({
+      label: "Migraine",
+      type: "OTHER",
+      onsetAt,
+      resolvedAt: "2026-01-10T12:00:00.0001Z",
+    });
+    expect(createOut.success).toBe(false);
+
+    const updateOut = illnessEpisodeUpdateSchema.safeParse({
+      onsetAt,
+      resolvedAt: "2026-01-10T12:00:00.0001Z",
+    });
+    expect(updateOut.success).toBe(false);
+
+    const offsetWindow = {
+      onsetAt: "2026-01-10T21:00:00.000900+09:00",
+      resolvedAt: "2026-01-10T12:00:00.00090Z",
+    };
+    expect(
+      illnessEpisodeCreateSchema.safeParse({
+        label: "Migraine",
+        type: "OTHER",
+        ...offsetWindow,
+      }).success,
+    ).toBe(true);
+    expect(illnessEpisodeUpdateSchema.safeParse(offsetWindow).success).toBe(
+      true,
+    );
+  });
+
   // Equal instant across different representations
   it("accepts equal instants across different offset representations (create & update)", () => {
     const createOut = illnessEpisodeCreateSchema.safeParse({
