@@ -471,17 +471,15 @@ const REGISTRY: DestructiveEntry[] = [
     destroys:
       "a visit with its reason, outcome and the links it collected — and, for a booked one, the appointment reminder that would have nudged about it",
     triggers: ["components/encounters/encounter-sheet.tsx"],
-    // The route soft-deletes and a restore route exists, but nothing in the
-    // product reaches it yet, so from a person's side the visit is gone. This
-    // becomes "restorable" the day a surface offers the undo, not before.
-    recovery: "tombstoned-no-restore",
+    // The delete toast offers the Undo that calls the restore route.
+    recovery: "restorable",
     confirm: ["AlertDialog"],
   },
   {
     file: "hooks/use-practitioners.ts",
     destroys: "one address-book entry",
     triggers: ["components/practitioners/practitioner-list.tsx"],
-    recovery: "tombstoned-no-restore",
+    recovery: "restorable",
     confirm: ["AlertDialog"],
   },
   {
@@ -489,9 +487,8 @@ const REGISTRY: DestructiveEntry[] = [
     destroys:
       "one logged dose with its lot, site and the document links it collected — the booster reminder it once satisfied is deliberately not rewound",
     triggers: ["components/vaccinations/vaccination-sheet.tsx"],
-    // The route soft-deletes and a restore route exists, but no surface offers
-    // the undo yet, so from a person's side the dose is gone.
-    recovery: "tombstoned-no-restore",
+    // The delete toast offers the Undo that calls the restore route.
+    recovery: "restorable",
     confirm: ["AlertDialog"],
   },
 
@@ -528,13 +525,6 @@ const REGISTRY: DestructiveEntry[] = [
     destroys:
       "every intake event for a medication, or the medication with its schedules and inventory",
     recovery: "permanent",
-    confirm: ["AlertDialog"],
-  },
-  {
-    file: "components/medications/intake-history-editable.tsx",
-    destroys: "one intake event, or every selected intake event",
-    triggers: ["components/medications/intake-history-list-v2.tsx"],
-    recovery: "tombstoned-no-restore",
     confirm: ["AlertDialog"],
   },
   {

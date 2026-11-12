@@ -19,6 +19,7 @@ vi.mock("@/lib/crypto", () => ({
 }));
 
 import { prisma } from "@/lib/db";
+import { chainWithReasoningEffort } from "../provider-chain";
 import type { ProviderWorkAuthority } from "@/lib/sharing/provider-work-authority";
 
 import {
@@ -204,21 +205,70 @@ describe("probeProviderChain", () => {
     expect(presence.managedBy).toBe("server");
   });
 
-  it("falls back to the legacy single provider only for an empty chain", async () => {
-    // A chain whose only entry is switched off resolves empty.
+  it("finds nothing on a saved chain whose entries are all switched off", async () => {
+    // The person picked Anthropic, then switched it off in their chain, and
+    // the operator has a key: neither may serve behind the switch.
     load(
       row({
         aiProviderChain: [
           { providerType: "anthropic", enabled: false, priority: 0 },
+          { providerType: "admin-openai", enabled: false, priority: 1 },
         ],
         aiProvider: "ANTHROPIC",
         aiAnthropicKeyEncrypted: "enc",
       }),
+      settings({ adminAiKeyEncrypted: "enc" }),
     );
     const presence = await probeProviderChain("u1", OWNER);
+    expect(presence.entries).toEqual([]);
+    expect(presence.managedBy).toBeNull();
+  });
+
+  it("serves the picked gateway on a chain never saved, under its own name", async () => {
+    // The default chain has no gateway entry, so the gateway the person picked
+    // is what serves them.
+    const gateway = {
+      aiProvider: "OPENAI_COMPATIBLE",
+      aiCompatBaseUrl: "https://gateway.example/v1",
+      aiCompatModel: "llama-3",
+    };
+    load(row(gateway));
+    const presence = await probeProviderChain("u1", OWNER);
     expect(presence.entries.map((e) => e.providerType)).toEqual([
-      "admin-openai",
+      "openai-compatible",
     ]);
+    expect(presence.managedBy).toBe("user");
+
+    // A saved chain without it says nothing about the gateway, and neither
+    // does the switched-off entry the gateway form wrote for its reasoning
+    // effort.
+    for (const aiProviderChain of [
+      [{ providerType: "local", enabled: true, priority: 1 }],
+      chainWithReasoningEffort(null, "openai-compatible", "low"),
+    ]) {
+      load(row({ ...gateway, aiProviderChain }));
+      expect(
+        (await probeProviderChain("u1", OWNER)).entries.map(
+          (e) => e.providerType,
+        ),
+      ).toEqual(["openai-compatible"]);
+    }
+
+    // Switched off in the chain, the gateway stays off.
+    load(
+      row({
+        ...gateway,
+        aiProviderChain: [
+          { providerType: "local", enabled: true, priority: 1 },
+          { providerType: "openai-compatible", enabled: false, priority: 2 },
+        ],
+      }),
+    );
+    expect((await probeProviderChain("u1", OWNER)).entries).toEqual([]);
+    expect(await resolveProviderAvailability("u1")).toEqual({
+      aiAvailable: false,
+      managedBy: null,
+    });
   });
 
   it("carries the person's in-browser OCR opt-in", async () => {

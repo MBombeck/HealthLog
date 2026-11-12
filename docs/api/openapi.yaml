@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.47.2
+  version: 1.47.3
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -13677,9 +13677,9 @@ paths:
         and the profile facts every band was resolved from. Pure compute over the record's own data — no provider
         anywhere on the path. Stale-while-revalidate: past the fresh window the prior body serves immediately while one
         background rebuild warms the cell, and a write hard-evicts the bucket so the account's own action lands on the
-        next read. Delegable at MANAGE level over the whole record: the walk spans vitals, sleep, medications, mood and
-        glucose, so a section-scoped grant is refused rather than served a filtered page. Not module-gated as a whole; a
-        tile whose data does not exist is simply absent. Cookie or Bearer auth."
+        next read. Delegable at READ level over the whole record, like the dashboard snapshot: the walk spans vitals,
+        sleep, medications, mood and glucose, so a section-scoped grant is refused rather than served a filtered page.
+        Not module-gated as a whole; a tile whose data does not exist is simply absent. Cookie or Bearer auth."
       responses:
         "200":
           description: The target tiles and their page summary.
@@ -32053,11 +32053,11 @@ components:
           properties:
             min:
               type: number
-              minimum: 30
+              minimum: 1
               maximum: 300
             max:
               type: number
-              minimum: 30
+              minimum: 1
               maximum: 300
           required:
             - min
@@ -38564,11 +38564,11 @@ components:
               properties:
                 min:
                   type: number
-                  minimum: 30
+                  minimum: 1
                   maximum: 300
                 max:
                   type: number
-                  minimum: 30
+                  minimum: 1
                   maximum: 300
               required:
                 - min
@@ -39694,35 +39694,36 @@ components:
                 activity.calendar.future_date, activity.calendar.too_old; admin — admin.users.delete.managed_profile,
                 admin.users.delete.self; ai — ai.budget.exceeded, ai.provider.none, ai.record.notPermitted,
                 ai.unavailable, ai.usage.aboveCeiling, ai.usage.defaultAboveCeiling, ai.usage.invalid,
-                ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider — ai_provider.invalid, ai_provider.no_fields;
-                aiRuns — aiRuns.failed, aiRuns.notFound, aiRuns.readerBusy, aiRuns.timedOut, aiRuns.workerUnavailable;
-                allergy — allergy.invalid; analytics — analytics.invalid_query; anamnesis — anamnesis.auditC.invalid,
-                anamnesis.auditC.notFound, anamnesis.auditC.rateLimited, anamnesis.fact.conflict,
-                anamnesis.fact.currentExists, anamnesis.fact.invalidValue, anamnesis.lifeConfirm.invalid,
-                anamnesis.lifeSections.invalid; auth — auth.account.deletion_pending, auth.admin.required,
-                auth.already_authenticated, auth.mfa.code_invalid, auth.missing, auth.refresh.invalid,
-                auth.refresh.reuse, auth.refresh.revoked, auth.reproof.failed, auth.reproof.required,
-                auth.reproof.too_weak, auth.scope.insufficient, auth.session.insecure_transport,
-                auth.session.unavailable, auth.stepup.required, auth.token.expired, auth.token.invalid; backup —
-                backup.foreign_reference, backup.key.missing, backup.owner.exists, backup.owner.missing,
-                backup.payload.undecryptable, backup.restore.active, backup.restore.rows_exist_elsewhere,
-                backup.section.missing, backup.target.admin_account, backup.target.holds_records,
-                backup.target.managed_profile, backup.target.not_found, backup.target.pending_deletion,
-                backup.target.unconfirmed, backup.target.username_taken, backup.upload.too_large; biomarkers —
-                biomarkers.unit.locked; body-site — body-site.invalid; coach — coach.budget.exceeded,
-                coach.conversation.invalidTitle, coach.conversation.notFound, coach.fenced.attachmentConflict,
-                coach.fenced.attachmentLimit, coach.fenced.attachmentNotFound, coach.fenced.attachmentNotIndexed,
-                coach.fenced.attachmentRequired, coach.fenced.attachmentUnavailable, coach.fenced.invalid,
-                coach.request.invalid; coach-prefs — coach-prefs.body.invalid_json, coach-prefs.body.invalid_shape;
-                consent — consent.ai.confirmRequired, consent.ai.required; cycle — cycle.bulk.invalid,
-                cycle.bulk.too_large, cycle.calendar.invalid, cycle.calendar.range, cycle.cycles.invalid,
-                cycle.day-log.conflict, cycle.day-log.invalid, cycle.disabled, cycle.feed.api_disabled,
-                cycle.feed.cookie_only, cycle.feed.exists, cycle.feed.fertile_goal, cycle.feed.none,
-                cycle.feed.notFound, cycle.feed.rateLimited, cycle.period.invalid, cycle.symptom.custom.invalid,
-                cycle.symptom.custom.limit; cycle-prefs — cycle-prefs.body.invalid_json, cycle-prefs.invalid;
-                disable-coach — disable-coach.body.invalid_json; data_wipe — data_wipe.copy_failed; dawarich —
-                dawarich.credentials_rejected, dawarich.home_place_unknown, dawarich.invalid, dawarich.not_connected,
-                dawarich.rate_limited, dawarich.unreachable; day — day.invalid; demo — demo.readOnly; documents —
+                ai.usage.levelTooLow, ai.usage.rateLimited; ai_provider — ai_provider.invalid, ai_provider.no_fields,
+                ai_provider.private_host; aiRuns — aiRuns.failed, aiRuns.notFound, aiRuns.readerBusy, aiRuns.timedOut,
+                aiRuns.workerUnavailable; allergy — allergy.invalid; analytics — analytics.invalid_query; anamnesis —
+                anamnesis.auditC.invalid, anamnesis.auditC.notFound, anamnesis.auditC.rateLimited,
+                anamnesis.fact.conflict, anamnesis.fact.currentExists, anamnesis.fact.invalidValue,
+                anamnesis.lifeConfirm.invalid, anamnesis.lifeSections.invalid; auth — auth.account.deletion_pending,
+                auth.admin.required, auth.already_authenticated, auth.mfa.already_active, auth.mfa.code_invalid,
+                auth.missing, auth.passkey.last_method, auth.refresh.invalid, auth.refresh.reuse, auth.refresh.revoked,
+                auth.reproof.failed, auth.reproof.required, auth.reproof.too_weak, auth.scope.insufficient,
+                auth.session.insecure_transport, auth.session.unavailable, auth.stepup.required, auth.token.expired,
+                auth.token.invalid; backup — backup.foreign_reference, backup.key.missing, backup.owner.exists,
+                backup.owner.missing, backup.payload.undecryptable, backup.restore.active,
+                backup.restore.rows_exist_elsewhere, backup.section.missing, backup.target.admin_account,
+                backup.target.holds_records, backup.target.managed_profile, backup.target.not_found,
+                backup.target.pending_deletion, backup.target.unconfirmed, backup.target.username_taken,
+                backup.upload.too_large; biomarkers — biomarkers.unit.locked; body-site — body-site.invalid; coach —
+                coach.budget.exceeded, coach.conversation.invalidTitle, coach.conversation.notFound,
+                coach.fenced.attachmentConflict, coach.fenced.attachmentLimit, coach.fenced.attachmentNotFound,
+                coach.fenced.attachmentNotIndexed, coach.fenced.attachmentRequired, coach.fenced.attachmentUnavailable,
+                coach.fenced.invalid, coach.request.invalid; coach-prefs — coach-prefs.body.invalid_json,
+                coach-prefs.body.invalid_shape; consent — consent.ai.confirmRequired, consent.ai.required; customMetric
+                — customMetric.name_taken; cycle — cycle.bulk.invalid, cycle.bulk.too_large, cycle.calendar.invalid,
+                cycle.calendar.range, cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid,
+                cycle.disabled, cycle.feed.api_disabled, cycle.feed.cookie_only, cycle.feed.exists,
+                cycle.feed.fertile_goal, cycle.feed.none, cycle.feed.notFound, cycle.feed.rateLimited,
+                cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs —
+                cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json;
+                data_wipe — data_wipe.copy_failed; dawarich — dawarich.credentials_rejected,
+                dawarich.home_place_unknown, dawarich.invalid, dawarich.not_connected, dawarich.rate_limited,
+                dawarich.unreachable; day — day.invalid; demo — demo.readOnly; documents —
                 documents.chat.conversationNotFound, documents.chat.invalid, documents.inbound.alreadyConfirmed,
                 documents.inbound.alreadyPartlyConfirmed, documents.inbound.budgetExceeded,
                 documents.inbound.decryptFailed, documents.inbound.encounterNotFound, documents.inbound.episodeNotFound,
@@ -90607,7 +90608,8 @@ components:
           type: array
           items:
             type: string
-          description: Every event category the server knows, in declaration order — the list a client renders rows for.
+          description: "The event categories this account is shown a switch for, in declaration order: the list a client renders
+            rows for. A category nothing sends is not listed, and `preferences` carries no stored row for it."
         eventDefaults:
           type: object
           propertyNames:
@@ -90663,7 +90665,7 @@ components:
         - eventTypes
         - eventDefaults
       additionalProperties: false
-      description: The caller's notification channels, their stored per-event overrides, and the full event vocabulary.
+      description: The caller's notification channels, their stored per-event overrides, and the event categories they can switch.
     NotificationChannelSummary:
       type: object
       properties:

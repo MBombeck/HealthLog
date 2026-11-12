@@ -551,10 +551,11 @@ describe("<MessageThread>", () => {
   });
 
   it("falls back to initials when no avatar URL is present", () => {
-    // Default mock returns avatarUrl: null → initials path.
+    // Default mock returns avatarUrl: null → initials path, spelled like the
+    // top bar's: one word, one letter.
     const html = render(<MessageThread conversation={baseConversation} />);
     expect(html).toContain('data-slot="coach-bubble-user-avatar"');
-    expect(html).toMatch(/data-slot="coach-bubble-user-avatar"[^>]*>TE</);
+    expect(html).toMatch(/data-slot="coach-bubble-user-avatar"[^>]*>T</);
   });
 
   // v1.4.25 — optimistic user bubble appears before the "Thinking…"

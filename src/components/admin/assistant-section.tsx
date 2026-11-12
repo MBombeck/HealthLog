@@ -15,6 +15,7 @@ import {
 } from "@/lib/query-keys";
 import { SettingsToggle } from "./_shared";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import {
@@ -105,12 +106,9 @@ function useUpdateAssistantFlags() {
       toast.success(t("common.saved"));
     },
     onError: (err) => {
-      showErrorToast(
-        err instanceof Error && err.message
-          ? err.message
-          : t("admin.settingsSaveError"),
-        { cause: err },
-      );
+      showErrorToast(localizedApiError(err, t, "admin.settingsSaveError"), {
+        cause: err,
+      });
       client.invalidateQueries({
         queryKey: queryKeys.adminAssistantFlags(),
       });

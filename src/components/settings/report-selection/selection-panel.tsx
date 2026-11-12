@@ -49,6 +49,7 @@ import { ReportVisitOffer } from "./report-visit-offer";
 import { Switch } from "@/components/ui/switch";
 import { useRovingRadioGroup } from "@/hooks/use-roving-radio-group";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import {
   recentProofErrorMessage,
   throwIfReproofRequired,
@@ -177,7 +178,7 @@ export function HealthRecordExportPanel() {
       }
       const message = recentProofErrorMessage(
         err,
-        err instanceof Error ? err.message : String(err),
+        localizedApiError(err, t, "settings.healthRecord.errorGeneric"),
       );
       if (message) setError(message);
     } finally {

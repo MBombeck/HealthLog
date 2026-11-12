@@ -128,9 +128,10 @@ describe("<ManualWorkoutForm>", () => {
     await pickSport("Running");
     await screen.getByLabelText("Minutes").fill("30");
     await save.click();
+    // The form's own sentence, never the server's English prose.
     await expect
       .element(screen.getByRole("alert"))
-      .toHaveTextContent("Service unavailable");
+      .toHaveTextContent("The workout could not be saved");
     expect(onSuccess).not.toHaveBeenCalled();
 
     api.on("POST", BATCH, {

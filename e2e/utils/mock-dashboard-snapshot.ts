@@ -13,10 +13,11 @@ import type {
   DashboardTargetBands,
 } from "@/lib/dashboard/snapshot";
 import { getBpTargets } from "@/lib/analytics/bp-targets";
+import { METRIC_BOUNDS } from "@/lib/analytics/effective-range";
 import {
   buildTrafficLightBands,
   buildTrafficRange,
-  buildWeightBandsFromHeight,
+  buildBandsFromTrafficRange,
   buildWeightRangeFromHeight,
   getBodyFatTargetRange,
 } from "@/lib/analytics/value-bands";
@@ -77,8 +78,8 @@ function mockTargetBands(): DashboardTargetBands {
       upperBound: 55,
     }),
     weightRange: buildWeightRangeFromHeight(180),
-    weightBands: buildWeightBandsFromHeight(180, {
-      lowerBound: 30,
+    weightBands: buildBandsFromTrafficRange(buildWeightRangeFromHeight(180), {
+      lowerBound: METRIC_BOUNDS.WEIGHT.min,
       upperBound: 250,
     }),
   };

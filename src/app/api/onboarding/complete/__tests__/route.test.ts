@@ -90,6 +90,20 @@ describe("POST /api/onboarding/complete", () => {
     );
   });
 
+  it("stores a date of birth from the iOS app as its day in the owner's zone", async () => {
+    vi.mocked(getSession).mockResolvedValue({
+      ...SESSION_OK,
+      user: { ...SESSION_OK.user, timezone: "Europe/Berlin" },
+    } as unknown as Awaited<ReturnType<typeof getSession>>);
+    // 14 May picked at 00:30 in Berlin.
+    const res = await POST(req({ dateOfBirth: "1960-05-13T23:30:00Z" }));
+    expect(res.status).toBe(200);
+    const data = vi.mocked(prisma.user.update).mock.calls[0]![0]!.data as {
+      dateOfBirth: Date;
+    };
+    expect(data.dateOfBirth.toISOString()).toBe("1960-05-14T12:00:00.000Z");
+  });
+
   it("still refuses an unsupported gender", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     const res = await POST(req({ gender: "diverse" }));

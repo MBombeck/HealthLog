@@ -40,7 +40,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
 import { useAuth, useLogout } from "@/hooks/use-auth";
-import { accountName } from "@/lib/account-name";
+import { accountName, nameInitials } from "@/lib/account-name";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { useNavModules } from "@/hooks/use-nav-modules";
 import { useMounted } from "@/hooks/use-mounted";
@@ -96,14 +96,6 @@ export function writeSidebarCollapsedPref(collapsed: boolean): void {
   } catch {
     // Private mode or blocked storage: the choice lasts for this page only.
   }
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(/[\s._-]+/)
-    .slice(0, 2)
-    .map((s) => s[0]?.toUpperCase() ?? "")
-    .join("");
 }
 
 /**
@@ -170,7 +162,7 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
       <Avatar className="h-9 w-9 shrink-0">
         {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
         <AvatarFallback className="bg-primary/15 text-primary text-xs font-medium">
-          {getInitials(name)}
+          {nameInitials(name)}
         </AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1">
@@ -286,7 +278,7 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
               <Avatar className="h-8 w-8" aria-hidden="true">
                 {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
                 <AvatarFallback className="bg-primary/15 text-primary text-xs font-medium">
-                  {getInitials(name)}
+                  {nameInitials(name)}
                 </AvatarFallback>
               </Avatar>
             </DropdownMenuTrigger>
@@ -313,7 +305,7 @@ function SidebarUserSection({ collapsed }: { collapsed: boolean }) {
           <Avatar className="h-8 w-8 shrink-0" aria-hidden="true">
             {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
             <AvatarFallback className="bg-primary/15 text-primary text-xs font-medium">
-              {getInitials(name)}
+              {nameInitials(name)}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">

@@ -99,6 +99,9 @@ vi.mock("@/lib/notifications/dispatcher", () => ({
 }));
 vi.mock("@/lib/crypto", () => ({ decrypt: vi.fn(() => "token") }));
 vi.mock("@/lib/telegram", () => ({ deleteMessage: vi.fn() }));
+vi.mock("@/lib/modules/gate", () => ({
+  isModuleEnabled: vi.fn().mockResolvedValue(true),
+}));
 vi.mock("@/lib/notifications/reminder-dedup", () => ({
   claimNotificationEvent: vi.fn().mockResolvedValue(true),
   medicationReminderDedupKey: vi.fn(() => "dedup-key"),
@@ -108,8 +111,10 @@ vi.mock("@/lib/notifications/reminder-dedup", () => ({
 import {
   handleReminderCheck,
   nextSlotHeldBySnooze,
+  slotClock,
 } from "@/lib/jobs/reminder/medication-reminder-check";
 import { dispatchNotification } from "@/lib/notifications/dispatcher";
+import { isModuleEnabled } from "@/lib/modules/gate";
 
 function medicationWithSchedule(
   schedule: Record<string, unknown>,
@@ -301,6 +306,54 @@ describe("handleReminderCheck per-slot reminder windows", () => {
     await handleReminderCheck([]);
 
     expect(dispatchNotification).not.toHaveBeenCalled();
+  });
+});
+
+describe("the slot time in the reminder text follows the 12/24-hour setting", () => {
+  // 20:00 in Berlin on a summer day.
+  const slot = new Date("2026-07-28T18:00:00.000Z");
+
+  it("AUTO follows the message's language", () => {
+    const clock = slotClock(slot, "Europe/Berlin", {
+      timeFormat: "AUTO",
+      dateFormat: "AUTO",
+    });
+    expect(clock("en")).toBe("08:00 PM");
+    expect(clock("de")).toBe("20:00");
+  });
+
+  it("an explicit choice wins over the language", () => {
+    expect(
+      slotClock(slot, "Europe/Berlin", {
+        timeFormat: "H24",
+        dateFormat: "AUTO",
+      })("en"),
+    ).toBe("20:00");
+    expect(
+      slotClock(slot, "Europe/Berlin", {
+        timeFormat: "H12",
+        dateFormat: "AUTO",
+      })("de"),
+    ).toBe("08:00 PM");
+  });
+
+  it("the dispatched reminder carries the person's clock", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-28T09:15:00.000Z"));
+    const medication = medicationWithSchedule({
+      windowEnd: "18:00",
+      timesOfDay: ["08:00", "18:00"],
+    });
+    prismaMock.medication.findMany.mockResolvedValue([medication]);
+
+    await handleReminderCheck([]);
+
+    expect(dispatchNotification).toHaveBeenCalledTimes(1);
+    const payload = vi.mocked(dispatchNotification).mock.calls[0][0];
+    // An `en` owner on AUTO reads a 12-hour clock, as on the medication card.
+    expect(payload.message).toContain("08:00 AM");
+    // A recipient in another language gets that language's clock.
+    expect(payload.renderForRecipient?.("de").message).toContain("08:00)");
   });
 });
 
@@ -858,6 +911,26 @@ describe("issue #664 — exact occurrence identity survives local midnight", () 
         }),
       }),
     );
+  });
+
+  it("with the Medications module off, neither reminds nor mints the missed row", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-29T02:30:00.000Z")); // 04:30 Jul 29
+    const medication = crossMidnightMedication("Europe/Berlin");
+    prismaMock.medication.findMany.mockResolvedValue([
+      medication,
+      { ...medication, id: "medication-2" },
+    ]);
+    setIntakeEvents([]);
+    vi.mocked(isModuleEnabled).mockResolvedValueOnce(false);
+
+    await handleReminderCheck([]);
+
+    // One read for the owner, not one per medication or slot.
+    expect(isModuleEnabled).toHaveBeenCalledTimes(1);
+    expect(isModuleEnabled).toHaveBeenCalledWith("user-1", "medications");
+    expect(prismaMock.medicationIntakeEvent.create).not.toHaveBeenCalled();
+    expect(dispatchNotification).not.toHaveBeenCalled();
   });
 
   it("does not mint a second missed row for a dose taken just before midnight", async () => {

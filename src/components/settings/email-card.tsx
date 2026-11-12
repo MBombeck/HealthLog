@@ -14,10 +14,13 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { TestConnectionButton } from "@/components/settings/test-connection-button";
 import { isEmailFormDirty } from "@/components/settings/channel-form-dirty";
 import { toastWrittenOutcome } from "@/components/outcome/outcome-toast";
-import { useChannelEnabledToggle } from "@/components/settings/notification-channel-toggle";
+import {
+  channelSaveError,
+  useChannelEnabledToggle,
+} from "@/components/settings/notification-channel-toggle";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
+import { apiFetchRaw, apiGet, throwApiError } from "@/lib/api/api-fetch";
 
 interface EmailSettings {
   enabled: boolean;
@@ -64,10 +67,7 @@ export function EmailCard({ isAuthenticated }: { isAuthenticated: boolean }) {
           enabled: settings?.enabled ?? false,
         }),
       });
-      if (!res.ok) {
-        const json = await res.json();
-        throw new Error(json.error || t("common.error"));
-      }
+      if (!res.ok) await throwApiError(res);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.settingsEmail() });
@@ -75,8 +75,8 @@ export function EmailCard({ isAuthenticated }: { isAuthenticated: boolean }) {
       toastWrittenOutcome("success", t("settings.saved"));
     },
     // A form shows its refusal inline, next to the field it is about.
-    onError: (err: Error) => {
-      setSaveError(err.message);
+    onError: (err) => {
+      setSaveError(channelSaveError(err, t));
     },
   });
 

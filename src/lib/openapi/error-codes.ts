@@ -58,7 +58,11 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "ai.usage.levelTooLow",
       "ai.usage.rateLimited",
     ],
-    ai_provider: ["ai_provider.invalid", "ai_provider.no_fields"],
+    ai_provider: [
+      "ai_provider.invalid",
+      "ai_provider.no_fields",
+      "ai_provider.private_host",
+    ],
     aiRuns: [
       "aiRuns.failed",
       "aiRuns.notFound",
@@ -82,8 +86,10 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "auth.account.deletion_pending",
       "auth.admin.required",
       "auth.already_authenticated",
+      "auth.mfa.already_active",
       "auth.mfa.code_invalid",
       "auth.missing",
+      "auth.passkey.last_method",
       "auth.refresh.invalid",
       "auth.refresh.reuse",
       "auth.refresh.revoked",
@@ -135,6 +141,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "coach-prefs.body.invalid_shape",
     ],
     consent: ["consent.ai.confirmRequired", "consent.ai.required"],
+    customMetric: ["customMetric.name_taken"],
     cycle: [
       "cycle.bulk.invalid",
       "cycle.bulk.too_large",

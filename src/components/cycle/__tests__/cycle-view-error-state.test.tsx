@@ -42,7 +42,11 @@ const idleQuery = {
 const mutationStub = { mutate: vi.fn(), isPending: false, isError: false };
 
 vi.mock("../use-cycle", () => ({
-  localYmd: () => "2026-07-01",
+  useCycleWindow: () => ({
+    today: "2026-07-01",
+    from: "2026-04-02",
+    to: "2026-12-28",
+  }),
   useCycleCalendar: () => errorQuery,
   useCycleHistory: () => idleQuery,
   useCycleInsights: () => idleQuery,

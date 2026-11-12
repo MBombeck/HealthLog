@@ -49,15 +49,15 @@ const FACTORY = "lib/query-keys/index.ts";
  * match — the wrapper carries the refetch internally, so they are compliant by
  * construction and correctly invisible here.
  *
- * The cycle / encounter / vaccination / illness families joined the matcher
- * alongside the original three: the encounter and illness bundles now carry a
- * daily-read key directly, the vaccination bundle's reminder root feeds the
- * Today rail, and cycle rides along so a future daily-read key added to its
+ * The cycle / encounter / vaccination / illness / workout families joined the
+ * matcher alongside the original three: the encounter, illness and workout
+ * bundles carry a daily-read key directly, the vaccination bundle's reminder
+ * root feeds the Today rail, and cycle rides along so a future daily-read key added to its
  * bundle cannot ship an unpaired site silently (its current sites are
  * allowlisted below with the reason).
  */
 const INVALIDATION =
-  /invalidateKeys\(\s*[^,]+,\s*\[?\s*(?:\.\.\.)?\s*(?:medicationDependentKeys|measurementDependentKeys|moodDependentKeys|cycleDependentKeys|encounterDependentKeys|vaccinationDependentKeys|illnessDependentKeys)\b/g;
+  /invalidateKeys\(\s*[^,]+,\s*\[?\s*(?:\.\.\.)?\s*(?:medicationDependentKeys|measurementDependentKeys|moodDependentKeys|cycleDependentKeys|encounterDependentKeys|vaccinationDependentKeys|illnessDependentKeys|workoutDependentKeys)\b/g;
 // Match the CALL form only (open paren), never the bare import specifier —
 // otherwise the `import { refetchInactiveDailyReads }` line would inflate the
 // count and let a file drop one paired call while still "passing".
@@ -234,7 +234,6 @@ describe("daily-reads refetch guard", () => {
     const routedThroughHelper = [
       "components/medications/take-all-due.ts",
       "components/medications/intake-edit-dialog.tsx",
-      "components/medications/intake-history-editable.tsx",
       "components/medications/intake-import-dialog.tsx",
       "components/medications/sections/destructive-zone-section.tsx",
       "components/medications/use-medication-intake.ts",

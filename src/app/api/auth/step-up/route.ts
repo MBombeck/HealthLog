@@ -40,6 +40,7 @@ import {
   rateLimitHeaders,
 } from "@/lib/rate-limit";
 import {
+  REPROOF_FAILED_CODE,
   REPROOF_LIMIT,
   REPROOF_WINDOW_MS,
   reproofBucket,
@@ -132,7 +133,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
       action: { name: "auth.stepup.mint.failed" },
       meta: { method: parsed.data.method, reason: failure },
     });
-    return apiError("Verification failed", 401);
+    return apiError("Verification failed", 401, {
+      errorCode: REPROOF_FAILED_CODE,
+    });
   }
 
   const { token, expiresAt } = await mintStepUpElevation({

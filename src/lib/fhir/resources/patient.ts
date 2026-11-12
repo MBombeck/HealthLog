@@ -49,8 +49,7 @@ export function patientResource(
     resourceType: "Patient",
     id: PATIENT_RESOURCE_ID,
   };
-  const displayName = data.patient.fullName ?? data.patient.username ?? null;
-  if (displayName) patient.name = [{ text: displayName }];
+  if (data.patient.name) patient.name = [{ text: data.patient.name }];
   const gender = administrativeGender(data.patient.gender);
   if (gender) patient.gender = gender;
   if (data.patient.dateOfBirth) {

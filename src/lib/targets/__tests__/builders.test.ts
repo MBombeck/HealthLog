@@ -274,3 +274,50 @@ describe("buildVitalTargets — user weight target", () => {
     expect(weight?.source).toBe("Custom");
   });
 });
+
+describe("buildVitalTargets — a child's record", () => {
+  // 118 cm and 21 kg: a BMI of about 15, normal for a six-year-old and red
+  // under the adult cut-offs.
+  const child = {
+    recentMeasurements: [],
+    restingPulseProxy: [],
+    latestByType: { WEIGHT: 21 },
+    average30ByType: { WEIGHT: 21 },
+    heightCm: 118,
+    age: 6,
+    gender: null,
+    timezone: TZ,
+    now: NOW,
+    weightTargetOverride: null,
+    adultBands: false,
+  };
+  const card = (
+    targets: ReturnType<typeof buildVitalTargets>["targets"],
+    type: string,
+  ) => targets.find((t) => t.type === type);
+
+  it("keeps the values and names no adult band or category", () => {
+    const { targets } = buildVitalTargets(child);
+    expect(card(targets, "WEIGHT")).toMatchObject({
+      current: 21,
+      range: null,
+      classification: null,
+    });
+    expect(card(targets, "BMI")).toMatchObject({
+      current: 15.1,
+      range: null,
+      classification: null,
+    });
+  });
+
+  it("keeps the record's own weight target", () => {
+    const { targets } = buildVitalTargets({
+      ...child,
+      weightTargetOverride: { min: 19, max: 24 },
+    });
+    expect(card(targets, "WEIGHT")).toMatchObject({
+      range: { min: 19, max: 24 },
+      source: "Custom",
+    });
+  });
+});

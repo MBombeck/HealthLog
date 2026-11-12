@@ -154,9 +154,10 @@ describe("AI consent is granted only by the person's own tap", () => {
         }
       }
     }
-    // Non-zero floors: a matcher that stops matching is red, not green.
-    expect(callers).toBeGreaterThanOrEqual(3);
-    expect(sites).toBeGreaterThanOrEqual(3);
+    // Non-zero floors: a matcher that stops matching is red, not green. Two
+    // callers today: the consent request and the document-reading prompt.
+    expect(callers).toBeGreaterThanOrEqual(2);
+    expect(sites).toBeGreaterThanOrEqual(2);
   });
 
   it("keeps both grant routes refusing a request without the confirmation", () => {

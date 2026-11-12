@@ -18,6 +18,7 @@ import {
 import { DayDrillDown, SleepNightCaption } from "./day-drill-down";
 import {
   MeasurementRowActions,
+  isServerComputed,
   rowState,
   typeLabel,
   type MeasurementRowContext,
@@ -83,7 +84,7 @@ function MeasurementCard({
     >
       <div className="flex items-center justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-2">
-          {!isGrouped && canManage && (
+          {!isGrouped && !isServerComputed(m) && canManage && (
             // The checkbox owns its 44 px hit area through an `after`
             // hit-slop inside a plain layout `<div>`: a wrapper `<button>`
             // would nest a button in a button, invalid markup that failed

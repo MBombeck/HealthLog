@@ -33,6 +33,7 @@ import {
 import { FieldGroup } from "@/components/ui/field-group";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import {
   customLookupOf,
@@ -105,10 +106,9 @@ export function BoosterMintPrompt({
       });
       toastWrittenOutcome("success", t("vaccinations.booster.planned"));
     } catch (err) {
-      showErrorToast(
-        err instanceof Error ? err.message : t("vaccinations.booster.failed"),
-        { cause: err },
-      );
+      showErrorToast(localizedApiError(err, t, "vaccinations.booster.failed"), {
+        cause: err,
+      });
     } finally {
       onClose();
     }

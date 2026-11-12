@@ -362,29 +362,18 @@ export async function handleCoachReminderSweep(): Promise<JobOutcome> {
 }
 
 /**
- * The n-of-1 experiment review: writes the grounded before/after read-back
- * into the plan's encrypted outcome. A reviewed plan is not re-processed.
+ * The Coach plan review: moves each active plan whose review reminder fired
+ * to `reviewed`. A reviewed plan is not re-processed.
  */
 export async function handleCoachPlanReview(): Promise<JobOutcome> {
   return withBackgroundEvent("job.coach_plan_review", async (evt) => {
     try {
-      const summary = await runCoachPlanReviewTick(
-        getWorkerPrisma(),
-        new Date(),
-      );
+      const summary = await runCoachPlanReviewTick(getWorkerPrisma());
       evt.setBackground({
         task_name: "job.coach_plan_review",
-        result: {
-          reviewed: summary.reviewed,
-          insufficient: summary.insufficient,
-          errored: summary.errored,
-        },
+        result: { reviewed: summary.reviewed },
       });
-      return jobDone({
-        reviewed: summary.reviewed,
-        insufficient: summary.insufficient,
-        errored: summary.errored,
-      });
+      return jobDone({ reviewed: summary.reviewed });
     } catch (err) {
       evt.setError(err);
       recordError();

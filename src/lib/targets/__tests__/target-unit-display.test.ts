@@ -28,7 +28,7 @@ describe("resolveTargetUnitAdapter — metric account (identity)", () => {
       expect(units.toCanonical(value)).toBe(value);
       expect(units.toDisplayDelta(value)).toBe(value);
     }
-    expect(units.bounds(METRIC_BOUNDS.WEIGHT)).toEqual({ min: 30, max: 300 });
+    expect(units.bounds(METRIC_BOUNDS.WEIGHT)).toEqual({ min: 1, max: 300 });
     expect(units.step).toBe(0.1);
   });
 
@@ -115,9 +115,9 @@ describe("resolveTargetUnitAdapter — imperial weight class", () => {
 
   it("rounds guardrails inward so a value typed at the limit still saves", () => {
     const bounds = units.bounds(METRIC_BOUNDS.WEIGHT);
-    // A naive round of the 30 kg floor gives 66.1 lb, which inverts to
-    // 29.98 kg and the server rejects it. The ceiling keeps it legal.
-    expect(bounds.min).toBe(66.2);
+    // The 1 kg floor is 2.2046 lb: the floor rounds up to 2.3, never down,
+    // so a value typed at the limit converts back inside the window.
+    expect(bounds.min).toBe(2.3);
     expect(bounds.max).toBe(661.3);
     expect(units.toCanonical(bounds.min)).toBeGreaterThanOrEqual(
       METRIC_BOUNDS.WEIGHT.min,
@@ -144,7 +144,7 @@ describe("resolveTargetUnitAdapter — imperial weight class", () => {
 
   it("still rejects a genuinely out-of-range value", () => {
     const bounds = units.bounds(METRIC_BOUNDS.WEIGHT);
-    for (const typed of [12, 66.1, 661.4, 900]) {
+    for (const typed of [0.5, 2.2, 661.4, 900]) {
       expect(typed < bounds.min || typed > bounds.max).toBe(true);
     }
   });

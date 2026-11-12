@@ -10,6 +10,10 @@ import {
   getAgeFromDateOfBirth,
   getPersonalizedPulseTarget,
 } from "@/lib/analytics/pulse-targets";
+import {
+  getEffectiveRange,
+  resolveThresholdOverride,
+} from "@/lib/analytics/effective-range";
 import { resolveRestingPulseSeries } from "@/lib/analytics/resting-pulse";
 import { getNoKeyPulseStatusText } from "@/lib/insights/no-key-fallbacks";
 import { applyPayloadBudget } from "@/lib/insights/bucket-series";
@@ -73,8 +77,10 @@ async function buildPulseSnapshot(
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
+      heightCm: true,
       dateOfBirth: true,
       gender: true,
+      thresholdsJson: true,
     },
   });
 
@@ -150,11 +156,17 @@ async function buildPulseSnapshot(
   );
   const moodMean = moodSummary?.mean ?? null;
 
-  const pulseAge = getAgeFromDateOfBirth(user?.dateOfBirth ?? null);
-  const pulseTarget = getPersonalizedPulseTarget(
-    pulseAge,
-    binaryReferenceSex(user?.gender),
-  );
+  // The person's own resting-pulse target where one is set, the age and sex
+  // default otherwise.
+  const ownPulse = resolveThresholdOverride(user?.thresholdsJson, "PULSE");
+  const pulseTarget =
+    (user && ownPulse
+      ? getEffectiveRange("PULSE", user, { PULSE: ownPulse }).range
+      : null) ??
+    getPersonalizedPulseTarget(
+      getAgeFromDateOfBirth(user?.dateOfBirth ?? null),
+      binaryReferenceSex(user?.gender),
+    );
 
   const inTargetPctLast30DailyPoints = restingInTargetPct({
     restingMeasurements,

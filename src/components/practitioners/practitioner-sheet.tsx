@@ -20,6 +20,7 @@ import { FieldGroup } from "@/components/ui/field-group";
 import { Input } from "@/components/ui/input";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import {
   usePractitionerMutations,
@@ -104,8 +105,7 @@ export function PractitionerSheet({
       onSaved?.(saved);
       onOpenChange(false);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : t("practitioners.saveFailed");
+      const message = localizedApiError(err, t, "practitioners.saveFailed");
       setError(message);
       showErrorToast(message, { cause: err });
     }

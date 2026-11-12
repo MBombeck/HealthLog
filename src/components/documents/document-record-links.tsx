@@ -46,6 +46,7 @@ import { useVaccinations } from "@/components/vaccinations/use-vaccinations";
 import { useAuth } from "@/hooks/use-auth";
 import { apiGet } from "@/lib/api/api-fetch";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import { useCalendarDate } from "@/hooks/use-calendar-date";
 import { queryKeys } from "@/lib/query-keys";
 import type { EncounterDTO, EncounterListDTO } from "@/lib/encounters/dto";
 import type { EncounterKind } from "@/generated/prisma/client";
@@ -161,6 +162,7 @@ export function DocumentRecordLinks({
 }) {
   const { t } = useTranslations();
   const format = useFormatters();
+  const calendarDate = useCalendarDate();
   const { user } = useAuth();
   const vaccinationsOn = user?.modules?.vaccinations !== false;
   const anchor = doc.documentDate ?? doc.reportDate;
@@ -186,10 +188,7 @@ export function DocumentRecordLinks({
   const [visitIds, setVisitIds] = useState<string[] | null>(null);
   const [doseIds, setDoseIds] = useState<string[] | null>(null);
 
-  const labels = {
-    suggested: t("links.picker.suggested"),
-    date: (iso: string) => format.date(iso),
-  };
+  const suggested = t("links.picker.suggested");
 
   const visitOptions = recordOptions(
     [...encounters.items]
@@ -203,7 +202,7 @@ export function DocumentRecordLinks({
         href: visitHref(visit.id),
       })),
     anchor,
-    labels,
+    { suggested, date: format.date },
   );
   const doseOptions = recordOptions(
     (vaccinations.data?.vaccinations ?? []).map((dose) => ({
@@ -213,7 +212,7 @@ export function DocumentRecordLinks({
       href: doseHref(dose.id),
     })),
     anchor,
-    labels,
+    { suggested, date: calendarDate }, // a dose date is a calendar date
   );
 
   const showDoses = vaccinationsOn && doc.vaccinationLinks !== null;
@@ -324,7 +323,7 @@ export function DocumentRecordLinks({
                 </span>
                 {link.occurredAt ? (
                   <span className="text-muted-foreground shrink-0">
-                    {format.date(link.occurredAt)}
+                    {calendarDate(link.occurredAt)}
                   </span>
                 ) : null}
               </Link>

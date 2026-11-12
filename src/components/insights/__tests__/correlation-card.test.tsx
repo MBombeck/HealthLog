@@ -7,9 +7,9 @@ import type { CorrelationResult } from "@/lib/insights/correlations";
  * v1.4.20 — `<CorrelationCard>` rendering.
  *
  * Tests cover:
- *   1. OK status renders title + interpretation + source chip + disabled CTA.
+ *   1. OK status renders title + interpretation + source chip.
  *   2. Insufficient status renders the empty-state instead.
- *   3. CTA is `disabled` and exposes the "Coming soon" tooltip via `title`.
+ *   3. The card offers no placeholder action, only ones that work.
  *   4. Confidence chip surfaces high / moderate / low.
  *   5. Locale-aware copy (EN / DE).
  */
@@ -81,18 +81,15 @@ describe("<CorrelationCard>", () => {
     expect(html).toContain("High confidence");
   });
 
-  it("renders the disabled experiment CTA with the Coming-soon tooltip", () => {
+  it("offers no placeholder action, only ones that work", () => {
     const html = render(<CorrelationCard result={okResult} />);
-    expect(html).toMatch(/data-slot="correlation-card-cta"/);
-    expect(html).toContain("Try a 7-day experiment");
-    expect(html).toMatch(/disabled/);
-    expect(html).toContain("Coming soon");
+    expect(html).not.toMatch(/data-slot="correlation-card-cta"/);
+    expect(html).not.toMatch(/<button[^>]*disabled/);
   });
 
   it("renders the empty-state when status=insufficient", () => {
     const html = render(<CorrelationCard result={insufficient} />);
     expect(html).toContain("Need more data to see this relationship");
-    expect(html).not.toContain("Try a 7-day experiment");
   });
 
   it("tags the wrapper with the correlation kind", () => {
@@ -103,7 +100,7 @@ describe("<CorrelationCard>", () => {
   it("renders German copy when locale=de", () => {
     const html = render(<CorrelationCard result={okResult} />, "de");
     expect(html).toContain("BD × Therapietreue");
-    expect(html).toContain("7-Tage-Experiment");
+    expect(html).toContain("basierend auf 28 gepaarten Messungen");
   });
 
   it("never surfaces causal language in the interpretation slot", () => {

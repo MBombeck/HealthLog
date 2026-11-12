@@ -97,6 +97,8 @@ vi.mock("@/lib/medications/dose-day-refresh", () => ({
   refreshDoseSlot: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@/lib/modules/gate", () => ({ isModuleEnabled: vi.fn() }));
+
 import { POST, GET } from "../route";
 import { prisma } from "@/lib/db";
 import { invalidateUserMedications } from "@/lib/cache/invalidate";
@@ -112,6 +114,7 @@ import {
 } from "@/lib/mood/create-from-telegram";
 import { scheduleTelegramAutoDelete } from "@/lib/telegram-cleanup";
 import { satisfyReminder } from "@/lib/measurement-reminders/satisfy";
+import { isModuleEnabled } from "@/lib/modules/gate";
 
 const ORIGINAL_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 
@@ -129,11 +132,14 @@ const MEDICATION = { id: "med-1", name: "Ramipril" };
  * schedule projection (distinguishable by `select.schedules`); every other
  * `medication.findFirst` in the webhook wants the bare id/name shape. The
  * default projection carries no schedules, so the generic dispatch tests
- * exercise the ad-hoc (standalone create) path unchanged.
+ * exercise the ad-hoc (standalone create) path unchanged. The dose lookup
+ * (`findTelegramDoseMedication`) reads every match by id or name through
+ * `findMany`; a list read (no id, no name) finds nothing unless a test says.
  */
 function wireMedicationFindFirst(
   schedules: unknown[] = [],
   scheduleRevisions: unknown[] = [],
+  medication: Record<string, unknown> = MEDICATION,
 ) {
   vi.mocked(prisma.medication.findFirst).mockImplementation(((args: {
     select?: Record<string, unknown>;
@@ -149,8 +155,16 @@ function wireMedicationFindFirst(
         scheduleRevisions,
       });
     }
-    return Promise.resolve(MEDICATION);
+    return Promise.resolve(medication);
   }) as never);
+  vi.mocked(prisma.medication.findMany).mockImplementation(((args: {
+    where?: Record<string, unknown>;
+  }) =>
+    Promise.resolve(
+      args?.where && ("id" in args.where || "name" in args.where)
+        ? [medication]
+        : [],
+    )) as never);
 }
 
 beforeEach(() => {
@@ -162,8 +176,8 @@ beforeEach(() => {
     resetAt: Date.now() + 60_000,
   } as never);
   vi.mocked(prisma.user.findFirst).mockResolvedValue(TG_USER as never);
+  vi.mocked(isModuleEnabled).mockResolvedValue(true);
   wireMedicationFindFirst();
-  vi.mocked(prisma.medication.findMany).mockResolvedValue([] as never);
   vi.mocked(prisma.medication.update).mockResolvedValue({} as never);
   vi.mocked(prisma.medicationIntakeEvent.findFirst).mockResolvedValue(null);
   vi.mocked(prisma.medicationIntakeEvent.create).mockResolvedValue({} as never);
@@ -300,6 +314,7 @@ describe("Telegram webhook — callback dispatch", () => {
 
     expect(res.status).toBe(200);
     expect(prisma.medication.findFirst).not.toHaveBeenCalled();
+    expect(prisma.medication.findMany).not.toHaveBeenCalled();
     expect(prisma.medicationIntakeEvent.create).not.toHaveBeenCalled();
     expect(prisma.medication.update).not.toHaveBeenCalled();
     expect(deleteMessage).not.toHaveBeenCalled();
@@ -464,7 +479,7 @@ describe("Telegram webhook — callback dispatch", () => {
   });
 
   it("rejects 'taken' for an inactive medication and acks with the localised error", async () => {
-    vi.mocked(prisma.medication.findFirst).mockResolvedValueOnce(null);
+    vi.mocked(prisma.medication.findMany).mockResolvedValueOnce([]);
     const res = await POST(tgRequest(callbackUpdate("taken:med-1")));
     expect(res.status).toBe(200);
 
@@ -482,7 +497,7 @@ describe("Telegram webhook — callback dispatch", () => {
   });
 
   it("'snooze' for a missing medication acks with medicationNotFound (no update)", async () => {
-    vi.mocked(prisma.medication.findFirst).mockResolvedValueOnce(null);
+    vi.mocked(prisma.medication.findMany).mockResolvedValueOnce([]);
     const res = await POST(tgRequest(callbackUpdate("snooze:med-X:60")));
     expect(res.status).toBe(200);
     expect(prisma.medication.update).not.toHaveBeenCalled();
@@ -637,7 +652,7 @@ describe("Telegram webhook — text-message dispatch", () => {
   });
 
   it("/add with no active medications replies with the 'no active' message", async () => {
-    vi.mocked(prisma.medication.findMany).mockResolvedValueOnce([] as never);
+    vi.mocked(prisma.medication.findMany).mockResolvedValueOnce([]);
     const res = await POST(
       tgRequest({
         update_id: 203,
@@ -670,8 +685,8 @@ describe("Telegram webhook — text-message dispatch", () => {
       }),
     );
     expect(res.status).toBe(200);
-    // markMedicationTaken → findFirst on active medication
-    expect(prisma.medication.findFirst).toHaveBeenCalled();
+    // The list, then markMedicationTaken's lookup of the one it found.
+    expect(prisma.medication.findMany).toHaveBeenCalledTimes(2);
     expect(prisma.medicationIntakeEvent.create).toHaveBeenCalledTimes(1);
   });
 
@@ -712,15 +727,6 @@ describe("Telegram webhook — text-message dispatch", () => {
   });
 
   it("'taken Ramipril' (text command) creates an intake event for the matched medication", async () => {
-    vi.mocked(prisma.medication.findFirst).mockResolvedValueOnce({
-      id: "med-1",
-    } as never);
-    // Second findFirst inside markMedicationTaken
-    vi.mocked(prisma.medication.findFirst).mockResolvedValueOnce({
-      id: "med-1",
-      name: "Ramipril",
-    } as never);
-
     const res = await POST(
       tgRequest({
         update_id: 206,
@@ -762,8 +768,8 @@ describe("Telegram webhook — text-message dispatch", () => {
   });
 
   it("'taken UnknownMed' replies with the medication-not-found message and writes nothing", async () => {
-    // First findFirst (lookup by name) returns null
-    vi.mocked(prisma.medication.findFirst).mockResolvedValueOnce(null);
+    // The lookup by name finds nothing.
+    vi.mocked(prisma.medication.findMany).mockResolvedValueOnce([]);
 
     const res = await POST(
       tgRequest({
@@ -905,6 +911,29 @@ describe("Telegram webhook — slot convergence (v1.16.9)", () => {
     expect(invalidateUserMedications).toHaveBeenCalledWith("user-1", {
       evict: true,
     });
+  });
+
+  it("books the reminder's own dose on the last day of a course after it ended", async () => {
+    // The course ran through 9 June; yesterday's 09:00 reminder is confirmed
+    // the next morning. The dose belongs to a day the course covered.
+    wireMedicationFindFirst([scheduleRow], [], {
+      ...MEDICATION,
+      dose: "5 mg",
+      startsOn: null,
+      endsOn: new Date("2026-06-09T00:00:00.000Z"),
+      endedAt: null,
+    });
+    vi.mocked(prisma.telegramReminderMessage.findFirst).mockResolvedValue({
+      date: "2026-06-09",
+      timeOfDay: "09:00",
+    } as never);
+
+    await POST(tgRequest(callbackUpdate("taken:med-1")));
+
+    expect(prisma.$transaction).toHaveBeenCalled();
+    expect(vi.mocked(answerTelegramCallbackQuery).mock.calls[0][2]).not.toMatch(
+      /not found or inactive/i,
+    );
   });
 
   it("a take converges via band attribution when no reminder row matches", async () => {
@@ -1219,7 +1248,7 @@ describe("POST /api/telegram/webhook — record-only medications", () => {
 
   it("the 'taken' keyword resolves tracked medications only", async () => {
     await POST(tgRequest(textUpdate("taken Ramipril")));
-    const where = whereOf(vi.mocked(prisma.medication.findFirst).mock.calls[0]);
+    const where = whereOf(vi.mocked(prisma.medication.findMany).mock.calls[0]);
     expect(where).toMatchObject({ active: true, trackIntake: true });
   });
 
@@ -1227,12 +1256,95 @@ describe("POST /api/telegram/webhook — record-only medications", () => {
     await POST(tgRequest(callbackUpdate("taken:med-1")));
     // The gate lookup: a record-only medication resolves to nothing here,
     // so no dose is written (later lookups only bind an admitted dose).
-    const calls = vi.mocked(prisma.medication.findFirst).mock.calls;
+    const calls = vi.mocked(prisma.medication.findMany).mock.calls;
     expect(calls.length).toBeGreaterThan(0);
     expect(whereOf(calls[0])).toMatchObject({
       id: "med-1",
       active: true,
       trackIntake: true,
     });
+  });
+});
+
+/**
+ * With the Medications module switched off the bot offers no dose and books
+ * none: the web shows no medication surface and the reminder jobs are
+ * silent, so a reminder button left in the chat, the /add list and the
+ * "taken" keyword do nothing either.
+ */
+describe("POST /api/telegram/webhook with the Medications module off", () => {
+  function textUpdate(text: string) {
+    return {
+      update_id: 400,
+      message: { message_id: 40, text, chat: { id: 7777 }, from: { id: 7777 } },
+    };
+  }
+
+  beforeEach(() => {
+    vi.mocked(isModuleEnabled).mockResolvedValue(false);
+  });
+
+  it.each(["taken:med-1", "skip:med-1", "add:med-1"])(
+    "the %s button books nothing",
+    async (data) => {
+      const res = await POST(tgRequest(callbackUpdate(data)));
+      expect(res.status).toBe(200);
+      expect(isModuleEnabled).toHaveBeenCalledWith("user-1", "medications");
+      expect(prisma.medicationIntakeEvent.create).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    },
+  );
+
+  it("the snooze button snoozes nothing", async () => {
+    await POST(tgRequest(callbackUpdate("snooze:med-1:60")));
+    expect(prisma.medication.update).not.toHaveBeenCalled();
+    expect(vi.mocked(answerTelegramCallbackQuery).mock.calls[0][2]).toMatch(
+      /not found/i,
+    );
+  });
+
+  it("/add offers nothing", async () => {
+    await POST(tgRequest(textUpdate("/add")));
+    expect(prisma.medication.findMany).not.toHaveBeenCalled();
+    expect(vi.mocked(sendTelegramMessage).mock.calls[0][2]).toMatch(
+      /no active medications/i,
+    );
+  });
+
+  it("the 'taken' keyword records nothing", async () => {
+    await POST(tgRequest(textUpdate("taken Ramipril")));
+    expect(prisma.medicationIntakeEvent.create).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * A reminder button left in the chat takes no dose for a course that has
+ * since ended, which would also take a unit off the stock. The list side is
+ * pinned in `src/lib/__tests__/telegram-dose-medications.test.ts`.
+ */
+describe("POST /api/telegram/webhook on an ended course", () => {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const ENDED = {
+    ...MEDICATION,
+    dose: "5 mg",
+    startsOn: new Date(Date.now() - 20 * DAY_MS),
+    endsOn: new Date(Date.now() - 3 * DAY_MS),
+    endedAt: null,
+  };
+  it("the taken button on an ended course books nothing", async () => {
+    wireMedicationFindFirst([], [], ENDED);
+    await POST(tgRequest(callbackUpdate("taken:med-1")));
+    expect(prisma.medicationIntakeEvent.create).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(vi.mocked(answerTelegramCallbackQuery).mock.calls[0][2]).toMatch(
+      /not found or inactive/i,
+    );
+  });
+
+  it("the skip button on an ended course books nothing", async () => {
+    wireMedicationFindFirst([], [], ENDED);
+    await POST(tgRequest(callbackUpdate("skip:med-1")));
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 });

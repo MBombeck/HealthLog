@@ -18,9 +18,9 @@ vi.mock("@/hooks/use-ai-capability", () => ({
   useAiCapabilityAnswer: () => capability.answer,
 }));
 
-const plan = (id: string, status: string) => ({
+const plan = (id: string, status: string, metric = "WEIGHT") => ({
   id,
-  metric: "WEIGHT",
+  metric,
   ifCue: `cue ${id}`,
   thenAction: `action ${id}`,
   target: null,
@@ -35,7 +35,7 @@ vi.mock("@/hooks/use-coach-plans", () => ({
     data: [
       plan("p-proposed", "proposed"),
       plan("p-active", "active"),
-      plan("p-met", "met"),
+      plan("p-met", "met", "mood vibes"),
     ],
     isError: false,
     isLoading: false,
@@ -48,12 +48,16 @@ vi.mock("@/hooks/use-coach-plans", () => ({
 }));
 
 import { I18nProvider } from "@/lib/i18n/context";
+import { primeMessages } from "@/lib/i18n/load-locale";
+import deMessages from "../../../../../messages/de.json";
 
 import CoachPlansPage from "../page";
 
-function render(): string {
+primeMessages("de", deMessages);
+
+function render(locale: "en" | "de" = "en"): string {
   return renderToStaticMarkup(
-    <I18nProvider initialLocale="en">
+    <I18nProvider initialLocale={locale}>
       <CoachPlansPage />
     </I18nProvider>,
   );
@@ -89,5 +93,13 @@ describe("/coach/plans", () => {
     expect(html).toContain('data-slot="coach-plan-met"');
     expect(count(html, "coach-plan-delete")).toBe(1);
     expect(html).not.toContain("you can still read and delete your plans");
+  });
+
+  it("names the metric in the reader's language, and an unknown key as written", () => {
+    capability.answer = { available: true };
+    const html = render("de");
+    expect(html.split("<span>Gewicht</span>").length - 1).toBe(2);
+    expect(html).toContain("<span>mood vibes</span>");
+    expect(html).not.toContain("WEIGHT");
   });
 });

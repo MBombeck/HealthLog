@@ -30,6 +30,7 @@
  * document list in `./documents-list`, the downloads in `./download-actions`.
  */
 import type { DoctorReportData } from "@/lib/doctor-report-data";
+import { formatDate } from "@/lib/date-format";
 import { formatLabValue, type LabNumberFormat } from "@/lib/labs/format-value";
 import {
   makeFormatters,
@@ -133,6 +134,15 @@ interface ClinicianViewProps {
   dateFormat: DateFormatPreference;
 }
 
+/**
+ * A date-only value (a date of birth, a dose date) as its calendar date in
+ * the owner's date order, the same in every zone. Read as an instant in the
+ * owner's zone it fell on the previous day west of UTC.
+ */
+function calendarDateIn(dateFormat: DateFormatPreference, locale: Locale) {
+  return (iso: string) => formatDate(iso.slice(0, 10), dateFormat, locale);
+}
+
 export function ClinicianView({
   t,
   label,
@@ -199,7 +209,7 @@ export function ClinicianView({
               t={t}
               report={report}
               scope={scope}
-              fmtDate={fmtDate}
+              fmtCalendarDate={calendarDateIn(dateFormat, locale)}
             />
 
             {/* ── measurements ─────────────────────────────────────── */}
@@ -298,7 +308,7 @@ export function ClinicianView({
               t={t}
               report={report}
               scope={scope}
-              fmtDate={fmtDate}
+              fmtCalendarDate={calendarDateIn(dateFormat, locale)}
             />
             <AllergiesSection t={t} report={report} scope={scope} />
 

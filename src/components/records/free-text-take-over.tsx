@@ -31,7 +31,13 @@ import { withBaseToken } from "@/lib/api/optimistic-token";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
 import type { LifeCircumstancesDto } from "@/lib/profile/life-circumstances";
-import { queryKeys } from "@/lib/query-keys";
+import {
+  allergyDependentKeys,
+  illnessDependentKeys,
+  invalidateKeys,
+  queryKeys,
+  refetchInactiveDailyReads,
+} from "@/lib/query-keys";
 import { dateOnlyAtNoonUtc, isCalendarDateKey } from "@/lib/tz/date-only";
 
 interface AboutMeData {
@@ -66,13 +72,12 @@ export function FreeTextTakeOver({
   const afterCreate = () => {
     setSaved(true);
     toastWrittenOutcome("success", t("records.life.takeOver.savedToast"));
-    void queryClient.invalidateQueries({
-      queryKey: queryKeys.lifeCircumstances(),
-    });
-    void queryClient.invalidateQueries({
-      queryKey:
-        field === "conditions" ? queryKeys.illness() : queryKeys.allergies(),
-    });
+    void invalidateKeys(queryClient, [
+      queryKeys.lifeCircumstances(),
+      ...(field === "conditions" ? illnessDependentKeys : allergyDependentKeys),
+    ]);
+    // A chronic condition frames the dashboard and the Today digest.
+    if (field === "conditions") void refetchInactiveDailyReads(queryClient);
   };
 
   const createCondition = useMutation({
@@ -103,12 +108,10 @@ export function FreeTextTakeOver({
     onSuccess: () => {
       toastWrittenOutcome("success", t("records.life.takeOver.clearedToast"));
       close();
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.coachAboutMe(),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.lifeCircumstances(),
-      });
+      void invalidateKeys(queryClient, [
+        queryKeys.coachAboutMe(),
+        queryKeys.lifeCircumstances(),
+      ]);
     },
     onError: (error) =>
       showErrorToast(t("records.life.takeOver.clearError"), { cause: error }),

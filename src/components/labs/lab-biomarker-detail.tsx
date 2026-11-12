@@ -44,7 +44,7 @@ import {
   type MessageBundle,
 } from "@/lib/i18n/load-locale";
 import { resolveKey } from "@/lib/i18n/resolve-key";
-import { queryKeys } from "@/lib/query-keys";
+import { invalidateKeys, labDependentKeys, queryKeys } from "@/lib/query-keys";
 
 import dynamic from "next/dynamic";
 import type { ComponentProps } from "react";
@@ -259,13 +259,10 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
   // lapsed; bust them alongside the result list so the assessment repaints as
   // soon as the reading lands.
   function invalidateAfterReadingWrite() {
-    queryClient.invalidateQueries({ queryKey: queryKeys.labResults() });
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.insightsBiomarkerAssessment(biomarkerId, locale),
-    });
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.insightsLabsChanges(),
-    });
+    void invalidateKeys(queryClient, [
+      ...labDependentKeys,
+      queryKeys.insightsBiomarkerAssessment(biomarkerId, locale),
+    ]);
   }
 
   function afterAdd() {
@@ -282,12 +279,11 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
 
   function afterEditMarker() {
     setEditOpen(false);
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.biomarkerDetail(biomarkerId),
-    });
-    queryClient.invalidateQueries({ queryKey: queryKeys.biomarkers() });
     // Resolved name / unit / range on every reading derives from the marker.
-    queryClient.invalidateQueries({ queryKey: queryKeys.labResults() });
+    void invalidateKeys(queryClient, [
+      ...labDependentKeys,
+      queryKeys.biomarkerDetail(biomarkerId),
+    ]);
   }
 
   // v1.18.9 (#41/#3) — delete the biomarker directly from its detail page so
@@ -301,8 +297,7 @@ export function LabBiomarkerDetail({ biomarkerId }: { biomarkerId: string }) {
     mutationFn: () => apiDelete(`/api/biomarkers/${biomarkerId}`),
     onSuccess: () => {
       toast.success(t("labs.biomarker.deletedToast"));
-      queryClient.invalidateQueries({ queryKey: queryKeys.biomarkers() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.labResults() });
+      void invalidateKeys(queryClient, labDependentKeys);
       router.push("/labs");
     },
     onError: (failure) =>

@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { thresholdsUpdateSchema } from "@/lib/validations/thresholds";
+import { buildBandsFromTrafficRange } from "@/lib/analytics/value-bands";
 import {
   getEffectiveRange,
   getAllEffectiveRanges,
@@ -311,5 +313,39 @@ describe("resolveWeightTargetOverride", () => {
     expect(resolveWeightTargetOverride("nope")).toBeNull();
     expect(resolveWeightTargetOverride(42)).toBeNull();
     expect(resolveWeightTargetOverride(undefined)).toBeNull();
+  });
+});
+
+describe("a child's weight target", () => {
+  // A guardian keeping a record for a six-year-old sets 20 to 23 kg. The old
+  // 30 kg floor refused it with nothing but "please check your entries", and
+  // the chart's hard-coded 30 kg lower edge dropped the low red zone.
+  const child = { WEIGHT: { min: 20, max: 23 } };
+
+  it("is accepted by the same schema both save paths parse", () => {
+    expect(thresholdsUpdateSchema.safeParse(child).success).toBe(true);
+    expect(
+      thresholdsUpdateSchema.safeParse({ WEIGHT: { min: 0.5, max: 3 } })
+        .success,
+    ).toBe(false);
+  });
+
+  it("paints every band below and above the target", () => {
+    const range = getEffectiveRange(
+      "WEIGHT",
+      { heightCm: 118, dateOfBirth: null, gender: null },
+      child,
+    ).range!;
+    const bands = buildBandsFromTrafficRange(range, {
+      lowerBound: METRIC_BOUNDS.WEIGHT.min,
+      upperBound: 250,
+    });
+    expect(bands.map((band) => band.color)).toEqual([
+      "var(--destructive)",
+      "var(--warning)",
+      "var(--success)",
+      "var(--warning)",
+      "var(--destructive)",
+    ]);
   });
 });

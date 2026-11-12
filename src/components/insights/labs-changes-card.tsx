@@ -12,6 +12,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import type { LabChange } from "@/lib/insights/labs-changes";
 import { InsightSectionCard } from "./insight-section-card";
 import { withLabUnit } from "@/lib/labs/dimensionless";
+import { useLabNumber } from "@/components/labs/use-lab-format";
 
 /**
  * v1.25 — "what changed since your last panel" card.
@@ -55,6 +56,7 @@ export function LabsChangesCard({
 }: LabsChangesCardProps) {
   const { t } = useTranslations();
   const { isAuthenticated } = useAuth();
+  const labNumber = useLabNumber();
 
   const { data } = useQuery({
     queryKey: queryKeys.insightsLabsChanges(),
@@ -82,7 +84,10 @@ export function LabsChangesCard({
           const signedDelta =
             c.direction === "flat"
               ? t("insights.labsChanges.directionFlat")
-              : withLabUnit(`${c.delta > 0 ? "+" : ""}${c.delta}`, c.unit);
+              : withLabUnit(
+                  `${c.delta > 0 ? "+" : ""}${labNumber(c.delta)}`,
+                  c.unit,
+                );
           return (
             <div
               key={c.analyte}
@@ -94,7 +99,7 @@ export function LabsChangesCard({
                   {c.analyte}
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  {withLabUnit(String(c.latest), c.unit)}
+                  {withLabUnit(labNumber(c.latest), c.unit)}
                   {labelKey ? ` · ${t(labelKey)}` : ""}
                 </p>
               </div>

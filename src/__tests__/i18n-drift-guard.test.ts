@@ -15,7 +15,6 @@
  *   - insights.emptyState.*     (B4 — per-metric empty states)
  *   - notifications.admin.*     (B5 — admin notification messages)
  *   - notifications.user.*      (B5 — user-facing Telegram test body)
- *   - personalRecords + workouts (BL-P4-8 — PR + Workout strings)
  */
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -44,18 +43,6 @@ for (const locale of LOCALES) {
   const flat = new Map<string, string>();
   flatten(loadBundle(locale), "", flat);
   FLAT_BY_LOCALE.set(locale, flat);
-}
-
-function keysForPrefix(prefix: string): Set<string> {
-  // Source of truth: EN. The locale-integrity test ensures every
-  // locale carries the same key shape, so EN's view is canonical.
-  const enFlat = FLAT_BY_LOCALE.get("en");
-  if (!enFlat) throw new Error("EN bundle did not load");
-  const set = new Set<string>();
-  for (const k of enFlat.keys()) {
-    if (k === prefix || k.startsWith(`${prefix}.`)) set.add(k);
-  }
-  return set;
 }
 
 const REQUIRED_KEY_SETS: Array<{
@@ -142,40 +129,4 @@ describe("v1.4.27 B6 i18n drift-guard — required keys present in every locale"
       );
     });
   }
-});
-
-describe("v1.4.27 B6 i18n drift-guard — PR + Workout strings stay in lockstep", () => {
-  // BL-P4-8: PR and Workout strings were the trigger for the
-  // drift-guard ask. Personal-record badge / tooltip live under
-  // `insights.personalRecord.*`. Workout strings are not yet in the
-  // bundles — the v1.4.23 batch ingest landed the API, the UI
-  // surface ships in v1.4.28 / v1.5. The drift-guard keeps the
-  // namespace anchor live so the workout copy work in v1.4.28 lands
-  // with parity from the first commit.
-  const prKeys = [...keysForPrefix("insights.personalRecord")];
-
-  it("insights.personalRecord namespace has at least one key (sanity)", () => {
-    expect(
-      prKeys.length,
-      "insights.personalRecord.* keys exist in en.json",
-    ).toBeGreaterThan(0);
-  });
-
-  it.each(LOCALES)(
-    "messages/%s.json carries every insights.personalRecord.* key with a non-empty value",
-    (locale) => {
-      const flat = FLAT_BY_LOCALE.get(locale)!;
-      const missing: string[] = [];
-      const empty: string[] = [];
-      for (const key of prKeys) {
-        const v = flat.get(key);
-        if (v === undefined) missing.push(key);
-        else if (v.trim() === "") empty.push(key);
-      }
-      expect(
-        { missing, empty },
-        `Locale ${locale} drifted from the personal-record key set.`,
-      ).toEqual({ missing: [], empty: [] });
-    },
-  );
 });

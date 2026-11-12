@@ -13,6 +13,7 @@
  */
 import { ContactRound, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { showErrorToast } from "@/lib/errors/error-toast";
 
 import {
@@ -43,6 +44,35 @@ import { VISITS_PATH } from "@/lib/encounters/visit-links";
 import { useTranslations } from "@/lib/i18n/context";
 import { PractitionerSheet } from "./practitioner-sheet";
 
+/**
+ * Delete an entry, with an Undo: the delete is soft, and the restore brings
+ * the entry back. Each delete answers on its own promise: the callbacks
+ * `mutate` takes fire for the latest call only, so of two quick deletes only
+ * the second offered an Undo.
+ */
+export function deleteWithUndo(
+  { remove, restore }: ReturnType<typeof usePractitionerMutations>,
+  id: string,
+  t: (key: string) => string,
+) {
+  remove.mutateAsync(id).then(
+    () =>
+      toast.success(t("practitioners.deleted"), {
+        action: {
+          label: t("common.undo"),
+          onClick: () =>
+            void restore.mutateAsync(id).catch((failure) =>
+              showErrorToast(t("practitioners.restoreFailed"), {
+                cause: failure,
+              }),
+            ),
+        },
+      }),
+    (failure) =>
+      showErrorToast(t("practitioners.deleteFailed"), { cause: failure }),
+  );
+}
+
 export function PractitionerList({ enabled = true }: { enabled?: boolean }) {
   const { t } = useTranslations();
   const { canWriteDomain, canManageDomain } = useRecordCapabilities();
@@ -52,7 +82,7 @@ export function PractitionerList({ enabled = true }: { enabled?: boolean }) {
   const [term, setTerm] = useState("");
   const debounced = useDebouncedValue(term, 250);
   const list = usePractitioners(debounced, enabled);
-  const { remove } = usePractitionerMutations();
+  const mutations = usePractitionerMutations();
 
   const [editing, setEditing] = useState<Practitioner | "new" | null>(null);
   const [deleting, setDeleting] = useState<Practitioner | null>(null);
@@ -257,12 +287,7 @@ export function PractitionerList({ enabled = true }: { enabled?: boolean }) {
                 if (!deleting) return;
                 const id = deleting.id;
                 setDeleting(null);
-                remove.mutate(id, {
-                  onError: (failure) =>
-                    showErrorToast(t("practitioners.deleteFailed"), {
-                      cause: failure,
-                    }),
-                });
+                deleteWithUndo(mutations, id, t);
               }}
             >
               {t("common.delete")}

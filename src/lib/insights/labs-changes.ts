@@ -15,6 +15,7 @@
  * the newest panel is older than `LAB_CHANGE_RECENCY_DAYS`. Neutral framing
  * only — a delta is not a diagnosis.
  */
+import { recordedPrecision } from "@/lib/format/recorded-number";
 import {
   classifyAgainstEffectiveRange,
   resolveEffectiveReferenceRange,
@@ -33,6 +34,11 @@ export interface LabChangeRow extends SourceReferenceRange {
   biomarkerId?: string | null;
   unit: string;
   value: number;
+  /**
+   * The figure the source report printed when `value` was converted from
+   * another unit; it sets the precision the converted value is read at.
+   */
+  sourceValue?: number | null;
   referenceLow: number | null;
   referenceHigh: number | null;
   takenAt: Date;
@@ -41,9 +47,13 @@ export interface LabChangeRow extends SourceReferenceRange {
 export interface LabChange {
   analyte: string;
   unit: string;
+  /** The readings at the precision they were recorded at (`recordedPrecision`). */
   latest: number;
   previous: number;
-  /** Signed latest − previous, rounded to 2dp. */
+  /**
+   * Signed latest − previous, at the finer of the two readings' precisions,
+   * so TSH 0.004 → 0.009 is +0.005 and not a rounded-away 0.
+   */
   delta: number;
   direction: "up" | "down" | "flat";
   status: ReferenceRangeStatus;
@@ -108,8 +118,6 @@ function sameUnit(a: LabChangeRow, b: LabChangeRow): boolean {
   return a.unit.trim().toLowerCase() === b.unit.trim().toLowerCase();
 }
 
-const round2 = (n: number): number => Math.round(n * 100) / 100;
-
 /**
  * Summarise the change between the two most-recent numeric lab panels. `rows`
  * should already be the user's live (non-deleted) numeric results; this helper
@@ -161,14 +169,30 @@ export function summariseLabChanges(
     const previousRow = previous.get(key);
     // A delta across two units is no change, it is a conversion; skip it.
     if (!previousRow || !sameUnit(latestRow, previousRow)) continue;
-    const delta = round2(latestRow.value - previousRow.value);
+    // Each reading at the digits it was recorded with; the delta at the
+    // finer of the two, so it says what the printed figures say.
+    const latestReading = recordedPrecision(
+      latestRow.value,
+      latestRow.sourceValue,
+    );
+    const previousReading = recordedPrecision(
+      previousRow.value,
+      previousRow.sourceValue,
+    );
+    const digits = Math.max(
+      latestReading.fractionDigits,
+      previousReading.fractionDigits,
+    );
+    const delta = Number(
+      (latestReading.value - previousReading.value).toFixed(digits),
+    );
     const direction: LabChange["direction"] =
       delta > 0 ? "up" : delta < 0 ? "down" : "flat";
     changes.push({
       analyte: latestRow.analyte,
       unit: latestRow.unit,
-      latest: latestRow.value,
-      previous: previousRow.value,
+      latest: latestReading.value,
+      previous: previousReading.value,
       delta,
       direction,
       status: classifyAgainstEffectiveRange(

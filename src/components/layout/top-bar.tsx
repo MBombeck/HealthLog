@@ -26,7 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { useAuth, useLogout } from "@/hooks/use-auth";
-import { accountName } from "@/lib/account-name";
+import { accountName, nameInitials } from "@/lib/account-name";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useTheme } from "@/components/providers";
 import { useTranslations } from "@/lib/i18n/context";
@@ -40,14 +40,6 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-function getInitials(name: string): string {
-  return name
-    .split(/[\s._-]+/)
-    .slice(0, 2)
-    .map((s) => s[0]?.toUpperCase() ?? "")
-    .join("");
-}
 
 export function TopBar() {
   const { user, isLoading } = useAuth();
@@ -147,7 +139,7 @@ export function TopBar() {
                   <AvatarImage src={avatarUrl} alt={accountName(user)} />
                 )}
                 <AvatarFallback className="bg-primary/15 text-primary text-xs font-medium">
-                  {getInitials(accountName(user))}
+                  {nameInitials(accountName(user))}
                 </AvatarFallback>
               </Avatar>
               <span className="hidden sm:inline">{accountName(user)}</span>

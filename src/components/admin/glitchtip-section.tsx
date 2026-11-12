@@ -20,6 +20,7 @@ import {
   ConfiguredBadge,
 } from "./_shared";
 import { apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { queryKeys } from "@/lib/query-keys";
 
 export function GlitchtipSection() {
@@ -113,9 +114,7 @@ export function GlitchtipSection() {
     },
     onError: (error) => {
       showErrorToast(
-        error instanceof Error
-          ? error.message
-          : t("admin.monitoringTestFailed"),
+        localizedApiError(error, t, "admin.monitoringTestFailed"),
         { cause: error },
       );
       void queryClient.invalidateQueries({

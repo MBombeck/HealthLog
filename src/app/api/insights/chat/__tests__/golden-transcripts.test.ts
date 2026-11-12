@@ -81,7 +81,6 @@ vi.mock("@/lib/ai/provider-runner", () => ({
 }));
 vi.mock("@/lib/ai/provider", () => ({
   resolveProviderChain: h.m.resolveProviderChain,
-  resolveProvider: h.m.resolveProvider,
 }));
 vi.mock("@/lib/ai/consent-guard", () => ({
   assertConsentForChain: h.m.assertConsentForChain,
@@ -416,21 +415,8 @@ describe("coach chat golden transcripts", () => {
   });
 
   // 16 ── no provider ──────────────────────────────────────────────────────
-  it("16a coach.provider.none via an empty chain and no legacy provider", async () => {
+  it("16a coach.provider.none via an empty chain", async () => {
     m.resolveProviderChain.mockResolvedValue([]);
-    m.resolveProvider.mockResolvedValue({ type: "none" });
-    await golden({ message: "How is my blood pressure?" });
-  });
-
-  it("16b an empty chain served by the legacy provider", async () => {
-    m.resolveProviderChain.mockResolvedValue([]);
-    m.resolveProvider.mockResolvedValue({
-      type: "openai",
-      supportsTools: false,
-    });
-    m.runStreamingRawCompletionWithFallback.mockImplementation(
-      streamingResult("Your systolic averaged 128 mmHg over the window."),
-    );
     await golden({ message: "How is my blood pressure?" });
   });
 

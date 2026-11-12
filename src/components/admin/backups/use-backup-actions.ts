@@ -7,13 +7,12 @@ import {
   ReproofCancelledError,
   throwIfReproofRequired,
 } from "@/components/settings/security-section/use-recent-proof";
-import { apiFetchRaw, apiPost } from "@/lib/api/api-fetch";
+import { apiFetchRaw, apiPost, throwApiError } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import type { BackupRow } from "@/types/backups";
-
-import { getApiErrorMessage } from "../_shared";
 
 /** "Run backup now": enqueues the pg-boss `data-backup` job. */
 export function useRunBackup() {
@@ -34,9 +33,7 @@ export function useRunBackup() {
     },
     onError: (err) => {
       showErrorToast(
-        err instanceof Error && err.message
-          ? err.message
-          : t("admin.section.backups.runFailed"),
+        localizedApiError(err, t, "admin.section.backups.runFailed"),
         { cause: err },
       );
     },
@@ -62,9 +59,7 @@ export function useBackupDownload(
           await apiFetchRaw(`/api/admin/backups/${row.id}/download`),
         ),
       );
-      if (!res.ok) {
-        throw new Error(await getApiErrorMessage(res));
-      }
+      if (!res.ok) await throwApiError(res);
       // Use the server-provided Content-Disposition filename if present,
       // otherwise fall back to a deterministic client-side name. The
       // server filename is more accurate (uses the actual createdAt).
@@ -86,9 +81,7 @@ export function useBackupDownload(
     } catch (err) {
       if (err instanceof ReproofCancelledError) return;
       showErrorToast(
-        err instanceof Error && err.message
-          ? err.message
-          : t("admin.section.backups.downloadFailed"),
+        localizedApiError(err, t, "admin.section.backups.downloadFailed"),
         { cause: err },
       );
     } finally {

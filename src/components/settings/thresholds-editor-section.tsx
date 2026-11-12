@@ -22,7 +22,8 @@ import {
   type ThresholdMetric,
   type EffectiveRange,
 } from "@/lib/analytics/effective-range";
-import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
+import { apiFetchRaw, apiGet, apiPut } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 import { resolveTargetUnitAdapter } from "@/lib/targets/target-unit-display";
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -81,15 +82,7 @@ export function ThresholdsEditorSection({ id }: { id: string }) {
     mutationFn: async (
       payload: Partial<Record<ThresholdMetric, { min: number; max: number }>>,
     ) => {
-      const res = await apiFetchRaw("/api/user/thresholds", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        throw new Error(err?.error ?? "save failed");
-      }
+      await apiPut("/api/user/thresholds", payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.userThresholds() });
@@ -102,10 +95,9 @@ export function ThresholdsEditorSection({ id }: { id: string }) {
       toast.success(t("thresholds.saveSuccess"));
     },
     onError: (err) =>
-      showErrorToast(
-        err instanceof Error ? err.message : t("thresholds.saveError"),
-        { cause: err },
-      ),
+      showErrorToast(localizedApiError(err, t, "thresholds.saveError"), {
+        cause: err,
+      }),
   });
 
   const resetMutation = useMutation({

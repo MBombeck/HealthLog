@@ -6,11 +6,18 @@
  * Reads unwrap the envelope through `apiGet`; every key comes from the
  * factory (`queryKeys.symptom*`, under the `["illness"]` root). Every write
  * evicts the whole illness tree, because the episode detail lists the
- * occurrences filed against it and the definition summaries count them.
+ * occurrences filed against it and the definition summaries count them, and
+ * the day and timeline roots, which show each occurrence.
  */
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 
-import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import { apiDelete, apiGet, apiPatch } from "@/lib/api/api-fetch";
+import { useIdempotentPost } from "@/lib/api/use-idempotent-post";
 import { invalidateKeys, queryKeys } from "@/lib/query-keys";
 import type {
   SymptomDefinitionDTO,
@@ -118,16 +125,34 @@ export function useSymptomEvents(
   });
 }
 
+/**
+ * What a symptom write reaches: the illness tree its keys live under, and the
+ * day and the timeline, which list every occurrence. Nothing on the dashboard
+ * or the Today digest reads symptoms.
+ */
+export function invalidateSymptomReads(qc: QueryClient) {
+  return invalidateKeys(qc, [
+    queryKeys.illness(),
+    queryKeys.dayRoot(),
+    queryKeys.timelineRoot(),
+  ]);
+}
+
+// Not returned, so a save reports as soon as it lands rather than after
+// every read it touches has refetched.
 function useInvalidateSymptoms() {
   const qc = useQueryClient();
-  return () => invalidateKeys(qc, [queryKeys.illness()]);
+  return () => void invalidateSymptomReads(qc);
 }
 
 export function useCreateSymptomDefinition() {
   const invalidate = useInvalidateSymptoms();
+  // One key until a save lands, so a retry after a timeout is not a second
+  // symptom.
+  const post = useIdempotentPost();
   return useMutation({
     mutationFn: (input: { label: string; icon?: string | null }) =>
-      apiPost<SymptomDefinitionDTO>("/api/symptoms/definitions", input),
+      post<SymptomDefinitionDTO>("/api/symptoms/definitions", input),
     onSuccess: invalidate,
   });
 }
@@ -163,11 +188,13 @@ export function useDeleteSymptomDefinition() {
   });
 }
 
+/** Under one key for as long as the entry form that mounts it is open. */
 export function useLogSymptomEvent() {
   const invalidate = useInvalidateSymptoms();
+  const post = useIdempotentPost();
   return useMutation({
     mutationFn: (input: SymptomEventCreateInput) =>
-      apiPost<SymptomEventDTO>("/api/symptoms/events", input),
+      post<SymptomEventDTO>("/api/symptoms/events", input),
     onSuccess: invalidate,
   });
 }

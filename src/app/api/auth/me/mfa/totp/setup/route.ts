@@ -37,6 +37,8 @@ import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 import { generateTotpSecret, buildOtpauthUri } from "@/lib/auth/mfa/totp";
 import { checkCookieEnrollmentProof } from "@/lib/auth/existing-factor-proof";
 
+const TOTP_ALREADY_ACTIVE_CODE = "auth.mfa.already_active";
+
 export const dynamic = "force-dynamic";
 
 const SETUP_RATE_LIMIT = 5;
@@ -64,7 +66,11 @@ export const POST = apiHandler(async (req: Request) => {
   // live secret out from under the user's authenticator.
   if (user.totpConfirmedAt) {
     annotate({ action: { name: "auth.mfa.totp.setup.already_active" } });
-    throw new HttpError(409, "A second factor is already active");
+    throw new HttpError(
+      409,
+      "A second factor is already active",
+      TOTP_ALREADY_ACTIVE_CODE,
+    );
   }
 
   if (auth.transport === "cookie") {

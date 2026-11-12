@@ -3,6 +3,7 @@
 import { createPortal } from "react-dom";
 import { Loader2, MoreHorizontal, Trash2 } from "lucide-react";
 
+import { FieldError } from "@/components/forms/field-error";
 import { SeededFormDiscardDialog } from "@/components/forms/use-seeded-form-dismissal";
 import {
   AlertDialog,
@@ -57,6 +58,8 @@ export function MeasurementEditSheet({
     setEditValue,
     editError,
     editErrorDescriptor,
+    editValueError,
+    editValueErrorId,
     editMeasuredAt,
     setEditMeasuredAt,
     editNotes,
@@ -103,9 +106,12 @@ export function MeasurementEditSheet({
                 onChange={(e) => setEditValue(e.target.value)}
                 required
                 aria-required="true"
-                aria-invalid={!!editError || undefined}
-                aria-describedby={editErrorDescriptor}
+                aria-invalid={!!(editValueError || editError) || undefined}
+                aria-describedby={
+                  editValueError ? editValueErrorId : editErrorDescriptor
+                }
               />
+              <FieldError id={editValueErrorId} message={editValueError} />
             </div>
 
             <div className="space-y-2">

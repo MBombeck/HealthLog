@@ -16,7 +16,8 @@
  */
 import { aiCapabilityForRecord } from "@/lib/ai/capabilities/gate";
 import { prisma } from "@/lib/db";
-import { planDayValue, resolvePlanMetric } from "@/lib/jobs/coach-plan-review";
+import { planDayValue } from "@/lib/jobs/coach-plan-review";
+import { resolvePlanMetric } from "@/lib/ai/coach/plan-metric";
 import { readDayAggregates } from "@/lib/measurements/day-aggregates";
 import {
   applyDisplayTransform,

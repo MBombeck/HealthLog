@@ -190,6 +190,38 @@ describe("apiFetchEnvelope", () => {
   });
 });
 
+describe("ApiError.issuePaths", () => {
+  it("names the fields a 422's issue list refused", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        {
+          data: null,
+          error: "Validation failed",
+          details: {
+            issues: [
+              { path: "value", code: "custom", message: "out of range" },
+            ],
+          },
+        },
+        422,
+      ),
+    );
+    const error = await apiPut("/api/measurements/m1", { value: 720 }).catch(
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).issuePaths).toEqual(["value"]);
+  });
+
+  it("is empty when the refusal named no field", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ data: null, error: "Nope" }, 409),
+    );
+    const error = await apiGet("/api/x").catch((e: unknown) => e);
+    expect((error as ApiError).issuePaths).toEqual([]);
+  });
+});
+
 describe("apiFetchRaw", () => {
   it("returns the raw Response without ok-check or unwrap", async () => {
     const res = new Response("plain", { status: 500 });

@@ -14,7 +14,7 @@ import { prisma } from "@/lib/db";
 import { probeProviderPresence } from "@/lib/ai/provider";
 import type { DataSummary } from "@/lib/analytics/trends";
 import { summarize } from "@/lib/analytics/trends";
-import { getBpTargets } from "@/lib/analytics/bp-targets";
+import { resolveEffectiveBpTargets } from "@/lib/analytics/effective-range";
 import { computeBpInTargetPct } from "@/lib/analytics/bp-in-target";
 import {
   classifyBMI,
@@ -43,10 +43,18 @@ export type ComprehensiveOverviewBody = Awaited<
   ReturnType<typeof buildComprehensiveResponse>
 >;
 
-/** BMI and the 30-day BP classification against the record's profile. */
+/**
+ * BMI, the 30-day BP classification, and the BP band: the person's own target
+ * where one is set, the age default otherwise.
+ */
 function classifyProfile(
   summaries: Record<string, DataSummary>,
-  dbUser: { heightCm: number | null; dateOfBirth: Date | null } | null,
+  dbUser: {
+    heightCm: number | null;
+    dateOfBirth: Date | null;
+    gender: string | null;
+    thresholdsJson: unknown;
+  } | null,
 ) {
   let bmi: number | null = null;
   let bmiClassification = null;
@@ -57,7 +65,9 @@ function classifyProfile(
   }
 
   let bpClassification = null;
-  const bpTargets = getBpTargets(dbUser?.dateOfBirth ?? null);
+  const bpTargets = dbUser
+    ? resolveEffectiveBpTargets(dbUser, dbUser.thresholdsJson)
+    : null;
   if (
     summaries.BLOOD_PRESSURE_SYS?.avg30 &&
     summaries.BLOOD_PRESSURE_DIA?.avg30
@@ -75,12 +85,14 @@ export async function buildComprehensiveResponse(user: OverviewRecord) {
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
   const userTz = user.timezone || DEFAULT_TIMEZONE;
 
-  // Height + DOB drive BMI + BP targets.
+  // Height drives BMI; the BP band is the own target or the age default.
   const dbUser = await prisma.user.findUnique({
     where: { id: userId },
     select: {
       heightCm: true,
       dateOfBirth: true,
+      gender: true,
+      thresholdsJson: true,
     },
   });
 

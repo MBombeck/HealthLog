@@ -111,12 +111,31 @@ export function intakeFacts(source: string, fileName: string): IntakeFacts {
     callsHelper: false,
   };
 
+  // A create form posts through the function `useIdempotentPost()` returns
+  // (one key per opened form), bound to a local name.
+  const posters = new Set<string>();
+  const findPosters = (node: ts.Node): void => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer &&
+      ts.isCallExpression(node.initializer) &&
+      ts.isIdentifier(node.initializer.expression) &&
+      (aliases.get(node.initializer.expression.text) ??
+        node.initializer.expression.text) === "useIdempotentPost"
+    ) {
+      posters.add(node.name.text);
+    }
+    node.forEachChild(findPosters);
+  };
+  parsed.forEachChild(findPosters);
+
   const visit = (node: ts.Node): void => {
     if (ts.isCallExpression(node)) {
       const callee = node.expression;
       if (ts.isIdentifier(callee)) {
         const name = aliases.get(callee.text) ?? callee.text;
-        if (name === "apiPost") {
+        if (name === "apiPost" || posters.has(callee.text)) {
           const url = urlText(node);
           if (url !== null && url.endsWith("/intake")) facts.postsIntake = true;
         }

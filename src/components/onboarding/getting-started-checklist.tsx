@@ -21,6 +21,7 @@ import type { LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAccountOnceMounted } from "@/hooks/use-auth";
+import { hasOptedOutOfAi } from "@/lib/ai/capabilities/types";
 import { useTranslations } from "@/lib/i18n/context";
 import { useDashboardSnapshot } from "@/lib/queries/use-dashboard-snapshot";
 import { queryKeys } from "@/lib/query-keys";
@@ -262,10 +263,9 @@ export function GettingStartedChecklist() {
     enabled: checklistRelevant,
   });
 
-  // The AI row reads the provider state `/api/auth/me` already carries:
-  // present only while AI can be set up from here (`canConfigure`), done once
-  // any provider is configured (a personal key, a local model, an OAuth
-  // sign-in or the operator's shared key). No request of its own.
+  // The AI row reads `/api/auth/me`: present while AI can be set up here and
+  // is still wanted (`canConfigure`, `hasOptedOutOfAi`), done once any
+  // provider is configured. No request of its own.
   const aiProvider = useAiProviderState();
 
   // v1.5: skip these two fetches once the card can't render at
@@ -336,7 +336,8 @@ export function GettingStartedChecklist() {
     (channel) => channel?.enabled === true,
   );
   const insightsConfigured = aiProvider.configured;
-  const aiConfigurable = aiProvider.canConfigure;
+  const aiConfigurable =
+    aiProvider.canConfigure && !hasOptedOutOfAi(user?.modules);
 
   const items = useMemo(
     () =>

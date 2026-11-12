@@ -96,7 +96,7 @@ beforeEach(() => {
 
 describe("PUT /api/user/thresholds — 422 multi-issue (v1.4.43 W6)", () => {
   it("surfaces TWO simultaneous validation errors", async () => {
-    // WEIGHT bounds are min=30, max=300. Sending min > max + a value
+    // WEIGHT bounds are min=1, max=300. Sending min > max + a value
     // out of bounds on PULSE forces two range errors.
     const res = await PUT(
       putReq({

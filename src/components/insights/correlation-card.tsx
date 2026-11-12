@@ -1,8 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Activity, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Activity } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TileHeader } from "@/components/insights/tile-header";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -177,27 +176,7 @@ export function CorrelationCard({ result }: CorrelationCardProps) {
               })}
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                size="sm"
-                // Outline variant so the disabled placeholder reads as
-                // "this is on the roadmap" rather than "the system is
-                // broken right now". Flip back to default when the
-                // 7-day experiment feature ships in v1.5.
-                variant="outline"
-                disabled
-                data-slot="correlation-card-cta"
-                className="gap-1.5"
-                title={t("insights.correlationRow.experimentTooltip")}
-              >
-                <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>{t("insights.correlationRow.experimentCta")}</span>
-                <span className="sr-only">
-                  , {t("insights.correlationRow.experimentTooltip")}
-                </span>
-              </Button>
-              {/* v1.21.0 — the live Coach hand-off sits beside the
-                  roadmap CTA: it scopes to both sources in the pair. */}
+              {/* The Coach hand-off scopes to both sources in the pair. */}
               <AskCoachAction
                 question={t(COACH_QUESTION_BY_KIND[result.kind])}
                 scope={coachScope}

@@ -19,6 +19,7 @@ import {
   ConfiguredBadge,
 } from "./_shared";
 import { apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 
 export function UmamiSection() {
   const { t } = useTranslations();
@@ -52,9 +53,7 @@ export function UmamiSection() {
     },
     onError: (error) => {
       showErrorToast(
-        error instanceof Error
-          ? error.message
-          : t("admin.monitoringTestFailed"),
+        localizedApiError(error, t, "admin.monitoringTestFailed"),
         { cause: error },
       );
     },

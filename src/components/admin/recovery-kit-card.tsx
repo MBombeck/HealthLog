@@ -32,6 +32,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError, apiFetch, apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -264,11 +265,14 @@ function CheckMyCopy({ kit }: { kit: RecoveryKit }) {
       setCheckResult(data.matches);
       setCandidate("");
     },
-    onError: (err: Error) => {
+    onError: (err) => {
       setCheckResult(null);
-      showErrorToast(err.message || t("admin.recoveryKit.checkFailed"), {
-        cause: err,
-      });
+      showErrorToast(
+        localizedApiError(err, t, "admin.recoveryKit.checkFailed"),
+        {
+          cause: err,
+        },
+      );
     },
   });
 
@@ -395,9 +399,10 @@ export function RecoveryKitCard() {
         await invalidate();
         return;
       }
-      showErrorToast(err.message || t("admin.recoveryKit.confirmFailed"), {
-        cause: err,
-      });
+      showErrorToast(
+        localizedApiError(err, t, "admin.recoveryKit.confirmFailed"),
+        { cause: err },
+      );
     },
   });
 

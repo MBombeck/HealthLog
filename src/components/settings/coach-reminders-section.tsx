@@ -36,6 +36,7 @@ import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { useTranslations } from "@/lib/i18n/context";
 import { useAiCapability } from "@/hooks/use-ai-capability";
+import { planMetricLabel } from "@/lib/ai/coach/plan-metric";
 import {
   useCoachReminders,
   useCoachReminderMutations,
@@ -90,7 +91,7 @@ export function CoachRemindersSection({
       >
         <p className="text-sm break-words">{r.note}</p>
         <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-          {r.metric && <span className="uppercase">{r.metric}</span>}
+          {r.metric && <span>{planMetricLabel(r.metric, t)}</span>}
           {r.dueAt && (
             <span>
               {t("settings.ai.coachReminders.duePrefix", {

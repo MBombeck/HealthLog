@@ -35,6 +35,7 @@ import {
   type AiUsageLevel,
 } from "@/lib/ai/usage-level";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import {
   aiInputDependentKeys,
@@ -122,12 +123,9 @@ function AiUsageForm({ bounds }: { bounds: AiUsageBounds }) {
       toast.success(t("common.saved"));
     },
     onError: (err) => {
-      showErrorToast(
-        err instanceof Error && err.message
-          ? err.message
-          : t("admin.settingsSaveError"),
-        { cause: err },
-      );
+      showErrorToast(localizedApiError(err, t, "admin.settingsSaveError"), {
+        cause: err,
+      });
     },
   });
 

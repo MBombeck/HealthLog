@@ -27,7 +27,7 @@ import { CycleSettingsTab } from "./cycle-settings-tab";
 import { PHASE_HUE } from "./phase-tokens";
 import { monthOf, monthWindowOutside } from "./calendar-window";
 import {
-  localYmd,
+  useCycleWindow,
   useCycleCalendar,
   useCycleHistory,
   useCycleInsights,
@@ -49,13 +49,6 @@ import { ListCapNotice } from "@/components/ui/list-cap-notice";
  * keyframes, gated by sessionStorage so a background calendar refetch never
  * re-triggers the moment.
  */
-
-/** YYYY-MM-DD for `n` days from now in the local tz (shares `localYmd`). */
-function shiftToday(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  return localYmd(d);
-}
 
 /** The four cycle tabs, in render order. The deep-link value is validated
  *  against this set so a junk `?tab=` falls back to the calendar tab. */
@@ -114,9 +107,7 @@ export function CycleView() {
   // a later param change does not force-switch a tab the user is reading).
   const [tab, setTab] = useState<CycleTab>(initialTab);
 
-  const today = useMemo(() => shiftToday(0), []);
-  const from = useMemo(() => shiftToday(-90), []);
-  const to = useMemo(() => shiftToday(180), []);
+  const { today, from, to } = useCycleWindow();
 
   const calendar = useCycleCalendar(from, to);
   const history = useCycleHistory();

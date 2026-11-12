@@ -360,6 +360,52 @@ export const vaccinationDependentKeys = [
 ];
 
 /**
+ * Keys invalidated when a workout is logged, edited or deleted. The Today
+ * digest names a workout that just arrived and the write evicts the server's
+ * daily caches, so the daily reads ride along; pair call sites with
+ * `refetchInactiveDailyReads`, because both are unmounted wherever the form
+ * opens outside the dashboard.
+ */
+export const workoutDependentKeys = [
+  queryKeys.workouts(),
+  queryKeys.dashboardSnapshot(),
+  queryKeys.dailyDigest(),
+  queryKeys.dayRoot(),
+  queryKeys.timelineRoot(),
+];
+
+/**
+ * Keys invalidated when a lab reading is created, edited, deleted or restored,
+ * or a marker is renamed, hidden, merged or deleted. The marker list carries
+ * each marker's latest reading, and the "what changed since your last panel"
+ * card compares the two newest panels.
+ */
+export const labDependentKeys = [
+  queryKeys.labResults(),
+  queryKeys.biomarkers(),
+  queryKeys.insightsLabsChanges(),
+  queryKeys.dayRoot(),
+  queryKeys.timelineRoot(),
+];
+
+/** Keys invalidated when an allergy is created, edited or deleted. */
+export const allergyDependentKeys = [
+  queryKeys.allergies(),
+  queryKeys.dayRoot(),
+  queryKeys.timelineRoot(),
+];
+
+/**
+ * Keys invalidated when a document is uploaded, imported, edited, deleted or
+ * restored. A document's date places it on its day and on the timeline.
+ */
+export const documentDependentKeys = [
+  queryKeys.documents(),
+  queryKeys.dayRoot(),
+  queryKeys.timelineRoot(),
+];
+
+/**
  * Keys invalidated when an input of the `ai` block on `GET /api/auth/me`
  * changes: the account's own provider (key, local model, compatible endpoint,
  * Codex sign-in), the fallback chain, the central-Codex opt-in, a consent
@@ -385,7 +431,8 @@ export const aiInputDependentKeys = [
 /**
  * Invalidate every key in the bundle in parallel. Use this from mutation
  * `onSuccess` handlers so the call site stays a one-liner instead of repeating
- * `Promise.all(keys.map(...))` everywhere.
+ * `Promise.all(keys.map(...))` everywhere. A key listed twice (two bundles
+ * spread into one list share the day and timeline roots) is invalidated once.
  *
  * Uses `allSettled` so one transient network failure doesn't abort subsequent
  * invalidations (cache would otherwise be left half-stale) and so the `void
@@ -404,8 +451,11 @@ export function invalidateKeys(
   queryClient: QueryClient,
   keys: readonly QueryKey[],
 ): Promise<PromiseSettledResult<unknown>[]> {
+  const unique = new Map(keys.map((key) => [JSON.stringify(key), key]));
   return Promise.allSettled(
-    keys.map((queryKey) => invalidateKey(queryClient, queryKey)),
+    [...unique.values()].map((queryKey) =>
+      invalidateKey(queryClient, queryKey),
+    ),
   );
 }
 
@@ -441,9 +491,8 @@ async function invalidateKey(
  * remount re-fetches under `refetchOnMount: false`.
  *
  * Originates from the v1.16.11 dashboard-snapshot fix and the v1.29.1
- * medication-intake fix (`invalidateMedicationReads` in
- * `components/medications/use-medication-intake.ts`, which predates this
- * shared helper and keeps its own inline copy). Call this alongside
+ * medication-intake fix (`invalidateMedicationReads` below wraps the pair
+ * for medication writes). Call this alongside
  * `invalidateKeys(queryClient, xDependentKeys)` from any write whose server
  * route already hard-evicts the snapshot bucket — the forced refetch then
  * returns post-write data immediately, no server change needed.

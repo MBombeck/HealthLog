@@ -145,7 +145,15 @@
     "auth": {
       "reproof": {
         "required": "Bevestig je huidige wachtwoord om dit te wijzigen.",
-        "failed": "De verificatie is mislukt. Er is niets gewijzigd."
+        "failed": "De verificatie is mislukt. Er is niets gewijzigd.",
+        "too_weak": "Bevestig met je tweede factor of een passkey. Voor dit account is alleen je wachtwoord niet genoeg."
+      },
+      "missing": "Je sessie is verlopen, dus er is niets gewijzigd. Meld je opnieuw aan om verder te gaan.",
+      "passkey": {
+        "last_method": "Deze passkey is je enige manier om in te loggen. Stel eerst een wachtwoord in of voeg nog een passkey toe."
+      },
+      "mfa": {
+        "already_active": "Voor dit account is al een authenticator-app ingesteld. Schakel die eerst uit om een nieuwe in te stellen."
       }
     },
     "biomarkers": {
@@ -181,6 +189,54 @@
     },
     "aiRuns": {
       "readerBusy": "De documentlezer is met ander werk bezig. Probeer het over een minuut opnieuw."
+    },
+    "http": {
+      "unauthenticated": "Je sessie is verlopen, dus er is niets gewijzigd. Meld je opnieuw aan om verder te gaan.",
+      "rate_limited": "Er zijn net te veel verzoeken, dus er is niets gewijzigd. Wacht even en probeer het opnieuw.",
+      "forbidden": "Je hebt hier geen toestemming voor, dus er is niets gewijzigd.",
+      "invalid": "Sommige gegevens zijn niet geaccepteerd, dus er is niets gewijzigd. Controleer ze en probeer het opnieuw."
+    },
+    "ai_provider": {
+      "private_host": "Dit adres ligt in een privénetwerk. De beheerder moet de exacte origin eerst toestaan in AI_PRIVATE_ORIGINS."
+    },
+    "encounter": {
+      "invalid": "Controleer de gegevens van het bezoek en probeer het opnieuw.",
+      "practitioner-not-found": "Deze praktijk of arts bestaat niet meer. Kies een andere of geen.",
+      "reminder-not-found": "Deze controle bestaat niet meer. Kies een andere of geen.",
+      "reminder-conflict": "Een gepland bezoek kan geen controle afsluiten, want het heeft nog niet plaatsgevonden."
+    },
+    "vaccination": {
+      "invalid": "Controleer de gegevens van de vaccinatie en probeer het opnieuw.",
+      "practitioner-not-found": "Deze praktijk of arts bestaat niet meer. Kies een andere of geen.",
+      "encounter-not-found": "Dit bezoek bestaat niet meer. Kies een ander of geen.",
+      "custom-vaccine-not-found": "Dit vaccin bestaat niet meer. Kies het opnieuw uit de lijst.",
+      "not-found": "Deze vaccinatie is niet meer beschikbaar.",
+      "identity-required": "Een dosis heeft een naam nodig: kies een vaccin uit de lijst of typ wat er op je vaccinatiebewijs staat.",
+      "booster-invalid": "Controleer de gegevens van de booster en probeer het opnieuw.",
+      "booster-no-antigen": "Deze dosis noemt geen vaccin uit de catalogus, dus er kan geen booster worden gepland.",
+      "booster-out-of-scope": "Je toegang tot dit dossier dekt het plannen van een booster niet."
+    },
+    "allergy": {
+      "invalid": "Controleer de gegevens van de allergie en probeer het opnieuw."
+    },
+    "practitioner": {
+      "invalid": "Controleer de gegevens van de praktijk of arts en probeer het opnieuw."
+    },
+    "workout": {
+      "batch": {
+        "invalid": "Controleer de gegevens van de training en probeer het opnieuw.",
+        "too_large": "Te veel trainingen tegelijk. Stuur er minder per keer.",
+        "payload_too_large": "De trainingsgegevens zijn te groot om in één keer op te slaan.",
+        "source_not_permitted": "Deze koppeling mag geen trainingen onder die bron opslaan."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "Er is geen AI-provider ingesteld, dus er is niets verzonden. Stel er een in bij de AI-instellingen."
+      },
+      "budget": {
+        "exceeded": "Het AI-budget voor vandaag is op, dus er is niets verzonden. Morgen is het er weer."
+      }
     }
   },
   "doctorReport": {
@@ -983,7 +1039,9 @@
     "typeStressLevel": "Stressniveau",
     "typeTrainingReadiness": "Trainingsgereedheid",
     "typeAcuteTrainingLoad": "Acute trainingsbelasting",
-    "sourceGarmin": "Garmin"
+    "sourceGarmin": "Garmin",
+    "valueOutOfRange": "Vul een waarde in tussen {min} en {max} {unit}.",
+    "valueOutOfRangeNoUnit": "Vul een waarde in tussen {min} en {max}."
   },
   "metricCatalog": {
     "title": "Wat HealthLog kan bijhouden",
@@ -1535,7 +1593,8 @@
         "gallbladderDiscomfort": "Galblaasklachten"
       },
       "deleteConfirmTitle": "Deze registratie verwijderen?",
-      "deleteConfirmBody": "Deze bijwerkingregistratie wordt definitief verwijderd."
+      "deleteConfirmBody": "Deze bijwerkingregistratie wordt definitief verwijderd.",
+      "saveError": "De registratie kon niet worden opgeslagen"
     },
     "scheduling": {
       "naturalLanguage": {
@@ -1959,7 +2018,6 @@
       },
       "intake": {
         "title": "Innamegeschiedenis",
-        "importButton": "Importeren",
         "rowActions": {
           "openMenu": "Rijacties openen",
           "edit": "Bewerken",
@@ -1969,14 +2027,7 @@
           "rowToggleLabel": "Rij selecteren"
         },
         "bulkDelete": {
-          "selectionCount": "{count} registraties geselecteerd",
-          "deleteButton": "Selectie verwijderen",
-          "cancelButton": "Annuleren",
-          "confirmTitle": "Geselecteerde registraties verwijderen?",
-          "confirmBody": "{count} registraties worden definitief verwijderd. Het medicijn zelf blijft bestaan.",
-          "confirmAction": "Verwijderen",
-          "toast": "Selectie verwijderd",
-          "failed": "De selectie kon niet worden verwijderd."
+          "cancelButton": "Annuleren"
         },
         "edit": {
           "dialogTitle": "Inname bewerken",
@@ -2850,11 +2901,6 @@
     "bmiEmptyTitle": "Stel je lengte in om je BMI te zien",
     "bmiEmptyDescription": "Voor de BMI is je lengte nodig. Voeg die toe onder Instellingen → Account.",
     "bmiEmptyAction": "Accountinstellingen openen",
-    "personalRecord": {
-      "badge": "PR",
-      "tooltip": "Persoonlijk record: {value} {unit} op {date}",
-      "benchmark": "Gebruikelijk op die leeftijd: {low} tot {high} {unit} ({source})"
-    },
     "loadError": "Inzichten kunnen niet worden geladen",
     "heroPersonalBaseline": "Op basis van je afgelopen 90 dagen",
     "heroRegenerating": "Opnieuw genereren",
@@ -3021,8 +3067,6 @@
     },
     "correlationRow": {
       "title": "Verbanden",
-      "experimentCta": "Probeer een experiment van 7 dagen",
-      "experimentTooltip": "Binnenkort beschikbaar",
       "emptyTitle": "Meer gegevens nodig om dit verband te zien",
       "sourceChip": "gebaseerd op {n} gekoppelde metingen ({window})",
       "sourceWindowLast30": "afgelopen 30 dagen",
@@ -5183,7 +5227,9 @@
       "connectCta": "Een apparaat koppelen",
       "logCta": "Je eerste meting vastleggen",
       "importCta": "Bestaande geschiedenis importeren",
-      "modulesCta": "Je modules kiezen"
+      "modulesCta": "Je modules kiezen",
+      "aiOptional": "AI is optioneel. Alles werkt ook zonder.",
+      "aiSetupCta": "AI instellen"
     },
     "welcomeBack": {
       "title": "Welkom terug",
@@ -5203,37 +5249,6 @@
       "allergiesLabel": "Allergieën of intoleranties",
       "allergiesPlaceholder": "bijv. penicilline, lactose",
       "privacyNote": "Versleuteld opgeslagen en alleen gebruikt om je betere context te geven. We vragen hier niet naar je medicatie. Die kun je altijd toevoegen via de pagina Medicatie."
-    },
-    "ai": {
-      "panelTitle": "Bekijk hoe inzichten eruitzien",
-      "panelIntro": "Coach, de dagelijkse briefing en de toelichting per meetwaarde zetten je eigen cijfers om in begrijpelijke taal. Zo ziet dat eruit, nog voordat je iets koppelt.",
-      "showSample": "Voorbeeldbriefing bekijken",
-      "sampleTitle": "Dagelijkse briefing",
-      "sampleTag": "Voorbeeld",
-      "sampleAriaLabel": "Voorbeeld van een dagelijkse briefing",
-      "sampleBody": "Gewicht in twee weken 1,2 kg gedaald. Rusthartslag stabiel op 58 bpm. Bloeddruk binnen het bereik op 6 van de 7 dagen; de ene hoge meting volgde op een laat, zout avondeten.",
-      "sampleCaption": "Alleen een voorbeeld, niet je eigen gegevens. Zo leest een briefing zodra inzichten aanstaan.",
-      "ladderTitle": "Drie manieren om het aan te zetten",
-      "ladderLocalTitle": "Lokaal model: AI-verzoeken blijven op je eigen netwerk",
-      "ladderLocalBody": "Verwijs HealthLog naar Ollama of LM Studio op je eigen computer. Gratis en volledig privé, de rustige standaardkeuze.",
-      "ladderByokTitle": "Je eigen sleutel gebruiken",
-      "ladderByokBody": "Gebruik je eigen OpenAI- of Anthropic-sleutel. Die draait onder je eigen account en facturering, en via de API worden je gegevens standaard niet gebruikt voor training.",
-      "ladderOauthTitle": "Inloggen met een abonnement",
-      "ladderOauthBody": "Koppel een ChatGPT-account. Geen kosten per token, maar volgens de voorwaarden voor consumenten mag inhoud voor training worden gebruikt. Het is dus een bewuste keuze, nooit de standaard voor je gezondheidsgegevens.",
-      "keylessLine": "HealthLog is ook zonder AI volledig bruikbaar. Je tegels, grafieken, trends en exports werken allemaal. AI voegt alleen de toelichting in begrijpelijke taal toe.",
-      "setupCta": "Instellen (ongeveer een minuut)",
-      "sharedKeyNote": "Deze instantie biedt al een gedeelde AI-provider, dus inzichten werken nu al voor je, zonder instellen.",
-      "offer": {
-        "title": "Deze instantie kan je samenvatting in begrijpelijke taal schrijven.",
-        "body": "De beheerder stelt een provider beschikbaar die in de afgelopen 24 uur nog werkte. Met één tik zet je de toelichting in begrijpelijke taal aan; je gegevens gaan dan naar die ene provider en naar niemand anders.",
-        "cta": "Begrijpelijke taal aanzetten",
-        "granted": "Aangezet. De eerste samenvatting verschijnt op je dashboard.",
-        "error": "Aanzetten is niet gelukt. Probeer het zo meteen nog eens."
-      },
-      "unavailable": {
-        "title": "De provider van deze instantie reageert op dit moment niet.",
-        "body": "HealthLog is ook zonder de toelichting in begrijpelijke taal volledig bruikbaar. Je kunt later onder Instellingen een eigen provider toevoegen."
-      }
     },
     "steps": {
       "who": "Voor wie dit dossier is",
@@ -5948,6 +5963,7 @@
             "inProgress": "Er loopt al een import van doseringsgeschiedenis. Wacht tot die klaar is.",
             "workerUnavailable": "De achtergrondverwerking is niet beschikbaar, dus er is niets geïmporteerd.",
             "failed": "De import is mislukt. Er is niets opgeslagen.",
+            "stillRunning": "De import duurt langer dan normaal en kan nog afronden. Kijk over een paar minuten opnieuw naar je innames.",
             "columnsHeading": "Wat elke kolom doet",
             "jsonOnly": "Alleen JSON",
             "previewLine": "{rows} rijen gelezen, {queued} zouden worden geïmporteerd, {refused} geweigerd",
@@ -7797,7 +7813,9 @@
       "hrv": "HRV",
       "weight": "wegingen",
       "cycle": "menstruatiecyclus"
-    }
+    },
+    "passkeyRenameFailed": "De naam van de passkey kon niet worden gewijzigd.",
+    "passkeyRemoveFailed": "De passkey kon niet worden verwijderd."
   },
   "admin": {
     "title": "Beheer",
@@ -9320,16 +9338,8 @@
     },
     "eventMedicationReminder": "Medicatieherinnering",
     "eventMedicationReminderDesc": "Wordt verstuurd op elk gepland innamemoment.",
-    "eventMeasurementAnomaly": "Ongebruikelijke meting",
-    "eventMeasurementAnomalyDesc": "Wordt verstuurd als een meetwaarde ver buiten je gebruikelijke bereik ligt.",
-    "eventComplianceLow": "Lage therapietrouw",
-    "eventComplianceLowDesc": "Wordt verstuurd als je therapietrouw over de afgelopen dagen onder 80% zakt.",
-    "eventWithingsSyncFailed": "Withings-synchronisatie mislukt",
-    "eventWithingsSyncFailedDesc": "Wordt verstuurd als de Withings-synchronisatie meerdere keren achter elkaar mislukt.",
     "eventSystemAlert": "Systeembericht",
     "eventSystemAlertDesc": "Algemene berichten van de HealthLog-server, bijv. onderhoudsvensters of opmerkingen over je account.",
-    "eventPersonalRecord": "Persoonlijk record",
-    "eventPersonalRecordDesc": "Wordt verstuurd als een meetwaarde je vorige beste overtreft.",
     "eventMoodReminder": "Stemmingsherinnering",
     "eventMoodReminderDesc": "Dagelijks seintje om je huidige stemming vast te leggen.",
     "eventCyclePeriodSoon": "Menstruatie op komst",
@@ -10978,7 +10988,9 @@
       "deleteTitle": "Eigen vaccin verwijderen?",
       "sectionDescription": "Vaccins die je zelf hebt toegevoegd omdat ze niet in de catalogus staan.",
       "catalogGroup": "Catalogus"
-    }
+    },
+    "deleted": "Vaccinatie verwijderd",
+    "restoreFailed": "De vaccinatie kon niet worden teruggezet."
   },
   "illness": {
     "title": "Ziekte",
@@ -11192,7 +11204,6 @@
       "title": "Plannen",
       "pageDescription": "Als-dan-plannen die je in je gesprekken met de Coach hebt afgesproken. Bevestig een voorstel om het onderdeel te maken van het geheugen van de Coach.",
       "readOnlyNote": "De Coach is nu niet beschikbaar, maar je kunt je plannen nog wel lezen en verwijderen.",
-      "proposalTitle": "Planvoorstel",
       "ifThen": "Als {cue}, dan {action}.",
       "targetPrefix": "Doel: {target}",
       "reviewPrefix": "Evaluatie: {when}",
@@ -12487,6 +12498,10 @@
       "purgeFailed": "Het document kon niet worden verwijderd.",
       "purgeConfirmTitle": "Dit document definitief verwijderen?",
       "purgeConfirmBody": "Het wordt nu verwijderd in plaats van aan het einde van de wachttijd en kan niet worden hersteld."
+    },
+    "picker": {
+      "capped": "De nieuwste {count} staan hier. Zoek om een ouder document te vinden.",
+      "cappedSearching": "De nieuwste {count} resultaten staan hier. Verfijn de zoekopdracht om een ouder document te vinden."
     }
   },
   "selfDescription": {
@@ -12534,7 +12549,8 @@
       "save": "Opslaan",
       "savedToast": "Eigen meting opgeslagen",
       "updatedToast": "Eigen meting bijgewerkt",
-      "saveError": "De eigen meting kon niet worden opgeslagen"
+      "saveError": "De eigen meting kon niet worden opgeslagen",
+      "nameTaken": "Er bestaat al een eigen meting met deze naam."
     },
     "entry": {
       "value": "Waarde",
@@ -13489,7 +13505,9 @@
       "defaultReason": "Geen eerder bezoek bij dezelfde praktijk, in hetzelfde specialisme of van hetzelfde soort.",
       "capped": "De afgelopen twee jaar",
       "cappedReason": "Het laatste passende bezoek is meer dan twee jaar geleden, en een rapport beslaat hooguit twee jaar."
-    }
+    },
+    "deleted": "Bezoek verwijderd",
+    "restoreFailed": "Het bezoek kon niet worden teruggezet."
   },
   "checkups": {
     "viewSwitchLabel": "Controles, bezoeken, ingrepen of lichaamsdelen tonen",
@@ -13522,7 +13540,9 @@
     "deleteTitle": "Deze vermelding verwijderen?",
     "deleteDescription": "Je bestaande bezoeken blijven bestaan en houden deze naam.",
     "deleteFailed": "De vermelding kon niet worden verwijderd.",
-    "noSpecialtyGroup": "Geen specialisme"
+    "noSpecialtyGroup": "Geen specialisme",
+    "deleted": "Vermelding verwijderd",
+    "restoreFailed": "De vermelding kon niet worden teruggezet."
   },
   "links": {
     "picker": {

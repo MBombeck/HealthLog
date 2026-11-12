@@ -152,7 +152,10 @@ describe("generatePulseStatusForUser — graded payload", () => {
 });
 
 describe("generatePulseStatusForUser — A2 resting-target in-target %", () => {
-  it("scores RESTING_HEART_RATE against the resting band, ignoring workout PULSE", async () => {
+  /** A clean resting 72 bpm for 30 days beside a workout-polluted PULSE. */
+  async function restingSnapshot(
+    user: Record<string, unknown> = { dateOfBirth: null, gender: null },
+  ) {
     const now = new Date();
     // PULSE polluted with a heavy workout burst (would tank the in-target
     // % if scored against the resting band).
@@ -181,10 +184,7 @@ describe("generatePulseStatusForUser — A2 resting-target in-target %", () => {
       });
     }
 
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      dateOfBirth: null,
-      gender: null,
-    } as never);
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(user as never);
     // pulse-status reads PULSE first, then RESTING_HEART_RATE. The latest
     // 365 PULSE readings reach back less than 30 days here, so the PULSE
     // read takes the 30-day window as a second query.
@@ -199,12 +199,26 @@ describe("generatePulseStatusForUser — A2 resting-target in-target %", () => {
     stubCompletion('{"summary":"OK"}', captured);
 
     await generatePulseStatusForUser("user-resting", { locale: "en" });
+    return JSON.parse(captured.userPrompt!.match(/\{[\s\S]*\}/)![0]);
+  }
 
-    const match = captured.userPrompt!.match(/\{[\s\S]*\}/);
-    const snapshot = JSON.parse(match![0]);
+  it("scores RESTING_HEART_RATE against the resting band, ignoring workout PULSE", async () => {
+    const snapshot = await restingSnapshot();
     // Resting 72 sits inside the 60-100 band → 100 % in target, NOT the
     // ~0 % the workout-polluted PULSE stream would have produced.
     expect(snapshot.pulse.target.inTargetPctLast30DailyPoints).toBe(100);
+  });
+
+  it("scores the resting series against the person's own target where one is set", async () => {
+    const snapshot = await restingSnapshot({
+      heightCm: null,
+      dateOfBirth: null,
+      gender: null,
+      thresholdsJson: { PULSE: { min: 50, max: 65 } },
+    });
+    expect(snapshot.pulse.target).toMatchObject({ greenMin: 50, greenMax: 65 });
+    // Resting 72 is above the own ceiling of 65 on every day.
+    expect(snapshot.pulse.target.inTargetPctLast30DailyPoints).toBe(0);
   });
 
   it("falls back to a low-percentile PULSE proxy when no resting rows exist", async () => {

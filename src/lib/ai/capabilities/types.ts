@@ -189,6 +189,22 @@ export const AI_OPT_OUT_MODULES: ReadonlySet<ModuleKey> = new Set<ModuleKey>([
   "insights",
 ]);
 
+/**
+ * Whether the record has every opt-out module switched off, read from the
+ * module map on `/api/auth/me` (a key the map does not carry counts as on).
+ * An invitation to set AI up has nothing left to offer then. It does not gate
+ * the AI settings themselves: document reading, lab photos and medication
+ * extraction belong to other modules and still need a provider and consent.
+ */
+export function hasOptedOutOfAi(
+  modules: Partial<Record<ModuleKey, boolean>> | null | undefined,
+): boolean {
+  for (const key of AI_OPT_OUT_MODULES) {
+    if (modules?.[key] !== false) return false;
+  }
+  return true;
+}
+
 const COACH_KINDS: readonly AiConsentKind[] = ["ai_coach", "ai_full"];
 const INSIGHTS_KINDS: readonly AiConsentKind[] = [
   "ai_insights_only",

@@ -47,6 +47,7 @@ import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { SUB_SHELL_GRID_FLOOR } from "@/components/layout/shell-metrics";
 import { useAuth } from "@/hooks/use-auth";
+import { useNavModules } from "@/hooks/use-nav-modules";
 import { useMounted } from "@/hooks/use-mounted";
 import { useTranslations } from "@/lib/i18n/context";
 import { isSurfaceVisible } from "@/lib/modules/surface";
@@ -355,6 +356,20 @@ function deriveActiveSlug(
   return isSettingsSectionSlug(candidate) ? candidate : "account";
 }
 
+/**
+ * The module map the section list reads, the sidebar's. A managed record has
+ * no Settings, AI to list its Coach settings (its data scope, its switch), so
+ * there the Coach entry follows the module switch alone, not whether the
+ * record's Coach can answer yet.
+ */
+function useSectionModules() {
+  const { user } = useAuth();
+  const navModules = useNavModules();
+  return user?.accountAccess?.active?.recordKind === "managed"
+    ? user.modules
+    : navModules;
+}
+
 export function SettingsShell({
   active,
   heading,
@@ -366,8 +381,8 @@ export function SettingsShell({
   const activeSlug = deriveActiveSlug(pathname, active);
 
   // v1.18.0 — per-submodule entries are listed only when their module
-  // is enabled. Read from the resolved `useAuth().user.modules` map (the
-  // same map the Module hub, nav, and Insights pills gate off). Fail OPEN
+  // is enabled, from `useNavModules()` as in the sidebar (Coach follows its
+  // AI capability; Settings → AI then lists the stored memory). Fail OPEN
   // (`!== false`): a missing key, or a not-yet-resolved `/me` payload,
   // reads as enabled so an entry never silently disappears. A section's
   // owner comes from the surface map (`settings:<slug>`); sections with no
@@ -390,7 +405,7 @@ export function SettingsShell({
   // effect (which the lint rule flags as a cascading render), and no risk of
   // the two passes disagreeing.
   const hydrated = useMounted();
-  const modules = user?.modules;
+  const modules = useSectionModules();
   const activeRecord = user?.accountAccess?.active ?? null;
   const allVisibleSections = SETTINGS_SECTIONS.filter(
     (section) =>

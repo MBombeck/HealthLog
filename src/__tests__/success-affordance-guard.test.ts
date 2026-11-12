@@ -216,6 +216,7 @@ const PINNED_AFFORDANCES: Record<
   "src/components/documents/sources/document-source-picker.tsx": {
     "text-success": 1,
   },
+  "src/components/encounters/encounter-sheet.tsx": { "toast.success": 1 },
   "src/components/error-details.tsx": { CheckCircle2: 2, "text-success": 1 },
   "src/components/illness/episode-menu.tsx": {
     CheckCircle2: 2,
@@ -284,9 +285,6 @@ const PINNED_AFFORDANCES: Record<
     "toast.success": 4,
   },
   "src/components/medications/intake-edit-dialog.tsx": { "toast.success": 1 },
-  "src/components/medications/intake-history-editable.tsx": {
-    "toast.success": 2,
-  },
   "src/components/medications/intake-history-list-v2.tsx": {
     "text-success": 1,
   },
@@ -347,8 +345,10 @@ const PINNED_AFFORDANCES: Record<
   "src/components/symptoms/symptom-entry-form.tsx": { "toast.success": 1 },
   "src/components/mood/mood-list.tsx": { "toast.success": 3 },
   "src/components/onboarding/done-screen.tsx": { CheckCircle2: 2 },
+  "src/components/practitioners/practitioner-list.tsx": { "toast.success": 1 },
   "src/components/records/allergy-form.tsx": { "toast.success": 1 },
   "src/components/records/allergy-manager.tsx": { "toast.success": 1 },
+  "src/components/vaccinations/vaccination-sheet.tsx": { "toast.success": 1 },
   "src/components/records/conditions-manager.tsx": { "toast.success": 1 },
   "src/components/records/family-history-form.tsx": { "toast.success": 1 },
   "src/components/records/family-history-manager.tsx": { "toast.success": 1 },

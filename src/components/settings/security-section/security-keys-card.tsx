@@ -23,6 +23,7 @@ import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import { ApiError, apiDelete, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { describePasskeyError } from "@/lib/passkey-errors";
 import { formatDate } from "@/lib/format";
 import {
@@ -50,6 +51,8 @@ export interface WebauthnKeyInfo {
  * "Recent second-factor verification required", which is English-only and, for a
  * passkey-only account, not even accurate about which credential to re-prove —
  * so the caller supplies its own sentence and this only decides when to use it.
+ * Any other refusal reads as `fallback`, which callers resolve through
+ * `localizedApiError`; the server's prose is never shown.
  *
  * Matched on `meta.errorCode`, and on the whole `auth.stepup` prefix rather than
  * one code: `auth.stepup.required` and `auth.stepup.mfa_not_enrolled` both mean
@@ -70,7 +73,6 @@ export function describeStepUp(
     ) {
       return stepUpMsg;
     }
-    return err.message || fallback;
   }
   return fallback;
 }
@@ -141,7 +143,7 @@ export function SecurityKeysCard({
       }
       let message: string;
       if (err instanceof ApiError) {
-        message = err.message || t("settings.security.keys.addFailed");
+        message = localizedApiError(err, t, "settings.security.keys.addFailed");
       } else {
         const { key, params } = describePasskeyError(err);
         message = t(key, params);
@@ -165,9 +167,7 @@ export function SecurityKeysCard({
     },
     onError: (err) =>
       setError(
-        err instanceof ApiError
-          ? err.message
-          : t("settings.security.keys.renameFailed"),
+        localizedApiError(err, t, "settings.security.keys.renameFailed"),
       ),
   });
 
@@ -191,7 +191,7 @@ export function SecurityKeysCard({
       setError(
         describeStepUp(
           err,
-          t("settings.security.keys.removeFailed"),
+          localizedApiError(err, t, "settings.security.keys.removeFailed"),
           t("settings.security.stepUpRequired"),
         ),
       );

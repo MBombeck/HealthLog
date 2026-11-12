@@ -62,7 +62,11 @@ describe("the re-proof dialog flow", () => {
     const flow = createRecentProofFlow({
       view: { setMethods, setPending: vi.fn(), setError: vi.fn() },
       submit: vi.fn(),
-      messages: () => ({ signInAgain: "sign in again", failed: "failed" }),
+      messages: () => ({
+        signInAgain: "sign in again",
+        failed: "failed",
+        rateLimited: "rate limited",
+      }),
     });
     void flow
       .run(async () => {
@@ -74,5 +78,24 @@ describe("the re-proof dialog flow", () => {
       .catch(() => {});
     await vi.waitFor(() => expect(setMethods).toHaveBeenCalledWith(["oidc"]));
     flow.cancel();
+  });
+
+  it("says a throttled proof in the caller's words, not the server's", async () => {
+    const setError = vi.fn();
+    const flow = createRecentProofFlow({
+      view: { setMethods: vi.fn(), setPending: vi.fn(), setError },
+      submit: vi.fn(async () => {
+        throw new ApiError("Too many attempts. Please wait 15 minutes.", 429);
+      }),
+      messages: () => ({
+        signInAgain: "sign in again",
+        failed: "failed",
+        rateLimited: "rate limited",
+      }),
+    });
+
+    await flow.prove({ method: "password", password: "pw" });
+
+    expect(setError).toHaveBeenLastCalledWith("rate limited");
   });
 });

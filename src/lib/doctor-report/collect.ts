@@ -83,7 +83,8 @@ import {
   loadSurgicalHistory,
   loadLabResults,
 } from "./clinical-records";
-import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import { dateOfBirthKey, dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import { PATIENT_NAME_SELECT, patientName } from "@/lib/account-name";
 import { readingsMean } from "@/lib/measurements/day-mean";
 import { loadScreenerUnvalidatedTranslations } from "./screener-translations";
 
@@ -178,7 +179,7 @@ export async function collectDoctorReportData(
   const userProfile = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      username: true,
+      ...PATIENT_NAME_SELECT,
       dateOfBirth: true,
       gender: true,
       heightCm: true,
@@ -186,7 +187,6 @@ export async function collectDoctorReportData(
       thresholdsJson: true,
       timezone: true,
       sourcePriorityJson: true,
-      fullName: true,
       insurerName: true,
       insurerIkNumber: true,
     },
@@ -720,14 +720,13 @@ export async function collectDoctorReportData(
       end: end.toISOString(),
     },
     patient: {
-      username: identityOn ? (userProfile?.username ?? null) : null,
+      name: identityOn && userProfile ? patientName(userProfile) : null,
       dateOfBirth:
         identityOn && userProfile?.dateOfBirth
-          ? userProfile.dateOfBirth.toISOString()
+          ? dateOfBirthKey(userProfile.dateOfBirth, reportTz)
           : null,
       gender: identityOn ? (userProfile?.gender ?? null) : null,
       heightCm: identityOn ? (userProfile?.heightCm ?? null) : null,
-      fullName: identityOn ? (userProfile?.fullName ?? null) : null,
       insurerName: insuranceOn ? (userProfile?.insurerName ?? null) : null,
       insurerIkNumber: insuranceOn
         ? (userProfile?.insurerIkNumber ?? null)

@@ -11,7 +11,7 @@ import {
 } from "@/lib/documents/inbound-constants";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations } from "@/lib/i18n/context";
-import { invalidateKeys, queryKeys } from "@/lib/query-keys";
+import { documentDependentKeys, invalidateKeys } from "@/lib/query-keys";
 import type {
   DocumentBulkAction,
   DocumentBulkResultDto,
@@ -64,7 +64,7 @@ export function useVaultBulk({
       return results;
     },
     onSettled: () => {
-      void invalidateKeys(queryClient, [queryKeys.documents()]);
+      void invalidateKeys(queryClient, documentDependentKeys);
     },
   });
 

@@ -22,7 +22,8 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useTableSort } from "@/hooks/use-table-sort";
-import { ApiError, apiDelete, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import { apiDelete, apiPatch, apiPost } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { formatDateShort } from "@/lib/format";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
@@ -140,11 +141,7 @@ export function CustomMetricHistoryList({
       closeEdit();
     },
     onError: (err) => {
-      setEditError(
-        err instanceof ApiError
-          ? err.message
-          : t("customMetrics.entry.editError"),
-      );
+      setEditError(localizedApiError(err, t, "customMetrics.entry.editError"));
     },
   });
 

@@ -181,27 +181,30 @@ export function serializeProviderChain(
  * reasoning effort from that provider's own settings form.
  *
  * The setting lives on the chain entry, so a chain that was never customised
- * is materialised from the default first. A provider that is not in the chain
- * at all gets a DISABLED entry to hold the value: the setting must reach the
- * provider when it is resolved as the selected one, and a disabled entry is
- * inert everywhere else (every reader filters on `enabled`). Clearing on an
- * absent entry writes nothing new.
+ * is materialised from the default first. With `enable`, which the gateway
+ * form passes because saving it picks the gateway, the entry is switched on,
+ * a new one included. Otherwise a provider that is not in the chain gets a
+ * DISABLED entry to hold the value, inert everywhere but where the provider
+ * serves as the picked one (`servesPickedGateway`). Clearing on an absent
+ * entry writes nothing new.
  */
 export function chainWithReasoningEffort(
   rawChain: unknown,
   providerType: ReasoningProviderType,
   effort: ReasoningEffort | null,
+  enable = false,
 ): ProviderChainEntry[] {
   const chain = parseProviderChain(rawChain).map((e) => ({ ...e }));
   const entry = chain.find((e) => e.providerType === providerType);
   if (entry) {
     if (effort) entry.reasoningEffort = effort;
     else delete entry.reasoningEffort;
+    if (enable) entry.enabled = true;
   } else if (effort) {
     chain.push({
       providerType,
       priority: Math.max(0, ...chain.map((e) => e.priority)) + 1,
-      enabled: false,
+      enabled: enable,
       reasoningEffort: effort,
     });
   }

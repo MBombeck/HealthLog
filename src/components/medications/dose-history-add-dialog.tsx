@@ -193,16 +193,14 @@ export function LedgerAddDialog({
       } else {
         toast.success(message);
       }
-      await invalidateKeys(queryClient, [
-        ...medicationDependentKeys,
-        ledgerKey,
-      ]);
-      // A ledger add can land a today-dated dose, so clear the unmounted
-      // Today hero + dashboard too (v1.32.19 — same class as the ledger's
-      // own log/edit/delete sites).
-      await refetchInactiveDailyReads(queryClient);
       setNudgeOpen(false);
       onOpenChange(false);
+      // Started, not awaited: the dialog closes once the dose is stored. A
+      // ledger add can land a today-dated dose, so clear the unmounted Today
+      // hero + dashboard too (same class as the ledger's own log/edit/delete
+      // sites).
+      void invalidateKeys(queryClient, [...medicationDependentKeys, ledgerKey]);
+      void refetchInactiveDailyReads(queryClient);
     } catch (failure) {
       showErrorToast(
         t("medications.intakeToastFailed", { name: medicationName }),

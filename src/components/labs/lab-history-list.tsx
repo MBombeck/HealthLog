@@ -35,7 +35,7 @@ import { LabConvertedNote } from "./lab-converted-note";
 import { resolveNoteForUpdate } from "@/lib/labs/note-update";
 import { resolveValueForUpdate, valueEditSeed } from "@/lib/labs/value-update";
 import { useTranslations } from "@/lib/i18n/context";
-import { queryKeys } from "@/lib/query-keys";
+import { invalidateKeys, labDependentKeys, queryKeys } from "@/lib/query-keys";
 
 import { ReferenceRangeBadge } from "./reference-range-badge";
 import { LabReferenceRangeBar } from "./lab-reference-range-bar";
@@ -147,14 +147,7 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
   const [hasNote, setHasNote] = useState(false);
 
   function invalidate() {
-    queryClient.invalidateQueries({ queryKey: queryKeys.labResults() });
-    // v1.32.19 — a lab reading edit / delete / restore shifts the two most
-    // recent panels the Insights "what changed since your last panel" card
-    // reads, so bust it too instead of leaving it on its pre-write deltas
-    // until the 60 s stale window lapses.
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.insightsLabsChanges(),
-    });
+    void invalidateKeys(queryClient, labDependentKeys);
   }
 
   async function restore(id: string) {

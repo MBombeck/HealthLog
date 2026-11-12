@@ -65,7 +65,8 @@ vi.mock("@tanstack/react-query", () => ({
   useQueryClient: () => mocks.queryClient,
 }));
 
-vi.mock("@/lib/api/api-fetch", () => ({
+vi.mock("@/lib/api/api-fetch", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/api-fetch")>()),
   apiFetchRaw: mocks.apiFetchRaw,
   apiGet: vi.fn(),
 }));

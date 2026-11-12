@@ -366,7 +366,41 @@ describe("runLogIntake — manual backdated intake from the Add choice", () => {
       takenAt: "2026-06-01T08:30:00.000Z",
     });
     expect(body).not.toHaveProperty("scheduledFor");
-    expect(queryClient.invalidateQueries).toHaveBeenCalled();
+    // Started, not awaited (the case below).
+    await vi.waitFor(() =>
+      expect(queryClient.invalidateQueries).toHaveBeenCalled(),
+    );
+    expect(toast.success).toHaveBeenCalledWith(
+      "medications.intakeToastTaken:Mounjaro",
+    );
+  });
+
+  it("answers once the dose is stored, without waiting for the refetches", async () => {
+    // The dialog closes on this answer; on a slow connection the reads it
+    // refreshes can take seconds.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        headers: new Headers(),
+        json: vi.fn(),
+        text: vi.fn().mockResolvedValue(""),
+      }),
+    );
+    const queryClient = {
+      invalidateQueries: vi.fn(() => new Promise(() => {})),
+      getQueryCache: () => ({ findAll: () => [] }),
+    } as unknown as QueryClient;
+
+    await expect(
+      runLogIntake({
+        medication,
+        skipped: false,
+        takenAt: "2026-06-01T08:30:00.000Z",
+        t,
+        queryClient,
+      }),
+    ).resolves.toBe(true);
     expect(toast.success).toHaveBeenCalledWith(
       "medications.intakeToastTaken:Mounjaro",
     );

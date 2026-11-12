@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { waitForMedicationIntakeImport } from "../intake-import-poll";
+import {
+  MedicationIntakeImportTimeout,
+  waitForMedicationIntakeImport,
+} from "../intake-import-poll";
 
 describe("waitForMedicationIntakeImport", () => {
   it("polls queued and running jobs until the durable result is done", async () => {
@@ -52,5 +55,20 @@ describe("waitForMedicationIntakeImport", () => {
     ).rejects.toThrow("worker failed");
     expect(readStatus).toHaveBeenCalledOnce();
     expect(wait).not.toHaveBeenCalled();
+  });
+
+  it("tells a watch that gave up from a job that failed", async () => {
+    // The job may still write, so the card must not say nothing was written.
+    const readStatus = vi.fn().mockResolvedValue({
+      status: "running",
+      result: null,
+    });
+    await expect(
+      waitForMedicationIntakeImport("/api/import/job-1/status", {
+        readStatus,
+        wait: vi.fn().mockResolvedValue(undefined),
+        maxAttempts: 2,
+      }),
+    ).rejects.toBeInstanceOf(MedicationIntakeImportTimeout);
   });
 });

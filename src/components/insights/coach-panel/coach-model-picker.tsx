@@ -20,6 +20,7 @@ import {
   type UserAIProvider,
 } from "@/components/settings/ai/shared";
 import { apiGet, apiPatch, apiPut } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { useTranslations } from "@/lib/i18n/context";
 import {
   aiInputDependentKeys,
@@ -155,11 +156,7 @@ export function CoachModelPicker() {
     void invalidateKeys(queryClient, aiInputDependentKeys);
   };
   const onFailed = (e: unknown) =>
-    setError(
-      e instanceof Error && e.message
-        ? e.message
-        : t("insights.coach.frame.saveFailed"),
-    );
+    setError(localizedApiError(e, t, "insights.coach.frame.saveFailed"));
 
   const switchProvider = useMutation({
     mutationFn: async (provider: ProviderType) => {

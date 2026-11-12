@@ -21,6 +21,7 @@ import {
   queryKeys,
 } from "@/lib/query-keys";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
+import { localizedApiError } from "@/lib/api/localized-error";
 import { PasswordInput } from "./_shared";
 
 /**
@@ -90,10 +91,9 @@ export function AiServerKeySection() {
       toast.success(t("admin.aiServerKey.saved"));
     },
     onError: (error: unknown) => {
-      showErrorToast(
-        error instanceof Error ? error.message : t("admin.aiServerKey.error"),
-        { cause: error },
-      );
+      showErrorToast(localizedApiError(error, t, "admin.aiServerKey.error"), {
+        cause: error,
+      });
     },
   });
 

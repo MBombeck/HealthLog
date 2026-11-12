@@ -145,7 +145,15 @@
     "auth": {
       "reproof": {
         "required": "Potwierdź obecne hasło, aby to zmienić.",
-        "failed": "Weryfikacja nie powiodła się. Nic nie zostało zmienione."
+        "failed": "Weryfikacja nie powiodła się. Nic nie zostało zmienione.",
+        "too_weak": "Potwierdź drugim składnikiem lub kluczem dostępu. Na tym koncie samo hasło nie wystarczy."
+      },
+      "missing": "Twoja sesja wygasła, więc nic nie zostało zmienione. Zaloguj się ponownie, aby kontynuować.",
+      "passkey": {
+        "last_method": "Ten klucz dostępu to Twój jedyny sposób logowania. Najpierw ustaw hasło albo dodaj kolejny klucz dostępu."
+      },
+      "mfa": {
+        "already_active": "To konto ma już skonfigurowaną aplikację uwierzytelniającą. Najpierw ją wyłącz, aby skonfigurować nową."
       }
     },
     "biomarkers": {
@@ -181,6 +189,54 @@
     },
     "aiRuns": {
       "readerBusy": "Czytnik dokumentów jest zajęty innymi zadaniami. Spróbuj ponownie za minutę."
+    },
+    "http": {
+      "unauthenticated": "Twoja sesja wygasła, więc nic nie zostało zmienione. Zaloguj się ponownie, aby kontynuować.",
+      "rate_limited": "W tej chwili jest zbyt wiele zapytań, więc nic nie zostało zmienione. Zaczekaj chwilę i spróbuj ponownie.",
+      "forbidden": "Nie masz do tego uprawnień, więc nic nie zostało zmienione.",
+      "invalid": "Niektóre dane nie zostały przyjęte, więc nic nie zostało zmienione. Sprawdź je i spróbuj ponownie."
+    },
+    "ai_provider": {
+      "private_host": "Ten adres jest w sieci prywatnej. Operator musi najpierw dopuścić jego dokładne źródło w AI_PRIVATE_ORIGINS."
+    },
+    "encounter": {
+      "invalid": "Sprawdź dane wizyty i spróbuj ponownie.",
+      "practitioner-not-found": "Ten gabinet lub lekarz już nie istnieje. Wybierz inny wpis albo „Nie podano”.",
+      "reminder-not-found": "To badanie już nie istnieje. Wybierz inne albo pozostaw pole puste.",
+      "reminder-conflict": "Zaplanowana wizyta nie może zamknąć badania, bo jeszcze się nie odbyła."
+    },
+    "vaccination": {
+      "invalid": "Sprawdź dane szczepienia i spróbuj ponownie.",
+      "practitioner-not-found": "Ten gabinet lub lekarz już nie istnieje. Wybierz inny wpis albo „Nie podano”.",
+      "encounter-not-found": "Ta wizyta już nie istnieje. Wybierz inną albo pozostaw pole puste.",
+      "custom-vaccine-not-found": "Ta szczepionka już nie istnieje. Wybierz ją ponownie z listy.",
+      "not-found": "To szczepienie nie jest już dostępne.",
+      "identity-required": "Dawka potrzebuje nazwy: wybierz szczepionkę z listy albo wpisz to, co podano w karcie szczepień.",
+      "booster-invalid": "Sprawdź dane dawki przypominającej i spróbuj ponownie.",
+      "booster-no-antigen": "Ta dawka nie wskazuje szczepionki z katalogu, więc nie da się zaplanować dawki przypominającej.",
+      "booster-out-of-scope": "Twój dostęp do tej kartoteki nie obejmuje planowania dawki przypominającej."
+    },
+    "allergy": {
+      "invalid": "Sprawdź dane alergii i spróbuj ponownie."
+    },
+    "practitioner": {
+      "invalid": "Sprawdź dane gabinetu lub lekarza i spróbuj ponownie."
+    },
+    "workout": {
+      "batch": {
+        "invalid": "Sprawdź dane treningu i spróbuj ponownie.",
+        "too_large": "Za dużo treningów naraz. Wysyłaj mniej za jednym razem.",
+        "payload_too_large": "Dane treningu są za duże, by zapisać je za jednym razem.",
+        "source_not_permitted": "To połączenie nie może zapisywać treningów pod tym źródłem."
+      }
+    },
+    "ai": {
+      "provider": {
+        "none": "Nie skonfigurowano dostawcy AI, więc nic nie zostało wysłane. Skonfiguruj go w ustawieniach AI."
+      },
+      "budget": {
+        "exceeded": "Dzisiejszy budżet AI został wykorzystany, więc nic nie zostało wysłane. Odnowi się jutro."
+      }
     }
   },
   "doctorReport": {
@@ -983,7 +1039,9 @@
     "typeStressLevel": "Poziom stresu",
     "typeTrainingReadiness": "Gotowość do treningu",
     "typeAcuteTrainingLoad": "Ostre obciążenie treningowe",
-    "sourceGarmin": "Garmin"
+    "sourceGarmin": "Garmin",
+    "valueOutOfRange": "Wpisz wartość od {min} do {max} {unit}.",
+    "valueOutOfRangeNoUnit": "Wpisz wartość od {min} do {max}."
   },
   "metricCatalog": {
     "title": "Co HealthLog potrafi śledzić",
@@ -1535,7 +1593,8 @@
         "gallbladderDiscomfort": "Dolegliwości pęcherzyka żółciowego"
       },
       "deleteConfirmTitle": "Usunąć ten wpis?",
-      "deleteConfirmBody": "Ten wpis o skutku ubocznym zostanie trwale usunięty."
+      "deleteConfirmBody": "Ten wpis o skutku ubocznym zostanie trwale usunięty.",
+      "saveError": "Nie udało się zapisać wpisu"
     },
     "scheduling": {
       "naturalLanguage": {
@@ -1959,7 +2018,6 @@
       },
       "intake": {
         "title": "Historia przyjęć",
-        "importButton": "Importuj",
         "rowActions": {
           "openMenu": "Otwórz akcje wiersza",
           "edit": "Edytuj",
@@ -1969,14 +2027,7 @@
           "rowToggleLabel": "Zaznacz wiersz"
         },
         "bulkDelete": {
-          "selectionCount": "{count} wpisów zaznaczono",
-          "deleteButton": "Usuń zaznaczone",
-          "cancelButton": "Anuluj",
-          "confirmTitle": "Usunąć zaznaczone wpisy?",
-          "confirmBody": "{count} wpisów zostanie trwale usuniętych. Sam lek pozostaje.",
-          "confirmAction": "Usuń",
-          "toast": "Zaznaczone usunięto",
-          "failed": "Nie udało się usunąć zaznaczonych."
+          "cancelButton": "Anuluj"
         },
         "edit": {
           "dialogTitle": "Edytuj przyjęcie",
@@ -2850,11 +2901,6 @@
     "bmiEmptyTitle": "Dodaj wzrost, aby obliczyć BMI",
     "bmiEmptyDescription": "BMI wymaga twojego wzrostu. Zapisz go w Ustawieniach → Konto.",
     "bmiEmptyAction": "Otwórz ustawienia konta",
-    "personalRecord": {
-      "badge": "PR",
-      "tooltip": "Rekord osobisty: {value} {unit} dnia {date}",
-      "benchmark": "Typowo w tym wieku: od {low} do {high} {unit} ({source})"
-    },
     "loadError": "Nie udało się załadować analiz",
     "heroPersonalBaseline": "Na podstawie ostatnich 90 dni",
     "heroRegenerating": "Generowanie",
@@ -3021,8 +3067,6 @@
     },
     "correlationRow": {
       "title": "Korelacje",
-      "experimentCta": "Uruchom 7-dniowy eksperyment",
-      "experimentTooltip": "Wkrótce",
       "emptyTitle": "Potrzeba więcej danych, aby pokazać tę korelację",
       "sourceChip": "na podstawie {n} sparowanych pomiarów ({window})",
       "sourceWindowLast30": "Ostatnie 30 dni",
@@ -5183,7 +5227,9 @@
       "connectCta": "Połącz urządzenie",
       "logCta": "Zapisz pierwszy pomiar",
       "importCta": "Importuj istniejącą historię",
-      "modulesCta": "Wybierz swoje moduły"
+      "modulesCta": "Wybierz swoje moduły",
+      "aiOptional": "AI jest opcjonalne. Wszystko działa także bez niego.",
+      "aiSetupCta": "Skonfiguruj AI"
     },
     "welcomeBack": {
       "title": "Witaj ponownie",
@@ -5203,37 +5249,6 @@
       "allergiesLabel": "Alergie lub nietolerancje",
       "allergiesPlaceholder": "np. penicylina, laktoza",
       "privacyNote": "Przechowywane w postaci zaszyfrowanej i używane tylko po to, by dać Ci lepszy kontekst. Nie pytamy tu o leki, dodasz je w dowolnej chwili na stronie Leki."
-    },
-    "ai": {
-      "panelTitle": "Zobacz, jak wyglądają insighty",
-      "panelIntro": "Coach, codzienny briefing i oceny dla poszczególnych metryk zamieniają Twoje własne liczby w prosty język. Oto jak to wygląda, zanim cokolwiek podłączysz.",
-      "showSample": "Zobacz przykładowy briefing",
-      "sampleTitle": "Codzienny briefing",
-      "sampleTag": "Przykład",
-      "sampleAriaLabel": "Przykładowy codzienny briefing",
-      "sampleBody": "Waga niższa o 1,2 kg w ciągu dwóch tygodni. Tętno spoczynkowe stabilne na 58 bpm. Ciśnienie w normie przez 6 z 7 dni; jedyny wysoki odczyt nastąpił po późnej, słonej kolacji.",
-      "sampleCaption": "Tylko przykład, to nie są Twoje dane. Tak czyta się briefing, gdy insighty są włączone.",
-      "ladderTitle": "Trzy sposoby, by to włączyć",
-      "ladderLocalTitle": "Model lokalny: zapytania do AI zostają w Twojej sieci",
-      "ladderLocalBody": "Skieruj HealthLog na Ollama lub LM Studio na własnej maszynie. Za darmo i w pełni prywatnie: spokojny wybór domyślny.",
-      "ladderByokTitle": "Użyj własnego klucza",
-      "ladderByokBody": "Użyj własnego klucza OpenAI lub Anthropic. Działa na Twoim koncie i rozliczeniu, a poziom API domyślnie wyklucza Twoje dane z treningu.",
-      "ladderOauthTitle": "Zaloguj się przez subskrypcję",
-      "ladderOauthBody": "Podłącz konto ChatGPT. Bez kosztu za token, ale warunki poziomu konsumenckiego mogą wykorzystywać treści do treningu, więc to świadomy wybór, nigdy domyślny dla danych o zdrowiu.",
-      "keylessLine": "HealthLog jest w pełni użyteczny bez AI. Twoje kafelki, wykresy, trendy i eksporty działają; AI dokłada tylko odczyt prostym językiem.",
-      "setupCta": "Skonfiguruj (około minuty)",
-      "sharedKeyNote": "Ta instancja udostępnia już wspólnego dostawcę AI, więc insighty działają dla Ciebie od razu, bez konfiguracji.",
-      "offer": {
-        "title": "Ta instancja potrafi już napisać twoje podsumowanie zwykłym językiem.",
-        "body": "Operator udostępnia dostawcę, który działał po raz ostatni w ciągu ostatnich 24 godzin. Jedno dotknięcie włącza zwykły język; twoje dane trafią wtedy do tego jednego dostawcy i do nikogo więcej.",
-        "cta": "Włącz zwykły język",
-        "granted": "Włączone. Pierwsze podsumowanie pojawi się na pulpicie.",
-        "error": "Włączenie się nie powiodło. Spróbuj ponownie za chwilę."
-      },
-      "unavailable": {
-        "title": "Dostawca tej instancji w tej chwili nie odpowiada.",
-        "body": "HealthLog jest w pełni użyteczny bez zwykłego języka. Później możesz dodać w ustawieniach własnego dostawcę."
-      }
     },
     "steps": {
       "who": "Dla kogo jest ta kartoteka",
@@ -5948,6 +5963,7 @@
             "inProgress": "Import historii dawek już trwa. Poczekaj, aż się zakończy.",
             "workerUnavailable": "Proces w tle jest niedostępny, więc nic nie zostało zaimportowane.",
             "failed": "Import nie udał się. Nic nie zostało zapisane.",
+            "stillRunning": "Import trwa dłużej niż zwykle i może się jeszcze zakończyć. Sprawdź swoje dawki ponownie za kilka minut.",
             "columnsHeading": "Co się dzieje z każdą kolumną",
             "jsonOnly": "tylko JSON",
             "previewLine": "Odczytane wiersze: {rows}, do zaimportowania: {queued}, odrzucone: {refused}",
@@ -7797,7 +7813,9 @@
       "hrv": "HRV",
       "weight": "pomiary wagi",
       "cycle": "cykl menstruacyjny"
-    }
+    },
+    "passkeyRenameFailed": "Nie udało się zmienić nazwy klucza dostępu.",
+    "passkeyRemoveFailed": "Nie udało się usunąć klucza dostępu."
   },
   "admin": {
     "title": "Administracja",
@@ -9320,16 +9338,8 @@
     },
     "eventMedicationReminder": "Przypomnienie o leku",
     "eventMedicationReminderDesc": "Wysyłane o każdej zaplanowanej godzinie dawki.",
-    "eventMeasurementAnomaly": "Nietypowy pomiar",
-    "eventMeasurementAnomalyDesc": "Wysyłane, gdy odczyt znacznie odbiega od Twojego zwykłego zakresu.",
-    "eventComplianceLow": "Niska zgodność",
-    "eventComplianceLowDesc": "Wysyłane, gdy odsetek przyjętych dawek z ostatnich dni spadnie poniżej 80 %.",
-    "eventWithingsSyncFailed": "Synchronizacja Withings nie powiodła się",
-    "eventWithingsSyncFailedDesc": "Wysyłane, gdy synchronizacja Withings nie powiedzie się kilka razy z rzędu.",
     "eventSystemAlert": "Powiadomienie systemowe",
     "eventSystemAlertDesc": "Ogólne komunikaty z serwera HealthLog, na przykład okna serwisowe lub uwagi do konta.",
-    "eventPersonalRecord": "Rekord osobisty",
-    "eventPersonalRecordDesc": "Wysyłane, gdy odczyt pobije Twój dotychczasowy rekord.",
     "eventMoodReminder": "Przypomnienie o nastroju",
     "eventMoodReminderDesc": "Codzienne przypomnienie, aby zapisać swój aktualny nastrój.",
     "eventCyclePeriodSoon": "Zbliża się okres",
@@ -10978,7 +10988,9 @@
       "deleteTitle": "Usunąć własną szczepionkę?",
       "sectionDescription": "Szczepionki dodane przez Ciebie, bo nie ma ich w katalogu.",
       "catalogGroup": "Katalog"
-    }
+    },
+    "deleted": "Szczepienie usunięte",
+    "restoreFailed": "Nie udało się przywrócić szczepienia."
   },
   "illness": {
     "title": "Choroba",
@@ -11192,7 +11204,6 @@
       "title": "Plany",
       "pageDescription": "Plany typu „jeśli… to” uzgodnione w rozmowach z Coachem. Potwierdź propozycję, aby Coach ją zapamiętał.",
       "readOnlyNote": "Coach jest teraz niedostępny, ale nadal możesz czytać i usuwać swoje plany.",
-      "proposalTitle": "Propozycja planu",
       "ifThen": "Jeśli {cue}, to {action}.",
       "targetPrefix": "Cel: {target}",
       "reviewPrefix": "Przegląd: {when}",
@@ -12487,6 +12498,10 @@
       "purgeFailed": "Nie udało się usunąć dokumentu.",
       "purgeConfirmTitle": "Usunąć ten dokument na stałe?",
       "purgeConfirmBody": "Zostanie usunięty teraz zamiast po okresie oczekiwania i nie będzie można go przywrócić."
+    },
+    "picker": {
+      "capped": "Widać {count} najnowszych. Starszy dokument znajdziesz przez wyszukiwanie.",
+      "cappedSearching": "Widać {count} najnowszych wyników. Zawęź wyszukiwanie, aby znaleźć starszy."
     }
   },
   "selfDescription": {
@@ -12534,7 +12549,8 @@
       "save": "Zapisz",
       "savedToast": "Zapisano metrykę własną",
       "updatedToast": "Zaktualizowano metrykę własną",
-      "saveError": "Nie udało się zapisać metryki własnej"
+      "saveError": "Nie udało się zapisać metryki własnej",
+      "nameTaken": "Metryka własna o tej nazwie już istnieje."
     },
     "entry": {
       "value": "Wartość",
@@ -13489,7 +13505,9 @@
       "defaultReason": "Brak wcześniejszej wizyty w tym samym gabinecie, tej samej specjalizacji lub tego samego rodzaju.",
       "capped": "Ostatnie dwa lata",
       "cappedReason": "Ostatnia pasująca wizyta była ponad dwa lata temu, a raport obejmuje najwyżej dwa lata."
-    }
+    },
+    "deleted": "Wizyta usunięta",
+    "restoreFailed": "Nie udało się przywrócić wizyty."
   },
   "checkups": {
     "viewSwitchLabel": "Pokaż badania profilaktyczne, wizyty, zabiegi lub miejsca na ciele",
@@ -13522,7 +13540,9 @@
     "deleteTitle": "Usunąć ten wpis?",
     "deleteDescription": "Twoje dotychczasowe wizyty pozostają i zachowują tę nazwę.",
     "deleteFailed": "Nie udało się usunąć wpisu.",
-    "noSpecialtyGroup": "Bez specjalizacji"
+    "noSpecialtyGroup": "Bez specjalizacji",
+    "deleted": "Wpis usunięty",
+    "restoreFailed": "Nie udało się przywrócić wpisu."
   },
   "links": {
     "picker": {

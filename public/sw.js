@@ -16,7 +16,7 @@ try {
 }
 const CACHE_VERSION =
   (typeof self !== "undefined" && self.__APP_VERSION__) ||
-  /* @sw-version-fallback */ "v1.47.2";
+  /* @sw-version-fallback */ "v1.47.3";
 const STATIC_CACHE = `healthlog-static-${CACHE_VERSION}`;
 const PAGE_CACHE = `healthlog-pages-${CACHE_VERSION}`;
 // Every HealthLog cache, current and legacy, and nothing another app on the

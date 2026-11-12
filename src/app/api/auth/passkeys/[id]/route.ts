@@ -126,6 +126,7 @@ export const DELETE = apiHandler(
       return apiError(
         "Cannot delete. At least one authentication method must remain",
         400,
+        { errorCode: "auth.passkey.last_method" },
       );
     }
 
