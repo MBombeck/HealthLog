@@ -24,7 +24,7 @@ import { OIDC_MFA_COOKIE, OIDC_MFA_COOKIE_PATH } from "@/lib/auth/oidc-cookie";
 import { isDashboardSnapshotEnabled } from "@/lib/dashboard/snapshot-flag";
 import { prefetchDashboardSnapshot } from "@/lib/queries/use-dashboard-snapshot";
 import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
-import { leaveForSingleSignOn } from "@/lib/auth/leave-for-single-sign-on";
+import { clearOfflineCachesBeforeLeaving } from "@/lib/pwa/clear-before-leaving";
 import { sanitizeSameOriginPath } from "@/lib/url-safety";
 import { localizedSignInError } from "@/lib/api/localized-error";
 import { formatDate } from "@/lib/format";
@@ -184,7 +184,9 @@ export default function LoginPage() {
       params.set("client_proto", clientTransport.protocol);
       params.set("client_host", clientTransport.host);
     }
-    await leaveForSingleSignOn(`/api/auth/oidc/login?${params}`);
+    // The session starts on the way back; the last account's copies go first.
+    await clearOfflineCachesBeforeLeaving();
+    loadDocument(`/api/auth/oidc/login?${params}`);
   }
 
   function getRedirectTarget(): string {

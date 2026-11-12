@@ -221,21 +221,8 @@ describe("POST /api/devices", () => {
     };
     expect(args.data.apnsToken).toBe("deadbeef".repeat(8));
     expect(args.data.apnsEnvironment).toBe("sandbox");
-  });
-
-  it("ends a pause that was waiting for a paired iPhone", async () => {
     // A reminder with no iPhone paired rests the APNs channel for an hour;
-    // pairing one must not leave the next reminder waiting it out.
-    vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    const res = await POST(
-      req({
-        token: "abcd1234efgh5678",
-        bundleId: "io.healthlog.app",
-        apnsToken: "deadbeef".repeat(8),
-        apnsEnvironment: "sandbox",
-      }),
-    );
-    expect(res.status).toBe(201);
+    // pairing one ends that rest, so the next reminder does not wait it out.
     expect(prisma.notificationChannel.updateMany).toHaveBeenCalledWith({
       where: {
         userId: "user-1",

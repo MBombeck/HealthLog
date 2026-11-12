@@ -21,7 +21,8 @@ import {
 import { ApiError } from "@/lib/api/api-fetch";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
-import { leaveForSingleSignOn } from "@/lib/auth/leave-for-single-sign-on";
+import { loadDocument } from "@/lib/navigation/load-document";
+import { clearOfflineCachesBeforeLeaving } from "@/lib/pwa/clear-before-leaving";
 import {
   useClaimProfile,
   useClaimProfileSso,
@@ -110,7 +111,9 @@ export function ClaimProfile({
             next.searchParams.set("client_proto", clientTransport.protocol);
             next.searchParams.set("client_host", clientTransport.host);
           }
-          await leaveForSingleSignOn(`${next.pathname}${next.search}`);
+          // The session starts on the way back; the last account's copies go first.
+          await clearOfflineCachesBeforeLeaving();
+          loadDocument(`${next.pathname}${next.search}`);
         },
       },
     );
