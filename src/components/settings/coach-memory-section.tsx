@@ -146,7 +146,6 @@ function FactRow({
             maxLength={REMEMBER_FACT_MAX_CHARS}
             rows={2}
             onChange={(e) => setDraft(e.target.value)}
-            className="text-sm"
           />
           <div className="flex flex-wrap items-center justify-end gap-2">
             <Button

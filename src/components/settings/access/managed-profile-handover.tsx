@@ -468,7 +468,7 @@ function HandoverLink({
               id="managed-profile-handover-url"
               readOnly
               value={link.url}
-              className="min-w-0 flex-1 font-mono text-xs"
+              className="min-w-0 flex-1 font-mono md:pointer-fine:text-xs"
               onFocus={(e) => e.currentTarget.select()}
             />
             <Button
