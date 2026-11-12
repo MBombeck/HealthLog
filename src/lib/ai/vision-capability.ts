@@ -66,8 +66,8 @@ function openAIFamilySupportsVision(model: string): boolean {
 
 /**
  * Logical provider tags the OCR path reasons about. Mirrors the
- * `ProviderChainType` vocabulary plus the legacy `admin-key` single-provider
- * tag `resolveProvider`'s admin fallback returns.
+ * `ProviderChainType` vocabulary plus the legacy `admin-key` tag the
+ * operator-key client carries.
  */
 export type VisionProviderType =
   | "anthropic"

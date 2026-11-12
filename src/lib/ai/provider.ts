@@ -711,7 +711,7 @@ async function resolveAdminCodexProvider(): Promise<AIProvider | null> {
 }
 
 /**
- * Resolve the AI provider for a given user.
+ * Test-only, ignoring the chain's switches: use `resolveProviderChain`.
  *
  * Priority:
  *   1. User selected ANTHROPIC / LOCAL with valid creds → that provider.
@@ -840,7 +840,7 @@ export async function resolveProviderChain(
       aiResponseTimeoutSeconds: true,
     },
   });
-  // See `resolveProvider`: every instance carries the record's settings.
+  // Every instance carries the record's timeout and reasoning effort.
   const bind = (provider: AIProvider): AIProvider =>
     bindReasoningEffort(
       bindResponseTimeout(provider, userRow?.aiResponseTimeoutSeconds),
