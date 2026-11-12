@@ -7,9 +7,9 @@ import type { CorrelationResult } from "@/lib/insights/correlations";
  * v1.4.20 — `<CorrelationCard>` rendering.
  *
  * Tests cover:
- *   1. OK status renders title + interpretation + source chip + disabled CTA.
+ *   1. OK status renders title + interpretation + source chip.
  *   2. Insufficient status renders the empty-state instead.
- *   3. CTA is `disabled` and exposes the "Coming soon" tooltip via `title`.
+ *   3. The card offers no placeholder action, only ones that work.
  *   4. Confidence chip surfaces high / moderate / low.
  *   5. Locale-aware copy (EN / DE).
  */
