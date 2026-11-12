@@ -350,6 +350,9 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   "src/app/api/insights/correlations/route.ts",
   "src/app/api/insights/coach-read/route.ts",
   "src/app/api/insights/health-status/route.ts",
+  // The tab strip's gate spans every module: each flag whose page a
+  // switched-off module hides answers false and its rows are not read.
+  "src/app/api/insights/presence/route.ts",
   "src/app/api/insights/pulse/intraday/route.ts",
   "src/app/api/insights/patterns/route.ts",
   "src/app/api/insights/patterns/[id]/route.ts",
