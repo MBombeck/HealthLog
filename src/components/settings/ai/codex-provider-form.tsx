@@ -89,7 +89,7 @@ export function CodexProviderForm({
         intervalSeconds: data.intervalSeconds,
       });
     } catch (err) {
-      setMsg(localizedApiError(err, t, "settings.savingError"));
+      setMsg(localizedApiError(err, t, "settings.codexConnectionFailed"));
       setMsgType("error");
       setDevicePolling(false);
     }
@@ -117,7 +117,7 @@ export function CodexProviderForm({
         if (!cancelled) setTimeout(tick, intervalMs);
       } catch (err) {
         if (cancelled) return;
-        setMsg(localizedApiError(err, t, "settings.savingError"));
+        setMsg(localizedApiError(err, t, "settings.codexConnectionFailed"));
         setMsgType("error");
         setDeviceCode(null);
         setDevicePolling(false);

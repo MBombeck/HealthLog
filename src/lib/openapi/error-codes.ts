@@ -86,6 +86,7 @@ export const ERROR_CODE_CATALOGUE: Readonly<Record<string, readonly string[]>> =
       "auth.account.deletion_pending",
       "auth.admin.required",
       "auth.already_authenticated",
+      "auth.mfa.already_active",
       "auth.mfa.code_invalid",
       "auth.missing",
       "auth.passkey.last_method",

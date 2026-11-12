@@ -148,6 +148,9 @@
       "missing": "Sua sessão terminou, então nada foi alterado. Entre novamente para continuar.",
       "passkey": {
         "last_method": "Esta chave de acesso é sua única forma de entrar. Defina uma senha ou adicione outra chave de acesso primeiro."
+      },
+      "mfa": {
+        "already_active": "Esta conta já tem um aplicativo autenticador configurado. Desative-o primeiro para configurar um novo."
       }
     },
     "biomarkers": {
@@ -5956,6 +5959,7 @@
             "inProgress": "Uma importação de histórico de doses já está em andamento. Espere ela terminar.",
             "workerUnavailable": "O worker em segundo plano não está disponível, então nada foi importado.",
             "failed": "A importação falhou. Nada foi gravado.",
+            "stillRunning": "A importação está demorando mais que o normal e ainda pode terminar. Confira suas doses de novo em alguns minutos.",
             "columnsHeading": "O que cada coluna faz",
             "jsonOnly": "Somente JSON",
             "previewLine": "{rows} linhas lidas, {queued} seriam importadas, {refused} recusadas",

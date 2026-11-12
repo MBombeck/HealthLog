@@ -148,6 +148,9 @@
       "missing": "Votre session a expiré, rien n'a donc été modifié. Reconnectez-vous pour continuer.",
       "passkey": {
         "last_method": "Cette clé d’accès est votre seul moyen de connexion. Définissez d’abord un mot de passe ou ajoutez une autre clé d’accès."
+      },
+      "mfa": {
+        "already_active": "Une application d'authentification est déjà configurée pour ce compte. Désactivez-la d'abord pour en configurer une nouvelle."
       }
     },
     "biomarkers": {
@@ -5956,6 +5959,7 @@
             "inProgress": "Un import d'historique est déjà en cours. Attendez qu'il se termine.",
             "workerUnavailable": "Le service d'arrière-plan est indisponible, rien n'a été importé.",
             "failed": "L'import a échoué. Rien n'a été écrit.",
+            "stillRunning": "L'import prend plus de temps que d'habitude et peut encore aboutir. Revenez voir vos prises dans quelques minutes.",
             "columnsHeading": "Ce que devient chaque colonne",
             "jsonOnly": "JSON uniquement",
             "previewLine": "{rows} lignes lues, {queued} seraient importées, {refused} refusées",

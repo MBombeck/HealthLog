@@ -126,6 +126,21 @@ describe("localizedApiError", () => {
       ["a rate limit", 429, "http.rate_limited", "too many requests"],
       ["a missing right", 403, "http.forbidden", "permission"],
       ["a rejected entry", 422, "http.invalid", "Check them"],
+      ["a mistyped proof", 401, "auth.reproof.failed", "did not verify"],
+      [
+        "a password where a second factor is needed",
+        422,
+        "auth.reproof.too_weak",
+        "second factor",
+      ],
+      [
+        "an authenticator already set up",
+        409,
+        "auth.mfa.already_active",
+        "Disable it first",
+      ],
+      ["nothing to test with", 422, "ai.provider.none", "No AI provider"],
+      ["a spent AI budget", 429, "ai.budget.exceeded", "budget is used up"],
     ])("names %s instead of the save fallback", (_, status, code, text) => {
       const error = new ApiError("raw English server prose", status, {
         errorCode: code,
@@ -157,6 +172,10 @@ describe("localizedApiError", () => {
         "http.rate_limited",
         "http.forbidden",
         "http.invalid",
+        "auth.reproof.too_weak",
+        "auth.mfa.already_active",
+        "ai.provider.none",
+        "ai.budget.exceeded",
       ]) {
         const sentence = localT(`apiErrors.${code}`);
         expect(sentence).not.toBe(`apiErrors.${code}`);

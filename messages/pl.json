@@ -148,6 +148,9 @@
       "missing": "Twoja sesja wygasła, więc nic nie zostało zmienione. Zaloguj się ponownie, aby kontynuować.",
       "passkey": {
         "last_method": "Ten klucz dostępu to Twój jedyny sposób logowania. Najpierw ustaw hasło albo dodaj kolejny klucz dostępu."
+      },
+      "mfa": {
+        "already_active": "To konto ma już skonfigurowaną aplikację uwierzytelniającą. Najpierw ją wyłącz, aby skonfigurować nową."
       }
     },
     "biomarkers": {
@@ -5956,6 +5959,7 @@
             "inProgress": "Import historii dawek już trwa. Poczekaj, aż się zakończy.",
             "workerUnavailable": "Proces w tle jest niedostępny, więc nic nie zostało zaimportowane.",
             "failed": "Import nie udał się. Nic nie zostało zapisane.",
+            "stillRunning": "Import trwa dłużej niż zwykle i może się jeszcze zakończyć. Sprawdź swoje dawki ponownie za kilka minut.",
             "columnsHeading": "Co się dzieje z każdą kolumną",
             "jsonOnly": "tylko JSON",
             "previewLine": "Odczytane wiersze: {rows}, do zaimportowania: {queued}, odrzucone: {refused}",

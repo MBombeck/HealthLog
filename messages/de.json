@@ -148,6 +148,9 @@
       "missing": "Deine Sitzung ist abgelaufen, daher wurde nichts geändert. Melde dich erneut an, um weiterzumachen.",
       "passkey": {
         "last_method": "Dieser Passkey ist deine einzige Anmeldemöglichkeit. Lege zuerst ein Passwort fest oder füge einen weiteren Passkey hinzu."
+      },
+      "mfa": {
+        "already_active": "Für dieses Konto ist bereits eine Authenticator-App eingerichtet. Deaktiviere sie zuerst, um eine neue einzurichten."
       }
     },
     "biomarkers": {
@@ -5956,6 +5959,7 @@
             "inProgress": "Ein Import des Einnahmeverlaufs läuft bereits. Auf sein Ende warten.",
             "workerUnavailable": "Der Hintergrunddienst ist nicht verfügbar, es wurde nichts importiert.",
             "failed": "Der Import ist fehlgeschlagen. Es wurde nichts geschrieben.",
+            "stillRunning": "Der Import dauert länger als üblich und kann noch fertig werden. Sieh dir deine Einnahmen in ein paar Minuten noch einmal an.",
             "columnsHeading": "Was mit jeder Spalte passiert",
             "jsonOnly": "nur JSON",
             "previewLine": "{rows} Zeilen gelesen, {queued} würden importiert, {refused} abgewiesen",

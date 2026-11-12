@@ -148,6 +148,9 @@
       "missing": "La tua sessione è scaduta, quindi non è stato modificato nulla. Accedi di nuovo per continuare.",
       "passkey": {
         "last_method": "Questa passkey è il tuo unico modo per accedere. Imposta prima una password o aggiungi un’altra passkey."
+      },
+      "mfa": {
+        "already_active": "Per questo account è già configurata un'app di autenticazione. Disattivala prima di configurarne una nuova."
       }
     },
     "biomarkers": {
@@ -5956,6 +5959,7 @@
             "inProgress": "Un'importazione dello storico è già in corso. Attendi che finisca.",
             "workerUnavailable": "Il processo in background non è disponibile, quindi non è stato importato nulla.",
             "failed": "L'importazione è fallita. Non è stato scritto nulla.",
+            "stillRunning": "L'importazione richiede più tempo del solito e potrebbe ancora completarsi. Ricontrolla le tue assunzioni tra qualche minuto.",
             "columnsHeading": "Cosa fa ogni colonna",
             "jsonOnly": "solo JSON",
             "previewLine": "{rows} righe lette, {queued} da importare, {refused} rifiutate",

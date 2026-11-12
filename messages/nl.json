@@ -148,6 +148,9 @@
       "missing": "Je sessie is verlopen, dus er is niets gewijzigd. Meld je opnieuw aan om verder te gaan.",
       "passkey": {
         "last_method": "Deze passkey is je enige manier om in te loggen. Stel eerst een wachtwoord in of voeg nog een passkey toe."
+      },
+      "mfa": {
+        "already_active": "Voor dit account is al een authenticator-app ingesteld. Schakel die eerst uit om een nieuwe in te stellen."
       }
     },
     "biomarkers": {
@@ -5956,6 +5959,7 @@
             "inProgress": "Er loopt al een import van doseringsgeschiedenis. Wacht tot die klaar is.",
             "workerUnavailable": "De achtergrondverwerking is niet beschikbaar, dus er is niets geïmporteerd.",
             "failed": "De import is mislukt. Er is niets opgeslagen.",
+            "stillRunning": "De import duurt langer dan normaal en kan nog afronden. Kijk over een paar minuten opnieuw naar je innames.",
             "columnsHeading": "Wat elke kolom doet",
             "jsonOnly": "Alleen JSON",
             "previewLine": "{rows} rijen gelezen, {queued} zouden worden geïmporteerd, {refused} geweigerd",

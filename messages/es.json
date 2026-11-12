@@ -148,6 +148,9 @@
       "missing": "Tu sesión ha caducado, así que no se ha cambiado nada. Inicia sesión de nuevo para continuar.",
       "passkey": {
         "last_method": "Esta clave de acceso es tu única forma de iniciar sesión. Primero establece una contraseña o añade otra clave de acceso."
+      },
+      "mfa": {
+        "already_active": "Esta cuenta ya tiene una aplicación de autenticación configurada. Desactívala primero para configurar una nueva."
       }
     },
     "biomarkers": {
@@ -5956,6 +5959,7 @@
             "inProgress": "Ya hay una importación de historial en curso. Espera a que termine.",
             "workerUnavailable": "El proceso en segundo plano no está disponible, así que no se importó nada.",
             "failed": "La importación falló. No se escribió nada.",
+            "stillRunning": "La importación está tardando más de lo habitual y aún puede terminar. Vuelve a mirar tus dosis dentro de unos minutos.",
             "columnsHeading": "Qué hace cada columna",
             "jsonOnly": "solo JSON",
             "previewLine": "{rows} filas leídas, {queued} se importarían, {refused} rechazadas",

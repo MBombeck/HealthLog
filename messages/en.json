@@ -148,6 +148,9 @@
       "missing": "Your session has ended, so nothing was changed. Sign in again to continue.",
       "passkey": {
         "last_method": "This passkey is your only way to sign in. Set a password or add another passkey first."
+      },
+      "mfa": {
+        "already_active": "An authenticator app is already set up for this account. Disable it first to set up a new one."
       }
     },
     "biomarkers": {
@@ -5956,6 +5959,7 @@
             "inProgress": "A dose-history import is already running. Wait for it to finish.",
             "workerUnavailable": "The background worker is not available, so nothing was imported.",
             "failed": "The import failed. Nothing was written.",
+            "stillRunning": "The import is taking longer than usual and may still finish. Look at your doses again in a few minutes.",
             "columnsHeading": "What each column does",
             "jsonOnly": "JSON only",
             "previewLine": "{rows} rows read, {queued} would be imported, {refused} refused",
