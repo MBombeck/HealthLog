@@ -12490,7 +12490,8 @@
       "purgeConfirmBody": "Zostanie usunięty teraz zamiast po okresie oczekiwania i nie będzie można go przywrócić."
     },
     "picker": {
-      "capped": "Widać {count} najnowszych. Starszy dokument znajdziesz przez wyszukiwanie."
+      "capped": "Widać {count} najnowszych. Starszy dokument znajdziesz przez wyszukiwanie.",
+      "cappedSearching": "Widać {count} najnowszych wyników. Zawęź wyszukiwanie, aby znaleźć starszy."
     }
   },
   "selfDescription": {

@@ -37,7 +37,10 @@ vi.mock("@tanstack/react-query", () => ({
 }));
 
 import { I18nProvider } from "@/lib/i18n/context";
-import { DocumentPickerSheet } from "../document-picker-sheet";
+import {
+  DocumentPickerCapNotice,
+  DocumentPickerSheet,
+} from "../document-picker-sheet";
 
 function render() {
   return renderToStaticMarkup(
@@ -60,12 +63,22 @@ describe("DocumentPickerSheet", () => {
   it("says the list is cut, and how to reach the rest", () => {
     page.nextCursor = "d49";
     const html = render();
-    expect(html).toContain('data-slot="document-picker-capped"');
+    expect(html).toContain('data-slot="list-cap-notice"');
     expect(html).toContain("Showing the newest 50");
   });
 
   it("says nothing when every document is listed", () => {
     page.nextCursor = null;
-    expect(render()).not.toContain('data-slot="document-picker-capped"');
+    expect(render()).not.toContain('data-slot="list-cap-notice"');
+  });
+
+  it("asks for a narrower search, not a search, while one runs", () => {
+    const html = renderToStaticMarkup(
+      <I18nProvider initialLocale="en">
+        <DocumentPickerCapNotice cut count={50} searching />
+      </I18nProvider>,
+    );
+    expect(html).toContain("Narrow the search");
+    expect(html).not.toContain("Search to find");
   });
 });

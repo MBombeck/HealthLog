@@ -18,6 +18,7 @@ import { Check, Search } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { useDocumentDate } from "@/components/documents/use-document-date";
+import { ListCapNotice } from "@/components/ui/list-cap-notice";
 import { DOCUMENT_KIND_ICONS } from "@/components/documents/document-kind-meta";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
@@ -191,17 +192,40 @@ export function DocumentPickerSheet({
             })}
           </ul>
         )}
-        {cut && !list.isError ? (
-          <p
-            data-slot="document-picker-capped"
-            className="text-muted-foreground text-xs"
-          >
-            {t("documents.picker.capped", {
-              count: String(documents.length),
-            })}
-          </p>
-        ) : null}
+        <DocumentPickerCapNotice
+          cut={cut && !list.isError}
+          count={documents.length}
+          searching={query !== ""}
+        />
       </div>
     </ResponsiveSheet>
+  );
+}
+
+/**
+ * The line under a picker list cut at one page: the search reaches the rest,
+ * and while one runs, a narrower one does. Shared by the vault picker and
+ * the Coach's attachment picker.
+ */
+export function DocumentPickerCapNotice({
+  cut,
+  count,
+  searching,
+}: {
+  cut: boolean;
+  count: number;
+  searching: boolean;
+}) {
+  const { t } = useTranslations();
+  return (
+    <ListCapNotice
+      cap={{ truncated: cut, limit: count }}
+      message={t(
+        searching
+          ? "documents.picker.cappedSearching"
+          : "documents.picker.capped",
+        { count: String(count) },
+      )}
+    />
   );
 }

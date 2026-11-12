@@ -12490,7 +12490,8 @@
       "purgeConfirmBody": "Se elimina ahora en lugar de al final del periodo de espera y no se puede restaurar."
     },
     "picker": {
-      "capped": "Se muestran los {count} más recientes. Usa la búsqueda para encontrar un documento más antiguo."
+      "capped": "Se muestran los {count} más recientes. Usa la búsqueda para encontrar un documento más antiguo.",
+      "cappedSearching": "Se muestran las {count} coincidencias más recientes. Afina la búsqueda para encontrar una más antigua."
     }
   },
   "selfDescription": {

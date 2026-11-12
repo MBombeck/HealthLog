@@ -12490,7 +12490,8 @@
       "purgeConfirmBody": "Il est supprimé maintenant plutôt qu'à la fin du délai d'attente et ne peut pas être restauré."
     },
     "picker": {
-      "capped": "Les {count} plus récents sont affichés. Utilisez la recherche pour trouver un document plus ancien."
+      "capped": "Les {count} plus récents sont affichés. Utilisez la recherche pour trouver un document plus ancien.",
+      "cappedSearching": "Les {count} résultats les plus récents sont affichés. Affinez la recherche pour en trouver un plus ancien."
     }
   },
   "selfDescription": {

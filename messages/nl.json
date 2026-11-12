@@ -12490,7 +12490,8 @@
       "purgeConfirmBody": "Het wordt nu verwijderd in plaats van aan het einde van de wachttijd en kan niet worden hersteld."
     },
     "picker": {
-      "capped": "De nieuwste {count} staan hier. Zoek om een ouder document te vinden."
+      "capped": "De nieuwste {count} staan hier. Zoek om een ouder document te vinden.",
+      "cappedSearching": "De nieuwste {count} resultaten staan hier. Verfijn de zoekopdracht om een ouder document te vinden."
     }
   },
   "selfDescription": {

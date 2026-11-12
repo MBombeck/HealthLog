@@ -12490,7 +12490,8 @@
       "purgeConfirmBody": "Ele é removido agora, e não no fim do período de espera, e não pode ser restaurado."
     },
     "picker": {
-      "capped": "Mostrando os {count} mais recentes. Use a busca para encontrar um documento mais antigo."
+      "capped": "Mostrando os {count} mais recentes. Use a busca para encontrar um documento mais antigo.",
+      "cappedSearching": "Mostrando os {count} resultados mais recentes. Refine a busca para encontrar um mais antigo."
     }
   },
   "selfDescription": {

@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import type { InboundDocumentDto } from "@/lib/validations/inbound-documents";
 
 import { DOCUMENT_KIND_ICONS } from "@/components/documents/document-kind-meta";
+import { DocumentPickerCapNotice } from "@/components/documents/document-picker-sheet";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -266,16 +267,11 @@ export function AttachmentPicker({
             })}
           </ul>
         )}
-        {cut && !list.isError ? (
-          <p
-            data-slot="coach-attachment-picker-capped"
-            className="text-muted-foreground text-xs"
-          >
-            {t("documents.picker.capped", {
-              count: String(list.data?.documents.length ?? 0),
-            })}
-          </p>
-        ) : null}
+        <DocumentPickerCapNotice
+          cut={cut && !list.isError}
+          count={list.data?.documents.length ?? 0}
+          searching={query !== ""}
+        />
       </div>
     </ResponsiveSheet>
   );

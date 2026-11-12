@@ -12490,7 +12490,8 @@
       "purgeConfirmBody": "It is removed now instead of at the end of the waiting period, and cannot be restored."
     },
     "picker": {
-      "capped": "Showing the newest {count}. Search to find an older document."
+      "capped": "Showing the newest {count}. Search to find an older document.",
+      "cappedSearching": "Showing the newest {count} matches. Narrow the search to find an older one."
     }
   },
   "selfDescription": {

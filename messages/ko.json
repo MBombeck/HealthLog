@@ -12490,7 +12490,8 @@
       "purgeConfirmBody": "대기 기간이 끝나기 전에 지금 삭제되며 복구할 수 없습니다."
     },
     "picker": {
-      "capped": "최신 {count}개를 보여 줘요. 이전 문서는 검색으로 찾아 주세요."
+      "capped": "최신 {count}개를 보여 줘요. 이전 문서는 검색으로 찾아 주세요.",
+      "cappedSearching": "최근 검색 결과 {count}개를 보여 줘요. 이전 문서는 검색어를 좁혀서 찾아 주세요."
     }
   },
   "selfDescription": {

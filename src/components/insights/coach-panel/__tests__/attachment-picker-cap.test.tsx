@@ -56,14 +56,14 @@ describe("AttachmentPicker", () => {
   it("says the list is cut, and how to reach the rest", () => {
     page.nextCursor = "d49";
     const html = render();
-    expect(html).toContain('data-slot="coach-attachment-picker-capped"');
+    expect(html).toContain('data-slot="list-cap-notice"');
     expect(html).toContain("Showing the newest 50");
   });
 
   it("says nothing when every document is listed", () => {
     page.nextCursor = null;
     const html = render();
-    expect(html).not.toContain('data-slot="coach-attachment-picker-capped"');
+    expect(html).not.toContain('data-slot="list-cap-notice"');
     expect(
       html.match(/data-slot="coach-attachment-picker-item"/g),
     ).toHaveLength(3);

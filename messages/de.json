@@ -12490,7 +12490,8 @@
       "purgeConfirmBody": "Es wird jetzt entfernt statt am Ende der Wartezeit und lässt sich nicht wiederherstellen."
     },
     "picker": {
-      "capped": "Hier stehen die neuesten {count}. Ältere Dokumente findest du über die Suche."
+      "capped": "Hier stehen die neuesten {count}. Ältere Dokumente findest du über die Suche.",
+      "cappedSearching": "Hier stehen die neuesten {count} Treffer. Ältere findest du mit einer genaueren Suche."
     }
   },
   "selfDescription": {
