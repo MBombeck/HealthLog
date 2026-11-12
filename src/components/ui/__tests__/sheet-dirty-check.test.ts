@@ -28,6 +28,7 @@ function fakeBody(fixture: {
   const fields = (fixture.fields ?? []).map((field) => ({
     ...field,
     value: field.value ?? "",
+    dataset: {},
     closest: () => (field.inDateOrTimeField ? {} : null),
   }));
   return {
