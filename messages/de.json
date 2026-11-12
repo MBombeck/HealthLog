@@ -61,9 +61,6 @@
     "signIn": "Anmelden"
   },
   "apiErrors": {
-    "http": {
-      "rate_limited": "Zu viele Versuche. Warte ein paar Minuten und versuche es erneut."
-    },
     "measurement": {
       "create": {
         "invalid": "Prüfe die Messdaten und versuche es erneut."

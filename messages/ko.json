@@ -61,9 +61,6 @@
     "signIn": "로그인"
   },
   "apiErrors": {
-    "http": {
-      "rate_limited": "시도 횟수가 너무 많습니다. 몇 분 후 다시 시도하세요."
-    },
     "measurement": {
       "create": {
         "invalid": "측정 내용을 확인하고 다시 시도해 주세요."
