@@ -235,9 +235,10 @@ function useSheetDismissal({
   };
 
   const handleBack = React.useEffectEvent(() => {
-    if (hasUnsavedInput()) {
+    // Back while the question is open answers it with "keep editing".
+    if (asking || hasUnsavedInput()) {
       entryRef.current?.restore();
-      setAsking(true);
+      setAsking(!asking);
       return;
     }
     countBack();

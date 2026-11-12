@@ -8,10 +8,13 @@
  * entry's own state copied in (`HistoryUpdater`), and that write can land
  * after a sheet's close has asked for Back but before Back arrives.
  */
+import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { DAY_HISTORY_KEY } from "@/components/day/day-url";
 
+import { renderWithApp } from "../../../../tests/browser/render";
+import { ResponsiveSheet } from "../responsive-sheet";
 import { sheetHistory } from "../sheet-history";
 
 type Navigation = { currentEntry: { index: number } };
@@ -96,5 +99,41 @@ describe("sheet history in the browser", () => {
     expect(index()).toBe(page);
     expect(state()[DAY_HISTORY_KEY]).toBe("2026-11-10");
     expect(state()[MARK]).toBeUndefined();
+  });
+
+  it("answers Back during the discard question by keeping the sheet open", async () => {
+    window.history.pushState(null, "", "?step=form");
+    const page = index();
+    function EditedSheet() {
+      const [open, setOpen] = useState(true);
+      return (
+        <ResponsiveSheet
+          open={open}
+          onOpenChange={setOpen}
+          title="Add a reading"
+          dirty
+        >
+          <p>Typed but not saved</p>
+        </ResponsiveSheet>
+      );
+    }
+    const { screen } = await renderWithApp(<EditedSheet />);
+    await expect.element(screen.getByText("Typed but not saved")).toBeVisible();
+    await vi.waitFor(() => expect(index()).toBe(page + 1));
+
+    // Back with unsaved input asks first and puts the sheet's entry back.
+    window.history.back();
+    await settle(1);
+    await expect.element(screen.getByRole("alertdialog")).toBeVisible();
+    expect(index()).toBe(page + 1);
+
+    // Back again means "not now": the question goes, the sheet stays.
+    window.history.back();
+    await settle(1);
+    await expect
+      .element(screen.getByRole("alertdialog"))
+      .not.toBeInTheDocument();
+    await expect.element(screen.getByText("Typed but not saved")).toBeVisible();
+    expect(index()).toBe(page + 1);
   });
 });
