@@ -49,7 +49,9 @@ function HintedValue({
       <Popover>
         <PopoverTrigger
           className={cn(
-            "focus-visible:ring-ring/50 rounded-sm underline decoration-dotted underline-offset-2 focus-visible:ring-2 focus-visible:outline-none",
+            // On touch the trigger is 44 px tall; the negative margin keeps
+            // the tile's line where it was.
+            "focus-visible:ring-ring/50 rounded-sm underline decoration-dotted underline-offset-2 focus-visible:ring-2 focus-visible:outline-none pointer-coarse:-my-3.5 pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center",
             className,
           )}
         >
