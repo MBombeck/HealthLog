@@ -13,12 +13,25 @@ import { renderToStaticMarkup } from "react-dom/server";
  */
 
 const queries: Array<{ queryKey: readonly unknown[]; enabled?: boolean }> = [];
-const stripProps: Array<{ onRegenerate?: unknown }> = [];
+const stripProps: Array<{
+  onRegenerate?: unknown;
+  availability?: { summaries?: unknown; hasMood?: boolean };
+}> = [];
+/** What the presence read answers, and the record the session is inside. */
+const answer: { presence: unknown; active: unknown } = {
+  presence: undefined,
+  active: null,
+};
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: { queryKey: readonly unknown[]; enabled?: boolean }) => {
     queries.push(options);
-    return { data: undefined, isLoading: false, isError: false };
+    const presence = options.queryKey.join("/") === "insights/presence";
+    return {
+      data: presence ? answer.presence : undefined,
+      isLoading: false,
+      isError: false,
+    };
   },
   useMutation: () => ({ mutate: vi.fn(), isPending: false, data: undefined }),
   useQueryClient: () => ({
@@ -26,7 +39,10 @@ vi.mock("@tanstack/react-query", () => ({
   }),
 }));
 vi.mock("@/hooks/use-auth", () => ({
-  useAuth: () => ({ isAuthenticated: true, user: { modules: {} } }),
+  useAuth: () => ({
+    isAuthenticated: true,
+    user: { modules: {}, accountAccess: { active: answer.active } },
+  }),
 }));
 vi.mock("@/hooks/use-mounted", () => ({ useMounted: () => true }));
 vi.mock("@/hooks/use-ai-capability", () => ({
@@ -41,7 +57,7 @@ vi.mock("@/hooks/use-insights-layout", () => ({
   },
 }));
 vi.mock("@/components/insights/insights-tab-strip", () => ({
-  InsightsTabStrip: (props: { onRegenerate?: unknown }) => {
+  InsightsTabStrip: (props: (typeof stripProps)[number]) => {
     stripProps.push(props);
     return null;
   },
@@ -50,7 +66,7 @@ vi.mock("@/components/insights/insights-tab-strip", () => ({
 import { queryKeys } from "@/lib/query-keys";
 import { InsightsLayoutShell } from "../insights-layout-shell";
 
-describe("InsightsLayoutShell — what it reads on entry", () => {
+describe("InsightsLayoutShell: what it reads on entry", () => {
   it("keeps the regenerate button and sends no briefing read", () => {
     renderToStaticMarkup(
       <InsightsLayoutShell>
@@ -81,5 +97,34 @@ describe("InsightsLayoutShell — what it reads on entry", () => {
       .map((q) => JSON.stringify(q.queryKey));
     expect(sent).toEqual([JSON.stringify(queryKeys.insightsPresence())]);
     expect(layoutReads).toEqual([true]);
+  });
+
+  it("offers no metric pill inside a switched-to record", () => {
+    // The metric pages read `/api/analytics`, which serves only the caller's
+    // own record; the mood and medication pills read their own routes.
+    answer.presence = {
+      metrics: { WEIGHT: { count: 12 } },
+      hasMood: true,
+      hasMedication: false,
+      hasWorkouts: false,
+      hasEcgRecordings: false,
+    };
+    const render = (active: unknown) => {
+      answer.active = active;
+      stripProps.length = 0;
+      renderToStaticMarkup(
+        <InsightsLayoutShell>
+          <div />
+        </InsightsLayoutShell>,
+      );
+      return stripProps[0]?.availability;
+    };
+
+    expect(render(null)?.summaries).toEqual({ WEIGHT: { count: 12 } });
+    const switched = render({ accountId: "record-2" });
+    expect(switched?.summaries).toBeUndefined();
+    expect(switched?.hasMood).toBe(true);
+    answer.presence = undefined;
+    answer.active = null;
   });
 });

@@ -72,19 +72,22 @@ export function InsightsLayoutShell({ children }: { children: ReactNode }) {
   // on a first row as well left that page unreachable before data existed.
   const hasNutrients = user?.modules?.nutrients === true;
   const hasEcgRecordings = presence?.hasEcgRecordings === true;
+  // Inside a switched-to record the metric pages read `/api/analytics`, which
+  // serves only the caller's own record, so their pills would open an error.
+  const switched = user?.accountAccess?.active != null;
 
   // Memoised so an unchanged answer keeps the same reference: the strip is
   // wrapped in `React.memo` and reruns `buildTabs` on a new object.
   const availability: InsightInputs | undefined = useMemo(() => {
     if (!isAuthenticated) return undefined;
     return {
-      summaries: presence?.metrics,
+      summaries: switched ? undefined : presence?.metrics,
       hasMood: presence?.hasMood === true,
       hasMedication: presence?.hasMedication === true,
       hasWorkouts: presence?.hasWorkouts === true,
       hasNutrients,
     };
-  }, [isAuthenticated, presence, hasNutrients]);
+  }, [isAuthenticated, presence, hasNutrients, switched]);
 
   // v1.15.14 — couple the tab strip to the saved insights layout.
   // A sub-page pill now shows iff its metric has data AND its slug is
