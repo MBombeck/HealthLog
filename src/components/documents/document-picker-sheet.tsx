@@ -2,9 +2,9 @@
 
 /**
  * The vault document picker sheet: a `ResponsiveSheet` (bottom sheet on
- * phones) with a debounced search over the person's own vault — the same
- * recall path as the vault page, one page (50) of matches with a line that
- * says when more exist, the search input as the way to an older document —
+ * phones) with a debounced search over the person's own vault (the same
+ * recall path as the vault page, one page of 50 matches with a line that
+ * says when more exist, the search input as the way to an older document)
  * and one toggle row per document.
  *
  * Two pickers used to carry this whole body as copies: linking documents to

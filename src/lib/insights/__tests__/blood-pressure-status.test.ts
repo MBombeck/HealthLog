@@ -346,7 +346,7 @@ describe("generateBloodPressureStatusForUser — no rate without an expectation"
   });
 });
 
-describe("generateBloodPressureStatusForUser — the person's own target", () => {
+describe("generateBloodPressureStatusForUser and the person's own target", () => {
   const readings = [1, 2, 3].flatMap((daysAgo) => {
     const measuredAt = new Date(Date.now() - daysAgo * dayMs);
     return [

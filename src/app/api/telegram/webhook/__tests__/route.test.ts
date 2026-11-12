@@ -1272,7 +1272,7 @@ describe("POST /api/telegram/webhook — record-only medications", () => {
  * silent, so a reminder button left in the chat, the /add list and the
  * "taken" keyword do nothing either.
  */
-describe("POST /api/telegram/webhook — Medications module off", () => {
+describe("POST /api/telegram/webhook with the Medications module off", () => {
   function textUpdate(text: string) {
     return {
       update_id: 400,
@@ -1323,7 +1323,7 @@ describe("POST /api/telegram/webhook — Medications module off", () => {
  * since ended, which would also take a unit off the stock. The list side is
  * pinned in `src/lib/__tests__/telegram-dose-medications.test.ts`.
  */
-describe("POST /api/telegram/webhook — ended course", () => {
+describe("POST /api/telegram/webhook on an ended course", () => {
   const DAY_MS = 24 * 60 * 60 * 1000;
   const ENDED = {
     ...MEDICATION,

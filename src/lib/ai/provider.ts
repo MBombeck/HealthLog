@@ -1355,7 +1355,7 @@ async function resolveProviderForTestUnbound(
 
   // Empty selection ("test my saved config" — the ai-section calls
   // /api/ai/test with an empty body): resolve via the SAME path generation
-  // uses — the first entry of `resolveProviderChain`. The legacy codex→admin
+  // uses, the first entry of `resolveProviderChain`. The legacy codex→admin
   // fallback used to probe a different provider than generation ran
   // (observed: test→admin-key while generation→codex), so a green test gave
   // no signal about whether overnight generation would work.

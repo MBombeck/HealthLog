@@ -408,7 +408,7 @@ describe("submit invalidation — the quick-add is a capture-picker surface, not
   });
 
   it("forces the inactive Today hero + dashboard reads to refetch after submit", async () => {
-    // The helper the submit path calls — asserted directly, same shape as
+    // The helper the submit path calls, asserted directly, same shape as
     // the take-all-due suite: the bundle fans out (N keys), then the two
     // daily reads are invalidated with `refetchType: "inactive"`, which is
     // what actually refetches them while unmounted.
