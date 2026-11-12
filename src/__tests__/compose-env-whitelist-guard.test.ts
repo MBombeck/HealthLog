@@ -136,10 +136,6 @@ const NOT_OPERATOR_CONFIGURABLE: Readonly<Record<string, string>> = {
     "CI-only knob for the same nightly eval workflow",
   HEALTHLOG_MCP_TOKEN:
     "read by the local stdio MCP bridge the operator runs on their own machine; the production image strips tsx so it cannot run there",
-
-  // --- A whitelist entry would be obeyed by half the readers. ---
-  NEXT_PUBLIC_DASHBOARD_SNAPSHOT:
-    "NEXT_PUBLIC_* is inlined into the client bundle at build time and three of its four readers are client components, so a runtime value would steer the server half only — a split-brain worse than no knob. .env.production.example already documents it as a build-time toggle and says it is deliberately absent from the whitelist; adding it would make that note false.",
 };
 
 function sourceFiles(): string[] {

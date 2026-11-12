@@ -80,11 +80,8 @@ export const GET = apiHandler(async (request?: Request) => {
     const slim = await readSummariesSlice(user.id, { serveStale: true });
     // Drop the types whose module the user turned off, from the SAME map
     // the snapshot builder gates on (`SUMMARY_TYPE_MODULE`, via
-    // `gateSummariesByModules`). With `NEXT_PUBLIC_DASHBOARD_SNAPSHOT=false`
-    // this slice — not the snapshot — feeds the dashboard tile strip, and
-    // it used to hand back every type regardless: recovery off plus an
-    // RMSSD-only account still painted the HRV tile, because nothing on
-    // this path had ever filtered.
+    // `gateSummariesByModules`), so a switched-off module's series never
+    // reaches a page that reads this slice.
     //
     // Gated AFTER the cache read on purpose. The cached cell stays
     // module-independent, so toggling a module takes effect on the next

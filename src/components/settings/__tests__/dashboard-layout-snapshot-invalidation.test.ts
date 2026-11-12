@@ -11,13 +11,12 @@ import { queryKeys } from "@/lib/query-keys";
  * very next SAME-TAB navigation — not "eventually" via the 120 s poll or a
  * window-focus flick.
  *
- * The web dashboard (`src/app/page-client.tsx`) reads tile visibility/order
- * from TWO cache cells:
+ * Tile visibility/order lives in TWO cache cells:
  *   1. the snapshot cell (`queryKeys.dashboardSnapshot(locale)` via
- *      `useDashboardSnapshot`) — `snapshotQuery.data.layout` is the layout
- *      source whenever snapshot mode is on (the default), and
- *   2. the legacy `queryKeys.dashboardWidgets()` cell (snapshot mode off, plus
- *      the per-chart overlay-prefs hook).
+ *      `useDashboardSnapshot`) — `snapshotQuery.data.layout` is what the web
+ *      dashboard (`src/app/page-client.tsx`) paints from, and
+ *   2. the `queryKeys.dashboardWidgets()` cell (the settings editor and the
+ *      per-chart overlay-prefs hook).
  * The settings save writes (2) directly via `setQueryData` with the server
  * response, so its freshness is unconditional. (1) is only INVALIDATED — and
  * that is where the same-tab staleness lived:
@@ -154,12 +153,9 @@ describe("dashboard layout save — every layout source is covered (source pins)
     );
   });
 
-  it("the dashboard reads layout from the snapshot (or the dashboardWidgets cell) only", () => {
+  it("the dashboard reads layout from the snapshot only", () => {
     const pageSrc = dashboardSource();
-    // Snapshot path: layout comes off the snapshot payload…
     expect(pageSrc).toContain("snapshotQuery.data?.layout");
-    // …legacy path: the dashboardWidgets factory key (no bare literal).
-    expect(pageSrc).toContain("queryKeys.dashboardWidgets()");
     // The analytics slices carry tile DATA (summaries), never layout — if
     // someone threads layout through them, this pin forces a rethink of the
     // save-path invalidation set.

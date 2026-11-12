@@ -21,12 +21,10 @@ test.describe("authenticated dashboard render", () => {
   test.use({ storageState: STORAGE_STATE_PATH });
 
   test.beforeEach(async ({ page }) => {
-    // v1.7.2 — the dashboard snapshot flag is default-ON, so the page
-    // reads every tile from `/api/dashboard/snapshot` and ignores the
-    // legacy cells below. Mock the snapshot with the same populated
-    // four-metric set so the tile strip + charts paint. The legacy
-    // `/api/analytics` + `/api/mood/analytics` mocks stay for the
-    // reversible `NEXT_PUBLIC_DASHBOARD_SNAPSHOT=false` path.
+    // The page reads every tile from `/api/dashboard/snapshot`; mock it
+    // with the same populated four-metric set so the tile strip + charts
+    // paint. The dashboard ignores the `/api/analytics` and
+    // `/api/mood/analytics` mocks below.
     await mockDashboardSnapshot(page);
 
     // Mock analytics with a populated weight summary so the weight tile

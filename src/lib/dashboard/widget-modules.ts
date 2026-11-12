@@ -99,13 +99,11 @@ export function disabledSummaryTypes(
 
 /**
  * Strip disabled-module types from a summaries slice. Lifted out of
- * `@/lib/dashboard/snapshot`, where it was private, once a second
- * dashboard feed needed it: with `NEXT_PUBLIC_DASHBOARD_SNAPSHOT=false`
- * the tile strip hydrates from `/api/analytics` instead of the snapshot,
- * and that route filtered nothing — so a module the user had turned off
- * still reached the client, and the tile it owns still painted. The gate
- * has to sit on every feed that carries summaries, not just the default
- * one, or it is only as strong as a rollout flag.
+ * `@/lib/dashboard/snapshot`, where it was private, once `/api/analytics`
+ * needed it too: that route filtered nothing, so a module the user had
+ * turned off still reached the client. The gate has to sit on every feed
+ * that carries summaries (the snapshot, the analytics slice, the Insights
+ * presence read), not just one.
  *
  * Pure over its inputs and browser-safe (string keys + the map above), so
  * the snapshot builder, the analytics route and any future feed share one

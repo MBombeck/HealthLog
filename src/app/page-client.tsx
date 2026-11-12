@@ -84,7 +84,6 @@ export default function DashboardPageClient({
   const dashboard = useDashboardData({
     isAuthenticated,
     mounted,
-    user,
     batchWindowProp: batchWindow,
   });
   const { digestQuery, layout, primaryLoading } = dashboard;

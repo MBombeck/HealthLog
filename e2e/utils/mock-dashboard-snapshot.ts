@@ -88,20 +88,16 @@ function mockTargetBands(): DashboardTargetBands {
 /**
  * v1.7.2 — shared mock for `GET /api/dashboard/snapshot`.
  *
- * The dashboard snapshot flag flipped default-ON in v1.7.2, so
  * `src/app/page.tsx` reads every above-the-fold tile from the single
- * `/api/dashboard/snapshot` cell unless `NEXT_PUBLIC_DASHBOARD_SNAPSHOT`
- * is `"false"`. The e2e build sets no such var, so the snapshot path is
- * live in CI. Specs that previously mocked only the legacy cells
- * (`/api/analytics` + `/api/mood/analytics` + `/api/dashboard/widgets`)
- * now hit the REAL snapshot route, which returns empty `summaries` for
- * the seed user (zero measurements) and blanks the tile strip.
+ * `/api/dashboard/snapshot` cell. Without a mock a spec hits the REAL
+ * snapshot route, which returns empty `summaries` for the seed user (zero
+ * measurements) and blanks the tile strip.
  *
  * `mockDashboardSnapshot` registers a `page.route` for the snapshot
- * endpoint returning a correctly-typed `DashboardSnapshot` so the
- * default-ON path paints deterministic tiles. Callers keep their legacy
- * mocks alongside it — harmless, and they protect the reversible
- * `NEXT_PUBLIC_DASHBOARD_SNAPSHOT=false` path.
+ * endpoint returning a correctly-typed `DashboardSnapshot` so the tiles
+ * paint deterministically. Mocks of the older cells (`/api/analytics`,
+ * `/api/mood/analytics`, `/api/dashboard/widgets`) beside it are unused by
+ * the dashboard.
  */
 
 /** Fill a `DataSummary` from a sparse partial, defaulting the rest. */
