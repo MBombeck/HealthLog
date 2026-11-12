@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2876,
-  "total": 9172,
+  "total": 9164,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -982,7 +982,7 @@
     "components/insights/hero-strip.tsx": 3,
     "components/insights/insight-status-card.tsx": 12,
     "components/insights/insights-edit-mode.tsx": 5,
-    "components/insights/insights-layout-shell.tsx": 11,
+    "components/insights/insights-layout-shell.tsx": 3,
     "components/insights/insights-tab-strip.tsx": 35,
     "components/insights/intraday-pulse-chart.tsx": 1,
     "components/insights/labs-changes-card.tsx": 1,

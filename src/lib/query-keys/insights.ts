@@ -6,6 +6,8 @@
 export const insightsKeys = {
   insightsRoot: () => ["insights"] as const,
   insightsComprehensive: () => ["insights", "comprehensive"] as const,
+  /** Which Insights pages have data (`/api/insights/presence`), for the tab strip. */
+  insightsPresence: () => ["insights", "presence"] as const,
   insightsTargets: () => ["insights", "targets"] as const,
   /**
    * Shared cache key for the rich `/api/insights/generate` advisor

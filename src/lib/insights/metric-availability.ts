@@ -19,9 +19,8 @@
  *     `summaries[METRIC].count` from the analytics endpoint.
  *   - `BMI` is derived from `WEIGHT` so it inherits the weight count.
  *   - Event-driven metrics (`MOOD`, `MEDICATION`) read the boolean
- *     `hasMood` / `hasMedication` flags the caller threads in from
- *     `/api/insights/comprehensive` (mood summary count > 0,
- *     medications array length > 0).
+ *     `hasMood` / `hasMedication` flags the caller threads in (the tab
+ *     strip from `/api/insights/presence`).
  *
  * Auto-light-up behaviour: once the iOS native client uploads its
  * first Apple-Health measurement, `summaries[METRIC].count` flips
@@ -29,7 +28,6 @@
  * pill, sub-page, and dashboard tile — no separate feature flag
  * needed. (F18.)
  */
-import type { DataSummary } from "@/lib/analytics/trends";
 
 /**
  * Metric keys the gating helper distinguishes. Mirrors the
@@ -133,14 +131,14 @@ export type InsightMetric =
   | "NUTRIENTS";
 
 /**
- * Inputs the gating helper consumes. The `summaries` shape mirrors
- * the `/api/analytics` response (`Record<MeasurementType, DataSummary>`)
- * — undefined means the caller hasn't loaded analytics yet, which
- * the helper treats as "not available" so loading shells aren't
- * accidentally lit up.
+ * Inputs the gating helper consumes. `summaries` is keyed by
+ * `MeasurementType` and only its `count` is read, so an analytics
+ * summaries map and the presence read's `metrics` both fit. Undefined
+ * means the caller hasn't loaded it yet, which the helper treats as
+ * "not available" so loading shells aren't accidentally lit up.
  */
 export interface InsightInputs {
-  summaries: Record<string, DataSummary> | undefined;
+  summaries: Readonly<Record<string, { count: number }>> | undefined;
   /** Whether the user has logged at least one mood entry. */
   hasMood: boolean;
   /** Whether the user has at least one active medication. */
