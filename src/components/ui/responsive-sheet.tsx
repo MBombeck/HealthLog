@@ -6,10 +6,6 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { SeededFormDiscardDialog } from "@/components/forms/use-seeded-form-dismissal";
 import {
-  sheetHistory,
-  type SheetHistoryEntry,
-} from "@/components/ui/sheet-history";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -102,17 +98,12 @@ export interface ResponsiveSheetProps {
   onCloseAutoFocus?: (event: Event) => void;
   /**
    * Whether the form holds input a dismissal would lose. A backdrop tap,
-   * Escape, a swipe down, the X and Back then ask before closing; the form's
+   * Escape, a swipe down and the X then ask before closing; the form's
    * own Cancel and Save close it as before. A function is read at the moment
    * of the dismissal and gets this sheet's body: pass
    * `sheetBodyHasUnsavedInput` for an add form that keeps its state inside.
    */
   dirty?: boolean | ((body: HTMLElement | null) => boolean);
-  /**
-   * Back closes the sheet (`sheet-history.ts`). False for a sheet whose open
-   * state lives in the URL already, which has its own history entry.
-   */
-  historyEntry?: boolean;
   children: React.ReactNode;
 }
 
@@ -215,23 +206,14 @@ export function sheetBodyHasUnsavedInput(body: HTMLElement | null): boolean {
   return false;
 }
 
-/**
- * How a sheet closes: a dismissal with unsaved input asks first, and Back
- * closes the sheet (asking the same way) instead of leaving the page.
- */
+/** How a sheet closes: a dismissal with unsaved input asks first. */
 function useSheetDismissal({
   open,
   onOpenChange,
   dirty,
-  historyEntry,
-}: Pick<
-  ResponsiveSheetProps,
-  "open" | "onOpenChange" | "dirty" | "historyEntry"
->) {
+}: Pick<ResponsiveSheetProps, "open" | "onOpenChange" | "dirty">) {
   const bodyRef = React.useRef<HTMLDivElement | null>(null);
-  const entryRef = React.useRef<SheetHistoryEntry | null>(null);
   const [asking, setAsking] = React.useState(false);
-  const [backs, countBack] = React.useReducer((n: number) => n + 1, 0);
   if (!open && asking) setAsking(false);
 
   const hasUnsavedInput = () =>
@@ -245,34 +227,6 @@ function useSheetDismissal({
     }
     onOpenChange(next);
   };
-
-  const handleBack = React.useEffectEvent(() => {
-    // Back while the question is open answers it with "keep editing".
-    if (asking || hasUnsavedInput()) {
-      entryRef.current?.restore();
-      setAsking(!asking);
-      return;
-    }
-    countBack();
-    onOpenChange(false);
-  });
-
-  React.useEffect(() => {
-    if (!open || historyEntry === false) return;
-    const entry = sheetHistory()?.open(() => handleBack());
-    if (!entry) return;
-    entryRef.current = entry;
-    return () => {
-      entry.release();
-      if (entryRef.current === entry) entryRef.current = null;
-    };
-  }, [open, historyEntry]);
-
-  // Back was answered and the sheet is still open: its owner kept it (its
-  // own discard question, a save under way), so Back must keep working.
-  React.useEffect(() => {
-    if (backs > 0 && open) entryRef.current?.restore();
-  }, [backs, open]);
 
   // A sibling of the sheet, not a child: inside it, a touch on the question
   // would reach the sheet's drag through the React tree.
@@ -305,7 +259,6 @@ export function ResponsiveSheet({
   contentWidth = "md",
   onCloseAutoFocus,
   dirty,
-  historyEntry,
   children,
 }: ResponsiveSheetProps) {
   const isMobile = useIsMobile();
@@ -313,7 +266,6 @@ export function ResponsiveSheet({
     open,
     onOpenChange,
     dirty,
-    historyEntry,
   });
 
   if (isMobile) {
