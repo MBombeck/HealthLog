@@ -521,7 +521,7 @@
     "backToDashboard": "Torna alla dashboard"
   },
   "offlineBanner": {
-    "message": "Nessuna connessione: le modifiche non possono essere salvate finché non torni online.",
+    "message": "Nessuna connessione: le modifiche non possono essere salvate.",
     "saveFailed": "Impossibile salvare: sei offline. Riprova quando torni online.",
     "stayOnPage": "Questa pagina resta leggibile; le altre si aprono quando torni online."
   },

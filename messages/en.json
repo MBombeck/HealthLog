@@ -521,7 +521,7 @@
     "backToDashboard": "Back to dashboard"
   },
   "offlineBanner": {
-    "message": "No connection: changes can't be saved until you're back online.",
+    "message": "No connection: changes can't be saved.",
     "saveFailed": "Couldn't save, you're offline. Please try again once you're back online.",
     "stayOnPage": "This page stays readable; other pages open once you're back online."
   },

@@ -521,7 +521,7 @@
     "backToDashboard": "Voltar ao painel"
   },
   "offlineBanner": {
-    "message": "Sem conexão: as alterações não podem ser salvas até você voltar a ficar online.",
+    "message": "Sem conexão: as alterações não podem ser salvas.",
     "saveFailed": "Não foi possível salvar, você está offline. Tente novamente quando voltar a ficar online.",
     "stayOnPage": "Esta página continua legível; as outras abrem quando você voltar a ficar online."
   },

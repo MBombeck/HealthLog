@@ -521,7 +521,7 @@
     "backToDashboard": "Zurück zum Dashboard"
   },
   "offlineBanner": {
-    "message": "Keine Verbindung: Änderungen können erst gespeichert werden, wenn du wieder online bist.",
+    "message": "Keine Verbindung: Änderungen können nicht gespeichert werden.",
     "saveFailed": "Speichern fehlgeschlagen, du bist offline. Bitte versuche es erneut, sobald du wieder online bist.",
     "stayOnPage": "Diese Seite bleibt lesbar, andere Seiten öffnen sich, sobald du wieder online bist."
   },

@@ -521,7 +521,7 @@
     "backToDashboard": "Volver al panel"
   },
   "offlineBanner": {
-    "message": "Sin conexión: los cambios no se pueden guardar hasta que vuelvas a estar en línea.",
+    "message": "Sin conexión: los cambios no se pueden guardar.",
     "saveFailed": "No se pudo guardar porque estás sin conexión. Inténtalo de nuevo cuando vuelvas a estar en línea.",
     "stayOnPage": "Esta página se puede seguir leyendo; las demás se abrirán cuando vuelvas a estar en línea."
   },

@@ -521,7 +521,7 @@
     "backToDashboard": "Powrót do panelu"
   },
   "offlineBanner": {
-    "message": "Brak połączenia: zmian nie można zapisać, dopóki nie wrócisz online.",
+    "message": "Brak połączenia: nie można zapisać zmian.",
     "saveFailed": "Nie udało się zapisać, jesteś offline. Spróbuj ponownie, gdy wrócisz online.",
     "stayOnPage": "Ta strona pozostaje czytelna, inne otworzą się, gdy wrócisz online."
   },

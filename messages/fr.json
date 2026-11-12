@@ -521,7 +521,7 @@
     "backToDashboard": "Retour au tableau de bord"
   },
   "offlineBanner": {
-    "message": "Pas de connexion : les modifications ne peuvent pas être enregistrées tant que vous n'êtes pas de nouveau en ligne.",
+    "message": "Pas de connexion : les modifications ne peuvent pas être enregistrées.",
     "saveFailed": "Enregistrement impossible : vous êtes hors ligne. Réessayez une fois de nouveau en ligne.",
     "stayOnPage": "Cette page reste lisible ; les autres s'ouvriront dès que vous serez de nouveau en ligne."
   },

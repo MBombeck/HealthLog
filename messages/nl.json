@@ -521,7 +521,7 @@
     "backToDashboard": "Terug naar het dashboard"
   },
   "offlineBanner": {
-    "message": "Geen verbinding: wijzigingen kunnen pas worden opgeslagen als je weer online bent.",
+    "message": "Geen verbinding: wijzigingen kunnen niet worden opgeslagen.",
     "saveFailed": "Opslaan is mislukt, je bent offline. Probeer het opnieuw zodra je weer online bent.",
     "stayOnPage": "Deze pagina blijft leesbaar; andere pagina's openen zodra je weer online bent."
   },
