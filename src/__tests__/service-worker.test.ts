@@ -482,13 +482,15 @@ describe("sw.js — activate", () => {
     expect(harness.navPreload.enabled).toBe(true);
   });
 
-  it("clears the dose count an earlier release left on the app icon", async () => {
+  it("leaves the app icon badge to the page, never touches it while activating", async () => {
+    // A badge call from the worker can stall Chromium's worker thread, so the
+    // activation never claims its pages. The page clears a leftover count.
     const harness = bootServiceWorker();
     const { badge } = swFakes(harness);
 
     await dispatchActivate(harness);
 
-    expect(badge.cleared).toBe(true);
+    expect(badge.cleared).toBe(false);
   });
 });
 

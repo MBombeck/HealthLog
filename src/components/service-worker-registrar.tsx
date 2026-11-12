@@ -20,6 +20,22 @@ export function shouldRegisterServiceWorker(
 }
 
 /**
+ * Earlier releases set a dose count on the installed app's icon, and nothing
+ * sets one now, so a leftover count would stay for good. Cleared from the page
+ * of the installed app only, where the badge exists; never from the worker,
+ * where the call can stall Chromium's worker thread.
+ */
+export function clearLeftoverAppBadge(win: Window): void {
+  const standalone =
+    win.matchMedia?.("(display-mode: standalone)").matches ?? false;
+  const nav = win.navigator as Navigator & {
+    clearAppBadge?: () => Promise<void>;
+  };
+  if (!standalone || typeof nav.clearAppBadge !== "function") return;
+  nav.clearAppBadge().catch(() => undefined);
+}
+
+/**
  * App-wide service-worker registration.
  *
  * Until this component shipped, `/sw.js` was registered exactly once —
@@ -64,6 +80,7 @@ export function ServiceWorkerRegistrar(): null {
           .catch(() => {
             /* best effort — registration failure must never break the app */
           });
+        clearLeftoverAppBadge(window);
       });
     };
 
