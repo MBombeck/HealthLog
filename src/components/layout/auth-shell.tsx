@@ -345,9 +345,11 @@ export function AuthShell({
     // a sign-in form that is taller than a fixed-height box centres out of
     // it at the top, where nothing can scroll back to it. A minimum lets the
     // box grow and the document scroll. The safe-area padding keeps the form
-    // off the status bar and the home indicator in an installed app.
+    // off the status bar and the home indicator in an installed app, and
+    // `shell-safe-area` paints the strip behind the status bar so its white
+    // clock stays readable in the light theme, as in the signed-in shell.
     return (
-      <div className="flex min-h-dvh flex-col pt-[env(safe-area-inset-top,0px)] pr-[env(safe-area-inset-right,0px)] pb-[env(safe-area-inset-bottom,0px)] pl-[env(safe-area-inset-left,0px)]">
+      <div className="shell-safe-area flex min-h-dvh flex-col pb-[env(safe-area-inset-bottom,0px)]">
         {demoMode ? <DemoBanner /> : null}
         <main
           id="main-content"
@@ -419,7 +421,7 @@ export function AuthShell({
         {showUnlockNotifier && user?.id ? (
           <AchievementUnlockNotifier userId={user.id} />
         ) : null}
-        <div className="flex min-h-dvh flex-col pt-[env(safe-area-inset-top,0px)] pr-[env(safe-area-inset-right,0px)] pl-[env(safe-area-inset-left,0px)]">
+        <div className="shell-safe-area flex min-h-dvh flex-col">
           <MaintainershipBanner />
           <div className="flex flex-1 items-center justify-center px-4 py-8">
             {children}
