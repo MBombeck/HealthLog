@@ -88,16 +88,18 @@ describe("useLogout", () => {
     expect(showErrorToast).not.toHaveBeenCalled();
   });
 
-  it("removes this browser's push subscription before the session ends", async () => {
-    // Left in place, the browser kept showing the signed-out account's
-    // medication reminders, also after someone else signed in.
-    const order: string[] = [];
+  /** A browser holding a push subscription; returns the call order log. */
+  function holdSubscription(order: string[]) {
     const unsubscribe = vi.fn(async () => {
       order.push("browser unsubscribe");
       return true;
     });
     const subscription = {
       endpoint: "https://push.example.com/send/abc",
+      toJSON: () => ({
+        endpoint: "https://push.example.com/send/abc",
+        keys: { p256dh: "p256dh", auth: "auth" },
+      }),
       unsubscribe,
     };
     vi.stubGlobal("window", { PushManager: class {} });
@@ -108,6 +110,16 @@ describe("useLogout", () => {
         }),
       },
     });
+    return { subscription, unsubscribe };
+  }
+
+  it("takes this browser's push subscription off the account and out of the browser", async () => {
+    // Left in place, the browser kept showing the signed-out account's
+    // medication reminders, also after someone else signed in. The server
+    // row goes while the session can still name it; the browser's own only
+    // once the sign-out is confirmed.
+    const order: string[] = [];
+    const { subscription } = holdSubscription(order);
     fetchMock.mockImplementation(async (url, init) => {
       order.push(`${init?.method} ${url}`);
       return json(200, { data: {} });
@@ -118,14 +130,36 @@ describe("useLogout", () => {
 
     expect(order).toEqual([
       "DELETE /api/notifications/web-push",
-      "browser unsubscribe",
       "POST /api/auth/logout",
+      "browser unsubscribe",
     ]);
     const deleteCall = fetchMock.mock.calls[0];
     expect(JSON.parse(String(deleteCall[1]?.body))).toEqual({
       endpoint: subscription.endpoint,
     });
     expect(push).toHaveBeenCalledWith("/auth/login");
+  });
+
+  it("keeps push working when the server refuses the sign-out", async () => {
+    const order: string[] = [];
+    const { unsubscribe } = holdSubscription(order);
+    fetchMock.mockImplementation(async (url, init) => {
+      order.push(`${init?.method} ${url}`);
+      return url === "/api/auth/logout"
+        ? json(503, { data: null, error: "Unavailable" })
+        : json(200, { data: {} });
+    });
+
+    useLogout();
+    await settle(captured.options!);
+
+    expect(order).toEqual([
+      "DELETE /api/notifications/web-push",
+      "POST /api/auth/logout",
+      "POST /api/notifications/web-push",
+    ]);
+    expect(unsubscribe).not.toHaveBeenCalled();
+    expect(showErrorToast).toHaveBeenCalledTimes(1);
   });
 
   it("still signs out when removing the subscription fails", async () => {

@@ -117,6 +117,42 @@ describe("ClaimProfile", () => {
 });
 
 describe("ClaimProfile, already signed in", () => {
+  it("takes this browser's push subscription with it on sign-out", async () => {
+    // The button exists so the profile's person can take over on this
+    // browser; a subscription left behind would show them the last
+    // account's reminders.
+    const unsubscribe = vi.fn(async () => true);
+    const registration = vi
+      .spyOn(navigator.serviceWorker, "getRegistration")
+      .mockResolvedValue({
+        pushManager: {
+          getSubscription: async () => ({
+            endpoint: "https://push.example.test/send/abc",
+            unsubscribe,
+          }),
+        },
+      } as unknown as ServiceWorkerRegistration);
+    api
+      .on("DELETE", "/api/notifications/web-push", { data: {} })
+      .on("POST", "/api/auth/logout", { data: { loggedOut: true } });
+    await renderWithApp(<ClaimProfile token={TOKEN} />, {
+      user: { username: "signed-in" },
+    });
+
+    await click("claim-sign-out");
+
+    await expect.poll(() => unsubscribe.mock.calls.length).toBe(1);
+    const order = api.requests
+      .map((r) => `${r.method} ${r.path.split("?")[0]}`)
+      .filter((call) => !call.startsWith("GET "));
+    // The signed-out page then loads the link's preview.
+    expect(order.slice(0, 2)).toEqual([
+      "DELETE /api/notifications/web-push",
+      "POST /api/auth/logout",
+    ]);
+    registration.mockRestore();
+  });
+
   it("keeps the session's page and says so when the server refuses the sign-out", async () => {
     api.on("POST", "/api/auth/logout", {
       status: 403,

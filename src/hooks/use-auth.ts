@@ -30,7 +30,7 @@ import type { TourProgress } from "@/lib/onboarding/tour-progress";
 import { clearLastDay } from "@/lib/day/last-day";
 import { clearCoachDeleteJournal } from "@/lib/ai/coach/delete-journal";
 import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
-import { unsubscribeWebPush } from "@/lib/notifications/web-push-unsubscribe";
+import { signOutWithoutWebPush } from "@/lib/notifications/web-push-subscription";
 import {
   setRecordScope,
   setRefusedRecordScope,
@@ -646,20 +646,25 @@ export function clearCachesForSessionEnd(queryClient: QueryClient): void {
   void clearOfflineCachesForSessionEnd();
 }
 
+/**
+ * End the session on the server, for every sign-out button. Takes this
+ * browser's push subscription with it. Throws on any non-2xx answer: a
+ * refused sign-out leaves the session alive, and showing the sign-in page
+ * then would claim otherwise.
+ */
+export function signOutRequest(): Promise<void> {
+  return signOutWithoutWebPush(() =>
+    apiFetch("/api/auth/logout", { method: "POST" }),
+  );
+}
+
 export function useLogout() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const { t } = useTranslations();
 
   return useMutation({
-    mutationFn: async () => {
-      // Before the session ends: the server row can only be removed while
-      // it is still valid. A failure here does not block signing out.
-      await unsubscribeWebPush().catch(() => undefined);
-      // Throws on any non-2xx answer: a refused sign-out leaves the session
-      // alive, and showing the sign-in page then would claim otherwise.
-      await apiFetch("/api/auth/logout", { method: "POST" });
-    },
+    mutationFn: signOutRequest,
     onSuccess: () => {
       clearCachesForSessionEnd(queryClient);
       router.push("/auth/login");

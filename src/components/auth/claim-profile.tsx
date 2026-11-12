@@ -13,8 +13,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/ui/logo";
 import { PasswordStrength } from "@/components/ui/password-strength";
-import { clearCachesForSessionEnd, useAuth } from "@/hooks/use-auth";
-import { ApiError, apiFetch } from "@/lib/api/api-fetch";
+import {
+  clearCachesForSessionEnd,
+  signOutRequest,
+  useAuth,
+} from "@/hooks/use-auth";
+import { ApiError } from "@/lib/api/api-fetch";
 import { showErrorToast } from "@/lib/errors/error-toast";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { loadDocument } from "@/lib/navigation/load-document";
@@ -79,7 +83,7 @@ export function ClaimProfile({
   async function signOut() {
     setSigningOut(true);
     try {
-      await apiFetch("/api/auth/logout", { method: "POST" });
+      await signOutRequest();
       clearCachesForSessionEnd(queryClient);
       // Back to this page with the link intact: the token only rides the URL.
       router.replace(

@@ -10,7 +10,10 @@ import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { SettingsCardHeader } from "@/components/settings/_card-header";
 import { useTranslations } from "@/lib/i18n/context";
 import { apiFetchRaw } from "@/lib/api/api-fetch";
-import { unsubscribeWebPush } from "@/lib/notifications/web-push-unsubscribe";
+import {
+  saveWebPushSubscription,
+  unsubscribeWebPush,
+} from "@/lib/notifications/web-push-subscription";
 
 /** Convert a URL-safe base64 string to an ArrayBuffer (for VAPID key). */
 function urlBase64ToArrayBuffer(base64String: string): ArrayBuffer {
@@ -36,27 +39,6 @@ export function needsHomeScreen(): boolean {
     /iPhone|iPad|iPod/.test(ua) ||
     (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
   return appleTouch && !window.matchMedia("(display-mode: standalone)").matches;
-}
-
-/**
- * Store this browser's subscription for the signed-in account. Also run for a
- * subscription the browser already holds, so a row the server lost or gave
- * to another account on this browser comes back, and a channel switched off
- * by failed sends is turned on again.
- */
-function saveSubscription(subscription: PushSubscription): Promise<Response> {
-  const subJson = subscription.toJSON();
-  return apiFetchRaw("/api/notifications/web-push", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      endpoint: subJson.endpoint,
-      keys: {
-        p256dh: subJson.keys?.p256dh ?? "",
-        auth: subJson.keys?.auth ?? "",
-      },
-    }),
-  });
 }
 
 type Unsupported = "browser" | "install" | null;
@@ -94,7 +76,11 @@ export function WebPushCard() {
         if (registration) {
           const subscription = await registration.pushManager.getSubscription();
           setIsSubscribed(!!subscription);
-          if (subscription) void saveSubscription(subscription).catch(() => {});
+          // Sent again on every open: the server may have lost the row or
+          // switched the channel off, and the browser cannot tell.
+          if (subscription) {
+            void saveWebPushSubscription(subscription).catch(() => null);
+          }
         }
       } catch {
         // Ignore errors during check
@@ -133,7 +119,7 @@ export function WebPushCard() {
         applicationServerKey: urlBase64ToArrayBuffer(vapidPublicKey),
       });
 
-      const res = await saveSubscription(subscription);
+      const res = await saveWebPushSubscription(subscription);
       if (res.ok) {
         setIsSubscribed(true);
         setMsg(t("settings.webPushSubscribed"));

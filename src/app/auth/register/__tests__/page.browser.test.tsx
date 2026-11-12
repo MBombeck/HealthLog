@@ -6,7 +6,7 @@
  * existed belongs to it. The app replaces the page in the history, so Back
  * does not show the form again.
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { page } from "vitest/browser";
 
 import { queryKeys } from "@/lib/query-keys";
@@ -48,6 +48,45 @@ describe("registration page", () => {
 });
 
 describe("registration page, already signed in", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("takes this browser's push subscription with it on sign-out", async () => {
+    // The button exists so someone else can register on this browser; a
+    // subscription left behind would show them the last account's reminders.
+    const unsubscribe = vi.fn(async () => true);
+    vi.spyOn(navigator.serviceWorker, "getRegistration").mockResolvedValue({
+      pushManager: {
+        getSubscription: async () => ({
+          endpoint: "https://push.example.test/send/abc",
+          unsubscribe,
+        }),
+      },
+    } as unknown as ServiceWorkerRegistration);
+    const api = stubFetch()
+      .on("DELETE", "/api/notifications/web-push", { data: {} })
+      .on("POST", "/api/auth/logout", { data: { loggedOut: true } });
+    window.history.replaceState(null, "", "/auth/register?invite=hlv_x");
+    const { screen } = await renderWithApp(<RegisterPage />, {
+      user: { username: "signed-in" },
+    });
+
+    await screen.getByTestId("register-sign-out").click();
+
+    await expect.poll(() => unsubscribe.mock.calls.length).toBe(1);
+    const order = api.requests
+      .map((r) => `${r.method} ${r.path.split("?")[0]}`)
+      .filter((call) => !call.startsWith("GET "));
+    expect(order).toEqual([
+      "DELETE /api/notifications/web-push",
+      "POST /api/auth/logout",
+    ]);
+    expect(api.calls("DELETE", "/api/notifications/web-push")[0].body).toEqual({
+      endpoint: "https://push.example.test/send/abc",
+    });
+  });
+
   it("keeps the page and says so when the server refuses the sign-out", async () => {
     const api = stubFetch().on("POST", "/api/auth/logout", {
       status: 403,
