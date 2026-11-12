@@ -764,7 +764,7 @@
       "noneActionableCta": "Open medications"
     },
     "quickEntryDiscard": {
-      "title": "Discard this entry?",
+      "title": "Discard your changes?",
       "description": "You have unsaved input. Close the form and lose what you typed?",
       "confirm": "Discard",
       "cancel": "Keep editing"
@@ -7071,7 +7071,7 @@
       "builtAtLabel": "Built",
       "license": "License",
       "repository": "Source code",
-      "changelog": "Changelog",
+      "changelog": "Release notes",
       "docs": "Documentation",
       "credits": "Credits & data attributions",
       "linksHeading": "Sources & docs",

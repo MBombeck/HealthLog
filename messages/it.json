@@ -764,7 +764,7 @@
       "noneActionableCta": "Apri i farmaci"
     },
     "quickEntryDiscard": {
-      "title": "Scartare questa voce?",
+      "title": "Scartare le modifiche?",
       "description": "Hai dati non salvati. Chiudere il modulo e perdere ciò che hai digitato?",
       "confirm": "Scarta",
       "cancel": "Continua a modificare"
@@ -7071,7 +7071,7 @@
       "builtAtLabel": "Compilato",
       "license": "Licenza",
       "repository": "Codice sorgente",
-      "changelog": "Changelog",
+      "changelog": "Note di rilascio",
       "docs": "Documentazione",
       "credits": "Crediti e attribuzioni dei dati",
       "linksHeading": "Fonti e documentazione",

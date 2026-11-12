@@ -764,7 +764,7 @@
       "noneActionableCta": "약 목록 열기"
     },
     "quickEntryDiscard": {
-      "title": "이 기록을 버릴까요?",
+      "title": "변경 내용을 버릴까요?",
       "description": "저장하지 않은 입력이 있어요. 폼을 닫고 입력한 내용을 버릴까요?",
       "confirm": "버리기",
       "cancel": "계속 작성"
@@ -7071,7 +7071,7 @@
       "builtAtLabel": "빌드 시각",
       "license": "라이선스",
       "repository": "소스 코드",
-      "changelog": "변경 이력",
+      "changelog": "릴리스 노트",
       "docs": "문서",
       "credits": "크레딧 및 데이터 출처",
       "linksHeading": "출처 및 문서",

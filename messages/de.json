@@ -764,7 +764,7 @@
       "noneActionableCta": "Zu den Medikamenten"
     },
     "quickEntryDiscard": {
-      "title": "Eintrag verwerfen?",
+      "title": "Eingaben verwerfen?",
       "description": "Du hast nicht gespeicherte Eingaben. Formular schließen und das Getippte verwerfen?",
       "confirm": "Verwerfen",
       "cancel": "Weiter bearbeiten"
@@ -7071,7 +7071,7 @@
       "builtAtLabel": "Erstellt",
       "license": "Lizenz",
       "repository": "Quellcode",
-      "changelog": "Changelog",
+      "changelog": "Versionshinweise",
       "docs": "Dokumentation",
       "credits": "Credits & Datenquellen",
       "linksHeading": "Quellen & Dokumentation",

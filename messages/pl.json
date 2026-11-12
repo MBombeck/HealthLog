@@ -764,7 +764,7 @@
       "noneActionableCta": "Otwórz leki"
     },
     "quickEntryDiscard": {
-      "title": "Odrzucić ten wpis?",
+      "title": "Odrzucić zmiany?",
       "description": "Masz niezapisane dane. Zamknąć formularz i utracić to, co wpisano?",
       "confirm": "Odrzuć",
       "cancel": "Kontynuuj edycję"
@@ -3730,7 +3730,7 @@
       "valuesBackToMetric": "Powrót do {metric}",
       "scoresBack": "Powrót do Insights",
       "ecgDescription": "Zapisy EKG jednoodprowadzeniowe z Twojego urządzenia, każdy z wynikiem samego urządzenia.",
-      "emptyCoachPrefill": "{metric}: nie zapisałem tu jeszcze niczego. Co ten wskaźnik mówi o moim zdrowiu i jak mogę go poprawić?"
+      "emptyCoachPrefill": "{metric}: nie mam tu jeszcze żadnych wpisów. Co ten wskaźnik mówi o moim zdrowiu i jak mogę go poprawić?"
     },
     "units": {
       "steps": "kroki",
@@ -7071,7 +7071,7 @@
       "builtAtLabel": "Skompilowano",
       "license": "Licencja",
       "repository": "Kod źródłowy",
-      "changelog": "Changelog",
+      "changelog": "Informacje o wersjach",
       "docs": "Dokumentacja",
       "credits": "Autorzy i źródła danych",
       "linksHeading": "Źródła i dokumentacja",

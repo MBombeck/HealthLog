@@ -764,7 +764,7 @@
       "noneActionableCta": "Abrir medicamentos"
     },
     "quickEntryDiscard": {
-      "title": "¿Descartar esta entrada?",
+      "title": "¿Descartar los cambios?",
       "description": "Tienes datos sin guardar. ¿Cerrar el formulario y perder lo que escribiste?",
       "confirm": "Descartar",
       "cancel": "Seguir editando"
@@ -7071,7 +7071,7 @@
       "builtAtLabel": "Compilado",
       "license": "Licencia",
       "repository": "Código fuente",
-      "changelog": "Changelog",
+      "changelog": "Notas de la versión",
       "docs": "Documentación",
       "credits": "Créditos y atribuciones de datos",
       "linksHeading": "Fuentes y documentación",
@@ -10219,7 +10219,7 @@
     "snoozedUntil": "Aplazado hasta {date}",
     "skippedOn": "Omitido el {date}",
     "skipCount": "omitido {count} veces",
-    "disabledBadge": "Apagado",
+    "disabledBadge": "Desactivado",
     "nextDue": {
       "none": "Sin programar",
       "today": "Vence hoy",

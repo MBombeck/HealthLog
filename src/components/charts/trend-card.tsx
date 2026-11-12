@@ -459,7 +459,7 @@ export function TrendCard({
                 deltaColor,
               )}
               data-slot="trend7-delta"
-              aria-label={`7-day trend ${formatDelta(trend7Delta)}`}
+              aria-label={`${t("charts.trend7dShort")} ${formatDelta(trend7Delta)}`}
             >
               ({formatDelta(trend7Delta)})
             </span>
