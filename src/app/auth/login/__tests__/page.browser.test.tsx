@@ -63,6 +63,21 @@ describe("sign-in page, single sign-on", () => {
   });
 });
 
+describe("sign-in page, single sign-on with a stuck cache", () => {
+  it("still leaves for the identity provider when the wipe never settles", async () => {
+    // WebKit can leave an IndexedDB open hanging after the app returns from
+    // the background; the button did nothing then.
+    clearOffline.mockImplementationOnce(() => new Promise(() => {}));
+    const { screen } = await renderWithApp(<LoginPage />, { user: null });
+    await screen.getByRole("button", { name: "Example ID" }).click();
+
+    await expect
+      .poll(() => loadDocument.mock.calls.length, { timeout: 4000 })
+      .toBe(1);
+    expect(clearOffline).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("sign-in page, password", () => {
   it("replaces itself with the page asked for", async () => {
     api.on("POST", "/api/auth/login", { data: { id: "signed-in" } });

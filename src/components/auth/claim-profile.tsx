@@ -23,11 +23,15 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { loadDocument } from "@/lib/navigation/load-document";
 import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
+import { settleWithin } from "@/lib/async/settle-within";
 import {
   useClaimProfile,
   useClaimProfileSso,
   useProfileClaimPreview,
 } from "@/lib/queries/use-profile-claim";
+
+/** How long the single-sign-on claim waits for the offline copies to go. */
+const SSO_CLEANUP_WAIT_MS = 1_500;
 
 /**
  * v1.42 (#959) — the person a managed profile describes takes it over as
@@ -111,8 +115,13 @@ export function ClaimProfile({
             next.searchParams.set("client_proto", clientTransport.protocol);
             next.searchParams.set("client_host", clientTransport.host);
           }
-          // The session starts on the way back; the last account's copies go first.
-          await clearOfflineCachesForSessionEnd();
+          // The session starts on the way back; the last account's copies
+          // go first, waited on no longer than on the sign-in page.
+          await settleWithin(
+            clearOfflineCachesForSessionEnd(),
+            SSO_CLEANUP_WAIT_MS,
+            undefined,
+          );
           loadDocument(`${next.pathname}${next.search}`);
         },
       },
