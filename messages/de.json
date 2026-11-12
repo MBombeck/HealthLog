@@ -600,7 +600,7 @@
     "noAccount": "Noch kein Konto?",
     "hasAccount": "Bereits ein Konto?",
     "loginFailed": "Anmeldung fehlgeschlagen",
-    "signOutFailed": "Abmelden hat nicht geklappt. Du bist weiterhin angemeldet.",
+    "signOutFailed": "Das Abmelden hat nicht geklappt. Du bist weiterhin angemeldet.",
     "registerFailed": "Registrierung fehlgeschlagen",
     "invitedBanner": "Du wurdest eingeladen. Erstelle dein Konto, auch wenn die Registrierung sonst geschlossen ist.",
     "alreadySignedIn": {
