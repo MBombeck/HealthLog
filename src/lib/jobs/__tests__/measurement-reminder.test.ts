@@ -590,6 +590,25 @@ describe("runMeasurementReminderTick", () => {
     expect(isModuleEnabled).toHaveBeenCalledWith("u1", "glucose");
   });
 
+  it("skips a ketone checkup when the Glucose module is off, like glucose", async () => {
+    const { prisma } = makePrisma({
+      reminders: [reminder({ measurementType: "BLOOD_KETONES" })],
+      measurementMatch: null,
+    });
+    const dispatch = vi.fn<DispatchFn>(async () => OK);
+    const isModuleEnabled = vi.fn(async () => false);
+
+    const summary = await runMeasurementReminderTick(
+      prisma as never,
+      NINE_LOCAL,
+      { dispatch, isModuleEnabled },
+    );
+
+    expect(summary.skippedModuleDisabled).toBe(1);
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(isModuleEnabled).toHaveBeenCalledWith("u1", "glucose");
+  });
+
   it("v1.18.0 — a core-vital (BP) reminder never consults the module gate and dispatches", async () => {
     const { prisma } = makePrisma({
       reminders: [reminder({ measurementType: "BLOOD_PRESSURE_SYS" })],

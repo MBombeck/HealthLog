@@ -50,6 +50,7 @@ import {
 } from "@/lib/notifications/reminder-dedup";
 import { getEvent } from "@/lib/logging/context";
 import { isModuleEnabled } from "@/lib/modules/gate";
+import { moduleForMeasurementType } from "@/lib/modules/measurement-scope";
 import type { ModuleKey } from "@/lib/modules/registry";
 import {
   byHourTimesOfDay,
@@ -69,33 +70,15 @@ import {
 } from "@/lib/encounters/appointment-reminder";
 
 /**
- * v1.18.0 — map a reminder's `measurementType` to the toggleable module
- * that owns it, or `null` when the type is a CORE domain (weight, blood
- * pressure, pulse, body composition) or has no module of its own. A
- * `null` reminder type (free-text Vorsorge entry) also yields `null`.
- *
- * Only the secondary-domain types carry a gate: glucose, sleep, and the
- * mental-wellbeing screenings (v1.27.6 — the PHQ-9 / GAD-7 module is
- * opt-in, so a screening reminder must fall silent the moment the module
- * is off). Everything else is core and dispatches regardless — disabling
- * a module must never silence a core-vital reminder.
+ * The toggleable module a reminder's `measurementType` belongs to, from the
+ * one ownership table (`measurement-scope.ts`): glucose and ketones, sleep,
+ * the mental-wellbeing screenings. A reminder of such a type falls silent
+ * the moment its module is off. A core vital (weight, blood pressure, pulse,
+ * body composition) and a free-text checkup (`null` type) have no module
+ * and dispatch regardless: disabling a module never silences them.
  */
-function moduleForMeasurementType(
-  type: MeasurementType | null,
-): ModuleKey | null {
-  switch (type) {
-    case "BLOOD_GLUCOSE":
-      return "glucose";
-    case "SLEEP_DURATION":
-      return "sleep";
-    case "PHQ9_SCORE":
-    case "GAD7_SCORE":
-    case "WHO5_SCORE":
-    case "SCI_SCORE":
-      return "mentalHealth";
-    default:
-      return null;
-  }
+function reminderModule(type: MeasurementType | null): ModuleKey | null {
+  return type === null ? null : moduleForMeasurementType(type);
 }
 
 /**
@@ -437,12 +420,12 @@ export async function runMeasurementReminderTick(
       summary.inWindow += 1;
 
       // v1.18.0 module gate — a reminder whose measurement type belongs to
-      // a toggleable module (glucose / sleep) must not fire once the user
+      // a toggleable module (`reminderModule`) must not fire once the user
       // turns that module off. Core-vital reminders (weight / BP / pulse /
       // body comp) and free-text reminders map to no module and are never
       // gated. Checked after the due + window gates so the gate read only
       // fires for reminders that would otherwise dispatch this tick.
-      const gatedModule = moduleForMeasurementType(reminder.measurementType);
+      const gatedModule = reminderModule(reminder.measurementType);
       if (
         gatedModule !== null &&
         !(await moduleGate(reminder.user.id, gatedModule))
@@ -633,7 +616,7 @@ export async function runReminderSatisfyForUser(
       // Module toggle — no engine activity for a reminder whose type
       // belongs to a disabled module. Core-vital + free-text reminders map
       // to no module and are never gated.
-      const gatedModule = moduleForMeasurementType(reminder.measurementType);
+      const gatedModule = reminderModule(reminder.measurementType);
       if (gatedModule !== null && !(await moduleGate(userId, gatedModule))) {
         summary.skippedModuleDisabled += 1;
         continue;

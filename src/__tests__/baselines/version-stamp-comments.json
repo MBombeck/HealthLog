@@ -2309,7 +2309,7 @@
     "lib/jobs/lab-biomarker-backfill.ts": 2,
     "lib/jobs/mean-consolidation.ts": 1,
     "lib/jobs/measurement-fold-repair.ts": 1,
-    "lib/jobs/measurement-reminder.ts": 14,
+    "lib/jobs/measurement-reminder.ts": 13,
     "lib/jobs/med-notes-encryption-backfill.ts": 2,
     "lib/jobs/medication-intake-import.ts": 1,
     "lib/jobs/medication-inventory-expire.ts": 1,

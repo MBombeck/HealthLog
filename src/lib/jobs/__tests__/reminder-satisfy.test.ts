@@ -186,6 +186,25 @@ describe("runReminderSatisfyForUser", () => {
     expect(prisma.measurement.findFirst).not.toHaveBeenCalled();
   });
 
+  it("leaves a ketone checkup alone while the Glucose module is off", async () => {
+    const { prisma, updates } = makePrisma({
+      reminders: [reminderRow({ measurementType: "BLOOD_KETONES" })],
+      measurement: { measuredAt: new Date("2026-06-14T18:00:00Z") },
+    });
+    const isModuleEnabled = vi.fn(async () => false);
+
+    const summary = await runReminderSatisfyForUser(
+      prisma as never,
+      "u1",
+      new Date(),
+      { isModuleEnabled },
+    );
+
+    expect(summary.skippedModuleDisabled).toBe(1);
+    expect(isModuleEnabled).toHaveBeenCalledWith("u1", "glucose");
+    expect(updates).toHaveLength(0);
+  });
+
   it("satisfies a screening reminder from the server-written score row (v1.27.6)", async () => {
     // A completed PHQ-9 check-in writes a COMPUTED PHQ9_SCORE measurement;
     // the screening reminder resolves from that row like any typed reminder.

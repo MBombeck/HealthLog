@@ -109,6 +109,13 @@ const METRIC_STATUS_MODULE_OWNERS: Partial<Record<MeasurementType, ModuleKey>> =
     // belong to the glucose module; they stay off the Coach snapshot, so the
     // scope token cannot reach them.
     BLOOD_KETONES: "glucose",
+    // The mental-wellbeing screenings: the score row a completed check-in
+    // writes. Off the Coach snapshot and MCP by construction, so layer 1
+    // never reaches them; a screening checkup follows the module too.
+    PHQ9_SCORE: "mentalHealth",
+    GAD7_SCORE: "mentalHealth",
+    WHO5_SCORE: "mentalHealth",
+    SCI_SCORE: "mentalHealth",
     // The HRV fallback type. `resolveRichMetricForUser` swaps HRV to its RMSSD
     // fallback for an account that only has ring/strap nightly RMSSD rows, so
     // leaving this unowned would have let the fallback path serve exactly the
