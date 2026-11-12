@@ -64,6 +64,36 @@ const bodySite = z.string().max(200).nullable().optional();
 const laterality = lateralityEnum.nullable().optional();
 
 /**
+ * Shared episode-window refinement: an episode can never resolve before it began.
+ *
+ * For create, `onsetAt` defaults to "now" server-side when omitted, so the invariant
+ * only bites when BOTH instants are supplied (the inverted-window case). For update,
+ * a partial edit touching only one instant is validated against the stored row in the
+ * route. Instants are compared as parsed timestamps to correctly support mixed Z/offset
+ * forms and fractional seconds.
+ */
+export function refineEpisodeWindow(
+  v: { onsetAt?: string; resolvedAt?: string | null },
+  ctx: z.RefinementCtx,
+): void {
+  if (v.resolvedAt && v.onsetAt) {
+    const onsetMs = Date.parse(v.onsetAt);
+    const resolvedMs = Date.parse(v.resolvedAt);
+    if (
+      !Number.isNaN(onsetMs) &&
+      !Number.isNaN(resolvedMs) &&
+      resolvedMs < onsetMs
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["resolvedAt"],
+        message: "resolvedAt must be on or after onsetAt",
+      });
+    }
+  }
+}
+
+/**
  * Create an episode. `label` is the user-facing name; `note` is encrypted
  * at rest. `parentConditionId` threads a FLARE/RECURRING bout under a
  * parent condition. `onsetAt` defaults to "now" server-side when omitted.
@@ -80,18 +110,7 @@ export const illnessEpisodeCreateSchema = z
     bodySite,
     laterality,
   })
-  // An episode can never resolve before it began. `onsetAt` defaults to "now"
-  // server-side when omitted, so the invariant only bites when BOTH instants
-  // are supplied (the inverted-window case).
-  .superRefine((v, ctx) => {
-    if (v.resolvedAt && v.onsetAt && v.resolvedAt < v.onsetAt) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["resolvedAt"],
-        message: "resolvedAt must be on or after onsetAt",
-      });
-    }
-  });
+  .superRefine(refineEpisodeWindow);
 
 export type IllnessEpisodeCreate = z.infer<typeof illnessEpisodeCreateSchema>;
 
@@ -112,18 +131,7 @@ export const illnessEpisodeUpdateSchema = z
     laterality,
   })
   .strict()
-  // When BOTH instants are in the same edit body, enforce the window order at
-  // parse time. A partial edit touching only one is validated against the
-  // stored value in the route (it must load the row anyway).
-  .superRefine((v, ctx) => {
-    if (v.resolvedAt && v.onsetAt && v.resolvedAt < v.onsetAt) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["resolvedAt"],
-        message: "resolvedAt must be on or after onsetAt",
-      });
-    }
-  });
+  .superRefine(refineEpisodeWindow);
 
 export type IllnessEpisodeUpdate = z.infer<typeof illnessEpisodeUpdateSchema>;
 

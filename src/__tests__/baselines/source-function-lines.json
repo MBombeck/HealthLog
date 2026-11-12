@@ -1,7 +1,7 @@
 {
   "$comment": "Production functions over 200 lines, keyed \"file :: name\", and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 335,
-  "total": 109058,
+  "total": 109041,
   "entries": {
     "app/achievements/page.tsx :: AchievementsPage": 206,
     "app/api/admin/backups/upload/route.ts :: apiHandler(arg)": 275,
@@ -98,7 +98,7 @@
     "components/documents/documents-view.tsx :: DocumentsView": 303,
     "components/documents/sources/document-source-picker.tsx :: DocumentSourcePicker": 563,
     "components/illness/log-day-sheet.tsx :: LogDaySheet": 265,
-    "components/illness/new-episode-sheet.tsx :: NewEpisodeSheet": 278,
+    "components/illness/new-episode-sheet.tsx :: NewEpisodeSheet": 261,
     "components/insights/coach-panel/chat-bubble.tsx :: ChatBubbleImpl": 417,
     "components/insights/coach-panel/coach-conversation.tsx :: CoachConversation": 1002,
     "components/insights/coach-panel/coach-input.tsx :: CoachInput": 259,

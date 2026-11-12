@@ -119,3 +119,58 @@ export function resolveEpisodeInstant({
   }
   return serializeEpisodeDate(trimmedDate, today, now, timeZone);
 }
+
+/**
+ * Resolve both instants of an episode save from its two calendar-date fields.
+ *
+ * Each field keeps its stored instant when the selected calendar date is
+ * unchanged (see {@link resolveEpisodeInstant}); the rest are serialized. An
+ * end date equal to the onset is clamped up to the onset's instant, because a
+ * preserved end can otherwise sit before a freshly serialized same-day onset
+ * (e.g. onset changed to today before local noon).
+ */
+export function resolveEpisodeWindow({
+  onset,
+  resolved,
+  storedOnset,
+  storedResolved,
+  today,
+  now,
+  timeZone,
+}: {
+  onset: string;
+  resolved: string;
+  storedOnset?: string | null;
+  storedResolved?: string | null;
+  today: string;
+  now: Date;
+  timeZone?: string;
+}): { onsetAt: string; resolvedAt: string | null } {
+  const trimmedOnset = onset.trim();
+  const trimmedResolved = resolved.trim();
+  const onsetAt = resolveEpisodeInstant({
+    date: trimmedOnset,
+    storedInstant: storedOnset,
+    today,
+    now,
+    timeZone,
+  });
+  let resolvedAt =
+    trimmedResolved === ""
+      ? null
+      : resolveEpisodeInstant({
+          date: trimmedResolved,
+          storedInstant: storedResolved,
+          today,
+          now,
+          timeZone,
+        });
+  if (
+    resolvedAt !== null &&
+    trimmedOnset === trimmedResolved &&
+    new Date(resolvedAt).getTime() < new Date(onsetAt).getTime()
+  ) {
+    resolvedAt = onsetAt;
+  }
+  return { onsetAt, resolvedAt };
+}

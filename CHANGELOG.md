@@ -7,7 +7,7 @@
 - **Illness episode onset dates keep the intended calendar day.**
   Illness episode onset dates could display as the previous or next calendar
   day in non-UTC time zones. Saving an episode now preserves the intended
-  local date.
+  local date and avoids losing save errors or duplicate saves.
 
 ## [1.47.5] — 2026-11-12
 
