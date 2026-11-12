@@ -669,7 +669,6 @@
       "submit": "Asumir",
       "submitting": "Asumiendo…",
       "errorTaken": "Ese nombre de usuario o correo electrónico ya está en uso.",
-      "errorRateLimit": "Demasiados intentos. Espera unos minutos y vuelve a intentarlo.",
       "errorFailed": "No ha funcionado. Vuelve a intentarlo en un momento.",
       "errorOffline": "No se llegó al servidor. Comprueba tu conexión y vuelve a intentarlo.",
       "ssoContinue": "Continuar con {provider}",
@@ -691,7 +690,8 @@
       "toLogin": "Ir a iniciar sesión"
     },
     "deletionPending": "Esta cuenta se eliminará el {date} y está bloqueada hasta entonces. Un administrador de este servidor puede deshacer la eliminación antes de esa fecha.",
-    "deletionPendingNoDate": "Esta cuenta está programada para eliminarse y está bloqueada. Un administrador de este servidor puede deshacer la eliminación hasta que se complete."
+    "deletionPendingNoDate": "Esta cuenta está programada para eliminarse y está bloqueada. Un administrador de este servidor puede deshacer la eliminación hasta que se complete.",
+    "signInRateLimited": "Demasiados intentos. Espera unos minutos y vuelve a intentarlo."
   },
   "dashboard": {
     "title": "Panel",

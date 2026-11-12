@@ -669,7 +669,6 @@
       "submit": "Prendi in carico",
       "submitting": "Presa in carico…",
       "errorTaken": "Questo nome utente o indirizzo email è già in uso.",
-      "errorRateLimit": "Troppi tentativi. Attendi qualche minuto e riprova.",
       "errorFailed": "Non ha funzionato. Riprova tra un momento.",
       "errorOffline": "Il server non è stato raggiunto. Controlla la connessione e riprova.",
       "ssoContinue": "Continua con {provider}",
@@ -691,7 +690,8 @@
       "toLogin": "Vai all’accesso"
     },
     "deletionPending": "Questo account verrà eliminato il {date} ed è bloccato fino ad allora. Un amministratore di questo server può annullare l’eliminazione prima di quella data.",
-    "deletionPendingNoDate": "Questo account è in attesa di eliminazione ed è bloccato. Un amministratore di questo server può annullare l’eliminazione finché non è completata."
+    "deletionPendingNoDate": "Questo account è in attesa di eliminazione ed è bloccato. Un amministratore di questo server può annullare l’eliminazione finché non è completata.",
+    "signInRateLimited": "Troppi tentativi. Attendi qualche minuto e riprova."
   },
   "dashboard": {
     "title": "Cruscotto",

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { ApiError } from "../api-fetch";
-import { localizedApiError } from "../localized-error";
+import { localizedApiError, localizedSignInError } from "../localized-error";
 import de from "../../../../messages/de.json";
 import en from "../../../../messages/en.json";
 import es from "../../../../messages/es.json";
@@ -232,5 +232,48 @@ describe("localizedApiError", () => {
         );
       }
     });
+  });
+});
+
+describe("localizedSignInError", () => {
+  const enT = translator(en as Catalog);
+
+  it("reads a wrong password or code as the step's failure, not an ended session", () => {
+    const error = new ApiError("Invalid credentials", 401, {
+      errorCode: "http.unauthenticated",
+    });
+    expect(localizedSignInError(error, enT, "auth.loginFailed")).toBe(
+      "Login failed",
+    );
+  });
+
+  it.each([
+    ["de", de],
+    ["en", en],
+    ["es", es],
+    ["fr", fr],
+    ["it", itCatalog],
+    ["ko", ko],
+    ["nl", nl],
+    ["pl", pl],
+    ["pt-BR", ptBR],
+    ["ru", ru],
+  ])("reads a lockout as one in %s", (_, locale) => {
+    const localT = translator(locale as Catalog);
+    const error = new ApiError("Too many login attempts", 429, {
+      errorCode: "http.rate_limited",
+    });
+    const sentence = localizedSignInError(error, localT, "auth.loginFailed");
+    expect(sentence).toBe(localT("auth.signInRateLimited"));
+    expect(sentence).not.toBe("auth.signInRateLimited");
+  });
+
+  it("keeps the sentence of a code the step names itself", () => {
+    const error = new ApiError("raw English server prose", 401, {
+      errorCode: "auth.reproof.failed",
+    });
+    expect(localizedSignInError(error, enT, "auth.loginFailed")).toMatch(
+      /did not verify/,
+    );
   });
 });

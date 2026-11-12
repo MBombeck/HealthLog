@@ -669,7 +669,6 @@
       "submit": "Przejmij",
       "submitting": "Przejmowanie…",
       "errorTaken": "Ta nazwa użytkownika lub adres e-mail jest już zajęty.",
-      "errorRateLimit": "Zbyt wiele prób. Odczekaj kilka minut i spróbuj ponownie.",
       "errorFailed": "Nie udało się. Spróbuj ponownie za chwilę.",
       "errorOffline": "Nie udało się połączyć z serwerem. Sprawdź połączenie i spróbuj ponownie.",
       "ssoContinue": "Kontynuuj przez {provider}",
@@ -691,7 +690,8 @@
       "toLogin": "Przejdź do logowania"
     },
     "deletionPending": "To konto zostanie usunięte {date} i do tego czasu jest zablokowane. Administrator tego serwera może cofnąć usunięcie przed tą datą.",
-    "deletionPendingNoDate": "To konto czeka na usunięcie i jest zablokowane. Administrator tego serwera może cofnąć usunięcie, dopóki się nie zakończy."
+    "deletionPendingNoDate": "To konto czeka na usunięcie i jest zablokowane. Administrator tego serwera może cofnąć usunięcie, dopóki się nie zakończy.",
+    "signInRateLimited": "Zbyt wiele prób. Odczekaj kilka minut i spróbuj ponownie."
   },
   "dashboard": {
     "title": "Pulpit",

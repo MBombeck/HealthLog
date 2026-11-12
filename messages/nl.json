@@ -669,7 +669,6 @@
       "submit": "Overnemen",
       "submitting": "Overnemen…",
       "errorTaken": "Die gebruikersnaam of dat e-mailadres is al in gebruik.",
-      "errorRateLimit": "Te veel pogingen. Wacht een paar minuten en probeer het opnieuw.",
       "errorFailed": "Dat is niet gelukt. Probeer het zo opnieuw.",
       "errorOffline": "De server is niet bereikt. Controleer je verbinding en probeer het opnieuw.",
       "ssoContinue": "Doorgaan met {provider}",
@@ -691,7 +690,8 @@
       "toLogin": "Naar inloggen"
     },
     "deletionPending": "Dit account wordt op {date} verwijderd en is tot dan vergrendeld. Een beheerder van deze server kan de verwijdering vóór die datum ongedaan maken.",
-    "deletionPendingNoDate": "Dit account staat gepland voor verwijdering en is vergrendeld. Een beheerder van deze server kan de verwijdering ongedaan maken tot die voltooid is."
+    "deletionPendingNoDate": "Dit account staat gepland voor verwijdering en is vergrendeld. Een beheerder van deze server kan de verwijdering ongedaan maken tot die voltooid is.",
+    "signInRateLimited": "Te veel pogingen. Wacht een paar minuten en probeer het opnieuw."
   },
   "dashboard": {
     "title": "Dashboard",

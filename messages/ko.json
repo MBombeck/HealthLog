@@ -669,7 +669,6 @@
       "submit": "넘겨받기",
       "submitting": "넘겨받는 중…",
       "errorTaken": "이미 사용 중인 사용자 이름 또는 이메일 주소입니다.",
-      "errorRateLimit": "시도 횟수가 너무 많습니다. 몇 분 후 다시 시도하세요.",
       "errorFailed": "처리하지 못했습니다. 잠시 후 다시 시도하세요.",
       "errorOffline": "서버에 연결하지 못했습니다. 연결을 확인하고 다시 시도하세요.",
       "ssoContinue": "{provider}(으)로 계속",
@@ -691,7 +690,8 @@
       "toLogin": "로그인으로 이동"
     },
     "deletionPending": "이 계정은 {date}에 삭제될 예정이며 그때까지 잠겨 있어요. 그 전에는 이 서버의 관리자가 삭제를 취소할 수 있어요.",
-    "deletionPendingNoDate": "이 계정은 삭제 예정이라 잠겨 있어요. 삭제가 끝나기 전까지는 이 서버의 관리자가 취소할 수 있어요."
+    "deletionPendingNoDate": "이 계정은 삭제 예정이라 잠겨 있어요. 삭제가 끝나기 전까지는 이 서버의 관리자가 취소할 수 있어요.",
+    "signInRateLimited": "시도 횟수가 너무 많아요. 몇 분 후 다시 시도해 주세요."
   },
   "dashboard": {
     "title": "대시보드",

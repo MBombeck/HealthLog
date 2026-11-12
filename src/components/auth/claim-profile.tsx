@@ -229,7 +229,7 @@ export function ClaimProfile({
           title={t("auth.claim.title")}
           description={t(
             previewStatus === 429
-              ? "auth.claim.errorRateLimit"
+              ? "auth.signInRateLimited"
               : "auth.claim.errorFailed",
           )}
         />
@@ -548,6 +548,6 @@ export function claimErrorKey(err: unknown): string {
       : "auth.claim.errorTaken";
   }
   if (err.status === 403) return "auth.claim.oidcOnly";
-  if (err.status === 429) return "auth.claim.errorRateLimit";
+  if (err.status === 429) return "auth.signInRateLimited";
   return "auth.claim.errorFailed";
 }

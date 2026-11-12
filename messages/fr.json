@@ -669,7 +669,6 @@
       "submit": "Reprendre",
       "submitting": "Reprise en cours…",
       "errorTaken": "Ce nom d'utilisateur ou cette adresse e-mail est déjà utilisé.",
-      "errorRateLimit": "Trop de tentatives. Attendez quelques minutes puis réessayez.",
       "errorFailed": "Cela n'a pas fonctionné. Réessayez dans un instant.",
       "errorOffline": "Le serveur n'a pas été atteint. Vérifiez votre connexion et réessayez.",
       "ssoContinue": "Continuer avec {provider}",
@@ -691,7 +690,8 @@
       "toLogin": "Aller à la connexion"
     },
     "deletionPending": "Ce compte sera supprimé le {date} et reste verrouillé d’ici là. Un administrateur de ce serveur peut annuler la suppression avant cette date.",
-    "deletionPendingNoDate": "Ce compte est programmé pour suppression et il est verrouillé. Un administrateur de ce serveur peut annuler la suppression tant qu’elle n’est pas terminée."
+    "deletionPendingNoDate": "Ce compte est programmé pour suppression et il est verrouillé. Un administrateur de ce serveur peut annuler la suppression tant qu’elle n’est pas terminée.",
+    "signInRateLimited": "Trop de tentatives. Attendez quelques minutes puis réessayez."
   },
   "dashboard": {
     "title": "Tableau de bord",

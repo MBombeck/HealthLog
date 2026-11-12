@@ -669,7 +669,6 @@
       "submit": "Take over",
       "submitting": "Taking over…",
       "errorTaken": "That username or email address is already in use.",
-      "errorRateLimit": "Too many attempts. Wait a few minutes and try again.",
       "errorFailed": "That did not work. Try again in a moment.",
       "errorOffline": "That did not reach the server. Check your connection and try again.",
       "ssoContinue": "Continue with {provider}",
@@ -691,7 +690,8 @@
       "toLogin": "Go to sign in"
     },
     "deletionPending": "This account is scheduled for deletion on {date} and is locked until then. An admin of this server can undo the deletion before that date.",
-    "deletionPendingNoDate": "This account is scheduled for deletion and is locked. An admin of this server can undo the deletion until it completes."
+    "deletionPendingNoDate": "This account is scheduled for deletion and is locked. An admin of this server can undo the deletion until it completes.",
+    "signInRateLimited": "Too many attempts. Wait a few minutes and try again."
   },
   "dashboard": {
     "title": "Dashboard",

@@ -669,7 +669,6 @@
       "submit": "Assumir",
       "submitting": "Assumindo…",
       "errorTaken": "Esse nome de usuário ou e-mail já está em uso.",
-      "errorRateLimit": "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
       "errorFailed": "Isso não funcionou. Tente novamente em instantes.",
       "errorOffline": "Não foi possível alcançar o servidor. Verifique sua conexão e tente novamente.",
       "ssoContinue": "Continuar com {provider}",
@@ -691,7 +690,8 @@
       "toLogin": "Ir para o login"
     },
     "deletionPending": "Esta conta será excluída em {date} e está bloqueada até lá. Um administrador deste servidor pode desfazer a exclusão antes dessa data.",
-    "deletionPendingNoDate": "Esta conta está programada para exclusão e está bloqueada. Um administrador deste servidor pode desfazer a exclusão até que ela seja concluída."
+    "deletionPendingNoDate": "Esta conta está programada para exclusão e está bloqueada. Um administrador deste servidor pode desfazer a exclusão até que ela seja concluída.",
+    "signInRateLimited": "Muitas tentativas. Aguarde alguns minutos e tente novamente."
   },
   "dashboard": {
     "title": "Painel",

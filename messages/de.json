@@ -669,7 +669,6 @@
       "submit": "Übernehmen",
       "submitting": "Wird übernommen…",
       "errorTaken": "Dieser Benutzername oder diese E-Mail-Adresse ist schon vergeben.",
-      "errorRateLimit": "Zu viele Versuche. Warte ein paar Minuten und versuche es erneut.",
       "errorFailed": "Das hat nicht geklappt. Versuche es gleich noch einmal.",
       "errorOffline": "Das hat den Server nicht erreicht. Prüfe deine Verbindung und versuche es erneut.",
       "ssoContinue": "Weiter mit {provider}",
@@ -691,7 +690,8 @@
       "toLogin": "Zur Anmeldung"
     },
     "deletionPending": "Dieses Konto wird am {date} gelöscht und ist bis dahin gesperrt. Ein Admin dieses Servers kann die Löschung vor diesem Datum rückgängig machen.",
-    "deletionPendingNoDate": "Dieses Konto ist zur Löschung vorgemerkt und gesperrt. Ein Admin dieses Servers kann die Löschung rückgängig machen, bis sie abgeschlossen ist."
+    "deletionPendingNoDate": "Dieses Konto ist zur Löschung vorgemerkt und gesperrt. Ein Admin dieses Servers kann die Löschung rückgängig machen, bis sie abgeschlossen ist.",
+    "signInRateLimited": "Zu viele Versuche. Warte ein paar Minuten und versuche es erneut."
   },
   "dashboard": {
     "title": "Dashboard",
