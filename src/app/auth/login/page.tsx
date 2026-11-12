@@ -24,7 +24,7 @@ import { OIDC_MFA_COOKIE, OIDC_MFA_COOKIE_PATH } from "@/lib/auth/oidc-cookie";
 import { isDashboardSnapshotEnabled } from "@/lib/dashboard/snapshot-flag";
 import { prefetchDashboardSnapshot } from "@/lib/queries/use-dashboard-snapshot";
 import { clearOfflineCachesForSessionEnd } from "@/lib/pwa/query-persister";
-import { settleWithin } from "@/lib/async/settle-within";
+import { leaveForSingleSignOn } from "@/lib/auth/leave-for-single-sign-on";
 import { sanitizeSameOriginPath } from "@/lib/url-safety";
 import { localizedSignInError } from "@/lib/api/localized-error";
 import { formatDate } from "@/lib/format";
@@ -51,9 +51,6 @@ function deletionPendingMessage(t: Translate, purgeAt: unknown): string {
     ? t("auth.deletionPending", { date: formatDate(purgeAt) })
     : t("auth.deletionPendingNoDate");
 }
-
-/** How long the single-sign-on start waits for the offline copies to go. */
-const SSO_CLEANUP_WAIT_MS = 1_500;
 
 /** The message for the `?error=` a sign-in redirect (the SSO callback) set. */
 function signInRedirectError(
@@ -187,15 +184,7 @@ export default function LoginPage() {
       params.set("client_proto", clientTransport.protocol);
       params.set("client_host", clientTransport.host);
     }
-    // The session starts on the way back; the last account's copies go
-    // first. Bounded: WebKit can leave an IndexedDB open hanging after the
-    // app returns from the background, and the button must still work.
-    await settleWithin(
-      clearOfflineCachesForSessionEnd(),
-      SSO_CLEANUP_WAIT_MS,
-      undefined,
-    );
-    loadDocument(`/api/auth/oidc/login?${params}`);
+    await leaveForSingleSignOn(`/api/auth/oidc/login?${params}`);
   }
 
   function getRedirectTarget(): string {
