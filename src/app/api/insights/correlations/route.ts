@@ -85,8 +85,8 @@ export const GET = apiHandler(async () => {
   // EVERY mount. Cache the built body in the analytics bucket (60 s fresh /
   // 1 h stale — the bucket defaults are exactly the contract this read wants).
   // Eviction truth comes free: every measurement / mood / medication /
-  // illness / custom-metric write sweeps the `${userId}|` prefix in this
-  // bucket, and a pattern dismiss goes through
+  // illness / nutrient / custom-metric write sweeps the `${userId}|` prefix
+  // in this bucket, and a pattern dismiss goes through
   // `invalidateUserCorrelationPatterns`, which sweeps it too. The
   // `syncAcceptedPatterns` calls are DB writes and live INSIDE the builder,
   // so a cache hit performs no write on the read path.

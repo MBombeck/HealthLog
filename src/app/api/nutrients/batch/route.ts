@@ -44,7 +44,7 @@ import {
 import { withIdempotency } from "@/lib/idempotency";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireModuleEnabled } from "@/lib/modules/gate";
-import { invalidateUserDashboardSnapshot } from "@/lib/cache/invalidate";
+import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { NUTRIENT_CATALOG } from "@/lib/nutrients/catalog";
 import { maxAcceptableNutrientDay } from "@/lib/nutrients/day-bounds";
 import {
@@ -347,12 +347,13 @@ async function postBatch(request: NextRequest): Promise<Response> {
 
   if (inserted + updated > 0) {
     // v1.30.3 — a landed row changes the dashboard's water/nutrient
-    // tile; without this the snapshot kept serving the pre-sync figure
-    // until the analytics fresh TTL lapsed (~3 min). Mirrors the manual
-    // water POST's own hard-evict (`nutrients/water/route.ts`) so an
-    // Apple-Health-synced total reflects on the very next dashboard read,
-    // same as a manually logged one.
-    invalidateUserDashboardSnapshot(user.id);
+    // tile and the correlation scan (water, caffeine and nutrient channels)
+    // behind the metric pages and the Coach read; without this they kept
+    // serving the pre-sync figure until the analytics fresh TTL lapsed.
+    // Mirrors the manual water POST's own hard-evict
+    // (`nutrients/water/route.ts`) so an Apple-Health-synced total
+    // reflects on the very next read, same as a manually logged one.
+    invalidateUserHealthContext(user.id);
   }
 
   annotate({

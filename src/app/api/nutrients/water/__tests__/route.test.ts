@@ -26,7 +26,7 @@ vi.mock("@/lib/modules/gate", () => ({
 }));
 
 vi.mock("@/lib/cache/invalidate", () => ({
-  invalidateUserDashboardSnapshot: vi.fn(),
+  invalidateUserHealthContext: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({ getSession: vi.fn() }));
@@ -59,7 +59,7 @@ import { apiError } from "@/lib/api-response";
 import { getSession } from "@/lib/auth/session";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireModuleEnabled } from "@/lib/modules/gate";
-import { invalidateUserDashboardSnapshot } from "@/lib/cache/invalidate";
+import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { NUTRIENT_CATALOG } from "@/lib/nutrients/catalog";
 import { auditLog } from "@/lib/auth/audit";
 
@@ -194,7 +194,7 @@ describe("POST /api/nutrients/water", () => {
       },
       update: { amount: { increment: 250 } },
     });
-    expect(invalidateUserDashboardSnapshot).toHaveBeenCalledWith("user-1");
+    expect(invalidateUserHealthContext).toHaveBeenCalledWith("user-1");
   });
 
   it("set mode overwrites the MANUAL row's amount instead of incrementing", async () => {
