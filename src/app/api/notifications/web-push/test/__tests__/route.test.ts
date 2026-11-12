@@ -1,176 +1,201 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+/**
+ * The Web Push test reaches every subscribed browser of the account, in the
+ * account's language, through the sender real reminders use.
+ *
+ * It used to send to the newest subscription only: with a phone and a laptop
+ * subscribed, Test pressed on the laptop buzzed the phone and the laptop
+ * looked broken. The text was English in every locale, and the push went out
+ * through the library's own transport instead of the pinned `safeFetch` dial.
+ *
+ * The real sender runs here; the push library's signing, the dial and the
+ * database are stubbed.
+ */
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { PushSubscription } from "@/generated/prisma/client";
 
-vi.mock("@/lib/api-handler", () => ({
-  apiHandler: <T extends (...args: unknown[]) => unknown>(fn: T) => fn,
-  requireAuth: vi.fn(async () => ({
-    user: { id: "u-1" },
-    session: { id: "s-1" },
-  })),
+const mocks = vi.hoisted(() => ({
+  requireAuth: vi.fn(),
+  findMany: vi.fn(),
+  deleteMany: vi.fn(),
+  getVapidConfig: vi.fn(),
+  safeFetch: vi.fn(),
+  generateRequestDetails: vi.fn(),
+  checkRateLimit: vi.fn(),
 }));
 
+vi.mock("@/lib/api-handler", () => ({
+  apiHandler: <T>(fn: T) => fn,
+  requireAuth: mocks.requireAuth,
+}));
 vi.mock("@/lib/db", () => ({
   prisma: {
     pushSubscription: {
-      findFirst: vi.fn(),
+      findMany: mocks.findMany,
+      deleteMany: mocks.deleteMany,
     },
   },
 }));
-
-vi.mock("@/lib/rate-limit", () => ({
-  checkRateLimit: vi.fn(async () => ({ allowed: true })),
-}));
-
+vi.mock("@/lib/rate-limit", () => ({ checkRateLimit: mocks.checkRateLimit }));
 vi.mock("@/lib/logging/context", () => ({
   annotate: vi.fn(),
+  getEvent: () => null,
 }));
-
-vi.mock("@/lib/crypto", () => ({
-  decrypt: vi.fn((x: string) => x),
-}));
-
+vi.mock("@/lib/crypto", () => ({ decrypt: (v: string) => v }));
 vi.mock("@/lib/notifications/vapid-config", () => ({
-  getVapidConfig: vi.fn(async () => ({
-    subject: "mailto:test@example.com",
-    publicKey:
-      "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM",
-    privateKey: "private-key-stub",
-  })),
+  getVapidConfig: mocks.getVapidConfig,
 }));
-
-const sendNotification = vi.fn();
+vi.mock("@/lib/notifications/senders/push-attempt-record", () => ({
+  recordPushAttemptForPayload: vi.fn(),
+}));
+vi.mock("@/lib/safe-fetch", () => ({ safeFetch: mocks.safeFetch }));
 vi.mock("web-push", () => ({
-  default: {
-    setVapidDetails: vi.fn(),
-    sendNotification: (...args: unknown[]) => sendNotification(...args),
-  },
   setVapidDetails: vi.fn(),
-  sendNotification: (...args: unknown[]) => sendNotification(...args),
+  generateRequestDetails: mocks.generateRequestDetails,
 }));
 
 import { POST } from "../route";
-import { prisma } from "@/lib/db";
-import { checkRateLimit } from "@/lib/rate-limit";
 
-interface ApiErrorEnvelope {
-  data: null;
-  error: string;
-}
-interface ApiSuccessEnvelope<T> {
-  data: T;
-  error: null;
+type Handler = (request: Request) => Promise<Response>;
+const post = () =>
+  (POST as unknown as Handler)(
+    new Request("http://localhost/api/notifications/web-push/test", {
+      method: "POST",
+    }),
+  );
+
+function subscription(id: string, endpoint: string): PushSubscription {
+  return {
+    id,
+    userId: "u-1",
+    endpoint,
+    p256dh: "p256",
+    auth: "auth",
+    userAgent: null,
+    createdAt: new Date(0),
+  };
 }
 
-const originalFetch = global.fetch;
+const PHONE = subscription(
+  "s-phone",
+  "https://fcm.googleapis.com/fcm/send/phone-secret",
+);
+const LAPTOP = subscription(
+  "s-laptop",
+  "https://updates.push.services.mozilla.com/wpush/v2/laptop-secret",
+);
+
+/** The JSON payload the sender encrypted for each subscription. */
+function payloadsSent(): Array<{ title: string; body: string; tag: string }> {
+  return mocks.generateRequestDetails.mock.calls.map(([, payload]) =>
+    JSON.parse(String(payload)),
+  );
+}
 
 beforeEach(() => {
-  vi.mocked(checkRateLimit).mockResolvedValue({
-    allowed: true,
-    remaining: 5,
-    resetAt: Date.now() + 60_000,
-  } as never);
-  vi.mocked(prisma.pushSubscription.findFirst).mockReset();
-  sendNotification.mockReset();
-  global.fetch = vi.fn() as never;
-});
-
-afterEach(() => {
-  global.fetch = originalFetch;
-});
-
-function emptyRequest(): Request {
-  return new Request("http://localhost/api/notifications/web-push/test", {
-    method: "POST",
-    headers: { "content-length": "0" },
+  vi.clearAllMocks();
+  mocks.requireAuth.mockResolvedValue({ user: { id: "u-1", locale: "de" } });
+  mocks.checkRateLimit.mockResolvedValue({ allowed: true });
+  mocks.getVapidConfig.mockResolvedValue({
+    subject: "mailto:ops@example.com",
+    publicKey: "pub",
+    privateKey: "priv",
   });
-}
+  mocks.findMany.mockResolvedValue([PHONE, LAPTOP]);
+  mocks.deleteMany.mockResolvedValue({ count: 0 });
+  mocks.generateRequestDetails.mockImplementation(
+    (sub: { endpoint: string }) => ({
+      endpoint: sub.endpoint,
+      method: "POST",
+      headers: { TTL: "60" },
+      body: null,
+    }),
+  );
+  mocks.safeFetch.mockResolvedValue(new Response(null, { status: 201 }));
+});
 
 describe("POST /api/notifications/web-push/test", () => {
-  it("happy path returns ok and sends to one subscription", async () => {
-    vi.mocked(prisma.pushSubscription.findFirst).mockResolvedValueOnce({
-      id: "p-1",
-      userId: "u-1",
-      endpoint: "https://fcm.googleapis.com/fcm/send/abc123token",
-      p256dh: "p256",
-      auth: "auth",
-    } as never);
-    sendNotification.mockResolvedValueOnce({ statusCode: 201 });
+  it("sends to every subscribed browser, in the account's language", async () => {
+    const res = await post();
 
-    const response = await POST(emptyRequest() as never);
-    expect(response.status).toBe(200);
-    const body = (await response.json()) as ApiSuccessEnvelope<{
-      ok: boolean;
-      sent: number;
-      latencyMs: number;
-      perEndpoint: Array<{ host: string; status: number | null }>;
-    }>;
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      data: { ok: boolean; latencyMs: number };
+    };
     expect(body.data.ok).toBe(true);
-    expect(body.data.sent).toBe(1);
-    expect(body.data.perEndpoint).toHaveLength(1);
-    expect(body.data.perEndpoint[0].host).toBe("fcm.googleapis.com");
-    // never the full endpoint URL (the routing token is the only thing
-    // protecting that subscription from anyone who learns it).
-    const text = JSON.stringify(body);
-    expect(text).not.toMatch(/abc123token/);
+    expect(typeof body.data.latencyMs).toBe("number");
 
-    // Spec: only the most-recent subscription gets the test push, not all.
-    expect(prisma.pushSubscription.findFirst).toHaveBeenCalledWith(
+    expect(mocks.findMany).toHaveBeenCalledWith({ where: { userId: "u-1" } });
+    expect(mocks.safeFetch.mock.calls.map(([url]) => url)).toEqual([
+      PHONE.endpoint,
+      LAPTOP.endpoint,
+    ]);
+    for (const call of mocks.safeFetch.mock.calls) {
+      expect(call[2]).toEqual({ requirePublicHost: true });
+    }
+    expect(payloadsSent()).toEqual([
       expect.objectContaining({
-        where: { userId: "u-1" },
-        orderBy: { createdAt: "desc" },
+        title: "Test-Benachrichtigung von HealthLog",
+        body: "Wenn du das siehst, kommen Push-Benachrichtigungen auf diesem Gerät an.",
+        tag: "self-test",
       }),
-    );
-    expect(sendNotification).toHaveBeenCalledTimes(1);
+      expect.objectContaining({ tag: "self-test" }),
+    ]);
   });
 
-  it("rate-limit denial returns 429 with no upstream call", async () => {
-    vi.mocked(checkRateLimit).mockResolvedValueOnce({
-      allowed: false,
-      remaining: 0,
-      resetAt: Date.now() + 60_000,
-    } as never);
-    const response = await POST(emptyRequest() as never);
-    expect(response.status).toBe(429);
-    expect(sendNotification).not.toHaveBeenCalled();
+  it("answers 422 not_configured when no browser is subscribed", async () => {
+    mocks.findMany.mockResolvedValue([]);
+
+    const res = await post();
+
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { meta?: { errorCode?: string } };
+    expect(body.meta?.errorCode).toBe("not_configured");
+    expect(mocks.safeFetch).not.toHaveBeenCalled();
   });
 
-  it("returns 422 when no subscriptions registered", async () => {
-    vi.mocked(prisma.pushSubscription.findFirst).mockResolvedValueOnce(null);
-    const response = await POST(emptyRequest() as never);
-    expect(response.status).toBe(422);
-    const body = (await response.json()) as ApiErrorEnvelope;
-    expect(body.error).toMatch(/no push subscriptions/i);
-    expect(sendNotification).not.toHaveBeenCalled();
+  it("answers 422 vapid_not_configured without VAPID keys", async () => {
+    mocks.getVapidConfig.mockResolvedValue(null);
+
+    const res = await post();
+
+    expect(res.status).toBe(422);
+    const body = (await res.json()) as { meta?: { errorCode?: string } };
+    expect(body.meta?.errorCode).toBe("vapid_not_configured");
+    expect(mocks.safeFetch).not.toHaveBeenCalled();
   });
 
-  it("does not leak Bearer/sk- or full endpoint URL when upstream rejects", async () => {
-    vi.mocked(prisma.pushSubscription.findFirst).mockResolvedValueOnce({
-      id: "p-1",
-      userId: "u-1",
-      endpoint: "https://fcm.googleapis.com/fcm/send/abc123token",
-      p256dh: "p256",
-      auth: "auth",
-    } as never);
-    sendNotification.mockRejectedValueOnce(
-      Object.assign(
-        new Error(
-          "401 Unauthorized: Authorization: Bearer sk-secret from https://fcm.googleapis.com/fcm/send/abc123token",
-        ),
-        { statusCode: 401 },
-      ),
-    );
-    const response = await POST(emptyRequest() as never);
-    const text = await response.text();
-    expect(response.status).toBe(200);
-    expect(text).not.toMatch(/sk-/);
-    expect(text).not.toMatch(/abc123token/);
-    const parsed = JSON.parse(text) as ApiSuccessEnvelope<{
-      ok: boolean;
-      sent: number;
-      perEndpoint: Array<{ host: string; status: number | null }>;
-    }>;
-    expect(parsed.data.ok).toBe(false);
-    expect(parsed.data.sent).toBe(0);
-    expect(parsed.data.perEndpoint[0].host).toBe("fcm.googleapis.com");
-    expect(parsed.data.perEndpoint[0].status).toBe(401);
+  it("refuses over the rate limit without sending", async () => {
+    mocks.checkRateLimit.mockResolvedValue({ allowed: false });
+
+    const res = await post();
+
+    expect(res.status).toBe(429);
+    expect(mocks.safeFetch).not.toHaveBeenCalled();
+  });
+
+  it("reports a rejected push without echoing an endpoint", async () => {
+    mocks.safeFetch.mockResolvedValue(new Response(null, { status: 401 }));
+
+    const res = await post();
+    const text = await res.text();
+
+    expect(res.status).toBe(200);
+    expect(JSON.parse(text).data.ok).toBe(false);
+    // What the Test button reads to say why.
+    expect(JSON.parse(text).meta.errorCode).toBe("upstream_rejected");
+    expect(text).not.toMatch(/phone-secret|laptop-secret/);
+  });
+
+  it("tells a push service that never answered apart from one that refused", async () => {
+    mocks.safeFetch.mockRejectedValue(new TypeError("fetch failed"));
+
+    const res = await post();
+    const body = (await res.json()) as {
+      data: { ok: boolean };
+      meta?: { errorCode?: string };
+    };
+
+    expect(body.data.ok).toBe(false);
+    expect(body.meta?.errorCode).toBe("connection_failed");
   });
 });

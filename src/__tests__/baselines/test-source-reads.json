@@ -1,7 +1,7 @@
 {
   "$comment": "tests that read a source file by path, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
-  "count": 332,
-  "total": 332,
+  "count": 331,
+  "total": 331,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 1,
     "__tests__/admin-data-wipe-completeness.test.ts": 1,
@@ -329,7 +329,6 @@
     "lib/modules/__tests__/surface-module-registry.test.ts": 1,
     "lib/mood/__tests__/context-vocabulary.test.ts": 1,
     "lib/notifications/__tests__/event-defaults.test.ts": 1,
-    "lib/pwa/__tests__/sw-cache-policy.test.ts": 1,
     "lib/record-activity/__tests__/verb-map-covers-routes.test.ts": 1,
     "lib/sharing/__tests__/record-session-fence.test.ts": 1,
     "lib/sources/__tests__/source-priority-whoop-applehealth.test.ts": 1,

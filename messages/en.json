@@ -151,7 +151,12 @@
       },
       "mfa": {
         "already_active": "An authenticator app is already set up for this account. Disable it first to set up a new one."
-      }
+      },
+      "register": {
+        "taken": "That username or email address is already in use.",
+        "invite_invalid": "This invitation is no longer valid. Ask the person who invited you for a new link."
+      },
+      "already_authenticated": "You are already signed in. Sign out first, then try again."
     },
     "biomarkers": {
       "unit": {
@@ -234,7 +239,17 @@
       "budget": {
         "exceeded": "Today's AI budget is used up, so nothing was sent. It renews tomorrow."
       }
-    }
+    },
+    "passkey": {
+      "unknown": "This passkey is not registered here. Sign in another way.",
+      "challenge": {
+        "expired": "The sign-in took too long or was already used. Try again."
+      },
+      "response": {
+        "invalid": "The passkey's answer could not be read. Try again."
+      }
+    },
+    "oidc_only": "This server only allows single sign-on. Continue with your identity provider instead."
   },
   "doctorReport": {
     "title": "Health Report",
@@ -506,9 +521,9 @@
     "backToDashboard": "Back to dashboard"
   },
   "offlineBanner": {
-    "message": "No connection: changes can't be saved until you're back online.",
+    "message": "No connection: changes can't be saved.",
     "saveFailed": "Couldn't save, you're offline. Please try again once you're back online.",
-    "showingCached": "Showing your last synced data."
+    "stayOnPage": "This page stays readable; other pages open once you're back online."
   },
   "demoBanner": {
     "message": "Demo mode: changes are not saved."
@@ -585,6 +600,7 @@
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?",
     "loginFailed": "Login failed",
+    "signOutFailed": "Could not sign out. You are still signed in.",
     "registerFailed": "Registration failed",
     "invitedBanner": "You have been invited. Create your account even while registration is otherwise closed.",
     "alreadySignedIn": {
@@ -668,7 +684,6 @@
       "submit": "Take over",
       "submitting": "Taking over…",
       "errorTaken": "That username or email address is already in use.",
-      "errorRateLimit": "Too many attempts. Wait a few minutes and try again.",
       "errorFailed": "That did not work. Try again in a moment.",
       "errorOffline": "That did not reach the server. Check your connection and try again.",
       "ssoContinue": "Continue with {provider}",
@@ -690,7 +705,8 @@
       "toLogin": "Go to sign in"
     },
     "deletionPending": "This account is scheduled for deletion on {date} and is locked until then. An admin of this server can undo the deletion before that date.",
-    "deletionPendingNoDate": "This account is scheduled for deletion and is locked. An admin of this server can undo the deletion until it completes."
+    "deletionPendingNoDate": "This account is scheduled for deletion and is locked. An admin of this server can undo the deletion until it completes.",
+    "signInRateLimited": "Too many attempts. Wait a few minutes and try again."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -6405,6 +6421,7 @@
     "webPush": "Browser Push",
     "webPushDescription": "Receive notifications directly in your browser, even when HealthLog is not open.",
     "webPushNotSupported": "Your browser does not support push notifications.",
+    "webPushInstallFirst": "On iPhone and iPad, push notifications only work in the installed app. In Safari, tap Share, then Add to Home Screen, open HealthLog from the Home Screen and tap Enable push here.",
     "webPushDenied": "Push notifications are blocked. Allow them in your browser settings.",
     "webPushNotConfigured": "Web Push is not configured on the server.",
     "webPushSubscribe": "Enable push",
@@ -9284,7 +9301,9 @@
       "accountErasureFailedBody": "The deletion window of {username} has ended, but erasing the account failed. It stays locked and is tried again every hour, after the other accounts due. The failing jobs card in Administration has the error."
     },
     "user": {
-      "telegramTestBody": "HealthLog: connection successful. Telegram notifications are active."
+      "telegramTestBody": "HealthLog: connection successful. Telegram notifications are active.",
+      "webPushTestBody": "If you can see this, push notifications reach this device.",
+      "webPushTestTitle": "HealthLog test notification"
     },
     "moodReminder": {
       "title": "Daily mood reminder",

@@ -151,7 +151,12 @@
       },
       "mfa": {
         "already_active": "Esta conta já tem um aplicativo autenticador configurado. Desative-o primeiro para configurar um novo."
-      }
+      },
+      "register": {
+        "taken": "Esse nome de usuário ou endereço de e-mail já está em uso.",
+        "invite_invalid": "Este convite não é mais válido. Peça um novo link à pessoa que convidou você."
+      },
+      "already_authenticated": "Você já está conectado. Saia primeiro e tente novamente."
     },
     "biomarkers": {
       "unit": {
@@ -234,7 +239,17 @@
       "budget": {
         "exceeded": "O orçamento de IA de hoje acabou, então nada foi enviado. Ele é renovado amanhã."
       }
-    }
+    },
+    "passkey": {
+      "unknown": "Esta chave de acesso não está registrada aqui. Entre de outra forma.",
+      "challenge": {
+        "expired": "O login demorou demais ou já foi usado. Tente novamente."
+      },
+      "response": {
+        "invalid": "Não foi possível ler a resposta da chave de acesso. Tente novamente."
+      }
+    },
+    "oidc_only": "Este servidor permite apenas login único. Continue com seu provedor de identidade."
   },
   "doctorReport": {
     "title": "Relatório de Saúde",
@@ -506,9 +521,9 @@
     "backToDashboard": "Voltar ao painel"
   },
   "offlineBanner": {
-    "message": "Sem conexão: as alterações não podem ser salvas até você voltar a ficar online.",
+    "message": "Sem conexão: as alterações não podem ser salvas.",
     "saveFailed": "Não foi possível salvar, você está offline. Tente novamente quando voltar a ficar online.",
-    "showingCached": "Mostrando seus últimos dados sincronizados."
+    "stayOnPage": "Esta página continua legível; as outras abrem quando você voltar a ficar online."
   },
   "demoBanner": {
     "message": "Modo demonstração: as alterações não são salvas."
@@ -585,6 +600,7 @@
     "noAccount": "Não tem uma conta?",
     "hasAccount": "Já tem uma conta?",
     "loginFailed": "Falha no login",
+    "signOutFailed": "Não foi possível sair. Sua sessão continua ativa.",
     "registerFailed": "Falha no cadastro",
     "invitedBanner": "Você foi convidado. Crie sua conta mesmo que o cadastro esteja fechado.",
     "alreadySignedIn": {
@@ -668,7 +684,6 @@
       "submit": "Assumir",
       "submitting": "Assumindo…",
       "errorTaken": "Esse nome de usuário ou e-mail já está em uso.",
-      "errorRateLimit": "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
       "errorFailed": "Isso não funcionou. Tente novamente em instantes.",
       "errorOffline": "Não foi possível alcançar o servidor. Verifique sua conexão e tente novamente.",
       "ssoContinue": "Continuar com {provider}",
@@ -690,7 +705,8 @@
       "toLogin": "Ir para o login"
     },
     "deletionPending": "Esta conta será excluída em {date} e está bloqueada até lá. Um administrador deste servidor pode desfazer a exclusão antes dessa data.",
-    "deletionPendingNoDate": "Esta conta está programada para exclusão e está bloqueada. Um administrador deste servidor pode desfazer a exclusão até que ela seja concluída."
+    "deletionPendingNoDate": "Esta conta está programada para exclusão e está bloqueada. Um administrador deste servidor pode desfazer a exclusão até que ela seja concluída.",
+    "signInRateLimited": "Muitas tentativas. Aguarde alguns minutos e tente novamente."
   },
   "dashboard": {
     "title": "Painel",
@@ -6405,6 +6421,7 @@
     "webPush": "Push do navegador",
     "webPushDescription": "Receba notificações diretamente no navegador, mesmo quando o HealthLog não estiver aberto.",
     "webPushNotSupported": "Seu navegador não oferece suporte a notificações push.",
+    "webPushInstallFirst": "No iPhone e no iPad, as notificações push só funcionam no app instalado. No Safari, toque em Compartilhar e depois em “Adicionar à Tela de Início”, abra o HealthLog pela Tela de Início e toque aqui em “Ativar push”.",
     "webPushDenied": "As notificações push estão bloqueadas. Permita-as nas configurações do navegador.",
     "webPushNotConfigured": "O Web Push não está configurado no servidor.",
     "webPushSubscribe": "Ativar push",
@@ -9284,7 +9301,9 @@
       "accountErasureFailedBody": "O prazo de exclusão de {username} terminou, mas apagar a conta falhou. Ela continua bloqueada e uma nova tentativa é feita a cada hora, depois das outras contas pendentes. O erro aparece no cartão de tarefas com falha em Administração."
     },
     "user": {
-      "telegramTestBody": "HealthLog: conexão bem-sucedida. As notificações do Telegram estão ativas."
+      "telegramTestBody": "HealthLog: conexão bem-sucedida. As notificações do Telegram estão ativas.",
+      "webPushTestBody": "Se você está vendo isto, as notificações push chegam a este dispositivo.",
+      "webPushTestTitle": "Notificação de teste do HealthLog"
     },
     "moodReminder": {
       "title": "Lembrete diário de humor",

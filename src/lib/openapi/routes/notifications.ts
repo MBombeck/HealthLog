@@ -105,7 +105,7 @@ const channelDeliveryStatus = z
     state: z
       .enum(["active", "auto_disabled", "manually_disabled", "sending_paused"])
       .describe(
-        "Server-derived. `auto_disabled` — the dispatcher turned it off after repeated hard rejects (`disabledReason` says why). `manually_disabled` — the user turned it off. `sending_paused` — still enabled but inside a retry cooldown until `nextRetryAt`. `active` — enabled and sending.",
+        "Server-derived. `auto_disabled` — the dispatcher turned it off after repeated hard rejects (`disabledReason` says why). `manually_disabled` — the user turned it off. `sending_paused` — still enabled but inside a retry cooldown until `nextRetryAt`, after a transient failure or after a send that had nobody to go to (no browser subscribed, no iPhone paired, a transport the operator has not set up; `lastFailureReason` names it, `consecutiveFailures` is not raised). `active` — enabled and sending.",
       ),
     disabledReason: z
       .string()

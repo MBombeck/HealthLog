@@ -109,17 +109,12 @@ export function attachRecordContextEcho(
   headers.set(RECORD_SCOPE_HEADER, recordScopeHeaderValue(context.scope));
   // And declare that the answer DEPENDS on those two request headers.
   //
-  // Not a precaution against some future reverse proxy — it is load-bearing on
-  // a path that exists today. When a switch is driven EXTERNALLY (another tab,
-  // an account deletion, an operator), this browser never ran
-  // `clearOfflineCachesForRecordSwitch`, so the service worker's
-  // `healthlog-data-*` entries from the previous record are still on disk.
-  // `Vary` is the only thing that stops `cache.match()` handing one of them to
-  // the next request for the same URL under a different context — one person's
-  // health record served to another, out of the disk layer, with no request
-  // reaching the fence at all. Proved in
-  // `e2e/v137-record-session-fence-offline.spec.ts`, which fails the moment
-  // this block is removed.
+  // The service worker no longer stores API answers, so no disk layer of
+  // this app can hand one record's answer to a request made under another
+  // context (`e2e/v137-record-session-fence-offline.spec.ts` pins that no
+  // `/api/` entry reaches the disk). `Vary` keeps the same promise for any
+  // HTTP cache between the browser and the server, which this app does not
+  // control.
   //
   // Appended rather than assigned: a route that already varies on something
   // (`Accept-Encoding`, a locale header) must keep it. Case-insensitive

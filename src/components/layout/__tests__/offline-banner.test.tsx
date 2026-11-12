@@ -1,5 +1,5 @@
 /**
- * v1.4.43 — `<OfflineBanner>` SSR contract.
+ * `<OfflineBanner>` SSR contract and copy.
  *
  * The banner reads `navigator.onLine` + subscribes to `online`/`offline`
  * window events inside a `useEffect`. SSR markup is therefore always
@@ -13,7 +13,6 @@ import { join } from "node:path";
 
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { I18nProvider } from "@/lib/i18n/context";
 import { OfflineBanner } from "../offline-banner";
@@ -22,20 +21,16 @@ const ROOT = join(__dirname, "../../../..");
 const SHELL_PATH = join(ROOT, "src/components/layout/auth-shell.tsx");
 const BANNER_PATH = join(ROOT, "src/components/layout/offline-banner.tsx");
 
-function loadMessages(locale: string): { offlineBanner: { message: string } } {
+function loadMessages(locale: string): {
+  offlineBanner: { message: string; stayOnPage: string };
+} {
   const path = join(ROOT, "messages", `${locale}.json`);
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
 function render(node: React.ReactNode, locale: "en" | "de" = "en") {
-  // v1.18.6 — the banner now reads the cached dashboard snapshot to decide
-  // whether to append the "showing last synced data" hint, so it needs a
-  // QueryClient in context.
-  const queryClient = new QueryClient();
   return renderToStaticMarkup(
-    <QueryClientProvider client={queryClient}>
-      <I18nProvider initialLocale={locale}>{node}</I18nProvider>
-    </QueryClientProvider>,
+    <I18nProvider initialLocale={locale}>{node}</I18nProvider>,
   );
 }
 
@@ -51,18 +46,29 @@ describe("<OfflineBanner>", () => {
   it("ships the EN copy for `offlineBanner.message`", () => {
     // The copy must not over-promise auto-save: offline mutations now
     // fail fast (networkMode "always") rather than queue, so the banner states
-    // the honest thing.
+    // the honest thing. "Once you're back online" is said by the sentence
+    // after it, once.
     const en = loadMessages("en");
     expect(en.offlineBanner.message).toBe(
-      "No connection: changes can't be saved until you're back online.",
+      "No connection: changes can't be saved.",
     );
   });
 
   it("ships the DE copy for `offlineBanner.message`", () => {
     const de = loadMessages("de");
     expect(de.offlineBanner.message).toBe(
-      "Keine Verbindung: Änderungen können erst gespeichert werden, wenn du wieder online bist.",
+      "Keine Verbindung: Änderungen können nicht gespeichert werden.",
     );
+  });
+
+  it("says what still works: the open page, not the rest of the app", () => {
+    // The banner used to promise "your last synced data" although one tap
+    // on another page ended on the worker's offline page.
+    const en = loadMessages("en");
+    expect(en.offlineBanner.stayOnPage).toBe(
+      "This page stays readable; other pages open once you're back online.",
+    );
+    expect(en.offlineBanner).not.toHaveProperty("showingCached");
   });
 
   it("ships the message key in every supported locale", () => {
@@ -76,9 +82,11 @@ describe("<OfflineBanner>", () => {
       "ko",
       "nl",
       "pt-BR",
+      "ru",
     ] as const) {
       const m = loadMessages(locale);
       expect(m.offlineBanner.message.length, locale).toBeGreaterThan(0);
+      expect(m.offlineBanner.stayOnPage.length, locale).toBeGreaterThan(0);
     }
   });
 
@@ -89,12 +97,10 @@ describe("<OfflineBanner>", () => {
   });
 });
 
-// v1.4.43 — also pin the client-side branch: when
-// `isOnline === false` the banner paints with the i18n message,
-// the WifiOff icon, and the `role="status"` aria-live region. We
-// can't easily fire window events from a node-environment vitest
-// suite, but we can read the component source and assert the
-// branch carries the expected affordances.
+// The client-side branch: when `isOnline === false` the banner paints with
+// the i18n message, the WifiOff icon, and the `role="status"` aria-live
+// region. Window events cannot fire in this node-environment suite, so the
+// branch is read from the source.
 describe("<OfflineBanner> rendered branch (source-level)", () => {
   const source = readFileSync(BANNER_PATH, "utf8");
 

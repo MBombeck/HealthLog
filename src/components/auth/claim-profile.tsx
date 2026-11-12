@@ -13,16 +13,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/ui/logo";
 import { PasswordStrength } from "@/components/ui/password-strength";
-import { clearCachesForSessionEnd, useAuth } from "@/hooks/use-auth";
-import { ApiError, apiFetchRaw } from "@/lib/api/api-fetch";
+import {
+  clearCachesForSessionEnd,
+  signOutRequest,
+  useAuth,
+} from "@/hooks/use-auth";
+import { ApiError } from "@/lib/api/api-fetch";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { loadDocument } from "@/lib/navigation/load-document";
+import { clearOfflineCachesBeforeLeaving } from "@/lib/pwa/clear-before-leaving";
 import {
   useClaimProfile,
   useClaimProfileSso,
   useProfileClaimPreview,
 } from "@/lib/queries/use-profile-claim";
-import { queryKeys } from "@/lib/query-keys";
 
 /**
  * v1.42 (#959) — the person a managed profile describes takes it over as
@@ -78,7 +83,7 @@ export function ClaimProfile({
   async function signOut() {
     setSigningOut(true);
     try {
-      await apiFetchRaw("/api/auth/logout", { method: "POST" });
+      await signOutRequest();
       clearCachesForSessionEnd(queryClient);
       // Back to this page with the link intact: the token only rides the URL.
       router.replace(
@@ -87,6 +92,8 @@ export function ClaimProfile({
           : "/auth/claim",
       );
       router.refresh();
+    } catch (failure) {
+      showErrorToast(t("auth.signOutFailed"), { cause: failure });
     } finally {
       setSigningOut(false);
     }
@@ -97,14 +104,15 @@ export function ClaimProfile({
     claimSso.mutate(
       { token, username },
       {
-        onSuccess: ({ redirectTo }) => {
-          // Only the path and query of the server's answer, so a response
-          // could never send the browser off this origin.
+        onSuccess: async ({ redirectTo }) => {
+          // Path and query only, so an answer can never leave this origin.
           const next = new URL(redirectTo, window.location.origin);
           if (clientTransport) {
             next.searchParams.set("client_proto", clientTransport.protocol);
             next.searchParams.set("client_host", clientTransport.host);
           }
+          // The session starts on the way back; the last account's copies go first.
+          await clearOfflineCachesBeforeLeaving();
           loadDocument(`${next.pathname}${next.search}`);
         },
       },
@@ -117,12 +125,9 @@ export function ClaimProfile({
     claim.mutate(
       { token, username, email, password },
       {
-        onSuccess: async () => {
-          queryClient.removeQueries({
-            queryKey: queryKeys.profileClaimPreview(),
-          });
-          await queryClient.invalidateQueries({ queryKey: queryKeys.auth() });
-          router.push("/onboarding/handover");
+        onSuccess: () => {
+          queryClient.clear(); // as after any sign-in
+          router.replace("/onboarding/handover");
         },
       },
     );
@@ -224,7 +229,7 @@ export function ClaimProfile({
           title={t("auth.claim.title")}
           description={t(
             previewStatus === 429
-              ? "auth.claim.errorRateLimit"
+              ? "auth.signInRateLimited"
               : "auth.claim.errorFailed",
           )}
         />
@@ -543,6 +548,6 @@ export function claimErrorKey(err: unknown): string {
       : "auth.claim.errorTaken";
   }
   if (err.status === 403) return "auth.claim.oidcOnly";
-  if (err.status === 429) return "auth.claim.errorRateLimit";
+  if (err.status === 429) return "auth.signInRateLimited";
   return "auth.claim.errorFailed";
 }

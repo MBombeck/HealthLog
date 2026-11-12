@@ -245,7 +245,6 @@ describe("medication intake tracking — intake-row readers honour the switch", 
       "lib/jobs/coach-nudge.ts",
       "lib/insights/general-status.ts",
       "lib/analytics/correlations-fast-path.ts",
-      "lib/medications/outstanding-doses.ts",
     ]) {
       expect(intakeReaders).toContain(known);
     }

@@ -207,6 +207,66 @@ describe("dispatchNotification — soft reject (web-push 429)", () => {
   });
 });
 
+describe("dispatchNotification — nobody to send to", () => {
+  // Turning push off on the last browser deletes its subscription and leaves
+  // the channel on. Counted as failures, the next five reminders switched the
+  // channel off for good, and subscribing again later did not bring it back.
+  // Not counted either, the jobs that retry until delivered asked again every
+  // minute, and a watchdog read the attempt as an announced alert.
+  it.each([
+    ["WEB_PUSH", "web_push_no_subscriptions"],
+    ["WEB_PUSH", "web_push_vapid_not_configured"],
+    ["APNS", "apns_no_devices"],
+    ["APNS", "apns_not_configured"],
+  ] as const)(
+    "%s answering %s rests the channel without counting a failure or an attempt",
+    async (type, reason) => {
+      vi.mocked(prisma.notificationChannel.findMany).mockResolvedValueOnce([
+        {
+          ...makeChannel({ type, consecutiveFailures: 4 }),
+          createdAt: new Date(0),
+          updatedAt: new Date(0),
+          disabledReason: null,
+          lastSuccessAt: null,
+          lastFailureAt: null,
+          lastFailureReason: null,
+        },
+      ]);
+      const sender = type === "APNS" ? sendViaApnsMock : sendViaWebPushMock;
+      sender.mockResolvedValueOnce({ ok: false, hardReject: false, reason });
+
+      const outcome = await dispatchNotification({
+        eventType: "MEDICATION_REMINDER",
+        userId: "u-1",
+        title: "t",
+        message: "m",
+      });
+
+      expect(sender).toHaveBeenCalledTimes(1);
+      expect(outcome).toEqual({
+        dispatched: false,
+        channelsAttempted: 0,
+        channelsSucceeded: 0,
+      });
+      expect(prisma.notificationChannel.update).toHaveBeenCalledTimes(1);
+      const { data } = vi.mocked(prisma.notificationChannel.update).mock
+        .calls[0][0] as { data: Record<string, unknown> };
+      // The reason for the status screen and an hour's rest; the counter and
+      // the switch stay as they were.
+      expect(data).toEqual({
+        lastFailureAt: expect.any(Date),
+        lastFailureReason: reason,
+        nextRetryAt: expect.any(Date),
+      });
+      expect(
+        (data.nextRetryAt as Date).getTime() -
+          (data.lastFailureAt as Date).getTime(),
+      ).toBe(60 * 60 * 1000);
+      expect(auditLog).not.toHaveBeenCalled();
+    },
+  );
+});
+
 describe("dispatchNotification — bounded APNs fallback", () => {
   it("continues to the next channel after an APNs timeout", async () => {
     vi.mocked(prisma.notificationChannel.findMany).mockResolvedValueOnce([

@@ -277,18 +277,18 @@ function QueryVisibilityRefreshBridge() {
   return null;
 }
 
-// ── Offline query persistence ────────────────────────
+// ── Dashboard snapshot persistence ───────────────────
 //
-// v1.18.6 — hydrate the last-synced query cache from IndexedDB before the
-// first authenticated paint, then debounce-persist successful reads back.
-// Combined with the service worker's allowlisted stale-while-revalidate API
-// branch, an installed PWA opened offline renders last-known data instead of
-// empty skeletons. Build-version + age gated; cleared on logout.
+// Fill the dashboard reads from the IndexedDB snapshot as a warm start, then
+// debounce-persist them back. The restore waits for `/api/auth/me`: the
+// snapshot belongs to one account, and only a known account can be compared
+// with its owner. Build-version + age gated; cleared at every session end.
 function QueryPersistenceBridge() {
   const queryClient = useQueryClient();
   const transition = useRecordSessionTransition();
+  const userId = useAuth().user?.id ?? null;
   useEffect(() => {
-    if (transition.phase !== "ready") return;
+    if (transition.phase !== "ready" || userId === null) return;
     let stop: (() => void) | undefined;
     let cancelled = false;
     void restorePersistedQueryCache(
@@ -304,7 +304,7 @@ function QueryPersistenceBridge() {
       cancelled = true;
       stop?.();
     };
-  }, [queryClient, transition.phase]);
+  }, [queryClient, transition.phase, userId]);
   return null;
 }
 

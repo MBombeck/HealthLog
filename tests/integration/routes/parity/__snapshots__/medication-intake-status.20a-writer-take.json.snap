@@ -54,13 +54,6 @@
       ]
     },
     {
-      "effect": "countOutstandingDosesToday",
-      "args": [
-        "<id:2>",
-        "UTC"
-      ]
-    },
-    {
       "effect": "notifyDelegatedIntake",
       "args": [
         {
@@ -68,17 +61,6 @@
           "actorId": "<id:6>",
           "medicationId": "<id:3>",
           "status": "taken"
-        }
-      ]
-    },
-    {
-      "effect": "dispatchMedicationIntakeWebClear",
-      "args": [
-        {
-          "userId": "<id:2>",
-          "medicationId": "<id:3>",
-          "scheduledFor": "2026-10-15T08:00:00.000Z",
-          "badgeCount": 2
         }
       ]
     }

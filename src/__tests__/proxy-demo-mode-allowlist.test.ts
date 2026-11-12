@@ -161,6 +161,25 @@ describe("proxy.ts DEMO_MODE mutation allowlist", () => {
     expect(proxy(makeRequest("/api/search", "DELETE")).status).toBe(403);
   });
 
+  it("lets a visitor sign out, report page timings and pick a language", () => {
+    // Each touches only this visitor: their own session, a log line, their
+    // own language cookie (the locale route leaves the shared account's row
+    // alone under DEMO_MODE). Refused, sign-out stayed signed in and every
+    // page load sent the refused locale write and the timings again.
+    for (const [path, method] of [
+      ["/api/auth/logout", "POST"],
+      ["/api/internal/web-vitals", "POST"],
+      ["/api/auth/me/locale", "PUT"],
+    ] as const) {
+      expect(
+        proxy(makeRequest(path, method)).status,
+        `${method} ${path} is blocked in the demo`,
+      ).not.toBe(403);
+    }
+    // The rest of the account's settings stay closed.
+    expect(proxy(makeRequest("/api/auth/me/timezone", "PUT")).status).toBe(403);
+  });
+
   it("still blocks a health-data mutation (POST /api/measurements)", () => {
     const res = proxy(makeRequest("/api/measurements", "POST"));
     expect(res.status).toBe(403);

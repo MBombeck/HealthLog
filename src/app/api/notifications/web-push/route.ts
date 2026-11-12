@@ -5,6 +5,7 @@ import { isChannelGloballyEnabled } from "@/lib/app-settings";
 import { annotate } from "@/lib/logging/context";
 import { apiSuccess, apiError, returnAllZodIssues } from "@/lib/api-response";
 import { encrypt } from "@/lib/crypto";
+import { reEnableChannel } from "@/lib/notifications/channel-state";
 import { webPushSubscriptionSchema } from "@/lib/validations/notifications";
 import { z } from "zod/v4";
 
@@ -97,7 +98,18 @@ export const POST = apiHandler(async (request: NextRequest) => {
     },
   });
 
-  // Ensure a WEB_PUSH notification channel exists for this user
+  // An endpoint is one browser, and the account that subscribed it last owns
+  // it. A row another account left (a session that ended without a sign-out)
+  // would keep showing that account's reminders to whoever uses it now.
+  await prisma.pushSubscription.deleteMany({
+    where: { endpoint, userId: { not: user.id } },
+  });
+
+  // Ensure an enabled WEB_PUSH channel that is not waiting out a cooldown. A
+  // channel switched off because the last browser's endpoint died (410) or
+  // failed five times stays off until something turns it back on, and a new
+  // subscription is exactly that. Failures counted before it would switch it
+  // off again after a single later one.
   const existingChannel = await prisma.notificationChannel.findFirst({
     where: { userId: user.id, type: "WEB_PUSH" },
   });
@@ -110,6 +122,16 @@ export const POST = apiHandler(async (request: NextRequest) => {
         enabled: true,
         config: encrypt(JSON.stringify({})),
       },
+    });
+  } else if (
+    !existingChannel.enabled ||
+    existingChannel.consecutiveFailures > 0 ||
+    existingChannel.nextRetryAt !== null
+  ) {
+    await reEnableChannel({
+      id: existingChannel.id,
+      userId: existingChannel.userId,
+      type: "WEB_PUSH",
     });
   }
 

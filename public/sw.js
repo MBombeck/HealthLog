@@ -1,159 +1,52 @@
 /**
- * Service Worker for HealthLog PWA.
- * Handles Web Push notifications and offline caching.
+ * HealthLog service worker: Web Push, a page cache for public pages, and a
+ * static cache for catalogs, icons, fonts and images. API answers and app
+ * chunks are never stored here.
  */
 
-// v1.4.38.4 — `CACHE_VERSION` now tracks the app release tag.
-// Bumped on every release so the `activate` step evicts every
-// pre-release cache entry. Without this the precached root HTML and
-// the cached `/_next/static/*` chunks survived across deploys,
-// stale-shell-served the old chunk graph, and the running app then
-// hit `ChunkLoadError` on the first lazy navigation. Pair with the
-// `<VersionPoller>` client component (mounted in `<Providers>`) that
-// polls `/api/version`, compares against `NEXT_PUBLIC_APP_VERSION`,
-// and triggers an SW-unregister + cache-wipe + hard reload when the
-// server moves ahead of the running shell.
-//
-// v1.4.43 — read the active version from `self.__APP_VERSION__`,
-// which the build step writes to `/public/sw-version.js` (loaded
-// synchronously below via `importScripts`). Pre-fix the literal was
-// hand-bumped per release and quietly drifted four releases stale, so
-// every deploy between v1.4.38.4 → v1.4.42 served the previous shell's
-// cache instead of evicting it on activate. The fallback literal stays
-// in case the import is missing (legacy SW versions, dev mode without
-// the build step), but the source of truth is now the generated file.
+// Cache names carry the release, so `activate` drops every older cache. The
+// build writes the release to `/sw-version.js`; the literal below is the
+// fallback when that file is missing (dev without `prebuild`, a 404), and
+// `scripts/generate-sw-version.mjs` rewrites it at the marker on every
+// build. Do not edit it by hand.
 try {
   importScripts("/sw-version.js");
 } catch {
-  // Fall through to the literal fallback below.
+  // Fall through to the fallback literal.
 }
-// The `|| "..."` fallback literal is the value used only when the
-// `importScripts('/sw-version.js')` above is absent (dev with no `prebuild`
-// step, or a 404 on the generated file). `scripts/generate-sw-version.mjs`
-// rewrites it to the current `package.json` version on every prebuild — the
-// marker below is the rewrite anchor — so in any shipped image the literal
-// matches the active release and can never drift stale the way it did across
-// v1.4.38.4 → v1.4.42. Do not hand-edit; bump `package.json` and rebuild.
 const CACHE_VERSION =
   (typeof self !== "undefined" && self.__APP_VERSION__) ||
-  /* @sw-version-fallback */ "v1.47.3";
+  /* @sw-version-fallback */ "v1.47.4";
 const STATIC_CACHE = `healthlog-static-${CACHE_VERSION}`;
 const PAGE_CACHE = `healthlog-pages-${CACHE_VERSION}`;
-// v1.18.6 — read-only data cache for a curated allowlist of safe GET `/api/*`
-// reads. Network-first: online callers always get the fresh server response
-// (and the cache is refreshed behind it), so a read-after-write never serves a
-// stale pre-mutation list. Offline (the network fetch throws) the LAST cached
-// dashboard/series is served instead of empty skeletons forever.
-//
-// v1.18.6.x — reverted from stale-while-revalidate, which served the cached
-// pre-mutation copy first and only revalidated in the background, so a list
-// read straight after a create/update showed the old (or empty) data until the
-// next paint. Network-first restores read-after-write freshness while keeping
-// the offline fallback.
-const DATA_CACHE = `healthlog-data-${CACHE_VERSION}`;
-// Keep this ownership contract aligned with
-// `clearOfflineCachesForSessionEnd()` in `query-persister.ts`. Cache cleanup
-// must cover every current/legacy HealthLog cache without deleting unrelated
-// CacheStorage namespaces owned by another app on the same origin.
+// Every HealthLog cache, current and legacy, and nothing another app on the
+// origin owns. `data` stays in the pattern so caches from releases that still
+// kept API reads are deleted on activate. Same pattern as
+// `HEALTHLOG_CACHE_NAME_RE` in `src/lib/pwa/sw-cache-policy.ts`.
 const HEALTHLOG_CACHE_NAME_RE = /^healthlog-(?:static|pages|data)-/;
-const CURRENT_HEALTHLOG_CACHES = new Set([
-  STATIC_CACHE,
-  PAGE_CACHE,
-  DATA_CACHE,
-]);
-// Presence marker `src/proxy.ts` sets on every HealthLog page response. See
-// `isForeignNavigationResponse` for why the worker needs it and the proxy for
-// why it carries no version. Keep the name in lockstep with
-// `HEALTHLOG_PAGE_MARKER_HEADER` there.
+const CURRENT_HEALTHLOG_CACHES = new Set([STATIC_CACHE, PAGE_CACHE]);
+// Set by `src/proxy.ts` on every HealthLog page; same name as there.
 const HEALTHLOG_PAGE_MARKER_HEADER = "X-HealthLog-Page";
-// Set as soon as a navigation looks like another app (see
-// `isForeignNavigationResponse`). While it is set the fetch handler declines
-// every request, so the page and its assets come from the network. It is
-// cleared again when `confirmForeignOrigin` finds HealthLog after all, and
-// stays set for the rest of the worker's life when the origin is confirmed
-// foreign and the worker retires.
+// While set, the fetch handler declines every request. Set when a page looks
+// like another app, cleared unless the probe confirms another app.
 let foreignOrigin = false;
-// One confirmation at a time: a burst of navigations must not fire a burst of
-// probes, or race one probe's "HealthLog after all" against another's retire.
+// One confirmation at a time, shared by a burst of navigations.
 let foreignOriginCheck = null;
 const MAX_STATIC_ENTRIES = 150;
 const MAX_PAGE_ENTRIES = 30;
-const MAX_DATA_ENTRIES = 60;
 
-// Safe-GET read allowlist. ONLY idempotent reads that render the core views
-// and carry NO secret-shaped body. Auth, mutations and token endpoints are
-// never listed — and `isCacheableApiResponse` is a second, body-level guard
-// (mirrors the idempotency cache's `hlk_`/`hlr_`/`sk-` refusal) so a future
-// endpoint that slipped onto the list can still never persist a secret.
-// Matched by exact path or `<path>/` / `<path>?` prefix.
-// v1.18.6 — AI/clinical narrative surfaces (`/api/insights`, `/api/analytics`)
-// are deliberately NOT cached: `/api/insights` prefix-matched the Coach chat
-// endpoint into the disk cache, and neither belongs on a self-hosted health
-// PWA's durable storage. Only the dashboard snapshot, the widget layout, the
-// measurement reads (incl. the batched daily series), the medication reads,
-// and the version probe are eligible.
-const API_READ_ALLOWLIST = [
-  "/api/dashboard/snapshot",
-  // v1.37.20 — daily digest: the Today rail's offline read. Keep in
-  // lockstep with src/lib/pwa/sw-cache-policy.ts.
-  "/api/daily/digest",
-  "/api/dashboard/widgets",
-  "/api/measurements",
-  "/api/medications",
-  "/api/version",
-];
-
-// Defence in depth: even an allowlisted path is refused if its pathname looks
-// like an auth/token/secret surface.
-const API_DENY_RE = /\/(auth|tokens?|sessions?|login|password|webauthn)(\/|$|\?)/i;
-
-function isAllowlistedApiRead(pathname) {
-  if (API_DENY_RE.test(pathname)) return false;
-  return API_READ_ALLOWLIST.some(
-    (p) =>
-      pathname === p ||
-      pathname.startsWith(p + "/") ||
-      pathname.startsWith(p + "?"),
-  );
-}
-
-// Body-level secret refusal: never persist a body carrying a token/secret-
-// shaped pattern even if the path was allowlisted by mistake.
-const SECRET_BODY_RE = /(hlk_|hlr_|sk-)[A-Za-z0-9_-]/;
-
-function isCacheableApiResponse(response, bodyText) {
-  if (!response || !response.ok) return false;
-  const cacheControl = response.headers.get("Cache-Control") || "";
-  if (/no-store/i.test(cacheControl)) return false;
-  if (typeof bodyText === "string" && SECRET_BODY_RE.test(bodyText)) {
-    return false;
-  }
-  return true;
-}
-
-// Public immutable assets to precache on install. Never include `/`: installing
-// while signed in would fetch the authenticated Dashboard document with the
-// browser's session cookies and persist that health-bearing HTML in
-// CacheStorage for replay after logout.
+// Never `/`: installed while signed in, it would store the dashboard HTML.
 const PRECACHE_URLS = ["/logo-192.png", "/logo-512.png", "/favicon.svg"];
 
-// ── Install: precache public immutable assets ────────────────────────────────
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(STATIC_CACHE)
-      .then(async (cache) => {
-        // An updated worker can reuse the same release-scoped cache when its
-        // source changes without a version bump. Remove a root document left
-        // by the previous worker before adding the safe public asset set.
-        await cache.delete("/");
-        await cache.addAll(PRECACHE_URLS);
-      })
+      .then((cache) => cache.addAll(PRECACHE_URLS))
       .then(() => self.skipWaiting()),
   );
 });
 
-// ── Activate: clean up old caches ────────────────────────────────────────────
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     Promise.all([
@@ -170,42 +63,27 @@ self.addEventListener("activate", (event) => {
               .map((k) => caches.delete(k)),
           ),
         ),
-      // Navigation preload lets the browser start the navigation request
-      // in parallel with service-worker startup; `networkFirst` consumes
-      // it via `event.preloadResponse`, shaving SW boot latency off every
-      // page navigation. Guarded — older engines lack the API.
+      // The browser starts the navigation while the worker boots;
+      // `networkFirst` uses `event.preloadResponse`.
       self.registration.navigationPreload
         ? self.registration.navigationPreload.enable()
         : Promise.resolve(),
+      clearLeftoverAppBadge(),
     ]).then(() => self.clients.claim()),
   );
 });
 
-// ── Fetch: strategy per resource type ────────────────────────────────────────
 self.addEventListener("fetch", (event) => {
-  // The origin serves another app now (see `retireFromForeignOrigin`): no
-  // `respondWith`, no cache, the browser's own fetch for everything.
   if (foreignOrigin) return;
 
   const { request } = event;
   const url = new URL(request.url);
-
-  // Only handle same-origin GET requests
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
 
-  // One-shot auth navigations must reach the server EXACTLY ONCE. The OIDC
-  // login + callback endpoints are top-level browser navigations (not
-  // `fetch`/XHR), so with navigation preload enabled (see `activate`) the
-  // browser has ALREADY dispatched the request by the time this handler runs.
-  // Returning early WITHOUT `event.respondWith()` — the general `/api/` path
-  // below does exactly that — makes the browser ALSO run its own default
-  // navigation fetch, so the request is sent twice. The OIDC authorization
-  // code is single-use: the first callback redeems it and sets the session,
-  // the second fails at the IdP and redirects to
-  // `/auth/login?error=oidc_failed` on an otherwise-successful sign-in.
-  // Consuming the preload response here (or fetching once when there is none)
-  // settles the event with a single network request. These responses are
-  // never cached.
+  // The OIDC login and callback are navigations the browser has already sent
+  // as a preload. Declining here would make it send them a second time, and
+  // the single-use code fails on the second. Answer with the preload (or one
+  // fetch) and store nothing.
   if (url.pathname.startsWith("/api/auth/")) {
     event.respondWith(
       (async () => (await event.preloadResponse) || fetch(request))(),
@@ -213,52 +91,28 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // API calls. Allowlisted safe GET reads use network-first so the installed
-  // PWA always renders fresh server data online (and falls back to the last
-  // cached copy only when the network fails); everything else (auth,
-  // mutations, anything not on the list) stays network-only.
-  if (url.pathname.startsWith("/api/")) {
-    if (isAllowlistedApiRead(url.pathname)) {
-      event.respondWith(networkFirstApi(request));
-    }
-    return;
-  }
+  // Every other API request goes to the network untouched: no API answer is
+  // kept on this device.
+  if (url.pathname.startsWith("/api/")) return;
 
-  // Next.js static assets — cache-first (immutable hashed filenames)
-  if (url.pathname.startsWith("/_next/static/")) {
-    event.respondWith(cacheFirst(request, STATIC_CACHE));
-    return;
-  }
-
-  // Locale-catalog boot script — cache-first. The URL is versioned by the
-  // catalogs' content hash (`/i18n/<locale>?v=<hash>`, `next.config.ts`),
-  // so a changed catalog is a new URL and cache-first is
-  // correct and keeps the catalog available on an offline relaunch (the
-  // cached shell HTML references the same versioned URL it was rendered
-  // with). Carries no user data — same public strings as the repository's
-  // messages/*.json.
+  // Locale catalog: the URL carries the catalogs' content hash, so a change
+  // is a new URL. Public strings only.
   if (url.pathname.startsWith("/i18n/")) {
     event.respondWith(cacheFirst(request, STATIC_CACHE));
     return;
   }
 
-  // Static files (fonts, icons, images) — cache-first with long TTL
   if (/\.(png|svg|jpg|jpeg|gif|webp|ico|woff2?|ttf|eot)$/i.test(url.pathname)) {
     event.respondWith(cacheFirst(request, STATIC_CACHE));
     return;
   }
 
-  // HTML pages — network-first with cache fallback. The whole event is
-  // passed so `networkFirst` can consume the navigation-preload response.
   if (request.headers.get("accept")?.includes("text/html")) {
     event.respondWith(networkFirst(event, PAGE_CACHE));
     return;
   }
 });
 
-/**
- * Cache-first: serve from cache, fall back to network and cache the response.
- */
 async function cacheFirst(request, cacheName) {
   const cached = await caches.match(request);
   if (cached) return cached;
@@ -276,80 +130,13 @@ async function cacheFirst(request, cacheName) {
 }
 
 /**
- * Network-first for allowlisted safe GET `/api/*` reads.
- *
- * Always tries the network first so an online caller gets the fresh server
- * response — critical for read-after-write: a list fetched straight after a
- * create/update must reflect the mutation, not a stale pre-mutation copy. On a
- * cacheable response the data cache is refreshed behind it. Only when the
- * network fails (offline) is the last cached copy served; with neither, a JSON
- * 503 lets the client's TanStack Query cache / IndexedDB persister supply data.
- *
- * Caching is gated twice: `isAllowlistedApiRead` already filtered the path,
- * and `isCacheableApiResponse` inspects the actual body so a `no-store` or
- * secret-shaped (`hlk_`/`hlr_`/`sk-`) response is never persisted — the same
- * refusal discipline the idempotency cache uses.
- */
-async function networkFirstApi(request) {
-
-  try {
-    const response = await fetch(request);
-    // Read the body once to body-screen it, then reconstruct a fresh Response
-    // so both the cache.put and the return value have an unconsumed body.
-    const bodyText = await response
-      .clone()
-      .text()
-      .catch(() => undefined);
-    if (isCacheableApiResponse(response, bodyText)) {
-      await bestEffortCacheWrite(
-        DATA_CACHE,
-        request,
-        new Response(bodyText, {
-          status: response.status,
-          statusText: response.statusText,
-          headers: response.headers,
-        }),
-        MAX_DATA_ENTRIES,
-      );
-    }
-    return response;
-  } catch {
-    // Network failed (offline) — serve the last cached copy if we have one.
-    const cache = await caches.open(DATA_CACHE);
-    const cached = await cache.match(request);
-    if (cached) return cached;
-
-    return new Response(
-      JSON.stringify({ data: null, error: "offline", meta: { offline: true } }),
-      {
-        status: 503,
-        headers: { "Content-Type": "application/json; charset=utf-8" },
-      },
-    );
-  }
-}
-
-/**
- * Privacy gate for the navigation page cache. Most app routes are
- * client-fetch-only shells with no server-rendered PII (health JSON loads
- * over `/api/*`, which is network-only here), so caching their HTML is
- * safe. Two carve-outs:
- *
- *   1. A `Cache-Control: no-store` response opts itself out — the
- *      principled, future-proof rule for any current/future server RSC
- *      that renders user data and sets the header.
- *   2. `/c/*` (the clinician-share view) renders health values + wellness
- *      scores straight into the HTML and emits `no-store`; the explicit
- *      path skip is belt-and-braces so a revoked share can never linger in
- *      CacheStorage and render back offline.
- *
- * In practice rule 1 covers every signed-in page: `src/proxy.ts` pins
- * `private, no-store` on all of them, because several server-prefetch one
- * account's record into the HTML. Only the public pages (sign-in, legal)
- * land in this cache, so a navigation to an app page without a connection
- * gets the offline page below, never somebody's cached record. A page that
- * is already open keeps working offline from the cached chunks and the
- * allowlisted data reads.
+ * Which navigation responses may land in the page cache. Signed-in pages
+ * never do: the proxy sends them `private, no-store` because some carry one
+ * account's record in the HTML. Two paths are skipped by name as well: the
+ * clinician share view `/c/*` (no-store too; a revoked share must never
+ * render back offline) and `/onboarding/*`. What is left are the public
+ * pages (sign-in, legal), so a navigation to an app page without a
+ * connection gets the offline page, never somebody's cached record.
  */
 function isCacheableNavigation(request, response) {
   const cacheControl = response.headers.get("Cache-Control") || "";
@@ -357,6 +144,11 @@ function isCacheableNavigation(request, response) {
   try {
     const { pathname } = new URL(request.url);
     if (pathname === "/c" || pathname.startsWith("/c/")) return false;
+    // Public to the proxy, so not no-store, but rendered for a signed-in
+    // account during its setup.
+    if (pathname === "/onboarding" || pathname.startsWith("/onboarding/")) {
+      return false;
+    }
   } catch {
     // Unparseable URL — fall through; the no-store check already ran.
   }
@@ -364,30 +156,11 @@ function isCacheableNavigation(request, response) {
 }
 
 /**
- * Does this navigation response come from something other than HealthLog?
- *
- * The worker is registered with scope `/` because HealthLog serves everything
- * from `/`. When HealthLog is stopped and a different app starts on the same
- * origin (the usual case is `localhost:3000` on a developer machine), this
- * worker kept answering: `/_next/static/*` is cache-first, so the other app
- * ran on HealthLog's cached chunks, and the only way out was unregistering by
- * hand in the browser's developer tools.
- *
- * Only a response that positively looks like another app counts:
- *
- *   - a redirect is opaque to the worker (`opaqueredirect`, status 0, no
- *     readable headers), and HealthLog redirects every signed-out page, so it
- *     proves nothing; status 0 fails the `ok` check below;
- *   - a non-2xx answer proves nothing either: a reverse proxy or auth gateway
- *     in front of a stopped HealthLog answers 502 or 401 without the marker,
- *     and unregistering there would also drop the Web Push subscription;
- *   - a network failure never reaches this check (it throws into the offline
- *     fallback in `networkFirst`).
- *
- * What is left is a successful page without the marker HealthLog's proxy puts
- * on every page response. That is a suspicion, not a verdict: a reverse proxy
- * with a response-header allowlist strips the marker from every genuine page.
- * `confirmForeignOrigin` settles it before anything is deleted.
+ * Does this page come from another app on the same origin (a developer's
+ * `localhost:3000`, say)? Only a successful page without the proxy's marker
+ * counts: a redirect is opaque, and a 401 or 502 from a gateway in front of a
+ * stopped HealthLog proves nothing. Still only a suspicion, because a proxy
+ * with a header allowlist strips the marker; `confirmForeignOrigin` decides.
  */
 function isForeignNavigationResponse(response) {
   if (!response || !response.ok) return false;
@@ -395,30 +168,15 @@ function isForeignNavigationResponse(response) {
 }
 
 /**
- * Is the origin positively not HealthLog? Asked of `/api/version`, which is
- * public (on the proxy's `PUBLIC_PATHS` list, no session needed) and answers
- * `{ data: { version, buildSha, ... } }`. A body check survives any proxy that
- * rewrites headers.
+ * Is the origin positively not HealthLog? Asks the public `/api/version`,
+ * whose body (`data.version` a string, `data.buildSha` present, possibly
+ * null) survives any header rewriting. A 404, non-JSON or another shape is
+ * foreign; a thrown fetch, a 5xx, a 401 or a redirect proves nothing.
  *
- * Retire only on a positive answer from something else: a 404, a 2xx that is
- * not JSON (another app's HTML fallback), or JSON without the HealthLog shape.
- * `buildSha` is `null` on an image not built by the release workflow, so the
- * shape is "`version` is a string and `buildSha` is present", not "both are
- * strings". Anything that is not an answer (a thrown fetch, a 5xx, a 401 from
- * an auth gateway, a redirect) proves nothing, and the worker resumes normal
- * service.
- *
- * One gateway shape still reads as "another app": a same-origin auth gateway
- * that answers an expired session with its sign-in page and status 200 (nginx
- * `auth_request` with `error_page 401 = /oauth2/sign_in` does this). Both the
- * navigation and this probe then come back as HTML. The probe sends the
- * gateway cookie (`credentials: "same-origin"`), so a valid gateway session
- * reaches HealthLog; with an expired one the verdict is wrong, which is why
- * `retireFromForeignOrigin` never unregisters while a push subscription exists.
- *
- * The probe is the worker's own `fetch`, which never passes through this
- * worker's fetch handler; `no-store` keeps the HTTP cache out of it and
- * `redirect: "manual"` keeps a login redirect from reading as an answer.
+ * An auth gateway that answers an expired session with a 200 sign-in page
+ * still reads as foreign, which is why `retireFromForeignOrigin` keeps a
+ * worker that holds a push subscription. The gateway cookie is sent, so a
+ * valid gateway session reaches HealthLog.
  */
 async function confirmForeignOrigin() {
   let response;
@@ -448,9 +206,7 @@ async function confirmForeignOrigin() {
   return !isHealthlog;
 }
 
-/**
- * Confirm, then either retire or resume. Shared by concurrent navigations.
- */
+/** Confirm, then retire or resume. Shared by concurrent navigations. */
 function checkForeignOrigin() {
   if (!foreignOriginCheck) {
     foreignOriginCheck = (async () => {
@@ -464,8 +220,7 @@ function checkForeignOrigin() {
         await retireFromForeignOrigin();
         return;
       }
-      // HealthLog after all, or no answer: serve normally again, and let a
-      // later suspicious navigation ask again.
+      // HealthLog after all, or no answer: resume, and ask again next time.
       foreignOrigin = false;
       foreignOriginCheck = null;
     })();
@@ -474,11 +229,9 @@ function checkForeignOrigin() {
 }
 
 /**
- * Whether this registration holds a Web Push subscription. Unregistering
- * destroys the subscription and nothing in the app re-creates it (the push
- * card only reads it), so reminders would stop without notice. A missing
- * `pushManager` or a throwing lookup counts as "has one": keeping a worker
- * that only passes requests through costs nothing, losing reminders does.
+ * Whether this registration holds a Web Push subscription, which
+ * unregistering would destroy without notice. When unsure, yes: a
+ * pass-through worker costs nothing, lost reminders do.
  */
 async function hasPushSubscription() {
   try {
@@ -493,18 +246,11 @@ async function hasPushSubscription() {
 }
 
 /**
- * Leave an origin that no longer serves HealthLog: delete every HealthLog
- * cache (only ours, matched by name, never another app's CacheStorage) and
- * unregister, so the next load of that origin runs without this worker. The
- * `foreignOrigin` flag set by the caller stays set, so the requests the
- * current page still makes go to the network. Each step is best-effort and
- * independent: a failed cache delete must not keep the worker registered.
- *
- * With a push subscription the worker does not unregister: the verdict may
- * be a gateway's 200 sign-in page (see `confirmForeignOrigin`), and
- * unregistering would destroy the subscription. It deletes the caches and
- * stays in pass-through for the rest of its life instead, so another app on
- * the origin still gets network content. The next worker start probes again.
+ * Leave an origin that no longer serves HealthLog: delete HealthLog's caches
+ * (never another app's) and unregister. With a push subscription it stays
+ * registered in pass-through instead (`foreignOrigin` stays set), and the
+ * next worker start probes again. Each step is independent: a failed delete
+ * must not keep the worker registered.
  */
 async function retireFromForeignOrigin() {
   try {
@@ -515,7 +261,7 @@ async function retireFromForeignOrigin() {
         .map((k) => caches.delete(k)),
     );
   } catch {
-    // CacheStorage unavailable; unregistering still matters more.
+    // CacheStorage unavailable; unregistering matters more.
   }
   if (await hasPushSubscription()) return;
   try {
@@ -526,14 +272,11 @@ async function retireFromForeignOrigin() {
 }
 
 /**
- * Network-first: try network (preferring the navigation-preload response
- * when the browser already started it), fall back to cache.
- *
- * The offline fallback only serves a shell cached under the CURRENT
- * `CACHE_VERSION` cache names. The previous global `caches.match()` could
- * resolve from a stale pre-update cache in the activation gap and serve a
- * shell whose `/_next/static/*` chunk graph no longer exists
- * (`ChunkLoadError` on the first lazy navigation).
+ * Network-first for pages: the navigation-preload response when the browser
+ * already started it, else a fetch. Without a connection, a page from this
+ * release's page cache (only public pages are there), else the offline page.
+ * The lookup is scoped to this release's cache name: a page from an older
+ * release would reference chunks that no longer exist.
  */
 async function networkFirst(event, cacheName) {
   const { request } = event;
@@ -542,8 +285,7 @@ async function networkFirst(event, cacheName) {
       (event.preloadResponse ? await event.preloadResponse : null) ||
       (await fetch(request));
     if (isForeignNavigationResponse(response)) {
-      // Step aside at once (declining a request only sends it to the
-      // network), but delete nothing until the origin is confirmed foreign.
+      // Step aside at once; delete nothing until it is confirmed.
       foreignOrigin = true;
       event.waitUntil(checkForeignOrigin());
       return response;
@@ -560,28 +302,8 @@ async function networkFirst(event, cacheName) {
     }
     return response;
   } catch {
-    // Version-scoped fallback: the page cache first, then the precached
-    // app shell — both names embed CACHE_VERSION, so a stale shell from a
-    // previous release can never be served here.
-    const pageCache = await caches.open(cacheName);
-    const cachedPage = await pageCache.match(request);
+    const cachedPage = await (await caches.open(cacheName)).match(request);
     if (cachedPage) return cachedPage;
-    const staticCache = await caches.open(STATIC_CACHE);
-    const precached = await staticCache.match(request);
-    if (precached) return precached;
-
-    // Offline fallback. F-7 (mobile security audit, 2026-05-16): the
-    // previous fallback rendered hard-coded German body copy, which is
-    // wrong for any en/* user reaching it offline. The replacement is
-    // language-neutral — wordmark + the universally understood
-    // "Offline" token + a generic retry hint expressed as an icon
-    // (the round-trip arrow), so the page does the right thing in any
-    // locale without shipping a translation bundle into the worker.
-    //
-    // v1.42 — the arrow is a real control now (a link to the same URL,
-    // 64 px), the page reloads by itself as soon as the connection is
-    // back, it follows the device's light or dark scheme, and it keeps
-    // clear of the notch and home indicator of an installed app.
     return new Response(OFFLINE_PAGE, {
       status: 503,
       headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -589,6 +311,9 @@ async function networkFirst(event, cacheName) {
   }
 }
 
+// Language-neutral, because the worker ships no catalog: the wordmark, the
+// word "Offline" and a 64 px retry link. It reloads itself when the
+// connection returns, follows the device scheme and keeps clear of the notch.
 const OFFLINE_PAGE =
   '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="dark light"><title>HealthLog — Offline</title><style>' +
   ":root{--bg:#282a36;--fg:#f8f8f2;--accent:#bd93f9;--muted:#a4a9c9;color-scheme:dark}" +
@@ -600,10 +325,8 @@ const OFFLINE_PAGE =
   '<script>addEventListener("online",function(){location.reload()})</script></body></html>';
 
 /**
- * Cache a successful network response without making CacheStorage
- * availability part of the fetch contract. Quota, eviction, or trim failures
- * are intentionally swallowed: caching may improve a later request, but it
- * must never replace this request's already-successful network response.
+ * Store a response, then trim. Failures (quota, eviction) are swallowed: a
+ * cache write must never replace a response that already succeeded.
  */
 async function bestEffortCacheWrite(
   cacheName,
@@ -616,15 +339,11 @@ async function bestEffortCacheWrite(
     await cache.put(request, response);
     await trimCache(cacheName, maxEntries);
   } catch {
-    // CacheStorage is an optional optimization.
+    // Optional.
   }
 }
 
-/**
- * Trim cache to maxEntries by removing oldest entries. `keys()` returns
- * insertion order, so one read + a single pass over the excess prefix
- * replaces the previous re-fetch-keys-per-deletion loop (O(n²) reads).
- */
+/** Drop the oldest entries past `maxEntries`; `keys()` is insertion order. */
 async function trimCache(cacheName, maxEntries) {
   const cache = await caches.open(cacheName);
   const keys = await cache.keys();
@@ -634,28 +353,16 @@ async function trimCache(cacheName, maxEntries) {
   }
 }
 
-// ── App badge helper (PWA Badging API) ───────────────────────────────────────
-// v1.18.4 — reflect the server-authoritative outstanding-dose count on the
-// installed PWA icon. Feature-detected + best-effort: unsupported engines
-// (most desktop Firefox, older Safari) silently no-op. A count of 0 clears the
-// badge; a positive count sets it. `undefined`/non-number leaves it untouched.
-function applyAppBadge(count) {
-  if (typeof count !== "number" || !isFinite(count)) return;
+// Earlier releases set a dose count on the app icon; nothing sends one now,
+// so clear what they left. Never fails the activation.
+async function clearLeftoverAppBadge() {
   try {
-    if (count > 0) {
-      if (typeof self.navigator?.setAppBadge === "function") {
-        self.navigator.setAppBadge(count);
-      }
-    } else if (typeof self.navigator?.clearAppBadge === "function") {
-      self.navigator.clearAppBadge();
-    }
+    await self.navigator?.clearAppBadge?.();
   } catch {
-    // Badging API can reject (permission / unsupported) — never let it
-    // break the push handler.
+    // Optional.
   }
 }
 
-// ── Push Notifications ───────────────────────────────────────────────────────
 self.addEventListener("push", (event) => {
   if (!event.data) return;
 
@@ -666,66 +373,34 @@ self.addEventListener("push", (event) => {
     payload = { title: "HealthLog", body: event.data.text() };
   }
 
-  // v1.18.4 — `type:"clear"` is the PWA equivalent of ending an iOS Live
-  // Activity: the server sends it when a dose is logged so the still-pending
-  // dose-due reminder for that slot is closed here (matched on its stable
-  // `tag`), and the app badge re-reflects the outstanding-dose count. No new
-  // notification is shown.
-  if (payload && payload.type === "clear") {
-    event.waitUntil(
-      (async () => {
-        const tagToClear = payload.tag;
-        if (tagToClear) {
-          const matches = await self.registration.getNotifications({
-            tag: tagToClear,
-          });
-          for (const n of matches) n.close();
-        }
-        applyAppBadge(payload.badge);
-      })(),
-    );
-    return;
-  }
-
   const {
     title = "HealthLog",
     body = "",
     tag = "default",
     url = "/",
-    badge,
     requireInteraction = false,
   } = payload;
 
   event.waitUntil(
-    Promise.all([
-      self.registration.showNotification(title, {
-        body,
-        tag,
-        // `renotify` lets a re-fired reminder for the same `tag` re-alert the
-        // user instead of silently replacing the existing notification.
-        renotify: true,
-        // v1.18.4 — urgent events (the web-push sender sets this) keep the
-        // notification on screen until the user acts, where the browser
-        // honours it.
-        requireInteraction: requireInteraction === true,
-        icon: "/logo-192.png",
-        badge: "/logo-192.png",
-        data: { url },
-      }),
-      Promise.resolve(applyAppBadge(badge)),
-    ]),
+    self.registration.showNotification(title, {
+      body,
+      tag,
+      // A re-sent reminder with the same tag alerts again.
+      renotify: true,
+      // Set by the sender for urgent events, where the browser honours it.
+      requireInteraction: requireInteraction === true,
+      icon: "/logo-192.png",
+      badge: "/logo-192.png",
+      data: { url },
+    }),
   );
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  // F-7 (mobile security audit, 2026-05-16): validate the destination
-  // resolves to the same origin before navigating any client. Push
-  // payloads are VAPID-signed by our own server, but a server-side bug
-  // (or compromised admin issuing pushes) could ship an off-origin URL
-  // into `data.url` and use the focused PWA as a redirect-driven phish.
-  // Reject anything that doesn't match our origin and fall back to "/".
+  // Only ever navigate within this origin: a server bug or a compromised
+  // sender must not turn a tap into a redirect elsewhere.
   const rawUrl = event.notification.data?.url || "/";
   let safeUrl = "/";
   try {
@@ -737,17 +412,25 @@ self.addEventListener("notificationclick", (event) => {
     safeUrl = "/";
   }
 
+  const target = new URL(safeUrl, self.location.origin).href;
   event.waitUntil(
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList) => {
-        for (const client of clientList) {
-          if (client.url.includes(self.location.origin) && "focus" in client) {
-            client.navigate(safeUrl);
-            return client.focus();
-          }
-        }
-        return self.clients.openWindow(safeUrl);
+        const windows = clientList.filter(
+          (c) => c.url.startsWith(self.location.origin + "/") && "focus" in c,
+        );
+        // A window already on the target only needs focus: navigating it
+        // would reload the app and drop whatever is open there.
+        const there = windows.find((c) => c.url === target);
+        if (there) return there.focus();
+        const client = windows[0];
+        if (!client) return self.clients.openWindow(safeUrl);
+        // Focus first, while the tap still counts as user activation.
+        return client
+          .focus()
+          .then(() => client.navigate(safeUrl))
+          .catch(() => self.clients.openWindow(safeUrl));
       }),
   );
 });

@@ -87,7 +87,7 @@ describe("proxy early exits carry the baseline security headers", () => {
 
   it("unauthenticated page redirect to /auth/login", () => {
     const res = proxy(makeRequest("/dashboard"));
-    expect(res.headers.get("location")).toMatch(/\/auth\/login$/);
+    expect(res.headers.get("location")).toMatch(/\/auth\/login(\?|$)/);
     expectBaselineHeaders(res);
   });
 

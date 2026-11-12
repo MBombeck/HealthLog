@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.47.3
+  version: 1.47.4
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -4016,15 +4016,16 @@ paths:
         "403":
           description: Refused before any work. Either the operator runs `OIDC_ONLY=true` (`meta.errorCode` = `oidc_only`), or
             self-registration is closed and the request carried no invite, or the invite it carried was invalid, expired
-            or exhausted. The three are distinguishable by prose but not by code.
+            or exhausted (`auth.register.invite_invalid`).
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "409":
-          description: The email or the username is taken. Deliberately one message for both, so this is not an account-existence
-            oracle. Also the answer when two concurrent signups race past the pre-check and the database unique index
-            catches the second.
+          description: The email or the username is taken (`auth.register.taken`). Deliberately one message and one code for both,
+            so this is not an account-existence oracle. Also the answer when two concurrent signups race past the
+            pre-check and the database unique index catches the second. `auth.already_authenticated` when the request
+            carries a signed-in session.
           content:
             application/json:
               schema:
@@ -24732,16 +24733,17 @@ paths:
     post:
       tags:
         - Notifications
-      summary: Send a test push to the newest Web Push subscription
+      summary: Send a test push to every Web Push subscription
       description: >-
-        Fires one notification to the caller's MOST RECENT subscription only — a person with a phone, a tablet and a
-        desktop registered should not get three buzzes per click. Takes no body. Rate-limited 5 per minute per user.
+        Fires one notification to each of the caller's subscriptions, through the same sender real reminders use, with
+        the text in the account's language. The device the test was pressed on gets it whichever subscription is newest.
+        Endpoints the push service reports gone (404/410) are removed, as on a real send. Takes no body. Rate-limited 5
+        per minute per user.
 
 
-        Read `ok`, not the status. A push that the service rejects still answers 200, with `ok: false` and the service's
-        own status in `perEndpoint`. Only the endpoint's HOST is reported: the full endpoint is the routing secret for
-        that subscription, and push services embed it in their own error messages, so it is stripped before anything is
-        logged or returned.
+        Read `ok`, not the status. A push that every service rejects still answers 200, with `ok: false`, a `reason`,
+        and `meta.errorCode`: `upstream_rejected`, or `connection_failed` when no push service answered. No endpoint is
+        returned: the full endpoint is the routing secret for that subscription.
       responses:
         "200":
           description: The test ran. `ok` says whether the push was accepted; a false here is a real failure reported inside a
@@ -39724,42 +39726,43 @@ components:
                 anamnesis.lifeConfirm.invalid, anamnesis.lifeSections.invalid; auth — auth.account.deletion_pending,
                 auth.admin.required, auth.already_authenticated, auth.mfa.already_active, auth.mfa.code_invalid,
                 auth.missing, auth.passkey.last_method, auth.refresh.invalid, auth.refresh.reuse, auth.refresh.revoked,
-                auth.reproof.failed, auth.reproof.required, auth.reproof.too_weak, auth.scope.insufficient,
-                auth.session.insecure_transport, auth.session.unavailable, auth.stepup.required, auth.token.expired,
-                auth.token.invalid; backup — backup.foreign_reference, backup.key.missing, backup.owner.exists,
-                backup.owner.missing, backup.payload.undecryptable, backup.restore.active,
-                backup.restore.rows_exist_elsewhere, backup.section.missing, backup.target.admin_account,
-                backup.target.holds_records, backup.target.managed_profile, backup.target.not_found,
-                backup.target.pending_deletion, backup.target.unconfirmed, backup.target.username_taken,
-                backup.upload.too_large; biomarkers — biomarkers.unit.locked; body-site — body-site.invalid; coach —
-                coach.budget.exceeded, coach.conversation.invalidTitle, coach.conversation.notFound,
-                coach.fenced.attachmentConflict, coach.fenced.attachmentLimit, coach.fenced.attachmentNotFound,
-                coach.fenced.attachmentNotIndexed, coach.fenced.attachmentRequired, coach.fenced.attachmentUnavailable,
-                coach.fenced.invalid, coach.request.invalid; coach-prefs — coach-prefs.body.invalid_json,
-                coach-prefs.body.invalid_shape; consent — consent.ai.confirmRequired, consent.ai.required; customMetric
-                — customMetric.name_taken; cycle — cycle.bulk.invalid, cycle.bulk.too_large, cycle.calendar.invalid,
-                cycle.calendar.range, cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid,
-                cycle.disabled, cycle.feed.api_disabled, cycle.feed.cookie_only, cycle.feed.exists,
-                cycle.feed.fertile_goal, cycle.feed.none, cycle.feed.notFound, cycle.feed.rateLimited,
-                cycle.period.invalid, cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs —
-                cycle-prefs.body.invalid_json, cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json;
-                data_wipe — data_wipe.copy_failed; dawarich — dawarich.credentials_rejected,
-                dawarich.home_place_unknown, dawarich.invalid, dawarich.not_connected, dawarich.rate_limited,
-                dawarich.unreachable; day — day.invalid; demo — demo.readOnly; documents —
-                documents.chat.conversationNotFound, documents.chat.invalid, documents.inbound.alreadyConfirmed,
-                documents.inbound.alreadyPartlyConfirmed, documents.inbound.budgetExceeded,
-                documents.inbound.decryptFailed, documents.inbound.encounterNotFound, documents.inbound.episodeNotFound,
-                documents.inbound.extractFailed, documents.inbound.factNotFound, documents.inbound.factNotPending,
-                documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge, documents.inbound.fileType,
-                documents.inbound.invalidMetadata, documents.inbound.invalidQuery, documents.inbound.invalidUpdate,
-                documents.inbound.localOcrDisabled, documents.inbound.notDeleted, documents.inbound.notFound,
-                documents.inbound.notIndexed, documents.inbound.outputLimit, documents.inbound.pdfRendererUnavailable,
-                documents.inbound.providerUnsupported, documents.inbound.quotaExceeded, documents.inbound.rateLimited,
-                documents.inbound.restoreDuplicate, documents.inbound.restoreGone, documents.inbound.sourceAliasLimit,
-                documents.inbound.uploadBusy, documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound,
-                documents.sources.authRefused, documents.sources.badResponse, documents.sources.browserOnly,
-                documents.sources.invalidAddress, documents.sources.linkTargetNotFound, documents.sources.notConnected,
-                documents.sources.notFound, documents.sources.organizationRequired, documents.sources.originNotAllowed,
+                auth.register.invite_invalid, auth.register.taken, auth.reproof.failed, auth.reproof.required,
+                auth.reproof.too_weak, auth.scope.insufficient, auth.session.insecure_transport,
+                auth.session.unavailable, auth.stepup.required, auth.token.expired, auth.token.invalid; backup —
+                backup.foreign_reference, backup.key.missing, backup.owner.exists, backup.owner.missing,
+                backup.payload.undecryptable, backup.restore.active, backup.restore.rows_exist_elsewhere,
+                backup.section.missing, backup.target.admin_account, backup.target.holds_records,
+                backup.target.managed_profile, backup.target.not_found, backup.target.pending_deletion,
+                backup.target.unconfirmed, backup.target.username_taken, backup.upload.too_large; biomarkers —
+                biomarkers.unit.locked; body-site — body-site.invalid; coach — coach.budget.exceeded,
+                coach.conversation.invalidTitle, coach.conversation.notFound, coach.fenced.attachmentConflict,
+                coach.fenced.attachmentLimit, coach.fenced.attachmentNotFound, coach.fenced.attachmentNotIndexed,
+                coach.fenced.attachmentRequired, coach.fenced.attachmentUnavailable, coach.fenced.invalid,
+                coach.request.invalid; coach-prefs — coach-prefs.body.invalid_json, coach-prefs.body.invalid_shape;
+                consent — consent.ai.confirmRequired, consent.ai.required; customMetric — customMetric.name_taken; cycle
+                — cycle.bulk.invalid, cycle.bulk.too_large, cycle.calendar.invalid, cycle.calendar.range,
+                cycle.cycles.invalid, cycle.day-log.conflict, cycle.day-log.invalid, cycle.disabled,
+                cycle.feed.api_disabled, cycle.feed.cookie_only, cycle.feed.exists, cycle.feed.fertile_goal,
+                cycle.feed.none, cycle.feed.notFound, cycle.feed.rateLimited, cycle.period.invalid,
+                cycle.symptom.custom.invalid, cycle.symptom.custom.limit; cycle-prefs — cycle-prefs.body.invalid_json,
+                cycle-prefs.invalid; disable-coach — disable-coach.body.invalid_json; data_wipe — data_wipe.copy_failed;
+                dawarich — dawarich.credentials_rejected, dawarich.home_place_unknown, dawarich.invalid,
+                dawarich.not_connected, dawarich.rate_limited, dawarich.unreachable; day — day.invalid; demo —
+                demo.readOnly; documents — documents.chat.conversationNotFound, documents.chat.invalid,
+                documents.inbound.alreadyConfirmed, documents.inbound.alreadyPartlyConfirmed,
+                documents.inbound.budgetExceeded, documents.inbound.decryptFailed, documents.inbound.encounterNotFound,
+                documents.inbound.episodeNotFound, documents.inbound.extractFailed, documents.inbound.factNotFound,
+                documents.inbound.factNotPending, documents.inbound.factTypeMismatch, documents.inbound.fileTooLarge,
+                documents.inbound.fileType, documents.inbound.invalidMetadata, documents.inbound.invalidQuery,
+                documents.inbound.invalidUpdate, documents.inbound.localOcrDisabled, documents.inbound.notDeleted,
+                documents.inbound.notFound, documents.inbound.notIndexed, documents.inbound.outputLimit,
+                documents.inbound.pdfRendererUnavailable, documents.inbound.providerUnsupported,
+                documents.inbound.quotaExceeded, documents.inbound.rateLimited, documents.inbound.restoreDuplicate,
+                documents.inbound.restoreGone, documents.inbound.sourceAliasLimit, documents.inbound.uploadBusy,
+                documents.inbound.uploadTimeout, documents.inbound.vaccinationNotFound, documents.sources.authRefused,
+                documents.sources.badResponse, documents.sources.browserOnly, documents.sources.invalidAddress,
+                documents.sources.linkTargetNotFound, documents.sources.notConnected, documents.sources.notFound,
+                documents.sources.organizationRequired, documents.sources.originNotAllowed,
                 documents.sources.permissionMissing, documents.sources.rateLimited, documents.sources.redirected,
                 documents.sources.tokenRequired, documents.sources.unavailable, documents.sources.unreachable,
                 documents.sources.versionTooOld; encounter — encounter.invalid, encounter.link.invalid,
@@ -90554,40 +90557,18 @@ components:
       properties:
         ok:
           type: boolean
-        sent:
-          type: integer
-          minimum: -9007199254740991
-          maximum: 9007199254740991
-          description: 1 on success, 0 on failure. Never more than one.
+          description: Whether at least one of the account's subscriptions accepted the push.
         latencyMs:
-          description: Round-trip to the push service. Present on success only.
+          description: Time to send to every subscription. Present on success only.
           type: integer
           minimum: -9007199254740991
           maximum: 9007199254740991
-        perEndpoint:
-          type: array
-          items:
-            type: object
-            properties:
-              host:
-                type: string
-                description: Host of the push service the test went to — the endpoint path is a routing secret and is never returned.
-              status:
-                anyOf:
-                  - type: integer
-                    minimum: -9007199254740991
-                    maximum: 9007199254740991
-                  - type: "null"
-                description: The push service's HTTP status, or null when the attempt threw before one existed.
-            required:
-              - host
-              - status
-            additionalProperties: false
-          description: "One entry: only the newest subscription is tested."
+        reason:
+          description: Why it was not, when `ok` is false. Absent on success. The sender's own classification, the same code a
+            failed reminder records (`web_push_410_gone` when every endpoint is gone, a status-derived code otherwise).
+          type: string
       required:
         - ok
-        - sent
-        - perEndpoint
       additionalProperties: false
     ApnsTestEnvelope:
       type: object
@@ -90899,7 +90880,9 @@ components:
             - sending_paused
           description: Server-derived. `auto_disabled` — the dispatcher turned it off after repeated hard rejects
             (`disabledReason` says why). `manually_disabled` — the user turned it off. `sending_paused` — still enabled
-            but inside a retry cooldown until `nextRetryAt`. `active` — enabled and sending.
+            but inside a retry cooldown until `nextRetryAt`, after a transient failure or after a send that had nobody
+            to go to (no browser subscribed, no iPhone paired, a transport the operator has not set up;
+            `lastFailureReason` names it, `consecutiveFailures` is not raised). `active` — enabled and sending.
         disabledReason:
           description: Why the dispatcher auto-disabled the channel; null when it did not. This is the field that separates
             `auto_disabled` from `manually_disabled`.

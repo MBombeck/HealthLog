@@ -1,19 +1,20 @@
 /**
- * v1.15.20 — service-worker cache behaviour, evaluated in a `vm` sandbox.
+ * Service-worker behaviour, evaluated in a `vm` sandbox.
  *
  * `public/sw.js` is plain script (no module system), so the test boots it
  * inside a vm context with a fake CacheStorage and dispatches the captured
- * event listeners. Four behaviours are pinned:
+ * event listeners. Pinned here:
  *
- *   1. cache write and trim failures never replace a successful network
- *      response for API, navigation, or static-asset requests;
- *   2. the offline HTML fallback only serves a shell cached under the
- *      CURRENT `CACHE_VERSION` cache names (a stale pre-update shell would
- *      reference a chunk graph that no longer exists);
- *   3. `activate` enables navigation preload and `networkFirst` consumes
- *      `event.preloadResponse` when the browser supplies it;
- *   4. `trimCache` reads the key list once and deletes the excess prefix
- *      in a single pass (the previous loop re-fetched all keys per delete).
+ *   1. API requests and `/_next/static/` chunks go to the network untouched,
+ *      and nothing of them lands in CacheStorage;
+ *   2. cache write and trim failures never replace a successful network
+ *      response for navigation or static-asset requests;
+ *   3. the offline HTML fallback only serves a page cached under the
+ *      CURRENT `CACHE_VERSION` cache names;
+ *   4. `activate` deletes every other HealthLog cache, enables navigation
+ *      preload, and `networkFirst` consumes `event.preloadResponse`;
+ *   5. `trimCache` reads the key list once and deletes the excess prefix
+ *      in a single pass.
  *
  * A HealthLog page response carries the `X-HealthLog-Page` marker the proxy
  * sets, so the navigation fixtures below build pages with `healthlogPage()`.
@@ -41,7 +42,10 @@ const FALLBACK_VERSION = /\/\* @sw-version-fallback \*\/\s*"(v[^"]*)"/.exec(
 )![1];
 const CURRENT_PAGE_CACHE = `healthlog-pages-${FALLBACK_VERSION}`;
 const CURRENT_STATIC_CACHE = `healthlog-static-${FALLBACK_VERSION}`;
-const CURRENT_DATA_CACHE = `healthlog-data-${FALLBACK_VERSION}`;
+// The API cache older releases kept, under the current version's name.
+const LEGACY_DATA_CACHE = `healthlog-data-${FALLBACK_VERSION}`;
+// A cache-first static asset: the locale catalog boot script.
+const CATALOG = "/i18n/en.js?v=abc123";
 
 const PAGE_MARKER = "X-HealthLog-Page";
 
@@ -154,10 +158,9 @@ function bootServiceWorker(): SwHarness {
       navPreload.enabled = true;
     },
   };
-  // v1.18.4 — push-handler fakes: a notification store the `getNotifications`
-  // / `showNotification` calls read/write, and a Badging-API spy.
+  // The notifications `showNotification` shows, and a Badging-API spy.
   const shown: Array<{ title: string; tag?: string; closed: boolean }> = [];
-  const badge = { value: undefined as number | undefined, cleared: false };
+  const badge = { cleared: false };
   const selfObj = {
     addEventListener: (type: string, fn: (event: unknown) => void) => {
       listeners.set(type, fn);
@@ -176,22 +179,10 @@ function bootServiceWorker(): SwHarness {
       showNotification: async (title: string, opts: { tag?: string }) => {
         shown.push({ title, tag: opts?.tag, closed: false });
       },
-      getNotifications: async ({ tag }: { tag?: string }) =>
-        shown
-          .filter((n) => !n.closed && (tag === undefined || n.tag === tag))
-          .map((n) => ({
-            close: () => {
-              n.closed = true;
-            },
-          })),
     },
     navigator: {
-      setAppBadge: (n: number) => {
-        badge.value = n;
-      },
-      clearAppBadge: () => {
+      clearAppBadge: async () => {
         badge.cleared = true;
-        badge.value = undefined;
       },
     },
     location: { origin: ORIGIN },
@@ -271,18 +262,6 @@ function dispatchNavigationFetch(
     preloadResponse,
     waitUntil: (p: Promise<unknown>) => {
       harness.lifetimePromises.push(p);
-    },
-  });
-  if (!captured) throw new Error("fetch handler did not respond");
-  return captured;
-}
-
-function dispatchApiFetch(harness: SwHarness, path: string): Promise<Response> {
-  let captured: Promise<Response> | null = null;
-  harness.listeners.get("fetch")!({
-    request: new Request(`${ORIGIN}${path}`),
-    respondWith: (p: Promise<Response>) => {
-      captured = p;
     },
   });
   if (!captured) throw new Error("fetch handler did not respond");
@@ -386,43 +365,37 @@ describe("sw.js — one-shot auth navigations", () => {
     await dispatchAuthNavigation(harness, url).response;
     await Promise.all(harness.lifetimePromises);
 
-    const pages = await harness.cacheStorage.open(CURRENT_PAGE_CACHE);
-    expect(await pages.match(`${ORIGIN}${url}`)).toBeUndefined();
-    const data = await harness.cacheStorage.open(CURRENT_DATA_CACHE);
-    expect(await data.match(`${ORIGIN}${url}`)).toBeUndefined();
+    expect(await harness.cacheStorage.match(`${ORIGIN}${url}`)).toBeUndefined();
+  });
+});
+
+describe("sw.js — what stays off the device", () => {
+  it.each([
+    "/api/dashboard/snapshot",
+    "/api/measurements?type=WEIGHT",
+    "/api/medications",
+    "/api/daily/digest",
+    "/api/version",
+    "/_next/static/chunks/app.js",
+  ])("leaves %s to the network and stores nothing", async (path) => {
+    const harness = bootServiceWorker();
+    let fetchCalls = 0;
+    harness.context.fetch = async () => {
+      fetchCalls += 1;
+      return new Response(JSON.stringify({ data: { weightKg: 80 } }));
+    };
+
+    const { responded } = dispatchAnyFetch(harness, path);
+    await Promise.all(harness.lifetimePromises);
+
+    // Declined: the browser fetches it itself, the worker never sees the body.
+    expect(responded).toBe(false);
+    expect(fetchCalls).toBe(0);
+    expect(harness.cacheStorage.stores.size).toBe(0);
   });
 });
 
 describe("sw.js — best-effort cache writes", () => {
-  it("returns the original successful API response when cache.put rejects", async () => {
-    const harness = bootServiceWorker();
-    const dataCache = await harness.cacheStorage.open(CURRENT_DATA_CACHE);
-    dataCache.putError = new Error("CacheStorage quota exceeded");
-    const networkResponse = new Response(
-      JSON.stringify({ data: { weightKg: 80 }, error: null }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "X-Network-Response": "original",
-        },
-      },
-    );
-    harness.context.fetch = async () => networkResponse;
-
-    const response = await dispatchApiFetch(
-      harness,
-      "/api/measurements?type=WEIGHT",
-    );
-
-    expect(response).toBe(networkResponse);
-    expect(response.status).toBe(200);
-    expect(response.headers.get("X-Network-Response")).toBe("original");
-    expect(await response.text()).toBe(
-      JSON.stringify({ data: { weightKg: 80 }, error: null }),
-    );
-  });
-
   it("returns the original successful navigation response when cache.put rejects", async () => {
     const harness = bootServiceWorker();
     const pageCache = await harness.cacheStorage.open(CURRENT_PAGE_CACHE);
@@ -477,39 +450,16 @@ describe("sw.js — best-effort cache writes", () => {
     const harness = bootServiceWorker();
     const staticCache = await harness.cacheStorage.open(CURRENT_STATIC_CACHE);
     staticCache.putError = new Error("CacheStorage quota exceeded");
-    const networkResponse = new Response("immutable chunk", {
+    const networkResponse = new Response("immutable catalog", {
       headers: { "X-Network-Response": "original" },
     });
     harness.context.fetch = async () => networkResponse;
 
-    const response = await dispatchAssetFetch(
-      harness,
-      "/_next/static/chunks/app.js",
-    );
+    const response = await dispatchAssetFetch(harness, CATALOG);
 
     expect(response).toBe(networkResponse);
     expect(response.headers.get("X-Network-Response")).toBe("original");
-    expect(await response.text()).toBe("immutable chunk");
-  });
-
-  it("returns the original successful API response when cache trimming rejects", async () => {
-    const harness = bootServiceWorker();
-    const dataCache = await harness.cacheStorage.open(CURRENT_DATA_CACHE);
-    dataCache.keysError = new Error("CacheStorage keys unavailable");
-    const networkResponse = new Response(
-      JSON.stringify({ data: { weightKg: 80 }, error: null }),
-      { headers: { "Content-Type": "application/json" } },
-    );
-    harness.context.fetch = async () => networkResponse;
-
-    const response = await dispatchApiFetch(harness, "/api/measurements");
-
-    expect(response).toBe(networkResponse);
-    expect(response.status).toBe(200);
-    expect(await response.text()).toBe(
-      JSON.stringify({ data: { weightKg: 80 }, error: null }),
-    );
-    expect(dataCache.keysCalls).toBe(1);
+    expect(await response.text()).toBe("immutable catalog");
   });
 });
 
@@ -519,14 +469,26 @@ describe("sw.js — activate", () => {
     const stale = await harness.cacheStorage.open("healthlog-pages-v0.0.1");
     await stale.put(`${ORIGIN}/`, new Response("stale shell"));
     await harness.cacheStorage.open(CURRENT_PAGE_CACHE);
+    // API answers an older worker kept, under this version's name and an old one.
+    await harness.cacheStorage.open(LEGACY_DATA_CACHE);
+    await harness.cacheStorage.open("healthlog-data-v0.0.1");
+    await harness.cacheStorage.open("next-app-runtime");
 
     await dispatchActivate(harness);
 
-    expect(harness.cacheStorage.stores.has("healthlog-pages-v0.0.1")).toBe(
-      false,
+    expect([...harness.cacheStorage.stores.keys()].sort()).toEqual(
+      [CURRENT_PAGE_CACHE, "next-app-runtime"].sort(),
     );
-    expect(harness.cacheStorage.stores.has(CURRENT_PAGE_CACHE)).toBe(true);
     expect(harness.navPreload.enabled).toBe(true);
+  });
+
+  it("clears the dose count an earlier release left on the app icon", async () => {
+    const harness = bootServiceWorker();
+    const { badge } = swFakes(harness);
+
+    await dispatchActivate(harness);
+
+    expect(badge.cleared).toBe(true);
   });
 });
 
@@ -588,15 +550,6 @@ describe("sw.js — networkFirst offline fallback", () => {
 
     const res = await dispatchNavigationFetch(harness, "/");
     expect(await res.text()).toBe("current shell");
-  });
-
-  it("falls back to the current-version precached shell when the page cache misses", async () => {
-    const harness = bootServiceWorker();
-    const statics = await harness.cacheStorage.open(CURRENT_STATIC_CACHE);
-    await statics.addAll(["/"]);
-
-    const res = await dispatchNavigationFetch(harness, "/");
-    expect(await res.text()).toBe("precached:/");
   });
 
   it("consumes the navigation-preload response instead of re-fetching", async () => {
@@ -663,6 +616,22 @@ describe("sw.js — networkFirst privacy gate", () => {
     const pages = await harness.cacheStorage.open(CURRENT_PAGE_CACHE);
     expect(await pages.match(`${ORIGIN}/c/hls_abc123`)).toBeUndefined();
   });
+
+  it.each(["/onboarding", "/onboarding/who"])(
+    "does not cache the signed-in onboarding page %s",
+    async (path) => {
+      const harness = bootServiceWorker();
+      harness.context.fetch = async () => healthlogPage("onboarding step");
+
+      const res = await dispatchNavigationFetch(harness, path);
+      expect(await res.clone().text()).toBe("onboarding step");
+      await Promise.all(harness.lifetimePromises);
+
+      expect(
+        await harness.cacheStorage.match(`${ORIGIN}${path}`),
+      ).toBeUndefined();
+    },
+  );
 
   it("still caches an ordinary navigation response", async () => {
     const harness = bootServiceWorker();
@@ -734,10 +703,7 @@ const foreignHtml = () =>
 
 async function seedHealthlogCaches(harness: SwHarness): Promise<void> {
   const statics = await harness.cacheStorage.open(CURRENT_STATIC_CACHE);
-  await statics.put(
-    `${ORIGIN}/_next/static/chunks/app.js`,
-    new Response("healthlog chunk"),
-  );
+  await statics.put(`${ORIGIN}${CATALOG}`, new Response("healthlog catalog"));
   const pages = await harness.cacheStorage.open(CURRENT_PAGE_CACHE);
   await pages.put(`${ORIGIN}/`, healthlogPage("healthlog shell"));
   const legacy = await harness.cacheStorage.open("healthlog-data-v0.0.1");
@@ -759,9 +725,9 @@ describe("sw.js — foreign origin (#847)", () => {
     expect(await res.text()).toBe("fresh shell");
     expect(harness.unregisterCalls.count).toBe(0);
     expect(harness.cacheStorage.stores.has(CURRENT_STATIC_CACHE)).toBe(true);
-    const asset = dispatchAnyFetch(harness, "/_next/static/chunks/app.js");
+    const asset = dispatchAnyFetch(harness, CATALOG);
     expect(asset.responded).toBe(true);
-    expect(await (await asset.response!).text()).toBe("healthlog chunk");
+    expect(await (await asset.response!).text()).toBe("healthlog catalog");
   });
 
   it("retires when the page lacks the marker and the version probe finds another app's HTML", async () => {
@@ -775,9 +741,7 @@ describe("sw.js — foreign origin (#847)", () => {
     // The other app's page is returned untouched, and the worker declines
     // requests at once, before the probe has answered.
     expect(res).toBe(foreignPage);
-    expect(
-      dispatchAnyFetch(harness, "/_next/static/chunks/app.js").responded,
-    ).toBe(false);
+    expect(dispatchAnyFetch(harness, CATALOG).responded).toBe(false);
 
     await Promise.all(harness.lifetimePromises);
 
@@ -790,9 +754,7 @@ describe("sw.js — foreign origin (#847)", () => {
 
     // Still declining after the retire: static, HTML and API all go to the
     // network through the browser.
-    expect(
-      dispatchAnyFetch(harness, "/_next/static/chunks/app.js").responded,
-    ).toBe(false);
+    expect(dispatchAnyFetch(harness, CATALOG).responded).toBe(false);
     expect(
       dispatchAnyFetch(harness, "/about", { accept: "text/html" }).responded,
     ).toBe(false);
@@ -877,10 +839,10 @@ describe("sw.js — foreign origin (#847)", () => {
 
     expect(harness.unregisterCalls.count).toBe(0);
     expect(harness.cacheStorage.stores.has(CURRENT_STATIC_CACHE)).toBe(true);
-    // Normal service resumed: the cached chunk is served cache-first again.
-    const asset = dispatchAnyFetch(harness, "/_next/static/chunks/app.js");
+    // Normal service resumed: the cached catalog is served cache-first again.
+    const asset = dispatchAnyFetch(harness, CATALOG);
     expect(asset.responded).toBe(true);
-    expect(await (await asset.response!).text()).toBe("healthlog chunk");
+    expect(await (await asset.response!).text()).toBe("healthlog catalog");
   });
 
   it.each([
@@ -905,9 +867,7 @@ describe("sw.js — foreign origin (#847)", () => {
 
       expect(harness.unregisterCalls.count).toBe(0);
       expect(harness.cacheStorage.stores.has(CURRENT_STATIC_CACHE)).toBe(true);
-      expect(
-        dispatchAnyFetch(harness, "/_next/static/chunks/app.js").responded,
-      ).toBe(true);
+      expect(dispatchAnyFetch(harness, CATALOG).responded).toBe(true);
     },
   );
 
@@ -970,9 +930,7 @@ describe("sw.js — foreign origin (#847)", () => {
     expect([...harness.cacheStorage.stores.keys()]).toEqual([
       "next-app-runtime",
     ]);
-    expect(
-      dispatchAnyFetch(harness, "/_next/static/chunks/app.js").responded,
-    ).toBe(false);
+    expect(dispatchAnyFetch(harness, CATALOG).responded).toBe(false);
     expect(
       dispatchAnyFetch(harness, "/about", { accept: "text/html" }).responded,
     ).toBe(false);
@@ -1056,9 +1014,7 @@ describe("sw.js — foreign origin (#847)", () => {
 
     expect(res).toBe(response);
     expect(harness.unregisterCalls.count).toBe(0);
-    expect(
-      dispatchAnyFetch(harness, "/_next/static/chunks/app.js").responded,
-    ).toBe(true);
+    expect(dispatchAnyFetch(harness, CATALOG).responded).toBe(true);
   });
 
   it("does not treat an opaque redirect (a signed-out HealthLog page) as foreign", async () => {
@@ -1127,7 +1083,7 @@ describe("sw.js — trimCache", () => {
   });
 });
 
-// ── push handler (v1.18.4: clear-on-taken tag close + app badge) ─────────────
+// ── push handler ─────────────────────────────────────────────────────────────
 async function dispatchPush(harness: SwHarness, data: unknown): Promise<void> {
   let settled: Promise<unknown> = Promise.resolve();
   harness.listeners.get("push")!({
@@ -1142,58 +1098,122 @@ async function dispatchPush(harness: SwHarness, data: unknown): Promise<void> {
 function swFakes(harness: SwHarness) {
   const selfObj = harness.context.self as unknown as {
     __shown: Array<{ title: string; tag?: string; closed: boolean }>;
-    __badge: { value: number | undefined; cleared: boolean };
+    __badge: { cleared: boolean };
   };
   return { shown: selfObj.__shown, badge: selfObj.__badge };
 }
 
 describe("sw.js — push handler", () => {
-  it("shows a reminder with its stable tag and sets the app badge", async () => {
+  it("shows a reminder with its stable tag", async () => {
     const harness = bootServiceWorker();
-    const { shown, badge } = swFakes(harness);
+    const { shown } = swFakes(harness);
     const tag = "med:med-1:2026-06-18T07:00:00.000Z";
 
     await dispatchPush(harness, {
       title: "Time for your dose",
       body: "Ramipril 5mg",
       tag,
-      badge: 3,
     });
 
     expect(shown).toHaveLength(1);
     expect(shown[0].tag).toBe(tag);
-    expect(badge.value).toBe(3);
+  });
+});
+
+// ── notification tap ─────────────────────────────────────────────────────────
+interface FakeWindow {
+  url: string;
+  focused: number;
+  navigatedTo: string[];
+  focus: () => Promise<FakeWindow>;
+  navigate: (url: string) => Promise<FakeWindow>;
+}
+
+function fakeWindow(path: string, navigateFails = false): FakeWindow {
+  const win: FakeWindow = {
+    url: `${ORIGIN}${path}`,
+    focused: 0,
+    navigatedTo: [],
+    focus: async () => {
+      win.focused += 1;
+      return win;
+    },
+    navigate: async (url: string) => {
+      if (navigateFails) throw new TypeError("not controlled");
+      win.navigatedTo.push(url);
+      return win;
+    },
+  };
+  return win;
+}
+
+async function tapNotification(
+  harness: SwHarness,
+  windows: FakeWindow[],
+  url: string,
+): Promise<string[]> {
+  const opened: string[] = [];
+  (harness.context.self as { clients: unknown }).clients = {
+    claim: async () => {},
+    matchAll: async () => windows,
+    openWindow: async (target: string) => {
+      opened.push(target);
+      return null;
+    },
+  };
+  let settled: Promise<unknown> = Promise.resolve();
+  harness.listeners.get("notificationclick")!({
+    notification: { close: () => {}, data: { url } },
+    waitUntil: (p: Promise<unknown>) => {
+      settled = p;
+    },
+  });
+  await settled;
+  return opened;
+}
+
+describe("sw.js — notification tap", () => {
+  it("only focuses a window that is already on the target", async () => {
+    const harness = bootServiceWorker();
+    const win = fakeWindow("/medications");
+
+    const opened = await tapNotification(harness, [win], "/medications");
+
+    expect(win.focused).toBe(1);
+    expect(win.navigatedTo).toEqual([]);
+    expect(opened).toEqual([]);
   });
 
-  it("a type:clear push closes the matching-tag notification (no new one) and updates the badge", async () => {
+  it("prefers the window on the target over the first one", async () => {
     const harness = bootServiceWorker();
-    const { shown, badge } = swFakes(harness);
-    const tag = "med:med-1:2026-06-18T07:00:00.000Z";
+    const other = fakeWindow("/");
+    const there = fakeWindow("/mood?add=1");
 
-    await dispatchPush(harness, { title: "dose", tag, badge: 1 });
-    expect(shown.filter((n) => !n.closed)).toHaveLength(1);
+    await tapNotification(harness, [other, there], "/mood?add=1");
 
-    await dispatchPush(harness, { type: "clear", tag, badge: 0 });
-
-    // The pending reminder for that slot is closed; no new notification shown.
-    expect(shown).toHaveLength(1);
-    expect(shown[0].closed).toBe(true);
-    // badge: 0 clears the app badge.
-    expect(badge.cleared).toBe(true);
+    expect(there.focused).toBe(1);
+    expect(other.focused).toBe(0);
+    expect(other.navigatedTo).toEqual([]);
   });
 
-  it("a type:clear push only closes its own slot's tag", async () => {
+  it("focuses and navigates a window that is elsewhere", async () => {
     const harness = bootServiceWorker();
-    const { shown } = swFakes(harness);
+    const win = fakeWindow("/");
 
-    await dispatchPush(harness, { title: "a", tag: "med:a:t1" });
-    await dispatchPush(harness, { title: "b", tag: "med:b:t2" });
+    const opened = await tapNotification(harness, [win], "/medications");
 
-    await dispatchPush(harness, { type: "clear", tag: "med:a:t1" });
+    expect(win.focused).toBe(1);
+    expect(win.navigatedTo).toEqual(["/medications"]);
+    expect(opened).toEqual([]);
+  });
 
-    const a = shown.find((n) => n.tag === "med:a:t1")!;
-    const b = shown.find((n) => n.tag === "med:b:t2")!;
-    expect(a.closed).toBe(true);
-    expect(b.closed).toBe(false);
+  it("opens a window when none is open or navigating fails", async () => {
+    const harness = bootServiceWorker();
+    expect(await tapNotification(harness, [], "/medications")).toEqual([
+      "/medications",
+    ]);
+    expect(
+      await tapNotification(harness, [fakeWindow("/", true)], "/medications"),
+    ).toEqual(["/medications"]);
   });
 });

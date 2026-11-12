@@ -24,9 +24,10 @@ import { isSafeAppPath } from "@/lib/notifications/tap-target";
  *    permanent reject (410/404) and the channel can no longer succeed.
  *    The 410 subscriptions themselves are deleted from the DB regardless,
  *    so a hard-channel-reject means the user has zero devices left.
- *  - `hardReject: false` for any 5xx, 429, fetch failure, or
- *    "no subscriptions at all" (treated as soft so the user can re-pair
- *    a device without the channel staying auto-disabled forever).
+ *  - `hardReject: false` for any 5xx, 429 or fetch failure.
+ *  - `reason: "web_push_no_subscriptions"` (or `_vapid_not_configured`) when
+ *    there is nothing to send to; the dispatcher leaves the channel state
+ *    alone for those.
  */
 export async function sendViaWebPush(
   userId: string,
@@ -65,10 +66,8 @@ export async function sendViaWebPush(
     });
 
     if (!subscriptions.length) {
-      // No devices registered yet — not a hard channel reject. The user
-      // may simply not have hit "Subscribe" on this browser. Counting
-      // this as a give-up signal would lock the user out of the channel
-      // they just configured. Treat it as a soft "no recipient" instead.
+      // No browser subscribed (never, or push was turned off on the last
+      // one). Nothing failed; the dispatcher books this as a skip.
       recordPushAttemptForPayload(payload, userId, {
         userId,
         channel: "WEB_PUSH",
@@ -83,23 +82,13 @@ export async function sendViaWebPush(
       };
     }
 
-    // v1.18.4 — a dispatcher payload may carry a stable per-slot tag in
-    // `metadata.webPushTag` (e.g. a medication dose slot, see
-    // `medicationDoseTag`). The matching `type:"clear"` push reuses the SAME
-    // tag so the SW can replace/close the pending reminder when the dose is
-    // logged — the PWA-only equivalent of ending a Live Activity. Discreet
-    // mode still wins so no event name leaks even when a stable tag exists.
+    // A payload may carry a stable per-slot tag in `metadata.webPushTag`
+    // (a medication dose slot, see `medicationDoseTag`), so a repeated
+    // reminder for the same dose replaces the one on screen instead of
+    // stacking. Discreet mode still wins so no event name leaks.
     const stableTag =
       typeof payload.metadata?.webPushTag === "string"
         ? payload.metadata.webPushTag
-        : undefined;
-    // v1.18.4 — server-authoritative app-badge count. The dispatcher puts the
-    // user's current outstanding-dose count in `metadata.badgeCount`; the SW
-    // calls `navigator.setAppBadge(count)` (feature-detected, no-op elsewhere).
-    const badgeCount =
-      typeof payload.metadata?.badgeCount === "number" &&
-      Number.isFinite(payload.metadata.badgeCount)
-        ? Math.max(0, Math.trunc(payload.metadata.badgeCount))
         : undefined;
 
     const pushPayload = JSON.stringify({
@@ -110,7 +99,6 @@ export async function sendViaWebPush(
       // but the discreet contract still requires no event name on the wire —
       // mirror the APNs GENERIC_EVENT collapse (QA M-sec3).
       tag: payload.discreet ? "REMINDER" : (stableTag ?? payload.eventType),
-      ...(badgeCount !== undefined ? { badge: badgeCount } : {}),
       // v1.15.20 — opt-in deep link: a dispatcher payload may carry a
       // same-origin path in `metadata.url` (e.g. the Coach nudge's
       // `/coach`); everything else keeps the legacy "/" click

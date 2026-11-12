@@ -151,7 +151,12 @@
       },
       "mfa": {
         "already_active": "Für dieses Konto ist bereits eine Authenticator-App eingerichtet. Deaktiviere sie zuerst, um eine neue einzurichten."
-      }
+      },
+      "register": {
+        "taken": "Dieser Nutzername oder diese E-Mail-Adresse wird bereits verwendet.",
+        "invite_invalid": "Diese Einladung gilt nicht mehr. Bitte die Person, die dich eingeladen hat, um einen neuen Link."
+      },
+      "already_authenticated": "Du bist bereits angemeldet. Melde dich zuerst ab und versuche es dann erneut."
     },
     "biomarkers": {
       "unit": {
@@ -234,7 +239,17 @@
       "budget": {
         "exceeded": "Das KI-Budget für heute ist aufgebraucht, daher wurde nichts gesendet. Morgen steht es wieder bereit."
       }
-    }
+    },
+    "passkey": {
+      "unknown": "Dieser Passkey ist hier nicht registriert. Melde dich auf anderem Weg an.",
+      "challenge": {
+        "expired": "Die Anmeldung hat zu lange gedauert oder wurde schon verwendet. Versuche es erneut."
+      },
+      "response": {
+        "invalid": "Die Antwort des Passkeys konnte nicht gelesen werden. Versuche es erneut."
+      }
+    },
+    "oidc_only": "Dieser Server erlaubt nur Single Sign-on. Fahre stattdessen mit deinem Identitätsanbieter fort."
   },
   "doctorReport": {
     "title": "Gesundheitsbericht",
@@ -506,9 +521,9 @@
     "backToDashboard": "Zurück zum Dashboard"
   },
   "offlineBanner": {
-    "message": "Keine Verbindung: Änderungen können erst gespeichert werden, wenn du wieder online bist.",
+    "message": "Keine Verbindung: Änderungen können nicht gespeichert werden.",
     "saveFailed": "Speichern fehlgeschlagen, du bist offline. Bitte versuche es erneut, sobald du wieder online bist.",
-    "showingCached": "Zeigt deine zuletzt synchronisierten Daten."
+    "stayOnPage": "Diese Seite bleibt lesbar, andere Seiten öffnen sich, sobald du wieder online bist."
   },
   "demoBanner": {
     "message": "Demo-Modus: Änderungen werden nicht gespeichert."
@@ -585,6 +600,7 @@
     "noAccount": "Noch kein Konto?",
     "hasAccount": "Bereits ein Konto?",
     "loginFailed": "Anmeldung fehlgeschlagen",
+    "signOutFailed": "Das Abmelden hat nicht geklappt. Du bist weiterhin angemeldet.",
     "registerFailed": "Registrierung fehlgeschlagen",
     "invitedBanner": "Du wurdest eingeladen. Erstelle dein Konto, auch wenn die Registrierung sonst geschlossen ist.",
     "alreadySignedIn": {
@@ -668,7 +684,6 @@
       "submit": "Übernehmen",
       "submitting": "Wird übernommen…",
       "errorTaken": "Dieser Benutzername oder diese E-Mail-Adresse ist schon vergeben.",
-      "errorRateLimit": "Zu viele Versuche. Warte ein paar Minuten und versuche es erneut.",
       "errorFailed": "Das hat nicht geklappt. Versuche es gleich noch einmal.",
       "errorOffline": "Das hat den Server nicht erreicht. Prüfe deine Verbindung und versuche es erneut.",
       "ssoContinue": "Weiter mit {provider}",
@@ -690,7 +705,8 @@
       "toLogin": "Zur Anmeldung"
     },
     "deletionPending": "Dieses Konto wird am {date} gelöscht und ist bis dahin gesperrt. Ein Admin dieses Servers kann die Löschung vor diesem Datum rückgängig machen.",
-    "deletionPendingNoDate": "Dieses Konto ist zur Löschung vorgemerkt und gesperrt. Ein Admin dieses Servers kann die Löschung rückgängig machen, bis sie abgeschlossen ist."
+    "deletionPendingNoDate": "Dieses Konto ist zur Löschung vorgemerkt und gesperrt. Ein Admin dieses Servers kann die Löschung rückgängig machen, bis sie abgeschlossen ist.",
+    "signInRateLimited": "Zu viele Versuche. Warte ein paar Minuten und versuche es erneut."
   },
   "dashboard": {
     "title": "Dashboard",
@@ -6405,6 +6421,7 @@
     "webPush": "Browser-Push",
     "webPushDescription": "Erhalte Benachrichtigungen direkt im Browser, auch wenn HealthLog nicht geöffnet ist.",
     "webPushNotSupported": "Dein Browser unterstützt keine Push-Benachrichtigungen.",
+    "webPushInstallFirst": "Auf iPhone und iPad funktionieren Push-Benachrichtigungen nur in der installierten App. Tippe in Safari auf Teilen und dann auf „Zum Home-Bildschirm“, öffne HealthLog vom Home-Bildschirm aus und tippe hier auf „Push aktivieren“.",
     "webPushDenied": "Push-Benachrichtigungen wurden blockiert. Erlaube sie in den Browser-Einstellungen.",
     "webPushNotConfigured": "Web Push ist serverseitig nicht konfiguriert.",
     "webPushSubscribe": "Push aktivieren",
@@ -9284,7 +9301,9 @@
       "accountErasureFailedBody": "Die Löschfrist von {username} ist abgelaufen, aber das Löschen des Kontos ist fehlgeschlagen. Es bleibt gesperrt und wird jede Stunde erneut versucht, nach den anderen fälligen Konten. Den Fehler zeigt die Karte der fehlgeschlagenen Jobs unter Administration."
     },
     "user": {
-      "telegramTestBody": "HealthLog: Verbindung hergestellt. Telegram-Benachrichtigungen sind aktiv."
+      "telegramTestBody": "HealthLog: Verbindung hergestellt. Telegram-Benachrichtigungen sind aktiv.",
+      "webPushTestBody": "Wenn du das siehst, kommen Push-Benachrichtigungen auf diesem Gerät an.",
+      "webPushTestTitle": "Test-Benachrichtigung von HealthLog"
     },
     "moodReminder": {
       "title": "Tägliche Stimmungs-Erinnerung",

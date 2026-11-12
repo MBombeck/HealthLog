@@ -98,7 +98,7 @@ describe("session-end CacheStorage cleanup", () => {
     }
   });
 
-  it("deletes current and legacy HealthLog static/page/data caches only", async () => {
+  it("deletes current and legacy HealthLog page and data caches only", async () => {
     const cacheNames = [
       "healthlog-static-v1.34.0",
       "healthlog-static-v1.15.20",
@@ -124,9 +124,11 @@ describe("session-end CacheStorage cleanup", () => {
       .soft(deleted.sort())
       .toEqual(
         cacheNames
-          .filter((name) => /^healthlog-(?:static|pages|data)-/.test(name))
+          .filter((name) => /^healthlog-(?:pages|data)-/.test(name))
           .sort(),
       );
+    // The static cache holds catalogs and icons, nothing of an account.
+    expect(deleted).not.toContain("healthlog-static-v1.34.0");
     expect(deleted).not.toContain("unrelated-app-static-v7");
     expect(deleted).not.toContain("workbox-precache-healthlog");
   });
@@ -193,6 +195,7 @@ describe("persister round-trips through a fake IndexedDB", () => {
     };
 
     const source = new QueryClient();
+    source.setQueryData(["auth", "me"], { id: "user-a" });
     source.setQueryData(["dashboard", "snapshot"], { weightKg: 81 });
     const stop = startPersistingQueryCache(source, "v1.18.6");
     // Force a flush by advancing past the 1s debounce. The trigger write uses
@@ -205,6 +208,7 @@ describe("persister round-trips through a fake IndexedDB", () => {
     stop();
 
     const matchingBuild = new QueryClient();
+    matchingBuild.setQueryData(["auth", "me"], { id: "user-a" });
     await restorePersistedQueryCache(matchingBuild, "v1.18.6");
     expect(matchingBuild.getQueryData(["dashboard", "snapshot"])).toEqual({
       weightKg: 81,
@@ -220,6 +224,7 @@ describe("persister round-trips through a fake IndexedDB", () => {
     expect(restored?.isStale()).toBe(true);
 
     const foreignBuild = new QueryClient();
+    foreignBuild.setQueryData(["auth", "me"], { id: "user-a" });
     await restorePersistedQueryCache(foreignBuild, "v9.9.9");
     expect(
       foreignBuild.getQueryData(["dashboard", "snapshot"]),
@@ -278,6 +283,7 @@ describe("persister round-trips through a fake IndexedDB", () => {
 
     // Persist a STALE (empty) chart series under an allowlisted family.
     const source = new QueryClient();
+    source.setQueryData(["auth", "me"], { id: "user-a" });
     source.setQueryData(["chart-data", "WEIGHT"], []);
     const stop = startPersistingQueryCache(source, "v1.18.6");
     vi.useFakeTimers();
@@ -289,6 +295,7 @@ describe("persister round-trips through a fake IndexedDB", () => {
 
     // The live client already fetched the FRESH (post-mutation) series.
     const live = new QueryClient();
+    live.setQueryData(["auth", "me"], { id: "user-a" });
     live.setQueryData(["chart-data", "WEIGHT"], [{ id: "fresh-row" }]);
 
     await restorePersistedQueryCache(live, "v1.18.6");
@@ -297,6 +304,15 @@ describe("persister round-trips through a fake IndexedDB", () => {
     expect(live.getQueryData(["chart-data", "WEIGHT"])).toEqual([
       { id: "fresh-row" },
     ]);
+
+    // A query the page has started but not answered has no data: filled.
+    const mounting = new QueryClient();
+    mounting.setQueryData(["auth", "me"], { id: "user-a" });
+    mounting
+      .getQueryCache()
+      .build(mounting, { queryKey: ["chart-data", "WEIGHT"] });
+    await restorePersistedQueryCache(mounting, "v1.18.6");
+    expect(mounting.getQueryData(["chart-data", "WEIGHT"])).toEqual([]);
   });
 
   it("discards a snapshot stamped with a different account id", async () => {
@@ -370,7 +386,123 @@ describe("persister round-trips through a fake IndexedDB", () => {
     // restore can't resurrect it either.
     expect(store.get("react-query")).toBeUndefined();
   });
+
+  it("restores nothing until the live account is known", async () => {
+    installRoundTripIdb();
+    const source = new QueryClient();
+    source.setQueryData(["auth", "me"], { id: "user-a" });
+    await persistOnce(source);
+
+    // A cold start: the snapshot is on disk, `/api/auth/me` has not answered.
+    const booting = new QueryClient();
+    await restorePersistedQueryCache(booting, "v1.18.6");
+    expect(booting.getQueryData(["dashboard", "snapshot"])).toBeUndefined();
+    // Not discarded either: the account may well turn out to be its owner.
+    expect(roundTripStore.get("react-query")).toBeDefined();
+
+    booting.setQueryData(["auth", "me"], { id: "user-a" });
+    await restorePersistedQueryCache(booting, "v1.18.6");
+    expect(booting.getQueryData(["dashboard", "snapshot"])).toEqual({
+      weightKg: 81,
+    });
+  });
+
+  it("writes the dashboard snapshot without the model-written briefing", async () => {
+    installRoundTripIdb();
+    const source = new QueryClient();
+    source.setQueryData(["auth", "me"], { id: "user-a" });
+    const briefing = { headline: "Your pressure ran high this week." };
+    const briefingMemory = { recall: "Last week: steady.", forward: "Calm." };
+    source.setQueryData(["dashboard", "snapshot", "en"], {
+      weightKg: 81,
+      briefing,
+      briefingMemory,
+      briefingState: "ready",
+    });
+    await persistOnce(source);
+
+    const written = JSON.stringify(roundTripStore.get("react-query"));
+    expect(written).toContain('"weightKg":81');
+    expect(written).not.toContain(briefing.headline);
+    expect(written).not.toContain(briefingMemory.recall);
+    // The live cache keeps what the server sent.
+    expect(
+      source.getQueryData<{ briefing: unknown }>([
+        "dashboard",
+        "snapshot",
+        "en",
+      ])?.briefing,
+    ).toBe(briefing);
+  });
+
+  it("discards a snapshot written before any account was known", async () => {
+    installRoundTripIdb();
+    await persistOnce(new QueryClient());
+
+    const live = new QueryClient();
+    live.setQueryData(["auth", "me"], { id: "user-b" });
+    await restorePersistedQueryCache(live, "v1.18.6");
+    expect(live.getQueryData(["dashboard", "snapshot"])).toBeUndefined();
+    expect(roundTripStore.get("react-query")).toBeUndefined();
+  });
 });
+
+// ── shared fake IndexedDB for the account cases above ───────────────────────
+const roundTripStore = new Map<string, unknown>();
+
+function installRoundTripIdb(): void {
+  roundTripStore.clear();
+  const makeReq = (result?: unknown) => {
+    const req: Record<string, unknown> = { result };
+    queueMicrotask(() => (req.onsuccess as (() => void) | undefined)?.());
+    return req;
+  };
+  const fakeDb = {
+    close() {},
+    transaction() {
+      return {
+        objectStore() {
+          return {
+            put(value: unknown, key: string) {
+              roundTripStore.set(key, value);
+              return makeReq();
+            },
+            get(key: string) {
+              return makeReq(roundTripStore.get(key));
+            },
+            delete(key: string) {
+              roundTripStore.delete(key);
+              return makeReq();
+            },
+          };
+        },
+        set oncomplete(fn: () => void) {
+          queueMicrotask(fn);
+        },
+        set onerror(_fn: () => void) {},
+      };
+    },
+  };
+  (globalThis as { indexedDB?: unknown }).indexedDB = {
+    open() {
+      const req: Record<string, unknown> = { result: fakeDb };
+      queueMicrotask(() => (req.onsuccess as () => void)?.());
+      return req;
+    },
+  };
+}
+
+/** Write one dashboard snapshot from `source` through the 1 s debounce. */
+async function persistOnce(source: QueryClient): Promise<void> {
+  source.setQueryData(["dashboard", "snapshot"], { weightKg: 81 });
+  const stop = startPersistingQueryCache(source, "v1.18.6");
+  vi.useFakeTimers();
+  source.setQueryData(["chart-data", "WEIGHT"], [{ v: 81 }]);
+  vi.advanceTimersByTime(1100);
+  vi.useRealTimers();
+  await new Promise((r) => setTimeout(r, 0));
+  stop();
+}
 
 describe("persister is bounded and surfaces quota failures", () => {
   const original = (globalThis as { indexedDB?: unknown }).indexedDB;

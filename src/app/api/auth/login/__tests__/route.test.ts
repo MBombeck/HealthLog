@@ -184,3 +184,30 @@ describe("POST /api/auth/login — OIDC_ONLY server-side enforcement", () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe("POST /api/auth/login — per-address limit", () => {
+  const original = process.env.DEMO_MODE;
+  afterEach(() => {
+    if (original === undefined) delete process.env.DEMO_MODE;
+    else process.env.DEMO_MODE = original;
+  });
+
+  function limitAsked(): unknown {
+    const call = vi
+      .mocked(checkAuthSurfaceRateLimit)
+      .mock.calls.find((c) => c[1] === "auth:login");
+    return call?.[2];
+  }
+
+  it("allows five attempts per address on an ordinary instance", async () => {
+    delete process.env.DEMO_MODE;
+    await POST(makeRequest());
+    expect(limitAsked()).toBe(5);
+  });
+
+  it("allows thirty on a demo, whose one account everybody shares", async () => {
+    process.env.DEMO_MODE = "true";
+    await POST(makeRequest());
+    expect(limitAsked()).toBe(30);
+  });
+});

@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
   "count": 84,
-  "total": 93815,
+  "total": 93816,
   "entries": {
     "app/medications/page-client.tsx": 839,
     "components/charts/mood-chart.tsx": 1166,
@@ -86,6 +86,6 @@
     "lib/validations/inbound-documents.ts": 1018,
     "lib/withings/sync-sleep.ts": 884,
     "lib/withings/sync.ts": 933,
-    "proxy.ts": 845
+    "proxy.ts": 846
   }
 }

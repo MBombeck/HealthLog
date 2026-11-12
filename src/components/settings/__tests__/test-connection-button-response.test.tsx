@@ -101,6 +101,24 @@ describe("runConnectionTest", () => {
     });
   });
 
+  it("reads why a push test that ran was refused", async () => {
+    // The Web Push test answers 200 with `ok: false`; the code rides `meta`.
+    apiFetchRawMock.mockResolvedValue(
+      envelope(200, {
+        data: { ok: false, reason: "web_push_403" },
+        error: null,
+        meta: { errorCode: "upstream_rejected" },
+      }),
+    );
+
+    const result = await runConnectionTest("/api/notifications/web-push/test");
+
+    expect(result).toMatchObject({
+      kind: "error",
+      errorCode: "upstream_rejected",
+    });
+  });
+
   it("reports success with the latency", async () => {
     apiFetchRawMock.mockResolvedValue(
       envelope(200, { data: { ok: true, latencyMs: 42 }, error: null }),
