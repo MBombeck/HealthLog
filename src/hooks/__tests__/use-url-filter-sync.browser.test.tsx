@@ -164,12 +164,12 @@ describe("useUrlFilterSync with FilterBar", () => {
 
   it("writes a facet picked from the open menu as a new history entry", async () => {
     const { pill, history, pick } = await mount();
-    const entries = window.history.length;
     await pick("Type", "Pulse");
     await expectSearch("?type=PULSE");
+    // A push and no replace is the new entry. `history.length` is no proof:
+    // the browser caps it, and other files in this frame push entries too.
     expect(history.pushes()).toEqual(["?type=PULSE"]);
     expect(history.replaces()).toEqual([]);
-    expect(window.history.length).toBe(entries + 1);
     await expect.element(pill("Type: Pulse")).toBeInTheDocument();
   });
 

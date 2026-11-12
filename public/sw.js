@@ -68,7 +68,6 @@ self.addEventListener("activate", (event) => {
       self.registration.navigationPreload
         ? self.registration.navigationPreload.enable()
         : Promise.resolve(),
-      clearLeftoverAppBadge(),
     ]).then(() => self.clients.claim()),
   );
 });
@@ -350,16 +349,6 @@ async function trimCache(cacheName, maxEntries) {
   const excess = keys.length - maxEntries;
   for (let i = 0; i < excess; i++) {
     await cache.delete(keys[i]);
-  }
-}
-
-// Earlier releases set a dose count on the app icon; nothing sends one now,
-// so clear what they left. Never fails the activation.
-async function clearLeftoverAppBadge() {
-  try {
-    await self.navigator?.clearAppBadge?.();
-  } catch {
-    // Optional.
   }
 }
 
