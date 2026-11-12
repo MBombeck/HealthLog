@@ -66,17 +66,8 @@ next-env.d.ts
 # COPY target always exists.
 /assets/geolite2/*.mmdb
 
-# Local workspace files, never committed
-/docs/superpowers/
-.claude/
-.cursor/
-.codex/
-.aider*
-
-# Planning scratch — all internal per-release reports, QA findings, ad-hoc
-# backlog, and the iOS coordination channel. These are internal working
-# notes; everything user-facing lives in the public surfaces (README,
-# CHANGELOG, docs/). Kept on disk for the working session, never tracked.
+# Internal working notes (per-release reports, backlog, iOS coordination).
+# Everything user-facing lives in README, CHANGELOG and docs/.
 /.planning/
 
 # Docs scratch — temporary spec drafts that live in the repo only

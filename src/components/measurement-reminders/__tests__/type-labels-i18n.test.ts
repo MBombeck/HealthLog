@@ -28,6 +28,7 @@ const LOCALES = readdirSync(MESSAGES_DIR)
 const REQUIRED_KEYS = [
   // Newly added Vorsorge reminder type labels.
   "measurementReminders.types.WAIST_CIRCUMFERENCE",
+  "measurementReminders.types.BLOOD_KETONES",
   "measurementReminders.types.WHO5_SCORE",
   "measurementReminders.types.SCI_SCORE",
   // Pre-existing screening labels (regression floor).

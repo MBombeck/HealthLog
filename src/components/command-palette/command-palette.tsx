@@ -329,7 +329,7 @@ export function PaletteBody({ isMobile }: { isMobile: boolean }) {
           autoCorrect="off"
           spellCheck={false}
           enterKeyHint="go"
-          className="placeholder:text-muted-foreground h-14 min-w-0 flex-1 bg-transparent text-base outline-none md:text-sm"
+          className="placeholder:text-muted-foreground h-14 min-w-0 flex-1 bg-transparent text-base outline-none md:pointer-fine:text-sm"
         />
         {isMobile ? (
           <Button

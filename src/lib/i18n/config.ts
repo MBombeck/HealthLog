@@ -87,7 +87,7 @@ export const localeLabels: Record<Locale, string> = {
 
 /**
  * v1.4.25 — locales actively maintained by the project owner.
- * Locales outside this set are AI-initial translations and surface a
+ * Locales outside this set are machine-translated translations and surface a
  * <MaintainershipBanner> notice at the top of the auth shell so users
  * know to expect rough edges and where to contribute fixes. Promoting
  * a locale here turns the banner off.

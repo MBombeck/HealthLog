@@ -37,6 +37,7 @@ import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { SettingsInfoTile } from "@/components/settings/_info-tile";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import {
   useAboutMeSaveTimeoutMs,
@@ -44,7 +45,6 @@ import {
 } from "@/hooks/use-ai-capability";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import { cn } from "@/lib/utils";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
 import { withBaseToken, isConflict } from "@/lib/api/optimistic-token";
 
@@ -60,9 +60,6 @@ interface AboutMeData {
   maxChars: number;
   fieldMaxChars: number;
 }
-
-const FIELD_CLASSES =
-  "border-input bg-background placeholder:text-muted-foreground focus-visible:border-input-focus w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none";
 
 export function AboutMeNoteManager() {
   const { t } = useTranslations();
@@ -134,10 +131,11 @@ export function AboutMeNoteManager() {
         <Label htmlFor="settings-about-me-freetext">
           {t("settings.ai.aboutMe.freeTextLabel")}
         </Label>
-        <textarea
+        <Textarea
           id="settings-about-me-freetext"
           data-testid="settings-about-me-textarea"
-          className={cn(FIELD_CLASSES, "min-h-36 resize-y")}
+          className="resize-y"
+          rows={6}
           value={value}
           maxLength={maxChars}
           placeholder={t("settings.ai.aboutMe.placeholder")}

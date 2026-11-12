@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -58,6 +58,22 @@ interface CustomMetricFormProps {
    * bottom-sheet branch can sticky-pin it.
    */
   footerSlot?: HTMLElement | null;
+  /** Whether the fields differ from what the form opened with. */
+  onDirtyChange?: (dirty: boolean) => void;
+}
+
+/** What the form opens with: the edited metric, or an empty definition. */
+function metricFields(existing: CustomMetricDto | undefined) {
+  const text = (n: number | null | undefined) => (n != null ? String(n) : "");
+  return {
+    name: existing?.name ?? "",
+    unit: existing?.unit ?? "",
+    low: text(existing?.targetLow),
+    high: text(existing?.targetHigh),
+    decimals: text(existing?.decimals),
+    description: existing?.description ?? "",
+    correlationEnabled: existing?.correlationEnabled ?? false,
+  };
 }
 
 /**
@@ -83,25 +99,27 @@ export function CustomMetricForm({
   onSuccess,
   onCancel,
   footerSlot,
+  onDirtyChange,
 }: CustomMetricFormProps) {
   const { t } = useTranslations();
   const formId = useId();
 
-  const [name, setName] = useState(existing?.name ?? "");
-  const [unit, setUnit] = useState(existing?.unit ?? "");
-  const [low, setLow] = useState(
-    existing?.targetLow != null ? String(existing.targetLow) : "",
-  );
-  const [high, setHigh] = useState(
-    existing?.targetHigh != null ? String(existing.targetHigh) : "",
-  );
-  const [decimals, setDecimals] = useState(
-    existing?.decimals != null ? String(existing.decimals) : "",
-  );
-  const [description, setDescription] = useState(existing?.description ?? "");
+  const [seed] = useState(() => metricFields(existing));
+  const [name, setName] = useState(seed.name);
+  const [unit, setUnit] = useState(seed.unit);
+  const [low, setLow] = useState(seed.low);
+  const [high, setHigh] = useState(seed.high);
+  const [decimals, setDecimals] = useState(seed.decimals);
+  const [description, setDescription] = useState(seed.description);
   const [correlationEnabled, setCorrelationEnabled] = useState(
-    existing?.correlationEnabled ?? false,
+    seed.correlationEnabled,
   );
+  const fields = { name, unit, low, high, decimals, description };
+  const dirty =
+    JSON.stringify({ ...fields, correlationEnabled }) !== JSON.stringify(seed);
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const save = useSaveCustomMetric(existing);

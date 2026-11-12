@@ -171,17 +171,17 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
   { section: "integrations", anchor: "webhook", titleKey: "settings.webhook" },
   // ── Health record ──
   {
-    section: "gesundheitsakte",
+    section: "health-record",
     anchor: "health-record",
     titleKey: "settings.healthRecord.title",
   },
   {
-    section: "gesundheitsakte",
+    section: "health-record",
     anchor: "share-link-create",
     titleKey: "settings.sharing.createTitle",
   },
   {
-    section: "gesundheitsakte",
+    section: "health-record",
     anchor: "share-links-active",
     titleKey: "settings.sharing.activeTitle",
   },
@@ -459,7 +459,7 @@ export const SETTINGS_LAYOUT_PAGES: ReadonlyArray<{
     titleKey: "settings.sections.layout.documents.title",
     module: "inboundDocuments",
   },
-  { slug: "vorsorge", titleKey: "settings.sections.layout.vorsorge.title" },
+  { slug: "checkups", titleKey: "settings.sections.layout.checkups.title" },
 ];
 
 /**

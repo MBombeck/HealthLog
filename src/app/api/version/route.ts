@@ -63,7 +63,7 @@ export const GET = apiHandler(async () => {
     builtAt,
     license: "PolyForm-Noncommercial-1.0.0",
     repository: "https://github.com/MBombeck/HealthLog",
-    changelog: "https://github.com/MBombeck/HealthLog/blob/main/CHANGELOG.md",
+    changelog: "https://github.com/MBombeck/HealthLog/releases",
     docs: "https://docs.healthlog.dev",
     offlineGeoEnabled,
     geoProviderHost,

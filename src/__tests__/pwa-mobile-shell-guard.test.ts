@@ -9,17 +9,21 @@
  *      5 px content box and pushed the logo across its bottom border).
  *   2. The stylesheet carries the rules the shell and the keyboard bridge
  *      depend on.
- *   3. Every form-field primitive keeps 16 px type on a touch screen: iOS
- *      Safari zooms the page into a focused field below 16 px, and a width
+ *   3. Every form field keeps 16 px type on a touch screen: iOS Safari
+ *      zooms the page into a focused field below 16 px, and a width
  *      breakpoint alone (`md:text-sm`) handed 14 px to a phone held sideways
  *      and to every iPad. The small size is allowed only behind
- *      `pointer-fine:`.
+ *      `pointer-fine:`. That holds for the primitives and for every call
+ *      site, whose `text-sm` replaces the primitive's size, and for a raw
+ *      `<textarea>` styled from a class constant.
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { stripComments } from "./helpers/source-files";
+import { parse, productionSources, readSrc } from "./helpers/source-metrics";
 
 const ROOT = resolve(__dirname, "../..");
 const read = (path: string) => readFileSync(resolve(ROOT, path), "utf8");
@@ -125,6 +129,24 @@ describe("the shell owns the safe area", () => {
     expect(bottomClass).not.toMatch(/(?<![\w-])bottom-/);
   });
 
+  it("the More sheet's grid scrolls inside the sheet's height cap", () => {
+    // Held sideways a phone keeps the bottom bar, and 90 dvh of a 393 px
+    // screen is shorter than the hub: the last rows sat below the edge.
+    const nav = code(read("src/components/layout/bottom-nav.tsx"));
+    const grid = nav.match(/"grid [^"]*grid-cols-2[^"]*"/)?.[0] ?? "";
+    expect(grid).toMatch(/\bmin-h-0\b/);
+    expect(grid).toMatch(/\boverflow-y-auto\b/);
+    expect(grid).toMatch(/\boverscroll-contain\b/);
+  });
+
+  it("the onboarding tour's bottom card clears the home indicator", () => {
+    const tour = code(read("src/components/onboarding/tour.tsx"));
+    const card = tour.match(/"[^"]*absolute inset-x-2 [^"]*"/)?.[0] ?? "";
+    expect(card).toMatch(
+      /\bbottom-\[calc\(env\(safe-area-inset-bottom,0px\)\+0\.5rem\)\]/,
+    );
+  });
+
   it("the sheet primitives name their side for those rules", () => {
     expect(read("src/components/ui/sheet.tsx")).toMatch(
       /data-sheet-side=\{side\}/,
@@ -164,4 +186,155 @@ describe("form fields keep 16 px on a touch screen", () => {
       }
     },
   );
+});
+
+/** Elements a person types into. */
+const FIELD_TAGS = new Set([
+  "input",
+  "textarea",
+  "select",
+  "Input",
+  "Textarea",
+  "PasswordInput",
+  "NativeSelect",
+]);
+/** `type` values of an `<input>` nobody types into. */
+const NOT_TYPED = new Set([
+  "checkbox",
+  "radio",
+  "range",
+  "file",
+  "hidden",
+  "color",
+  "button",
+  "submit",
+  "reset",
+  "image",
+]);
+/** A type size under 16 px that is not behind `pointer-fine:`. */
+const SMALL_TYPE =
+  /(?<![\w:-])(?:(?:sm|md|lg|xl):)?text-(?:2xs|xs|sm)(?![\w-])/g;
+
+/** Every string a `className` expression can produce, constants resolved. */
+function classStrings(
+  node: ts.Node,
+  constants: ReadonlyMap<string, string>,
+): string[] {
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+    return [node.text];
+  }
+  if (ts.isTemplateExpression(node)) {
+    return [
+      node.head.text,
+      ...node.templateSpans.flatMap((span) => [
+        ...classStrings(span.expression, constants),
+        span.literal.text,
+      ]),
+    ];
+  }
+  if (ts.isIdentifier(node)) {
+    const value = constants.get(node.text);
+    return value === undefined ? [] : [value];
+  }
+  const out: string[] = [];
+  node.forEachChild((child) => {
+    out.push(...classStrings(child, constants));
+  });
+  return out;
+}
+
+/** `rel:line <Tag> class` for each field whose classes go under 16 px. */
+function smallFields(
+  rel: string,
+  text: string,
+): {
+  fields: number;
+  small: string[];
+} {
+  const sf = parse(rel, text);
+  const constants = new Map<string, string>();
+  sf.forEachChild((statement) => {
+    if (!ts.isVariableStatement(statement)) return;
+    for (const decl of statement.declarationList.declarations) {
+      if (
+        ts.isIdentifier(decl.name) &&
+        decl.initializer &&
+        (ts.isStringLiteral(decl.initializer) ||
+          ts.isNoSubstitutionTemplateLiteral(decl.initializer))
+      ) {
+        constants.set(decl.name.text, decl.initializer.text);
+      }
+    }
+  });
+  let fields = 0;
+  const small: string[] = [];
+  const visit = (node: ts.Node) => {
+    if (
+      (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) &&
+      FIELD_TAGS.has(node.tagName.getText(sf))
+    ) {
+      const attribute = (name: string) =>
+        node.attributes.properties.find(
+          (prop): prop is ts.JsxAttribute =>
+            ts.isJsxAttribute(prop) && prop.name.getText(sf) === name,
+        );
+      const type = attribute("type")?.initializer;
+      const typed = !(
+        type &&
+        ts.isStringLiteral(type) &&
+        NOT_TYPED.has(type.text)
+      );
+      const className = attribute("className")?.initializer;
+      if (typed && className) {
+        fields += 1;
+        const line = sf.getLineAndCharacterOfPosition(node.getStart()).line + 1;
+        for (const cls of classStrings(className, constants)) {
+          for (const match of cls.matchAll(SMALL_TYPE)) {
+            small.push(
+              `${rel}:${line} <${node.tagName.getText(sf)}> ${match[0]}`,
+            );
+          }
+        }
+      }
+    }
+    node.forEachChild(visit);
+  };
+  visit(sf);
+  return { fields, small };
+}
+
+describe("no field call site goes under 16 px on a touch screen", () => {
+  const scan = productionSources()
+    .filter((rel) => rel.endsWith(".tsx"))
+    .map((rel) => ({ rel, ...smallFields(rel, readSrc(rel)) }));
+
+  it("reads the field call sites (floor)", () => {
+    const fields = scan.reduce((sum, file) => sum + file.fields, 0);
+    expect(fields).toBeGreaterThan(90);
+  });
+
+  it("finds a class constant on a raw field, and spares fine-pointer sizes and checkboxes", () => {
+    const { small } = smallFields(
+      "probe.tsx",
+      [
+        'const FIELD_CLASSES = "border-input w-full text-sm";',
+        "export const A = () => (",
+        "  <>",
+        '    <textarea className={cn(FIELD_CLASSES, "min-h-16")} />',
+        '    <Textarea className="font-mono sm:pointer-fine:text-xs" />',
+        '    <input type="checkbox" className="text-sm" />',
+        '    <Input className={`h-9 ${wide ? "md:text-sm" : ""}`} />',
+        "  </>",
+        ");",
+      ].join("\n"),
+    );
+    expect(small).toEqual([
+      "probe.tsx:4 <textarea> text-sm",
+      "probe.tsx:7 <Input> md:text-sm",
+    ]);
+  });
+
+  it("no typed-into field sets a size under 16 px outside a fine pointer", () => {
+    expect(scan.flatMap((file) => file.small)).toEqual([]);
+  });
 });

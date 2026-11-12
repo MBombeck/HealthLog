@@ -548,28 +548,32 @@ describe("runMeasurementReminderTick", () => {
     );
   });
 
-  it("v1.18.0 — skips a glucose reminder when the Glucose module is off, and advances", async () => {
-    const { prisma, updates } = makePrisma({
-      reminders: [reminder({ measurementType: "BLOOD_GLUCOSE" })],
-      measurementMatch: null,
-    });
-    const dispatch = vi.fn<DispatchFn>(async () => OK);
-    const isModuleEnabled = vi.fn(async () => false);
+  // Ketones come off the glucose meter and follow the same module.
+  it.each(["BLOOD_GLUCOSE", "BLOOD_KETONES"] as const)(
+    "skips a %s reminder when the Glucose module is off, and advances",
+    async (measurementType) => {
+      const { prisma, updates } = makePrisma({
+        reminders: [reminder({ measurementType })],
+        measurementMatch: null,
+      });
+      const dispatch = vi.fn<DispatchFn>(async () => OK);
+      const isModuleEnabled = vi.fn(async () => false);
 
-    const summary = await runMeasurementReminderTick(
-      prisma as never,
-      NINE_LOCAL,
-      { dispatch, isModuleEnabled },
-    );
+      const summary = await runMeasurementReminderTick(
+        prisma as never,
+        NINE_LOCAL,
+        { dispatch, isModuleEnabled },
+      );
 
-    expect(summary.skippedModuleDisabled).toBe(1);
-    expect(summary.dispatched).toBe(0);
-    expect(dispatch).not.toHaveBeenCalled();
-    expect(isModuleEnabled).toHaveBeenCalledWith("u1", "glucose");
-    // Advances past the cycle so it does not re-evaluate every tick.
-    expect(updates).toHaveLength(1);
-    expect(updates[0].data.nextDueAt).toBeInstanceOf(Date);
-  });
+      expect(summary.skippedModuleDisabled).toBe(1);
+      expect(summary.dispatched).toBe(0);
+      expect(dispatch).not.toHaveBeenCalled();
+      expect(isModuleEnabled).toHaveBeenCalledWith("u1", "glucose");
+      // Advances past the cycle so it does not re-evaluate every tick.
+      expect(updates).toHaveLength(1);
+      expect(updates[0].data.nextDueAt).toBeInstanceOf(Date);
+    },
+  );
 
   it("v1.18.0 — still dispatches a glucose reminder when the Glucose module is on", async () => {
     const { prisma } = makePrisma({

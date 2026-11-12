@@ -24,11 +24,9 @@ import {
  * strip's footprint immediately and swaps to the real tiles the moment
  * the query resolves.
  *
- * v1.7.0 — the gate now keys off `primaryLoading`, which resolves to
- * the snapshot cell under `NEXT_PUBLIC_DASHBOARD_SNAPSHOT=true` and the
- * slim analytics cell otherwise. A disabled TanStack query reports
- * `isLoading: false`, so keying off the slim query in snapshot mode
- * (where it is `enabled: false`) flashed the empty state for the whole
+ * v1.7.0 — the gate keys off `primaryLoading`, which resolves to the
+ * snapshot cell. A disabled TanStack query reports `isLoading: false`, so
+ * keying off any other query flashed the empty state for the whole
  * snapshot fetch. The pure `resolveDashboardFirstPaintGate` carries the
  * behaviour; textual pins keep the wiring honest.
  */
@@ -198,13 +196,13 @@ describe("v1.4.43 W11 — dashboard tile-strip skeleton (wiring)", () => {
     expect(skeletonBlock?.[0]).toContain("<ChartSkeleton");
   });
 
-  it("derives `primaryLoading` from the snapshot vs slim query", () => {
+  it("derives `primaryLoading` from the snapshot query", () => {
     const src = dashboardSource();
     // v1.16.4 — `!mounted` pins SSR + the hydration render to the
     // skeleton branch so a late-hydrating boundary can't disagree with
     // the server HTML (React #418); see `useMounted`.
     expect(src).toMatch(
-      /const\s+primaryLoading\s*=\s*!mounted\s*\|\|\s*\(snapshotEnabled\s*\?\s*snapshotQuery\.isLoading\s*:\s*analyticsSlimQuery\.isLoading\);/,
+      /const\s+primaryLoading\s*=\s*!mounted\s*\|\|\s*snapshotQuery\.isLoading;/,
     );
   });
 

@@ -83,6 +83,7 @@ export function CustomMetricDetail({
   const [addFooterEl, setAddFooterEl] = useState<HTMLDivElement | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editFooterEl, setEditFooterEl] = useState<HTMLDivElement | null>(null);
+  const [editDirty, setEditDirty] = useState(false);
 
   const {
     data: metric,
@@ -326,6 +327,7 @@ export function CustomMetricDetail({
       <ResponsiveSheet
         open={editOpen}
         onOpenChange={setEditOpen}
+        dirty={editDirty}
         title={t("customMetrics.editTitle")}
         description={t("customMetrics.defineDescription")}
         footer={
@@ -341,6 +343,7 @@ export function CustomMetricDetail({
             footerSlot={editFooterEl}
             onSuccess={afterEditMetric}
             onCancel={() => setEditOpen(false)}
+            onDirtyChange={setEditDirty}
           />
         ) : null}
       </ResponsiveSheet>

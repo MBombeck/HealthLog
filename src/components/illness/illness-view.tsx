@@ -42,7 +42,7 @@ import { cn } from "@/lib/utils";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { applyOrder, useModuleListPrefs } from "@/lib/module-list-prefs";
 
-import { LogDaySheet } from "./log-day-sheet";
+import { LogDaySheet, useLastLoggableDay } from "./log-day-sheet";
 import { NewEpisodeSheet } from "./new-episode-sheet";
 import { EpisodeMenu } from "./episode-menu";
 import { IllnessInsightsCard } from "./illness-insights-card";
@@ -384,6 +384,7 @@ export function IllnessView() {
   const [logEpisodeId, setLogEpisodeId] = useState<string | null>(null);
 
   const logEpisode = episodes?.find((e) => e.id === logEpisodeId) ?? null;
+  const logLastDay = useLastLoggableDay(today, logEpisode?.resolvedAt);
 
   /**
    * Group the flat list into active / resolved, nesting flares and recurring
@@ -532,7 +533,7 @@ export function IllnessView() {
             if (!open) setLogEpisodeId(null);
           }}
           episodeId={logEpisodeId}
-          date={today}
+          date={logLastDay}
           onsetDate={logEpisode?.onsetAt.slice(0, 10)}
         />
       ) : null}

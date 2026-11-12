@@ -24,6 +24,7 @@ import { CoachLaunchButton } from "@/components/insights/coach-launch-button";
 import { InsightStatusCard } from "@/components/insights/insight-status-card";
 import { MetricTargetSummary } from "@/components/insights/metric-target-summary";
 import { MedicationEfficacySummary } from "@/components/insights/medication-efficacy-summary";
+import { DeferUntilNear } from "@/components/insights/defer-until-near";
 import { Glp1SubstanceCurveSummary } from "@/components/insights/glp1-substance-curve-summary";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 import { TileHeader } from "@/components/insights/tile-header";
@@ -321,12 +322,12 @@ export default function InsightsMedikamentePage() {
         })}
       </div>
 
-      {/* v1.28 — compact efficacy summary: reuses the same server-computed
-          efficacy DTO the detail-page "Wirkung" tab reads (never a second
-          computation), association-only, linking through to the full view. */}
-      <MedicationEfficacySummary
-        medications={medications.map((m) => ({ id: m.id, name: m.name }))}
-      />
+      {/* v1.28 — one efficacy read per medication, below every card: mounted when near. */}
+      <DeferUntilNear id="medication-efficacy">
+        <MedicationEfficacySummary
+          medications={medications.map((m) => ({ id: m.id, name: m.name }))}
+        />
+      </DeferUntilNear>
 
       {/* v1.28.20 — estimated active-substance curve for GLP-1 medications
           (additive; renders nothing when the user has no GLP-1 medication). */}

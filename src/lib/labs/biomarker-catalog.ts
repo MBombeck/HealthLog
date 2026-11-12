@@ -104,8 +104,7 @@ export const BIOMARKER_CATALOG: readonly BiomarkerSeed[] = [
     upperBound: 5.7,
   },
   // v1.25 — longevity panel: fasting insulin (metabolically-optimal often
-  // cited < 8 µIU/mL; typical reference ~2.5–13). HOMA-IR is derived from
-  // fasting glucose × insulin (see `homa-ir.ts`), not a stored catalog marker.
+  // cited < 8 µIU/mL; typical reference ~2.5–13).
   {
     slug: "fasting-insulin",
     panel: "glucose",

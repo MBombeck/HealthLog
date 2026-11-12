@@ -61,20 +61,17 @@ import { isSurfaceVisible } from "@/lib/modules/surface";
  *   - Active pill gets `aria-current="page"`.
  *   - The regenerate button has an `aria-label` so the icon-only
  *     affordance is announced. The button only renders when
- *     `onRegenerate` is wired — sub-pages don't carry the regenerate
- *     handler today (the mother page owns the advisor query and
- *     forwards the trigger via the layout slot).
+ *     `onRegenerate` is wired; the layout shell wires it on every
+ *     Insights page while the briefing capability is available.
  *   - `prefers-reduced-motion` honoured at the global level (no
  *     scroll-into-view here — Next.js routing handles focus + scroll).
  */
 
 export interface InsightsTabStripProps {
   /**
-   * Optional regenerate handler. Only the mother page passes this;
-   * sub-pages render the strip without the right-slot button.
-   * Wiring the strip in `layout.tsx` means we'd need a layout-level
-   * advisor query — for v1.4.25 we keep the strip stateless and the
-   * regenerate affordance on the mother page only.
+   * Optional regenerate handler. The layout shell passes it on every
+   * Insights page while the briefing capability is available; without
+   * it the strip renders no customise or regenerate control.
    */
   onRegenerate?: () => void;
   /** Spinner state — disables the button and swaps the icon. */

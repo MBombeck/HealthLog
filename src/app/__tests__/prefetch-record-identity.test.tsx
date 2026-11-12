@@ -64,9 +64,6 @@ vi.mock("@/lib/modules/gate", () => ({
 vi.mock("@/lib/dashboard/snapshot-read", () => ({
   readDashboardSnapshotCached: (u: unknown) => readDashboardSnapshotCached(u),
 }));
-vi.mock("@/lib/dashboard/snapshot-flag", () => ({
-  isDashboardSnapshotEnabled: () => true,
-}));
 vi.mock("@/lib/dashboard/batch-chart-types", () => ({
   computeBatchWindow: () => ({
     from: "2026-07-01T00:00:00.000Z",

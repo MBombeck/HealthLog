@@ -450,7 +450,7 @@ export async function extractAndStoreFacts(
 
   let proposed = 0;
   for (const f of toStore) {
-    // Field-by-field, no spread (mass-assignment rule, CLAUDE.md). A health
+    // Field-by-field, no spread (no mass assignment). A health
     // fact waits for the person's tap; everything else is kept as extracted.
     const source = backgroundSource(f.category, f.fact, "extracted");
     if (source === PROPOSED_FACT_SOURCE) proposed += 1;
@@ -710,7 +710,7 @@ export async function storeDeterministicFacts(args: {
   for (const cand of candidates) {
     if (isNearDuplicate(cand.fact, seen)) continue;
     seen.push(cand.fact);
-    // Field-by-field, no spread (mass-assignment rule, CLAUDE.md).
+    // Field-by-field, no spread (no mass assignment).
     await db.coachFact.create({
       data: {
         userId: args.userId,

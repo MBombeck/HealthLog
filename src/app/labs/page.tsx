@@ -31,7 +31,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PageHeader } from "@/components/ui/page-header";
 import { PullToRefreshIndicator } from "@/components/ui/pull-to-refresh-indicator";
-import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import {
+  ResponsiveSheet,
+  sheetBodyHasUnsavedInput,
+} from "@/components/ui/responsive-sheet";
 import { useAuth } from "@/hooks/use-auth";
 import { useMounted } from "@/hooks/use-mounted";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
@@ -218,6 +221,7 @@ export default function LabsPage() {
       <ResponsiveSheet
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        dirty={sheetBodyHasUnsavedInput}
         title={t("labs.addResult")}
         description={t("labs.addDescription")}
         footer={

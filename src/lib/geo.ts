@@ -480,7 +480,7 @@ async function lookupIpOnline(ip: string): Promise<GeoResolved | null> {
       // metadata address (SSRF/rebinding).
       // v1.15.12 — keep the online timeout below the audit-log 3 s race
       // window so a slow-but-successful lookup still lands before the race
-      // resolves null and drops the location (the "—" symptom on apps01).
+      // resolves null and drops the location (the "—" symptom in production).
       { timeoutMs: 2_500, requirePublicHost: true },
     );
     if (!res.ok) {

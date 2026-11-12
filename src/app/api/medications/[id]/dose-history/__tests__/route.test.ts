@@ -19,7 +19,7 @@ import { NextRequest } from "next/server";
 vi.mock("@/lib/db", () => ({
   prisma: {
     medication: { findUnique: vi.fn() },
-    medicationIntakeEvent: { findMany: vi.fn() },
+    medicationIntakeEvent: { findMany: vi.fn(), findFirst: vi.fn() },
   },
 }));
 

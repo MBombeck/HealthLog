@@ -87,7 +87,7 @@ export default function InsightsBlutdruckPage() {
               </Link>
             </Button>
           }
-          coachPrefill="I haven't recorded any blood pressure yet. Why does it matter, and what should I know before I start?"
+          coachPrefill={t("insights.emptyState.bloodPressure.coachPrefill")}
         />
       </SubPageShell>
     );

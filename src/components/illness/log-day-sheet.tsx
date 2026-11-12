@@ -24,7 +24,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { useFormatters, useTranslations } from "@/lib/i18n/context";
+import {
+  useDisplayTimezone,
+  useFormatters,
+  useTranslations,
+} from "@/lib/i18n/context";
+import { userDayKey } from "@/lib/tz/format";
 import { useUnitDisplay } from "@/hooks/use-unit-display";
 
 import { ILLNESS_SYMPTOM_CATALOG } from "./symptom-catalog";
@@ -35,7 +40,11 @@ interface LogDaySheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   episodeId: string;
-  /** The day to seed the picker with (usually today). */
+  /**
+   * The last day of the episode (`YYYY-MM-DD`): the day the picker opens on
+   * and the latest it offers. Today while the episode runs, its recovery day
+   * once it ended (`useLastLoggableDay`).
+   */
   date: string;
   /**
    * Episode onset day (`YYYY-MM-DD`) — the earliest day the picker allows, so
@@ -43,6 +52,29 @@ interface LogDaySheetProps {
    * (a user ill Sat–Sun who opens Monday can still record either day).
    */
   onsetDate?: string;
+}
+
+/**
+ * The last day a log can belong to: today, or the recovery day when the
+ * episode ended before today. The recovery day is read in the profile zone,
+ * the zone the server reads it in.
+ */
+export function lastLoggableDay(
+  today: string,
+  resolvedAt: string | null | undefined,
+  timeZone: string,
+): string {
+  if (!resolvedAt) return today;
+  const resolvedDay = userDayKey(new Date(resolvedAt), timeZone);
+  return resolvedDay < today ? resolvedDay : today;
+}
+
+/** `lastLoggableDay` in the viewer's profile zone. */
+export function useLastLoggableDay(
+  today: string,
+  resolvedAt: string | null | undefined,
+): string {
+  return lastLoggableDay(today, resolvedAt, useDisplayTimezone());
 }
 
 /** Mini toggle chip — the shared selection vocabulary. */
@@ -147,8 +179,8 @@ export function LogDaySheet({
   const { toDisplay, fromDisplay, unitFor } = useUnitDisplay();
   const feverUnit = unitFor("BODY_TEMPERATURE");
 
-  // The day being logged — seeded from `date` (today), but the picker lets the
-  // user backdate within [onset, today] for the retrospective journal.
+  // The day being logged — seeded from `date` (the episode's last day), and
+  // the picker lets the user backdate within [onset, date] for the journal.
   const [selectedDate, setSelectedDate] = useState(date);
   // Re-seed the picker each time the sheet opens (the open transition).
   const [pickerWasOpen, setPickerWasOpen] = useState(false);

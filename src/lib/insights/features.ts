@@ -834,8 +834,8 @@ export interface AggregatedFeatures {
  *
  * Replaces v1.4.35.x `rawMeasurements` (which appended every
  * measurement row and blew the 10 MB Codex prompt ceiling on power
- * users with multi-year imports — 25.9 MB observed on the maintainer's account
- * with 311 775 rows). Reading from `measurement_rollups` instead caps
+ * users with multi-year imports, about 26 MB for an account of some 300 000
+ * rows). Reading from `measurement_rollups` instead caps
  * the payload at O(types × buckets) regardless of underlying row
  * count.
  */

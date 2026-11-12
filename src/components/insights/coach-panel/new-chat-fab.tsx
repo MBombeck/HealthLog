@@ -16,7 +16,8 @@ import { cn } from "@/lib/utils";
  * column is wide enough, it takes the bottom right corner beside the
  * composer, where the Coach button sits on other pages; where the composer
  * fills the width (a phone, the drawer, a narrow column), it rises just
- * above the composer's top edge so it never covers the field.
+ * above the composer's top edge so it never covers the field, and the thread
+ * keeps its height free below the last message.
  *
  * The parent is the composer's wrapper and must be `relative` and an
  * `@container/composer`.

@@ -33,7 +33,7 @@ describe("determinePhase", () => {
   });
 });
 
-// v1.4 marathon — closes v3 audit "Locale Mixing" CRIT.
+// v1.4: closes the "Locale Mixing" finding.
 // Reminder messages must follow the user's stored locale, not always
 // German. callback_data values are stable English identifiers and stay
 // untranslated regardless of UI locale.

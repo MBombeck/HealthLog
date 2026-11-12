@@ -56,7 +56,7 @@ describe("<LayoutSection> hub", () => {
       "medications",
       "labs",
       "illness",
-      "vorsorge",
+      "checkups",
     ]) {
       expect(html).toContain(`href="/settings/layout/${id}"`);
     }
@@ -66,12 +66,12 @@ describe("<LayoutSection> hub", () => {
     const html = render({ medications: false, labs: false });
     expect(html).not.toContain('href="/settings/layout/medications"');
     expect(html).not.toContain('href="/settings/layout/labs"');
-    // Other modules unaffected; Vorsorge is never gated.
+    // Other modules unaffected; checkups are never gated.
     expect(html).toContain('href="/settings/layout/illness"');
-    expect(html).toContain('href="/settings/layout/vorsorge"');
+    expect(html).toContain('href="/settings/layout/checkups"');
   });
 
-  it("always lists dashboard, insights, and vorsorge (no module gate)", () => {
+  it("always lists dashboard, insights, and checkups (no module gate)", () => {
     const html = render({
       medications: false,
       mood: false,
@@ -80,7 +80,7 @@ describe("<LayoutSection> hub", () => {
     });
     expect(html).toContain('href="/settings/layout/dashboard"');
     expect(html).toContain('href="/settings/layout/insights"');
-    expect(html).toContain('href="/settings/layout/vorsorge"');
+    expect(html).toContain('href="/settings/layout/checkups"');
     // v1.44 — mood is tag management and left Arrangement for Modules.
     expect(html).not.toContain('href="/settings/layout/mood"');
   });

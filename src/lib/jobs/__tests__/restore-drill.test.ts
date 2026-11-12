@@ -8,7 +8,7 @@ import {
   RESTORE_DRILL_QUEUE,
   RESTORE_DRILL_SEND_OPTIONS,
 } from "@/lib/jobs/restore-drill-queue";
-import { QUEUE_RUNTIME } from "../queue-runtime";
+import { QUEUE_RUNTIME } from "@/__tests__/helpers/queue-runtime";
 
 vi.mock("../report-worker-error", () => ({
   reportWorkerError: vi.fn().mockResolvedValue(undefined),

@@ -16,7 +16,7 @@ import { renderToStaticMarkup } from "react-dom/server";
  *
  * The fix is aggressive: every cell that could carry a long string
  * gets `truncate` (overflow-hidden + text-ellipsis + whitespace-nowrap)
- * AND a tooltip on hover/long-press so the full value is still
+ * AND a popover on a tap so the full value is still
  * discoverable. This is the same pattern UserManagementSection uses
  * — apply it consistently here.
  */
@@ -83,7 +83,7 @@ function render() {
   );
 }
 
-describe("ApiTokenOverviewSection — truncate + tooltip (4th attempt)", () => {
+describe("ApiTokenOverviewSection — truncate + popover", () => {
   it("mobile token-name span does NOT carry the contradictory `break-all` modifier", () => {
     // `truncate` already sets `white-space: nowrap`, which beats
     // `word-break: break-all` per CSS spec — `break-all` was dead
@@ -125,11 +125,11 @@ describe("ApiTokenOverviewSection — truncate + tooltip (4th attempt)", () => {
     );
   });
 
-  it("renders shadcn tooltip wrappers around truncated cells so the full value stays discoverable", () => {
+  it("makes each truncated cell a button that opens the full value on a tap", () => {
     const html = render();
-    // Tooltip primitive uses `data-slot="tooltip-content"` for the
-    // hover bubble. Verify at least one tooltip-content node was
-    // rendered next to a truncated cell.
-    expect(html).toContain('data-slot="tooltip-trigger"');
+    // A hover tooltip never opens on a phone; the popover trigger does.
+    expect(html).toMatch(
+      /<button type="button"[^>]*data-slot="popover-trigger"[^>]*\btruncate\b/,
+    );
   });
 });

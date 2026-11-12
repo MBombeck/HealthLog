@@ -76,9 +76,10 @@ export function VaccinationSheet({
   const detail = useVaccination(vaccination?.id ?? null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   // Seeded once at mount; the caller remounts on every open by varying `key`.
-  const [draft, setDraft] = useState<VaccinationDraft>(() =>
+  const [seed] = useState<VaccinationDraft>(() =>
     vaccination ? draftFromVaccination(vaccination) : emptyDraft(),
   );
+  const [draft, setDraft] = useState<VaccinationDraft>(seed);
   const [error, setError] = useState<string | null>(null);
 
   const isEdit = vaccination !== null;
@@ -111,6 +112,7 @@ export function VaccinationSheet({
     <ResponsiveSheet
       open={open}
       onOpenChange={onOpenChange}
+      dirty={JSON.stringify(draft) !== JSON.stringify(seed)}
       title={t(isEdit ? "vaccinations.editTitle" : "vaccinations.createTitle")}
       description={t("vaccinations.formDescription")}
       footer={

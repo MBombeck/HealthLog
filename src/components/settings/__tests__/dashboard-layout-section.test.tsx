@@ -111,7 +111,7 @@ describe("<DashboardLayoutSection> — tile + chart split", () => {
   it("renders both column headers in German", () => {
     const html = render(<DashboardLayoutSection id="dashboard-layout" />, "de");
     expect(html).toContain("Kachel");
-    expect(html).toContain("Chart");
+    expect(html).toContain("Diagramm");
   });
 
   it("paints both switch slots per widget", () => {

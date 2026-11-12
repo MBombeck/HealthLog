@@ -26,7 +26,7 @@ import { parseJsonBody } from "@/lib/api/body";
 import { withIdempotency } from "@/lib/idempotency";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireModuleEnabled } from "@/lib/modules/gate";
-import { invalidateUserDashboardSnapshot } from "@/lib/cache/invalidate";
+import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
 import { NUTRIENT_CATALOG } from "@/lib/nutrients/catalog";
 import { maxAcceptableNutrientDay } from "@/lib/nutrients/day-bounds";
 import { nutrientWaterWriteSchema } from "@/lib/validations/nutrients";
@@ -138,10 +138,11 @@ async function postWater(request: NextRequest): Promise<Response> {
     });
   }
 
-  // Interactive single-entry write — hard-evict (not mark-stale) so the
-  // dashboard water tile reflects the new total on the very next read,
-  // matching the mood / medication / measurement posture.
-  invalidateUserDashboardSnapshot(user.id);
+  // Interactive single-entry write: hard-evict (not mark-stale) the record's
+  // analytics cells, so the dashboard water tile and the correlation scan
+  // behind the metric pages and the Coach read reflect the new total on the
+  // very next read, matching the mood / medication / measurement posture.
+  invalidateUserHealthContext(user.id);
 
   // A health-data write earns a durable row, like every other one. This was
   // the last manual write in the nutrients family that only reached the wide

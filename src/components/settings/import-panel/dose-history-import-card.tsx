@@ -241,7 +241,7 @@ export function DoseHistoryImportCard() {
           maxLength={MAX_PASTE_CHARS}
           spellCheck={false}
           placeholder="Date,Scheduled Date,Medication,…"
-          className="font-mono text-xs"
+          className="font-mono sm:pointer-fine:text-xs"
         />
         <p className="text-muted-foreground text-right text-xs tabular-nums">
           {t("settings.sections.export.import.charCount", {

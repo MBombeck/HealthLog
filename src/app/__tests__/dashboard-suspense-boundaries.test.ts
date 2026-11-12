@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { dashboardSource } from "@/__tests__/helpers/dashboard-source";
-import { readSource } from "@/__tests__/helpers/source-files";
 
 /**
  * v1.4.40 — dashboard Suspense boundaries.
@@ -55,19 +54,6 @@ describe("v1.4.40 — dashboard per-cell Suspense boundaries", () => {
     expect(src).toMatch(
       /<Suspense\s+fallback=\{<TrendCardSkeleton\s*\/>\}>\s*\{entry\.node\}\s*<\/Suspense>/,
     );
-  });
-
-  it("hoists DASHBOARD_QUERY_OPTS to module scope (audit-M2)", () => {
-    const src = readSource(
-      "src/components/dashboard/tiles/use-dashboard-data.ts",
-      "export function useDashboardData",
-    );
-    // Module-scope declaration — search outside the hook body. Declared
-    // inside it, every render would create a fresh `{}` reference.
-    const moduleSliceEnd = src.indexOf("export function useDashboardData");
-    expect(moduleSliceEnd).toBeGreaterThan(0);
-    const moduleSlice = src.slice(0, moduleSliceEnd);
-    expect(moduleSlice).toMatch(/const\s+DASHBOARD_QUERY_OPTS\s*=\s*\{/);
   });
 
   it("keeps the per-render Intl hour walk off the page (audit-H4 successor)", () => {

@@ -661,7 +661,7 @@ test.describe("notification preferences drive the dispatch decision", () => {
     await page.goto(`/medications/${medicationId}`, {
       waitUntil: "domcontentloaded",
     });
-    await page.locator('[data-slot="medication-tab-zeitplan"]').click();
+    await page.locator('[data-slot="medication-tab-schedule"]').click();
     await expect(
       page.locator('[data-slot="notifications-client-managed-chip"]'),
     ).toBeVisible({ timeout: 30_000 });

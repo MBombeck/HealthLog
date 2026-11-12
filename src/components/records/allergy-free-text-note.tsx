@@ -31,10 +31,10 @@ import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { FreeTextTakeOver } from "@/components/records/free-text-take-over";
 import { useTranslations } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
-import { cn } from "@/lib/utils";
 import { apiGet, apiPut } from "@/lib/api/api-fetch";
 import { useAboutMeSaveTimeoutMs } from "@/hooks/use-ai-capability";
 import { withBaseToken, isConflict } from "@/lib/api/optimistic-token";
@@ -49,9 +49,6 @@ interface AboutMeData {
   updatedAt: string | null;
   fieldMaxChars: number;
 }
-
-const FIELD_CLASSES =
-  "border-input bg-background placeholder:text-muted-foreground focus-visible:border-input-focus w-full rounded-md border px-3 py-2 text-sm focus-visible:outline-none";
 
 export function AllergyFreeTextNote({
   leadingAction,
@@ -122,10 +119,10 @@ export function AllergyFreeTextNote({
       <p className="text-muted-foreground text-xs">
         {t("records.allergies.freeText.hint")}
       </p>
-      <textarea
+      <Textarea
         id="records-allergy-free-text"
         data-testid="records-allergy-free-text"
-        className={cn(FIELD_CLASSES, "min-h-16 resize-y")}
+        className="resize-y"
         rows={2}
         value={value}
         maxLength={fieldMaxChars}

@@ -53,11 +53,8 @@ public/sw-version.js
 *.har
 *.heapsnapshot
 
-# Editor / agent worktrees + caches.
-.claude
+# Editor worktrees and caches.
 .worktrees
-.cursor
-.aider*
 .vscode
 .idea
 .DS_Store
@@ -80,15 +77,12 @@ Dockerfile
 # Documentation not needed for runtime image
 README.md
 CHANGELOG.md
-CLAUDE.md
 CONTRIBUTING.md
-CONTRIBUTING-AI.md
 CODE_OF_CONDUCT.md
 SECURITY.md
 # LICENSE / LICENSE.md are deliberately NOT ignored: the PolyForm
 # Noncommercial 1.0.0 notice terms require the licence text (or its URL)
 # to ship with every copy of the software, so it ships inside the image.
-AGENTS.md
 .planning
 docs
 docs/*.md

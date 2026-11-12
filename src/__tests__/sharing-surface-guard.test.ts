@@ -161,7 +161,7 @@ const BARE_REQUIRE_AUTH_FLOOR = 200;
  * omits the three routes under `src/app/.well-known/` — three request handlers
  * that a glob-based sweep reports as if they did not exist. Leg (a) pins one of
  * them by name so this cannot quietly regress. Names only; nothing under
- * `generated/` is ever read (CLAUDE.md).
+ * `generated/` is ever read.
  */
 function allPaths(): string[] {
   return readdirSync(SRC, { recursive: true })
@@ -1511,6 +1511,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "record",
     why: "The heaviest SQL aggregation in the product, cached per record; no provider on the path. Reached only through this module's MANAGE arm; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
   },
+  "app/api/insights/presence/route.ts": {
+    domain: "record",
+    why: "Which Insights pages have data: reading counts per type and four presence flags, the gate of the tab strip over the overview. Reached only through this module's MANAGE arm; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
+  },
   "app/api/insights/correlations/route.ts": {
     domain: "record",
     why: "Correlations over the record's own series. Reached only through this module's MANAGE arm; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
@@ -2049,6 +2053,11 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     conditions: [],
     why: "The heaviest SQL aggregation in the product, cached per record; no provider on the path.",
   },
+  "app/api/insights/presence/route.ts": {
+    domain: "record",
+    conditions: [],
+    why: "Counts and flags only, no values, from the cells the overview and the summaries slice already serve; no provider on the path.",
+  },
   "app/api/insights/correlations/route.ts": {
     domain: "record",
     conditions: [],
@@ -2299,8 +2308,11 @@ const ACTOR_ROUTES: Record<string, string> = {
  * list: a standing credential to a third-party calendar is the owner's to
  * make, or a managed profile's guardian's, never an adult record's delegate's.
  * 276 -> 278.
+ *
+ * The Insights presence read joins the record list and the manage literal:
+ * the tab strip's gate over the overview, counts and flags only. 277 -> 279.
  */
-const FROZEN_ENTRY_COUNT = 277;
+const FROZEN_ENTRY_COUNT = 279;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —

@@ -109,12 +109,13 @@ const SOURCE_KEY_OVERRIDES: Partial<Record<SubPageSlug, string>> = {
 /**
  * Metrics with no device path at all — manual entry is the only source.
  * Mood and medications are inherently self-report (no sensor produces a
- * mood score or an adherence event). Pain, grip strength, and waist-to-
- * height ratio are ALSO manual-only despite sitting beside device-fed
- * siblings in their group: none carries an Apple Health mapping
+ * mood score or an adherence event). Pain, grip strength, waist-to-height
+ * ratio and blood ketones are ALSO manual-only despite sitting beside
+ * device-fed siblings in their group: none carries an Apple Health mapping
  * (`apple-health-mapping.ts`) or a Withings/wearable source — pain is a
- * 0–10 self-rating, grip strength is read off a hand dynamometer, and
- * waist-to-height is logged directly (not derived like BMI). Cross-
+ * 0–10 self-rating, grip strength is read off a hand dynamometer,
+ * waist-to-height is logged directly (not derived like BMI), and ketones
+ * come off a fingerstick meter that no integration reads. Cross-
  * checked against every routed sub-page's `emptyStateCtaType` +
  * `emptyState.description` copy so this list can't silently drift from
  * what the metric's own empty state actually offers.
@@ -125,6 +126,7 @@ const MANUAL_ONLY_SLUGS: ReadonlySet<SubPageSlug> = new Set([
   "pain",
   "grip-strength",
   "waist-to-height",
+  "ketones",
 ]);
 
 const MANUAL_CTA: Partial<
@@ -146,6 +148,10 @@ const MANUAL_CTA: Partial<
   "waist-to-height": {
     href: "/measurements?add=WAIST_TO_HEIGHT",
     ctaKey: "insights.waistToHeight.emptyState.cta",
+  },
+  ketones: {
+    href: "/measurements?add=BLOOD_KETONES",
+    ctaKey: "insights.bloodKetones.emptyState.cta",
   },
 };
 

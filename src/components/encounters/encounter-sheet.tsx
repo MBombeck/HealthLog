@@ -92,7 +92,7 @@ export function EncounterSheet({
   // varying its `key`, so a second edit never shows the first one's values and
   // a create after an edit starts empty — without an effect that copies props
   // into state and briefly renders the stale pair.
-  const [draft, setDraft] = useState<EncounterDraft>(() =>
+  const [seed] = useState<EncounterDraft>(() =>
     encounter
       ? draftFromEncounter(encounter)
       : emptyDraft({
@@ -101,6 +101,7 @@ export function EncounterSheet({
           ...(kind ? { kind } : {}),
         }),
   );
+  const [draft, setDraft] = useState<EncounterDraft>(seed);
   const [error, setError] = useState<string | null>(null);
 
   const isEdit = encounter !== null;
@@ -140,6 +141,7 @@ export function EncounterSheet({
     <ResponsiveSheet
       open={open}
       onOpenChange={onOpenChange}
+      dirty={JSON.stringify(draft) !== JSON.stringify(seed)}
       title={t(isEdit ? "encounters.editTitle" : "encounters.createTitle")}
       description={t("encounters.formDescription")}
       footer={

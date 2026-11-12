@@ -23,9 +23,8 @@ type UnitPreference = "metric" | "imperial";
  * picker rather than in a standalone card (it replaces the retired
  * `<UnitPreferenceCard>`). Persistence is unchanged: a change PATCHes
  * `/api/auth/me/unit-preference` immediately and invalidates
- * `queryKeys.authMe()` + `queryKeys.userUnitPreference()` so every chart
- * display transform (km/h vs mph, km vs mi) re-renders on the next /me
- * refetch — no manual reload, no contract change.
+ * `queryKeys.authMe()`, the account payload every chart display transform
+ * (km/h vs mph, km vs mi) reads, so they re-render on the next /me refetch.
  */
 export function UnitPreferenceSelect({
   isAuthenticated,
@@ -59,9 +58,6 @@ export function UnitPreferenceSelect({
     onSuccess: () => {
       toastWrittenOutcome("success", t("settings.dashboard.units.saved"));
       queryClient.invalidateQueries({ queryKey: queryKeys.authMe() });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.userUnitPreference(),
-      });
       setOptimistic(null);
     },
     onError: (err) => {

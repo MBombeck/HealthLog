@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
  * demo.healthlog.dev. Its Argon2id hash lives in two places that must agree:
  *
  *   - scripts/seed-demo.ts          writes it when a demo tenant is seeded
- *   - scripts/migrate-demo-edge01.sh overwrites it after a migration load
+ *   - scripts/migrate-demo-account.sh overwrites it after a migration load
  *
  * Public issue #805: the migration used to carry the SOURCE account's hash
  * across instead, so once the operator rotated their own demo password the
@@ -18,7 +18,7 @@ import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = join(__dirname, "..", "..");
 const SEED = join(REPO_ROOT, "scripts", "seed-demo.ts");
-const MIGRATE = join(REPO_ROOT, "scripts", "migrate-demo-edge01.sh");
+const MIGRATE = join(REPO_ROOT, "scripts", "migrate-demo-account.sh");
 
 /** Every Argon2id hash literal in a file, in source order. */
 function argon2Hashes(path: string): string[] {
@@ -27,7 +27,7 @@ function argon2Hashes(path: string): string[] {
 }
 
 describe("published demo password", () => {
-  it("is the same hash in the seed script and the edge01 migration", () => {
+  it("is the same hash in the seed script and the demo migration", () => {
     const seeded = argon2Hashes(SEED);
     const migrated = argon2Hashes(MIGRATE);
 
@@ -55,7 +55,7 @@ describe("published demo password", () => {
     // ...and it must be proven, not merely attempted. Without the check a
     // mangled hash would reach a visitor's login screen instead of the script.
     expect(script).toContain(
-      "ABORT/FAIL: demo password_hash on edge01 is not the published literal",
+      "ABORT/FAIL: demo password_hash on the target is not the published literal",
     );
   });
 

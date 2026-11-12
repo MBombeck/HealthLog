@@ -2,6 +2,75 @@
 
 ## [Unreleased]
 
+## [1.47.5] — 2026-11-12
+
+### Fixed
+
+- **Sheets no longer throw away what you typed.** A tap outside, a swipe
+  down or Escape closed a sheet and dropped its input without a word in
+  the medication wizard, the add sheets on Measurements, Mood and Labs,
+  the visit, vaccination, practitioner and check-up forms, and the edit
+  sheets for illnesses, cycle days, custom metrics, targets, mood tags,
+  symptoms and life events. They now ask first, and an untouched form
+  closes at once. A sheet that asks before closing slides back after a
+  swipe instead of staying half off the screen.
+- **Hints open on a tap.** Information that only appeared on mouse hover
+  now opens on a tap: the measurement-pattern tip, the sleep-source
+  warning, score coverage, target status, range-bar values, the colour
+  of dashboard averages and long admin token names.
+- **No more zoom on iPhone when a field gets focus.** The medical-history
+  notes, the import and passphrase fields, the Coach memory editor, the
+  managed profile's handover link, the cycle length fields and the
+  command search use 16 px text now.
+- The "More" sheet scrolls when the phone is held sideways, the
+  practitioner and vaccine pickers open as wide as their field, the
+  remove buttons on chips are easier to hit without catching the label,
+  the first-run tour card sits above the iPhone home indicator, and the
+  Coach's New conversation button no longer covers the last message.
+- Illness screens no longer show "Weight", "Pulse", "Recovery" and "Day"
+  in English in German, French, Spanish, Italian and Polish, and the
+  medication wizard's "Name" step and the dashboard layout's "Chart"
+  column are translated too. The Coach question on an empty metric page
+  is in your language on every metric page.
+- The check-up list view shows the Coach and switched-off badges like
+  the cards. "Log day" on a recovered illness opens on the recovery day.
+  After switching the glucose unit, the target panels switch at once.
+- Blood ketones (new in 1.47.2) can be logged from the metric catalog
+  and tied to a check-up, and a ketone check-up goes quiet with the
+  Glucose module like the glucose one.
+
+### Changed
+
+- **Insights pages load faster.** The tab bar no longer downloads the
+  whole overview, a workout and the ECG list on every Insights page; one
+  small read, `GET /api/insights/presence`, tells it which tabs have
+  data for the record you are looking at. The Coach line under a metric
+  chart is worked out once per account and language instead of once per
+  page, the health status card loads from cache after the first open,
+  and Insights > Medications asks for each medication's efficacy only
+  when you scroll to the summary.
+- The dose history of a long-taken medication loads the window it shows
+  instead of every dose ever recorded.
+- A background tab no longer checks for a new version every minute; it
+  checks once when you come back. Every page load saves one request, the
+  dashboard's mood chart reuses what the dashboard already loaded, and
+  the admin Coach page loads its quality summary once.
+- The admin backups page and the cycle page no longer jump while they
+  load.
+- Medication tabs, the health record page and the check-ups layout page
+  have English addresses. Old links and bookmarks still work.
+- Settings, About opens the release notes instead of the full changelog
+  file.
+
+### Removed
+
+- The build-time switch `NEXT_PUBLIC_DASHBOARD_SNAPSHOT=false` and the
+  dashboard's old fallback behind it; the dashboard always reads its one
+  snapshot. If you build your own image with that switch, drop it.
+- The unused `GET /api/monitoring/settings` endpoint.
+- One-off scripts nothing runs, code paths nothing reaches and tests
+  about features removed long ago, about 15,000 lines in all.
+
 ## [1.47.4] — 2026-11-12
 
 ### Fixed
@@ -19279,9 +19348,8 @@ NOT NULL`) is the defence-in-depth backstop.
 - **DE+EN bilingual CHANGELOG entries (v1.4.14 + v1.4.15)
   normalised to English-only.** Per the English-only voice
   rule.
-- **`CLAUDE.md` filename retired** so the filename is no longer
-  AI-vendor-specific; `CONTRIBUTING.md` reference updated.
-  `AGENTS.md` stays for multi-agent compatibility.
+- **Maintainer notes renamed**; the `CONTRIBUTING.md` reference is
+  updated.
 
 ### Deferred to v1.4.23
 
@@ -20599,8 +20667,8 @@ token '<', "<!DOCTYPE "`. 401/403 from the provider now map to 422,
 - **Repo-internal docs synced for v1.4.** README adds the
   Multi-tenant ready and Test connection buttons feature blocks, the
   API reference table includes the eleven new v1.4 endpoints, and
-  the model count is corrected to 26 (RefreshToken). AGENTS.md and
-  CLAUDE.md reflect the per-route `/settings/[section]` layout and
+  the model count is corrected to 26 (RefreshToken). The maintainer
+  notes reflect the per-route `/settings/[section]` layout and
   the per-section admin layout. `docs/api/openapi.yaml` documents
   the new endpoints (version, refresh, refresh/revoke,
   status-overview, backup/test, the five test-connection probes).
@@ -21157,7 +21225,7 @@ timeout: 30s })` so in-flight handlers finish instead of being killed.
   - `.env.example` now points at the in-container hostname `db:5432` (was `localhost:5432`, which never resolves inside the app container).
 - **Documentation**:
   - `package.json` synced to 1.2.0 (was lagging on 1.1.0).
-  - `CLAUDE.md` and `AGENTS.md` corrected to 23 models (the `Feedback` model added in v1.2 was missing from the count).
+  - The maintainer notes are corrected to 23 models (the `Feedback` model added in v1.2 was missing from the count).
   - `README.md` Quick Start gives a realistic time estimate, generates the four secrets in one block straight into `.env`, and points reverse-proxy users at the docs.
 
 ### Added — Tooling & Supply Chain

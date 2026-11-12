@@ -130,7 +130,7 @@ export function CsvImportCard() {
           maxLength={MAX_PASTE_CHARS}
           spellCheck={false}
           placeholder="type,value,unit,measuredAt,…"
-          className="font-mono text-xs"
+          className="font-mono sm:pointer-fine:text-xs"
         />
         <p className="text-muted-foreground text-right text-xs tabular-nums">
           {t("settings.sections.export.import.charCount", {

@@ -19,12 +19,11 @@ import type {
 /**
  * v1.7.0 — first-paint gate for the dashboard tile strip.
  *
- * `primaryLoading` must come from whichever query actually drives the
- * tiles: the snapshot cell by default, the slim analytics cell when
- * `NEXT_PUBLIC_DASHBOARD_SNAPSHOT=false`. A disabled TanStack query reports
- * `isLoading: false` (idle fetch status), so keying off the wrong
- * source flashes the empty state for the whole fetch. Pure + exported
- * so the gate has direct unit coverage without mounting the page.
+ * `primaryLoading` comes from the snapshot cell that drives the tiles. A
+ * disabled TanStack query reports `isLoading: false` (idle fetch status),
+ * so keying off another source flashes the empty state for the whole
+ * fetch. Pure + exported so the gate has direct unit coverage without
+ * mounting the page.
  */
 export function resolveDashboardFirstPaintGate(input: {
   trendCardCount: number;

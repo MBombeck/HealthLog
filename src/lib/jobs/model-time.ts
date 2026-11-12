@@ -7,8 +7,9 @@
  * bound. pg-boss fails and retries a job that runs past its expiry, and it
  * does not stop the handler, so an expiry below that work lets a retry run
  * beside the first attempt (#1274). The bounds here are what the outer aborts
- * use and what the expiries in `queue-runtime.ts` are derived from, so both
- * move together when a call count or the setting's ceiling does.
+ * use and what the queue expiries are derived from (the queue table in
+ * `src/__tests__/helpers/queue-runtime.ts` checks them), so both move
+ * together when a call count or the setting's ceiling does.
  *
  * No server import: the queue modules that carry an expiry into a send read
  * these without loading a generator.

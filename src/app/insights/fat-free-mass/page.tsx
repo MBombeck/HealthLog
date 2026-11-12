@@ -24,7 +24,6 @@ export default function InsightsFettfreieMassePage() {
       color="var(--chart-1)"
       emptyStateIcon={<Scale className="size-6" />}
       emptyStateCtaType={null}
-      coachPrefill="I haven't logged any fat-free mass yet. What does this metric tell me about my health, and how do I improve it?"
     />
   );
 }

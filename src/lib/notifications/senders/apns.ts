@@ -1031,7 +1031,7 @@ const IOS_METADATA_ALLOWLIST = new Set([
   "phase",
   "date",
   // v1.16.11 — MEDICATION_LOW_STOCK deep link + context: the in-app
-  // path the push should open (`/medications/{id}?tab=bestand`) plus
+  // path the push should open (`/medications/{id}?tab=supply`) plus
   // the runway / threshold figures the iOS handler can surface.
   "url",
   "runwayDays",

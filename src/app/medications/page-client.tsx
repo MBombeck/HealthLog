@@ -435,7 +435,7 @@ export default function MedicationsPageClient() {
 
   function openHistory(med: Medication) {
     seedDetail(med);
-    router.push(`/medications/${med.id}?tab=verlauf`);
+    router.push(`/medications/${med.id}?tab=history`);
   }
 
   function closeDialog() {

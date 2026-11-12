@@ -320,20 +320,16 @@ describe("marking a dose", () => {
 
 describe("the medication card menu", () => {
   const node = (
-    <MedicationCardMenu
-      onEdit={() => {}}
-      onOpenHistory={() => {}}
-      onLogSideEffect={() => {}}
-    />
+    <MedicationCardMenu onEdit={() => {}} onOpenHistory={() => {}} />
   );
 
   it("renders its trigger in the caller's own record", () => {
     expect(render(OWN_RECORD, node)).toContain("<button");
   });
 
-  it("keeps a trigger for a delegate who may write", () => {
-    // One item survives for them — noting a side effect — so the menu stays.
-    expect(render(WRITABLE, node)).toContain("<button");
+  it("disappears for a delegate who may write but not manage", () => {
+    // Editing and the history editor are owner work; nothing survives.
+    expect(render(WRITABLE, node)).toBe("");
   });
 
   it("disappears entirely for a read-only delegate", () => {

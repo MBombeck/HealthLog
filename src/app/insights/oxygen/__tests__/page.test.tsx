@@ -13,6 +13,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+import { I18nProvider } from "@/lib/i18n/context";
 import { queryKeys } from "@/lib/query-keys";
 import type { ValueBand } from "@/lib/analytics/value-bands";
 
@@ -37,7 +38,9 @@ function bandsRendered(thresholds: unknown): ValueBand[] {
   }
   const html = renderToStaticMarkup(
     <QueryClientProvider client={client}>
-      <InsightsOxygenSaturationPage />
+      <I18nProvider initialLocale="en">
+        <InsightsOxygenSaturationPage />
+      </I18nProvider>
     </QueryClientProvider>,
   );
   const match = /<pre[^>]*>([^<]*)<\/pre>/.exec(html);

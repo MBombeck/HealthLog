@@ -128,7 +128,7 @@ describe("POST /api/internal/deploy-webhook", () => {
         {
           status: "success",
           application_name: "HealthLog",
-          application_uuid: "pg8wggwogo8c4gc4ks0kk4ss",
+          application_uuid: "app-uuid-1",
           deployment_uuid: "dep-123",
         },
         { "x-deploy-webhook-secret": "test-secret" },
@@ -144,7 +144,7 @@ describe("POST /api/internal/deploy-webhook", () => {
       expect.objectContaining({
         details: expect.objectContaining({
           applicationName: "HealthLog",
-          applicationUuid: "pg8wggwogo8c4gc4ks0kk4ss",
+          applicationUuid: "app-uuid-1",
           deploymentUuid: "dep-123",
           error: null,
           raw: expect.objectContaining({ status: "success" }),
@@ -166,7 +166,7 @@ describe("POST /api/internal/deploy-webhook", () => {
         {
           status: "failed",
           application_name: "HealthLog",
-          application_uuid: "pg8wggwogo8c4gc4ks0kk4ss",
+          application_uuid: "app-uuid-1",
           deployment_uuid: "dep-456",
           error: "container exited 137",
         },
@@ -284,7 +284,7 @@ describe("POST /api/internal/deploy-webhook", () => {
     const fullPayload = {
       status: "success",
       application_name: "HealthLog",
-      application_uuid: "pg8wggwogo8c4gc4ks0kk4ss",
+      application_uuid: "app-uuid-1",
       deployment_uuid: "dep-789",
       future_field: { commit_sha: "abc123", environment: "production" },
     };

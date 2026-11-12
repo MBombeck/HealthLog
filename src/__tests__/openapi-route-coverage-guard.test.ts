@@ -339,7 +339,6 @@ const UNPUBLISHED: Readonly<Record<string, Exemption>> = {
   "/api/internal/web-vitals": { kind: "internalOps", methods: ["POST"] },
   "/api/monitoring/csp-report": { kind: "internalOps", methods: ["POST"] },
   "/api/monitoring/glitchtip": { kind: "internalOps", methods: ["POST"] },
-  "/api/monitoring/settings": { kind: "internalOps", methods: ["GET"] },
   "/api/monitoring/umami-script": { kind: "internalOps", methods: ["GET"] },
   "/api/monitoring/umami/{path}": { kind: "internalOps", methods: ["POST"] },
   "/api/mcp/oauth/authorize": {

@@ -465,49 +465,9 @@ describe("<Glp1MedicationCard> — GLP-1 variant rendering", () => {
     expect(html).not.toContain("Low stock");
   });
 
-  it("folds the side-effect quick-log into the same overflow kebab", () => {
-    // v1.7.2 — the side-effect quick-log folds into the SAME overflow
-    // menu as edit / history / advanced, so the GLP-1 header carries one
-    // kebab whether or not the hand-off is wired (parity with the generic
-    // card). SSR doesn't open Radix Portal content, so we assert the
-    // single trigger surfaces and smoke-check the handler payload.
-    const client = makeClient();
-    seedCompliance(client, med7p5.id);
-    seedGlp1Details(client, med7p5.id, {});
-
-    const handler = vi.fn();
-    const html = render(
-      <Glp1MedicationCard
-        medication={med7p5}
-        onEdit={() => {}}
-        onOpenHistory={() => {}}
-        onLogSideEffect={handler}
-      />,
-      client,
-    );
-
-    // Exactly one kebab trigger with the localised aria-label.
-    const triggers = html.match(/aria-label="More options"/g) ?? [];
-    expect(triggers).toHaveLength(1);
-    // The side-effect button must no longer ride alongside
-    // Eingenommen / Übersprungen in the primary actions row.
-    expect(html).not.toMatch(
-      /class="[^"]*flex[^"]*gap-2[^"]*"[^>]*>[\s\S]*?Log side effect/,
-    );
-
-    // Invoke the supplied handler the way the menu item's onClick
-    // would — pins the prefill payload contract for MoodEntry.
-    handler(med7p5);
-    expect(handler).toHaveBeenCalledWith(
-      expect.objectContaining({ name: "Mounjaro", treatmentClass: "GLP1" }),
-    );
-  });
-
-  it("still renders the single kebab when onLogSideEffect is not supplied", () => {
-    // v1.7.2 — the kebab is unconditional now (it always carries edit
-    // / history / advanced); the side-effect item is the only opt-in
-    // part. Mounjaro and Ramipril therefore share the same one-kebab
-    // header shape regardless of the hand-off prop.
+  it("renders the single overflow kebab", () => {
+    // The kebab carries edit and history, so Mounjaro and Ramipril share
+    // the same one-kebab header shape.
     const client = makeClient();
     seedCompliance(client, med7p5.id);
     seedGlp1Details(client, med7p5.id, {});

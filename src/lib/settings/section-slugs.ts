@@ -44,9 +44,10 @@
 // canonical editors; reminder TYPES now live centrally in `notifications`,
 // each row gated on its module. `/settings/reminders` 301-redirects to
 // `/settings/notifications` (next.config.ts).
-// v1.18.0 — per-submodule settings split. `gesundheitsakte` (the full
+// v1.18.0 — per-submodule settings split. `health-record` (the full
 // health-record export, always available) lifts out of Export & Import into
-// its own top-level entry.
+// its own top-level entry. Its address was the German `gesundheitsakte` in
+// every language; that one redirects (next.config.ts).
 export const SETTINGS_SECTION_SLUGS = [
   "account",
   // v1.23 — `security` is the dedicated account-security home: second-factor
@@ -75,7 +76,7 @@ export const SETTINGS_SECTION_SLUGS = [
   // `insights`, `medications`, `mood`, `labs`, `illness`, `vorsorge`) and
   // `sharing` left this list. Their URLs are owned by permanent redirects
   // in `next.config.ts` (`/settings/<module>` → `/settings/layout/<module>`,
-  // `/settings/sharing` → `/settings/gesundheitsakte#sharing`), so the
+  // `/settings/sharing` → `/settings/health-record#sharing`), so the
   // dynamic route could never serve them — prerendering eight unreachable
   // pages and keeping eight dead component wirings. The redirects, the
   // section components, and the layout-hub subpages are unchanged.
@@ -106,7 +107,7 @@ export const SETTINGS_SECTION_SLUGS = [
   // assistant (Claude.ai / ChatGPT). Sits next to `api` (both are programmatic
   // access surfaces). Not nav-gated — the card carries its own enable toggle.
   "mcp",
-  "gesundheitsakte",
+  "health-record",
   "export",
   "advanced",
   // v1.23 — "Data & Privacy": a single surface that assembles the already-

@@ -114,7 +114,7 @@ export function MedicationEfficacySummary({
                   </div>
                   <InlineAction asChild className="shrink-0">
                     <Link
-                      href={`/medications/${med.id}?tab=wirkung`}
+                      href={`/medications/${med.id}?tab=effect`}
                       data-slot="insights-medication-efficacy-link"
                     >
                       {t("medications.efficacy.insights.link")}

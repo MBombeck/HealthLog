@@ -6,7 +6,6 @@ import {
 
 import { getUnswitchedSession } from "@/lib/auth/acting-carrier";
 import { readDashboardSnapshotCached } from "@/lib/dashboard/snapshot-read";
-import { isDashboardSnapshotEnabled } from "@/lib/dashboard/snapshot-flag";
 import {
   computeBatchWindow,
   deriveBatchChartTypes,
@@ -102,30 +101,32 @@ export default async function DashboardPage() {
       const queryClient = new QueryClient();
       queryClient.setQueryData(queryKeys.dashboardSnapshot(locale), wireBody);
       queryClient.setQueryData(queryKeys.dashboardWidgets(), wireBody.layout);
-
-      // Above-the-fold prefetch runs ONLY in snapshot mode: legacy mode derives
-      // its chart-type list from analytics queries the RSC did not run, so there
-      // is no byte-identical key to dehydrate the series under. In legacy mode
-      // `batchWindow` stays undefined and the client falls back to its own
-      // browser-local window exactly as before — no behaviour change off-flag.
-      const snapshotMode = isDashboardSnapshotEnabled();
-
-      // The profile-tz window is computed ONCE (snapshot mode only) and threaded
-      // to the client so the batched-series key matches byte-for-byte.
-      if (snapshotMode) {
-        batchWindow = computeBatchWindow(new Date(), user.timezone);
+      // The mood chart's series rides the mood tile (same engine as
+      // `/api/mood/analytics`); seeded with readings only, where the tile's
+      // summary is the route's.
+      const mood = (
+        wireBody.tiles as
+          { mood?: { entries: unknown[]; summary: unknown } } | undefined
+      )?.mood;
+      if (mood?.summary && mood.entries.length > 0) {
+        queryClient.setQueryData(queryKeys.moodAnalytics(), {
+          entries: mood.entries,
+          summary: mood.summary,
+        });
       }
 
-      const seriesTypes = snapshotMode
-        ? deriveBatchChartTypes(
-            resolveDashboardLayout(wireBody.layout),
-            (
-              wireBody.tiles as {
-                summaries?: Record<string, { count?: number }>;
-              }
-            )?.summaries,
-          )
-        : [];
+      // The profile-tz window is computed ONCE and threaded to the client so
+      // the batched-series key matches byte-for-byte.
+      batchWindow = computeBatchWindow(new Date(), user.timezone);
+
+      const seriesTypes = deriveBatchChartTypes(
+        resolveDashboardLayout(wireBody.layout),
+        (
+          wireBody.tiles as {
+            summaries?: Record<string, { count?: number }>;
+          }
+        )?.summaries,
+      );
 
       // Digest carries a soft budget (cold-day extras rebuild); series is a
       // warm rollup read (< 100 ms) with none. Both fail soft to `undefined`.

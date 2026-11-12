@@ -8,7 +8,7 @@
  * so could every other job that legitimately needs longer: the nightly status
  * passes, the pre-generation, the record scan, the key rotation, the backups.
  *
- * `src/lib/jobs/queue-runtime.ts` declares every queue `short`, `budgeted` or
+ * `helpers/queue-runtime.ts` declares every queue `short`, `budgeted` or
  * `long`. This guard holds the tree to it:
  *
  *   - every queue the worker registry declares (`jobs/registry/`) is in the
@@ -41,7 +41,7 @@ import {
   DEFAULT_JOB_EXPIRE_SECONDS,
   QUEUE_RUNTIME,
   type QueueRuntime,
-} from "@/lib/jobs/queue-runtime";
+} from "./helpers/queue-runtime";
 import { SCHEDULED_AND_SENT_QUEUES } from "@/lib/jobs/reminder/registrar-shared";
 import { HEAVY_QUEUES } from "@/lib/jobs/heavy-lane";
 import type { JobDefinition } from "@/lib/jobs/registry/define-job";

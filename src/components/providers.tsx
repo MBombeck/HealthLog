@@ -25,7 +25,6 @@ import { OidcReproofReturnBridge } from "@/components/auth/oidc-reproof-return";
 import { LocaleServerSyncBridge } from "@/components/layout/locale-server-sync-bridge";
 import { useAuth, type AccountAccessStatus } from "@/hooks/use-auth";
 import { useRecordSessionTransition } from "@/hooks/use-record-session-transition";
-import { isDashboardSnapshotEnabled } from "@/lib/dashboard/snapshot-flag";
 import {
   discardDashboardSnapshotPreload,
   prefetchDashboardSnapshot,
@@ -240,7 +239,7 @@ function DashboardSnapshotPreloader() {
   useEffect(() => {
     if (!ready) return;
     const controller = new AbortController();
-    if (pathname === "/" && isDashboardSnapshotEnabled()) {
+    if (pathname === "/") {
       prefetchDashboardSnapshot(queryClient, controller.signal);
     }
     // v1.16.7 — same waterfall cut for the medications page: its list

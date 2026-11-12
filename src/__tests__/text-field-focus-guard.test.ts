@@ -41,9 +41,6 @@ const TEXT_FIELD_FILES = [
   "src/components/ui/calendar.tsx",
   "src/components/insights/coach-panel/coach-input.tsx",
   "src/components/cycle/cycle-settings.tsx",
-  "src/components/records/about-me-note-manager.tsx",
-  "src/components/records/conditions-manager.tsx",
-  "src/components/records/allergy-free-text-note.tsx",
 ];
 
 const FOCUS_VARIANT = /(^|:)(focus|focus-visible|focus-within|has-focus)(:|$)/;

@@ -24,7 +24,6 @@ import {
   CheckCircle2,
   Clock,
   LifeBuoy,
-  Loader2,
   MinusCircle,
   XCircle,
 } from "lucide-react";
@@ -34,6 +33,7 @@ import { SettingsCard } from "@/components/settings/settings-card";
 import { Badge } from "@/components/ui/badge";
 import { InlineAction } from "@/components/ui/inline-action";
 import { QueryErrorRow } from "@/components/ui/query-error-row";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +43,17 @@ import {
   type ReadinessState,
   type RecoveryReadiness,
 } from "./use-recovery-readiness";
+
+/** One placeholder row per readiness signal the card always lists. */
+const READINESS_SIGNAL_SLOTS = [
+  "database_dump",
+  "weekly_copy",
+  "offhost_copies",
+  "restore_drill",
+  "offhost_setup",
+  "dump_retention",
+  "recovery_kit",
+] as const satisfies readonly ReadinessSignal["id"][];
 
 const STATE_ICON: Record<
   ReadinessState,
@@ -194,14 +205,27 @@ export function RecoveryReadinessCard() {
           onRetry={() => void refetch()}
         />
       ) : (
-        <div className="flex items-center gap-2">
-          <Loader2
-            className="text-muted-foreground size-4 animate-spin motion-reduce:animate-none"
-            aria-hidden="true"
-          />
-          <span className="text-muted-foreground text-sm">
+        // Holds the list's height while it loads. The card opens the backups
+        // page, and a one-line spinner here pushed every card below it down
+        // by the whole list once the signals landed.
+        <div data-testid="recovery-readiness-loading">
+          <span className="sr-only">
             {t("admin.recoveryReadiness.loading")}
           </span>
+          <ul className="divide-border divide-y" aria-hidden="true">
+            {READINESS_SIGNAL_SLOTS.map((slot) => (
+              <li
+                key={slot}
+                className="flex items-start gap-3 py-3 first:pt-0 last:pb-0"
+              >
+                <Skeleton className="mt-0.5 size-4 shrink-0 rounded-full" />
+                <div className="min-w-0 flex-1 space-y-1">
+                  <Skeleton className="h-5 w-40 max-w-full" />
+                  <Skeleton className="h-5 w-full" />
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </SettingsCard>

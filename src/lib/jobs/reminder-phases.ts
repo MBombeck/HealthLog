@@ -157,8 +157,8 @@ const resolveLocale = coerceLocale;
  * `medicationReminders.phase*`. The reminder worker passes the user's
  * stored locale; absent / unknown locales fall back to the app default.
  *
- * v1.4 marathon — closes the v3 audit "Locale-Mixing" CRIT finding
- * (German-only Telegram / Web Push templates regardless of user locale).
+ * v1.4: closes the "Locale-Mixing" finding (German-only Telegram / Web Push
+ * templates regardless of user locale).
  */
 export function getPhaseMessage(
   phase: ReminderPhase,

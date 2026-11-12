@@ -46,6 +46,7 @@ vi.mock("@/lib/i18n/context", () => ({
 vi.mock("@/components/ui/responsive-sheet", () => ({
   ResponsiveSheet: ({ open }: { open: boolean; children?: ReactNode }) =>
     open ? <div data-slot="mood-sheet-open" /> : null,
+  sheetBodyHasUnsavedInput: () => false,
 }));
 vi.mock("@/components/mood/mood-form", () => ({ MoodForm: () => null }));
 vi.mock("@/components/mood/mood-list", () => ({ MoodList: () => null }));

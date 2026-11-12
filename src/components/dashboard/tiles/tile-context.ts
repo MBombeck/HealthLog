@@ -127,8 +127,7 @@ export function useDashboardTileContext({
   ): number | null =>
     value == null ? null : unitDisplay.toDisplayDelta(type, value);
 
-  const { data, layout, layoutData, moodData, snapshot, snapshotEnabled } =
-    dashboard;
+  const { data, layout, layoutData, moodData, snapshot } = dashboard;
   const summaries = data?.summaries;
   const compareBaseline = layout.comparisonBaseline ?? "none";
 
@@ -183,15 +182,15 @@ export function useDashboardTileContext({
   const layoutResolved = layoutData != null;
 
   // Band and target numbers come resolved from the snapshot (`targetBands`).
-  // The client copy below is computed from the profile through the SAME
+  // The client copy below is computed from the profile (the age defaults; the
+  // person's own targets arrive with the snapshot) through the SAME
   // `buildDashboardBands` the server uses, so a still-loading snapshot frame
-  // keeps real bands rather than blank charts and the two cannot disagree.
+  // keeps real bands rather than blank charts.
   // The profile it reads is the caller's, and under a switch the caller is
   // the delegate: `viewerBandProfile` then draws no client band at all and
   // waits for the snapshot's, which resolve against the record. Keyed on the
   // `user` identity so the React Compiler can preserve the memo.
   const inSharedRecord = user?.accountAccess?.active != null;
-  const thresholdsData = dashboard.thresholdsData;
   const clientBandProfile = useMemo(
     () =>
       viewerBandProfile(
@@ -199,35 +198,32 @@ export function useDashboardTileContext({
           dateOfBirth: user?.dateOfBirth ? new Date(user.dateOfBirth) : null,
           gender: toProfileSex(user?.gender),
           heightCm: user?.heightCm ?? null,
-          thresholdsJson: thresholdsData?.overrides ?? null,
+          thresholdsJson: null,
         },
         inSharedRecord,
       ),
-    [user, thresholdsData, inSharedRecord],
+    [user, inSharedRecord],
   );
   const clientBands = useMemo(
     () => buildDashboardBands(clientBandProfile),
     [clientBandProfile],
   );
-  const serverBands = snapshotEnabled ? snapshot?.targetBands : undefined;
-  const bands = serverBands ?? clientBands;
+  const bands = snapshot?.targetBands ?? clientBands;
 
   // Which way a weight change counts as progress against the stored target.
   // The snapshot carries the server's answer; the fallback asks the same
   // resolver from the same profile the band fallback reads.
   const weight = summaries?.WEIGHT;
   const weightTrend =
-    (snapshotEnabled ? snapshot?.tiles.weightTrend : undefined) ??
+    snapshot?.tiles.weightTrend ??
     resolveWeightTrend(
       resolveWeightTargetOverride(clientBandProfile.thresholdsJson),
       weightTrendReferenceKg(weight),
     );
   // Every other tile's direction comes resolved from the server against the
-  // record's own targets. The snapshot-disabled path has no resolved answer
-  // and renders neutral rather than guessing a polarity.
-  const tileDirections = snapshotEnabled
-    ? snapshot?.tiles.directions
-    : undefined;
+  // record's own targets; until the snapshot lands it renders neutral rather
+  // than guessing a polarity.
+  const tileDirections = snapshot?.tiles.directions;
   const directionOf = (key: string): TrendDirectionSentiment =>
     tileDirections?.[key]?.direction ?? "neutral";
 

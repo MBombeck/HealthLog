@@ -204,26 +204,6 @@ describe("dispatchLocalisedNotification — pass-through plumbing", () => {
     );
   });
 
-  it("annotates metadata with preferredChannel when channel is supplied", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValueOnce({
-      locale: "en",
-    } as never);
-
-    await dispatchLocalisedNotification({
-      userId: "u-en",
-      titleKey: "notifications.admin.testTitle",
-      messageKey: "notifications.admin.testBody",
-      params: { name: "Test" },
-      channel: "telegram",
-      metadata: { source: "test" },
-    });
-
-    expect(dispatchNotificationMock.mock.calls[0][0].metadata).toEqual({
-      source: "test",
-      preferredChannel: "telegram",
-    });
-  });
-
   it("does not crash when the locale lookup throws (logs warning, falls back to default)", async () => {
     vi.mocked(prisma.user.findUnique).mockRejectedValueOnce(
       new Error("db down"),

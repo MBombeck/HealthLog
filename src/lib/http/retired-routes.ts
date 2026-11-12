@@ -62,8 +62,7 @@
  * other twenty-two are admin-console routes, operator diagnostics, aggregators
  * superseded in place, and the moodLog bridge — surfaces reachable only from
  * the operator's own browser, which ships with the server and reads no
- * contract to find out what it talks to. `moodlog-removal-guard.test.ts`
- * separately holds that bridge removed. Every entry after those five was
+ * contract to find out what it talks to. Every entry after those five was
  * written by the release that removed the path, which is where a tombstone
  * belongs.
  *

@@ -22,4 +22,4 @@ Every endpoint wraps its handler in `apiHandler` (`@/lib/api-handler`), parses a
 
 ## Conventions
 
-See [`../../CLAUDE.md`](../../CLAUDE.md). The request-flow walk in `.planning/codebase/arch.md` annotates each layer with file:line citations. Related dirs: handlers compose [`../lib/`](../lib/README.md); pages render [`../components/`](../components/README.md).
+Related dirs: handlers compose [`../lib/`](../lib/README.md); pages render [`../components/`](../components/README.md).

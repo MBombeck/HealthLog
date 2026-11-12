@@ -1,7 +1,9 @@
 # Fitbit integration (Fitbit & Pixel)
 
-> **Experimental.** Field mapping is still being verified against live accounts,
-> so some values may be missing or change in a future update.
+> **Ended.** Google turned the classic Fitbit Web API off on 30 October 2026.
+> HealthLog no longer calls it; existing connections and what they imported
+> stay. Fitbit and Pixel Watch data now come through
+> [Google Health](google-health.md).
 
 HealthLog reads Fitbit and Pixel Watch data through the **classic Fitbit Web
 API** (`api.fitbit.com`). The OAuth app is a **Fitbit developer app registered
@@ -16,13 +18,13 @@ Settings. The internal integration key is `fitbit`.
 > consent screen with `unauthorized_client — Invalid client_id`, because Fitbit
 > and Google Cloud are separate client registries.
 
-> **The classic Fitbit Web API is turned off on 30 October 2026.** Google
-> ended support for it on 30 September 2026 and turns it off on
+> **The classic Fitbit Web API was turned off on 30 October 2026.** Google
+> ended support for it on 30 September 2026 and turned it off on
 > **30 October 2026**, after which it "will no longer function or sync data"
 > ([Google's migration guide](https://developers.google.com/health/migration)).
-> New app registrations at `dev.fitbit.com/apps/new` are already closed.
+> New app registrations at `dev.fitbit.com/apps/new` are closed.
 >
-> From that day HealthLog stops calling the Web API for every Fitbit
+> Since that day HealthLog no longer calls the Web API for any Fitbit
 > connection: no hourly sync, no backfill, no token refresh, and no new
 > connection. Nothing is deleted. The connection and every reading it imported
 > stay, and the Fitbit card explains the move instead of asking for a
@@ -30,10 +32,10 @@ Settings. The internal integration key is `fitbit`.
 > [Google Health integration](google-health.md). It reads the same devices,
 > but Google asks for consent once more: Fitbit tokens cannot be carried over.
 >
-> Both integrations can run side by side while you move. Where both deliver the
-> same day, the source-priority ladder keeps one of them per day (Fitbit ranks
-> just above Google Health by default), so steps, sleep and the other daily
-> values are not counted twice. After the turndown only Google Health delivers.
+> Where a day imported from Fitbit before the turndown also comes in through
+> Google Health, the source-priority ladder keeps one of them per day (Fitbit
+> ranks just above Google Health by default), so steps, sleep and the other
+> daily values are not counted twice.
 
 ## 1. Use an existing Fitbit developer app
 

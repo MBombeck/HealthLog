@@ -70,13 +70,13 @@ pnpm typecheck && pnpm lint && pnpm test && pnpm format:check && pnpm build
 ## Code Conventions
 
 - **TypeScript strict mode** -- avoid `any`. Where it's truly unavoidable (e.g. variadic Next.js handler signatures in `src/lib/api-handler.ts`), document the reason inline.
-- **English-default UI** -- the default locale is English. German is user-selectable. Code, comments, commit messages, and docs are English. All user-facing strings go through `t("key")` with translations in both `messages/en.json` and `messages/de.json`. The `i18n-locale-integrity.test.ts` suite blocks merges if keys drift between locales or duplicate at any nesting depth.
+- **English-default UI**: the default locale is English, and nine more languages are user-selectable. Code, comments, commit messages, and docs are English. All user-facing strings go through `t("key")`, with the key in every `messages/*.json`. The `i18n-locale-integrity.test.ts` suite blocks merges if keys drift between locales or duplicate at any nesting depth.
 - **API responses** follow the `{ data, error }` envelope via `apiSuccess()` / `apiError()` in `src/lib/api-response.ts`. Wrap every route handler in `apiHandler()` (`src/lib/api-handler.ts`) for error handling, structured Wide-Event logging, and `x-request-id` propagation.
 - **Zod v4** (`import { ... } from "zod/v4"`) for input validation in API routes and forms.
 - **shadcn/ui** components (new-york style) for UI primitives.
 - **Dracula theme** -- dark mode is the default; a `light`/`system` toggle is exposed in the topbar. Chart and accent colors use the `--dracula-*` CSS tokens so both themes stay coherent.
 
-See `CONTRIBUTING-AI.md` for detailed architecture and patterns.
+Whoever commits a change has read it and stands behind it. Committed text names no real users or reporters and carries no live health figures; fixtures and examples use invented data. Nothing secret, and nothing secret-shaped, goes into code, fixtures or docs.
 
 ## Database Changes
 
@@ -121,7 +121,7 @@ Contributors: branch off `main`; PRs target `main`.
 
 ## Translations
 
-HealthLog ships with English (`en`) and German (`de`) maintained by the project, plus French (`fr`), Spanish (`es`), Italian (`it`), Polish (`pl`), Korean (`ko`), Dutch (`nl`), and Brazilian Portuguese (`pt-BR`) that are **AI-initial, community-maintained**. The maintained locales are reviewed line-by-line; the community-maintained ones surface a small banner inviting users to improve them.
+HealthLog ships with English (`en`) and German (`de`) maintained by the project, plus French (`fr`), Spanish (`es`), Italian (`it`), Polish (`pl`), Korean (`ko`), Dutch (`nl`), Brazilian Portuguese (`pt-BR`) and Russian (`ru`), which started as machine-translated first drafts and are reviewed by the community. The maintained locales are reviewed line by line; the community-reviewed ones show a small banner inviting users to improve them.
 
 ### Improving an existing locale
 
@@ -168,9 +168,9 @@ To propose a validated version for a language that has none, or a better source 
 
 If you want to introduce a locale that isn't shipped (e.g. `sv`, `cs`):
 
-1. Open an issue first using the **Translation request** template. We'll confirm the locale is in scope and decide whether it joins the AI-initial-community-maintained tier or the maintained tier.
+1. Open an issue first using the **Translation request** template. We'll confirm the locale is in scope and decide whether it joins the community-reviewed tier or the maintained tier.
 2. Copy `messages/en.json` to `messages/<locale>.json`. Questionnaire text is not in it; the new language needs a wording file per instrument instead (see Questionnaire wording above), which step 4 makes impossible to forget.
-3. Translate. AI assistance is welcome as a starting point but the PR description should note whether it's an AI-initial pass or a fully human-reviewed one — that information drives the banner state.
+3. Translate. A machine translation is fine as a starting point, but the PR description should say whether the pass is machine-translated or fully reviewed by someone who reads the language; that decides the banner state.
 4. Add the locale to `locales` in `src/lib/i18n/config.ts` and to `locales` in `project.inlang/settings.json`, then run `pnpm typecheck`. Every per-locale table that still lacks the new locale fails to compile, and that list is the work: date and number formatting, the reply-language footers of the Coach and insights prompts, the outbound safety banks, the prose-grounding patterns, the no-key fallback copy and the questionnaire wording registry. Include those in the same PR.
 5. Run `pnpm test` before submitting. The i18n guards hold the new bundle to the English keys and placeholders.
 
@@ -185,7 +185,7 @@ If you want to introduce a locale that isn't shipped (e.g. `sv`, `cs`):
 
 ### Long-term
 
-Fink covers browser editing today. It edits the files in this repository directly and keeps no copy of the translations anywhere else. If the community outgrows it, a self-hosted [Weblate](https://weblate.org/) instance remains the fallback. Tracking issue: `v1.6 — Weblate self-hosted on edge-01`.
+Fink covers browser editing today. It edits the files in this repository directly and keeps no copy of the translations anywhere else. If the community outgrows it, a self-hosted [Weblate](https://weblate.org/) instance remains the fallback.
 
 ## Code of Conduct
 

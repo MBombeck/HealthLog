@@ -16,7 +16,7 @@ import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { CycleRing } from "./cycle-ring";
-import { CycleCalendar } from "./cycle-calendar";
+import { CycleCalendar, CycleCalendarSkeleton } from "./cycle-calendar";
 import { CycleHistoryChart } from "./cycle-history-chart";
 import { LogDaySheet, sheetDayContext } from "./log-day-sheet";
 import { PhaseEducationCard } from "./phase-education-card";
@@ -347,9 +347,7 @@ export function CycleView() {
             <Card>
               <CardContent className="py-4">
                 {loading ? (
-                  <p className="text-muted-foreground text-sm">
-                    {t("cycle.calendar.loading")}
-                  </p>
+                  <CycleCalendarSkeleton today={today} />
                 ) : calendarError ? (
                   // Inside the calendar card already — a borderless row keeps
                   // it in line with the plain loading line above it (§3/§6).

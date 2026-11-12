@@ -3,6 +3,7 @@
 import { Thermometer } from "lucide-react";
 
 import { HealthKitMetricPage } from "@/components/insights/healthkit-metric-page";
+import { useTranslations } from "@/lib/i18n/context";
 
 /**
  * v1.4.32 — `/insights/body-temperature`.
@@ -13,6 +14,7 @@ import { HealthKitMetricPage } from "@/components/insights/healthkit-metric-page
  * them on separate enum values per the v1.4.30 categorisation overlay.
  */
 export default function InsightsBodyTemperaturePage() {
+  const { t } = useTranslations();
   return (
     <HealthKitMetricPage
       measurementType="BODY_TEMPERATURE"
@@ -24,7 +26,7 @@ export default function InsightsBodyTemperaturePage() {
       color="var(--chart-3)"
       emptyStateIcon={<Thermometer className="size-6" />}
       emptyStateCtaType="BODY_TEMPERATURE"
-      coachPrefill="I haven't logged any body temperature yet. What's the healthy range, and what should I do if it drifts?"
+      coachPrefill={t("insights.bodyTemperature.coachPrefill")}
     />
   );
 }

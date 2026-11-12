@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: HealthLog API
-  version: 1.47.4
+  version: 1.47.5
   description: >-
     Self-hosted personal-health-tracking PWA — public API surface for the iOS native client and external ingest.
 
@@ -13112,6 +13112,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/InsightsComprehensiveResponseEnvelope"
+        "401": *a1
+        "403": *a20
+        "422": *a4
+        "429": *a5
+  /api/insights/presence:
+    get:
+      tags:
+        - Insights
+      summary: Which Insights pages have data
+      description: "What the Insights tab strip gates its pills on, for the record on screen: the reading count per
+        measurement type (after the record's module switches) and whether the record has mood entries in the last 90
+        days, a tracked scheduled medication, workouts and ECG recordings. A flag whose module is off is false. Counts
+        and flags only; each page reads its own data. No provider is called and no AI switch refuses it. Delegable at
+        MANAGE level over the whole record. Cookie or Bearer auth."
+      responses:
+        "200":
+          description: The presence answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InsightsPresenceEnvelope"
         "401": *a1
         "403": *a20
         "422": *a4
@@ -34935,6 +34956,7 @@ components:
         - BLOOD_PRESSURE_SYS
         - PULSE
         - BLOOD_GLUCOSE
+        - BLOOD_KETONES
         - OXYGEN_SATURATION
         - BODY_TEMPERATURE
         - BODY_FAT
@@ -68521,6 +68543,63 @@ components:
       additionalProperties: false
       description: A significant Pearson correlation (n >= 20, p < 0.05). The field holding it is null when the pairing is not
         significant.
+    InsightsPresenceEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/InsightsPresence"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    InsightsPresence:
+      type: object
+      properties:
+        metrics:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            type: object
+            properties:
+              count:
+                type: integer
+                minimum: -9007199254740991
+                maximum: 9007199254740991
+            required:
+              - count
+            additionalProperties: false
+          description: "Keyed by `MeasurementType`: the reading count of every type with at least one reading, after the record's
+            module switches. The same counts `GET /api/analytics?slice=summaries` reports."
+        hasMood:
+          type: boolean
+          description: A mood entry in the last 90 days. False while the mood module is off.
+        hasMedication:
+          type: boolean
+          description: An active medication with a schedule whose intake is tracked. False while the medications module is off.
+        hasWorkouts:
+          type: boolean
+          description: At least one workout. False while the workouts module is off.
+        hasEcgRecordings:
+          type: boolean
+          description: At least one ECG recording.
+      required:
+        - metrics
+        - hasMood
+        - hasMedication
+        - hasWorkouts
+        - hasEcgRecordings
+      additionalProperties: false
+      description: "Which Insights pages have something to show for the record: what the tab strip gates its pills on. Counts
+        and flags only, no values."
     InsightsCardsEnvelope:
       type: object
       properties:

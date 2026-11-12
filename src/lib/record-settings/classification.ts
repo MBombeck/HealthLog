@@ -94,7 +94,7 @@ export const SETTINGS_DESTINATION_INVENTORY = {
   coach: MANAGED_GUARDIAN,
   api: PERSONAL,
   mcp: PERSONAL,
-  gesundheitsakte: PERSONAL,
+  "health-record": PERSONAL,
   export: PERSONAL,
   advanced: PERSONAL,
   privacy: PERSONAL,

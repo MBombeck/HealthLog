@@ -110,7 +110,7 @@ const LOADERS: Record<
     import("@/components/settings/api-section").then((m) => m.ApiSection),
   mcp: () =>
     import("@/components/settings/mcp-section").then((m) => m.McpSection),
-  gesundheitsakte: () =>
+  "health-record": () =>
     import("@/components/settings/gesundheitsakte-section").then(
       (m) => m.GesundheitsakteSection,
     ),
@@ -152,7 +152,7 @@ const SECTIONS: Record<SettingsSectionSlug, ComponentType<SectionProps>> = {
   }),
   api: dynamic(LOADERS.api, { loading: () => <SectionLoading /> }),
   mcp: dynamic(LOADERS.mcp, { loading: () => <SectionLoading /> }),
-  gesundheitsakte: dynamic(LOADERS.gesundheitsakte, {
+  "health-record": dynamic(LOADERS["health-record"], {
     loading: () => <SectionLoading />,
   }),
   export: dynamic(LOADERS.export, { loading: () => <SectionLoading /> }),

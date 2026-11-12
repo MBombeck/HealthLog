@@ -194,6 +194,21 @@ function makeSnapshotQueryFn(queryClient: QueryClient) {
     if (!queryClient.getQueryData(queryKeys.dashboardWidgets())) {
       queryClient.setQueryData(queryKeys.dashboardWidgets(), snap.layout);
     }
+    // The mood tile carries the series `/api/mood/analytics` answers (one
+    // engine, `buildMoodDailySeries`), which is what the mood chart reads.
+    // Same seed-when-empty rule, and only with readings, the one case where
+    // the tile's summary is the route's.
+    const mood = snap.tiles?.mood;
+    if (
+      mood?.summary &&
+      mood.entries.length > 0 &&
+      !queryClient.getQueryData(queryKeys.moodAnalytics())
+    ) {
+      queryClient.setQueryData(queryKeys.moodAnalytics(), {
+        entries: mood.entries,
+        summary: mood.summary,
+      });
+    }
     return snap;
   };
 }

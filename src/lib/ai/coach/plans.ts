@@ -380,7 +380,7 @@ export async function extractAndStorePlanProposals(
   const toStore = accepted.slice(0, remainingCapacity);
 
   for (const p of toStore) {
-    // Field-by-field, no spread (mass-assignment rule, CLAUDE.md). Always
+    // Field-by-field, no spread (no mass assignment). Always
     // written as "proposed" — only the user-facing PATCH activates a plan.
     await db.coachPlan.create({
       data: {

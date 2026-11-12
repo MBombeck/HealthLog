@@ -15,7 +15,11 @@
 
 import { describe, expect, it } from "vitest";
 
-import { cachesToEvict, resolveVersionPollDecision } from "../version-poller";
+import {
+  cachesToEvict,
+  resolveVersionPollDecision,
+  versionCheckDueOnReturn,
+} from "../version-poller";
 
 describe("resolveVersionPollDecision", () => {
   it("is up-to-date when live matches the shell", () => {
@@ -170,5 +174,22 @@ describe("cachesToEvict", () => {
 
   it("never touches another app's caches", () => {
     expect(cachesToEvict(keys, "1.43.0")).not.toContain("another-app-cache");
+  });
+});
+
+describe("versionCheckDueOnReturn", () => {
+  const NOW = 1_000_000_000;
+
+  it("asks at once when the tab comes back after a full interval away", () => {
+    expect(versionCheckDueOnReturn("visible", NOW - 60_000, NOW)).toBe(true);
+    expect(versionCheckDueOnReturn("visible", 0, NOW)).toBe(true);
+  });
+
+  it("does not ask again on a quick switch back", () => {
+    expect(versionCheckDueOnReturn("visible", NOW - 5_000, NOW)).toBe(false);
+  });
+
+  it("never asks while the tab is hidden", () => {
+    expect(versionCheckDueOnReturn("hidden", 0, NOW)).toBe(false);
   });
 });

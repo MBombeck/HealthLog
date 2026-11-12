@@ -16,7 +16,7 @@
  * polls the read-only GET until it lands.
  *
  * Recurring/event pg-boss task — never runs inside an HTTP request and
- * never shells out to `tsx` (CLAUDE.md DO-NOTs). Registered in the
+ * never shells out to `tsx` (the production image has none). Registered in the
  * reminder-worker `allQueues` loop + a `boss.work` handler; a queue built
  * but never registered silently never drains (the v1.4.37 W10 incident),
  * so a guard test pins the registration.

@@ -38,7 +38,7 @@ describe("layout-groups registry", () => {
       "labs",
       "illness",
       "documents",
-      "vorsorge",
+      "checkups",
     ]);
     // generateStaticParams() shape.
     expect(LAYOUT_GROUP_IDS.map((module) => ({ module }))).toEqual([
@@ -48,13 +48,13 @@ describe("layout-groups registry", () => {
       { module: "labs" },
       { module: "illness" },
       { module: "documents" },
-      { module: "vorsorge" },
+      { module: "checkups" },
     ]);
   });
 
   it("guards unknown segments", () => {
     expect(isLayoutGroupId("medications")).toBe(true);
-    expect(isLayoutGroupId("vorsorge")).toBe(true);
+    expect(isLayoutGroupId("checkups")).toBe(true);
     expect(isLayoutGroupId("nope")).toBe(false);
     expect(isLayoutGroupId("")).toBe(false);
   });
@@ -68,10 +68,10 @@ describe("layout-groups registry", () => {
     expect(gate("mood")).toBe("not-a-group");
     expect(gate("labs")).toBe("labs");
     expect(gate("illness")).toBe("illness");
-    // dashboard / insights / vorsorge are never gated.
+    // dashboard / insights / checkups are never gated.
     expect(gate("dashboard")).toBeUndefined();
     expect(gate("insights")).toBeUndefined();
-    expect(gate("vorsorge")).toBeUndefined();
+    expect(gate("checkups")).toBeUndefined();
   });
 
   it("maps every id to a distinct section body and the canonical i18n keys", () => {

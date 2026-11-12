@@ -50,6 +50,7 @@ const HISTORICAL_SETTINGS_PATHS: readonly string[] = [
   "/settings/api",
   "/settings/mcp",
   "/settings/gesundheitsakte",
+  "/settings/health-record",
   "/settings/sharing",
   "/settings/export",
   "/settings/advanced",
@@ -72,6 +73,7 @@ const HISTORICAL_SETTINGS_PATHS: readonly string[] = [
   "/settings/layout/illness",
   "/settings/layout/documents",
   "/settings/layout/vorsorge",
+  "/settings/layout/checkups",
 ];
 
 interface Redirect {
@@ -149,6 +151,22 @@ describe("historical Settings addresses", () => {
       (path) => !listed.has(path) && !path.startsWith("/settings/modules/"),
     );
     expect(unlisted).toEqual([]);
+  });
+
+  it("sends the old German addresses to their English ones", async () => {
+    const redirects = await settingsRedirects();
+    expect(resolve("/settings/gesundheitsakte", redirects)).toBe(
+      "/settings/health-record",
+    );
+    expect(resolve("/settings/sharing", redirects)).toBe(
+      "/settings/health-record",
+    );
+    expect(resolve("/settings/layout/vorsorge", redirects)).toBe(
+      "/settings/layout/checkups",
+    );
+    expect(resolve("/settings/vorsorge", redirects)).toBe(
+      "/settings/layout/checkups",
+    );
   });
 
   it("keeps the v1.44 moves addressable", async () => {

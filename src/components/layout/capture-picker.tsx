@@ -10,7 +10,10 @@ import {
   Waves,
 } from "lucide-react";
 
-import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
+import {
+  ResponsiveSheet,
+  sheetBodyHasUnsavedInput,
+} from "@/components/ui/responsive-sheet";
 import {
   ManualWorkoutForm,
   MeasurementForm,
@@ -19,17 +22,6 @@ import {
   SymptomEntryForm,
 } from "@/components/dashboard/quick-entry-forms.lazy";
 import { LifeEventForm } from "@/components/timeline/life-event-form.lazy";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { sheetBodyHasUnsavedInput } from "@/components/dashboard/quick-entry-sheets";
 import { useTranslations } from "@/lib/i18n/context";
 import { isSurfaceVisible, type SurfaceModuleMap } from "@/lib/modules/surface";
 import type { ShareDomain } from "@/lib/sharing/scope";
@@ -60,11 +52,9 @@ import {
  * from their own pages (`/measurements`, `/mood`, dashboard) and from
  * the More hub. The picker is an additional fast path, not a removal.
  *
- * v1.30.1 — the form sheet shares the dashboard quick-entry sheets'
- * confirm-before-discard guard (`sheetBodyHasUnsavedInput()`), so a
- * swipe-down / backdrop tap / Escape on a half-filled form from the
- * primary mobile capture path asks before dropping typed input,
- * instead of closing unconditionally.
+ * The form sheet asks before a swipe-down, backdrop tap, Escape or Back
+ * drops a half-filled form (`ResponsiveSheet`'s `dirty`), the same way the
+ * dashboard quick-entry sheets do.
  */
 
 export type CaptureKind =
@@ -189,10 +179,6 @@ export function CapturePicker({
   // sheet that is already open. See `admittedCaptureKind`.
   const openKind = admittedCaptureKind(kind, offered);
   const [footerEl, setFooterEl] = useState<HTMLDivElement | null>(null);
-  // v1.30.1 — mirrors `QuickEntrySheets`' `confirmDiscardOpen`: hold a
-  // dismiss attempt here instead of closing outright when the form
-  // body carries unsaved input.
-  const [confirmDiscardOpen, setConfirmDiscardOpen] = useState(false);
 
   function chooseKind(next: CaptureKind) {
     if (!offered.includes(next)) return;
@@ -206,16 +192,8 @@ export function CapturePicker({
     setKind(null);
   }
 
-  // Intercept a form-sheet dismiss: close immediately when the form is
-  // clean, otherwise keep the sheet open and ask before discarding —
-  // same contract as `QuickEntrySheets.handleQuickEntryOpenChange`.
   function handleFormOpenChange(next: boolean) {
-    if (next) return;
-    if (sheetBodyHasUnsavedInput()) {
-      setConfirmDiscardOpen(true);
-      return;
-    }
-    closeForm();
+    if (!next) closeForm();
   }
 
   const allOptions: ReadonlyArray<{
@@ -318,6 +296,7 @@ export function CapturePicker({
       <ResponsiveSheet
         open={openKind !== null}
         onOpenChange={handleFormOpenChange}
+        dirty={sheetBodyHasUnsavedInput}
         title={formTitle}
         footer={<div ref={setFooterEl} className="flex w-full" />}
       >
@@ -370,39 +349,6 @@ export function CapturePicker({
           />
         )}
       </ResponsiveSheet>
-
-      {/* v1.30.1 — confirm before discarding a partly-filled capture
-          form when the sheet is dismissed by an overlay tap, Escape,
-          or a mobile swipe-down. Copy shared with the dashboard
-          quick-entry sheets' identical guard. */}
-      <AlertDialog
-        open={confirmDiscardOpen}
-        onOpenChange={setConfirmDiscardOpen}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("dashboard.quickEntryDiscard.title")}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("dashboard.quickEntryDiscard.description")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>
-              {t("dashboard.quickEntryDiscard.cancel")}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setConfirmDiscardOpen(false);
-                closeForm();
-              }}
-            >
-              {t("dashboard.quickEntryDiscard.confirm")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

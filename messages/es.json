@@ -764,7 +764,7 @@
       "noneActionableCta": "Abrir medicamentos"
     },
     "quickEntryDiscard": {
-      "title": "¿Descartar esta entrada?",
+      "title": "¿Descartar los cambios?",
       "description": "Tienes datos sin guardar. ¿Cerrar el formulario y perder lo que escribiste?",
       "confirm": "Descartar",
       "cancel": "Seguir editando"
@@ -1547,7 +1547,6 @@
     "glp1NextInjectionToday": "hoy",
     "glp1NextInjectionTomorrow": "mañana",
     "glp1RotationSuggested": "Sugerido: {site}",
-    "glp1LogSideEffect": "Registrar efecto secundario",
     "sideEffects": {
       "section": "Efectos secundarios",
       "addCta": "Registrar",
@@ -1741,7 +1740,7 @@
         "step1": {
           "title": "¿Cómo se llama el medicamento?",
           "subline": "Exactamente como aparece en la caja.",
-          "label": "Name",
+          "label": "Nombre",
           "placeholder": "p. ej. Ramipril",
           "short": "Nombre"
         },
@@ -3583,7 +3582,8 @@
       "emptyState": {
         "title": "Aún no hay valores de VFC",
         "description": "Los valores de VFC aparecerán aquí en cuanto Apple Watch (o un dispositivo Withings compatible) sincronice las mediciones nocturnas."
-      }
+      },
+      "coachPrefill": "Aún no he registrado datos de VFC: ¿qué me dice la variabilidad de la frecuencia cardíaca y cómo la registro?"
     },
     "restingHr": {
       "title": "FC en reposo",
@@ -3602,7 +3602,8 @@
       "emptyState": {
         "title": "Aún no hay muestras de SpO₂",
         "description": "Las muestras de SpO₂ llegan aquí en cuanto un wearable compatible (Apple Watch, Withings ScanWatch) capture una lectura."
-      }
+      },
+      "coachPrefill": "Aún no he registrado la saturación de oxígeno: ¿qué me dice la SpO₂ y a qué rango debería aspirar?"
     },
     "bodyTemperature": {
       "title": "Temperatura corporal",
@@ -3612,7 +3613,8 @@
         "title": "Aún no hay temperatura corporal",
         "description": "Registra una lectura o deja que tu wearable sincronice una, y la tendencia aparecerá aquí.",
         "cta": "Registrar temperatura corporal"
-      }
+      },
+      "coachPrefill": "Aún no he registrado la temperatura corporal: ¿cuál es el rango saludable y qué debo hacer si se desvía?"
     },
     "steps": {
       "title": "Pasos",
@@ -3621,7 +3623,8 @@
       "emptyState": {
         "title": "Aún no hay datos de pasos",
         "description": "Los totales diarios de pasos aparecerán aquí en cuanto Apple Salud o un dispositivo de actividad sincronice un día completo."
-      }
+      },
+      "coachPrefill": "Aún no he registrado pasos: ¿cuál es un objetivo diario de pasos razonable y cómo ayuda a mi salud caminar más?"
     },
     "activeEnergy": {
       "title": "Energía activa",
@@ -3630,7 +3633,8 @@
       "emptyState": {
         "title": "Aún no hay datos de energía activa",
         "description": "Los totales de energía activa aparecerán aquí en cuanto Apple Salud o un dispositivo de actividad Withings sincronice un día completo."
-      }
+      },
+      "coachPrefill": "Aún no he registrado energía activa: ¿cuál es un objetivo diario razonable y cómo se compara con las calorías totales?"
     },
     "subPage": {
       "loadError": "No se pudo cargar esta métrica ahora mismo.",
@@ -3725,7 +3729,8 @@
       "valuesBack": "Volver a Insights",
       "valuesBackToMetric": "Volver a {metric}",
       "scoresBack": "Volver a Insights",
-      "ecgDescription": "Registros de ECG de una derivación de tu dispositivo, cada uno con el resultado del propio dispositivo."
+      "ecgDescription": "Registros de ECG de una derivación de tu dispositivo, cada uno con el resultado del propio dispositivo.",
+      "emptyCoachPrefill": "{metric}: aún no he registrado nada aquí. ¿Qué dice esta métrica sobre mi salud y cómo la mejoro?"
     },
     "units": {
       "steps": "pasos",
@@ -3825,27 +3830,32 @@
       "bloodPressure": {
         "title": "Aún no hay registros de presión arterial",
         "description": "Registra una medición de presión y aquí aparecerán la tendencia, el porcentaje en rango y la clasificación de la OMS.",
-        "cta": "Registrar presión"
+        "cta": "Registrar presión",
+        "coachPrefill": "Aún no he registrado la presión arterial: ¿por qué importa y qué debería saber antes de empezar?"
       },
       "weight": {
         "title": "Aún no hay registros de peso",
         "description": "Registra un peso y aparecerán automáticamente la tendencia, la media móvil y la zona objetivo.",
-        "cta": "Registrar peso"
+        "cta": "Registrar peso",
+        "coachPrefill": "Aún no he registrado mi peso: ¿por qué importa y qué debería saber antes de empezar a registrarlo?"
       },
       "pulse": {
         "title": "Aún no hay registros de pulso",
         "description": "Registra un pulso y aquí aparecerán pulso en reposo, VFC y VO₂ máx.",
-        "cta": "Registrar pulso"
+        "cta": "Registrar pulso",
+        "coachPrefill": "Aún no he registrado el pulso en reposo: ¿por qué importa y qué debería saber antes de empezar?"
       },
       "bmi": {
         "title": "IMC aún no calculado",
         "description": "Cuando haya altura y al menos un registro de peso, aquí aparecerá la tendencia del IMC con las zonas de la OMS.",
-        "cta": "Registrar peso"
+        "cta": "Registrar peso",
+        "coachPrefill": "Aún no he registrado mi peso: ¿por qué me importa el IMC y qué debería saber antes de empezar a seguirlo?"
       },
       "mood": {
         "title": "Aún no hay entradas de estado de ánimo",
         "description": "Registra un estado de ánimo y aparecerán la tendencia, la banda de estabilidad y las correlaciones.",
-        "cta": "Registrar ánimo"
+        "cta": "Registrar ánimo",
+        "coachPrefill": "Aún no he registrado mi estado de ánimo: ¿por qué importa registrarlo y cómo debería empezar?"
       },
       "medication": {
         "title": "Aún no hay medicamentos configurados",
@@ -3855,7 +3865,8 @@
       "sleep": {
         "title": "Aún no hay registros de sueño",
         "description": "Una vez disponibles los datos de sueño (manual o vía Withings / Apple Health), aquí aparecerá el desglose por fases.",
-        "cta": "Conectar una fuente"
+        "cta": "Conectar una fuente",
+        "coachPrefill": "Aún no tengo datos de sueño: ¿por qué importa registrar el sueño y qué debería saber antes de conectar una fuente?"
       }
     },
     "navWorkouts": "Entrenamientos",
@@ -3865,7 +3876,8 @@
       "description": "Carreras, salidas en bici, paseos y sesiones de fuerza recientes, deduplicados entre Apple Watch y Withings.",
       "emptyState": {
         "title": "Aún no hay entrenamientos",
-        "description": "Los entrenamientos llegan desde Apple Salud en el iPhone y desde Withings. También puedes registrar uno a mano."
+        "description": "Los entrenamientos llegan desde Apple Salud en el iPhone y desde Withings. También puedes registrar uno a mano.",
+        "coachPrefill": "Aún no he registrado entrenamientos: ¿por qué importa registrarlos y en qué debería centrarme primero?"
       },
       "detail": {
         "backToList": "Volver a entrenamientos",
@@ -4745,7 +4757,8 @@
       "emptyState": {
         "title": "Aún no hay datos de caídas",
         "description": "Las caídas detectadas aparecen aquí cuando Apple Health se sincroniza. Cero caídas es el objetivo."
-      }
+      },
+      "coachPrefill": "Aún no he registrado datos de caídas: ¿qué dice esta métrica sobre mi salud y cómo reduzco mi riesgo de caídas?"
     },
     "navFalls": "Caídas",
     "sixMinuteWalk": {
@@ -5695,7 +5708,7 @@
           "title": "Diario de enfermedades",
           "description": "Vista de lista y orden de episodios."
         },
-        "vorsorge": {
+        "checkups": {
           "title": "Revisiones",
           "description": "Vista de lista y orden de recordatorios."
         },
@@ -6121,7 +6134,7 @@
           "moduleSettingsDescription": "Todo lo demás está en la página del módulo, en Módulos."
         }
       },
-      "gesundheitsakte": {
+      "health-record": {
         "title": "Historial médico",
         "subtitle": "Exporta un historial de salud completo, listo para el médico."
       },
@@ -7058,7 +7071,7 @@
       "builtAtLabel": "Compilado",
       "license": "Licencia",
       "repository": "Código fuente",
-      "changelog": "Changelog",
+      "changelog": "Notas de la versión",
       "docs": "Documentación",
       "credits": "Créditos y atribuciones de datos",
       "linksHeading": "Fuentes y documentación",
@@ -10206,7 +10219,7 @@
     "snoozedUntil": "Aplazado hasta {date}",
     "skippedOn": "Omitido el {date}",
     "skipCount": "omitido {count} veces",
-    "disabledBadge": "Apagado",
+    "disabledBadge": "Desactivado",
     "nextDue": {
       "none": "Sin programar",
       "today": "Vence hoy",
@@ -10229,6 +10242,7 @@
       "BLOOD_PRESSURE_SYS": "Presión arterial",
       "PULSE": "Pulso",
       "BLOOD_GLUCOSE": "Glucosa en sangre",
+      "BLOOD_KETONES": "Cetonas en sangre",
       "OXYGEN_SATURATION": "Saturación de oxígeno",
       "BODY_FAT": "Grasa corporal",
       "BODY_TEMPERATURE": "Temperatura corporal",
@@ -11073,7 +11087,7 @@
       "notePlaceholder": "Cómo te sentiste hoy (cifrado).",
       "severityFor": "Gravedad de {symptom}",
       "saveError": "No se pudo guardar el día. Inténtalo de nuevo.",
-      "day": "Day"
+      "day": "Día"
     },
     "impact": {
       "0": "Plenamente funcional",
@@ -11162,14 +11176,14 @@
       "RESTING_HEART_RATE": "Frecuencia cardíaca en reposo",
       "HEART_RATE_VARIABILITY": "Variabilidad de la frecuencia cardíaca",
       "HRV_RMSSD": "VFC (RMSSD)",
-      "RECOVERY_SCORE": "Recovery",
+      "RECOVERY_SCORE": "Recuperación",
       "OXYGEN_SATURATION": "Saturación de oxígeno",
       "BODY_TEMPERATURE": "Temperatura corporal",
       "RESPIRATORY_RATE": "Frecuencia respiratoria",
       "BLOOD_PRESSURE_SYS": "Presión arterial sistólica",
       "BLOOD_PRESSURE_DIA": "Presión arterial diastólica",
-      "PULSE": "Pulse",
-      "WEIGHT": "Weight",
+      "PULSE": "Pulso",
+      "WEIGHT": "Peso",
       "FUNCTIONAL_IMPACT": "Impacto funcional"
     },
     "listLoadError": "No se pudieron cargar tus episodios."

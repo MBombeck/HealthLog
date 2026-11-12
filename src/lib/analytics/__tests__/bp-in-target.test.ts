@@ -21,8 +21,8 @@ describe("isBpReadingInTarget()", () => {
    * v1.4.16 A2 regression: 117/79 is textbook normotensive
    * (well-controlled, below the goal ceiling, above hypotension). The
    * v1.4.15 implementation rejected this because sys < sysLow (120),
-   * which collapsed the live tenant's BD-Zielbereich tile to 0 %. The fix uses a
-   * one-sided ceiling check with a clinical floor.
+   * which collapsed the in-target tile of a well-controlled profile to
+   * 0 %. The fix uses a one-sided ceiling check with a clinical floor.
    */
   it("counts a normotensive reading below the goal band as in-target", () => {
     expect(isBpReadingInTarget(117, 79, TARGETS_UNDER_65)).toBe(true);
@@ -197,11 +197,8 @@ describe("computeBpInTargetPct", () => {
   });
 
   /**
-   * v1.4.16 A2 regression — the live tenant's actual production data.
-   *
-   * The maintainer reported BD-Zielbereich = 0 % despite multiple BP readings
-   * that "are clearly in target". A query against production showed
-   * their last 30 days of paired readings include 117/79, 122/76, 108/76,
+   * v1.4.16 A2 regression: a month of ten paired readings, most of them
+   * clearly in target, that the tile read as 0 %: 117/79, 122/76, 108/76,
    * 106/73, 127/86, 115/78, 108/75, 124/82, 126/80, 133/95.
    *
    * Under v1.4.15 narrow-band semantics (sys >= 120 AND sys <= 129 AND
@@ -216,9 +213,9 @@ describe("computeBpInTargetPct", () => {
    * Result: 5/10 = 50 %.
    *
    * Compare with the v1.4.15 narrow-band result (0/10 = 0 %) — that's
-   * the regression the maintainer reported.
+   * the regression.
    */
-  it("regression: the maintainer's production data produces non-zero % under the ceiling semantics", () => {
+  it("regression: the ten-pair month produces non-zero % under the ceiling semantics", () => {
     const sys = [
       reading("2026-05-08T07:38:22Z", 117),
       reading("2026-05-03T21:22:02Z", 122),
@@ -267,12 +264,12 @@ describe("computeBpInTargetPct", () => {
 
 describe("computeBpInTargetWindows — all-time headline (v1.4.19 A1)", () => {
   /**
-   * v1.4.19 A1 regression — the maintainer reported the BD-Zielbereich tile shows
-   * **EXACTLY 50 % on 7T, 30T, AND the headline ("total")** for their
-   * production data. Hand-counted hypothesis-1 from the brief (the
-   * three-way coincidence cannot be data — it's a calculation pin):
+   * v1.4.19 A1 regression — the in-target tile showed
+   * **EXACTLY 50 % on 7T, 30T, AND the headline ("total")** for a long
+   * history. Hand-counted (the three-way coincidence cannot be data, it is
+   * a calculation pin):
    *
-   *   - The live tenant has 572 paired BP readings going back to 2022-01.
+   *   - A history of 572 paired BP readings over four years.
    *   - Last 7 days: 1 / 2 in target = 50 %.
    *   - Last 30 days: 5 / 10 in target = 50 %.
    *   - All time:   62 / 572 in target ≈ 11 %.
@@ -389,8 +386,8 @@ describe("computeBpInTargetWindows — all-time headline (v1.4.19 A1)", () => {
     expect(result.last90Days).toBeNull();
   });
 
-  it("regression: the live tenant's 30-day fixture mirrors the live tenant's prod headline bug", () => {
-    // Reuse the maintainer's production fixture (10 pairs, 5 in target = 50 %).
+  it("regression: the ten-pair month alone hides the headline bug", () => {
+    // Reuse the ten-pair fixture (5 in target = 50 %).
     // When the input is JUST those 10 pairs, allTime equals 30d == 50 %
     // (this is the legitimate coincidence — it only hides the bug when
     // the user has no older history). The bug surfaces the moment older
@@ -431,7 +428,7 @@ describe("computeBpInTargetWindows — all-time headline (v1.4.19 A1)", () => {
 
 describe("computeBpInTargetWindows", () => {
   /**
-   * v1.4.18 A1 regression — the maintainer reported the BD-Zielbereich tile shows
+   * v1.4.18 A1 regression — the in-target tile showed
    * the 30-day headline (50 %) but `7T: —` and `30T: —` placeholders
    * even though the user has paired BP readings in both windows. Root
    * cause: the analytics route only returned `bpInTargetPct` once over
@@ -439,7 +436,7 @@ describe("computeBpInTargetWindows", () => {
    * renders the "—" fallback. The fix is a windowed helper that returns
    * both 7-day and 30-day shares so the tile can show all three.
    *
-   * Pinning the live tenant's actual production fixture (10 paired readings over
+   * Pinning a fixture of 10 paired readings over
    * the last 30 days, 2 of them within the last 7 days) so a future
    * reviewer can re-derive the expected counts by hand.
    */
@@ -520,11 +517,11 @@ describe("computeBpInTargetWindows", () => {
   });
 
   /**
-   * the live tenant's real fixture: 10 paired readings over the last 30 days (5 in
+   * The fixture: 10 paired readings over the last 30 days (5 in
    * target, 5 out → 50 %), of which 2 are inside the last 7 days
    * (1 in target, 1 out → 50 %).
    */
-  it("regression: the maintainer's production fixture renders 7d=50% and 30d=50%", () => {
+  it("regression: the ten-pair fixture renders 7d=50% and 30d=50%", () => {
     const fixtureNow = new Date("2026-05-09T12:00:00Z");
     const sys = [
       reading("2026-05-08T07:38:22Z", 117), // 7d IN

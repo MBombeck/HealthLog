@@ -148,9 +148,8 @@ export interface HealthKitMetricPageProps {
    */
   statIcon?: ComponentType<{ className?: string }>;
   /**
-   * Optional Coach prefill for the empty-state launch. Falls back to a
-   * generic onboarding prompt threaded through `<CoachLaunchButton>`'s
-   * default.
+   * The empty state's Coach question, for a metric that asks its own. Without
+   * it the page asks the shared, translated one with its own title.
    */
   coachPrefill?: string;
   /**
@@ -221,6 +220,17 @@ export interface HealthKitMetricPageProps {
    * the empty / loading / error branches skip it and no void card appears.
    */
   afterAssessment?: ReactNode;
+}
+
+/**
+ * The empty state's Coach question for a metric that asks none of its own:
+ * one translated sentence around the page's title.
+ */
+function sharedCoachPrefill(
+  t: ReturnType<typeof useTranslations>["t"],
+  metric: string,
+): string {
+  return t("insights.subPage.emptyCoachPrefill", { metric });
 }
 
 export function HealthKitMetricPage({
@@ -424,7 +434,7 @@ export function HealthKitMetricPage({
           title={t(`${i18nPrefix}.emptyState.title`)}
           description={t(`${i18nPrefix}.emptyState.description`)}
           cta={ctaNode}
-          coachPrefill={coachPrefill ?? null}
+          coachPrefill={coachPrefill ?? sharedCoachPrefill(t, title)}
         />
       </SubPageShell>
     );

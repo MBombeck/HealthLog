@@ -73,8 +73,8 @@ async function readDailySeries({
   async function fetchSleepNights() {
     const sleepParams = new URLSearchParams();
     sleepParams.set("kind", "sleep");
-    // The series route caps sleep at 365 days; clamp the request so a
-    // longer comparison window still resolves.
+    // The series route caps `days` at 3650 (the "All" tab); clamp the
+    // request so a window stretched by a comparison shift still resolves.
     sleepParams.set(
       "days",
       String(Math.max(1, Math.min(3650, Math.ceil(fetchWindow.windowDays)))),

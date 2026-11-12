@@ -190,9 +190,8 @@ describe("medication card symmetry — Ramipril vs Mounjaro", () => {
     }
   });
 
-  it("Mounjaro keeps the single kebab even when onLogSideEffect is supplied (GLP-1-only)", () => {
-    // The side-effect quick-log folds into the SAME overflow menu, so the
-    // GLP-1 header shape stays byte-symmetric with the generic card: one
+  it("Mounjaro carries the same single kebab as the generic card", () => {
+    // The GLP-1 header shape stays byte-symmetric with the generic card: one
     // kebab trigger, no extra control.
     const client = makeClient();
     seedCompliance(client, mounjaro.id);
@@ -203,7 +202,6 @@ describe("medication card symmetry — Ramipril vs Mounjaro", () => {
         medication={mounjaro}
         onEdit={() => {}}
         onOpenHistory={() => {}}
-        onLogSideEffect={() => {}}
       />,
       client,
     );
@@ -294,7 +292,6 @@ describe("medication card symmetry — Ramipril vs Mounjaro", () => {
         medication={mounjaro}
         onEdit={() => {}}
         onOpenHistory={() => {}}
-        onLogSideEffect={() => {}}
       />,
       client,
     );

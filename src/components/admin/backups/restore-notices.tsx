@@ -290,7 +290,7 @@ export function RestoreSkipReport({
 /**
  * Says out loud whether the SCHEDULE is still alive.
  *
- * The weekly pass on the maintainer's own instance stopped producing copies
+ * The weekly pass on one instance stopped producing copies
  * and nothing surfaced it for a month and a half: the table listed the rows it
  * had, each with an ordinary timestamp, and a copy from six weeks ago reads
  * exactly like one made on Sunday until somebody does the subtraction. Two

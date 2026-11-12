@@ -46,7 +46,7 @@
  * provider-less account costs one cheap chain-resolve and no LLM call.
  *
  * Recurring pg-boss task — never runs inside an HTTP request and never
- * shells out to `tsx` (CLAUDE.md DO-NOTs).
+ * shells out to `tsx` (the production image has none).
  */
 import { activeAccount } from "@/lib/account-deletion/active-account";
 import { createHash, randomUUID } from "node:crypto";
