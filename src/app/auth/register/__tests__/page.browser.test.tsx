@@ -125,14 +125,39 @@ describe("registration refusals", () => {
     return screen;
   }
 
-  it("says the registration failed instead of the server's words", async () => {
+  it("says what to change when the name or address is taken", async () => {
     const screen = await register({
       status: 409,
       error: "Username or email already taken",
-      meta: { errorCode: "http.conflict" },
+      meta: { errorCode: "auth.register.taken" },
+    });
+    await expect
+      .element(
+        screen.getByText("That username or email address is already in use."),
+      )
+      .toBeVisible();
+    expect(document.body.textContent).not.toContain("already taken");
+  });
+
+  it("tells an invitee their link no longer works", async () => {
+    const screen = await register({
+      status: 403,
+      error: "Invalid or expired invite",
+      meta: { errorCode: "auth.register.invite_invalid" },
+    });
+    await expect
+      .element(screen.getByText(/This invitation is no longer valid/))
+      .toBeVisible();
+  });
+
+  it("says the registration failed for a refusal it has no words for", async () => {
+    const screen = await register({
+      status: 500,
+      error: "Internal error",
+      meta: { errorCode: "http.internal" },
     });
     await expect.element(screen.getByText("Registration failed")).toBeVisible();
-    expect(document.body.textContent).not.toContain("already taken");
+    expect(document.body.textContent).not.toContain("Internal error");
   });
 
   it("shows the password feedback, which the server words for the reader", async () => {

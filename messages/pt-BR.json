@@ -151,7 +151,12 @@
       },
       "mfa": {
         "already_active": "Esta conta já tem um aplicativo autenticador configurado. Desative-o primeiro para configurar um novo."
-      }
+      },
+      "register": {
+        "taken": "Esse nome de usuário ou endereço de e-mail já está em uso.",
+        "invite_invalid": "Este convite não é mais válido. Peça um novo link à pessoa que convidou você."
+      },
+      "already_authenticated": "Você já está conectado. Saia primeiro e tente novamente."
     },
     "biomarkers": {
       "unit": {
@@ -234,7 +239,17 @@
       "budget": {
         "exceeded": "O orçamento de IA de hoje acabou, então nada foi enviado. Ele é renovado amanhã."
       }
-    }
+    },
+    "passkey": {
+      "unknown": "Esta chave de acesso não está registrada aqui. Entre de outra forma.",
+      "challenge": {
+        "expired": "O login demorou demais ou já foi usado. Tente novamente."
+      },
+      "response": {
+        "invalid": "Não foi possível ler a resposta da chave de acesso. Tente novamente."
+      }
+    },
+    "oidc_only": "Este servidor permite apenas login único. Continue com seu provedor de identidade."
   },
   "doctorReport": {
     "title": "Relatório de Saúde",

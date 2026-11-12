@@ -151,7 +151,12 @@
       },
       "mfa": {
         "already_active": "An authenticator app is already set up for this account. Disable it first to set up a new one."
-      }
+      },
+      "register": {
+        "taken": "That username or email address is already in use.",
+        "invite_invalid": "This invitation is no longer valid. Ask the person who invited you for a new link."
+      },
+      "already_authenticated": "You are already signed in. Sign out first, then try again."
     },
     "biomarkers": {
       "unit": {
@@ -234,7 +239,17 @@
       "budget": {
         "exceeded": "Today's AI budget is used up, so nothing was sent. It renews tomorrow."
       }
-    }
+    },
+    "passkey": {
+      "unknown": "This passkey is not registered here. Sign in another way.",
+      "challenge": {
+        "expired": "The sign-in took too long or was already used. Try again."
+      },
+      "response": {
+        "invalid": "The passkey's answer could not be read. Try again."
+      }
+    },
+    "oidc_only": "This server only allows single sign-on. Continue with your identity provider instead."
   },
   "doctorReport": {
     "title": "Health Report",

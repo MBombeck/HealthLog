@@ -144,7 +144,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
     prisma.user.findUnique({ where: { username } }),
   ]);
   if (existingEmail || existingUsername) {
-    return apiError("Username or email already taken", 409);
+    return apiError("Username or email already taken", 409, {
+      errorCode: "auth.register.taken",
+    });
   }
 
   // Validate password strength (locale-aware feedback)
@@ -196,7 +198,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
         },
       });
       if (!registrationEnabled) {
-        return apiError("Invalid or expired invite", 403);
+        return apiError("Invalid or expired invite", 403, {
+          errorCode: "auth.register.invite_invalid",
+        });
       }
     }
   }
@@ -249,7 +253,9 @@ export const POST = apiHandler(async (request: NextRequest) => {
     });
 
   if (user === null) {
-    return apiError("Username or email already taken", 409);
+    return apiError("Username or email already taken", 409, {
+      errorCode: "auth.register.taken",
+    });
   }
 
   // Create session immediately. v1.4.22 W5 reconcile (Sr-H1) —

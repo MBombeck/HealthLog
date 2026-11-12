@@ -151,7 +151,12 @@
       },
       "mfa": {
         "already_active": "Für dieses Konto ist bereits eine Authenticator-App eingerichtet. Deaktiviere sie zuerst, um eine neue einzurichten."
-      }
+      },
+      "register": {
+        "taken": "Dieser Nutzername oder diese E-Mail-Adresse wird bereits verwendet.",
+        "invite_invalid": "Diese Einladung gilt nicht mehr. Bitte die Person, die dich eingeladen hat, um einen neuen Link."
+      },
+      "already_authenticated": "Du bist bereits angemeldet. Melde dich zuerst ab und versuche es dann erneut."
     },
     "biomarkers": {
       "unit": {
@@ -234,7 +239,17 @@
       "budget": {
         "exceeded": "Das KI-Budget für heute ist aufgebraucht, daher wurde nichts gesendet. Morgen steht es wieder bereit."
       }
-    }
+    },
+    "passkey": {
+      "unknown": "Dieser Passkey ist hier nicht registriert. Melde dich auf anderem Weg an.",
+      "challenge": {
+        "expired": "Die Anmeldung hat zu lange gedauert oder wurde schon verwendet. Versuche es erneut."
+      },
+      "response": {
+        "invalid": "Die Antwort des Passkeys konnte nicht gelesen werden. Versuche es erneut."
+      }
+    },
+    "oidc_only": "Dieser Server erlaubt nur Single Sign-on. Fahre stattdessen mit deinem Identitätsanbieter fort."
   },
   "doctorReport": {
     "title": "Gesundheitsbericht",

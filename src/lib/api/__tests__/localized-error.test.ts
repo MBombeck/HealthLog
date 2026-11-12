@@ -268,6 +268,42 @@ describe("localizedSignInError", () => {
     expect(sentence).not.toBe("auth.signInRateLimited");
   });
 
+  it.each([
+    ["de", de],
+    ["en", en],
+    ["es", es],
+    ["fr", fr],
+    ["it", itCatalog],
+    ["ko", ko],
+    ["nl", nl],
+    ["pl", pl],
+    ["pt-BR", ptBR],
+    ["ru", ru],
+  ])(
+    "names the passkey, single sign-on and registration refusals in %s",
+    (_, locale) => {
+      const localT = translator(locale as Catalog);
+      for (const [status, code] of [
+        [401, "passkey.challenge.expired"],
+        [404, "passkey.unknown"],
+        [422, "passkey.response.invalid"],
+        [403, "oidc_only"],
+        [409, "auth.already_authenticated"],
+        [409, "auth.register.taken"],
+        [403, "auth.register.invite_invalid"],
+      ] as const) {
+        const error = new ApiError("raw English server prose", status, {
+          errorCode: code,
+        });
+        expect(
+          localizedSignInError(error, localT, "auth.loginFailed"),
+          code,
+        ).toBe(localT(`apiErrors.${code}`));
+        expect(localT(`apiErrors.${code}`), code).not.toBe(`apiErrors.${code}`);
+      }
+    },
+  );
+
   it("keeps the sentence of a code the step names itself", () => {
     const error = new ApiError("raw English server prose", 401, {
       errorCode: "auth.reproof.failed",

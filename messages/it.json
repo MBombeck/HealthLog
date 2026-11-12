@@ -151,7 +151,12 @@
       },
       "mfa": {
         "already_active": "Per questo account è già configurata un'app di autenticazione. Disattivala prima di configurarne una nuova."
-      }
+      },
+      "register": {
+        "taken": "Questo nome utente o indirizzo e-mail è già in uso.",
+        "invite_invalid": "Questo invito non è più valido. Chiedi un nuovo link alla persona che ti ha invitato."
+      },
+      "already_authenticated": "Hai già effettuato l’accesso. Prima esci, poi riprova."
     },
     "biomarkers": {
       "unit": {
@@ -234,7 +239,17 @@
       "budget": {
         "exceeded": "Il budget IA di oggi è esaurito, quindi non è stato inviato nulla. Si rinnova domani."
       }
-    }
+    },
+    "passkey": {
+      "unknown": "Questa passkey non è registrata qui. Accedi in un altro modo.",
+      "challenge": {
+        "expired": "L’accesso ha richiesto troppo tempo o è già stato usato. Riprova."
+      },
+      "response": {
+        "invalid": "Non è stato possibile leggere la risposta della passkey. Riprova."
+      }
+    },
+    "oidc_only": "Questo server consente solo il single sign-on. Continua invece con il tuo provider di identità."
   },
   "doctorReport": {
     "title": "Rapporto sanitario",

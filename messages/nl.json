@@ -151,7 +151,12 @@
       },
       "mfa": {
         "already_active": "Voor dit account is al een authenticator-app ingesteld. Schakel die eerst uit om een nieuwe in te stellen."
-      }
+      },
+      "register": {
+        "taken": "Deze gebruikersnaam of dit e-mailadres is al in gebruik.",
+        "invite_invalid": "Deze uitnodiging is niet meer geldig. Vraag de persoon die je heeft uitgenodigd om een nieuwe link."
+      },
+      "already_authenticated": "Je bent al ingelogd. Log eerst uit en probeer het dan opnieuw."
     },
     "biomarkers": {
       "unit": {
@@ -234,7 +239,17 @@
       "budget": {
         "exceeded": "Het AI-budget voor vandaag is op, dus er is niets verzonden. Morgen is het er weer."
       }
-    }
+    },
+    "passkey": {
+      "unknown": "Deze passkey is hier niet geregistreerd. Log op een andere manier in.",
+      "challenge": {
+        "expired": "Het inloggen duurde te lang of is al gebruikt. Probeer het opnieuw."
+      },
+      "response": {
+        "invalid": "Het antwoord van de passkey kon niet worden gelezen. Probeer het opnieuw."
+      }
+    },
+    "oidc_only": "Deze server staat alleen single sign-on toe. Ga in plaats daarvan verder met je identiteitsprovider."
   },
   "doctorReport": {
     "title": "Gezondheidsrapport",
