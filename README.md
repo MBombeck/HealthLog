@@ -153,5 +153,6 @@ HealthLog is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE):
   <a href="https://docs.healthlog.dev">Docs</a> |
   <a href="https://apps.apple.com/app/id6769501341">iOS App Store</a> |
   <a href="https://testflight.apple.com/join/bucuTBpa">iOS TestFlight</a> |
+  <a href="https://github.com/sponsors/MBombeck">GitHub Sponsors</a> |
   <a href="https://buymeacoffee.com/mbombeck">Buy Me a Coffee</a>
 </p>
