@@ -3,7 +3,7 @@
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslations } from "@/lib/i18n/context";
-import { MEDICATION_NOTE_MAX_CHARS } from "@/lib/validations/medication/base";
+import { MEDICATION_NOTE_MAX_CHARS } from "@/lib/medications/note-limits";
 
 import type { StepProps } from "./step1-name";
 

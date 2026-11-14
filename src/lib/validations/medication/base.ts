@@ -4,6 +4,7 @@ import { INJECTION_SITE_KEYS } from "@/lib/medications/injection-sites";
 import { validateEntryInstant } from "@/lib/validations/entry-instant";
 import { hhmmToMinutes } from "@/lib/medications/scheduling/hhmm";
 import { isoDateTime } from "@/lib/validations/datetime";
+import { MEDICATION_NOTE_MAX_CHARS } from "@/lib/medications/note-limits";
 
 /**
  * v1.8.5 — the eight injection-site enum values, mirrored from the
@@ -63,13 +64,7 @@ export const rxNormCodeField = z
   .describe(
     "Optional RxNorm RxCUI (numeric, US identifier, e.g. `2601723`). Secondary coding emitted under `http://www.nlm.nih.gov/research/umls/rxnorm` alongside any ATC code, never instead of the free-text name. NULL clears it; absent leaves it untouched.",
   );
-/**
- * #1371 — the longest note a medication carries. Room for a full set of
- * directions ("on an empty stomach, 30 to 60 minutes before breakfast, not
- * within four hours of calcium or iron") with space to spare; the editor caps
- * its input at the same length.
- */
-export const MEDICATION_NOTE_MAX_CHARS = 500;
+export { MEDICATION_NOTE_MAX_CHARS };
 /**
  * #1371 — the person's own note on a medication. Trimmed; an empty string or
  * NULL clears it, absent leaves it untouched. Sealed at rest by the writer.
