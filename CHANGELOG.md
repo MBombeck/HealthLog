@@ -15,6 +15,14 @@
   audit log records which token wrote them. Measurement tokens you
   already have can do this too, without being created again. (#1377)
 
+### Security
+
+- The `hono` dependency floor is raised to 4.13.16 (CVE-2026-126355 to
+  CVE-2026-126358). HealthLog only gets it under the MCP SDK and loads none
+  of the affected parts (CSRF and validator middleware, `mount`, the
+  RegExpRouter), so this clears the audit rather than closing a reachable
+  hole.
+
 ## [1.47.5] — 2026-11-12
 
 ### Fixed

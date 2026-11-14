@@ -1,12 +1,12 @@
 overrides:
   # CVE-2026-84375 (js-yaml < 4.3.2, HIGH), CVE-2026-84363/84364/84365 (hono
   # < 4.13.5, via @hono/node-server under the MCP SDK; GHSA-5r4p-p66f-jhc7 raised the
-  # floor to 4.13.11), CVE-2026-45819
+  # floor to 4.13.11, CVE-2026-126355 to 126358 to 4.13.16), CVE-2026-45819
   # (baseline-browser-mapping < 2.11.0), GHSA-rgj7-g3m4-5g8c (sharp < 0.35.4,
   # pulled by next). None is a direct dependency; the bounds move the copies
   # the scanner flags and nothing else.
   "js-yaml@<4.3.2": "^4.3.2"
-  "hono@<4.13.11": "^4.13.11"
+  "hono@<4.13.16": "^4.13.16"
   "baseline-browser-mapping@<2.11.0": "^2.11.0"
   "sharp@<0.35.4": "^0.35.4"
   # GHSA-55q2-fjhq-7xh7: a crafted document gets past the sanitiser and its
