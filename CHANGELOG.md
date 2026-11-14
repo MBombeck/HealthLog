@@ -15,6 +15,20 @@
   audit log records which token wrote them. Measurement tokens you
   already have can do this too, without being created again. (#1377)
 
+### Fixed
+
+- **Opening a record on a phone.** In the account menu, "Open a record"
+  used to open a second menu beside the first, and on a narrow screen it
+  ran off the edge and cut the names off. On a phone the records now
+  unfold inside the account menu itself; wider screens keep the side
+  menu. (#1372)
+- **A clearer message when the browser refuses push.** When the browser's
+  push service turned the registration down, enabling Browser Push said
+  only "Activation failed". It now says that the push service refused and
+  links the help page. Brave keeps push messaging off by default, so in
+  Brave the message names the setting to turn on: "Use Google services
+  for push messaging" under brave://settings/privacy. (Discussion #1378)
+
 ### Security
 
 - The `hono` dependency floor is raised to 4.13.16 (CVE-2026-126355 to

@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BellRing, Loader2 } from "lucide-react";
+import { BellRing, ExternalLink, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { InlineAction } from "@/components/ui/inline-action";
+import { DOCS_GUIDES_BASE } from "@/components/settings/integrations/setup-guide-link";
 import { TestConnectionButton } from "@/components/settings/test-connection-button";
 import { SettingsCard } from "@/components/settings/settings-card";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
@@ -14,6 +16,14 @@ import {
   saveWebPushSubscription,
   unsubscribeWebPush,
 } from "@/lib/notifications/web-push-subscription";
+import {
+  classifyWebPushSubscribeFailure,
+  isBraveBrowser,
+  type WebPushSubscribeFailure,
+} from "@/lib/notifications/web-push-subscribe-failure";
+
+/** The docs section on Browser Push, linked when the browser refused. */
+export const WEB_PUSH_DOCS_HREF = `${DOCS_GUIDES_BASE}/reminder-channels/#web-push-vapid`;
 
 /** Convert a URL-safe base64 string to an ArrayBuffer (for VAPID key). */
 function urlBase64ToArrayBuffer(base64String: string): ArrayBuffer {
@@ -43,6 +53,67 @@ export function needsHomeScreen(): boolean {
 
 type Unsupported = "browser" | "install" | null;
 
+/** What one press of "Enable push" ended in. */
+type SubscribeOutcome =
+  "subscribed" | "not-configured" | "save-failed" | WebPushSubscribeFailure;
+
+/**
+ * Subscribe this browser and store the subscription on the server. The
+ * browser's own refusal is classified apart from the server's answers around
+ * it: Brave, for one, rejects with "push service error" until push messaging
+ * is switched on in its privacy settings, and "Activation failed" told nobody
+ * that.
+ */
+async function subscribeThisBrowser(): Promise<SubscribeOutcome> {
+  const vapidRes = await apiFetchRaw("/api/notifications/vapid");
+  if (!vapidRes.ok) return "not-configured";
+  const vapidData = await vapidRes.json();
+  const vapidPublicKey = vapidData.data.publicKey;
+
+  // Defer to the app-wide registration (`<ServiceWorkerRegistrar>` in the
+  // root providers) rather than re-registering here — same scope, so a second
+  // `register("/sw.js")` would only return the existing worker. `ready`
+  // resolves with the active registration once it is controlling the page.
+  const registration = await navigator.serviceWorker.ready;
+
+  let subscription: PushSubscription;
+  try {
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToArrayBuffer(vapidPublicKey),
+    });
+  } catch (error) {
+    return classifyWebPushSubscribeFailure(error, {
+      permission: Notification.permission,
+      isBrave: isBraveBrowser(),
+    });
+  }
+
+  const res = await saveWebPushSubscription(subscription);
+  return res.ok ? "subscribed" : "save-failed";
+}
+
+function subscribeOutcomeMessage(
+  outcome: SubscribeOutcome,
+  t: ReturnType<typeof useTranslations>["t"],
+): string {
+  switch (outcome) {
+    case "subscribed":
+      return t("settings.webPushSubscribed");
+    case "not-configured":
+      return t("settings.webPushNotConfigured");
+    case "denied":
+      return t("settings.webPushDenied");
+    case "push-service":
+      return t("settings.webPushServiceRefused");
+    case "push-service-brave":
+      return t("settings.webPushServiceRefusedBrave");
+    case "save-failed":
+    case "unknown":
+      return t("settings.webPushSubscribeFailed");
+  }
+}
+
 export function WebPushCard() {
   const { t } = useTranslations();
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -52,6 +123,7 @@ export function WebPushCard() {
   const [actionLoading, setActionLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [msgType, setMsgType] = useState<"success" | "error" | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     // Async I/O (browser API + service worker registration). The lint rule
@@ -95,50 +167,21 @@ export function WebPushCard() {
     setActionLoading(true);
     setMsg(null);
     setMsgType(null);
+    setShowHelp(false);
 
+    let outcome: SubscribeOutcome;
     try {
-      const vapidRes = await apiFetchRaw("/api/notifications/vapid");
-      if (!vapidRes.ok) {
-        setMsg(t("settings.webPushNotConfigured"));
-        setMsgType("error");
-        setActionLoading(false);
-        return;
-      }
-      const vapidData = await vapidRes.json();
-      const vapidPublicKey = vapidData.data.publicKey;
-
-      // Defer to the app-wide registration (`<ServiceWorkerRegistrar>` in
-      // the root providers) rather than re-registering here — same scope,
-      // so a second `register("/sw.js")` would only return the existing
-      // worker. `ready` resolves with the active registration once it is
-      // controlling the page.
-      const registration = await navigator.serviceWorker.ready;
-
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToArrayBuffer(vapidPublicKey),
-      });
-
-      const res = await saveWebPushSubscription(subscription);
-      if (res.ok) {
-        setIsSubscribed(true);
-        setMsg(t("settings.webPushSubscribed"));
-        setMsgType("success");
-      } else {
-        setMsg(t("settings.webPushSubscribeFailed"));
-        setMsgType("error");
-      }
+      outcome = await subscribeThisBrowser();
     } catch {
-      if (Notification.permission === "denied") {
-        setIsDenied(true);
-        setMsg(t("settings.webPushDenied"));
-      } else {
-        setMsg(t("settings.webPushSubscribeFailed"));
-      }
-      setMsgType("error");
-    } finally {
-      setActionLoading(false);
+      outcome = Notification.permission === "denied" ? "denied" : "unknown";
     }
+    if (outcome === "subscribed") setIsSubscribed(true);
+    if (outcome === "denied") setIsDenied(true);
+    setMsg(subscribeOutcomeMessage(outcome, t));
+    setMsgType(outcome === "subscribed" ? "success" : "error");
+    // The push service refused: the fix is in the browser, so link the docs.
+    setShowHelp(outcome === "push-service" || outcome === "push-service-brave");
+    setActionLoading(false);
   }
 
   async function handleUnsubscribe() {
@@ -231,6 +274,18 @@ export function WebPushCard() {
             >
               {msg}
             </p>
+          )}
+          {msg && showHelp && (
+            <InlineAction asChild tone="primary" size="sm">
+              <a
+                href={WEB_PUSH_DOCS_HREF}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t("settings.webPushHelpLink")}
+                <ExternalLink aria-hidden="true" />
+              </a>
+            </InlineAction>
           )}
         </div>
       ) : null}

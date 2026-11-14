@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { stubFetch } from "../../../../tests/browser/fetch-stub";
 import { renderWithApp } from "../../../../tests/browser/render";
 
-import { WebPushCard } from "../web-push-card";
+import { WEB_PUSH_DOCS_HREF, WebPushCard } from "../web-push-card";
 
 const SUBSCRIPTION = {
   endpoint: "https://push.example.test/send/abc",
@@ -60,5 +60,71 @@ describe("WebPushCard", () => {
 
     await expect.element(screen.getByText("Disable push")).toBeVisible();
     expect(document.querySelector('[role="alert"]')).toBeNull();
+  });
+});
+
+/**
+ * A browser whose push service refuses the registration, as Brave does with
+ * push messaging switched off: `subscribe()` rejects with an `AbortError`.
+ */
+function refuseAtPushService(): void {
+  vi.spyOn(Notification, "permission", "get").mockReturnValue("granted");
+  vi.spyOn(navigator.serviceWorker, "getRegistration").mockResolvedValue(
+    undefined,
+  );
+  const refusal = new DOMException(
+    "Registration failed - push service error",
+    "AbortError",
+  );
+  vi.spyOn(navigator.serviceWorker, "ready", "get").mockReturnValue(
+    Promise.resolve({
+      pushManager: { subscribe: () => Promise.reject(refusal) },
+    } as unknown as ServiceWorkerRegistration),
+  );
+}
+
+function alertText(): string {
+  return document.querySelector('[role="alert"]')?.textContent ?? "";
+}
+
+describe("WebPushCard when the push service refuses", () => {
+  afterEach(() => {
+    delete (navigator as Navigator & { brave?: unknown }).brave;
+  });
+
+  it("says the push service refused and links the docs", async () => {
+    refuseAtPushService();
+    const api = stubFetch().on("GET", "/api/notifications/vapid", {
+      data: { publicKey: "BAAAAAAA" },
+    });
+
+    const { screen } = await renderWithApp(<WebPushCard />);
+    await screen.getByRole("button", { name: "Enable push" }).click();
+
+    await expect
+      .poll(() => alertText())
+      .toContain("Your browser's push service refused the registration");
+    await expect
+      .element(screen.getByRole("link", { name: "Help with browser push" }))
+      .toHaveAttribute("href", WEB_PUSH_DOCS_HREF);
+    // Nothing reached the server: the browser refused before a save.
+    expect(api.calls("POST", "/api/notifications/web-push")).toHaveLength(0);
+  });
+
+  it("names the setting in Brave", async () => {
+    refuseAtPushService();
+    Object.defineProperty(navigator, "brave", {
+      value: { isBrave: async () => true },
+      configurable: true,
+    });
+    stubFetch().on("GET", "/api/notifications/vapid", {
+      data: { publicKey: "BAAAAAAA" },
+    });
+
+    const { screen } = await renderWithApp(<WebPushCard />);
+    await screen.getByRole("button", { name: "Enable push" }).click();
+
+    await expect.poll(() => alertText()).toContain("brave://settings/privacy");
+    expect(alertText()).toContain("Use Google services for push messaging");
   });
 });
