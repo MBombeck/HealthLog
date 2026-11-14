@@ -9,6 +9,12 @@
   ran off the edge and cut the names off. On a phone the records now
   unfold inside the account menu itself; wider screens keep the side
   menu. (#1372)
+- **A clearer message when the browser refuses push.** When the browser's
+  push service turned the registration down, enabling Browser Push said
+  only "Activation failed". It now says that the push service refused and
+  links the help page. Brave keeps push messaging off by default, so in
+  Brave the message names the setting to turn on: "Use Google services
+  for push messaging" under brave://settings/privacy. (Discussion #1378)
 
 ## [1.47.5] — 2026-11-12
 
