@@ -457,7 +457,7 @@ describe("B7 — cookie sessions are untouched", () => {
   });
 });
 
-describe("B8 — the measurement-ingest scope reaches its two routes and no others", () => {
+describe("B8 — the measurement-ingest scope reaches its measurement routes and no others", () => {
   /**
    * A second account, plus a live, accepted, record-wide grant letting the
    * token's owner write to it.
@@ -945,6 +945,281 @@ describe("B8 — the measurement-ingest scope reaches its two routes and no othe
       where: { type: "WEIGHT" },
     });
     expect(row.userId).toBe(ownerId);
+  });
+});
+
+describe("B10 — the measurement-ingest scope logs values on its owner's custom metrics (#1377)", () => {
+  const OTHER_ID = "user-bearer-scope-other";
+
+  async function seedMetric(userId = USER_ID, name = "Grip strength") {
+    return getPrismaClient().customMetric.create({
+      data: { userId, name, unit: "kg" },
+    });
+  }
+
+  async function seedOtherAccount(): Promise<void> {
+    await getPrismaClient().user.create({
+      data: {
+        id: OTHER_ID,
+        username: "scope-other",
+        email: "scope-other@example.test",
+        timezone: "UTC",
+      },
+    });
+  }
+
+  function params(id: string) {
+    return { params: Promise.resolve({ id }) };
+  }
+
+  function postValue(
+    metricId: string,
+    extraHeaders: Record<string, string> = {},
+  ): NextRequest {
+    return new NextRequest(
+      `https://health.example/api/custom-metrics/${metricId}/entries`,
+      {
+        method: "POST",
+        headers: {
+          authorization: headerJar.get("authorization")!,
+          "content-type": "application/json",
+          ...extraHeaders,
+        },
+        body: JSON.stringify({
+          value: 41.5,
+          measuredAt: "2026-11-01T07:00:00.000Z",
+        }),
+      } as never,
+    );
+  }
+
+  it("admits the scope on its owner's metric, and the audit row names the token", async () => {
+    const metric = await seedMetric();
+    const raw = await armToken(["measurements:write"], "cmwrite1");
+    const { POST } =
+      await import("@/app/api/custom-metrics/[id]/entries/route");
+
+    const res = await POST(postValue(metric.id), params(metric.id));
+
+    expect(res.status).toBe(201);
+    const row = await getPrismaClient().customMetricEntry.findFirstOrThrow({
+      where: { customMetricId: metric.id },
+    });
+    expect(row.userId).toBe(USER_ID);
+    expect(row.value).toBe(41.5);
+    // The metric's unit, snapshotted; the token cannot name one.
+    expect(row.unit).toBe("kg");
+
+    // The entry has no source column, so the audit row is what says a bridge
+    // wrote it — and which token, so the right one can be revoked.
+    const token = await getPrismaClient().apiToken.findUniqueOrThrow({
+      where: { tokenHash: hashToken(raw) },
+    });
+    const audit = await getPrismaClient().auditLog.findFirstOrThrow({
+      where: { action: "customMetricEntry.create", userId: USER_ID },
+    });
+    expect(JSON.parse(audit.details!)).toMatchObject({
+      customMetricId: metric.id,
+      entryId: row.id,
+      ingestTokenId: token.id,
+    });
+  });
+
+  it("a retry under the same Idempotency-Key writes one value", async () => {
+    const metric = await seedMetric();
+    await armToken(["measurements:write"], "cmwrite2");
+    const { POST } =
+      await import("@/app/api/custom-metrics/[id]/entries/route");
+    const key = { "idempotency-key": "grip-2026-11-01" };
+
+    const first = await POST(postValue(metric.id, key), params(metric.id));
+    const second = await POST(postValue(metric.id, key), params(metric.id));
+
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(201);
+    const a = (await first.json()) as { data: { id: string } };
+    const b = (await second.json()) as { data: { id: string } };
+    expect(b.data.id).toBe(a.data.id);
+    expect(await getPrismaClient().customMetricEntry.count()).toBe(1);
+  });
+
+  it("refuses another account's metric id with the same 404 as an unknown one", async () => {
+    await seedOtherAccount();
+    const foreign = await seedMetric(OTHER_ID, "Their metric");
+    await armToken(["measurements:write"], "cmwrite3");
+    const { POST } =
+      await import("@/app/api/custom-metrics/[id]/entries/route");
+
+    const res = await POST(postValue(foreign.id), params(foreign.id));
+    const unknown = await POST(
+      postValue("cm_does_not_exist"),
+      params("cm_does_not_exist"),
+    );
+
+    expect(res.status).toBe(404);
+    expect(unknown.status).toBe(404);
+    // Indistinguishable, so the 404 tells a token holder nothing about which
+    // ids exist on other accounts.
+    expect((await res.json()).error).toBe((await unknown.json()).error);
+    // Nothing on the other account, and nothing quietly on the holder's own.
+    expect(await getPrismaClient().customMetricEntry.count()).toBe(0);
+  });
+
+  it("refuses a deleted metric of its own owner", async () => {
+    const metric = await seedMetric();
+    await getPrismaClient().customMetric.update({
+      where: { id: metric.id },
+      data: { deletedAt: new Date() },
+    });
+    await armToken(["measurements:write"], "cmwrite4");
+    const { POST } =
+      await import("@/app/api/custom-metrics/[id]/entries/route");
+
+    const res = await POST(postValue(metric.id), params(metric.id));
+
+    expect(res.status).toBe(404);
+    expect(await getPrismaClient().customMetricEntry.count()).toBe(0);
+  });
+
+  it.each([
+    ["workouts:write"],
+    ["documents:write"],
+    ["medication:ingest"],
+    ["fhir:read"],
+    ["health:read", "health:write"],
+  ])(
+    "still refuses a narrow token that is not the ingest scope: %s",
+    async (...scopes) => {
+      const metric = await seedMetric();
+      await armToken(scopes, `cmnarrow-${scopes.join("-")}`);
+      const { POST } =
+        await import("@/app/api/custom-metrics/[id]/entries/route");
+
+      const res = await POST(postValue(metric.id), params(metric.id));
+
+      expect(res.status).toBe(403);
+      expect(await getPrismaClient().customMetricEntry.count()).toBe(0);
+    },
+  );
+
+  it("is refused on every other custom-metric leg", async () => {
+    const metric = await seedMetric();
+    const entry = await getPrismaClient().customMetricEntry.create({
+      data: {
+        userId: USER_ID,
+        customMetricId: metric.id,
+        value: 40,
+        unit: "kg",
+        measuredAt: new Date("2026-10-31T07:00:00.000Z"),
+      },
+    });
+    await armToken(["measurements:write"], "cmwrite5");
+    const bearer = headerJar.get("authorization")!;
+    const send = (path: string, method: string, body?: unknown) =>
+      new NextRequest(`https://health.example${path}`, {
+        method,
+        headers: {
+          authorization: bearer,
+          "content-type": "application/json",
+        },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      } as never);
+    const base = `/api/custom-metrics/${metric.id}`;
+    const entryParams = {
+      params: Promise.resolve({ id: metric.id, entryId: entry.id }),
+    };
+
+    const list = await import("@/app/api/custom-metrics/route");
+    const one = await import("@/app/api/custom-metrics/[id]/route");
+    const values = await import("@/app/api/custom-metrics/[id]/entries/route");
+    const single =
+      await import("@/app/api/custom-metrics/[id]/entries/[entryId]/route");
+    const restore =
+      await import("@/app/api/custom-metrics/[id]/entries/restore/route");
+
+    const statuses = {
+      // The list handler takes no request; the Bearer rides `next/headers`.
+      listMetrics: (await list.GET()).status,
+      createMetric: (
+        await list.POST(
+          send("/api/custom-metrics", "POST", { name: "New", unit: "x" }),
+        )
+      ).status,
+      readMetric: (await one.GET(send(base, "GET"), params(metric.id))).status,
+      editMetric: (
+        await one.PATCH(send(base, "PATCH", { unit: "lb" }), params(metric.id))
+      ).status,
+      deleteMetric: (await one.DELETE(send(base, "DELETE"), params(metric.id)))
+        .status,
+      listValues: (
+        await values.GET(send(`${base}/entries`, "GET"), params(metric.id))
+      ).status,
+      editValue: (
+        await single.PATCH(
+          send(`${base}/entries/${entry.id}`, "PATCH", { value: 1 }),
+          entryParams,
+        )
+      ).status,
+      deleteValue: (
+        await single.DELETE(
+          send(`${base}/entries/${entry.id}`, "DELETE"),
+          entryParams,
+        )
+      ).status,
+      restoreValues: (
+        await restore.POST(
+          send(`${base}/entries/restore`, "POST", { ids: [entry.id] }),
+          params(metric.id),
+        )
+      ).status,
+    };
+
+    expect(statuses).toEqual({
+      listMetrics: 403,
+      createMetric: 403,
+      readMetric: 403,
+      editMetric: 403,
+      deleteMetric: 403,
+      listValues: 403,
+      editValue: 403,
+      deleteValue: 403,
+      restoreValues: 403,
+    });
+    // And nothing moved.
+    const after = await getPrismaClient().customMetric.findUniqueOrThrow({
+      where: { id: metric.id },
+    });
+    expect(after.unit).toBe("kg");
+    expect(after.deletedAt).toBeNull();
+    expect(await getPrismaClient().customMetric.count()).toBe(1);
+    const entryAfter =
+      await getPrismaClient().customMetricEntry.findUniqueOrThrow({
+        where: { id: entry.id },
+      });
+    expect(entryAfter.value).toBe(40);
+    expect(entryAfter.deletedAt).toBeNull();
+  });
+
+  it("is refused a shared record's metric its holder may genuinely write to", async () => {
+    await seedOtherAccount();
+    await getPrismaClient().accountGrant.create({
+      data: {
+        grantorId: OTHER_ID,
+        granteeId: USER_ID,
+        access: "WRITE",
+        acceptedAt: new Date(),
+      },
+    });
+    const shared = await seedMetric(OTHER_ID, "Shared metric");
+    await armToken(["measurements:write"], "cmwrite6");
+    headerJar.set(ACCOUNT_SELECTOR_HEADER, OTHER_ID);
+    const { POST } =
+      await import("@/app/api/custom-metrics/[id]/entries/route");
+
+    const res = await POST(postValue(shared.id), params(shared.id));
+
+    expect(res.status).toBe(403);
+    expect(await getPrismaClient().customMetricEntry.count()).toBe(0);
   });
 });
 

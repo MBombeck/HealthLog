@@ -430,6 +430,49 @@ describe("T4 — declared scopes are exported constants, never string literals",
   });
 });
 
+describe("T4a — `measurements:write` opens exactly three doors", () => {
+  it("the two measurement writes and the custom-metric value write, POST only", () => {
+    // The set of files naming the scope IS its reach. The single and batch
+    // measurement writes, and logging a value against a custom metric the
+    // person already made. Not the measurement reads, not the custom-metric
+    // list or detail, and not creating, editing or deleting a metric: a
+    // fourth file here is a widening and belongs in review.
+    const declaring = sourceFiles().filter((rel) => {
+      const src = read(rel);
+      return (
+        requireAuthScopes(src).includes("MEASUREMENTS_WRITE_SCOPE") ||
+        recordAuthScopes(src).includes("MEASUREMENTS_WRITE_SCOPE")
+      );
+    });
+    expect(declaring).toEqual([
+      "app/api/custom-metrics/[id]/entries/route.ts",
+      "app/api/measurements/batch/route.ts",
+      "app/api/measurements/route.ts",
+    ]);
+
+    // Within the custom-metric file, once, and on the POST: the GET beside it
+    // lists the metric's values and must keep refusing the token.
+    const entries = readSource(
+      "src/app/api/custom-metrics/[id]/entries/route.ts",
+      "MEASUREMENTS_WRITE_SCOPE",
+    );
+    expect(
+      requireAuthScopes(entries).filter(
+        (x) => x === "MEASUREMENTS_WRITE_SCOPE",
+      ),
+    ).toHaveLength(1);
+    expect(recordAuthScopes(entries)).toEqual([]);
+    const postBody = entries.slice(
+      entries.indexOf("async function postCustomMetricEntry"),
+    );
+    expect(
+      requireAuthScopes(postBody).filter(
+        (x) => x === "MEASUREMENTS_WRITE_SCOPE",
+      ),
+    ).toHaveLength(1);
+  });
+});
+
 describe("T4b — `documents:write` opens exactly two doors", () => {
   it("only the vault upload and the source-key lookup declare the scope", () => {
     // The scope admits a narrow token wherever it is named, so the set of

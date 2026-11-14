@@ -1,6 +1,11 @@
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireAuth, requireRecordAuth } from "@/lib/api-handler";
+import {
+  apiHandler,
+  isScopedCredential,
+  requireAuth,
+  requireRecordAuth,
+} from "@/lib/api-handler";
 import {
   apiError,
   apiSuccess,
@@ -16,6 +21,7 @@ import { encryptNote } from "@/lib/crypto/note-cipher";
 import { prisma } from "@/lib/db";
 import { withIdempotency } from "@/lib/idempotency";
 import { annotate } from "@/lib/logging/context";
+import { MEASUREMENTS_WRITE_SCOPE } from "@/lib/measurements/scopes";
 import {
   createCustomMetricEntrySchema,
   listCustomMetricEntriesSchema,
@@ -28,8 +34,9 @@ import {
  * GET lists the metric's values with offset pagination (the chart + history
  * feed). POST records a value, snapshotting the metric's current `unit` onto
  * the entry at write time (historical truth). `userId` is always narrowed from
- * the session and the parent metric is verified owner-scoped (a forged / foreign
- * id is a 404) before any value is read or written.
+ * the session (or, on POST, the measurement-ingest token) and the parent metric
+ * is verified owner-scoped (a forged / foreign id is a 404) before any value is
+ * read or written.
  */
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -105,7 +112,27 @@ async function postCustomMetricEntry(
   // product did not offer. Whoever builds a delegate-reachable way to log a
   // tracked value adds it back in the same diff: the argument for admitting it
   // was never wrong, and the GET arm above stays delegable meanwhile.
-  const { user } = await requireAuth();
+  //
+  // It does accept the measurement-ingest token (#1377): a custom metric's
+  // value is a reading the person defined themselves, and the bridge that
+  // pushes their weight is the one that would push it. What that admits is
+  // this POST and nothing beside it. The GET above names no scope, nor do the
+  // metric's own create / edit / delete routes, so the token can add a value
+  // to a metric that already exists and cannot list the metrics, read one
+  // back, or make a new one. The id it writes to comes from the person, who
+  // reads it off the metric's page; a token that has only ever been pasted
+  // into a scale's uploader never learns one.
+  //
+  // `requireAuth` rather than the record resolver, so the selector refusal is
+  // the undeclared-mode one every credential meets here: the token is on its
+  // owner's record or nowhere. The ownership query below then turns any id
+  // that is not that owner's live metric into the same 404 an unknown id gets.
+  const auth = await requireAuth(MEASUREMENTS_WRITE_SCOPE);
+  const { user } = auth;
+  // A custom-metric entry has no source column, so the row cannot say a
+  // bridge wrote it the way an `EXTERNAL` measurement does. The audit row
+  // can, and it names the token, so revoking the right one is possible later.
+  const ingestTokenId = isScopedCredential(auth) ? auth.session.id : null;
 
   const { id } = await params;
 
@@ -156,12 +183,20 @@ async function postCustomMetricEntry(
   await auditLog("customMetricEntry.create", {
     userId: user.id,
     ipAddress: getClientIp(request),
-    details: { customMetricId: id, entryId: created.id },
+    details: {
+      customMetricId: id,
+      entryId: created.id,
+      ...(ingestTokenId ? { ingestTokenId } : {}),
+    },
   });
 
   annotate({
     action: { name: "custom-metric.entry.create" },
-    meta: { customMetricId: id, entryId: created.id },
+    meta: {
+      customMetricId: id,
+      entryId: created.id,
+      via_ingest_scope: ingestTokenId !== null,
+    },
   });
   invalidateUserCorrelationPatterns(user.id);
 
