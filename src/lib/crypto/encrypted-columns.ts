@@ -374,6 +374,8 @@ export const ENCRYPTED_COLUMNS: readonly EncryptedColumn[] = [
   { model: "MedicationSideEffect", field: "notesEncrypted", kind: "bytes" },
   { model: "MedicationDoseChange", field: "noteEncrypted", kind: "bytes" },
   { model: "MedicationCourse", field: "noteEncrypted", kind: "bytes" },
+  // #1371 — the person's own note on the medication (directions).
+  { model: "Medication", field: "noteEncrypted", kind: "bytes" },
   { model: "MedicationInventoryItem", field: "notesEncrypted", kind: "bytes" },
 
   // ───── v1.39.3 custom-metric reading note (Bytes column) ─────
@@ -658,6 +660,7 @@ export const UPDATED_AT_MODELS: ReadonlySet<string> = new Set([
   "LabResult",
   "LifeEvent",
   "Measurement",
+  "Medication",
   "MedicationCategoryLabel",
   "MedicationCourse",
   "MedicationInventoryItem",

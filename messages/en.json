@@ -1506,6 +1506,11 @@
       "disabledToast": "Intake tracking off",
       "toggleFailed": "Could not change intake tracking."
     },
+    "note": {
+      "label": "Note",
+      "placeholder": "e.g. 30 to 60 minutes before food",
+      "helper": "Shown on the medication and when you log a dose."
+    },
     "autoMarkTaken": {
       "label": "Record doses automatically",
       "helper": "HealthLog records each scheduled dose as taken at its time. You can still change or skip a dose by hand. No reminders are sent.",

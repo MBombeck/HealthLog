@@ -4,6 +4,20 @@
 
 ### Added
 
+- **A note on a medication.** Directions such as "30 to 60 minutes before
+  food" now have a place of their own: type them into the last step of the
+  medication wizard, and they show under the medication's name on its
+  page, above the Taken and Skip buttons on its card, under the medication
+  you pick when logging a dose, and in the list of doses when you take all
+  due ones at once. The note is up to 500 characters, encrypted like your
+  other notes, and travels with backups, restores and the data export. The
+  MCP medication schedule and medication resources include it. It is not
+  part of the doctor report or the FHIR export. `POST /api/medications`
+  and `PUT /api/medications/{id}` take an optional `note` (trimmed, at
+  most 500 characters; an empty string or `null` clears it, leaving it
+  out keeps it), and the list and detail reads answer `note`, `null` when
+  there is none. Migration `0498_medication_note`. (#1371)
+
 - **Measurement tokens can log custom-metric values.** A script or a
   Home Assistant rule holding a measurement token can now post a value
   to `POST /api/custom-metrics/{id}/entries` for a custom metric you

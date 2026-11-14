@@ -1506,6 +1506,11 @@
       "disabledToast": "Suivi des prises désactivé",
       "toggleFailed": "Impossible de modifier le suivi des prises."
     },
+    "note": {
+      "label": "Note",
+      "placeholder": "p. ex. 30 à 60 minutes avant le repas",
+      "helper": "Affichée sur le médicament et lors de l'enregistrement d'une prise."
+    },
     "autoMarkTaken": {
       "label": "Enregistrer les prises automatiquement",
       "helper": "HealthLog enregistre chaque dose prévue comme prise à son heure. Vous pouvez toujours modifier ou sauter une dose à la main. Aucun rappel n'est envoyé.",

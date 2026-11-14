@@ -16,6 +16,7 @@
  */
 
 import { Badge } from "@/components/ui/badge";
+import { MedicationNote } from "@/components/medications/medication-note";
 import {
   hydrateWizardPayload,
   summariseCadence,
@@ -47,6 +48,11 @@ export interface MedicationDetailSummaryProps {
   startsOn?: string | null;
   /** v1.39.1 (#1033) — intake tracking off: a "Record only" badge. */
   recordOnly?: boolean;
+  /**
+   * #1371 — the person's own note ("30 to 60 minutes before food"), shown
+   * under the cadence line. Null or empty renders nothing.
+   */
+  note?: string | null;
 }
 
 type Status = "active" | "paused" | "ended";
@@ -69,6 +75,7 @@ export function MedicationDetailSummary({
   asNeeded = false,
   startsOn,
   recordOnly = false,
+  note = null,
 }: MedicationDetailSummaryProps) {
   const { t, locale } = useTranslations();
   const formatters = useFormatters();
@@ -137,6 +144,12 @@ export function MedicationDetailSummary({
       >
         {cadenceLine}
       </p>
+      <MedicationNote
+        note={note}
+        slot="medication-detail-note"
+        icon
+        className="pt-1"
+      />
     </div>
   );
 }

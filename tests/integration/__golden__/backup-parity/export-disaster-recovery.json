@@ -328,7 +328,7 @@
         "reorderLeadDays": 3,
         "externalSource": "WEB",
         "externalId": "rt-Medication-externalId",
-        "updatedAt": "2026-05-01T11:52:00.000Z",
+        "updatedAt": "2026-05-01T11:53:00.000Z",
         "categoryUpdatedAt": "2026-05-01T21:22:00.000Z",
         "name": "Round-trip tablet",
         "dose": "5 mg",
@@ -337,7 +337,8 @@
         "autoMarkTaken": true,
         "autoMarkTakenSince": "2026-06-30T12:34:56.789Z",
         "category": "custom:5f0c6a52-6a43-4f63-9b39-0c1f4d7e2a10",
-        "createdAt": "2026-05-01T11:51:00.000Z",
+        "noteEncrypted": "<sealed:v1:before breakfast, with water>",
+        "createdAt": "2026-05-01T11:52:00.000Z",
         "schedules": [
           {
             "id": "<id:7>",
@@ -2766,13 +2767,14 @@
         "criticalAlarmEnabled": true,
         "atcCode": "rt-Medication-atcCode",
         "rxNormCode": "rt-Medication-rxNormCode",
+        "noteEncrypted": "<sealed:v1:before breakfast, with water>",
         "lowStockNotifiedAt": "2026-06-30T12:34:56.789Z",
         "lowStockNotifiedThresholdDays": 3,
         "reorderLeadDays": 3,
         "externalSource": "WEB",
         "externalId": "rt-Medication-externalId",
-        "createdAt": "2026-05-01T11:51:00.000Z",
-        "updatedAt": "2026-05-01T11:52:00.000Z",
+        "createdAt": "2026-05-01T11:52:00.000Z",
+        "updatedAt": "2026-05-01T11:53:00.000Z",
         "schedules": [
           {
             "id": "<id:7>",

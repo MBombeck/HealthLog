@@ -537,6 +537,7 @@
         "criticalAlarmEnabled": false,
         "atcCode": null,
         "rxNormCode": null,
+        "noteEncrypted": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
@@ -572,6 +573,7 @@
         "criticalAlarmEnabled": false,
         "atcCode": null,
         "rxNormCode": null,
+        "noteEncrypted": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
@@ -1413,6 +1415,7 @@
         "autoMarkTaken": false,
         "autoMarkTakenSince": null,
         "category": "OTHER",
+        "noteEncrypted": null,
         "createdAt": "2026-07-01T07:00:00.000Z",
         "schedules": [
           {
@@ -1477,6 +1480,7 @@
         "autoMarkTaken": false,
         "autoMarkTakenSince": null,
         "category": "OTHER",
+        "noteEncrypted": null,
         "createdAt": "2026-07-01T08:00:00.000Z",
         "schedules": [],
         "sideEffects": [],

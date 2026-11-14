@@ -7,6 +7,7 @@ import {
   atcCodeField,
   injectionSiteEnum,
   INJECTION_SITE_VALUES,
+  medicationNoteField,
   rxNormCodeField,
 } from "./base";
 import { scheduleSchema } from "./schedule";
@@ -186,6 +187,8 @@ export const createMedicationSchema = z
     atcCode: atcCodeField,
     /** v1.9.0 — optional RxNorm RxCUI (secondary, US). */
     rxNormCode: rxNormCodeField,
+    /** #1371 — the person's own note (directions). */
+    note: medicationNoteField,
     /**
      * v1.28 — mirrored-medication provenance. Only APPLE_HEALTH is
      * accepted here (the iOS 26+ HealthKit Medications sync); the other
@@ -340,6 +343,8 @@ export const updateMedicationSchema = z
     atcCode: atcCodeField,
     /** v1.9.0 — optional RxNorm RxCUI (secondary, US). */
     rxNormCode: rxNormCodeField,
+    /** #1371 — the person's own note (directions). */
+    note: medicationNoteField,
     ...courseWindowFields,
     schedules: z.array(scheduleSchema).optional(),
     /**

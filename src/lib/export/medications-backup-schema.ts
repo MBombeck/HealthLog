@@ -26,6 +26,7 @@ import {
   UNITS_PER_DOSE_MESSAGE,
   isSupportedUnitsPerDose,
 } from "@/lib/medications/units-per-dose";
+import { MEDICATION_NOTE_MAX_CHARS } from "@/lib/validations/medication/base";
 
 // #1034 — the restore applies the write routes' units-per-dose rule. A
 // backup carries the Decimal column as a string ("1.5"); a hand-authored
@@ -322,6 +323,11 @@ export const medicationSchema = z
     criticalAlarmEnabled: z.boolean().optional(),
     atcCode: z.string().nullable().optional(),
     rxNormCode: z.string().nullable().optional(),
+    // #1371 — the person's own note: readable in a portable file, the
+    // ciphertext in a disaster-recovery file. Both absent in a file written
+    // before the note existed, which restores as no note.
+    note: z.string().max(MEDICATION_NOTE_MAX_CHARS).nullable().optional(),
+    noteEncrypted: base64BytesSchema.nullable().optional(),
     lowStockNotifiedAt: isoDateTime.nullable().optional(),
     lowStockNotifiedThresholdDays: z.number().int().nullable().optional(),
     reorderLeadDays: z.number().int().nullable().optional(),

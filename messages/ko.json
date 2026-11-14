@@ -1506,6 +1506,11 @@
       "disabledToast": "복용 기록 꺼짐",
       "toggleFailed": "복용 기록 설정을 바꾸지 못했어요."
     },
+    "note": {
+      "label": "메모",
+      "placeholder": "예: 식사 30~60분 전",
+      "helper": "약 정보와 복용을 기록할 때 표시됩니다."
+    },
     "autoMarkTaken": {
       "label": "복용 자동 기록",
       "helper": "HealthLog가 예정된 각 복용을 해당 시간에 복용한 것으로 기록합니다. 복용은 언제든 직접 변경하거나 건너뛸 수 있습니다. 알림은 보내지 않습니다.",

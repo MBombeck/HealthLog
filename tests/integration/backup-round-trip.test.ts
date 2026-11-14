@@ -2055,6 +2055,79 @@ describe("every model the plan claims two-ended survives a real restore", () => 
     expect(decryptFromBytes(restored.trailEncrypted!)).toBe(COACH_TRAIL_JSON);
   });
 
+  it.each(["portable-export", "disaster-recovery"] as const)(
+    "carries a medication's own note through a %s round trip (#1371)",
+    async (purpose) => {
+      const NOTE = "30 to 60 minutes before food, round trip";
+      const prisma = getPrismaClient();
+      await seedAdminSession(prisma);
+      await createOwner(prisma);
+      await prisma.medication.create({
+        data: {
+          userId: OWNER_ID,
+          name: "Note round-trip tablet",
+          dose: "50 µg",
+          noteEncrypted: encryptToBytes(NOTE),
+        },
+      });
+      await prisma.medication.create({
+        data: { userId: OWNER_ID, name: "No note tablet", dose: "5 mg" },
+      });
+
+      const { payload } = await buildFullBackupPayload(prisma, OWNER_ID, {
+        purpose,
+      });
+      const { medications } = payload as {
+        medications: Array<Record<string, unknown>>;
+      };
+      const withNote = medications.find(
+        (m) => m.name === "Note round-trip tablet",
+      )!;
+      const without = medications.find((m) => m.name === "No note tablet")!;
+      if (purpose === "portable-export") {
+        // Readable, so it restores on an instance with another key.
+        expect(withNote.note).toBe(NOTE);
+        expect(withNote).not.toHaveProperty("noteEncrypted");
+        expect(without.note).toBeNull();
+      } else {
+        // The ciphertext verbatim; the readable note never rides the file.
+        expect(typeof withNote.noteEncrypted).toBe("string");
+        expect(withNote).not.toHaveProperty("note");
+        expect(JSON.stringify(payload)).not.toContain("before food");
+        expect(without.noteEncrypted).toBeNull();
+      }
+
+      await prisma.user.delete({ where: { id: OWNER_ID } });
+      await createOwner(prisma);
+      const backup = await prisma.dataBackup.create({
+        data: {
+          userId: OWNER_ID,
+          type: "TWO_ENDED_ROUND_TRIP",
+          data: encrypt(JSON.stringify(payload)),
+        },
+      });
+      const response = await POST(
+        new Request(`http://localhost/api/admin/backups/${backup.id}/restore`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ confirm: "RESTORE" }),
+        }) as never,
+        { params: Promise.resolve({ id: backup.id }) },
+      );
+      expect(response.status, JSON.stringify(await response.json())).toBe(200);
+
+      const restored = await prisma.medication.findFirstOrThrow({
+        where: { userId: OWNER_ID, name: "Note round-trip tablet" },
+      });
+      expect(restored.noteEncrypted).not.toBeNull();
+      expect(decryptFromBytes(restored.noteEncrypted!)).toBe(NOTE);
+      const restoredWithout = await prisma.medication.findFirstOrThrow({
+        where: { userId: OWNER_ID, name: "No note tablet" },
+      });
+      expect(restoredWithout.noteEncrypted).toBeNull();
+    },
+  );
+
   it("drops and names a filing and a commitment a truncated file cannot resolve", async () => {
     const prisma = getPrismaClient();
     await seedAdminSession(prisma);

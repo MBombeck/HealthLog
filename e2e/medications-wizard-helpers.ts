@@ -27,6 +27,8 @@ interface StubbedMedication {
   rrule: string | null;
   rollingIntervalDays: number | null;
   oneShot: boolean;
+  /** #1371 — the medication's own note, echoed on the list. */
+  note?: string | null;
 }
 
 export function mockMedicationsApi(page: Page, stubbed: StubbedMedication) {
@@ -57,6 +59,7 @@ export function mockMedicationsApi(page: Page, stubbed: StubbedMedication) {
     startsOn: null,
     endsOn: null,
     oneShot: stubbed.oneShot,
+    note: stubbed.note ?? null,
     schedules: [
       {
         id: "sch_e2e_1",

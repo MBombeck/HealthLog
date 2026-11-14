@@ -1412,3 +1412,74 @@ describe("custom categories (v1.40, #1041)", () => {
     expect(payload.customCategoryKey).toBeNull();
   });
 });
+
+describe("the medication's own note (#1371)", () => {
+  function hydrate(note?: string | null) {
+    return hydrateWizardPayload({
+      id: "m1",
+      name: "Levothyroxine",
+      dose: "50 µg",
+      category: "THYROID",
+      treatmentClass: "GENERIC",
+      notificationsEnabled: true,
+      startsOn: null,
+      endsOn: null,
+      oneShot: false,
+      ...(note !== undefined && { note }),
+      schedules: [
+        {
+          windowStart: "07:00",
+          windowEnd: "08:00",
+          timesOfDay: ["07:00"],
+          rrule: "FREQ=DAILY",
+        },
+      ],
+    });
+  }
+
+  it("starts empty on a fresh wizard and sends nothing for a blank note", () => {
+    const payload = emptyWizardPayload();
+    expect(payload.note).toBe("");
+    expect("note" in buildCreateBody({ ...payload, note: "   " })).toBe(false);
+  });
+
+  it("sends a typed note on create, trimmed", () => {
+    const body = buildCreateBody(
+      { ...hydrate(), note: "  30 to 60 minutes before food \n" },
+      "create",
+    );
+    expect(body.note).toBe("30 to 60 minutes before food");
+  });
+
+  it("hydrates the stored note into the editor", () => {
+    expect(hydrate("Before breakfast").note).toBe("Before breakfast");
+    expect(hydrate(null).note).toBe("");
+  });
+
+  it("leaves the stored note alone on an edit that did not touch it", () => {
+    const body = buildCreateBody(
+      { ...hydrate("Before breakfast"), name: "Renamed" },
+      "edit",
+    );
+    expect("note" in body).toBe(false);
+  });
+
+  it("never clears a note on an edit from a snapshot without the field", () => {
+    // A snapshot that predates the field hydrates an empty editor; saving
+    // must not send the empty value over the stored note.
+    expect("note" in buildCreateBody(hydrate(), "edit")).toBe(false);
+  });
+
+  it("sends a changed note on edit, and a blank one to clear it", () => {
+    const changed = buildCreateBody(
+      { ...hydrate("Before breakfast"), note: "With food" },
+      "edit",
+    );
+    expect(changed.note).toBe("With food");
+    const cleared = buildCreateBody(
+      { ...hydrate("Before breakfast"), note: "  " },
+      "edit",
+    );
+    expect(cleared.note).toBe("");
+  });
+});

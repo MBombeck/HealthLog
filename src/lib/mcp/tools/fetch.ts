@@ -38,6 +38,7 @@ import {
   plainNutrientText,
 } from "./render/citation-text";
 import { READ_ONLY_ANNOTATIONS, type McpToolDefinition } from "./types";
+import { readMedicationNote } from "@/lib/medications/medication-note";
 
 /** The lab result id of the reading `plainLabText` quotes, when it has one. */
 function latestLabId(result: unknown): string | null {
@@ -151,6 +152,7 @@ async function fetchMedication(
       dose: true,
       treatmentClass: true,
       asNeeded: true,
+      noteEncrypted: true,
     },
   });
   if (!med) {
@@ -162,6 +164,7 @@ async function fetchMedication(
       metadata: { type: "medication" },
     };
   }
+  const note = readMedicationNote(med.noteEncrypted);
   // Plain-text prose, not a JSON blob. `name` / `dose` /
   // `treatmentClass` are user-controlled free text returned as DATA,
   // never interpreted — fenced so that contract is stated on the wire
@@ -169,7 +172,9 @@ async function fetchMedication(
   const text = fenceUserText(
     `${med.name}${med.dose ? ` ${med.dose}` : ""}` +
       `${med.asNeeded ? " (as needed)" : ""}` +
-      `${med.treatmentClass ? ` — ${med.treatmentClass}` : ""}.`,
+      `${med.treatmentClass ? ` — ${med.treatmentClass}` : ""}.` +
+      // #1371 — the person's own note (directions), inside the same fence.
+      (note ? ` Note: ${note}` : ""),
   );
   const linked = await linksBySource(
     userId,

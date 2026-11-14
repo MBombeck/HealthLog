@@ -17,6 +17,7 @@ import {
   summariseScheduleDraft,
   type WizardPayload,
 } from "../wizard-payload";
+import { Step8NoteField } from "./step8-note-field";
 
 export interface Step8SummaryProps {
   payload: WizardPayload;
@@ -167,6 +168,7 @@ export function Step8Summary({
         )}
       </div>
 
+      <Step8NoteField payload={payload} applyPartial={applyPartial} />
       {/* v1.39.1 (#1033) — intake tracking. Off keeps the medication and
           its schedule as a record; nothing is due, so the reminders toggle
           below goes with it. As-needed is never due either way. */}

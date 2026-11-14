@@ -166,3 +166,36 @@ describe("<LogIntakeDialog> medication default", () => {
     expectSelected(html, "r");
   });
 });
+
+describe("<LogIntakeDialog> the medication's own note (#1371)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-12T08:00:00.000Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("shows the picked medication's note under the picker", () => {
+    const html = renderDialog([
+      medication("a", { note: "30 to 60 minutes before food" }),
+    ]);
+    expect(html).toContain('data-slot="log-intake-note"');
+    expect(html).toContain("30 to 60 minutes before food");
+  });
+
+  it("shows no note line for a medication without one", () => {
+    const html = renderDialog([medication("a", { note: null })]);
+    expect(html).not.toContain("log-intake-note");
+  });
+
+  it("shows the note of the medication that is picked, not another's", () => {
+    const html = renderDialog([
+      medication("a", { name: "Alpha", note: "Alpha note" }),
+      medication("b", { name: "Beta", note: "Beta note" }),
+    ]);
+    expect(html).toContain("Alpha note");
+    expect(html).not.toContain("Beta note");
+  });
+});

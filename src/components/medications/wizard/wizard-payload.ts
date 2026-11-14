@@ -351,6 +351,10 @@ export interface WizardPayload {
    * time has passed. No reminder is sent while it is on.
    */
   autoMarkTaken: boolean;
+  /** #1371 — the medication's own note; empty = none. */
+  note: string;
+  /** #1371 — the note an edit hydrated to; absent on create. */
+  initialNote?: string;
   /** Every parallel schedule under construction. Always >= 1 entry. */
   schedules: ScheduleDraft[];
   /** Which schedule Steps 5-7 currently edit. */
@@ -401,6 +405,7 @@ export function emptyWizardPayload(): WizardPayload {
     notificationsEnabled: true,
     trackIntake: true,
     autoMarkTaken: false,
+    note: "",
     schedules: [draft],
     activeScheduleIndex: 0,
   };
@@ -707,6 +712,8 @@ export interface CreateMedicationBody {
    * so re-sending the stored value never moves it. Off for as-needed.
    */
   autoMarkTaken: boolean;
+  /** #1371 — trimmed; sent only when set (create) or changed (edit). */
+  note?: string;
   schedules: Array<{
     id?: string;
     windowStart: string;
@@ -937,6 +944,12 @@ export function buildCreateBody(
     trackIntake: isAsNeeded ? true : committed.trackIntake,
     // An as-needed medication has no slot to record.
     autoMarkTaken: isAsNeeded ? false : committed.autoMarkTaken,
+    // An edit names the note only when it changed, so an unrelated save
+    // never clears it; a blank one then clears it.
+    ...(committed.note.trim() !==
+      (forMode === "edit" ? (committed.initialNote ?? "").trim() : "") && {
+      note: committed.note.trim(),
+    }),
     schedules: draftsToEmit.map((draft) =>
       encodeScheduleDraft(draft, isOneShot),
     ),
@@ -1165,6 +1178,8 @@ export interface MedicationPayload {
   trackIntake?: boolean;
   /** v1.42.2 — auto-mark-taken; absent = off. */
   autoMarkTaken?: boolean;
+  /** #1371 — the person's own note; null or absent = none. */
+  note?: string | null;
   schedules: Array<{
     id?: string;
     windowStart: string;
@@ -1318,6 +1333,8 @@ export function hydrateWizardPayload(
     notificationsEnabled: initial.notificationsEnabled ?? true,
     trackIntake: initial.trackIntake !== false,
     autoMarkTaken: initial.autoMarkTaken === true,
+    note: initial.note ?? "",
+    initialNote: initial.note ?? "",
     schedules: drafts,
     activeScheduleIndex: 0,
   };

@@ -127,6 +127,8 @@ interface Medication {
   trackIntake?: boolean;
   /** v1.42.2 — doses recorded automatically. */
   autoMarkTaken?: boolean;
+  /** #1371 — the person's own note, shown above the dose actions. */
+  note?: string | null;
   /**
    * v1.39.4 (#1040) — server-resolved: taken / skip are offered today only
    * when true (active, tracked, and the course includes today).
@@ -510,6 +512,7 @@ export function MedicationCard({
       highlighted={highlighted}
       name={medication.name}
       dose={formatDose(medication.dose, t)}
+      note={medication.note ?? null}
       categoryLabel={categoryLabel}
       active={medication.active}
       href={`/medications/${medication.id}`}

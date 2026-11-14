@@ -32,6 +32,7 @@ import {
   type ReadUser,
 } from "@/lib/medications/read-medication";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
+import { sealMedicationNote } from "@/lib/medications/medication-note";
 
 export type CreateMedicationInput = z.output<typeof createMedicationSchema>;
 type ScheduleInput = NonNullable<CreateMedicationInput["schedules"]>[number];
@@ -329,6 +330,7 @@ function insertMedication(
     criticalAlarmEnabled,
     atcCode,
     rxNormCode,
+    note,
     externalSource,
     externalId,
     startsOn,
@@ -338,6 +340,7 @@ function insertMedication(
     autoMarkTaken,
   } = data;
   const { scheduleInputs, normalisedEndsOn, initialCourse } = shape;
+  const noteEncrypted = sealMedicationNote(note);
   return prisma.medication.create({
     data: {
       userId,
@@ -365,6 +368,8 @@ function insertMedication(
       // format by Zod; stored verbatim when present.
       ...(atcCode !== undefined && { atcCode }),
       ...(rxNormCode !== undefined && { rxNormCode }),
+      // The person's own note (#1371), sealed; a blank one stores nothing.
+      ...(noteEncrypted !== undefined && { noteEncrypted }),
       // Mirrored-medication provenance (Apple Health). Zod enforces the
       // both-or-neither pairing; field-by-field like every other column.
       ...(externalSource !== undefined && { externalSource }),

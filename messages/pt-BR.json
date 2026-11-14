@@ -1506,6 +1506,11 @@
       "disabledToast": "Acompanhamento de tomadas desligado",
       "toggleFailed": "Não foi possível alterar o acompanhamento de tomadas."
     },
+    "note": {
+      "label": "Observação",
+      "placeholder": "ex.: 30 a 60 minutos antes de comer",
+      "helper": "Aparece no medicamento e quando você registra uma tomada."
+    },
     "autoMarkTaken": {
       "label": "Registrar doses automaticamente",
       "helper": "O HealthLog registra cada dose programada como tomada no horário dela. Você ainda pode alterar ou pular uma dose manualmente. Nenhum lembrete é enviado.",

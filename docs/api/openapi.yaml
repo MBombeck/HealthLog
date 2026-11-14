@@ -30709,6 +30709,15 @@ components:
               maxLength: 20
               pattern: ^\d+$
             - type: "null"
+        note:
+          description: "#1371 — the person's own note on the medication, for directions such as \"30 to 60 minutes before food\".
+            Free text, trimmed, at most 500 characters (counted after trimming). An empty string or NULL clears it;
+            absent leaves it untouched. Encrypted at rest and returned decrypted as `note` on the medication read
+            paths."
+          anyOf:
+            - type: string
+              maxLength: 500
+            - type: "null"
         externalSource:
           description: "Marks the medication as MIRRORED from an external medication list. Only `APPLE_HEALTH` (the iOS 26+
             HealthKit Medications sync) is accepted. Must be supplied together with `externalId`. A mirrored medication
@@ -31136,6 +31145,15 @@ components:
             - type: string
               maxLength: 20
               pattern: ^\d+$
+            - type: "null"
+        note:
+          description: "#1371 — the person's own note on the medication, for directions such as \"30 to 60 minutes before food\".
+            Free text, trimmed, at most 500 characters (counted after trimming). An empty string or NULL clears it;
+            absent leaves it untouched. Encrypted at rest and returned decrypted as `note` on the medication read
+            paths."
+          anyOf:
+            - type: string
+              maxLength: 500
             - type: "null"
         startsOn:
           description: Date the medication course begins (ISO `YYYY-MM-DD`). Anchors RRULE BYDAY / BYMONTHDAY patterns and the
@@ -43018,6 +43036,16 @@ components:
                 type:
                   - string
                   - "null"
+              note:
+                anyOf:
+                  - type: string
+                    maxLength: 500
+                  - type: "null"
+              noteEncrypted:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                  - type: "null"
               lowStockNotifiedAt:
                 anyOf:
                   - type: string
@@ -55636,6 +55664,14 @@ components:
           type:
             - string
             - "null"
+        note:
+          description: "#1371 — the person's own note on the medication, for directions such as \"30 to 60 minutes before food\".
+            Free text, at most 500 characters, decrypted on the way out (encrypted at rest). NULL = no note. Show it
+            with the medication and wherever a dose is logged. Set or cleared through `note` on the create and update
+            bodies."
+          type:
+            - string
+            - "null"
         pausedAt:
           anyOf:
             - type: string
@@ -55863,6 +55899,7 @@ components:
         - criticalAlarmEnabled
         - atcCode
         - rxNormCode
+        - note
         - pausedAt
         - snoozedUntil
         - remindersActive
@@ -56093,6 +56130,14 @@ components:
           type:
             - string
             - "null"
+        note:
+          description: "#1371 — the person's own note on the medication, for directions such as \"30 to 60 minutes before food\".
+            Free text, at most 500 characters, decrypted on the way out (encrypted at rest). NULL = no note. Show it
+            with the medication and wherever a dose is logged. Set or cleared through `note` on the create and update
+            bodies."
+          type:
+            - string
+            - "null"
         pausedAt:
           anyOf:
             - type: string
@@ -56305,6 +56350,7 @@ components:
         - criticalAlarmEnabled
         - atcCode
         - rxNormCode
+        - note
         - pausedAt
         - snoozedUntil
         - remindersActive
@@ -96853,6 +96899,14 @@ components:
           type:
             - string
             - "null"
+        note:
+          description: "#1371 — the person's own note on the medication, for directions such as \"30 to 60 minutes before food\".
+            Free text, at most 500 characters, decrypted on the way out (encrypted at rest). NULL = no note. Show it
+            with the medication and wherever a dose is logged. Set or cleared through `note` on the create and update
+            bodies."
+          type:
+            - string
+            - "null"
         pausedAt:
           anyOf:
             - type: string
@@ -96984,6 +97038,7 @@ components:
         - criticalAlarmEnabled
         - atcCode
         - rxNormCode
+        - note
         - pausedAt
         - snoozedUntil
         - startsOn

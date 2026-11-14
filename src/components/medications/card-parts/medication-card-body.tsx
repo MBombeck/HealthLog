@@ -17,6 +17,7 @@ import {
 import { MedicationCycleStatus } from "@/components/medications/card-parts/medication-cycle-status";
 import { MedicationIntakeActions } from "@/components/medications/card-parts/medication-intake-actions";
 import { MedicationNextLastSlot } from "@/components/medications/card-parts/medication-next-last-slot";
+import { MedicationNote } from "@/components/medications/medication-note";
 import { useTranslations } from "@/lib/i18n/context";
 import type { CurrentCycle, DoseStatus } from "@/lib/analytics/compliance";
 import type { MedicationWindowStatus } from "@/lib/medications/window-status";
@@ -61,6 +62,14 @@ export interface MedicationCardBodyProps {
   name: string;
   /** Dose shown beside the name on line 1. */
   dose: string;
+  /**
+   * #1371 — the person's own note ("30 to 60 minutes before food"), shown
+   * inside the bottom-pinned block directly above the take / skip actions,
+   * so it is in view when a dose is logged. The block only grows upward into
+   * the free space, so the rows above (next / last, bars) keep their
+   * baseline across a grid row. Null or empty renders nothing.
+   */
+  note?: string | null;
   /** Localised category label for the header badge. */
   categoryLabel: string;
   /** Whether the medication is active (greys out + hides the action row). */
@@ -181,6 +190,7 @@ export function MedicationCardBody({
   id,
   name,
   dose,
+  note = null,
   categoryLabel,
   active,
   href,
@@ -362,7 +372,8 @@ export function MedicationCardBody({
         {/* Quick actions — bottom-pinned so the action rows align across a
             grid row regardless of how much content sits above. */}
         {canAct && !recordOnly && (
-          <div className="mt-auto pt-0">
+          <div className="mt-auto space-y-2 pt-0">
+            <MedicationNote note={note} slot="medication-card-note" clamp />
             <MedicationIntakeActions
               intakeLoading={intakeLoading}
               onRecordIntake={onRecordIntake}

@@ -47,6 +47,7 @@ import {
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { useMedicationDueThresholds } from "@/lib/queries/use-reminder-thresholds";
 import { EmptyState } from "@/components/ui/empty-state";
+import { MedicationNote } from "@/components/medications/medication-note";
 
 interface LogIntakeSchedule extends ScheduleWindowInput {
   label: string | null;
@@ -55,6 +56,8 @@ interface LogIntakeSchedule extends ScheduleWindowInput {
 
 export interface LogIntakeMedication extends DefaultMedicationOption {
   dose: string;
+  /** #1371 — the person's own note, shown under the picker when present. */
+  note?: string | null;
   schedules: LogIntakeSchedule[];
 }
 
@@ -299,6 +302,7 @@ export function LogIntakeDialog({
                   </option>
                 ))}
               </NativeSelect>
+              <MedicationNote note={selected?.note} slot="log-intake-note" />
             </div>
 
             {slotTimes.length > 0 && (

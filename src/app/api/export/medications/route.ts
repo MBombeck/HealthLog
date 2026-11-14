@@ -32,6 +32,7 @@ import {
   formatIntakeEventsForExport,
 } from "@/lib/export";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
+import { withMedicationNote } from "@/lib/medications/medication-note";
 import { NextRequest, NextResponse } from "next/server";
 
 export const GET = apiHandler(async (request: NextRequest) => {
@@ -67,6 +68,7 @@ export const GET = apiHandler(async (request: NextRequest) => {
         dose: true,
         active: true,
         trackIntake: true,
+        noteEncrypted: true,
         schedules: {
           select: {
             windowStart: true,
@@ -90,7 +92,8 @@ export const GET = apiHandler(async (request: NextRequest) => {
 
   const sections: string[] = [
     "# Medications",
-    toCSV(formatMedicationsForExport(medications)),
+    // The note travels decrypted (#1371); the ciphertext never does.
+    toCSV(formatMedicationsForExport(medications.map(withMedicationNote))),
   ];
   let intakeCount = 0;
 

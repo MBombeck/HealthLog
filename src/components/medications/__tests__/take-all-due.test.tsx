@@ -123,6 +123,16 @@ describe("deriveDueMedications — only currently-due, active, unpaused", () => 
   const now = todayAtUtc(12, 0);
   const opts = { now, tz: "UTC" };
 
+  it("carries the medication's own note into the confirm list (#1371)", () => {
+    const [withNote] = deriveDueMedications(
+      [makeMed({ id: "a", note: "With food" })],
+      opts,
+    );
+    expect(withNote?.note).toBe("With food");
+    const [without] = deriveDueMedications([makeMed({ id: "b" })], opts);
+    expect(without?.note).toBeNull();
+  });
+
   it("includes an in-window medication with its matched band and slot instant", () => {
     const due = deriveDueMedications([makeMed({ id: "a" })], opts);
     expect(due).toHaveLength(1);
@@ -620,6 +630,24 @@ describe("<TakeAllDueDialog> — confirm dialog lists the due medications", () =
     expect(html).toContain("Fällige Medikamente einnehmen");
     expect(html).toContain("Alle einnehmen (2)");
     expect(html).toContain("Abbrechen");
+  });
+
+  it("lists each medication's own note under its name (#1371)", () => {
+    const html = render(
+      <TakeAllDueDialog
+        open
+        onOpenChange={vi.fn()}
+        dueMedications={[
+          { ...due[0], note: "Vor dem Frühstück" },
+          { ...due[1], note: null },
+        ]}
+      />,
+    );
+    expect(html.match(/data-slot="take-all-due-note"/g)).toHaveLength(1);
+    expect(html).toContain("Vor dem Frühstück");
+    expect(html.indexOf("Metoprolol")).toBeLessThan(
+      html.indexOf("Vor dem Frühstück"),
+    );
   });
 
   it("does not render when closed", () => {

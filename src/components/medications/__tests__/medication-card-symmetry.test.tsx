@@ -555,4 +555,59 @@ describe("medication card symmetry — Ramipril vs Mounjaro", () => {
     expect(htmls[1]).toContain("aria-hidden"); // prn skeleton
     expect(htmls[2]).toContain("aria-hidden"); // one-shot skeleton
   });
+
+  it("both cards show the medication's own note inside the bottom-pinned action block (#1371)", () => {
+    const note = "30 to 60 minutes before food";
+    const client = makeClient();
+    seedCompliance(client, ramipril.id);
+    seedCompliance(client, mounjaro.id);
+    seedGlp1Details(client, mounjaro.id);
+    const htmls = [
+      render(
+        <MedicationCard
+          medication={{ ...ramipril, note }}
+          onEdit={() => {}}
+          onOpenHistory={() => {}}
+        />,
+        client,
+      ),
+      render(
+        <Glp1MedicationCard
+          medication={{ ...mounjaro, note }}
+          onEdit={() => {}}
+          onOpenHistory={() => {}}
+        />,
+        client,
+      ),
+    ];
+    for (const html of htmls) {
+      // In the bottom-pinned block, before the take button: the rows above
+      // keep their baseline, and the note is in view when a dose is logged.
+      const block = html.indexOf("mt-auto space-y-2");
+      const noteAt = html.indexOf('data-slot="medication-card-note"');
+      const takeAt = html.indexOf('data-slot="medication-intake-take"');
+      expect(block).toBeGreaterThan(-1);
+      expect(noteAt).toBeGreaterThan(block);
+      expect(takeAt).toBeGreaterThan(noteAt);
+      expect(html).toContain(note);
+      // The person's words are content, never muted meta.
+      expect(html).toMatch(
+        /<span data-slot="medication-card-note" title="30 to 60 minutes before food" class="text-sm break-words line-clamp-2">/,
+      );
+    }
+  });
+
+  it("renders no note slot for a medication without one", () => {
+    const client = makeClient();
+    seedCompliance(client, ramipril.id);
+    const html = render(
+      <MedicationCard
+        medication={{ ...ramipril, note: null }}
+        onEdit={() => {}}
+        onOpenHistory={() => {}}
+      />,
+      client,
+    );
+    expect(html).not.toContain("medication-card-note");
+  });
 });

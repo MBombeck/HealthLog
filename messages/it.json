@@ -1506,6 +1506,11 @@
       "disabledToast": "Registrazione assunzioni disattivata",
       "toggleFailed": "Impossibile modificare la registrazione delle assunzioni."
     },
+    "note": {
+      "label": "Nota",
+      "placeholder": "ad es. da 30 a 60 minuti prima dei pasti",
+      "helper": "Mostrata sul farmaco e quando registri un'assunzione."
+    },
     "autoMarkTaken": {
       "label": "Registra le assunzioni automaticamente",
       "helper": "HealthLog registra ogni dose programmata come assunta al suo orario. Puoi comunque modificare o saltare una dose a mano. Non vengono inviati promemoria.",

@@ -276,6 +276,8 @@ export function formatMedicationsForExport(
     active: boolean;
     /** v1.39.1 (#1033) — false: kept as a record, intake not tracked. */
     trackIntake: boolean;
+    /** #1371 — the person's own note, decrypted; NULL when there is none. */
+    note: string | null;
     schedules: Array<{
       windowStart: string;
       windowEnd: string;
@@ -295,6 +297,7 @@ export function formatMedicationsForExport(
           `${s.label ? s.label + ": " : ""}${s.windowStart}-${s.windowEnd}${s.dose ? " (" + s.dose + ")" : ""}`,
       )
       .join("; "),
+    note: m.note ?? "",
   }));
 }
 
