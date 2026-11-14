@@ -12,7 +12,8 @@
   answers 404. A metric's ID is the part after `/custom-metrics/` in the
   address of its page, and the token card in Settings says so. Values
   posted this way are not marked as coming from an external device; the
-  audit log records which token wrote them. (#1377)
+  audit log records which token wrote them. Measurement tokens you
+  already have can do this too, without being created again. (#1377)
 
 ## [1.47.5] — 2026-11-12
 
