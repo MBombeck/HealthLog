@@ -18,6 +18,39 @@
   out keeps it), and the list and detail reads answer `note`, `null` when
   there is none. Migration `0498_medication_note`. (#1371)
 
+- **Measurement tokens can log custom-metric values.** A script or a
+  Home Assistant rule holding a measurement token can now post a value
+  to `POST /api/custom-metrics/{id}/entries` for a custom metric you
+  already created. The token still cannot list, read, create, change or
+  delete custom metrics or their values, and a metric of another account
+  answers 404. A metric's ID is the part after `/custom-metrics/` in the
+  address of its page, and the token card in Settings says so. Values
+  posted this way are not marked as coming from an external device; the
+  audit log records which token wrote them. Measurement tokens you
+  already have can do this too, without being created again. (#1377)
+
+### Fixed
+
+- **Opening a record on a phone.** In the account menu, "Open a record"
+  used to open a second menu beside the first, and on a narrow screen it
+  ran off the edge and cut the names off. On a phone the records now
+  unfold inside the account menu itself; wider screens keep the side
+  menu. (#1372)
+- **A clearer message when the browser refuses push.** When the browser's
+  push service turned the registration down, enabling Browser Push said
+  only "Activation failed". It now says that the push service refused and
+  links the help page. Brave keeps push messaging off by default, so in
+  Brave the message names the setting to turn on: "Use Google services
+  for push messaging" under brave://settings/privacy. (Discussion #1378)
+
+### Security
+
+- The `hono` dependency floor is raised to 4.13.16 (CVE-2026-126355 to
+  CVE-2026-126358). HealthLog only gets it under the MCP SDK and loads none
+  of the affected parts (CSRF and validator middleware, `mount`, the
+  RegExpRouter), so this clears the audit rather than closing a reachable
+  hole.
+
 ## [1.47.5] — 2026-11-12
 
 ### Fixed

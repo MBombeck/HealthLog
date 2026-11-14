@@ -6434,6 +6434,9 @@
     "webPushSubscribed": "¡Notificaciones push activadas!",
     "webPushUnsubscribed": "Notificaciones push desactivadas.",
     "webPushSubscribeFailed": "Falló la activación",
+    "webPushServiceRefused": "El servicio push de tu navegador rechazó el registro, así que no se pudo activar push. El navegador tiene que llegar a su servicio push, y una opción de privacidad, un bloqueador o la red pueden impedirlo. Vuelve a intentarlo más tarde o en otro navegador.",
+    "webPushServiceRefusedBrave": "El servicio push de Brave rechazó el registro. Brave trae push desactivado de fábrica: abre brave://settings/privacy, activa el uso de los servicios de Google para la mensajería push y toca otra vez «Activar push».",
+    "webPushHelpLink": "Ayuda con push en el navegador",
     "codexConnected": "¡ChatGPT conectado correctamente! Insights ya está activo.",
     "codexDisconnected": "Conexión con ChatGPT eliminada.",
     "codexConnectionFailed": "Falló la conexión con ChatGPT. Inténtalo de nuevo.",
@@ -6994,9 +6997,9 @@
     "apiTokensDescription": "Revisa y revoca los tokens de mediciones, entrenamientos, documentos y tomas de medicación.",
     "measurementsToken": {
       "title": "Tokens de mediciones",
-      "description": "Crea un token para que una báscula, un reloj o tu domótica añadan mediciones.",
+      "description": "Crea un token para que una báscula, un reloj o tu domótica añadan mediciones y valores de tus métricas personalizadas.",
       "detail": "El token se muestra una sola vez.",
-      "scopeNote": "Solo puede añadir mediciones nuevas a tu propio historial: no puede leer tus datos, ni modificar o borrar nada, ni crear otro token. Las mediciones se marcan como procedentes de un dispositivo externo, así las distingues más tarde, y puedes corregirlas igualmente.",
+      "scopeNote": "Solo puede añadir mediciones nuevas a tu propio historial y valores a las métricas personalizadas que ya creaste: no puede leer tus datos, ni crear una métrica, ni modificar o borrar nada, ni crear otro token. Las mediciones se marcan como procedentes de un dispositivo externo, así las distingues más tarde; los valores de las métricas personalizadas no llevan esa marca. Puedes corregir ambos igualmente. El ID de una métrica personalizada es la parte que sigue a /custom-metrics/ en la dirección de su página.",
       "createFailed": "No se pudo crear el token. Inténtalo de nuevo.",
       "namePlaceholder": "Nombre, p. ej. Home Assistant",
       "appleHealth": {

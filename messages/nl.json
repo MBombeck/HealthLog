@@ -6434,6 +6434,9 @@
     "webPushSubscribed": "Pushmeldingen ingeschakeld!",
     "webPushUnsubscribed": "Pushmeldingen uitgeschakeld.",
     "webPushSubscribeFailed": "Activeren mislukt",
+    "webPushServiceRefused": "De pushdienst van je browser heeft de registratie geweigerd, dus push kon niet worden ingeschakeld. De browser moet zijn pushdienst kunnen bereiken, en een privacyinstelling, een blocker of het netwerk kan dat tegenhouden. Probeer het later opnieuw of in een andere browser.",
+    "webPushServiceRefusedBrave": "De pushdienst van Brave heeft de registratie geweigerd. Brave zet push standaard uit: open brave://settings/privacy, zet het gebruik van Google-services voor pushberichten aan en tik daarna opnieuw op 'Push inschakelen'.",
+    "webPushHelpLink": "Hulp bij browserpush",
     "codexConnected": "ChatGPT gekoppeld! Inzichten zijn nu actief.",
     "codexDisconnected": "Koppeling met ChatGPT verwijderd.",
     "codexConnectionFailed": "Koppelen met ChatGPT is mislukt. Probeer het opnieuw.",
@@ -6994,9 +6997,9 @@
     "apiTokensDescription": "Bekijk tokens voor metingen, trainingen, documenten en medicatie-inname en trek ze in.",
     "measurementsToken": {
       "title": "Metingtokens",
-      "description": "Maak een token aan zodat een weegschaal, een horlogekoppeling of je domotica metingen kan toevoegen.",
+      "description": "Maak een token aan zodat een weegschaal, een horlogekoppeling of je domotica metingen en waarden voor je eigen metingen kan toevoegen.",
       "detail": "Het token wordt één keer getoond.",
-      "scopeNote": "Het kan alleen nieuwe metingen aan je eigen dossier toevoegen. Het kan je gegevens niet lezen, niets wijzigen of verwijderen en geen ander token aanmaken. Metingen worden gemarkeerd als afkomstig van een extern apparaat, zodat je ze later kunt onderscheiden, en je kunt ze nog steeds zelf corrigeren.",
+      "scopeNote": "Het kan alleen nieuwe metingen aan je eigen dossier toevoegen, en waarden aan eigen metingen die je al hebt aangemaakt. Het kan je gegevens niet lezen, geen eigen meting aanmaken, niets wijzigen of verwijderen en geen ander token aanmaken. Metingen worden gemarkeerd als afkomstig van een extern apparaat, zodat je ze later kunt onderscheiden; waarden van eigen metingen krijgen die markering niet. Je kunt beide nog steeds zelf corrigeren. De ID van een eigen meting is het deel na /custom-metrics/ in het adres van de pagina ervan.",
       "createFailed": "Het token kon niet worden aangemaakt. Probeer het opnieuw.",
       "namePlaceholder": "Naam, bijv. Home Assistant",
       "appleHealth": {

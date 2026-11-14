@@ -6434,6 +6434,9 @@
     "webPushSubscribed": "Push-Benachrichtigungen aktiviert!",
     "webPushUnsubscribed": "Push-Benachrichtigungen deaktiviert.",
     "webPushSubscribeFailed": "Aktivierung fehlgeschlagen",
+    "webPushServiceRefused": "Der Push-Dienst deines Browsers hat die Anmeldung abgelehnt, deshalb ließ sich Push nicht einschalten. Der Browser muss seinen Push-Dienst erreichen, und eine Datenschutzeinstellung, ein Blocker oder das Netzwerk kann das verhindern. Versuche es später noch einmal oder in einem anderen Browser.",
+    "webPushServiceRefusedBrave": "Der Push-Dienst von Brave hat die Anmeldung abgelehnt. Brave lässt Push ab Werk ausgeschaltet: Öffne brave://settings/privacy, schalte dort die Nutzung von Google-Diensten für Push-Nachrichten ein und tippe dann noch einmal auf „Push aktivieren“.",
+    "webPushHelpLink": "Hilfe zu Browser-Push",
     "codexConnected": "ChatGPT erfolgreich verbunden! Insights sind jetzt aktiv.",
     "codexDisconnected": "ChatGPT-Verbindung getrennt.",
     "codexConnectionFailed": "ChatGPT-Verbindung fehlgeschlagen. Bitte versuche es erneut.",
@@ -6994,9 +6997,9 @@
     "apiTokensDescription": "Tokens für Messwerte, Trainings, Dokumente und Medikamenten-Einnahme prüfen und widerrufen.",
     "measurementsToken": {
       "title": "Messwert-Tokens",
-      "description": "Erzeuge ein Token, damit eine Waage, eine Uhr oder deine Hausautomatisierung Werte eintragen kann.",
+      "description": "Erzeuge ein Token, damit eine Waage, eine Uhr oder deine Hausautomatisierung Messwerte und Werte deiner eigenen Metriken eintragen kann.",
       "detail": "Das Token wird nur einmal angezeigt.",
-      "scopeNote": "Es kann ausschließlich neue Werte in deine eigene Akte eintragen. Es kann deine Daten nicht lesen, nichts ändern oder löschen und kein weiteres Token erstellen. Werte werden als von einem externen Gerät gekennzeichnet, damit du sie später erkennst, und lassen sich jederzeit korrigieren.",
+      "scopeNote": "Es kann ausschließlich neue Werte in deine eigene Akte eintragen, auch für eigene Metriken, die du bereits angelegt hast. Es kann deine Daten nicht lesen, keine Metrik anlegen, nichts ändern oder löschen und kein weiteres Token erstellen. Messwerte werden als von einem externen Gerät gekennzeichnet, damit du sie später erkennst; Werte eigener Metriken tragen keine solche Kennzeichnung. Beides lässt sich jederzeit korrigieren. Die ID einer eigenen Metrik ist der Teil nach /custom-metrics/ in der Adresse ihrer Seite.",
       "createFailed": "Das Token konnte nicht erstellt werden. Bitte versuche es erneut.",
       "namePlaceholder": "Name, z. B. Home Assistant",
       "appleHealth": {

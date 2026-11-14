@@ -6434,6 +6434,9 @@
     "webPushSubscribed": "Push notifications enabled!",
     "webPushUnsubscribed": "Push notifications disabled.",
     "webPushSubscribeFailed": "Activation failed",
+    "webPushServiceRefused": "Your browser's push service refused the registration, so push could not be turned on. The browser has to reach its push service, and a privacy setting, a blocker or the network can stop it. Try again later or in another browser.",
+    "webPushServiceRefusedBrave": "Brave's push service refused the registration. Brave keeps push off by default: open brave://settings/privacy, turn on “Use Google services for push messaging” and tap Enable push again.",
+    "webPushHelpLink": "Help with browser push",
     "codexConnected": "ChatGPT connected successfully! Insights are now active.",
     "codexDisconnected": "ChatGPT connection removed.",
     "codexConnectionFailed": "ChatGPT connection failed. Please try again.",
@@ -6994,9 +6997,9 @@
     "apiTokensDescription": "Review and revoke tokens for measurements, workouts, documents and medication intake.",
     "measurementsToken": {
       "title": "Measurement tokens",
-      "description": "Mint a token so a scale, a watch bridge or your home automation can add readings.",
+      "description": "Mint a token so a scale, a watch bridge or your home automation can add readings and custom-metric values.",
       "detail": "The token is shown once.",
-      "scopeNote": "It can only add new readings to your own record. It cannot read your data, change or delete anything, or create another token. Readings are marked as coming from an external device, so you can tell them apart later, and you can still correct them yourself.",
+      "scopeNote": "It can only add new readings to your own record, and values to custom metrics you already created. It cannot read your data, create a custom metric, change or delete anything, or create another token. Readings are marked as coming from an external device, so you can tell them apart later; custom-metric values carry no such mark. You can still correct both yourself. A custom metric's ID is the part after /custom-metrics/ in the address of its page.",
       "createFailed": "The token could not be created. Please try again.",
       "namePlaceholder": "Name, e.g. Home Assistant",
       "appleHealth": {

@@ -6434,6 +6434,9 @@
     "webPushSubscribed": "Notifications push activées !",
     "webPushUnsubscribed": "Notifications push désactivées.",
     "webPushSubscribeFailed": "Échec de l’activation",
+    "webPushServiceRefused": "Le service push de votre navigateur a refusé l’inscription, le push n’a donc pas pu être activé. Le navigateur doit pouvoir joindre son service push, et un réglage de confidentialité, un bloqueur ou le réseau peut l’en empêcher. Réessayez plus tard ou dans un autre navigateur.",
+    "webPushServiceRefusedBrave": "Le service push de Brave a refusé l’inscription. Brave désactive le push par défaut : ouvrez brave://settings/privacy, activez l’utilisation des services Google pour la messagerie push, puis touchez à nouveau « Activer le push ».",
+    "webPushHelpLink": "Aide sur le push du navigateur",
     "codexConnected": "ChatGPT connecté ! Insights est maintenant actif.",
     "codexDisconnected": "Connexion à ChatGPT supprimée.",
     "codexConnectionFailed": "Échec de la connexion à ChatGPT. Veuillez réessayer.",
@@ -6994,9 +6997,9 @@
     "apiTokensDescription": "Consultez et révoquez les jetons des mesures, entraînements, documents et prises de médicaments.",
     "measurementsToken": {
       "title": "Jetons de mesures",
-      "description": "Créez un jeton pour qu'une balance, une montre ou votre domotique ajoutent des mesures.",
+      "description": "Créez un jeton pour qu'une balance, une montre ou votre domotique ajoutent des mesures et des valeurs à vos mesures personnalisées.",
       "detail": "Le jeton n'est affiché qu'une fois.",
-      "scopeNote": "Il peut uniquement ajouter de nouvelles mesures à votre propre dossier : il ne peut pas lire vos données, ni modifier ou supprimer quoi que ce soit, ni créer un autre jeton. Les mesures sont signalées comme provenant d'un appareil externe, ce qui vous permet de les reconnaître plus tard, et vous pouvez toujours les corriger.",
+      "scopeNote": "Il peut uniquement ajouter de nouvelles mesures à votre propre dossier, ainsi que des valeurs aux mesures personnalisées que vous avez déjà créées : il ne peut pas lire vos données, ni créer une mesure personnalisée, ni modifier ou supprimer quoi que ce soit, ni créer un autre jeton. Les mesures sont signalées comme provenant d'un appareil externe, ce qui vous permet de les reconnaître plus tard ; les valeurs des mesures personnalisées ne portent pas cette marque. Vous pouvez toujours corriger les unes comme les autres. L'identifiant d'une mesure personnalisée est la partie qui suit /custom-metrics/ dans l'adresse de sa page.",
       "createFailed": "Le jeton n'a pas pu être créé. Veuillez réessayer.",
       "namePlaceholder": "Nom, p. ex. Home Assistant",
       "appleHealth": {
