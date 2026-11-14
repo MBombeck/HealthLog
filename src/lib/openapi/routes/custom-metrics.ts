@@ -294,7 +294,8 @@ export const customMetricPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Custom metrics"],
       summary: "Log a value",
       description:
-        "Records a value against the custom metric, snapshotting the metric's unit. Audits as `customMetricEntry.create`.",
+        "Records a value against the custom metric, snapshotting the metric's unit. Audits as `customMetricEntry.create`.\n\n" +
+        "**Narrow token.** Also reachable with a `measurements:write` Bearer (minted at `POST /api/tokens/measurements`), the supported way to push a custom metric's value from a script or a home-automation rule. Such a credential writes only to its owner's own live metrics: an id that is unknown, deleted, or another account's answers the same 404, and a request carrying the account selector is refused 403 before any sharing grant is read. This POST is all the scope reaches on custom metrics. The value list on this same path, the metric list, and creating, editing or deleting a metric or a value name no scope and refuse it 403, so the metric id has to come from its owner: it is the path segment after `/custom-metrics/` in the address of the metric's page in the app. The entry carries no source of its own; the audit row names the token that wrote it. Every other narrow token, `workouts:write` included, is refused 403.",
       requestParams: { path: z.object({ id: z.string() }) },
       parameters: [idempotencyKeyParameter],
       requestBody: {

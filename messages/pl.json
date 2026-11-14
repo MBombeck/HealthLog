@@ -6989,9 +6989,9 @@
     "apiTokensDescription": "Przeglądaj i unieważniaj tokeny do pomiarów, treningów, dokumentów i przyjęć leków.",
     "measurementsToken": {
       "title": "Tokeny pomiarów",
-      "description": "Utwórz token, aby waga, zegarek lub automatyka domowa mogły dodawać pomiary.",
+      "description": "Utwórz token, aby waga, zegarek lub automatyka domowa mogły dodawać pomiary i wartości Twoich metryk własnych.",
       "detail": "Token pokazujemy tylko raz.",
-      "scopeNote": "Może wyłącznie dodawać nowe pomiary do Twojej dokumentacji: nie odczyta danych, niczego nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Pomiary są oznaczane jako pochodzące z urządzenia zewnętrznego, dzięki czemu później je rozpoznasz, i nadal możesz je poprawić.",
+      "scopeNote": "Może wyłącznie dodawać nowe pomiary do Twojej dokumentacji oraz wartości do już utworzonych metryk własnych: nie odczyta danych, nie utworzy metryki, niczego nie zmieni ani nie usunie i nie utworzy kolejnego tokenu. Pomiary są oznaczane jako pochodzące z urządzenia zewnętrznego, dzięki czemu później je rozpoznasz; wartości metryk własnych nie mają takiego oznaczenia. Jedne i drugie nadal możesz poprawić. Identyfikator metryki własnej to część po /custom-metrics/ w adresie jej strony.",
       "createFailed": "Nie udało się utworzyć tokenu. Spróbuj ponownie.",
       "namePlaceholder": "Nazwa, np. Home Assistant",
       "appleHealth": {
