@@ -6989,9 +6989,9 @@
     "apiTokensDescription": "Revise e revogue tokens para medições, treinos, documentos e tomadas de medicamentos.",
     "measurementsToken": {
       "title": "Tokens de medição",
-      "description": "Gere um token para que uma balança, uma ponte de relógio ou sua automação residencial possa adicionar leituras.",
+      "description": "Gere um token para que uma balança, uma ponte de relógio ou sua automação residencial possa adicionar leituras e valores das suas métricas personalizadas.",
       "detail": "O token é exibido uma vez.",
-      "scopeNote": "Ele só pode adicionar novas leituras ao seu próprio registro. Não pode ler seus dados, alterar ou excluir nada, nem criar outro token. As leituras são marcadas como vindas de um dispositivo externo, para você distingui-las depois, e você ainda pode corrigi-las você mesmo.",
+      "scopeNote": "Ele só pode adicionar novas leituras ao seu próprio registro e valores às métricas personalizadas que você já criou. Não pode ler seus dados, criar uma métrica, alterar ou excluir nada, nem criar outro token. As leituras são marcadas como vindas de um dispositivo externo, para você distingui-las depois; os valores de métricas personalizadas não recebem essa marca. Você ainda pode corrigir ambos. O ID de uma métrica personalizada é a parte depois de /custom-metrics/ no endereço da página dela.",
       "createFailed": "O token não pôde ser criado. Tente novamente.",
       "namePlaceholder": "Nome, ex.: Home Assistant",
       "appleHealth": {

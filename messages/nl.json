@@ -6989,9 +6989,9 @@
     "apiTokensDescription": "Bekijk tokens voor metingen, trainingen, documenten en medicatie-inname en trek ze in.",
     "measurementsToken": {
       "title": "Metingtokens",
-      "description": "Maak een token aan zodat een weegschaal, een horlogekoppeling of je domotica metingen kan toevoegen.",
+      "description": "Maak een token aan zodat een weegschaal, een horlogekoppeling of je domotica metingen en waarden voor je eigen metingen kan toevoegen.",
       "detail": "Het token wordt één keer getoond.",
-      "scopeNote": "Het kan alleen nieuwe metingen aan je eigen dossier toevoegen. Het kan je gegevens niet lezen, niets wijzigen of verwijderen en geen ander token aanmaken. Metingen worden gemarkeerd als afkomstig van een extern apparaat, zodat je ze later kunt onderscheiden, en je kunt ze nog steeds zelf corrigeren.",
+      "scopeNote": "Het kan alleen nieuwe metingen aan je eigen dossier toevoegen, en waarden aan eigen metingen die je al hebt aangemaakt. Het kan je gegevens niet lezen, geen eigen meting aanmaken, niets wijzigen of verwijderen en geen ander token aanmaken. Metingen worden gemarkeerd als afkomstig van een extern apparaat, zodat je ze later kunt onderscheiden; waarden van eigen metingen krijgen die markering niet. Je kunt beide nog steeds zelf corrigeren. De ID van een eigen meting is het deel na /custom-metrics/ in het adres van de pagina ervan.",
       "createFailed": "Het token kon niet worden aangemaakt. Probeer het opnieuw.",
       "namePlaceholder": "Naam, bijv. Home Assistant",
       "appleHealth": {

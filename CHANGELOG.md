@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Measurement tokens can log custom-metric values.** A script or a
+  Home Assistant rule holding a measurement token can now post a value
+  to `POST /api/custom-metrics/{id}/entries` for a custom metric you
+  already created. The token still cannot list, read, create, change or
+  delete custom metrics or their values, and a metric of another account
+  answers 404. A metric's ID is the part after `/custom-metrics/` in the
+  address of its page, and the token card in Settings says so. Values
+  posted this way are not marked as coming from an external device; the
+  audit log records which token wrote them. Measurement tokens you
+  already have can do this too, without being created again. (#1377)
+
 ### Security
 
 - The `hono` dependency floor is raised to 4.13.16 (CVE-2026-126355 to

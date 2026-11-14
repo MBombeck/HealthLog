@@ -6989,9 +6989,9 @@
     "apiTokensDescription": "Rivedi e revoca i token per misurazioni, allenamenti, documenti e assunzioni di farmaci.",
     "measurementsToken": {
       "title": "Token per misurazioni",
-      "description": "Crea un token perché una bilancia, un orologio o la tua domotica aggiungano misurazioni.",
+      "description": "Crea un token perché una bilancia, un orologio o la tua domotica aggiungano misurazioni e valori delle tue metriche personalizzate.",
       "detail": "Il token viene mostrato una sola volta.",
-      "scopeNote": "Può soltanto aggiungere nuove misurazioni alla tua cartella: non può leggere i tuoi dati, modificare o eliminare nulla, né creare un altro token. Le misurazioni vengono contrassegnate come provenienti da un dispositivo esterno, così le riconosci in seguito, e puoi comunque correggerle.",
+      "scopeNote": "Può soltanto aggiungere nuove misurazioni alla tua cartella e valori alle metriche personalizzate che hai già creato: non può leggere i tuoi dati, creare una metrica, modificare o eliminare nulla, né creare un altro token. Le misurazioni vengono contrassegnate come provenienti da un dispositivo esterno, così le riconosci in seguito; i valori delle metriche personalizzate non hanno questo contrassegno. Puoi comunque correggere entrambi. L'ID di una metrica personalizzata è la parte che segue /custom-metrics/ nell'indirizzo della sua pagina.",
       "createFailed": "Non è stato possibile creare il token. Riprova.",
       "namePlaceholder": "Nome, ad es. Home Assistant",
       "appleHealth": {
