@@ -67,6 +67,7 @@
           "resolvedUnitsPerDose": 1
         }
       ],
+      "note": null,
       "category": "custom:5b1f7c2e-4d3a-4b8e-9c61-2a7d0e9f4c13",
       "categoryLabel": "Heart and circulation",
       "courses": [
@@ -140,6 +141,7 @@
         "criticalAlarmEnabled": false,
         "atcCode": null,
         "rxNormCode": null,
+        "noteEncrypted": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
@@ -178,6 +180,7 @@
         "criticalAlarmEnabled": true,
         "atcCode": "A10BJ06",
         "rxNormCode": "1991302",
+        "noteEncrypted": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": 7,
@@ -213,6 +216,7 @@
         "criticalAlarmEnabled": false,
         "atcCode": null,
         "rxNormCode": null,
+        "noteEncrypted": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,

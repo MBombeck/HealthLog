@@ -174,6 +174,8 @@ export interface MedicationDetailSnapshot {
   asNeeded?: boolean;
   atcCode?: string | null;
   rxNormCode?: string | null;
+  /** #1371 — the person's own note on the medication; null = none. */
+  note?: string | null;
   /**
    * v1.15.20 — server-computed next due instant (the detail GET carries
    * it alongside the row). The Übersicht status surface renders it
@@ -252,6 +254,7 @@ function snapshotToWizardPayload(
     asNeeded: med.asNeeded ?? false,
     trackIntake: med.trackIntake !== false,
     autoMarkTaken: med.autoMarkTaken === true,
+    note: med.note ?? null,
     schedules: med.schedules.map((s) => ({
       id: s.id,
       windowStart: s.windowStart,
@@ -502,6 +505,7 @@ export function MedicationDetailTabs({
         asNeeded={asNeeded}
         startsOn={medication.startsOn}
         recordOnly={recordOnly}
+        note={medication.note ?? null}
       />
 
       <Tabs

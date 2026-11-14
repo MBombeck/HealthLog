@@ -20,6 +20,7 @@ import { resolveUserTimezone } from "@/lib/tz/resolver";
 import { loadUserSourcePriority } from "@/lib/rollups/measurement-read";
 import { NextRequest, NextResponse } from "next/server";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
+import { withMedicationNote } from "@/lib/medications/medication-note";
 
 /**
  * Export user data.
@@ -126,10 +127,12 @@ export const GET = apiHandler(async (request: NextRequest) => {
       include: { schedules: { orderBy: MEDICATION_SCHEDULE_ORDER } },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
+    // The note travels decrypted (#1371); the ciphertext never does.
+    const readable = medications.map(withMedicationNote);
     data.medications =
       format === "csv"
-        ? toCSV(formatMedicationsForExport(medications))
-        : formatMedicationsForExport(medications);
+        ? toCSV(formatMedicationsForExport(readable))
+        : formatMedicationsForExport(readable);
   }
 
   if (type === "intake" || type === "all") {

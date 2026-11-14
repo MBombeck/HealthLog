@@ -75,6 +75,8 @@ export interface DueDerivationMedication {
   id: string;
   name: string;
   dose: string;
+  /** #1371 — the person's own note; null or absent = none. */
+  note?: string | null;
   active: boolean;
   pausedAt: string | null;
   lastTakenAt: string | null;
@@ -97,6 +99,8 @@ export interface DueMedication {
   name: string;
   /** Matched schedule dose, falling back to the medication-level dose. */
   dose: string;
+  /** #1371 — the person's own note, listed under the name; null = none. */
+  note?: string | null;
   /** HH:mm bounds of the matched dose band, for the dialog's window line. */
   window: { start: string; end: string } | null;
   /**
@@ -206,6 +210,7 @@ export function deriveDueMedications(
       id: m.id,
       name: m.name,
       dose: status.schedule?.dose ?? m.dose,
+      note: m.note ?? null,
       window: status.window
         ? { start: status.window.start, end: status.window.end }
         : null,

@@ -45,6 +45,7 @@ import { floorWhole } from "@/lib/medications/units-per-dose";
 import { resolveIntakeActionability } from "@/lib/medications/intake-actionable";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
+import { withMedicationNote } from "@/lib/medications/medication-note";
 
 export type MedicationsListResult = Array<Record<string, unknown>>;
 
@@ -313,7 +314,9 @@ export async function buildMedicationsList(
           );
     const { _count: counts, ...row } = m;
     return {
-      ...row,
+      // The row with its sealed note swapped for the decrypted `note`
+      // (#1371); the ciphertext column never reaches the wire or the cache.
+      ...withMedicationNote(row),
       // v1.43 — whether a composition per unit is stored; the detail read
       // carries the composition itself.
       hasIngredients: counts.ingredients > 0,

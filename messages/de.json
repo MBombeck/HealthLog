@@ -1506,6 +1506,11 @@
       "disabledToast": "Einnahmen werden nicht erfasst",
       "toggleFailed": "Einnahme-Erfassung konnte nicht geändert werden."
     },
+    "note": {
+      "label": "Notiz",
+      "placeholder": "z. B. 30 bis 60 Minuten vor dem Essen",
+      "helper": "Wird beim Medikament und beim Erfassen einer Einnahme angezeigt."
+    },
     "autoMarkTaken": {
       "label": "Einnahmen automatisch erfassen",
       "helper": "HealthLog erfasst jede geplante Dosis zu ihrer Uhrzeit als eingenommen. Du kannst eine Dosis weiterhin selbst ändern oder überspringen. Erinnerungen entfallen.",

@@ -115,6 +115,8 @@ export interface Glp1Medication {
   pausedAt: string | null;
   lastTakenAt: string | null;
   todayEventCount?: number;
+  /** #1371 — the person's own note, shown above the dose actions. */
+  note?: string | null;
   /**
    * v1.8.4 — server-computed next due instant from `GET /api/medications`
    * (the canonical recurrence engine anchored on the last intake). The card
@@ -547,6 +549,7 @@ export function Glp1MedicationCard({
       highlighted={highlighted}
       name={medication.name}
       dose={formatDose(medication.dose, t)}
+      note={medication.note ?? null}
       categoryLabel={categoryLabel}
       active={medication.active}
       href={`/medications/${medication.id}`}

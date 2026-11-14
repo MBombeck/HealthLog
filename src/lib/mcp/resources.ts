@@ -46,6 +46,7 @@ import { metricStatusDiscoveryRows } from "@/lib/mcp/rich-reads";
 import { summariseForVisit } from "./doctor-visit-summary";
 import type { McpAuthContext } from "./auth";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
+import { readMedicationNote } from "@/lib/medications/medication-note";
 
 export interface McpResourceDefinition {
   name: string;
@@ -187,7 +188,7 @@ export const MCP_RESOURCES: McpResourceDefinition[] = [
     uri: "healthlog://medications",
     title: "Medications",
     description:
-      'The user\'s tracked medications with their schedules (dose, cadence, time windows). Read-only list; use get_medication_compliance for adherence figures. Returns { present: false, reason: "module_disabled" } when its module is switched off.',
+      "The user's tracked medications with their schedules (dose, cadence, time windows) and the user's own note on each (null when none). Read-only list; use get_medication_compliance for adherence figures. Returns { present: false, reason: \"module_disabled\" } when its module is switched off.",
     mimeType: "application/json",
     async read(ctx) {
       if (!(await isModuleEnabled(ctx.userId, "medications"))) {
@@ -224,6 +225,8 @@ export const MCP_RESOURCES: McpResourceDefinition[] = [
           // for a custom one.
           category: categories[med.id]?.category ?? "OTHER",
           categoryLabel: fenceOptional(categories[med.id]?.categoryLabel),
+          // #1371 — the person's own note (directions), fenced as their text.
+          note: fenceOptional(readMedicationNote(med.noteEncrypted)),
           asNeeded: med.asNeeded,
           // v1.39.1 (#1033) — false: kept as a record, nothing is due and
           // no adherence applies; the schedules below are information.
@@ -561,7 +564,7 @@ export const MCP_RESOURCE_TEMPLATES: McpResourceTemplateDefinition[] = [
     uriTemplate: "healthlog://medication/{id}",
     title: "Medication summary",
     description:
-      'One of the user\'s medications by id, with its schedules. User-scoped: returns { present: false } when the id does not belong to this user. Use get_medication_compliance for adherence figures. Returns { present: false, reason: "module_disabled" } when its module is switched off.',
+      "One of the user's medications by id, with its schedules and the user's own note on it (null when none). User-scoped: returns { present: false } when the id does not belong to this user. Use get_medication_compliance for adherence figures. Returns { present: false, reason: \"module_disabled\" } when its module is switched off.",
     mimeType: "application/json",
     async list(ctx) {
       if (!(await isModuleEnabled(ctx.userId, "medications"))) return [];
@@ -597,6 +600,8 @@ export const MCP_RESOURCE_TEMPLATES: McpResourceTemplateDefinition[] = [
         present: true,
         name: med.name,
         dose: med.dose,
+        // #1371 — the person's own note (directions), fenced as their text.
+        note: fenceOptional(readMedicationNote(med.noteEncrypted)),
         treatmentClass: med.treatmentClass,
         asNeeded: med.asNeeded,
         intakeTracked: med.trackIntake,

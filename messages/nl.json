@@ -1506,6 +1506,11 @@
       "disabledToast": "Inname bijhouden uit",
       "toggleFailed": "Inname bijhouden kon niet worden gewijzigd."
     },
+    "note": {
+      "label": "Notitie",
+      "placeholder": "bijv. 30 tot 60 minuten voor het eten",
+      "helper": "Zichtbaar bij het medicijn en wanneer je een inname vastlegt."
+    },
     "autoMarkTaken": {
       "label": "Doses automatisch registreren",
       "helper": "HealthLog registreert elke geplande dosis op het geplande tijdstip als ingenomen. Je kunt een dosis nog steeds handmatig wijzigen of overslaan. Er worden geen herinneringen verstuurd.",

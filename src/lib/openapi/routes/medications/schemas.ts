@@ -341,6 +341,12 @@ export const medicationResource = z
       .describe(
         "v1.9.0 optional RxNorm RxCUI (numeric, US identifier, e.g. `2601723`). Secondary FHIR coding under `http://www.nlm.nih.gov/research/umls/rxnorm`, alongside any ATC code. NULL = no code captured.",
       ),
+    note: z
+      .string()
+      .nullable()
+      .describe(
+        '#1371 — the person\'s own note on the medication, for directions such as "30 to 60 minutes before food". Free text, at most 500 characters, decrypted on the way out (encrypted at rest). NULL = no note. Show it with the medication and wherever a dose is logged. Set or cleared through `note` on the create and update bodies.',
+      ),
     pausedAt: isoDateTime().nullable(),
     snoozedUntil: isoDateTime().nullable(),
     remindersActive: z

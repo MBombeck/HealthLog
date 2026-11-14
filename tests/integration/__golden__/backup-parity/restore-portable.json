@@ -697,12 +697,13 @@
         "criticalAlarmEnabled": false,
         "atcCode": null,
         "rxNormCode": null,
+        "noteEncrypted": "<sealed:v2:before breakfast, with water>",
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,
         "externalSource": null,
         "externalId": null,
-        "createdAt": "2026-05-01T11:51:00.000Z",
+        "createdAt": "2026-05-01T11:52:00.000Z",
         "updatedAt": "<now>"
       }
     ],
@@ -2611,7 +2612,8 @@
         "autoMarkTaken": true,
         "autoMarkTakenSince": "<now>",
         "category": "custom:5f0c6a52-6a43-4f63-9b39-0c1f4d7e2a10",
-        "createdAt": "2026-05-01T11:51:00.000Z",
+        "note": "before breakfast, with water",
+        "createdAt": "2026-05-01T11:52:00.000Z",
         "schedules": [
           {
             "windowStart": "08:00",

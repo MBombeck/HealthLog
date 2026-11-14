@@ -59,6 +59,7 @@
             "resolvedUnitsPerDose": 1
           }
         ],
+        "note": null,
         "hasIngredients": false,
         "category": "OTHER",
         "categoryLabel": null,
@@ -127,6 +128,7 @@
         "criticalAlarmEnabled": false,
         "atcCode": null,
         "rxNormCode": null,
+        "noteEncrypted": null,
         "lowStockNotifiedAt": null,
         "lowStockNotifiedThresholdDays": null,
         "reorderLeadDays": null,

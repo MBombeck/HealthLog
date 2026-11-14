@@ -1506,6 +1506,11 @@
       "disabledToast": "Rejestrowanie przyjęć wyłączone",
       "toggleFailed": "Nie udało się zmienić rejestrowania przyjęć."
     },
+    "note": {
+      "label": "Notatka",
+      "placeholder": "np. od 30 do 60 minut przed posiłkiem",
+      "helper": "Widoczna przy leku i podczas zapisywania przyjęcia."
+    },
     "autoMarkTaken": {
       "label": "Zapisuj przyjęcia automatycznie",
       "helper": "HealthLog zapisuje każdą zaplanowaną dawkę jako przyjętą o jej porze. Nadal możesz ręcznie zmienić lub pominąć dawkę. Przypomnienia nie są wysyłane.",

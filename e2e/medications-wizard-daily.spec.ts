@@ -42,6 +42,7 @@ test.describe("medication wizard — daily", () => {
       rrule: "FREQ=DAILY",
       rollingIntervalDays: null,
       oneShot: false,
+      note: "Mit dem Frühstück",
     });
 
     await openCreateWizard(page);
@@ -91,6 +92,8 @@ test.describe("medication wizard — daily", () => {
     await expectStep(page, 7, 7);
     const summary = page.locator('[data-slot="wizard-summary"]');
     await expect(summary).toContainText(/Jeden Tag/i);
+    // #1371 — the medication's own note, typed on the last step.
+    await page.locator("#wizard-note").fill("  Mit dem Frühstück ");
 
     await clickSave(page);
 
@@ -98,6 +101,8 @@ test.describe("medication wizard — daily", () => {
     expect(capture.postBody).toMatchObject({
       name: "Vitamin D",
       oneShot: false,
+      // Trimmed on the way out.
+      note: "Mit dem Frühstück",
       schedules: [{ rrule: "FREQ=DAILY" }],
     });
 
@@ -105,5 +110,9 @@ test.describe("medication wizard — daily", () => {
       name: "Vitamin D",
       withNextDueChip: true,
     });
+    // The note sits on the card, above the dose actions.
+    await expect(
+      page.locator('main [data-slot="medication-card-note"]').first(),
+    ).toHaveText(/Mit dem Frühstück/);
   });
 });

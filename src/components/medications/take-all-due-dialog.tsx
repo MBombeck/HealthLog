@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { ResponsiveSheet } from "@/components/ui/responsive-sheet";
 import { useTranslations } from "@/lib/i18n/context";
 import { useActiveRecordName } from "@/hooks/use-record-capabilities";
+import { MedicationNote } from "@/components/medications/medication-note";
 import { formatDose } from "@/lib/medications/format-dose";
 import { formatTimeWindowRange } from "@/lib/time-window-format";
 import {
@@ -113,14 +114,21 @@ export function TakeAllDueDialog({
             key={med.id}
             className="flex items-baseline justify-between gap-3 text-sm"
           >
-            <span className="min-w-0 truncate">
-              <span className="font-medium">{med.name}</span>
-              {med.dose ? (
-                <span className="text-muted-foreground">
-                  {" "}
-                  — {formatDose(med.dose, t)}
-                </span>
-              ) : null}
+            <span className="min-w-0">
+              <span className="block truncate">
+                <span className="font-medium">{med.name}</span>
+                {med.dose ? (
+                  <span className="text-muted-foreground">
+                    {" "}
+                    — {formatDose(med.dose, t)}
+                  </span>
+                ) : null}
+              </span>
+              <MedicationNote
+                note={med.note}
+                slot="take-all-due-note"
+                className="mt-0.5"
+              />
             </span>
             {med.window ? (
               <span className="text-muted-foreground shrink-0 text-xs tabular-nums">

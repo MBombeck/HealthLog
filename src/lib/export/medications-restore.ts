@@ -8,6 +8,7 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { encryptToBytes } from "@/lib/ai/coach/bytes-codec";
 import { encryptNote } from "@/lib/crypto/note-cipher";
+import { sealMedicationNote } from "@/lib/medications/medication-note";
 import { toJson } from "@/lib/db";
 import { restoredMedicationCreatedAt } from "@/lib/export/medication-created-at";
 import {
@@ -139,6 +140,13 @@ function medicationRowData(
     criticalAlarmEnabled: m.criticalAlarmEnabled ?? false,
     atcCode: m.atcCode ?? null,
     rxNormCode: m.rxNormCode ?? null,
+    // #1371 — the ciphertext verbatim from a disaster-recovery file, the
+    // readable note sealed here from a portable one; neither key (a file
+    // written before the note existed) restores as no note.
+    noteEncrypted:
+      m.noteEncrypted != null
+        ? decodeEncryptedBytes(m.noteEncrypted)
+        : (sealMedicationNote(m.note ?? null) ?? null),
     lowStockNotifiedAt: m.lowStockNotifiedAt
       ? new Date(m.lowStockNotifiedAt)
       : null,

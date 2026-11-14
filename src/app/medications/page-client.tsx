@@ -85,6 +85,8 @@ interface Medication {
   id: string;
   name: string;
   dose: string;
+  /** #1371 — the person's own note; null = none. */
+  note?: string | null;
   category: string;
   /** v1.40 — the label of a custom category; null for a built-in one. */
   categoryLabel?: string | null;
@@ -816,6 +818,7 @@ export default function MedicationsPageClient() {
               id: m.id,
               name: m.name,
               dose: m.dose,
+              note: m.note ?? null,
               active: m.active,
               intakeActionable: m.intakeActionable === true,
               lastTakenAt: m.lastTakenAt,

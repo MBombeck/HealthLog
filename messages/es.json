@@ -1506,6 +1506,11 @@
       "disabledToast": "Registro de tomas desactivado",
       "toggleFailed": "No se pudo cambiar el registro de tomas."
     },
+    "note": {
+      "label": "Nota",
+      "placeholder": "p. ej. de 30 a 60 minutos antes de comer",
+      "helper": "Se muestra en el medicamento y al registrar una toma."
+    },
     "autoMarkTaken": {
       "label": "Registrar las tomas automáticamente",
       "helper": "HealthLog registra cada dosis programada como tomada a su hora. Puedes seguir cambiando u omitiendo una dosis a mano. No se envían recordatorios.",

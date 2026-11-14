@@ -25,6 +25,7 @@ import { DEFAULT_TIMEZONE } from "@/lib/tz/format";
 import type { EditableMedication } from "./preflight";
 import type { MedicationEdit, NormalisedSchedule } from "./schedule-normalise";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
+import { sealMedicationNote } from "@/lib/medications/medication-note";
 
 /**
  * C7. What a schedule replacement destroys, captured for the audit row: the
@@ -309,11 +310,15 @@ function medicationUpdateData(edit: MedicationEditWrite) {
     criticalAlarmEnabled,
     atcCode,
     rxNormCode,
+    note,
     oneShot,
     asNeeded,
     trackIntake,
     autoMarkTaken,
   } = input;
+  // #1371 — the person's own note, sealed. Absent leaves it; NULL or a blank
+  // string clears it.
+  const noteEncrypted = sealMedicationNote(note);
   return {
     ...(name !== undefined && { name }),
     ...(dose !== undefined && { dose }),
@@ -340,6 +345,7 @@ function medicationUpdateData(edit: MedicationEditWrite) {
     // Field-by-field; `null` is a valid explicit value (clears the code).
     ...(atcCode !== undefined && { atcCode }),
     ...(rxNormCode !== undefined && { rxNormCode }),
+    ...(noteEncrypted !== undefined && { noteEncrypted }),
     // Scheduling primitives — pass-through when supplied.
     // `startsOn` / `endsOn` are not written here (#1024): the
     // course writer below writes them together with the course they

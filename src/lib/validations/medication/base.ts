@@ -64,6 +64,29 @@ export const rxNormCodeField = z
     "Optional RxNorm RxCUI (numeric, US identifier, e.g. `2601723`). Secondary coding emitted under `http://www.nlm.nih.gov/research/umls/rxnorm` alongside any ATC code, never instead of the free-text name. NULL clears it; absent leaves it untouched.",
   );
 /**
+ * #1371 — the longest note a medication carries. Room for a full set of
+ * directions ("on an empty stomach, 30 to 60 minutes before breakfast, not
+ * within four hours of calcium or iron") with space to spare; the editor caps
+ * its input at the same length.
+ */
+export const MEDICATION_NOTE_MAX_CHARS = 500;
+/**
+ * #1371 — the person's own note on a medication. Trimmed; an empty string or
+ * NULL clears it, absent leaves it untouched. Sealed at rest by the writer.
+ */
+export const medicationNoteField = z
+  .string()
+  .trim()
+  .max(
+    MEDICATION_NOTE_MAX_CHARS,
+    `Note must be at most ${MEDICATION_NOTE_MAX_CHARS} characters`,
+  )
+  .nullable()
+  .optional()
+  .describe(
+    `#1371 — the person's own note on the medication, for directions such as "30 to 60 minutes before food". Free text, trimmed, at most ${MEDICATION_NOTE_MAX_CHARS} characters (counted after trimming). An empty string or NULL clears it; absent leaves it untouched. Encrypted at rest and returned decrypted as \`note\` on the medication read paths.`,
+  );
+/**
  * Clinical-category values stored in the `medication_categories` table
  * (TEXT column, the `MedicationCategoryAssignment` model). v1.5.4 adds `DIABETES` and `ANTIBIOTIC` so the
  * wizard's Step 2 taxonomy can write a first-class bucket for those

@@ -3057,6 +3057,12 @@ model Medication {
   /// under `http://www.nlm.nih.gov/research/umls/rxnorm` alongside any
   /// ATC code, never instead of the free-text `.text` anchor.
   rxNormCode                    String?                @map("rxnorm_code")
+  /// #1371 — the person's own note on the medication, for directions such as
+  /// "30 to 60 minutes before food". Shown on the medication and wherever a
+  /// dose is logged. AES-256-GCM at rest; there is no plaintext column. NULL =
+  /// no note. Written by the create and edit routes and the restore only,
+  /// trimmed, at most 500 characters.
+  noteEncrypted                 Bytes?                 @map("note_encrypted")
   /// v1.16.11 — low-stock notification stamp. Set when the daily
   /// low-stock pass dispatched a notification for the current
   /// threshold crossing; cleared (re-armed) when the projected runway

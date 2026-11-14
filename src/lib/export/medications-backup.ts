@@ -22,6 +22,7 @@ import {
   readMedicationCategoryLabelsForBackup,
 } from "@/lib/medication-category";
 import { dayKeyOfDate } from "@/lib/medications/course-window";
+import { readMedicationNote } from "@/lib/medications/medication-note";
 
 // Side effects ride INSIDE their medication, exactly as the schedules
 // beside them do. The alternative — a top-level array carrying
@@ -124,6 +125,16 @@ function serialiseMedicationRow(
     autoMarkTakenSince: m.autoMarkTakenSince?.toISOString() ?? null,
     // Both purposes: the category is something the person chose.
     category,
+    // #1371 — the person's own note. The contract of every other sealed
+    // column: a disaster-recovery file carries the ciphertext verbatim, a
+    // portable file the decrypted text.
+    ...(disasterRecovery
+      ? {
+          noteEncrypted: m.noteEncrypted
+            ? Buffer.from(m.noteEncrypted).toString("base64")
+            : null,
+        }
+      : { note: readMedicationNote(m.noteEncrypted) }),
     // Both purposes carry the creation instant: it is the floor of the
     // medication's expected slots, so a restore stamped with the restore
     // time would read the whole restored history as predating the

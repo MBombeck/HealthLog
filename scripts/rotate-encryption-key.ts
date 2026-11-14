@@ -734,6 +734,10 @@ async function main() {
       prisma.medicationDoseChange,
     ),
   );
+  // #1371 — the note on the medication itself.
+  results.push(
+    await rotateBytesColumn("Medication", "noteEncrypted", prisma.medication),
+  );
   // v1.40 (#1024) — the note on a medication course.
   results.push(
     await rotateBytesColumn(

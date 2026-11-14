@@ -41,6 +41,7 @@ import {
   withCourseActionAuthority,
 } from "@/lib/medications/course-authority";
 import { MEDICATION_SCHEDULE_ORDER } from "@/lib/medications/read-order";
+import { withMedicationNote } from "@/lib/medications/medication-note";
 
 export type ReadUser = Pick<SessionUser, "id" | "timezone" | "locale">;
 type MedicationWithSchedules = Medication & {
@@ -268,7 +269,9 @@ export async function medicationDetail(input: {
   ).get(id);
 
   const body = {
-    ...medication,
+    // The row with its sealed note swapped for the decrypted `note` (#1371);
+    // the ciphertext column never leaves the server.
+    ...withMedicationNote(medication),
     unitsPerDose: Number(medication.unitsPerDose),
     // `schedules: []` plus `recordedSchedules` when intake tracking is off
     // (#1033, see `scheduleWireFields`).
