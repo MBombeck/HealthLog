@@ -64,6 +64,80 @@ const bodySite = z.string().max(200).nullable().optional();
 const laterality = lateralityEnum.nullable().optional();
 
 /**
+ * Shared episode-window refinement: an episode can never resolve before it began.
+ *
+ * For create, `onsetAt` defaults to "now" server-side when omitted, so the invariant
+ * only bites when BOTH instants are supplied (the inverted-window case). For update,
+ * a partial edit touching only one instant is validated against the stored row in the
+ * route. Milliseconds establish the order for mixed Z/offset forms; the
+ * remaining fraction is compared lexically because Date truncates finer precision.
+ */
+const FRACTION_AFTER_MILLISECONDS =
+  /T\d{2}:\d{2}:\d{2}\.\d{3}(\d*)(?:Z|[+-]\d{2}:\d{2})$/;
+
+function fractionAfterMilliseconds(instant: string): string {
+  return FRACTION_AFTER_MILLISECONDS.exec(instant)?.[1] ?? "";
+}
+
+/**
+ * Consistent instant comparison across string/Date representations, supporting
+ * mixed timezone offsets and sub-millisecond precision.
+ * Returns negative if a < b, positive if a > b, 0 if equal.
+ */
+export function compareEpisodeInstants(
+  a: string | Date,
+  b: string | Date,
+): number {
+  const aStr = typeof a === "string" ? a : a.toISOString();
+  const bStr = typeof b === "string" ? b : b.toISOString();
+  const aMs = Date.parse(aStr);
+  const bMs = Date.parse(bStr);
+  if (Number.isNaN(aMs) || Number.isNaN(bMs)) {
+    return Number.isNaN(aMs) && Number.isNaN(bMs)
+      ? 0
+      : Number.isNaN(aMs)
+        ? -1
+        : 1;
+  }
+  if (aMs !== bMs) {
+    return aMs < bMs ? -1 : 1;
+  }
+  const extraAFraction = fractionAfterMilliseconds(aStr);
+  const extraBFraction = fractionAfterMilliseconds(bStr);
+  const maxLen = Math.max(extraAFraction.length, extraBFraction.length);
+  const aPadded = extraAFraction.padEnd(maxLen, "0");
+  const bPadded = extraBFraction.padEnd(maxLen, "0");
+  if (aPadded < bPadded) return -1;
+  if (aPadded > bPadded) return 1;
+  return 0;
+}
+
+/**
+ * Returns true if resolvedAt is chronologically earlier than onsetAt (invalid window).
+ */
+export function isEpisodeWindowInverted(
+  onsetAt: string | Date,
+  resolvedAt: string | Date,
+): boolean {
+  return compareEpisodeInstants(resolvedAt, onsetAt) < 0;
+}
+
+export function refineEpisodeWindow(
+  v: { onsetAt?: string; resolvedAt?: string | null },
+  ctx: z.RefinementCtx,
+): void {
+  if (v.resolvedAt && v.onsetAt) {
+    if (isEpisodeWindowInverted(v.onsetAt, v.resolvedAt)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["resolvedAt"],
+        message: "resolvedAt must be on or after onsetAt",
+      });
+    }
+  }
+}
+
+/**
  * Create an episode. `label` is the user-facing name; `note` is encrypted
  * at rest. `parentConditionId` threads a FLARE/RECURRING bout under a
  * parent condition. `onsetAt` defaults to "now" server-side when omitted.
@@ -80,18 +154,7 @@ export const illnessEpisodeCreateSchema = z
     bodySite,
     laterality,
   })
-  // An episode can never resolve before it began. `onsetAt` defaults to "now"
-  // server-side when omitted, so the invariant only bites when BOTH instants
-  // are supplied (the inverted-window case).
-  .superRefine((v, ctx) => {
-    if (v.resolvedAt && v.onsetAt && v.resolvedAt < v.onsetAt) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["resolvedAt"],
-        message: "resolvedAt must be on or after onsetAt",
-      });
-    }
-  });
+  .superRefine(refineEpisodeWindow);
 
 export type IllnessEpisodeCreate = z.infer<typeof illnessEpisodeCreateSchema>;
 
@@ -112,18 +175,7 @@ export const illnessEpisodeUpdateSchema = z
     laterality,
   })
   .strict()
-  // When BOTH instants are in the same edit body, enforce the window order at
-  // parse time. A partial edit touching only one is validated against the
-  // stored value in the route (it must load the row anyway).
-  .superRefine((v, ctx) => {
-    if (v.resolvedAt && v.onsetAt && v.resolvedAt < v.onsetAt) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["resolvedAt"],
-        message: "resolvedAt must be on or after onsetAt",
-      });
-    }
-  });
+  .superRefine(refineEpisodeWindow);
 
 export type IllnessEpisodeUpdate = z.infer<typeof illnessEpisodeUpdateSchema>;
 

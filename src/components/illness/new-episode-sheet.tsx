@@ -5,6 +5,9 @@
  * label, the broad condition type, the lifecycle, an onset date, and an
  * optional encrypted note. Retrospective-only — no prediction UI, no
  * diagnosis prompt. Neutral palette throughout.
+ *
+ * The form fields live in `use-episode-form` and the save lifecycle in
+ * `use-episode-save`; this file keeps the layout.
  */
 import { useState } from "react";
 
@@ -21,17 +24,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useTranslations } from "@/lib/i18n/context";
+import { useDisplayTimezone, useTranslations } from "@/lib/i18n/context";
 import {
   BodySiteFields,
   type BodySiteSideValue,
 } from "@/components/body-sites/body-site-fields";
 
-import {
-  useCreateEpisode,
-  useIllnessEpisodes,
-  useUpdateEpisode,
-} from "./use-illness";
+import { useIllnessEpisodes } from "./use-illness";
+import { useEpisodeForm } from "./use-episode-form";
+import { useEpisodeSave } from "./use-episode-save";
+import { toLocalDateKey } from "./dates";
 import type { IllnessEpisodeDTO, IllnessLifecycle, IllnessType } from "./types";
 
 const TYPES: IllnessType[] = [
@@ -51,20 +53,23 @@ const LIFECYCLES: IllnessLifecycle[] = [
   "FLARE",
 ];
 
-/** Lifecycles that may hang off a parent condition. */
-const PARENTABLE: IllnessLifecycle[] = ["FLARE", "RECURRING"];
-
 const NONE = "__none__";
 
 /** What the form opens with: the edited episode, or a new one from today. */
-function episodeForm(episode: IllnessEpisodeDTO | undefined, today: string) {
+function episodeForm(
+  episode: IllnessEpisodeDTO | undefined,
+  today: string,
+  timeZone: string,
+) {
   return {
     label: episode?.label ?? "",
     type: episode?.type ?? ("INFECTION" as IllnessType),
     lifecycle: episode?.lifecycle ?? ("ACUTE" as IllnessLifecycle),
-    onset: episode ? episode.onsetAt.slice(0, 10) : today,
-    resolved: episode?.resolvedAt ? episode.resolvedAt.slice(0, 10) : "",
-    parentId: episode?.parentConditionId ?? NONE,
+    onset: episode ? toLocalDateKey(episode.onsetAt, timeZone) : today,
+    resolved: episode?.resolvedAt
+      ? toLocalDateKey(episode.resolvedAt, timeZone)
+      : "",
+    parentId: episode?.parentConditionId ?? null,
     note: episode?.note ?? "",
     bodySite: episode?.bodySite ?? "",
     laterality: (episode?.laterality ?? null) as BodySiteSideValue,
@@ -86,11 +91,27 @@ export function NewEpisodeSheet({
   editEpisode,
 }: NewEpisodeSheetProps) {
   const { t } = useTranslations();
-  const create = useCreateEpisode();
-  const update = useUpdateEpisode();
+  const timeZone = useDisplayTimezone();
   const isEdit = editEpisode !== undefined;
-  const pending = create.isPending || update.isPending;
-  const isError = create.isError || update.isError;
+  const form = useEpisodeForm({ open, editEpisode, timeZone, today });
+  const {
+    pending,
+    saveError,
+    todayInSession,
+    showParent,
+    trimmedOnset,
+    trimmedResolved,
+    endBeforeStart,
+    handleSave,
+    handleOpenChange,
+    clearSaveError,
+  } = useEpisodeSave({
+    open,
+    onOpenChange,
+    editEpisode,
+    timeZone,
+    values: form,
+  });
 
   // Candidate parents: live episodes other than the one being edited.
   const { data: allEpisodes } = useIllnessEpisodes(true);
@@ -98,108 +119,43 @@ export function NewEpisodeSheet({
     (e) => e.id !== editEpisode?.id,
   );
 
-  const [label, setLabel] = useState("");
-  const [type, setType] = useState<IllnessType>("INFECTION");
-  const [lifecycle, setLifecycle] = useState<IllnessLifecycle>("ACUTE");
-  const [onset, setOnset] = useState(today);
-  // Resolved/end date — "" means the episode is still ongoing (open-ended).
-  // Backdating both onset and this end date lets a whole past episode be
-  // recorded after the fact.
-  const [resolved, setResolved] = useState("");
-  const [parentId, setParentId] = useState<string>(NONE);
-  const [note, setNote] = useState("");
-  // v1.39.2 — where on the body. Offered on every type: an injury or a joint
-  // condition is the usual case, but nothing about a type rules a site out.
-  const [bodySite, setBodySite] = useState("");
-  const [laterality, setLaterality] = useState<BodySiteSideValue>(null);
-
-  // Reset / hydrate the form each time the sheet opens — adjusted during
-  // render keyed on the open transition (React's recommended alternative to a
-  // setState-in-effect).
-  const [wasOpen, setWasOpen] = useState(false);
-  const [seed, setSeed] = useState(() => episodeForm(editEpisode, today));
+  const [wasOpen, setWasOpen] = useState(open);
+  const [seed, setSeed] = useState(() =>
+    episodeForm(editEpisode, today, timeZone),
+  );
   if (open && !wasOpen) {
-    const next = episodeForm(editEpisode, today);
     setWasOpen(true);
-    setSeed(next);
-    setLabel(next.label);
-    setType(next.type);
-    setLifecycle(next.lifecycle);
-    setOnset(next.onset);
-    setResolved(next.resolved);
-    setParentId(next.parentId);
-    setNote(next.note);
-    setBodySite(next.bodySite);
-    setLaterality(next.laterality);
+    setSeed(episodeForm(editEpisode, today, timeZone));
   } else if (!open && wasOpen) {
     setWasOpen(false);
   }
-  const form = {
-    label,
-    type,
-    lifecycle,
-    onset,
-    resolved,
-    parentId,
-    note,
-    bodySite,
-    laterality,
-  };
-  const dirty = JSON.stringify(form) !== JSON.stringify(seed);
+  const dirty =
+    JSON.stringify({
+      label: form.label,
+      type: form.type,
+      lifecycle: form.lifecycle,
+      onset: form.onset,
+      resolved: form.resolved,
+      parentId: form.parentId,
+      note: form.note,
+      bodySite: form.bodySite,
+      laterality: form.laterality,
+    }) !== JSON.stringify(seed);
 
-  const showParent = PARENTABLE.includes(lifecycle);
+  function handleOnsetChange(value: string) {
+    form.setOnset(value);
+    clearSaveError();
+  }
 
-  // The end date can never precede the start; the field is min-bounded to the
-  // onset, and this guard belts-and-braces the same invariant the server holds.
-  const endBeforeStart = resolved !== "" && resolved < onset;
-
-  async function handleSave() {
-    if (label.trim() === "" || endBeforeStart) return;
-    const onsetAt = new Date(`${onset}T12:00:00`).toISOString();
-    // "" ⇒ ongoing (null clears any stored end). Anchor to local noon so the
-    // UTC instant lands on the intended calendar day regardless of offset.
-    const resolvedAt =
-      resolved === "" ? null : new Date(`${resolved}T12:00:00`).toISOString();
-    const parentConditionId = showParent && parentId !== NONE ? parentId : null;
-    try {
-      if (isEdit && editEpisode) {
-        await update.mutateAsync({
-          id: editEpisode.id,
-          input: {
-            label: label.trim(),
-            type,
-            lifecycle,
-            onsetAt,
-            resolvedAt,
-            parentConditionId,
-            note: note.trim() === "" ? null : note,
-            bodySite: bodySite.trim() || null,
-            laterality,
-          },
-        });
-      } else {
-        await create.mutateAsync({
-          label: label.trim(),
-          type,
-          lifecycle,
-          onsetAt,
-          resolvedAt,
-          parentConditionId,
-          note: note.trim() === "" ? null : note,
-          bodySite: bodySite.trim() || null,
-          laterality,
-        });
-      }
-      onOpenChange(false);
-    } catch {
-      // Keep the sheet open; the error strip reports it.
-    }
+  function handleResolvedChange(value: string) {
+    form.setResolved(value);
+    clearSaveError();
   }
 
   return (
     <ResponsiveSheet
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       dirty={dirty}
       title={isEdit ? t("illness.edit.title") : t("illness.new.title")}
       description={
@@ -207,12 +163,17 @@ export function NewEpisodeSheet({
       }
       footer={
         <>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>
             {t("common.cancel")}
           </Button>
           <Button
             onClick={handleSave}
-            disabled={pending || label.trim() === "" || endBeforeStart}
+            disabled={
+              pending ||
+              form.label.trim() === "" ||
+              trimmedOnset === "" ||
+              endBeforeStart
+            }
           >
             {t("common.save")}
           </Button>
@@ -224,16 +185,25 @@ export function NewEpisodeSheet({
           <Label htmlFor="illness-label">{t("illness.new.label")}</Label>
           <Input
             id="illness-label"
-            value={label}
+            value={form.label}
             maxLength={120}
-            onChange={(e) => setLabel(e.target.value)}
+            onChange={(e) => {
+              form.setLabel(e.target.value);
+              clearSaveError();
+            }}
             placeholder={t("illness.new.labelPlaceholder")}
           />
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="illness-type">{t("illness.new.type")}</Label>
-          <Select value={type} onValueChange={(v) => setType(v as IllnessType)}>
+          <Select
+            value={form.type}
+            onValueChange={(v) => {
+              form.setType(v as IllnessType);
+              clearSaveError();
+            }}
+          >
             <SelectTrigger id="illness-type" className="w-full">
               <SelectValue />
             </SelectTrigger>
@@ -249,10 +219,16 @@ export function NewEpisodeSheet({
 
         <BodySiteFields
           idPrefix="illness"
-          bodySite={bodySite}
-          laterality={laterality}
-          onBodySiteChange={setBodySite}
-          onLateralityChange={setLaterality}
+          bodySite={form.bodySite}
+          laterality={form.laterality}
+          onBodySiteChange={(v) => {
+            form.setBodySite(v);
+            clearSaveError();
+          }}
+          onLateralityChange={(v) => {
+            form.setLaterality(v);
+            clearSaveError();
+          }}
           hint={t("illness.new.bodySiteHint")}
         />
 
@@ -261,8 +237,11 @@ export function NewEpisodeSheet({
             {t("illness.new.lifecycle")}
           </Label>
           <Select
-            value={lifecycle}
-            onValueChange={(v) => setLifecycle(v as IllnessLifecycle)}
+            value={form.lifecycle}
+            onValueChange={(v) => {
+              form.setLifecycle(v as IllnessLifecycle);
+              clearSaveError();
+            }}
           >
             <SelectTrigger id="illness-lifecycle" className="w-full">
               <SelectValue />
@@ -280,7 +259,13 @@ export function NewEpisodeSheet({
         {showParent ? (
           <div className="space-y-1.5">
             <Label htmlFor="illness-parent">{t("illness.new.parent")}</Label>
-            <Select value={parentId} onValueChange={setParentId}>
+            <Select
+              value={form.parentId ?? NONE}
+              onValueChange={(v) => {
+                form.setParentId(v === NONE ? null : v);
+                clearSaveError();
+              }}
+            >
               <SelectTrigger id="illness-parent" className="w-full">
                 <SelectValue placeholder={t("illness.new.parentNone")} />
               </SelectTrigger>
@@ -302,9 +287,9 @@ export function NewEpisodeSheet({
           <Label htmlFor="illness-onset">{t("illness.new.onset")}</Label>
           <DateField
             id="illness-onset"
-            value={onset}
-            max={today}
-            onChange={setOnset}
+            value={form.onset}
+            max={todayInSession}
+            onChange={handleOnsetChange}
             className="max-w-44"
           />
         </div>
@@ -314,18 +299,18 @@ export function NewEpisodeSheet({
           <div className="flex items-center gap-2">
             <DateField
               id="illness-resolved"
-              value={resolved}
-              min={onset}
-              max={today}
-              onChange={setResolved}
+              value={form.resolved}
+              min={trimmedOnset}
+              max={todayInSession}
+              onChange={handleResolvedChange}
               className="max-w-44"
             />
-            {resolved !== "" ? (
+            {trimmedResolved !== "" ? (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => setResolved("")}
+                onClick={() => handleResolvedChange("")}
               >
                 {t("illness.new.markOngoing")}
               </Button>
@@ -340,15 +325,18 @@ export function NewEpisodeSheet({
           <Label htmlFor="illness-note">{t("illness.new.note")}</Label>
           <Textarea
             id="illness-note"
-            value={note}
+            value={form.note}
             maxLength={2000}
-            onChange={(e) => setNote(e.target.value)}
+            onChange={(e) => {
+              form.setNote(e.target.value);
+              clearSaveError();
+            }}
             placeholder={t("illness.new.notePlaceholder")}
             rows={3}
           />
         </div>
 
-        {isError ? (
+        {saveError ? (
           <p className="text-destructive text-sm" role="alert">
             {t("illness.new.saveError")}
           </p>

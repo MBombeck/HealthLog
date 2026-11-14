@@ -1,7 +1,7 @@
 {
   "$comment": "Comment lines that open with a release version, per file under src/. Maintained by src/__tests__/version-stamp-ratchet.test.ts.",
   "count": 2863,
-  "total": 9122,
+  "total": 9121,
   "entries": {
     "__tests__/account-payload-consumer-guard.test.ts": 2,
     "__tests__/acting-account-boundary-guard.test.ts": 7,
@@ -840,7 +840,7 @@
     "components/illness/illness-settings.tsx": 2,
     "components/illness/illness-view.tsx": 5,
     "components/illness/log-day-sheet.tsx": 1,
-    "components/illness/new-episode-sheet.tsx": 2,
+    "components/illness/new-episode-sheet.tsx": 1,
     "components/illness/symptom-catalog.ts": 1,
     "components/illness/types.ts": 1,
     "components/illness/use-illness.ts": 2,

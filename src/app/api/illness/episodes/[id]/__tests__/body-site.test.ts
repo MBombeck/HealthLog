@@ -58,6 +58,7 @@ vi.mock("next/headers", () => ({
 
 import { PATCH } from "../route";
 import { POST } from "../../route";
+import { PATCH as resolveEpisode } from "../resolve/route";
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth/session";
 import { requireIllnessEnabled } from "@/lib/illness/gate";
@@ -68,9 +69,15 @@ const SESSION_OK = {
   user: { id: "user-1", username: "tester", role: "USER" as const },
 };
 
-const PARAMS = { params: Promise.resolve({ id: "ep-1" }) };
+const PARAMS: Parameters<typeof PATCH>[1] = {
+  params: Promise.resolve({ id: "ep-1" }),
+};
 
-function row(overrides: Record<string, unknown> = {}) {
+type IllnessEpisode = NonNullable<
+  Awaited<ReturnType<typeof prisma.illnessEpisode.findUnique>>
+>;
+
+function row(overrides: Partial<IllnessEpisode> = {}): IllnessEpisode {
   return {
     id: "ep-1",
     userId: "user-1",
@@ -103,6 +110,14 @@ function postReq(body: unknown): NextRequest {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
+  });
+}
+
+function resolveReq(body?: unknown): NextRequest {
+  return new NextRequest("http://localhost/api/illness/episodes/ep-1/resolve", {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 }
 
@@ -219,5 +234,107 @@ describe("POST /api/illness/episodes — body site", () => {
     };
     expect(call.data.bodySiteEncrypted).toBeNull();
     expect(call.data.laterality).toBeNull();
+  });
+});
+
+describe("PATCH /api/illness/episodes/{id} — sub-millisecond window ordering", () => {
+  it("rejects partial onset update that reverses sub-millisecond ordering against stored resolvedAt", async () => {
+    vi.mocked(prisma.illnessEpisode.findUnique).mockResolvedValue(
+      row({
+        onsetAt: new Date("2026-06-01T08:00:00.000Z"),
+        resolvedAt: new Date("2026-06-01T12:00:00.123Z"),
+      }),
+    );
+
+    const res = await PATCH(
+      patchReq({ onsetAt: "2026-06-01T12:00:00.123800Z" }),
+      PARAMS,
+    );
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error).toContain("resolvedAt must be on or after onsetAt");
+    expect(body.meta?.errorCode).toBe("illness.episode.invalid-window");
+    expect(prisma.illnessEpisode.update).not.toHaveBeenCalled();
+  });
+
+  it("rejects partial resolved update that reverses sub-millisecond ordering against stored onsetAt", async () => {
+    const onsetDate = Object.assign(new Date("2026-06-01T12:00:00.123Z"), {
+      toISOString: () => "2026-06-01T12:00:00.123800Z",
+    });
+    vi.mocked(prisma.illnessEpisode.findUnique).mockResolvedValue(
+      row({
+        onsetAt: onsetDate,
+        resolvedAt: null,
+      }),
+    );
+
+    const res = await PATCH(
+      patchReq({ resolvedAt: "2026-06-01T12:00:00.123200Z" }),
+      PARAMS,
+    );
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error).toContain("resolvedAt must be on or after onsetAt");
+    expect(body.meta?.errorCode).toBe("illness.episode.invalid-window");
+    expect(prisma.illnessEpisode.update).not.toHaveBeenCalled();
+  });
+
+  it("accepts valid partial onset update chronologically on/before stored resolvedAt", async () => {
+    vi.mocked(prisma.illnessEpisode.findUnique).mockResolvedValue(
+      row({
+        onsetAt: new Date("2026-06-01T08:00:00.000Z"),
+        resolvedAt: new Date("2026-06-01T12:00:00.123Z"),
+      }),
+    );
+
+    const res = await PATCH(
+      patchReq({ onsetAt: "2026-06-01T12:00:00.123000Z" }),
+      PARAMS,
+    );
+    expect(res.status).toBe(200);
+    expect(prisma.illnessEpisode.update).toHaveBeenCalled();
+  });
+});
+
+describe("PATCH /api/illness/episodes/{id}/resolve — sub-millisecond window ordering", () => {
+  it("rejects resolve request with resolvedAt sub-millisecond earlier than stored onsetAt", async () => {
+    const onsetDate = Object.assign(new Date("2026-06-01T12:00:00.123Z"), {
+      toISOString: () => "2026-06-01T12:00:00.123800Z",
+    });
+    vi.mocked(prisma.illnessEpisode.findUnique).mockResolvedValue(
+      row({
+        onsetAt: onsetDate,
+        lifecycle: "ACUTE",
+      }),
+    );
+
+    const res = await resolveEpisode(
+      resolveReq({ resolvedAt: "2026-06-01T12:00:00.123200Z" }),
+      PARAMS,
+    );
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error).toContain("resolvedAt must be on or after onsetAt");
+    expect(body.meta?.errorCode).toBe("illness.episode.invalid-window");
+    expect(prisma.illnessEpisode.update).not.toHaveBeenCalled();
+  });
+
+  it("accepts resolve request with resolvedAt sub-millisecond on/after stored onsetAt", async () => {
+    const onsetDate = Object.assign(new Date("2026-06-01T12:00:00.123Z"), {
+      toISOString: () => "2026-06-01T12:00:00.123200Z",
+    });
+    vi.mocked(prisma.illnessEpisode.findUnique).mockResolvedValue(
+      row({
+        onsetAt: onsetDate,
+        lifecycle: "ACUTE",
+      }),
+    );
+
+    const res = await resolveEpisode(
+      resolveReq({ resolvedAt: "2026-06-01T12:00:00.123800Z" }),
+      PARAMS,
+    );
+    expect(res.status).toBe(200);
+    expect(prisma.illnessEpisode.update).toHaveBeenCalled();
   });
 });

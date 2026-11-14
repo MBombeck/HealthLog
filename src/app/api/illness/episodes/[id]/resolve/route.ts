@@ -17,7 +17,10 @@ import { auditLog } from "@/lib/auth/audit";
 import { apiSuccess, apiError, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { requireIllnessEnabled } from "@/lib/illness/gate";
-import { illnessEpisodeResolveSchema } from "@/lib/validations/illness";
+import {
+  illnessEpisodeResolveSchema,
+  isEpisodeWindowInverted,
+} from "@/lib/validations/illness";
 import { toIllnessEpisodeDTO } from "@/lib/illness/dto";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -62,13 +65,11 @@ export const PATCH = apiHandler(
     });
     if (!parsed.ok) return parsed.error;
 
-    const resolvedAt = parsed.data.resolvedAt
-      ? new Date(parsed.data.resolvedAt)
-      : new Date();
+    const resolvedAt = parsed.data.resolvedAt ?? new Date();
 
     // An episode can never resolve before it began (the inverted-window guard,
     // checked against the stored onset since the body only carries resolvedAt).
-    if (resolvedAt < existing.onsetAt) {
+    if (isEpisodeWindowInverted(existing.onsetAt, resolvedAt)) {
       return apiError("resolvedAt must be on or after onsetAt", 422, {
         errorCode: "illness.episode.invalid-window",
       });
@@ -76,7 +77,10 @@ export const PATCH = apiHandler(
 
     const updated = await prisma.illnessEpisode.update({
       where: { id },
-      data: { resolvedAt },
+      data: {
+        resolvedAt:
+          typeof resolvedAt === "string" ? new Date(resolvedAt) : resolvedAt,
+      },
     });
 
     await auditLog("illness.episode.resolve", {

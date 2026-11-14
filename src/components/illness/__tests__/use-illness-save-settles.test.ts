@@ -36,7 +36,7 @@ vi.mock("@/lib/api/api-fetch", () => ({
   apiDelete: vi.fn(),
 }));
 
-import { apiPost } from "@/lib/api/api-fetch";
+import { apiPatch, apiPost } from "@/lib/api/api-fetch";
 import {
   useCreateEpisode,
   useDeleteEpisode,
@@ -83,5 +83,56 @@ describe("creating an episode", () => {
     expect(keyOf(0)).toBeTruthy();
     expect(keyOf(1)).toBe(keyOf(0));
     expect(keyOf(2)).not.toBe(keyOf(0));
+  });
+});
+
+describe("updating an episode", () => {
+  it("supports useUpdateEpisode(id) with direct input", async () => {
+    const patch = vi.mocked(apiPatch);
+    patch.mockResolvedValueOnce({ id: "e1" });
+    const update = useUpdateEpisode("e1") as unknown as {
+      mutationKey: unknown;
+      scope: { id: string };
+      mutationFn: (input: unknown) => Promise<unknown>;
+    };
+
+    expect(update.scope).toEqual({ id: "illness-episode-update-e1" });
+    expect(update.mutationKey).toEqual(["illness", "episode", "e1", "update"]);
+
+    await update.mutationFn({ label: "Migraine" });
+    expect(patch).toHaveBeenCalledWith("/api/illness/episodes/e1", {
+      label: "Migraine",
+    });
+  });
+
+  it("supports useUpdateEpisode(id) with legacy { id, input } payload", async () => {
+    const patch = vi.mocked(apiPatch);
+    patch.mockResolvedValueOnce({ id: "e2" });
+    const update = useUpdateEpisode("e1") as unknown as {
+      mutationFn: (input: unknown) => Promise<unknown>;
+    };
+
+    await update.mutationFn({ id: "e2", input: { label: "Flu" } });
+    expect(patch).toHaveBeenCalledWith("/api/illness/episodes/e2", {
+      label: "Flu",
+    });
+  });
+
+  it("supports legacy useUpdateEpisode() without id and with { id, input } payload", async () => {
+    const patch = vi.mocked(apiPatch);
+    patch.mockResolvedValueOnce({ id: "e3" });
+    const update = useUpdateEpisode() as unknown as {
+      mutationKey?: unknown;
+      scope?: unknown;
+      mutationFn: (input: unknown) => Promise<unknown>;
+    };
+
+    expect(update.scope).toBeUndefined();
+    expect(update.mutationKey).toBeUndefined();
+
+    await update.mutationFn({ id: "e3", input: { label: "Cold" } });
+    expect(patch).toHaveBeenCalledWith("/api/illness/episodes/e3", {
+      label: "Cold",
+    });
   });
 });
