@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **Opening a record on a phone.** In the account menu, "Open a record"
+  used to open a second menu beside the first, and on a narrow screen it
+  ran off the edge and cut the names off. On a phone the records now
+  unfold inside the account menu itself; wider screens keep the side
+  menu. (#1372)
+
 ## [1.47.5] — 2026-11-12
 
 ### Fixed
