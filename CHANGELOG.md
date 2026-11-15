@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Security
+
+- The container image moves to Node 22.23.5, a security release with fixes
+  in HTTP, HTTP/2 and TLS handling (CVE-2026-123863 and others).
+
 ## [1.47.6] — 2026-11-15
 
 ### Added
