@@ -10466,7 +10466,7 @@
         "namePlaceholder": "e.g. LDL cholesterol",
         "unit": "Unit",
         "unitPlaceholder": "e.g. mg/dL",
-        "unitLockedHint": "Once this marker has readings, its unit stays as it is. The stored values would otherwise be shown in a new unit without being converted.",
+        "unitLockedHint": "Once this marker holds numeric readings, its unit stays as it is. The stored values would otherwise be shown in a new unit without being converted.",
         "panel": "Panel",
         "panelPlaceholder": "e.g. Lipids",
         "panelHint": "Pick a suggestion or type your own. Catalog panels are recognised in every language.",

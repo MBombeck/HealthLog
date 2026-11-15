@@ -9,6 +9,10 @@
   and document chat streams are left uncompressed, so their text still
   arrives as it is written.
 
+### Fixed
+
+- A lab marker created from a text result, such as "negative" on a scanned report or a CSV row without a unit, can be edited again. It opens with "No unit" ticked, a rename saves without touching the unit, and the unit can be set while the marker holds only text results. The unit stays locked once numbers are stored under it, and writing the same unit another way (`mg/dl` for `mg/dL`) no longer counts as a change. (#1393)
+
 ### Security
 
 - The container image moves to Node 22.23.5, a security release with fixes
