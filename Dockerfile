@@ -150,7 +150,7 @@ RUN mkdir -p /opt/prisma-cli && \
 # does for the bundled database. The libpq file is found through the loader
 # rather than by an architecture path, so the step is the same on amd64 and
 # arm64.
-FROM postgres:18.6-trixie@sha256:3a4264520e121176619f54ff867d12774bc81e95e7b84db58d63bccdb6144b81 AS pgclient
+FROM postgres:18.6-trixie@sha256:e3d24f6906d0760bf4da0dae872415391ededefad23fd471c47dc53b0ddf3c42 AS pgclient
 RUN set -eu; \
     mkdir -p /out/bin /out/lib; \
     cp /usr/lib/postgresql/18/bin/pg_dump /usr/lib/postgresql/18/bin/pg_restore /out/bin/; \
