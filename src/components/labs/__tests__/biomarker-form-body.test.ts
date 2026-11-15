@@ -38,6 +38,7 @@ describe("buildBiomarkerBody", () => {
   it("sends null for every field an edit emptied", () => {
     expect(
       buildBiomarkerBody(empty, {
+        unit: "mmol/L",
         lowerBound: 10,
         upperBound: 0,
         panel: "Lipids",
@@ -56,11 +57,60 @@ describe("buildBiomarkerBody", () => {
   it("leaves a field out that was empty when the edit began", () => {
     expect(
       buildBiomarkerBody(empty, {
+        unit: "mmol/L",
         lowerBound: null,
         upperBound: null,
         panel: null,
         context: null,
       }),
     ).toEqual({ name: "LDL", unit: "mg/dL" });
+  });
+});
+
+describe("buildBiomarkerBody: the unit on an edit", () => {
+  const initial = {
+    lowerBound: null,
+    upperBound: null,
+    panel: null,
+    context: null,
+  };
+
+  it("leaves an unchanged unit out, so a rename never touches it", () => {
+    expect(
+      buildBiomarkerBody(
+        { ...empty, name: "LDL-C" },
+        { ...initial, unit: "mg/dL" },
+      ),
+    ).toEqual({ name: "LDL-C" });
+  });
+
+  it("leaves the unit out when only the whitespace around it moved", () => {
+    expect(
+      buildBiomarkerBody(
+        { ...empty, unit: " mg/dL " },
+        { ...initial, unit: "mg/dL" },
+      ),
+    ).toEqual({ name: "LDL" });
+  });
+
+  it("reads a marker minted from a text result and the ticked box as the same no unit", () => {
+    expect(
+      buildBiomarkerBody(
+        { ...empty, name: "Urine protein", unit: "1" },
+        { ...initial, unit: "" },
+      ),
+    ).toEqual({ name: "Urine protein" });
+  });
+
+  it("sends a unit the edit changed", () => {
+    expect(
+      buildBiomarkerBody({ ...empty, unit: "mg/dL" }, { ...initial, unit: "" }),
+    ).toEqual({ name: "LDL", unit: "mg/dL" });
+    expect(
+      buildBiomarkerBody(
+        { ...empty, unit: "1" },
+        { ...initial, unit: "mg/dL" },
+      ),
+    ).toEqual({ name: "LDL", unit: "1" });
   });
 });
