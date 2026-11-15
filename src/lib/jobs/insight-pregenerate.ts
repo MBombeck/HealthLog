@@ -82,6 +82,10 @@ import {
 import { withTimeout } from "@/lib/insights/with-timeout";
 import { comprehensiveWarmBudgetMs } from "@/lib/jobs/model-time";
 import {
+  firstFailure,
+  settleFailedGeneration,
+} from "@/lib/jobs/insight-pregenerate-failure";
+import {
   INSIGHT_PREGENERATE_QUEUE,
   enqueueForceWarm,
   enqueuePregenerateFailureRetry,
@@ -235,6 +239,8 @@ export interface PregenerateRunResult {
    * seven specialised cards.
    */
   metricAssessmentsWarmed: number;
+  /** #1384 — the first failed account's reason and provider, as facts. */
+  firstFailure: ReturnType<typeof firstFailure>;
 }
 
 /**
@@ -302,9 +308,9 @@ async function warmPerStatusCaches(
  * once and issues ONE provider call for the metrics still needing the LLM,
  * fanning the response back into the same per-metric cache rows the
  * standalone generators wrote. Replaces the prior seven independent warm
- * calls. Returns the count of metrics that got a fresh (batched or
- * fallback) assessment so the wide-event tally is comparable to the old
- * per-card count.
+ * calls. Returns the count of metrics that got a fresh model-written
+ * assessment, batched or through a card's own fallback call, so the
+ * wide-event tally is comparable to the old per-card count.
  *
  * Refill-only (`force: false`): a card already generated today and a card
  * whose content-hash is unchanged both resolve inside the batch as `served`
@@ -322,7 +328,7 @@ async function warmStatusBatch(
         locale,
         force: false,
       });
-      warmed += result.batched + result.fellBack;
+      warmed += result.batched + result.fellBackAnswered;
     } catch (err) {
       // The batch must never throw the cron's user loop off course — but
       // a swallowed batch failure left ~7 cards cold with zero signal.
@@ -555,6 +561,7 @@ export async function runInsightPregenerate(
     allFailed: false,
     assessmentsWarmed: 0,
     metricAssessmentsWarmed: 0,
+    firstFailure: null,
   };
 
   // Master kill-switch — when the operator disabled the briefing
@@ -619,6 +626,7 @@ export async function runInsightPregenerate(
     candidates: runOutcomes,
   });
   result.allFailed = verdict.allFailed;
+  result.firstFailure = firstFailure(runOutcomes);
 
   return result;
 
@@ -783,42 +791,34 @@ export async function runInsightPregenerate(
             result.skipped++;
             settle("skipped", generated.reason);
             break;
-          case "failed":
-            result.failed++;
-            // v1.28.30 — THE previously-silent failure path. A generator
-            // that resolves with `{ status: "failed" }` (features error,
-            // oversize payload, invalid JSON after retry, abort) bumped
-            // the tally with no annotation at all — the nightly summary
-            // showed `failed: 1` and nothing else was greppable. Reuse
-            // the `comprehensive_failed` shape with the generator's own
-            // reason as the cause.
+          case "failed": {
+            // Benched, screened, a refused credential and whose, or a
+            // retryable failure: `insight-pregenerate-failure.ts` (#1384).
+            const verdict = settleFailedGeneration(generated);
+            if (verdict.attempted) result.failed++;
+            else result.skipped++;
             annotate({
-              action: { name: "insights.pregenerate.comprehensive_failed" },
+              action: {
+                name: verdict.attempted
+                  ? "insights.pregenerate.comprehensive_failed"
+                  : "insights.pregenerate.provider_benched",
+              },
               meta: {
                 locale,
                 stage: "nightly.generator",
                 cause: `generator:${generated.reason}`,
+                provider: generated.provider ?? null,
+                credential_refused: generated.credentialExpired === true,
                 budget_ms: warmBudgetMs,
                 message: null,
               },
             });
-            if (generated.reason === "outbound-screened") {
-              // v1.42 — the model answered and the safety screen withheld
-              // it, after the generator's own repair. Asking the same model
-              // again in 45 minutes is not a provider retry; it is the same
-              // question, and it was screened eight times a night.
-              settle("screened", generated.reason);
-            } else if (generated.credentialExpired) {
-              // v1.42 — a dead sign-in (a Codex refresh token the issuer
-              // revoked) does not heal in 45 minutes either; the person has
-              // to reconnect. The refusal parked the connection as expired,
-              // which Settings shows, and the next run no longer counts it.
-              settle("auth_failed", generated.reason);
-            } else {
-              settle("failed", generated.reason);
+            settle(verdict.outcome, verdict.cause);
+            if (verdict.retry) {
               await enqueueRetry({ userId: candidate.id, locale });
             }
             break;
+          }
         }
       }
     }

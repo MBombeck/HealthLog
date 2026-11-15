@@ -21,7 +21,7 @@ import {
   type InsightStatusGeneratePayload,
   runInsightStatusGenerate,
 } from "@/lib/jobs/insight-status-generate";
-import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
+import { codeFact, jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { jobBudget } from "@/lib/jobs/job-budget";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { generateStatusBatchForUser } from "@/lib/insights/status-batch";
@@ -80,7 +80,7 @@ export async function runStatusBatchCron(
             locale: await resolveJobLocale(user.locale),
             force: false,
           });
-          generated += result.batched + result.fellBack;
+          generated += result.batched + result.fellBackAnswered;
           served += result.served;
         } catch (error) {
           failed++;
@@ -203,6 +203,10 @@ export async function handleInsightPregenerateJob(
         all_failed: summary.allFailed,
         assessments_warmed: summary.assessmentsWarmed,
         metric_assessments_warmed: summary.metricAssessmentsWarmed,
+        // #1384 — what failed, for the admin page and the alert ("none"
+        // when nothing did, or the generator could not say).
+        failure_cause: codeFact(summary.firstFailure?.reason) ?? "none",
+        failure_provider: codeFact(summary.firstFailure?.provider) ?? "none",
       });
     } catch (err) {
       evt.addWarning(

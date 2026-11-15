@@ -21,6 +21,18 @@
  * attempted but is not a provider failure, so a run of only screened
  * candidates is partial, not failed.
  *
+ * `auth_failed` is attempted and is not a failure of the run either (#1384).
+ * It means the provider refused the account's own credential: a key revoked
+ * at its issuer, a gateway that now wants a key the account no longer
+ * stores. Only that account's owner can change it, and the run itself worked.
+ * It used to count as a failure on the assumption that a refusal is reported
+ * once and then parked; that holds for a ChatGPT sign-in and for nothing else,
+ * so an API key the issuer had revoked failed every night for as long as it
+ * stayed saved. On an instance where that account was the only candidate the
+ * run then read as all-failed, and the operator was told the job was broken
+ * night after night. A refusal of the operator's own credential is reported by
+ * the caller as `failed`, because there the operator is the one who can act.
+ *
  * The verdict comes back to the caller, which writes `all_failed` into its
  * `jobDone` facts. That fact is what lets `readConsecutiveRunFailures` count a
  * completed-but-all-failed night as part of a streak.
@@ -46,18 +58,26 @@ export interface JobRunVerdict {
   total: number;
   /** Candidates it actually attempted (not skipped, not deferred). */
   attempted: number;
-  /** `failed` + `auth_failed`. */
+  /** Candidates that failed (`failed`; a refused credential is not one). */
   failed: number;
   /** Every attempted candidate failed (and at least one was attempted). */
   allFailed: boolean;
-  /** Something failed or was withheld, but not everything. */
+  /**
+   * Something failed, was withheld or had its credential refused, but not
+   * everything failed.
+   */
   partial: boolean;
 }
 
 /** Candidates listed on the run's line; the counts always cover all of them. */
 const MAX_LISTED_CANDIDATES = 50;
 
-const FAILED: ReadonlySet<JobRunOutcome> = new Set(["failed", "auth_failed"]);
+const FAILED: ReadonlySet<JobRunOutcome> = new Set(["failed"]);
+/** Attempted, not a failure of the run, but worth a `partial` line. */
+const WITHHELD: ReadonlySet<JobRunOutcome> = new Set([
+  "screened",
+  "auth_failed",
+]);
 const NOT_ATTEMPTED: ReadonlySet<JobRunOutcome> = new Set([
   "skipped",
   "deferred",
@@ -72,14 +92,14 @@ export function judgeJobRun(
     (c) => !NOT_ATTEMPTED.has(c.outcome),
   ).length;
   const failed = candidates.filter((c) => FAILED.has(c.outcome)).length;
-  const screened = candidates.filter((c) => c.outcome === "screened").length;
+  const withheld = candidates.filter((c) => WITHHELD.has(c.outcome)).length;
   const allFailed = attempted > 0 && failed === attempted;
   return {
     total,
     attempted,
     failed,
     allFailed,
-    partial: !allFailed && (failed > 0 || screened > 0),
+    partial: !allFailed && (failed > 0 || withheld > 0),
   };
 }
 

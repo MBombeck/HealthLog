@@ -8768,7 +8768,7 @@
     },
     "failingJobs": {
       "title": "Hintergrundjobs",
-      "description": "Queues, deren Jobs nach allen Wiederholungen aufgegeben haben.",
+      "description": "Queues, deren Jobs nach allen Wiederholungen aufgaben oder deren Lauf bei jedem versuchten Konto scheiterte.",
       "none": "In den letzten {hours} Stunden ist kein Job fehlgeschlagen.",
       "unavailable": "Keine Job-Queue lesbar. Dieses Deployment läuft ohne Hintergrund-Worker.",
       "countOne": "{count} Fehlschlag",

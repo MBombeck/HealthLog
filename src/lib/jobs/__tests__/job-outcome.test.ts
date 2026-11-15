@@ -193,3 +193,36 @@ describe("bounded generic JobOutcome serialization", () => {
     });
   });
 });
+
+// #1384 — a generator reason and a provider type become facts the admin page
+// and the repeated-failure alert can show.
+describe("codeFact", () => {
+  it("turns our own hyphenated codes into stable fact codes", async () => {
+    const { codeFact, serializeJobOutcome } = await vi.importActual<
+      typeof import("@/lib/jobs/job-outcome")
+    >("@/lib/jobs/job-outcome");
+    expect(codeFact("all-providers-failed")).toBe("all_providers_failed");
+    expect(codeFact("openai-compatible")).toBe("openai_compatible");
+    expect(codeFact("generator:invalid-json")).toBe("generator_invalid_json");
+    expect(codeFact("timeout")).toBe("timeout");
+    // Nothing usable: the caller leaves the fact out.
+    expect(codeFact("")).toBeNull();
+    expect(codeFact("---")).toBeNull();
+    expect(codeFact(null)).toBeNull();
+    // What it produces is a fact the serializer accepts.
+    expect(
+      serializeJobOutcome(
+        jobDone({
+          failure_cause: codeFact("all-providers-failed")!,
+          failure_provider: codeFact("admin-openai")!,
+        }),
+      ),
+    ).toEqual({
+      ok: true,
+      did: {
+        failure_cause: "all_providers_failed",
+        failure_provider: "admin_openai",
+      },
+    });
+  });
+});

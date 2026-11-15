@@ -47,6 +47,21 @@
   default was rejected as in the future, and onset dates could display as the
   wrong calendar day in non-UTC time zones. Saving now anchors to the current
   time when before local noon and preserves stored timestamps on edit.
+- **No more nightly "job still failing" alert over a provider that cannot
+  answer.** When the only account on an instance still had an AI provider
+  saved whose key the provider no longer accepted (removing the key from a
+  Local or OpenAI-compatible provider keeps its address, so it is still
+  called), or whose provider HealthLog had paused after repeated errors, the
+  nightly briefing pass counted that account as a failure, and every night
+  the admins were told the job was broken. A key the provider refuses is now
+  that account's matter: the run notes it but does not fail over it, unless
+  it is the instance's own shared key. An account whose providers are all
+  paused is skipped, since nothing was sent. The Background jobs card on the
+  admin status page now lists a run that finished with every account
+  failing, the same runs the alert counts, and the alert and the card say in
+  words what failed and which provider, instead of quoting the run's
+  counters. Those counters also stop counting a fallback text as a warmed
+  assessment. (#1384)
 
 ### Security
 

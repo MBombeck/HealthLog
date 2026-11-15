@@ -47,13 +47,27 @@ describe("judgeJobRun", () => {
     });
   });
 
-  it("counts a dead credential as a failure", () => {
-    expect(
-      judgeJobRun([
-        { key: "a", outcome: "auth_failed" },
-        { key: "b", outcome: "failed" },
-      ]).allFailed,
-    ).toBe(true);
+  // #1384 — a key the issuer revoked stays saved and is refused every night.
+  // Counted as a failure, it made a single-account instance's nightly pass
+  // read as all-failed forever and alerted the operator about the job.
+  it("does not fail a run over a refused credential of the account's own", () => {
+    expect(judgeJobRun([{ key: "a", outcome: "auth_failed" }])).toEqual({
+      total: 1,
+      attempted: 1,
+      failed: 0,
+      allFailed: false,
+      partial: true,
+    });
+  });
+
+  it("reads a refused credential beside a real failure as partial", () => {
+    const verdict = judgeJobRun([
+      { key: "a", outcome: "auth_failed" },
+      { key: "b", outcome: "failed" },
+    ]);
+    expect(verdict.allFailed).toBe(false);
+    expect(verdict.partial).toBe(true);
+    expect(verdict.failed).toBe(1);
   });
 
   it("reads one success among failures as partial, not failed", () => {
@@ -84,7 +98,7 @@ describe("reportJobRun", () => {
       queue: "insight-pregenerate",
       runId: "r1",
       candidates: [
-        { key: "a", outcome: "auth_failed", cause: "all-providers-failed" },
+        { key: "a", outcome: "failed", cause: "all-providers-failed" },
         { key: "b", outcome: "skipped", cause: "no-consent" },
       ],
     });
@@ -101,7 +115,31 @@ describe("reportJobRun", () => {
         consecutiveFailures: 3,
         failed: 1,
         total: 1,
-        causes: ["auth_failed:all-providers-failed"],
+        causes: ["failed:all-providers-failed"],
+      },
+    });
+  });
+
+  it("emits job.run.partial, never job.run.failed, for a run whose only attempt was a refused credential (#1384)", async () => {
+    const verdict = await reportJobRun({
+      queue: "insight-pregenerate",
+      runId: "r1",
+      candidates: [
+        {
+          key: "a",
+          outcome: "auth_failed",
+          cause: "all-providers-failed:openai-compatible",
+        },
+      ],
+    });
+    expect(verdict.allFailed).toBe(false);
+    expect(readConsecutiveRunFailures).not.toHaveBeenCalled();
+    expect(emitSignal).toHaveBeenCalledTimes(1);
+    expect(emitSignal.mock.calls[0][0]).toMatchObject({
+      action: "job.run.partial",
+      level: "warn",
+      meta: {
+        causes: ["auth_failed:all-providers-failed:openai-compatible"],
       },
     });
   });

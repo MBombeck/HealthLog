@@ -8768,7 +8768,7 @@
     },
     "failingJobs": {
       "title": "Background jobs",
-      "description": "Queues whose jobs gave up after exhausting their retries.",
+      "description": "Queues whose jobs gave up after their retries, or whose run ended with every account it tried failing.",
       "none": "No job has failed in the last {hours} hours.",
       "unavailable": "No job queue to read. This deployment runs without the background worker.",
       "countOne": "{count} failure",
