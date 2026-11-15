@@ -216,12 +216,13 @@ export interface PregenerateRunResult {
   /** The job's time budget ran out before every candidate was reached. */
   stoppedEarly: boolean;
   /**
-   * v1.42 — every candidate the run attempted failed (see `reportJobRun`).
-   * Written into the job's facts as `all_failed`, which is how a completed
-   * night with nothing generated still counts toward the repeated-failure
-   * streak.
+   * v1.42 — every candidate the run attempted failed (see `reportJobRun`),
+   * written into the job's facts as `all_failed` so a completed night with
+   * nothing generated counts toward the repeated-failure streak. `attempted`
+   * (#1384) goes out as `run_attempted`; at 0 the streak steps over the night.
    */
   allFailed: boolean;
+  attempted: number;
   /**
    * Count of per-metric assessment caches written warm across the whole
    * run. The comprehensive generator evicts the seven `*-status`
@@ -559,6 +560,7 @@ export async function runInsightPregenerate(
     budgetBlocked: 0,
     stoppedEarly: false,
     allFailed: false,
+    attempted: 0,
     assessmentsWarmed: 0,
     metricAssessmentsWarmed: 0,
     firstFailure: null,
@@ -626,6 +628,7 @@ export async function runInsightPregenerate(
     candidates: runOutcomes,
   });
   result.allFailed = verdict.allFailed;
+  result.attempted = verdict.attempted;
   result.firstFailure = firstFailure(runOutcomes);
 
   return result;
