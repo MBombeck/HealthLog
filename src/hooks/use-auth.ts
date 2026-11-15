@@ -36,6 +36,7 @@ import {
   setRefusedRecordScope,
 } from "@/lib/query-keys/record-scope";
 import {
+  recordSessionRevision,
   settleRecordSessionTransition,
   settleRefusedRecordSessionTransition,
 } from "@/lib/query-keys/record-session-transition";
@@ -361,6 +362,46 @@ export function isAuthVerdictUnknown(error: unknown): boolean {
   return true;
 }
 
+/**
+ * How many times `fetchMe` asks again when a record-session transition moved
+ * while its request was in flight. Each repeat needs another transition inside
+ * one round trip, which only a browser switching records over and over
+ * produces.
+ */
+const SUPERSEDED_ME_RETRIES = 3;
+
+type MePayload = Partial<AuthUser> & {
+  id: string;
+  username: string;
+  role: string;
+  timezone: string;
+};
+
+/**
+ * `GET /api/auth/me`, never answered across a record-session transition.
+ *
+ * Everything `fetchMe` does with the payload is a statement about which record
+ * this browser is in: it adopts the fence context, rewrites the cache-scope
+ * mirror every other tab watches, and may release the hold. A request issued
+ * before a transition and answered after it may have been read on the far side
+ * of a switch, and applying it is how a browser ended up wedged behind the
+ * hydration gate (see `recordSessionRevision`). Such an answer is dropped and
+ * the read repeated; the repeat is issued after the change, so it describes the
+ * session as it now is.
+ */
+async function getCurrentMe(): Promise<MePayload> {
+  for (let attempt = 0; ; attempt++) {
+    const before = recordSessionRevision();
+    const data = await apiGet<MePayload>("/api/auth/me");
+    if (recordSessionRevision() === before) return data;
+    if (attempt >= SUPERSEDED_ME_RETRIES) {
+      // Not an `ApiError`: no verdict on the session, so nothing is wiped and
+      // the hold stays until a later read settles it.
+      throw new Error("record session kept moving during /api/auth/me");
+    }
+  }
+}
+
 export async function fetchMe(): Promise<AuthUser> {
   // v1.16.4 — routed through the typed wrapper; a non-OK /me (401)
   // throws `ApiError`, which `useAuth` treats as "not authenticated"
@@ -369,14 +410,7 @@ export async function fetchMe(): Promise<AuthUser> {
   // v1.4.47 — coerce `disableCoach` against `undefined` so a stale
   // /me payload from a partial-deploy rollback (older server image
   // without the field) keeps the Coach surface visible by default.
-  const data = await apiGet<
-    Partial<AuthUser> & {
-      id: string;
-      username: string;
-      role: string;
-      timezone: string;
-    }
-  >("/api/auth/me");
+  const data = await getCurrentMe();
   // Hour-cycle preference: coerce against a stale /me payload, then mirror
   // into localStorage so `useFormatters()` and the legacy format helpers
   // (which cannot reach the query cache) render the same clock.

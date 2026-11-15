@@ -12,7 +12,10 @@ import { queryKeys } from "@/lib/query-keys";
 import { useTranslations } from "@/lib/i18n/context";
 import { useInsightsLayoutPrefs } from "@/hooks/use-insights-layout-prefs";
 import { Button } from "@/components/ui/button";
-import { ChartSkeleton } from "@/components/charts/chart-skeleton";
+import {
+  ChartSkeleton,
+  MoodChartSkeleton,
+} from "@/components/charts/chart-skeleton";
 import { MetricEmptyState } from "@/components/insights/metric-empty-state";
 import { MetricTargetSummary } from "@/components/insights/metric-target-summary";
 import {
@@ -54,7 +57,7 @@ const MoodChart = dynamic(
     import("@/components/charts/chart-runtime").then((mod) => ({
       default: mod.MoodChart,
     })),
-  { ssr: false, loading: () => <ChartSkeleton /> },
+  { ssr: false, loading: () => <MoodChartSkeleton /> },
 );
 
 /**

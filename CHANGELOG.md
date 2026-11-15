@@ -61,6 +61,18 @@
   sent. The Background jobs card on the admin status page now lists the
   same runs the alert counts, and both say in words what failed and
   which provider. (#1384)
+- **Switching records with HealthLog open in a second tab.** Switching
+  into or out of a shared record could leave both tabs on the loading
+  spinner, and a reload within the next half minute did not help. An
+  account check the switching tab had started just before the switch
+  could answer for the record being left and undo the switch the other
+  tabs were waiting for. Such an answer is now thrown away and asked
+  again.
+- **Charts no longer jump while they load.** The placeholder of every
+  chart that links its days was 20 px taller than the chart it turned
+  into (40 px on a phone), and the mood chart's placeholder was about
+  30 px shorter, so the dashboard and the metric pages shifted under you
+  when the charts arrived.
 
 ### Security
 
