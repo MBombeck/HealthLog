@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/lib/i18n/context";
@@ -50,12 +51,16 @@ const SLOW_HINT_DELAY_MS = 3_000;
 
 /**
  * The footer a loaded `<HealthChart>` paints under its plot: the row of day
- * dots and its caption on a day-linked chart, and the collapsed "show as
- * table" disclosure. A loading shell without it was ~100 px shorter than the
- * card it turned into (CLS on every metric page, the BMI page most visibly),
- * so the shells reserve the same boxes: `h-3` rug, `mt-1` caption (two lines
- * on a phone, one from `sm`), and the disclosure's `mt-3 border-t pt-3` frame
- * around its `min-h-11` button.
+ * dots on a day-linked chart, and the collapsed "show as table" disclosure. A
+ * loading shell without it was ~100 px shorter than the card it turned into
+ * (CLS on every metric page, the BMI page most visibly), so the shells reserve
+ * the same boxes: the `h-3` rug, and the disclosure's `mt-3 border-t pt-3`
+ * frame around its `min-h-11` button.
+ *
+ * The rug is all a day-linked chart paints under its plot. It used to carry a
+ * one-line caption as well, and the reserve kept that line after the caption
+ * went: every day-linked shell stood 20 px taller than its chart (40 px on a
+ * phone) and the page shrank under the reader when the chart arrived.
  */
 export function ChartFooterReserve({
   dayLinks = false,
@@ -67,12 +72,7 @@ export function ChartFooterReserve({
   if (!dayLinks && !dataTable) return null;
   return (
     <div aria-hidden="true" data-slot="chart-footer-reserve">
-      {dayLinks ? (
-        <>
-          <div className="h-3" />
-          <div className="mt-1 h-9 sm:h-4" />
-        </>
-      ) : null}
+      {dayLinks ? <div className="h-3" /> : null}
       {dataTable ? (
         <div className="border-border mt-3 border-t pt-3">
           <div className="h-11" />
@@ -170,5 +170,45 @@ export function ChartSkeleton({
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * The loading shell for a full-size, day-linked `<MoodChart>`.
+ *
+ * The mood chart is drawn in a `Card` (vertical padding and a gap between
+ * header and plot, where `ChartSkeleton` has padding and a margin), its plot
+ * band is 200 / 220 px rather than 240 / 280, and it paints the day rug and
+ * the collapsed data-table disclosure under the plot. Shown in the generic
+ * shell, the card grew by about 30 px when the chart chunk arrived, under a
+ * reader already scrolled past it. So it gets the same primitives and the
+ * same boxes.
+ */
+export function MoodChartSkeleton() {
+  const { t } = useTranslations();
+  return (
+    <Card
+      data-slot="chart-skeleton"
+      role="status"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <span className="sr-only">{t("charts.loadingLabel")}</span>
+      <CardHeader>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <Skeleton className="h-5 w-32" />
+          <div className="flex h-11 items-center gap-2">
+            <Skeleton className="h-6 w-12" />
+            <Skeleton className="h-6 w-12" />
+            <Skeleton className="h-6 w-12" />
+            <Skeleton className="h-6 w-12" />
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-[var(--chart-height,200px)] w-full md:h-[var(--chart-height-md,220px)]" />
+        <ChartFooterReserve dayLinks dataTable />
+      </CardContent>
+    </Card>
   );
 }

@@ -53,6 +53,11 @@
   switching tab had started a moment before the switch could answer with the
   record being left and overwrite the switch the other tabs were waiting on.
   Such an answer is now discarded and asked again.
+- **Charts no longer jump while they load.** The placeholder of every chart
+  that links its days was 20 px taller than the chart it turned into (40 px
+  on a phone), and the mood chart's placeholder was about 30 px shorter, so
+  the dashboard and the metric pages shifted under the reader when the charts
+  arrived.
 
 ### Security
 
