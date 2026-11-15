@@ -103,6 +103,7 @@ vi.mock("@/lib/insights/status-batch", () => ({
     served: 0,
     batched: 0,
     fellBack: 0,
+    fellBackAnswered: 0,
     batchCallMade: false,
   })),
 }));
@@ -132,6 +133,7 @@ import {
   INSIGHT_PREGENERATE_EXPIRE_SECONDS,
 } from "../insight-pregenerate-shared";
 import { handleInsightPregenerateJob } from "../reminder/insights-handlers";
+import { judgeJobRun, type reportJobRun } from "../job-run-report";
 import { insightRetryOptions } from "../reminder/registrar-shared";
 import {
   groupOf,
@@ -1556,15 +1558,9 @@ describe("runInsightPregenerate — warm budget honours the response timeout (v1
 // withheld (screened) briefing and a dead sign-in queue no provider retry,
 // and a time-budget cut-off reports the unreached accounts as deferred.
 describe("runInsightPregenerate — one outcome per candidate (v1.42)", () => {
-  type Reported = {
-    queue: string;
-    runId: string;
-    candidates: Array<{ key: string; outcome: string; cause?: string }>;
-  };
-
   function harness(users: Array<{ id: string; locale: string }>) {
     const { prisma } = makePrisma(users);
-    const reportRun = vi.fn(async (input: Reported) => ({
+    const reportRun = vi.fn<typeof reportJobRun>(async (input) => ({
       total: input.candidates.length,
       attempted: 0,
       failed: 0,
@@ -1606,7 +1602,7 @@ describe("runInsightPregenerate — one outcome per candidate (v1.42)", () => {
       statusGenerators: h.statusGenerators,
       warmGenericMetrics: h.warmGenericMetrics,
       enqueueRetry: h.enqueueRetry,
-      reportRun: h.reportRun as never,
+      reportRun: h.reportRun,
     });
 
     expect(h.reportRun).toHaveBeenCalledTimes(1);
@@ -1639,7 +1635,7 @@ describe("runInsightPregenerate — one outcome per candidate (v1.42)", () => {
       statusGenerators: h.statusGenerators,
       warmGenericMetrics: h.warmGenericMetrics,
       enqueueRetry: h.enqueueRetry,
-      reportRun: h.reportRun as never,
+      reportRun: h.reportRun,
     });
 
     expect(h.enqueueRetry).toHaveBeenCalledTimes(1);
@@ -1668,12 +1664,130 @@ describe("runInsightPregenerate — one outcome per candidate (v1.42)", () => {
       statusGenerators: h.statusGenerators,
       warmGenericMetrics: h.warmGenericMetrics,
       enqueueRetry: h.enqueueRetry,
-      reportRun: h.reportRun as never,
+      reportRun: h.reportRun,
       shouldStop: () => ++calls > 1,
     });
 
     expect(
       h.reportRun.mock.calls[0][0].candidates.map((c) => c.outcome),
     ).toEqual(["ok", "deferred", "deferred"]);
+  });
+});
+
+// #1384 — a self-hoster whose only account kept a provider that no longer
+// works was told every night that the job was failing. The run used the real
+// verdict here, so what the alert reads (`all_failed`) is what is asserted.
+describe("runInsightPregenerate — a provider that cannot serve is not a failing run (#1384)", () => {
+  async function runOne(outcome: Record<string, unknown>) {
+    const { prisma } = makePrisma([{ id: "only-account", locale: "en" }]);
+    const reportRun = vi.fn<typeof reportJobRun>(async (input) =>
+      judgeJobRun(input.candidates),
+    );
+    const enqueueRetry = vi.fn().mockResolvedValue(undefined);
+    const result = await runInsightPregenerate(prisma as never, {
+      generate: vi.fn().mockResolvedValue(outcome),
+      statusGenerators: Array.from({ length: 7 }, () =>
+        vi.fn().mockResolvedValue({ hasProvider: true, cached: true }),
+      ),
+      warmGenericMetrics: vi.fn().mockResolvedValue(0),
+      enqueueRetry,
+      reportRun,
+    });
+    return {
+      result,
+      enqueueRetry,
+      candidate: reportRun.mock.calls[0][0].candidates[0],
+    };
+  }
+
+  it("skips an account whose every provider was benched, so nothing was sent", async () => {
+    const { result, enqueueRetry, candidate } = await runOne({
+      status: "failed",
+      reason: "all-providers-failed",
+      provider: "local",
+      sentNothing: true,
+    });
+
+    expect(candidate).toEqual(
+      expect.objectContaining({
+        outcome: "skipped",
+        cause: "provider_benched",
+      }),
+    );
+    expect(result.skipped).toBe(1);
+    expect(result.failed).toBe(0);
+    expect(result.allFailed).toBe(false);
+    // Nobody attempted: the handler then writes no `all_failed`, so a benched
+    // night neither extends nor ends the alert's streak.
+    expect(result.attempted).toBe(0);
+    expect(result.firstFailure).toBeNull();
+    // The retry would find the same bench.
+    expect(enqueueRetry).not.toHaveBeenCalled();
+    expect(annotateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: { name: "insights.pregenerate.provider_benched" },
+      }),
+    );
+  });
+
+  it("reports a refused credential of the account's own as auth_failed, naming the provider, without failing the run", async () => {
+    const { result, enqueueRetry, candidate } = await runOne({
+      status: "failed",
+      reason: "all-providers-failed",
+      provider: "openai-compatible",
+      credentialExpired: true,
+    });
+
+    expect(candidate).toEqual(
+      expect.objectContaining({
+        outcome: "auth_failed",
+        cause: "all-providers-failed:openai-compatible",
+      }),
+    );
+    expect(result.allFailed).toBe(false);
+    expect(result.attempted).toBe(1);
+    expect(enqueueRetry).not.toHaveBeenCalled();
+    expect(annotateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: { name: "insights.pregenerate.comprehensive_failed" },
+        meta: expect.objectContaining({
+          provider: "openai-compatible",
+          credential_refused: true,
+        }),
+      }),
+    );
+  });
+
+  it("still fails the run when the operator's own key was refused, and says which", async () => {
+    const { result, enqueueRetry, candidate } = await runOne({
+      status: "failed",
+      reason: "all-providers-failed",
+      provider: "admin-openai",
+      credentialExpired: true,
+    });
+
+    expect(candidate.outcome).toBe("failed");
+    expect(result.allFailed).toBe(true);
+    expect(result.firstFailure).toEqual({
+      reason: "all-providers-failed",
+      provider: "admin-openai",
+    });
+    // A refused key does not heal in 45 minutes.
+    expect(enqueueRetry).not.toHaveBeenCalled();
+  });
+
+  it("carries the cause and provider of an ordinary failure into the run's facts", async () => {
+    const { result, enqueueRetry } = await runOne({
+      status: "failed",
+      reason: "provider-error",
+      provider: "local",
+    });
+
+    expect(result.allFailed).toBe(true);
+    expect(result.firstFailure).toEqual({
+      reason: "provider-error",
+      provider: "local",
+    });
+    expect(enqueueRetry).toHaveBeenCalledTimes(1);
   });
 });

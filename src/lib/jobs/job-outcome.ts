@@ -130,6 +130,11 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "duration_ms",
   "errored",
   "failed",
+  // #1384 — a fan-out pass's first failed candidate: its cause and the
+  // provider that failed for it, as stable codes. What the admin page and
+  // the repeated-failure alert show for a run that completed all-failed.
+  "failure_cause",
+  "failure_provider",
   "failures",
   "feedback_buckets",
   "feedback_total_rows",
@@ -239,6 +244,9 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "removed",
   "resting_corrected",
   "rows_written",
+  // #1384 — how many accounts a fan-out pass attempted; 0 marks a run that
+  // neither failed nor recovered, which the failure streak steps over.
+  "run_attempted",
   // v1.39.1 — the background restore of a stored backup, and the sweep that
   // re-queues one a stopped worker left running. Counts and a claim flag.
   "restore_claimed",
@@ -421,6 +429,22 @@ export function wholeFact(value: number | null | undefined): number {
 export function percentFact(ratio: number | null | undefined): number {
   if (ratio == null || !Number.isFinite(ratio)) return 0;
   return wholeFact(ratio * 100);
+}
+
+/**
+ * A short code from our own vocabulary (a generator reason, a provider type)
+ * as a fact: `all-providers-failed` becomes `all_providers_failed`. Null when
+ * nothing of it survives, so the caller leaves the fact out.
+ */
+export function codeFact(value: string | null | undefined): string | null {
+  if (value == null) return null;
+  const code = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^[^a-z]+/, "")
+    .slice(0, 64)
+    .replace(/_+$/, "");
+  return STABLE_CODE_PATTERN.test(code) ? code : null;
 }
 
 /** Why one fact is refused, or null when it is a valid fact. */

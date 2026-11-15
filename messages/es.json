@@ -8768,7 +8768,7 @@
     },
     "failingJobs": {
       "title": "Trabajos en segundo plano",
-      "description": "Colas cuyos trabajos se rindieron tras agotar sus reintentos.",
+      "description": "Colas cuyos trabajos se rindieron tras sus reintentos o cuya ejecución falló en cada cuenta intentada.",
       "none": "Ningún trabajo ha fallado en las últimas {hours} horas.",
       "unavailable": "No hay ninguna cola que consultar: este despliegue funciona sin el worker en segundo plano.",
       "countOne": "{count} fallo",

@@ -94,6 +94,10 @@ import { insightResultSchema, type InsightResult } from "@/lib/ai/types";
 import { resolveProviderChain } from "@/lib/ai/provider";
 import { AllProvidersFailedError } from "@/lib/ai/provider-runner";
 import {
+  chainFailureFacts,
+  type ChainFailureFacts,
+} from "@/lib/insights/chain-failure-facts";
+import {
   BriefingBudgetExceededError,
   runBriefingCompletion,
 } from "@/lib/insights/briefing-provider";
@@ -178,17 +182,7 @@ export type GenerateOutcome =
         | "scope-changed"
         | "profile-scope-changed";
     }
-  | {
-      status: "failed";
-      reason: string;
-      /**
-       * v1.42 — the chain's first provider refused the credential (a dead
-       * Codex sign-in, a revoked key). The nightly pass reports the account
-       * as `auth_failed` and does not queue a retry that cannot succeed until
-       * the person reconnects.
-       */
-      credentialExpired?: boolean;
-    };
+  | ({ status: "failed"; reason: string } & ChainFailureFacts);
 
 /** Higher, seedless temperature for the daily-briefing phrasing re-roll. */
 const BRIEFING_REROLL_TEMPERATURE = 0.6;
@@ -1290,11 +1284,7 @@ export async function generateComprehensiveInsight(
           ? (e.attempts?.[0]?.failureKind ?? null)
           : providerFailureKind(e).failure,
     });
-    const credentialExpired =
-      e instanceof AllProvidersFailedError && e.primaryCredentialExpired;
-    return credentialExpired
-      ? { status: "failed", reason, credentialExpired }
-      : { status: "failed", reason };
+    return { status: "failed", reason, ...chainFailureFacts(e) };
   }
 
   // Anthropic + local have no native JSON mode, so a ```json-fenced or

@@ -435,7 +435,7 @@
     "lib/jobs/__tests__/document-summary-reaper.test.ts": 1,
     "lib/jobs/__tests__/document-summary.test.ts": 19,
     "lib/jobs/__tests__/geo-backfill.test.ts": 1,
-    "lib/jobs/__tests__/insight-pregenerate.test.ts": 45,
+    "lib/jobs/__tests__/insight-pregenerate.test.ts": 43,
     "lib/jobs/__tests__/insight-status-generate.test.ts": 2,
     "lib/jobs/__tests__/measurement-maintenance-schedule.test.ts": 2,
     "lib/jobs/__tests__/measurement-reminder-byhour.test.ts": 2,

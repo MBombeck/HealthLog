@@ -54,6 +54,42 @@ async function openDashboard(page: Page) {
   ).toBeVisible();
   // The module-gated destinations join the rail once `/api/auth/me` lands.
   await expect(page.locator('aside nav a[href="/medications"]')).toHaveCount(1);
+  await expectChartRowSettled(page);
+}
+
+/**
+ * The dashboard's chart row has swapped every loading shell for its chart.
+ *
+ * The charts are one lazily loaded chunk, and each cell holds a skeleton until
+ * it lands and the row reveals. The swap changes the row's height, so a page
+ * measured before it is not the page the reader ends up with: on a loaded
+ * runner the chunk arrived a second after the dashboard painted, after
+ * `scrollMainToEnd` had already seen two equal heights, and `<main>` was no
+ * longer at its end when it was measured. Waited for on the cells' own state
+ * rather than on time.
+ */
+async function expectChartRowSettled(page: Page) {
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const main = document.getElementById("main-content")!;
+          const cells = main.querySelectorAll(
+            '[data-slot="dashboard-chart-cell"]',
+          );
+          const held = main.querySelectorAll(
+            '[data-slot="dashboard-chart-cell"]:not([data-revealed="true"])',
+          );
+          const shells = main.querySelectorAll('[data-slot="chart-skeleton"]');
+          return {
+            cells: cells.length > 0,
+            held: held.length,
+            shells: shells.length,
+          };
+        }),
+      { timeout: 15_000 },
+    )
+    .toEqual({ cells: true, held: 0, shells: 0 });
 }
 
 /** The shell fills the window exactly and the document has nothing to scroll. */

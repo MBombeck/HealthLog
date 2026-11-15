@@ -87,6 +87,34 @@ describe("judgeQueueRuns", () => {
     ).toBe("failing");
   });
 
+  // #1384 — the alert quoted the completed run's own outcome JSON, and the
+  // operator it sent to the admin page found nothing there.
+  it("says in words what an all-failed night was, with its cause and provider", () => {
+    const output = JSON.stringify({
+      ok: true,
+      did: {
+        total: 1,
+        failed: 1,
+        all_failed: true,
+        assessments_warmed: 0,
+        failure_cause: "all_providers_failed",
+        failure_provider: "admin_openai",
+      },
+    });
+    const verdict = judgeQueueRuns(
+      [0, 1, 2].map((ago) =>
+        run(ago, { state: "completed", allFailed: true, error: output }),
+      ),
+    );
+    expect(verdict.state).toBe("failing");
+    expect(verdict.lastError).toBe(
+      "The run completed, but every account it attempted failed (1 of 1). " +
+        "First cause: all_providers_failed from provider admin_openai. " +
+        "Accounts without a usable provider are skipped and not counted; " +
+        "job.run.failed in the app log lists each account's outcome.",
+    );
+  });
+
   it("explains a bare timeout the way the admin card does", () => {
     const verdict = judgeQueueRuns(
       [0, 1, 2].map((ago) =>

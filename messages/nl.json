@@ -8768,7 +8768,7 @@
     },
     "failingJobs": {
       "title": "Achtergrondtaken",
-      "description": "Wachtrijen waarvan taken het hebben opgegeven nadat alle nieuwe pogingen waren verbruikt.",
+      "description": "Wachtrijen waarvan taken na alle pogingen opgaven, of waarvan een run voor elk geprobeerd account mislukte.",
       "none": "Er is de afgelopen {hours} uur geen taak mislukt.",
       "unavailable": "Geen takenwachtrij om te lezen. Deze installatie draait zonder de achtergrondworker.",
       "countOne": "{count} fout",

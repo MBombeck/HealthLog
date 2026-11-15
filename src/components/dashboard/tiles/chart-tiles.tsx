@@ -4,7 +4,10 @@ import type { ComponentProps, ReactNode } from "react";
 import dynamic from "next/dynamic";
 
 import { ChartErrorBoundary } from "@/components/charts/chart-error-state";
-import { ChartSkeleton } from "@/components/charts/chart-skeleton";
+import {
+  ChartSkeleton,
+  MoodChartSkeleton,
+} from "@/components/charts/chart-skeleton";
 import { HealthChartDynamic } from "@/components/charts/health-chart-dynamic";
 import { RecentWorkoutsTile } from "@/components/dashboard/recent-workouts-tile";
 import { RecentAchievementsCard } from "@/components/gamification/recent-achievements-card";
@@ -26,7 +29,7 @@ const MoodChartLazy = dynamic(
     importWithRetry(() => import("@/components/charts/chart-runtime")).then(
       (mod) => ({ default: mod.MoodChart }),
     ),
-  { ssr: false, loading: () => <ChartSkeleton /> },
+  { ssr: false, loading: () => <MoodChartSkeleton /> },
 );
 const MoodChart = (props: ComponentProps<typeof MoodChartLazy>) => (
   <ChartErrorBoundary>

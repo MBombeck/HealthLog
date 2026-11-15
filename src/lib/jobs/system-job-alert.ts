@@ -197,6 +197,12 @@ export async function readTerminalRuns(
           WHERE name = q.name
             AND completed_on IS NOT NULL
             AND state IN ('completed', 'failed')
+            -- #1384: a fan-out run that attempted nobody neither fails nor
+            -- recovers; it must not end a streak.
+            AND NOT (
+              state = 'completed'
+              AND COALESCE(output->'did'->>'run_attempted', '') = '0'
+            )
           ORDER BY completed_on DESC
           LIMIT ${LOOKBACK_ROWS}
         ) j

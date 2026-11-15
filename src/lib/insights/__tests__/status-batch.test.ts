@@ -134,6 +134,7 @@ describe("generateStatusBatchForUser — the statusText capability comes first",
       served: 0,
       batched: 0,
       fellBack: 0,
+      fellBackAnswered: 0,
       batchCallMade: false,
     });
   });
@@ -340,6 +341,15 @@ describe("generateStatusBatchForUser — graceful partial degradation", () => {
     vi.mocked(runStatusCompletion).mockResolvedValue({
       kind: "error",
     } as never);
+    // #1384 — one card's own call came back with a model note; the other six
+    // served their fallback. A nightly warm over a provider that only failed
+    // reported `assessments_warmed: 6`, because every fallback counted.
+    vi.mocked(runPreparedStatusCard).mockResolvedValueOnce({
+      hasProvider: true,
+      text: "note",
+      cached: false,
+      updatedAt: "t",
+    });
 
     const result = await generateStatusBatchForUser("u1", { locale: "en" });
 
@@ -347,6 +357,7 @@ describe("generateStatusBatchForUser — graceful partial degradation", () => {
     for (const f of finalizers) expect(f).not.toHaveBeenCalled();
     expect(runPreparedStatusCard).toHaveBeenCalledTimes(7);
     expect(result.fellBack).toBe(7);
+    expect(result.fellBackAnswered).toBe(1);
     expect(result.batched).toBe(0);
   });
 
@@ -411,6 +422,7 @@ describe("generateStatusBatchForUser — graceful partial degradation", () => {
     for (const f of finalizers) expect(f).not.toHaveBeenCalled();
     expect(runPreparedStatusCard).not.toHaveBeenCalled();
     expect(result.fellBack).toBe(7);
+    expect(result.fellBackAnswered).toBe(0);
     expect(result.batchCallMade).toBe(false);
   });
 });

@@ -21,7 +21,7 @@ import {
   type InsightStatusGeneratePayload,
   runInsightStatusGenerate,
 } from "@/lib/jobs/insight-status-generate";
-import { jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
+import { codeFact, jobDone, type JobOutcome } from "@/lib/jobs/job-outcome";
 import { jobBudget } from "@/lib/jobs/job-budget";
 import { withBackgroundEvent } from "@/lib/logging/background";
 import { generateStatusBatchForUser } from "@/lib/insights/status-batch";
@@ -80,7 +80,7 @@ export async function runStatusBatchCron(
             locale: await resolveJobLocale(user.locale),
             force: false,
           });
-          generated += result.batched + result.fellBack;
+          generated += result.batched + result.fellBackAnswered;
           served += result.served;
         } catch (error) {
           failed++;
@@ -201,8 +201,17 @@ export async function handleInsightPregenerateJob(
         // v1.42 — read back by `readConsecutiveRunFailures`, so a night that
         // completed with nothing generated counts toward the failure streak.
         all_failed: summary.allFailed,
+        // #1384 — a night that attempted no account (every provider paused)
+        // is neither a failure nor a recovery. `run_attempted: 0` is how the
+        // streak readers (`readConsecutiveRunFailures`, the repeated-failure
+        // alert) know to step over it instead of ending the streak.
+        run_attempted: summary.attempted,
         assessments_warmed: summary.assessmentsWarmed,
         metric_assessments_warmed: summary.metricAssessmentsWarmed,
+        // #1384 — what failed, for the admin page and the alert ("none"
+        // when nothing did, or the generator could not say).
+        failure_cause: codeFact(summary.firstFailure?.reason) ?? "none",
+        failure_provider: codeFact(summary.firstFailure?.provider) ?? "none",
       });
     } catch (err) {
       evt.addWarning(

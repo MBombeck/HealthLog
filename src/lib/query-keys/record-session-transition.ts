@@ -51,6 +51,8 @@ const READY: RecordSessionTransition = {
 
 let transition = READY;
 let seeded = false;
+/** Bumped on every change this tab applies; see `recordSessionRevision`. */
+let revision = 0;
 const listeners = new Set<() => void>();
 let channel: BroadcastChannel | null = null;
 let storageListenerAttached = false;
@@ -107,6 +109,7 @@ function applyWire(next: WireTransition): void {
   }
   transition = toSnapshot(next);
   seeded = true;
+  revision += 1;
   notify();
 }
 
@@ -226,6 +229,26 @@ function seed(): void {
 export function getRecordSessionTransition(): RecordSessionTransition {
   seed();
   return transition;
+}
+
+/**
+ * A counter that moves whenever this tab applies a transition change — its own
+ * publish, or one received from another tab.
+ *
+ * `fetchMe` reads it on both sides of its request. A `/api/auth/me` answered
+ * across a change cannot say which side of that change the server read it on:
+ * the switcher's own `queryClient.clear()` remounts the account query the
+ * moment the hold goes up, so the initiator routinely has a `/me` in flight
+ * beside its own `POST /api/account/switch`, and that answer can describe the
+ * record the session has just left. Applied after the commit, it rewrites the
+ * scope mirror back to the old record; every peer that has already settled
+ * reads that write as a foreign switch and holds for a `/me` naming the old
+ * record, which no server answer will ever give. The counter is how `fetchMe`
+ * recognises such an answer and asks again instead of applying it.
+ */
+export function recordSessionRevision(): number {
+  seed();
+  return revision;
 }
 
 export function subscribeToRecordSessionTransition(

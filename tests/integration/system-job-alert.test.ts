@@ -62,6 +62,7 @@ async function runOnce(
   outcome: "fail" | "complete",
   userId = "u",
   retryLimit = 0,
+  output: Record<string, unknown> = { ok: true },
 ) {
   const id = await boss.send(
     queue,
@@ -80,7 +81,7 @@ async function runOnce(
         new Error(`canceling statement due to statement timeout (${userId})`),
       );
     } else {
-      await boss.complete(queue, job.id, { ok: true });
+      await boss.complete(queue, job.id, output);
       return;
     }
   }
@@ -191,6 +192,21 @@ describe("notifySystemJobFailures", () => {
     const outcome = await notifySystemJobFailures();
     expect(outcome.failing).toBe(0);
     expect(outcome.sent).toEqual([]);
+  });
+
+  it("lets a run that attempted nobody neither end nor extend the streak (#1384)", async () => {
+    await makeUser({ role: "ADMIN" });
+    // What the briefing pass writes on a night every provider was paused.
+    const benched = {
+      ok: true,
+      did: { all_failed: false, run_attempted: 0, skipped: 1 },
+    };
+    await runOnce(SYSTEM_QUEUE, "fail");
+    await runOnce(SYSTEM_QUEUE, "fail");
+    await runOnce(SYSTEM_QUEUE, "complete", "u", 0, benched);
+    expect((await notifySystemJobFailures()).failing).toBe(0);
+    await runOnce(SYSTEM_QUEUE, "fail");
+    expect((await notifySystemJobFailures()).failing).toBe(1);
   });
 
   it("counts a job that used up its retries as one failure", async () => {

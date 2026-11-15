@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.47.6] — 2026-11-15
+
 ### Added
 
 - **A note on a medication.** Directions such as "30 to 60 minutes before
@@ -42,11 +44,35 @@
   links the help page. Brave keeps push messaging off by default, so in
   Brave the message names the setting to turn on: "Use Google services
   for push messaging" under brave://settings/privacy. (Discussion #1378)
-- **Illness episode onset dates keep the intended calendar day.**
-  Creating a new illness episode in the morning was refused because its noon
-  default was rejected as in the future, and onset dates could display as the
-  wrong calendar day in non-UTC time zones. Saving now anchors to the current
-  time when before local noon and preserves stored timestamps on edit.
+- **Illness episodes can be added in the morning.** The form sent the
+  start date as noon, which before noon is still in the future, so the
+  save was refused. Start and end dates now also stay on the day you
+  picked when your time zone is far from UTC, and editing an episode
+  keeps the times you saved. (#1376)
+- **No nightly "job still failing" alert over an AI provider that cannot
+  answer.** An account that still had a provider saved whose key the
+  provider refused (removing the key from a Local or OpenAI-compatible
+  provider keeps its address, so it is still called), or whose providers
+  HealthLog had paused after repeated errors, counted as a failed
+  briefing every night. On an instance with one account that read as a
+  broken job. A refused key of the account's own is now noted but no
+  longer fails the run; a refused shared server key still does. An
+  account whose providers are all paused is skipped, since nothing was
+  sent. The Background jobs card on the admin status page now lists the
+  same runs the alert counts, and both say in words what failed and
+  which provider. (#1384)
+- **Switching records with HealthLog open in a second tab.** Switching
+  into or out of a shared record could leave both tabs on the loading
+  spinner, and a reload within the next half minute did not help. An
+  account check the switching tab had started just before the switch
+  could answer for the record being left and undo the switch the other
+  tabs were waiting for. Such an answer is now thrown away and asked
+  again.
+- **Charts no longer jump while they load.** The placeholder of every
+  chart that links its days was 20 px taller than the chart it turned
+  into (40 px on a phone), and the mood chart's placeholder was about
+  30 px shorter, so the dashboard and the metric pages shifted under you
+  when the charts arrived.
 
 ### Security
 

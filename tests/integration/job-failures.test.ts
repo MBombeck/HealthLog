@@ -126,6 +126,41 @@ describe("readFailingQueues", () => {
     await expect(readFailingQueues()).resolves.toEqual([]);
   });
 
+  // #1384 — the repeated-failure alert counts a nightly pass that completed
+  // with every account failed, and sent the operator to this page, which
+  // listed only pg-boss failures and said nothing had failed.
+  it("lists a run that completed with every account failed, in words, and not a good run", async () => {
+    const ALL_FAILED_QUEUE = "insight-pregenerate";
+    await boss.createQueue(ALL_FAILED_QUEUE);
+    async function completeOne(did: Record<string, unknown>) {
+      const jobId = await boss.send(ALL_FAILED_QUEUE, {}, { retryLimit: 0 });
+      const [job] = await boss.fetch(ALL_FAILED_QUEUE);
+      if (!job || job.id !== jobId) throw new Error("nothing to fetch");
+      await boss.complete(ALL_FAILED_QUEUE, job.id, { ok: true, did });
+    }
+    // A good night, and the night from the report: one account, one failure.
+    await completeOne({ total: 1, generated: 1, failed: 0, all_failed: false });
+    await completeOne({
+      total: 1,
+      generated: 0,
+      failed: 1,
+      all_failed: true,
+      assessments_warmed: 0,
+      failure_cause: "all_providers_failed",
+      failure_provider: "openai_compatible",
+    });
+
+    const failing = await readFailingQueues();
+    const entry = failing?.find((e) => e.queue === ALL_FAILED_QUEUE);
+    expect(entry?.failures).toBe(1);
+    expect(entry?.lastError).toBe(
+      "The run completed, but every account it attempted failed (1 of 1). " +
+        "First cause: all_providers_failed from provider openai_compatible. " +
+        "Accounts without a usable provider are skipped and not counted; " +
+        "job.run.failed in the app log lists each account's outcome.",
+    );
+  });
+
   it("ignores a failure older than the window", async () => {
     await failOneJob(QUEUE, { userId: "user-a" }, "old failure");
     await getPrismaClient().$executeRawUnsafe(
@@ -230,6 +265,19 @@ describe("readConsecutiveRunFailures (v1.42)", () => {
     await finishedMinutesAgo(await completeOneJob({ all_failed: true }), 10);
 
     // Two earlier failures plus the run failing now.
+    await expect(readConsecutiveRunFailures(STREAK_QUEUE)).resolves.toBe(3);
+  });
+
+  it("steps over a night that attempted nobody instead of ending the streak (#1384)", async () => {
+    await boss.createQueue(STREAK_QUEUE);
+    // Failed, then every provider paused (nothing attempted), then failed.
+    await finishedMinutesAgo(await completeOneJob({ all_failed: true }), 30);
+    await finishedMinutesAgo(
+      await completeOneJob({ all_failed: false, run_attempted: 0 }),
+      20,
+    );
+    await finishedMinutesAgo(await completeOneJob({ all_failed: true }), 10);
+
     await expect(readConsecutiveRunFailures(STREAK_QUEUE)).resolves.toBe(3);
   });
 
