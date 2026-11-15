@@ -17,7 +17,7 @@
 # future change to one of the stages cannot pair them wrongly.
 
 # ── Stage 1: Dependencies ──────────────────────────────────
-FROM node:22-trixie-slim@sha256:be1e2a3dc2c4fd68cdfadad2a696a280e0d2749098bee509230174d72fb768c6 AS deps
+FROM node:22-trixie-slim@sha256:68c76cfad89921b927eae28ba21407475e29d0ce450afcdbe70c1532db042b64 AS deps
 RUN corepack enable && corepack prepare pnpm@11.15.1 --activate
 WORKDIR /app
 
@@ -29,7 +29,7 @@ COPY scripts/prepare.mjs scripts/prepare.mjs
 RUN pnpm install --frozen-lockfile --prod=false
 
 # ── Stage 2: Build ─────────────────────────────────────────
-FROM node:22-trixie-slim@sha256:be1e2a3dc2c4fd68cdfadad2a696a280e0d2749098bee509230174d72fb768c6 AS builder
+FROM node:22-trixie-slim@sha256:68c76cfad89921b927eae28ba21407475e29d0ce450afcdbe70c1532db042b64 AS builder
 RUN corepack enable && corepack prepare pnpm@11.15.1 --activate
 WORKDIR /app
 
@@ -127,7 +127,7 @@ RUN node scripts/verify-message-catalogs.mjs --dir messages \
 # npm install never reads. Rebuilding this install both ways confirms it:
 # without the two fields below npm resolves 1.19.11 and 1.2.0, with them it
 # resolves 1.19.17 and 1.4.2, and `prisma --version` still reports 7.8.0.
-FROM node:22-trixie-slim@sha256:be1e2a3dc2c4fd68cdfadad2a696a280e0d2749098bee509230174d72fb768c6 AS prisma-cli
+FROM node:22-trixie-slim@sha256:68c76cfad89921b927eae28ba21407475e29d0ce450afcdbe70c1532db042b64 AS prisma-cli
 RUN mkdir -p /opt/prisma-cli && \
     cd /opt/prisma-cli && \
     npm init -y && \
@@ -136,7 +136,7 @@ RUN mkdir -p /opt/prisma-cli && \
     npm pkg set 'overrides.@hono/node-server=^2.1.3' && \
     npm pkg set 'overrides.valibot=^1.4.2' && \
     npm pkg set 'allowScripts.@prisma/engines=true' 'allowScripts.prisma=true' 'allowScripts.esbuild=true' --json && \
-    npm install --omit=dev prisma@7.10.1 @prisma/engines@7.10.1 tsx@4.23.1 dotenv@18.0.9 --no-fund --no-audit
+    npm install --omit=dev prisma@7.10.1 @prisma/engines@7.10.1 tsx@4.23.1 dotenv@18.0.10 --no-fund --no-audit
 
 # ── Stage 4: PostgreSQL client ─────────────────────────────
 # pg_dump and pg_restore of the bundled database's major, taken from the
@@ -150,7 +150,7 @@ RUN mkdir -p /opt/prisma-cli && \
 # does for the bundled database. The libpq file is found through the loader
 # rather than by an architecture path, so the step is the same on amd64 and
 # arm64.
-FROM postgres:18.6-trixie@sha256:3a4264520e121176619f54ff867d12774bc81e95e7b84db58d63bccdb6144b81 AS pgclient
+FROM postgres:18.6-trixie@sha256:e3d24f6906d0760bf4da0dae872415391ededefad23fd471c47dc53b0ddf3c42 AS pgclient
 RUN set -eu; \
     mkdir -p /out/bin /out/lib; \
     cp /usr/lib/postgresql/18/bin/pg_dump /usr/lib/postgresql/18/bin/pg_restore /out/bin/; \
@@ -159,7 +159,7 @@ RUN set -eu; \
     cp -L "$LIBPQ" /out/lib/libpq.so.5
 
 # ── Stage 5: Production runner ─────────────────────────────
-FROM node:22-trixie-slim@sha256:be1e2a3dc2c4fd68cdfadad2a696a280e0d2749098bee509230174d72fb768c6 AS runner
+FROM node:22-trixie-slim@sha256:68c76cfad89921b927eae28ba21407475e29d0ce450afcdbe70c1532db042b64 AS runner
 # The package managers the base ships (npm, npx, corepack, yarn) go first.
 # Nothing at runtime installs a package, and the bundled npm carried the only
 # HIGH findings with a fix the image scan reported. Removed in a later layer,

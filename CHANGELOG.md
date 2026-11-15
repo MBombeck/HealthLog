@@ -2,9 +2,21 @@
 
 ## [Unreleased]
 
+### Changed
+
+- API responses and CSV or JSON exports now go out gzip-compressed when the
+  browser or app asks for it, which comes with Next.js 16.4.6. The live Coach
+  and document chat streams are left uncompressed, so their text still
+  arrives as it is written.
+
 ### Fixed
 
 - A lab marker created from a text result, such as "negative" on a scanned report or a CSV row without a unit, can be edited again. It opens with "No unit" ticked, a rename saves without touching the unit, and the unit can be set while the marker holds only text results. The unit stays locked once numbers are stored under it, and writing the same unit another way (`mg/dl` for `mg/dL`) no longer counts as a change. (#1393)
+
+### Security
+
+- The container image moves to Node 22.23.5, a security release with fixes
+  in HTTP, HTTP/2 and TLS handling (CVE-2026-123863 and others).
 
 ## [1.47.6] — 2026-11-15
 

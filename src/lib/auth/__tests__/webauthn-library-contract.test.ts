@@ -791,6 +791,10 @@ describe("stored credentials", () => {
       userVerified: info.userVerified,
       origin: info.origin,
       rpID: info.rpID,
+      // Filled only when a FIDO metadata service has been initialised, which
+      // downloads from the FIDO Alliance. HealthLog never initialises one, so
+      // registration stays offline and this stays undefined.
+      passkeyProviderMetadata: info.passkeyProviderMetadata ?? "absent",
       registrationInfoKeys: Object.keys(info).sort(),
     }).toMatchInlineSnapshot(`
       {
@@ -802,6 +806,7 @@ describe("stored credentials", () => {
         "credentialType": "public-key",
         "fmt": "none",
         "origin": "https://health.example.test",
+        "passkeyProviderMetadata": "absent",
         "publicKeyHex": "a50102032620012158202a40dff8de2ee1ba264ae10e05136e3933839a3bf5a24fb40672a2fb90bccf722258205508587675cda220cac807aa2bb93596dc3ce76590eb728fab4d00dbda17d4b4",
         "registrationInfoKeys": [
           "aaguid",
@@ -813,6 +818,7 @@ describe("stored credentials", () => {
           "credentialType",
           "fmt",
           "origin",
+          "passkeyProviderMetadata",
           "rpID",
           "userVerified",
         ],
