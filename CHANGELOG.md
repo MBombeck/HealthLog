@@ -47,6 +47,12 @@
   default was rejected as in the future, and onset dates could display as the
   wrong calendar day in non-UTC time zones. Saving now anchors to the current
   time when before local noon and preserves stored timestamps on edit.
+- **Opening a record with the app open in a second tab.** Switching into or
+  out of a shared record could leave both tabs on the loading spinner, and a
+  reload within the next half minute did not help. An account check the
+  switching tab had started a moment before the switch could answer with the
+  record being left and overwrite the switch the other tabs were waiting on.
+  Such an answer is now discarded and asked again.
 
 ### Security
 
