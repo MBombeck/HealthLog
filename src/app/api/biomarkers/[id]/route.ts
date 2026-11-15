@@ -24,6 +24,7 @@ import { serialiseBiomarker } from "@/lib/labs/biomarker-dto";
 import { mergedInto } from "@/lib/labs/biomarker-merge";
 import { encryptContextToBytes } from "@/lib/labs/biomarker-store";
 import { matchAnalyteKey } from "@/lib/labs/analyte-match";
+import { sameLabUnit } from "@/lib/labs/unit-normalise";
 import { annotate } from "@/lib/logging/context";
 import { computeLabTrend } from "@/lib/labs/lab-trend";
 
@@ -160,14 +161,20 @@ export const PUT = apiHandler(
       }
     }
 
-    // A marker's unit labels every reading linked to it: readers resolve the
+    // A marker's unit labels every number linked to it: readers resolve the
     // unit from the marker, and the stored numbers are in the old unit. A
-    // change while readings exist would relabel history without converting a
-    // single value, so it is refused. Tombstoned readings count too, since an
-    // undo brings them back under the new label.
-    if (d.unit !== undefined && d.unit !== existing.unit) {
+    // change while numeric readings exist would relabel history without
+    // converting a single value, so it is refused. Tombstoned readings count
+    // too, since an undo brings them back under the new label.
+    //
+    // Only a real change is one: another spelling of the same unit relabels
+    // nothing. And only numbers lock it: a text result ("negative") carries
+    // no value the unit could misstate. That is what frees a marker minted
+    // from a text result, whose empty unit nothing has chosen yet (#1393);
+    // its first number would have set the unit the same way.
+    if (d.unit !== undefined && !sameLabUnit(d.unit, existing.unit)) {
       const readingCount = await prisma.labResult.count({
-        where: { userId: user.id, biomarkerId: id },
+        where: { userId: user.id, biomarkerId: id, value: { not: null } },
       });
       if (readingCount > 0) {
         annotate({

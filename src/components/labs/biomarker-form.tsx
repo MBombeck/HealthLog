@@ -26,7 +26,7 @@ import {
 } from "@/lib/labs/biomarker-catalog";
 import { useTranslations } from "@/lib/i18n/context";
 
-import { buildBiomarkerBody } from "./biomarker-form-body";
+import { buildBiomarkerBody, formUnit } from "./biomarker-form-body";
 import { BiomarkerPanelField } from "./biomarker-panel-field";
 import { LabUnitInput } from "./lab-unit-input";
 import type { BiomarkerDto } from "./types";
@@ -76,7 +76,7 @@ export function BiomarkerForm({
   const unitHintId = `${formId}-unit-hint`;
 
   const [name, setName] = useState(existing?.name ?? "");
-  const [unit, setUnit] = useState(existing?.unit ?? "");
+  const [unit, setUnit] = useState(existing ? formUnit(existing.unit) : "");
   const [lower, setLower] = useState(
     existing?.lowerBound != null ? String(existing.lowerBound) : "",
   );

@@ -216,6 +216,127 @@ describe("PUT /api/biomarkers/{id} — unit lock (real Postgres)", () => {
   });
 });
 
+/**
+ * #1393 — a marker minted from a text result ("negative", "SEE NOTE") has an
+ * empty unit: none has been chosen yet, and the first numeric reading gives
+ * it one. The lock guards numbers stored in a unit, so it never fires on such
+ * a marker, and a rename or a spelling of the same unit never trips it.
+ */
+async function seedTextMarker(name: string) {
+  const prisma = getPrismaClient();
+  const marker = await prisma.biomarker.create({
+    data: { userId: USER_ID, name, unit: "" },
+  });
+  await prisma.labResult.create({
+    data: {
+      userId: USER_ID,
+      biomarkerId: marker.id,
+      analyte: name,
+      unit: "",
+      valueText: "negative",
+      takenAt: new Date("2026-06-20T08:00:00.000Z"),
+    },
+  });
+  return marker;
+}
+
+describe("PUT /api/biomarkers/{id} — a marker without a unit (#1393)", () => {
+  it("renames a marker minted from a text result and keeps its empty unit", async () => {
+    const { PUT } = await import("@/app/api/biomarkers/[id]/route");
+    const marker = await seedTextMarker("Urine protein");
+
+    const res = await PUT(
+      putReq(marker.id, { name: "Protein (urine)" }),
+      params(marker.id),
+    );
+
+    expect(res.status).toBe(200);
+    const row = await getPrismaClient().biomarker.findUniqueOrThrow({
+      where: { id: marker.id },
+    });
+    expect(row.name).toBe("Protein (urine)");
+    expect(row.unit).toBe("");
+  });
+
+  it("lets a text-only marker take the unity, since no number is stored in its unit", async () => {
+    const { PUT } = await import("@/app/api/biomarkers/[id]/route");
+    const marker = await seedTextMarker("Nitrite");
+
+    const res = await PUT(
+      putReq(marker.id, { name: "Nitrite (urine)", unit: "1" }),
+      params(marker.id),
+    );
+
+    expect(res.status).toBe(200);
+    const row = await getPrismaClient().biomarker.findUniqueOrThrow({
+      where: { id: marker.id },
+    });
+    expect(row.name).toBe("Nitrite (urine)");
+    expect(row.unit).toBe("1");
+  });
+
+  it("lets a text-only marker take a real unit", async () => {
+    const { PUT } = await import("@/app/api/biomarkers/[id]/route");
+    const marker = await seedTextMarker("Glucose (urine)");
+
+    const res = await PUT(
+      putReq(marker.id, { unit: "mg/dL" }),
+      params(marker.id),
+    );
+
+    expect(res.status).toBe(200);
+    const row = await getPrismaClient().biomarker.findUniqueOrThrow({
+      where: { id: marker.id },
+    });
+    expect(row.unit).toBe("mg/dL");
+  });
+
+  it("accepts another spelling of the stored unit while numbers are linked", async () => {
+    const { PUT } = await import("@/app/api/biomarkers/[id]/route");
+    const marker = await seedMarkerWithReadings(USER_ID, "Cholesterol");
+
+    const res = await PUT(
+      putReq(marker.id, { name: "Total cholesterol", unit: "mg/dl" }),
+      params(marker.id),
+    );
+
+    expect(res.status).toBe(200);
+    const row = await getPrismaClient().biomarker.findUniqueOrThrow({
+      where: { id: marker.id },
+    });
+    expect(row.name).toBe("Total cholesterol");
+  });
+
+  it("still locks a real change and counts only the numeric readings", async () => {
+    const { PUT } = await import("@/app/api/biomarkers/[id]/route");
+    const prisma = getPrismaClient();
+    const marker = await seedMarkerWithReadings(USER_ID, "Albumin");
+    await prisma.labResult.create({
+      data: {
+        userId: USER_ID,
+        biomarkerId: marker.id,
+        analyte: "Albumin",
+        unit: "",
+        valueText: "SEE NOTE",
+        takenAt: new Date("2026-04-20T08:00:00.000Z"),
+      },
+    });
+
+    const res = await PUT(putReq(marker.id, { unit: "1" }), params(marker.id));
+
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.meta).toMatchObject({
+      errorCode: "biomarkers.unit.locked",
+      readingCount: 2,
+    });
+    const row = await prisma.biomarker.findUniqueOrThrow({
+      where: { id: marker.id },
+    });
+    expect(row.unit).toBe("mg/dL");
+  });
+});
+
 describe("DELETE /api/biomarkers/{id} (real Postgres)", () => {
   it("drops the marker together with its readings", async () => {
     const { DELETE } = await import("@/app/api/biomarkers/[id]/route");
