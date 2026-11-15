@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Changed
+
+- API responses and CSV or JSON exports now go out gzip-compressed when the
+  browser or app asks for it, which comes with Next.js 16.4.6. The live Coach
+  and document chat streams are left uncompressed, so their text still
+  arrives as it is written.
+
 ### Security
 
 - The container image moves to Node 22.23.5, a security release with fixes

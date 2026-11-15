@@ -217,8 +217,15 @@ async function attemptCount(page: Page): Promise<number> {
  * sync-from-server shape, no effect involved. A value typed into the input
  * before that copy runs is silently replaced by the server's, so the save that
  * follows persists an empty field and the next request is refused for a reason
- * that points nowhere near the test. Waiting for the two reads is what makes
- * the copy already done rather than pending.
+ * that points nowhere near the test.
+ *
+ * Waiting for the two reads alone is not enough. Playwright settles a
+ * response on its headers, and the body can follow later: API responses are
+ * compressed, and the compressed body reaches the socket only after a round
+ * through zlib on the thread pool, which a loaded runner can hold up. The copy
+ * runs only once the body is parsed. Each card keeps its enable switch
+ * disabled until its read has landed and does the copy in that same render,
+ * so an enabled switch is the signal that the seed is in the input.
  */
 async function openChannels(page: Page): Promise<void> {
   const seeded = ["/api/settings/email", "/api/settings/ntfy"].map((endpoint) =>
@@ -231,6 +238,8 @@ async function openChannels(page: Page): Promise<void> {
   await page.goto("/settings/integrations", { waitUntil: "domcontentloaded" });
   await expect(page.locator(CHANNELS_PANEL)).toBeVisible({ timeout: 30_000 });
   await Promise.all(seeded);
+  await expect(page.locator("#email-toggle")).toBeEnabled();
+  await expect(page.locator("#ntfy-toggle")).toBeEnabled();
 }
 
 /**
