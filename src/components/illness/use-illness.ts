@@ -176,16 +176,11 @@ export function useCreateEpisode() {
 }
 
 /** Edit an episode (partial). */
-export function useUpdateEpisode() {
+export function useUpdateEpisode(id?: string) {
   const invalidate = useInvalidateIllness();
   return useMutation({
-    mutationFn: ({
-      id,
-      input,
-    }: {
-      id: string;
-      input: IllnessEpisodeUpdateInput;
-    }) => apiPatch<IllnessEpisodeDTO>(`/api/illness/episodes/${id}`, input),
+    mutationFn: (input: IllnessEpisodeUpdateInput) =>
+      apiPatch<IllnessEpisodeDTO>(`/api/illness/episodes/${id}`, input),
     onSuccess: invalidate,
   });
 }

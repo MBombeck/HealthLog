@@ -3,7 +3,7 @@
  * episode schemas. An episode can never resolve before it began; the schema
  * `superRefine` rejects an inverted window when both instants are supplied
  * (a partial edit touching only one is checked against the stored row in the
- * route).
+ * route). Instants are compared at millisecond precision via Date.parse.
  */
 import { describe, expect, it } from "vitest";
 import {
@@ -49,6 +49,24 @@ describe("illnessEpisodeCreateSchema — window invariant", () => {
     });
     expect(out.success).toBe(true);
   });
+
+  it.each([
+    ["after", "2026-01-10T11:00:00Z", true],
+    ["before", "2026-01-10T09:00:00Z", false],
+    ["equal", "2026-01-10T10:00:00Z", true],
+  ])(
+    "compares mixed Z/offset instants correctly (%s)",
+    (_, resolvedAt, expected) => {
+      // 19:00:00+09:00 is 10:00:00Z
+      const out = illnessEpisodeCreateSchema.safeParse({
+        label: "Cold",
+        type: "INFECTION",
+        onsetAt: "2026-01-10T19:00:00+09:00",
+        resolvedAt,
+      });
+      expect(out.success).toBe(expected);
+    },
+  );
 });
 
 describe("illnessEpisodeUpdateSchema — window invariant", () => {

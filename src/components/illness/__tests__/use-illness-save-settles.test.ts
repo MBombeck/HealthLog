@@ -49,7 +49,7 @@ import {
 describe("episode saves", () => {
   it.each([
     ["create", () => useCreateEpisode()],
-    ["update", () => useUpdateEpisode()],
+    ["update", () => useUpdateEpisode("e1")],
     ["resolve", () => useResolveEpisode()],
     ["delete", () => useDeleteEpisode()],
     ["restore", () => useRestoreEpisode()],

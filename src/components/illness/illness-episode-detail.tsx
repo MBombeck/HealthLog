@@ -24,7 +24,12 @@ import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RevealWhenSettled } from "@/components/ui/reveal-when-settled";
-import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import {
+  useDisplayTimezone,
+  useTranslations,
+  useFormatters,
+} from "@/lib/i18n/context";
+import { useTodayKey } from "@/components/day/use-today-key";
 import { bodySiteText } from "@/components/encounters/encounter-labels";
 import { canReadBodySites } from "@/hooks/use-body-sites";
 
@@ -34,15 +39,7 @@ import { LogDaySheet, useLastLoggableDay } from "./log-day-sheet";
 import { NewEpisodeSheet } from "./new-episode-sheet";
 import { EpisodeMenu } from "./episode-menu";
 import { useIllnessEpisode, useResolveEpisode } from "./use-illness";
-
-/** Today as YYYY-MM-DD in the viewer's local calendar. */
-function todayLocal(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
+import { toLocalDateKey } from "./dates";
 
 export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
   const { t } = useTranslations();
@@ -65,7 +62,8 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
 
   const [logOpen, setLogOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const today = todayLocal();
+  const today = useTodayKey();
+  const timeZone = useDisplayTimezone();
   const logLastDay = useLastLoggableDay(today, episode?.resolvedAt);
 
   if (isError) {
@@ -228,7 +226,7 @@ export function IllnessEpisodeDetail({ episodeId }: { episodeId: string }) {
             onOpenChange={setLogOpen}
             episodeId={episode.id}
             date={logLastDay}
-            onsetDate={episode.onsetAt.slice(0, 10)}
+            onsetDate={toLocalDateKey(episode.onsetAt, timeZone)}
           />
           <NewEpisodeSheet
             open={editOpen}

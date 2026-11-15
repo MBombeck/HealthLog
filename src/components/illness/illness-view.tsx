@@ -39,7 +39,12 @@ import { PageHeader } from "@/components/ui/page-header";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useTranslations, useFormatters } from "@/lib/i18n/context";
+import {
+  useDisplayTimezone,
+  useTranslations,
+  useFormatters,
+} from "@/lib/i18n/context";
+import { useTodayKey } from "@/components/day/use-today-key";
 import { applyOrder, useModuleListPrefs } from "@/lib/module-list-prefs";
 
 import { LogDaySheet, useLastLoggableDay } from "./log-day-sheet";
@@ -49,16 +54,8 @@ import { IllnessInsightsCard } from "./illness-insights-card";
 import { SymptomsSection } from "@/components/symptoms/symptoms-section";
 import { groupEpisodes } from "./group-episodes";
 import { useIllnessEpisodes, useResolveEpisode } from "./use-illness";
+import { toLocalDateKey } from "./dates";
 import type { IllnessEpisodeDTO } from "./types";
-
-/** Today as a YYYY-MM-DD string in the viewer's local calendar. */
-function todayLocal(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
 
 /**
  * The flares and recurring bouts filed under a condition, inside its card or
@@ -376,7 +373,8 @@ export function IllnessView() {
   const resolve = useResolveEpisode();
   const { prefs } = useModuleListPrefs("illness");
 
-  const today = todayLocal();
+  const today = useTodayKey();
+  const timeZone = useDisplayTimezone();
   const [newOpen, setNewOpen] = useState(false);
   const [editEpisode, setEditEpisode] = useState<IllnessEpisodeDTO | null>(
     null,
@@ -534,7 +532,11 @@ export function IllnessView() {
           }}
           episodeId={logEpisodeId}
           date={logLastDay}
-          onsetDate={logEpisode?.onsetAt.slice(0, 10)}
+          onsetDate={
+            logEpisode
+              ? toLocalDateKey(logEpisode.onsetAt, timeZone)
+              : undefined
+          }
         />
       ) : null}
     </div>
