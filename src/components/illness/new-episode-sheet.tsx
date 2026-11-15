@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useTranslations } from "@/lib/i18n/context";
+import { useDisplayTimezone, useTranslations } from "@/lib/i18n/context";
 import {
   BodySiteFields,
   type BodySiteSideValue,
@@ -32,6 +32,7 @@ import {
   useIllnessEpisodes,
   useUpdateEpisode,
 } from "./use-illness";
+import { resolveEpisodeWindow, toLocalDateKey } from "./dates";
 import type { IllnessEpisodeDTO, IllnessLifecycle, IllnessType } from "./types";
 
 const TYPES: IllnessType[] = [
@@ -57,14 +58,20 @@ const PARENTABLE: IllnessLifecycle[] = ["FLARE", "RECURRING"];
 const NONE = "__none__";
 
 /** What the form opens with: the edited episode, or a new one from today. */
-function episodeForm(episode: IllnessEpisodeDTO | undefined, today: string) {
+function episodeForm(
+  episode: IllnessEpisodeDTO | undefined,
+  today: string,
+  timeZone: string,
+) {
   return {
     label: episode?.label ?? "",
     type: episode?.type ?? ("INFECTION" as IllnessType),
     lifecycle: episode?.lifecycle ?? ("ACUTE" as IllnessLifecycle),
-    onset: episode ? episode.onsetAt.slice(0, 10) : today,
-    resolved: episode?.resolvedAt ? episode.resolvedAt.slice(0, 10) : "",
-    parentId: episode?.parentConditionId ?? NONE,
+    onset: episode ? toLocalDateKey(episode.onsetAt, timeZone) : today,
+    resolved: episode?.resolvedAt
+      ? toLocalDateKey(episode.resolvedAt, timeZone)
+      : "",
+    parentId: episode?.parentConditionId ?? null,
     note: episode?.note ?? "",
     bodySite: episode?.bodySite ?? "",
     laterality: (episode?.laterality ?? null) as BodySiteSideValue,
@@ -86,27 +93,26 @@ export function NewEpisodeSheet({
   editEpisode,
 }: NewEpisodeSheetProps) {
   const { t } = useTranslations();
+  const timeZone = useDisplayTimezone();
   const create = useCreateEpisode();
-  const update = useUpdateEpisode();
+  const update = useUpdateEpisode(editEpisode?.id);
   const isEdit = editEpisode !== undefined;
   const pending = create.isPending || update.isPending;
-  const isError = create.isError || update.isError;
+  const [saveError, setSaveError] = useState(false);
 
   // Candidate parents: live episodes other than the one being edited.
   const { data: allEpisodes } = useIllnessEpisodes(true);
-  const parentCandidates = (allEpisodes ?? []).filter(
-    (e) => e.id !== editEpisode?.id,
-  );
+  const parentCandidates =
+    allEpisodes?.filter((e) => e.id !== editEpisode?.id) ?? [];
 
   const [label, setLabel] = useState("");
   const [type, setType] = useState<IllnessType>("INFECTION");
   const [lifecycle, setLifecycle] = useState<IllnessLifecycle>("ACUTE");
   const [onset, setOnset] = useState(today);
-  // Resolved/end date — "" means the episode is still ongoing (open-ended).
-  // Backdating both onset and this end date lets a whole past episode be
-  // recorded after the fact.
+  // Resolved/end date — "" means ongoing (open-ended). Backdating both onset
+  // and this end date lets a whole past episode be recorded after the fact.
   const [resolved, setResolved] = useState("");
-  const [parentId, setParentId] = useState<string>(NONE);
+  const [parentId, setParentId] = useState<string | null>(null);
   const [note, setNote] = useState("");
   // v1.39.2 — where on the body. Offered on every type: an injury or a joint
   // condition is the usual case, but nothing about a type rules a site out.
@@ -117,9 +123,11 @@ export function NewEpisodeSheet({
   // render keyed on the open transition (React's recommended alternative to a
   // setState-in-effect).
   const [wasOpen, setWasOpen] = useState(false);
-  const [seed, setSeed] = useState(() => episodeForm(editEpisode, today));
+  const [seed, setSeed] = useState(() =>
+    episodeForm(editEpisode, today, timeZone),
+  );
   if (open && !wasOpen) {
-    const next = episodeForm(editEpisode, today);
+    const next = episodeForm(editEpisode, today, timeZone);
     setWasOpen(true);
     setSeed(next);
     setLabel(next.label);
@@ -131,8 +139,10 @@ export function NewEpisodeSheet({
     setNote(next.note);
     setBodySite(next.bodySite);
     setLaterality(next.laterality);
+    setSaveError(false);
   } else if (!open && wasOpen) {
     setWasOpen(false);
+    setSaveError(false);
   }
   const form = {
     label,
@@ -154,45 +164,37 @@ export function NewEpisodeSheet({
   const endBeforeStart = resolved !== "" && resolved < onset;
 
   async function handleSave() {
-    if (label.trim() === "" || endBeforeStart) return;
-    const onsetAt = new Date(`${onset}T12:00:00`).toISOString();
-    // "" ⇒ ongoing (null clears any stored end). Anchor to local noon so the
-    // UTC instant lands on the intended calendar day regardless of offset.
-    const resolvedAt =
-      resolved === "" ? null : new Date(`${resolved}T12:00:00`).toISOString();
-    const parentConditionId = showParent && parentId !== NONE ? parentId : null;
+    if (pending || label.trim() === "" || onset === "" || endBeforeStart)
+      return;
+    setSaveError(false);
+    const now = new Date();
+    const { onsetAt, resolvedAt } = resolveEpisodeWindow({
+      onset,
+      resolved,
+      storedOnset: editEpisode?.onsetAt,
+      storedResolved: editEpisode?.resolvedAt,
+      now,
+      timeZone,
+    });
+    const payload = {
+      label: label.trim(),
+      type,
+      lifecycle,
+      onsetAt,
+      resolvedAt,
+      parentConditionId: showParent ? parentId : null,
+      note: note.trim() === "" ? null : note,
+      bodySite: bodySite.trim() || null,
+      laterality,
+    };
     try {
-      if (isEdit && editEpisode) {
-        await update.mutateAsync({
-          id: editEpisode.id,
-          input: {
-            label: label.trim(),
-            type,
-            lifecycle,
-            onsetAt,
-            resolvedAt,
-            parentConditionId,
-            note: note.trim() === "" ? null : note,
-            bodySite: bodySite.trim() || null,
-            laterality,
-          },
-        });
-      } else {
-        await create.mutateAsync({
-          label: label.trim(),
-          type,
-          lifecycle,
-          onsetAt,
-          resolvedAt,
-          parentConditionId,
-          note: note.trim() === "" ? null : note,
-          bodySite: bodySite.trim() || null,
-          laterality,
-        });
-      }
+      await (isEdit && editEpisode
+        ? update.mutateAsync(payload)
+        : create.mutateAsync(payload));
       onOpenChange(false);
     } catch {
       // Keep the sheet open; the error strip reports it.
+      setSaveError(true);
     }
   }
 
@@ -212,7 +214,9 @@ export function NewEpisodeSheet({
           </Button>
           <Button
             onClick={handleSave}
-            disabled={pending || label.trim() === "" || endBeforeStart}
+            disabled={
+              pending || label.trim() === "" || onset === "" || endBeforeStart
+            }
           >
             {t("common.save")}
           </Button>
@@ -280,7 +284,10 @@ export function NewEpisodeSheet({
         {showParent ? (
           <div className="space-y-1.5">
             <Label htmlFor="illness-parent">{t("illness.new.parent")}</Label>
-            <Select value={parentId} onValueChange={setParentId}>
+            <Select
+              value={parentId ?? NONE}
+              onValueChange={(v) => setParentId(v === NONE ? null : v)}
+            >
               <SelectTrigger id="illness-parent" className="w-full">
                 <SelectValue placeholder={t("illness.new.parentNone")} />
               </SelectTrigger>
@@ -348,7 +355,7 @@ export function NewEpisodeSheet({
           />
         </div>
 
-        {isError ? (
+        {saveError ? (
           <p className="text-destructive text-sm" role="alert">
             {t("illness.new.saveError")}
           </p>

@@ -42,6 +42,11 @@
   links the help page. Brave keeps push messaging off by default, so in
   Brave the message names the setting to turn on: "Use Google services
   for push messaging" under brave://settings/privacy. (Discussion #1378)
+- **Illness episode onset dates keep the intended calendar day.**
+  Creating a new illness episode in the morning was refused because its noon
+  default was rejected as in the future, and onset dates could display as the
+  wrong calendar day in non-UTC time zones. Saving now anchors to the current
+  time when before local noon and preserves stored timestamps on edit.
 
 ### Security
 

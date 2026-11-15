@@ -84,7 +84,11 @@ export const illnessEpisodeCreateSchema = z
   // server-side when omitted, so the invariant only bites when BOTH instants
   // are supplied (the inverted-window case).
   .superRefine((v, ctx) => {
-    if (v.resolvedAt && v.onsetAt && v.resolvedAt < v.onsetAt) {
+    if (
+      v.resolvedAt &&
+      v.onsetAt &&
+      Date.parse(v.resolvedAt) < Date.parse(v.onsetAt)
+    ) {
       ctx.addIssue({
         code: "custom",
         path: ["resolvedAt"],
@@ -116,7 +120,11 @@ export const illnessEpisodeUpdateSchema = z
   // parse time. A partial edit touching only one is validated against the
   // stored value in the route (it must load the row anyway).
   .superRefine((v, ctx) => {
-    if (v.resolvedAt && v.onsetAt && v.resolvedAt < v.onsetAt) {
+    if (
+      v.resolvedAt &&
+      v.onsetAt &&
+      Date.parse(v.resolvedAt) < Date.parse(v.onsetAt)
+    ) {
       ctx.addIssue({
         code: "custom",
         path: ["resolvedAt"],
