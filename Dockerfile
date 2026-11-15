@@ -136,7 +136,7 @@ RUN mkdir -p /opt/prisma-cli && \
     npm pkg set 'overrides.@hono/node-server=^2.1.3' && \
     npm pkg set 'overrides.valibot=^1.4.2' && \
     npm pkg set 'allowScripts.@prisma/engines=true' 'allowScripts.prisma=true' 'allowScripts.esbuild=true' --json && \
-    npm install --omit=dev prisma@7.10.1 @prisma/engines@7.10.1 tsx@4.23.1 dotenv@18.0.9 --no-fund --no-audit
+    npm install --omit=dev prisma@7.10.1 @prisma/engines@7.10.1 tsx@4.23.1 dotenv@18.0.10 --no-fund --no-audit
 
 # ── Stage 4: PostgreSQL client ─────────────────────────────
 # pg_dump and pg_restore of the bundled database's major, taken from the
