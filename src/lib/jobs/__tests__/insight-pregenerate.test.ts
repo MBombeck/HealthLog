@@ -1717,6 +1717,9 @@ describe("runInsightPregenerate — a provider that cannot serve is not a failin
     expect(result.skipped).toBe(1);
     expect(result.failed).toBe(0);
     expect(result.allFailed).toBe(false);
+    // Nobody attempted: the handler then writes no `all_failed`, so a benched
+    // night neither extends nor ends the alert's streak.
+    expect(result.attempted).toBe(0);
     expect(result.firstFailure).toBeNull();
     // The retry would find the same bench.
     expect(enqueueRetry).not.toHaveBeenCalled();
@@ -1742,6 +1745,7 @@ describe("runInsightPregenerate — a provider that cannot serve is not a failin
       }),
     );
     expect(result.allFailed).toBe(false);
+    expect(result.attempted).toBe(1);
     expect(enqueueRetry).not.toHaveBeenCalled();
     expect(annotateSpy).toHaveBeenCalledWith(
       expect.objectContaining({

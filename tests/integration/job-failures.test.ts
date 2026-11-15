@@ -268,6 +268,19 @@ describe("readConsecutiveRunFailures (v1.42)", () => {
     await expect(readConsecutiveRunFailures(STREAK_QUEUE)).resolves.toBe(3);
   });
 
+  it("steps over a night that attempted nobody instead of ending the streak (#1384)", async () => {
+    await boss.createQueue(STREAK_QUEUE);
+    // Failed, then every provider paused (nothing attempted), then failed.
+    await finishedMinutesAgo(await completeOneJob({ all_failed: true }), 30);
+    await finishedMinutesAgo(
+      await completeOneJob({ all_failed: false, run_attempted: 0 }),
+      20,
+    );
+    await finishedMinutesAgo(await completeOneJob({ all_failed: true }), 10);
+
+    await expect(readConsecutiveRunFailures(STREAK_QUEUE)).resolves.toBe(3);
+  });
+
   it("answers 1 for a queue with no history: the run failing now", async () => {
     await expect(readConsecutiveRunFailures("never-ran")).resolves.toBe(1);
   });

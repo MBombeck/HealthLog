@@ -497,6 +497,11 @@ export async function readConsecutiveRunFailures(
         AND state IN ('completed', 'failed')
         AND completed_on IS NOT NULL
         AND (state = 'failed' OR output->'did'->>'all_failed' IS NOT NULL)
+        -- #1384: a run that attempted nobody neither fails nor recovers.
+        AND NOT (
+          state = 'completed'
+          AND COALESCE(output->'did'->>'run_attempted', '') = '0'
+        )
       ORDER BY completed_on DESC
       LIMIT ${CONSECUTIVE_LOOKBACK_ROWS}
     `;

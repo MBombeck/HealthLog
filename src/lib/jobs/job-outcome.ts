@@ -244,6 +244,9 @@ export const JOB_FACT_ALLOWLIST: ReadonlySet<string> = new Set([
   "removed",
   "resting_corrected",
   "rows_written",
+  // #1384 — how many accounts a fan-out pass attempted; 0 marks a run that
+  // neither failed nor recovered, which the failure streak steps over.
+  "run_attempted",
   // v1.39.1 — the background restore of a stored backup, and the sweep that
   // re-queues one a stopped worker left running. Counts and a claim flag.
   "restore_claimed",
