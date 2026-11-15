@@ -40,6 +40,7 @@ vi.mock("@/lib/insights/status-batch", async () => {
         served: 0,
         batched: 0,
         fellBack: 0,
+        fellBackAnswered: 0,
         batchCallMade: false,
       };
       if (!(await aiCapabilityForJob(userId, "statusText")).available) {

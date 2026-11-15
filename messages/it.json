@@ -8768,7 +8768,7 @@
     },
     "failingJobs": {
       "title": "Processi in background",
-      "description": "Code i cui processi hanno rinunciato dopo aver esaurito i tentativi.",
+      "description": "Code i cui processi hanno rinunciato dopo i tentativi o la cui esecuzione è fallita per ogni account.",
       "none": "Nessun processo è fallito nelle ultime {hours} ore.",
       "unavailable": "Nessuna coda da leggere: questo deployment funziona senza il worker in background.",
       "countOne": "{count} errore",

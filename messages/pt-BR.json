@@ -8768,7 +8768,7 @@
     },
     "failingJobs": {
       "title": "Tarefas em segundo plano",
-      "description": "Filas cujas tarefas desistiram depois de esgotar as tentativas.",
+      "description": "Filas cujas tarefas desistiram após as tentativas, ou cuja execução falhou em todas as contas tentadas.",
       "none": "Nenhuma tarefa falhou nas últimas {hours} horas.",
       "unavailable": "Nenhuma fila de tarefas para ler. Esta implantação roda sem o worker em segundo plano.",
       "countOne": "{count} falha",

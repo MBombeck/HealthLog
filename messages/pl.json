@@ -8768,7 +8768,7 @@
     },
     "failingJobs": {
       "title": "Zadania w tle",
-      "description": "Kolejki, których zadania poddały się po wyczerpaniu ponowień.",
+      "description": "Kolejki, których zadania poddały się po ponowieniach albo których przebieg zawiódł dla każdego konta.",
       "none": "W ciągu ostatnich {hours} godzin żadne zadanie nie zawiodło.",
       "unavailable": "Brak kolejki zadań do odczytu: to wdrożenie działa bez workera w tle.",
       "countOne": "{count} niepowodzenie",

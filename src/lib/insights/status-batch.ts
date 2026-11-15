@@ -37,6 +37,7 @@ import {
   runPreparedStatusCard,
   type PendingStatusCard,
   type PreparedStatusCard,
+  type StatusCardResult,
 } from "@/lib/insights/status-card-generation";
 import { runStatusCompletion } from "@/lib/insights/status-provider";
 import {
@@ -77,8 +78,25 @@ export interface StatusBatchResult {
   /** Metrics that fell back to a single-card call (omitted by the batch, or
    *  the batch failed). */
   fellBack: number;
+  /**
+   * Of `fellBack`, the metrics whose own single-card call came back with a
+   * model-written assessment. The rest served their deterministic fallback:
+   * no provider, a failed or cooling-down provider, or a screened reply.
+   * `batched + fellBackAnswered` is what a warm pass may call warmed (#1384);
+   * `fellBack` alone counted a night of six failed calls as six assessments.
+   */
+  fellBackAnswered: number;
   /** True when the one batched provider call was issued. */
   batchCallMade: boolean;
+}
+
+/**
+ * Whether a single-card run ended in a model-written assessment: the persisted
+ * shape is the only one with a provider and no cache flag. The no-key, the
+ * timeout / error stub and the screened fallback all carry `cached: true`.
+ */
+function modelAnswered(result: StatusCardResult): boolean {
+  return result.hasProvider === true && result.cached === false;
 }
 
 /** Pull `perMetric` out of a (possibly fenced) model completion. */
@@ -119,6 +137,7 @@ export async function generateStatusBatchForUser(
     served: 0,
     batched: 0,
     fellBack: 0,
+    fellBackAnswered: 0,
     batchCallMade: false,
   };
 
@@ -171,11 +190,19 @@ export async function generateStatusBatchForUser(
   // One metric still needing the LLM is not worth a batch envelope — run it
   // through its own single-card path (identical persisted result).
   if (pending.length === 1) {
-    await runPreparedStatusCard(pending[0]);
+    if (modelAnswered(await runPreparedStatusCard(pending[0]))) {
+      result.fellBackAnswered++;
+    }
     result.fellBack++;
     annotate({
       action: { name: "insights.status.batch" },
-      meta: { served: result.served, batched: 0, fell_back: 1, single: true },
+      meta: {
+        served: result.served,
+        batched: 0,
+        fell_back: 1,
+        fell_back_answered: result.fellBackAnswered,
+        single: true,
+      },
     });
     return result;
   }
@@ -272,14 +299,19 @@ export async function generateStatusBatchForUser(
     // Batch missed this metric (omitted key, or timeout/error/invalid-json):
     // fall back to the single-card path. On a batch timeout/error this writes
     // the per-card negative stub via the card's own `timeout`.
-    await runPreparedStatusCard(card);
-    return "fellBack" as const;
+    return modelAnswered(await runPreparedStatusCard(card))
+      ? ("fellBackAnswered" as const)
+      : ("fellBack" as const);
   });
 
   const outcomes = await Promise.all(fanOuts);
   for (const o of outcomes) {
-    if (o === "batched") result.batched++;
-    else result.fellBack++;
+    if (o === "batched") {
+      result.batched++;
+      continue;
+    }
+    result.fellBack++;
+    if (o === "fellBackAnswered") result.fellBackAnswered++;
   }
 
   annotate({
@@ -288,6 +320,7 @@ export async function generateStatusBatchForUser(
       served: result.served,
       batched: result.batched,
       fell_back: result.fellBack,
+      fell_back_answered: result.fellBackAnswered,
       pending: pending.length,
     },
   });

@@ -209,4 +209,59 @@ describe("comprehensive warm-path timeout + failure observability", () => {
       (failAnnotation![0] as { meta?: { reason?: string } }).meta?.reason,
     ).toBe("all-providers-failed");
   });
+
+  // #1384 — the nightly pass needs to know which configured provider failed,
+  // whose credential a refusal was, and whether anything was sent at all.
+  it("names the provider that failed first and whether its credential was refused", async () => {
+    runRawCompletionWithFallback.mockRejectedValue(
+      Object.assign(new AllProvidersFailedError([]), {
+        attempts: [
+          {
+            providerType: "openai-compatible",
+            attempt: 1,
+            failureReason: "401",
+            httpStatus: 401,
+          },
+        ],
+        primaryCredentialExpired: true,
+        sentNothing: false,
+      }),
+    );
+
+    const outcome = await generateComprehensiveInsight("u1", { locale: "de" });
+
+    expect(outcome).toEqual({
+      status: "failed",
+      reason: "all-providers-failed",
+      credentialExpired: true,
+      provider: "openai-compatible",
+    });
+  });
+
+  it("says so when every provider was benched and nothing was sent (#1279)", async () => {
+    runRawCompletionWithFallback.mockRejectedValue(
+      Object.assign(new AllProvidersFailedError([]), {
+        attempts: [
+          {
+            providerType: "local",
+            attempt: 1,
+            failureReason: "benched-for-background-work",
+            httpStatus: null,
+            failureKind: "paused",
+          },
+        ],
+        primaryCredentialExpired: false,
+        sentNothing: true,
+      }),
+    );
+
+    const outcome = await generateComprehensiveInsight("u1", { locale: "de" });
+
+    expect(outcome).toEqual({
+      status: "failed",
+      reason: "all-providers-failed",
+      provider: "local",
+      sentNothing: true,
+    });
+  });
 });

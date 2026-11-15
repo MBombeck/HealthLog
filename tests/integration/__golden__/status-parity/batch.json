@@ -460,6 +460,7 @@
       "batchCallMade": true,
       "batched": 6,
       "fellBack": 1,
+      "fellBackAnswered": 0,
       "served": 0
     }
   },
@@ -1719,6 +1720,7 @@
       "batchCallMade": true,
       "batched": 0,
       "fellBack": 7,
+      "fellBackAnswered": 0,
       "served": 0
     }
   },
@@ -1831,6 +1833,7 @@
       "batchCallMade": false,
       "batched": 0,
       "fellBack": 1,
+      "fellBackAnswered": 0,
       "served": 6
     }
   }

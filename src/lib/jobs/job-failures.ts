@@ -92,7 +92,7 @@ const MAX_ERROR_CHARS = 300;
 export interface FailingQueue {
   /** The pg-boss queue name, e.g. `environment-fetch`. */
   queue: string;
-  /** Jobs that exhausted their retries inside the window. */
+  /** Failed runs inside the window: exhausted retries, or all-failed passes. */
   failures: number;
   /** ISO instant of the newest failure. */
   lastFailedAt: string;
@@ -141,9 +141,47 @@ function explainTimeout(message: string, expireSeconds: number | null): string {
 }
 
 /**
+ * Say what a completed run that failed every account means (#1384). Such a
+ * run's `output` is its outcome, `{"ok":true,"did":{…,"all_failed":true}}`,
+ * and quoting that JSON told the operator nothing: not that the job ran, not
+ * which provider failed. Null when `raw` is not such an outcome.
+ */
+function explainAllFailedRun(raw: string): string | null {
+  if (!raw.startsWith("{")) return null;
+  let did: Record<string, unknown>;
+  try {
+    const parsed = JSON.parse(raw) as { ok?: unknown; did?: unknown };
+    if (parsed?.ok !== true || typeof parsed.did !== "object") return null;
+    did = (parsed.did ?? {}) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+  if (did.all_failed !== true) return null;
+  // Every attempted account failed, so the count is both sides of "of".
+  const failed =
+    typeof did.failed === "number" && did.failed > 0
+      ? ` (${did.failed} of ${did.failed})`
+      : "";
+  // "none" is how the run says it has no cause or provider to name.
+  const named = (value: unknown): string | null =>
+    typeof value === "string" && value !== "none" ? value : null;
+  const cause = named(did.failure_cause);
+  const provider = named(did.failure_provider);
+  const why = cause
+    ? ` First cause: ${cause}${provider ? ` from provider ${provider}` : ""}.`
+    : "";
+  return (
+    `The run completed, but every account it attempted failed${failed}.${why} ` +
+    `Accounts without a usable provider are skipped and not counted; ` +
+    `job.run.failed in the app log lists each account's outcome.`
+  );
+}
+
+/**
  * Turn whatever pg-boss stored in `output` into one line. A thrown `Error`
  * serialises to `{ message, stack, … }`; a thrown non-Error can be any JSON at
  * all, so the raw text is the fallback rather than an invented placeholder.
+ * A completed run that reported every account failed is said in words.
  */
 export function presentError(
   raw: string | null,
@@ -152,6 +190,8 @@ export function presentError(
   if (raw === null) return "";
   const trimmed = raw.trim();
   if (trimmed.length === 0) return "";
+  const allFailed = explainAllFailedRun(trimmed);
+  if (allFailed !== null) return allFailed;
   if (TIMEOUT_MESSAGE.test(trimmed))
     return explainTimeout(trimmed, expireSeconds);
   if (HEARTBEAT_MESSAGE.test(trimmed)) {
@@ -168,8 +208,13 @@ export function presentError(
 }
 
 /**
- * Every queue with at least one exhausted-retry failure in the window, newest
- * first. `null` when the queue schema is not present at all.
+ * Every queue with at least one failed run in the window, newest first:
+ * a job that exhausted its retries, or a fan-out pass that completed but
+ * reported that every account it attempted failed (`did.all_failed`). The
+ * second kind is what the repeated-failure alert counts too
+ * (`readConsecutiveRunFailures`, `system-job-alert.ts`); the page used to
+ * list only the first, so an operator the alert sent here read "no job has
+ * failed" (#1384). `null` when the queue schema is not present at all.
  */
 export async function readFailingQueues(
   withinHours: number = JOB_FAILURE_WINDOW_HOURS,
@@ -194,7 +239,10 @@ export async function readFailingQueues(
           array_agg(expire_seconds ORDER BY completed_on DESC NULLS LAST)
         )[1] AS last_expire_seconds
       FROM pgboss.job
-      WHERE state = 'failed'
+      WHERE (
+          state = 'failed'
+          OR (state = 'completed' AND output->'did'->>'all_failed' = 'true')
+        )
         AND completed_on > now() - make_interval(hours => ${withinHours}::int)
       GROUP BY name
       ORDER BY max(completed_on) DESC

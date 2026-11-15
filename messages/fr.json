@@ -8768,7 +8768,7 @@
     },
     "failingJobs": {
       "title": "Tâches en arrière-plan",
-      "description": "Files dont les tâches ont abandonné après avoir épuisé leurs tentatives.",
+      "description": "Files dont les tâches ont abandonné après leurs tentatives, ou dont l’exécution a échoué pour chaque compte.",
       "none": "Aucune tâche n’a échoué au cours des {hours} dernières heures.",
       "unavailable": "Aucune file à consulter : ce déploiement fonctionne sans le worker en arrière-plan.",
       "countOne": "{count} échec",
