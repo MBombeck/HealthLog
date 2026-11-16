@@ -63,6 +63,10 @@ import type {
   MeasurementType,
   RollupGranularity,
 } from "@/generated/prisma/client";
+import {
+  readLiveMeasurementSpan,
+  readNewestRowsPerType,
+} from "@/lib/measurements/newest-per-type";
 
 import {
   resolveEffectiveBpTargets,
@@ -705,7 +709,9 @@ export interface AggregatedFeatures {
   context: {
     heightCm: number | null;
     hasBpTargets: boolean;
+    /** Readings the blocks were built from (capped per type). */
     totalMeasurements: number;
+    /** First to last reading of any type inside the window. */
     dataSpanDays: number;
     oldestMeasurementDaysAgo: number | null;
     newestMeasurementDaysAgo: number | null;
@@ -1041,11 +1047,11 @@ async function readMoodFeature(
 
 /**
  * v1.25 — newest-first row cap on the bulk measurement read in
- * `extractFeatures`. Mirrors the Coach snapshot's `SNAPSHOT_MEASUREMENT_ROW_CAP`
- * (6000): the prompt / insights aggregates only ever fold this read into a
- * bounded set of summaries, so a year of dense PULSE / glucose rows is wasted
- * I/O on the shared pool for a heavy-data tenant. Full-history extremes come
- * from `readAllTimeExtremes`, not this read, so the cap stays correct.
+ * `extractFeatures`: the aggregates fold it into a bounded set of summaries,
+ * so a year of dense PULSE / glucose rows is wasted I/O. It applies to each
+ * type on its own (#1398): shared across types, a dense stream filled it
+ * within hours and every sparse type fell out of the read. Worst case: this
+ * times the 12 `FEATURE_ROW_TYPES`, 72,000 rows.
  */
 const FEATURE_MEASUREMENT_ROW_CAP = 6000;
 
@@ -1054,6 +1060,22 @@ const FEATURE_MEASUREMENT_ROW_CAP = 6000;
  * Each is built from exactly the reads the full extraction runs for it.
  */
 export type ScopedFeatureBlock = "weight" | "bloodPressure" | "pulse" | "mood";
+
+/** The types the blocks and the signals of the day read; nothing else is. */
+const FEATURE_ROW_TYPES: readonly MeasurementType[] = [
+  "WEIGHT",
+  "BLOOD_PRESSURE_SYS",
+  "BLOOD_PRESSURE_DIA",
+  "PULSE",
+  "BODY_FAT",
+  "GRIP_STRENGTH",
+  "WAIST_CIRCUMFERENCE",
+  "PAIN_NRS",
+  "SLEEP_DURATION",
+  "ACTIVITY_STEPS",
+  "BLOOD_GLUCOSE",
+  "RESTING_HEART_RATE",
+];
 
 const SCOPED_BLOCK_TYPES: Readonly<
   Record<ScopedFeatureBlock, readonly MeasurementType[]>
@@ -1071,10 +1093,10 @@ export async function extractFeatures(
     sinceDays?: number;
     /**
      * Build only these blocks (plus `context`) and return. Each block is
-     * identical to the one the full extraction builds: the bulk read keeps its
-     * newest-first cap, restricted to the requested blocks' own measurement
-     * types, so a dense type cannot starve a sparse one out of the read. Used
-     * by the single-metric Coach read, which reads one block and nothing else.
+     * identical to the one the full extraction builds: the bulk read caps
+     * each type on its own, so reading only the requested blocks' types
+     * leaves every one of them with the rows the full read gives it. Used by
+     * the single-metric Coach read, which reads one block and nothing else.
      */
     only?: ReadonlySet<ScopedFeatureBlock>;
     /**
@@ -1117,55 +1139,21 @@ export async function extractFeatures(
     typeof sinceDays === "number" && sinceDays > 0
       ? new Date(now - sinceDays * 24 * 60 * 60 * 1000)
       : null;
-  // v1.25 — newest-first cap on the bulk feature read, mirroring the Coach
-  // snapshot (`SNAPSHOT_MEASUREMENT_ROW_CAP`). Callers pass windows of 365-400
-  // days, and PULSE / glucose are 200k-row-class types, so an uncapped read
-  // pulled hundreds of thousands of rows per Coach turn and nightly briefing
-  // only to fold them into a handful of summaries. Read newest-first, cap, then
-  // reverse so every downstream consumer (`byType`, `summarize`, BP pairing,
-  // sleep reconstruction, oldest/newest span) still sees ascending order. The
-  // cap is safe even unbounded: the genuine all-time extremes are sourced
-  // separately via `readAllTimeExtremes` on the bounded branch, so capping only
-  // sheds the deepest rows of the bulk read and never relabels an extreme.
-  // A scoped read (`only`) builds its blocks from their own measurement
-  // types, so its bulk read is restricted to those types. Under the
-  // all-type cap a dense type fills the whole cap within hours — PULSE
-  // from a wearable is a 200k-row-class type — and starves every sparse
-  // type out of the read, so the scoped block then reports no data for a
-  // metric that demonstrably exists.
-  const scopedTypes = only ? [...allTimeTypes] : [];
-  const typeFilter =
-    scopedTypes.length > 0 ? { type: { in: scopedTypes } } : {};
-  const measurements = !needsMeasurementRows
-    ? []
-    : await prisma.measurement
-        .findMany({
-          where: sinceCutoff
-            ? {
-                userId,
-                measuredAt: { gte: sinceCutoff },
-                deletedAt: null,
-                ...typeFilter,
-              }
-            : { userId, deletedAt: null, ...typeFilter },
-          orderBy: { measuredAt: "desc" },
-          take: FEATURE_MEASUREMENT_ROW_CAP,
-          // Project only the columns every downstream consumer reads (`byType`,
-          // `summarize`, BP pairing, and `reconstructSleepNights`'s `SleepStageRow`).
-          // The PULSE / glucose windows are 200k-row-class; pulling every column
-          // (notes, externalId, …) is pure wasted I/O on the shared Prisma pool.
-          select: {
-            type: true,
-            value: true,
-            measuredAt: true,
-            sleepStage: true,
-            source: true,
-            deviceType: true,
-          },
-        })
-        // Restore ascending order so order-sensitive consumers (oldest/newest span,
-        // BP pairing, sleep reconstruction) see the same shape as before the cap.
-        .then((rows) => rows.reverse());
+  // Newest-first, capped per type (`FEATURE_MEASUREMENT_ROW_CAP`), oldest
+  // first on return. A scoped read asks for its blocks' types only and each
+  // gets the rows the full read gives it. The all-time extremes come from
+  // `readAllTimeExtremes`, so the cap never relabels an extreme.
+  const rowTypes = only ? allTimeTypes : FEATURE_ROW_TYPES;
+  const [measurements, span] = !needsMeasurementRows
+    ? [[], { oldest: null, newest: null }]
+    : await Promise.all([
+        readNewestRowsPerType(userId, rowTypes, {
+          perTypeCap: FEATURE_MEASUREMENT_ROW_CAP,
+          since: sinceCutoff,
+        }).then((read) => read.rows),
+        // The account's span, any type; capped rows shrink it to hours.
+        readLiveMeasurementSpan(userId, sinceCutoff),
+      ]);
 
   // v1.18.11 — when the bulk read is bounded to a recent window, the
   // windowed `summarize()` no longer covers the full history, so the `allTime*`
@@ -1195,12 +1183,8 @@ export async function extractFeatures(
     user && resolveEffectiveBpTargets(user, user.thresholdsJson);
 
   // Compute overall data span
-  const oldestMeasurement =
-    measurements.length > 0 ? measurements[0].measuredAt : null;
-  const newestMeasurement =
-    measurements.length > 0
-      ? measurements[measurements.length - 1].measuredAt
-      : null;
+  const oldestMeasurement = span.oldest;
+  const newestMeasurement = span.newest;
   const overallSpanDays =
     oldestMeasurement && newestMeasurement
       ? Math.round(

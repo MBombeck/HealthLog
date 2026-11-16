@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { readNewestRowsPerType } from "@/lib/measurements/newest-per-type";
 import { readRecentMoodScores } from "@/lib/mood/recent-scores";
 import {
   getWeightSystemPrompt,
@@ -432,28 +433,14 @@ async function readWeightSeries(
   mass: DisplayTransform,
   userTz: string,
 ) {
-  // v1.4.28 — cap the snapshot input. BP captures three types
-  // per day so 1095 = 365 d × 3 channels. Order desc + reverse so we
-  // keep the most recent year of rows.
-  const measurements = await prisma.measurement
-    .findMany({
-      where: {
-        userId,
-        type: {
-          in: ["WEIGHT", "BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"],
-        },
-        // Soft-deleted rows must never reach the prompt snapshot.
-        deletedAt: null,
-      },
-      take: 1095,
-      orderBy: { measuredAt: "desc" },
-      select: {
-        type: true,
-        value: true,
-        measuredAt: true,
-      },
-    })
-    .then((rows) => rows.reverse());
+  // v1.4.28 — cap the snapshot input: 1095 = 365 d × 3 channels, the
+  // newest rows, oldest first on return. #1398: shared fairly across the
+  // three channels, so frequent cuff readings cannot push weight out.
+  const { rows: measurements } = await readNewestRowsPerType(
+    userId,
+    ["WEIGHT", "BLOOD_PRESSURE_SYS", "BLOOD_PRESSURE_DIA"],
+    { perTypeCap: 1095, totalCap: 1095 },
+  );
 
   const now = new Date();
 

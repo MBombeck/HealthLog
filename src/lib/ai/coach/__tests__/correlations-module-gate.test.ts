@@ -29,6 +29,13 @@ const { prismaMock } = vi.hoisted(() => ({
     userSourcePriority: { findMany: vi.fn() },
   },
 }));
+// The per-type measurement read is raw SQL; serve it from the findMany mock.
+vi.mock("@/lib/measurements/newest-per-type", async () =>
+  (
+    await import("@/__tests__/helpers/newest-per-type-mock")
+  ).newestPerTypeMock(),
+);
+
 vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
 
 import { readCoachCorrelations } from "../tools/correlations-read";

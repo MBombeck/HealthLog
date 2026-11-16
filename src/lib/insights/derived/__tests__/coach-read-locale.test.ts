@@ -33,6 +33,13 @@ vi.mock("@/lib/modules/gate", () => ({
   resolveModuleMap: vi.fn(async () => ({})),
 }));
 vi.mock("@/lib/logging/context", () => ({ annotate: vi.fn() }));
+// The per-type measurement read is raw SQL; serve it from the findMany mock.
+vi.mock("@/lib/measurements/newest-per-type", async () =>
+  (
+    await import("@/__tests__/helpers/newest-per-type-mock")
+  ).newestPerTypeMock(),
+);
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     // v1.44 — the extended channel families (intake, training, room climate).

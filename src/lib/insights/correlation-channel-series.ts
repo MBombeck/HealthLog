@@ -20,6 +20,7 @@
  * fabricating a constant.
  */
 import { prisma } from "@/lib/db";
+import { readNewestRowsPerType } from "@/lib/measurements/newest-per-type";
 import { triggersRestMode } from "@/lib/illness/rest-mode";
 import {
   buildComplianceMedicationContext,
@@ -529,8 +530,9 @@ export interface MeasurementWindowFetch {
  * period narrative. Hoisted here so a fourth independently-maintained copy
  * can't drift the way the period-narrative one did.
  *
- * Orders DESC + caps at {@link MEASUREMENT_READ_CAP}, then re-sorts ASC in
- * JS so a dense account's cap falls on the OLDEST rows, never the newest —
+ * Reads newest-first under {@link MEASUREMENT_READ_CAP}, shared fairly
+ * across the types, and returns ASC, so a dense account's cap falls on the
+ * OLDEST rows of the densest types, never the newest —
  * the inverse of a naive `orderBy asc, take N`, which silently drops the
  * NEWEST reads once an account's in-window row count crosses the cap
  * (exactly backwards for a recent-window read, e.g. the Coach's emerging-
@@ -545,30 +547,19 @@ export async function fetchMeasurementWindowSeries(
   since: Date,
   types: MeasurementType[],
 ): Promise<MeasurementWindowFetch> {
-  const rowsDesc = await prisma.measurement.findMany({
-    where: {
-      userId,
-      deletedAt: null,
-      measuredAt: { gte: since },
-      type: { in: types },
-    },
-    orderBy: { measuredAt: "desc" },
-    take: MEASUREMENT_READ_CAP,
-    select: {
-      type: true,
-      value: true,
-      measuredAt: true,
-      source: true,
-      deviceType: true,
-      sleepStage: true,
-    },
+  // #1398: the cap is shared fairly across the types (each keeps at least its
+  // share, a sparse one all of its window). Newest-first across all of them,
+  // a dense pulse stream filled it within days and starved every sparse
+  // channel out of the window.
+  const { rows, cappedTypes } = await readNewestRowsPerType(userId, types, {
+    perTypeCap: MEASUREMENT_READ_CAP,
+    totalCap: MEASUREMENT_READ_CAP,
+    since,
   });
-  const measurementsCapped = rowsDesc.length >= MEASUREMENT_READ_CAP;
+  const measurementsCapped = cappedTypes.length > 0;
 
   const byType = new Map<string, MeasurementSeriesRow[]>();
-  for (const m of [...rowsDesc].sort(
-    (a, b) => a.measuredAt.getTime() - b.measuredAt.getTime(),
-  )) {
+  for (const m of rows) {
     const list = byType.get(m.type) ?? [];
     list.push({
       value: m.value,

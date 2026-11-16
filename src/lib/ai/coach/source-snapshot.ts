@@ -14,8 +14,8 @@
  * source's own reads only, and hands back the same section and the same
  * reference grounding. Each block reads exactly what the full build reads for
  * it: the core clinical aggregates come from `extractFeatures` scoped to the
- * one block (whose bulk read is restricted to that block's own measurement
- * types under the same newest-first cap), the timelines from the same
+ * one block (whose bulk read caps each type on its own, so that block's types
+ * get the rows the full read gives them), the timelines from the same
  * windowed read, the coarse tail from the same rollup reader.
  *
  * Two cases go to the full builder instead:

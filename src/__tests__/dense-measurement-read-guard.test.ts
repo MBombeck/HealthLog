@@ -346,8 +346,10 @@ describe("dense measurement reads stay bounded (#1023)", () => {
 
   it("finds the reads it is meant to police", () => {
     // Guard against a matcher that silently matches nothing.
-    // Pinned below the counts on 2026-10-01 (82 / 45 / 37 / 33).
-    expect(all).toBeGreaterThanOrEqual(75);
+    // Pinned below the counts on 2026-10-01 (82 / 45 / 37 / 33). Seven
+    // capped multi-type findMany reads moved to the per-type raw read
+    // (#1398), leaving 71 on 2026-11-16.
+    expect(all).toBeGreaterThanOrEqual(65);
     expect(untaken.length).toBeGreaterThanOrEqual(40);
     expect(raw.length).toBeGreaterThanOrEqual(33);
     expect(raw.filter((r) => r.folds).length).toBeGreaterThanOrEqual(30);

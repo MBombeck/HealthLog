@@ -7,6 +7,13 @@ import {
 import { coachDataClusterEnum } from "@/lib/validations/coach-prefs";
 import { coachScopeSourceSchema } from "../types";
 
+// The per-type measurement read is raw SQL; serve it from the findMany mock.
+vi.mock("@/lib/measurements/newest-per-type", async () =>
+  (
+    await import("@/__tests__/helpers/newest-per-type-mock")
+  ).newestPerTypeMock(),
+);
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     measurement: { findMany: vi.fn() },
