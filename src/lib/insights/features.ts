@@ -1072,7 +1072,8 @@ export async function extractFeatures(
     /**
      * Build only these blocks (plus `context`) and return. Each block is
      * identical to the one the full extraction builds: the bulk read keeps its
-     * all-type newest-first cap, so the rows a block sees do not change. Used
+     * newest-first cap, restricted to the requested blocks' own measurement
+     * types, so a dense type cannot starve a sparse one out of the read. Used
      * by the single-metric Coach read, which reads one block and nothing else.
      */
     only?: ReadonlySet<ScopedFeatureBlock>;
