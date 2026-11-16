@@ -1127,13 +1127,27 @@ export async function extractFeatures(
   // cap is safe even unbounded: the genuine all-time extremes are sourced
   // separately via `readAllTimeExtremes` on the bounded branch, so capping only
   // sheds the deepest rows of the bulk read and never relabels an extreme.
+  // A scoped read (`only`) builds its blocks from their own measurement
+  // types, so its bulk read is restricted to those types. Under the
+  // all-type cap a dense type fills the whole cap within hours — PULSE
+  // from a wearable is a 200k-row-class type — and starves every sparse
+  // type out of the read, so the scoped block then reports no data for a
+  // metric that demonstrably exists.
+  const scopedTypes = only ? [...allTimeTypes] : [];
+  const typeFilter =
+    scopedTypes.length > 0 ? { type: { in: scopedTypes } } : {};
   const measurements = !needsMeasurementRows
     ? []
     : await prisma.measurement
         .findMany({
           where: sinceCutoff
-            ? { userId, measuredAt: { gte: sinceCutoff }, deletedAt: null }
-            : { userId, deletedAt: null },
+            ? {
+                userId,
+                measuredAt: { gte: sinceCutoff },
+                deletedAt: null,
+                ...typeFilter,
+              }
+            : { userId, deletedAt: null, ...typeFilter },
           orderBy: { measuredAt: "desc" },
           take: FEATURE_MEASUREMENT_ROW_CAP,
           // Project only the columns every downstream consumer reads (`byType`,
