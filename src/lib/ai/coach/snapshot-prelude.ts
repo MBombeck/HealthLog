@@ -9,6 +9,7 @@
  */
 import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
+import { readNewestRowsPerType } from "@/lib/measurements/newest-per-type";
 import { parseCoachPrefs } from "@/lib/validations/coach-prefs";
 import { DEFAULT_TIMEZONE } from "@/lib/tz/resolver";
 import { locales, defaultLocale, type Locale } from "@/lib/i18n/config";
@@ -56,10 +57,14 @@ export const MAX_SNAPSHOT_CHARS = 14_000;
  * (`lastYear` / `allTime`) across high-frequency types (PULSE / glucose are
  * 200k-row-class), but the prompt only renders ~21 daily + ~10 weekly buckets
  * per metric, so an uncapped read loaded a year of rows to discard almost all
- * of them. 6000 keeps the recent-daily + weekly window exact even with several
- * dense types active (≈ a year of multi-daily readings on one type, or a
- * handful of types at a few readings/day) while bounding the worst case; the
- * coarse MONTH/YEAR tail comes from the rollup tier, not this read.
+ * of them. 6000 keeps a year of multi-daily readings of a type exact while
+ * bounding a dense one; the coarse MONTH/YEAR tail comes from the rollup
+ * tier, not this read.
+ *
+ * #1398 — the cap applies per type. Shared across the read's types, a dense
+ * stream filled it within hours and the weight and blood pressure timelines
+ * came back empty. Worst case: this times the number of types read, reached
+ * only by types that each write more than 6000 rows inside the window.
  */
 const SNAPSHOT_MEASUREMENT_ROW_CAP = 6000;
 
@@ -251,51 +256,28 @@ export function resolveSnapshotCutoffs(
 /**
  * The windowed measurement read the timeline blocks share.
  *
- * Single fetch for all measurement types — Prisma's filter pushes
- * the type list into one SQL `WHERE type IN (…)` so we don't pay
- * per-metric round-trips.
+ * One statement for all measurement types, each type read newest-first up to
+ * its own cap (`readNewestRowsPerType`), so a dense stream cannot push a
+ * sparse type's rows out of the read and a single-source build sees exactly
+ * the rows the full build gives that source. Oldest first. `glucoseContext`
+ * rides along so the glucose block can split fasting / postprandial / random
+ * / bedtime without a second query; NULL on every non-glucose row.
  */
-export function readSnapshotMeasurementRows(
+export async function readSnapshotMeasurementRows(
   userId: string,
   wantedTypes: readonly MeasurementType[],
   cutoff: Date,
 ) {
-  if (wantedTypes.length === 0) return Promise.resolve([]);
-  return (
-    prisma.measurement
-      .findMany({
-        where: {
-          userId,
-          type: { in: [...wantedTypes] },
-          measuredAt: { gte: cutoff },
-          deletedAt: null,
-        },
-        // v1.18.10 — read NEWEST-first + cap. PULSE / glucose are
-        // 200k-row-class types and the window can reach 365 days
-        // (lastYear / allTime), so an uncapped read pulled the entire
-        // year of high-frequency rows into memory just to fold them into
-        // ~21 daily + ~10 weekly buckets the prompt actually shows. The
-        // newest-first cap keeps the recent-daily timeline exact and only
-        // sheds the deepest weekly buckets on an extreme-volume account;
-        // the coarse MONTH/YEAR tail is read separately from the rollup
-        // tier (`buildCoarseTimelineTail`), so deep history survives.
-        orderBy: { measuredAt: "desc" },
-        take: SNAPSHOT_MEASUREMENT_ROW_CAP,
-        // v1.7.0 — `glucoseContext` rides along so the glucose block
-        // can split fasting / postprandial / random / bedtime without
-        // a second query. NULL on every non-glucose row.
-        select: {
-          type: true,
-          value: true,
-          measuredAt: true,
-          glucoseContext: true,
-        },
-      })
-      // Downstream bucketers re-sort/group internally, but restore
-      // ascending order so any order-sensitive consumer sees the same
-      // shape as before the cap.
-      .then((rows) => rows.reverse())
-  );
+  const { rows } = await readNewestRowsPerType(userId, wantedTypes, {
+    perTypeCap: SNAPSHOT_MEASUREMENT_ROW_CAP,
+    since: cutoff,
+  });
+  return rows.map((row) => ({
+    type: row.type,
+    value: row.value,
+    measuredAt: row.measuredAt,
+    glucoseContext: row.glucoseContext,
+  }));
 }
 
 /**

@@ -87,7 +87,7 @@
             }
           },
           "promptChars": 34193,
-          "promptSha256": "f11bae5de41f1344113977970c832df38427bcdf4b24a6f7fb8b05cef899c5af"
+          "promptSha256": "54a7cb6909644975b8ccc521b333ee46547b1470d742e3362c3f8c3d0db43741"
         }
       ]
     },
@@ -251,7 +251,7 @@
       },
       "briefingGeneratedAt": "anchor+0d+12:00:00"
     },
-    "snapshotHash": "11a4fb0ae0188e5a95cbe69124afaccdb326b76ea8e8ad73affbc819255a01cc",
+    "snapshotHash": "488c3eab37beb28d7dafdb0e7eaf8dc47921e3afa4be6bf79062ad7366bf5907",
     "audit": [
       {
         "action": "insights.generate",

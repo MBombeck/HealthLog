@@ -27,9 +27,10 @@ describe("prompt reads exclude tombstoned rows", () => {
   });
 
   it("weight-status filters its measurement read", () => {
-    const src = read("../weight-status.ts");
-    expect(src).toMatch(
-      /measurement\s*\n?\s*\.findMany\(\{\s*where:\s*\{[\s\S]{0,300}?\bdeletedAt:\s*null/,
+    // The weight series reads through the per-type newest-rows query.
+    expect(read("../weight-status.ts")).toMatch(/readNewestRowsPerType\(/);
+    expect(read("../../measurements/newest-per-type.ts")).toMatch(
+      /readNewestRowsPerType[\s\S]*?m\."deleted_at" IS NULL/,
     );
   });
 

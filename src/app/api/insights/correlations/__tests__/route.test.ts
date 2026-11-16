@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+// The per-type measurement read is raw SQL; serve it from the findMany mock.
+vi.mock("@/lib/measurements/newest-per-type", async () =>
+  (
+    await import("@/__tests__/helpers/newest-per-type-mock")
+  ).newestPerTypeMock(),
+);
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     // v1.44 — the extended channel families (intake, training, room climate).

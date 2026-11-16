@@ -80,7 +80,7 @@
             "timeoutMs": 180000
           },
           "promptChars": 39012,
-          "promptSha256": "9b74ece939faf8f6643d894cc718bd3e0925133e2c6c12d98dfb3f9d68c82d61"
+          "promptSha256": "fe27fbfa60a4e13470e1545a6a778f94404774212ca8ed4006862dba63a4ea7f"
         }
       ]
     },
@@ -244,7 +244,7 @@
       },
       "briefingGeneratedAt": "anchor+0d+12:00:00"
     },
-    "snapshotHash": "c98e2d8e9f112318293af870eaa7c15d342f7f37a12047b0fd4e2a7f66d84676",
+    "snapshotHash": "6e6dd1b4e6fd65294b8b340e40505eaed27b4cb324228626d4072963fb943ce6",
     "audit": [
       {
         "action": "insights.generate",

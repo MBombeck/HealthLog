@@ -8,6 +8,13 @@ const environmentFindMany = vi.fn();
 const userFindUnique = vi.fn(async () => ({
   environmentAirQualityEnabled: true,
 }));
+// The per-type measurement read is raw SQL; serve it from the findMany mock.
+vi.mock("@/lib/measurements/newest-per-type", async () =>
+  (
+    await import("@/__tests__/helpers/newest-per-type-mock")
+  ).newestPerTypeMock(),
+);
+
 vi.mock("@/lib/db", () => ({
   prisma: {
     user: { findUnique: () => userFindUnique() },

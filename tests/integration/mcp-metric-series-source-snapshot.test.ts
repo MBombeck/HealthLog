@@ -5,9 +5,9 @@
  * builder on real rows: for every seeded source, across windows, the tool's
  * result serialises to exactly what `buildCoachSnapshot` scoped to that source
  * yields for the same section and grounding — the result `get_metric_series`
- * returned before. A dense series pushes the feature extraction's all-type row
- * cap into play, a year of blood pressure is large enough to go back to the
- * full builder, and an absent source stays an explicit absence.
+ * returned before. A dense series pushes the feature extraction's per-type
+ * row cap into play, a year of blood pressure is large enough to go back to
+ * the full builder, and an absent source stays an explicit absence.
  */
 import { beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -148,8 +148,8 @@ beforeAll(async () => {
     }
   };
   // Hourly pulse for 400 days: more than the feature extraction's 6000-row
-  // all-type cap on its own, so the cap decides which weight rows the core
-  // aggregates see, in both builds.
+  // cap on its own, so pulse is capped in both builds while every other type
+  // keeps its rows.
   add("PULSE", "bpm", 400 * 24, HOUR_MS, (i) => 60 + ((i * 7) % 25));
   add("RESTING_HEART_RATE", "bpm", 400, DAY_MS, (i) => 52 + (i % 9));
   add("HEART_RATE_VARIABILITY", "ms", 400, DAY_MS, (i) => 40 + (i % 13));
