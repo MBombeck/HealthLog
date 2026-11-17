@@ -14825,7 +14825,9 @@
       "note": "Nota",
       "delete": "Excluir crise",
       "deleteTitle": "Excluir esta crise?",
-      "deleteBody": "A crise e suas doses de resgate são removidas, e as doses também são retiradas do medicamento."
+      "deleteBody": "A crise e suas doses de resgate são removidas, e as doses também são retiradas do medicamento.",
+      "observable": "Sinais visíveis",
+      "incontinence": "Incontinência"
     },
     "rescue": {
       "title": "Medicação de resgate",
@@ -14878,6 +14880,11 @@
       "hours": "Dentro de horas",
       "invalid": "Use de 2 a 20 crises dentro de 1 a 168 horas.",
       "saved": "Regra de crises em salvas atualizada"
+    },
+    "observation": {
+      "YES": "Sim",
+      "NO": "Não, nada visível",
+      "UNKNOWN": "Não tenho certeza"
     }
   }
 }

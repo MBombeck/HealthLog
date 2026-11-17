@@ -14825,7 +14825,9 @@
       "note": "Nota",
       "delete": "Elimina crisi",
       "deleteTitle": "Eliminare questa crisi?",
-      "deleteBody": "La crisi e le sue dosi di soccorso vengono rimosse e le dosi vengono tolte anche dal farmaco."
+      "deleteBody": "La crisi e le sue dosi di soccorso vengono rimosse e le dosi vengono tolte anche dal farmaco.",
+      "observable": "Segni visibili",
+      "incontinence": "Incontinenza"
     },
     "rescue": {
       "title": "Farmaco di soccorso",
@@ -14878,6 +14880,11 @@
       "hours": "Entro ore",
       "invalid": "Usa da 2 a 20 crisi entro 1 a 168 ore.",
       "saved": "Regola delle crisi a grappolo salvata"
+    },
+    "observation": {
+      "YES": "Sì",
+      "NO": "No, nulla di visibile",
+      "UNKNOWN": "Non so"
     }
   }
 }

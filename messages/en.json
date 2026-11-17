@@ -14825,7 +14825,9 @@
       "note": "Note",
       "delete": "Delete seizure",
       "deleteTitle": "Delete this seizure?",
-      "deleteBody": "The seizure and its rescue doses are removed, and the doses are taken off the medication again."
+      "deleteBody": "The seizure and its rescue doses are removed, and the doses are taken off the medication again.",
+      "observable": "Visible signs",
+      "incontinence": "Incontinence"
     },
     "rescue": {
       "title": "Rescue medication",
@@ -14878,6 +14880,11 @@
       "hours": "Within hours",
       "invalid": "Use 2 to 20 seizures within 1 to 168 hours.",
       "saved": "Cluster rule saved"
+    },
+    "observation": {
+      "YES": "Yes",
+      "NO": "No, nothing visible",
+      "UNKNOWN": "Not sure"
     }
   }
 }

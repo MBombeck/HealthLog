@@ -14825,7 +14825,9 @@
       "note": "Notatka",
       "delete": "Usuń napad",
       "deleteTitle": "Usunąć ten napad?",
-      "deleteBody": "Napad i jego dawki ratunkowe zostaną usunięte, a dawki zostaną też wycofane z leku."
+      "deleteBody": "Napad i jego dawki ratunkowe zostaną usunięte, a dawki zostaną też wycofane z leku.",
+      "observable": "Widoczne objawy",
+      "incontinence": "Nietrzymanie moczu lub stolca"
     },
     "rescue": {
       "title": "Leki ratunkowe",
@@ -14878,6 +14880,11 @@
       "hours": "W ciągu godzin",
       "invalid": "Podaj od 2 do 20 napadów w ciągu od 1 do 168 godzin.",
       "saved": "Reguła napadów gromadnych zapisana"
+    },
+    "observation": {
+      "YES": "Tak",
+      "NO": "Nie, nic nie było widać",
+      "UNKNOWN": "Nie wiem"
     }
   }
 }

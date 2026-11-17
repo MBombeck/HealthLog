@@ -21,6 +21,8 @@ function event(
     rescue: true,
     injury: true,
     note: null,
+    observableManifestations: "YES",
+    incontinence: false,
     responsiveness: "IMPAIRED",
     recall: null,
     postictal: ["WEAKNESS_TODD"],

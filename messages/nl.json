@@ -14825,7 +14825,9 @@
       "note": "Notitie",
       "delete": "Aanval verwijderen",
       "deleteTitle": "Deze aanval verwijderen?",
-      "deleteBody": "De aanval en de bijbehorende nooddoses worden verwijderd, en de doses worden ook weer van het medicijn afgehaald."
+      "deleteBody": "De aanval en de bijbehorende nooddoses worden verwijderd, en de doses worden ook weer van het medicijn afgehaald.",
+      "observable": "Zichtbare tekenen",
+      "incontinence": "Incontinentie"
     },
     "rescue": {
       "title": "Noodmedicatie",
@@ -14878,6 +14880,11 @@
       "hours": "Binnen uur",
       "invalid": "Gebruik 2 tot 20 aanvallen binnen 1 tot 168 uur.",
       "saved": "Clusterregel opgeslagen"
+    },
+    "observation": {
+      "YES": "Ja",
+      "NO": "Nee, niets zichtbaar",
+      "UNKNOWN": "Niet zeker"
     }
   }
 }

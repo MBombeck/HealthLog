@@ -14825,7 +14825,9 @@
       "note": "Nota",
       "delete": "Eliminar crisis",
       "deleteTitle": "¿Eliminar esta crisis?",
-      "deleteBody": "Se eliminan la crisis y sus dosis de rescate, y las dosis se retiran también del medicamento."
+      "deleteBody": "Se eliminan la crisis y sus dosis de rescate, y las dosis se retiran también del medicamento.",
+      "observable": "Signos visibles",
+      "incontinence": "Incontinencia"
     },
     "rescue": {
       "title": "Medicación de rescate",
@@ -14878,6 +14880,11 @@
       "hours": "En horas",
       "invalid": "Usa de 2 a 20 crisis en 1 a 168 horas.",
       "saved": "Regla de crisis en racimo guardada"
+    },
+    "observation": {
+      "YES": "Sí",
+      "NO": "No, nada visible",
+      "UNKNOWN": "No estoy seguro"
     }
   }
 }

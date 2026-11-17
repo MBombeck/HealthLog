@@ -31,6 +31,7 @@ import {
   SEIZURE_EMERGENCIES,
   SEIZURE_FUNCTION_STATES,
   SEIZURE_INJURIES,
+  SEIZURE_OBSERVATIONS,
   SEIZURE_OBSERVER_ROLES,
   SEIZURE_POSTICTAL,
   SEIZURE_SEMIOLOGY,
@@ -59,6 +60,7 @@ type Draft = {
   count: string;
   certainty: string;
   sleepState: string;
+  observable: string;
   responsiveness: string;
   recall: string;
   semiology: string[];
@@ -69,6 +71,7 @@ type Draft = {
   postictal: string[];
   injuries: string[];
   emergency: string;
+  incontinence: string;
   witnessed: string;
   witnessRole: string;
   witnessNote: string;
@@ -91,6 +94,7 @@ function draftOf(
     count: String(event?.count ?? 1),
     certainty: event?.certainty ?? "CONFIRMED",
     sleepState: event?.sleepState ?? "UNKNOWN",
+    observable: event?.observableManifestations ?? "",
     responsiveness: event?.responsiveness ?? "",
     recall: event?.recall ?? "",
     semiology: event?.semiology ?? [],
@@ -102,6 +106,8 @@ function draftOf(
     postictal: event?.postictal ?? [],
     injuries: event?.injuries ?? [],
     emergency: event?.emergency ?? "NONE",
+    incontinence:
+      event?.incontinence == null ? "" : event.incontinence ? "yes" : "no",
     witnessed: event?.witnessed == null ? "" : event.witnessed ? "yes" : "no",
     witnessRole: event?.witnessRole ?? "",
     witnessNote: event?.witnessNote ?? "",
@@ -132,6 +138,7 @@ export function bodyOf(draft: Draft): SeizureEventBody {
     count: Math.max(1, Math.round(Number(draft.count) || 1)),
     certainty: draft.certainty,
     sleepState: draft.sleepState,
+    observableManifestations: draft.observable || null,
     responsiveness: draft.responsiveness || null,
     recall: draft.recall || null,
     semiology: draft.semiology,
@@ -145,6 +152,8 @@ export function bodyOf(draft: Draft): SeizureEventBody {
     postictal: draft.postictal,
     injuries: draft.injuries,
     emergency: draft.emergency,
+    incontinence:
+      draft.incontinence === "" ? null : draft.incontinence === "yes",
     witnessed: draft.witnessed === "" ? null : draft.witnessed === "yes",
     witnessRole: draft.witnessRole || null,
     witnessNote: text(draft.witnessNote),
@@ -459,6 +468,76 @@ function CoreFields({
   );
 }
 
+/** What came after: recovery, post-ictal state, injuries, emergency care. */
+function AfterSection({ draft, set, readOnly }: DraftProps) {
+  const { t } = useTranslations();
+  const dp = { draft, set, readOnly };
+  const notKnown = { value: "", label: t("seizures.notRecorded") };
+  return (
+    <SheetSection title={t("seizures.sheet.sectionAfter")}>
+      <div className="space-y-4">
+        <FieldGroup
+          htmlFor="seizure-postictal-minutes"
+          label={t("seizures.sheet.postictalMinutes")}
+        >
+          <Input
+            id="seizure-postictal-minutes"
+            inputMode="numeric"
+            value={draft.postictalMinutes}
+            disabled={readOnly}
+            onChange={(e) =>
+              set("postictalMinutes", e.target.value.replace(/\D/g, ""))
+            }
+          />
+        </FieldGroup>
+        <DraftChips
+          {...dp}
+          args={[
+            t("seizures.sheet.postictal"),
+            "postictal",
+            SEIZURE_POSTICTAL,
+            "seizures.postictal",
+          ]}
+        />
+        <DraftChips
+          {...dp}
+          args={[
+            t("seizures.sheet.injuries"),
+            "injuries",
+            SEIZURE_INJURIES,
+            "seizures.injury",
+          ]}
+        />
+        <DraftSelect
+          {...dp}
+          args={[
+            "seizure-emergency",
+            t("seizures.sheet.emergency"),
+            "emergency",
+            SEIZURE_EMERGENCIES.map((v) => ({
+              value: v,
+              label: t(`seizures.emergency.${v}`),
+            })),
+          ]}
+        />
+        <DraftSelect
+          {...dp}
+          args={[
+            "seizure-incontinence",
+            t("seizures.sheet.incontinence"),
+            "incontinence",
+            [
+              notKnown,
+              { value: "yes", label: t("common.yes") },
+              { value: "no", label: t("common.no") },
+            ],
+          ]}
+        />
+      </div>
+    </SheetSection>
+  );
+}
+
 /** The optional details, folded: what was seen, afterwards, triggers and witness. */
 function DetailSections({ draft, set, readOnly }: DraftProps) {
   const { t } = useTranslations();
@@ -468,6 +547,21 @@ function DetailSections({ draft, set, readOnly }: DraftProps) {
     <>
       <SheetSection title={t("seizures.sheet.sectionObserved")}>
         <div className="space-y-4">
+          <DraftSelect
+            {...dp}
+            args={[
+              "seizure-observable",
+              t("seizures.sheet.observable"),
+              "observable",
+              [
+                notKnown,
+                ...SEIZURE_OBSERVATIONS.map((v) => ({
+                  value: v,
+                  label: t(`seizures.observation.${v}`),
+                })),
+              ],
+            ]}
+          />
           <DraftSelect
             {...dp}
             args={[
@@ -546,54 +640,7 @@ function DetailSections({ draft, set, readOnly }: DraftProps) {
         </div>
       </SheetSection>
 
-      <SheetSection title={t("seizures.sheet.sectionAfter")}>
-        <div className="space-y-4">
-          <FieldGroup
-            htmlFor="seizure-postictal-minutes"
-            label={t("seizures.sheet.postictalMinutes")}
-          >
-            <Input
-              id="seizure-postictal-minutes"
-              inputMode="numeric"
-              value={draft.postictalMinutes}
-              disabled={readOnly}
-              onChange={(e) =>
-                set("postictalMinutes", e.target.value.replace(/\D/g, ""))
-              }
-            />
-          </FieldGroup>
-          <DraftChips
-            {...dp}
-            args={[
-              t("seizures.sheet.postictal"),
-              "postictal",
-              SEIZURE_POSTICTAL,
-              "seizures.postictal",
-            ]}
-          />
-          <DraftChips
-            {...dp}
-            args={[
-              t("seizures.sheet.injuries"),
-              "injuries",
-              SEIZURE_INJURIES,
-              "seizures.injury",
-            ]}
-          />
-          <DraftSelect
-            {...dp}
-            args={[
-              "seizure-emergency",
-              t("seizures.sheet.emergency"),
-              "emergency",
-              SEIZURE_EMERGENCIES.map((v) => ({
-                value: v,
-                label: t(`seizures.emergency.${v}`),
-              })),
-            ]}
-          />
-        </div>
-      </SheetSection>
+      <AfterSection {...dp} />
 
       <SheetSection title={t("seizures.sheet.sectionContext")}>
         <div className="space-y-4">

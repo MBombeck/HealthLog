@@ -151,6 +151,8 @@ export interface SeizureReportEventRow {
   injury: boolean;
   /** The note, cut to a line. */
   note: string | null;
+  observableManifestations: "YES" | "NO" | "UNKNOWN" | null;
+  incontinence: boolean | null;
   responsiveness: SeizureFunctionState | null;
   recall: SeizureFunctionState | null;
   postictal: SeizurePostictal[];

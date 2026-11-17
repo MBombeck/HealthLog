@@ -14825,7 +14825,9 @@
       "note": "Note",
       "delete": "Supprimer la crise",
       "deleteTitle": "Supprimer cette crise ?",
-      "deleteBody": "La crise et ses doses de secours sont supprimées, et les doses sont retirées du médicament."
+      "deleteBody": "La crise et ses doses de secours sont supprimées, et les doses sont retirées du médicament.",
+      "observable": "Signes visibles",
+      "incontinence": "Incontinence"
     },
     "rescue": {
       "title": "Traitement de secours",
@@ -14878,6 +14880,11 @@
       "hours": "En heures",
       "invalid": "Indiquez 2 à 20 crises en 1 à 168 heures.",
       "saved": "Règle des crises en salves enregistrée"
+    },
+    "observation": {
+      "YES": "Oui",
+      "NO": "Non, rien de visible",
+      "UNKNOWN": "Pas sûr"
     }
   }
 }

@@ -120,6 +120,15 @@ function seizureComponents(
       valueCodeableConcept: text(lower(e.sleepState)),
     });
   }
+  if (e.observableManifestations && e.observableManifestations !== "UNKNOWN") {
+    out.push({
+      code: text("Observable manifestations"),
+      valueBoolean: e.observableManifestations === "YES",
+    });
+  }
+  if (e.incontinence !== null) {
+    out.push({ code: text("Incontinence"), valueBoolean: e.incontinence });
+  }
   if (e.responsiveness) {
     out.push({
       code: text("Responsiveness"),

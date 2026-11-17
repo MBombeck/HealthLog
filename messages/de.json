@@ -14825,7 +14825,9 @@
       "note": "Notiz",
       "delete": "Anfall löschen",
       "deleteTitle": "Diesen Anfall löschen?",
-      "deleteBody": "Der Anfall und seine Notfalldosen werden entfernt, und die Dosen werden beim Medikament wieder ausgetragen."
+      "deleteBody": "Der Anfall und seine Notfalldosen werden entfernt, und die Dosen werden beim Medikament wieder ausgetragen.",
+      "observable": "Sichtbare Zeichen",
+      "incontinence": "Einnässen oder Einkoten"
     },
     "rescue": {
       "title": "Notfallmedikation",
@@ -14878,6 +14880,11 @@
       "hours": "Innerhalb von Stunden",
       "invalid": "Erlaubt sind 2 bis 20 Anfälle innerhalb von 1 bis 168 Stunden.",
       "saved": "Regel für Anfallsserien gespeichert"
+    },
+    "observation": {
+      "YES": "Ja",
+      "NO": "Nein, nichts sichtbar",
+      "UNKNOWN": "Nicht sicher"
     }
   }
 }

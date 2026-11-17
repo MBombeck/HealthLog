@@ -287,6 +287,8 @@ export function buildSeizureReportSection(
       rescue: r.rescueDoses.length > 0,
       injury: r.injuries.some((i) => i !== "NONE"),
       note: note ? (note.length > 80 ? `${note.slice(0, 79)}…` : note) : null,
+      observableManifestations: r.observableManifestations,
+      incontinence: r.incontinence,
       responsiveness: r.responsiveness,
       recall: r.recall,
       postictal: r.postictal,
