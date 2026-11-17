@@ -24,6 +24,7 @@ import { describe, expect, it } from "vitest";
  */
 
 import { GET } from "@/app/.well-known/apple-app-site-association/route";
+import { NATIVE_OIDC_RETURN_PATH } from "@/lib/auth/native-return";
 
 const APP_ID = "S8WDX4W5KX.dev.healthlog.app";
 
@@ -59,7 +60,7 @@ describe("/.well-known/apple-app-site-association (SB-4)", () => {
         details: [
           {
             appID: APP_ID,
-            paths: ["*"],
+            paths: ["/auth/register*", "/invite*", "/auth/native-return"],
           },
         ],
       },
@@ -67,6 +68,18 @@ describe("/.well-known/apple-app-site-association (SB-4)", () => {
         apps: [APP_ID],
       },
     });
+  });
+
+  it("lists only the paths the app handles, never the whole host", async () => {
+    const body = (await GET().json()) as {
+      applinks: { details: Array<{ paths: string[] }> };
+    };
+    const paths = body.applinks.details.flatMap((d) => d.paths);
+    expect(paths).not.toContain("*");
+    // The web SSO return stays in the browser.
+    expect(paths.some((p) => p.startsWith("/api/"))).toBe(false);
+    // The native https return the server announces is one of them.
+    expect(paths).toContain(NATIVE_OIDC_RETURN_PATH);
   });
 
   it("uses the same App ID prefix for applinks and webcredentials", async () => {

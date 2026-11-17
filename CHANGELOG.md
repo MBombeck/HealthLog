@@ -18,6 +18,13 @@
 
 ### Changed
 
+- The `apple-app-site-association` file now lists only the addresses the
+  iPhone app actually opens: registration and invite links, and the new
+  sign-in return. Before, it claimed every address on the server, so an app
+  build linked to your server could pull pages into the app that belong in
+  the browser, such as the web sign-in's own return from your identity
+  provider.
+
 - API responses and CSV or JSON exports now go out gzip-compressed when the
   browser or app asks for it, which comes with Next.js 16.4.6. The live Coach
   and document chat streams are left uncompressed, so their text still
