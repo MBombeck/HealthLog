@@ -274,6 +274,21 @@ export const MAX_MICRONUTRIENT_CHANNELS = 4;
 export const MAX_MACRONUTRIENT_CHANNELS = 2;
 
 /**
+ * The rows of a nutrient read that stopped at `cap`, newest day first, with
+ * the oldest day left out when the cap was reached: the read can end in the
+ * middle of that day, and its total would then be judged on whichever of its
+ * sources happened to be read.
+ */
+export function wholeNutrientDays<T extends { day: string }>(
+  rows: readonly T[],
+  cap: number,
+): readonly T[] {
+  if (rows.length < cap) return rows;
+  const cut = rows[rows.length - 1].day;
+  return rows.filter((row) => row.day !== cut);
+}
+
+/**
  * The intake channels from the nutrient log: water as HYDRATION, caffeine as
  * CAFFEINE, at most {@link MAX_MICRONUTRIENT_CHANNELS} micronutrients and at
  * most {@link MAX_MACRONUTRIENT_CHANNELS} energy or macronutrient codes as

@@ -52,6 +52,7 @@ import {
   buildAlcoholDailySeries,
   buildComplianceDailySeries,
   buildNutrientDailySeries,
+  wholeNutrientDays,
   buildOvernightClimateSeries,
   buildTrainingLoadSeries,
   buildWorkoutMinutesSeries,
@@ -1167,10 +1168,7 @@ export async function fetchLabDraws(
 
 // ─── v1.44 — the extended channel families ─────────────────────────────────
 
-/**
- * Upper bound on nutrient rows read for one scan: 180 days × 37 codes × three
- * sources is about twenty thousand; the cap falls on the oldest rows.
- */
+/** Nutrient rows read per scan: 180 days × 37 codes × three sources. */
 const NUTRIENT_READ_CAP = 20_000;
 
 /**
@@ -1188,7 +1186,8 @@ export async function fetchNutrientSeries(
     take: NUTRIENT_READ_CAP,
     select: { day: true, nutrient: true, amount: true, source: true },
   });
-  return buildNutrientDailySeries(rows, { minDays: MIN_PAIRED_N });
+  const whole = wholeNutrientDays(rows, NUTRIENT_READ_CAP);
+  return buildNutrientDailySeries(whole, { minDays: MIN_PAIRED_N });
 }
 
 /** The mood read the alcohol channel shares its cap with. */
