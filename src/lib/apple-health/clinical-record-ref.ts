@@ -33,7 +33,7 @@ const CAPS = {
   fhirVersion: 16,
 } as const;
 
-function capped(raw: string | undefined, max: number): string | null {
+function withinCap(raw: string | undefined, max: number): string | null {
   if (raw === undefined) return null;
   const trimmed = raw.trim();
   if (trimmed === "" || trimmed.length > max) return null;
@@ -51,11 +51,11 @@ export function routeClinicalRecord(
 ): boolean {
   if (!onLab || attrs.type !== HK_LAB_RESULT_RECORD) return false;
   onLab({
-    path: capped(attrs.resourceFilePath, CAPS.path),
-    identifier: capped(attrs.identifier, CAPS.identifier),
-    sourceURL: capped(attrs.sourceURL, CAPS.sourceURL),
-    sourceName: capped(attrs.sourceName, CAPS.sourceName),
-    fhirVersion: capped(attrs.fhirVersion, CAPS.fhirVersion),
+    path: withinCap(attrs.resourceFilePath, CAPS.path),
+    identifier: withinCap(attrs.identifier, CAPS.identifier),
+    sourceURL: withinCap(attrs.sourceURL, CAPS.sourceURL),
+    sourceName: withinCap(attrs.sourceName, CAPS.sourceName),
+    fhirVersion: withinCap(attrs.fhirVersion, CAPS.fhirVersion),
   });
   return true;
 }
