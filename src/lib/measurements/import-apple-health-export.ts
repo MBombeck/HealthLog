@@ -46,6 +46,10 @@ import {
 } from "@/lib/measurements/drain-per-sample-cumulative";
 import { isHealthLogOriginEntry } from "@/lib/apple-health/own-origin";
 import {
+  routeClinicalRecord,
+  type ClinicalLabReference,
+} from "@/lib/apple-health/clinical-record-ref";
+import {
   isSameReadingAcrossSource,
   MEASURED_AT_TOLERANCE_MS,
 } from "@/lib/measurements/cross-source-merge";
@@ -460,6 +464,9 @@ export interface StreamParseInput {
    * pass, from the archive (`src/lib/apple-health/route-import.ts`).
    */
   onWorkoutRoute?: (ref: { externalId: string; path: string }) => void;
+  /** Called once per lab-result `<ClinicalRecord>`; without it every clinical
+   *  record is counted as skipped (`src/lib/apple-health/clinical-labs-import.ts`). */
+  onClinicalLabRecord?: (ref: ClinicalLabReference) => void;
 }
 
 /**
@@ -1449,7 +1456,9 @@ export async function streamParseExportXml(
 
     if (name === "ClinicalRecord") {
       recordsRead += 1;
-      clinical.skipped += 1;
+      if (!routeClinicalRecord(attrs, input.onClinicalLabRecord)) {
+        clinical.skipped += 1;
+      }
       return;
     }
 

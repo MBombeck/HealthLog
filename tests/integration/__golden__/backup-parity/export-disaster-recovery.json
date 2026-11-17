@@ -912,8 +912,8 @@
         "id": "<id:37>",
         "biomarkerId": "<id:38>",
         "noteEncrypted": "<sealed:v1:rt-LabResult-noteEncrypted>",
-        "createdAt": "2026-05-02T10:58:00.000Z",
-        "updatedAt": "2026-05-02T10:59:00.000Z",
+        "createdAt": "2026-05-02T10:59:00.000Z",
+        "updatedAt": "2026-05-02T11:00:00.000Z",
         "deletedAt": null,
         "note": null,
         "panel": "rt-LabResult-panel",
@@ -930,14 +930,15 @@
         "sourceUnit": "rt-LabResult-sourceUnit",
         "takenAt": "2026-06-30T09:00:00.000Z",
         "source": "rt-LabResult-source",
+        "externalId": "rt-LabResult-externalId",
         "biomarkerName": "Ferritin"
       },
       {
         "id": "<id:39>",
         "biomarkerId": null,
         "noteEncrypted": null,
-        "createdAt": "2026-05-02T10:58:01.000Z",
-        "updatedAt": "2026-05-02T10:59:01.000Z",
+        "createdAt": "2026-05-02T10:59:01.000Z",
+        "updatedAt": "2026-05-02T11:00:01.000Z",
         "deletedAt": "<tombstone>",
         "note": null,
         "panel": null,
@@ -954,6 +955,7 @@
         "sourceUnit": null,
         "takenAt": "2026-05-30T09:00:00.000Z",
         "source": "MANUAL",
+        "externalId": null,
         "biomarkerName": null
       }
     ],
@@ -3381,13 +3383,14 @@
         "sourceUnit": "rt-LabResult-sourceUnit",
         "takenAt": "2026-06-30T09:00:00.000Z",
         "source": "rt-LabResult-source",
+        "externalId": "rt-LabResult-externalId",
         "biomarkerName": "Ferritin",
         "biomarkerId": "<id:38>",
         "note": null,
-        "createdAt": "2026-05-02T10:58:00.000Z",
+        "createdAt": "2026-05-02T10:59:00.000Z",
         "noteEncrypted": "<sealed:v1:rt-LabResult-noteEncrypted>",
         "deletedAt": null,
-        "updatedAt": "2026-05-02T10:59:00.000Z"
+        "updatedAt": "2026-05-02T11:00:00.000Z"
       },
       {
         "id": "<id:39>",
@@ -3405,13 +3408,14 @@
         "sourceUnit": null,
         "takenAt": "2026-05-30T09:00:00.000Z",
         "source": "MANUAL",
+        "externalId": null,
         "biomarkerName": null,
         "biomarkerId": null,
         "note": null,
-        "createdAt": "2026-05-02T10:58:01.000Z",
+        "createdAt": "2026-05-02T10:59:01.000Z",
         "noteEncrypted": null,
         "deletedAt": "<tombstone>",
-        "updatedAt": "2026-05-02T10:59:01.000Z"
+        "updatedAt": "2026-05-02T11:00:01.000Z"
       }
     ],
     "biomarkers": [

@@ -256,8 +256,8 @@ export async function importAppleHealthWorkoutRoutes(input: {
       }
     }
   } catch {
-    // The archive itself is unreadable for this pass (a ZIP64 export, a
-    // limit hit in the directory). Every referenced track not yet handled
+    // The archive itself is unreadable for this pass (a malformed directory,
+    // a limit hit in it). Every referenced track not yet handled
     // counts as failed; the import stays done.
     const handled = counts.attached + counts.skipped + counts.failed;
     counts.failed += Math.max(0, byMember.size - handled);

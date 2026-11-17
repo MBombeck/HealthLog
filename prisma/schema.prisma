@@ -6660,6 +6660,14 @@ model LabResult {
   biomarkerId         String?   @map("biomarker_id")
   /// Provenance: "MANUAL" today; import paths set their own source string.
   source              String    @default("MANUAL")
+  /// #1400 — the identity a reading arrived under from Apple Health's Health
+  /// Records: "fhir:" + a SHA-256 digest of the issuing institution and the
+  /// FHIR Observation's identifier (or "fhirc:" + a digest of its content when
+  /// it has none). A digest, not the identifier and not ciphertext. NULL for
+  /// every reading typed, scanned or imported from CSV. Read by
+  /// `writeFhirLabReadings` (`src/lib/labs/fhir-import/write.ts`), which treats
+  /// a reading it already holds under this id, deleted or not, as a duplicate.
+  externalId          String?   @map("external_id")
   /// Optional free-text note, AES-256-GCM encrypted at rest via
   /// `src/lib/crypto.ts` (Bytes column, `*Encrypted` suffix per convention).
   noteEncrypted       Bytes?    @map("note_encrypted")
@@ -6673,6 +6681,7 @@ model LabResult {
   encounterLinks EncounterLabLink[]
   documentLinks  LabResultDocumentLink[]
 
+  @@unique([userId, source, externalId])
   @@index([userId, analyte, takenAt])
   @@index([userId, deletedAt])
   @@index([biomarkerId])

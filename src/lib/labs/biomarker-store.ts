@@ -22,6 +22,7 @@ import {
   type MarkerIndex,
 } from "@/lib/labs/biomarker-resolve";
 import { mintedBounds } from "@/lib/labs/minted-bounds";
+import { analyteAcceptsUnit } from "@/lib/labs/unit-conversion/convert";
 import { getEvent } from "@/lib/logging/context";
 
 /** Encrypt a UTF-8 context note into the `Bytes` payload the schema stores. */
@@ -110,11 +111,12 @@ export async function resolveOrMintBiomarker(
     referenceHigh: number | null;
     panel: string | null;
   },
-  options: { index?: MarkerIndex } = {},
+  options: { index?: MarkerIndex; catalogKey?: string | null } = {},
 ): Promise<MintedBiomarker> {
   const name = input.analyte.trim();
   const index = options.index ?? (await loadMarkerIndex(prisma, userId));
-  const hit = resolveInIndex(index, name, input.unit || null);
+  const catalogKey = options.catalogKey ?? null;
+  const hit = resolveInIndex(index, name, input.unit || null, { catalogKey });
   if (hit) return toMinted(hit.marker);
 
   const { lowerBound, upperBound } = mintedBounds(
@@ -130,7 +132,13 @@ export async function resolveOrMintBiomarker(
         lowerBound,
         upperBound,
         panel: input.panel,
-        analyteKey: matchAnalyteKey({ name, unit: input.unit }),
+        // A name the catalog does not know still links when the source named
+        // the analyte (a LOINC code), provided the unit is one it reaches.
+        analyteKey:
+          matchAnalyteKey({ name, unit: input.unit }) ??
+          (catalogKey && analyteAcceptsUnit(catalogKey, input.unit)
+            ? catalogKey
+            : null),
       },
       select: INDEXED_SELECT,
     });

@@ -5895,6 +5895,7 @@
             "writtenByHealthLogOther": "{count} Einträge, die HealthLog selbst in Apple Health geschrieben hat, wurden ausgelassen, weil sie schon in deinen Daten sind.",
             "writtenByHealthLogFew": "{count} Einträge, die HealthLog selbst in Apple Health geschrieben hat, wurden ausgelassen, weil sie schon in deinen Daten sind.",
             "ecgResult": "EKGs: {discovered} gefunden, {imported} importiert, {updated} aktualisiert, {skipped} übersprungen, {failed} fehlgeschlagen. Fehler bei EKGs verwerfen keine unterstützten Datensätze, die aus export.xml importiert wurden.",
+            "labsResult": "Laborwerte aus Gesundheitsakten: {discovered} gefunden, {imported} importiert, {duplicate} schon vorhanden, {skipped} übersprungen, {failed} fehlgeschlagen. Ein fehlgeschlagener Laborwert verwirft nichts anderes aus dem Archiv.",
             "estimateWarning": "Kumulative Summen für {count} Tag(e) wurden anhand der größten Exportquelle geschätzt. Native Apple-Health-Statistiken bleiben maßgeblich.",
             "phase": {
               "queued": "In Warteschlange…",

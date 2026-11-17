@@ -17419,6 +17419,51 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a12
+  /api/labs/fhir-batch:
+    post:
+      tags:
+        - Labs
+      summary: Ingest lab results from Apple Health's Health Records
+      description: "Maps each FHIR lab result (DSTU2 or R4 Observation) to a lab reading and writes it: final results only
+        (`final`, `amended`, `corrected`), the laboratory category, numeric values in their unit (UCUM codes are read),
+        a value with a comparator (`<0.5 mg/L`) kept as text as printed, string and coded values as text, the report's
+        own reference range, and the panel's name for its members. The name resolves to the caller's marker by its own
+        name, an alias, or the catalog analyte its LOINC code names; a new analyte gets a new marker; a reading in
+        another unit is converted when the conversion is known and refused otherwise. The identity is a digest of
+        `sourceURL` and `identifier`, the same one an Apple Health export import builds, so a result already imported
+        from an export is a `duplicate` here, and sending a batch again is safe. First write wins: an amended result
+        under a held identity is a duplicate. Owner-only: a cookie session or a full-scope login token. The body is
+        capped at 1 MiB (413 past it): a client splits a large sync by size as well as by count. Rate limit 60 batches a
+        minute; Idempotency-Key supported. A response carrying `write_failed` is `Cache-Control: no-store` and is not
+        replayed for its key. Audits as `labs.fhir.batch` with counts only."
+      parameters:
+        - *a6
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FhirLabBatchRequest"
+      responses:
+        "200":
+          description: Batch processed; one result per record. `outcome` reads `inserted` against `failed` (skips and duplicates
+            are information, not failure).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FhirLabBatchEnvelope"
+        "401": *a1
+        "403": *a9
+        "409": *a7
+        "422":
+          description: "Nothing was written. `meta.errorCode` = `labs.fhir_batch.invalid`: no records, more than 200, a record
+            without a `resource` object, an over-long HealthKit field, or a field the request does not define (every
+            issue under `details.issues`)."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429": *a5
   /api/labs/overview:
     get:
       tags:
@@ -35222,6 +35267,47 @@ components:
         optional `source` records provenance: `"OCR"` for an on-device-OCR capture (the raw image never reaches the
         server on this path), defaulting to `"MANUAL"` when omitted. The optional `encounterId` files the reading
         against a visit the caller owns — always optional, and a link that could not be made never fails the reading.'
+    FhirLabBatchRequest:
+      type: object
+      properties:
+        records:
+          minItems: 1
+          maxItems: 200
+          type: array
+          items:
+            type: object
+            properties:
+              resource:
+                type: object
+                propertyNames:
+                  type: string
+                additionalProperties: {}
+                description: The FHIR resource as JSON (`HKFHIRResource.data`), DSTU2 or R4. Only Observations of the laboratory
+                  category are kept.
+              fhirVersion:
+                description: "`HKFHIRResource.fhirVersion` (e.g. `4.0.1`)."
+                type: string
+                maxLength: 16
+              identifier:
+                description: "`HKFHIRResource.identifier`, the resource's id at its source."
+                type: string
+                maxLength: 256
+              sourceURL:
+                description: "`HKFHIRResource.sourceURL`, the issuing institution's FHIR base."
+                type: string
+                maxLength: 2048
+              sourceName:
+                description: The institution as the Health app names it (`sourceRevision.source.name`).
+                type: string
+                maxLength: 200
+            required:
+              - resource
+      required:
+        - records
+      additionalProperties: false
+      description: "1 to 200 Health Records lab results (`HKClinicalTypeIdentifierLabResultRecord`), each the FHIR resource as
+        JSON plus the HealthKit fields its identity is built from. Send a panel and its members in the same batch so the
+        members carry the panel's name. No `userId`: the owner is the caller."
     UpdateLabResultRequest:
       type: object
       properties:
@@ -40595,12 +40681,12 @@ components:
                 insights.generate.scopeChanged; labs — labs.biomarker.alias.taken, labs.biomarker.create.invalid,
                 labs.biomarker.duplicate, labs.biomarker.merge.invalid, labs.biomarker.merge.unitMismatch,
                 labs.biomarker.notFound, labs.biomarker.update.invalid, labs.biomarker.update.referenceRangeInvalid,
-                labs.create.invalid, labs.series.invalid, labs.link.invalid, labs.ocr.budgetExceeded,
-                labs.ocr.extractFailed, labs.ocr.fileTooLarge, labs.ocr.fileType, labs.ocr.localOcrDisabled,
-                labs.ocr.outputLimit, labs.ocr.pdfRendererUnavailable, labs.ocr.providerUnsupported,
-                labs.ocr.rateLimited, labs.ocr.tooLarge, labs.restore.invalid, labs.result.notFound, labs.unit.mismatch,
-                labs.update.invalid, labs.update.linkedFieldsImmutable, labs.update.numericExpected,
-                labs.update.qualitativeExpected, labs.update.referenceRangeInvalid,
+                labs.create.invalid, labs.fhir_batch.invalid, labs.series.invalid, labs.link.invalid,
+                labs.ocr.budgetExceeded, labs.ocr.extractFailed, labs.ocr.fileTooLarge, labs.ocr.fileType,
+                labs.ocr.localOcrDisabled, labs.ocr.outputLimit, labs.ocr.pdfRendererUnavailable,
+                labs.ocr.providerUnsupported, labs.ocr.rateLimited, labs.ocr.tooLarge, labs.restore.invalid,
+                labs.result.notFound, labs.unit.mismatch, labs.update.invalid, labs.update.linkedFieldsImmutable,
+                labs.update.numericExpected, labs.update.qualitativeExpected, labs.update.referenceRangeInvalid,
                 labs.update.sourceReferenceRangeInvalid; life_event — life_event.invalid, life_event.not_found;
                 managed_profile — managed_profile.guardian.duplicate, managed_profile.guardian.managed_invitee,
                 managed_profile.guardian.required, managed_profile.handover.no_pending,
@@ -45440,6 +45526,12 @@ components:
               source:
                 type: string
                 minLength: 1
+              externalId:
+                anyOf:
+                  - type: string
+                    minLength: 1
+                    maxLength: 128
+                  - type: "null"
               biomarkerName:
                 type:
                   - string
@@ -77453,9 +77545,10 @@ components:
                     type: string
                   additionalProperties: {}
                 - type: "null"
-              description: The worker's outcome summary, null until it finishes. Free-form except for `ecg`, whose five counters
-                (`discovered` / `imported` / `updated` / `skipped` / `failed`) are normalised to bounded non-negative
-                integers before serving.
+              description: "The worker's outcome summary, null until it finishes. Free-form except for `ecg` and `labs`, whose five
+                counters each (`ecg`: `discovered` / `imported` / `updated` / `skipped` / `failed`; `labs`, the lab
+                results from Health Records: `discovered` / `imported` / `duplicate` / `skipped` / `failed`) are
+                normalised to bounded non-negative integers before serving."
             failureReason:
               description: Free text on `failed`; null otherwise.
               type:
@@ -78001,6 +78094,9 @@ components:
           type: string
         source:
           type: string
+          description: "Where the reading came from: `MANUAL` (typed), `OCR` (a scanned report), `DOCUMENT` (a document import),
+            `IMPORT` (a lab CSV) or `APPLE_HEALTH` (Apple Health's Health Records, from an export or `POST
+            /api/labs/fhir-batch`). Open-ended: render an unknown value as-is."
         hasNote:
           type: boolean
         rangeStatus:
@@ -78095,6 +78191,105 @@ components:
         - data
         - error
       additionalProperties: false
+    FhirLabBatchEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/FhirLabBatchResponse"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    FhirLabBatchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/FhirLabRecordResult"
+        inserted:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        duplicate:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        skipped:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        failed:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        outcome:
+          type: string
+          enum:
+            - empty
+            - failed
+            - partial
+            - success
+      required:
+        - results
+        - inserted
+        - duplicate
+        - skipped
+        - failed
+        - outcome
+      additionalProperties: false
+    FhirLabRecordResult:
+      type: object
+      properties:
+        index:
+          type: integer
+          minimum: -9007199254740991
+          maximum: 9007199254740991
+        status:
+          type: string
+          enum:
+            - inserted
+            - duplicate
+            - skipped
+            - failed
+        reason:
+          type: string
+          enum:
+            - not_observation
+            - not_lab
+            - not_final
+            - withdrawn
+            - panel_header
+            - no_value
+            - unsupported_value
+            - no_date
+            - future_date
+            - invalid_date
+            - too_large
+            - missing_unit
+            - unit_mismatch
+            - text_too_long
+            - write_failed
+      required:
+        - index
+        - status
+      additionalProperties: false
+      description: "One record's outcome, by its position in the request. `inserted`: written. `duplicate`: the record already
+        holds it, under the same identity (deleted readings included, so a deleted result stays deleted) or as the same
+        reading on the same day from another source. `skipped`: not a reading HealthLog keeps, with `reason`
+        `not_observation` | `not_lab` | `not_final` (preliminary; it is taken once final) | `withdrawn` | `panel_header`
+        | `no_value` | `unsupported_value` | `no_date` | `future_date` | `invalid_date` | `too_large` (a resource over
+        256 KiB). `failed`: a reading that could not be stored, with `reason` `missing_unit` | `unit_mismatch` (the
+        account's marker is in a unit this one does not convert into) | `text_too_long` | `write_failed` (transient:
+        send it again)."
     LabOverviewEnvelope:
       type: object
       properties:
@@ -78331,6 +78526,9 @@ components:
           type: string
         source:
           type: string
+          description: "Where the reading came from: `MANUAL` (typed), `OCR` (a scanned report), `DOCUMENT` (a document import),
+            `IMPORT` (a lab CSV) or `APPLE_HEALTH` (Apple Health's Health Records, from an export or `POST
+            /api/labs/fhir-batch`). Open-ended: render an unknown value as-is."
         rangeStatus:
           $ref: "#/components/schemas/LabReferenceRangeStatus"
         createdAt:

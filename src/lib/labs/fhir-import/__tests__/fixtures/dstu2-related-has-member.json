@@ -1,0 +1,37 @@
+[
+  {
+    "resourceType": "Observation",
+    "id": "dstu2-lipid",
+    "status": "final",
+    "category": { "coding": [{ "code": "laboratory" }] },
+    "code": { "text": "Lipid panel" },
+    "effectiveDateTime": "2019-06-11T07:05:00Z",
+    "related": [
+      {
+        "type": "has-member",
+        "target": { "reference": "Observation/dstu2-hdl" }
+      },
+      {
+        "type": "derived-from",
+        "target": { "reference": "Observation/dstu2-other" }
+      }
+    ]
+  },
+  {
+    "resourceType": "Observation",
+    "id": "dstu2-hdl",
+    "status": "final",
+    "category": { "coding": [{ "code": "laboratory" }] },
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "2085-9",
+          "display": "HDL Cholesterol"
+        }
+      ]
+    },
+    "effectiveDateTime": "2019-06-11T07:05:00Z",
+    "valueQuantity": { "value": 55, "unit": "mg/dL" }
+  }
+]

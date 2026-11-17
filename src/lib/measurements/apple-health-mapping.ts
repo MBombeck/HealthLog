@@ -1262,7 +1262,10 @@ export const HK_QUANTITY_TYPE_DEFERRED = new Set<string>([
   // branch runs.
   "HKCategoryTypeIdentifierBleedingAfterPregnancy",
   "HKCategoryTypeIdentifierBleedingDuringPregnancy",
-  // Clinical (FHIR) — v1.6+
+  // Clinical (FHIR). These never arrive as a `<Record>`; the export writes
+  // `<ClinicalRecord>` elements, which the parser handles itself: lab results
+  // are imported as lab readings (`src/lib/apple-health/clinical-labs-import.ts`),
+  // every other clinical type is counted in `clinical.skipped`.
   "HKClinicalTypeIdentifierAllergyRecord",
   "HKClinicalTypeIdentifierConditionRecord",
   "HKClinicalTypeIdentifierImmunizationRecord",

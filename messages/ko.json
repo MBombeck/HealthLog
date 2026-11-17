@@ -5895,6 +5895,7 @@
             "writtenByHealthLogOther": "HealthLog가 직접 건강 앱에 기록한 {count}개 항목은 이미 데이터에 있으므로 제외했습니다.",
             "writtenByHealthLogFew": "HealthLog가 직접 건강 앱에 기록한 {count}개 항목은 이미 데이터에 있으므로 제외했습니다.",
             "ecgResult": "심전도: 발견 {discovered}개, 불러옴 {imported}개, 갱신 {updated}개, 건너뜀 {skipped}개, 실패 {failed}개. 심전도가 실패해도 export.xml에서 불러온 지원 기록은 그대로 남아요.",
+            "labsResult": "건강 기록의 검사 결과: 발견 {discovered}개, 불러옴 {imported}개, 이미 있음 {duplicate}개, 건너뜀 {skipped}개, 실패 {failed}개. 검사 결과가 실패해도 아카이브의 다른 기록은 그대로 남아요.",
             "estimateWarning": "{count}일치 누적 합계는 가장 큰 내보내기 소스에서 추정했어요. Apple Health 자체 통계가 여전히 기준이에요.",
             "phase": {
               "queued": "대기 중…",

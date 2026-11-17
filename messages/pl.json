@@ -5895,6 +5895,7 @@
             "writtenByHealthLogOther": "Pominięto {count} wpisów, które HealthLog sam zapisał w Apple Health, ponieważ są już w Twoich danych.",
             "writtenByHealthLogFew": "Pominięto {count} wpisy, które HealthLog sam zapisał w Apple Health, ponieważ są już w Twoich danych.",
             "ecgResult": "EKG: wykryto {discovered}, zaimportowano {imported}, zaktualizowano {updated}, pominięto {skipped}, nie powiodło się {failed}. Błędy EKG nie usuwają obsługiwanych rekordów zaimportowanych z pliku export.xml.",
+            "labsResult": "Wyniki badań z dokumentacji medycznej: wykryto {discovered}, zaimportowano {imported}, już zapisane {duplicate}, pominięto {skipped}, nie powiodło się {failed}. Nieudany wynik nie usuwa niczego innego z archiwum.",
             "estimateWarning": "Łączne wartości dla {count} dni oszacowano na podstawie największego źródła w eksporcie. Natywne statystyki Apple Health pozostają nadrzędne.",
             "phase": {
               "queued": "W kolejce…",

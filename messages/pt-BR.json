@@ -5895,6 +5895,7 @@
             "writtenByHealthLogOther": "{count} registros que o próprio HealthLog gravou no Apple Health foram deixados de fora, porque já estão nos seus dados.",
             "writtenByHealthLogFew": "{count} registros que o próprio HealthLog gravou no Apple Health foram deixados de fora, porque já estão nos seus dados.",
             "ecgResult": "ECGs: {discovered} descobertos, {imported} importados, {updated} atualizados, {skipped} pulados, {failed} falharam. Falhas de ECG não descartam registros compatíveis importados do export.xml.",
+            "labsResult": "Resultados de exames dos registros de saúde: {discovered} descobertos, {imported} importados, {duplicate} já registrados, {skipped} pulados, {failed} falharam. Um resultado com falha não descarta mais nada do arquivo.",
             "estimateWarning": "Os totais acumulados de {count} dia(s) foram estimados a partir da maior fonte de exportação. As estatísticas nativas do Apple Health continuam sendo a referência.",
             "phase": {
               "queued": "Na fila…",

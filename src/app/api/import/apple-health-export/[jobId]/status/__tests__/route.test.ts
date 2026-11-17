@@ -47,6 +47,10 @@ const ADMIN_SESSION = {
 
 const NOW = new Date("2026-05-15T10:00:00.000Z");
 
+function ownerSession(): Awaited<ReturnType<typeof getSession>> {
+  return OWNER_SESSION as unknown as Awaited<ReturnType<typeof getSession>>;
+}
+
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     id: "ij-1",
@@ -91,6 +95,54 @@ describe("GET /api/import/apple-health-export/[jobId]/status", () => {
     };
     expect(body.error).toBeNull();
     expect(body.data.status).toBe("parsing");
+  });
+
+  it("bounds the lab counts and drops anything else in the block", async () => {
+    vi.mocked(getSession).mockResolvedValue(ownerSession());
+    mocks.importJobFindUnique.mockResolvedValue(
+      makeRow({
+        status: "done",
+        result: {
+          labs: {
+            discovered: 3,
+            imported: 2,
+            duplicate: -1,
+            skipped: "x",
+            failed: 1.5,
+            reasons: { leaked: "content" },
+          },
+        },
+      }),
+    );
+    const req = new NextRequest(
+      "http://localhost/api/import/apple-health-export/ij-1/status",
+    );
+    const res = await GET(req, { params: Promise.resolve({ jobId: "ij-1" }) });
+    const body = (await res.json()) as {
+      data: { result: { labs: Record<string, unknown> } };
+    };
+    expect(body.data.result.labs).toEqual({
+      discovered: 3,
+      imported: 2,
+      duplicate: 0,
+      skipped: 0,
+      failed: 0,
+    });
+  });
+
+  it("reports zeroed lab counts for a job from before labs were read", async () => {
+    vi.mocked(getSession).mockResolvedValue(ownerSession());
+    mocks.importJobFindUnique.mockResolvedValue(
+      makeRow({ status: "done", result: { totals: { recordsRead: 1 } } }),
+    );
+    const req = new NextRequest(
+      "http://localhost/api/import/apple-health-export/ij-1/status",
+    );
+    const res = await GET(req, { params: Promise.resolve({ jobId: "ij-1" }) });
+    const body = (await res.json()) as {
+      data: { result: { labs: Record<string, number> } };
+    };
+    expect(body.data.result.labs.imported).toBe(0);
   });
 
   it("returns 404 to a non-owner non-admin user", async () => {

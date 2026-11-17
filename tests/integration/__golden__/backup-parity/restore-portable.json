@@ -976,6 +976,7 @@
         "takenAt": "2026-06-30T09:00:00.000Z",
         "biomarkerId": "<id:23>",
         "source": "rt-LabResult-source",
+        "externalId": "rt-LabResult-externalId",
         "noteEncrypted": "<sealed:v2:rt-LabResult-noteEncrypted>",
         "createdAt": "<now>",
         "updatedAt": "<now>",
@@ -2983,6 +2984,7 @@
         "sourceUnit": "rt-LabResult-sourceUnit",
         "takenAt": "2026-06-30T09:00:00.000Z",
         "source": "rt-LabResult-source",
+        "externalId": "rt-LabResult-externalId",
         "biomarkerName": "Ferritin"
       }
     ],
