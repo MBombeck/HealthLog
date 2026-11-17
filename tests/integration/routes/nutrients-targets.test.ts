@@ -76,6 +76,23 @@ describe("/api/nutrients/targets", () => {
     expect(await stored(user)).toBeNull();
   });
 
+  it("keeps every code when edits of different codes arrive at once", async () => {
+    // Two open editors, or the phone and the web, saving different codes at
+    // the same moment: each must keep the other's.
+    const user = await nutrientUser();
+    const session = await makeSession(user);
+    const codes = ["protein", "fat", "fiber", "sugar", "sodium", "potassium"];
+    const results = await Promise.all(
+      codes.map((code, i) =>
+        patch({ [code]: { value: 10 + i, direction: "target" } }, session),
+      ),
+    );
+    for (const res of results) expect(res.status).toBe(200);
+    expect(Object.keys((await stored(user)) as Targets).sort()).toEqual(
+      [...codes].sort(),
+    );
+  });
+
   it("refuses an unknown code or an out-of-range value with 422 and stores nothing", async () => {
     const user = await nutrientUser();
     const session = await makeSession(user);

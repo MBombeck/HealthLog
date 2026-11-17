@@ -22,6 +22,7 @@ import {
   mergeNutrientTargets,
   nutrientTargetCodes,
   nutrientTargetsPatchSchema,
+  parseNutrientTargets,
 } from "@/lib/validations/nutrient-targets";
 
 export const dynamic = "force-dynamic";
@@ -50,17 +51,31 @@ export const PATCH = apiHandler(async (request: Request) => {
   });
   if (!parsed.ok) return parsed.error;
 
-  const next = mergeNutrientTargets(
-    await readNutrientTargets(user.id),
-    parsed.data,
-  );
-  const set = nutrientTargetCodes(next);
-  await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      nutrientTargetsJson: set.length === 0 ? Prisma.DbNull : toJson(next),
-    },
+  // Read, merge and write under the account row's lock: two saves of
+  // different codes at once (two editors, the phone and the web) each keep
+  // the other's instead of the later one writing back what it read.
+  const next = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT 1 FROM "users" WHERE "id" = ${user.id} FOR UPDATE`;
+    const row = await tx.user.findUnique({
+      where: { id: user.id },
+      select: { nutrientTargetsJson: true },
+    });
+    const merged = mergeNutrientTargets(
+      parseNutrientTargets(row?.nutrientTargetsJson ?? null),
+      parsed.data,
+    );
+    await tx.user.update({
+      where: { id: user.id },
+      data: {
+        nutrientTargetsJson:
+          nutrientTargetCodes(merged).length === 0
+            ? Prisma.DbNull
+            : toJson(merged),
+      },
+    });
+    return merged;
   });
+  const set = nutrientTargetCodes(next);
 
   // Codes only, never the amounts: a target is a health figure.
   await auditLog("nutrient.targets.update", {
