@@ -96,8 +96,10 @@ export function NutrientTargetSheet({
       footer={
         <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
           {current ? (
+            // Neutral like the threshold sheet's reset: the chart goes back
+            // to the reference, and a new target is one save away.
             <ConfirmButton
-              slot="nutrients-target-remove"
+              slot="nutrients-target-reset"
               variant="ghost"
               size="sm"
               icon={<RotateCcw className="size-3.5" />}

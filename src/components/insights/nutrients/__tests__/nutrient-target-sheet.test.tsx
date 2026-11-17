@@ -76,7 +76,7 @@ describe("<NutrientTargetSheet>", () => {
     expect(html).toContain("Daily target: Protein");
     expect(html).toContain("Protein per day (g)");
     expect(html).toContain("Above 0, at most");
-    const remove = html.indexOf('data-slot="nutrients-target-remove"');
+    const remove = html.indexOf('data-slot="nutrients-target-reset"');
     const cancel = html.indexOf(">Cancel<");
     const save = html.indexOf('data-slot="nutrients-target-save"');
     expect(remove).toBeGreaterThan(-1);
@@ -88,7 +88,7 @@ describe("<NutrientTargetSheet>", () => {
 
   it("offers no remove when no target is set", () => {
     const html = render(null);
-    expect(html).not.toContain("nutrients-target-remove");
+    expect(html).not.toContain("nutrients-target-reset");
     expect(html).toContain('value=""');
   });
 });
