@@ -13,7 +13,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
@@ -181,9 +180,7 @@ async function signIn(id: string) {
 
 async function notice(): Promise<boolean> {
   const { GET } = await import("@/app/api/integrations/status/route");
-  const res = await GET(
-    new NextRequest("http://localhost/api/integrations/status"),
-  );
+  const res = await GET();
   expect(res.status).toBe(200);
   const body = (await res.json()) as {
     data: {
@@ -210,13 +207,7 @@ describe("the note on the status envelope", () => {
 
     const { POST } =
       await import("@/app/api/integrations/fitbit-removal-notice/dismiss/route");
-    const dismiss = () =>
-      POST(
-        new NextRequest(
-          "http://localhost/api/integrations/fitbit-removal-notice/dismiss",
-          { method: "POST" },
-        ),
-      );
+    const dismiss = () => POST();
     const first = await dismiss();
     expect(first.status).toBe(200);
     expect(await first.json()).toEqual({
@@ -233,12 +224,7 @@ describe("the note on the status envelope", () => {
   it("refuses a dismissal without a session", async () => {
     const { POST } =
       await import("@/app/api/integrations/fitbit-removal-notice/dismiss/route");
-    const res = await POST(
-      new NextRequest(
-        "http://localhost/api/integrations/fitbit-removal-notice/dismiss",
-        { method: "POST" },
-      ),
-    );
+    const res = await POST();
     expect(res.status).toBe(401);
   });
 });
