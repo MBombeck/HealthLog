@@ -13,7 +13,9 @@ function isLocale(value: string | null | undefined): value is Locale {
   return !!value && (locales as readonly string[]).includes(value);
 }
 
-function pickLocaleFromAcceptLanguage(header: string | null): Locale | null {
+export function pickLocaleFromAcceptLanguage(
+  header: string | null,
+): Locale | null {
   if (!header) return null;
   // Accept-Language: "en-US,en;q=0.9,de;q=0.8"
   const candidates = header
@@ -77,4 +79,23 @@ export async function resolveServerLocale(
   if (fromHeader) return fromHeader;
 
   return defaultLocale;
+}
+
+/**
+ * #176 — the language a native app request asks for.
+ *
+ * A browser carries the reader's choice in the locale cookie, which outranks
+ * the account's stored language in `resolveServerLocale`. The app has no such
+ * cookie: it says which language it runs in through `Accept-Language`, and
+ * that header ranks below the stored language there, so an app set to English
+ * on an account stored as German got German texts. For a Bearer request the
+ * header is the app's own choice and wins; a header naming no shipped
+ * language leaves the stored one in charge. Null for a cookie request.
+ */
+export function nativeRequestLocale(
+  authMethod: "cookie" | "bearer",
+  request: Pick<Request, "headers">,
+): Locale | null {
+  if (authMethod !== "bearer") return null;
+  return pickLocaleFromAcceptLanguage(request.headers.get("accept-language"));
 }

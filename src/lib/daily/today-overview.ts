@@ -83,6 +83,7 @@ export type TodayLeadSource = (typeof TODAY_LEAD_SOURCES)[number];
 export interface TodayLead {
   text: string;
   source: TodayLeadSource;
+  language?: string | null; // the digest's only (`text-languages.ts`)
 }
 
 /**
@@ -172,6 +173,7 @@ export interface TodayOverviewInput {
 export interface TodaySignalLine {
   headline: string | null;
   delta: string | null;
+  language?: string | null; // the digest's only (`text-languages.ts`)
 }
 
 export interface TodayOverview {
@@ -301,11 +303,11 @@ function shortenAtWord(text: string): string {
 function substantiveSentences(
   paragraph: string | null | undefined,
   score: number | null,
-  name?: { firstName: string | null; locale: Locale },
+  opts?: { firstName: string | null; locale: Locale },
 ): string[] {
   if (!paragraph) return [];
   return sentences(paragraph)
-    .map((s) => (name ? withoutLeadingName(s, name.firstName, name.locale) : s))
+    .map((s) => (opts ? withoutLeadingName(s, opts.firstName, opts.locale) : s))
     .filter((s) => !isGreetingOnly(s) && !repeatsScore(s, score));
 }
 
@@ -771,12 +773,12 @@ export function buildTodayOverview(
 ): TodayOverview {
   const sleep = moduleOn(input.modules, "sleep") ? input.sleep : null;
 
-  const name = { firstName: input.firstName, locale: input.locale };
+  const leadOpts = { firstName: input.firstName, locale: input.locale };
   const briefingSentence =
     substantiveSentences(
       input.briefing?.paragraph,
       input.scoreValue,
-      name,
+      leadOpts,
     )[0] ?? null;
   const briefingLead = briefingSentence
     ? shortenAtWord(briefingSentence)

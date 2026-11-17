@@ -172,6 +172,12 @@ export const dailyDigestResponse = z
           .describe(
             "`reaction` and `briefing` are cached model text; `signal` is the deterministic sentence about the day's strongest signal.",
           ),
+        language: z
+          .string()
+          .nullable()
+          .describe(
+            "v1.48.0 — the language `text` is in (a shipped locale code such as `en` or `pt-BR`), or null when the stored text predates the tag. A `reaction` lead is never in another language than `languages.response`.",
+          ),
       })
       .nullable()
       .describe(
@@ -189,6 +195,12 @@ export const dailyDigestResponse = z
           .string()
           .nullable()
           .describe("The top signal's delta, when it has one."),
+        language: z
+          .string()
+          .nullable()
+          .describe(
+            "v1.48.0 — the briefing's language, as `languages.briefing`.",
+          ),
       })
       .nullable()
       .describe(
@@ -249,6 +261,29 @@ export const dailyDigestResponse = z
       })
       .describe(
         "The three AI capabilities the digest carries text or a card for: `briefing` (the lead and top signal), `coach` (the Coach check-in card, which opens the Coach) and `reactionLines` (the reaction line). Everything else in the digest is data.",
+      ),
+    languages: z
+      .object({
+        response: z
+          .string()
+          .describe(
+            "The language of every text the server words itself on this request: `today`, `worthALook`, a `signal` lead and a deterministic `line`. On a Bearer request it is the app's `Accept-Language` when that names a shipped language, otherwise the account's language; in a browser, the locale cookie or the account's language.",
+          ),
+        briefing: z
+          .string()
+          .nullable()
+          .describe(
+            "The language of the stored briefing texts (`briefingLead`, `topSignal`, `signalLine`, a `briefing` lead). A briefing written in another language than `response` is not served at all; null when none is served or it predates the tag.",
+          ),
+        reaction: z
+          .string()
+          .nullable()
+          .describe(
+            "The language `reactionLine` is written in: the account's language, which it was generated in. When it differs from `response`, the lead does not use it; the app may show its own wording instead.",
+          ),
+      })
+      .describe(
+        "v1.48.0 — which language each text is in, so a client can tell stored model text in another language from text worded for this request. Model text is generated once per account, not per request.",
       ),
   })
   .meta({

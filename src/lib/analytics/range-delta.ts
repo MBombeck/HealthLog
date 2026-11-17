@@ -59,6 +59,7 @@ import { shiftDateKey, userDayKey } from "@/lib/tz/format";
 import { resolveUserTimezone } from "@/lib/tz/resolver";
 import {
   ANALYTICS_RANGES,
+  rangeTrend,
   rangeWindowDays,
   type AnalyticsRange,
   type RangeDeltaResult,
@@ -72,6 +73,7 @@ import { dayKeyAsUtcMidnight, dateOnlyKey } from "@/lib/tz/date-only";
 // here so existing server-side callers keep importing from `range-delta`.
 export {
   ANALYTICS_RANGES,
+  rangeTrend,
   rangeWindowDays,
   type AnalyticsRange,
   type RangeDeltaResult,
@@ -214,6 +216,7 @@ async function readNightlySleep(
   userId: string,
   windowDays: number,
   now: number,
+  known: { timezone?: string; priorityJson?: unknown },
 ): Promise<Array<{ at: Date; value: number }>> {
   // A night's rows start the evening before its wake day: read one day more.
   const rows = (await prisma.measurement.findMany({
@@ -237,8 +240,10 @@ async function readNightlySleep(
   })) as SleepStageRow[];
   if (rows.length === 0) return [];
   const [tz, priorityJson] = await Promise.all([
-    resolveUserTimezone(userId),
-    loadUserSourcePriority(userId),
+    known.timezone ?? resolveUserTimezone(userId),
+    known.priorityJson !== undefined
+      ? known.priorityJson
+      : loadUserSourcePriority(userId),
   ]);
   return reconstructSleepNights(rows, tz, priorityJson)
     .filter((n) => n.asleepMinutes > 0)
@@ -276,11 +281,16 @@ export async function computeRangeDelta(
   type: MeasurementType,
   range: AnalyticsRange,
   now: number = Date.now(),
+  /**
+   * Reads a caller already holds (the dashboard summary loads both), so a
+   * card-per-metric caller pays one read per metric and not three.
+   */
+  known: { timezone?: string; priorityJson?: unknown } = {},
 ): Promise<RangeDeltaResult> {
   const windowDays = rangeWindowDays(range);
 
   if (type === "SLEEP_DURATION") {
-    const points = await readNightlySleep(userId, windowDays, now);
+    const points = await readNightlySleep(userId, windowDays, now, known);
     const { current, previous } = splitPerPeriod(points, windowDays, now);
     const { delta, deltaPct } = composeDelta(current, previous);
     return {
@@ -291,11 +301,15 @@ export async function computeRangeDelta(
       previous,
       delta,
       deltaPct,
+      trend: rangeTrend(delta),
     };
   }
 
   if (CUMULATIVE_HK_TYPES.has(type)) {
-    const endKey = dailyTotalsEndKey(now, await resolveUserTimezone(userId));
+    const endKey = dailyTotalsEndKey(
+      now,
+      known.timezone ?? (await resolveUserTimezone(userId)),
+    );
     const points = await readDailyTotals(userId, type, windowDays, endKey);
     const { current, previous } = splitDailyTotals(points, windowDays, endKey);
     const { delta, deltaPct } = composeDelta(current, previous);
@@ -307,6 +321,7 @@ export async function computeRangeDelta(
       previous,
       delta,
       deltaPct,
+      trend: rangeTrend(delta),
     };
   }
 
@@ -316,7 +331,7 @@ export async function computeRangeDelta(
     userId,
     type,
     windowDays * 2,
-    undefined,
+    known.priorityJson,
     new Date(now),
   );
   if (!resolved) {
@@ -335,6 +350,7 @@ export async function computeRangeDelta(
       previous: empty,
       delta: null,
       deltaPct: null,
+      trend: "unknown",
     };
   }
   const { current, previous } = sliceWindowDelta(
@@ -352,5 +368,6 @@ export async function computeRangeDelta(
     previous,
     delta,
     deltaPct,
+    trend: rangeTrend(delta),
   };
 }

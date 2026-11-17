@@ -232,3 +232,56 @@ describe("buildDailyDigest — justIn", () => {
     expect(JSON.stringify(arrivals)).toBe(snapshot);
   });
 });
+
+describe("buildDailyDigest — the language of each text (#176)", () => {
+  const reaction = arrival(60_000, {
+    line: "Your resting heart rate held at 54 bpm overnight.",
+  });
+
+  it("names the language of every stored text and of the server's own", () => {
+    const digest = buildDailyDigest(
+      input({
+        locale: "en",
+        arrivals: [reaction],
+        reactionLanguage: "en",
+        briefingLanguage: "en",
+      }),
+      t,
+    );
+    expect(digest.languages).toEqual({
+      response: "en",
+      briefing: "en",
+      reaction: "en",
+    });
+    expect(digest.lead).toMatchObject({ source: "reaction", language: "en" });
+  });
+
+  it("does not lead with a reaction written in another language", () => {
+    const digest = buildDailyDigest(
+      input({
+        locale: "en",
+        arrivals: [
+          arrival(60_000, { line: "Dein Ruhepuls lag über Nacht bei 54." }),
+        ],
+        reactionLanguage: "de",
+      }),
+      t,
+    );
+    // Still published, with its language, for a client that wants it.
+    expect(digest.reactionLine).toBe("Dein Ruhepuls lag über Nacht bei 54.");
+    expect(digest.languages?.reaction).toBe("de");
+    // The lead falls to a source in the reader's language.
+    expect(digest.lead?.source).not.toBe("reaction");
+    if (digest.lead) expect(digest.lead.language).toBe("en");
+  });
+
+  it("says when the language of a stored text is not known", () => {
+    const digest = buildDailyDigest(input({ arrivals: [reaction] }), t);
+    expect(digest.languages).toEqual({
+      response: "en",
+      briefing: null,
+      reaction: null,
+    });
+    expect(digest.lead).toMatchObject({ source: "reaction", language: null });
+  });
+});

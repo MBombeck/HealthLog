@@ -1048,6 +1048,11 @@ export const analyticsRangeResponse = z
       .describe(
         "`delta / previous.mean` as a fraction (0.03 = +3 %); null when the prior window has no / zero mean (no divide-by-zero). The client shows 'no prior-period data' in that case.",
       ),
+    trend: z
+      .enum(["up", "down", "flat", "unknown"])
+      .describe(
+        "v1.48.0 — the direction of `delta`: `flat` under 0.05 in the metric's own unit, `unknown` when `delta` is null. The dashboard summary's metric card takes its `trend` from this same comparison over `30d` (its `trendWindowDays` is then 30), so the arrow on the card and on the metric page agree.",
+      ),
   })
   .meta({
     id: "AnalyticsRangeResponse",

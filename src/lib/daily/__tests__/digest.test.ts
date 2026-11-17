@@ -1594,6 +1594,8 @@ describe("buildDailyDigest — Today overview", () => {
     expect(d.lead).toEqual({
       text: "Your latest blood pressure is sitting in the optimal band.",
       source: "briefing",
+      // The fixture names no briefing language; the digest says so.
+      language: null,
     });
     expect(d.line).toBe(d.briefingLead);
   });
@@ -1612,6 +1614,7 @@ describe("buildDailyDigest — Today overview", () => {
     expect(d.lead).toEqual({
       text: "Resting heart rate is at 61 bpm, above your usual range of 50 to 58 bpm.",
       source: "signal",
+      language: "en",
     });
     // The lead names the reading in the app. The push line is shown on a
     // locked phone and carries no value, so it does not take that sentence.

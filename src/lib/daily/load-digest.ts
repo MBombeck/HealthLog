@@ -14,6 +14,7 @@
  */
 import type { SessionUser } from "@/lib/auth/session-user";
 import { firstNameFromDisplayName } from "@/lib/ai/prompts/opener-archetype";
+import { resolveJobLocale } from "@/lib/i18n/job-locale";
 
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
@@ -941,6 +942,13 @@ export async function loadDailyDigest(
       // via `applyBriefingForToday`), as every surface serves it.
       briefing: snapshot.briefing,
       medsToday: snapshot.medsToday,
+      // #176 — the briefing is served only in the reader's language or
+      // untagged (written before the tag existed), so its tag says which; the
+      // reaction line is written in the account's language.
+      briefingLanguage: snapshot.briefing
+        ? (user.insightsCachedLocale ?? null)
+        : null,
+      reactionLanguage: await resolveJobLocale(user.locale),
       firstName: firstNameFromDisplayName(user.displayName),
       nextDoseTimeLabel: snapshot.medsToday.nextDueAt
         ? localTime(new Date(snapshot.medsToday.nextDueAt))

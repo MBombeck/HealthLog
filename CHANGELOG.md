@@ -60,6 +60,19 @@
 
 ### Fixed
 
+- The arrow on a dashboard tile in the iPhone app now points the same way
+  as the change shown on that metric's page. The tile used to compare the
+  first and last of the past seven days while the page compared this month
+  with last month, so weight could show a falling arrow on the tile and
+  "+0.1 kg vs last month" on the page. The tile now uses the month
+  comparison too and tells the app which window it used; with less than two
+  months of readings it keeps the seven-day direction.
+- With the iPhone app set to English or Dutch on an account stored in
+  German, the Today screen's own texts (facts, hints, the lead the server
+  writes) now follow the app's language. The briefing and the reaction
+  line are written once per account, so each now says which language it is
+  in, and a reaction line in another language no longer becomes the lead.
+
 - The Today screen no longer says your first name twice. When the daily
   briefing opened with it, the line under the greeting started with the
   name again; that line now drops it. The briefing itself still may.

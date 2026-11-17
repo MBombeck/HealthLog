@@ -727,6 +727,7 @@ describe("loadDailyDigest — Today overview inputs", () => {
     expect(digest.lead).toEqual({
       text: "daily.lead.vitalOutside.above",
       source: "signal",
+      language: "en",
     });
     expect(digest.briefingLead).toBeNull();
   });

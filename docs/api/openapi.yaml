@@ -71358,6 +71358,16 @@ components:
           type:
             - number
             - "null"
+        trend:
+          type: string
+          enum:
+            - up
+            - down
+            - flat
+            - unknown
+          description: "v1.48.0 — the direction of `delta`: `flat` under 0.05 in the metric's own unit, `unknown` when `delta` is
+            null. The dashboard summary's metric card takes its `trend` from this same comparison over `30d` (its
+            `trendWindowDays` is then 30), so the arrow on the card and on the metric page agree."
       required:
         - range
         - windowDays
@@ -71366,6 +71376,7 @@ components:
         - previous
         - delta
         - deltaPct
+        - trend
       additionalProperties: false
       description: Single-metric period-over-period aggregate. Reads the current and previous comparable windows from the
         rollup tier and composes a count-weighted-mean delta, one source per day. Step-like totals compare average daily
@@ -74172,6 +74183,9 @@ components:
             - comparison
             - delta
           additionalProperties: false
+          description: "`subject` and `comparison` are mean daily mood scores on the mood scale entries are logged on (1 to 5, the
+            scale of `summary` in the same response), rounded to two places; `delta` is their difference. Never
+            rescaled."
         sampleSize:
           type: object
           properties:
@@ -88024,9 +88038,17 @@ components:
                     - signal
                   description: "`reaction` and `briefing` are cached model text; `signal` is the deterministic sentence about the day's
                     strongest signal."
+                language:
+                  description: v1.48.0 — the language `text` is in (a shipped locale code such as `en` or `pt-BR`), or null when the
+                    stored text predates the tag. A `reaction` lead is never in another language than
+                    `languages.response`.
+                  type:
+                    - string
+                    - "null"
               required:
                 - text
                 - source
+                - language
               additionalProperties: false
             - type: "null"
           description: "The Today hero's lead line, resolved: the reaction line or a briefing sentence while their capabilities
@@ -88047,9 +88069,15 @@ components:
                   type:
                     - string
                     - "null"
+                language:
+                  description: v1.48.0 — the briefing's language, as `languages.briefing`.
+                  type:
+                    - string
+                    - "null"
               required:
                 - headline
                 - delta
+                - language
               additionalProperties: false
             - type: "null"
           description: "The muted line under an AI lead, decided on the server so every client shows the same one: the top signal
@@ -88139,6 +88167,35 @@ components:
           description: "The three AI capabilities the digest carries text or a card for: `briefing` (the lead and top signal),
             `coach` (the Coach check-in card, which opens the Coach) and `reactionLines` (the reaction line). Everything
             else in the digest is data."
+        languages:
+          type: object
+          properties:
+            response:
+              type: string
+              description: "The language of every text the server words itself on this request: `today`, `worthALook`, a `signal` lead
+                and a deterministic `line`. On a Bearer request it is the app's `Accept-Language` when that names a
+                shipped language, otherwise the account's language; in a browser, the locale cookie or the account's
+                language."
+            briefing:
+              description: The language of the stored briefing texts (`briefingLead`, `topSignal`, `signalLine`, a `briefing` lead). A
+                briefing written in another language than `response` is not served at all; null when none is served or
+                it predates the tag.
+              type:
+                - string
+                - "null"
+            reaction:
+              description: "The language `reactionLine` is written in: the account's language, which it was generated in. When it
+                differs from `response`, the lead does not use it; the app may show its own wording instead."
+              type:
+                - string
+                - "null"
+          required:
+            - response
+            - briefing
+            - reaction
+          additionalProperties: false
+          description: v1.48.0 — which language each text is in, so a client can tell stored model text in another language from
+            text worded for this request. Model text is generated once per account, not per request.
       required:
         - generatedAt
         - phase
@@ -88155,6 +88212,7 @@ components:
         - justIn
         - reactionLine
         - ai
+        - languages
       additionalProperties: false
       description: The one data spine of the daily-value system — composed from already-cached data, never a fresh AI call.
         Consumed by the Today surface, the daily push, and a future iOS widget.
@@ -88501,7 +88559,19 @@ components:
             - down
             - flat
             - unknown
-          description: First-to-last direction across `sparkline`, with a 1 % (min 1 unit) dead band. `unknown` under two points.
+          description: "Since v1.48.0, for a measured metric: this month's mean against last month's, exactly the `trend` of `GET
+            /api/analytics/range?range=30d` for the card's measurement type (systolic for `bloodPressure`), so the card
+            and the metric page point the same way; `trendWindowDays` is then 30. Without a previous month to compare,
+            and always for `mood` and `bmi`: the first-to-last direction across `sparkline`, with a 1 % (min 1 unit)
+            dead band, `unknown` under two points, and `trendWindowDays` null."
+        trendWindowDays:
+          anyOf:
+            - type: integer
+              minimum: -9007199254740991
+              maximum: 9007199254740991
+            - type: "null"
+          description: "v1.48.0 — the window `trend` compares: 30 for month against previous month, null for the sparkline's
+            first-to-last direction. Label the arrow with it (\"vs last month\")."
         sparkline:
           type: array
           items:
@@ -88552,6 +88622,7 @@ components:
         - sleepStages
         - sleepSourceDiscrepancy
         - trend
+        - trendWindowDays
         - sparkline
         - updatedAt
         - allTimeCount
