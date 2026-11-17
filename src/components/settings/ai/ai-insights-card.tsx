@@ -39,6 +39,7 @@ import { CentralCodexSwitch } from "./central-codex-switch";
 import { CodexProviderForm } from "./codex-provider-form";
 import { CompatProviderForm } from "./compat-provider-form";
 import { FallbackChainCard } from "./fallback-chain-card";
+import { NamedChainsCard } from "./named-chains-card";
 import { LocalProviderForm } from "./local-provider-form";
 import { OpenAIProviderForm } from "./openai-provider-form";
 import { ResponseTimeoutCard } from "./response-timeout-card";
@@ -47,6 +48,7 @@ import {
   PROVIDER_TYPES,
   isProviderType,
   type InsightsSettings,
+  type NamedChainsData,
   type ProviderChainData,
   type ProviderType,
   type UserAIProvider,
@@ -99,6 +101,14 @@ export function AiInsightsCard({
   } = useQuery({
     queryKey: queryKeys.insightsProviderChain(),
     queryFn: () => apiGet<ProviderChainData>("/api/insights/provider-chain"),
+    enabled: isAuthenticated,
+  });
+
+  // #1404 — read in parallel with the three above, never after them; the
+  // chains card paints its own placeholder until this lands.
+  const namedChains = useQuery({
+    queryKey: queryKeys.insightsProviderChains(),
+    queryFn: () => apiGet<NamedChainsData>("/api/insights/provider-chains"),
     enabled: isAuthenticated,
   });
 
@@ -196,6 +206,14 @@ export function AiInsightsCard({
             chain={chainData?.configuredChain ?? []}
             selected={selectedProvider}
             onSelect={pickProvider}
+          />
+
+          {/* #1404 — named chains, and which task follows which. */}
+          <NamedChainsCard
+            data={namedChains.data}
+            isPending={namedChains.isPending}
+            error={namedChains.error}
+            onRetry={() => void namedChains.refetch()}
           />
 
           {/* v1.43 (#1217) — how much background AI work the account

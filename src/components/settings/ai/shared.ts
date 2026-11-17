@@ -184,3 +184,49 @@ export function localiseTestReason(
 export function isProviderType(v: string | null): v is ProviderType {
   return v != null && (PROVIDER_TYPES as readonly string[]).includes(v);
 }
+
+/**
+ * #1404 — the tasks a named chain can be attached to, in the order the
+ * settings list shows them. Mirrors `AI_CAPABILITY_KEYS` server-side (a guard
+ * test holds the two equal); kept here so the client bundle does not pull the
+ * capability table.
+ */
+export const NAMED_CHAIN_CAPABILITIES = [
+  "documentAi",
+  "labsOcr",
+  "supplementLabel",
+  "medicationExtract",
+  "coach",
+  "aboutMeQuestions",
+  "briefing",
+  "periodNarrative",
+  "statusText",
+  "workoutInsights",
+  "reactionLines",
+] as const;
+
+/** Every provider type a named chain may list. */
+export type ChainProviderType = ProviderType | "admin-codex";
+
+export interface NamedChainView {
+  id: string;
+  name: string;
+  entries: ChainProviderType[];
+}
+
+/** `GET /api/insights/provider-chains`. */
+export interface NamedChainsData {
+  chains: NamedChainView[];
+  defaultChainId: string | null;
+  attachments: Partial<
+    Record<(typeof NAMED_CHAIN_CAPABILITIES)[number], string>
+  >;
+  /** The fallback chain's enabled entries, in order: what Default means. */
+  mainChain: ChainProviderType[];
+  providers: {
+    providerType: ChainProviderType;
+    available: boolean;
+    /** Whether input to it stays on this machine or leaves it. */
+    egress: "local" | "external";
+  }[];
+}
