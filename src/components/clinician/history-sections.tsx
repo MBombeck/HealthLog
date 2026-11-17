@@ -1,6 +1,7 @@
 /**
  * The `labs` and `history` groups on the clinician view: lab results, illness
- * episodes, visits, the surgical history and the immunization record.
+ * episodes, the seizure diary, visits, the surgical history and the
+ * immunization record.
  *
  * All four were selectable on a share link and none of them reached the page,
  * while the PDF download from the same link printed every one. What each
@@ -171,6 +172,90 @@ export function IllnessSection({
           ])}
         />
       ))}
+    </LeafSection>
+  );
+}
+
+/**
+ * The seizure diary over the window (#1368): the summary lines the PDF opens
+ * with, then one row per seizure type with its count per month and in total.
+ * The PDF carries the charts, the duration and rescue tables and the overlays;
+ * this page states the counts and says what a diary is.
+ */
+export function SeizuresSection({
+  t,
+  report,
+  scope,
+}: {
+  t: Translate;
+  report: DoctorReportData;
+  scope: LeafScope;
+}) {
+  const section = report.seizureDiary ?? null;
+  const s = section?.summary;
+  const typeLabel = (id: string | null) => {
+    const type = section?.types.find((ty) => ty.id === id);
+    if (!type || type.id === null) return t("seizures.report.untyped");
+    return type.label ?? t("seizures.type.unreadable");
+  };
+
+  return (
+    <LeafSection
+      t={t}
+      scope={scope}
+      leaves={["SEIZURES"]}
+      title={t("seizures.report.title")}
+      empty={!section}
+    >
+      {section && s ? (
+        <>
+          <StatRow
+            label={t("seizures.report.recorded")}
+            value={compose([
+              String(s.seizures),
+              t("seizures.report.seizureDaysValue", { count: s.seizureDays }),
+            ])}
+          />
+          <StatRow
+            label={t("seizures.report.daysSinceLast")}
+            value={s.daysSinceLast === null ? "—" : String(s.daysSinceLast)}
+          />
+          <StatRow
+            label={t("seizures.report.clusters", {
+              rule: t("seizures.report.ruleText", {
+                count: section.rule.count,
+                hours: section.rule.windowHours,
+              }),
+            })}
+            value={compose([
+              String(s.clusterEpisodes),
+              `${t("seizures.report.niceClusters")}: ${s.niceClusterEpisodes}`,
+            ])}
+          />
+          <StatRow
+            label={t("seizures.report.rescueDoses")}
+            value={String(s.rescueDoses)}
+          />
+          {section.monthly.map((row) => (
+            <StatRow
+              key={row.typeId ?? "untyped"}
+              label={typeLabel(row.typeId)}
+              value={compose([
+                String(row.total),
+                section.months
+                  .map((m, i) =>
+                    row.counts[i] > 0 ? `${m}: ${row.counts[i]}` : null,
+                  )
+                  .filter(Boolean)
+                  .join(", "),
+              ])}
+            />
+          ))}
+          <p className="text-muted-foreground text-xs">
+            {t("seizures.report.footer")}
+          </p>
+        </>
+      ) : null}
     </LeafSection>
   );
 }

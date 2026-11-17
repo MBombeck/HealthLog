@@ -33,6 +33,7 @@ const MODULES = {
   nutrients: true,
   vaccinations: true,
   timeline: true,
+  seizures: true,
 } as const;
 
 /** The dense path is about pulse and glucose; nothing else is in scope here. */

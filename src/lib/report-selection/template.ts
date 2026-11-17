@@ -54,6 +54,9 @@ export const STANDARD_TEMPLATE_LEAVES: readonly ReportLeafId[] = [
   "WORKOUTS",
   "ALLERGIES",
   "ILLNESS_EPISODES",
+  // The seizure diary rides its opt-in module: on the template, absent from
+  // the report of every record that never turned the diary on.
+  "SEIZURES",
   "SURGICAL_HISTORY",
   "IMMUNIZATIONS",
 ];
