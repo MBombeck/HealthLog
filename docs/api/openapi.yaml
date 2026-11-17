@@ -23246,6 +23246,25 @@ paths:
         "403": *a9
         "422": *a4
         "429": *a5
+  /api/integrations/fitbit-removal-notice/dismiss:
+    post:
+      tags:
+        - Integrations
+      summary: Dismiss the note that the Fitbit integration is gone
+      description: "Hides the note an account that held a Fitbit connection sees on the integrations surface after the
+        integration was removed (`fitbitRemovalNotice` on `GET /api/integrations/status`). Cookie-only, takes no body,
+        idempotent: dismissing twice, or with no note to dismiss, is a success."
+      responses:
+        "200":
+          description: Note dismissed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FitbitRemovalNoticeDismissEnvelope"
+        "401": *a1
+        "403": *a9
+        "422": *a4
+        "429": *a5
   /api/integrations/google-health/resume:
     post:
       tags:
@@ -86620,6 +86639,11 @@ components:
           minimum: -9007199254740991
           maximum: 9007199254740991
           description: Consecutive persistent failures at which the operator is alerted. Operator-level, configurable via env.
+        fitbitRemovalNotice:
+          type: boolean
+          description: The account held a Fitbit connection when the Fitbit integration was removed (Google turned the Fitbit Web
+            API off on 2026-10-30) and has not dismissed the note about it. Clients show the note while true; `POST
+            /api/integrations/fitbit-removal-notice/dismiss` clears it.
         metricFreshnessDegraded:
           type: boolean
           description: "The per-metric freshness query failed, so EVERY entry's `metricFreshness` is an empty array regardless of
@@ -86638,6 +86662,7 @@ components:
             from it."
       required:
         - threshold
+        - fitbitRemovalNotice
         - metricFreshnessDegraded
         - integrations
       additionalProperties: false
@@ -86955,6 +86980,30 @@ components:
       additionalProperties: false
       description: Per-metric-type last-seen timestamp with the server-computed staleness flag. Only types that have actually
         delivered appear — absence is absence, never an invented row.
+    FitbitRemovalNoticeDismissEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            dismissed:
+              type: boolean
+              const: true
+          required:
+            - dismissed
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
     GoogleHealthResumeEnvelope:
       type: object
       properties:

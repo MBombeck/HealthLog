@@ -83,6 +83,8 @@ export interface IntegrationStatusViewModel {
 export interface IntegrationStatusEnvelope {
   threshold: number;
   integrations: IntegrationStatusViewModel[];
+  /** Show the note that the Fitbit integration is gone (decided server-side). */
+  fitbitRemovalNotice?: boolean;
 }
 
 /**

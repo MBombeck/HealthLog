@@ -6835,6 +6835,15 @@
       "generic": "연결 중 알 수 없는 오류가 생겼어요. 연결을 다시 시작해 주세요.",
       "already_linked": "이 WHOOP 계정은 이미 다른 HealthLog 프로필에 연결되어 있어요. 이 프로필의 WHOOP 계정으로 로그인하거나, 먼저 다른 프로필에서 연결을 해제해 주세요."
     },
+    "fitbitRemoval": {
+      "title": "Fitbit 동기화가 중단됐어요",
+      "body": "Google이 2026년 10월 30일에 Fitbit Web API를 종료해서 HealthLog는 더 이상 Fitbit에 연결할 수 없고, Fitbit 연동은 제거됐어요. 이미 가져온 데이터는 모두 그대로 남아요. 차트, 내보내기, 백업, 진료 보고서에 계속 Fitbit으로 표시돼요.",
+      "ways": "Fitbit이나 Pixel Watch 데이터를 계속 받으려면 아래에서 Google Health를 연결해 주세요. 같은 기기의 데이터를 읽고, Google에서 동의를 한 번 요청해요. Android에서는 Health Connect 내보내기 파일을 가져올 수도 있어요.",
+      "toGoogleHealth": "Google Health로 이동",
+      "toHealthConnect": "Health Connect 가져오기",
+      "dismiss": "확인",
+      "dismissFailed": "안내를 숨기지 못했어요. 다시 시도해 주세요."
+    },
     "googleHealth": "Google Health",
     "googleHealthTag": "Fitbit & Pixel",
     "googleHealthBetaBadge": "베타",

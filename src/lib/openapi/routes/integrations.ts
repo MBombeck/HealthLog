@@ -1314,6 +1314,11 @@ const integrationStatusEnvelope = z
       .describe(
         "Consecutive persistent failures at which the operator is alerted. Operator-level, configurable via env.",
       ),
+    fitbitRemovalNotice: z
+      .boolean()
+      .describe(
+        "The account held a Fitbit connection when the Fitbit integration was removed (Google turned the Fitbit Web API off on 2026-10-30) and has not dismissed the note about it. Clients show the note while true; `POST /api/integrations/fitbit-removal-notice/dismiss` clears it.",
+      ),
     metricFreshnessDegraded: z
       .boolean()
       .describe(
@@ -2783,6 +2788,28 @@ export const integrationPaths: NonNullable<ZodOpenApiObject["paths"]> = {
               schema: dataEnvelope(
                 integrationStatusEnvelope,
                 "IntegrationStatusEnvelopeResponse",
+              ),
+            },
+          },
+        },
+        ...stdResponses,
+      },
+    },
+  },
+  "/api/integrations/fitbit-removal-notice/dismiss": {
+    post: {
+      tags: ["Integrations"],
+      summary: "Dismiss the note that the Fitbit integration is gone",
+      description:
+        "Hides the note an account that held a Fitbit connection sees on the integrations surface after the integration was removed (`fitbitRemovalNotice` on `GET /api/integrations/status`). Cookie-only, takes no body, idempotent: dismissing twice, or with no note to dismiss, is a success.",
+      responses: {
+        "200": {
+          description: "Note dismissed.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                z.object({ dismissed: z.literal(true) }),
+                "FitbitRemovalNoticeDismissEnvelope",
               ),
             },
           },

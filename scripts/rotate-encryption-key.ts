@@ -278,8 +278,7 @@ async function main() {
   // Columns: "codexAccessTokenEncrypted" "codexRefreshTokenEncrypted"
   // "telegramBotToken" "withingsClientIdEncrypted"
   // "withingsClientSecretEncrypted" "whoopClientIdEncrypted"
-  // "whoopClientSecretEncrypted" "fitbitClientIdEncrypted"
-  // "fitbitClientSecretEncrypted" "nightscoutUrlEncrypted"
+  // "whoopClientSecretEncrypted" "nightscoutUrlEncrypted"
   // "nightscoutTokenEncrypted" "polarAccessTokenEncrypted"
   // "polarUserIdEncrypted" "polarClientIdEncrypted"
   // "polarClientSecretEncrypted" "ouraAccessTokenEncrypted"
@@ -300,8 +299,6 @@ async function main() {
     "withingsClientSecretEncrypted",
     "whoopClientIdEncrypted",
     "whoopClientSecretEncrypted",
-    "fitbitClientIdEncrypted",
-    "fitbitClientSecretEncrypted",
     "googleHealthClientIdEncrypted",
     "googleHealthClientSecretEncrypted",
     "nightscoutUrlEncrypted",
@@ -348,13 +345,6 @@ async function main() {
         "WhoopConnection",
         field,
         prisma.whoopConnection,
-      ),
-    );
-    results.push(
-      await rotateStringColumn(
-        "FitbitConnection",
-        field,
-        prisma.fitbitConnection,
       ),
     );
     results.push(

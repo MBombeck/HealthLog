@@ -63,7 +63,6 @@ reset to `'disconnected'`), `ai_anthropic_key_encrypted`,
 `ai_local_key_encrypted`, `ai_openai_key_encrypted`,
 `withings_client_id_encrypted`, `withings_client_secret_encrypted`,
 `whoop_client_id_encrypted`, `whoop_client_secret_encrypted`,
-`fitbit_client_id_encrypted`, `fitbit_client_secret_encrypted`,
 `telegram_bot_token`, `telegram_chat_id`,
 `insurance_number_encrypted`, `insurer_name`, `insurer_ik_number`.
 
@@ -95,7 +94,7 @@ acknowledgement).
   refresh_tokens, devices, push_subscriptions, push_attempts,
   notification_channels, notification_preferences) — per-environment, never
   portable.
-- **Integration / OAuth** (withings/whoop/fitbit connections, all
+- **Integration / OAuth** (withings/whoop/google-health connections, all
   `*_oauth_states` / `*_connect_tickets`, telegram scheduled-deletions +
   reminder messages, clinician_share_links, provider_health) — tied to live
   credentials.

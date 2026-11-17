@@ -145,6 +145,7 @@ export const GET = apiHandler(async () => {
           garminKeyExpiresAt: true,
           garminBackfillProgress: true,
           garminBackfillCompletedAt: true,
+          fitbitRemovalNoticeAt: true,
         },
       }),
       prisma.withingsConnection.findUnique({
@@ -311,6 +312,7 @@ export const GET = apiHandler(async () => {
   return apiSuccess({
     threshold: getPersistentFailureThreshold(),
     metricFreshnessDegraded,
+    fitbitRemovalNotice: !!dbUser?.fitbitRemovalNoticeAt,
     integrations: [
       {
         ...publish(withingsStatus),

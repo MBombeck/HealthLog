@@ -6835,6 +6835,15 @@
       "generic": "Errore sconosciuto durante la connessione. Riavvia la connessione.",
       "already_linked": "Questo account WHOOP è già collegato a un altro profilo HealthLog. Accedi a WHOOP con l'account di questo profilo oppure scollegalo prima dall'altro profilo."
     },
+    "fitbitRemoval": {
+      "title": "Fitbit non si sincronizza più",
+      "body": "Google ha spento la Fitbit Web API il 30 ottobre 2026, quindi HealthLog non può più collegarsi a Fitbit e l'integrazione Fitbit è stata rimossa. Tutto ciò che è già stato importato resta: grafici, esportazioni, backup e referti medici lo conservano, ancora indicato come Fitbit.",
+      "ways": "Per continuare a ricevere i dati di un Fitbit o di un Pixel Watch, collega Google Health qui sotto. Legge gli stessi dispositivi e ti chiede il consenso su Google una volta. Su Android puoi anche importare un'esportazione di Health Connect.",
+      "toGoogleHealth": "Vai a Google Health",
+      "toHealthConnect": "Importazione Health Connect",
+      "dismiss": "Ho capito",
+      "dismissFailed": "Non è stato possibile nascondere la nota. Riprova."
+    },
     "googleHealth": "Google Health",
     "googleHealthTag": "Fitbit e Pixel",
     "googleHealthBetaBadge": "Beta",

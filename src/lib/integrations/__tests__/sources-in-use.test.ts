@@ -6,7 +6,6 @@ vi.mock("@/lib/db", () => ({
     user: { findUnique: vi.fn() },
     withingsConnection: { findUnique: vi.fn() },
     whoopConnection: { findUnique: vi.fn() },
-    fitbitConnection: { findUnique: vi.fn() },
     googleHealthConnection: { findUnique: vi.fn() },
   },
 }));
@@ -22,7 +21,6 @@ beforeEach(() => {
   vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
   vi.mocked(prisma.withingsConnection.findUnique).mockResolvedValue(null);
   vi.mocked(prisma.whoopConnection.findUnique).mockResolvedValue(null);
-  vi.mocked(prisma.fitbitConnection.findUnique).mockResolvedValue(null);
   vi.mocked(prisma.googleHealthConnection.findUnique).mockResolvedValue(null);
 });
 

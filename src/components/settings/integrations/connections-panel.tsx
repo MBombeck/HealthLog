@@ -20,6 +20,7 @@ import { showErrorToast } from "@/lib/errors/error-toast";
 
 import { AppleHealthCard } from "@/components/settings/integrations/apple-health-card";
 import { DawarichCard } from "@/components/settings/integrations/dawarich-card";
+import { FitbitRemovalNotice } from "@/components/settings/integrations/fitbit-removal-notice";
 import { GarminCard } from "@/components/settings/integrations/garmin-card";
 import { GoogleHealthCard } from "@/components/settings/integrations/google-health-card";
 import { IntegrationFallbackRow } from "@/components/settings/integrations/integration-fallback-row";
@@ -308,6 +309,9 @@ export function ConnectionsPanel({
 
   return (
     <div className="space-y-6" data-slot="connections-panel">
+      {integrationStatus?.fitbitRemovalNotice === true && (
+        <FitbitRemovalNotice />
+      )}
       {/* Per-provider anchors so deep-links (onboarding "more sources" chips,
           `/settings/integrations#oura`) scroll straight to the right card. */}
       <div id="withings" className="scroll-mt-28">
