@@ -1,0 +1,516 @@
+/**
+ * The seizure diary (#1368) through the real routes and a real Postgres.
+ *
+ * What has to be PROVEN rather than assumed:
+ *
+ *   1. The quick log's write lands whole: the seizure, its rescue dose, and
+ *      the intake that dose writes on the as-needed medication; removing the
+ *      seizure undoes the intake again. Free text is sealed at rest.
+ *   2. A guardian standing inside a managed child's record logs against the
+ *      CHILD, and the row remembers who logged it.
+ *   3. On an adult's shared record the levels hold: READ reads the diary and
+ *      cannot log; WRITE logs and cannot edit.
+ *   4. The module gates every route, and a body cannot reach another record's
+ *      type or a scheduled medication as a rescue medication.
+ *   5. The report section, the FHIR export and the MCP tool read the same
+ *      derived figures.
+ */
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { NextRequest } from "next/server";
+
+process.env.ENCRYPTION_KEY ??=
+  "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+import { GET as readDiary } from "@/app/api/seizures/route";
+import { POST as createEvent } from "@/app/api/seizures/events/route";
+import {
+  DELETE as deleteEvent,
+  PATCH as patchEvent,
+} from "@/app/api/seizures/events/[id]/route";
+import { POST as createType } from "@/app/api/seizures/types/route";
+import { DELETE as deleteType } from "@/app/api/seizures/types/[id]/route";
+import { collectDoctorReportData } from "@/lib/doctor-report-data";
+import { renderDoctorReportPdfBytes } from "@/lib/doctor-report-pdf-core";
+import { buildFhirDocumentBundle } from "@/lib/fhir/build-bundle";
+import { getServerTranslator } from "@/lib/i18n/server-translator";
+import { getSeizuresTool } from "@/lib/mcp/tools/get-seizures";
+import { selectionFromLeaves } from "@/lib/report-selection/selection";
+
+import { cookieJar, headerJar } from "./mock-next-headers";
+import { getPrismaClient, switchSessionTo, truncateAllTables } from "./setup";
+
+vi.mock("next/headers", async () => {
+  const { cookieJar, headerJar } = await import("./mock-next-headers");
+  return {
+    headers: vi.fn(async () => ({
+      get: (name: string) => headerJar.get(name.toLowerCase()) ?? null,
+    })),
+    cookies: vi.fn(async () => ({
+      get: (name: string) => {
+        const value = cookieJar.get(name);
+        return value ? { name, value } : undefined;
+      },
+      set: (name: string, value: string) => cookieJar.set(name, value),
+      delete: (name: string) => cookieJar.delete(name),
+    })),
+  };
+});
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const ago = (ms: number) => new Date(Date.now() - ms);
+
+let sequence = 0;
+
+interface Person {
+  id: string;
+  sessionId: string;
+}
+
+async function person(label: string, seizures = true): Promise<Person> {
+  const suffix = sequence++;
+  const prisma = getPrismaClient();
+  const user = await prisma.user.create({
+    data: {
+      username: `${label}-${suffix}`,
+      email: `${label}-${suffix}@example.test`,
+      timezone: "Europe/Berlin",
+      ...(seizures ? { modulePreferencesJson: { seizures: true } } : {}),
+    },
+  });
+  const session = await prisma.session.create({
+    data: { userId: user.id, expiresAt: new Date(Date.now() + DAY_MS) },
+  });
+  return { id: user.id, sessionId: session.id };
+}
+
+function signIn(who: Person): void {
+  headerJar.delete("authorization");
+  cookieJar.set("healthlog_session", who.sessionId);
+}
+
+function json(method: string, url: string, body?: unknown): NextRequest {
+  return new NextRequest(`http://localhost${url}`, {
+    method,
+    headers: { "content-type": "application/json" },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+}
+
+const params = (p: Record<string, string>) =>
+  ({ params: Promise.resolve(p) }) as never;
+
+async function diary() {
+  return readDiary(json("GET", "/api/seizures"));
+}
+
+async function rescueMedication(userId: string) {
+  return getPrismaClient().medication.create({
+    data: {
+      userId,
+      name: "Buccal midazolam",
+      dose: "10 mg",
+      asNeeded: true,
+    },
+  });
+}
+
+async function newType(body: Record<string, unknown>) {
+  const res = await createType(json("POST", "/api/seizures/types", body));
+  expect(res.status, JSON.stringify(await res.clone().json())).toBe(201);
+  return ((await res.json()) as { data: { id: string } }).data;
+}
+
+async function newEvent(body: Record<string, unknown>) {
+  return createEvent(json("POST", "/api/seizures/events", body));
+}
+
+beforeEach(async () => {
+  await truncateAllTables(getPrismaClient());
+  cookieJar.clear();
+  headerJar.clear();
+});
+
+describe("the quick log's write lands whole", () => {
+  it("records the seizure, the rescue dose and the intake, and undoes the intake on delete", async () => {
+    const owner = await person("owner");
+    signIn(owner);
+    const prisma = getPrismaClient();
+    const med = await rescueMedication(owner.id);
+    const type = await newType({
+      label: "The big one",
+      ilaeType: "FOCAL_TO_BILATERAL_TC",
+      usualDurationSec: 90,
+      rescuePlan: "Midazolam after 5 minutes",
+      rescueMedicationId: med.id,
+      rescueDoseAmount: 10,
+      rescueDoseUnit: "mg",
+      rescueRoute: "BUCCAL",
+    });
+
+    const onset = ago(2 * 60 * 60 * 1000);
+    const res = await newEvent({
+      typeProfileId: type.id,
+      onsetAt: onset.toISOString(),
+      durationSec: 400,
+      durationSource: "TIMED",
+      witnessed: true,
+      note: "woke from a nap",
+      rescueDoses: [
+        {
+          medicationId: med.id,
+          doseAmount: 10,
+          doseUnit: "mg",
+          route: "BUCCAL",
+          givenAt: new Date(onset.getTime() + 6 * 60_000).toISOString(),
+        },
+      ],
+    });
+    expect(res.status, JSON.stringify(await res.clone().json())).toBe(201);
+    const event = (
+      (await res.json()) as {
+        data: {
+          id: string;
+          loggedBy: string;
+          flags: { overT1: boolean; prolonged: boolean };
+          rescueDoses: Array<{ intakeEventId: string | null }>;
+        };
+      }
+    ).data;
+    expect(event.loggedBy).toBe("owner");
+    expect(event.flags).toEqual({ overT1: true, prolonged: true });
+
+    // The dose is recorded on the as-needed medication too.
+    const intakeId = event.rescueDoses[0].intakeEventId;
+    expect(intakeId).not.toBeNull();
+    const intake = await prisma.medicationIntakeEvent.findUniqueOrThrow({
+      where: { id: intakeId! },
+    });
+    expect(intake.medicationId).toBe(med.id);
+    expect(intake.takenAt?.getTime()).toBe(onset.getTime() + 6 * 60_000);
+
+    // The note is sealed: the stored bytes do not carry the words.
+    const row = await prisma.seizureEvent.findUniqueOrThrow({
+      where: { id: event.id },
+    });
+    expect(Buffer.from(row.noteEncrypted!).toString("utf8")).not.toContain(
+      "woke from a nap",
+    );
+
+    // The diary reads it back with the server's figures.
+    const read = await diary();
+    expect(read.status).toBe(200);
+    const data = (
+      (await read.json()) as {
+        data: {
+          events: Array<{ note: string | null }>;
+          summary: { seizures: number; rescueDoses: number };
+        };
+      }
+    ).data;
+    expect(data.summary.seizures).toBe(1);
+    expect(data.summary.rescueDoses).toBe(1);
+    expect(data.events[0].note).toBe("woke from a nap");
+
+    // Details later, then a delete that takes the intake back off.
+    const patched = await patchEvent(
+      json("PATCH", `/api/seizures/events/${event.id}`, {
+        sleepState: "ASLEEP",
+        triggers: ["FEVER"],
+      }),
+      params({ id: event.id }),
+    );
+    expect(patched.status).toBe(200);
+    expect(
+      (await prisma.seizureEvent.findUniqueOrThrow({ where: { id: event.id } }))
+        .sleepState,
+    ).toBe("ASLEEP");
+
+    const removed = await deleteEvent(
+      json("DELETE", `/api/seizures/events/${event.id}`),
+      params({ id: event.id }),
+    );
+    expect(removed.status).toBe(200);
+    expect(await prisma.seizureEvent.count()).toBe(0);
+    expect(await prisma.seizureRescueDose.count()).toBe(0);
+    const undone = await prisma.medicationIntakeEvent.findUniqueOrThrow({
+      where: { id: intakeId! },
+    });
+    expect(undone.deletedAt).not.toBeNull();
+  });
+
+  it("refuses a scheduled medication as a rescue medication and writes nothing", async () => {
+    const owner = await person("owner");
+    signIn(owner);
+    const scheduled = await getPrismaClient().medication.create({
+      data: { userId: owner.id, name: "Levetiracetam", dose: "500 mg" },
+    });
+    const res = await newEvent({
+      onsetAt: ago(60_000).toISOString(),
+      rescueDoses: [
+        { medicationId: scheduled.id, givenAt: ago(30_000).toISOString() },
+      ],
+    });
+    expect(res.status).toBe(422);
+    expect((await res.json()).meta?.errorCode).toBe(
+      "seizures.rescue.notAsNeeded",
+    );
+    expect(await getPrismaClient().seizureEvent.count()).toBe(0);
+  });
+
+  it("does not let a body name another record's seizure type", async () => {
+    const other = await person("other");
+    signIn(other);
+    const foreign = await newType({ label: "Theirs", ilaeType: "GEN_TONIC" });
+
+    const owner = await person("owner");
+    signIn(owner);
+    const res = await newEvent({
+      typeProfileId: foreign.id,
+      onsetAt: ago(60_000).toISOString(),
+    });
+    expect(res.status).toBe(404);
+    expect(await getPrismaClient().seizureEvent.count()).toBe(0);
+  });
+
+  it("keeps a type that seizures name: delete is refused, archive is the way", async () => {
+    const owner = await person("owner");
+    signIn(owner);
+    const type = await newType({
+      label: "Absences",
+      ilaeType: "ABSENCE_TYPICAL",
+    });
+    expect(
+      (
+        await newEvent({
+          typeProfileId: type.id,
+          onsetAt: ago(60_000).toISOString(),
+          count: 6,
+        })
+      ).status,
+    ).toBe(201);
+    const res = await deleteType(
+      json("DELETE", `/api/seizures/types/${type.id}`),
+      params({ id: type.id }),
+    );
+    expect(res.status).toBe(409);
+    expect((await res.json()).meta?.errorCode).toBe("seizures.type.inUse");
+  });
+});
+
+describe("the module gates every route", () => {
+  it("answers seizures.disabled while the diary is off, even for a valid write", async () => {
+    const owner = await person("owner", false);
+    signIn(owner);
+    const read = await diary();
+    expect(read.status).toBe(403);
+    expect((await read.json()).meta?.errorCode).toBe("seizures.disabled");
+    const write = await newEvent({ onsetAt: ago(60_000).toISOString() });
+    expect(write.status).toBe(403);
+    expect(await getPrismaClient().seizureEvent.count()).toBe(0);
+  });
+});
+
+describe("a guardian logs against the managed child's record", () => {
+  it("files the seizure under the child and remembers who logged it", async () => {
+    const { createManagedProfile } =
+      await import("@/lib/managed-profiles/create");
+    const guardian = await person("guardian");
+    const { profile } = await createManagedProfile({
+      creatorId: guardian.id,
+      displayName: "Child record",
+      dateOfBirth: null,
+      locale: "en",
+      timezone: "Europe/Berlin",
+    });
+    await getPrismaClient().user.update({
+      where: { id: profile.id },
+      data: { modulePreferencesJson: { seizures: true } },
+    });
+
+    signIn(guardian);
+    await switchSessionTo(guardian.sessionId, profile.id);
+
+    const res = await newEvent({
+      onsetAt: ago(5 * 60_000).toISOString(),
+      durationSec: 95,
+      durationSource: "TIMED",
+      witnessed: true,
+      witnessRole: "PARENT",
+    });
+    expect(res.status, JSON.stringify(await res.clone().json())).toBe(201);
+    const id = ((await res.json()) as { data: { id: string } }).data.id;
+
+    const row = await getPrismaClient().seizureEvent.findUniqueOrThrow({
+      where: { id },
+    });
+    expect(row.userId).toBe(profile.id);
+    expect(row.loggedByUserId).toBe(guardian.id);
+    expect(
+      await getPrismaClient().seizureEvent.count({
+        where: { userId: guardian.id },
+      }),
+    ).toBe(0);
+
+    const read = await diary();
+    const events = (
+      (await read.json()) as {
+        data: { events: Array<{ loggedBy: string; loggedByViewer: boolean }> };
+      }
+    ).data.events;
+    expect(events[0]).toEqual(
+      expect.objectContaining({ loggedBy: "delegate", loggedByViewer: true }),
+    );
+
+    // The guardian manages the record, so the details can be added later.
+    const patched = await patchEvent(
+      json("PATCH", `/api/seizures/events/${id}`, { postictalMinutes: 30 }),
+      params({ id }),
+    );
+    expect(patched.status).toBe(200);
+  });
+});
+
+describe("an adult's shared record holds the grant levels", () => {
+  async function delegateWith(
+    ownerId: string,
+    access: "READ" | "WRITE",
+  ): Promise<Person> {
+    const { inviteGrant, acceptGrant } = await import("@/lib/sharing/grants");
+    const delegate = await person("delegate");
+    const invited = await inviteGrant({
+      grantorId: ownerId,
+      granteeId: delegate.id,
+      access,
+      scope: ["illness"],
+    });
+    await acceptGrant({ grantId: invited.id, granteeId: delegate.id });
+    signIn(delegate);
+    await switchSessionTo(delegate.sessionId, ownerId);
+    return delegate;
+  }
+
+  it("lets an illness READ delegate read the diary and not log", async () => {
+    const owner = await person("owner");
+    await getPrismaClient().seizureEvent.create({
+      data: { userId: owner.id, onsetAt: ago(DAY_MS) },
+    });
+    await delegateWith(owner.id, "READ");
+
+    const read = await diary();
+    expect(read.status).toBe(200);
+    const write = await newEvent({ onsetAt: ago(60_000).toISOString() });
+    expect(write.status).toBe(403);
+    expect(
+      await getPrismaClient().seizureEvent.count({
+        where: { userId: owner.id },
+      }),
+    ).toBe(1);
+  });
+
+  it("lets an illness WRITE delegate log and not edit", async () => {
+    const owner = await person("owner");
+    await delegateWith(owner.id, "WRITE");
+
+    const write = await newEvent({ onsetAt: ago(60_000).toISOString() });
+    expect(write.status).toBe(201);
+    const id = ((await write.json()) as { data: { id: string } }).data.id;
+
+    const patched = await patchEvent(
+      json("PATCH", `/api/seizures/events/${id}`, { count: 3 }),
+      params({ id }),
+    );
+    expect(patched.status).toBe(403);
+    expect(
+      (
+        await getPrismaClient().seizureEvent.findUniqueOrThrow({
+          where: { id },
+        })
+      ).count,
+    ).toBe(1);
+  });
+});
+
+describe("the report, the FHIR export and the MCP tool read the same figures", () => {
+  it("renders the section, emits the resources and answers the tool", async () => {
+    const owner = await person("owner");
+    const prisma = getPrismaClient();
+    const type = await prisma.seizureTypeProfile.create({
+      data: {
+        userId: owner.id,
+        labelEncrypted: new Uint8Array(),
+        ilaeType: "FOCAL_IMPAIRED",
+        usualDurationSec: 60,
+      },
+    });
+    // Two seizures four hours apart: one cluster under 2 in 24 h.
+    for (const hours of [30, 26]) {
+      await prisma.seizureEvent.create({
+        data: {
+          userId: owner.id,
+          typeProfileId: type.id,
+          onsetAt: ago(hours * 60 * 60 * 1000),
+          durationSec: 700,
+          durationSource: "TIMED",
+          loggedByUserId: owner.id,
+        },
+      });
+    }
+
+    const end = new Date();
+    const range = {
+      start: new Date(end.getTime() - 30 * DAY_MS),
+      end,
+      days: 30,
+    };
+    const data = await collectDoctorReportData(
+      owner.id,
+      range,
+      selectionFromLeaves(["SEIZURES", "WEIGHT"]),
+    );
+    expect(data.seizureDiary?.summary.seizures).toBe(2);
+    expect(data.seizureDiary?.summary.clusterEpisodes).toBe(1);
+    expect(data.seizureDiary?.durations[0].overT1).toBe(2);
+
+    const without = await collectDoctorReportData(
+      owner.id,
+      range,
+      selectionFromLeaves(["WEIGHT"]),
+    );
+    expect(without.seizureDiary ?? null).toBeNull();
+
+    const { t } = getServerTranslator("en");
+    const opts = {
+      t,
+      locale: "en" as const,
+      timeFormat: "AUTO" as const,
+      dateFormat: "AUTO" as const,
+    };
+    const withPdf = renderDoctorReportPdfBytes(data, opts);
+    const withoutPdf = renderDoctorReportPdfBytes(without, opts);
+    expect(withPdf.byteLength).toBeGreaterThan(withoutPdf.byteLength);
+
+    const bundle = buildFhirDocumentBundle(data, { insuranceNumber: null });
+    const seizureObs = bundle.entry.filter(
+      (e) =>
+        e.resource.resourceType === "Observation" &&
+        e.resource.id.startsWith("seizure-"),
+    );
+    // Two seizures, one cluster, and the frequency, time-since-last and
+    // seizure-type summaries.
+    expect(seizureObs.length).toBe(6);
+
+    const tool = (await getSeizuresTool.run(
+      {
+        userId: owner.id,
+        tokenId: "t",
+        scopes: ["health:read"],
+        binding: `${owner.id}:t`,
+        canRead: true,
+        canWrite: false,
+      },
+      { days: 30 },
+    )) as { present: boolean; summary: { recordedSeizures: number } };
+    expect(tool.present).toBe(true);
+    expect(tool.summary.recordedSeizures).toBe(2);
+  });
+});
