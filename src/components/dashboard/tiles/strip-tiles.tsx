@@ -377,6 +377,8 @@ export const STRIP_TILES: readonly StripTile[] = [
     label: ctx.t("nutrients.names.water"),
     unit: "mL",
     icon: GlassWater,
+    // Whole millilitres, as the nutrients page prints a day of water.
+    fractionDigits: 0,
   })),
   // Energy intake, opt-in: the day's total kcal, neutral like water (more is
   // not simply better or worse). Opens the nutrients page.
@@ -384,6 +386,7 @@ export const STRIP_TILES: readonly StripTile[] = [
     label: ctx.t("nutrients.names.energy"),
     unit: "kcal",
     icon: Flame,
+    fractionDigits: 0,
   })),
   {
     // Blood pressure in target. Hidden while every window reads zero, so a
