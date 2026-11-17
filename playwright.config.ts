@@ -204,6 +204,10 @@ export default defineConfig({
         // through stable data-slots, not a mobile layout, so it runs in one
         // project.
         "vaccinations.spec.ts",
+        // The seizure-diary journey records seizures on the one shared
+        // account and reads the count back, and moves its module on and off.
+        // Two projects mutating it in parallel would read each other's rows.
+        "seizures.spec.ts",
         // The timeline journey moves its account's timeline module on and
         // off; two projects on that one account would flip it under each
         // other. It checks the phone chronicle itself by resizing inside the
