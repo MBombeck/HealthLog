@@ -62,7 +62,7 @@ export function zip64Archive(
 
   const record = Buffer.alloc(56);
   record.writeUInt32LE(0x06064b50, 0);
-  record.writeBigUInt64LE(44n, 4);
+  record.writeBigUInt64LE(BigInt(44), 4);
   record.writeUInt16LE(45, 12);
   record.writeUInt16LE(45, 14);
   record.writeBigUInt64LE(BigInt(count), 24);
