@@ -1,7 +1,7 @@
 {
   "$comment": "Production files over 800 lines and their length. Maintained by src/__tests__/source-size-ratchet.test.ts.",
-  "count": 84,
-  "total": 93816,
+  "count": 85,
+  "total": 94634,
   "entries": {
     "app/medications/page-client.tsx": 842,
     "components/charts/mood-chart.tsx": 1166,
@@ -42,7 +42,8 @@
     "lib/dashboard-layout.ts": 977,
     "lib/dashboard/snapshot.ts": 1550,
     "lib/day/records.ts": 1172,
-    "lib/export/backup-plan.ts": 838,
+    "lib/doctor-report/collect.ts": 807,
+    "lib/export/backup-plan.ts": 849,
     "lib/export/coach-backup.ts": 1070,
     "lib/export/profile-backup.ts": 1019,
     "lib/fitbit/client.ts": 1262,

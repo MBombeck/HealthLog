@@ -1640,6 +1640,220 @@ manageContract("DELETE /api/symptoms/events/[id]", {
     })) === null,
 });
 
+/* The seizure diary (#1368): opt-in, so every fixture turns it on first. */
+
+async function enableSeizures(userId: string) {
+  await getPrismaClient().user.update({
+    where: { id: userId },
+    data: { modulePreferencesJson: { seizures: true } },
+  });
+}
+
+async function makeSeizureType(userId: string) {
+  await enableSeizures(userId);
+  return getPrismaClient().seizureTypeProfile.create({
+    data: {
+      userId,
+      labelEncrypted: encryptToBytes("Big one"),
+      ilaeType: "FOCAL_TO_BILATERAL_TC",
+      usualDurationSec: 90,
+    },
+  });
+}
+
+async function makeSeizure(userId: string) {
+  await enableSeizures(userId);
+  return getPrismaClient().seizureEvent.create({
+    data: { userId, onsetAt: new Date(ISO), durationSec: 60 },
+  });
+}
+
+async function makeRescueMedication(userId: string) {
+  return getPrismaClient().medication.create({
+    data: {
+      userId,
+      name: "Buccal midazolam",
+      dose: "10 mg",
+      asNeeded: true,
+    },
+  });
+}
+
+async function makeRescueDose(userId: string) {
+  const event = await makeSeizure(userId);
+  return getPrismaClient().seizureRescueDose.create({
+    data: {
+      userId,
+      eventId: event.id,
+      medicationName: "Buccal midazolam",
+      givenAt: new Date(ISO),
+    },
+  });
+}
+
+proveWriteRoute("POST /api/seizures/events", {
+  route: "/api/seizures/events",
+  prepare: async (ownerId) => {
+    await enableSeizures(ownerId);
+    return { ownerId };
+  },
+  body: () => ({ onsetAt: ISO, durationSec: 75, durationSource: "TIMED" }),
+  ok: 201,
+  auditAction: "seizures.event.create",
+  applied: async ({ ownerId }) =>
+    (await getPrismaClient().seizureEvent.count({
+      where: { userId: ownerId },
+    })) === 1,
+});
+
+proveManageRoute("PATCH /api/seizures/events/[id]", {
+  route: "/api/seizures/events/[id]",
+  action: "PATCH",
+  prepare: (ownerId) => makeSeizure(ownerId),
+  params: (row) => ({ id: row.id }),
+  body: () => ({ sleepState: "ASLEEP" }),
+  ok: 200,
+  auditAction: "seizures.event.update",
+  applied: async (row) =>
+    (
+      await getPrismaClient().seizureEvent.findUnique({
+        where: { id: row.id },
+      })
+    )?.sleepState === "ASLEEP",
+});
+
+proveManageRoute("DELETE /api/seizures/events/[id]", {
+  route: "/api/seizures/events/[id]",
+  action: "DELETE",
+  prepare: (ownerId) => makeSeizure(ownerId),
+  params: (row) => ({ id: row.id }),
+  ok: 200,
+  auditAction: "seizures.event.delete",
+  applied: async (row) =>
+    (await getPrismaClient().seizureEvent.findUnique({
+      where: { id: row.id },
+    })) === null,
+});
+
+proveWriteRoute("POST /api/seizures/events/[id]/rescue", {
+  route: "/api/seizures/events/[id]/rescue",
+  prepare: async (ownerId) => ({
+    ownerId,
+    event: await makeSeizure(ownerId),
+    medication: await makeRescueMedication(ownerId),
+  }),
+  params: ({ event }) => ({ id: event.id }),
+  body: ({ medication }) => ({
+    medicationId: medication.id,
+    doseAmount: 10,
+    doseUnit: "mg",
+    route: "BUCCAL",
+    givenAt: ISO,
+  }),
+  ok: 201,
+  auditAction: "seizures.rescue.create",
+  // The dose lands, and so does the intake on the as-needed medication.
+  applied: async ({ ownerId, medication }) =>
+    (await getPrismaClient().seizureRescueDose.count({
+      where: { userId: ownerId },
+    })) === 1 &&
+    (await getPrismaClient().medicationIntakeEvent.count({
+      where: { userId: ownerId, medicationId: medication.id },
+    })) === 1,
+});
+
+proveManageRoute("PATCH /api/seizures/events/[id]/rescue/[doseId]", {
+  route: "/api/seizures/events/[id]/rescue/[doseId]",
+  action: "PATCH",
+  prepare: (ownerId) => makeRescueDose(ownerId),
+  params: (row) => ({ id: row.eventId, doseId: row.id }),
+  body: () => ({ effect: "STOPPED" }),
+  ok: 200,
+  auditAction: "seizures.rescue.update",
+  applied: async (row) =>
+    (
+      await getPrismaClient().seizureRescueDose.findUnique({
+        where: { id: row.id },
+      })
+    )?.effect === "STOPPED",
+});
+
+proveManageRoute("DELETE /api/seizures/events/[id]/rescue/[doseId]", {
+  route: "/api/seizures/events/[id]/rescue/[doseId]",
+  action: "DELETE",
+  prepare: (ownerId) => makeRescueDose(ownerId),
+  params: (row) => ({ id: row.eventId, doseId: row.id }),
+  ok: 200,
+  auditAction: "seizures.rescue.delete",
+  applied: async (row) =>
+    (await getPrismaClient().seizureRescueDose.findUnique({
+      where: { id: row.id },
+    })) === null,
+});
+
+proveManageRoute("POST /api/seizures/types", {
+  route: "/api/seizures/types",
+  action: "POST",
+  prepare: async (ownerId) => {
+    await enableSeizures(ownerId);
+    return { ownerId };
+  },
+  body: () => ({ label: "Absences", ilaeType: "ABSENCE_TYPICAL" }),
+  ok: 201,
+  auditAction: "seizures.type.create",
+  applied: async ({ ownerId }) =>
+    (await getPrismaClient().seizureTypeProfile.count({
+      where: { userId: ownerId },
+    })) === 1,
+});
+
+proveManageRoute("PATCH /api/seizures/types/[id]", {
+  route: "/api/seizures/types/[id]",
+  action: "PATCH",
+  prepare: (ownerId) => makeSeizureType(ownerId),
+  params: (row) => ({ id: row.id }),
+  body: () => ({ usualDurationSec: 120 }),
+  ok: 200,
+  auditAction: "seizures.type.update",
+  applied: async (row) =>
+    (
+      await getPrismaClient().seizureTypeProfile.findUnique({
+        where: { id: row.id },
+      })
+    )?.usualDurationSec === 120,
+});
+
+proveManageRoute("DELETE /api/seizures/types/[id]", {
+  route: "/api/seizures/types/[id]",
+  action: "DELETE",
+  prepare: (ownerId) => makeSeizureType(ownerId),
+  params: (row) => ({ id: row.id }),
+  ok: 200,
+  auditAction: "seizures.type.delete",
+  applied: async (row) =>
+    (await getPrismaClient().seizureTypeProfile.findUnique({
+      where: { id: row.id },
+    })) === null,
+});
+
+proveManageRoute("PATCH /api/seizures/settings", {
+  route: "/api/seizures/settings",
+  action: "PATCH",
+  prepare: async (ownerId) => {
+    await enableSeizures(ownerId);
+    return { ownerId };
+  },
+  body: () => ({ clusterCount: 3, clusterWindowHours: 12 }),
+  ok: 200,
+  auditAction: "seizures.settings.update",
+  applied: async ({ ownerId }) =>
+    (
+      await getPrismaClient().seizureDiarySettings.findUnique({
+        where: { userId: ownerId },
+      })
+    )?.clusterCount === 3,
+});
+
 writeEffectContract("POST /api/encounters", {
   contract: ADMITTED_MUTATING_HANDLERS.find(
     (entry) => entry.route === "/api/encounters" && entry.action === "POST",

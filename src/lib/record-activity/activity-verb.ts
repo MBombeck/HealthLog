@@ -65,7 +65,8 @@ export function recordActivityVerbLine(
   if (refused !== null) return refused;
   const medication = medicationManageVerb(t, action, name);
   if (medication !== null) return medication;
-  const cycle = cycleManageVerb(t, action, name);
+  const cycle =
+    cycleManageVerb(t, action, name) ?? seizureVerb(t, action, name);
   if (cycle !== null) return cycle;
   switch (action) {
     case "measurement.create":
@@ -520,4 +521,27 @@ function cycleManageVerb(
     default:
       return null;
   }
+}
+
+/** The seizure diary's verbs (#1368): recording is WRITE, the rest MANAGE. */
+const SEIZURE_VERB_KEYS: Readonly<Record<string, string>> = {
+  "seizures.event.create": "seizureEventCreate",
+  "seizures.rescue.create": "seizureRescueCreate",
+  "seizures.event.update": "seizureEventUpdate",
+  "seizures.event.delete": "seizureEventDelete",
+  "seizures.rescue.update": "seizureRescueUpdate",
+  "seizures.rescue.delete": "seizureRescueDelete",
+  "seizures.type.create": "seizureTypeCreate",
+  "seizures.type.update": "seizureTypeUpdate",
+  "seizures.type.delete": "seizureTypeDelete",
+  "seizures.settings.update": "seizureSettingsUpdate",
+};
+
+function seizureVerb(
+  t: Translator,
+  action: string,
+  name: string,
+): string | null {
+  const key = SEIZURE_VERB_KEYS[action];
+  return key ? t(`recordSharing.activityVerb.${key}`, { name }) : null;
 }
