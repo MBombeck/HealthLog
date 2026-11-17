@@ -69,6 +69,7 @@ export function DocumentDetailFooter({
   const launch = useCoachLaunch();
   const {
     canManageDocuments,
+    canUseOwnerVerbs,
     setConfirmDeleteOpen,
     remove,
     setShareOpen,
@@ -77,10 +78,10 @@ export function DocumentDetailFooter({
   } = detail;
   return (
     <div className="flex w-full items-center justify-between gap-2">
-      {/* .x — deleting, sharing and re-filing a document are the
-          owner's alone. Inside somebody else's record the sheet reads
-          the document and offers the download, and the leading slot
-          simply has nothing in it. */}
+      {/* Deleting is the owner's and a managed profile's guardian's;
+          inside an adult's record the sheet reads the document and offers
+          the download, and the leading slot simply has nothing in it.
+          Sharing stays the owner's alone. */}
       {canManageDocuments ? (
         <Button
           variant="ghost"
@@ -123,7 +124,7 @@ export function DocumentDetailFooter({
             </span>
           </Button>
         ) : null}
-        {canManageDocuments && (
+        {canUseOwnerVerbs && (
           <Button
             variant="outline"
             onClick={() => setShareOpen(true)}

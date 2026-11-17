@@ -56,8 +56,10 @@ export function VaultPageActions({
       ) : null}
       {/* Quiet, like the wrench, and only while there is something to
         bring back: deleted documents wait there for 30 days. On a phone
-        the icon and the count; the words from `sm` up. */}
-      {canManageDocuments && !inSharedRecord && deletedCount > 0 ? (
+        the icon and the count; the words from `sm` up. A managed
+        profile's guardian restores too; an adult's delegate is offered no
+        way in (and the server counts nothing for them). */}
+      {canManageDocuments && deletedCount > 0 ? (
         <Button
           asChild
           variant="ghost"

@@ -100,8 +100,13 @@ export function useDocumentDetail({
       (fact) => fact.factType === "OBSERVATION" && fact.status === "APPROVED",
     ).length ?? 0;
   const { user } = useAuth();
-  const { canManageDomain } = useRecordCapabilities();
+  const { canManageDomain, inSharedRecord } = useRecordCapabilities();
+  // Renaming, retyping, re-dating, linking and deleting: the owner's, and a
+  // managed profile's guardian's (#1403).
   const canManageDocuments = canManageDomain("documents");
+  // The verbs no grant reaches, a guardian's included: sharing a document,
+  // reading it with AI, and the staged-facts review that writes into Labs.
+  const canUseOwnerVerbs = canManageDocuments && !inSharedRecord;
   const labsModuleEnabled = user?.modules?.labs !== false;
 
   const episodes = useIllnessEpisodes(true);
@@ -211,6 +216,7 @@ export function useDocumentDetail({
     linkSeedFresh,
     labFactCount,
     canManageDocuments,
+    canUseOwnerVerbs,
     labsModuleEnabled,
     episodes,
     mutationError,

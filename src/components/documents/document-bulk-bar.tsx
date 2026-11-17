@@ -67,6 +67,32 @@ function VerbLabel({ children }: { children: string }) {
   );
 }
 
+/** Share the selection as one link; the owner's verb alone. */
+function BulkShareButton({
+  busy,
+  onShare,
+}: {
+  busy: boolean;
+  onShare: () => void;
+}) {
+  const { t } = useTranslations();
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      disabled={busy}
+      onClick={onShare}
+      className={VERB_CLASS}
+      data-slot="document-bulk-share"
+      aria-label={t("documents.bulk.share")}
+      title={t("documents.bulk.share")}
+    >
+      <Share2 className="size-4" aria-hidden />
+      <VerbLabel>{t("documents.bulk.share")}</VerbLabel>
+    </Button>
+  );
+}
+
 export function DocumentBulkBar({
   selectedCount,
   episodes,
@@ -93,8 +119,10 @@ export function DocumentBulkBar({
    * Share the whole selection as ONE documents-only link. The page caps the
    * selection at `SHARE_LINK_MAX_DOCUMENTS` and surfaces the over-cap hint —
    * this handler just opens the share sheet seeded with the selection.
+   * Absent inside somebody else's record: a share link is the owner's to
+   * make, a managed profile's guardian included, so the verb is not offered.
    */
-  onShare: () => void;
+  onShare?: () => void;
   /** Ask to delete the selection. The page confirms before anything goes. */
   onRequestDelete: () => void;
   onClear: () => void;
@@ -235,19 +263,7 @@ export function DocumentBulkBar({
             </DropdownMenu>
           ) : null}
 
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={busy}
-            onClick={onShare}
-            className={VERB_CLASS}
-            data-slot="document-bulk-share"
-            aria-label={t("documents.bulk.share")}
-            title={t("documents.bulk.share")}
-          >
-            <Share2 className="size-4" aria-hidden />
-            <VerbLabel>{t("documents.bulk.share")}</VerbLabel>
-          </Button>
+          {onShare ? <BulkShareButton busy={busy} onShare={onShare} /> : null}
 
           {/* Solid destructive (matching the detail sheet's Delete) — the
             outline variant's destructive text on the card surface fails the

@@ -25,6 +25,10 @@
  *     mark-done leg goes red.
  *   - `EpisodeDocumentsCard` dropping its `canManageDomain` bail → the link +
  *     upload leg goes red, on the MANAGE arm.
+ *   - `delegatedDomains` ignoring the record kind → the guardian legs (the
+ *     vault's row delete and the episode card's link + upload inside a
+ *     managed profile) go red, and answering the vault for every MANAGE grant
+ *     turns the adult-manager legs red instead (#1403).
  */
 import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -75,8 +79,8 @@ const WRITABLE: AccountAccess = {
   canSwitch: true,
 };
 /**
- * v1.38.12 — a MANAGE grant, published as the server publishes it: the
- * sections with a delegated route, and never the vault.
+ * v1.38.12 — a MANAGE grant on an adult's record, published as the server
+ * publishes it: the sections with a delegated route, and never the vault.
  */
 const MANAGING: AccountAccess = {
   accounts: [OWNER],
@@ -87,6 +91,25 @@ const MANAGING: AccountAccess = {
     canWrite: true,
     writableDomains: delegatedDomains("manage", null, "write"),
     manageableDomains: delegatedDomains("manage", null, "manage"),
+  },
+  canSwitch: true,
+};
+
+/**
+ * #1403 — a guardian inside a managed profile: the same MANAGE grant, on a
+ * record carrying the managed-profile marker, so the vault's guardian routes
+ * are published too.
+ */
+const GUARDING: AccountAccess = {
+  accounts: [OWNER],
+  active: {
+    ...OWNER,
+    access: "write",
+    level: "manage",
+    recordKind: "managed",
+    canWrite: true,
+    writableDomains: delegatedDomains("manage", null, "write", "managed"),
+    manageableDomains: delegatedDomains("manage", null, "manage", "managed"),
   },
   canSwitch: true,
 };
@@ -238,7 +261,7 @@ describe("row delete", () => {
     expect(render(WRITABLE, node)).toBe("");
   });
 
-  it("follows the section for a guardian: labs yes, the vault and owner-only rows no", () => {
+  it("follows the section for an adult's manager: labs yes, the vault and owner-only rows no", () => {
     // The v1.37.0 hold-back answered "no" for every section; #939 is what
     // that cost. The answer is per section now, and the server's.
     expect(render(MANAGING, node)).toContain("<button");
@@ -257,6 +280,34 @@ describe("row delete", () => {
     expect(
       render(
         MANAGING,
+        <DeleteButton
+          domain={null}
+          onConfirm={() => {}}
+          title="Delete?"
+          description="Gone."
+        />,
+      ),
+    ).toBe("");
+  });
+});
+
+describe("row delete inside a managed profile", () => {
+  it("offers a guardian the vault's row delete as well (#1403)", () => {
+    const vault = (
+      <DeleteButton
+        domain="documents"
+        onConfirm={() => {}}
+        title="Delete?"
+        description="Gone."
+      />
+    );
+    expect(render(GUARDING, vault)).toContain("<button");
+    // The same grant level on an adult's record still withholds it.
+    expect(render(MANAGING, vault)).toBe("");
+    // And the route that resolves the caller is still nobody's to offer.
+    expect(
+      render(
+        GUARDING,
         <DeleteButton
           domain={null}
           onConfirm={() => {}}
@@ -476,12 +527,19 @@ describe("linking a document to an illness episode", () => {
     expect(html).toContain("Upload");
   });
 
-  it("offers neither inside somebody else's record, at every level", () => {
+  it("offers both to a managed profile's guardian (#1403)", () => {
+    const html = render(GUARDING, node);
+    expect(html).toContain(">Link<");
+    expect(html).toContain("Upload");
+  });
+
+  it("offers neither inside an adult's record, at every level", () => {
     // Both write through `POST /api/documents/inbound/bulk`, which the vault
     // gates on the same answer throughout — the episode side of the same link
     // had no gate at all, and the upload deep-linked to a page whose own
-    // upload control is already withheld. The vault has no delegated write
-    // route, so a MANAGE grant is refused the same way.
+    // upload control is already withheld. The vault's writes admit a managed
+    // profile's guardian only, so an adult's MANAGE grant is refused the same
+    // way.
     for (const access of [READ_ONLY, WRITABLE, MANAGING]) {
       const html = render(access, node);
       expect(html).not.toContain(">Link<");
