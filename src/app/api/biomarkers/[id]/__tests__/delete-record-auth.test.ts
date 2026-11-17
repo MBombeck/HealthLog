@@ -25,8 +25,13 @@ vi.mock("@/lib/api-handler", async (importOriginal) => {
 vi.mock("@/lib/db", () => {
   const prisma = {
     biomarker: { findFirst: vi.fn(), delete: vi.fn() },
-    labResult: { deleteMany: vi.fn(), findMany: vi.fn(async () => []) },
-    labResultImportKey: { createMany: vi.fn() },
+    labResult: {
+      deleteMany: vi.fn(),
+      findMany: vi.fn(async () => [
+        { source: "APPLE_HEALTH", externalId: "fhir:a" },
+      ]),
+    },
+    labResultImportKey: { createMany: vi.fn(async () => ({ count: 1 })) },
     $transaction: vi.fn(),
   };
   prisma.$transaction.mockImplementation(
@@ -89,7 +94,8 @@ describe("DELETE /api/biomarkers/[id] record authority", () => {
     expect(prisma.labResult.deleteMany).toHaveBeenCalledWith({
       where: { userId: "record-1", biomarkerId: "bm-1" },
     });
-    // The identities the import ledger keeps come from the same rows.
+    // A Health Records reading's identity outlives it in the import ledger,
+    // read from the same rows.
     expect(prisma.labResult.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
@@ -98,6 +104,12 @@ describe("DELETE /api/biomarkers/[id] record authority", () => {
         }),
       }),
     );
+    expect(prisma.labResultImportKey.createMany).toHaveBeenCalledWith({
+      data: [
+        { userId: "record-1", source: "APPLE_HEALTH", externalId: "fhir:a" },
+      ],
+      skipDuplicates: true,
+    });
   });
 
   it("refuses when the record authority refuses, deleting nothing", async () => {

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
+import type { Biomarker } from "@/generated/prisma/client";
 
 vi.mock("@/lib/db", () => {
   const prisma = {
@@ -101,9 +102,9 @@ beforeEach(() => {
     typeof arg === "function"
       ? (arg as (tx: unknown) => Promise<unknown>)(prisma)
       : Promise.all(arg as Promise<unknown>[])) as never);
-  vi.mocked(prisma.biomarkerAlias.findMany).mockResolvedValue([] as never);
-  vi.mocked(prisma.biomarker.findMany).mockResolvedValue([] as never);
-  vi.mocked(prisma.biomarkerMerge.findFirst).mockResolvedValue(null as never);
+  vi.mocked(prisma.biomarkerAlias.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.biomarker.findMany).mockResolvedValue([]);
+  vi.mocked(prisma.biomarkerMerge.findFirst).mockResolvedValue(null);
 });
 
 describe("GET /api/biomarkers/[id] — trend (v1.44)", () => {
@@ -160,15 +161,10 @@ describe("DELETE /api/biomarkers/[id]", () => {
   it("drops the marker and its readings in one userId-narrowed transaction", async () => {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
     vi.mocked(prisma.biomarker.findFirst).mockResolvedValue(EXISTING as never);
-    vi.mocked(prisma.labResult.deleteMany).mockResolvedValue({
-      count: 3,
-    } as never);
-    vi.mocked(prisma.labResult.findMany).mockResolvedValue([
-      { source: "APPLE_HEALTH", externalId: "fhir:a" },
-    ] as never);
+    vi.mocked(prisma.labResult.deleteMany).mockResolvedValue({ count: 3 });
     vi.mocked(prisma.labResultImportKey.createMany).mockResolvedValue({
-      count: 1,
-    } as never);
+      count: 0,
+    });
     vi.mocked(prisma.biomarker.delete).mockResolvedValue(EXISTING as never);
 
     const res = await DELETE(delReq(), params("bm-1"));
@@ -181,13 +177,6 @@ describe("DELETE /api/biomarkers/[id]", () => {
     });
     expect(prisma.biomarker.delete).toHaveBeenCalledWith({
       where: { id: "bm-1" },
-    });
-    // A Health Records reading's identity outlives it in the import ledger.
-    expect(prisma.labResultImportKey.createMany).toHaveBeenCalledWith({
-      data: [
-        { userId: "user-1", source: "APPLE_HEALTH", externalId: "fhir:a" },
-      ],
-      skipDuplicates: true,
     });
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);
   });
@@ -252,17 +241,18 @@ describe("PUT /api/biomarkers/[id] — a no-unit marker given a unit", () => {
   // unit ("10 - 20" beside "SEE NOTE"). Under a real unit those numbers are
   // not a window, so they give way to the bounds the edit sends, or to none,
   // the way the first numeric import reading treats them.
-  const TEXT_MARKER = { ...EXISTING, unit: "", lowerBound: 10, upperBound: 20 };
+  const TEXT_MARKER: Biomarker = {
+    ...EXISTING,
+    unit: "",
+    lowerBound: 10,
+    upperBound: 20,
+    analyteKey: null,
+  };
 
   function setUp() {
     vi.mocked(getSession).mockResolvedValue(SESSION_OK as never);
-    vi.mocked(prisma.biomarker.findFirst).mockResolvedValue(
-      TEXT_MARKER as never,
-    );
-    vi.mocked(prisma.labResult.count).mockResolvedValue(0 as never);
-    vi.mocked(prisma.biomarker.update).mockImplementation((async (args: {
-      data: Record<string, unknown>;
-    }) => ({ ...TEXT_MARKER, ...args.data })) as never);
+    vi.mocked(prisma.biomarker.findFirst).mockResolvedValue(TEXT_MARKER);
+    vi.mocked(prisma.biomarker.update).mockResolvedValue(TEXT_MARKER);
   }
   const updateData = () =>
     (

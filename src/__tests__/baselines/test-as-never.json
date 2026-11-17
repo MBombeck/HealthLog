@@ -1,7 +1,7 @@
 {
   "$comment": "as never casts in tests, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
   "count": 522,
-  "total": 5447,
+  "total": 5442,
   "entries": {
     "__tests__/api/auth/login/mfa-branch.test.ts": 10,
     "__tests__/api/auth/mfa/verify.test.ts": 9,
@@ -60,7 +60,7 @@
     "app/api/auth/password/__tests__/route.test.ts": 5,
     "app/api/auth/register/__tests__/route.test.ts": 25,
     "app/api/biomarkers/[id]/__tests__/delete-record-auth.test.ts": 3,
-    "app/api/biomarkers/[id]/__tests__/route.test.ts": 23,
+    "app/api/biomarkers/[id]/__tests__/route.test.ts": 20,
     "app/api/biomarkers/__tests__/error-contract.test.ts": 3,
     "app/api/coach/plans/__tests__/route.test.ts": 23,
     "app/api/coach/reminders/__tests__/route.test.ts": 15,
