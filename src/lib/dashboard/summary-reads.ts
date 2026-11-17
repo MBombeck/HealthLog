@@ -18,6 +18,7 @@
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { ROLLUP_FOLD_WINDOW_MS } from "@/lib/rollups/measurement-rollups";
+import { liveTypeDescent } from "@/lib/measurements/live-type-descent";
 
 /** v1.4.38 — the single most recent reading per measurement
  *  type, irrespective of age. One row per metric the user has ever
@@ -83,6 +84,10 @@ export interface SparklineRow {
  * is an inner join, so a type with no live reading drops out exactly as
  * DISTINCT ON dropped it, and `ORDER BY mt."type"` reproduces the enum
  * ordering the old `ORDER BY m."type"` emitted. Same rows, same order.
+ * The lookup's WHERE and ORDER BY are `liveTypeDescent`'s: written as a
+ * plain equality, an account whose rows arrived after the last ANALYZE had
+ * the planner walk the type-less `(user_id, measured_at)` index through
+ * every row of the account once per type.
  *
  * The driving relation is aliased `mt`, not `t`: a one-letter `t` alias
  * makes `t("type")` in the SQL text look exactly like a `t()` translation
@@ -94,9 +99,6 @@ export function readLatestEver(
   measurementTypes: readonly MeasurementType[],
   since: Date | null = null,
 ): Promise<LatestEverRow[]> {
-  const floor = since
-    ? Prisma.sql`AND m."measured_at" >= ${since}`
-    : Prisma.empty;
   return db.$queryRaw<LatestEverRow[]>`
     SELECT
       mt."type"                                  AS type,
@@ -108,11 +110,7 @@ export function readLatestEver(
         m."value"::double precision             AS value,
         m."measured_at"                         AS measured_at
       FROM measurements m
-      WHERE m."user_id" = ${userId}
-        AND m."type" = mt."type"
-        AND m."deleted_at" IS NULL
-        ${floor}
-      ORDER BY m."measured_at" DESC
+      ${liveTypeDescent(userId, Prisma.sql`mt."type"`, "newest", since)}
       LIMIT 1
     ) l
     ORDER BY mt."type"

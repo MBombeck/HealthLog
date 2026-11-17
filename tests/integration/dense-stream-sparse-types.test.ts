@@ -18,15 +18,14 @@
  * snapshot. The scoped and the full extraction must also agree block for
  * block, which is what the single-metric read promises.
  *
- * The per-type read and the span probe are also run under `EXPLAIN ANALYZE`
- * on the unanalysed table: the rows their plans touch must track the rows
- * they return, not the size of the dense stream, so the cap still bounds the
- * I/O it exists for.
+ * That the per-type read and the span probe touch only the rows they return,
+ * whatever the planner statistics say, is held in
+ * `newest-per-type-plans.test.ts`, which builds each statistics state on
+ * purpose.
  */
 import { beforeAll, describe, expect, it, vi } from "vitest";
 
 import { getPrismaClient, truncateAllTables } from "./setup";
-import { prisma as appPrisma } from "@/lib/db";
 import { MCP_TOOLS } from "@/lib/mcp/tools";
 import type { McpAuthContext } from "@/lib/mcp/auth";
 import {
@@ -38,10 +37,6 @@ import {
   extractFeatures,
   type AggregatedFeatures,
 } from "@/lib/insights/features";
-import {
-  readLiveMeasurementSpan,
-  readNewestRowsPerType,
-} from "@/lib/measurements/newest-per-type";
 import type { MeasurementType } from "@/generated/prisma/client";
 
 vi.mock("@/lib/jobs/boss-instance", () => ({
@@ -219,121 +214,4 @@ describe("a dense stream beside sparse history", () => {
     })) as { present: boolean; data?: { section?: unknown } };
     expect(JSON.stringify(single.data?.section)).toBe(JSON.stringify(weight));
   });
-
-  it("reads each type by its own index descent, bounded by the cap", async () => {
-    const cap = 6_000;
-    const types: MeasurementType[] = [
-      "PULSE",
-      "WEIGHT",
-      "BLOOD_PRESSURE_SYS",
-      "BLOOD_PRESSURE_DIA",
-    ];
-    const [result, plans] = await withPlans(() =>
-      readNewestRowsPerType(userId, types, { perTypeCap: cap }),
-    );
-    const counts = new Map<string, number>();
-    for (const row of result.rows) {
-      counts.set(row.type, (counts.get(row.type) ?? 0) + 1);
-    }
-    expect(Object.fromEntries(counts)).toEqual({
-      PULSE: cap,
-      WEIGHT: SPARSE_DAYS,
-      BLOOD_PRESSURE_SYS: SPARSE_DAYS * 2,
-      BLOOD_PRESSURE_DIA: SPARSE_DAYS * 2,
-    });
-    expect(result.cappedTypes).toEqual(["PULSE"]);
-    // Ascending, the order every consumer folds in.
-    for (let i = 1; i < result.rows.length; i++) {
-      expect(result.rows[i].measuredAt.getTime()).toBeGreaterThanOrEqual(
-        result.rows[i - 1].measuredAt.getTime(),
-      );
-    }
-
-    expect(plans).toHaveLength(1);
-    expect(JSON.stringify(plans[0])).not.toContain("Seq Scan");
-    // Every row the plan's measurement scans returned or threw away, over all
-    // their loops: a plan that walked the dense stream would touch all 9,000
-    // pulse rows, the descent stops at the cap.
-    expect(scanRowVisits(plans[0])).toBeLessThanOrEqual(
-      result.rows.length + types.length,
-    );
-  });
-
-  it("takes the overall span from index probes, not from the rows", async () => {
-    const [span, plans] = await withPlans(() =>
-      readLiveMeasurementSpan(userId, new Date(Date.now() - 400 * DAY_MS)),
-    );
-    expect(span.oldest).not.toBeNull();
-    expect(span.newest).not.toBeNull();
-    expect(
-      (span.newest!.getTime() - span.oldest!.getTime()) / DAY_MS,
-    ).toBeGreaterThan(SPARSE_DAYS);
-    expect(plans).toHaveLength(1);
-    expect(JSON.stringify(plans[0])).not.toContain("Seq Scan");
-    // One row at each end of each of the four seeded types.
-    expect(scanRowVisits(plans[0])).toBeLessThanOrEqual(8);
-  });
 });
-
-/**
- * Run `read`, then run every `$queryRaw` it issued again under `EXPLAIN
- * ANALYZE` and hand back the plans beside the reader's own result.
- */
-async function withPlans<T>(read: () => Promise<T>): Promise<[T, unknown[]]> {
-  const original = appPrisma.$queryRaw.bind(appPrisma) as (
-    ...args: unknown[]
-  ) => Promise<unknown>;
-  const statements: Array<[TemplateStringsArray, unknown[]]> = [];
-  vi.spyOn(appPrisma, "$queryRaw").mockImplementation(((
-    strings: TemplateStringsArray,
-    ...values: unknown[]
-  ) => {
-    statements.push([strings, values]);
-    return original(strings, ...values);
-  }) as never);
-  let result: T;
-  try {
-    result = await read();
-  } finally {
-    vi.restoreAllMocks();
-  }
-  const plans: unknown[] = [];
-  for (const [strings, values] of statements) {
-    const head = "EXPLAIN (ANALYZE, FORMAT JSON) ";
-    const explain = Object.assign([head + strings[0], ...strings.slice(1)], {
-      raw: [head + strings.raw[0], ...strings.raw.slice(1)],
-    });
-    const [{ "QUERY PLAN": plan }] = await appPrisma.$queryRaw<
-      Array<{ "QUERY PLAN": unknown }>
-    >(explain, ...values);
-    plans.push(plan);
-  }
-  return [result, plans];
-}
-
-interface PlanNode {
-  "Node Type"?: string;
-  "Relation Name"?: string;
-  "Actual Rows"?: number;
-  "Actual Loops"?: number;
-  "Rows Removed by Filter"?: number;
-  "Rows Removed by Index Recheck"?: number;
-  Plans?: PlanNode[];
-  Plan?: PlanNode;
-}
-
-/** Rows the scans of `measurements` produced or discarded, over all loops. */
-function scanRowVisits(plan: unknown): number {
-  const walk = (node: PlanNode): number => {
-    const own =
-      node["Relation Name"] === "measurements"
-        ? ((node["Actual Rows"] ?? 0) +
-            (node["Rows Removed by Filter"] ?? 0) +
-            (node["Rows Removed by Index Recheck"] ?? 0)) *
-          (node["Actual Loops"] ?? 1)
-        : 0;
-    return own + (node.Plans ?? []).reduce((sum, p) => sum + walk(p), 0);
-  };
-  const root = (plan as PlanNode[])[0];
-  return walk(root.Plan ?? root);
-}

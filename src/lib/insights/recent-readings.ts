@@ -16,6 +16,7 @@
 import type { MeasurementType } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
 import { annotate } from "@/lib/logging/context";
+import { readNewestRowsPerType } from "@/lib/measurements/newest-per-type";
 
 export const RECENT_READINGS = 365;
 export const RECENT_MIN_DAYS = 30;
@@ -70,9 +71,9 @@ export async function readRecentReadings(
  * the multi-metric overview. It read the newest 5 000 rows across all types
  * at once, so a dense stream (pulse every few minutes) filled the whole read
  * within days and every other type fell out of the overview. One index
- * descent per type now bounds each type on its own. The driving relation is
- * aliased `mt`, the way `readLatestEver` aliases it, so the i18n call-site
- * scanner does not read the SQL as a translation call.
+ * descent per type now bounds each type on its own; the descent is
+ * `readNewestRowsPerType`'s, so the statement that keeps the planner on it
+ * exists once.
  */
 export async function readLatestReadingsPerType(
   userId: string,
@@ -80,25 +81,12 @@ export async function readLatestReadingsPerType(
   perType: number = RECENT_READINGS,
 ): Promise<Array<RecentReading & { type: MeasurementType }>> {
   if (types.length === 0) return [];
-  const rows = await prisma.$queryRaw<
-    Array<{ type: MeasurementType; value: number; measured_at: Date }>
-  >`
-    SELECT mt."type" AS "type", x."value", x."measured_at"
-    FROM unnest(${[...types]}::text[]) AS mt("type")
-    CROSS JOIN LATERAL (
-      SELECT m."value", m."measured_at"
-      FROM measurements m
-      WHERE m."user_id" = ${userId}
-        AND m."type" = mt."type"::measurement_type
-        AND m."deleted_at" IS NULL
-      ORDER BY m."measured_at" DESC
-      LIMIT ${perType}
-    ) x
-    ORDER BY x."measured_at" ASC
-  `;
+  const { rows } = await readNewestRowsPerType(userId, types, {
+    perTypeCap: perType,
+  });
   return rows.map((r) => ({
     type: r.type,
-    value: Number(r.value),
-    measuredAt: new Date(r.measured_at),
+    value: r.value,
+    measuredAt: r.measuredAt,
   }));
 }
