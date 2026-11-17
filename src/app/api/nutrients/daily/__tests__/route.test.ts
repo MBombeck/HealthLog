@@ -63,7 +63,6 @@ interface DailyResponse {
     windowDays: number;
     days: Array<{ day: string; amount: number }>;
     reference: { kind: string; direction: string; value: number } | null;
-    personalTarget: { value: number; direction: string } | null;
   };
 }
 
@@ -72,9 +71,8 @@ beforeEach(() => {
   vi.mocked(getSession).mockResolvedValue(sessionFor("FEMALE") as never);
   vi.mocked(requireModuleEnabled).mockResolvedValue({ enabled: true } as never);
   vi.mocked(prisma.nutrientIntakeDay.findMany).mockResolvedValue([] as never);
-  vi.mocked(prisma.user.findUnique).mockResolvedValue({
-    nutrientTargetsJson: null,
-  } as never);
+  // No targets set: the account row carries none.
+  vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
 });
 
 describe("GET /api/nutrients/daily", () => {
@@ -152,27 +150,6 @@ describe("GET /api/nutrients/daily", () => {
       value: 2000,
       source: expect.stringContaining("EFSA"),
     });
-  });
-
-  it("returns the person's own target for the code, and null without one", async () => {
-    vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      nutrientTargetsJson: {
-        protein: { value: 120, direction: "target" },
-        sugar: { value: 40, direction: "limit" },
-      },
-    } as never);
-    const protein = (await (
-      await GET(getReq("?nutrient=protein&days=7"))
-    ).json()) as DailyResponse;
-    expect(protein.data.personalTarget).toEqual({
-      value: 120,
-      direction: "target",
-    });
-    expect(protein.data.unit).toBe("g");
-    const water = (await (
-      await GET(getReq("?nutrient=water&days=7"))
-    ).json()) as DailyResponse;
-    expect(water.data.personalTarget).toBeNull();
   });
 
   it("omits the reference when the profile has no sex on file — never guesses", async () => {

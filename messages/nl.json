@@ -10839,7 +10839,7 @@
     },
     "nutrients": {
       "label": "Inname van voedingsstoffen",
-      "description": "Dagelijkse totalen van voedingsstoffen uit Apple Health of een voedingsapp: water, energie, macro's, vitaminen en mineralen."
+      "description": "Dagtotalen uit Apple Health of een voedingsapp: water, energie, macro's, vitaminen en mineralen."
     },
     "vaccinations": {
       "label": "Vaccinaties",
@@ -12671,7 +12671,7 @@
     },
     "page": {
       "title": "Inname van voedingsstoffen",
-      "description": "Water, energie, macro's, vitaminen en mineralen uit je gezondheidsapp of een voedingsapp, plus handmatig ingevoerd water.",
+      "description": "Water, energie, macro's, vitaminen en mineralen uit je gezondheids- of voedingsapp, plus ingevoerd water.",
       "moduleOffDescription": "Zet de module voedingsstoffen aan om hier je vochtinname, energie, macronutriënten en je inname van vitaminen en mineralen te zien. Gesynchroniseerde inname wordt onderdeel van de gegevens die de Coach kan lezen.",
       "moduleOffCta": "Voedingsstoffen aanzetten",
       "emptyTitle": "Nog geen gegevens over voedingsstoffen",

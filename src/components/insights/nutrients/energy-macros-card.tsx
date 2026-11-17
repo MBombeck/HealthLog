@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Flame } from "lucide-react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -14,6 +13,7 @@ import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TileHeader } from "@/components/insights/tile-header";
 import { NutrientDailyBarChartDynamic } from "@/components/charts/nutrient-daily-bar-chart-dynamic";
+import { showErrorToast } from "@/lib/errors/error-toast";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
 import { apiGet, apiPatch } from "@/lib/api/api-fetch";
 import { queryKeys } from "@/lib/query-keys";
@@ -34,11 +34,18 @@ const WINDOW_DAYS = 30;
 /** Energy and the macros, in catalog order. */
 const MACRO_CODES = nutrientCodesInGroup("energy_macro");
 
+/** One decimal where there is one: 2150 kcal, 82.5 g. */
 function formatAmount(
-  fmt: { number: (v: number, d?: number) => string },
+  fmt: {
+    number: (v: number, d?: number) => string;
+    integer: (v: number) => string;
+  },
   amount: number,
 ): string {
-  return fmt.number(Math.round(amount * 10) / 10, 1);
+  const rounded = Math.round(amount * 10) / 10;
+  return Number.isInteger(rounded)
+    ? fmt.integer(rounded)
+    : fmt.number(rounded, 1);
 }
 
 /**
@@ -255,8 +262,8 @@ function TargetEditor({
         }),
       ]);
       onDone();
-    } catch {
-      toast.error(t("nutrients.macros.saveFailed"));
+    } catch (cause) {
+      showErrorToast(t("nutrients.macros.saveFailed"), { cause });
     } finally {
       setSaving(false);
     }

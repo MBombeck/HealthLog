@@ -3,7 +3,7 @@
  *
  * The unit battery (`correlation-extended-channels.test.ts`) pins the pure
  * shapers; this suite proves the reads that feed them: the room-climate
- * hour-mean SQL and its zone conversion, the nutrient day sum across sources,
+ * hour-mean SQL and its zone conversion, the nutrient day fold across sources,
  * the alcohol tag read from the legacy flat list, and the training read with
  * a session stored by two services.
  */
@@ -100,7 +100,7 @@ describe("extended correlation channels — reads", () => {
     expect(co2?.targets).toEqual(["SLEEP_DURATION"]);
   });
 
-  it("sums a nutrient day across sources", async () => {
+  it("folds a nutrient day across sources: the larger day total, manual water on top", async () => {
     const prisma = getPrismaClient();
     const user = await seedUser(prisma);
     await prisma.nutrientIntakeDay.createMany({
@@ -120,6 +120,15 @@ describe("extended correlation channels — reads", () => {
           amount: 250,
           unit: "ml",
           source: "MANUAL",
+        },
+        // A tracker reporting the same day: smaller, so it does not count.
+        {
+          userId: user.id,
+          day: dayKey(3),
+          nutrient: "water",
+          amount: 1400,
+          unit: "ml",
+          source: "EXTERNAL",
         },
         {
           userId: user.id,

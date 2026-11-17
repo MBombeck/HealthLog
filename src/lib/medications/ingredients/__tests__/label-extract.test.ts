@@ -137,6 +137,30 @@ describe("proposalFromLabel", () => {
     ]);
   });
 
+  it("never proposes energy or a macronutrient, even when the model names one", () => {
+    const proposal = proposalFromLabel({
+      lines: [
+        {
+          printedText: "Eiweiß 2 g",
+          nutrient: "protein",
+          amount: 2,
+          unit: "g",
+        },
+        {
+          printedText: "Energie 10 kcal",
+          nutrient: "energy",
+          amount: 10,
+          unit: "kcal",
+        },
+      ],
+    });
+    expect(proposal.ingredients).toEqual([]);
+    expect(proposal.unmatched.map((u) => u.printedText)).toEqual([
+      "Eiweiß 2 g",
+      "Energie 10 kcal",
+    ]);
+  });
+
   it("proposes a code once; a second line for it is unmatched", () => {
     const proposal = proposalFromLabel({
       lines: [
@@ -229,6 +253,13 @@ describe("executeSupplementLabelExtraction", () => {
       ]
     )[0];
     expect(JSON.stringify(params)).toContain("image/png");
+    // The closed code list offers ingredients only: no energy, macros,
+    // alcohol, water or caffeine.
+    const prompt = JSON.stringify(params);
+    expect(prompt).toContain("- magnesium:");
+    for (const code of ["energy", "protein", "alcohol", "water", "caffeine"]) {
+      expect(prompt).not.toContain(`- ${code}:`);
+    }
     expect(settle).toHaveBeenCalledWith("user-1", budget, 4000, "anthropic");
   });
 

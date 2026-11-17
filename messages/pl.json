@@ -10839,7 +10839,7 @@
     },
     "nutrients": {
       "label": "Spożycie składników odżywczych",
-      "description": "Dzienne sumy składników odżywczych z Apple Health lub aplikacji dietetycznej: woda, energia, makroskładniki, witaminy i minerały."
+      "description": "Dzienne sumy z Apple Health lub aplikacji dietetycznej: woda, energia, makro, witaminy i minerały."
     },
     "vaccinations": {
       "label": "Szczepienia",
@@ -12671,7 +12671,7 @@
     },
     "page": {
       "title": "Spożycie składników odżywczych",
-      "description": "Woda, energia, makroskładniki, witaminy i minerały z aplikacji zdrowia lub aplikacji dietetycznej, plus ręczne wpisy wody.",
+      "description": "Woda, energia, makro, witaminy i minerały z aplikacji zdrowia lub dietetycznej, plus ręczne wpisy wody.",
       "moduleOffDescription": "Włącz moduł składników odżywczych, aby zobaczyć tu nawodnienie, energię, makroskładniki i spożycie witamin/minerałów. Zsynchronizowane dane staną się częścią zapisu, który może odczytać Coach.",
       "moduleOffCta": "Włącz składniki odżywcze",
       "emptyTitle": "Brak jeszcze danych o składnikach odżywczych",

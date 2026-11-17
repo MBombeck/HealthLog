@@ -10839,7 +10839,7 @@
     },
     "nutrients": {
       "label": "Nährstoffzufuhr",
-      "description": "Tägliche Nährstoffsummen aus Apple Health oder einem Ernährungstracker: Wasser, Energie, Makros, Vitamine und Mineralstoffe."
+      "description": "Tagessummen aus Apple Health oder einem Ernährungstracker: Wasser, Energie, Makros, Vitamine und Mineralstoffe."
     },
     "vaccinations": {
       "label": "Impfungen",
@@ -12671,7 +12671,7 @@
     },
     "page": {
       "title": "Nährstoffaufnahme",
-      "description": "Wasser, Energie, Makros, Vitamine und Mineralstoffe aus deiner Gesundheits-App oder einem Ernährungstracker, plus manuelle Wassereinträge.",
+      "description": "Wasser, Energie, Makros, Vitamine und Mineralstoffe aus deiner Gesundheits-App oder einem Tracker, plus Wassereinträge.",
       "moduleOffDescription": "Aktiviere das Nährstoffe-Modul, um Flüssigkeit, Energie, Makronährstoffe und Vitamin-/Mineralstoffaufnahme hier zu sehen. Synchronisierte Werte werden Teil der Aufzeichnung, die der Coach lesen kann.",
       "moduleOffCta": "Nährstoffe aktivieren",
       "emptyTitle": "Noch keine Nährstoffdaten",

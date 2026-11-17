@@ -32,7 +32,7 @@
  */
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireAuth } from "@/lib/api-handler";
+import { apiHandler, isScopedCredential, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
 import {
@@ -46,7 +46,6 @@ import { withIdempotency } from "@/lib/idempotency";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
-import { isScopedCredential } from "@/lib/auth/guards/context";
 import { MEASUREMENTS_WRITE_SCOPE } from "@/lib/measurements/scopes";
 import { NUTRIENT_CATALOG } from "@/lib/nutrients/catalog";
 import { maxAcceptableNutrientDay } from "@/lib/nutrients/day-bounds";

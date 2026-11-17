@@ -50,6 +50,18 @@ describe("canonicalComposition", () => {
     ).toEqual({ ok: false, kind: "unknownNutrient", index: 1 });
   });
 
+  it("refuses a catalogue code that is no ingredient: energy, a macro, alcohol, water", () => {
+    for (const nutrient of ["energy", "protein", "alcohol", "water"]) {
+      expect(
+        canonicalComposition([
+          { nutrient: "zinc", amount: 10, unit: "mg" },
+          { nutrient, amount: 5, unit: "g" },
+        ]),
+        nutrient,
+      ).toEqual({ ok: false, kind: "unknownNutrient", index: 1 });
+    }
+  });
+
   it("names the row and the allowed units of a unit the code does not offer", () => {
     expect(
       canonicalComposition([

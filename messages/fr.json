@@ -10839,7 +10839,7 @@
     },
     "nutrients": {
       "label": "Apports en nutriments",
-      "description": "Totaux quotidiens de nutriments depuis Apple Health ou une appli de suivi alimentaire : eau, énergie, macros, vitamines et minéraux."
+      "description": "Totaux quotidiens depuis Apple Health ou une appli de suivi : eau, énergie, macros, vitamines et minéraux."
     },
     "vaccinations": {
       "label": "Vaccinations",
@@ -12671,7 +12671,7 @@
     },
     "page": {
       "title": "Apports en nutriments",
-      "description": "Eau, énergie, macros, vitamines et minéraux depuis votre appli santé ou une appli de suivi alimentaire, plus les saisies d'eau.",
+      "description": "Eau, énergie, macros, vitamines et minéraux depuis votre appli santé ou de suivi, plus les saisies d'eau.",
       "moduleOffDescription": "Activez le module nutriments pour voir ici l'hydratation, l'énergie, les macronutriments et les apports en vitamines/minéraux. Les données synchronisées feront partie du dossier que le Coach peut lire.",
       "moduleOffCta": "Activer les nutriments",
       "emptyTitle": "Pas encore de données nutritionnelles",

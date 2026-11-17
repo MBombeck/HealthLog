@@ -12671,7 +12671,7 @@
     },
     "page": {
       "title": "Ingesta de nutrientes",
-      "description": "Agua, energía, macros, vitaminas y minerales desde tu app de salud o una app de nutrición, más entradas manuales de agua.",
+      "description": "Agua, energía, macros, vitaminas y minerales desde tu app de salud o de nutrición, más entradas de agua.",
       "moduleOffDescription": "Activa el módulo de nutrientes para ver aquí la hidratación, la energía, los macronutrientes y la ingesta de vitaminas/minerales. Los datos sincronizados pasarán a formar parte del registro que el Coach puede leer.",
       "moduleOffCta": "Activar nutrientes",
       "emptyTitle": "Aún no hay datos de nutrientes",
