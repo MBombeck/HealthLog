@@ -65,15 +65,11 @@ export const GET = apiHandler(async (req: NextRequest) => {
   // before any state is minted. The return address itself is never taken from
   // the request: it is the fixed path on the operator-set app origin.
   const returnParam = req.nextUrl.searchParams.get("return");
-  if (
+  const returnRefused =
     returnParam !== null &&
-    (returnParam !== "https" || !isNative || !nativeHttpsReturnOrigin())
-  ) {
-    annotate({ meta: { reason: "invalid_native_return" } });
-    return apiError("Unsupported return", 422);
-  }
+    (returnParam !== "https" || !isNative || !nativeHttpsReturnOrigin());
   const nativeReturn: NativeOidcReturn =
-    returnParam === "https" ? "https" : "scheme";
+    returnParam === "https" && !returnRefused ? "https" : "scheme";
 
   // Native-aware error redirect: the scheme for a native start, the web login
   // page otherwise, and the claim page for a claim. Machine-readable
@@ -130,6 +126,11 @@ export const GET = apiHandler(async (req: NextRequest) => {
   );
   if (!rl.allowed) {
     return loginError("oidc_rate_limited");
+  }
+  // Refused after the rate limit, like every other malformed start.
+  if (returnRefused) {
+    annotate({ meta: { reason: "invalid_native_return" } });
+    return apiError("Unsupported return", 422);
   }
 
   // A native start MUST carry a valid S256 challenge (43–128 chars). `plain` is

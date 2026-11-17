@@ -13,9 +13,11 @@ import { NativeReturnNotice } from "@/components/auth/native-return-notice";
  * the app shows: a fixed "back to the app" message.
  *
  * A URL-credential surface by design (`session-surface-guard.test.ts`, S2,
- * leg 4). The page never reads its query, so the code is rendered into
- * nothing: not the markup, not the RSC payload, not a link. The client part
- * removes the query from the address bar as soon as it runs. The code alone is
+ * leg 4). The page never reads its query and renders it into no markup and
+ * no link. Next still carries the requested address in its own router state
+ * (the RSC payload of this response), which stays in this browser; the
+ * browser's history keeps the address too, and the client part only removes
+ * the query from the address bar as soon as it runs. The code alone is
  * worthless anyway: single-use, five minutes, and bound to the app's PKCE
  * verifier, which never leaves the device. The edge marks the address
  * uncacheable, unindexable and `Referrer-Policy: no-referrer`
