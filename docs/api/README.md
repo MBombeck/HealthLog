@@ -65,8 +65,10 @@ before treating a warning as a regression.
     - `POST /api/mcp/tokens` mints `health:read` (optionally plus
       `health:write`), audience-bound to `/mcp` and refused on REST writes;
     - `POST /api/tokens/measurements` mints `measurements:write`, accepted by
-      `POST /api/measurements` and `POST /api/measurements/batch` only, on the
-      holder's own record only. The readings it writes carry `source: EXTERNAL`
+      `POST /api/measurements`, `POST /api/measurements/batch`,
+      `POST /api/custom-metrics/{id}/entries` and `POST /api/nutrients/batch`
+      only, on the holder's own record only. The readings and nutrient day
+      totals it writes carry `source: EXTERNAL`
       and are linked to the token; whether the HealthLog app writes them into
       Apple Health is the token's `mirrorToAppleHealth` setting (off by
       default, changed with `PATCH /api/tokens/{id}`), resolved onto every

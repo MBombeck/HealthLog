@@ -1,36 +1,37 @@
 /**
- * `POST /api/nutrients/batch` — micronutrient day-total ingest (v1.28).
+ * `POST /api/nutrients/batch` — nutrient day-total ingest (v1.28).
  *
- * iOS posts daily totals for the closed 26-code catalog (vitamins,
- * minerals, water, caffeine) computed via `HKStatisticsCollectionQuery`
- * day-anchored cumulative sums; `day` arrives as YYYY-MM-DD in the
- * user's IANA timezone (the `stats:` day-key contract — the server
- * trusts the string after regex + calendar sanity, no re-derivation).
+ * Two callers. The native client posts daily totals for the HealthKit codes
+ * (vitamins, minerals, water, caffeine, energy, the macros) computed via
+ * `HKStatisticsCollectionQuery` day-anchored cumulative sums, with a cookie
+ * session or the wildcard token its login mints; those rows are stored as
+ * APPLE_HEALTH. A bridge (a food tracker, a script) posts with a narrow
+ * `measurements:write` token; its rows are stored as EXTERNAL, and it may post
+ * `alcohol` too. The credential picks the source, never the body, so the two
+ * never overwrite each other and the reads count the larger day total
+ * (`foldNutrientDay`). `day` arrives as YYYY-MM-DD in the user's IANA timezone
+ * (the `stats:` day-key contract — the server trusts the string after regex +
+ * calendar sanity, no re-derivation); any past day is accepted, so a bridge
+ * can backfill its history.
  *
- * Upsert key = the composite PK (userId, day, nutrient, source), and this
- * route always owns the APPLE_HEALTH row. Re-post
- * replaces amount / unit / externalSourceVersion — last-writer-wins,
- * the day-total contract; per-entry status is `updated` then, never
- * `duplicate`. Validation failures (`unit_mismatch` | `value_out_of_range`
- * | `day_invalid`) are always isolated per entry. The DB write itself runs
- * as two batched groups — a single indexed existence read splits valid
- * entries into a bulk `createMany` (new pairs) and a `$transaction` of
- * per-row updates (existing pairs), the measurements-batch shape. A write
- * failure marks its WHOLE group `skipped upsert_failed` rather than
- * isolating the one entry that would have caused it (unavoidable once the
- * write is batched) — the request itself never fails. That reason is
- * transient, unlike the validation skips: the client sends those entries
- * again, and the response is marked `no-store` so an idempotent retry is not
- * answered from the cache.
+ * Upsert key = the composite PK (userId, day, nutrient, source). Re-post
+ * replaces amount / unit / externalSourceVersion — last-writer-wins, the
+ * day-total contract; a bridge corrects a day by posting 0. Per-entry status
+ * is `updated` then, never `duplicate`. Validation failures (`unit_mismatch` |
+ * `value_out_of_range` | `day_invalid`) are always isolated per entry. The
+ * write (`writeNutrientDayTotals`) runs as two batched groups; a write failure
+ * marks its WHOLE group `skipped upsert_failed` — the request itself never
+ * fails. That reason is transient, unlike the validation skips: the client
+ * sends those entries again, and the response is marked `no-store` so an
+ * idempotent retry is not answered from the cache.
  *
  * Module gate FIRST: the opt-in `nutrients` module (default off)
- * refuses ingest with the 403 `module.disabled` envelope, so a phone
- * whose user never opted in cannot land rows server-side
+ * refuses ingest with the 403 `module.disabled` envelope, so a phone or a
+ * bridge whose user never opted in cannot land rows server-side
  * (refuse-ingest posture, mirroring mental health — not surface-only).
  */
 import { NextRequest } from "next/server";
 
-import { prisma } from "@/lib/db";
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { annotate } from "@/lib/logging/context";
 import { auditLog } from "@/lib/auth/audit";
@@ -45,8 +46,15 @@ import { withIdempotency } from "@/lib/idempotency";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { requireModuleEnabled } from "@/lib/modules/gate";
 import { invalidateUserHealthContext } from "@/lib/cache/invalidate";
+import { isScopedCredential } from "@/lib/auth/guards/context";
+import { MEASUREMENTS_WRITE_SCOPE } from "@/lib/measurements/scopes";
 import { NUTRIENT_CATALOG } from "@/lib/nutrients/catalog";
 import { maxAcceptableNutrientDay } from "@/lib/nutrients/day-bounds";
+import {
+  writeNutrientDayTotals,
+  type ValidNutrientEntry,
+} from "@/lib/nutrients/day-total-write";
+import { NUTRIENT_SOURCE, type NutrientSource } from "@/lib/nutrients/sources";
 import {
   MAX_NUTRIENT_ENTRIES_PER_BATCH,
   nutrientBatchSchema,
@@ -79,10 +87,27 @@ interface EntryResult {
 export const POST = apiHandler(withIdempotency<[NextRequest]>(postBatch));
 
 async function postBatch(request: NextRequest): Promise<Response> {
+  // Declares the third-party ingest scope, so a narrow `measurements:write`
+  // token reaches this route alongside cookie sessions and the wildcard tokens
+  // a native login mints. `requireAuth` refuses any acting-account carrier for
+  // every credential shape, so the scoped token is confined to its owner's own
+  // record here without this route adding an arm of its own.
   // Metered by this route's own bulk bucket below, not the shared per-account
   // write bucket: the native client syncs through here in bursts (see
   // `meterAccountWrite`).
-  const { user } = await requireAuth(undefined, { writeBucket: "own" });
+  const auth = await requireAuth(MEASUREMENTS_WRITE_SCOPE, {
+    writeBucket: "own",
+  });
+  const { user } = auth;
+
+  // A scoped credential is a bridge — a food tracker, a script — and not the
+  // native client. Its rows are stored as EXTERNAL, the phone's as
+  // APPLE_HEALTH; the body has no say. Two sources, so a bridge and the phone
+  // never overwrite each other's day total, and the reads count the larger.
+  const scoped = isScopedCredential(auth);
+  const source: NutrientSource = scoped
+    ? NUTRIENT_SOURCE.EXTERNAL
+    : NUTRIENT_SOURCE.APPLE_HEALTH;
 
   // Module gate first: a disabled module must refuse before any body
   // work, so iOS can branch on the 403 `module.disabled` errorCode and
@@ -90,8 +115,12 @@ async function postBatch(request: NextRequest): Promise<Response> {
   const gate = await requireModuleEnabled(user.id, "nutrients");
   if (!gate.enabled) return gate.response;
 
+  // A bridge counts in a bucket of its own, so a bridge stuck in a retry loop
+  // cannot use up the allowance the phone needs to sync the same account. All
+  // bridge tokens of one account share that bucket, so minting more tokens
+  // does not multiply the allowance.
   const rl = await checkRateLimit(
-    `nutrients:batch:${user.id}`,
+    scoped ? `nutrients:batch:bridge:${user.id}` : `nutrients:batch:${user.id}`,
     BATCH_RATE_LIMIT_MAX,
     BATCH_RATE_LIMIT_WINDOW_MS,
   );
@@ -138,15 +167,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
   let inserted = 0;
   let updated = 0;
 
-  interface ValidEntry {
-    index: number;
-    day: string;
-    nutrient: (typeof entries)[number]["nutrient"];
-    amount: number;
-    unit: string;
-    externalSourceVersion: string | null;
-  }
-  const validEntries: ValidEntry[] = [];
+  const validEntries: ValidNutrientEntry[] = [];
 
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
@@ -187,128 +208,18 @@ async function postBatch(request: NextRequest): Promise<Response> {
     });
   }
 
-  // v1.29 — `source` joined the composite PK (migration 0249) so a manual
-  // water entry (source=MANUAL, written by `POST /api/nutrients/water`)
-  // coexists with the Apple-synced day total instead of one clobbering the
-  // other on the next sync. The batch route always owns the APPLE_HEALTH
-  // row.
-  //
-  // Perf (measurements/batch shape): ONE indexed existence read replaces the
-  // per-entry probe-then-upsert (up to 1000 sequential round trips pre-fix).
-  // Genuinely new (day, nutrient) pairs land via a single chunked
-  // `createMany`; pairs that already exist update via a batched
-  // `$transaction` of per-row `update` calls (values differ per row, so a
-  // single bulk statement isn't available without raw SQL — this still
-  // collapses the per-entry PROBE, and pipelines the writes through one
-  // transaction instead of N standalone round trips).
-  if (validEntries.length > 0) {
-    const existing = await prisma.nutrientIntakeDay.findMany({
-      where: {
-        userId: user.id,
-        source: "APPLE_HEALTH",
-        OR: validEntries.map((e) => ({ day: e.day, nutrient: e.nutrient })),
-      },
-      select: { day: true, nutrient: true },
-    });
-    const existingKeys = new Set(
-      existing.map((r) => `${r.day}::${r.nutrient}`),
-    );
-
-    const toInsert: ValidEntry[] = [];
-    const toUpdate: ValidEntry[] = [];
-    for (const e of validEntries) {
-      (existingKeys.has(`${e.day}::${e.nutrient}`) ? toUpdate : toInsert).push(
-        e,
-      );
-    }
-
-    if (toInsert.length > 0) {
-      try {
-        const result = await prisma.nutrientIntakeDay.createMany({
-          data: toInsert.map((e) => ({
-            userId: user.id,
-            day: e.day,
-            nutrient: e.nutrient,
-            amount: e.amount,
-            unit: e.unit,
-            source: "APPLE_HEALTH" as const,
-            externalSourceVersion: e.externalSourceVersion,
-          })),
-          skipDuplicates: true,
-        });
-        inserted += result.count;
-        for (const e of toInsert) {
-          results[e.index] = { index: e.index, status: "inserted" };
-        }
-        // Rare race: a concurrent request claimed one of these keys between
-        // our existence probe and this createMany, so skipDuplicates
-        // silently dropped that row's write here — measurements/batch
-        // accepts the same count-only trade-off for its own createMany race.
-        // The DB itself stays consistent (the racing writer's row is
-        // stored); only this response's per-row label may be stale for
-        // that one entry.
-        if (result.count < toInsert.length) {
-          annotate({
-            action: { name: "nutrient.batch.insert_race" },
-            meta: { attempted: toInsert.length, stored: result.count },
-          });
-        }
-      } catch (err: unknown) {
-        console.error("[nutrient-batch] bulk insert failed", err);
-        for (const e of toInsert) {
-          skipped.push({ index: e.index, reason: "upsert_failed" });
-          results[e.index] = {
-            index: e.index,
-            status: "skipped",
-            reason: "upsert_failed",
-          };
-        }
-      }
-    }
-
-    if (toUpdate.length > 0) {
-      try {
-        await prisma.$transaction(
-          toUpdate.map((e) =>
-            prisma.nutrientIntakeDay.update({
-              where: {
-                userId_day_nutrient_source: {
-                  userId: user.id,
-                  day: e.day,
-                  nutrient: e.nutrient,
-                  source: "APPLE_HEALTH",
-                },
-              },
-              data: {
-                // Last-writer-wins on the day total: iOS re-posts the
-                // current and previous local day on every sync as the
-                // totals grow.
-                amount: e.amount,
-                unit: e.unit,
-                externalSourceVersion: e.externalSourceVersion,
-              },
-            }),
-          ),
-        );
-        updated += toUpdate.length;
-        for (const e of toUpdate) {
-          results[e.index] = { index: e.index, status: "updated" };
-        }
-      } catch (err: unknown) {
-        // The client-facing `reason` is a closed set (see the file header) —
-        // never echo raw exception text into it. Log the real error
-        // server-side only (SWC keeps `console.error` in prod) and return
-        // the fixed `upsert_failed` member.
-        console.error("[nutrient-batch] bulk update failed", err);
-        for (const e of toUpdate) {
-          skipped.push({ index: e.index, reason: "upsert_failed" });
-          results[e.index] = {
-            index: e.index,
-            status: "skipped",
-            reason: "upsert_failed",
-          };
-        }
-      }
+  // `source` is part of the composite PK (migration 0249), so this write
+  // touches only the caller's own source row: a manual water entry, the
+  // supplement total and the other day-total source are never clobbered.
+  const written = await writeNutrientDayTotals(user.id, source, validEntries);
+  inserted += written.inserted;
+  updated += written.updated;
+  for (const { index, status } of written.statuses) {
+    if (status === "failed") {
+      skipped.push({ index, reason: "upsert_failed" });
+      results[index] = { index, status: "skipped", reason: "upsert_failed" };
+    } else {
+      results[index] = { index, status };
     }
   }
 
@@ -337,6 +248,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
     userId: user.id,
     ipAddress: getClientIp(request),
     details: {
+      source,
       processed: entries.length,
       inserted,
       updated,
@@ -358,6 +270,7 @@ async function postBatch(request: NextRequest): Promise<Response> {
   annotate({
     action: { name: "nutrient.batch.ingest" },
     meta: {
+      source,
       processed: entries.length,
       inserted,
       updated,
