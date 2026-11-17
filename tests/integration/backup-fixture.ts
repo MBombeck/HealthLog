@@ -383,6 +383,7 @@ export async function seedEveryTwoEndedModel(
         doseValue: 5,
         doseUnit: "mg",
         noteEncrypted: encryptToBytes(DOSE_CHANGE_NOTE),
+        clientId: "device-step-1",
       },
       {
         medicationId: medication.id,

@@ -16,6 +16,19 @@
   code is removed from the address bar. Only servers reached over https
   offer it.
 
+- **GLP-1 dose steps can be corrected and removed.** A titration step
+  with a typo no longer stays for good: `PATCH` and `DELETE
+/api/medications/{id}/glp1/dose-changes/{doseChangeId}` change or remove
+  one step, with the same access rules and audit trail as adding one. A
+  step can also carry the app's own id (`clientId`), so when your iPhone
+  and iPad both upload the same step, it is stored once. The id travels
+  with backups and restores. Migration
+  `0506_medication_dose_change_client_id`.
+- **Set the injection site on a dose you already logged.** Correcting a
+  dose (`PUT /api/medications/{id}/intake/{eventId}`) now takes
+  `injectionSite`, or `null` to clear it, so "I forgot to pick the site"
+  has a fix. Only sites allowed for that medication are accepted.
+
 ### Changed
 
 - With HealthLog on both an iPhone and an iPad, each device's own

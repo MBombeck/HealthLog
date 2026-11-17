@@ -13283,6 +13283,7 @@
       "medicationCourseEnd": "{name} 님이 복용 기간을 끝냈어요",
       "medicationDelete": "{name} 님이 약을 삭제했어요",
       "medicationGlp1Update": "{name} 님이 GLP-1 요법을 수정했어요",
+      "medicationGlp1DoseChangeDelete": "{name} 님이 GLP-1 용량 단계를 삭제했어요",
       "medicationScheduleCreate": "{name} 님이 복용 일정을 추가했어요",
       "medicationScheduleUpdate": "{name} 님이 복용 일정을 수정했어요",
       "medicationScheduleDelete": "{name} 님이 복용 일정을 삭제했어요",

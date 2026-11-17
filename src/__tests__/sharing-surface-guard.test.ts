@@ -1419,6 +1419,10 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
     domain: "medications",
     why: "Reading the titration history, the recent injections and the supply math, and recording a titration step. The READ arm joined the MANAGE one when the route was published: the write had resolved the record since v1.37.0 while the read still resolved the caller, so a manager could add a dose the history refused them — may write, may not read, which the model does not produce. The read is at the level `/inventory`, `/side-effects` and `/cadence` use for the same medication's data and is strictly narrower than the write already admitted; the argument for the write is the manage literal's reason line.",
   },
+  "app/api/medications/[id]/glp1/dose-changes/[doseChangeId]/route.ts": {
+    domain: "medications",
+    why: "Correcting and removing one titration step (#169). Reached only through this module's MANAGE arm, the level the create on `.../glp1` already asks; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
+  },
   "app/api/medications/[id]/intake/[eventId]/route.ts": {
     domain: "medications",
     why: "Correcting and deleting a dose. Reached only through this module's MANAGE arm; the argument for admitting it is the manage literal's reason line, and the entry here is what leg (a) freezes and leg (f) checks the section against.",
@@ -1938,6 +1942,11 @@ const DELEGABLE_MANAGE_ROUTES: Record<string, ManageEntry> = {
     conditions: ["C1"],
     why: "Recording a titration step. C1.",
   },
+  "app/api/medications/[id]/glp1/dose-changes/[doseChangeId]/route.ts": {
+    domain: "medications",
+    conditions: ["C1", "C3", "C4"],
+    why: "Correcting and removing a titration step. The correction files the previous dose, unit and date (C4); the removal is hard and files the step's dose and date (C3); both burn the actor's bucket (C1).",
+  },
   "app/api/medications/[id]/intake/[eventId]/route.ts": {
     domain: "medications",
     conditions: ["C4", "C8"],
@@ -2312,7 +2321,7 @@ const ACTOR_ROUTES: Record<string, string> = {
  * The Insights presence read joins the record list and the manage literal:
  * the tab strip's gate over the overview, counts and flags only. 277 -> 279.
  */
-const FROZEN_ENTRY_COUNT = 279;
+const FROZEN_ENTRY_COUNT = 281;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -3090,7 +3099,7 @@ describe("(g) the MANAGE route set is frozen", () => {
 
   it("keeps the admitted mutation inventory complete and discoverable", () => {
     expect(ADMITTED_MUTATING_HANDLERS.length).toBeGreaterThan(0);
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(93);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(95);
 
     const expected = ADMITTED_MUTATING_HANDLERS.map(
       ({ handlerModule, action, level }) =>

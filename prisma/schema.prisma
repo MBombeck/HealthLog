@@ -3682,10 +3682,16 @@ model MedicationDoseChange {
   /// stays for read-fallback until the backfill reports zero remaining
   /// rows; the plaintext drop is DEFERRED to a later release.
   noteEncrypted Bytes?   @map("note_encrypted")
+  /// v1.48.0 (#169) — the client's own id for this step, optional. Unique
+  /// per medication, so a step two devices hold locally is created once: a
+  /// second POST with the same id answers the stored row instead of adding
+  /// one. Carried by backup and restore; never edited after create.
+  clientId      String?  @map("client_id")
   createdAt     DateTime @default(now()) @map("created_at")
 
   medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
 
+  @@unique([medicationId, clientId])
   @@index([medicationId, effectiveFrom])
   // `medication_dose_changes_note_backfill_idx` is a partial index over
   // `(medication_id) WHERE note IS NOT NULL AND note_encrypted IS NULL` — see

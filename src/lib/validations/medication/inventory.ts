@@ -179,19 +179,60 @@ const MAX_REASON_CHARS = 200;
 const MIN_EFFECTIVE_FROM = new Date("2020-01-01T00:00:00Z");
 const FIVE_YEARS_MS = 5 * 365 * 24 * 60 * 60 * 1000;
 
+const effectiveFromSchema = isoDateTime()
+  .transform((s) => new Date(s))
+  .refine((d) => d.getTime() >= MIN_EFFECTIVE_FROM.getTime(), {
+    message: "effectiveFrom must be on or after 2020-01-01",
+  })
+  .refine((d) => d.getTime() <= Date.now() + FIVE_YEARS_MS, {
+    message: "effectiveFrom must be within 5 years of now",
+  });
+const doseValueSchema = z.number().finite().min(0).max(MAX_DOSE_MG);
+const doseUnitSchema = z.string().min(1).max(10);
+const doseNoteSchema = z.string().max(MAX_NOTE_CHARS).nullable();
+
 export const glp1DoseChangePostSchema = z.object({
-  effectiveFrom: isoDateTime()
-    .transform((s) => new Date(s))
-    .refine((d) => d.getTime() >= MIN_EFFECTIVE_FROM.getTime(), {
-      message: "effectiveFrom must be on or after 2020-01-01",
-    })
-    .refine((d) => d.getTime() <= Date.now() + FIVE_YEARS_MS, {
-      message: "effectiveFrom must be within 5 years of now",
-    }),
-  doseValue: z.number().finite().min(0).max(MAX_DOSE_MG),
-  doseUnit: z.string().min(1).max(10),
-  note: z.string().max(MAX_NOTE_CHARS).nullable().optional(),
+  effectiveFrom: effectiveFromSchema,
+  doseValue: doseValueSchema,
+  doseUnit: doseUnitSchema,
+  note: doseNoteSchema.optional(),
+  /**
+   * #169 — the client's own id for the step. Unique per medication: a second
+   * POST with the same id answers the stored row (200) instead of creating
+   * one, so a step two devices hold locally is uploaded once. Never edited.
+   */
+  clientId: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(/^[A-Za-z0-9._:-]+$/)
+    .optional()
+    .describe(
+      "Optional client-side id of the step, 1–128 characters of `A–Z a–z 0–9 . _ : -`. Unique per medication: a second create with the same id returns the stored step with 200 and changes nothing, whatever else the body says. Fixed at create; a correction cannot change it.",
+    ),
 });
+
+/**
+ * #169 — correcting a titration step. Every field optional, at least one
+ * present; `note: null` clears the note. The client id is not in the shape
+ * (strict), because it names the step rather than describing it.
+ */
+export const glp1DoseChangePatchSchema = z
+  .object({
+    effectiveFrom: effectiveFromSchema.optional(),
+    doseValue: doseValueSchema.optional(),
+    doseUnit: doseUnitSchema.optional(),
+    note: doseNoteSchema.optional(),
+  })
+  .strict()
+  .refine((b) => Object.values(b).some((v) => v !== undefined), {
+    message: "Name at least one of effectiveFrom, doseValue, doseUnit, note",
+  })
+  .meta({
+    id: "Glp1DoseChangePatchRequest",
+    description:
+      "Correct one titration step. Every field is optional and at least one is required; a field left out keeps its value, `note: null` clears the note. The client id cannot be changed.",
+  });
 
 /**
  * DEPRECATED write path (v1.16.10) — the `inventory.delta` branch feeds
@@ -225,5 +266,8 @@ export const glp1PostBodySchema = z
   });
 
 export type Glp1DoseChangePostInput = z.infer<typeof glp1DoseChangePostSchema>;
+export type Glp1DoseChangePatchInput = z.infer<
+  typeof glp1DoseChangePatchSchema
+>;
 export type Glp1InventoryPostInput = z.infer<typeof glp1InventoryPostSchema>;
 export type Glp1PostBodyInput = z.infer<typeof glp1PostBodySchema>;

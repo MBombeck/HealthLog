@@ -280,7 +280,7 @@ const ROUTE_IMPORTS = import.meta.glob<Record<string, unknown>>(
 
 describe("the complete MANAGE handler matrix", () => {
   it("starts with a non-empty, exact handler inventory", () => {
-    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(93);
+    expect(ADMITTED_MUTATING_HANDLERS.length).toBe(95);
   });
 });
 
@@ -2322,6 +2322,60 @@ proveManageRoute("POST /api/medications/[id]/glp1", {
       where: { medicationId: medication.id },
     })) === 1,
 });
+
+async function makeDoseStep(ownerId: string) {
+  const medication = await makeMedication(ownerId);
+  const step = await getPrismaClient().medicationDoseChange.create({
+    data: {
+      medicationId: medication.id,
+      effectiveFrom: new Date(ISO),
+      doseValue: 0.5,
+      doseUnit: "mg",
+    },
+  });
+  return { ownerId, medication, step };
+}
+
+proveManageRoute(
+  "PATCH /api/medications/[id]/glp1/dose-changes/[doseChangeId]",
+  {
+    route: "/api/medications/[id]/glp1/dose-changes/[doseChangeId]",
+    action: "PATCH",
+    prepare: makeDoseStep,
+    params: ({ medication, step }) => ({
+      id: medication.id,
+      doseChangeId: step.id,
+    }),
+    body: () => ({ doseValue: 1 }),
+    ok: 200,
+    auditAction: "medication.glp1.update",
+    applied: async ({ step }) =>
+      (
+        await getPrismaClient().medicationDoseChange.findUnique({
+          where: { id: step.id },
+        })
+      )?.doseValue === 1,
+  },
+);
+
+proveManageRoute(
+  "DELETE /api/medications/[id]/glp1/dose-changes/[doseChangeId]",
+  {
+    route: "/api/medications/[id]/glp1/dose-changes/[doseChangeId]",
+    action: "DELETE",
+    prepare: makeDoseStep,
+    params: ({ medication, step }) => ({
+      id: medication.id,
+      doseChangeId: step.id,
+    }),
+    ok: 200,
+    auditAction: "medication.glp1.doseChange.delete",
+    applied: async ({ step }) =>
+      (await getPrismaClient().medicationDoseChange.findUnique({
+        where: { id: step.id },
+      })) === null,
+  },
+);
 
 proveManageRoute("PUT /api/medications/[id]/ingredients", {
   route: "/api/medications/[id]/ingredients",

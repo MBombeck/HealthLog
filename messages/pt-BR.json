@@ -13283,6 +13283,7 @@
       "medicationCourseEnd": "{name} encerrou um tratamento",
       "medicationDelete": "{name} removeu um medicamento",
       "medicationGlp1Update": "{name} alterou um curso de GLP-1",
+      "medicationGlp1DoseChangeDelete": "{name} removeu uma etapa de dose de GLP-1",
       "medicationScheduleCreate": "{name} adicionou um cronograma de doses",
       "medicationScheduleUpdate": "{name} alterou um cronograma de doses",
       "medicationScheduleDelete": "{name} removeu um cronograma de doses",

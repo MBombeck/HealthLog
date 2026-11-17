@@ -441,6 +441,10 @@ function medicationManageVerb(
       });
     case "medication.glp1.update":
       return t("recordSharing.activityVerb.medicationGlp1Update", { name });
+    case "medication.glp1.doseChange.delete":
+      return t("recordSharing.activityVerb.medicationGlp1DoseChangeDelete", {
+        name,
+      });
     case "medication.schedule_revision.created":
       return t("recordSharing.activityVerb.medicationScheduleCreate", { name });
     case "medication.schedule_revision.updated":

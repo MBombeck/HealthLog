@@ -13283,6 +13283,7 @@
       "medicationCourseEnd": "{name} heeft een medicijnkuur beëindigd",
       "medicationDelete": "{name} heeft een medicijn verwijderd",
       "medicationGlp1Update": "{name} heeft een GLP-1-kuur gewijzigd",
+      "medicationGlp1DoseChangeDelete": "{name} heeft een GLP-1-dosisstap verwijderd",
       "medicationScheduleCreate": "{name} heeft een doseerschema toegevoegd",
       "medicationScheduleUpdate": "{name} heeft een doseerschema gewijzigd",
       "medicationScheduleDelete": "{name} heeft een doseerschema verwijderd",

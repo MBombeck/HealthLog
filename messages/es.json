@@ -13283,6 +13283,7 @@
       "medicationCourseEnd": "{name} terminó un tratamiento",
       "medicationDelete": "{name} eliminó un medicamento",
       "medicationGlp1Update": "{name} cambió un tratamiento con GLP-1",
+      "medicationGlp1DoseChangeDelete": "{name} eliminó un escalón de dosis de GLP-1",
       "medicationScheduleCreate": "{name} añadió una pauta de dosificación",
       "medicationScheduleUpdate": "{name} cambió una pauta de dosificación",
       "medicationScheduleDelete": "{name} eliminó una pauta de dosificación",

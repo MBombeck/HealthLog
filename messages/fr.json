@@ -13283,6 +13283,7 @@
       "medicationCourseEnd": "{name} a terminé un traitement",
       "medicationDelete": "{name} a supprimé un médicament",
       "medicationGlp1Update": "{name} a modifié un traitement GLP-1",
+      "medicationGlp1DoseChangeDelete": "{name} a supprimé un palier de dose GLP-1",
       "medicationScheduleCreate": "{name} a ajouté un schéma de prise",
       "medicationScheduleUpdate": "{name} a modifié un schéma de prise",
       "medicationScheduleDelete": "{name} a supprimé un schéma de prise",

@@ -31,6 +31,8 @@ import {
   resolveSlotForWriteByBand,
 } from "@/lib/medications/scheduling/slot-upsert";
 import { dateOnlyKey } from "@/lib/tz/date-only";
+import { resolveInjectionSiteForWrite } from "@/lib/medications/injection-site-write";
+import type { InjectionSiteKey } from "@/lib/medications/injection-sites";
 import type { z } from "zod/v4";
 
 export type IntakeEventEdit = z.output<typeof updateIntakeEventSchema>;
@@ -110,6 +112,62 @@ async function refuseTakeBeforeStart(
     }
   }
   return null;
+}
+
+/**
+ * #169 — the injection site an edit sets, validated the way a new dose's site
+ * is (`resolveInjectionSiteForWrite`), except that a site the write could not
+ * keep is refused rather than dropped: an edit that names a site and gets back
+ * a dose without one would be a silent failure. `null` clears and is always
+ * allowed; `undefined` leaves the site alone.
+ */
+async function resolveEditedInjectionSite(
+  ctx: EditContext,
+  data: IntakeEventEdit,
+  taken: boolean,
+): Promise<
+  IntakeEditRefusal | { ok: true; site: InjectionSiteKey | null | undefined }
+> {
+  const submitted = data.injectionSite;
+  if (submitted === undefined || submitted === null) {
+    return { ok: true, site: submitted };
+  }
+  const [medication, owner] = await Promise.all([
+    prisma.medication.findFirst({
+      where: { id: ctx.medicationId, userId: ctx.user.id },
+      select: {
+        deliveryForm: true,
+        trackInjectionSites: true,
+        allowedInjectionSites: true,
+      },
+    }),
+    prisma.user.findUnique({
+      where: { id: ctx.user.id },
+      select: { globalExcludedInjectionSites: true },
+    }),
+  ]);
+  const resolution = resolveInjectionSiteForWrite({
+    submitted,
+    taken,
+    deliveryForm: medication?.deliveryForm ?? "ORAL",
+    trackInjectionSites: medication?.trackInjectionSites ?? false,
+    allowedInjectionSites: (medication?.allowedInjectionSites ??
+      []) as InjectionSiteKey[],
+    globalExcludedInjectionSites: (owner?.globalExcludedInjectionSites ??
+      []) as InjectionSiteKey[],
+  });
+  if (resolution.kind === "ok" && resolution.site === submitted) {
+    return { ok: true, site: submitted };
+  }
+  annotate({
+    action: { name: "medication.intake.injection_site.disallowed" },
+    meta: { medication_id: ctx.medicationId, event_id: ctx.eventId },
+  });
+  return {
+    ok: false,
+    message: "Injection site is not allowed for this dose",
+    errorCode: "medications.intake.injection_site.disallowed",
+  };
 }
 
 /**
@@ -239,6 +297,7 @@ async function editIntakeInPlace(
     nextTakenAt: Date | null;
     nextSkipped: boolean;
     wasTaken: boolean;
+    injectionSite: InjectionSiteKey | null | undefined;
   },
 ) {
   const { user, medicationId: id, eventId } = ctx;
@@ -248,6 +307,9 @@ async function editIntakeInPlace(
     data: {
       ...(data.takenAt !== undefined && { takenAt: data.takenAt }),
       ...(data.skipped !== undefined && { skipped: data.skipped }),
+      ...(edit.injectionSite !== undefined && {
+        injectionSite: edit.injectionSite,
+      }),
       // Binding provenance: pin / unpin / band re-attribution stamps it even
       // when the anchor itself did not move (e.g. a pin onto the slot the row
       // already sits on, or an unpin whose band re-attribution lands on the
@@ -308,6 +370,7 @@ async function moveIntakeToSlot(
     nextTakenAt: Date | null;
     nextSkipped: boolean;
     wasTaken: boolean;
+    injectionSite: InjectionSiteKey | null | undefined;
   },
 ) {
   const { user, medicationId: id, eventId, event } = ctx;
@@ -345,10 +408,23 @@ async function moveIntakeToSlot(
     attributionSource,
     // A slot move is a re-binding, not a new dose: the original row's
     // recorded injection site and dose override ride along onto the
-    // converged row instead of being tombstoned away.
-    injectionSite: event.injectionSite,
+    // converged row instead of being tombstoned away, unless the same edit
+    // sets a new site (#169).
+    injectionSite:
+      move.injectionSite !== undefined
+        ? move.injectionSite
+        : (event.injectionSite as InjectionSiteKey | null),
     doseTaken: event.doseTaken,
   });
+  // The shared slot write only ever sets a site; a clear in the same edit
+  // lands here, on the converged row.
+  let row = applied.row;
+  if (move.injectionSite === null && row.injectionSite !== null) {
+    row = await prisma.medicationIntakeEvent.update({
+      where: { id: row.id },
+      data: { injectionSite: null, syncVersion: { increment: 1 } },
+    });
+  }
   // A taken source WITHOUT a stamp is a legacy row whose stock moved through
   // the old take-time hook: the refund above was a no-op, so consuming on the
   // converged row would double-charge — skip it. Every other taken outcome
@@ -366,7 +442,7 @@ async function moveIntakeToSlot(
       intakeAt: nextTakenAt,
     });
   }
-  return applied.row;
+  return row;
 }
 
 /** Correct one dose; the event is the live row the route found. */
@@ -400,6 +476,14 @@ export async function updateIntakeEvent(
   if (!attribution.ok) return attribution;
   const { resolvedScheduledFor, attributionSource } = attribution;
 
+  const siteEdit = await resolveEditedInjectionSite(
+    ctx,
+    data,
+    nextTakenAt !== null && !nextSkipped,
+  );
+  if (!siteEdit.ok) return siteEdit;
+  const injectionSite = siteEdit.site;
+
   const targetScheduledFor = resolvedScheduledFor ?? event.scheduledFor;
   const slotMoved =
     targetScheduledFor.getTime() !== event.scheduledFor.getTime();
@@ -417,6 +501,7 @@ export async function updateIntakeEvent(
         nextTakenAt,
         nextSkipped,
         wasTaken,
+        injectionSite,
       })
     : await moveIntakeToSlot(ctx, {
         targetScheduledFor,
@@ -424,6 +509,7 @@ export async function updateIntakeEvent(
         nextTakenAt,
         nextSkipped,
         wasTaken,
+        injectionSite,
       });
 
   await auditLog("medication.intake.update", {
@@ -439,15 +525,17 @@ export async function updateIntakeEvent(
           scheduledFor: event.scheduledFor,
           takenAt: event.takenAt,
           skipped: event.skipped,
+          injectionSite: event.injectionSite,
         },
-        // The slot-write result carries the canonical four. The injection
-        // site and the dose override are not compared here because the move
-        // path copies them onto the converged row by construction — there is
-        // no edit of them to report.
+        // The slot-write result carries the canonical four. The dose override
+        // is not compared because the move path copies it onto the converged
+        // row by construction; the injection site is, since #169 lets an
+        // edit set it.
         after: {
           scheduledFor: updated.scheduledFor,
           takenAt: updated.takenAt,
           skipped: updated.skipped,
+          injectionSite: updated.injectionSite,
         },
       }),
     },

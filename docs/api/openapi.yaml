@@ -6269,14 +6269,21 @@ paths:
       tags:
         - Medications
       summary: Record a titration step or a legacy stock correction
-      description: "The body carries exactly one of `doseChange` or `inventory`; carrying both or neither is refused.
-        `doseChange` writes a titration step with its note encrypted at rest and evicts the medication caches so the
-        card's runway reflects the new daily-dose estimate. `inventory` is DEPRECATED: it appends to the legacy
-        running-sum pen ledger, which reads back only while the medication has no per-container inventory items — new
-        callers register containers through the inventory endpoints instead. Rate-limited 30/min keyed on the ACTOR, so
-        a delegate burns their own allowance and cannot collect a fresh one by switching records. Audits both branches
-        as `medication.glp1.update`. Delegable at MANAGE level over the `medications` section: a titration step is
-        record data and the dose is what the server then acts on."
+      description: >-
+        The body carries exactly one of `doseChange` or `inventory`; carrying both or neither is refused. `doseChange`
+        writes a titration step with its note encrypted at rest and evicts the medication caches so the card's runway
+        reflects the new daily-dose estimate. `inventory` is DEPRECATED: it appends to the legacy running-sum pen
+        ledger, which reads back only while the medication has no per-container inventory items — new callers register
+        containers through the inventory endpoints instead. Rate-limited 30/min keyed on the ACTOR, so a delegate burns
+        their own allowance and cannot collect a fresh one by switching records. Audits both branches as
+        `medication.glp1.update`. Delegable at MANAGE level over the `medications` section: a titration step is record
+        data and the dose is what the server then acts on.
+
+
+        **`doseChange.clientId` (v1.48.0).** Optional; unique per medication. A create whose `clientId` names a stored
+        step returns that step with **200** and writes nothing, whatever else the body says, so a step two devices hold
+        locally is uploaded once. The `Idempotency-Key` still covers a retry from one device; the client id covers the
+        same step from several. Correct or remove a step at `/api/medications/{id}/glp1/dose-changes/{doseChangeId}`.
       parameters:
         - in: path
           name: id
@@ -6311,6 +6318,14 @@ paths:
                         - type: string
                           maxLength: 500
                         - type: "null"
+                    clientId:
+                      description: "Optional client-side id of the step, 1–128 characters of `A–Z a–z 0–9 . _ : -`. Unique per medication: a
+                        second create with the same id returns the stored step with 200 and changes nothing, whatever
+                        else the body says. Fixed at create; a correction cannot change it."
+                      type: string
+                      minLength: 1
+                      maxLength: 128
+                      pattern: ^[A-Za-z0-9._:-]+$
                   required:
                     - effectiveFrom
                     - doseValue
@@ -6333,6 +6348,13 @@ paths:
                     - delta
                     - reason
       responses:
+        "200":
+          description: A step with this `doseChange.clientId` was already stored for the medication; it is returned unchanged and
+            nothing was written.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Glp1DoseChangeStoredEnvelope"
         "201":
           description: Created. The body carries `doseChange` OR `inventory` — whichever branch the request took — and never both.
           content:
@@ -6651,6 +6673,95 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+  /api/medications/{id}/glp1/dose-changes/{doseChangeId}:
+    patch:
+      tags:
+        - Medications
+      summary: Correct one GLP-1 titration step
+      description: "Changes the named fields of one titration step and keeps the rest; `note: null` clears the note, and a new
+        note is encrypted at rest. The client id cannot be changed. Evicts the medication caches, so the runway, the
+        Coach snapshot, the timeline and the doctor report read the corrected step. Rate-limited 30/min keyed on the
+        ACTOR. Audited as `medication.glp1.update` with the changed fields and their previous dose, unit and date (the
+        note is named, not copied). Delegable at MANAGE level over the `medications` section, like the create. Body
+        capped at 16 KiB. Cookie or Bearer auth."
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+        - in: path
+          name: doseChangeId
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Glp1DoseChangePatchRequest"
+      responses:
+        "200":
+          description: The corrected step.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Glp1DoseChangePatchEnvelope"
+        "401": *a1
+        "403": *a20
+        "404":
+          description: No such step for this medication and this record. An unknown id, another medication's step and another
+            record's step are indistinguishable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422":
+          description: "Validation failed: an empty body, a field out of range, or a field that is not part of the correction (the
+            client id among them). The envelope carries every offending issue."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429": *a5
+    delete:
+      tags:
+        - Medications
+      summary: Remove one GLP-1 titration step
+      description: "A HARD delete: the step is removed, not tombstoned, and its client id is free again. The audit row
+        (`medication.glp1.doseChange.delete`) carries the step's dose, unit, date and client id, so the removal is
+        reconstructable from the trail. Rate-limited 30/min keyed on the ACTOR. Delegable at MANAGE level over the
+        `medications` section. Cookie or Bearer auth."
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+        - in: path
+          name: doseChangeId
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: The step was removed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeleteGlp1DoseChangeEnvelope"
+        "401": *a1
+        "403": *a20
+        "404":
+          description: No such step for this medication and this record. An unknown id, another medication's step and another
+            record's step are indistinguishable.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "422": *a4
+        "429": *a5
   /api/medications/{id}/side-effects/{logId}:
     delete:
       tags:
@@ -6702,8 +6813,10 @@ paths:
         resetting the binding provenance to automatic. A correction that lands on a DIFFERENT slot is not an in-place
         edit: the original row is tombstoned and the dose is re-created on the corrected slot, so the row id in the
         response can differ from the `eventId` in the path, and the tombstone rides the sync feed. A `takenAt` before
-        the medication's start date is refused. Tombstoned events 404 rather than resurrect. Delegable at MANAGE level
-        over the `medications` section. Body capped at 64 KiB. Cookie or Bearer auth."
+        the medication's start date is refused. Since v1.48.0 `injectionSite` sets or clears the dose's site (a site the
+        medication does not allow, or a site on a dose that is not taken, is refused with 422
+        `medications.intake.injection_site.disallowed`). Tombstoned events 404 rather than resurrect. Delegable at
+        MANAGE level over the `medications` section. Body capped at 64 KiB. Cookie or Bearer auth."
       parameters:
         - in: path
           name: id
@@ -30483,6 +30596,29 @@ components:
         authoritative taxonomy, and a category sent anyway is dropped rather than refused, so an older client cannot
         stamp a row with one that contradicts its entry. `occurredAt` defaults to now. `notes` is capped at 280
         characters and is encrypted at rest.
+    Glp1DoseChangePatchRequest:
+      type: object
+      properties:
+        effectiveFrom:
+          type: string
+          format: date-time
+          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        doseValue:
+          type: number
+          minimum: 0
+          maximum: 100
+        doseUnit:
+          type: string
+          minLength: 1
+          maxLength: 10
+        note:
+          anyOf:
+            - type: string
+              maxLength: 500
+            - type: "null"
+      additionalProperties: false
+      description: "Correct one titration step. Every field is optional and at least one is required; a field left out keeps
+        its value, `note: null` clears the note. The client id cannot be changed."
     UpdateMedicationIntakeEventRequest:
       type: object
       properties:
@@ -30508,12 +30644,29 @@ components:
               format: date-time
               pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
             - type: "null"
-      description: Edit a single intake event. v1.15.18 re-runs window-band slot attribution whenever `takenAt` or `skipped`
-        change, snapping `scheduledFor` to the matched slot (or the take's own time when it falls in no window).
-        `forceSlotInstant` overrides that to pin the take onto a named real slot (explicit null unpins, re-attributing
-        by band); an explicit `scheduledFor` still wins when supplied directly. `takenAt` must not be in the future
-        (5-minute clock-skew allowance) nor more than 5 years in the past; a `takenAt` before the medication's start
-        date returns 422.
+        injectionSite:
+          description: Set the injection site of this dose, or `null` to clear it. Absent keeps it. A site is accepted only on a
+            dose that is taken after the edit, of an INJECTION medication with site tracking on, and inside the
+            medication's effective allowed set (its allowed sites minus the account-wide exclusions); anything else
+            answers 422 `medications.intake.injection_site.disallowed`. Clearing is always allowed.
+          anyOf:
+            - type: string
+              enum:
+                - ABDOMEN_LEFT
+                - ABDOMEN_RIGHT
+                - ABDOMEN_UPPER_LEFT
+                - ABDOMEN_UPPER_RIGHT
+                - THIGH_LEFT
+                - THIGH_RIGHT
+                - UPPER_ARM_LEFT
+                - UPPER_ARM_RIGHT
+            - type: "null"
+      description: Edit a single intake event. Since v1.48.0 it can also set or clear the dose's `injectionSite`. v1.15.18
+        re-runs window-band slot attribution whenever `takenAt` or `skipped` change, snapping `scheduledFor` to the
+        matched slot (or the take's own time when it falls in no window). `forceSlotInstant` overrides that to pin the
+        take onto a named real slot (explicit null unpins, re-attributing by band); an explicit `scheduledFor` still
+        wins when supplied directly. `takenAt` must not be in the future (5-minute clock-skew allowance) nor more than 5
+        years in the past; a `takenAt` before the medication's start date returns 422.
     BulkDeleteMedicationIntakeRequest:
       type: object
       properties:
@@ -43365,6 +43518,12 @@ components:
                         - type: string
                           minLength: 1
                         - type: "null"
+                    clientId:
+                      anyOf:
+                        - type: string
+                          minLength: 1
+                          maxLength: 128
+                        - type: "null"
                     createdAt:
                       type: string
                       minLength: 1
@@ -54902,12 +55061,18 @@ components:
           type:
             - string
             - "null"
+        clientId:
+          description: v1.48.0 — the client's own id for the step, as sent on create; null when none was. Unique per medication.
+          type:
+            - string
+            - "null"
       required:
         - id
         - effectiveFrom
         - doseValue
         - doseUnit
         - note
+        - clientId
       additionalProperties: false
       description: One titration step, oldest first. The note is encrypted at rest and the plaintext column is left null on
         every write this endpoint makes.
@@ -54949,6 +55114,29 @@ components:
       additionalProperties: false
       description: Running supply math. Computed over the per-container entities when any exist; otherwise, and only then,
         over the legacy running-sum ledger. Containers always win — the ledger never overrides them.
+    Glp1DoseChangeStoredEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            doseChange:
+              $ref: "#/components/schemas/Glp1DoseChange"
+          required:
+            - doseChange
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
     Glp1PostResponseEnvelope:
       type: object
       properties:
@@ -55324,6 +55512,56 @@ components:
       properties:
         data:
           $ref: "#/components/schemas/MedicationSideEffect"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    Glp1DoseChangePatchEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            doseChange:
+              $ref: "#/components/schemas/Glp1DoseChange"
+          required:
+            - doseChange
+          additionalProperties: false
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    DeleteGlp1DoseChangeEnvelope:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+            deleted:
+              type: boolean
+              const: true
+          required:
+            - id
+            - deleted
+          additionalProperties: false
         error:
           type: "null"
         meta:
