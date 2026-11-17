@@ -24,11 +24,16 @@ import {
   nutrientWaterWriteResponseSchema,
 } from "@/lib/validations/nutrients";
 import {
+  nutrientTargetsPatchSchema,
+  nutrientTargetsResponseSchema,
+} from "@/lib/validations/nutrient-targets";
+import {
   dataEnvelope,
   errorEnvelope,
   idempotencyKeyParameter,
   idempotentWrite,
   recordRefusal,
+  recordWriteRateLimitResponse,
   stdResponses,
 } from "./shared";
 
@@ -213,6 +218,57 @@ export const nutrientPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
         ...recordRefusal(NUTRIENTS_DISABLED_DESCRIPTION),
         ...stdResponses,
+      },
+    },
+  },
+  "/api/nutrients/targets": {
+    get: {
+      tags: ["Nutrients"],
+      summary: "Daily nutrient targets",
+      description:
+        "The daily targets the person set for themselves, keyed by catalog code, each `{ value, direction }` in the code's canonical unit: `target` is an amount to reach, `limit` one to stay under. Only codes with a target appear; there is no default. Owner only. `GET /api/nutrients/daily` carries the one for its code as `personalTarget`. Behind the opt-in `nutrients` module.",
+      responses: {
+        "200": {
+          description: "The targets.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                nutrientTargetsResponseSchema,
+                "NutrientTargetsEnvelope",
+              ),
+            },
+          },
+        },
+        ...moduleDisabled,
+        ...stdResponses,
+      },
+    },
+    patch: {
+      tags: ["Nutrients"],
+      summary: "Set daily nutrient targets",
+      description:
+        "Sets the targets the body names and keeps the rest; `null` clears one. An unknown code, or a value at or below 0 or above the code's plausibility cap, is refused with the multi-issue 422. Owner only: a shared or delegated session cannot change another person's targets. Behind the opt-in `nutrients` module.",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: nutrientTargetsPatchSchema },
+        },
+      },
+      responses: {
+        "200": {
+          description: "The targets after the change.",
+          content: {
+            "application/json": {
+              schema: dataEnvelope(
+                nutrientTargetsResponseSchema,
+                "NutrientTargetsPatchEnvelope",
+              ),
+            },
+          },
+        },
+        ...moduleDisabled,
+        ...stdResponses,
+        ...recordWriteRateLimitResponse,
       },
     },
   },

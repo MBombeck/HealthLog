@@ -1571,6 +1571,11 @@ export const USER_FILL_OVERRIDES: Readonly<Record<string, unknown>> = {
   // The restore admits goal by goal against the goals schema, so the generic
   // `{ roundTrip }` blob would be refused as an unknown key, not carried.
   "User.activityGoalsJson": { workoutsPerWeek: 4, stepsPerMonth: 250_000 },
+  // Admitted code by code against the target schema, like the goals above.
+  "User.nutrientTargetsJson": {
+    protein: { value: 120, direction: "target" },
+    sugar: { value: 40, direction: "limit" },
+  },
   "User.globalExcludedInjectionSites": ["THIGH_LEFT"],
   "User.avatarBytes": () => {
     const bytes = new Uint8Array(new ArrayBuffer(AVATAR_PNG.byteLength));

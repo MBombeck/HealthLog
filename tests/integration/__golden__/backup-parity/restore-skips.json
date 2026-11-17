@@ -909,6 +909,7 @@
       "moodTagLayoutJson": null,
       "moduleListLayoutJson": null,
       "activityGoalsJson": null,
+      "nutrientTargetsJson": null,
       "glucoseUnit": null,
       "hasDiabetes": false,
       "labsLocalOcrEnabled": false,
