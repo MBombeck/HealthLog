@@ -19,10 +19,8 @@ import {
   PICK_DECIDED_REASONS,
   type AiCapabilityKey,
 } from "@/lib/ai/capabilities/types";
-import {
-  isPinnedChain,
-  type ProviderChainResolved,
-} from "@/lib/ai/provider-runner";
+import { isPinnedChain } from "@/lib/ai/named-chains";
+import type { ProviderChainResolved } from "@/lib/ai/provider-runner";
 import { resolveProviderChain } from "@/lib/ai/provider";
 import { chainEntryReadsImages } from "@/lib/ai/codex-slug-chain";
 import { RASTERIZATION_AVAILABLE } from "@/lib/documents/rasterize-pdf";

@@ -32,7 +32,12 @@ import {
   type AiCapabilityKey,
 } from "@/lib/ai/capabilities/types";
 
-import { PROVIDER_CHAIN_TYPES, type ProviderChainType } from "./provider-chain";
+import {
+  parseProviderChain,
+  PROVIDER_CHAIN_TYPES,
+  type ProviderChainType,
+} from "./provider-chain";
+import type { ProviderChainResolved } from "./provider-runner";
 
 /** At most this many named chains per record. */
 export const MAX_NAMED_CHAINS = 10;
@@ -210,4 +215,49 @@ export function detachChain(
       config.defaultChainId === chainId ? null : config.defaultChainId,
     attachments,
   };
+}
+
+/** Whether a resolved chain is a capability's pinned named chain. */
+export function isPinnedChain(
+  providers: readonly Pick<ProviderChainResolved, "pinned">[],
+): boolean {
+  return providers.some((p) => p.pinned === true);
+}
+
+/**
+ * The provider types the default chain lists, in order: the enabled entries
+ * of the main chain, or the entries of the named chain marked default. The
+ * central Codex is never listed here; for an unattached capability it is
+ * appended behind the person's opt-in, exactly as before.
+ */
+export function defaultChainTypes(
+  config: NamedChainsConfig,
+  rawMainChain: unknown,
+): ProviderChainType[] {
+  const selection = chainSelectionFor(config, null);
+  if (selection.kind === "default") {
+    return selection.entries.filter((type) => type !== "admin-codex");
+  }
+  return parseProviderChain(rawMainChain)
+    .filter((entry) => entry.enabled)
+    .map((entry) => entry.providerType);
+}
+
+/**
+ * Each attached capability's chain, filtered to the entries `present` admits
+ * and mapped through `toEntry`, in the chain's order. Unattached capabilities
+ * are absent.
+ */
+export function pinnedChains<T>(
+  config: NamedChainsConfig,
+  present: (providerType: ProviderChainType) => boolean,
+  toEntry: (providerType: ProviderChainType) => T,
+): Partial<Record<AiCapabilityKey, T[]>> {
+  const out: Partial<Record<AiCapabilityKey, T[]>> = {};
+  for (const key of AI_CAPABILITY_KEYS) {
+    const selection = chainSelectionFor(config, key);
+    if (selection.kind !== "pinned") continue;
+    out[key] = selection.entries.filter(present).map(toEntry);
+  }
+  return out;
 }

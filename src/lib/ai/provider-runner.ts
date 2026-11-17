@@ -108,8 +108,9 @@ export function forgetLastWorkingProvider(userId: string): void {
 
 function rememberWorkingProvider(
   userId: string,
-  providerType: ProviderChainType,
+  { providerType, pinned }: ProviderChainResolved,
 ): void {
+  if (pinned) return;
   lastWorkingCache.set(userId, {
     providerType,
     expiresAt: Date.now() + LAST_WORKING_TTL_MS,
@@ -164,19 +165,8 @@ export interface ProviderChainResolved {
   providerType: ProviderChainType;
   /** The constructed provider instance. */
   instance: AIProvider;
-  /**
-   * #1404 — the entry comes from a named chain the capability is attached to.
-   * Its order is the person's word: the last-working memo neither reorders
-   * such a chain nor learns from it.
-   */
+  /** #1404 — from a capability's named chain: walked as given, never memoised. */
   pinned?: true;
-}
-
-/** Whether a resolved chain is a capability's pinned named chain. */
-export function isPinnedChain(
-  providers: readonly ProviderChainResolved[],
-): boolean {
-  return providers.some((p) => p.pinned === true);
 }
 
 export interface FallbackHop {
@@ -280,23 +270,17 @@ export class AllProvidersFailedError extends Error {
   }
 }
 
-/**
- * Reorder the input chain so the cached "last working" provider is
- * tried first. Cold cache or unknown provider → original order.
- */
+/** Try the cached "last working" provider first. A cold cache, an unknown
+ *  provider or a capability's pinned chain (#1404) keeps the order. */
 function applyLastWorkingCache(
   userId: string,
   providers: ProviderChainResolved[],
 ): ProviderChainResolved[] {
-  if (isPinnedChain(providers)) return providers;
   const cached = getLastWorkingProvider(userId);
-  if (!cached) return providers;
+  if (!cached || providers.some((p) => p.pinned)) return providers;
   const idx = providers.findIndex((p) => p.providerType === cached);
   if (idx <= 0) return providers; // not present, or already first
-  const reordered = [...providers];
-  const [hit] = reordered.splice(idx, 1);
-  reordered.unshift(hit);
-  return reordered;
+  return [providers[idx], ...providers.filter((_, i) => i !== idx)];
 }
 
 /**
@@ -664,9 +648,7 @@ async function runRawChain(
     }
     try {
       const result = await invoke(candidate);
-      if (!candidate.pinned) {
-        rememberWorkingProvider(userId, candidate.providerType);
-      }
+      rememberWorkingProvider(userId, candidate);
       void ledger.recordSuccess(userId, candidate.providerType);
       annotate({
         meta: {

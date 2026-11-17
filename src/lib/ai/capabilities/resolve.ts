@@ -413,7 +413,7 @@ export function resolveAiCapabilities(
  * chain's in capability order. What the record has configured, as a whole.
  */
 export function everyEntry(
-  provider: ProviderPresence,
+  provider: Pick<ProviderPresence, "entries" | "pinned">,
 ): readonly ProviderEntryPresence[] {
   const out: ProviderEntryPresence[] = [...provider.entries];
   for (const key of AI_CAPABILITY_KEYS) {
