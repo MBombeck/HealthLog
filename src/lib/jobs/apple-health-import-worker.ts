@@ -30,7 +30,9 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import { prisma, toJson } from "@/lib/db";
 import type { Job } from "pg-boss";
 
+import { boundedReferences } from "@/lib/apple-health/bounded-references";
 import {
+  APPLE_HEALTH_CLINICAL_ARCHIVE_LIMITS,
   importAppleHealthClinicalLabs,
   type AppleHealthImportJobResult,
 } from "@/lib/apple-health/clinical-labs-import";
@@ -39,6 +41,7 @@ import { importAppleHealthArchiveEcgs } from "@/lib/apple-health/ecg-import";
 import { extractExportXml } from "@/lib/import/unzip-export-xml";
 import { annotate } from "@/lib/logging/context";
 import {
+  APPLE_HEALTH_ROUTE_ARCHIVE_LIMITS,
   importAppleHealthWorkoutRoutes,
   type WorkoutRouteReference,
 } from "@/lib/apple-health/route-import";
@@ -312,6 +315,20 @@ async function writeProgress(
 }
 
 /**
+ * The route and Health Records references the XML names, kept up to what
+ * each archive pass reads; past that a reference is only counted, so an
+ * export naming far more files does not hold them all until the parse ends.
+ */
+const routeReferenceList = () =>
+  boundedReferences<WorkoutRouteReference>(
+    APPLE_HEALTH_ROUTE_ARCHIVE_LIMITS.maxRouteMembers,
+  );
+const labReferenceList = () =>
+  boundedReferences<ClinicalLabReference>(
+    APPLE_HEALTH_CLINICAL_ARCHIVE_LIMITS.maxClinicalMembers,
+  );
+
+/**
  * Top-level handler. Thrown errors land the job in `failed` with the
  * error message recorded on `ImportJob.failureReason` and re-thrown
  * so pg-boss sees the failure.
@@ -400,8 +417,8 @@ export async function handleAppleHealthImport(
     });
     // GPS tracks are read from the archive only when the person keeps them.
     const keepRoutes = userRow?.storeWorkoutRoutes === true;
-    const routeReferences: WorkoutRouteReference[] = [];
-    const labReferences: ClinicalLabReference[] = [];
+    const routeReferences = routeReferenceList();
+    const labReferences = labReferenceList();
     const userTimezone =
       userRow?.timezone && userRow.timezone.length > 0
         ? userRow.timezone
@@ -493,38 +510,38 @@ export async function handleAppleHealthImport(
     // workouts are committed, a track that cannot be read is only counted.
     // Read one member at a time from the archive; nothing about a track
     // reaches the result but the count.
-    if (routeReferences.length > 0) {
+    if (routeReferences.total > 0) {
       const routes = await importAppleHealthWorkoutRoutes({
         archivePath: uploadPath,
         userId,
-        references: routeReferences,
+        ...routeReferences.handOver(),
         prisma,
       });
       result.workouts.routesAttached = routes.attached;
       annotate({
         action: { name: "apple_health.import.workout_routes" },
         meta: {
-          referenced: routeReferences.length,
+          referenced: routeReferences.total,
           discovered: routes.discovered,
           attached: routes.attached,
           skipped: routes.skipped,
           failed: routes.failed,
         },
       });
-      routeReferences.length = 0;
+      routeReferences.clear();
     }
 
     // Lab results from Health Records, one FHIR file at a time; only counts
     // reach the result.
-    if (labReferences.length > 0) {
+    if (labReferences.total > 0) {
       result.labs = await importAppleHealthClinicalLabs({
         archivePath: uploadPath,
         userId,
         tz: userTimezone,
-        references: labReferences,
+        ...labReferences.handOver(),
         prisma,
       });
-      labReferences.length = 0;
+      labReferences.clear();
     }
 
     // Done. Persist the terminal envelope.

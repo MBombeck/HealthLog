@@ -230,6 +230,21 @@ describe("importAppleHealthWorkoutRoutes", () => {
     expect(prisma.workoutRoute.createMany).not.toHaveBeenCalled();
   });
 
+  it("counts references the job did not keep as failed", async () => {
+    const prisma = fakePrisma({ id: "w1", elevationM: null, route: null });
+    const counts = await importAppleHealthWorkoutRoutes({
+      archivePath: archive(files),
+      userId: "u1",
+      references: [
+        { externalId: "ext-1", path: "/workout-routes/route_1.gpx" },
+      ],
+      overflow: 3,
+      prisma: prisma as never,
+    });
+    expect(counts.attached).toBe(1);
+    expect(counts.failed).toBe(3);
+  });
+
   it("fails soft on a member over the byte cap", async () => {
     const prisma = fakePrisma({ id: "w1", elevationM: null, route: null });
     const counts = await importAppleHealthWorkoutRoutes({

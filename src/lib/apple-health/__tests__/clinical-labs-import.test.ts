@@ -183,6 +183,18 @@ describe("importAppleHealthClinicalLabs", () => {
     expect(counts).toMatchObject({ discovered: 2, imported: 1, failed: 1 });
   });
 
+  it("counts references the job did not keep as refused", async () => {
+    const path = archive({ [`${ROOT}Observation-a.json`]: observation("a") });
+    const counts = await importAppleHealthClinicalLabs({
+      archivePath: path,
+      userId: "user-1",
+      tz: "Europe/Berlin",
+      references: [ref("/clinical-records/Observation-a.json")],
+      overflow: 4,
+    });
+    expect(counts).toMatchObject({ discovered: 5, imported: 1, failed: 4 });
+  });
+
   it("fails soft when the archive breaks a limit", async () => {
     const path = archive({ [`${ROOT}Observation-a.json`]: observation("a") });
     const counts = await run(

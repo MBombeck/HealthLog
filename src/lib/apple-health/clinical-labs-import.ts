@@ -82,6 +82,8 @@ export async function importAppleHealthClinicalLabs(input: {
   userId: string;
   tz: string;
   references: readonly ClinicalLabReference[];
+  /** References the job counted past its cap and did not keep. */
+  overflow?: number;
   prisma?: Pick<
     PrismaClient,
     "labResult" | "biomarker" | "biomarkerAlias" | "labResultImportKey"
@@ -90,8 +92,9 @@ export async function importAppleHealthClinicalLabs(input: {
 }): Promise<FhirLabCounts> {
   const counts = emptyFhirLabCounts();
   const limits = input.limits ?? APPLE_HEALTH_CLINICAL_ARCHIVE_LIMITS;
-  counts.discovered = input.references.length;
-  if (input.references.length === 0) return counts;
+  const dropped = input.overflow ?? 0;
+  counts.discovered = input.references.length + dropped;
+  if (counts.discovered === 0) return counts;
 
   const tally: Record<string, number> = {};
   const note = (reason: string) => {
@@ -99,9 +102,10 @@ export async function importAppleHealthClinicalLabs(input: {
   };
 
   // More references than the archive may hold clinical files: the overflow
-  // is refused, the rest is read.
+  // is refused, the rest is read. The job stops keeping references at the
+  // same ceiling and hands over how many it only counted.
   const usable = input.references.slice(0, limits.maxClinicalMembers);
-  const overflow = input.references.length - usable.length;
+  const overflow = input.references.length - usable.length + dropped;
   counts.failed += overflow;
   if (overflow > 0) tally.over_limit = overflow;
 

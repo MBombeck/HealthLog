@@ -181,6 +181,8 @@ export async function importAppleHealthWorkoutRoutes(input: {
   archivePath: string;
   userId: string;
   references: readonly WorkoutRouteReference[];
+  /** References the job counted past its cap and did not keep. */
+  overflow?: number;
   prisma: Pick<PrismaClient, "workout" | "workoutRoute">;
   limits?: AppleHealthRouteArchiveLimits;
 }): Promise<WorkoutRouteImportCounts> {
@@ -188,7 +190,8 @@ export async function importAppleHealthWorkoutRoutes(input: {
     discovered: 0,
     attached: 0,
     skipped: 0,
-    failed: 0,
+    // A track the job did not keep is over the ceiling, never read.
+    failed: input.overflow ?? 0,
   };
   const byMember = new Map<string, string>();
   for (const ref of input.references) {
@@ -260,7 +263,8 @@ export async function importAppleHealthWorkoutRoutes(input: {
     // The archive itself is unreadable for this pass (a malformed directory,
     // a limit hit in it). Every referenced track not yet handled
     // counts as failed; the import stays done.
-    const handled = counts.attached + counts.skipped + counts.failed;
+    const handled =
+      counts.attached + counts.skipped + counts.failed - (input.overflow ?? 0);
     counts.failed += Math.max(0, byMember.size - handled);
   }
   return counts;
