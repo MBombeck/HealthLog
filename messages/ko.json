@@ -626,7 +626,9 @@
       "errorLinkRequired": "이 이메일 주소를 사용하는 계정이 이미 있습니다. 싱글 사인온에 연결하려면 해당 계정의 비밀번호나 패스키로 한 번 로그인하세요."
     },
     "native": {
-      "signingInToApp": "HealthLog 앱에 로그인하는 중"
+      "signingInToApp": "HealthLog 앱에 로그인하는 중",
+      "returnTitle": "앱으로 돌아가기",
+      "returnBody": "로그인은 HealthLog 앱에서 계속됩니다. 앱이 열리지 않았다면 앱으로 돌아가 다시 로그인하세요. 이 페이지는 닫아도 됩니다."
     },
     "mfa": {
       "title": "2단계 인증",

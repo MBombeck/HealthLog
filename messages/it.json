@@ -626,7 +626,9 @@
       "errorLinkRequired": "Esiste già un account con questo indirizzo email. Accedi una volta con la sua password o passkey per collegarlo al single sign-on."
     },
     "native": {
-      "signingInToApp": "Accesso all'app HealthLog"
+      "signingInToApp": "Accesso all'app HealthLog",
+      "returnTitle": "Torna all’app",
+      "returnBody": "L’accesso prosegue nell’app HealthLog. Se non si è aperta, torna all’app e avvia di nuovo l’accesso da lì. Puoi chiudere questa pagina."
     },
     "mfa": {
       "title": "Autenticazione a due fattori",

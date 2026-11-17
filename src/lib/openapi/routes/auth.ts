@@ -443,6 +443,13 @@ const oidcStatusResponse = z
       .describe(
         "`OIDC_ONLY=true` — password and passkey login are refused with 403 `oidc_only`. A client that offers those controls anyway strands the user.",
       ),
+    nativeReturnPath: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        "The path of the native sign-in's opt-in https return, `/auth/native-return`, a fixed constant. Present (non-null) only when SSO is configured and the instance is served over https (`NEXT_PUBLIC_APP_URL`). An app build that carries an associated domain for this host may then start the native leg with `return=https` on GET /api/auth/oidc/login and receive the callback on `https://<this host><nativeReturnPath>` with the same parameters the custom scheme carries. Null or absent: use the scheme. Servers before v1.48.0 omit the field.",
+      ),
   })
   .meta({ id: "OidcStatusResponse" });
 
@@ -2403,11 +2410,12 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Auth"],
       summary: "Start an SSO sign-in (browser redirect, or the native leg)",
       description:
-        "A full-page navigation, never a fetch: every outcome is a 302, and no branch returns the JSON envelope. Anonymous by definition — it is what authenticates the caller. Rate-limited 10 per 15 minutes on the anonymous auth-surface bucket.\n\n" +
+        "A full-page navigation, never a fetch: every outcome is a 302 except a malformed `return` (422, see below). Anonymous by definition — it is what authenticates the caller. Rate-limited 10 per 15 minutes on the anonymous auth-surface bucket.\n\n" +
         "**Browser arm.** No parameters, or `next=<path>` to return somewhere specific afterwards (sanitised to an in-app path — an absolute URL is discarded, not honoured). Redirects to the provider's authorization endpoint. Every failure redirects to `/auth/login?error=<reason>`.\n\n" +
         "**Native arm.** The iOS app opens this URL inside an `ASWebAuthenticationSession` with `client=native` and its own PKCE `code_challenge`. The challenge is mandatory on this arm and must be S256, 43–128 characters; `plain` is structurally unsupported because the exchange only ever verifies S256. `next` is ignored and pinned to `/` — a post-login web path means nothing to the app. Every failure redirects to `healthlog://oidc-callback?error=<reason>`, and an error redirect carries no code, no ticket and no session, which is why it is safe that `client` is caller-supplied.\n\n" +
         "**What comes back.** The provider returns to the server's own callback, not to the app. On success the callback redirects to the compiled-in `healthlog://oidc-callback` with a one-time `code=hlh_…`, which the app exchanges at POST /api/auth/oidc/native/token. When the account has a second factor the callback instead returns `mfa_ticket=…`, which the app completes at /api/auth/mfa/verify to obtain the same bundle. The token pair NEVER rides a URL — only the opaque code or ticket does. There is no `redirect_uri` parameter and no allowlist to configure: the scheme is a compile-time constant, so the open-redirect class is removed by construction.\n\n" +
         "**An account that exists but is not linked yet.** When the provider's verified email matches a local account with no SSO identity, nothing is linked and nobody is signed in: the local address was never verified, so matching it proves nothing about who owns the account. The browser arm redirects to `/auth/login?error=oidc_link_required` with a sealed, ten-minute, HttpOnly pending-link cookie; the person then signs in to that account once with its own password (and second factor) or passkey, and that sign-in makes the link. Under `OIDC_ONLY=true` the password sign-in is admitted for exactly the account the pending link names. The native arm redirects to `healthlog://oidc-callback?error=oidc_link_required`; the link is confirmed once on the web, after which the app's SSO sign-in works.\n\n" +
+        "**Opt-in https return (`return=https`).** An app build with an associated domain for this instance may add `return=https` to a native start when GET /api/auth/oidc/status announces a non-null `nativeReturnPath`. Every redirect of that sign-in, this route's error redirects and the callback's success, ticket and error redirects alike, then targets `https://<this host>/auth/native-return` instead of `healthlog://oidc-callback`, with exactly the same query parameters. The host is the operator-set `NEXT_PUBLIC_APP_URL`, never the request's own Host, and the choice is sealed in the state cookie with the native flag. Only the one-time code or ticket ever rides that URL; it is still bound to the app's PKCE verifier and single-use. In a browser without the app the page shows a short message, renders nothing from the query and sends no `Referer`. Without `return=https` nothing changes. Any other `return` value, `return=https` on the browser leg, or `return=https` on an instance not served over https answers 422 (the one non-redirect answer of this route) before any state is minted.\n\n" +
         "Two PKCE exchanges run here and must not be confused: the server↔provider verifier the server generates for itself, and the app↔server challenge supplied above. The native flag and the app's challenge travel only inside an AES-256-GCM state cookie, so the callback branches on tamper-authenticated state rather than on anything the provider or a network attacker can flip.",
       requestParams: {
         query: z.object({
@@ -2450,9 +2458,20 @@ export const authPaths: NonNullable<ZodOpenApiObject["paths"]> = {
             .describe(
               "Browser leg only: `location.host` of that page, read together with `client_proto`.",
             ),
+          return: z
+            .literal("https")
+            .optional()
+            .describe(
+              "Native leg only, opt-in: end the sign-in on `https://<this host>/auth/native-return` instead of the custom scheme. Only when GET /api/auth/oidc/status announces `nativeReturnPath`. Any other value answers 422.",
+            ),
         }),
       },
       responses: {
+        "422": {
+          description:
+            "`return` is not `https`, or `return=https` came without `client=native` or on an instance not served over https. No state is minted.",
+          content: { "application/json": { schema: errorEnvelope } },
+        },
         "302": {
           description:
             "Always a redirect. To the provider on success. On failure to `/auth/login?error=<reason>` (browser; `/auth/claim?error=<reason>` with `intent=claim`, where `claim_expired` is one more reason) or `healthlog://oidc-callback?error=<reason>` (native), where reason is one of `oidc_disabled`, `oidc_rate_limited`, `oidc_invalid_request`, `oidc_failed`, and on the browser leg `insecure_transport` (see `client_proto`). The provider then returns to the callback (not listed here, because the identity provider drives it rather than a client), which ends the native leg at `healthlog://oidc-callback` with `code=<hlh_…>`, with `mfa_ticket=<ticket>&methods=<list>`, or with `error=<reason>`, where reason is one of `oidc_disabled`, `oidc_rate_limited`, `oidc_denied`, `oidc_no_email`, `oidc_email_unverified`, `oidc_identity_conflict`, `oidc_link_required`, `oidc_registration_disabled`, `account_deletion_pending`, `oidc_failed`. `oidc_link_required` means the provider's e-mail matches an existing local account that is not linked yet; the owner links it by signing in once with that account's own password or passkey in a browser. `account_deletion_pending` means the account is locked pending deletion; when the purge date is known it rides beside the reason as `purgeAt=<ISO 8601 instant>` on both legs, and nothing else about the account does. The reasons are this exact snake_case vocabulary on both legs; a client maps a value it does not know to a generic sign-in failure.",

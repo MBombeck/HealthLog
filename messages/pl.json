@@ -626,7 +626,9 @@
       "errorLinkRequired": "Konto z tym adresem e-mail już tu istnieje. Zaloguj się do niego raz hasłem lub kluczem dostępu, aby połączyć je z logowaniem jednokrotnym."
     },
     "native": {
-      "signingInToApp": "Logowanie do aplikacji HealthLog"
+      "signingInToApp": "Logowanie do aplikacji HealthLog",
+      "returnTitle": "Wróć do aplikacji",
+      "returnBody": "Logowanie jest kontynuowane w aplikacji HealthLog. Jeśli się nie otworzyła, wróć do aplikacji i zacznij logowanie tam od nowa. Możesz zamknąć tę stronę."
     },
     "mfa": {
       "title": "Uwierzytelnianie dwuskładnikowe",

@@ -22,6 +22,14 @@ export interface StoredOidcState {
   /** The app's S256 PKCE challenge, bound at login; verified at the exchange. */
   appCodeChallenge?: string;
   /**
+   * Set only when a native login carried `return=https` (#163 B2): the
+   * callback ends on this instance's own https return page instead of the
+   * custom scheme. Sealed with the native flag, so nobody on the round trip
+   * can switch the return of a flow they did not start. Never without
+   * `native`.
+   */
+  nativeReturn?: "https";
+  /**
    * Set only when the login carried `intent=claim` and a valid `hl_claim`
    * cookie (#959). The callback then claims the managed profile the cookie
    * names instead of signing in, and only when the cookie still carries this
@@ -57,6 +65,9 @@ function isStoredOidcState(value: unknown): value is StoredOidcState {
   if (v.native !== undefined) {
     if (v.native !== true) return false;
     if (typeof v.appCodeChallenge !== "string") return false;
+  }
+  if (v.nativeReturn !== undefined) {
+    if (v.nativeReturn !== "https" || v.native !== true) return false;
   }
   if (v.intent !== undefined) {
     if (v.native !== undefined) return false;

@@ -7,7 +7,12 @@ import { encrypt } from "@/lib/crypto";
 import { shouldEmitSecureCookie } from "@/lib/auth/secure-cookie";
 import { transportVerdict } from "@/lib/auth/client-transport";
 import { s256Challenge, isValidChallenge } from "@/lib/mcp/oauth/pkce";
-import { buildNativeCallbackUrl } from "@/lib/auth/oidc-native-handoff";
+import { apiError } from "@/lib/api-response";
+import {
+  buildNativeCallbackUrl,
+  nativeHttpsReturnOrigin,
+  type NativeOidcReturn,
+} from "@/lib/auth/oidc-native-handoff";
 import {
   buildAuthorizationUrl,
   discoverOidcMetadata,
@@ -51,13 +56,33 @@ export const GET = apiHandler(async (req: NextRequest) => {
   // `POST /api/auth/claim/sso`, never this URL; the intent only says to look
   // for it. Web only.
   const isClaim = req.nextUrl.searchParams.get("intent") === "claim";
+  // #163 B2 — `return=https`: an app build with an associated domain for this
+  // instance asks to come back on `https://<own host>/auth/native-return`
+  // instead of the custom scheme. Opt-in and closed: absent keeps the scheme,
+  // `https` is the only other value, and it means something only on a native
+  // start on an instance served over https (the one that announces
+  // `nativeReturnPath`). Anything else is a malformed start, answered 422
+  // before any state is minted. The return address itself is never taken from
+  // the request: it is the fixed path on the operator-set app origin.
+  const returnParam = req.nextUrl.searchParams.get("return");
+  if (
+    returnParam !== null &&
+    (returnParam !== "https" || !isNative || !nativeHttpsReturnOrigin())
+  ) {
+    annotate({ meta: { reason: "invalid_native_return" } });
+    return apiError("Unsupported return", 422);
+  }
+  const nativeReturn: NativeOidcReturn =
+    returnParam === "https" ? "https" : "scheme";
 
   // Native-aware error redirect: the scheme for a native start, the web login
   // page otherwise, and the claim page for a claim. Machine-readable
   // `error=<reason>` in all three.
   const loginError = (reason: string): NextResponse => {
     if (isNative) {
-      return NextResponse.redirect(buildNativeCallbackUrl({ error: reason }));
+      return NextResponse.redirect(
+        buildNativeCallbackUrl({ error: reason }, nativeReturn),
+      );
     }
     if (isClaim) {
       return NextResponse.redirect(
@@ -172,7 +197,13 @@ export const GET = apiHandler(async (req: NextRequest) => {
       codeVerifier,
       next: safeNext,
       ...(isNative
-        ? { native: true as const, appCodeChallenge: appCodeChallenge! }
+        ? {
+            native: true as const,
+            appCodeChallenge: appCodeChallenge!,
+            ...(nativeReturn === "https"
+              ? { nativeReturn: "https" as const }
+              : {}),
+          }
         : {}),
       // The claim's binding, inside the same tamper-authenticated blob: the
       // callback admits the claim only when the cookie it carries back holds

@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Single sign-on can hand back to the iPhone app over https.** An app
+  build set up for your server can now finish an SSO sign-in on your
+  server's own address instead of the `healthlog://` link, so the sign-in
+  sheet closes without asking whether to open the app. It is opt-in: the
+  server says it supports it on `GET /api/auth/oidc/status`
+  (`nativeReturnPath`), and the app asks for it with `return=https` when it
+  starts the sign-in. Builds that don't ask keep the `healthlog://` return
+  exactly as before. If the address ever opens in a browser without the
+  app, you see a short "Back to the app" page, and the one-time sign-in
+  code is removed from the address bar. Only servers reached over https
+  offer it.
+
 ### Changed
 
 - API responses and CSV or JSON exports now go out gzip-compressed when the

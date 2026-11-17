@@ -626,7 +626,9 @@
       "errorLinkRequired": "Er bestaat hier al een account met dit e-mailadres. Log daar één keer in met het wachtwoord of de passkey om het aan single sign-on te koppelen."
     },
     "native": {
-      "signingInToApp": "Inloggen bij de HealthLog-app"
+      "signingInToApp": "Inloggen bij de HealthLog-app",
+      "returnTitle": "Terug naar de app",
+      "returnBody": "Het inloggen gaat verder in de HealthLog-app. Is die niet geopend, ga dan terug naar de app en start het inloggen daar opnieuw. Je kunt deze pagina sluiten."
     },
     "mfa": {
       "title": "Tweestapsverificatie",

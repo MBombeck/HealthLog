@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -33,7 +33,9 @@ import {
   buildNativeCallbackUrl,
   stampIssuedRefreshToken,
   NATIVE_OIDC_REDIRECT_URI,
+  NATIVE_OIDC_RETURN_PATH,
   OIDC_NATIVE_HANDOFF_TTL_MS,
+  nativeHttpsReturnOrigin,
 } from "../oidc-native-handoff";
 import { s256Challenge } from "@/lib/mcp/oauth/pkce";
 import { prisma } from "@/lib/db";
@@ -104,6 +106,59 @@ describe("buildNativeCallbackUrl", () => {
     expect(url).toContain("code=hlh_abc");
     // Comma is percent-escaped — no unescaped client value in the Location.
     expect(url).toContain("methods=totp%2Crecovery");
+  });
+
+  it("stays on the scheme when no return is named", () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://health.example.org");
+    expect(buildNativeCallbackUrl({ code: "hlh_abc" })).toBe(
+      `${NATIVE_OIDC_REDIRECT_URI}?code=hlh_abc`,
+    );
+    vi.unstubAllEnvs();
+  });
+});
+
+describe("the https return", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("is a fixed path, not configurable", () => {
+    expect(NATIVE_OIDC_RETURN_PATH).toBe("/auth/native-return");
+  });
+
+  it("targets the instance's own origin from the operator-set app URL", () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "https://health.example.org");
+    expect(
+      buildNativeCallbackUrl({ code: "hlh_abc", purgeAt: "x y" }, "https"),
+    ).toBe(
+      "https://health.example.org/auth/native-return?code=hlh_abc&purgeAt=x+y",
+    );
+  });
+
+  it("drops any path or query on the app URL and keeps only its origin", () => {
+    vi.stubEnv(
+      "NEXT_PUBLIC_APP_URL",
+      "https://health.example.org/sub/?next=//evil.example",
+    );
+    expect(nativeHttpsReturnOrigin()).toBe("https://health.example.org");
+    expect(buildNativeCallbackUrl({ code: "hlh_abc" }, "https")).toBe(
+      "https://health.example.org/auth/native-return?code=hlh_abc",
+    );
+  });
+
+  it("is unavailable on an instance served over plain http", () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://192.168.1.10:3000");
+    expect(nativeHttpsReturnOrigin()).toBeNull();
+    // A stored https choice the instance can no longer honour falls back to
+    // the scheme rather than to an http address.
+    expect(buildNativeCallbackUrl({ code: "hlh_abc" }, "https")).toBe(
+      `${NATIVE_OIDC_REDIRECT_URI}?code=hlh_abc`,
+    );
+  });
+
+  it("is unavailable without an app URL, or with an unparseable one", () => {
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "");
+    expect(nativeHttpsReturnOrigin()).toBeNull();
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "not a url");
+    expect(nativeHttpsReturnOrigin()).toBeNull();
   });
 });
 

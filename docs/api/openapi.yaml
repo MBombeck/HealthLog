@@ -4158,7 +4158,7 @@ paths:
         - Auth
       summary: Start an SSO sign-in (browser redirect, or the native leg)
       description: >-
-        A full-page navigation, never a fetch: every outcome is a 302, and no branch returns the JSON envelope.
+        A full-page navigation, never a fetch: every outcome is a 302 except a malformed `return` (422, see below).
         Anonymous by definition — it is what authenticates the caller. Rate-limited 10 per 15 minutes on the anonymous
         auth-surface bucket.
 
@@ -4192,6 +4192,18 @@ paths:
         link. Under `OIDC_ONLY=true` the password sign-in is admitted for exactly the account the pending link names.
         The native arm redirects to `healthlog://oidc-callback?error=oidc_link_required`; the link is confirmed once on
         the web, after which the app's SSO sign-in works.
+
+
+        **Opt-in https return (`return=https`).** An app build with an associated domain for this instance may add
+        `return=https` to a native start when GET /api/auth/oidc/status announces a non-null `nativeReturnPath`. Every
+        redirect of that sign-in, this route's error redirects and the callback's success, ticket and error redirects
+        alike, then targets `https://<this host>/auth/native-return` instead of `healthlog://oidc-callback`, with
+        exactly the same query parameters. The host is the operator-set `NEXT_PUBLIC_APP_URL`, never the request's own
+        Host, and the choice is sealed in the state cookie with the native flag. Only the one-time code or ticket ever
+        rides that URL; it is still bound to the app's PKCE verifier and single-use. In a browser without the app the
+        page shows a short message, renders nothing from the query and sends no `Referer`. Without `return=https`
+        nothing changes. Any other `return` value, `return=https` on the browser leg, or `return=https` on an instance
+        not served over https answers 422 (the one non-redirect answer of this route) before any state is minted.
 
 
         Two PKCE exchanges run here and must not be confused: the server↔provider verifier the server generates for
@@ -4257,6 +4269,15 @@ paths:
             type: string
             maxLength: 255
           description: "Browser leg only: `location.host` of that page, read together with `client_proto`."
+        - in: query
+          name: return
+          schema:
+            description: "Native leg only, opt-in: end the sign-in on `https://<this host>/auth/native-return` instead of the custom
+              scheme. Only when GET /api/auth/oidc/status announces `nativeReturnPath`. Any other value answers 422."
+            type: string
+            const: https
+          description: "Native leg only, opt-in: end the sign-in on `https://<this host>/auth/native-return` instead of the custom
+            scheme. Only when GET /api/auth/oidc/status announces `nativeReturnPath`. Any other value answers 422."
       responses:
         "302":
           description: Always a redirect. To the provider on success. On failure to `/auth/login?error=<reason>` (browser;
@@ -4274,6 +4295,13 @@ paths:
             known it rides beside the reason as `purgeAt=<ISO 8601 instant>` on both legs, and nothing else about the
             account does. The reasons are this exact snake_case vocabulary on both legs; a client maps a value it does
             not know to a generic sign-in failure.
+        "422":
+          description: "`return` is not `https`, or `return=https` came without `client=native` or on an instance not served over
+            https. No state is minted."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
   /api/auth/passkey/register-options:
     post:
       tags:
@@ -49445,6 +49473,16 @@ components:
           type: boolean
           description: "`OIDC_ONLY=true` — password and passkey login are refused with 403 `oidc_only`. A client that offers those
             controls anyway strands the user."
+        nativeReturnPath:
+          description: "The path of the native sign-in's opt-in https return, `/auth/native-return`, a fixed constant. Present
+            (non-null) only when SSO is configured and the instance is served over https (`NEXT_PUBLIC_APP_URL`). An app
+            build that carries an associated domain for this host may then start the native leg with `return=https` on
+            GET /api/auth/oidc/login and receive the callback on `https://<this host><nativeReturnPath>` with the same
+            parameters the custom scheme carries. Null or absent: use the scheme. Servers before v1.48.0 omit the
+            field."
+          type:
+            - string
+            - "null"
       required:
         - enabled
         - buttonLabel

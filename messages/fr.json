@@ -626,7 +626,9 @@
       "errorLinkRequired": "Un compte avec cette adresse e-mail existe déjà ici. Connectez-vous-y une fois avec son mot de passe ou sa clé d'accès pour le relier à l'authentification unique."
     },
     "native": {
-      "signingInToApp": "Connexion à l'application HealthLog"
+      "signingInToApp": "Connexion à l'application HealthLog",
+      "returnTitle": "Retour à l’app",
+      "returnBody": "La connexion se poursuit dans l’app HealthLog. Si elle ne s’est pas ouverte, revenez à l’app et relancez la connexion depuis celle-ci. Vous pouvez fermer cette page."
     },
     "mfa": {
       "title": "Authentification à deux facteurs",
