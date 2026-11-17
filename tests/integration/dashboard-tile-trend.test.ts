@@ -11,6 +11,7 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { __resetAllCachesForTests } from "@/lib/cache/server-cache";
 import { recomputeUserRollups } from "@/lib/rollups/measurement-rollups";
 
 import { cookieJar, headerJar } from "./mock-next-headers";
@@ -44,6 +45,8 @@ vi.mock("next/headers", async () => {
 const prisma = getPrismaClient();
 
 beforeEach(async () => {
+  // The summary is cached per account in the process; each case starts cold.
+  __resetAllCachesForTests();
   await truncateAllTables(prisma);
   cookieJar.clear();
   headerJar.clear();
@@ -110,7 +113,8 @@ describe("weight tile trend vs the metric page", () => {
   });
 
   it("falls back to the seven-day line, and says so, without a previous month", async () => {
-    for (let d = 6; d >= 0; d--) await weigh(d, 80 + d / 10);
+    // 82 kg six days ago down to 80 kg: first-to-last clears the dead band.
+    for (let d = 6; d >= 0; d--) await weigh(d, 80 + d / 3);
     await recomputeUserRollups(USER, { granularities: ["DAY"] });
 
     const summary = (await json(

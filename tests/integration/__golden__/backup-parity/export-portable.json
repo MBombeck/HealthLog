@@ -266,14 +266,16 @@
             "effectiveFrom": "2026-04-01T08:00:00.000Z",
             "doseValue": 5,
             "doseUnit": "mg",
-            "createdAt": "2026-05-01T19:47:00.000Z"
+            "clientId": "device-step-1",
+            "createdAt": "2026-05-01T19:48:00.000Z"
           },
           {
             "note": null,
             "effectiveFrom": "2026-06-01T08:00:00.000Z",
             "doseValue": 10,
             "doseUnit": "mg",
-            "createdAt": "2026-05-01T19:47:01.000Z"
+            "clientId": null,
+            "createdAt": "2026-05-01T19:48:01.000Z"
           }
         ],
         "inventoryItems": [
@@ -1911,14 +1913,16 @@
             "doseValue": 5,
             "doseUnit": "mg",
             "note": "titration note, encrypted at rest",
-            "createdAt": "2026-05-01T19:47:00.000Z"
+            "clientId": "device-step-1",
+            "createdAt": "2026-05-01T19:48:00.000Z"
           },
           {
             "effectiveFrom": "2026-06-01T08:00:00.000Z",
             "doseValue": 10,
             "doseUnit": "mg",
             "note": null,
-            "createdAt": "2026-05-01T19:47:01.000Z"
+            "clientId": null,
+            "createdAt": "2026-05-01T19:48:01.000Z"
           }
         ],
         "inventoryItems": [
