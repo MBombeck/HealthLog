@@ -67,6 +67,8 @@ export function recordActivityVerbLine(
   if (medication !== null) return medication;
   const cycle = cycleManageVerb(t, action, name);
   if (cycle !== null) return cycle;
+  const document = documentVerb(t, action, name);
+  if (document !== null) return document;
   switch (action) {
     case "measurement.create":
       return t("recordSharing.activityVerb.measurementCreate", { name });
@@ -306,15 +308,35 @@ export function recordActivityVerbLine(
       return t("recordSharing.activityVerb.customMetricUpdate", { name });
     case "customMetric.delete":
       return t("recordSharing.activityVerb.customMetricDelete", { name });
+
+    default:
+      return t("recordSharing.activity.acted", { name });
+  }
+}
+
+/**
+ * The document vault's verbs, or null when `action` is not one. A managed
+ * profile's guardian uploads, files, deletes, restores and bulk-acts (#1403);
+ * an older row from a delegated read of the vault never reaches here.
+ */
+function documentVerb(
+  t: Translator,
+  action: string,
+  name: string,
+): string | null {
+  switch (action) {
     case "documents.inbound.store":
       return t("recordSharing.activityVerb.documentStore", { name });
     case "documents.inbound.update":
       return t("recordSharing.activityVerb.documentUpdate", { name });
     case "documents.inbound.discard":
       return t("recordSharing.activityVerb.documentDiscard", { name });
-
+    case "documents.inbound.restore":
+      return t("recordSharing.activityVerb.documentRestore", { name });
+    case "documents.inbound.bulk":
+      return t("recordSharing.activityVerb.documentBulk", { name });
     default:
-      return t("recordSharing.activity.acted", { name });
+      return null;
   }
 }
 

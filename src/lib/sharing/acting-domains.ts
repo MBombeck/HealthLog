@@ -17,7 +17,7 @@
  */
 import type { Prisma } from "@/generated/prisma/client";
 
-import { grantCoversDomain } from "@/lib/sharing/grant-access";
+import { grantAllows, grantCoversDomain } from "@/lib/sharing/grant-access";
 import type { ShareScope } from "@/lib/sharing/scope";
 
 export async function actingDomainVisibility(
@@ -31,4 +31,34 @@ export async function actingDomainVisibility(
   });
   if (!grant) return () => false;
   return (domain) => grantCoversDomain(grant, domain);
+}
+
+/**
+ * #1403 — whether this request may use the record's guardian-only verbs: the
+ * vault's upload, edits, delete and restore.
+ *
+ * The answer `requireRecordAuth("guardian", …)` gives, for a route that
+ * resolved at a lower need and wants to shape a READ by it (the vault's usage
+ * read offers Recently deleted only to whoever can restore from it). The owner
+ * always may; a delegate may when the grant is a live MANAGE grant and the
+ * record carries the managed-profile marker. Fail closed: a grant that vanished
+ * between the auth check and here answers no.
+ */
+export async function actingHoldsGuardianVerbs(
+  tx: Prisma.TransactionClient,
+  grantId: string | null,
+  record: { managedProfileAt: Date | null },
+): Promise<boolean> {
+  if (grantId === null) return true;
+  if (record.managedProfileAt === null) return false;
+  const grant = await tx.accountGrant.findUnique({
+    where: { id: grantId },
+    select: {
+      access: true,
+      acceptedAt: true,
+      revokedAt: true,
+      expiresAt: true,
+    },
+  });
+  return grant !== null && grantAllows(grant, "manage");
 }

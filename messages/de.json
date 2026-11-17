@@ -13337,6 +13337,8 @@
       "documentStore": "{name} hat ein Dokument hinzugefügt",
       "documentUpdate": "{name} hat ein Dokument geändert",
       "documentDiscard": "{name} hat ein Dokument verworfen",
+      "documentRestore": "{name} hat ein Dokument wiederhergestellt",
+      "documentBulk": "{name} hat mehrere Dokumente geändert",
       "medicationIntakeImportFinished": "Der von {name} gestartete Einnahme-Import ist fertig",
       "medicationOneShotReconciled": "Ein einmaliges Medikament wurde nach einer Einnahme von {name} geöffnet oder geschlossen",
       "vaccinationBoosterPlanned": "{name} hat eine Auffrischung geplant",

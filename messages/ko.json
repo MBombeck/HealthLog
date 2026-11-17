@@ -13337,6 +13337,8 @@
       "documentStore": "{name} 님이 문서를 추가했어요",
       "documentUpdate": "{name} 님이 문서를 수정했어요",
       "documentDiscard": "{name} 님이 문서를 폐기했어요",
+      "documentRestore": "{name} 님이 문서를 복원했어요",
+      "documentBulk": "{name} 님이 여러 문서를 수정했어요",
       "medicationIntakeImportFinished": "{name} 님이 시작한 복용 기록 불러오기가 끝났어요",
       "medicationOneShotReconciled": "{name} 님이 기록한 복용에 따라 일회성 약이 시작되거나 종료됐어요",
       "vaccinationBoosterPlanned": "{name} 님이 추가 접종을 계획했어요",

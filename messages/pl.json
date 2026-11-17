@@ -13337,6 +13337,8 @@
       "documentStore": "{name} dodał dokument",
       "documentUpdate": "{name} zmienił dokument",
       "documentDiscard": "{name} odrzucił dokument",
+      "documentRestore": "{name} przywrócił dokument",
+      "documentBulk": "{name} zmienił kilka dokumentów",
       "medicationIntakeImportFinished": "Import przyjęć rozpoczęty przez {name} zakończył się",
       "medicationOneShotReconciled": "Lek jednorazowy został otwarty lub zamknięty po dawce zapisanej przez {name}",
       "vaccinationBoosterPlanned": "{name} zaplanował dawkę przypominającą",

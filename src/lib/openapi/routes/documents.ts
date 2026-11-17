@@ -52,6 +52,13 @@ import { isoDateTime } from "@/lib/validations/datetime";
 
 const kindEnum = z.enum(INBOUND_DOCUMENT_KINDS);
 
+/**
+ * Who may change the vault besides its owner. One sentence on every operation
+ * that admits it, so the contract says the same thing everywhere it applies.
+ */
+const GUARDIAN_VAULT_NOTE =
+  "The owner's, and a managed profile's guardian's: a guardian inside the managed record (the session switch, or the per-request account selector on a cookie-equivalent token) acts on that record, the document stays the record's, and the audit row names the guardian. An adult's share is refused at every level, MANAGE included.";
+
 // ─── Vault presentation (v1.42) ────────────────────────────────────────────
 
 const documentsLayoutSchema = z
@@ -656,7 +663,8 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       description:
         'STORE-ONLY upload. Stores the raw document ENCRYPTED at rest with `status: STORED` and runs NO extraction — provider-free, no AI consent / budget / egress. A file is always filable, even with no document-scan provider configured. `multipart/form-data`: a `file` plus optional `title`, `kind`, `documentDate` (YYYY-MM-DD), and repeated `episodeIds` form fields (pre-link to the caller\'s illness/condition episodes). Accepted types (magic-byte sniffed, never the wire Content-Type): PDF/JPEG/PNG/WebP/GIF render inline; Office (docx/xlsx/pptx/doc/xls/ppt), text/CSV/Markdown/RTF, TIFF, HEIC/HEIF, XML/JSON are stored verbatim and served download-only. HEIC is stored as-is but attachment-only — prefer transcoding to JPEG client-side for inline preview parity. Error contract: `413` with `meta.reason = "fileTooLarge"` (+ `maxFileBytes`) or `"quotaExceeded"` (+ `quotaBytes`, `usedBytes`); `415` with `meta.reason = "unsupportedType"`. A same-user duplicate (same bytes) returns 200 + `meta.duplicate: true` with the existing row — not an error. `Idempotency-Key` honoured. Read `GET /api/documents/inbound/usage` for the effective limits before offering an upload. AI extraction is a separate opt-in action — see `POST /api/documents/inbound/{id}/extract`.\n\n' +
         "**Importing from another system (v1.39.2).** Optional `sourceSystem` (`PAPERLESS`, `PAPRA`, `OTHER`) and `sourceId` (its id there, printable, up to 128 characters, never `.` or `..`; needs `sourceSystem`) key the upload, optionally with `sourceInstance` (v1.39.3: the address of the Paperless-ngx or Papra it came from, normalised to its origin; without it the key matches any instance of the system). A re-send with a known key is a duplicate: 200 with the live row (`meta.duplicate: true`), or, when the owner DELETED that document, 200 with `data.deleted: true` and `meta.deleted: true` and nothing stored; this holds after the 30-day purge too. The key may also ride the query string (`?sourceSystem=…&sourceId=…`): a key the vault already holds is then answered at once, the file is not stored or processed, and the request counts only toward the lookup allowance shared with `GET /api/documents/inbound/source` (5000 an hour per token, per person for a session; 429 past it), not toward the hourly upload limit. A key in both places must agree (else 422). Every other upload counts toward the hourly upload limit, duplicates included. A key that is answered with an existing document by its bytes is remembered for that document, so deleting it keeps that key deleted too; one document takes at most 20 such keys, beyond which the upload is refused 409 (`documents.inbound.sourceAliasLimit`). `OTHER` is one shared namespace per account: two different systems both sent as `OTHER` must not reuse each other\'s ids. `aiRead=defer` holds back automatic AI reading for this upload: the thumbnail and a local text index still run, the summary and lab staging do not, and the document stays out of every automatic AI path (the summary catch-up, the automatic index, Index all for search) until the person reads it with AI or generates its summary. Absent, behaviour is unchanged.\n\n" +
-        "**Narrow token.** Also reachable with a `documents:write` Bearer (minted at `POST /api/tokens/documents`), which reaches only this route and the source-key lookup `GET /api/documents/inbound/source`. Such a caller draws on a bucket of its own, keyed on the token (default 120 an hour, `DOCUMENT_UPLOAD_LIMIT_PER_HOUR`, clamped 1-1000; the 429 carries `Retry-After` and `X-RateLimit-*`), and gets a `DocumentUploadReceipt` instead of the stored row; its 413 `quotaExceeded` carries no `quotaBytes` / `usedBytes`. The response is an untagged union (row or receipt) on purpose: a discriminator would need a new field on the row every existing client decodes. A cookie or wildcard caller keeps the 60-an-hour per-user bucket and the full row. With the vault module off the answer is 403 `module.disabled` for every caller.",
+        "**Narrow token.** Also reachable with a `documents:write` Bearer (minted at `POST /api/tokens/documents`), which reaches only this route and the source-key lookup `GET /api/documents/inbound/source`. Such a caller draws on a bucket of its own, keyed on the token (default 120 an hour, `DOCUMENT_UPLOAD_LIMIT_PER_HOUR`, clamped 1-1000; the 429 carries `Retry-After` and `X-RateLimit-*`), and gets a `DocumentUploadReceipt` instead of the stored row; its 413 `quotaExceeded` carries no `quotaBytes` / `usedBytes`. The response is an untagged union (row or receipt) on purpose: a discriminator would need a new field on the row every existing client decodes. A cookie or wildcard caller keeps the 60-an-hour per-user bucket and the full row. With the vault module off the answer is 403 `module.disabled` for every caller.\n\n" +
+        `**Inside a managed profile.** ${GUARDIAN_VAULT_NOTE} The file counts against the record's quota and limits, and automatic AI reading follows the record's own settings and consent. The hourly upload allowance and the concurrent-upload slot are the uploader's. A \`documents:write\` token never acts on another record.`,
       requestBody: {
         required: true,
         content: {
@@ -711,6 +719,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
       },
       responses: {
+        ...recordRefusal(),
         ...idempotentWrite(),
         "200": {
           description:
@@ -953,12 +962,14 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Documents"],
       summary: "Bulk action over documents",
       description:
-        "Applies one action to up to 100 owner-scoped documents and returns a per-id result array — a partial failure never aborts the batch. `error` is `notFound` (unknown / foreign / tombstoned where liveness is required) or `conflict` (restore blocked by a live duplicate of the same bytes).",
+        "Applies one action to up to 100 of the record's documents and returns a per-id result array — a partial failure never aborts the batch. `error` is `notFound` (unknown / foreign / tombstoned where liveness is required) or `conflict` (restore blocked by a live duplicate of the same bytes). " +
+        GUARDIAN_VAULT_NOTE,
       requestBody: {
         required: true,
         content: { "application/json": { schema: documentBulkRequest } },
       },
       responses: {
+        ...recordRefusal(),
         "200": {
           description: "Per-id outcomes.",
           content: {
@@ -1018,7 +1029,8 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Documents"],
       summary: "Edit a document's metadata",
       description:
-        "Rename / recategorise / set the user filing date on a stored document. Owner-scoped; no mass assignment. Returns the updated document + its staged facts.",
+        "Rename / recategorise / set the user filing date on a stored document, or replace its episode, visit and vaccination links. No mass assignment. Returns the updated document + its staged facts. " +
+        GUARDIAN_VAULT_NOTE,
       parameters: [
         {
           name: "id",
@@ -1032,6 +1044,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         content: { "application/json": { schema: documentUpdateRequest } },
       },
       responses: {
+        ...recordRefusal(),
         "200": {
           description: "The updated document.",
           content: {
@@ -1050,7 +1063,8 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Documents"],
       summary: "Discard a document",
       description:
-        "Soft-deletes the document + its staging. Facts already approved into the structured stores are independent rows and are NOT affected.",
+        "Soft-deletes the document + its staging. Facts already approved into the structured stores are independent rows and are NOT affected. " +
+        GUARDIAN_VAULT_NOTE,
       parameters: [
         {
           name: "id",
@@ -1060,6 +1074,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
       ],
       responses: {
+        ...recordRefusal(),
         "200": {
           description: "Discarded.",
           content: {
@@ -1080,7 +1095,8 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Documents"],
       summary: "Restore a discarded document",
       description:
-        'Clears the soft-delete tombstone within the 30-day undo grace, and forgets any import-ledger entry for the document\'s source keys. 409 when the tombstone is already purged (the undo window is over, or the document was deleted for good) or when an identical live document blocks the restore (`meta.reason = "duplicateExists"`). Restoring an already-live document is a no-op success.',
+        'Clears the soft-delete tombstone within the 30-day undo grace, and forgets any import-ledger entry for the document\'s source keys. 409 when the tombstone is already purged (the undo window is over, or the document was deleted for good) or when an identical live document blocks the restore (`meta.reason = "duplicateExists"`). Restoring an already-live document is a no-op success. ' +
+        GUARDIAN_VAULT_NOTE,
       parameters: [
         {
           name: "id",
@@ -1090,6 +1106,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
         },
       ],
       responses: {
+        ...recordRefusal(),
         "200": {
           description: "The restored document + its staged facts.",
           content: {
@@ -1115,8 +1132,11 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Documents"],
       summary: "List Recently deleted",
       description:
-        "The caller's deleted documents that the purge has not removed yet, newest deletion first, metadata only. Each carries `purgeAt`, when the daily purge becomes due for it. Restore one with `POST /api/documents/inbound/{id}/restore` (or the bulk `restore` action); remove one for good ahead of time with `POST /api/documents/inbound/{id}/purge`. Capped at 200 rows (`meta.truncated`, `meta.limit`). Owner-only: refused while acting inside somebody else's record.",
+        "The caller's deleted documents that the purge has not removed yet, newest deletion first, metadata only. Each carries `purgeAt`, when the daily purge becomes due for it. Restore one with `POST /api/documents/inbound/{id}/restore` (or the bulk `restore` action); remove one for good ahead of time with `POST /api/documents/inbound/{id}/purge`. Capped at 200 rows (`meta.truncated`, `meta.limit`). " +
+        GUARDIAN_VAULT_NOTE +
+        " Deleting for good stays with the owner.",
       responses: {
+        ...recordRefusal(),
         "200": {
           description: "Recently deleted.",
           content: {
@@ -1137,7 +1157,7 @@ export const inboundDocumentPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Documents"],
       summary: "Delete a deleted document for good",
       description:
-        "Removes one deleted document now instead of when the grace window ends, through the same purge the daily job runs: the row and everything that cascades from it go, and an imported document's source keys are kept in the import ledger, so an importer re-sending it is still answered as deleted. Only a deleted document can be purged: a live one answers 409 `documents.inbound.notDeleted`. 404 `documents.inbound.notFound` when the caller has no such document. Owner-only.",
+        "Removes one deleted document now instead of when the grace window ends, through the same purge the daily job runs: the row and everything that cascades from it go, and an imported document's source keys are kept in the import ledger, so an importer re-sending it is still answered as deleted. Only a deleted document can be purged: a live one answers 409 `documents.inbound.notDeleted`. 404 `documents.inbound.notFound` when the caller has no such document. Owner-only, a managed profile's guardian included: inside somebody else's record it is refused, and the daily purge removes the document when its grace window ends.",
       parameters: [
         {
           name: "id",

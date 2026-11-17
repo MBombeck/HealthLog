@@ -8,12 +8,14 @@
  * route handlers, the real grant table and real Postgres:
  *
  *   1. a guardian acting on a managed profile reads the payload and gets
- *      every section with a delegated route as manageable, and never the
- *      vault;
+ *      every section with a delegated route as manageable, the vault
+ *      included (#1403: its writes admit a managed profile's guardian);
  *   2. the same guardian posts a mood entry and an allergy — the two writes
  *      #939 was reported on — and both land on the PROFILE's record;
- *   3. the same guardian is refused a vault write, which is what the empty
- *      answer for `documents` promised;
+ *   3. the same guardian's vault write is accepted, which is what the
+ *      answer for `documents` promised (the whole vault journey lives in
+ *      `guardian-document-vault.test.ts`), while an adult's MANAGE delegate
+ *      is told no and refused;
  *   4. a WRITE delegate on an adult's record reads writable sections and no
  *      manageable ones, and is refused the mood entry the list withheld.
  *
@@ -130,7 +132,9 @@ async function postDocumentsBulk() {
   const { POST } = await import("@/app/api/documents/inbound/bulk/route");
   return POST(
     jsonRequest("/api/documents/inbound/bulk", {
-      ids: [],
+      // An id the record does not hold: the batch answers per id, so an
+      // admitted call is 200 with a `notFound` row and writes nothing.
+      ids: ["no-such-document"],
       action: "setKind",
       kind: "OTHER",
     }),
@@ -161,7 +165,7 @@ describe("a guardian acting on a managed profile", () => {
     return { guardian, profile };
   }
 
-  it("is told every section with a delegated route is manageable, and the vault is not", async () => {
+  it("is told every section with a delegated route is manageable, the vault included", async () => {
     const { profile } = await guardianInside();
     const active = await readActive();
 
@@ -169,17 +173,23 @@ describe("a guardian acting on a managed profile", () => {
     expect(active.level).toBe("manage");
     expect(active.recordKind).toBe("managed");
     expect(active.writableDomains).toEqual(
-      delegatedDomains("manage", null, "write"),
+      delegatedDomains("manage", null, "write", "managed"),
     );
     expect(active.manageableDomains).toEqual(
-      delegatedDomains("manage", null, "manage"),
+      delegatedDomains("manage", null, "manage", "managed"),
     );
-    // The sections #939 named, by name, so the list is not only self-consistent.
-    for (const domain of ["mind", "profile", "labs", "measurements"] as const) {
+    // The sections #939 and #1403 named, by name, so the list is not only
+    // self-consistent.
+    for (const domain of [
+      "mind",
+      "profile",
+      "labs",
+      "measurements",
+      "documents",
+    ] as const) {
       expect(active.manageableDomains, domain).toContain(domain);
     }
-    expect(active.manageableDomains).not.toContain("documents");
-    expect(active.writableDomains).not.toContain("documents");
+    expect(active.writableDomains).toContain("documents");
   });
 
   it("lands a mood entry and an allergy on the profile's record", async () => {
@@ -206,8 +216,45 @@ describe("a guardian acting on a managed profile", () => {
     expect(allergyRows[0]?.substance).toBe("Penicillin");
   });
 
-  it("is refused a vault write, as the empty documents answer promised", async () => {
-    await guardianInside();
+  it("is accepted a vault write, as the documents answer promised", async () => {
+    const { profile } = await guardianInside();
+    // The vault is an opt-in module, switched on for the profile here.
+    await getPrismaClient().user.update({
+      where: { id: profile.id },
+      data: { modulePreferencesJson: { inboundDocuments: true } },
+    });
+    const res = await postDocumentsBulk();
+    expect(res.status).toBe(200);
+  });
+});
+
+describe("a MANAGE delegate on an adult's record", () => {
+  it("is told the vault is not theirs to change, and the route agrees", async () => {
+    const owner = await makeUser("owner");
+    const delegate = await makeUser("delegate");
+    await getPrismaClient().user.update({
+      where: { id: owner.id },
+      data: { modulePreferencesJson: { inboundDocuments: true } },
+    });
+    const { inviteGrant, acceptGrant } = await import("@/lib/sharing/grants");
+    const invited = await inviteGrant({
+      grantorId: owner.id,
+      granteeId: delegate.id,
+      access: "MANAGE",
+      scope: null,
+    });
+    await acceptGrant({ grantId: invited.id, granteeId: delegate.id });
+    const session = await signIn(delegate.id);
+    await switchSessionTo(session.id, owner.id);
+
+    const active = await readActive();
+    expect(active.recordKind).toBe("shared");
+    expect(active.manageableDomains).toEqual(
+      delegatedDomains("manage", null, "manage", "shared"),
+    );
+    expect(active.manageableDomains).not.toContain("documents");
+    expect(active.writableDomains).not.toContain("documents");
+
     const res = await postDocumentsBulk();
     expect(res.status).toBe(403);
   });

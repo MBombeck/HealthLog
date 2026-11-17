@@ -73,14 +73,38 @@ describe("resolveAccountAccess", () => {
         sections: null,
         recordKind: "managed",
         // v1.38.12 — the routes' answer for a whole-record MANAGE grant: every
-        // section with a delegated write route, and never the vault.
-        writableDomains: delegatedDomains("manage", null, "write"),
-        manageableDomains: delegatedDomains("manage", null, "manage"),
+        // section with a delegated write route. #1403 — on a managed profile
+        // that includes the vault, whose writes admit the guardian.
+        writableDomains: delegatedDomains("manage", null, "write", "managed"),
+        manageableDomains: delegatedDomains(
+          "manage",
+          null,
+          "manage",
+          "managed",
+        ),
       }),
     );
     expect(access.active?.manageableDomains).toContain("mind");
-    expect(access.active?.manageableDomains).not.toContain("documents");
+    expect(access.active?.manageableDomains).toContain("documents");
+    expect(access.active?.writableDomains).toContain("documents");
     expect(access.recordKind).toBe("managed");
+  });
+
+  it("never publishes the vault for an adult's MANAGE grant (#1403)", async () => {
+    vi.mocked(prisma.accountGrant.findMany).mockResolvedValue([
+      activeGrant({ access: "MANAGE", managedProfileAt: null }),
+    ] as never);
+
+    const access = await resolveAccountAccess({
+      user: { id: "delegate" },
+      session: { actingAsUserId: "record-owner" },
+    });
+
+    expect(access.active?.recordKind).toBe("shared");
+    expect(access.active?.level).toBe("manage");
+    expect(access.active?.manageableDomains).toContain("mind");
+    expect(access.active?.manageableDomains).not.toContain("documents");
+    expect(access.active?.writableDomains).not.toContain("documents");
   });
 
   it("publishes a WRITE grant's writable sections within its scope and no manageable ones", async () => {

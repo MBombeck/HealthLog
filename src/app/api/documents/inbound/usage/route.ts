@@ -19,7 +19,10 @@ import { loadLinkedProcedures } from "@/lib/documents/links";
 import { listDistinctTargets } from "@/lib/links";
 import { annotate } from "@/lib/logging/context";
 import { requireModuleEnabled } from "@/lib/modules/gate";
-import { actingDomainVisibility } from "@/lib/sharing/acting-domains";
+import {
+  actingDomainVisibility,
+  actingHoldsGuardianVerbs,
+} from "@/lib/sharing/acting-domains";
 import type { DocumentUsageDto } from "@/lib/validations/inbound-documents";
 
 export const dynamic = "force-dynamic";
@@ -95,10 +98,10 @@ export const GET = apiHandler(async () => {
       where: { userId: user.id, deletedAt: null },
     }),
     // How many sit in Recently deleted — the vault's way in to it shows only
-    // when there is something there. Recently deleted is the owner's own
-    // (restore and delete-now are owner-only writes), so a delegate gets 0
-    // and the vault offers them no way in.
-    grantId === null
+    // when there is something there. Recently deleted is for whoever may
+    // restore from it: the owner, or a managed profile's guardian (#1403). An
+    // adult's delegate gets 0 and the vault offers them no way in.
+    (await actingHoldsGuardianVerbs(prisma, grantId, user))
       ? prisma.inboundDocument.count({
           where: { userId: user.id, deletedAt: { not: null } },
         })

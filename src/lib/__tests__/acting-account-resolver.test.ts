@@ -974,6 +974,134 @@ describe("the guardian resolver gates on the marker, not the grant", () => {
 });
 
 /**
+ * #1403 — a section only a managed profile's guardian may write to.
+ *
+ * The vault is health data, so it stays on the record resolver with its
+ * section; what it adds is the marker. A MANAGE grant on an adult's record is
+ * refused at this need exactly as `requireGuardianAuth` refuses it, so no
+ * widening of what MANAGE means can reach the vault through this path.
+ */
+describe("a route declaring guardian admits only a managed profile's guardian", () => {
+  const MARKED = new Date("2026-08-04T00:00:00Z");
+
+  it("serves the caller's own record without asking about a grant", async () => {
+    signedInCookie(null);
+
+    const ctx = await resolveInRoute(
+      () => requireRecordAuth("guardian", "documents"),
+      "POST",
+    );
+    expect(ctx.user.id).toBe(DELEGATE);
+    expect(ctx.actor.id).toBe(DELEGATE);
+    expect(ctx.grantId).toBeNull();
+    expect(prisma.accountGrant.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("admits a MANAGE grant on a marked record, on a safe and an unsafe method", async () => {
+    signedInCookie(OWNER);
+    userRows.set(OWNER, user(OWNER, "USER", MARKED));
+    liveGrant({ access: "MANAGE" });
+
+    for (const method of ["GET", "POST", "PATCH", "DELETE"]) {
+      const ctx = await resolveInRoute(
+        () => requireRecordAuth("guardian", "documents"),
+        method,
+      );
+      expect(ctx.user.id).toBe(OWNER);
+      expect(ctx.actor.id).toBe(DELEGATE);
+      expect(ctx.grantId).toBe("grant-1");
+    }
+  });
+
+  it("stamps the guardian authority for provider work", async () => {
+    signedInCookie(OWNER);
+    userRows.set(OWNER, user(OWNER, "USER", MARKED));
+    liveGrant({ access: "MANAGE" });
+
+    await resolveInRoute(
+      () => requireRecordAuth("guardian", "documents"),
+      "POST",
+    );
+    const auth = lastEvent().auth as Record<string, unknown>;
+    expect(auth.provider_work_authority).toMatchObject({
+      origin: "guardian",
+      recordUserId: OWNER,
+      actorUserId: DELEGATE,
+      grantId: "grant-1",
+    });
+    expect(auth.delegated_generation).not.toBe("suppressed");
+  });
+
+  it("refuses a MANAGE grant on an adult's record, on every method", async () => {
+    signedInCookie(OWNER);
+    userRows.set(OWNER, user(OWNER, "USER", null));
+    liveGrant({ access: "MANAGE" });
+
+    for (const method of ["GET", "POST", "PATCH", "DELETE"]) {
+      const response = await route(() =>
+        requireRecordAuth("guardian", "documents"),
+      )(method);
+      expect(response.status, method).toBe(403);
+    }
+    for (const [, entry] of sharingAuditCalls()) {
+      expect(entry).toMatchObject({
+        details: expect.objectContaining({ reason: "guardian_only" }),
+      });
+    }
+  });
+
+  it("refuses READ and WRITE grants on a marked record", async () => {
+    userRows.set(OWNER, user(OWNER, "USER", MARKED));
+    for (const access of ["READ", "WRITE"] as const) {
+      grantRows.length = 0;
+      vi.mocked(auditLog).mockClear();
+      signedInCookie(OWNER);
+      liveGrant({ access });
+
+      const response = await route(() =>
+        requireRecordAuth("guardian", "documents"),
+      )("GET");
+      expect(response.status, access).toBe(403);
+      expect(sharingAuditCalls()[0][1]).toMatchObject({
+        details: expect.objectContaining({ reason: "insufficient_access" }),
+      });
+    }
+  });
+
+  it("admits the guardian over the Bearer selector too", async () => {
+    signedInBearer();
+    selector(OWNER);
+    userRows.set(OWNER, user(OWNER, "USER", MARKED));
+    liveGrant({ access: "MANAGE" });
+
+    const ctx = await resolveInRoute(
+      () => requireRecordAuth("guardian", "documents"),
+      "POST",
+    );
+    expect(ctx.user.id).toBe(OWNER);
+    expect(ctx.actor.id).toBe(DELEGATE);
+  });
+
+  it("says the same thing on the wire as every other refusal", async () => {
+    signedInCookie(OWNER);
+    userRows.set(OWNER, user(OWNER, "USER", null));
+    liveGrant({ access: "MANAGE" });
+    const fenced = await route(() =>
+      requireRecordAuth("guardian", "documents"),
+    )("POST");
+    const fencedBody = await bodyWithoutRequestId(fenced);
+
+    grantRows.length = 0;
+    const nothing = await route(() =>
+      requireRecordAuth("read", "measurements"),
+    )();
+
+    expect(fenced.status).toBe(nothing.status);
+    expect(fencedBody).toBe(await bodyWithoutRequestId(nothing));
+  });
+});
+
+/**
  * v1.37.0 — the record-session fence, from the resolver's side.
  *
  * The integration file proves the refusal against a real database with the

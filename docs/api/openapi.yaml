@@ -19919,6 +19919,14 @@ paths:
         receipt) on purpose: a discriminator would need a new field on the row every existing client decodes. A cookie
         or wildcard caller keeps the 60-an-hour per-user bucket and the full row. With the vault module off the answer
         is 403 `module.disabled` for every caller.
+
+
+        **Inside a managed profile.** The owner's, and a managed profile's guardian's: a guardian inside the managed
+        record (the session switch, or the per-request account selector on a cookie-equivalent token) acts on that
+        record, the document stays the record's, and the audit row names the guardian. An adult's share is refused at
+        every level, MANAGE included. The file counts against the record's quota and limits, and automatic AI reading
+        follows the record's own settings and consent. The hourly upload allowance and the concurrent-upload slot are
+        the uploader's. A `documents:write` token never acts on another record.
       parameters:
         - *a6
         - name: sourceSystem
@@ -20036,7 +20044,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentUploadEnvelope"
         "401": *a1
-        "403": *a9
+        "403": *a20
         "404":
           description: An `episodeIds` or `encounterIds` id is not a live episode or visit of the caller
             (`documents.inbound.episodeNotFound` / `documents.inbound.encounterNotFound`). Nothing was stored.
@@ -20211,9 +20219,12 @@ paths:
       tags:
         - Documents
       summary: Bulk action over documents
-      description: Applies one action to up to 100 owner-scoped documents and returns a per-id result array — a partial
+      description: "Applies one action to up to 100 of the record's documents and returns a per-id result array — a partial
         failure never aborts the batch. `error` is `notFound` (unknown / foreign / tombstoned where liveness is
-        required) or `conflict` (restore blocked by a live duplicate of the same bytes).
+        required) or `conflict` (restore blocked by a live duplicate of the same bytes). The owner's, and a managed
+        profile's guardian's: a guardian inside the managed record (the session switch, or the per-request account
+        selector on a cookie-equivalent token) acts on that record, the document stays the record's, and the audit row
+        names the guardian. An adult's share is refused at every level, MANAGE included."
       requestBody:
         required: true
         content:
@@ -20228,7 +20239,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentBulkEnvelope"
         "401": *a1
-        "403": *a9
+        "403": *a20
         "422": *a4
         "429": *a5
   /api/documents/inbound/{id}:
@@ -20258,8 +20269,11 @@ paths:
       tags:
         - Documents
       summary: Edit a document's metadata
-      description: Rename / recategorise / set the user filing date on a stored document. Owner-scoped; no mass assignment.
-        Returns the updated document + its staged facts.
+      description: "Rename / recategorise / set the user filing date on a stored document, or replace its episode, visit and
+        vaccination links. No mass assignment. Returns the updated document + its staged facts. The owner's, and a
+        managed profile's guardian's: a guardian inside the managed record (the session switch, or the per-request
+        account selector on a cookie-equivalent token) acts on that record, the document stays the record's, and the
+        audit row names the guardian. An adult's share is refused at every level, MANAGE included."
       parameters:
         - name: id
           in: path
@@ -20280,15 +20294,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/InboundDocumentUpdateEnvelope"
         "401": *a1
-        "403": *a9
+        "403": *a20
         "422": *a4
         "429": *a5
     delete:
       tags:
         - Documents
       summary: Discard a document
-      description: Soft-deletes the document + its staging. Facts already approved into the structured stores are independent
-        rows and are NOT affected.
+      description: "Soft-deletes the document + its staging. Facts already approved into the structured stores are independent
+        rows and are NOT affected. The owner's, and a managed profile's guardian's: a guardian inside the managed record
+        (the session switch, or the per-request account selector on a cookie-equivalent token) acts on that record, the
+        document stays the record's, and the audit row names the guardian. An adult's share is refused at every level,
+        MANAGE included."
       parameters:
         - name: id
           in: path
@@ -20303,7 +20320,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/InboundDiscardEnvelope"
         "401": *a1
-        "403": *a9
+        "403": *a20
         "422": *a4
         "429": *a5
   /api/documents/inbound/{id}/restore:
@@ -20311,10 +20328,13 @@ paths:
       tags:
         - Documents
       summary: Restore a discarded document
-      description: Clears the soft-delete tombstone within the 30-day undo grace, and forgets any import-ledger entry for the
+      description: "Clears the soft-delete tombstone within the 30-day undo grace, and forgets any import-ledger entry for the
         document's source keys. 409 when the tombstone is already purged (the undo window is over, or the document was
-        deleted for good) or when an identical live document blocks the restore (`meta.reason = "duplicateExists"`).
-        Restoring an already-live document is a no-op success.
+        deleted for good) or when an identical live document blocks the restore (`meta.reason = \"duplicateExists\"`).
+        Restoring an already-live document is a no-op success. The owner's, and a managed profile's guardian's: a
+        guardian inside the managed record (the session switch, or the per-request account selector on a
+        cookie-equivalent token) acts on that record, the document stays the record's, and the audit row names the
+        guardian. An adult's share is refused at every level, MANAGE included."
       parameters:
         - name: id
           in: path
@@ -20329,7 +20349,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/InboundRestoreEnvelope"
         "401": *a1
-        "403": *a9
+        "403": *a20
         "409":
           description: "Not restorable: purged past the grace window, or an identical live document exists."
           content:
@@ -20346,8 +20366,11 @@ paths:
       description: "The caller's deleted documents that the purge has not removed yet, newest deletion first, metadata only.
         Each carries `purgeAt`, when the daily purge becomes due for it. Restore one with `POST
         /api/documents/inbound/{id}/restore` (or the bulk `restore` action); remove one for good ahead of time with
-        `POST /api/documents/inbound/{id}/purge`. Capped at 200 rows (`meta.truncated`, `meta.limit`). Owner-only:
-        refused while acting inside somebody else's record."
+        `POST /api/documents/inbound/{id}/purge`. Capped at 200 rows (`meta.truncated`, `meta.limit`). The owner's, and
+        a managed profile's guardian's: a guardian inside the managed record (the session switch, or the per-request
+        account selector on a cookie-equivalent token) acts on that record, the document stays the record's, and the
+        audit row names the guardian. An adult's share is refused at every level, MANAGE included. Deleting for good
+        stays with the owner."
       responses:
         "200":
           description: Recently deleted.
@@ -20356,7 +20379,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeletedDocumentListEnvelope"
         "401": *a1
-        "403": *a9
+        "403": *a20
         "422": *a4
         "429": *a5
   /api/documents/inbound/{id}/purge:
@@ -20368,7 +20391,8 @@ paths:
         job runs: the row and everything that cascades from it go, and an imported document's source keys are kept in
         the import ledger, so an importer re-sending it is still answered as deleted. Only a deleted document can be
         purged: a live one answers 409 `documents.inbound.notDeleted`. 404 `documents.inbound.notFound` when the caller
-        has no such document. Owner-only."
+        has no such document. Owner-only, a managed profile's guardian included: inside somebody else's record it is
+        refused, and the daily purge removes the document when its grace window ends."
       parameters:
         - name: id
           in: path

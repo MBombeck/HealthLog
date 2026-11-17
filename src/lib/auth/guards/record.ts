@@ -81,6 +81,23 @@ export interface RecordAuthContext extends AuthContext {
   readonly grantId: string | null;
 }
 
+/**
+ * What a delegable route declares it does to the record.
+ *
+ * The three grant levels, plus `"guardian"`: this route changes a section
+ * that only the record's own owner or the guardian of a managed profile may
+ * change (#1403, the document vault). It admits a MANAGE grant on a record
+ * carrying the managed-profile marker and nothing else, on every method, so
+ * an adult who granted MANAGE over their own record reaches none of it. The
+ * marker is read from the owner row the resolver loads anyway, for the reason
+ * `requireGuardianAuth` gives: no change to what MANAGE means can widen it.
+ *
+ * It is a need on this resolver rather than a call to `requireGuardianAuth`
+ * because the vault is health data in a section, and the section check, the
+ * Bearer scope option and the frozen per-route lists all live here.
+ */
+export type RecordNeed = GrantNeed | "guardian";
+
 /** What a delegable route may additionally declare about the credentials it takes. */
 export interface RecordAuthOptions {
   /**
@@ -134,7 +151,9 @@ export interface RecordAuthOptions {
  *   method (no event context) counts as a write and is refused, the same
  *   fail-closed posture as the MCP audience guard in `caller.ts`. A route declaring
  *   `"manage"` refuses everything below it regardless of method: the method
- *   can only escalate what the declaration asked for, never satisfy it.
+ *   can only escalate what the declaration asked for, never satisfy it. A
+ *   route declaring `"guardian"` admits only a managed profile's guardian, on
+ *   every method (see {@link RecordNeed}).
  * @param domain v1.37.0 — which section of the record the route touches, or
  *   `"record"` when it reads across sections. Required, and the requirement is
  *   the fail-closed lever: a delegable route without a classification does not
@@ -149,7 +168,7 @@ export interface RecordAuthOptions {
  *   visible decision rather than an omission.
  */
 export async function requireRecordAuth(
-  need: GrantNeed,
+  need: RecordNeed,
   domain: ShareScope,
   options?: RecordAuthOptions,
 ): Promise<RecordAuthContext> {
@@ -213,6 +232,12 @@ export async function requireRecordAuth(
     throw refuseUndeclaredMode(auth, carrier, "misplaced_selector");
   }
 
+  if (need === "guardian") {
+    // Every method alike: the declaration names who may touch the section at
+    // all, so a safe method cannot lower it.
+    return resolveSwitchedRecord(auth, carrier, admitGuardianNeed(domain));
+  }
+
   const method = (getEvent()?.getHttpMethod() ?? "").toUpperCase();
   const readsOnly =
     READ_HTTP_METHODS.has(method) ||
@@ -231,6 +256,27 @@ export async function requireRecordAuth(
     if (!grantCoversDomain(grant, domain)) return "out_of_scope";
     return null;
   });
+}
+
+/**
+ * The admission for a route declaring `"guardian"` (#1403).
+ *
+ * The one place the record resolver reads the managed-profile marker, kept
+ * out of `requireRecordAuth`'s own body so the structural guard can hold the
+ * other three needs to never reading it: a marker check that drifted into the
+ * read, write or manage path would blur exactly the line it draws. Level
+ * first, then the marker, then the section — the order the other arms keep for
+ * the audit trail. Every refusal is the same bytes on the wire.
+ */
+function admitGuardianNeed(
+  domain: ShareScope,
+): (grant: AccountGrant, owner: SessionUser) => string | null {
+  return (grant, owner) => {
+    if (!grantAllows(grant, "manage")) return "insufficient_access";
+    if (owner.managedProfileAt === null) return "guardian_only";
+    if (!grantCoversDomain(grant, domain)) return "out_of_scope";
+    return null;
+  };
 }
 
 /**

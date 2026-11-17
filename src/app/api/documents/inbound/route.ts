@@ -40,9 +40,8 @@ import { Buffer } from "node:buffer";
 import {
   apiHandler,
   isScopedCredential,
-  requireAuth,
   requireRecordAuth,
-  type AuthContext,
+  type RecordAuthContext,
 } from "@/lib/api-handler";
 import {
   apiError,
@@ -108,10 +107,10 @@ const MULTIPART_OVERHEAD_BYTES = 64 * 1024;
  */
 async function answerQuerySourceKey(
   request: Request,
-  auth: AuthContext,
+  auth: RecordAuthContext,
   scoped: boolean,
 ): Promise<Response | QuerySourceKey | null> {
-  const { user } = auth;
+  const { user, actor } = auth;
   const query = parseQuerySourceKey(new URL(request.url));
   if (query.kind === "invalid") {
     return apiValidationError(
@@ -129,7 +128,7 @@ async function answerQuerySourceKey(
     const lookupRl = await checkSourceLookupRateLimit(
       scoped,
       auth.session.id,
-      user.id,
+      actor.id,
     );
     if (!lookupRl.allowed) {
       const response = apiError("Too many lookups. Try again later.", 429, {
@@ -210,9 +209,9 @@ function answerNotStored(
 /** Process one admitted upload. The caller owns and releases its memory slot. */
 async function processUpload(
   request: Request,
-  auth: AuthContext,
+  auth: RecordAuthContext,
 ): Promise<Response> {
-  const { user } = auth;
+  const { user, actor } = auth;
   const scoped = isScopedCredential(auth);
 
   // Opt-in module gate — even a valid Bearer token is refused when the surface
@@ -227,10 +226,12 @@ async function processUpload(
   // A scoped token draws on its own bucket, keyed on the token (its id rides
   // `session.id` on the Bearer path), so an import running overnight cannot
   // use up the allowance the person's own uploads from the web or the phone
-  // draw on. The cookie / wildcard bucket is unchanged.
+  // draw on. The cookie / wildcard bucket is keyed on the person uploading:
+  // a guardian filing into a managed profile spends their own allowance, not
+  // the record's (on the owner's own record the two are the same id).
   const bucketKey = scoped
     ? `documents-upload:token:${auth.session.id}`
-    : personalUploadBucket(user.id);
+    : personalUploadBucket(actor.id);
   const rl = await checkRateLimit(
     bucketKey,
     scoped ? resolveDocumentUploadLimitPerHour() : UPLOAD_LIMIT_PER_HOUR,
@@ -364,9 +365,20 @@ async function postUpload(request: Request): Promise<Response> {
   // source-key lookup beside it). Every other vault leg —
   // list, detail, original, thumbnail, bulk, AI — declares no scope and so
   // refuses the token (`bearer-scope-enforcement-guard.test.ts`).
-  const auth = await requireAuth(DOCUMENTS_WRITE_SCOPE);
-  const { user } = auth;
-  const releaseUploadSlot = acquireDocumentUploadSlot(user.id);
+  //
+  // #1403 — delegable to a managed profile's guardian and to nobody else:
+  // `"guardian"` admits a MANAGE grant on a record carrying the managed-
+  // profile marker, so an adult's share uploads nothing at any level. The
+  // scope does not compound with it: a `documents:write` token naming any
+  // record but its owner's is refused before a grant is read. Everything
+  // below runs on the resolved record — quota, limits, module gate, source
+  // keys, the stored row — so the file belongs to the record and counts
+  // against it, and the audit row names the guardian as the actor.
+  const auth = await requireRecordAuth("guardian", "documents", {
+    scope: DOCUMENTS_WRITE_SCOPE,
+  });
+  // Memory, not storage: the concurrent-upload slot is the uploader's.
+  const releaseUploadSlot = acquireDocumentUploadSlot(auth.actor.id);
   if (!releaseUploadSlot) {
     const response = apiError(
       "Too many uploads are already in progress. Try again shortly.",
@@ -399,10 +411,10 @@ export const POST = apiHandler(withIdempotency<[Request]>(postUpload));
  * letter is health data belonging to the record, and reading it is the whole
  * point of handing somebody the record.
  *
- * The POST above is NOT delegable and declares its own scope. Uploading is not
- * a verb the grant admits, and the module-level split matters here: the
- * resolver escalates any non-safe method to `"write"`, so the two arms have to
- * declare separately rather than share one line.
+ * The POST above declares `"guardian"` and its own scope. Uploading is not a
+ * verb an adult's grant admits at any level, only a managed profile's
+ * guardian, and the two arms declare separately because they admit different
+ * people: every reading grant lists, one relationship uploads.
  */
 export const GET = apiHandler(async (request: Request) => {
   const { user } = await requireRecordAuth("read", "documents");

@@ -13337,6 +13337,8 @@
       "documentStore": "{name} heeft een document toegevoegd",
       "documentUpdate": "{name} heeft een document gewijzigd",
       "documentDiscard": "{name} heeft een document weggegooid",
+      "documentRestore": "{name} heeft een document hersteld",
+      "documentBulk": "{name} heeft meerdere documenten gewijzigd",
       "medicationIntakeImportFinished": "De dosisimport die {name} had gestart, is voltooid",
       "medicationOneShotReconciled": "Een eenmalig medicijn is geopend of afgesloten na een dosis die {name} had vastgelegd",
       "vaccinationBoosterPlanned": "{name} heeft een booster gepland",

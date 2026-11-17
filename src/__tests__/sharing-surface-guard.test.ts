@@ -450,6 +450,9 @@ const HANDLER_BODY_MODULES: Record<string, readonly string[]> = {
     "lib/medications/update-intake-event.ts",
     "lib/medications/delete-intake-event.ts",
   ],
+  // #1403 — the vault upload stores through the shared ingest, which files
+  // `documents.inbound.store`.
+  "app/api/documents/inbound/route.ts": ["lib/documents/ingest.ts"],
 };
 
 /** The route and the service modules carrying its handler bodies. */
@@ -1292,16 +1295,31 @@ const DELEGABLE_ROUTES: Record<string, DelegableEntry> = {
   // The document vault. Five reads admitted together for the reason the front
   // door's eight were: `/documents` carries `sharedRecord: true`, so the shell
   // offers the destination and every read behind it refused — the same failure
-  // v1.36.1 describes as fixed on `/`. Uploading, retyping, deleting, linking,
-  // indexing and every AI verb stay bare; the split is per-arm, because the
-  // resolver escalates a non-safe method to `"write"` on its own.
+  // v1.36.1 describes as fixed on `/`. Indexing and every AI verb stay bare;
+  // the split is per-arm, because the resolver escalates a non-safe method to
+  // `"write"` on its own. #1403 — uploading, retyping, linking, deleting and
+  // restoring declare `"guardian"`: a managed profile's guardian runs the
+  // vault, an adult's share at any level does not. Those arms are frozen a
+  // second time in the guardian literal below.
   "app/api/documents/inbound/route.ts": {
     domain: "documents",
-    why: "The record's document list. The GET never selects the encrypted blob column and scopes every predicate to the resolved user id; the POST upload beside it is not delegable and keeps `requireAuth()`.",
+    why: "The record's document list. The GET never selects the encrypted blob column and scopes every predicate to the resolved user id. The POST upload beside it declares `\"guardian\"`: only a managed profile's guardian uploads into somebody else's vault.",
   },
   "app/api/documents/inbound/[id]/route.ts": {
     domain: "documents",
-    why: "One document of the record with its staged facts and condition links, fetched under the resolved user id before anything is serialised. The PATCH and DELETE are edits and stay with the owner.",
+    why: "One document of the record with its staged facts and condition links, fetched under the resolved user id before anything is serialised. The PATCH and DELETE are edits and declare `\"guardian\"`: a managed profile's guardian makes them, an adult's delegate never does.",
+  },
+  "app/api/documents/inbound/[id]/restore/route.ts": {
+    domain: "documents",
+    why: "Bringing a deleted document back, under the resolved record. Declares `\"guardian\"` and nothing else: a managed profile's guardian replaces a bad scan and undoes a slip; an adult's delegate deleted nothing they could restore.",
+  },
+  "app/api/documents/inbound/deleted/route.ts": {
+    domain: "documents",
+    why: "Recently deleted, metadata only, for whoever may restore from it. A GET that declares `\"guardian\"` on purpose: an adult's delegate restores nothing, so they are not shown the owner's decisions in progress at any level.",
+  },
+  "app/api/documents/inbound/bulk/route.ts": {
+    domain: "documents",
+    why: 'The vault\'s selection actions — retype, link and unlink, delete, restore — batched under the resolved record, every id narrowed to it. Declares `"guardian"`, the same people as the single-document verbs it batches; the link targets are re-checked against the sections the grant opens.',
   },
   "app/api/documents/inbound/[id]/thumbnail/route.ts": {
     domain: "documents",
@@ -2165,6 +2183,36 @@ const GUARDIAN_ROUTES: Record<string, string> = {
 };
 
 /**
+ * #1403 — route modules whose arms declare `requireRecordAuth("guardian", …)`:
+ * a change only the record's owner or a managed profile's guardian may make.
+ *
+ * A subset of {@link DELEGABLE_ROUTES} (each is health data in a section, so
+ * the section column lives there) frozen a second time here, because the
+ * people it admits are a different set from every level above: a MANAGE grant
+ * on a record carrying the managed-profile marker, and nobody on an adult's
+ * record at any level. A route joining this list widens what a guardian may do
+ * and is the diff to review; a route that should have joined it and declared
+ * `"manage"` instead would open the vault to every adult manager, which is
+ * what leg (g) and `domain-write-support-guard.test.ts` would show.
+ *
+ * Every member with a mutating guardian arm files its rows through
+ * `auditLog`, for the reason the write literal states: the actor column is the
+ * only trail of who did it.
+ */
+const DELEGABLE_GUARDIAN_ROUTES: Record<string, string> = {
+  "app/api/documents/inbound/route.ts":
+    "The vault upload. The file lands on the resolved record, counts against its quota, and the AI work it queues follows the record's capability under the guardian's authority. The importer's `documents:write` token is refused under any selector before a grant is read.",
+  "app/api/documents/inbound/[id]/route.ts":
+    "Renaming, retyping, re-dating and re-linking a document, and moving it to Recently deleted. Links are narrowed to the record and re-checked against the sections the grant opens.",
+  "app/api/documents/inbound/[id]/restore/route.ts":
+    "Restoring a deleted document, through the shared restore with its duplicate check and import-ledger cleanup.",
+  "app/api/documents/inbound/deleted/route.ts":
+    "The list the restore is chosen from. Read only; it writes nothing and so files nothing.",
+  "app/api/documents/inbound/bulk/route.ts":
+    "The batched form of the single-document verbs above, one audit row per batch.",
+};
+
+/**
  * Route modules that deliberately resolve the ACTOR and keep working under a
  * switch, because they serve the caller's own account and nothing of the
  * owner's.
@@ -2311,8 +2359,13 @@ const ACTOR_ROUTES: Record<string, string> = {
  *
  * The Insights presence read joins the record list and the manage literal:
  * the tab strip's gate over the overview, counts and flags only. 277 -> 279.
+ *
+ * #1403 -- a managed profile's guardian runs the vault: the restore, the
+ * Recently deleted list and the bulk actions join the record list, and the
+ * new guardian literal holds the five modules with a `"guardian"` arm.
+ * 279 -> 287.
  */
-const FROZEN_ENTRY_COUNT = 279;
+const FROZEN_ENTRY_COUNT = 287;
 
 /**
  * The two surfaces that authenticate a Bearer token outside `requireAuth` —
@@ -2782,6 +2835,7 @@ describe("every frozen entry carries a reason", () => {
         ([rel, entry]): [string, string] => [rel, entry.why],
       ),
       ...Object.entries(DELEGABLE_WRITE_ROUTES),
+      ...Object.entries(DELEGABLE_GUARDIAN_ROUTES),
       ...Object.entries(GUARDIAN_ROUTES),
       ...Object.entries(ACTOR_ROUTES),
     ];
@@ -2951,7 +3005,7 @@ describe("(e) the delegable write set is frozen", () => {
     for (const rel of remainder) {
       const needs = recordNeeds(rel);
       expect(
-        needs.has("read") || needs.has("manage"),
+        needs.has("read") || needs.has("manage") || needs.has("guardian"),
         `${rel} resolves no record level at all`,
       ).toBe(true);
       expect(needs.has("write"), `${rel} writes without being listed`).toBe(
@@ -3543,15 +3597,89 @@ describe("(h) the guardian route set is frozen", () => {
     expect(guardian).toContain(GUARDIAN_RESOLVER);
     expect(guardian).toContain("managedProfileAt");
 
-    // …and the record resolver must NOT read it. The two resolvers differ in
-    // exactly this fact, so a marker check that drifted into the delegable
-    // path would make the fence meaningless while every list still agreed.
+    // …and the record resolver must NOT read it on the read, write and
+    // manage paths. The two resolvers differ in exactly this fact, so a marker
+    // check that drifted into the delegable path would make the fence
+    // meaningless while every list still agreed. #1403 — the one exception is
+    // the `"guardian"` need, whose admission lives in its own function and is
+    // reached from exactly one branch; leg (j) reads that function.
     const record = functionSource(
       guardModuleOf(RECORD_RESOLVER),
       RECORD_RESOLVER,
     );
     expect(record.length).toBeGreaterThan(0);
     expect(record).not.toContain("managedProfileAt");
+    expect(record.match(/admitGuardianNeed\(/g)).toHaveLength(1);
+    expect(record).toMatch(
+      /if \(need === "guardian"\) \{[^}]*admitGuardianNeed\(domain\)/,
+    );
+  });
+});
+
+/* -------------------------------------------------------------------------- */
+/* (j) the guardian-need set                                                  */
+/* -------------------------------------------------------------------------- */
+
+describe("(j) the guardian-need route set is frozen", () => {
+  it("equals the frozen guardian-need list", () => {
+    const scanned = routeModules();
+    expect(scanned.length).toBeGreaterThan(ROUTE_MODULE_FLOOR);
+
+    // The evidence the matcher works: `recordNeeds` is the same function that
+    // produces the large read set leg (g) measures, so a blinded matcher fails
+    // there loudly before this one can agree with itself.
+    expect(
+      scanned.filter((rel) => recordNeeds(rel).has("read")).length,
+    ).toBeGreaterThan(20);
+
+    const guarding = scanned.filter((rel) => recordNeeds(rel).has("guardian"));
+    expect(guarding.length).toBeGreaterThan(0);
+    expect(guarding).toEqual(Object.keys(DELEGABLE_GUARDIAN_ROUTES).sort());
+  });
+
+  it("is a subset of the delegable set, every member in a frozen section", () => {
+    for (const rel of Object.keys(DELEGABLE_GUARDIAN_ROUTES)) {
+      expect(DELEGABLE_ROUTES, rel).toHaveProperty([rel]);
+    }
+  });
+
+  it("declares guardian on a verb handler, and every mutating one audits", () => {
+    let mutating = 0;
+    for (const rel of Object.keys(DELEGABLE_GUARDIAN_ROUTES)) {
+      const verbs = resolverVerbsIn(rel, "guardian");
+      expect(
+        verbs.length,
+        `${rel} declares guardian outside a handler`,
+      ).toBeGreaterThan(0);
+      if (verbs.some((verb) => MUTATING_VERBS.has(verb))) {
+        mutating += 1;
+        expect(
+          handlerCallsSymbol(rel, "auditLog"),
+          `${rel} never calls auditLog`,
+        ).toBe(true);
+        expect(
+          handlerDirectAuditWrites(rel),
+          `${rel} writes an audit row without the helper`,
+        ).toEqual([]);
+      }
+    }
+    // Non-zero: the leg above is about the mutating members, and there are
+    // four of them today (upload, edit/delete, restore, bulk).
+    expect(mutating).toBeGreaterThanOrEqual(4);
+  });
+
+  it("the guardian need gates on the grant level and the marker", () => {
+    // The anchor, as leg (h) anchors the guardian resolver: the literal means
+    // "a managed profile's guardian and nobody else", and that is only true
+    // while the admission reads both the MANAGE level and the marker.
+    const admission = functionSource(
+      guardModuleOf(RECORD_RESOLVER),
+      "admitGuardianNeed",
+    );
+    expect(admission.length).toBeGreaterThan(0);
+    expect(admission).toContain('grantAllows(grant, "manage")');
+    expect(admission).toContain("managedProfileAt");
+    expect(admission).toContain("grantCoversDomain(grant, domain)");
   });
 });
 

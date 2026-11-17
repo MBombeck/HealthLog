@@ -9,7 +9,7 @@
  */
 import { NextRequest } from "next/server";
 
-import { apiHandler, requireAuth, requireRecordAuth } from "@/lib/api-handler";
+import { apiHandler, requireRecordAuth } from "@/lib/api-handler";
 import { apiError, apiSuccess, getClientIp } from "@/lib/api-response";
 import { parseJsonBody } from "@/lib/api/body";
 import { auditLog } from "@/lib/auth/audit";
@@ -46,16 +46,20 @@ type RouteParams = { params: Promise<{ id: string }> };
 export const dynamic = "force-dynamic";
 
 /**
- * Edit / discard are owner-scoped, so a generous per-user ceiling is just a
- * self-DoS backstop. PATCH and DELETE share one write bucket.
+ * Edit / discard are the owner's, or a managed profile's guardian's, so a
+ * generous per-person ceiling is just a self-DoS backstop. PATCH and DELETE
+ * share one write bucket, keyed on the person editing: a guardian spends their
+ * own allowance, not the record's.
  */
 const WRITE_LIMIT_PER_HOUR = 240;
 const WRITE_WINDOW_MS = 60 * 60 * 1000;
 
-/** Shared 429 helper for the mutating routes. */
-async function enforceWriteRateLimit(userId: string): Promise<Response | null> {
+/** Shared 429 helper for the mutating routes, keyed on the acting person. */
+async function enforceWriteRateLimit(
+  actorId: string,
+): Promise<Response | null> {
   const rl = await checkRateLimit(
-    `documents-write:${userId}`,
+    `documents-write:${actorId}`,
     WRITE_LIMIT_PER_HOUR,
     WRITE_WINDOW_MS,
   );
@@ -78,9 +82,10 @@ async function enforceWriteRateLimit(userId: string): Promise<Response | null> {
  * resolved user id before anything is serialised, so the substitution reaches
  * the query rather than a filter after it.
  *
- * The PATCH and DELETE below keep `requireAuth()`. Retyping a document,
- * relabelling it and deleting it are edits, and an edit stays with the owner —
- * including of a document the delegate has just read.
+ * The PATCH and DELETE below declare `"guardian"` (#1403). Retyping a
+ * document, relabelling it and deleting it are edits, and an edit stays with
+ * the owner and, on a managed profile, with its guardian — never with an
+ * adult's delegate, at any level, including of a document they have just read.
  */
 export const GET = apiHandler(
   async (_request: NextRequest, { params }: RouteParams) => {
@@ -149,11 +154,14 @@ export const GET = apiHandler(
 
 export const PATCH = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    const { user, actor, grantId } = await requireRecordAuth(
+      "guardian",
+      "documents",
+    );
     const gate = await requireModuleEnabled(user.id, "inboundDocuments");
     if (!gate.enabled) return gate.response;
 
-    const limited = await enforceWriteRateLimit(user.id);
+    const limited = await enforceWriteRateLimit(actor.id);
     if (limited) return limited;
 
     const { id } = await params;
@@ -174,10 +182,21 @@ export const PATCH = apiHandler(
       });
     }
 
+    // The links reach into other sections of the record. A guardian's grant
+    // is MANAGE and so always the whole record, but the rule is checked here
+    // rather than assumed: a section the grant does not cover answers like a
+    // foreign id would.
+    const visible = await actingDomainVisibility(prisma, grantId);
+
     // Replace-set condition links: every episode id must be a LIVE episode
-    // of the caller — a foreign/unknown id gets a 404-shaped refusal.
+    // of the record — a foreign/unknown id gets a 404-shaped refusal.
     let nextEpisodeIds: string[] | undefined;
     if (parsed.data.episodeIds !== undefined) {
+      if (!visible("illness")) {
+        return apiError("Episode not found", 404, {
+          errorCode: "documents.inbound.episodeNotFound",
+        });
+      }
       const narrowed = await narrowOwnedEpisodeIds(
         user.id,
         parsed.data.episodeIds,
@@ -193,6 +212,11 @@ export const PATCH = apiHandler(
     // Replace-set visit links, same semantics and same refusal.
     let nextEncounterIds: string[] | undefined;
     if (parsed.data.encounterIds !== undefined) {
+      if (!visible("profile")) {
+        return apiError("Visit not found", 404, {
+          errorCode: "documents.inbound.encounterNotFound",
+        });
+      }
       const narrowed = await narrowOwnedEncounterIds(
         user.id,
         parsed.data.encounterIds,
@@ -209,6 +233,11 @@ export const PATCH = apiHandler(
     // table is the one the dose's own form writes from the other end.
     let nextVaccinationIds: string[] | undefined;
     if (parsed.data.vaccinationIds !== undefined) {
+      if (!visible("profile")) {
+        return apiError("Vaccination not found", 404, {
+          errorCode: "documents.inbound.vaccinationNotFound",
+        });
+      }
       const narrowed = await narrowOwnedVaccinationIds(
         user.id,
         parsed.data.vaccinationIds,
@@ -264,13 +293,15 @@ export const PATCH = apiHandler(
       omit: { contentEncrypted: true },
       include: { facts: { orderBy: { createdAt: "asc" } } },
     });
-    // PATCH is owner-only (bare `requireAuth()`), so every section is the
-    // caller's own and the dose list is always readable here.
+    // The answer the GET gives: the dose list is withheld (null) where the
+    // grant does not open the health background.
     const [links, visitLinks, doseLinks, contentIndex, thumbnail] =
       await Promise.all([
         loadConditionLinks(user.id, [document.id]),
         loadDocumentEncounterLinks(user.id, [document.id]),
-        loadDocumentVaccinationLinks(user.id, [document.id]),
+        visible("profile")
+          ? loadDocumentVaccinationLinks(user.id, [document.id])
+          : Promise.resolve(null),
         prisma.documentContentIndex.findUnique({
           where: { documentId: document.id },
           select: { source: true },
@@ -311,7 +342,7 @@ export const PATCH = apiHandler(
         toContentIndexSource(contentIndex?.source),
         thumbnail !== null,
         visitLinks.get(document.id) ?? [],
-        doseLinks.get(document.id) ?? [],
+        doseLinks === null ? null : (doseLinks.get(document.id) ?? []),
       ),
     );
   },
@@ -319,11 +350,11 @@ export const PATCH = apiHandler(
 
 export const DELETE = apiHandler(
   async (request: NextRequest, { params }: RouteParams) => {
-    const { user } = await requireAuth();
+    const { user, actor } = await requireRecordAuth("guardian", "documents");
     const gate = await requireModuleEnabled(user.id, "inboundDocuments");
     if (!gate.enabled) return gate.response;
 
-    const limited = await enforceWriteRateLimit(user.id);
+    const limited = await enforceWriteRateLimit(actor.id);
     if (limited) return limited;
 
     const { id } = await params;

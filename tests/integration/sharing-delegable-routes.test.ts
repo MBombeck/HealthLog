@@ -1860,8 +1860,11 @@ describe("GET /api/medications/compliance — the bucket follows the actor", () 
  * record, and reading it is much of the point of handing somebody the record.
  *
  * Five GET arms moved. The upload, the retype, the delete, the episode link
- * and every AI verb did not, and `sharing-surface-guard.test.ts` is what
- * freezes that split — this file asserts the moved arms actually substitute.
+ * and every AI verb did not for an adult's share; #1403 opened the upload and
+ * the edits to a managed profile's guardian only (`"guardian"`, covered in
+ * `guardian-document-vault.test.ts`). `sharing-surface-guard.test.ts` is
+ * what freezes that split — this file asserts the moved arms actually
+ * substitute.
  */
 async function enableDocuments(userId: string, enabled = true) {
   await getPrismaClient().user.update({
@@ -1955,11 +1958,11 @@ describe("GET /api/documents/inbound", () => {
     expect(payload.documents.map((d) => d.title)).toEqual(["my-letter"]);
   });
 
-  it("refuses the upload arm beside it, at either grant level", async () => {
-    // The half that must NOT have moved. The module-level split is the whole
-    // reason the two arms declare separately, and a future edit that hoisted
-    // one resolver to the top of the file would make this go red rather than
-    // quietly admitting uploads.
+  it("refuses the upload arm beside it to an adult's delegate", async () => {
+    // The half that must NOT have moved for an adult's record. The module-
+    // level split is the whole reason the two arms declare separately, and a
+    // future edit that hoisted one resolver to the top of the file would make
+    // this go red rather than quietly admitting uploads.
     const owner = await makeUser("owner");
     const delegate = await makeUser("delegate");
     await enableDocuments(owner.id);
@@ -1993,11 +1996,11 @@ describe("GET /api/documents/inbound", () => {
       }),
     );
 
-    // The undeclared-mode refusal: the POST arm names no sharing mode, so the
-    // carrier is refused before any grant is read.
+    // The POST arm declares `"guardian"` (#1403): the grant is read and
+    // refused, because a WRITE grant on an adult's record is not a guardian.
     expect(response.status).toBe(403);
     expect((await body(response)).meta?.errorCode).toBe(
-      "sharing.not_permitted",
+      "sharing.access.denied",
     );
     expect(
       await getPrismaClient().inboundDocument.count({

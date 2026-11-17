@@ -13337,6 +13337,8 @@
       "documentStore": "{name} добавил(а) документ",
       "documentUpdate": "{name} изменил(а) документ",
       "documentDiscard": "{name} отбросил(а) документ",
+      "documentRestore": "{name} восстановил(а) документ",
+      "documentBulk": "{name} изменил(а) несколько документов",
       "medicationIntakeImportFinished": "Импорт доз, запущенный {name}, завершён",
       "medicationOneShotReconciled": "Однократное лекарство было открыто или закрыто после дозы, записанной {name}",
       "vaccinationBoosterPlanned": "{name} запланировал(а) ревакцинацию",

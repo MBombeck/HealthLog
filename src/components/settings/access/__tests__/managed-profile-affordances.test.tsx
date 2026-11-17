@@ -235,8 +235,8 @@ function entry(partial: Partial<AccountAccessEntry> = {}): AccountAccessEntry {
     recordKind: "managed",
     sections: null,
     canWrite: true,
-    writableDomains: delegatedDomains("manage", null, "write"),
-    manageableDomains: delegatedDomains("manage", null, "manage"),
+    writableDomains: delegatedDomains("manage", null, "write", "managed"),
+    manageableDomains: delegatedDomains("manage", null, "manage", "managed"),
     ...partial,
   };
 }
