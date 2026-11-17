@@ -5895,6 +5895,7 @@
             "writtenByHealthLogOther": "{count} enregistrements que HealthLog a écrits lui-même dans Santé ont été ignorés, car ils figurent déjà dans vos données.",
             "writtenByHealthLogFew": "{count} enregistrements que HealthLog a écrits lui-même dans Santé ont été ignorés, car ils figurent déjà dans vos données.",
             "ecgResult": "ECG : {discovered} détectés, {imported} importés, {updated} mis à jour, {skipped} ignorés et {failed} échoués. Les erreurs d’ECG n’annulent pas les enregistrements compatibles importés depuis export.xml.",
+            "labsResult": "Résultats d’analyses des dossiers médicaux : {discovered} détectés, {imported} importés, {duplicate} déjà enregistrés, {skipped} ignorés et {failed} échoués. Un résultat en échec n’annule rien d’autre dans l’archive.",
             "estimateWarning": "Les totaux cumulés de {count} jour(s) ont été estimés à partir de la source d’export la plus élevée. Les statistiques Apple Santé natives restent la référence.",
             "phase": {
               "queued": "En file d'attente…",

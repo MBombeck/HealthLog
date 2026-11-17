@@ -47,6 +47,10 @@ const ADMIN_SESSION = {
 
 const NOW = new Date("2026-05-15T10:00:00.000Z");
 
+function ownerSession(): Awaited<ReturnType<typeof getSession>> {
+  return OWNER_SESSION as unknown as Awaited<ReturnType<typeof getSession>>;
+}
+
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     id: "ij-1",
@@ -94,7 +98,7 @@ describe("GET /api/import/apple-health-export/[jobId]/status", () => {
   });
 
   it("bounds the lab counts and drops anything else in the block", async () => {
-    vi.mocked(getSession).mockResolvedValue(OWNER_SESSION as never);
+    vi.mocked(getSession).mockResolvedValue(ownerSession());
     mocks.importJobFindUnique.mockResolvedValue(
       makeRow({
         status: "done",
@@ -127,7 +131,7 @@ describe("GET /api/import/apple-health-export/[jobId]/status", () => {
   });
 
   it("reports zeroed lab counts for a job from before labs were read", async () => {
-    vi.mocked(getSession).mockResolvedValue(OWNER_SESSION as never);
+    vi.mocked(getSession).mockResolvedValue(ownerSession());
     mocks.importJobFindUnique.mockResolvedValue(
       makeRow({ status: "done", result: { totals: { recordsRead: 1 } } }),
     );

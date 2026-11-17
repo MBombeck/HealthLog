@@ -5895,6 +5895,7 @@
             "writtenByHealthLogOther": "{count} records die HealthLog zelf naar Apple Health had geschreven, zijn weggelaten, omdat ze al in je gegevens staan.",
             "writtenByHealthLogFew": "{count} records die HealthLog zelf naar Apple Health had geschreven, zijn weggelaten, omdat ze al in je gegevens staan.",
             "ecgResult": "ECG's: {discovered} gevonden, {imported} geïmporteerd, {updated} bijgewerkt, {skipped} overgeslagen, {failed} mislukt. Mislukte ECG's maken ondersteunde records die uit export.xml zijn geïmporteerd niet ongedaan.",
+            "labsResult": "Labuitslagen uit medische dossiers: {discovered} gevonden, {imported} geïmporteerd, {duplicate} al aanwezig, {skipped} overgeslagen, {failed} mislukt. Een mislukte uitslag gooit verder niets uit het archief weg.",
             "estimateWarning": "Cumulatieve totalen voor {count} dag(en) zijn geschat op basis van de grootste bron in de export. De eigen statistieken van Apple Health blijven leidend.",
             "phase": {
               "queued": "In de wachtrij…",

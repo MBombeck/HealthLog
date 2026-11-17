@@ -5895,6 +5895,7 @@
             "writtenByHealthLogOther": "{count} registrazioni che HealthLog ha scritto in Salute sono state escluse, perché sono già nei tuoi dati.",
             "writtenByHealthLogFew": "{count} registrazioni che HealthLog ha scritto in Salute sono state escluse, perché sono già nei tuoi dati.",
             "ecgResult": "ECG: {discovered} rilevati, {imported} importati, {updated} aggiornati, {skipped} ignorati e {failed} non riusciti. Gli errori ECG non eliminano i record supportati importati da export.xml.",
+            "labsResult": "Esami di laboratorio dalle cartelle cliniche: {discovered} rilevati, {imported} importati, {duplicate} già presenti, {skipped} ignorati e {failed} non riusciti. Un esame non riuscito non elimina nient’altro dall’archivio.",
             "estimateWarning": "I totali cumulativi di {count} giorno/i sono stati stimati dalla fonte di esportazione più alta. Le statistiche native di Apple Salute restano autorevoli.",
             "phase": {
               "queued": "In coda…",

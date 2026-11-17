@@ -5895,6 +5895,7 @@
             "writtenByHealthLogOther": "{count} records that HealthLog wrote into Apple Health itself were left out, because they are already in your data.",
             "writtenByHealthLogFew": "{count} records that HealthLog wrote into Apple Health itself were left out, because they are already in your data.",
             "ecgResult": "ECGs: {discovered} discovered, {imported} imported, {updated} updated, {skipped} skipped, {failed} failed. ECG failures do not discard supported records imported from export.xml.",
+            "labsResult": "Lab results from health records: {discovered} found, {imported} imported, {duplicate} already in your record, {skipped} skipped, {failed} failed. A lab result that fails does not discard anything else from the archive.",
             "estimateWarning": "Cumulative totals for {count} day(s) were estimated from the largest export source. Native Apple Health statistics remain authoritative.",
             "phase": {
               "queued": "Queued…",

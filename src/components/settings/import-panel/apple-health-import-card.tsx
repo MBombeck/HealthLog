@@ -11,6 +11,11 @@ import { queryKeys } from "@/lib/query-keys";
 import { useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
+import {
+  AppleHealthAuxiliaryLines,
+  type AppleHealthEcgCounts,
+  type AppleHealthLabCounts,
+} from "./apple-health-auxiliary-lines";
 import { ImportCardShell } from "./import-card-shell";
 import { WrittenOutcomeLine } from "@/components/outcome/written-outcome-line";
 import { classifyWrittenOutcome } from "@/lib/outcome/written-outcome";
@@ -49,13 +54,8 @@ interface JobStatus {
       daysFailed?: number;
       firstFailureReason?: string | null;
     };
-    ecg?: {
-      discovered?: number;
-      imported?: number;
-      updated?: number;
-      skipped?: number;
-      failed?: number;
-    };
+    ecg?: AppleHealthEcgCounts;
+    labs?: AppleHealthLabCounts;
   } | null;
   failureReason: string | null;
 }
@@ -389,7 +389,10 @@ export function AppleHealthImportCard() {
     }
   })();
   const ecg = status?.result?.ecg;
-  const ecgWritten = (ecg?.imported ?? 0) + (ecg?.updated ?? 0);
+  const labs = status?.result?.labs;
+  const rowsWritten = status?.result?.totals?.rowsUpserted ?? 0;
+  const auxWritten =
+    (ecg?.imported ?? 0) + (ecg?.updated ?? 0) + (labs?.imported ?? 0);
   const skips = summarizeAppleHealthSkips(status?.result ?? null);
   const cycleStats = status?.result?.cycle;
 
@@ -482,18 +485,23 @@ export function AppleHealthImportCard() {
         {isDone && (
           <WrittenOutcomeLine
             outcome={classifyWrittenOutcome({
-              written: (status?.result?.totals?.rowsUpserted ?? 0) + ecgWritten,
+              written: rowsWritten + auxWritten,
               // Deliberate exclusions (clinical records, unsupported /
               // deferred types, a disabled cycle module) are information
               // and must not tip the archive into a warning. Genuine
               // refusals — samples that SHOULD have landed (unparseable,
               // out of range, upsert failure) plus failed cycle days — do.
-              skipped: skips.refused + (cycleStats?.daysFailed ?? 0),
+              skipped:
+                skips.refused +
+                (cycleStats?.daysFailed ?? 0) +
+                (labs?.failed ?? 0),
             })}
             message={
-              (status?.result?.totals?.rowsUpserted ?? 0) > 0
+              // An archive whose only new data is lab results or ECGs still
+              // imported something.
+              rowsWritten + auxWritten > 0
                 ? t("settings.sections.export.import.appleHealth.doneSummary", {
-                    imported: status?.result?.totals?.rowsUpserted ?? 0,
+                    imported: rowsWritten,
                     read: status?.result?.totals?.recordsRead ?? 0,
                     skipped: status?.result?.clinical?.skipped ?? 0,
                   })
@@ -505,20 +513,7 @@ export function AppleHealthImportCard() {
           />
         )}
         {isDone && <AppleHealthSkipLines skips={skips} cycle={cycleStats} />}
-        {isDone && (ecg?.discovered ?? 0) > 0 && (
-          <p
-            data-testid="import-apple-health-ecg-result"
-            className="text-muted-foreground text-xs"
-          >
-            {t("settings.sections.export.import.appleHealth.ecgResult", {
-              discovered: ecg?.discovered ?? 0,
-              imported: ecg?.imported ?? 0,
-              updated: ecg?.updated ?? 0,
-              skipped: ecg?.skipped ?? 0,
-              failed: ecg?.failed ?? 0,
-            })}
-          </p>
-        )}
+        {isDone && <AppleHealthAuxiliaryLines ecg={ecg} labs={labs} />}
         {isDone && ownRecordsSkipped > 0 && (
           <AppleHealthOwnRecordsNote count={ownRecordsSkipped} />
         )}
