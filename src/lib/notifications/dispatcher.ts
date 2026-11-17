@@ -642,11 +642,11 @@ function prepareChannelSend(
       // changing the dispatcher shape.
       return {
         send: () =>
-          sendViaApns(
-            recipientUserId,
-            payload,
-            apnsDeviceIds ? { onlyDeviceIds: apnsDeviceIds } : undefined,
-          ),
+          apnsDeviceIds
+            ? sendViaApns(recipientUserId, payload, {
+                onlyDeviceIds: apnsDeviceIds,
+              })
+            : sendViaApns(recipientUserId, payload),
       };
     }
     default:
