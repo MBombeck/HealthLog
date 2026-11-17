@@ -21,7 +21,13 @@ import {
   SPARKLINE_MAX_POINTS,
 } from "@/lib/insights/derived/types";
 import { ANALYTICS_RANGES } from "@/lib/analytics/range-delta";
-import { providerChainPutSchema } from "@/lib/validations/ai-provider";
+import {
+  namedChainSchema,
+  namedChainsPutSchema,
+  providerChainPutSchema,
+} from "@/lib/validations/ai-provider";
+import { PROVIDER_CHAIN_TYPES } from "@/lib/ai/provider-chain";
+import { AI_CAPABILITY_KEYS } from "@/lib/ai/capabilities/types";
 import { PERIOD_DAYS } from "@/lib/insights/narrative/period-narrative";
 import { aiCapabilityState } from "../profile";
 import {
@@ -2820,6 +2826,59 @@ export const providerChainPutRequest = providerChainPutSchema.meta({
   id: "ProviderChainPutRequest",
   description:
     "Replaces the account's provider chain wholesale. No credential is written or read here — only which provider types exist, in what order, which are enabled, and the reasoning setting of the Local and OpenAI-compatible entries.",
+});
+
+// ── Named provider chains (`/api/insights/provider-chains`, #1404) ─────
+
+export const namedChainsResponse = z
+  .object({
+    chains: z
+      .array(namedChainSchema)
+      .describe("The account's named chains, in the order they were saved."),
+    defaultChainId: z
+      .string()
+      .nullable()
+      .describe(
+        "The named chain every unattached capability follows, or null for the main chain.",
+      ),
+    attachments: z
+      .partialRecord(z.enum(AI_CAPABILITY_KEYS), z.string())
+      .describe(
+        "Capability → chain id. An attached capability uses exactly its chain's entries in their order and nothing else; one left out follows the default chain under its own rules (documents prefer a local entry, lab scans keep the chain order).",
+      ),
+    mainChain: z
+      .array(z.enum(PROVIDER_CHAIN_TYPES))
+      .describe(
+        "The enabled entries of the main chain in order, for showing what Default means.",
+      ),
+    providers: z
+      .array(
+        z.object({
+          providerType: z.enum(PROVIDER_CHAIN_TYPES),
+          available: z
+            .boolean()
+            .describe(
+              "Whether the account holds a usable credential for it (presence only; a dead key still reads true). An entry that is not available never serves.",
+            ),
+          egress: z
+            .enum(["local", "external"])
+            .describe(
+              "`local` keeps the input on the machine; `external` sends it to a third-party AI service.",
+            ),
+        }),
+      )
+      .describe("Every provider type a chain may list."),
+  })
+  .meta({
+    id: "NamedChainsResponse",
+    description:
+      "The account's named provider chains and attachments. Provider TYPES, names and capability keys only. Whether a capability is available is published on `/api/auth/me` (`ai`), resolved through these chains.",
+  });
+
+export const namedChainsPutRequest = namedChainsPutSchema.meta({
+  id: "NamedChainsPutRequest",
+  description:
+    "Replaces the named chains, the default and the attachments wholesale. The main chain is not touched. No credential is written or read here.",
 });
 
 // ── Read-only advisor + generation (`/api/insights/generate`) ─────────

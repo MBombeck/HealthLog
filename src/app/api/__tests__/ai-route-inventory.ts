@@ -262,6 +262,8 @@ export const DATA_ROUTES: Readonly<Record<string, string>> = {
   "src/app/api/insights/layout/route.ts": "The person's tile layout.",
   "src/app/api/insights/provider-chain/route.ts":
     "AI configuration: editable while AI is unavailable, so it can be set up.",
+  "src/app/api/insights/provider-chains/route.ts":
+    "AI configuration: editable while AI is unavailable, so it can be set up.",
   "src/app/api/insights/settings/route.ts":
     "AI configuration: editable while AI is unavailable, so it can be set up.",
   "src/app/api/insights/targets/route.ts": "Threshold reference values.",
