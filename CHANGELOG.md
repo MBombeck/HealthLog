@@ -18,6 +18,12 @@
 
 ### Changed
 
+- A phone or iPad now counts as recently seen whenever the HealthLog app
+  uses it to talk to your server, not only when the app registers it after
+  a cold start. The device list shows the real last use, at most an hour
+  behind, and the app can tell reliably which of your devices is still in
+  use, for example to decide which one should remind you of a medication.
+
 - The `apple-app-site-association` file now lists only the addresses the
   iPhone app actually opens: registration and invite links, and the new
   sign-in return. Before, it claimed every address on the server, so an app
