@@ -1,6 +1,6 @@
 /**
- * The third-party provider sync queues: Withings, WHOOP, Fitbit, Google
- * Health, Nightscout, Polar, Oura, Strava, Garmin, the full-history backfills and
+ * The third-party provider sync queues: Withings, WHOOP, Google Health,
+ * Nightscout, Polar, Oura, Strava, Garmin, the full-history backfills and
  * repairs that run through the shared admission lane, the integration
  * watchdog, and the OAuth-state and handoff prunes.
  *
@@ -16,10 +16,6 @@
  * better a second later, and the daily tick is the retry. The sync crons keep
  * the default retries; a provider outage is transient.
  */
-import {
-  FITBIT_BOOT_DISCOVERY,
-  FITBIT_JOBS,
-} from "@/lib/fitbit/jobs/definitions";
 import {
   INTEGRATION_BACKFILL_ADMISSION_QUEUE,
   INTEGRATION_BACKFILL_GLOBAL_CONCURRENCY,
@@ -234,7 +230,6 @@ const jobs: readonly JobDefinition[] = [
     work: { localConcurrency: 1 },
     load: async () => (await cleanups()).handleWhoopOAuthStateCleanup,
   }),
-  ...FITBIT_JOBS,
   defineJob({
     queue: GOOGLE_HEALTH_SYNC_QUEUE,
     cron: GOOGLE_HEALTH_SYNC_CRON,
@@ -404,11 +399,23 @@ const discovery: readonly BootDiscovery[] = [
       await import("@/lib/jobs/lab-biomarker-backfill")
     ).enqueueBootTimeLabBiomarkerBackfill(stagger),
   ),
-  ...FITBIT_BOOT_DISCOVERY,
 ];
+
+/**
+ * The Fitbit queues. Google turned the Fitbit Web API off on 2026-10-30 and
+ * the integration is gone; an instance that ran it still holds their
+ * schedules and whatever they had queued, removed here at boot.
+ */
+const RETIRED_INTEGRATION_QUEUES = [
+  "fitbit-sync",
+  "fitbit-backfill",
+  "fitbit-sleep-repair",
+  "fitbit-oauth-state-cleanup",
+] as const;
 
 export const INTEGRATION_SYNC_GROUP: JobGroup = {
   name: "integration_sync",
   jobs,
   discovery,
+  retired: RETIRED_INTEGRATION_QUEUES,
 };

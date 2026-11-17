@@ -46,7 +46,6 @@ import { healthFixture } from "../integrations/__tests__/health-fixture";
 const KEYS = [
   "withings",
   "whoop",
-  "fitbit",
   "nightscout",
   "polar",
   "oura",
@@ -99,7 +98,7 @@ describe("<ManagedIntegrationStatus>", () => {
       'aria-labelledby="managed-integration-status-title"',
     );
     expect(html).toContain('data-record-id="record-1"');
-    expect(html.match(/data-slot="integration-card"/g)).toHaveLength(8);
+    expect(html.match(/data-slot="integration-card"/g)).toHaveLength(7);
     for (const key of KEYS) {
       expect(html).toContain(`data-testid="managed-integration-${key}"`);
     }
@@ -113,15 +112,12 @@ describe("<ManagedIntegrationStatus>", () => {
     expect(html).toContain('data-testid="withings-menu"');
     expect(html.match(/Connects for Managed record/g)).toHaveLength(6);
     // Each unconnected OAuth provider offers one connect for the record;
-    // Fitbit (retired) and Nightscout (no OAuth) stay status only.
+    // Nightscout (no OAuth) stays status only.
     for (const key of ["whoop", "polar", "google-health", "strava"]) {
       expect(html).toContain(
         `data-testid="managed-integration-${key}-connect"`,
       );
     }
-    expect(html).not.toContain(
-      'data-testid="managed-integration-fitbit-connect"',
-    );
     expect(html).not.toContain(
       'data-testid="managed-integration-nightscout-connect"',
     );

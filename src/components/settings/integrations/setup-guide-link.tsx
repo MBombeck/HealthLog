@@ -4,7 +4,7 @@
  * v1.17.1 — shared "Setup guide" doc-link for every Settings → Integrations
  * card. Each card paints the same affordance: one discreet, external link to
  * the provider's setup runbook ("was eingeben, wo klicken"). Single-sourced
- * here so all six cards (WHOOP / Withings / Fitbit / Polar / Oura / Nightscout)
+ * here so every card (WHOOP / Withings / Polar / Oura / Nightscout / …)
  * read as one family and the docs host lives in exactly one place.
  *
  * The runbooks themselves are authored separately; this link wires the
@@ -28,7 +28,6 @@ export const DOCS_GUIDES_BASE = "https://docs.healthlog.dev/guides";
 export type IntegrationDocsProvider =
   | "whoop"
   | "withings"
-  | "fitbit"
   | "polar"
   | "oura"
   | "nightscout"
@@ -92,8 +91,8 @@ export function CallbackMismatchNotice({
 /**
  * v1.29.x (UX audit H2) — compact 3-step BYO-developer-app guide for the
  * six providers that require a self-hoster to register their own vendor
- * app before an OAuth connect can ever succeed (Withings / WHOOP / Fitbit /
- * Polar / Oura / Strava). The external "Setup guide" link explains the
+ * app before an OAuth connect can ever succeed (Withings / WHOOP / Google
+ * Health / Polar / Oura / Strava). The external "Setup guide" link explains the
  * *why*; this inline callout gives the one value every vendor form asks
  * for and the app already knows — the callback URL — so it doesn't have to
  * be reconstructed by hand from the docs. Shown only while the user hasn't

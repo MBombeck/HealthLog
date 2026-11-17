@@ -77,27 +77,3 @@ vi.mock("@/lib/auth/write-meter", async (importOriginal) => {
     await importOriginal<typeof import("@/lib/auth/write-meter")>();
   return { ...actual, meterAccountWrite: vi.fn(async () => undefined) };
 });
-
-/**
- * The end of the legacy Fitbit Web API is a calendar date
- * (`src/lib/fitbit/retirement.ts`). Read off the real clock, every suite that
- * exercises the Fitbit sync, its jobs or its routes would turn red on that day
- * and stay red until the provider code is removed. The suites therefore run
- * before the turndown by default; a test about the turndown itself flips
- * `isFitbitRetired` (`vi.mocked(isFitbitRetired).mockReturnValue(true)`) or
- * loads the real module with `vi.importActual`, as
- * `src/lib/fitbit/__tests__/retirement.test.ts` does.
- */
-vi.mock("@/lib/fitbit/retirement", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("@/lib/fitbit/retirement")>();
-  const isFitbitRetired = vi.fn((_now?: Date) => false);
-  return {
-    ...actual,
-    isFitbitRetired,
-    fitbitRetirement: vi.fn((now?: Date) => ({
-      ...actual.fitbitRetirement(now),
-      ended: isFitbitRetired(now),
-    })),
-  };
-});

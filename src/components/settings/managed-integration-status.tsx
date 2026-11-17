@@ -44,7 +44,6 @@ interface ManagedIntegrationStatusResponse {
 const INTEGRATION_DISPLAY_NAMES = {
   withings: "Withings",
   whoop: "WHOOP",
-  fitbit: "Fitbit",
   nightscout: "Nightscout",
   polar: "Polar",
   oura: "Oura",

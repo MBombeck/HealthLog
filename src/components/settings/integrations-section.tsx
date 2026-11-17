@@ -5,7 +5,7 @@
  *
  * v1.18.1 — the Connections content IS the Integrationen page: clicking
  * Integrationen shows the OAuth + device data sources (Withings / WHOOP /
- * Fitbit / Polar / Oura / Nightscout) directly, with no tab strip.
+ * Google Health / Polar / Oura / Nightscout) directly, with no tab strip.
  *
  * v1.25.7 — the delivery CHANNELS (Telegram / ntfy / Web Push / Webhook /
  * Email) move back here from Notifications as a labelled "Delivery channels"

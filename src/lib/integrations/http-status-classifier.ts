@@ -1,7 +1,7 @@
 /**
  * v1.17.0 — shared HTTP-status response classifier for OAuth integrations.
  *
- * Polar, Oura, WHOOP and Fitbit all signal failure through the HTTP status
+ * Polar, Oura and WHOOP all signal failure through the HTTP status
  * code itself (no `status` field embedded in a 200 body), so their off-response
  * classifiers were byte-identical copies of one another. This module lifts the
  * shared core; each vendor module re-exports it under its existing names so

@@ -44,7 +44,6 @@ const FILES_THAT_HAD_IT = [
   "src/app/api/auth/native/login/route.ts",
   "src/app/api/withings/connect/route.ts",
   "src/app/api/whoop/connect/route.ts",
-  "src/app/api/fitbit/connect/route.ts",
 ] as const;
 
 function read(relativePath: string): string {

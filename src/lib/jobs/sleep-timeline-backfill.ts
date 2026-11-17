@@ -25,7 +25,7 @@
  * A reboot mid-pass re-runs delete + re-sync from scratch — the re-sync upserts
  * are key-stable, so the result converges.
  *
- * Modelled on `whoop-backfill.ts` / `fitbit/jobs/backfill.ts`. The queue name MUST
+ * Modelled on `whoop-backfill.ts`. The queue name MUST
  * be registered in `allQueues` in `src/lib/jobs/reminder-worker.ts` or pg-boss
  * never provisions it and the boot enqueue silently never drains (the v1.4.37
  * dead-queue class).

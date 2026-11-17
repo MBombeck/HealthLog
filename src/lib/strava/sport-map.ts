@@ -10,9 +10,8 @@
  * rendered every Strava row generic, and a picker that treats two generic
  * rows as the same sport clusters a same-source brick session (a Strava
  * "Ride" ending 15:00 immediately followed by a Strava "Run" starting
- * 15:03) into one and silently drops a leg. Fitbit
- * (`mapFitbitSportType()` in `src/lib/fitbit/client.ts`), Google Health
- * (`mapGoogleHealthSportType()` in `src/lib/google-health/mappers.ts`), and
+ * 15:03) into one and silently drops a leg. Google Health
+ * (`mapGoogleHealthSportType()` in `src/lib/google-health/mappers.ts`) and
  * WHOOP (`mapWhoopSportType()` in `src/lib/whoop/sport-map.ts`) all
  * normalise at ingest time; this module brings Strava to parity.
  *

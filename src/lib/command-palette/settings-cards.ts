@@ -127,7 +127,6 @@ export const SETTINGS_CARDS: ReadonlyArray<SettingsCardEntry> = [
     titleKey: "settings.withings",
   },
   { section: "integrations", anchor: "whoop", titleKey: "settings.whoop" },
-  { section: "integrations", anchor: "fitbit", titleKey: "settings.fitbit" },
   {
     section: "integrations",
     anchor: "google-health",

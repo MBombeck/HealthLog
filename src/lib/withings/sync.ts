@@ -296,8 +296,8 @@ export async function syncUserMeasurements(
     measuredAt: Date;
   }> = [];
 
-  // v1.28.39 — hold-watermark-on-hard-failure (mirrors google-health /
-  // fitbit's `hardFailStorage` verdict). A per-row write that HARD-fails
+  // v1.28.39 — hold-watermark-on-hard-failure (mirrors google-health's
+  // `hardFailStorage` verdict). A per-row write that HARD-fails
   // (anything but a benign P2002 idempotent-write collision) must not let
   // `lastSyncedAt` advance past the unpersisted reading — the 10-min overlap
   // window would otherwise never re-cover it and the reading is stranded

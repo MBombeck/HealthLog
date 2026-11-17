@@ -2,9 +2,8 @@
  * WHOOP `sport_id` / `sport_name` → HealthLog canonical `WorkoutSportType`.
  *
  * WHOOP is the only workout integration that shipped WITHOUT this mapping —
- * Fitbit (`FITBIT_EXERCISE_TYPE_MAP` in `src/lib/fitbit/client.ts`) and
  * Google Health (`GOOGLE_HEALTH_EXERCISE_TYPE_MAP` in
- * `src/lib/google-health/mappers.ts`) both normalise at ingest time. Before
+ * `src/lib/google-health/mappers.ts`) normalises at ingest time. Before
  * this module, `sync-workout.ts` wrote WHOOP's raw `sport_name` or a literal
  * `whoop_sport_<id>` placeholder straight into `Workout.sportType`, so WHOOP
  * rows never matched a canonical bucket and the `/insights/workouts` list

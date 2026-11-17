@@ -9,7 +9,7 @@
  *
  * This is the single fetch the Settings → Integrations cards read off
  * — it carries every field the cards render (Withings activity scope,
- * WHOOP/Fitbit backfill state) so the per-card /api/<provider>/status
+ * WHOOP/Google Health backfill state) so the per-card /api/<provider>/status
  * round-trips are gone
  * from the web. The legacy per-provider routes stay for the iOS/test
  * callers; the web cards no longer hit them.
@@ -68,10 +68,6 @@ import {
   type GoogleHealthBackfillEndedEntry,
 } from "@/lib/google-health/backfill-progress";
 import type { ConnectionHealth } from "@/lib/integrations/connection-health";
-import {
-  fitbitRetirement,
-  type PublishedFitbitRetirement,
-} from "@/lib/fitbit/retirement";
 
 export const dynamic = "force-dynamic";
 
@@ -87,7 +83,6 @@ export const GET = apiHandler(async () => {
     [
       withingsStatus,
       whoopStatus,
-      fitbitStatus,
       googleHealthStatus,
       polarStatus,
       ouraStatus,
@@ -98,7 +93,6 @@ export const GET = apiHandler(async () => {
       dbUser,
       withingsConn,
       whoopConn,
-      fitbitConn,
       googleHealthConn,
       // v1.17.1 — `available` reports whether usable OAuth credentials resolve
       // (per-user BYO first, then the shared env app), mirroring the per-card
@@ -113,7 +107,6 @@ export const GET = apiHandler(async () => {
     Promise.all([
       getIntegrationStatus(user.id, "withings"),
       getIntegrationStatus(user.id, "whoop"),
-      getIntegrationStatus(user.id, "fitbit"),
       getIntegrationStatus(user.id, "google-health"),
       getIntegrationStatus(user.id, "polar"),
       getIntegrationStatus(user.id, "oura"),
@@ -128,8 +121,6 @@ export const GET = apiHandler(async () => {
           withingsClientSecretEncrypted: true,
           whoopClientIdEncrypted: true,
           whoopClientSecretEncrypted: true,
-          fitbitClientIdEncrypted: true,
-          fitbitClientSecretEncrypted: true,
           googleHealthClientIdEncrypted: true,
           googleHealthClientSecretEncrypted: true,
           polarAccessTokenEncrypted: true,
@@ -176,15 +167,6 @@ export const GET = apiHandler(async () => {
           backfillCompletedAt: true,
         },
       }),
-      prisma.fitbitConnection.findUnique({
-        where: { userId: user.id },
-        select: {
-          tokenExpiresAt: true,
-          lastSyncedAt: true,
-          createdAt: true,
-          backfillCompletedAt: true,
-        },
-      }),
       prisma.googleHealthConnection.findUnique({
         where: { userId: user.id },
         select: {
@@ -206,7 +188,6 @@ export const GET = apiHandler(async () => {
     loadConnectionHealth(user.id, [
       "withings",
       "whoop",
-      "fitbit",
       "google-health",
       "polar",
       "oura",
@@ -310,24 +291,6 @@ export const GET = apiHandler(async () => {
   const whoopLegacyLastSyncedAt = whoopConnected
     ? (whoopConn?.lastSyncedAt?.toISOString() ?? null)
     : null;
-  const fitbitConnected = !!fitbitConn;
-  const fitbitConfigured =
-    !!dbUser?.fitbitClientIdEncrypted && !!dbUser?.fitbitClientSecretEncrypted;
-  const fitbitLegacyLastSyncedAt =
-    fitbitConn?.lastSyncedAt?.toISOString() ?? null;
-  // Once the Web API is gone the Fitbit card only explains the move to an
-  // account that had something to move: a connection, its own Fitbit app, or
-  // imported Fitbit data. Anyone else is shown no dead card. The data probe
-  // runs only after the turndown, for an account with neither of the others.
-  const retirementNow = fitbitRetirement();
-  const fitbitOffered =
-    !retirementNow.ended ||
-    fitbitConnected ||
-    fitbitConfigured ||
-    (await prisma.measurement.findFirst({
-      where: { userId: user.id, source: "FITBIT", deletedAt: null },
-      select: { id: true },
-    })) !== null;
   const googleHealthConnected = !!googleHealthConn;
   const googleHealthConfigured =
     !!dbUser?.googleHealthClientIdEncrypted &&
@@ -405,25 +368,6 @@ export const GET = apiHandler(async () => {
           legacyLastSyncedAt: whoopLegacyLastSyncedAt,
         }),
       } satisfies IntegrationViewModel & WhoopExtras,
-      {
-        ...publish(fitbitStatus),
-        configured: fitbitConfigured,
-        connected: fitbitConnected,
-        connectedAt: fitbitConn?.createdAt?.toISOString() ?? null,
-        legacyLastSyncedAt: fitbitLegacyLastSyncedAt,
-        tokenExpiresAt: fitbitConn?.tokenExpiresAt?.toISOString() ?? null,
-        tokenExpired: fitbitConn
-          ? fitbitConn.tokenExpiresAt.getTime() <= now
-          : null,
-        backfillCompleted: fitbitConn ? !!fitbitConn.backfillCompletedAt : null,
-        retirement: { ...retirementNow, offered: fitbitOffered },
-        health: health["fitbit"],
-        ...resolve("fitbit", fitbitStatus, {
-          connected: fitbitConnected,
-          configured: fitbitConfigured,
-          legacyLastSyncedAt: fitbitLegacyLastSyncedAt,
-        }),
-      } satisfies IntegrationViewModel & FitbitExtras,
       {
         ...publish(googleHealthStatus),
         configured: googleHealthConfigured,
@@ -605,19 +549,7 @@ interface WhoopExtras {
   backfillCompleted: boolean | null;
 }
 
-interface FitbitExtras {
-  configured: boolean;
-  connected: boolean;
-  connectedAt: string | null;
-  legacyLastSyncedAt: string | null;
-  tokenExpiresAt: string | null;
-  tokenExpired: boolean | null;
-  backfillCompleted: boolean | null;
-  /** The end of the legacy Fitbit Web API (`@/lib/fitbit/retirement`). */
-  retirement: PublishedFitbitRetirement;
-}
-
-// v1.27.0 — Google Health mirrors the Fitbit shape plus `needsReauth`: Google
+// v1.27.0 — Google Health carries the WHOOP shape plus `needsReauth`: Google
 // expires the refresh token after 7 days in "Testing" publishing mode, so a
 // connected user is periodically pushed back through OAuth. The card reads the
 // flag to raise a distinct reconnect banner.

@@ -61,7 +61,7 @@ export const INCIDENT_AFTER_MS = DAY_MS;
  * counts, and it follows how each source actually delivers:
  *
  *   - 24 h for wearables and CGMs whose cloud receives data on its own
- *     (Fitbit, Google Health, Polar, Nightscout).
+ *     (Google Health, Polar, Nightscout).
  *   - 48 h for Oura, WHOOP and Garmin. Their rings and straps upload only when the
  *     phone app is opened, so a day without opening it is ordinary and must
  *     not page anyone.
@@ -81,7 +81,6 @@ export const SOURCE_PROFILES: Record<ConnectionKey, SourceProfile> = {
   strava: { kind: "on_demand", silenceWindowMs: DAY_MS },
   whoop: { kind: "continuous", silenceWindowMs: 2 * DAY_MS },
   oura: { kind: "continuous", silenceWindowMs: 2 * DAY_MS },
-  fitbit: { kind: "continuous", silenceWindowMs: DAY_MS },
   "google-health": { kind: "continuous", silenceWindowMs: DAY_MS },
   polar: { kind: "continuous", silenceWindowMs: DAY_MS },
   nightscout: { kind: "continuous", silenceWindowMs: DAY_MS },

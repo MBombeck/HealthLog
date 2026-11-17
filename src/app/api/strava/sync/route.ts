@@ -13,8 +13,8 @@ import { syncUserStrava } from "@/lib/strava/sync";
  * the last one stopped. No `fullSync` flag — deep history belongs to the
  * connect-time backfill queue, which is self-converging and already gated.
  *
- * Rate-limited 5/60s per user, matching the hardened Fitbit / Google Health
- * routes; Strava's 200-req / 15-min cap leaves no room for a retry loop.
+ * Rate-limited 5/60s per user, matching the hardened Google Health
+ * route; Strava's 200-req / 15-min cap leaves no room for a retry loop.
  */
 export const POST = apiHandler(async () => {
   const { user } = await requireAuth();

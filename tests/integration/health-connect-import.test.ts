@@ -323,7 +323,7 @@ describe("Health Connect import, duplicates from other paths", () => {
       dbPath: path,
       userId: user.id,
       userTimezone: "Europe/Berlin",
-      connectedIntegrations: ["withings", "fitbit"],
+      connectedIntegrations: ["withings", "googleHealth"],
     });
     const counts = await countBy(user.id);
     // Only the Health Connect app's own weighings; the scale's are skipped.

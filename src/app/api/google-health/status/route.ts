@@ -8,7 +8,7 @@ import { googleHealthBackfillEndedList } from "@/lib/google-health/backfill-prog
 /**
  * Get Google Health connection status for the current user (v1.26.0).
  *
- * Mirrors the Fitbit status route: `configured` checks the per-user BYO-key
+ * `configured` checks the per-user BYO-key
  * credentials; the connection row reports last-sync + token expiry + backfill
  * progress. `tokenExpired` is reported straight off the row; the sync path
  * refreshes lazily via `getValidToken`. `needsReauth` surfaces the soft

@@ -221,16 +221,15 @@ describe("getSourceMetricFreshness", () => {
     ]);
   });
 
-  it.each(["whoop", "fitbit", "google-health"] as const)(
+  it.each(["whoop", "google-health"] as const)(
     "carries the workout leg for %s, which writes workouts too",
     async (integration) => {
       const source = {
         whoop: "WHOOP",
-        fitbit: "FITBIT",
         "google-health": "GOOGLE_HEALTH",
       }[integration];
 
-      // These three were missing from the workout table, so a card could
+      // These were missing from the workout table, so a card could
       // report every measurement type fresh while the workout leg had been
       // silent for weeks — the disclosure had no row that could go quiet.
       groupByMock.mockResolvedValue([

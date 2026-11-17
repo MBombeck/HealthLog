@@ -67,7 +67,6 @@ import { IntegrationsSection } from "../integrations-section";
 const CALLBACK_URLS = {
   withings: "https://app.example/api/withings/callback",
   whoop: "https://app.example/api/whoop/callback",
-  fitbit: "https://app.example/api/fitbit/callback",
   "google-health": "https://app.example/api/google-health/callback",
   polar: "https://app.example/api/polar/callback",
   oura: "https://app.example/api/oura/callback",
@@ -96,7 +95,6 @@ function count(html: string, needle: string): number {
 const PROVIDERS = [
   "withings",
   "whoop",
-  "fitbit",
   "google-health",
   "polar",
   "oura",
@@ -177,7 +175,7 @@ describe("IntegrationsSection — one status display per card", () => {
     expect(html).not.toContain("Last attempt");
     // The seven other providers and Apple Health are not connected and say so
     // once each.
-    expect(count(html, ">Not connected.<")).toBe(9);
+    expect(count(html, ">Not connected.<")).toBe(8);
   });
 
   it("never shows the stored provider error or a failure counter", () => {
@@ -248,7 +246,7 @@ describe("IntegrationsSection — one status display per card", () => {
     });
 
     const html = render();
-    expect(count(html, 'data-slot="integration-setup-guide"')).toBe(9);
+    expect(count(html, 'data-slot="integration-setup-guide"')).toBe(8);
     for (const provider of PROVIDERS) {
       expect(html).toContain(`data-testid="${provider}-setup-guide"`);
       expect(html).toContain(

@@ -17,10 +17,8 @@
 import type { Job } from "pg-boss";
 
 import { runWhoopBackfillForUser } from "@/lib/jobs/whoop-backfill";
-import { runFitbitBackfillForUser } from "@/lib/fitbit/jobs/backfill";
 import { runGoogleHealthBackfillForUser } from "@/lib/jobs/google-health-backfill";
 import { runGoogleHealthSleepRepairForUser } from "@/lib/jobs/google-health-sleep-repair";
-import { runFitbitSleepRepairForUser } from "@/lib/fitbit/jobs/sleep-repair";
 import { runStravaBackfillForUser } from "@/lib/jobs/strava-backfill";
 import { runOuraBackfillForUser } from "@/lib/jobs/oura-backfill";
 import { runGarminBackfillForUser } from "@/lib/jobs/garmin-backfill";
@@ -60,15 +58,6 @@ async function runAdmitted(
       workerLog("info", `[whoop-backfill] user=${userId} imported=${imported}`);
       return;
     }
-    case "fitbit-backfill": {
-      const { imported } = await runFitbitBackfillForUser(userId);
-      totals.imported += imported;
-      workerLog(
-        "info",
-        `[fitbit-backfill] user=${userId} imported=${imported}`,
-      );
-      return;
-    }
     case "google-health-backfill": {
       const { imported, continued } = await runGoogleHealthBackfillForUser(
         userId,
@@ -89,16 +78,6 @@ async function runAdmitted(
       workerLog(
         "info",
         `[google-health-sleep-repair] user=${userId} imported=${imported}`,
-      );
-      return;
-    }
-    case "fitbit-sleep-repair": {
-      const { imported, removed } = await runFitbitSleepRepairForUser(userId);
-      totals.imported += imported;
-      totals.removed += removed;
-      workerLog(
-        "info",
-        `[fitbit-sleep-repair] user=${userId} imported=${imported} removed=${removed}`,
       );
       return;
     }

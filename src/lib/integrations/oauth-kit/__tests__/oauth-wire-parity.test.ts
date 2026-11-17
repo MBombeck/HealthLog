@@ -173,7 +173,6 @@ async function providers(): Promise<Record<string, ProviderUnderTest>> {
   const { ouraOAuth, exchangeOuraCode } = await import("@/lib/oura/oauth");
   const { polarOAuth } = await import("@/lib/polar/oauth");
   const { googleHealthOAuth } = await import("@/lib/google-health/oauth");
-  const { fitbitOAuth } = await import("@/lib/fitbit/oauth");
   const MOI = "https://moi.ouraring.com/oauth/v2/ext/oauth-anonymous";
   const pkce = { codeVerifier: VERIFIER };
   return {
@@ -254,23 +253,6 @@ async function providers(): Promise<Record<string, ProviderUnderTest>> {
       exchange: () => googleHealthOAuth.exchange("code-1", CREDS, pkce),
       refresh: () => googleHealthOAuth.refresh("refresh-0", CREDS),
     },
-    fitbit: {
-      answers: {
-        ...STANDARD_ANSWERS,
-        fitbit_errors: [
-          json(400, {
-            errors: [
-              { errorType: "invalid_grant", message: "Refresh token invalid" },
-            ],
-            success: false,
-          }),
-        ],
-      },
-      redirectUri: fitbitOAuth.redirectUri,
-      authorize: () => fitbitOAuth.authorizationUrl(STATE, CREDS, CHALLENGE),
-      exchange: () => fitbitOAuth.exchange("code-1", CREDS, pkce),
-      refresh: () => fitbitOAuth.refresh("refresh-0", CREDS),
-    },
   };
 }
 
@@ -323,7 +305,6 @@ beforeEach(() => {
     "OURA_REDIRECT_URI",
     "POLAR_REDIRECT_URI",
     "GOOGLE_HEALTH_REDIRECT_URI",
-    "FITBIT_REDIRECT_URI",
   ]) {
     vi.stubEnv(name, "");
   }
@@ -361,7 +342,7 @@ describe("OAuth wire parity", () => {
 
     // The run must have reached every provider's token endpoint; an empty
     // transcript would match an empty golden.
-    expect(Object.keys(transcript)).toHaveLength(7);
+    expect(Object.keys(transcript)).toHaveLength(6);
 
     await expect(
       JSON.stringify(transcript, null, 2) + "\n",
@@ -391,10 +372,5 @@ describe("OAuth wire parity", () => {
     expect(() => all["google-health"]!.redirectUri()).toThrow(
       /does not match NEXT_PUBLIC_APP_URL origin/,
     );
-    vi.stubEnv(
-      "FITBIT_REDIRECT_URI",
-      "http://healthlog.example/api/fitbit/callback",
-    );
-    expect(() => all.fitbit!.redirectUri()).toThrow(/must be https/);
   });
 });

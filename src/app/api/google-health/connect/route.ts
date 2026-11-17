@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
  * Redirect the user to the Google OAuth consent page for the Google Health
  * integration (v1.26.0).
  *
- * Mirrors the Fitbit / WHOOP connect route with PKCE added: a fully-random
+ * Mirrors the WHOOP connect route with PKCE added: a fully-random
  * base64url state nonce backed by a 10-minute `GoogleHealthOAuthState` ledger
  * row carries the `(nonce → userId)` mapping AND the PKCE `code_verifier`, so
  * neither the user id nor the verifier ever travels in the OAuth `state` param

@@ -30,8 +30,8 @@ import {
  * manual `/api/whoop/sync` trigger.
  *
  * Parks immediately when the connection is at `error_reauth` (the user must
- * reconnect first) — returns `{ imported: 0, failed: true }`, matching the
- * landed Fitbit verdict contract so the backfill caller can gate its marker.
+ * reconnect first) — returns `{ imported: 0, failed: true }`, so the backfill
+ * caller can gate its marker.
  */
 export async function syncUserWhoop(
   userId: string,

@@ -58,7 +58,6 @@ const WRITERS: Record<string, Disposition> = {
   // ── Provider sync writers, gated ──────────────────────────────────────
   "lib/withings/sync.ts": { kind: "gate" },
   "lib/withings/sync-activity.ts": { kind: "gate" },
-  "lib/fitbit/sync-core.ts": { kind: "gate" },
   "lib/google-health/sync-core.ts": { kind: "gate" },
   "lib/nightscout/sync.ts": { kind: "gate" },
   "lib/oura/sync-heart-rate.ts": { kind: "gate" },

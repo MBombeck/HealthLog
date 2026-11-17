@@ -1,7 +1,7 @@
 {
   "$comment": "route tests that mock @/lib/db wholesale, per test file under src/. Maintained by src/__tests__/test-realism-ratchet.test.ts.",
-  "count": 274,
-  "total": 274,
+  "count": 271,
+  "total": 271,
   "entries": {
     "app/api/account/grants/__tests__/invite-access-level.test.ts": 1,
     "app/api/account/grants/__tests__/invite-recent-proof.test.ts": 1,
@@ -104,8 +104,6 @@
     "app/api/export/encrypted/__tests__/route.test.ts": 1,
     "app/api/export/health-record/__tests__/route.test.ts": 1,
     "app/api/feature-flags/__tests__/route.test.ts": 1,
-    "app/api/fitbit/connect/__tests__/route.test.ts": 1,
-    "app/api/fitbit/credentials/__tests__/route.test.ts": 1,
     "app/api/gamification/achievements/__tests__/hidden-redaction.test.ts": 1,
     "app/api/gamification/achievements/__tests__/ios-format.test.ts": 1,
     "app/api/gamification/achievements/__tests__/module-gate.test.ts": 1,
@@ -162,7 +160,6 @@
     "app/api/insights/provider-chain/__tests__/route.test.ts": 1,
     "app/api/insights/rhythm-events/__tests__/route.test.ts": 1,
     "app/api/insights/targets/__tests__/route.test.ts": 1,
-    "app/api/integrations/fitbit/test/__tests__/route.test.ts": 1,
     "app/api/integrations/healthkit/__tests__/route.test.ts": 1,
     "app/api/integrations/status/__tests__/route.test.ts": 1,
     "app/api/integrations/whoop/test/__tests__/route.test.ts": 1,

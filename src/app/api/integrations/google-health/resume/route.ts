@@ -16,7 +16,7 @@
  * Returns 200 with `{ resumed: true, wasParked: boolean }`. The
  * `wasParked` flag lets the caller decide whether to surface a "you
  * resumed it" toast or treat the action as a no-op (the row was
- * already connected / disconnected). Mirrors the Fitbit resume route.
+ * already connected / disconnected). Mirrors the WHOOP resume route.
  */
 import { apiHandler, requireAuth } from "@/lib/api-handler";
 import { apiSuccess, apiError } from "@/lib/api-response";

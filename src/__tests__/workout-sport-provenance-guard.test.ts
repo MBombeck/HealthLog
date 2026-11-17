@@ -133,15 +133,6 @@ const PROVIDER_INGESTS: ProviderIngest[] = [
     writeFile: "lib/oura/sync-workouts.ts",
     metadataKey: "ouraActivity",
   },
-  {
-    provider: "Fitbit",
-    mapper: "mapFitbitSportType",
-    mapperFile: "lib/fitbit/client.ts",
-    captureFile: "lib/fitbit/client.ts",
-    captureField: "activityName",
-    writeFile: "lib/fitbit/sync-workout.ts",
-    metadataKey: "fitbitActivityName",
-  },
 ];
 
 /**

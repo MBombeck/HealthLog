@@ -22537,9 +22537,9 @@ paths:
       tags:
         - Integrations
       summary: Trigger a Withings sync
-      description: "Incremental by default; `{ fullSync: true }` walks full history. Two limiters apply, matching the Fitbit /
-        Google Health siblings: 5 requests / 60 s for any run, and additionally 1 per hour for a full one. Auth via
-        cookie or Bearer."
+      description: "Incremental by default; `{ fullSync: true }` walks full history. Two limiters apply, matching the Google
+        Health sibling: 5 requests / 60 s for any run, and additionally 1 per hour for a full one. Auth via cookie or
+        Bearer."
       requestBody:
         required: false
         content:
@@ -22587,8 +22587,8 @@ paths:
         - Integrations
       summary: Trigger a WHOOP sync
       description: "Incremental by default; `{ fullSync: true }` walks full history across the four WHOOP resources. Two
-        limiters apply, matching the Fitbit / Google Health siblings: 5 requests / 60 s for any run, and additionally 1
-        per hour for a full one. Auth via cookie or Bearer."
+        limiters apply, matching the Google Health sibling: 5 requests / 60 s for any run, and additionally 1 per hour
+        for a full one. Auth via cookie or Bearer."
       requestBody:
         required: false
         content:
@@ -22658,166 +22658,6 @@ paths:
         "422": *a4
         "429":
           description: More than 10 ticket mints in 60 s from this user.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-  /api/fitbit/credentials:
-    get:
-      tags:
-        - Integrations
-      summary: Check whether Fitbit BYO-key credentials are stored
-      description: Presence only. Auth via cookie or Bearer.
-      responses:
-        "200":
-          description: Credential presence.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FitbitCredentialsStatusEnvelope"
-        "401": *a1
-        "403": *a9
-        "422": *a4
-        "429": *a5
-    put:
-      tags:
-        - Integrations
-      summary: Store the caller's Fitbit BYO-key credentials
-      description: Replaces both values; there is no partial update. Auth via cookie or Bearer.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/FitbitCredentialsRequest"
-      responses:
-        "200":
-          description: Credentials stored.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FitbitCredentialsUpdateEnvelope"
-        "400": *a55
-        "401": *a1
-        "403": *a9
-        "413": *a56
-        "415": *a57
-        "422": *a58
-        "429": *a5
-    delete:
-      tags:
-        - Integrations
-      summary: Delete the caller's Fitbit credentials and connection
-      description: Deletes the connection row, clears both credential columns, audits the teardown and parks the `fitbit`
-        ledger at `disconnected`. Idempotent — a missing connection row is a benign no-op, so a repeat call still
-        answers 200. Auth via cookie or Bearer.
-      responses:
-        "200":
-          description: Credentials and connection removed.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FitbitCredentialsDeleteEnvelope"
-        "401": *a1
-        "403": *a9
-        "422": *a4
-        "429": *a5
-  /api/fitbit/status:
-    get:
-      tags:
-        - Integrations
-      summary: Read the caller's Fitbit connection status
-      description: Reports the BYO-key marker plus the connection row's last sync, token expiry, granted scope and backfill
-        progress. Pure read — no refresh, no ledger write. Auth via cookie or Bearer.
-      responses:
-        "200":
-          description: Connection status.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FitbitStatusEnvelope"
-        "401": *a1
-        "403": *a9
-        "422": *a4
-        "429": *a5
-  /api/fitbit/disconnect:
-    post:
-      tags:
-        - Integrations
-      summary: Disconnect the caller's Fitbit account
-      description: Deletes the connection row, audits the teardown and parks the `fitbit` ledger at `disconnected`. There is
-        nothing to unsubscribe upstream — the integration polls. The BYO-key credentials are deliberately LEFT IN PLACE
-        so a reconnect does not force the user to re-paste them; use the credentials DELETE to remove those too. No
-        body. Auth via cookie or Bearer.
-      responses:
-        "200":
-          description: The connection was removed.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FitbitDisconnectEnvelope"
-        "401": *a1
-        "403": *a9
-        "404":
-          description: "No Fitbit connection to remove. NOT an idempotent no-op: a second disconnect answers 404 rather than 200."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a4
-        "429": *a5
-  /api/fitbit/sync:
-    post:
-      tags:
-        - Integrations
-      summary: Trigger a Fitbit sync
-      description: "Incremental by default; `{ fullSync: true }` walks full history across four paginated resources. Two
-        limiters apply: 5 requests / 60 s for any run, and additionally 1 per hour for a full one, because the classic
-        Web API budget is 150 requests per hour per user. Auth via cookie or Bearer."
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SyncTriggerRequest"
-      responses:
-        "200":
-          description: Sync run complete.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FitbitSyncTriggerEnvelope"
-        "400":
-          description: Body is not parseable JSON. An ABSENT body is not this case — omit the body entirely for an incremental run.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-        "401": *a1
-        "403": *a9
-        "410":
-          description: Google turned the legacy Fitbit Web API off on 2026-10-30; nothing is fetched. `meta.errorCode` =
-            `provider_retired`. The data already imported stays; Google Health reads the same devices.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-        "413":
-          description: Body exceeds 64 KiB.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-        "422":
-          description: "The body was present and failed the schema — `fullSync` was not a boolean. Nothing was synced. Note that
-            this is a behaviour change: such a body used to be read as `fullSync: false` and answered 200."
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-        "429":
-          description: "Either limiter tripped: more than 5 syncs in 60 s, or a second full sync within the hour. `meta.errorCode`
-            = `rate_limited_self` for both; the message distinguishes them."
           content:
             application/json:
               schema:
@@ -23406,60 +23246,13 @@ paths:
         "403": *a9
         "422": *a4
         "429": *a5
-  /api/integrations/fitbit/resume:
-    post:
-      tags:
-        - Integrations
-      summary: Clear a parked Fitbit integration
-      description: A provider whose persistent-failure streak has run for more than 24 h is parked, and the sync entry point
-        short-circuits until somebody clears it. This clears it; the next cron tick attempts again. No body, no upstream
-        call. Rate-limited 5 requests / 60 s per user. Auth via cookie or Bearer.
-      responses:
-        "200":
-          description: Park cleared, or nothing to clear.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FitbitResumeEnvelope"
-        "401": *a1
-        "403": *a9
-        "422": *a4
-        "429": *a60
-  /api/integrations/fitbit/test:
-    post:
-      tags:
-        - Integrations
-      summary: Probe the caller's Fitbit connection
-      description: Resolves a valid access token (refreshing if needed) and fetches the profile endpoint. Returns the
-        connection's `lastSyncedAt` alongside the probe result — the shape difference from the `/api/<provider>/test`
-        family. No body, nothing written beyond whatever the token refresh persists. Rate-limited 5 requests / 60 s per
-        user. Auth via cookie or Bearer.
-      responses:
-        "200":
-          description: The probe reached Fitbit.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FitbitIntegrationTestEnvelope"
-        "401": *a1
-        "403": *a9
-        "410":
-          description: Google turned the legacy Fitbit Web API off on 2026-10-30; nothing is probed. `meta.errorCode` =
-            `provider_retired`.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a59
-        "429": *a60
-        "502": *a61
   /api/integrations/google-health/resume:
     post:
       tags:
         - Integrations
       summary: Clear a parked Google Health integration
-      description: Identical contract to the Fitbit / WHOOP / Withings resume endpoints — same body (none), same response,
-        same limiter. Auth via cookie or Bearer.
+      description: Identical contract to the WHOOP / Withings resume endpoints — same body (none), same response, same
+        limiter. Auth via cookie or Bearer.
       responses:
         "200":
           description: Park cleared, or nothing to clear.
@@ -23477,12 +23270,12 @@ paths:
         - Integrations
       summary: Probe the caller's Google Health connection
       description: 'Two endpoints in one, selected by the body. With no body (or any body other than the one below) it behaves
-        like its Fitbit / WHOOP / Withings siblings: fetch the profile endpoint and answer `{ ok, lastSyncedAt,
-        latencyMs }`. With `{ "probe": "structure" }` it instead walks one page or window per Google Health data type
-        and answers a per-type diagnostic map — a completely different response shape under the same status code, so a
-        client MUST branch on what it sent. The structure map reduces every leaf to its type name and never carries a
-        value, a timestamp or an identifier, so the output is safe to paste into a public support thread. Rate-limited 5
-        requests / 60 s per user. Auth via cookie or Bearer.'
+        like its WHOOP / Withings siblings: fetch the profile endpoint and answer `{ ok, lastSyncedAt, latencyMs }`.
+        With `{ "probe": "structure" }` it instead walks one page or window per Google Health data type and answers a
+        per-type diagnostic map — a completely different response shape under the same status code, so a client MUST
+        branch on what it sent. The structure map reduces every leaf to its type name and never carries a value, a
+        timestamp or an identifier, so the output is safe to paste into a public support thread. Rate-limited 5 requests
+        / 60 s per user. Auth via cookie or Bearer.'
       requestBody:
         required: false
         content:
@@ -23512,8 +23305,8 @@ paths:
       tags:
         - Integrations
       summary: Clear a parked WHOOP integration
-      description: Identical contract to the Fitbit / Google Health / Withings resume endpoints — same body (none), same
-        response, same limiter. Auth via cookie or Bearer.
+      description: Identical contract to the Google Health / Withings resume endpoints — same body (none), same response, same
+        limiter. Auth via cookie or Bearer.
       responses:
         "200":
           description: Park cleared, or nothing to clear.
@@ -23550,9 +23343,9 @@ paths:
       tags:
         - Integrations
       summary: Clear a parked Withings integration
-      description: Identical contract to the Fitbit / Google Health / WHOOP resume endpoints — same body (none), same
-        response, same limiter. For Withings the park is typically reached through a run of contract-mismatch errors
-        rather than an expired grant. Auth via cookie or Bearer.
+      description: Identical contract to the Google Health / WHOOP resume endpoints — same body (none), same response, same
+        limiter. For Withings the park is typically reached through a run of contract-mismatch errors rather than an
+        expired grant. Auth via cookie or Bearer.
       responses:
         "200":
           description: Park cleared, or nothing to clear.
@@ -25202,8 +24995,7 @@ paths:
         the record-session fence applies. The state names the managed record: the provider's callback lands the tokens
         on it after checking the browser still belongs to a Guardian holding a live MANAGE grant on that record. When
         the record has no provider app of its own and the deployment has none, the Guardian's own app is copied onto the
-        record (audited). Fitbit is not offered: its classic API is retired. Cookie session, while acting on a managed
-        record the caller guards."
+        record (audited). Cookie session, while acting on a managed record the caller guards."
       parameters:
         - &a64
           name: provider
@@ -37610,23 +37402,6 @@ components:
         neither: `{ "fullSync": "true" }` was silently read as `false` and answered 200, so a client that asked for full
         history and mistyped the value was told the run it never requested had succeeded. Unknown keys are still
         ignored.'
-    FitbitCredentialsRequest:
-      type: object
-      properties:
-        clientId:
-          type: string
-          minLength: 1
-          maxLength: 200
-        clientSecret:
-          type: string
-          minLength: 1
-          maxLength: 200
-      required:
-        - clientId
-        - clientSecret
-      description: "Per-user Fitbit BYO-key credentials, 1–200 characters each, stored encrypted at rest and never read back.
-        NOT trimmed: a trailing space or newline from the developer portal's copy button is stored verbatim and reaches
-        Fitbit as part of the id."
     GoogleHealthCredentialsRequest:
       type: object
       properties:
@@ -39892,8 +39667,8 @@ components:
                 health_score_config_conflict, insights_layout_conflict, invalid_base_updated_at,
                 json_carries_no_intake_time, json_not_an_array, medication_layout_conflict, missing_required_columns,
                 modules_conflict, mood_tag_layout_conflict, not_configured, notification_prefs_conflict, oidc_only,
-                private_origin_not_approved, private_origin_not_grantable, provider_retired, rate_limited_self,
-                sync_in_progress, too_many_rows, unreadable_json, upstream_invalid_json, vapid_not_configured"
+                private_origin_not_approved, private_origin_not_grantable, rate_limited_self, sync_in_progress,
+                too_many_rows, unreadable_json, upstream_invalid_json, vapid_not_configured"
               type: string
             capability:
               description: "On an AI refusal: the capability that is unavailable, one of the keys of `AiCapabilities` (`coach`,
@@ -86112,177 +85887,6 @@ components:
         - data
         - error
       additionalProperties: false
-    FitbitCredentialsStatusEnvelope:
-      type: object
-      properties:
-        data:
-          $ref: "#/components/schemas/CredentialsPresenceResponse"
-        error:
-          type: "null"
-        meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
-      required:
-        - data
-        - error
-      additionalProperties: false
-    FitbitCredentialsUpdateEnvelope:
-      type: object
-      properties:
-        data:
-          type: object
-          properties:
-            updated:
-              type: boolean
-              const: true
-          required:
-            - updated
-          additionalProperties: false
-        error:
-          type: "null"
-        meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
-      required:
-        - data
-        - error
-      additionalProperties: false
-    FitbitCredentialsDeleteEnvelope:
-      type: object
-      properties:
-        data:
-          type: object
-          properties:
-            deleted:
-              type: boolean
-              const: true
-          required:
-            - deleted
-          additionalProperties: false
-        error:
-          type: "null"
-        meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
-      required:
-        - data
-        - error
-      additionalProperties: false
-    FitbitStatusEnvelope:
-      type: object
-      properties:
-        data:
-          $ref: "#/components/schemas/FitbitStatusResponse"
-        error:
-          type: "null"
-        meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
-      required:
-        - data
-        - error
-      additionalProperties: false
-    FitbitStatusResponse:
-      type: object
-      properties:
-        connected:
-          type: boolean
-          description: A connection row exists.
-        configured:
-          type: boolean
-          description: Per-user BYO-key client id AND secret are both stored.
-        lastSyncedAt:
-          anyOf:
-            - type: string
-              format: date-time
-              pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-            - type: "null"
-        connectedAt:
-          type: string
-          format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-        tokenExpired:
-          deprecated: true
-          description: "Deprecated, still served: read `health`. Read straight off the row — this endpoint does not refresh; the
-            sync path refreshes lazily."
-          type: boolean
-        tokenExpiresAt:
-          type: string
-          format: date-time
-          pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
-        backfillCompleted:
-          description: The history backfill has walked every collection.
-          type: boolean
-        scope:
-          description: OAuth scope string granted at authorisation. Null on a legacy connection that predates scope tracking.
-          type:
-            - string
-            - "null"
-        health:
-          description: The unified connection state. Present whenever the connection exists; null in the rare case it resolved to
-            none. Absent on the not-connected body.
-          anyOf:
-            - $ref: "#/components/schemas/ConnectionHealth"
-            - type: "null"
-      required:
-        - connected
-        - configured
-      additionalProperties: false
-      description: "Fitbit connection status. When no connection row exists the body is exactly `{ connected: false,
-        configured }` — every other field is absent, not null. Pure read."
-    FitbitDisconnectEnvelope:
-      type: object
-      properties:
-        data:
-          type: object
-          properties:
-            disconnected:
-              type: boolean
-              const: true
-          required:
-            - disconnected
-          additionalProperties: false
-        error:
-          type: "null"
-        meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
-      required:
-        - data
-        - error
-      additionalProperties: false
-    FitbitSyncTriggerEnvelope:
-      type: object
-      properties:
-        data:
-          $ref: "#/components/schemas/SyncTriggerOutcome"
-        error:
-          type: "null"
-        meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
-      required:
-        - data
-        - error
-      additionalProperties: false
     GoogleHealthCredentialsStatusEnvelope:
       type: object
       properties:
@@ -87028,7 +86632,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/IntegrationStatusEntry"
-          description: "All ten providers, always, in the fixed order withings, whoop, fitbit, google-health, polar, oura, strava,
+          description: "All nine providers, always, in the fixed order withings, whoop, google-health, polar, oura, strava,
             nightscout, dawarich, garmin. A provider the user has never touched still appears, with `connected: false`
             and the ledger state `unknown` — absence from this list never means anything, because nothing is ever absent
             from it."
@@ -87048,7 +86652,6 @@ components:
           enum:
             - withings
             - whoop
-            - fitbit
             - google-health
             - polar
             - oura
@@ -87297,42 +86900,14 @@ components:
                 tracks no cycle, say). Each is skipped by the sync and counts as done for the backfill; none turns the
                 connection red. A new key clears the list.
             - type: "null"
-        retirement:
-          description: Fitbit only. The end of the legacy Fitbit Web API.
-          type: object
-          properties:
-            endsOn:
-              type: string
-              pattern: ^\d{4}-\d{2}-\d{2}$
-              description: The day Google turns the legacy Fitbit Web API off.
-            ended:
-              type: boolean
-              description: "The day has come: the connection no longer syncs, its imported data stays, and `health` is null."
-            successor:
-              type: string
-              enum:
-                - google-health
-              description: The integration that reads the same Fitbit and Pixel devices. Moving needs a fresh consent; the Fitbit
-                grant cannot be carried over.
-            offered:
-              type: boolean
-              description: "Whether the Fitbit card is shown. False once `ended` for an account that never connected Fitbit, has no
-                Fitbit app of its own and holds no Fitbit data: there is nothing to explain the move for. True before
-                the turndown and for every account that had Fitbit."
-          required:
-            - endsOn
-            - ended
-            - successor
-            - offered
-          additionalProperties: false
         health:
           anyOf:
             - $ref: "#/components/schemas/ConnectionHealth"
             - type: "null"
-          description: The unified connection state, null when the provider is not connected (and for Fitbit once
-            `retirement.ended`). It supersedes `state`, `lastError`, `consecutiveFailuresByKind`, `syncHealth`,
-            `tokenExpired`, `needsReauth`, `hasActivityScope`, `planUnavailable` and `scopeReconnect` on this entry;
-            those nine are deprecated and still served for clients that predate `health`.
+          description: The unified connection state, null when the provider is not connected. It supersedes `state`, `lastError`,
+            `consecutiveFailuresByKind`, `syncHealth`, `tokenExpired`, `needsReauth`, `hasActivityScope`,
+            `planUnavailable` and `scopeReconnect` on this entry; those nine are deprecated and still served for clients
+            that predate `health`.
       required:
         - integration
         - state
@@ -87380,7 +86955,7 @@ components:
       additionalProperties: false
       description: Per-metric-type last-seen timestamp with the server-computed staleness flag. Only types that have actually
         delivered appear — absence is absence, never an invented row.
-    FitbitResumeEnvelope:
+    GoogleHealthResumeEnvelope:
       type: object
       properties:
         data:
@@ -87413,11 +86988,13 @@ components:
       additionalProperties: false
       description: "The result of clearing a park. Idempotent: a second call answers 200 with `wasParked: false` and writes no
         further audit row."
-    FitbitIntegrationTestEnvelope:
+    GoogleHealthIntegrationTestEnvelope:
       type: object
       properties:
         data:
-          $ref: "#/components/schemas/IntegrationProbeResponse"
+          anyOf:
+            - $ref: "#/components/schemas/IntegrationProbeResponse"
+            - $ref: "#/components/schemas/GoogleHealthStructureProbeResponse"
         error:
           type: "null"
         meta:
@@ -87454,42 +87031,6 @@ components:
         - latencyMs
       additionalProperties: false
       description: A probe that reached the provider with a freshly-resolved access token, plus the connection's last sync instant.
-    GoogleHealthResumeEnvelope:
-      type: object
-      properties:
-        data:
-          $ref: "#/components/schemas/IntegrationResumeResponse"
-        error:
-          type: "null"
-        meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
-      required:
-        - data
-        - error
-      additionalProperties: false
-    GoogleHealthIntegrationTestEnvelope:
-      type: object
-      properties:
-        data:
-          anyOf:
-            - $ref: "#/components/schemas/IntegrationProbeResponse"
-            - $ref: "#/components/schemas/GoogleHealthStructureProbeResponse"
-        error:
-          type: "null"
-        meta:
-          type: object
-          properties:
-            requestId:
-              type: string
-          additionalProperties: false
-      required:
-        - data
-        - error
-      additionalProperties: false
     GoogleHealthStructureProbeResponse:
       type: object
       properties:
@@ -91316,7 +90857,6 @@ components:
                 enum:
                   - withings
                   - whoop
-                  - fitbit
                   - nightscout
                   - polar
                   - oura
@@ -91355,8 +90895,8 @@ components:
               - lastAttemptAt
               - health
             additionalProperties: false
-          description: All eight providers, always, in the fixed order withings, whoop, fitbit, nightscout, polar, oura,
-            google-health, strava. Note the order differs from the owner's own `/api/integrations/status` envelope.
+          description: All seven providers, always, in the fixed order withings, whoop, nightscout, polar, oura, google-health,
+            strava. Note the order differs from the owner's own `/api/integrations/status` envelope.
       required:
         - recordId
         - integrations

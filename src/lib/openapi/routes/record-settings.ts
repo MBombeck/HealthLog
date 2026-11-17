@@ -84,7 +84,6 @@ const recordSettingsIntegrationsResponse = z
           integration: z.enum([
             "withings",
             "whoop",
-            "fitbit",
             "nightscout",
             "polar",
             "oura",
@@ -108,7 +107,7 @@ const recordSettingsIntegrationsResponse = z
         }),
       )
       .describe(
-        "All eight providers, always, in the fixed order withings, whoop, fitbit, nightscout, polar, oura, google-health, strava. Note the order differs from the owner's own `/api/integrations/status` envelope.",
+        "All seven providers, always, in the fixed order withings, whoop, nightscout, polar, oura, google-health, strava. Note the order differs from the owner's own `/api/integrations/status` envelope.",
       ),
   })
   .meta({
@@ -427,7 +426,7 @@ export const recordSettingsPaths: NonNullable<ZodOpenApiObject["paths"]> = {
       tags: ["Account sharing"],
       summary: "Start connecting an OAuth provider for the managed record",
       description:
-        "Mints the OAuth state for the record the session is acting on, sets it as an httpOnly cookie, and answers with the provider's consent URL; the client then sends the browser there. A fetch rather than a navigation, so the record-session fence applies. The state names the managed record: the provider's callback lands the tokens on it after checking the browser still belongs to a Guardian holding a live MANAGE grant on that record. When the record has no provider app of its own and the deployment has none, the Guardian's own app is copied onto the record (audited). Fitbit is not offered: its classic API is retired. Cookie session, while acting on a managed record the caller guards.",
+        "Mints the OAuth state for the record the session is acting on, sets it as an httpOnly cookie, and answers with the provider's consent URL; the client then sends the browser there. A fetch rather than a navigation, so the record-session fence applies. The state names the managed record: the provider's callback lands the tokens on it after checking the browser still belongs to a Guardian holding a live MANAGE grant on that record. When the record has no provider app of its own and the deployment has none, the Guardian's own app is copied onto the record (audited). Cookie session, while acting on a managed record the caller guards.",
       parameters: [managedProviderParameter],
       responses: {
         ...recordRefusal(),
