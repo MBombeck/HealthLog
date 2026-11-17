@@ -22,6 +22,7 @@ import sax from "sax";
 
 import type { PrismaClient } from "@/generated/prisma/client";
 import {
+  APPLE_HEALTH_ARCHIVE_MAX_ENTRIES,
   routeMemberNameFromReference,
   streamAppleHealthRouteMembers,
   type AppleHealthRouteArchiveLimits,
@@ -52,7 +53,7 @@ export interface WorkoutRouteImportCounts {
 /** Per-archive ceilings for the route members. */
 export const APPLE_HEALTH_ROUTE_ARCHIVE_LIMITS: AppleHealthRouteArchiveLimits =
   {
-    maxMembers: 100_000,
+    maxMembers: APPLE_HEALTH_ARCHIVE_MAX_ENTRIES,
     maxRouteMembers: 20_000,
     // A three-hour ride at 1 Hz is a few MB of GPX; 32 MB covers a 24-hour
     // ultra with room to spare and bounds the one buffer held at a time.

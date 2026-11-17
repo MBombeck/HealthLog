@@ -24,6 +24,7 @@
  */
 import type { PrismaClient } from "@/generated/prisma/client";
 import {
+  APPLE_HEALTH_ARCHIVE_MAX_ENTRIES,
   clinicalMemberNameFromReference,
   isClinicalRecordJson,
   streamAppleHealthClinicalMembers,
@@ -52,7 +53,7 @@ export type AppleHealthImportJobResult = ImportJobResult & {
 /** Per-archive ceilings for the Health Records members. */
 export const APPLE_HEALTH_CLINICAL_ARCHIVE_LIMITS: AppleHealthClinicalArchiveLimits =
   {
-    maxMembers: 200_000,
+    maxMembers: APPLE_HEALTH_ARCHIVE_MAX_ENTRIES,
     maxClinicalMembers: 50_000,
     // A single Observation is a few KB; 2 MiB leaves room for a long note.
     maxMemberBytes: 2 * 1024 * 1024,
@@ -129,6 +130,15 @@ export async function importAppleHealthClinicalLabs(input: {
         byMember.has(name) || (byId.size > 0 && isClinicalRecordJson(name)),
     })) {
       const byPath = byMember.get(member.name);
+      if (member.refused) {
+        // Over a per-member limit: this file fails, the rest are read.
+        if (byPath) {
+          handled += 1;
+          counts.failed += 1;
+          note(`member_${member.refused}`);
+        }
+        continue;
+      }
       let resource: unknown;
       try {
         resource = await readJson(member.stream);

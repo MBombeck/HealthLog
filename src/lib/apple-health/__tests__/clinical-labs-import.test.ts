@@ -195,6 +195,29 @@ describe("importAppleHealthClinicalLabs", () => {
     expect(counts).toMatchObject({ discovered: 1, imported: 0, failed: 1 });
   });
 
+  it("fails only the file over a per-member limit and reads the rest", async () => {
+    const path = archive({
+      [`${ROOT}Observation-a.json`]: observation("a"),
+      [`${ROOT}Observation-big.json`]: observation("big", {
+        note: [{ text: "x".repeat(4_000) }],
+      }),
+      [`${ROOT}Observation-c.json`]: observation("c"),
+    });
+    const counts = await run(
+      path,
+      [
+        ref("/clinical-records/Observation-a.json"),
+        ref("/clinical-records/Observation-big.json"),
+        ref("/clinical-records/Observation-c.json"),
+      ],
+      { maxMemberBytes: 1_024 },
+    );
+    expect(counts).toMatchObject({ discovered: 3, imported: 2, failed: 1 });
+    expect(JSON.stringify(mocks.annotate.mock.calls)).toContain(
+      "member_too_large",
+    );
+  });
+
   it("annotates counts and closed reasons only", async () => {
     const path = archive({
       [`${ROOT}Observation-a.json`]: observation("a", {

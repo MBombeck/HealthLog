@@ -17,7 +17,10 @@
  */
 import { createHash } from "node:crypto";
 import type { PrismaClient } from "@/generated/prisma/client";
-import { streamAppleHealthEcgMembers } from "@/lib/apple-health/archive-stream";
+import {
+  APPLE_HEALTH_ARCHIVE_MAX_ENTRIES,
+  streamAppleHealthEcgMembers,
+} from "@/lib/apple-health/archive-stream";
 import {
   parseAppleHealthEcgCsv,
   type NormalizedAppleHealthEcg,
@@ -73,8 +76,9 @@ export async function importAppleHealthEcg(input: {
   return "updated";
 }
 
-const APPLE_HEALTH_ECG_ARCHIVE_LIMITS = {
-  maxMembers: 20_000,
+/** Per-archive ceilings for the ECG members. */
+export const APPLE_HEALTH_ECG_ARCHIVE_LIMITS = {
+  maxMembers: APPLE_HEALTH_ARCHIVE_MAX_ENTRIES,
   maxEcgMembers: 2_000,
   maxMemberBytes: 16 * 1024 * 1024,
   maxTotalEcgBytes: 512 * 1024 * 1024,

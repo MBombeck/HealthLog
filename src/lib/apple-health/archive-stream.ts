@@ -20,9 +20,19 @@ export interface AppleHealthArchiveLimits {
   maxCompressionRatio: number;
 }
 
+/**
+ * Why a wanted member was not read: it breaks a per-member limit (`too_large`
+ * for its size or compression ratio, `unsupported` for encryption or a
+ * compression method the reader does not inflate).
+ */
+export type AppleHealthMemberRefusal = "too_large" | "unsupported";
+
 export interface AppleHealthArchiveMember {
   name: string;
+  /** Errors on the first read when the member was refused. */
   stream: Readable;
+  /** Set when the member broke a per-member limit and was not inflated. */
+  refused?: AppleHealthMemberRefusal;
 }
 
 interface ZipEntry {
@@ -32,7 +42,19 @@ interface ZipEntry {
   compressedSize: number;
   uncompressedSize: number;
   localHeaderOffset: number;
+  /** Set on a wanted member of the kind that breaks a per-member limit. */
+  refused?: AppleHealthMemberRefusal;
 }
+
+/**
+ * The most directory entries an archive may hold, for every pass alike. It
+ * bounds the walk of the central directory, which every pass makes over every
+ * entry whatever its kind; a pass's own members are bounded by its own count.
+ * A Health app export holds one file per ECG, per workout route and per Health
+ * Records resource beside `export.xml`, so years of routes and a clinic's
+ * history reach tens of thousands.
+ */
+export const APPLE_HEALTH_ARCHIVE_MAX_ENTRIES = 200_000;
 
 const EOCD_SIGNATURE = 0x06054b50;
 const CENTRAL_SIGNATURE = 0x02014b50;
@@ -202,11 +224,20 @@ export function clinicalMemberNameFromReference(path: string): string | null {
   return isClinicalRecordJson(name) ? name : null;
 }
 
+/**
+ * The central directory, checked as a whole: entry count, bounds, names. Of
+ * the entries, only the ones the pass will read (`wanted` members of its
+ * kind) are held to the per-member limits and counted against the kind's
+ * ceiling; one that breaks a per-member limit is marked refused rather than
+ * failing the archive. The others are not read, so neither their size nor how
+ * many there are can make reading the wanted ones unsafe.
+ */
 async function readCentralDirectory(
   handle: FileHandle,
   fileSize: number,
   limits: AppleHealthArchiveLimits,
   kind: MemberKind,
+  wanted: (name: string) => boolean,
 ): Promise<ZipEntry[]> {
   if (fileSize < 22) throw archiveError("missing ZIP directory");
 
@@ -321,24 +352,16 @@ async function readCentralDirectory(
     if (names.has(name)) throw archiveError("duplicate member name");
     names.add(name);
 
-    if (kind.matches(name)) {
+    let refused: AppleHealthMemberRefusal | undefined;
+    if (kind.matches(name) && wanted(name)) {
       kindCount += 1;
       if (kindCount > kind.maxMembers) {
         throw archiveError(`${kind.label} member count limit exceeded`);
       }
-      if ((flags & 0x1) !== 0) {
-        throw archiveError(`encrypted ${kind.label} member is unsupported`);
-      }
-      if (method !== 0 && method !== 8) {
-        throw archiveError(`unsupported ${kind.label} compression method`);
-      }
-      if (uncompressedSize > limits.maxMemberBytes) {
-        throw archiveError(`${kind.label} member byte limit exceeded`);
-      }
-      const ratio = uncompressedSize / Math.max(1, compressedSize);
-      if (ratio > limits.maxCompressionRatio) {
-        throw archiveError(`${kind.label} compression ratio limit exceeded`);
-      }
+      refused = memberRefusal(
+        { flags, method, compressedSize, uncompressedSize },
+        limits,
+      );
     }
 
     entries.push({
@@ -348,6 +371,7 @@ async function readCentralDirectory(
       compressedSize,
       uncompressedSize,
       localHeaderOffset,
+      ...(refused ? { refused } : {}),
     });
     cursor += 46 + nameLength + extraLength + commentLength;
     if (cursor > centralOffset + centralSize) {
@@ -355,6 +379,60 @@ async function readCentralDirectory(
     }
   }
   return entries;
+}
+
+/**
+ * Why a member breaks a per-member limit by what its directory entry
+ * declares, or undefined. The compressed size is held to the member limit
+ * too: it is what the reader allocates before inflating, and a member that
+ * does not fit compressed cannot fit inflated.
+ */
+function memberRefusal(
+  entry: Pick<
+    ZipEntry,
+    "flags" | "method" | "compressedSize" | "uncompressedSize"
+  >,
+  limits: AppleHealthArchiveLimits,
+): AppleHealthMemberRefusal | undefined {
+  if ((entry.flags & 0x1) !== 0) return "unsupported";
+  if (entry.method !== 0 && entry.method !== 8) return "unsupported";
+  if (
+    entry.uncompressedSize > limits.maxMemberBytes ||
+    entry.compressedSize > limits.maxMemberBytes
+  ) {
+    return "too_large";
+  }
+  const ratio = entry.uncompressedSize / Math.max(1, entry.compressedSize);
+  if (ratio > limits.maxCompressionRatio) return "too_large";
+  return undefined;
+}
+
+/** A member breaking a per-member limit; the pass goes on without it. */
+class MemberRefused extends Error {
+  constructor(
+    readonly reason: AppleHealthMemberRefusal,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+/** A member that was not read: its stream errors on the first read. */
+function refusedMember(
+  name: string,
+  reason: AppleHealthMemberRefusal,
+  label: string,
+): AppleHealthArchiveMember {
+  const error = archiveError(`${label} member refused (${reason})`);
+  return {
+    name,
+    refused: reason,
+    stream: new Readable({
+      read() {
+        this.destroy(error);
+      },
+    }),
+  };
 }
 
 async function decompressEntry(
@@ -387,6 +465,13 @@ async function decompressEntry(
   if (dataOffset + entry.compressedSize > fileSize) {
     throw archiveError("invalid member data bounds");
   }
+  // Checked again here, beside the allocation it guards.
+  if (entry.compressedSize > limits.maxMemberBytes) {
+    throw new MemberRefused(
+      "too_large",
+      `${kind.label} member byte limit exceeded`,
+    );
+  }
 
   const compressed = await readExactly(
     handle,
@@ -401,22 +486,30 @@ async function decompressEntry(
       : Readable.from([compressed]).pipe(createInflateRaw());
   const chunks: Buffer[] = [];
   let memberBytes = 0;
+  // Which limit stopped the inflate: the member's own fails the member, the
+  // running total ends the pass.
+  let stop: Error | null = null;
 
   try {
     for await (const value of source) {
       const chunk = Buffer.isBuffer(value) ? value : Buffer.from(value);
       memberBytes += chunk.byteLength;
       if (memberBytes > limits.maxMemberBytes) {
-        throw archiveError(`actual ${kind.label} member byte limit exceeded`);
+        stop = new MemberRefused(
+          "too_large",
+          `actual ${kind.label} member byte limit exceeded`,
+        );
+        throw stop;
       }
       if (total.bytes + memberBytes > kind.maxTotalBytes) {
-        throw archiveError(`total ${kind.label} byte limit exceeded`);
+        stop = archiveError(`total ${kind.label} byte limit exceeded`);
+        throw stop;
       }
       chunks.push(chunk);
     }
   } catch {
     for (const chunk of chunks) chunk.fill(0);
-    throw archiveError(`${kind.label} decompression or byte limit failure`);
+    throw stop ?? archiveError(`${kind.label} decompression failure`);
   } finally {
     compressed.fill(0);
   }
@@ -430,6 +523,9 @@ async function decompressEntry(
  * The complete central directory is validated before any health data is
  * yielded, so a structurally unsafe archive is never partly processed.
  * `wanted` narrows further (a route the export's XML actually references).
+ * A wanted member that breaks a per-member limit is yielded refused (its
+ * stream errors) and the pass goes on; a running total, a malformed archive
+ * or an inflate failure ends it.
  */
 async function* streamMembers(
   archivePath: string,
@@ -445,18 +541,35 @@ async function* streamMembers(
     if (!Number.isSafeInteger(fileSize)) {
       throw archiveError("archive is too large to address safely");
     }
-    const entries = await readCentralDirectory(handle, fileSize, limits, kind);
+    const entries = await readCentralDirectory(
+      handle,
+      fileSize,
+      limits,
+      kind,
+      wanted,
+    );
     const total = { bytes: 0 };
     for (const entry of entries) {
       if (!kind.matches(entry.name) || !wanted(entry.name)) continue;
-      const chunks = await decompressEntry(
-        handle,
-        entry,
-        fileSize,
-        limits,
-        kind,
-        total,
-      );
+      if (entry.refused) {
+        yield refusedMember(entry.name, entry.refused, kind.label);
+        continue;
+      }
+      let chunks: Buffer[];
+      try {
+        chunks = await decompressEntry(
+          handle,
+          entry,
+          fileSize,
+          limits,
+          kind,
+          total,
+        );
+      } catch (err) {
+        if (!(err instanceof MemberRefused)) throw err;
+        yield refusedMember(entry.name, err.reason, kind.label);
+        continue;
+      }
       yield { name: entry.name, stream: Readable.from(chunks) };
     }
   } finally {
