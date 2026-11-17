@@ -105,6 +105,8 @@ export const RESTORE_CLEARED_KEYS = [
   "ecgRecordings",
   "symptomDefinitions",
   "lifeEvents",
+  "seizureTypes",
+  "seizureEvents",
 ] as const;
 
 export type RestoreClearedKey = (typeof RESTORE_CLEARED_KEYS)[number];

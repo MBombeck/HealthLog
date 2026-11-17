@@ -111,6 +111,11 @@ export const BACKED_UP_MODELS = [
   // else holds either; a restore without them loses the history outright.
   "SymptomDefinition",
   "SymptomEvent",
+  // The seizure diary (#1368); nothing else holds any of it.
+  "SeizureTypeProfile",
+  "SeizureEvent",
+  "SeizureRescueDose",
+  "SeizureDiarySettings",
   // v1.42 — the person's life events, the timeline's anchors. Written by the
   // person and held nowhere else.
   "LifeEvent",
@@ -304,6 +309,8 @@ export const BACKUP_WRITER_FILES: readonly string[] = [
   "src/lib/export/symptoms-backup.ts",
   // The person's life events, both ends beside each other (v1.42).
   "src/lib/export/life-events-backup.ts",
+  // The seizure diary; the doses ride inside their seizure both ways.
+  "src/lib/export/seizures-backup.ts",
   // The five relation links that close the relation matrix (v1.43), both
   // ends beside each other, each through its OWN delegate.
   "src/lib/export/relation-links-backup.ts",
@@ -373,6 +380,10 @@ export const TWO_ENDED_MODELS = [
   "IllnessSymptomLink",
   "SymptomDefinition",
   "SymptomEvent",
+  "SeizureTypeProfile",
+  "SeizureEvent",
+  "SeizureRescueDose",
+  "SeizureDiarySettings",
   "LifeEvent",
   "UserHealthProfile",
   "HealthProfileFactRevision",
