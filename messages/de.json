@@ -58,7 +58,8 @@
     "errorIdCopied": "Fehler-ID kopiert",
     "readThrottled": "Gerade gibt es zu viele Anfragen, versuch es später noch einmal.",
     "sessionEnded": "Deine Sitzung ist abgelaufen, melde dich erneut an, um weiterzumachen.",
-    "signIn": "Anmelden"
+    "signIn": "Anmelden",
+    "yes": "Ja"
   },
   "apiErrors": {
     "measurement": {
@@ -249,7 +250,24 @@
         "invalid": "Die Antwort des Passkeys konnte nicht gelesen werden. Versuche es erneut."
       }
     },
-    "oidc_only": "Dieser Server erlaubt nur Single Sign-on. Fahre stattdessen mit deinem Identitätsanbieter fort."
+    "oidc_only": "Dieser Server erlaubt nur Single Sign-on. Fahre stattdessen mit deinem Identitätsanbieter fort.",
+    "seizures": {
+      "disabled": "Der Anfallskalender ist für diesen Datensatz ausgeschaltet.",
+      "event": {
+        "notFound": "Diesen Anfall gibt es nicht mehr."
+      },
+      "rescue": {
+        "notFound": "Diese Notfalldosis gibt es nicht mehr.",
+        "medicationNotFound": "Dieses Medikament gibt es nicht mehr.",
+        "medicationRequired": "Wähle das Medikament aus, das gegeben wurde.",
+        "notAsNeeded": "Ein Notfallmedikament muss ein Bedarfsmedikament sein."
+      },
+      "type": {
+        "inUse": "Unter dieser Anfallsart sind Anfälle erfasst. Archiviere sie stattdessen.",
+        "limit": "Es gibt bereits 12 Anfallsarten. Archiviere eine, um eine weitere anzulegen.",
+        "notFound": "Diese Anfallsart gibt es nicht mehr."
+      }
+    }
   },
   "doctorReport": {
     "title": "Gesundheitsbericht",
@@ -584,7 +602,8 @@
     "documents": "Dokumente",
     "vaccinations": "Impfungen",
     "mentalWellbeing": "Seelisches Wohlbefinden",
-    "timeline": "Zeitleiste"
+    "timeline": "Zeitleiste",
+    "seizures": "Anfälle"
   },
   "auth": {
     "login": "Anmelden",
@@ -8582,7 +8601,9 @@
           "failureUnconfirmed": "Tippe den Benutzernamen des Kontos genau ab, um zu bestätigen.",
           "failureUsernameTaken": "Dieser Benutzername ist schon vergeben.",
           "failureOwnerExists": "Das Konto, zu dem diese Datei gehört, ist auf diesem Server, und die Datei wird in dieses Konto wiederhergestellt. Lade sie noch einmal hoch, ohne ein Konto zu wählen."
-        }
+        },
+        "restoreSkippedSeizureMedicationReference": "Notfallplan oder Notfalldosis eines Anfalls verweist auf ein Medikament, das nicht in der Datei enthalten ist (ohne Verknüpfung übernommen)",
+        "restoreSkippedSeizureTypeReference": "Anfall verweist auf eine Anfallsart, die nicht in der Datei enthalten ist (ohne Anfallsart übernommen)"
       },
       "danger-zone": {
         "title": "Gefahrenzone",
@@ -10848,6 +10869,10 @@
     "timeline": {
       "label": "Zeitleiste",
       "description": "Jahre auf einen Blick: Erkrankungen, Medikamente und Arztbesuche neben deinen Werten, dazu deine Lebensereignisse."
+    },
+    "seizures": {
+      "label": "Anfallskalender",
+      "description": "Anfälle mit Anfallsart, Dauer und Notfallmedikation festhalten, Anfallsserien sehen und in den Arztbericht übernehmen."
     }
   },
   "moduleOff": {
@@ -12977,7 +13002,8 @@
     "leafEmergency": "Notfalldaten (Blutgruppe, Kontakte, Verfügungen)",
     "leafMedicationEffect": "Veränderung rund um den Start jedes Medikaments (braucht die Medikamentenliste)",
     "leafWorkouts": "Trainings (Übersicht je Sportart)",
-    "leafHrvSdnn": "HRV (SDNN)"
+    "leafHrvSdnn": "HRV (SDNN)",
+    "leafSeizures": "Anfallskalender"
   },
   "recordSharing": {
     "banner": {
@@ -13360,7 +13386,17 @@
       "cycleFeedCreate": "{name} hat das Kalender-Abo eingeschaltet",
       "cycleFeedUpdate": "{name} hat das Kalender-Abo geändert",
       "cycleFeedRotate": "{name} hat den Link des Kalender-Abos erneuert",
-      "cycleFeedRevoke": "{name} hat das Kalender-Abo ausgeschaltet"
+      "cycleFeedRevoke": "{name} hat das Kalender-Abo ausgeschaltet",
+      "seizureEventCreate": "{name} hat einen Anfall eingetragen",
+      "seizureRescueCreate": "{name} hat eine Notfalldosis eingetragen",
+      "seizureEventUpdate": "{name} hat einen Anfallseintrag bearbeitet",
+      "seizureEventDelete": "{name} hat einen Anfallseintrag gelöscht",
+      "seizureRescueUpdate": "{name} hat eine Notfalldosis bearbeitet",
+      "seizureRescueDelete": "{name} hat eine Notfalldosis gelöscht",
+      "seizureTypeCreate": "{name} hat eine Anfallsart angelegt",
+      "seizureTypeUpdate": "{name} hat eine Anfallsart bearbeitet",
+      "seizureTypeDelete": "{name} hat eine Anfallsart gelöscht",
+      "seizureSettingsUpdate": "{name} hat die Regel für Anfallsserien geändert"
     },
     "section": {
       "measurements": {
@@ -13381,7 +13417,7 @@
       },
       "illness": {
         "label": "Krankheiten",
-        "detail": "Krankheitsverläufe und die Tageseinträge darunter."
+        "detail": "Krankheitsverläufe und die Tageseinträge darunter, die eigenen Symptome und der Anfallskalender. Eine im Anfallskalender eingetragene Notfalldosis wird auch beim zugehörigen Medikament erfasst."
       },
       "mind": {
         "label": "Stimmung und Psyche",
@@ -14422,5 +14458,426 @@
       "endsOn": "Ende"
     },
     "unitlessHint": "Ein Quotient oder Index ohne Einheit (INR, Cholesterin/HDL): Trag in der Spalte für die Einheit eine 1 ein. Eine leere Einheit bleibt ein Fehler."
+  },
+  "seizures": {
+    "ilae": {
+      "FOCAL_PRESERVED": {
+        "current": "Fokaler Anfall mit erhaltenem Bewusstsein",
+        "ilae2017": "Fokal bewusst erlebter Anfall"
+      },
+      "FOCAL_IMPAIRED": {
+        "current": "Fokaler Anfall mit beeinträchtigtem Bewusstsein",
+        "ilae2017": "Fokaler Anfall mit Bewusstseinsstörung"
+      },
+      "FOCAL_UNDETERMINED": {
+        "current": "Fokaler Anfall",
+        "ilae2017": "Fokal beginnender Anfall"
+      },
+      "FOCAL_TO_BILATERAL_TC": {
+        "current": "Fokaler zu bilateral tonisch-klonischer Anfall",
+        "ilae2017": "Fokal beginnender Anfall mit Übergang zu bilateral tonisch-klonisch"
+      },
+      "GENERALIZED_UNDETERMINED": {
+        "current": "Generalisierter Anfall",
+        "ilae2017": "Generalisiert beginnender Anfall"
+      },
+      "GENERALIZED_TC": {
+        "current": "Generalisierter tonisch-klonischer Anfall",
+        "ilae2017": "Generalisiert beginnender tonisch-klonischer Anfall"
+      },
+      "GEN_CLONIC": {
+        "current": "Generalisierter klonischer Anfall",
+        "ilae2017": "Generalisiert beginnender klonischer Anfall"
+      },
+      "GEN_TONIC": {
+        "current": "Generalisierter tonischer Anfall",
+        "ilae2017": "Generalisiert beginnender tonischer Anfall"
+      },
+      "GEN_MYOCLONIC": {
+        "current": "Generalisierter myoklonischer Anfall",
+        "ilae2017": "Generalisiert beginnender myoklonischer Anfall"
+      },
+      "GEN_MYOCLONIC_ATONIC": {
+        "current": "Generalisierter myoklonisch-atonischer Anfall",
+        "ilae2017": "Generalisiert beginnender myoklonisch-atonischer Anfall"
+      },
+      "GEN_ATONIC": {
+        "current": "Generalisierter atonischer Anfall",
+        "ilae2017": "Generalisiert beginnender atonischer Anfall"
+      },
+      "GEN_NEGATIVE_MYOCLONIC": {
+        "current": "Generalisierter negativ-myoklonischer Anfall"
+      },
+      "GEN_SPASMS": {
+        "current": "Generalisierte epileptische Spasmen",
+        "ilae2017": "Generalisiert beginnende epileptische Spasmen"
+      },
+      "ABSENCE_TYPICAL": {
+        "current": "Typische Absence",
+        "ilae2017": "Generalisierter nicht motorischer Anfall (Absence), typisch"
+      },
+      "ABSENCE_ATYPICAL": {
+        "current": "Atypische Absence",
+        "ilae2017": "Generalisierter nicht motorischer Anfall (Absence), atypisch"
+      },
+      "ABSENCE_MYOCLONIC": {
+        "current": "Myoklonische Absence",
+        "ilae2017": "Generalisierter nicht motorischer Anfall (Absence), myoklonisch"
+      },
+      "EYELID_MYOCLONIA": {
+        "current": "Lidmyoklonien (mit oder ohne Absence)",
+        "ilae2017": "Absence mit Lidmyoklonien"
+      },
+      "UNKNOWN_UNDETERMINED": {
+        "current": "Anfall, unklar ob fokal oder generalisiert",
+        "ilae2017": "Anfall mit unbekanntem Beginn"
+      },
+      "UNKNOWN_PRESERVED": {
+        "current": "Unklar ob fokal oder generalisiert, erhaltenes Bewusstsein",
+        "ilae2017": "Anfall mit unbekanntem Beginn, bewusst erlebt"
+      },
+      "UNKNOWN_IMPAIRED": {
+        "current": "Unklar ob fokal oder generalisiert, beeinträchtigtes Bewusstsein",
+        "ilae2017": "Anfall mit unbekanntem Beginn, mit Bewusstseinsstörung"
+      },
+      "UNKNOWN_BILATERAL_TC": {
+        "current": "Bilateral tonisch-klonischer Anfall, unklar ob fokal oder generalisiert",
+        "ilae2017": "Tonisch-klonischer Anfall mit unbekanntem Beginn"
+      },
+      "UNCLASSIFIED": {
+        "current": "Nicht klassifizierbarer Anfall",
+        "ilae2017": "Nicht klassifizierbarer Anfall"
+      }
+    },
+    "ilaeClass": {
+      "FOCAL": "Fokaler Beginn",
+      "GENERALIZED": "Generalisierter Beginn",
+      "UNKNOWN": "Unklar ob fokal oder generalisiert",
+      "UNCLASSIFIED": "Nicht klassifizierbar"
+    },
+    "route": {
+      "BUCCAL": "Bukkal",
+      "INTRANASAL": "Intranasal",
+      "RECTAL": "Rektal",
+      "ORAL": "Oral",
+      "SUBLINGUAL": "Sublingual",
+      "IM": "Intramuskulär",
+      "IV_BY_EMS": "Intravenös (Rettungsdienst)"
+    },
+    "effect": {
+      "STOPPED": "Anfall beendet",
+      "REDUCED": "Anfall abgeschwächt",
+      "NO_EFFECT": "Keine Wirkung",
+      "UNKNOWN": "Nicht bekannt"
+    },
+    "trigger": {
+      "MISSED_DOSE": "Vergessene Einnahme",
+      "SLEEP_DEPRIVATION": "Schlafmangel",
+      "FEVER": "Fieber",
+      "ILLNESS": "Erkrankung",
+      "MENSTRUATION": "Periode",
+      "ALCOHOL": "Alkohol",
+      "FLASHING_LIGHTS": "Flackerlicht",
+      "STRESS": "Stress",
+      "OTHER": "Sonstiges",
+      "NONE_IDENTIFIED": "Keiner erkennbar"
+    },
+    "sleepState": {
+      "AWAKE": "Wach",
+      "ASLEEP": "Im Schlaf",
+      "ON_WAKING": "Beim Aufwachen",
+      "UNKNOWN": "Nicht bekannt"
+    },
+    "type": {
+      "unreadable": "Name nicht lesbar"
+    },
+    "report": {
+      "title": "Anfallskalender",
+      "untyped": "Keine Anfallsart erfasst",
+      "ruleText": "{count} oder mehr in {hours} h",
+      "recorded": "Erfasste Anfälle",
+      "seizureDays": "Tage mit Anfall",
+      "seizureFreeDays": "Tage ohne erfassten Anfall",
+      "per28Days": "Anfälle pro 28 Tage",
+      "longestFree": "Längster Zeitraum ohne erfassten Anfall",
+      "daysValue": "{count} Tage",
+      "daysSinceLast": "Tage seit dem letzten erfassten Anfall",
+      "convulsive": "Bilateral tonisch-klonische Anfälle",
+      "fromSleep": "Anfälle aus dem Schlaf",
+      "clusters": "Anfallsserien (Regel: {rule})",
+      "niceClusters": "nach NICE: 3 in 24 h",
+      "rescueDoses": "Gegebene Notfalldosen",
+      "emergencies": "Rettungsdienst, Notaufnahme, stationäre Aufnahmen",
+      "emergencyValue": "{ems} / {ed} / {admitted}",
+      "suspected": "Verdachtsereignisse (oben nicht mitgezählt)",
+      "monthlyTitle": "Anfälle nach Anfallsart und Monat",
+      "monthlyNote": "Anfälle pro Monat, in Klammern die Anzahl der Tage, an denen sie auftraten.",
+      "type": "Anfallsart",
+      "total": "Gesamt",
+      "chartTitle": "Anfälle pro Monat und Medikamentenänderungen",
+      "markersTitle": "Medikamentenänderungen:",
+      "marker": {
+        "start": "({n}) {date} {name} begonnen",
+        "stop": "({n}) {date} {name} abgesetzt",
+        "change": "({n}) {date} {name} geändert auf {dose}"
+      },
+      "markersNote": "Änderungen an regelmäßig geplanten Medikamenten, neben den Anzahlen dargestellt. Der Kalender sagt nichts darüber aus, ob eine Änderung einen Unterschied bewirkt hat.",
+      "durationTitle": "Dauer",
+      "timed": "Mit Dauer",
+      "median": "Median",
+      "max": "Längste",
+      "overT1": "t1 erreicht oder überschritten",
+      "prolonged": "2 min länger als üblich",
+      "durationNote": "Dauer als min:s. t1 ist die Zeit, nach der eine Notfallbehandlung angezeigt ist (ILAE, Trinka 2015: tonisch-klonisch 5 min, fokal mit Bewusstseinsstörung und Absence 10 min). „2 min länger als üblich“ zählt Anfälle, die mindestens 2 Minuten länger dauerten als die übliche Dauer bei dieser Person (NICE NG217).",
+      "rescueTitle": "Notfallmedikation",
+      "date": "Datum",
+      "drug": "Medikament",
+      "dose": "Dosis",
+      "route": "Applikation",
+      "minutesFromOnset": "Minuten nach Beginn",
+      "effect": "Wirkung",
+      "triggersTitle": "Vermutete Auslöser",
+      "triggersNote": "Von der Person oder ihren Betreuenden beim Eintragen genannt; keine gesicherten Ursachen.",
+      "overlaysTitle": "Gleichzeitig erfasst",
+      "overlayMissedDose": "{followed} von {of} Anfällen folgten innerhalb der vorangegangenen 48 Stunden auf eine vergessene oder ausgelassene geplante Dosis.",
+      "overlayIllness": "{during} Anfälle traten während einer von {episodes} erfassten Krankheitsepisoden auf.",
+      "overlaySleep": "Erfasster Schlaf in der Nacht vor einem Anfallstag: durchschnittlich {before} h ({nightsBefore} Nächte); andere Nächte: {other} h ({nightsOther} Nächte).",
+      "overlayCycleDays": "Anfälle nach Zyklustag (Tag: Anzahl): {list}.",
+      "overlayCycleRatio": "Über {cycles} vollständig erfasste Zyklen lag die Anfallsrate pro Tag rund um die Periode (Tag −3 bis +3) beim {c1}-Fachen der Rate an den übrigen Tagen und rund um den Eisprung (Tag 10 bis −13) beim {c2}-Fachen. Herzogs Kriterium für katameniale Epilepsie ist ein mindestens zweifacher Anstieg; dies ist ein Referenzwert, kein Befund.",
+      "overlayCycleTooFew": "Raten nach Zyklusphase werden ab drei vollständig erfassten Zyklen angezeigt (bisher {cycles}).",
+      "overlaysNote": "Dies sind gleichzeitig erfasste Dinge, keine Ursachen.",
+      "eventsTitle": "Alle erfassten Ereignisse",
+      "duration": "Dauer",
+      "sleep": "Schlaf",
+      "rescueShort": "Notfallmed.",
+      "injury": "Verletzung",
+      "note": "Notiz",
+      "suspectedMark": "(Verdacht)",
+      "eventsTruncated": "Nur die letzten 200 Ereignisse sind aufgeführt; die Zahlen oben umfassen alle.",
+      "classificationNote": "Die Anfallsarten folgen der ILAE-Klassifikation 2025; die Bezeichnungen nach ILAE 2017 lauten:",
+      "footer": "Von Patient oder Betreuungsperson geführter Kalender. Es handelt sich um erfasste Anfälle, wahrscheinlich zu wenige, insbesondere bei Anfällen aus dem Schlaf. Der Kalender hält Beobachtungen fest und stellt keine Diagnose oder Beurteilung von Anfällen dar.",
+      "seizureDaysValue": "an {count} Tagen"
+    },
+    "title": "Anfallskalender",
+    "subtitle": "Anfälle so, wie sie beobachtet wurden, mit Anfallsart, Dauer und gegebener Notfallmedikation.",
+    "loadError": "Der Anfallskalender konnte nicht geladen werden.",
+    "saveError": "Das konnte nicht gespeichert werden. Bitte erneut versuchen.",
+    "untyped": "Keine Anfallsart",
+    "notRecorded": "Nicht erfasst",
+    "ilaeWith2017": "{current} (ILAE 2017: {legacy})",
+    "safety": {
+      "header": "Dieser Kalender hält fest, was du beobachtest, damit du es mit dem Behandlungsteam teilen kannst. Er stellt keine Diagnose und beurteilt keine Anfälle. Halte dich an den Notfallplan, den du mit deiner Ärztin oder deinem Arzt vereinbart hast.",
+      "timer": "Ruf den Notruf ({number} oder die örtliche Notrufnummer), wenn ein Anfall mit Zuckungen oder Versteifung 5 Minuten oder länger dauert, wenn ein weiterer Anfall folgt, bevor sich die Person erholt hat, wenn die Atmung erschwert ist, wenn die Person verletzt ist, wenn der Anfall im Wasser auftrat oder wenn es ihr erster Anfall ist. Dein eigener Notfallplan hat Vorrang.",
+      "notifications": "HealthLog ist kein Anfallsalarm und kein Medizinprodukt. Es erfasst nur, was hier eingetragen wird."
+    },
+    "quick": {
+      "title": "Schnell erfassen",
+      "typeGroup": "Anfallsart",
+      "elapsedLabel": "Zeit seit Anfallsbeginn",
+      "startedAt": "Begonnen um {time}",
+      "start": "Anfall hat begonnen",
+      "stop": "Anfall ist vorbei",
+      "rescueGiven": "Notfallmedikament gegeben: {name}",
+      "rescueGivenCount": "Notfallmedikament gegeben ({count}), tippen für eine weitere Dosis",
+      "threshold": {
+        "t1": "Der Anfall dauert schon {time}. Folge dem Notfallplan.",
+        "usualPlusTwo": "Der Anfall dauert schon {time}, mehr als 2 Minuten länger als üblich. Folge dem Notfallplan.",
+        "generic": "Der Anfall dauert schon {time}. Folge dem Notfallplan."
+      },
+      "noPlan": "Für diese Anfallsart ist kein Notfallplan gespeichert. Ruf den Notruf, wenn du unsicher bist.",
+      "call": "{number} anrufen",
+      "recorded": "Anfall erfasst",
+      "recordedLine": "Erfasst, Dauer {duration}.",
+      "addDetails": "Details ergänzen",
+      "logPast": "Anfall ohne gestoppte Zeit erfassen",
+      "discard": "Timer verwerfen",
+      "discardTitle": "Laufenden Timer verwerfen?",
+      "discardConfirm": "Es wird nichts erfasst und die Startzeit geht verloren."
+    },
+    "summary": {
+      "title": "Erfasst",
+      "recorded": "Erfasste Anfälle, letzte {days} Tage",
+      "seizureDays": "Tage mit Anfall",
+      "sinceLast": "Tage seit dem letzten erfassten Anfall",
+      "longestFree": "Längster anfallsfreier Zeitraum, Tage",
+      "clusters": "Anfallsserien ({rule})",
+      "niceClusters": "Anfallsserien nach NICE (3 in 24 h)",
+      "suspected": "{count} Verdachtsfälle sind aufgeführt, aber nicht mitgezählt.",
+      "clusterLine": "Anfallsserie ab {start}: {count} Anfälle",
+      "monthlyCaption": "Anfälle pro Anfallsart und Monat",
+      "undercount": "Erfasste Anfälle, wahrscheinlich zu wenige, insbesondere bei Anfällen aus dem Schlaf."
+    },
+    "list": {
+      "title": "Erfasste Anfälle",
+      "empty": "In den letzten 90 Tagen wurde kein Anfall erfasst.",
+      "rescue": "Notfallmed.",
+      "loggedByDelegate": "von einer Person mit Zugriff erfasst",
+      "showAll": "Alle {count} anzeigen",
+      "truncated": "Nur die letzten Anfälle werden angezeigt."
+    },
+    "certainty": {
+      "CONFIRMED": "Anfall",
+      "SUSPECTED": "Verdacht"
+    },
+    "onsetPrecision": {
+      "EXACT": "Genaue Uhrzeit",
+      "APPROX": "Ungefähr um diese Zeit",
+      "UNKNOWN_TIME": "Uhrzeit nicht bekannt"
+    },
+    "durationSource": {
+      "TIMED": "Gestoppt",
+      "ESTIMATED": "Geschätzt",
+      "UNKNOWN": "Nicht bekannt"
+    },
+    "functionState": {
+      "PRESERVED": "Erhalten",
+      "IMPAIRED": "Beeinträchtigt",
+      "UNKNOWN": "Nicht sicher"
+    },
+    "emergency": {
+      "NONE": "Keine",
+      "EMS_CALLED": "Rettungsdienst gerufen",
+      "ED_VISIT": "Notaufnahme",
+      "ADMITTED": "Stationär aufgenommen"
+    },
+    "observer": {
+      "SELF": "Die Person selbst",
+      "PARENT": "Elternteil",
+      "PARTNER": "Partner oder Partnerin",
+      "FAMILY": "Familienangehörige",
+      "CARER": "Betreuungsperson",
+      "TEACHER": "Lehrkraft",
+      "CLINICIAN": "Ärztin, Arzt oder Pflegekraft",
+      "PARAMEDIC": "Rettungsdienst",
+      "OTHER": "Jemand anderes"
+    },
+    "semiology": {
+      "AURA": "Aura",
+      "BEHAVIOUR_ARREST": "Hielt in der Tätigkeit inne",
+      "STARING": "Starrer Blick",
+      "AUTOMATISMS": "Automatismen (Schmatzen, Nesteln)",
+      "TONIC": "Versteifung",
+      "CLONIC": "Rhythmische Zuckungen",
+      "MYOCLONIC": "Kurze Zuckungen",
+      "ATONIC_DROP": "Plötzliches Zusammensacken",
+      "SPASMS": "Spasmen",
+      "HEAD_EYE_VERSION": "Kopf oder Augen zu einer Seite gedreht",
+      "VOCALISATION": "Schrei oder Laute",
+      "CYANOSIS": "Blaue Lippen oder blaues Gesicht",
+      "DROOLING": "Speichelfluss",
+      "BREATHING_CHANGE": "Veränderte Atmung"
+    },
+    "postictal": {
+      "SLEEP": "Schlaf",
+      "CONFUSION": "Verwirrtheit",
+      "HEADACHE": "Kopfschmerzen",
+      "WEAKNESS_TODD": "Halbseitige Schwäche (Todd-Parese)",
+      "SPEECH": "Sprachstörung",
+      "AGITATION": "Unruhe",
+      "OTHER": "Sonstiges"
+    },
+    "injury": {
+      "NONE": "Keine Verletzung",
+      "TONGUE_BITE": "Zungenbiss",
+      "HEAD": "Kopfverletzung",
+      "FALL_OTHER": "Andere Sturzverletzung",
+      "BURN": "Verbrennung",
+      "FRACTURE": "Knochenbruch",
+      "OTHER": "Sonstiges"
+    },
+    "sheet": {
+      "newTitle": "Anfall erfassen",
+      "editTitle": "Details zum Anfall",
+      "description": "Nur der Beginn ist nötig. Ergänze, was du weißt.",
+      "created": "Anfall erfasst",
+      "updated": "Anfall aktualisiert",
+      "type": "Anfallsart",
+      "onset": "Beginn",
+      "onsetPrecision": "Wie sicher ist die Startzeit",
+      "duration": "Dauer",
+      "minutes": "Minuten",
+      "seconds": "Sekunden",
+      "durationHint": "Leer lassen, wenn niemand gesehen hat, wie lange er dauerte.",
+      "durationSource": "Die Dauer wurde",
+      "certainty": "War es ein Anfall",
+      "count": "Wie viele",
+      "countHint": "Mehr als einer für eine Strichliste, etwa die Absencen eines Tages.",
+      "sleepState": "Wach oder im Schlaf",
+      "sectionObserved": "Was beobachtet wurde",
+      "responsiveness": "Reagierte auf Ansprache",
+      "recall": "Erinnert sich an den Anfall",
+      "semiology": "Was geschah, in der Reihenfolge",
+      "semiologyNote": "Beschreibung",
+      "aura": "Vorgefühl (Aura)",
+      "ilaeOverride": "Klassifikation dieses Anfalls",
+      "ilaeFromType": "Wie bei der Anfallsart festgelegt",
+      "sectionAfter": "Danach",
+      "postictalMinutes": "Minuten bis zum gewohnten Zustand",
+      "postictal": "Nach dem Anfall",
+      "injuries": "Verletzungen",
+      "emergency": "Notfallversorgung",
+      "sectionContext": "Auslöser und Zeugen",
+      "triggers": "Vermutete Auslöser",
+      "triggersHint": "Deine eigene Vermutung, im Bericht als vermutet gekennzeichnet.",
+      "witnessed": "Hat jemand den Anfall gesehen",
+      "witnessRole": "Wer hat ihn gesehen",
+      "witnessNote": "Was wurde gesehen",
+      "note": "Notiz",
+      "delete": "Anfall löschen",
+      "deleteTitle": "Diesen Anfall löschen?",
+      "deleteBody": "Der Anfall und seine Notfalldosen werden entfernt, und die Dosen werden beim Medikament wieder ausgetragen."
+    },
+    "rescue": {
+      "title": "Notfallmedikation",
+      "none": "Keine Notfalldosis erfasst.",
+      "effect": "Wirkung",
+      "remove": "Dosis entfernen",
+      "removeTitle": "Diese Notfalldosis entfernen?",
+      "removeBody": "Die Dosis wird auch beim Medikament wieder ausgetragen.",
+      "medication": "Medikament",
+      "pick": "Medikament auswählen",
+      "givenAt": "Gegeben um",
+      "route": "Applikation",
+      "intakeHint": "Die Dosis wird auch beim Medikament erfasst. Bedarfsmedikation zählt nicht zur Therapietreue.",
+      "add": "Notfalldosis hinzufügen"
+    },
+    "types": {
+      "title": "Anfallsarten",
+      "emptyTitle": "Noch keine Anfallsarten",
+      "emptyDescription": "Lege die Anfallsarten der Person einmal an, am besten zusammen mit dem Behandlungsteam.",
+      "newTitle": "Anfallsart hinzufügen",
+      "editTitle": "Anfallsart bearbeiten",
+      "description": "Die Klassifikation wählst du oder das Behandlungsteam; HealthLog klassifiziert nicht.",
+      "label": "Eigene Bezeichnung",
+      "labelHint": "Das Wort, das in deiner Familie verwendet wird, etwa „der große“.",
+      "class": "Beginn",
+      "ilaeType": "Anfallsart (ILAE 2025)",
+      "notSure": "Nicht sicher: {name}",
+      "usualDuration": "Übliche Dauer",
+      "usualHint": "Damit wird der Notfallplan angezeigt, wenn ein Anfall 2 Minuten länger dauert als üblich (NICE).",
+      "plan": "Notfallplan",
+      "planHint": "Die mit dem Behandlungsteam vereinbarten Schritte, angezeigt, sobald der Timer die Schwelle überschreitet.",
+      "rescueMedication": "Notfallmedikation",
+      "noMedication": "Keine",
+      "noAsNeeded": "Lege das Notfallmedikament zuerst als Bedarfsmedikament an.",
+      "dose": "Dosis",
+      "unit": "Einheit",
+      "saved": "Anfallsart gespeichert",
+      "archive": "Archivieren",
+      "unarchive": "Wieder verwenden",
+      "archived": "Archiviert",
+      "delete": "Anfallsart löschen",
+      "deleteTitle": "Diese Anfallsart löschen?",
+      "deleteBody": "Löschen lässt sich nur eine Anfallsart, unter der kein Anfall erfasst ist. Andernfalls archiviere sie.",
+      "rescueLine": "Notfallmedikament: {name}"
+    },
+    "rule": {
+      "title": "Regel für Anfallsserien",
+      "explainer": "Eine Anfallsserie sind so viele Anfälle innerhalb so vieler Stunden. Verwende die Regel aus dem Notfallplan; NICE verwendet {niceCount} in {niceHours} Stunden, das wird daneben angezeigt.",
+      "count": "Anfälle",
+      "hours": "Innerhalb von Stunden",
+      "invalid": "Erlaubt sind 2 bis 20 Anfälle innerhalb von 1 bis 168 Stunden.",
+      "saved": "Regel für Anfallsserien gespeichert"
+    }
   }
 }

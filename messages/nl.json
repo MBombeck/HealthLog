@@ -58,7 +58,8 @@
     "errorIdCopied": "Fout-ID gekopieerd",
     "readThrottled": "Er zijn net te veel verzoeken, dus probeer het later opnieuw.",
     "sessionEnded": "Je sessie is verlopen, dus meld je opnieuw aan om verder te gaan.",
-    "signIn": "Aanmelden"
+    "signIn": "Aanmelden",
+    "yes": "Ja"
   },
   "apiErrors": {
     "measurement": {
@@ -249,7 +250,24 @@
         "invalid": "Het antwoord van de passkey kon niet worden gelezen. Probeer het opnieuw."
       }
     },
-    "oidc_only": "Deze server staat alleen single sign-on toe. Ga in plaats daarvan verder met je identiteitsprovider."
+    "oidc_only": "Deze server staat alleen single sign-on toe. Ga in plaats daarvan verder met je identiteitsprovider.",
+    "seizures": {
+      "disabled": "Het aanvalsdagboek staat uit voor dit dossier.",
+      "event": {
+        "notFound": "Deze aanval bestaat niet meer."
+      },
+      "rescue": {
+        "notFound": "Deze nooddosis bestaat niet meer.",
+        "medicationNotFound": "Dit medicijn bestaat niet meer.",
+        "medicationRequired": "Kies het medicijn dat is gegeven.",
+        "notAsNeeded": "Noodmedicatie moet een zo-nodig-medicijn zijn."
+      },
+      "type": {
+        "inUse": "Onder dit type zijn aanvallen vastgelegd. Archiveer het in plaats daarvan.",
+        "limit": "Er zijn al 12 aanvalstypen. Archiveer er een om een nieuw type toe te voegen.",
+        "notFound": "Dit aanvalstype bestaat niet meer."
+      }
+    }
   },
   "doctorReport": {
     "title": "Gezondheidsrapport",
@@ -584,7 +602,8 @@
     "documents": "Documenten",
     "vaccinations": "Vaccinaties",
     "mentalWellbeing": "Mentaal welzijn",
-    "timeline": "Tijdlijn"
+    "timeline": "Tijdlijn",
+    "seizures": "Aanvallen"
   },
   "auth": {
     "login": "Inloggen",
@@ -8582,7 +8601,9 @@
           "failureUnconfirmed": "Typ de gebruikersnaam van het account precies over om te bevestigen.",
           "failureUsernameTaken": "Deze gebruikersnaam is al in gebruik.",
           "failureOwnerExists": "Het account waar dit bestand bij hoort, staat op deze server, en het bestand wordt in dat account teruggezet. Upload het opnieuw zonder een account te kiezen."
-        }
+        },
+        "restoreSkippedSeizureMedicationReference": "Noodplan of nooddosis van een aanval gekoppeld aan een medicijn dat niet in het bestand staat (bewaard zonder de koppeling)",
+        "restoreSkippedSeizureTypeReference": "Aanval gekoppeld aan een aanvalstype dat niet in het bestand staat (bewaard zonder het type)"
       },
       "danger-zone": {
         "title": "Gevarenzone",
@@ -10848,6 +10869,10 @@
     "timeline": {
       "label": "Tijdlijn",
       "description": "Jaren in één oogopslag: aandoeningen, medicatie en bezoeken naast je metingen, plus je eigen levensgebeurtenissen."
+    },
+    "seizures": {
+      "label": "Aanvalsdagboek",
+      "description": "Leg aanvallen vast met type, duur en noodmedicatie, bekijk clusters en aanvalsvrije dagen, en voeg een onderdeel over aanvallen toe aan het artsenrapport."
     }
   },
   "moduleOff": {
@@ -12977,7 +13002,8 @@
     "leafEmergency": "Noodinformatie (bloedgroep, contactpersonen, wilsverklaringen)",
     "leafMedicationEffect": "Verandering rond de start van elk medicijn (vereist de medicatielijst)",
     "leafWorkouts": "Trainingen (overzicht per sport)",
-    "leafHrvSdnn": "HRV (SDNN)"
+    "leafHrvSdnn": "HRV (SDNN)",
+    "leafSeizures": "Aanvalsdagboek"
   },
   "recordSharing": {
     "banner": {
@@ -13360,7 +13386,17 @@
       "cycleFeedCreate": "{name} heeft het agenda-abonnement aangezet",
       "cycleFeedUpdate": "{name} heeft het agenda-abonnement gewijzigd",
       "cycleFeedRotate": "{name} heeft de link van het agenda-abonnement vernieuwd",
-      "cycleFeedRevoke": "{name} heeft het agenda-abonnement uitgezet"
+      "cycleFeedRevoke": "{name} heeft het agenda-abonnement uitgezet",
+      "seizureEventCreate": "{name} heeft een aanval vastgelegd",
+      "seizureRescueCreate": "{name} heeft een nooddosis vastgelegd",
+      "seizureEventUpdate": "{name} heeft een aanval bewerkt",
+      "seizureEventDelete": "{name} heeft een aanval verwijderd",
+      "seizureRescueUpdate": "{name} heeft een nooddosis bewerkt",
+      "seizureRescueDelete": "{name} heeft een nooddosis verwijderd",
+      "seizureTypeCreate": "{name} heeft een aanvalstype toegevoegd",
+      "seizureTypeUpdate": "{name} heeft een aanvalstype bewerkt",
+      "seizureTypeDelete": "{name} heeft een aanvalstype verwijderd",
+      "seizureSettingsUpdate": "{name} heeft de clusterregel gewijzigd"
     },
     "section": {
       "measurements": {
@@ -13381,7 +13417,7 @@
       },
       "illness": {
         "label": "Ziekte",
-        "detail": "Ziekte-episodes en de dagregistraties die daarbij horen."
+        "detail": "Ziekte-episodes en de dagregistraties die daarbij horen, je eigen symptomen en het aanvalsdagboek. Een nooddosis die in het aanvalsdagboek is vastgelegd, wordt ook bij het bijbehorende medicijn vastgelegd."
       },
       "mind": {
         "label": "Stemming en mentale gezondheid",
@@ -14422,5 +14458,426 @@
       "endsOn": "Einde"
     },
     "unitlessHint": "Een verhouding of index zonder eenheid (INR, cholesterol/HDL): vul 1 in de eenheidskolom in. Een lege eenheid blijft een fout."
+  },
+  "seizures": {
+    "ilae": {
+      "FOCAL_PRESERVED": {
+        "current": "Focale aanval met behouden bewustzijn",
+        "ilae2017": "Focale bewuste aanval"
+      },
+      "FOCAL_IMPAIRED": {
+        "current": "Focale aanval met verminderd bewustzijn",
+        "ilae2017": "Focale aanval met verminderd bewustzijn"
+      },
+      "FOCAL_UNDETERMINED": {
+        "current": "Focale aanval",
+        "ilae2017": "Aanval met focaal begin"
+      },
+      "FOCAL_TO_BILATERAL_TC": {
+        "current": "Focaal naar bilateraal tonisch-klonische aanval",
+        "ilae2017": "Focaal naar bilateraal tonisch-klonische aanval"
+      },
+      "GENERALIZED_UNDETERMINED": {
+        "current": "Gegeneraliseerde aanval",
+        "ilae2017": "Aanval met gegeneraliseerd begin"
+      },
+      "GENERALIZED_TC": {
+        "current": "Gegeneraliseerde tonisch-klonische aanval",
+        "ilae2017": "Tonisch-klonische aanval met gegeneraliseerd begin"
+      },
+      "GEN_CLONIC": {
+        "current": "Gegeneraliseerde klonische aanval",
+        "ilae2017": "Klonische aanval met gegeneraliseerd begin"
+      },
+      "GEN_TONIC": {
+        "current": "Gegeneraliseerde tonische aanval",
+        "ilae2017": "Tonische aanval met gegeneraliseerd begin"
+      },
+      "GEN_MYOCLONIC": {
+        "current": "Gegeneraliseerde myoclonische aanval",
+        "ilae2017": "Myoclonische aanval met gegeneraliseerd begin"
+      },
+      "GEN_MYOCLONIC_ATONIC": {
+        "current": "Gegeneraliseerde myoclonisch-atone aanval",
+        "ilae2017": "Myoclonisch-atone aanval met gegeneraliseerd begin"
+      },
+      "GEN_ATONIC": {
+        "current": "Gegeneraliseerde atone aanval",
+        "ilae2017": "Atone aanval met gegeneraliseerd begin"
+      },
+      "GEN_NEGATIVE_MYOCLONIC": {
+        "current": "Gegeneraliseerde negatief myoclonische aanval"
+      },
+      "GEN_SPASMS": {
+        "current": "Gegeneraliseerde epileptische spasmen",
+        "ilae2017": "Epileptische spasmen met gegeneraliseerd begin"
+      },
+      "ABSENCE_TYPICAL": {
+        "current": "Typische absence",
+        "ilae2017": "Gegeneraliseerde niet-motorische aanval (absence), typisch"
+      },
+      "ABSENCE_ATYPICAL": {
+        "current": "Atypische absence",
+        "ilae2017": "Gegeneraliseerde niet-motorische aanval (absence), atypisch"
+      },
+      "ABSENCE_MYOCLONIC": {
+        "current": "Myoclonische absence",
+        "ilae2017": "Gegeneraliseerde niet-motorische aanval (absence), myoclonisch"
+      },
+      "EYELID_MYOCLONIA": {
+        "current": "Ooglidmyoclonieën (met of zonder absence)",
+        "ilae2017": "Absence met ooglidmyoclonieën"
+      },
+      "UNKNOWN_UNDETERMINED": {
+        "current": "Aanval, onbekend of focaal of gegeneraliseerd",
+        "ilae2017": "Aanval met onbekend begin"
+      },
+      "UNKNOWN_PRESERVED": {
+        "current": "Onbekend of focaal of gegeneraliseerd, behouden bewustzijn",
+        "ilae2017": "Aanval met onbekend begin, bewust"
+      },
+      "UNKNOWN_IMPAIRED": {
+        "current": "Onbekend of focaal of gegeneraliseerd, verminderd bewustzijn",
+        "ilae2017": "Aanval met onbekend begin, verminderd bewustzijn"
+      },
+      "UNKNOWN_BILATERAL_TC": {
+        "current": "Bilateraal tonisch-klonische aanval, onbekend of focaal of gegeneraliseerd",
+        "ilae2017": "Tonisch-klonische aanval met onbekend begin"
+      },
+      "UNCLASSIFIED": {
+        "current": "Niet-geclassificeerde aanval",
+        "ilae2017": "Niet-geclassificeerde aanval"
+      }
+    },
+    "ilaeClass": {
+      "FOCAL": "Focaal begin",
+      "GENERALIZED": "Gegeneraliseerd begin",
+      "UNKNOWN": "Onbekend of focaal of gegeneraliseerd",
+      "UNCLASSIFIED": "Niet geclassificeerd"
+    },
+    "route": {
+      "BUCCAL": "Buccaal",
+      "INTRANASAL": "Intranasaal",
+      "RECTAL": "Rectaal",
+      "ORAL": "Oraal",
+      "SUBLINGUAL": "Sublinguaal",
+      "IM": "Intramusculair",
+      "IV_BY_EMS": "Intraveneus (ambulancepersoneel)"
+    },
+    "effect": {
+      "STOPPED": "Aanval gestopt",
+      "REDUCED": "Aanval verminderd",
+      "NO_EFFECT": "Geen effect",
+      "UNKNOWN": "Onbekend"
+    },
+    "trigger": {
+      "MISSED_DOSE": "Vergeten dosis",
+      "SLEEP_DEPRIVATION": "Slaaptekort",
+      "FEVER": "Koorts",
+      "ILLNESS": "Ziekte",
+      "MENSTRUATION": "Menstruatie",
+      "ALCOHOL": "Alcohol",
+      "FLASHING_LIGHTS": "Flikkerend licht",
+      "STRESS": "Stress",
+      "OTHER": "Anders",
+      "NONE_IDENTIFIED": "Geen gevonden"
+    },
+    "sleepState": {
+      "AWAKE": "Wakker",
+      "ASLEEP": "In slaap",
+      "ON_WAKING": "Bij het ontwaken",
+      "UNKNOWN": "Onbekend"
+    },
+    "type": {
+      "unreadable": "Onleesbare naam"
+    },
+    "report": {
+      "title": "Aanvalsdagboek",
+      "untyped": "Geen type vastgelegd",
+      "ruleText": "{count} of meer in {hours} u",
+      "recorded": "Vastgelegde aanvallen",
+      "seizureDays": "Dagen met een aanval",
+      "seizureFreeDays": "Dagen zonder vastgelegde aanval",
+      "per28Days": "Aanvallen per 28 dagen",
+      "longestFree": "Langste periode zonder vastgelegde aanval",
+      "daysValue": "{count} dagen",
+      "daysSinceLast": "Dagen sinds de laatste vastgelegde aanval",
+      "convulsive": "Bilateraal tonisch-klonische aanvallen",
+      "fromSleep": "Aanvallen vanuit de slaap",
+      "clusters": "Clusters (regel: {rule})",
+      "niceClusters": "volgens NICE: 3 in 24 u",
+      "rescueDoses": "Gegeven nooddoses",
+      "emergencies": "Ambulance, spoedeisende hulp, opnames",
+      "emergencyValue": "{ems} / {ed} / {admitted}",
+      "suspected": "Vermoedelijke voorvallen (hierboven niet meegeteld)",
+      "monthlyTitle": "Aanvallen per type en maand",
+      "monthlyNote": "Aanvallen per maand, met tussen haakjes het aantal dagen waarop ze voorkwamen.",
+      "type": "Type",
+      "total": "Totaal",
+      "chartTitle": "Aanvallen per maand en medicatiewijzigingen",
+      "markersTitle": "Medicatiewijzigingen:",
+      "marker": {
+        "start": "({n}) {date} {name} gestart",
+        "stop": "({n}) {date} {name} gestopt",
+        "change": "({n}) {date} {name} gewijzigd naar {dose}"
+      },
+      "markersNote": "Wijzigingen in vast ingeplande medicatie, getoond naast de aantallen. Het dagboek zegt niet of een wijziging verschil heeft gemaakt.",
+      "durationTitle": "Duur",
+      "timed": "Met duur",
+      "median": "Mediaan",
+      "max": "Langste",
+      "overT1": "t1 bereikt of overschreden",
+      "prolonged": "2 min langer dan gewoonlijk",
+      "durationNote": "Duur als min:s. t1 is de tijd waarna spoedbehandeling nodig is (ILAE, Trinka 2015: tonisch-klonisch 5 min, focaal met verminderd bewustzijn en absence 10 min). “2 min langer dan gewoonlijk” telt aanvallen die minstens 2 minuten langer duurden dan de gebruikelijke duur bij deze persoon (NICE NG217).",
+      "rescueTitle": "Noodmedicatie",
+      "date": "Datum",
+      "drug": "Medicijn",
+      "dose": "Dosis",
+      "route": "Toedieningsweg",
+      "minutesFromOnset": "Minuten na begin",
+      "effect": "Effect",
+      "triggersTitle": "Vermoedelijke uitlokkers",
+      "triggersNote": "Genoemd door de persoon of verzorger bij het vastleggen; geen vastgestelde oorzaken.",
+      "overlaysTitle": "Tegelijk vastgelegd",
+      "overlayMissedDose": "{followed} van {of} aanvallen volgden binnen de voorafgaande 48 uur op een vergeten of overgeslagen geplande dosis.",
+      "overlayIllness": "{during} aanvallen vonden plaats tijdens een van {episodes} vastgelegde ziekte-episodes.",
+      "overlaySleep": "Vastgelegde slaap in de nacht voor een aanvalsdag: gemiddeld {before} u ({nightsBefore} nachten); andere nachten: {other} u ({nightsOther} nachten).",
+      "overlayCycleDays": "Aanvallen per cyclusdag (dag: aantal): {list}.",
+      "overlayCycleRatio": "Over {cycles} volledig bijgehouden cycli was het aantal aanvallen per dag rond de menstruatie (dag −3 tot +3) {c1} keer zo hoog als op de andere dagen, en {c2} keer rond de ovulatie (dag 10 tot −13). Het catameniale criterium van Herzog is een verdubbeling of meer; dit is een referentie, geen bevinding.",
+      "overlayCycleTooFew": "Aantallen per cyclusfase worden getoond vanaf drie volledig bijgehouden cycli (tot nu toe {cycles}).",
+      "overlaysNote": "Dit zijn dingen die tegelijk zijn vastgelegd, geen oorzaken.",
+      "eventsTitle": "Alle vastgelegde voorvallen",
+      "duration": "Duur",
+      "sleep": "Slaap",
+      "rescueShort": "Noodmed.",
+      "injury": "Letsel",
+      "note": "Notitie",
+      "suspectedMark": "(vermoed)",
+      "eventsTruncated": "Alleen de 200 meest recente voorvallen staan in de lijst; de cijfers hierboven gaan over alle voorvallen.",
+      "classificationNote": "De aanvalstypen volgen de ILAE-classificatie 2025; de namen volgens ILAE 2017 zijn:",
+      "footer": "Dagboek bijgehouden door patiënt of verzorger. Dit zijn vastgelegde aanvallen, waarschijnlijk een onderschatting, vooral bij aanvallen vanuit de slaap. Het dagboek legt waarnemingen vast en stelt geen diagnose en beoordeelt geen aanvallen.",
+      "seizureDaysValue": "op {count} dagen"
+    },
+    "title": "Aanvalsdagboek",
+    "subtitle": "Aanvallen zoals ze zijn waargenomen, met het type, de duur en de gegeven noodmedicatie.",
+    "loadError": "Het aanvalsdagboek kon niet worden geladen.",
+    "saveError": "Opslaan is niet gelukt. Probeer het opnieuw.",
+    "untyped": "Geen type",
+    "notRecorded": "Niet vastgelegd",
+    "ilaeWith2017": "{current} (ILAE 2017: {legacy})",
+    "safety": {
+      "header": "Dit dagboek legt vast wat je waarneemt, zodat je het met het behandelteam kunt delen. Het stelt geen diagnose en beoordeelt geen aanvallen. Volg het noodplan dat je met je arts hebt afgesproken.",
+      "timer": "Bel het alarmnummer ({number} of je lokale nummer) als een aanval met schokken of verstijven 5 minuten of langer duurt, als er een nieuwe aanval volgt voordat de persoon hersteld is, als de ademhaling moeilijk gaat, als de persoon gewond is, als de aanval in het water plaatsvond of als het de eerste aanval is. Je eigen noodplan gaat voor.",
+      "notifications": "HealthLog is geen aanvalsalarm en geen medisch hulpmiddel. Het legt alleen vast wat hier wordt ingevoerd."
+    },
+    "quick": {
+      "title": "Snel vastleggen",
+      "typeGroup": "Aanvalstype",
+      "elapsedLabel": "Tijd sinds het begin van de aanval",
+      "startedAt": "Begonnen om {time}",
+      "start": "Aanval begonnen",
+      "stop": "Aanval gestopt",
+      "rescueGiven": "Noodmedicatie gegeven: {name}",
+      "rescueGivenCount": "Noodmedicatie gegeven ({count}), tik voor nog een dosis",
+      "threshold": {
+        "t1": "De aanval duurt al {time}. Volg het noodplan.",
+        "usualPlusTwo": "De aanval duurt al {time}, meer dan 2 minuten langer dan gewoonlijk. Volg het noodplan.",
+        "generic": "De aanval duurt al {time}. Volg het noodplan."
+      },
+      "noPlan": "Voor dit aanvalstype is geen noodplan opgeslagen. Bel het alarmnummer als je twijfelt.",
+      "call": "{number} bellen",
+      "recorded": "Aanval vastgelegd",
+      "recordedLine": "Vastgelegd, duur {duration}.",
+      "addDetails": "Details toevoegen",
+      "logPast": "Aanval vastleggen die niet is getimed",
+      "discard": "Timer weggooien",
+      "discardTitle": "Lopende timer weggooien?",
+      "discardConfirm": "Er wordt niets vastgelegd en de begintijd gaat verloren."
+    },
+    "summary": {
+      "title": "Vastgelegd",
+      "recorded": "Vastgelegde aanvallen, laatste {days} dagen",
+      "seizureDays": "Dagen met een aanval",
+      "sinceLast": "Dagen sinds de laatste vastgelegde aanval",
+      "longestFree": "Langste periode zonder aanval, dagen",
+      "clusters": "Clusters ({rule})",
+      "niceClusters": "Clusters volgens NICE (3 in 24 u)",
+      "suspected": "{count} vermoedelijke aanvallen staan in de lijst maar worden niet meegeteld.",
+      "clusterLine": "Cluster vanaf {start}: {count} aanvallen",
+      "monthlyCaption": "Aanvallen per type en maand",
+      "undercount": "Vastgelegde aanvallen, waarschijnlijk een onderschatting, vooral bij aanvallen vanuit de slaap."
+    },
+    "list": {
+      "title": "Vastgelegde aanvallen",
+      "empty": "Geen aanval vastgelegd in de afgelopen 90 dagen.",
+      "rescue": "Noodmed.",
+      "loggedByDelegate": "vastgelegd door iemand met toegang",
+      "showAll": "Alle {count} tonen",
+      "truncated": "Alleen de meest recente aanvallen worden getoond."
+    },
+    "certainty": {
+      "CONFIRMED": "Aanval",
+      "SUSPECTED": "Vermoed"
+    },
+    "onsetPrecision": {
+      "EXACT": "Exacte tijd",
+      "APPROX": "Rond deze tijd",
+      "UNKNOWN_TIME": "Tijd onbekend"
+    },
+    "durationSource": {
+      "TIMED": "Getimed",
+      "ESTIMATED": "Geschat",
+      "UNKNOWN": "Onbekend"
+    },
+    "functionState": {
+      "PRESERVED": "Behouden",
+      "IMPAIRED": "Verminderd",
+      "UNKNOWN": "Niet zeker"
+    },
+    "emergency": {
+      "NONE": "Geen",
+      "EMS_CALLED": "Ambulance gebeld",
+      "ED_VISIT": "Spoedeisende hulp",
+      "ADMITTED": "Opgenomen in het ziekenhuis"
+    },
+    "observer": {
+      "SELF": "De persoon zelf",
+      "PARENT": "Ouder",
+      "PARTNER": "Partner",
+      "FAMILY": "Familielid",
+      "CARER": "Verzorger",
+      "TEACHER": "Leerkracht",
+      "CLINICIAN": "Zorgverlener",
+      "PARAMEDIC": "Ambulanceverpleegkundige",
+      "OTHER": "Iemand anders"
+    },
+    "semiology": {
+      "AURA": "Aura",
+      "BEHAVIOUR_ARREST": "Stopte met wat hij of zij deed",
+      "STARING": "Staren",
+      "AUTOMATISMS": "Automatismen (smakken, friemelen)",
+      "TONIC": "Verstijven",
+      "CLONIC": "Ritmische schokken",
+      "MYOCLONIC": "Korte schokjes",
+      "ATONIC_DROP": "Plotseling neervallen",
+      "SPASMS": "Spasmen",
+      "HEAD_EYE_VERSION": "Hoofd of ogen naar één kant gedraaid",
+      "VOCALISATION": "Kreet of geluiden",
+      "CYANOSIS": "Blauwe lippen of blauw gezicht",
+      "DROOLING": "Kwijlen",
+      "BREATHING_CHANGE": "Veranderde ademhaling"
+    },
+    "postictal": {
+      "SLEEP": "Slaap",
+      "CONFUSION": "Verwardheid",
+      "HEADACHE": "Hoofdpijn",
+      "WEAKNESS_TODD": "Zwakte aan één kant (Toddse parese)",
+      "SPEECH": "Moeite met praten",
+      "AGITATION": "Onrust",
+      "OTHER": "Anders"
+    },
+    "injury": {
+      "NONE": "Geen letsel",
+      "TONGUE_BITE": "Tongbeet",
+      "HEAD": "Hoofdletsel",
+      "FALL_OTHER": "Ander letsel door een val",
+      "BURN": "Brandwond",
+      "FRACTURE": "Botbreuk",
+      "OTHER": "Anders"
+    },
+    "sheet": {
+      "newTitle": "Aanval vastleggen",
+      "editTitle": "Details van de aanval",
+      "description": "Alleen het begin is nodig. Vul aan wat je weet.",
+      "created": "Aanval vastgelegd",
+      "updated": "Aanval bijgewerkt",
+      "type": "Aanvalstype",
+      "onset": "Begin",
+      "onsetPrecision": "Hoe zeker is de begintijd",
+      "duration": "Duur",
+      "minutes": "Minuten",
+      "seconds": "Seconden",
+      "durationHint": "Laat leeg als niemand heeft gezien hoe lang de aanval duurde.",
+      "durationSource": "De duur is",
+      "certainty": "Was het een aanval",
+      "count": "Hoeveel",
+      "countHint": "Meer dan één om te turven, zoals de absences van een dag.",
+      "sleepState": "Wakker of in slaap",
+      "sectionObserved": "Wat werd gezien",
+      "responsiveness": "Reageerde op aanspreken",
+      "recall": "Herinnert zich de aanval",
+      "semiology": "Wat er gebeurde, op volgorde",
+      "semiologyNote": "Beschrijving",
+      "aura": "Waarschuwing vooraf (aura)",
+      "ilaeOverride": "Classificatie van deze aanval",
+      "ilaeFromType": "Zoals ingesteld bij het type",
+      "sectionAfter": "Daarna",
+      "postictalMinutes": "Minuten tot weer zoals gewoonlijk",
+      "postictal": "Na de aanval",
+      "injuries": "Letsel",
+      "emergency": "Spoedzorg",
+      "sectionContext": "Uitlokkers en getuige",
+      "triggers": "Vermoedelijke uitlokkers",
+      "triggersHint": "Je eigen vermoeden, in het rapport aangeduid als vermoed.",
+      "witnessed": "Heeft iemand het gezien",
+      "witnessRole": "Wie heeft het gezien",
+      "witnessNote": "Wat diegene zag",
+      "note": "Notitie",
+      "delete": "Aanval verwijderen",
+      "deleteTitle": "Deze aanval verwijderen?",
+      "deleteBody": "De aanval en de bijbehorende nooddoses worden verwijderd, en de doses worden ook weer van het medicijn afgehaald."
+    },
+    "rescue": {
+      "title": "Noodmedicatie",
+      "none": "Geen nooddosis vastgelegd.",
+      "effect": "Effect",
+      "remove": "Dosis verwijderen",
+      "removeTitle": "Deze nooddosis verwijderen?",
+      "removeBody": "De dosis wordt ook weer van het medicijn afgehaald.",
+      "medication": "Medicijn",
+      "pick": "Kies een medicijn",
+      "givenAt": "Gegeven om",
+      "route": "Toedieningsweg",
+      "intakeHint": "De dosis wordt ook bij het medicijn vastgelegd. Zo-nodig-medicatie telt niet mee voor de therapietrouw.",
+      "add": "Nooddosis toevoegen"
+    },
+    "types": {
+      "title": "Aanvalstypen",
+      "emptyTitle": "Nog geen aanvalstypen",
+      "emptyDescription": "Stel de aanvalstypen van de persoon één keer in, het liefst samen met het behandelteam.",
+      "newTitle": "Aanvalstype toevoegen",
+      "editTitle": "Aanvalstype bewerken",
+      "description": "De classificatie kies jij of het behandelteam; HealthLog classificeert niet.",
+      "label": "Je eigen naam ervoor",
+      "labelHint": "Het woord dat jullie thuis gebruiken, zoals “de grote”.",
+      "class": "Begin",
+      "ilaeType": "Aanvalstype (ILAE 2025)",
+      "notSure": "Niet zeker: {name}",
+      "usualDuration": "Gebruikelijke duur",
+      "usualHint": "Wordt gebruikt om het noodplan te tonen als een aanval 2 minuten langer duurt dan gewoonlijk (NICE).",
+      "plan": "Noodplan",
+      "planHint": "De stappen die met het behandelteam zijn afgesproken, getoond zodra de timer de drempel passeert.",
+      "rescueMedication": "Noodmedicatie",
+      "noMedication": "Geen",
+      "noAsNeeded": "Voeg de noodmedicatie eerst toe als zo-nodig-medicijn.",
+      "dose": "Dosis",
+      "unit": "Eenheid",
+      "saved": "Aanvalstype opgeslagen",
+      "archive": "Archiveren",
+      "unarchive": "Weer gebruiken",
+      "archived": "Gearchiveerd",
+      "delete": "Type verwijderen",
+      "deleteTitle": "Dit aanvalstype verwijderen?",
+      "deleteBody": "Alleen een type waaronder geen aanval is vastgelegd, kan worden verwijderd. Archiveer het anders.",
+      "rescueLine": "Noodmedicatie: {name}"
+    },
+    "rule": {
+      "title": "Clusterregel",
+      "explainer": "Een cluster is dit aantal aanvallen binnen dit aantal uur. Gebruik de regel uit het noodplan; NICE gebruikt {niceCount} in {niceHours} uur, dat ernaast wordt getoond.",
+      "count": "Aanvallen",
+      "hours": "Binnen uur",
+      "invalid": "Gebruik 2 tot 20 aanvallen binnen 1 tot 168 uur.",
+      "saved": "Clusterregel opgeslagen"
+    }
   }
 }

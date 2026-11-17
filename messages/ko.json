@@ -58,7 +58,8 @@
     "errorIdCopied": "오류 ID 복사됨",
     "readThrottled": "지금은 요청이 너무 많으니 나중에 다시 시도해 주세요.",
     "sessionEnded": "세션이 만료되었으니 계속하려면 다시 로그인해 주세요.",
-    "signIn": "로그인"
+    "signIn": "로그인",
+    "yes": "예"
   },
   "apiErrors": {
     "measurement": {
@@ -249,7 +250,24 @@
         "invalid": "패스키의 응답을 읽을 수 없어요. 다시 시도해 주세요."
       }
     },
-    "oidc_only": "이 서버는 통합 로그인(SSO)만 허용해요. 대신 ID 공급자로 계속해 주세요."
+    "oidc_only": "이 서버는 통합 로그인(SSO)만 허용해요. 대신 ID 공급자로 계속해 주세요.",
+    "seizures": {
+      "disabled": "이 기록에서는 발작 일지가 꺼져 있어요.",
+      "event": {
+        "notFound": "이 발작 기록이 더 이상 없어요."
+      },
+      "rescue": {
+        "notFound": "이 응급약 투여 기록이 더 이상 없어요.",
+        "medicationNotFound": "이 약이 더 이상 없어요.",
+        "medicationRequired": "투여한 약을 선택하세요.",
+        "notAsNeeded": "응급약은 필요시 약이어야 해요."
+      },
+      "type": {
+        "inUse": "이 유형으로 기록된 발작이 있어요. 대신 보관하세요.",
+        "limit": "발작 유형이 이미 12개예요. 새로 추가하려면 하나를 보관하세요.",
+        "notFound": "이 발작 유형이 더 이상 없어요."
+      }
+    }
   },
   "doctorReport": {
     "title": "건강 리포트",
@@ -584,7 +602,8 @@
     "documents": "문서",
     "vaccinations": "예방접종",
     "mentalWellbeing": "정신 건강",
-    "timeline": "타임라인"
+    "timeline": "타임라인",
+    "seizures": "발작"
   },
   "auth": {
     "login": "로그인",
@@ -8557,7 +8576,9 @@
           "failureUnconfirmed": "확인하려면 계정의 사용자 이름을 정확히 입력해 주세요.",
           "failureUsernameTaken": "이미 사용 중인 사용자 이름이에요.",
           "failureOwnerExists": "이 파일의 계정이 이 서버에 있어서 파일은 그 계정으로 복원돼요. 계정을 고르지 말고 다시 업로드해 주세요."
-        }
+        },
+        "restoreSkippedSeizureMedicationReference": "파일에 없는 약에 연결된 발작 응급 계획 또는 응급약 투여 (연결 없이 보존)",
+        "restoreSkippedSeizureTypeReference": "파일에 없는 발작 유형에 연결된 발작 (유형 없이 보존)"
       },
       "danger-zone": {
         "title": "위험 구역",
@@ -10848,6 +10869,10 @@
     "timeline": {
       "label": "타임라인",
       "description": "몇 년을 한눈에: 수치 옆에 질환, 약, 진료가 놓이고, 내 삶의 사건도 함께 보여요."
+    },
+    "seizures": {
+      "label": "발작 일지",
+      "description": "발작을 유형, 지속 시간, 응급약과 함께 기록하고, 군집 발작과 발작 없는 날을 확인하고, 진료용 리포트에 발작 항목을 추가해요."
     }
   },
   "moduleOff": {
@@ -12977,7 +13002,8 @@
     "leafEmergency": "응급 정보 (혈액형, 연락처, 사전지시)",
     "leafMedicationEffect": "각 약 시작 전후의 변화 (약 목록 필요)",
     "leafWorkouts": "운동(종목별 요약)",
-    "leafHrvSdnn": "심박변이도 (SDNN)"
+    "leafHrvSdnn": "심박변이도 (SDNN)",
+    "leafSeizures": "발작 일지"
   },
   "recordSharing": {
     "banner": {
@@ -13360,7 +13386,17 @@
       "cycleFeedCreate": "{name} 님이 캘린더 구독을 켰어요",
       "cycleFeedUpdate": "{name} 님이 캘린더 구독을 변경했어요",
       "cycleFeedRotate": "{name} 님이 캘린더 구독 링크를 다시 발급했어요",
-      "cycleFeedRevoke": "{name} 님이 캘린더 구독을 껐어요"
+      "cycleFeedRevoke": "{name} 님이 캘린더 구독을 껐어요",
+      "seizureEventCreate": "{name} 님이 발작을 기록했어요",
+      "seizureRescueCreate": "{name} 님이 응급약 투여를 기록했어요",
+      "seizureEventUpdate": "{name} 님이 발작 기록을 수정했어요",
+      "seizureEventDelete": "{name} 님이 발작 기록을 삭제했어요",
+      "seizureRescueUpdate": "{name} 님이 응급약 투여 기록을 수정했어요",
+      "seizureRescueDelete": "{name} 님이 응급약 투여 기록을 삭제했어요",
+      "seizureTypeCreate": "{name} 님이 발작 유형을 추가했어요",
+      "seizureTypeUpdate": "{name} 님이 발작 유형을 수정했어요",
+      "seizureTypeDelete": "{name} 님이 발작 유형을 삭제했어요",
+      "seizureSettingsUpdate": "{name} 님이 군집 발작 기준을 변경했어요"
     },
     "section": {
       "measurements": {
@@ -13381,7 +13417,7 @@
       },
       "illness": {
         "label": "아픈 날",
-        "detail": "아픈 기간 기록과 그 아래 남긴 하루 기록이에요."
+        "detail": "아픈 기간 기록과 그 아래 남긴 하루 기록, 본인의 증상, 발작 일지예요. 발작 일지에 기록한 응급약 투여는 해당 약에도 기록돼요."
       },
       "mind": {
         "label": "기분과 마음",
@@ -14422,5 +14458,426 @@
       "endsOn": "종료"
     },
     "unitlessHint": "단위가 없는 비율이나 지수(INR, 콜레스테롤/HDL)는 단위 열에 1을 입력하세요. 단위 칸이 비어 있으면 여전히 오류예요."
+  },
+  "seizures": {
+    "ilae": {
+      "FOCAL_PRESERVED": {
+        "current": "의식 보존 국결신발작",
+        "ilae2017": "국소 인지 발작"
+      },
+      "FOCAL_IMPAIRED": {
+        "current": "의식 손상 국결신발작",
+        "ilae2017": "국소 인지 장애 발작"
+      },
+      "FOCAL_UNDETERMINED": {
+        "current": "국결신발작",
+        "ilae2017": "국소 시작 발작"
+      },
+      "FOCAL_TO_BILATERAL_TC": {
+        "current": "국소에서 양측 강직간대발작으로 진행",
+        "ilae2017": "국소에서 양측 강직간대발작으로 진행"
+      },
+      "GENERALIZED_UNDETERMINED": {
+        "current": "전신발작",
+        "ilae2017": "전신 시작 발작"
+      },
+      "GENERALIZED_TC": {
+        "current": "전신 강직간대발작",
+        "ilae2017": "전신 시작 강직간대발작"
+      },
+      "GEN_CLONIC": {
+        "current": "전신 간대발작",
+        "ilae2017": "전신 시작 간대발작"
+      },
+      "GEN_TONIC": {
+        "current": "전신 강직발작",
+        "ilae2017": "전신 시작 강직발작"
+      },
+      "GEN_MYOCLONIC": {
+        "current": "전신 근간대발작",
+        "ilae2017": "전신 시작 근간대발작"
+      },
+      "GEN_MYOCLONIC_ATONIC": {
+        "current": "전신 근간대-무긴장발작",
+        "ilae2017": "전신 시작 근간대-무긴장발작"
+      },
+      "GEN_ATONIC": {
+        "current": "전신 무긴장발작",
+        "ilae2017": "전신 시작 무긴장발작"
+      },
+      "GEN_NEGATIVE_MYOCLONIC": {
+        "current": "전신 음성 근간대발작"
+      },
+      "GEN_SPASMS": {
+        "current": "전신 뇌전증 연축",
+        "ilae2017": "전신 시작 뇌전증 연축"
+      },
+      "ABSENCE_TYPICAL": {
+        "current": "전형 결신발작",
+        "ilae2017": "전신 비운동 발작(결신발작), 전형"
+      },
+      "ABSENCE_ATYPICAL": {
+        "current": "비전형 결신발작",
+        "ilae2017": "전신 비운동 발작(결신발작), 비전형"
+      },
+      "ABSENCE_MYOCLONIC": {
+        "current": "근간대 결신발작",
+        "ilae2017": "전신 비운동 발작(결신발작), 근간대"
+      },
+      "EYELID_MYOCLONIA": {
+        "current": "눈꺼풀 근간대경련(결신발작 동반 또는 미동반)",
+        "ilae2017": "눈꺼풀 근간대경련을 동반한 결신발작"
+      },
+      "UNKNOWN_UNDETERMINED": {
+        "current": "발작, 국소인지 전신인지 알 수 없음",
+        "ilae2017": "시작 불명 발작"
+      },
+      "UNKNOWN_PRESERVED": {
+        "current": "국소인지 전신인지 알 수 없음, 의식 보존",
+        "ilae2017": "시작 불명 발작, 인지 유지"
+      },
+      "UNKNOWN_IMPAIRED": {
+        "current": "국소인지 전신인지 알 수 없음, 의식 손상",
+        "ilae2017": "시작 불명 발작, 인지 장애"
+      },
+      "UNKNOWN_BILATERAL_TC": {
+        "current": "양측 강직간대발작, 국소인지 전신인지 알 수 없음",
+        "ilae2017": "시작 불명 강직간대발작"
+      },
+      "UNCLASSIFIED": {
+        "current": "분류되지 않은 발작",
+        "ilae2017": "분류되지 않은 발작"
+      }
+    },
+    "ilaeClass": {
+      "FOCAL": "국소 시작",
+      "GENERALIZED": "전신 시작",
+      "UNKNOWN": "국소인지 전신인지 알 수 없음",
+      "UNCLASSIFIED": "분류되지 않음"
+    },
+    "route": {
+      "BUCCAL": "볼 점막(협측)",
+      "INTRANASAL": "비강 내",
+      "RECTAL": "직장",
+      "ORAL": "경구",
+      "SUBLINGUAL": "설하",
+      "IM": "근육 주사",
+      "IV_BY_EMS": "정맥 주사(구급대원)"
+    },
+    "effect": {
+      "STOPPED": "발작이 멈췄어요",
+      "REDUCED": "발작이 약해졌어요",
+      "NO_EFFECT": "효과 없음",
+      "UNKNOWN": "모름"
+    },
+    "trigger": {
+      "MISSED_DOSE": "약 복용 누락",
+      "SLEEP_DEPRIVATION": "수면 부족",
+      "FEVER": "발열",
+      "ILLNESS": "질병",
+      "MENSTRUATION": "생리",
+      "ALCOHOL": "음주",
+      "FLASHING_LIGHTS": "깜박이는 빛",
+      "STRESS": "스트레스",
+      "OTHER": "기타",
+      "NONE_IDENTIFIED": "찾지 못함"
+    },
+    "sleepState": {
+      "AWAKE": "깨어 있을 때",
+      "ASLEEP": "자는 중",
+      "ON_WAKING": "깨어날 때",
+      "UNKNOWN": "모름"
+    },
+    "type": {
+      "unreadable": "읽을 수 없는 이름"
+    },
+    "report": {
+      "title": "발작 일지",
+      "untyped": "기록된 유형 없음",
+      "ruleText": "{hours}시간 내 {count}회 이상",
+      "recorded": "기록된 발작",
+      "seizureDays": "발작이 있었던 날",
+      "seizureFreeDays": "기록된 발작이 없는 날",
+      "per28Days": "28일당 발작 횟수",
+      "longestFree": "기록된 발작이 없었던 가장 긴 기간",
+      "daysValue": "{count}일",
+      "daysSinceLast": "마지막으로 기록된 발작 이후 일수",
+      "convulsive": "양측 강직간대발작",
+      "fromSleep": "수면 중 발작",
+      "clusters": "군집 발작(기준: {rule})",
+      "niceClusters": "NICE 기준: 24시간 내 3회",
+      "rescueDoses": "투여한 응급약",
+      "emergencies": "구급대 출동, 응급실, 입원",
+      "emergencyValue": "{ems} / {ed} / {admitted}",
+      "suspected": "의심 사례(위 집계에서 제외)",
+      "monthlyTitle": "유형별, 월별 발작",
+      "monthlyNote": "월별 발작 횟수이며, 괄호 안은 발작이 있었던 날의 수예요.",
+      "type": "유형",
+      "total": "합계",
+      "chartTitle": "월별 발작과 약 변경",
+      "markersTitle": "약 변경:",
+      "marker": {
+        "start": "({n}) {date} {name} 시작",
+        "stop": "({n}) {date} {name} 중단",
+        "change": "({n}) {date} {name} {dose}(으)로 변경"
+      },
+      "markersNote": "정기적으로 복용하도록 일정이 잡힌 약의 변경 사항을 발작 횟수 옆에 표시해요. 일지만으로는 변경이 차이를 만들었는지 알 수 없어요.",
+      "durationTitle": "지속 시간",
+      "timed": "지속 시간 기록됨",
+      "median": "중앙값",
+      "max": "최장",
+      "overT1": "t1 이상",
+      "prolonged": "평소보다 2분 이상 김",
+      "durationNote": "지속 시간은 분:초 형식이에요. t1은 응급 치료가 필요한 시점이에요(ILAE, Trinka 2015: 강직간대 5분, 의식 손상 국결신발작과 결신발작 10분). '평소보다 2분 이상 김'은 이 사람의 평소 지속 시간보다 2분 이상 길었던 발작을 세요(NICE NG217).",
+      "rescueTitle": "응급약",
+      "date": "날짜",
+      "drug": "약",
+      "dose": "용량",
+      "route": "투여 경로",
+      "minutesFromOnset": "시작 후 분",
+      "effect": "효과",
+      "triggersTitle": "의심되는 유발 요인",
+      "triggersNote": "기록할 때 본인이나 돌보는 사람이 적은 내용이며, 확인된 원인이 아니에요.",
+      "overlaysTitle": "함께 기록된 내용",
+      "overlayMissedDose": "발작 {of}회 중 {followed}회는 직전 48시간 안에 예정된 약을 잊었거나 건너뛴 뒤에 일어났어요.",
+      "overlayIllness": "발작 {during}회가 기록된 아픈 기간 {episodes}건 중 하나에 일어났어요.",
+      "overlaySleep": "발작이 있던 날 전날 밤의 기록된 수면: 평균 {before}시간({nightsBefore}일 밤), 다른 밤: {other}시간({nightsOther}일 밤).",
+      "overlayCycleDays": "주기 일차별 발작(일차: 횟수): {list}.",
+      "overlayCycleRatio": "완전히 기록된 {cycles}번의 주기 동안 생리 전후(−3일부터 +3일)의 하루 발작 빈도는 다른 날의 {c1}배, 배란 전후(10일부터 −13일)는 {c2}배였어요. Herzog의 월경 관련 뇌전증 기준은 2배 이상 증가이며, 이 값은 참고용일 뿐 판단 결과가 아니에요.",
+      "overlayCycleTooFew": "주기 단계별 빈도는 완전히 기록된 주기가 3번 이상일 때 표시돼요(현재 {cycles}번).",
+      "overlaysNote": "같은 시기에 기록된 내용일 뿐 원인이 아니에요.",
+      "eventsTitle": "기록된 모든 사례",
+      "duration": "지속 시간",
+      "sleep": "수면",
+      "rescueShort": "응급약",
+      "injury": "부상",
+      "note": "메모",
+      "suspectedMark": "(의심)",
+      "eventsTruncated": "최근 200건만 나열해요. 위 수치는 전체를 포함해요.",
+      "classificationNote": "발작 유형은 ILAE 2025 분류를 따르며, ILAE 2017 명칭은 다음과 같아요:",
+      "footer": "환자 본인이나 돌보는 사람이 기록한 일지예요. 기록된 발작이며 실제보다 적을 가능성이 높고, 특히 수면 중 발작이 그래요. 이 일지는 관찰 내용을 기록할 뿐 발작을 진단하거나 평가하지 않아요.",
+      "seizureDaysValue": "{count}일에 걸쳐"
+    },
+    "title": "발작 일지",
+    "subtitle": "관찰한 그대로의 발작을 유형, 지속 시간, 투여한 응급약과 함께 기록해요.",
+    "loadError": "발작 일지를 불러오지 못했어요.",
+    "saveError": "저장하지 못했어요. 다시 시도해 주세요.",
+    "untyped": "유형 없음",
+    "notRecorded": "기록 없음",
+    "ilaeWith2017": "{current} (ILAE 2017: {legacy})",
+    "safety": {
+      "header": "이 일지는 관찰한 내용을 기록해 의료진과 공유할 수 있게 해요. 발작을 진단하거나 평가하지 않아요. 담당 의사와 정한 응급 계획을 따르세요.",
+      "timer": "경련이나 몸이 굳는 발작이 5분 이상 계속되거나, 회복하기 전에 다른 발작이 이어지거나, 숨쉬기 힘들어하거나, 다쳤거나, 물속에서 발작이 일어났거나, 처음 겪는 발작이면 응급 신고({number} 또는 현지 번호)를 하세요. 본인의 응급 계획이 우선이에요.",
+      "notifications": "HealthLog는 발작 경보기도 의료기기도 아니에요. 여기에 입력한 내용만 기록해요."
+    },
+    "quick": {
+      "title": "빠른 기록",
+      "typeGroup": "발작 유형",
+      "elapsedLabel": "발작 시작 후 경과 시간",
+      "startedAt": "{time}에 시작",
+      "start": "발작 시작",
+      "stop": "발작 멈춤",
+      "rescueGiven": "응급약 투여: {name}",
+      "rescueGivenCount": "응급약 투여({count}), 한 번 더 투여하려면 누르세요",
+      "threshold": {
+        "t1": "발작이 {time} 동안 계속되고 있어요. 응급 계획을 따르세요.",
+        "usualPlusTwo": "발작이 {time} 동안 계속되어 평소보다 2분 넘게 길어졌어요. 응급 계획을 따르세요.",
+        "generic": "발작이 {time} 동안 계속되고 있어요. 응급 계획을 따르세요."
+      },
+      "noPlan": "이 발작 유형에 저장된 계획이 없어요. 확실하지 않으면 응급 신고를 하세요.",
+      "call": "{number}에 전화",
+      "recorded": "발작을 기록했어요",
+      "recordedLine": "기록했어요. 지속 시간 {duration}.",
+      "addDetails": "세부 내용 추가",
+      "logPast": "시간을 재지 못한 발작 기록",
+      "discard": "타이머 취소",
+      "discardTitle": "진행 중인 타이머를 취소할까요?",
+      "discardConfirm": "아무것도 기록되지 않고 시작 시각도 사라져요."
+    },
+    "summary": {
+      "title": "기록",
+      "recorded": "기록된 발작, 최근 {days}일",
+      "seizureDays": "발작이 있었던 날",
+      "sinceLast": "마지막으로 기록된 발작 이후 일수",
+      "longestFree": "발작 없이 지난 가장 긴 기간(일)",
+      "clusters": "군집 발작({rule})",
+      "niceClusters": "NICE 기준 군집 발작(24시간 내 3회)",
+      "suspected": "의심 발작 {count}건은 목록에는 있지만 집계에서 제외돼요.",
+      "clusterLine": "{start}부터 군집 발작: {count}회",
+      "monthlyCaption": "유형별, 월별 발작",
+      "undercount": "기록된 발작이며 실제보다 적을 가능성이 높고, 특히 수면 중 발작이 그래요."
+    },
+    "list": {
+      "title": "기록된 발작",
+      "empty": "최근 90일 동안 기록된 발작이 없어요.",
+      "rescue": "응급약",
+      "loggedByDelegate": "접근 권한이 있는 사람이 기록함",
+      "showAll": "{count}건 모두 보기",
+      "truncated": "최근 발작만 표시해요."
+    },
+    "certainty": {
+      "CONFIRMED": "발작",
+      "SUSPECTED": "의심"
+    },
+    "onsetPrecision": {
+      "EXACT": "정확한 시각",
+      "APPROX": "대략 이 시각",
+      "UNKNOWN_TIME": "시각 모름"
+    },
+    "durationSource": {
+      "TIMED": "측정함",
+      "ESTIMATED": "추정함",
+      "UNKNOWN": "모름"
+    },
+    "functionState": {
+      "PRESERVED": "유지됨",
+      "IMPAIRED": "손상됨",
+      "UNKNOWN": "잘 모르겠음"
+    },
+    "emergency": {
+      "NONE": "없음",
+      "EMS_CALLED": "구급대 호출",
+      "ED_VISIT": "응급실",
+      "ADMITTED": "입원"
+    },
+    "observer": {
+      "SELF": "본인",
+      "PARENT": "부모",
+      "PARTNER": "배우자 또는 연인",
+      "FAMILY": "가족",
+      "CARER": "돌보는 사람",
+      "TEACHER": "교사",
+      "CLINICIAN": "의료진",
+      "PARAMEDIC": "구급대원",
+      "OTHER": "다른 사람"
+    },
+    "semiology": {
+      "AURA": "전조(아우라)",
+      "BEHAVIOUR_ARREST": "하던 행동을 멈춤",
+      "STARING": "멍하니 응시",
+      "AUTOMATISMS": "자동증(입맛 다시기, 손 만지작거리기)",
+      "TONIC": "몸이 굳음",
+      "CLONIC": "규칙적인 떨림",
+      "MYOCLONIC": "짧은 움찔거림",
+      "ATONIC_DROP": "갑자기 쓰러짐",
+      "SPASMS": "연축",
+      "HEAD_EYE_VERSION": "머리나 눈이 한쪽으로 돌아감",
+      "VOCALISATION": "비명이나 소리",
+      "CYANOSIS": "입술이나 얼굴이 파래짐",
+      "DROOLING": "침 흘림",
+      "BREATHING_CHANGE": "호흡 변화"
+    },
+    "postictal": {
+      "SLEEP": "잠",
+      "CONFUSION": "혼돈",
+      "HEADACHE": "두통",
+      "WEAKNESS_TODD": "한쪽 근력 약화(토드 마비)",
+      "SPEECH": "말하기 어려움",
+      "AGITATION": "초조함",
+      "OTHER": "기타"
+    },
+    "injury": {
+      "NONE": "부상 없음",
+      "TONGUE_BITE": "혀 깨묾",
+      "HEAD": "머리 부상",
+      "FALL_OTHER": "넘어져서 생긴 다른 부상",
+      "BURN": "화상",
+      "FRACTURE": "골절",
+      "OTHER": "기타"
+    },
+    "sheet": {
+      "newTitle": "발작 기록",
+      "editTitle": "발작 세부 내용",
+      "description": "시작 시각만 있으면 돼요. 아는 내용을 추가하세요.",
+      "created": "발작을 기록했어요",
+      "updated": "발작 기록을 수정했어요",
+      "type": "발작 유형",
+      "onset": "시작",
+      "onsetPrecision": "시작 시각이 얼마나 정확한가요",
+      "duration": "지속 시간",
+      "minutes": "분",
+      "seconds": "초",
+      "durationHint": "얼마나 오래 지속됐는지 본 사람이 없으면 비워 두세요.",
+      "durationSource": "지속 시간",
+      "certainty": "발작이었나요",
+      "count": "횟수",
+      "countHint": "하루 동안의 결신발작처럼 한꺼번에 셀 때는 1보다 크게 입력하세요.",
+      "sleepState": "깨어 있었나요, 자고 있었나요",
+      "sectionObserved": "관찰한 내용",
+      "responsiveness": "말을 걸었을 때 반응함",
+      "recall": "발작을 기억함",
+      "semiology": "일어난 일, 순서대로",
+      "semiologyNote": "설명",
+      "aura": "미리 느낀 전조(아우라)",
+      "ilaeOverride": "이 발작의 분류",
+      "ilaeFromType": "유형에 설정한 대로",
+      "sectionAfter": "발작 후",
+      "postictalMinutes": "평소 상태로 돌아오기까지 걸린 분",
+      "postictal": "발작 후",
+      "injuries": "부상",
+      "emergency": "응급 처치",
+      "sectionContext": "유발 요인과 목격자",
+      "triggers": "의심되는 유발 요인",
+      "triggersHint": "본인이 짐작한 내용이며, 리포트에는 의심 요인으로 표시돼요.",
+      "witnessed": "누군가 봤나요",
+      "witnessRole": "본 사람",
+      "witnessNote": "본 내용",
+      "note": "메모",
+      "delete": "발작 삭제",
+      "deleteTitle": "이 발작을 삭제할까요?",
+      "deleteBody": "발작과 응급약 투여 기록이 삭제되고, 해당 약에서도 투여 기록이 빠져요."
+    },
+    "rescue": {
+      "title": "응급약",
+      "none": "기록된 응급약 투여가 없어요.",
+      "effect": "효과",
+      "remove": "투여 기록 삭제",
+      "removeTitle": "이 응급약 투여 기록을 삭제할까요?",
+      "removeBody": "해당 약에서도 투여 기록이 빠져요.",
+      "medication": "약",
+      "pick": "약 선택",
+      "givenAt": "투여 시각",
+      "route": "투여 경로",
+      "intakeHint": "투여 기록은 해당 약에도 남아요. 필요시 약은 복약 순응도에 포함되지 않아요.",
+      "add": "응급약 투여 추가"
+    },
+    "types": {
+      "title": "발작 유형",
+      "emptyTitle": "아직 발작 유형이 없어요",
+      "emptyDescription": "이 사람의 발작 유형을 한 번 설정해 두세요. 가능하면 의료진과 함께 정하는 게 좋아요.",
+      "newTitle": "발작 유형 추가",
+      "editTitle": "발작 유형 수정",
+      "description": "분류는 본인이나 의료진이 정해요. HealthLog는 분류하지 않아요.",
+      "label": "부르는 이름",
+      "labelHint": "가족끼리 부르는 말, 예를 들어 '큰 발작'.",
+      "class": "시작",
+      "ilaeType": "발작 유형(ILAE 2025)",
+      "notSure": "잘 모르겠음: {name}",
+      "usualDuration": "평소 지속 시간",
+      "usualHint": "발작이 평소보다 2분 더 길어지면 계획을 보여 주는 데 쓰여요(NICE).",
+      "plan": "응급 계획",
+      "planHint": "의료진과 정한 단계로, 타이머가 기준을 넘으면 표시돼요.",
+      "rescueMedication": "응급약",
+      "noMedication": "없음",
+      "noAsNeeded": "먼저 응급약을 필요시 약으로 추가하세요.",
+      "dose": "용량",
+      "unit": "단위",
+      "saved": "발작 유형을 저장했어요",
+      "archive": "보관",
+      "unarchive": "다시 사용",
+      "archived": "보관됨",
+      "delete": "유형 삭제",
+      "deleteTitle": "이 발작 유형을 삭제할까요?",
+      "deleteBody": "기록된 발작이 없는 유형만 삭제할 수 있어요. 그렇지 않으면 보관하세요.",
+      "rescueLine": "응급약: {name}"
+    },
+    "rule": {
+      "title": "군집 발작 기준",
+      "explainer": "군집 발작은 정해진 시간 안에 정해진 횟수 이상 일어난 발작이에요. 응급 계획에 있는 기준을 사용하세요. NICE 기준은 {niceHours}시간 내 {niceCount}회이며, 옆에 함께 표시돼요.",
+      "count": "발작 횟수",
+      "hours": "시간 이내",
+      "invalid": "1~168시간 안에 2~20회로 설정하세요.",
+      "saved": "군집 발작 기준을 저장했어요"
+    }
   }
 }

@@ -391,6 +391,17 @@ const REGISTRY: DestructiveEntry[] = [
     confirm: ["AlertDialog"],
   },
   {
+    file: "components/seizures/use-seizures.ts",
+    destroys:
+      "one recorded seizure with its rescue doses (and the intakes they wrote), one rescue dose, or a seizure type no seizure names",
+    triggers: [
+      "components/seizures/seizure-sheet.tsx",
+      "components/seizures/seizure-type-sheet.tsx",
+    ],
+    recovery: "permanent",
+    confirm: ["ConfirmButton"],
+  },
+  {
     file: "components/labs/biomarker-manager.tsx",
     destroys: "a biomarker AND every lab reading recorded against it",
     recovery: "permanent",

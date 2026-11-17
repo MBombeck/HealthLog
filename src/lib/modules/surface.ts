@@ -87,6 +87,7 @@ const STATIC_SURFACE_MODULE = {
   "nav:/labs": "labs",
   "nav:/illness": "illness",
   "nav:/vaccinations": "vaccinations",
+  "nav:/seizures": "seizures",
   "nav:/documents": "inboundDocuments",
   "nav:/coach": "coach",
   "nav:/achievements": "achievements",
