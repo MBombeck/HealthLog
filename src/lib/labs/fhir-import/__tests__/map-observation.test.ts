@@ -196,6 +196,63 @@ describe("mapFhirLabRecord — R4", () => {
     expect(map(resource)).toMatchObject({ kind: "fail", reason });
   });
 
+  describe("a number printed without a unit", () => {
+    const loinc = (code: string, text: string) => ({
+      text,
+      coding: [{ system: "http://loinc.org", code }],
+    });
+
+    it.each([
+      ["urine specific gravity", loinc("5811-5", "Specific Gravity"), 1.015],
+      ["urine pH", loinc("5803-2", "pH, Urine"), 6],
+      ["INR", loinc("6301-6", "INR"), 1.1],
+    ])("is the unity for %s", (_label, code, value) => {
+      const r = reading(map(base({ code, valueQuantity: { value } })));
+      expect(r.value).toBe(value);
+      expect(r.unit).toBe("1");
+    });
+
+    it("is the unity for a dimensionless integer", () => {
+      const r = reading(
+        map(
+          base({
+            code: loinc("2756-5", "pH"),
+            valueQuantity: undefined,
+            valueInteger: 7,
+          }),
+        ),
+      );
+      expect(r.value).toBe(7);
+      expect(r.unit).toBe("1");
+    });
+
+    it("still fails for an analyte that has a unit", () => {
+      expect(
+        map(
+          base({
+            code: loinc("2951-2", "Sodium"),
+            valueQuantity: { value: 140 },
+          }),
+        ),
+      ).toMatchObject({ kind: "fail", reason: "missing_unit" });
+    });
+  });
+
+  it.each([
+    [{ coding: [{ code: "LAB" }] }],
+    [{ coding: [{ code: "lab" }] }],
+    [{ coding: [{ code: "x", display: "Lab Results" }] }],
+    [{ text: "Laboratory results" }],
+  ])("reads a lab category however the source spells it: %j", (category) => {
+    expect(map(base({ category: [category] })).kind).toBe("reading");
+  });
+
+  it("still skips a category that is not a lab", () => {
+    expect(
+      map(base({ category: [{ coding: [{ code: "vital-signs" }] }] })),
+    ).toMatchObject({ kind: "skip", reason: "not_lab" });
+  });
+
   it("accepts a resource with no category", () => {
     expect(map(base({ category: undefined })).kind).toBe("reading");
   });

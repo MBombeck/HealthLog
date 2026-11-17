@@ -54,3 +54,31 @@ export function labUnitFromFhirQuantity(quantity: {
   }
   return unit ?? code;
 }
+
+/**
+ * LOINC codes of lab results that are numbers without a unit: specific
+ * gravity, pH and the INR. A system often sends them as a bare number with
+ * no unit at all, and for these analytes that is the value, the UCUM unity
+ * ("1"), not a unit that was dropped. Kept to codes whose meaning is settled;
+ * an analyte that is not listed keeps the refusal of a number without a unit.
+ */
+const DIMENSIONLESS_LOINC: ReadonlySet<string> = new Set([
+  // Specific gravity of urine (test strip, unspecified, refractometry).
+  "5811-5",
+  "2965-2",
+  "53326-5",
+  // pH of urine (test strip, unspecified), of blood and of arterial blood.
+  "5803-2",
+  "2756-5",
+  "11558-4",
+  "2744-1",
+  // INR (platelet-poor plasma, blood, capillary blood).
+  "6301-6",
+  "34714-6",
+  "46418-0",
+]);
+
+/** Whether a LOINC code names an analyte whose value has no unit. */
+export function isDimensionlessLoinc(code: string | null): boolean {
+  return code !== null && DIMENSIONLESS_LOINC.has(code.trim());
+}

@@ -30,6 +30,7 @@ import {
   parseReferenceRange,
   SOURCE_REFERENCE_TEXT_MAX,
 } from "@/lib/labs/parse-reference-range";
+import { DIMENSIONLESS_UNIT } from "@/lib/labs/dimensionless";
 import { LAB_TEXT_LIMITS } from "@/lib/labs/reading-keys";
 import { sameLabUnit } from "@/lib/labs/unit-normalise";
 
@@ -40,7 +41,7 @@ import type {
   FhirLabSkipReason,
   MappedFhirLab,
 } from "./types";
-import { labUnitFromFhirQuantity } from "./units";
+import { isDimensionlessLoinc, labUnitFromFhirQuantity } from "./units";
 
 /** A reading dated more than a day ahead is a mistake, not a result. */
 const FUTURE_SLACK_MS = 86_400_000;
@@ -122,11 +123,20 @@ function memberRefs(resource: Json): string[] {
   return refs;
 }
 
+/**
+ * Whether a category names lab results. FHIR's own code is "laboratory", but
+ * a record reaches the import only because Apple Health already filed it as
+ * a lab result (or the phone sends lab records alone), and systems spell the
+ * category their own way ("LAB", "Lab Results"). Any code, display or text
+ * naming a lab counts; a record whose categories are all something else (vital
+ * signs, say) is still left out.
+ */
 function isLaboratory(concept: Json): boolean {
-  if (str(concept.text)?.toLowerCase() === "laboratory") return true;
-  return codings(concept).some(
-    (c) => str(c.code)?.toLowerCase() === "laboratory",
-  );
+  const names = [
+    str(concept.text),
+    ...codings(concept).flatMap((c) => [str(c.code), str(c.display)]),
+  ];
+  return names.some((name) => name !== null && /lab/i.test(name));
 }
 
 function analyteName(code: Json | null): string | null {
@@ -229,12 +239,18 @@ type ValueRead =
   | { ok: false; skip?: FhirLabSkipReason; fail?: FhirLabFailureReason }
   | null;
 
-function readValue(resource: Json): ValueRead {
+/**
+ * `dimensionless` says the analyte's value has no unit (its LOINC code is a
+ * specific gravity, a pH or an INR): a bare number is then the unity "1"
+ * rather than a number whose unit was dropped.
+ */
+function readValue(resource: Json, dimensionless: boolean): ValueRead {
+  const bare = dimensionless ? DIMENSIONLESS_UNIT : null;
   const quantity = obj(resource.valueQuantity);
   if (quantity) {
     const value = num(quantity.value);
     if (value === null) return { ok: false, skip: "no_value" };
-    const unit = labUnitFromFhirQuantity(quantity);
+    const unit = labUnitFromFhirQuantity(quantity) ?? bare;
     const comparator = str(quantity.comparator);
     if (comparator) {
       const printed =
@@ -247,7 +263,9 @@ function readValue(resource: Json): ValueRead {
     return { ok: true, value, valueText: null, unit };
   }
   if (Number.isSafeInteger(resource.valueInteger)) {
-    return { ok: false, fail: "missing_unit" };
+    if (!bare) return { ok: false, fail: "missing_unit" };
+    const value = resource.valueInteger as number;
+    return { ok: true, value, valueText: null, unit: bare };
   }
   const text = str(resource.valueString);
   if (text) return { ok: true, value: null, valueText: text, unit: null };
@@ -362,7 +380,8 @@ export function mapFhirLabRecord(
     return fail("text_too_long");
   }
 
-  let read = readValue(resource);
+  const loinc = loincCode(code);
+  let read = readValue(resource, isDimensionlessLoinc(loinc));
   if (read === null && resource.dataAbsentReason !== undefined) {
     read = { ok: false, skip: "no_value" };
   }
@@ -403,7 +422,6 @@ export function mapFhirLabRecord(
   }
   if (takenAt.getTime() < EARLIEST) return skip("invalid_date", members);
 
-  const loinc = loincCode(code);
   const range = referenceRangeOf(resource, read.unit);
 
   return {
