@@ -63,6 +63,7 @@ export const RESTORE_CLEARED_KEYS = [
   "cycleDayLogs",
   "cycleProfile",
   "labResults",
+  "labResultImportKeys",
   "biomarkers",
   "nutrientDays",
   "illnessEpisodes",

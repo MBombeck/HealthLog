@@ -18,6 +18,7 @@
         "cycleDayLogs": 0,
         "nutrientDays": 1,
         "labResults": 1,
+        "labResultImportKeys": 0,
         "biomarkers": 1,
         "illnessEpisodes": 2,
         "illnessDayLogs": 1,
@@ -75,6 +76,7 @@
         "cycleDayLogs": 0,
         "cycleProfile": 0,
         "labResults": 0,
+        "labResultImportKeys": 0,
         "biomarkers": 0,
         "nutrientDays": 0,
         "illnessEpisodes": 0,
@@ -292,6 +294,7 @@
           "cycleDayLogs": 0,
           "cycleProfile": 0,
           "labResults": 0,
+          "labResultImportKeys": 0,
           "biomarkers": 0,
           "nutrientDays": 0,
           "illnessEpisodes": 0,
@@ -745,6 +748,7 @@
         "deletedAt": null
       }
     ],
+    "LabResultImportKey": [],
     "Biomarker": [
       {
         "id": "<id:14>",
@@ -1660,6 +1664,7 @@
       }
     ],
     "biomarkerMerges": [],
+    "labResultImportKeys": [],
     "illnessEpisodes": [
       {
         "id": "legacy-episode-child",

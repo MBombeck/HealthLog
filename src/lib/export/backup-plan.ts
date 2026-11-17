@@ -101,6 +101,7 @@ export const BACKED_UP_MODELS = [
   // ── Clinical record ───────────────────────────────────────────────────────
   "MentalHealthAssessment",
   "LabResult",
+  "LabResultImportKey", // Deleted Health Records readings: `labs-backup.ts`.
   "Biomarker",
   "Allergy",
   "FamilyHistoryEntry",
@@ -365,6 +366,7 @@ export const TWO_ENDED_MODELS = [
   "MoodEntryTagLink",
   "MoodTag",
   "LabResult",
+  "LabResultImportKey",
   "Biomarker",
   "Allergy",
   "FamilyHistoryEntry",

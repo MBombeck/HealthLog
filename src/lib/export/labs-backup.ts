@@ -145,11 +145,28 @@ export interface BiomarkerMergeBackupEntry {
   mergedAt: string;
 }
 
-/** The lab slice of the records section: results, markers, merge ledger. */
+/**
+ * The identity of a Health Records reading the person deleted (the import
+ * ledger, `LabResultImportKey`). A digest, no lab content.
+ */
+export interface LabResultImportKeyBackupEntry {
+  source: string;
+  externalId: string;
+  createdAt: string;
+}
+
+/**
+ * The lab slice of the records section: results, markers, merge ledger, and
+ * the identities of the Health Records readings the person deleted.
+ */
 export async function buildLabsBackupSlice(
   prisma: Pick<
     PrismaClient,
-    "labResult" | "biomarker" | "biomarkerAlias" | "biomarkerMerge"
+    | "labResult"
+    | "biomarker"
+    | "biomarkerAlias"
+    | "biomarkerMerge"
+    | "labResultImportKey"
   >,
   userId: string,
   disasterRecovery: boolean,
@@ -157,35 +174,42 @@ export async function buildLabsBackupSlice(
   labResults: LabResultBackupEntry[];
   biomarkers: BiomarkerBackupEntry[];
   biomarkerMerges: BiomarkerMergeBackupEntry[];
+  labResultImportKeys: LabResultImportKeyBackupEntry[];
 }> {
-  const [labResultRows, biomarkerRows, biomarkerAliasRows, biomarkerMergeRows] =
-    await Promise.all([
-      prisma.labResult.findMany({
-        where: disasterRecovery ? { userId } : { userId, deletedAt: null },
-        orderBy: [{ takenAt: "desc" }, { id: "asc" }],
-        include: { biomarker: { select: { name: true } } },
-      }),
-      prisma.biomarker.findMany({
-        where: { userId },
-        orderBy: [{ name: "asc" }, { id: "asc" }],
-      }),
-      prisma.biomarkerAlias.findMany({
-        where: { userId },
-        orderBy: [{ biomarkerId: "asc" }, { nameFolded: "asc" }, { id: "asc" }],
-        select: {
-          id: true,
-          biomarkerId: true,
-          name: true,
-          source: true,
-          createdAt: true,
-        },
-      }),
-      prisma.biomarkerMerge.findMany({
-        where: { userId },
-        orderBy: [{ mergedAt: "asc" }, { id: "asc" }],
-        include: { target: { select: { name: true } } },
-      }),
-    ]);
+  const [
+    labResultRows,
+    biomarkerRows,
+    biomarkerAliasRows,
+    biomarkerMergeRows,
+    labResultImportKeys,
+  ] = await Promise.all([
+    prisma.labResult.findMany({
+      where: disasterRecovery ? { userId } : { userId, deletedAt: null },
+      orderBy: [{ takenAt: "desc" }, { id: "asc" }],
+      include: { biomarker: { select: { name: true } } },
+    }),
+    prisma.biomarker.findMany({
+      where: { userId },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
+    }),
+    prisma.biomarkerAlias.findMany({
+      where: { userId },
+      orderBy: [{ biomarkerId: "asc" }, { nameFolded: "asc" }, { id: "asc" }],
+      select: {
+        id: true,
+        biomarkerId: true,
+        name: true,
+        source: true,
+        createdAt: true,
+      },
+    }),
+    prisma.biomarkerMerge.findMany({
+      where: { userId },
+      orderBy: [{ mergedAt: "asc" }, { id: "asc" }],
+      include: { target: { select: { name: true } } },
+    }),
+    buildDeletedLabImportKeys(prisma, userId, disasterRecovery),
+  ]);
 
   const labResults: LabResultBackupEntry[] = labResultRows.map((r) => ({
     ...(disasterRecovery
@@ -288,7 +312,56 @@ export async function buildLabsBackupSlice(
     aliases: aliasesByMarker.get(b.id) ?? [],
   }));
 
-  return { labResults, biomarkers, biomarkerMerges };
+  return { labResults, biomarkers, biomarkerMerges, labResultImportKeys };
+}
+
+/**
+ * What the person deleted among their Health Records readings, as the import
+ * ledger would hold it once every deletion is purged: the ledger's own rows,
+ * then, in a portable file, the identities of the deleted readings still
+ * waiting as tombstones. A portable file does not carry those readings, as it
+ * carries no tombstone; without their identities a restore onto a fresh
+ * instance would let the next import write each one again. A disaster-recovery
+ * file carries the tombstones themselves. An identity is carried once.
+ */
+async function buildDeletedLabImportKeys(
+  prisma: Pick<PrismaClient, "labResult" | "labResultImportKey">,
+  userId: string,
+  disasterRecovery: boolean,
+): Promise<LabResultImportKeyBackupEntry[]> {
+  const [ledger, tombstones] = await Promise.all([
+    prisma.labResultImportKey.findMany({
+      where: { userId },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      select: { source: true, externalId: true, createdAt: true },
+    }),
+    disasterRecovery
+      ? Promise.resolve([])
+      : prisma.labResult.findMany({
+          where: {
+            userId,
+            deletedAt: { not: null },
+            externalId: { not: null },
+          },
+          orderBy: [{ deletedAt: "asc" }, { id: "asc" }],
+          select: { source: true, externalId: true, deletedAt: true },
+        }),
+  ]);
+  const out: LabResultImportKeyBackupEntry[] = [];
+  const seen = new Set<string>();
+  const add = (source: string, externalId: string, at: Date) => {
+    const key = JSON.stringify([source, externalId]);
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ source, externalId, createdAt: at.toISOString() });
+  };
+  for (const row of ledger) add(row.source, row.externalId, row.createdAt);
+  for (const row of tombstones) {
+    if (row.externalId && row.deletedAt) {
+      add(row.source, row.externalId, row.deletedAt);
+    }
+  }
+  return out;
 }
 
 // ── Restore ──────────────────────────────────────────────────────────────────
@@ -298,6 +371,11 @@ export async function clearLabResults(ctx: RestoreContext): Promise<void> {
     where: { userId: ctx.ownerId },
   });
   ctx.cleared.labResults = labResults.count;
+  // The ledger is what the file says was deleted: replaced, like the rest.
+  const keys = await ctx.tx.labResultImportKey.deleteMany({
+    where: { userId: ctx.ownerId },
+  });
+  ctx.cleared.labResultImportKeys = keys.count;
 }
 
 export async function clearBiomarkers(ctx: RestoreContext): Promise<void> {
@@ -487,4 +565,32 @@ export async function restoreLabResults(ctx: RestoreContext): Promise<void> {
     const labSourceId = lab.id ?? lab.ref;
     if (labSourceId) labResultIdBySourceId.set(labSourceId, createdLab.id);
   }
+  await restoreLabImportKeys(ctx);
+}
+
+/**
+ * The import ledger, after the results: an identity a restored reading holds
+ * (live, or a tombstone in a disaster-recovery file) is that reading's, and
+ * the ledger only remembers identities whose row is gone.
+ */
+async function restoreLabImportKeys(ctx: RestoreContext): Promise<void> {
+  const { tx, ownerId, payload } = ctx;
+  const held = new Set(
+    payload.labResults.flatMap((lab) =>
+      lab.externalId ? [JSON.stringify([lab.source, lab.externalId])] : [],
+    ),
+  );
+  const keys = (payload.labResultImportKeys ?? []).filter(
+    (key) => !held.has(JSON.stringify([key.source, key.externalId])),
+  );
+  if (keys.length === 0) return;
+  await tx.labResultImportKey.createMany({
+    data: keys.map((key) => ({
+      userId: ownerId,
+      source: key.source,
+      externalId: key.externalId,
+      ...(key.createdAt ? { createdAt: new Date(key.createdAt) } : {}),
+    })),
+    skipDuplicates: true,
+  });
 }

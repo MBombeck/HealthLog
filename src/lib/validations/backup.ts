@@ -67,6 +67,7 @@ import { intradayProfileBackupSchema } from "@/lib/export/intraday-profile-backu
 import {
   biomarkerBackupSchema,
   biomarkerMergeBackupSchema,
+  labResultImportKeyBackupSchema,
   labResultBackupSchema,
 } from "@/lib/export/labs-backup-schema";
 import { lifeEventBackupSchema } from "@/lib/export/life-events-backup-schema";
@@ -167,6 +168,9 @@ export const backupPayloadSchema = z
     biomarkers: z.array(biomarkerBackupSchema).default([]),
     // Defaulted: a file written before v1.43 carries no key.
     biomarkerMerges: z.array(biomarkerMergeBackupSchema).default([]),
+    // The identities of Health Records readings the person deleted.
+    // Defaulted: a file written before the lab import ledger carries no key.
+    labResultImportKeys: z.array(labResultImportKeyBackupSchema).default([]),
     illnessEpisodes: z.array(illnessEpisodeBackupSchema).default([]),
     // Defaulted: a file written before v1.40 carries no key.
     symptomDefinitions: z.array(symptomDefinitionBackupSchema).default([]),

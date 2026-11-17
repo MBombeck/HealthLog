@@ -69,6 +69,7 @@ vi.mock("@/lib/db", () => ({
     biomarker: { findMany: vi.fn() },
     biomarkerAlias: { findMany: vi.fn() },
     biomarkerMerge: { findMany: vi.fn() },
+    labResultImportKey: { findMany: vi.fn(async () => []) },
     allergy: { findMany: vi.fn() },
     familyHistoryEntry: { findMany: vi.fn() },
     workout: { findMany: vi.fn() },

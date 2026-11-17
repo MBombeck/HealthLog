@@ -27,6 +27,7 @@ import { matchAnalyteKey } from "@/lib/labs/analyte-match";
 import { sameLabUnit } from "@/lib/labs/unit-normalise";
 import { annotate } from "@/lib/logging/context";
 import { computeLabTrend } from "@/lib/labs/lab-trend";
+import { retireLabImportKeys } from "@/lib/labs/fhir-import/import-keys";
 
 /** Upper bound on readings the trend line reads. */
 const LAB_TREND_READ_CAP = 2000;
@@ -319,14 +320,17 @@ export const DELETE = apiHandler(
     // Hard delete the marker AND its readings in one transaction. Deleting a
     // biomarker is a deliberate "remove this and its history" action, so the
     // readings go with it rather than lingering as orphaned, unlinked rows.
-    // Both legs are userId-narrowed so a cross-user id can never reach another
-    // account's data.
-    const [removedReadings] = await prisma.$transaction([
-      prisma.labResult.deleteMany({
-        where: { userId: user.id, biomarkerId: id },
-      }),
-      prisma.biomarker.delete({ where: { id } }),
-    ]);
+    // Every leg is userId-narrowed so a cross-user id can never reach another
+    // account's data. A reading imported from Health Records leaves its
+    // identity in the import ledger first, so the next export or resend does
+    // not write it again.
+    const removedReadings = await prisma.$transaction(async (tx) => {
+      const where = { userId: user.id, biomarkerId: id };
+      await retireLabImportKeys(tx, user.id, where);
+      const removed = await tx.labResult.deleteMany({ where });
+      await tx.biomarker.delete({ where: { id } });
+      return removed;
+    });
     invalidateUserHealthScore(user.id);
 
     await auditLog("biomarker.delete", {

@@ -40,6 +40,8 @@ export interface BackupSummary {
   cycleDayLogs: number;
   /** Lab results in the backup. */
   labResults: number;
+  /** Identities of Health Records lab readings the person deleted. */
+  labResultImportKeys: number;
   nutrientDays: number;
   /** User-scoped biomarker catalog entries in the backup. */
   biomarkers: number;
@@ -146,6 +148,7 @@ export function summarizeBackup(payload: BackupPayload): BackupSummary {
     cycleDayLogs: payload.cycleDayLogs.length,
     nutrientDays: payload.nutrientDays.length,
     labResults: payload.labResults.length,
+    labResultImportKeys: payload.labResultImportKeys.length,
     biomarkers: payload.biomarkers.length,
     illnessEpisodes: payload.illnessEpisodes.length,
     illnessDayLogs: payload.illnessEpisodes.reduce(

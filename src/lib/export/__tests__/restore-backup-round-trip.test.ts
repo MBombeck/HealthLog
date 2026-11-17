@@ -167,6 +167,7 @@ function sourceClient() {
     biomarker: empty,
     biomarkerAlias: empty,
     biomarkerMerge: empty,
+    labResultImportKey: empty,
     illnessEpisode: empty,
     allergy: empty,
     familyHistoryEntry: empty,

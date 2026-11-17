@@ -136,6 +136,10 @@ export const WIPE_MODELS = [
   // ── Clinical record ─────────────────────────────────────────────────────
   "MentalHealthAssessment",
   "LabResult",
+  // The identities of Health Records readings the person deleted (#1400).
+  // Kept, they would make the first import after the wipe skip results for
+  // a decision about a record that no longer exists.
+  "LabResultImportKey",
   // v1.43 — a marker's other spellings and the merges folded into it. Both
   // cascade from the marker; named before it so their counts read true.
   "BiomarkerAlias",

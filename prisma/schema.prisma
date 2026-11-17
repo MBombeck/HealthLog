@@ -1083,6 +1083,9 @@ model User {
   // v1.39.2 — source keys of imported documents that the tombstone purge
   // removed, so a re-run of an importer cannot bring a deleted document back.
   documentImportKeys                        DocumentImportKey[]
+  // v1.47.7 — identities of Health Records lab readings the person deleted,
+  // kept once the reading's row is gone. See LabResultImportKey.
+  labResultImportKeys                       LabResultImportKey[]
   // v1.39.2 — further source keys an import answered with an existing
   // document (same bytes under another key). See DocumentSourceAlias.
   documentSourceAliases                     DocumentSourceAlias[]
@@ -6666,7 +6669,8 @@ model LabResult {
   /// it has none). A digest, not the identifier and not ciphertext. NULL for
   /// every reading typed, scanned or imported from CSV. Read by
   /// `writeFhirLabReadings` (`src/lib/labs/fhir-import/write.ts`), which treats
-  /// a reading it already holds under this id, deleted or not, as a duplicate.
+  /// a reading it already holds under this id, deleted or not, as a duplicate;
+  /// once a deleted reading's row is gone, `LabResultImportKey` holds the id.
   externalId          String?   @map("external_id")
   /// Optional free-text note, AES-256-GCM encrypted at rest via
   /// `src/lib/crypto.ts` (Bytes column, `*Encrypted` suffix per convention).
@@ -6690,6 +6694,30 @@ model LabResult {
   // (v1.28.46 H4), serving the lab-biomarker boot-discovery `SELECT DISTINCT
   // user_id`. Raw SQL only (partial predicate not expressible in Prisma).
   @@map("lab_results")
+}
+
+/// v1.47.7 (#1400) — the identity of a Health Records lab reading the person
+/// deleted, once the reading's row is gone. While a deleted reading waits as
+/// a tombstone, its own `externalId` is the memory that the person deleted it
+/// and the import answers "duplicate". When the row leaves the database (the
+/// tombstone purge, or deleting the reading's whole marker) the identity moves
+/// here in the same transaction, so an Apple Health export or the phone
+/// sending the result again still writes nothing. Read by
+/// `writeFhirLabReadings`, carried by the backup. Holds the digest only, no
+/// lab content.
+model LabResultImportKey {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  /// The `LabResult.source` the identity arrived under ("APPLE_HEALTH").
+  source     String
+  /// The `LabResult.externalId` digest.
+  externalId String   @map("external_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, source, externalId])
+  @@map("lab_result_import_keys")
 }
 
 // ─── Biomarker catalog ───────────────────────────────────────

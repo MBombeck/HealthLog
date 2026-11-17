@@ -11,8 +11,10 @@
  *
  * Two duplicate checks, in this order:
  *   1. the identity (`externalId`) under `source = APPLE_HEALTH`, against
- *      every row including the deleted ones: a result the person deleted
- *      stays deleted however often the export or the phone sends it again;
+ *      every row including the deleted ones and against the import ledger
+ *      that keeps a deleted reading's identity once its row is gone
+ *      (`./import-keys.ts`): a result the person deleted stays deleted
+ *      however often the export or the phone sends it again;
  *   2. the reading itself (marker or name, day, value) against the live
  *      record, so a result already typed, scanned or imported from a CSV is
  *      not written a second time.
@@ -43,6 +45,7 @@ import {
 import { readingKeys } from "@/lib/labs/reading-keys";
 import { encryptNoteToBytes } from "@/lib/labs/store";
 
+import { heldLabImportKeys } from "./import-keys";
 import {
   APPLE_HEALTH_LAB_SOURCE,
   type FhirLabWriteStatus,
@@ -53,7 +56,7 @@ const CHUNK = 200;
 
 type LabWriteClient = Pick<
   PrismaClient,
-  "labResult" | "biomarker" | "biomarkerAlias"
+  "labResult" | "biomarker" | "biomarkerAlias" | "labResultImportKey"
 >;
 
 export interface FhirLabWriteResult {
@@ -118,18 +121,27 @@ export async function writeFhirLabReadings(args: {
       seenIds.add(reading.externalId);
       fresh.push({ at, reading });
     }
-    const held = new Set(
+    const freshIds = fresh.map((f) => f.reading.externalId);
+    const held = new Set<string | null>(
       (
         await client.labResult.findMany({
           where: {
             userId,
             source: APPLE_HEALTH_LAB_SOURCE,
-            externalId: { in: fresh.map((f) => f.reading.externalId) },
+            externalId: { in: freshIds },
           },
           select: { externalId: true },
         })
       ).map((row) => row.externalId),
     );
+    for (const id of await heldLabImportKeys(
+      client,
+      userId,
+      APPLE_HEALTH_LAB_SOURCE,
+      freshIds,
+    )) {
+      held.add(id);
+    }
 
     // 2. The marker, and whether the unit fits it.
     const planned: Pending[] = [];

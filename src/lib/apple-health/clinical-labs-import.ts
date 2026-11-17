@@ -81,7 +81,10 @@ export async function importAppleHealthClinicalLabs(input: {
   userId: string;
   tz: string;
   references: readonly ClinicalLabReference[];
-  prisma?: Pick<PrismaClient, "labResult" | "biomarker" | "biomarkerAlias">;
+  prisma?: Pick<
+    PrismaClient,
+    "labResult" | "biomarker" | "biomarkerAlias" | "labResultImportKey"
+  >;
   limits?: AppleHealthClinicalArchiveLimits;
 }): Promise<FhirLabCounts> {
   const counts = emptyFhirLabCounts();

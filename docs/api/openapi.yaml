@@ -45678,6 +45678,27 @@ components:
               - readingCount
               - mergedAt
             additionalProperties: {}
+        labResultImportKeys:
+          default: []
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+                minLength: 1
+                maxLength: 32
+              externalId:
+                type: string
+                minLength: 1
+                maxLength: 128
+              createdAt:
+                type: string
+                minLength: 1
+            required:
+              - source
+              - externalId
+            additionalProperties: {}
         illnessEpisodes:
           default: []
           type: array
@@ -49012,6 +49033,7 @@ components:
         - labResults
         - biomarkers
         - biomarkerMerges
+        - labResultImportKeys
         - illnessEpisodes
         - symptomDefinitions
         - lifeEvents

@@ -22,13 +22,18 @@ vi.mock("@/lib/api-handler", async (importOriginal) => {
   };
 });
 
-vi.mock("@/lib/db", () => ({
-  prisma: {
+vi.mock("@/lib/db", () => {
+  const prisma = {
     biomarker: { findFirst: vi.fn(), delete: vi.fn() },
-    labResult: { deleteMany: vi.fn() },
-    $transaction: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
-  },
-}));
+    labResult: { deleteMany: vi.fn(), findMany: vi.fn(async () => []) },
+    labResultImportKey: { createMany: vi.fn() },
+    $transaction: vi.fn(),
+  };
+  prisma.$transaction.mockImplementation(
+    async (fn: (tx: typeof prisma) => unknown) => fn(prisma),
+  );
+  return { prisma };
+});
 vi.mock("@/lib/auth/audit", () => ({
   auditLog: vi.fn().mockResolvedValue(undefined),
 }));
@@ -79,11 +84,20 @@ describe("DELETE /api/biomarkers/[id] record authority", () => {
     expect(requireAuth).not.toHaveBeenCalled();
   });
 
-  it("narrows both delete legs to the resolved record", async () => {
+  it("narrows every delete leg to the resolved record", async () => {
     await DELETE(delReq(), params);
     expect(prisma.labResult.deleteMany).toHaveBeenCalledWith({
       where: { userId: "record-1", biomarkerId: "bm-1" },
     });
+    // The identities the import ledger keeps come from the same rows.
+    expect(prisma.labResult.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          userId: "record-1",
+          biomarkerId: "bm-1",
+        }),
+      }),
+    );
   });
 
   it("refuses when the record authority refuses, deleting nothing", async () => {

@@ -117,3 +117,15 @@ export const biomarkerMergeBackupSchema = z
     mergedAt: isoDateTime,
   })
   .passthrough();
+
+/**
+ * The identity of a Health Records reading the person deleted (the import
+ * ledger). Bounded like the reading's own `externalId`.
+ */
+export const labResultImportKeyBackupSchema = z
+  .object({
+    source: z.string().min(1).max(32),
+    externalId: z.string().min(1).max(128),
+    createdAt: isoDateTime.optional(),
+  })
+  .passthrough();

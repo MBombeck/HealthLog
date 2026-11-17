@@ -551,6 +551,17 @@ export async function seedEveryTwoEndedModel(
       takenAt: AT("2026-06-30T09:00:00.000Z"),
     },
   });
+  // A Health Records reading the person deleted and the purge then removed:
+  // only the import ledger remembers it, and a restore that dropped the row
+  // would let the next Apple Health import write it again.
+  await prisma.labResultImportKey.create({
+    data: {
+      userId: OWNER_ID,
+      source: "APPLE_HEALTH",
+      externalId: "fhir:round-trip-deleted-result",
+      createdAt: AT("2026-07-04T09:00:00.000Z"),
+    },
+  });
   // What the drug above is FOR, pinned to the analyte just created. The two
   // rows are seeded at opposite ends of this fixture on purpose: the drug is
   // restored hundreds of lines before the analyte, so this pairing is what
