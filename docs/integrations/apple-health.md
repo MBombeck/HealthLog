@@ -140,14 +140,21 @@ temporary files.
 
 The auxiliary reader enforces limits before and during decompression:
 
-- at most 20,000 total archive members and 2,000 ECG CSV members;
+- at most 200,000 archive members of any kind (the same ceiling for the
+  ECG, workout-route and Health Records passes) and 2,000 ECG CSV members;
 - at most 16 MiB per decompressed ECG CSV and 512 MiB across all ECG CSVs;
 - at most a 200:1 declared compression ratio; and
 - at most 2,000,000 waveform samples per recording.
 
-Encrypted ZIP members, unsupported compression, unsafe or duplicate
-paths, forged size metadata, malformed timestamps or samples, and
-limit overruns are rejected. An ECG failure is fail-soft: valid
+Unsafe or duplicate paths and a malformed archive end the pass; so does
+a running total over its limit. An ECG CSV that is encrypted, uses an
+unsupported compression or breaks a per-file limit (including a
+compressed size over the per-file limit, whatever the size metadata
+says) fails on its own, and the other recordings are still read. The
+per-file limits apply only to the files a pass reads: a large file of
+another kind, or a route or Health Records file the export does not
+reference, is skipped without being checked. Malformed timestamps or
+samples are rejected per recording. An ECG failure is fail-soft: valid
 `export.xml` measurements and workouts still commit, while the
 terminal result reports only
 `discovered/imported/updated/skipped/failed` ECG counts. It never
@@ -179,17 +186,30 @@ turns each final laboratory Observation into a lab reading:
   value kept beside it;
 - a result with a comparator (`<0.5 mg/L`) is kept as text, as printed;
 - the report's own reference range is kept with the reading;
+- a specific gravity, a pH or an INR sent as a number without a unit
+  (known by its LOINC code) is kept as a plain number; any other number
+  without a unit is refused;
 - a panel header is not a reading, but its members carry its name;
 - preliminary results, withdrawn results and other categories (vital
-  signs, for instance) are skipped.
+  signs, for instance) are skipped. A category counts as laboratory when
+  its code, display or text contains "lab", whatever the spelling;
+- a file over a size limit fails on its own; the other files are still
+  read.
 
 Each reading keeps an identity built from the issuing institution and
 the record identifier (a digest, `lab_results.external_id`). Uploading
 the archive again writes nothing new, a result deleted in HealthLog
-stays deleted, and the iOS app sending the same result through
+stays deleted (also after its whole marker is deleted, after the
+deleted reading is purged, and across a backup restore: the identity is
+kept in `lab_result_import_keys`), and the iOS app sending the same result through
 `POST /api/labs/fhir-batch` is recognised as the same reading. A
 reading already entered by hand, scanned or imported from a CSV on the
-same day with the same value is not written twice. The pass is
+same day with the same value is not written twice. The first stored
+version of a result is the one kept: an amended result arriving under
+the same identity is a duplicate, and a result later marked entered in
+error or cancelled at the provider is skipped as withdrawn but does not
+remove the reading already stored. Delete it in HealthLog if it should
+go. The pass is
 fail-soft like the ECG pass, and the job result carries only
 `discovered/imported/duplicate/skipped/failed` lab counts.
 
