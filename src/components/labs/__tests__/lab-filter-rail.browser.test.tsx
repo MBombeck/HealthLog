@@ -14,6 +14,7 @@ function props(): LabFilterRailProps {
     searchInputRef: { current: null },
     onStatusChange: vi.fn(),
     onCategoryChange: vi.fn(),
+    onSourceChange: vi.fn(),
     onFromDayChange: vi.fn(),
     onToDayChange: vi.fn(),
     onResetFilters: vi.fn(),

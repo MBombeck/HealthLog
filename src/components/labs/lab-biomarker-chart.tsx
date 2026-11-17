@@ -17,6 +17,7 @@ import {
 import { CHART_HEIGHT_PX } from "@/lib/charts/constants";
 import { prefersReducedMotion } from "@/lib/charts/reduced-motion";
 import { formatReferenceRange } from "@/lib/labs/reference-range";
+import { labSourceLabelKey } from "@/lib/i18n/source-labels";
 import {
   useDisplayTimezone,
   useFormatters,
@@ -78,6 +79,8 @@ interface ChartPoint {
   sourceReferenceText: string | null;
   /** What the report printed, for a converted reading; sets its precision. */
   sourceValue: number | null;
+  /** How the reading reached the record (`LabResult.source`). */
+  source: string;
 }
 
 /** The source window drawn as the second band, resolved from the readings in view. */
@@ -157,6 +160,7 @@ export function LabBiomarkerChart({
       referenceOrigin: r.referenceOrigin,
       sourceReferenceText: r.sourceReferenceText,
       sourceValue: r.sourceValue,
+      source: r.source,
     }));
   }, [readings, range, nowMs]);
 
@@ -380,11 +384,15 @@ export function LabBiomarkerChart({
                     if (!active || !point) {
                       return <RichChartTooltip active={false} rows={[]} />;
                     }
+                    // Where the reading came from, under its value: a reading
+                    // the phone imported looks like a typed one otherwise.
+                    const sourceKey = labSourceLabelKey(point.source);
                     const rows: RichTooltipRow[] = [
                       {
                         name: t("labs.chart.valueLabel"),
                         value: `${labNumber(point.value, point.sourceValue)} ${unit}`,
                         color: primary,
+                        delta: sourceKey ? t(sourceKey) : undefined,
                       },
                     ];
                     // Name the window THIS reading was judged against. Two

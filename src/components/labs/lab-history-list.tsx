@@ -35,6 +35,7 @@ import { LabConvertedNote } from "./lab-converted-note";
 import { resolveNoteForUpdate } from "@/lib/labs/note-update";
 import { resolveValueForUpdate, valueEditSeed } from "@/lib/labs/value-update";
 import { useTranslations } from "@/lib/i18n/context";
+import { labSourceLabelKey } from "@/lib/i18n/source-labels";
 import { invalidateKeys, labDependentKeys, queryKeys } from "@/lib/query-keys";
 
 import { ReferenceRangeBadge } from "./reference-range-badge";
@@ -355,6 +356,13 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
     });
   }, [readings, sortBy, sortDir]);
 
+  // How the reading reached the record, in the app's source vocabulary; a
+  // value this client does not know shows nothing rather than a raw code.
+  const sourceLabel = (r: LabResultDto) => {
+    const key = labSourceLabelKey(r.source);
+    return key ? t(key) : null;
+  };
+
   // One action pair per reading, shared by the phone list and the table.
   const renderActions = (r: LabResultDto) => (
     <div className="flex items-center justify-end gap-1">
@@ -375,7 +383,14 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
         domain="labs"
         onConfirm={() => deleteMutation.mutate(r.id)}
         title={t("labs.deleteConfirmTitle")}
-        description={t("labs.deleteConfirmDescription")}
+        description={
+          // A reading from Apple Health's Health Records stays deleted: the
+          // next import recognises it and leaves it out. Say so before the
+          // delete, since nothing on the row will bring it back.
+          r.source === "APPLE_HEALTH"
+            ? `${t("labs.deleteConfirmDescription")} ${t("labs.deleteAppleHealthNote")}`
+            : t("labs.deleteConfirmDescription")
+        }
         confirmLabel={t("labs.deleteReading")}
         className="size-11 sm:size-9"
         iconClassName="h-4 w-4"
@@ -421,6 +436,11 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
                 {r.hasNote ? (
                   <span className="text-xs">{t("labs.hasNote")}</span>
                 ) : null}
+                {sourceLabel(r) ? (
+                  <span className="text-xs" data-slot="lab-reading-source">
+                    {sourceLabel(r)}
+                  </span>
+                ) : null}
               </div>
               <SourceRangeNote
                 reading={r}
@@ -463,6 +483,7 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
                 currentDir={sortDir}
                 onSort={toggleSort}
               />
+              <TableHead>{t("dataList.sourceLabel")}</TableHead>
               <TableHead className="w-20 pr-4 text-right">
                 <span className="sr-only">{t("labs.editReading")}</span>
               </TableHead>
@@ -504,6 +525,12 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">
                   {r.hasNote ? t("labs.hasNote") : ""}
+                </TableCell>
+                <TableCell
+                  className="text-muted-foreground text-sm whitespace-nowrap"
+                  data-slot="lab-reading-source"
+                >
+                  {sourceLabel(r) ?? ""}
                 </TableCell>
                 <TableCell className="pr-4 text-right">
                   {renderActions(r)}
@@ -582,7 +609,7 @@ export function LabHistoryList({ readings }: { readings: LabResultDto[] }) {
           <div className="flex justify-end gap-2">
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               onClick={closeEdit}
               disabled={updateMutation.isPending}
             >

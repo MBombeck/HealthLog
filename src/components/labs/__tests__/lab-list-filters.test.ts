@@ -197,6 +197,31 @@ describe("filterMarkerRows", () => {
     expect(filterMarkerRows(rows, { status: "below" })).toEqual([row2]);
   });
 
+  it("filters by the newest reading's source", () => {
+    const imported = mockMarkerRow({
+      key: "bm:ah",
+      analyte: "HbA1c",
+      latest: mockReading({ source: "APPLE_HEALTH" }),
+    });
+    expect(
+      filterMarkerRows([...rows, imported], { source: "APPLE_HEALTH" }),
+    ).toEqual([imported]);
+    expect(filterMarkerRows([...rows, imported], { source: "MANUAL" })).toEqual(
+      rows,
+    );
+  });
+
+  it("round-trips the source through the URL and drops a malformed one", () => {
+    const parsed = parseLabListSearchParams(
+      new URLSearchParams("source=APPLE_HEALTH"),
+    );
+    expect(parsed.source).toBe("APPLE_HEALTH");
+    expect(labListFiltersToSearch(parsed)).toBe("source=APPLE_HEALTH");
+    expect(
+      parseLabListSearchParams(new URLSearchParams("source=<b>")).source,
+    ).toBeUndefined();
+  });
+
   it("filters by category using categoryOf lookup", () => {
     const categoryOf = (key: string) =>
       key === "bm:1" || key === "bm:2" ? "iron_panel" : "lipid_panel";

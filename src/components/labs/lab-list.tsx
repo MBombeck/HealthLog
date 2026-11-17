@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRecordCapabilities } from "@/hooks/use-record-capabilities";
 import { useCallback, useId, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -43,6 +44,7 @@ import {
   type MarkerRow,
 } from "./lab-list-rows";
 import type { LabOverviewCategoryDto, LabOverviewResponse } from "./types";
+import { LAB_SOURCE_LABEL_KEYS } from "@/lib/i18n/source-labels";
 
 type GroupsOpen = ReturnType<typeof useGroupsOpen>;
 
@@ -233,8 +235,22 @@ function LabListEmpty({
       title={t("labs.emptyTitle")}
       description={t("labs.emptyDescription")}
       action={
-        onAddFirst && canAddLab ? (
-          <Button onClick={onAddFirst}>{t("labs.addFirst")}</Button>
+        canAddLab ? (
+          // Results also arrive in bulk: Apple Health's Health Records and a
+          // lab CSV both import from Settings › Import, the first card there.
+          <div className="flex flex-wrap justify-center gap-2">
+            {onAddFirst ? (
+              <Button onClick={onAddFirst}>{t("labs.addFirst")}</Button>
+            ) : null}
+            <Button asChild variant="outline">
+              <Link
+                href="/settings/export#import-apple-health"
+                data-slot="labs-empty-import-link"
+              >
+                {t("labs.importAction")}
+              </Link>
+            </Button>
+          </div>
         ) : undefined
       }
     />
@@ -343,6 +359,7 @@ export function LabList({
     searchInputRef,
     setStatusFilter,
     setCategoryFilter,
+    setSourceFilter,
     setFromDay,
     setToDay,
     resetFilters,
@@ -369,6 +386,7 @@ export function LabList({
     (effectiveFilters.q && effectiveFilters.q.trim() !== "") ||
     (effectiveFilters.status && effectiveFilters.status !== "ALL") ||
     (effectiveFilters.category && effectiveFilters.category !== "ALL") ||
+    (effectiveFilters.source && effectiveFilters.source !== "ALL") ||
     effectiveFilters.fromDay ||
     effectiveFilters.toDay,
   );
@@ -386,6 +404,15 @@ export function LabList({
       setCategoryFilter("ALL", { mode: "replace", afterPaint: true });
     }
   }, [categories, filters.category, setCategoryFilter]);
+
+  // The sources the newest readings carry, in the vocabulary's order, for the
+  // rail's source pill.
+  const sources = useMemo(() => {
+    const present = new Set(rawRows.map((row) => row.latest.source));
+    return Object.keys(LAB_SOURCE_LABEL_KEYS).filter((source) =>
+      present.has(source),
+    );
+  }, [rawRows]);
 
   const categoryMap = useMemo(
     () => buildMarkerCategoryMap(categories),
@@ -453,11 +480,13 @@ export function LabList({
       searchInputRef={searchInputRef}
       onStatusChange={setStatusFilter}
       onCategoryChange={setCategoryFilter}
+      onSourceChange={setSourceFilter}
       onFromDayChange={setFromDay}
       onToDayChange={setToDay}
       onResetFilters={resetFilters}
       isFiltered={effectiveIsFiltered}
       categories={categories}
+      sources={sources}
       total={rows.length}
     />
   );

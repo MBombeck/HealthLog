@@ -46,24 +46,24 @@ const CONVERTED: Reading = {
 describe("<SourceRangeNote>", () => {
   it("names a stated reading's window verbatim", () => {
     const html = render(STATED);
-    expect(html).toContain("Report range 70 - 99");
+    expect(html).toContain("Lab&#x27;s range 70 - 99");
     expect(html).not.toContain("as printed");
   });
 
   it("states a converted reading's window in the marker's unit", () => {
     const html = render(CONVERTED);
-    expect(html).toContain("Report range 70.27–99.1 mg/dL");
+    expect(html).toContain("Lab&#x27;s range 70.27–99.1 mg/dL");
   });
 
   it("keeps the printed text as evidence, labelled with the unit it is in", () => {
     const html = render(CONVERTED);
-    expect(html).toContain("as printed in mmol/L: 3.9 - 5.5");
+    expect(html).toContain("as given in mmol/L: 3.9 - 5.5");
   });
 
   it("never puts the printed numbers in the statement about the stored unit", () => {
     const html = render(CONVERTED);
     // The window in force is followed by the marker's unit, not the printed text.
-    expect(html).not.toContain("Report range 3.9 - 5.5");
+    expect(html).not.toContain("Lab&#x27;s range 3.9 - 5.5");
     expect(html).toContain("your range 70–100 mg/dL");
   });
 
