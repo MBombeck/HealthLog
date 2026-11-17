@@ -172,11 +172,16 @@ export function unitFitsMarker(
 /**
  * The marker a printed name resolves to, and how; null when nothing does.
  * `unit` is the unit the reading states, used only by the catalog step.
+ * `options.catalogKey` names the catalog analyte when the source says which
+ * one it is (a LOINC code on a FHIR result): the catalog step then uses it in
+ * place of the analyte the name alone would suggest. The account's own names
+ * and aliases still win first.
  */
 export function resolveInIndex(
   index: MarkerIndex,
   rawName: string,
   unit?: string | null,
+  options: { catalogKey?: string | null } = {},
 ): MarkerMatch | null {
   const name = rawName.trim();
   if (!name) return null;
@@ -203,7 +208,7 @@ export function resolveInIndex(
   }
 
   // 3. The catalog: a marker of the same analyte that can take the unit.
-  const key = catalogKeyForName(name);
+  const key = options.catalogKey ?? catalogKeyForName(name);
   if (key) {
     const candidates = index.markers.filter(
       (m) =>

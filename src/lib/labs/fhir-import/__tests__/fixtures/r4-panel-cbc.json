@@ -1,0 +1,56 @@
+[
+  {
+    "resourceType": "Observation",
+    "id": "obs-cbc",
+    "status": "final",
+    "category": [{ "coding": [{ "code": "laboratory" }] }],
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "58410-2",
+          "display": "CBC panel - Blood by Automated count"
+        }
+      ],
+      "text": "Complete blood count"
+    },
+    "effectiveDateTime": "2025-02-01T07:30:00Z",
+    "hasMember": [
+      { "reference": "Observation/obs-hgb" },
+      { "reference": "https://fhir.example.org/api/Observation/obs-wbc" }
+    ]
+  },
+  {
+    "resourceType": "Observation",
+    "id": "obs-hgb",
+    "status": "final",
+    "category": [{ "coding": [{ "code": "laboratory" }] }],
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "718-7",
+          "display": "Hemoglobin [Mass/volume] in Blood"
+        }
+      ],
+      "text": "Hemoglobin"
+    },
+    "effectiveDateTime": "2025-02-01T07:30:00Z",
+    "valueQuantity": { "value": 14.2, "unit": "g/dL", "code": "g/dL" },
+    "referenceRange": [
+      {
+        "low": { "value": 13.5, "unit": "g/dL" },
+        "high": { "value": 17.5, "unit": "g/dL" }
+      }
+    ]
+  },
+  {
+    "resourceType": "Observation",
+    "id": "obs-wbc",
+    "status": "final",
+    "category": [{ "coding": [{ "code": "laboratory" }] }],
+    "code": { "text": "WBC" },
+    "effectiveDateTime": "2025-02-01T07:30:00Z",
+    "valueQuantity": { "value": 6.4, "unit": "x10^3/uL", "code": "10*3/uL" }
+  }
+]

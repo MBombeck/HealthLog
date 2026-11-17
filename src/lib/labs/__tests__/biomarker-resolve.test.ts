@@ -284,3 +284,33 @@ describe("suggestions", () => {
     expect(nameSimilarity("LDL", "Ferritin")).toBeLessThan(0.5);
   });
 });
+
+describe("a catalog hint from the source (#1400)", () => {
+  it("matches a marker by the hinted analyte when the name says nothing", () => {
+    const ldl = marker("LDL", "mg/dL");
+    const idx = index([ldl]);
+    const name =
+      "Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation";
+    expect(resolveInIndex(idx, name, "mmol/L")).toBeNull();
+    expect(
+      resolveInIndex(idx, name, "mmol/L", { catalogKey: "ldl" }),
+    ).toMatchObject({ marker: { id: ldl.id }, matchKind: "catalog" });
+  });
+
+  it("still steps aside for a unit the marker cannot take", () => {
+    const ldl = marker("LDL", "mg/dL");
+    expect(
+      resolveInIndex(index([ldl]), "LDL calc", "U/L", { catalogKey: "ldl" }),
+    ).toBeNull();
+  });
+
+  it("lets the account's own name win over the hint", () => {
+    const own = marker("Odd name", "mmol/L");
+    const ldl = marker("LDL", "mg/dL");
+    expect(
+      resolveInIndex(index([own, ldl]), "odd name", "mmol/L", {
+        catalogKey: "ldl",
+      }),
+    ).toMatchObject({ marker: { id: own.id }, matchKind: "name" });
+  });
+});

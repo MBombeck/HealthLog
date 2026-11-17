@@ -1,0 +1,37 @@
+{
+  "resourceType": "Observation",
+  "id": "dstu2-glu",
+  "status": "final",
+  "category": {
+    "coding": [
+      {
+        "system": "http://hl7.org/fhir/observation-category",
+        "code": "laboratory"
+      }
+    ]
+  },
+  "code": {
+    "coding": [
+      {
+        "system": "http://loinc.org",
+        "code": "2345-7",
+        "display": "Glucose [Mass/volume] in Serum or Plasma"
+      }
+    ]
+  },
+  "subject": { "reference": "Patient/example-patient" },
+  "effectiveDateTime": "2019-06-11T07:05:00-07:00",
+  "valueQuantity": {
+    "value": 92,
+    "unit": "mg/dL",
+    "system": "http://unitsofmeasure.org",
+    "code": "mg/dL"
+  },
+  "referenceRange": [
+    {
+      "low": { "value": 70, "unit": "mg/dL" },
+      "high": { "value": 99, "unit": "mg/dL" }
+    }
+  ],
+  "comments": "Specimen slightly haemolysed."
+}
