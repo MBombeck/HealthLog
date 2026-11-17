@@ -40,18 +40,23 @@ function activeGrant({
   };
 }
 
+/** The rows the grant query answers, in the shape the module selects. */
+function mockGrants(rows: ReturnType<typeof activeGrant>[]): void {
+  vi.mocked(prisma.accountGrant.findMany).mockResolvedValue(rows as never);
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
 describe("resolveAccountAccess", () => {
   it("keeps MANAGE compatible with legacy access while publishing its canonical level", async () => {
-    vi.mocked(prisma.accountGrant.findMany).mockResolvedValue([
+    mockGrants([
       activeGrant({
         access: "MANAGE",
         managedProfileAt: new Date("2026-08-01T00:00:00.000Z"),
       }),
-    ] as never);
+    ]);
 
     const access = await resolveAccountAccess({
       user: { id: "delegate" },
@@ -91,9 +96,7 @@ describe("resolveAccountAccess", () => {
   });
 
   it("never publishes the vault for an adult's MANAGE grant (#1403)", async () => {
-    vi.mocked(prisma.accountGrant.findMany).mockResolvedValue([
-      activeGrant({ access: "MANAGE", managedProfileAt: null }),
-    ] as never);
+    mockGrants([activeGrant({ access: "MANAGE", managedProfileAt: null })]);
 
     const access = await resolveAccountAccess({
       user: { id: "delegate" },
@@ -108,9 +111,7 @@ describe("resolveAccountAccess", () => {
   });
 
   it("publishes a WRITE grant's writable sections within its scope and no manageable ones", async () => {
-    vi.mocked(prisma.accountGrant.findMany).mockResolvedValue([
-      activeGrant({ access: "WRITE", scopeJson: ["mind", "labs"] }),
-    ] as never);
+    mockGrants([activeGrant({ access: "WRITE", scopeJson: ["mind", "labs"] })]);
 
     const access = await resolveAccountAccess({
       user: { id: "delegate" },
@@ -124,9 +125,7 @@ describe("resolveAccountAccess", () => {
   });
 
   it("publishes two empty lists for a READ grant", async () => {
-    vi.mocked(prisma.accountGrant.findMany).mockResolvedValue([
-      activeGrant({ access: "READ" }),
-    ] as never);
+    mockGrants([activeGrant({ access: "READ" })]);
 
     const access = await resolveAccountAccess({
       user: { id: "delegate" },
@@ -138,9 +137,7 @@ describe("resolveAccountAccess", () => {
   });
 
   it("resolves an ordinary shared record on the server", async () => {
-    vi.mocked(prisma.accountGrant.findMany).mockResolvedValue([
-      activeGrant({ access: "READ" }),
-    ] as never);
+    mockGrants([activeGrant({ access: "READ" })]);
 
     const access = await resolveAccountAccess({
       user: { id: "delegate" },
@@ -164,9 +161,7 @@ describe("resolveAccountAccess", () => {
     // READ grant, and the delegate's resolved entry still names the owner in
     // full. If a future change drops `fullName` from the grantor `select`,
     // this fails rather than silently reverting the disclosure to a nickname.
-    vi.mocked(prisma.accountGrant.findMany).mockResolvedValue([
-      activeGrant({ access: "READ" }),
-    ] as never);
+    mockGrants([activeGrant({ access: "READ" })]);
 
     const access = await resolveAccountAccess({
       user: { id: "delegate" },
