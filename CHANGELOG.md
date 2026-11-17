@@ -2,6 +2,28 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Activity files (FIT).** Settings → Export & Import has a new card for
+  the file a watch or bike computer records: a bare `.fit`, a `.fit.gz`,
+  or the ZIP Garmin Connect's "Export original" writes. Each session
+  becomes a workout with its heart-rate, speed, power and cadence curve
+  (the heart-rate chart on the workout page), and with its GPS track when
+  Workout routes is switched on, stored encrypted like an Apple Health
+  track. A run that is already here from Garmin, Apple Health or Strava is
+  not stored twice: the existing workout gets the curve from the file if it
+  had none. Importing the same file again changes nothing. The file is
+  read in the background worker, never in the request: it is checked for
+  its header and checksums and against limits on messages, definitions and
+  developer fields before it is decoded, and deleted as soon as the import
+  ends. `POST /api/import/fit` (multipart, 10 MB) and
+  `GET /api/import/fit/status`; new rows carry `source = IMPORT`. Thanks to
+  @kruemelro for asking for it. (#1343)
+- **Heart rate over Garmin activities.** The Garmin connection now also
+  downloads the original file of each new activity and adds its heart-rate
+  curve to the workout, which the activity summary leaves out. Older
+  activities get theirs through the FIT card. (#1343)
+
 ### Changed
 
 - API responses and CSV or JSON exports now go out gzip-compressed when the
