@@ -34,7 +34,8 @@
 import { prisma } from "@/lib/db";
 import type { MeasurementType } from "@/generated/prisma/client";
 import { countLiveReadingsPerType } from "@/lib/measurements/newest-per-type";
-import { resolveModuleMap } from "@/lib/modules/gate";
+import { isModuleEnabled, resolveModuleMap } from "@/lib/modules/gate";
+import { TRACKED_INTAKE_EVENT_WHERE } from "@/lib/medications/intake-tracking";
 import { isCycleAvailableForUser } from "@/lib/cycle/gate";
 import { parseCoachPrefs } from "@/lib/validations/coach-prefs";
 import { admitCoachSources, coachExclusions } from "@/lib/ai/coach/scope-gate";
@@ -126,18 +127,24 @@ export async function buildMcpDataInventory(
         : 0,
       sources.has("compliance")
         ? prisma.medicationIntakeEvent.count({
-            where: { ...windowed, scheduledFor: { gte: since, lte: now } },
+            where: {
+              ...windowed,
+              ...TRACKED_INTAKE_EVENT_WHERE,
+              scheduledFor: { gte: since, lte: now },
+            },
           })
         : 0,
       sources.has("workouts")
         ? prisma.workout.count({ where: { userId, startedAt: { gte: since } } })
         : 0,
-      moduleMap.labs === false
-        ? null
-        : prisma.labResult.findFirst({
-            where: windowed,
-            select: { id: true },
-          }),
+      isModuleEnabled(userId, "labs").then((on) =>
+        on
+          ? prisma.labResult.findFirst({
+              where: windowed,
+              select: { id: true },
+            })
+          : null,
+      ),
       cycleEnabled ? cycleRecorded(userId) : false,
       buildIllnessSnapshotBlock(userId, now),
       probeEnvironment(userId),
