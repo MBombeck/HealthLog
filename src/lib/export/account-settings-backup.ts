@@ -557,6 +557,9 @@ const ACCOUNT_SETTING_CODECS = {
   aiCompatBaseUrl: aiEndpoint("aiCompatBaseUrl"),
   aiCompatModel: plain("aiCompatModel"),
   aiProviderChain: json("aiProviderChain"),
+  // #1404 — the named chains and which capability is attached to which.
+  // Provider types only; the reader drops anything it cannot resolve.
+  aiNamedChains: json("aiNamedChains"),
   aiResponseTimeoutSeconds: plain("aiResponseTimeoutSeconds"),
   useCentralCodex: plain("useCentralCodex"),
   insightsPrivacyMode: oneOf(

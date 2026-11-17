@@ -82,6 +82,7 @@ export const accountSettingsBackupSchema = z
     aiCompatBaseUrl: z.string().nullable().optional(),
     aiCompatModel: z.string().nullable().optional(),
     aiProviderChain: z.unknown().optional(),
+    aiNamedChains: z.unknown().optional(),
     aiResponseTimeoutSeconds: z.number().int().nullable().optional(),
     useCentralCodex: z.boolean().optional(),
     insightsPrivacyMode: z.string().optional(),
