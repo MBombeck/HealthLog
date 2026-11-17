@@ -25,8 +25,8 @@ import { requireSeizuresEnabled } from "@/lib/seizures/gate";
 import {
   seizureRescueDoseUpdateSchema,
   toSeizureRescueDoseDTO,
-  undoRescueIntakes,
 } from "@/lib/seizures/server";
+import { undoRescueIntakes } from "@/lib/seizures/rescue";
 
 export const dynamic = "force-dynamic";
 

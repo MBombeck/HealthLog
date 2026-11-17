@@ -25,8 +25,8 @@ import {
   checkRescueMedication,
   seizureRescueDoseCreateSchema,
   toSeizureRescueDoseDTO,
-  writeRescueDose,
 } from "@/lib/seizures/server";
+import { writeRescueDose } from "@/lib/seizures/rescue";
 
 export const dynamic = "force-dynamic";
 

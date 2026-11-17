@@ -30,8 +30,8 @@ import {
   seizureEventUpdateSchema,
   toSeizureEventDTO,
   typeLookupOf,
-  undoRescueIntakes,
 } from "@/lib/seizures/server";
+import { undoRescueIntakes } from "@/lib/seizures/rescue";
 
 export const dynamic = "force-dynamic";
 
