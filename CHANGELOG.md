@@ -2,6 +2,35 @@
 
 ## [Unreleased]
 
+### Added
+
+- **A seizure diary.** For anyone living with epilepsy, and for the parent or
+  carer who keeps the record for them, there is now a diary that stores what
+  a neurologist asks about. Switch it on under Settings, Modules (it is off
+  by default), set up the person's seizure types once with the family's own
+  name, the ILAE 2025 type (the 2017 name is shown beside it), the usual
+  duration and the rescue plan agreed with the care team, and log from a
+  phone: tap the type, tap "Seizure started", and the timer keeps running
+  through a reload or a locked screen. When it passes the type's threshold
+  (5 minutes for a tonic-clonic seizure, or the usual duration plus 2
+  minutes when that comes first, 10 minutes for a focal seizure with
+  impaired consciousness or an absence, 5 minutes otherwise) the person's own
+  plan appears with a call button for the emergency number. "Rescue given"
+  stamps the drug and dose, and the dose is also recorded on the as-needed
+  medication. Details such as sleep state, injuries, suspected triggers and
+  the witness are added later. The page shows recorded seizures, seizure
+  days, days since the last one, clusters under the record's own rule (2 in
+  24 hours until you set one) with NICE's 3 in 24 hours beside it, and a
+  type by month table. A new doctor report section adds monthly charts with
+  medication changes, duration and rescue tables, and, where the record has
+  them, missed doses, cycle days, the night's sleep and illness at the time.
+  The FHIR export carries each seizure, rescue dose and cluster, and the MCP
+  server has a `get_seizures` tool. It works in a managed child profile:
+  the guardian logs for the child. The diary records what was seen; it does
+  not diagnose and never says it is safe to wait. New routes under
+  `/api/seizures`; migration `0504_seizure_diary`. Thanks to @ch3funio for
+  the detailed request and the clinical detail behind it. (#1368)
+
 ### Changed
 
 - API responses and CSV or JSON exports now go out gzip-compressed when the
