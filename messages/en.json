@@ -5809,7 +5809,7 @@
         "subtitle": "Decide which source wins when two report the same metric.",
         "nutrients": {
           "title": "Synced nutrient intake",
-          "description": "Daily totals over the last {days} days: what Apple Health synced plus the supplements you took.",
+          "description": "Daily totals over the last {days} days: what Apple Health or a food tracker synced plus the supplements you took.",
           "empty": "No nutrient data has been synced yet.",
           "latest": "{amount} {unit} on {date}",
           "daysWithData": "{count} of {days} days",
@@ -6997,9 +6997,9 @@
     "apiTokensDescription": "Review and revoke tokens for measurements, workouts, documents and medication intake.",
     "measurementsToken": {
       "title": "Measurement tokens",
-      "description": "Mint a token so a scale, a watch bridge or your home automation can add readings and custom-metric values.",
+      "description": "Mint a token so a scale, a watch bridge, a food tracker or your home automation can add readings, custom-metric values and daily nutrient totals.",
       "detail": "The token is shown once.",
-      "scopeNote": "It can only add new readings to your own record, and values to custom metrics you already created. It cannot read your data, create a custom metric, change or delete anything, or create another token. Readings are marked as coming from an external device, so you can tell them apart later; custom-metric values carry no such mark. You can still correct both yourself. A custom metric's ID is the part after /custom-metrics/ in the address of its page.",
+      "scopeNote": "It can only add new readings to your own record, values to custom metrics you already created, and daily nutrient totals while the nutrients module is on. It cannot read your data, create a custom metric, change or delete anything, or create another token. Readings and nutrient totals are marked as coming from an external device, so you can tell them apart later; custom-metric values carry no such mark. You can still correct readings and custom-metric values yourself; a tracker corrects a nutrient day by sending it again. A custom metric's ID is the part after /custom-metrics/ in the address of its page.",
       "createFailed": "The token could not be created. Please try again.",
       "namePlaceholder": "Name, e.g. Home Assistant",
       "appleHealth": {
@@ -10839,7 +10839,7 @@
     },
     "nutrients": {
       "label": "Nutrient intake",
-      "description": "Daily micronutrient totals synced from Apple Health."
+      "description": "Daily nutrient totals from Apple Health or a food tracker: water, energy, macros, vitamins and minerals."
     },
     "vaccinations": {
       "label": "Vaccinations",
@@ -12658,15 +12658,24 @@
       "water": "Water",
       "caffeine": "Caffeine",
       "dha": "DHA (omega-3)",
-      "epa": "EPA (omega-3)"
+      "epa": "EPA (omega-3)",
+      "energy": "Energy",
+      "protein": "Protein",
+      "carbohydrates": "Carbohydrates",
+      "fat": "Fat",
+      "sugar": "Sugar",
+      "fiber": "Fiber",
+      "sodium": "Sodium",
+      "potassium": "Potassium",
+      "alcohol": "Alcohol"
     },
     "page": {
       "title": "Nutrient intake",
-      "description": "Hydration and vitamin/mineral intake synced from your phone's health app, plus manual water entries.",
-      "moduleOffDescription": "Turn on the nutrients module to see hydration and vitamin/mineral intake here. Synced intake becomes part of the record the Coach can read.",
+      "description": "Water, energy, macros, vitamins and minerals from your health app or a food tracker, plus manual water entries.",
+      "moduleOffDescription": "Turn on the nutrients module to see hydration, energy, macronutrients and vitamin/mineral intake here. Synced intake becomes part of the record the Coach can read.",
       "moduleOffCta": "Turn on nutrients",
       "emptyTitle": "No nutrient data yet",
-      "emptyDescription": "Data arrives from your phone's health app sync or a manual water entry.",
+      "emptyDescription": "Data arrives from your phone's health app sync, a food tracker with a measurement token, or a manual water entry.",
       "loadError": "Your nutrient data could not be loaded",
       "lastAttemptTitle": "A sync arrived, but nothing could be stored",
       "lastAttemptAt": "Last attempt: {date}",
@@ -12679,7 +12688,7 @@
       }
     },
     "hydration": {
-      "referenceMeta": "Reference intake {value} {unit}/day (EFSA)",
+      "referenceMeta": "Reference intake {value} {unit}/day ({authority})",
       "loadError": "Could not load water."
     },
     "caffeine": {
@@ -12688,7 +12697,7 @@
     },
     "micronutrients": {
       "title": "Vitamins & minerals",
-      "rowMeta": "{days} of {window} days, ref {value} {unit} (EFSA)",
+      "rowMeta": "{days} of {window} days, ref {value} {unit} ({authority})",
       "rowMetaNoRef": "{days} of {window} days",
       "footer": "{tracked} of {total} tracked micronutrients have data in this window.",
       "emptyTitle": "No micronutrient data synced yet",
@@ -12703,14 +12712,43 @@
         "alpha_tocopherol": "The level is set for alpha-tocopherol."
       }
     },
-    "sparseNote": "A low number here usually means sparse logging, not a deficiency. Apple Health day totals reflect what your apps logged, not total dietary intake.",
+    "sparseNote": "A low number here usually means sparse logging, not a deficiency. Day totals reflect what your apps logged, not total dietary intake. When a tracker and Apple Health report the same day, the larger total counts.",
     "units": {
       "IU": "IU"
     },
     "sources": {
       "APPLE_HEALTH": "Synced",
       "MANUAL": "Entered",
-      "SUPPLEMENT": "Supplements"
+      "SUPPLEMENT": "Supplements",
+      "EXTERNAL": "External",
+      "HEALTH_CONNECT": "Health Connect"
+    },
+    "macros": {
+      "title": "Energy & macronutrients",
+      "short": {
+        "energy": "Energy",
+        "protein": "Protein",
+        "carbohydrates": "Carbs",
+        "fat": "Fat",
+        "sugar": "Sugar",
+        "fiber": "Fiber"
+      },
+      "pickLabel": "Nutrient",
+      "referenceMeta": "Reference {value} {unit}/day ({authority})",
+      "targetMeta": "Your target {value} {unit}/day",
+      "limitMeta": "Your limit {value} {unit}/day",
+      "setTarget": "Set target",
+      "editTarget": "Edit target",
+      "clearTarget": "Remove target",
+      "targetLabel": "Daily {name} in {unit}",
+      "directionLabel": "Kind of target",
+      "directionTarget": "Reach at least",
+      "directionLimit": "Stay under",
+      "saveFailed": "The target could not be saved. Please try again.",
+      "loadError": "Could not load energy and macronutrients."
+    },
+    "alcohol": {
+      "loadError": "Could not load alcohol."
     }
   },
   "daily": {

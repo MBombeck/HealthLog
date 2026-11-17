@@ -36,6 +36,12 @@
  */
 import { dayKeyForUserTz } from "@/lib/measurements/consolidation-tz";
 import { shiftDateKey } from "@/lib/tz/format";
+import { foldNutrientDays } from "@/lib/nutrients/day-total";
+import {
+  NUTRIENT_CATALOG,
+  isNutrientCode,
+  type NutrientGroup,
+} from "@/lib/nutrients/catalog";
 import type { DoseHistoryRow } from "@/lib/medications/scheduling/dose-history";
 import {
   ALCOHOL_CHANNEL_KEY,
@@ -258,34 +264,44 @@ export interface NutrientDayRow {
   day: string;
   nutrient: string;
   amount: number;
+  source: string;
 }
 
-/** Ceiling on `NUTRIENT:<code>` channels in one scan. */
+/** Ceiling on vitamin, mineral and omega-3 `NUTRIENT:<code>` channels in one scan. */
 export const MAX_MICRONUTRIENT_CHANNELS = 4;
+
+/** Ceiling on energy and macronutrient `NUTRIENT:<code>` channels in one scan. */
+export const MAX_MACRONUTRIENT_CHANNELS = 2;
 
 /**
  * The intake channels from the nutrient log: water as HYDRATION, caffeine as
- * CAFFEINE, and at most {@link MAX_MICRONUTRIENT_CHANNELS} micronutrients as
- * `NUTRIENT:<code>`.
+ * CAFFEINE, at most {@link MAX_MICRONUTRIENT_CHANNELS} micronutrients and at
+ * most {@link MAX_MACRONUTRIENT_CHANNELS} energy or macronutrient codes as
+ * `NUTRIENT:<code>`. The two budgets are separate so a food tracker's six
+ * daily macros cannot crowd the vitamins out of the scan. Logged alcohol is
+ * left out: the ALCOHOL channel already comes from the mood tag, and a second
+ * alcohol channel would mostly correlate with the first.
  *
- * A day's amount is the sum across its sources (a manual water entry and the
- * Apple Health total are two rows, and reads sum them). A day without a row is
- * no point: the log does not say whether nothing was taken or nothing was
- * recorded. The micronutrients admitted are those with at least `minDays`
- * logged days and any day-to-day variance, the most-logged first (code as the
- * tie-break): a daily supplement at a fixed dose is a constant, and a
- * constant cannot correlate with anything. Pure.
+ * A day's amount is `foldNutrientDay` over its sources (the largest day-total
+ * source counts, a manual water entry adds on top), the same fold every read
+ * uses. A day without a row is no point: the log does not say whether nothing
+ * was taken or nothing was recorded. The codes admitted are those with at
+ * least `minDays` logged days and any day-to-day variance, the most-logged
+ * first (code as the tie-break): a daily supplement at a fixed dose is a
+ * constant, and a constant cannot correlate with anything. Pure.
  */
 export function buildNutrientDailySeries(
   rows: readonly NutrientDayRow[],
   opts: { minDays: number },
 ): NamedSeries[] {
+  const finite = rows.filter((row) => Number.isFinite(row.amount));
+  const folds = foldNutrientDays(finite, (row) => `${row.nutrient}|${row.day}`);
   const byNutrient = new Map<string, Map<string, number>>();
-  for (const row of rows) {
-    if (!Number.isFinite(row.amount)) continue;
-    const days = byNutrient.get(row.nutrient) ?? new Map<string, number>();
-    days.set(row.day, (days.get(row.day) ?? 0) + row.amount);
-    byNutrient.set(row.nutrient, days);
+  for (const [key, fold] of folds) {
+    const [nutrient, day] = key.split("|");
+    const days = byNutrient.get(nutrient) ?? new Map<string, number>();
+    days.set(day, fold.total);
+    byNutrient.set(nutrient, days);
   }
   const pointsOf = (code: string): DailySeriesPoint[] =>
     [...(byNutrient.get(code) ?? new Map<string, number>()).entries()]
@@ -304,18 +320,30 @@ export function buildNutrientDailySeries(
       points: pointsOf("caffeine"),
     },
   ];
-  const candidates = [...byNutrient.keys()]
-    .filter((code) => code !== "water" && code !== "caffeine")
-    .map((code) => ({ code, points: pointsOf(code) }))
-    .filter(
-      ({ points }) =>
-        points.length >= opts.minDays &&
-        points.some((p) => p.value !== points[0].value),
-    )
-    .sort(
-      (a, b) => b.points.length - a.points.length || (a.code < b.code ? -1 : 1),
-    )
-    .slice(0, MAX_MICRONUTRIENT_CHANNELS);
+  const admitted = (
+    groups: ReadonlySet<NutrientGroup>,
+    budget: number,
+  ): Array<{ code: string; points: DailySeriesPoint[] }> =>
+    [...byNutrient.keys()]
+      .filter(
+        (code) =>
+          isNutrientCode(code) && groups.has(NUTRIENT_CATALOG[code].group),
+      )
+      .map((code) => ({ code, points: pointsOf(code) }))
+      .filter(
+        ({ points }) =>
+          points.length >= opts.minDays &&
+          points.some((p) => p.value !== points[0].value),
+      )
+      .sort(
+        (a, b) =>
+          b.points.length - a.points.length || (a.code < b.code ? -1 : 1),
+      )
+      .slice(0, budget);
+  const candidates = [
+    ...admitted(MICRONUTRIENT_GROUPS, MAX_MICRONUTRIENT_CHANNELS),
+    ...admitted(MACRONUTRIENT_GROUPS, MAX_MACRONUTRIENT_CHANNELS),
+  ];
   for (const { code, points } of candidates) {
     out.push({
       key: `${NUTRIENT_CHANNEL_PREFIX}${code}`,
@@ -325,6 +353,15 @@ export function buildNutrientDailySeries(
   }
   return out;
 }
+
+const MICRONUTRIENT_GROUPS: ReadonlySet<NutrientGroup> = new Set([
+  "vitamin",
+  "mineral",
+  "omega3",
+]);
+const MACRONUTRIENT_GROUPS: ReadonlySet<NutrientGroup> = new Set([
+  "energy_macro",
+]);
 
 /** One mood entry as the alcohol channel reads it. */
 export interface AlcoholTagEntry {

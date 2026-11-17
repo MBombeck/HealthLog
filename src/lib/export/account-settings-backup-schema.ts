@@ -71,6 +71,7 @@ export const accountSettingsBackupSchema = z
     // because no codec reads it, so such a file restores everything else.
     previewFeaturesJson: z.unknown().optional(),
     activityGoalsJson: z.unknown().optional(),
+    nutrientTargetsJson: z.unknown().optional(),
     reportSelectionJson: z.unknown().optional(),
     globalExcludedInjectionSites: z.array(z.string()).optional(),
     healthKitConfigJson: z.unknown().optional(),

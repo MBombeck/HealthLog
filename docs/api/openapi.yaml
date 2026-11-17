@@ -3617,17 +3617,20 @@ paths:
         the only place it ever exists; it is stored as an HMAC and no path re-reveals it.
 
 
-        **What it can do.** `POST /api/measurements` and `POST /api/measurements/batch`, on its owner's own record, and
+        **What it can do.** `POST /api/measurements` and `POST /api/measurements/batch`, on its owner's own record,
         `POST /api/custom-metrics/{id}/entries` for a custom metric its owner already created (it cannot list, create,
-        edit or delete metrics, so the id comes from the metric's page in the app). Measurement rows it writes carry
-        `source: EXTERNAL`, resolved from the credential rather than taken from the body, so a reading pushed by a
-        bridge stays distinguishable from one typed in by hand and can be picked out with the source filter. A body
-        naming ANY source is refused 422 rather than relabelled — honouring it would defeat the label, overriding it
-        silently would hand the caller rows it did not ask for. `APPLE_HEALTH` is the one that would do real damage: it
-        is half a dedup key the phone also writes into, it participates in the cross-source merge, and it is what
-        decides the Apple Health card may claim a sync happened. For the same reason a write through this credential
-        does not move the native client's sync checkpoint. The rows stay editable by their owner, unlike a connected
-        provider's — the hardware behind the token is the user's own.
+        edit or delete metrics, so the id comes from the metric's page in the app), and `POST /api/nutrients/batch` for
+        daily nutrient totals (energy, macronutrients, alcohol, vitamins, minerals, water, caffeine) while the owner has
+        the nutrients module on; the day totals it posts are stored as source `EXTERNAL`, apart from the phone's Apple
+        Health totals, and a re-post replaces the day. Measurement rows it writes carry `source: EXTERNAL`, resolved
+        from the credential rather than taken from the body, so a reading pushed by a bridge stays distinguishable from
+        one typed in by hand and can be picked out with the source filter. A body naming ANY source is refused 422
+        rather than relabelled — honouring it would defeat the label, overriding it silently would hand the caller rows
+        it did not ask for. `APPLE_HEALTH` is the one that would do real damage: it is half a dedup key the phone also
+        writes into, it participates in the cross-source merge, and it is what decides the Apple Health card may claim a
+        sync happened. For the same reason a write through this credential does not move the native client's sync
+        checkpoint. The rows stay editable by their owner, unlike a connected provider's — the hardware behind the token
+        is the user's own.
 
 
         **What it cannot do.** Everything else, including the measurement reads on the same paths, the custom-metric
@@ -21586,19 +21589,29 @@ paths:
     post:
       tags:
         - Nutrients
-      summary: Ingest micronutrient day totals (v1.28)
+      summary: Ingest nutrient day totals (v1.28)
       description: >-
-        Bulk upsert of supplement-style daily totals synced from HealthKit — vitamins, minerals, water, caffeine. Day
-        totals only: compute HKStatisticsCollectionQuery cumulative sums day-anchored in the user's current IANA
-        timezone; `day` is yyyy-MM-dd in that timezone (the same rule as the `stats:` day keys). Never post raw samples.
-        Upsert key is (day, nutrient): a re-post replaces the stored total and reports `updated`. Post the current +
-        previous local day per sync; backfill 30 days on first enable. Max 500 entries; Idempotency-Key supported; rate
-        limit 60/min. Per-entry skips (`unit_mismatch` | `value_out_of_range` | `day_invalid`) are terminal — log and
-        drop, do not retry the entry. `upsert_failed` is not one of them: it is a server-side write failure for the
-        entry's whole write group, nothing was stored, and the entry should be sent again on a later sync; a response
-        carrying it is `Cache-Control: no-store` and is not replayed for its `Idempotency-Key`. Behind the opt-in
-        `nutrients` module (403 `module.disabled` when off). Query HealthKit with exactly the listed unit per code (`ug`
-        = microgram; do not convert to IU):
+        Bulk upsert of daily nutrient totals: vitamins, minerals, water, caffeine, energy (kcal), the macronutrients (g)
+        and alcohol (g of ethanol). Two kinds of caller. The native client syncs from HealthKit with a cookie session or
+        its login token, and its rows are stored as source APPLE_HEALTH. A bridge (a food tracker, a script) posts with
+        a `measurements:write` token, and its rows are stored as source EXTERNAL; the body never chooses the source. A
+        bridge may post any past day, and posts 0 to correct a day it got wrong. On the reads, the largest of the
+        day-total sources (EXTERNAL, APPLE_HEALTH, HEALTH_CONNECT) counts for a day, so a tracker that also writes into
+        Apple Health is not counted twice. Units are fixed per code (table below); energy is kcal, and a kJ value is
+        skipped `unit_mismatch`, never converted.
+
+
+        For the native client: day totals only: compute HKStatisticsCollectionQuery cumulative sums day-anchored in the
+        user's current IANA timezone; `day` is yyyy-MM-dd in that timezone (the same rule as the `stats:` day keys).
+        Never post raw samples. Upsert key is (day, nutrient): a re-post replaces the stored total and reports
+        `updated`. Post the current + previous local day per sync; backfill 30 days on first enable. Max 500 entries;
+        Idempotency-Key supported; rate limit 60/min. Per-entry skips (`unit_mismatch` | `value_out_of_range` |
+        `day_invalid`) are terminal — log and drop, do not retry the entry. `upsert_failed` is not one of them: it is a
+        server-side write failure for the entry's whole write group, nothing was stored, and the entry should be sent
+        again on a later sync; a response carrying it is `Cache-Control: no-store` and is not replayed for its
+        `Idempotency-Key`. Behind the opt-in `nutrients` module (403 `module.disabled` when off). Query HealthKit with
+        exactly the listed unit per code (`ug` = microgram; do not convert to IU). `alcohol` has no HealthKit type and
+        is posted by bridges only, in g:
 
 
         | code | HealthKit identifier | unit |
@@ -21653,9 +21666,25 @@ paths:
 
         | iodine | HKQuantityTypeIdentifierDietaryIodine | ug |
 
+        | sodium | HKQuantityTypeIdentifierDietarySodium | mg |
+
+        | potassium | HKQuantityTypeIdentifierDietaryPotassium | mg |
+
         | water | HKQuantityTypeIdentifierDietaryWater | ml |
 
         | caffeine | HKQuantityTypeIdentifierDietaryCaffeine | mg |
+
+        | energy | HKQuantityTypeIdentifierDietaryEnergyConsumed | kcal |
+
+        | protein | HKQuantityTypeIdentifierDietaryProtein | g |
+
+        | carbohydrates | HKQuantityTypeIdentifierDietaryCarbohydrates | g |
+
+        | fat | HKQuantityTypeIdentifierDietaryFatTotal | g |
+
+        | sugar | HKQuantityTypeIdentifierDietarySugar | g |
+
+        | fiber | HKQuantityTypeIdentifierDietaryFiber | g |
       parameters:
         - *a6
       requestBody:
@@ -21672,7 +21701,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/NutrientBatchEnvelope"
         "401": *a1
-        "403":
+        "403": &a55
           description: "`meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: The opt-in `nutrients` module is
             off for this account (errorCode `module.disabled`). Stop syncing and do not retry; offer the
@@ -21717,19 +21746,21 @@ paths:
         - Nutrients
       summary: One nutrient's day-bucketed series (v1.29)
       description: Dense per-day series for one catalog code over the last `days` days (default 30) — one entry per calendar
-        day, 0 for a day with no logged data, summed ACROSS SOURCES (a day may carry both an APPLE_HEALTH row and a
-        MANUAL row since migration 0249). Feeds the `/insights/nutrients` hydration + caffeine charts. Also returns the
-        EFSA reference resolved against the caller's profile sex — `null` when the profile has no sex on file (never
-        guessed). Behind the opt-in `nutrients` module.
+        day, 0 for a day with no logged data, folded across sources (the largest of the day-total sources APPLE_HEALTH,
+        HEALTH_CONNECT and EXTERNAL, plus MANUAL and SUPPLEMENT on top). Feeds the `/insights/nutrients` charts. Also
+        returns the dietary reference resolved against the caller's profile sex — `null` when the profile has no sex on
+        file (never guessed) or the nutrient has none — and the user's own target for the nutrient, if set. Behind the
+        opt-in `nutrients` module.
       parameters:
         - in: query
           name: nutrient
           schema:
             $ref: "#/components/schemas/NutrientCode"
           required: true
-          description: Closed nutrient catalog code — 24 HealthKit Dietary vitamin/mineral types plus water and caffeine, and
-            (v1.43, responses only) `dha` and `epa`, which only a supplement's composition produces. Energy, macros and
-            sodium/potassium are out of scope. Decode unknown values leniently.
+          description: "Closed nutrient catalog code: the vitamins and minerals (sodium and potassium included), water, caffeine,
+            dietary energy (`energy`, kcal), the macronutrients (`protein`, `carbohydrates`, `fat`, `sugar`, `fiber`,
+            g), `alcohol` (grams of ethanol), and (responses only) `dha` and `epa`, which only a supplement's
+            composition produces. The set grows; decode unknown values leniently."
         - in: query
           name: days
           schema:
@@ -21778,6 +21809,50 @@ paths:
         "409": *a7
         "422": *a4
         "429": *a5
+  /api/nutrients/targets:
+    get:
+      tags:
+        - Nutrients
+      summary: Daily nutrient targets
+      description: "The daily targets the person set for themselves, keyed by catalog code, each `{ value, direction }` in the
+        code's canonical unit: `target` is an amount to reach, `limit` one to stay under. Only codes with a target
+        appear; there is no default. Owner only. `GET /api/nutrients/daily` carries the one for its code as
+        `personalTarget`. Behind the opt-in `nutrients` module."
+      responses:
+        "200":
+          description: The targets.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NutrientTargetsEnvelope"
+        "401": *a1
+        "403": *a55
+        "422": *a4
+        "429": *a5
+    patch:
+      tags:
+        - Nutrients
+      summary: Set daily nutrient targets
+      description: "Sets the targets the body names and keeps the rest; `null` clears one. An unknown code, or a value at or
+        below 0 or above the code's plausibility cap, is refused with the multi-issue 422. Owner only: a shared or
+        delegated session cannot change another person's targets. Behind the opt-in `nutrients` module."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NutrientTargetsPatchRequest"
+      responses:
+        "200":
+          description: The targets after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NutrientTargetsPatchEnvelope"
+        "401": *a1
+        "403": *a55
+        "422": *a4
+        "429": *a12
   /api/integrations/healthkit:
     get:
       tags:
@@ -22486,7 +22561,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WithingsCredentialsUpdateEnvelope"
-        "400": &a55
+        "400": &a56
           description: Body is not parseable JSON.
           content:
             application/json:
@@ -22494,19 +22569,19 @@ paths:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
         "403": *a9
-        "413": &a56
+        "413": &a57
           description: Body exceeds 64 KiB.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "415": &a57
+        "415": &a58
           description: Content-Type is not `application/json`.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": &a58
+        "422": &a59
           description: "`clientId` and `clientSecret` are both required and each must be 1–200 characters. The envelope carries a
             single fixed message, not per-field issues."
           content:
@@ -22697,12 +22772,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FitbitCredentialsUpdateEnvelope"
-        "400": *a55
+        "400": *a56
         "401": *a1
         "403": *a9
-        "413": *a56
-        "415": *a57
-        "422": *a58
+        "413": *a57
+        "415": *a58
+        "422": *a59
         "429": *a5
     delete:
       tags:
@@ -22857,12 +22932,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/GoogleHealthCredentialsUpdateEnvelope"
-        "400": *a55
+        "400": *a56
         "401": *a1
         "403": *a9
-        "413": *a56
-        "415": *a57
-        "422": *a58
+        "413": *a57
+        "415": *a58
+        "422": *a59
         "429": *a5
     delete:
       tags:
@@ -23028,12 +23103,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OuraCredentialsUpdateEnvelope"
-        "400": *a55
+        "400": *a56
         "401": *a1
         "403": *a9
-        "413": *a56
-        "415": *a57
-        "422": *a58
+        "413": *a57
+        "415": *a58
+        "422": *a59
         "429": *a5
     delete:
       tags:
@@ -23113,21 +23188,21 @@ paths:
                 $ref: "#/components/schemas/OuraTestEnvelope"
         "401": *a1
         "403": *a9
-        "422": &a59
+        "422": &a60
           description: No usable connection for this provider — nothing stored, or the stored grant could no longer be resolved
             into an access token. `meta.errorCode` = `not_configured`.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "429": &a60
+        "429": &a61
           description: More than 5 requests in 60 s from this user. `meta.errorCode` = `rate_limited_self` — this is the local
             limiter, distinct from a `rate_limited` 502 which is the provider's.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "502": &a61
+        "502": &a62
           description: "The probe did not complete. `meta.errorCode` names the class: `credentials_rejected` (the provider
             answered 401/403 — the stored grant is gone), `rate_limited` (the PROVIDER answered 429, which is not this
             endpoint's own limiter), `upstream_error` (5xx), `timeout` (no answer within 5 s), `connection_failed`
@@ -23173,12 +23248,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PolarCredentialsUpdateEnvelope"
-        "400": *a55
+        "400": *a56
         "401": *a1
         "403": *a9
-        "413": *a56
-        "415": *a57
-        "422": *a58
+        "413": *a57
+        "415": *a58
+        "422": *a59
         "429": *a5
     delete:
       tags:
@@ -23258,9 +23333,9 @@ paths:
                 $ref: "#/components/schemas/PolarTestEnvelope"
         "401": *a1
         "403": *a9
-        "422": *a59
-        "429": *a60
-        "502": *a61
+        "422": *a60
+        "429": *a61
+        "502": *a62
   /api/strava/credentials:
     get:
       tags:
@@ -23297,12 +23372,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/StravaCredentialsUpdateEnvelope"
-        "400": *a55
+        "400": *a56
         "401": *a1
         "403": *a9
-        "413": *a56
-        "415": *a57
-        "422": *a58
+        "413": *a57
+        "415": *a58
+        "422": *a59
         "429": *a5
     delete:
       tags:
@@ -23384,9 +23459,9 @@ paths:
                 $ref: "#/components/schemas/StravaTestEnvelope"
         "401": *a1
         "403": *a9
-        "422": *a59
-        "429": *a60
-        "502": *a61
+        "422": *a60
+        "429": *a61
+        "502": *a62
   /api/integrations/status:
     get:
       tags:
@@ -23424,7 +23499,7 @@ paths:
         "401": *a1
         "403": *a9
         "422": *a4
-        "429": *a60
+        "429": *a61
   /api/integrations/fitbit/test:
     post:
       tags:
@@ -23450,9 +23525,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a59
-        "429": *a60
-        "502": *a61
+        "422": *a60
+        "429": *a61
+        "502": *a62
   /api/integrations/google-health/resume:
     post:
       tags:
@@ -23470,7 +23545,7 @@ paths:
         "401": *a1
         "403": *a9
         "422": *a4
-        "429": *a60
+        "429": *a61
   /api/integrations/google-health/test:
     post:
       tags:
@@ -23504,9 +23579,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a59
-        "429": *a60
-        "502": *a61
+        "422": *a60
+        "429": *a61
+        "502": *a62
   /api/integrations/whoop/resume:
     post:
       tags:
@@ -23524,7 +23599,7 @@ paths:
         "401": *a1
         "403": *a9
         "422": *a4
-        "429": *a60
+        "429": *a61
   /api/integrations/whoop/test:
     post:
       tags:
@@ -23542,9 +23617,9 @@ paths:
                 $ref: "#/components/schemas/WhoopIntegrationTestEnvelope"
         "401": *a1
         "403": *a9
-        "422": *a59
-        "429": *a60
-        "502": *a61
+        "422": *a60
+        "429": *a61
+        "502": *a62
   /api/integrations/withings/resume:
     post:
       tags:
@@ -23563,7 +23638,7 @@ paths:
         "401": *a1
         "403": *a9
         "422": *a4
-        "429": *a60
+        "429": *a61
   /api/integrations/withings/test:
     post:
       tags:
@@ -23582,8 +23657,8 @@ paths:
                 $ref: "#/components/schemas/WithingsIntegrationTestEnvelope"
         "401": *a1
         "403": *a9
-        "422": *a59
-        "429": *a60
+        "422": *a60
+        "429": *a61
         "502":
           description: "The probe did not complete. The shared codes apply (`credentials_rejected`, `rate_limited`,
             `upstream_error`, `timeout`, `connection_failed`) and this path adds one of its own:
@@ -24001,7 +24076,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RecordActivityEnvelope"
         "401": *a1
-        "403": &a62
+        "403": &a63
           description: "`meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: Refused. `meta.errorCode` is
             `sharing.not_permitted` when the request was made while acting on another account (grant management is never
@@ -24028,7 +24103,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AccountGrantListEnvelope"
         "401": *a1
-        "403": *a62
+        "403": *a63
         "422": *a4
         "429": *a5
     post:
@@ -24132,7 +24207,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/AcceptedAccountGrantEnvelope"
         "401": *a1
-        "403": *a62
+        "403": *a63
         "404":
           description: No such invitation for this account.
           content:
@@ -24176,7 +24251,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RevokedAccountGrantEnvelope"
         "401": *a1
-        "403": *a62
+        "403": *a63
         "404":
           description: No such grant on this account's record.
           content:
@@ -24217,7 +24292,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/RenouncedAccountGrantEnvelope"
         "401": *a1
-        "403": *a62
+        "403": *a63
         "404":
           description: No such grant held by this account.
           content:
@@ -24616,7 +24691,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
-        "403": *a62
+        "403": *a63
         "409":
           description: "The record this browser session is on is not the record the request asserted. `meta.errorCode` is
             `sharing.session.changed`. It is not a refusal of access — the caller may well be entitled to both records —
@@ -25006,7 +25081,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectionListEnvelope"
         "401": *a1
-        "403": &a63
+        "403": &a64
           description: "`meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: The operator has disabled the API
             instance-wide. Every route in this module refuses while that setting is off, for a cookie session as well as
@@ -25040,7 +25115,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectionRevokeEnvelope"
         "401": *a1
-        "403": *a63
+        "403": *a64
         "404":
           description: No live connection with this id for this caller — also the answer for an already-revoked one, so a repeat
             revoke is 404 rather than an idempotent 200.
@@ -25067,7 +25142,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectorTokenListEnvelope"
         "401": *a1
-        "403": *a63
+        "403": *a64
         "422": *a4
         "429": *a5
     post:
@@ -25100,7 +25175,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "401": *a1
-        "403": *a63
+        "403": *a64
         "413":
           description: Body exceeds 16 KiB.
           content:
@@ -25143,7 +25218,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/McpConnectorTokenRevokeEnvelope"
         "401": *a1
-        "403": *a63
+        "403": *a64
         "404":
           description: No `health:read` token with this id for this caller. An already-revoked token is still found, so a repeat
             revoke answers 200.
@@ -25205,7 +25280,7 @@ paths:
         record (audited). Fitbit is not offered: its classic API is retired. Cookie session, while acting on a managed
         record the caller guards."
       parameters:
-        - &a64
+        - &a65
           name: provider
           in: path
           required: true
@@ -25252,7 +25327,7 @@ paths:
         Audited against the record with the Guardian as the actor. Cookie session or Bearer, while acting on a managed
         record the caller guards."
       parameters:
-        - *a64
+        - *a65
       responses:
         "200":
           description: The provider is disconnected.
@@ -25278,7 +25353,7 @@ paths:
       description: Returns the named family's resolved settings for the record the session is acting on. Cookie session or
         Bearer, while acting on a managed record the caller guards.
       parameters:
-        - &a65
+        - &a66
           name: family
           in: path
           required: true
@@ -25322,7 +25397,7 @@ paths:
         ride the audit row. Body capped at 64 KiB. Cookie session or Bearer, while acting on a managed record the caller
         guards.
       parameters:
-        - *a65
+        - *a66
       requestBody:
         required: true
         content:
@@ -26104,13 +26179,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminBackupDocument"
-        "403": &a66
+        "403": &a67
           description: Caller is not an admin. `requireAdmin()` is cookie-only, so a Bearer token lands here whatever its scope.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "404": &a67
+        "404": &a68
           description: No stored copy with this id.
           content:
             application/json:
@@ -26184,8 +26259,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "403": *a66
-        "404": *a67
+        "403": *a67
+        "404": *a68
         "409":
           description: A restore of the same account is already queued or running (`meta.errorCode` = `backup.restore.active`,
             `meta.jobId` names it), the stored copy was replaced by a newer one while it was being checked
@@ -26229,7 +26304,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminBackupRestoreJobListResponse"
-        "403": *a66
+        "403": *a67
   /api/admin/backups/restores/{jobId}:
     get:
       tags:
@@ -26252,7 +26327,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminBackupRestoreJobResponse"
-        "403": *a66
+        "403": *a67
         "404":
           description: No restore job with this id.
           content:
@@ -26271,7 +26346,7 @@ paths:
         request leaves the server. Needs neither the Documents module nor the list: with the list unset, `available` is
         false and any connection still stored is listed (with `originAllowed: false`) so it can be removed. Cookie
         session only; not delegable."
-      security: &a68
+      security: &a69
         - cookieAuth: []
       responses:
         "200":
@@ -26281,7 +26356,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourcesStatusEnvelope"
         "401": *a1
-        "403": &a69
+        "403": &a70
           description: "`meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: Refused before any request to the
             source: `documents.sources.browserOnly` for a Bearer caller, `sharing.not_permitted` while acting on another
@@ -26306,9 +26381,9 @@ paths:
         `documents.sources.tokenRequired`), so a stored token is never sent to an address it was not saved for. A Papra
         organization id is letters, digits, `_` and `-`. The token is stored encrypted (AES-256-GCM) and never returned.
         Ten saves and tests a minute per person. Cookie session only; not delegable."
-      security: *a68
+      security: *a69
       parameters:
-        - &a70
+        - &a71
           name: system
           in: path
           required: true
@@ -26347,8 +26422,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceConnectionEnvelope"
         "401": *a1
-        "403": *a69
-        "404": &a71
+        "403": *a70
+        "404": &a72
           description: "`documents.sources.unavailable`: the operator has not listed any origin in `DOCUMENT_SOURCE_ORIGINS`, so
             the picker is off. `documents.sources.notConnected`: no connection is saved for this system.
             `documents.sources.notFound`: the source has no such document, or (Papra) no such organization, including
@@ -26367,7 +26442,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
-        "502": &a72
+        "502": &a73
           description: "The source could not answer usefully, with the reason in `meta.errorCode` and, when the source answered at
             all, its HTTP status in `meta.upstreamStatus` (its body is never passed on): `documents.sources.unreachable`
             (no connection, timeout, or a destination refused at dial time), `documents.sources.redirected` (the source
@@ -26386,9 +26461,9 @@ paths:
       description: Deletes the caller's connection for this system, and its token with it. Works even after the operator
         removed the origin from the list, and with the Documents module switched off. `disconnected` is false when there
         was nothing to delete. Cookie session only; not delegable.
-      security: *a68
+      security: *a69
       parameters:
-        - *a70
+        - *a71
       responses:
         "200":
           description: Removed, or there was nothing to remove.
@@ -26397,7 +26472,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceDisconnectEnvelope"
         "401": *a1
-        "403": *a69
+        "403": *a70
         "422": *a4
         "429": *a5
   /api/documents/sources/{system}/test:
@@ -26408,9 +26483,9 @@ paths:
       description: One request to the source with the stored token. Answers `ok` with the round-trip time and stamps
         `lastVerifiedAt`, or the reason in `meta.errorCode`. Shares the save's allowance of ten a minute. Cookie session
         only; not delegable.
-      security: *a68
+      security: *a69
       parameters:
-        - *a70
+        - *a71
       responses:
         "200":
           description: The source answered.
@@ -26419,9 +26494,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceTestEnvelope"
         "401": *a1
-        "403": *a69
-        "404": *a71
-        "422": &a73
+        "403": *a70
+        "404": *a72
+        "422": &a74
           description: "`documents.sources.originNotAllowed`: the base address's origin is not on the operator's list (checked on
             every request, so a connection saved earlier is cut off once its origin is removed), or another validation
             failure."
@@ -26430,7 +26505,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "429": *a5
-        "502": *a72
+        "502": *a73
   /api/documents/sources/{system}/tags:
     get:
       tags:
@@ -26438,9 +26513,9 @@ paths:
       summary: Tags of a connected archive
       description: The source's tags for the picker's filter, the first 250 by name, in the source's own ids. Shares the
         search allowance of sixty a minute. Cookie session only; not delegable.
-      security: *a68
+      security: *a69
       parameters:
-        - *a70
+        - *a71
       responses:
         "200":
           description: The tags.
@@ -26449,11 +26524,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceTagsEnvelope"
         "401": *a1
-        "403": *a69
-        "404": *a71
-        "422": *a73
+        "403": *a70
+        "404": *a72
+        "422": *a74
         "429": *a5
-        "502": *a72
+        "502": *a73
   /api/documents/sources/{system}/search:
     get:
       tags:
@@ -26467,9 +26542,9 @@ paths:
         under that source key: `new`, `imported` with the vault document's `documentId`, or `deleted` (deleted in
         HealthLog; importing it again stores nothing). Nothing is stored. Sixty searches a minute, shared with the tag
         read. Cookie session only; not delegable."
-      security: *a68
+      security: *a69
       parameters:
-        - *a70
+        - *a71
         - name: q
           in: query
           required: false
@@ -26510,11 +26585,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceSearchEnvelope"
         "401": *a1
-        "403": *a69
-        "404": *a71
-        "422": *a73
+        "403": *a70
+        "404": *a72
+        "422": *a74
         "429": *a5
-        "502": *a72
+        "502": *a73
   /api/documents/sources/{system}/import:
     post:
       tags:
@@ -26536,9 +26611,9 @@ paths:
         fetched), including a duplicate. `kind` sets the document type (default OTHER). Automatic AI reading follows the
         person's own setting. Counts against the person's upload allowance (60 an hour) and storage quota. 201 for a new
         document, 200 otherwise. Cookie session only; not delegable."
-      security: *a68
+      security: *a69
       parameters:
-        - *a70
+        - *a71
       requestBody:
         required: true
         content:
@@ -26599,7 +26674,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentSourceImportEnvelope"
         "401": *a1
-        "403": *a69
+        "403": *a70
         "404":
           description: "`documents.sources.unavailable`: the operator has not listed any origin in `DOCUMENT_SOURCE_ORIGINS`, so
             the picker is off. `documents.sources.notConnected`: no connection is saved for this system.
@@ -26630,7 +26705,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "422": *a73
+        "422": *a74
         "429":
           description: "`documents.inbound.rateLimited` (the person's hourly upload allowance, with the rate-limit headers) or
             `documents.inbound.uploadBusy` (too many uploads in progress; `Retry-After: 1`)."
@@ -26638,7 +26713,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
-        "502": *a72
+        "502": *a73
   /api/symptoms/definitions:
     get:
       tags:
@@ -26662,7 +26737,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListSymptomDefinitionsEnvelope"
         "401": *a1
-        "403": &a74
+        "403": &a75
           description: >-
             `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: `illness.disabled`: the record
@@ -26706,7 +26781,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateSymptomDefinitionEnvelope"
         "401": *a1
-        "403": *a74
+        "403": *a75
         "409": *a7
         "422": *a4
         "429": *a5
@@ -26736,8 +26811,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateSymptomDefinitionEnvelope"
         "401": *a1
-        "403": *a74
-        "404": &a75
+        "403": *a75
+        "404": &a76
           description: "`symptoms.definition.notFound`: no definition with this id on the record."
           content:
             application/json:
@@ -26771,8 +26846,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteSymptomDefinitionEnvelope"
         "401": *a1
-        "403": *a74
-        "404": *a75
+        "403": *a75
+        "404": *a76
         "422": *a4
         "429": *a5
   /api/symptoms/events:
@@ -26821,7 +26896,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListSymptomEventsEnvelope"
         "401": *a1
-        "403": *a74
+        "403": *a75
         "422": *a4
         "429": *a5
     post:
@@ -26847,8 +26922,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateSymptomEventEnvelope"
         "401": *a1
-        "403": *a74
-        "404": *a75
+        "403": *a75
+        "404": *a76
         "409": *a7
         "422": *a4
         "429": *a5
@@ -26878,8 +26953,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateSymptomEventEnvelope"
         "401": *a1
-        "403": *a74
-        "404": &a76
+        "403": *a75
+        "404": &a77
           description: "`symptoms.event.notFound`: no occurrence with this id on the record."
           content:
             application/json:
@@ -26906,8 +26981,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteSymptomEventEnvelope"
         "401": *a1
-        "403": *a74
-        "404": *a76
+        "403": *a75
+        "404": *a77
         "422": *a4
         "429": *a5
   /api/day/index:
@@ -27072,7 +27147,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/TimelineEnvelope"
         "401": *a1
-        "403": &a77
+        "403": &a78
           description: >-
             `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: `module.disabled` with
@@ -27111,7 +27186,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/TimelineReadinessEnvelope"
         "401": *a1
-        "403": *a77
+        "403": *a78
         "422": *a4
         "429": *a5
   /api/life-events:
@@ -27129,7 +27204,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/LifeEventListEnvelope"
         "401": *a1
-        "403": &a78
+        "403": &a79
           description: >-
             `meta.errorCode` = `auth.scope.insufficient` when a Bearer token's scope does not reach this route; the
             generic auth gate answers it before the route's own checks run. Otherwise: Owner-only in v1.42: no share
@@ -27171,7 +27246,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/CreateLifeEventEnvelope"
         "401": *a1
-        "403": *a78
+        "403": *a79
         "409": *a7
         "422": *a4
         "429": *a12
@@ -27202,8 +27277,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/UpdateLifeEventEnvelope"
         "401": *a1
-        "403": *a78
-        "404": &a79
+        "403": *a79
+        "404": &a80
           description: No such life event on this account.
           content:
             application/json:
@@ -27230,8 +27305,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteLifeEventEnvelope"
         "401": *a1
-        "403": *a78
-        "404": *a79
+        "403": *a79
+        "404": *a80
         "422": *a4
         "429": *a5
   /api/search:
@@ -37343,9 +37418,10 @@ components:
             $ref: "#/components/schemas/NutrientIntakeEntry"
       required:
         - entries
-      description: Bulk day-total upsert, max 500 entries. Upsert key is the composite primary key (userId, day, nutrient,
-        source); this route always writes the APPLE_HEALTH source row, so a manual water entry is never clobbered. A
-        re-post replaces the stored total (last-writer-wins day-total contract).
+      description: "Bulk day-total upsert, max 500 entries. Upsert key is the composite primary key (userId, day, nutrient,
+        source). The credential decides the source, never the body: a cookie session or a native-login token writes the
+        APPLE_HEALTH row, a `measurements:write` token the EXTERNAL row. A manual water entry is never clobbered. A
+        re-post replaces the stored total (last-writer-wins day-total contract); post 0 to correct a day."
     NutrientIntakeEntry:
       type: object
       properties:
@@ -37371,7 +37447,8 @@ components:
         - unit
         - amount
       description: One nutrient day total. day = YYYY-MM-DD in the user's IANA timezone; unit must equal the catalog's
-        canonical unit for the code (mg | ug | ml) or the entry is skipped unit_mismatch.
+        canonical unit for the code (mg | ug | ml | g | kcal) or the entry is skipped unit_mismatch. Energy is kcal
+        only; a kJ value is skipped, never converted.
     SyncableNutrientCode:
       type: string
       enum:
@@ -37399,10 +37476,19 @@ components:
         - chromium
         - molybdenum
         - iodine
+        - sodium
+        - potassium
         - water
         - caffeine
-      description: "A nutrient code HealthKit may send: the 24 Dietary vitamin/mineral types plus water and caffeine. Never
-        `dha` or `epa`."
+        - energy
+        - protein
+        - carbohydrates
+        - fat
+        - sugar
+        - fiber
+        - alcohol
+      description: "A nutrient code the batch accepts: the HealthKit Dietary vitamin, mineral, energy and macronutrient types,
+        water and caffeine, plus `alcohol` (no HealthKit type; a bridge token posts it). Never `dha` or `epa`."
     NutrientCode:
       type: string
       enum:
@@ -37430,13 +37516,23 @@ components:
         - chromium
         - molybdenum
         - iodine
+        - sodium
+        - potassium
         - water
         - caffeine
+        - energy
+        - protein
+        - carbohydrates
+        - fat
+        - sugar
+        - fiber
+        - alcohol
         - dha
         - epa
-      description: Closed nutrient catalog code — 24 HealthKit Dietary vitamin/mineral types plus water and caffeine, and
-        (v1.43, responses only) `dha` and `epa`, which only a supplement's composition produces. Energy, macros and
-        sodium/potassium are out of scope. Decode unknown values leniently.
+      description: "Closed nutrient catalog code: the vitamins and minerals (sodium and potassium included), water, caffeine,
+        dietary energy (`energy`, kcal), the macronutrients (`protein`, `carbohydrates`, `fat`, `sugar`, `fiber`, g),
+        `alcohol` (grams of ethanol), and (responses only) `dha` and `epa`, which only a supplement's composition
+        produces. The set grows; decode unknown values leniently."
     NutrientWaterWriteRequest:
       type: object
       properties:
@@ -37457,6 +37553,685 @@ components:
         - mode
       description: Manual water quick-add against the MANUAL source row. add increments today's manual total; set overwrites
         it. Never touches the APPLE_HEALTH row.
+    NutrientTargetsPatchRequest:
+      type: object
+      properties:
+        targets:
+          type: object
+          properties:
+            vitamin_a:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 15000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            thiamin:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 500
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            riboflavin:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 1000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            niacin:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 3000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            pantothenic_acid:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 2000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            vitamin_b6:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 1000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            biotin:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 20000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            folate:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 5000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            vitamin_b12:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 5000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            vitamin_c:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 10000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            vitamin_d:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 1000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            vitamin_e:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 2000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            vitamin_k:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 10000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            calcium:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 5000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            iron:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 500
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            magnesium:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 2000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            phosphorus:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 5000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            zinc:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 200
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            copper:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 20
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            manganese:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 50
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            selenium:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 1000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            chromium:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 2000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            molybdenum:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 2000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            iodine:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 2000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            sodium:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 50000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            potassium:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 30000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            water:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 20000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            caffeine:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 2000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            energy:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 20000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            protein:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 1000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            carbohydrates:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 2000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            fat:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 1000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            sugar:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 1500
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            fiber:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 500
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            alcohol:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 1000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            dha:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 20000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+            epa:
+              anyOf:
+                - type: object
+                  properties:
+                    value:
+                      type: number
+                      exclusiveMinimum: 0
+                      maximum: 20000
+                    direction:
+                      type: string
+                      enum:
+                        - target
+                        - limit
+                  required:
+                    - value
+                    - direction
+                  additionalProperties: false
+                - type: "null"
+          additionalProperties: false
+          description: The codes to change, each `{ value, direction }` in the code's canonical unit (see the catalogue) or `null`
+            to clear it. Codes left out stay as they were. `value` is above 0 and at most the code's plausibility cap.
+      required:
+        - targets
+      additionalProperties: false
+      description: Set or clear daily nutrient targets, code by code.
     HealthKitConfigPatchRequest:
       type: object
       properties:
@@ -42625,6 +43400,7 @@ components:
                 moduleListLayoutJson: {}
                 previewFeaturesJson: {}
                 activityGoalsJson: {}
+                nutrientTargetsJson: {}
                 reportSelectionJson: {}
                 globalExcludedInjectionSites:
                   type: array
@@ -84175,8 +84951,12 @@ components:
           description: The nutrient's name in the account language.
         syncable:
           type: boolean
-          description: "Whether HealthKit may send this code in the nutrient batch. `dha` and `epa` are not syncable: they appear
-            in responses only."
+          description: "Whether the nutrient batch accepts this code. `dha` and `epa` are not syncable: they appear in responses
+            only."
+        ingredient:
+          type: boolean
+          description: Whether a supplement's composition may name this code. False for water, energy, the macronutrients and
+            alcohol.
         inputUnits:
           type: array
           items:
@@ -84201,6 +84981,7 @@ components:
         - labelKey
         - label
         - syncable
+        - ingredient
         - inputUnits
         - upperLimit
       additionalProperties: false
@@ -84419,13 +85200,20 @@ components:
       properties:
         APPLE_HEALTH:
           type: number
+        HEALTH_CONNECT:
+          type: number
+        EXTERNAL:
+          type: number
         MANUAL:
           type: number
         SUPPLEMENT:
           type: number
       additionalProperties: false
-      description: "The amount split by source: synced from Apple Health, entered by hand, and counted from taken supplement
-        doses. A source with nothing is absent."
+      description: "The amount split by the sources that counted: synced from Apple Health, imported from Health Connect,
+        posted by a bridge token (EXTERNAL), entered by hand, and counted from taken supplement doses. APPLE_HEALTH,
+        HEALTH_CONNECT and EXTERNAL each report the whole day, usually the same meals, so only the largest of them
+        counts and the others are absent here; MANUAL and SUPPLEMENT add on top. The values sum to the day's total. A
+        source that did not count is absent. Decode unknown keys leniently."
     NutrientDailySeriesEnvelope:
       type: object
       properties:
@@ -84479,6 +85267,14 @@ components:
           anyOf:
             - type: object
               properties:
+                authority:
+                  description: "The body that set the value: EFSA wherever it sets a per-day value, IOM for protein and carbohydrates, NIH
+                    ODS for chromium."
+                  type: string
+                  enum:
+                    - EFSA
+                    - IOM
+                    - NIH ODS
                 kind:
                   type: string
                   enum:
@@ -84501,6 +85297,12 @@ components:
                 - source
               additionalProperties: false
             - type: "null"
+        personalTarget:
+          description: The target or limit the user set for this nutrient (`PATCH /api/nutrients/targets`), or null. A chart
+            prefers it over `reference`.
+          anyOf:
+            - $ref: "#/components/schemas/NutrientPersonalTarget"
+            - type: "null"
         upperLimit:
           description: v1.43 — the nutrient's upper intake level, or null.
           anyOf:
@@ -84513,9 +85315,27 @@ components:
         - days
         - reference
       additionalProperties: false
-      description: Dense day-bucketed series (one entry per day in the window, 0 for a day with no data) summed across
-        sources, plus the EFSA reference resolved against the caller's profile sex (null when sex is unknown on the
-        profile).
+      description: Dense day-bucketed series (one entry per day in the window, 0 for a day with no data). A day's amount is
+        the largest of the day-total sources plus the additive ones (see NutrientAmountBySource). Carries the dietary
+        reference resolved against the caller's profile sex (null when sex is unknown on the profile or the nutrient has
+        none) and the user's own target, if set.
+    NutrientPersonalTarget:
+      type: object
+      properties:
+        value:
+          type: number
+          exclusiveMinimum: 0
+        direction:
+          type: string
+          enum:
+            - target
+            - limit
+      required:
+        - value
+        - direction
+      additionalProperties: false
+      description: A user-set daily amount in the nutrient's canonical unit. `target` = an amount to reach, `limit` = an
+        amount to stay under.
     NutrientWaterWriteEnvelope:
       type: object
       properties:
@@ -84556,6 +85376,66 @@ components:
         - unit
       additionalProperties: false
       description: The MANUAL water row after the add/set write.
+    NutrientTargetsEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/NutrientTargets"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
+    NutrientTargets:
+      type: object
+      properties:
+        targets:
+          type: object
+          propertyNames:
+            type: string
+          additionalProperties:
+            type: object
+            properties:
+              value:
+                type: number
+              direction:
+                type: string
+                enum:
+                  - target
+                  - limit
+            required:
+              - value
+              - direction
+            additionalProperties: false
+          description: Only the codes that carry a target. Decode unknown keys leniently.
+      required:
+        - targets
+      additionalProperties: false
+      description: The daily nutrient targets the user set, keyed by catalog code, each in the code's canonical unit.
+    NutrientTargetsPatchEnvelope:
+      type: object
+      properties:
+        data:
+          $ref: "#/components/schemas/NutrientTargets"
+        error:
+          type: "null"
+        meta:
+          type: object
+          properties:
+            requestId:
+              type: string
+          additionalProperties: false
+      required:
+        - data
+        - error
+      additionalProperties: false
     HealthKitConfigEnvelope:
       type: object
       properties:

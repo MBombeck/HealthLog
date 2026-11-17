@@ -4,7 +4,8 @@
  * Feeds the read-only settings card (Settings → Sources): per nutrient
  * with data inside the window, the latest synced day + total and the
  * count of days carrying data — the smallest honest surface for "what
- * does the server hold". Catalog order, no pagination (≤ 26 rows).
+ * does the server hold". Catalog order, no pagination (one row per catalog
+ * code at most).
  * Module-gated like the ingest path: 403 `module.disabled` when the
  * opt-in `nutrients` module is off. `userId` is narrowed from auth.
  *

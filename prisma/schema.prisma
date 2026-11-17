@@ -429,6 +429,13 @@ model User {
   /// `/api/activity/goals`, read by the activity calendar
   /// (`/api/activity/calendar`), which reports progress against each goal set.
   activityGoalsJson        Json?                @map("activity_goals_json")
+  /// Optional daily nutrient targets the person set for themselves, keyed by
+  /// catalog code: `{ value, direction: "target" | "limit" }` in the code's
+  /// canonical unit. Null or an absent key = no target. Parsed by
+  /// `src/lib/validations/nutrient-targets.ts`, written through
+  /// `/api/nutrients/targets`, read by `/api/nutrients/daily` and the MCP
+  /// `get_nutrients` tool, whose charts prefer it over the dietary reference.
+  nutrientTargetsJson      Json?                @map("nutrient_targets_json")
   // Blood-glucose display unit preference. Canonical storage is mg/dL.
   glucoseUnit              String?              @map("glucose_unit") // "mg/dL" | "mmol/L" | null = default "mg/dL"
   // v1.18.6 — explicit "I have diabetes / clinician glucose targets" opt-in.

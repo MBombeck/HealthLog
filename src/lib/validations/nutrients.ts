@@ -21,17 +21,17 @@ export const MAX_NUTRIENT_ENTRIES_PER_BATCH = 500;
 export const nutrientCodeEnum = z.enum(NUTRIENT_CODES).meta({
   id: "NutrientCode",
   description:
-    "Closed nutrient catalog code — 24 HealthKit Dietary vitamin/mineral types plus water and caffeine, and (v1.43, responses only) `dha` and `epa`, which only a supplement's composition produces. Energy, macros and sodium/potassium are out of scope. Decode unknown values leniently.",
+    "Closed nutrient catalog code: the vitamins and minerals (sodium and potassium included), water, caffeine, dietary energy (`energy`, kcal), the macronutrients (`protein`, `carbohydrates`, `fat`, `sugar`, `fiber`, g), `alcohol` (grams of ethanol), and (responses only) `dha` and `epa`, which only a supplement's composition produces. The set grows; decode unknown values leniently.",
 });
 
 /**
- * v1.43 — the codes the batch accepts: the catalogue without the
- * supplement-only codes, so the HealthKit sync contract stays unchanged.
+ * The codes the batch accepts: the catalogue without the supplement-only
+ * codes.
  */
 export const syncableNutrientCodeEnum = z.enum(SYNCABLE_NUTRIENT_CODES).meta({
   id: "SyncableNutrientCode",
   description:
-    "A nutrient code HealthKit may send: the 24 Dietary vitamin/mineral types plus water and caffeine. Never `dha` or `epa`.",
+    "A nutrient code the batch accepts: the HealthKit Dietary vitamin, mineral, energy and macronutrient types, water and caffeine, plus `alcohol` (no HealthKit type; a bridge token posts it). Never `dha` or `epa`.",
 });
 
 /**
@@ -39,8 +39,9 @@ export const syncableNutrientCodeEnum = z.enum(SYNCABLE_NUTRIENT_CODES).meta({
  * computed client-side (the `stats:` day-key contract); the server
  * trusts the string after regex + calendar sanity, no re-derivation.
  * `unit` deliberately rides the wire even though the catalog pins it:
- * a µg/mg confusion is a silent 1000× corruption and the one-string
- * echo is the cheapest guard — a mismatch skips the entry.
+ * a µg/mg confusion is a silent 1000× corruption (kJ read as kcal a 4.184×
+ * one) and the one-string echo is the cheapest guard — a mismatch skips the
+ * entry.
  */
 export const nutrientEntrySchema = z
   .object({
@@ -53,7 +54,7 @@ export const nutrientEntrySchema = z
   .meta({
     id: "NutrientIntakeEntry",
     description:
-      "One nutrient day total. day = YYYY-MM-DD in the user's IANA timezone; unit must equal the catalog's canonical unit for the code (mg | ug | ml) or the entry is skipped unit_mismatch.",
+      "One nutrient day total. day = YYYY-MM-DD in the user's IANA timezone; unit must equal the catalog's canonical unit for the code (mg | ug | ml | g | kcal) or the entry is skipped unit_mismatch. Energy is kcal only; a kJ value is skipped, never converted.",
   });
 
 export const nutrientBatchSchema = z
@@ -66,7 +67,7 @@ export const nutrientBatchSchema = z
   .meta({
     id: "NutrientBatchRequest",
     description:
-      "Bulk day-total upsert, max 500 entries. Upsert key is the composite primary key (userId, day, nutrient, source); this route always writes the APPLE_HEALTH source row, so a manual water entry is never clobbered. A re-post replaces the stored total (last-writer-wins day-total contract).",
+      "Bulk day-total upsert, max 500 entries. Upsert key is the composite primary key (userId, day, nutrient, source). The credential decides the source, never the body: a cookie session or a native-login token writes the APPLE_HEALTH row, a `measurements:write` token the EXTERNAL row. A manual water entry is never clobbered. A re-post replaces the stored total (last-writer-wins day-total contract); post 0 to correct a day.",
   });
 
 /** Per-entry outcome — a re-post is by definition an update, never a duplicate. */
@@ -130,17 +131,19 @@ export const nutrientUpperLimitSchema = z
       "The tolerable upper intake level, with the unit, whether it applies to the total intake or to the supplemental share only, and the cited source. `null` where no level is established.",
   });
 
-/** v1.43 — a day total split by where it came from. */
+/** A day total split by the sources that counted toward it. */
 export const nutrientBySourceSchema = z
   .object({
     APPLE_HEALTH: z.number().optional(),
+    HEALTH_CONNECT: z.number().optional(),
+    EXTERNAL: z.number().optional(),
     MANUAL: z.number().optional(),
     SUPPLEMENT: z.number().optional(),
   })
   .meta({
     id: "NutrientAmountBySource",
     description:
-      "The amount split by source: synced from Apple Health, entered by hand, and counted from taken supplement doses. A source with nothing is absent.",
+      "The amount split by the sources that counted: synced from Apple Health, imported from Health Connect, posted by a bridge token (EXTERNAL), entered by hand, and counted from taken supplement doses. APPLE_HEALTH, HEALTH_CONNECT and EXTERNAL each report the whole day, usually the same meals, so only the largest of them counts and the others are absent here; MANUAL and SUPPLEMENT add on top. The values sum to the day's total. A source that did not count is absent. Decode unknown keys leniently.",
   });
 
 export const nutrientOverviewSchema = z
@@ -228,6 +231,18 @@ export const nutrientWaterWriteResponseSchema = z
     description: "The MANUAL water row after the add/set write.",
   });
 
+/** A target or limit the user set for one nutrient. */
+export const nutrientPersonalTargetSchema = z
+  .object({
+    value: z.number().positive(),
+    direction: z.enum(["target", "limit"]),
+  })
+  .meta({
+    id: "NutrientPersonalTarget",
+    description:
+      "A user-set daily amount in the nutrient's canonical unit. `target` = an amount to reach, `limit` = an amount to stay under.",
+  });
+
 /** `GET /api/nutrients/daily` query — one nutrient's day-bucketed series. */
 export const nutrientDailyQuerySchema = z.object({
   nutrient: nutrientCodeEnum,
@@ -235,6 +250,12 @@ export const nutrientDailyQuerySchema = z.object({
 });
 
 const resolvedNutrientReferenceSchema = z.object({
+  authority: z
+    .enum(["EFSA", "IOM", "NIH ODS"])
+    .optional()
+    .describe(
+      "The body that set the value: EFSA wherever it sets a per-day value, IOM for protein and carbohydrates, NIH ODS for chromium.",
+    ),
   kind: z.enum(["PRI", "AI", "safeLevel"]),
   direction: z.enum(["target", "upperGuidance"]),
   value: z.number(),
@@ -263,6 +284,12 @@ export const nutrientDailySeriesSchema = z
       }),
     ),
     reference: resolvedNutrientReferenceSchema.nullable(),
+    personalTarget: nutrientPersonalTargetSchema
+      .nullable()
+      .optional()
+      .describe(
+        "The target or limit the user set for this nutrient (`PATCH /api/nutrients/targets`), or null. A chart prefers it over `reference`.",
+      ),
     upperLimit: nutrientUpperLimitSchema
       .nullable()
       .optional()
@@ -271,5 +298,5 @@ export const nutrientDailySeriesSchema = z
   .meta({
     id: "NutrientDailySeries",
     description:
-      "Dense day-bucketed series (one entry per day in the window, 0 for a day with no data) summed across sources, plus the EFSA reference resolved against the caller's profile sex (null when sex is unknown on the profile).",
+      "Dense day-bucketed series (one entry per day in the window, 0 for a day with no data). A day's amount is the largest of the day-total sources plus the additive ones (see NutrientAmountBySource). Carries the dietary reference resolved against the caller's profile sex (null when sex is unknown on the profile or the nutrient has none) and the user's own target, if set.",
   });

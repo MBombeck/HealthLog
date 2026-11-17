@@ -183,6 +183,38 @@ describe("POST /api/nutrients/batch (real Postgres)", () => {
     expect(count).toBe(0);
   });
 
+  it("stores energy in kcal and the macros in g, and skips energy sent in kJ", async () => {
+    const { POST } = await import("@/app/api/nutrients/batch/route");
+    const res = await POST(
+      postReq({
+        entries: [
+          { day: recentDay(1), nutrient: "energy", unit: "kcal", amount: 2100 },
+          { day: recentDay(1), nutrient: "protein", unit: "g", amount: 95.5 },
+          { day: recentDay(1), nutrient: "sodium", unit: "mg", amount: 2300 },
+          { day: recentDay(2), nutrient: "energy", unit: "kJ", amount: 8800 },
+        ],
+      }),
+    );
+    const json = (await res.json()) as BatchEnvelope;
+    expect(json.data.inserted).toBe(3);
+    expect(json.data.skipped).toEqual([{ index: 3, reason: "unit_mismatch" }]);
+    const stored = await getPrismaClient().nutrientIntakeDay.findMany({
+      where: { userId: OPTED_IN_USER },
+      orderBy: { nutrient: "asc" },
+      select: { nutrient: true, unit: true, amount: true, source: true },
+    });
+    expect(stored).toEqual([
+      {
+        nutrient: "energy",
+        unit: "kcal",
+        amount: 2100,
+        source: "APPLE_HEALTH",
+      },
+      { nutrient: "protein", unit: "g", amount: 95.5, source: "APPLE_HEALTH" },
+      { nutrient: "sodium", unit: "mg", amount: 2300, source: "APPLE_HEALTH" },
+    ]);
+  });
+
   // Before this, `nutrient.batch.ingest` audited only when
   // `inserted + updated > 0` — the ONLY durable record of the call — so a
   // batch where every entry was rejected left the exact same empty
@@ -288,6 +320,44 @@ describe("GET /api/nutrients (real Postgres)", () => {
       latestAmount: 250,
       daysWithData: 2,
     });
+  });
+
+  it("counts the larger day-total source and adds manual water on top", async () => {
+    const { GET } = await import("@/app/api/nutrients/route");
+    const day = recentDay(1);
+    await getPrismaClient().nutrientIntakeDay.createMany({
+      data: [
+        { source: "APPLE_HEALTH", amount: 1800 },
+        { source: "HEALTH_CONNECT", amount: 1600 },
+        { source: "EXTERNAL", amount: 1500 },
+        { source: "MANUAL", amount: 250 },
+      ].map((r) => ({
+        userId: OPTED_IN_USER,
+        day,
+        nutrient: "water",
+        unit: "ml",
+        ...r,
+      })),
+    });
+    const res = await GET(
+      new NextRequest("http://localhost/api/nutrients?days=14"),
+    );
+    const json = (await res.json()) as {
+      data: {
+        nutrients: Array<{
+          nutrient: string;
+          latestAmount: number;
+          latestBySource: Record<string, number>;
+        }>;
+      };
+    };
+    expect(json.data.nutrients).toEqual([
+      expect.objectContaining({
+        nutrient: "water",
+        latestAmount: 2050,
+        latestBySource: { APPLE_HEALTH: 1800, MANUAL: 250 },
+      }),
+    ]);
   });
 
   it("refuses the read 403 module.disabled when the module is off", async () => {

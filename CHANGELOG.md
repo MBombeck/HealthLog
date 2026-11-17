@@ -2,7 +2,34 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Energy and macronutrients.** The nutrients module now tracks dietary
+  energy (kcal), protein, carbohydrates, fat, sugar and fiber (g), sodium and
+  potassium (mg), and alcohol (grams of ethanol). The iPhone app can sync them
+  from Apple Health once its next release asks for them; a food tracker can
+  push its daily totals today with a measurement token through
+  `POST /api/nutrients/batch`, where they are stored as "External". The
+  nutrients page gets an energy and macronutrient card with a 30-day chart per
+  nutrient, an alcohol card beside caffeine, and sodium and potassium join the
+  vitamins and minerals. Reference values name who set them: EFSA, or the IOM
+  for protein and carbohydrates, since EFSA gives those per kilogram or as a
+  share of energy only. Thanks to @ljcasaai for asking for it. (#1402)
+- **Your own daily nutrient targets.** Set an amount to reach or a limit to
+  stay under for any nutrient on the energy card; the chart draws your number
+  instead of the reference. Targets travel in the full backup and are read
+  and set through `GET` and `PATCH /api/nutrients/targets`. (#1402)
+
 ### Changed
+
+- A day's nutrient total no longer adds up sources that each report the whole
+  day. When a food tracker, Apple Health and Health Connect report the same
+  day, only the largest of their totals counts; manual water entries and
+  supplement doses still add on top. Before, an Apple Health and a Health
+  Connect total for the same day were added together. (#1402)
+- The measurement token can now also post daily nutrient totals, on its
+  owner's own record and only while the nutrients module is on. It still
+  cannot read anything back. (#1402)
 
 - API responses and CSV or JSON exports now go out gzip-compressed when the
   browser or app asks for it, which comes with Next.js 16.4.6. The live Coach

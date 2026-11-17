@@ -22,4 +22,9 @@ export const nutrientKeys = {
    * it.
    */
   nutrientCatalog: () => ["nutrients", "catalog"] as const,
+  /**
+   * The daily targets the person set, from `GET /api/nutrients/targets`. The
+   * target editor reads it; the daily series carries the one for its code.
+   */
+  nutrientTargets: () => ["nutrients", "targets"] as const,
 };

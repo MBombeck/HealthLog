@@ -125,6 +125,7 @@ import {
   type ProfileSex,
 } from "@/lib/profile/sex";
 import { dayKeyAsUtcMidnight } from "@/lib/tz/date-only";
+import { foldNutrientDays } from "@/lib/nutrients/day-total";
 
 /** Briefing freshness window — mirrors the 24 h TTL on the advisor cache. */
 const BRIEFING_TTL_MS = 24 * 60 * 60 * 1000;
@@ -601,9 +602,9 @@ async function buildMoodBlock(
 
 /**
  * v1.29 — fluid-intake dashboard tile block, read from `NutrientIntakeDay`
- * (nutrient="water", last 30 day-keys, summed ACROSS SOURCES per day —
- * migration 0249 can carry an APPLE_HEALTH row and a MANUAL row for the
- * same day). ≤ 60 rows off the existing `(userId, nutrient, day desc)`
+ * (nutrient="water", last 30 day-keys, folded ACROSS SOURCES per day by
+ * `foldNutrientDay` — migration 0249 can carry an APPLE_HEALTH row and a
+ * MANUAL row for the same day). A few rows per day off the existing `(userId, nutrient, day desc)`
  * index. Sparse by construction (only days with an actual write become a
  * `DataPoint`) — matching the convention every real `MeasurementType`
  * summary follows: an unlogged day is absent, not a zero reading. `null`
@@ -623,18 +624,15 @@ async function buildNutrientWaterBlock(
     .slice(0, 10);
   const rows = await prisma.nutrientIntakeDay.findMany({
     where: { userId, nutrient: "water", day: { gte: since } },
-    select: { day: true, amount: true },
+    select: { day: true, amount: true, source: true },
   });
   if (rows.length === 0) return null;
 
-  const sumByDay = new Map<string, number>();
-  for (const row of rows) {
-    sumByDay.set(row.day, (sumByDay.get(row.day) ?? 0) + row.amount);
-  }
-  const points: DataPoint[] = [...sumByDay.entries()]
-    .map(([day, amount]) => ({
+  const folds = foldNutrientDays(rows, (row) => row.day);
+  const points: DataPoint[] = [...folds.entries()]
+    .map(([day, fold]) => ({
       date: dayKeyAsUtcMidnight(day),
-      value: amount,
+      value: fold.total,
     }))
     .sort((a, b) => a.date.getTime() - b.date.getTime());
 

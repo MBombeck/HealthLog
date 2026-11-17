@@ -53,6 +53,7 @@ import type { OcrVisionPick } from "@/lib/labs/ocr-run";
 import { annotate } from "@/lib/logging/context";
 import {
   NUTRIENT_DEFINITIONS,
+  isIngredientNutrientCode,
   isNutrientCode,
   parseNutrientInputUnit,
   toCanonicalNutrientAmount,
@@ -100,7 +101,7 @@ export async function requireSupplementLabelProvider(
 /** The code list the prompt offers, one `code: English name` per line. */
 function codeList(): string {
   return NUTRIENT_DEFINITIONS.filter(
-    (def) => def.code !== "water" && def.code !== "caffeine",
+    (def) => def.ingredient && def.group !== "caffeine",
   )
     .map((def) => `- ${def.code}: ${labelIn("en", def.labelKey) ?? def.code}`)
     .join("\n");
@@ -175,7 +176,7 @@ export function proposalFromLabel(
     const unit = line.unit ? parseNutrientInputUnit(line.unit) : null;
     const amount = line.amount ?? null;
     const usable =
-      isNutrientCode(code) &&
+      isIngredientNutrientCode(code) &&
       !seen.has(code) &&
       unit !== null &&
       amount !== null &&

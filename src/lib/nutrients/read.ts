@@ -3,9 +3,10 @@
  * `GET /api/nutrients/daily` and the MCP `get_nutrients` tool.
  *
  * A day can carry one row per source (migration 0249 put `source` in the
- * key, v1.43 added `SUPPLEMENT`), so every read sums a day across its rows
- * and, since v1.43, also keeps the split by source and judges the day
- * against the nutrient's upper intake level. The judgement is made here,
+ * key), so every read folds a day's rows through `foldNutrientDay` (the
+ * largest day-total source counts, additive sources add on top), keeps the
+ * split by source, and judges the day against the nutrient's upper intake
+ * level. The judgement is made here,
  * once, so no client and no prompt ever compares a number against a limit
  * of its own.
  */
@@ -19,14 +20,18 @@ import {
   type NutrientUpperLimit,
 } from "@/lib/nutrients/catalog";
 import {
-  NUTRIENT_SOURCE,
-  isNutrientSource,
-  type NutrientSource,
-} from "@/lib/nutrients/sources";
+  foldNutrientDay,
+  foldNutrientDays,
+  type NutrientAmountBySource,
+  type NutrientDayFold as DayFold,
+  type NutrientDayRow,
+} from "@/lib/nutrients/day-total";
+import { NUTRIENT_SOURCE } from "@/lib/nutrients/sources";
+import { readNutrientTargets } from "@/lib/nutrients/targets";
 import { shiftDateKey, userDayKey } from "@/lib/tz/format";
+import type { NutrientTarget } from "@/lib/validations/nutrient-targets";
 
-/** A day's amount split by source; a source with nothing is absent. */
-export type NutrientAmountBySource = Partial<Record<NutrientSource, number>>;
+export type { NutrientAmountBySource };
 
 interface StoredRow {
   nutrient: string;
@@ -34,20 +39,6 @@ interface StoredRow {
   amount: number;
   unit: string;
   source: string;
-}
-
-interface DayFold {
-  total: number;
-  bySource: NutrientAmountBySource;
-}
-
-function addToDay(fold: DayFold, source: string, amount: number): void {
-  fold.total += amount;
-  // A source outside the closed set still counts toward the day's total; it
-  // only cannot be named in the split.
-  if (isNutrientSource(source)) {
-    fold.bySource[source] = (fold.bySource[source] ?? 0) + amount;
-  }
 }
 
 /** Whether one folded day is above the code's upper limit (null without one). */
@@ -100,7 +91,12 @@ export async function readNutrientOverview(
 
   const byCode = new Map<
     string,
-    { unit: string; latestDay: string; latest: DayFold; daysSeen: Set<string> }
+    {
+      unit: string;
+      latestDay: string;
+      latestRows: NutrientDayRow[];
+      daysSeen: Set<string>;
+    }
   >();
   for (const row of rows) {
     let summary = byCode.get(row.nutrient);
@@ -110,7 +106,7 @@ export async function readNutrientOverview(
       summary = {
         unit: row.unit,
         latestDay: row.day,
-        latest: { total: 0, bySource: {} },
+        latestRows: [],
         daysSeen: new Set(),
       };
       byCode.set(row.nutrient, summary);
@@ -119,7 +115,7 @@ export async function readNutrientOverview(
     // once.
     summary.daysSeen.add(row.day);
     if (row.day === summary.latestDay) {
-      addToDay(summary.latest, row.source, row.amount);
+      summary.latestRows.push(row);
     }
   }
 
@@ -127,15 +123,16 @@ export async function readNutrientOverview(
     (code) => isNutrientCode(code) && byCode.has(code),
   ).map((code) => {
     const summary = byCode.get(code)!;
+    const latest = foldNutrientDay(summary.latestRows);
     return {
       nutrient: code,
       unit: summary.unit,
       latestDay: summary.latestDay,
-      latestAmount: summary.latest.total,
+      latestAmount: latest.total,
       daysWithData: summary.daysSeen.size,
-      latestBySource: summary.latest.bySource,
+      latestBySource: latest.bySource,
       upperLimit: NUTRIENT_CATALOG[code].upperLimit,
-      latestAboveUpperLimit: dayAboveLimit(code, summary.latest),
+      latestAboveUpperLimit: dayAboveLimit(code, latest),
     };
   });
 
@@ -152,29 +149,28 @@ export interface NutrientDailyEntry {
 /**
  * One nutrient's dense day series over the window: one entry per calendar
  * day, 0 and an empty split on a day without data, each judged against the
- * upper limit.
+ * upper limit; and the target the person set for the nutrient, or null.
  */
 export async function readNutrientDaily(
   userId: string,
   timezone: string,
   nutrient: NutrientCode,
   days: number,
-): Promise<{ days: NutrientDailyEntry[]; rowCount: number }> {
+): Promise<{
+  days: NutrientDailyEntry[];
+  rowCount: number;
+  personalTarget: NutrientTarget | null;
+}> {
   const since = nutrientWindowStart(timezone, days);
-  const rows = await prisma.nutrientIntakeDay.findMany({
-    where: { userId, nutrient, day: { gte: since } },
-    select: { day: true, amount: true, source: true },
-  });
+  const [rows, targets] = await Promise.all([
+    prisma.nutrientIntakeDay.findMany({
+      where: { userId, nutrient, day: { gte: since } },
+      select: { day: true, amount: true, source: true },
+    }),
+    readNutrientTargets(userId),
+  ]);
 
-  const folds = new Map<string, DayFold>();
-  for (const row of rows) {
-    let fold = folds.get(row.day);
-    if (!fold) {
-      fold = { total: 0, bySource: {} };
-      folds.set(row.day, fold);
-    }
-    addToDay(fold, row.source, row.amount);
-  }
+  const folds = foldNutrientDays(rows, (row) => row.day);
 
   const series: NutrientDailyEntry[] = [];
   for (let i = 0; i < days; i++) {
@@ -187,5 +183,9 @@ export async function readNutrientDaily(
       aboveUpperLimit: dayAboveLimit(nutrient, fold),
     });
   }
-  return { days: series, rowCount: rows.length };
+  return {
+    days: series,
+    rowCount: rows.length,
+    personalTarget: targets[nutrient] ?? null,
+  };
 }

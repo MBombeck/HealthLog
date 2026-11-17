@@ -33,6 +33,7 @@ import {
 
 import { GET as getMe } from "@/app/api/auth/me/route";
 import * as profile from "@/app/api/user/profile/route";
+import * as nutrientTargets from "@/app/api/nutrients/targets/route";
 import * as diabetes from "@/app/api/auth/me/diabetes/route";
 import * as autoAiRead from "@/app/api/auth/me/documents-auto-ai-read/route";
 import * as labsOcr from "@/app/api/auth/me/labs-local-ocr/route";
@@ -449,11 +450,38 @@ function entries(user: Pick<User, "id">): Entry[] {
         handler: modules.PATCH,
         method: "PATCH",
         route: "/api/auth/me/modules",
-        body: { mood: false },
+        // Nutrients on as well: the nutrient-target entry below is behind it.
+        body: { mood: false, nutrients: true },
       },
       read: get(modules.GET, "/api/auth/me/modules", "modules.mood"),
       expected: false,
       me: { pick: (me) => at(me, "modules.mood"), expected: false },
+    },
+    {
+      columns: ["nutrientTargetsJson"],
+      write: {
+        handler: nutrientTargets.PATCH,
+        method: "PATCH",
+        route: "/api/nutrients/targets",
+        body: {
+          targets: {
+            protein: { value: 120, direction: "target" },
+            sugar: { value: 40, direction: "limit" },
+          },
+        },
+      },
+      read: {
+        call: {
+          handler: nutrientTargets.GET,
+          method: "GET",
+          route: "/api/nutrients/targets",
+        },
+        pick: (res) => [
+          at(res.data, "targets.protein.value"),
+          at(res.data, "targets.sugar.direction"),
+        ],
+      },
+      expected: [120, "limit"],
     },
     {
       columns: ["healthScoreConfigJson"],

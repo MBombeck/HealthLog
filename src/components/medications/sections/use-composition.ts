@@ -29,6 +29,8 @@ export interface NutrientCatalogEntryDto {
   labelKey: string;
   label: string;
   syncable: boolean;
+  /** Whether a supplement's composition may name this code. */
+  ingredient: boolean;
   inputUnits: Array<{ unit: string; factorToCanonical: number }>;
   upperLimit: {
     value: number;

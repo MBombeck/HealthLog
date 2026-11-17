@@ -1,49 +1,57 @@
 /**
- * Nutrient catalog — the closed code set for the micronutrient-intake
- * sync (v1.28).
+ * Nutrient catalog — the closed code set for nutrient intake.
  *
- * 26 syncable codes: the 24 HealthKit `Dietary*` vitamin/mineral quantity
- * types plus DietaryWater and DietaryCaffeine. v1.43 adds two codes no
- * HealthKit type carries (`dha`, `epa`), which only a supplement's
- * composition produces; they appear in responses and never in the batch. Energy, carbohydrates,
- * protein, fat, sugar, fiber AND sodium/potassium are deliberately NOT
- * here — the anti-goal against diet-app territory stands, and
- * sodium/potassium are food-composition signals, not "substances
- * taken" (maintainer decision, out until explicit user demand).
+ * 35 syncable codes: the HealthKit `Dietary*` vitamin and mineral quantity
+ * types (sodium and potassium among them), water and caffeine, dietary energy
+ * and the macronutrients (protein, carbohydrates, fat, sugar, fiber), and
+ * alcohol. Energy and the macros came in by maintainer decision on #1402, once
+ * users asked to bring the day totals a food tracker already computes. "Syncable"
+ * means the batch accepts the code; whether HealthKit carries it is a separate
+ * question, answered by `hkIdentifier !== null`. Alcohol is the one syncable
+ * code HealthKit has no dietary type for: only a bridge token posts it. Two
+ * further codes (`dha`, `epa`) come only from a supplement's composition; they
+ * appear in responses and never in the batch.
  *
  * This catalog is the single source of truth for:
  *   - the closed `nutrient` code enum on the wire and in storage;
  *   - the canonical storage unit per code, which is ALSO the pinned
- *     HealthKit query unit for iOS (mass types in mg or µg as listed,
- *     water in mL — never IU). The batch route rejects any entry whose
- *     echoed `unit` differs, because a silent µg/mg confusion is a
- *     1000× corruption and the one-string echo is the cheapest guard;
+ *     HealthKit query unit for iOS (mass types in g, mg or µg as listed,
+ *     water in mL, energy in kcal — never IU, never kJ). The batch route
+ *     rejects any entry whose echoed `unit` differs, because a silent µg/mg
+ *     or kJ/kcal confusion corrupts the value and the one-string echo is the
+ *     cheapest guard;
  *   - the generous per-day plausibility cap (ingest guard against
  *     unit-confused or corrupted writers, NOT a health judgement —
  *     values above high-dose supplement reality get skipped);
- *   - the EFSA dietary reference values a later Coach block compares
- *     against. Every reference names its EFSA value kind (PRI /
- *     AI / safeLevel) and a direction: `target` for reference intakes,
- *     `upperGuidance` for caffeine's safe-level ceiling. Sex-split
- *     values resolve against the user profile at consumption time —
- *     a profile without sex omits the reference, never guesses.
+ *   - the dietary reference values the insights surfaces and the Coach
+ *     compare against. Every reference names its authority, its value kind
+ *     (PRI / AI / safeLevel) and a direction: `target` for reference intakes,
+ *     `upperGuidance` for a do-not-exceed level (caffeine, sodium). Sex-split
+ *     values resolve against the user profile at consumption time — a profile
+ *     without sex omits the reference, never guesses;
+ *   - the group a code belongs to (vitamin, mineral, energy and macros, …),
+ *     which the surfaces read instead of listing codes by hand, and whether a
+ *     supplement's composition may name it.
  *
- * Reference values are the EFSA DRV Finder adult values (Dietary
- * Reference Values for the EU population); each entry cites its source
- * verbatim in `reference.source`. Where EFSA expresses a vitamin per
- * energy unit (thiamin, niacin), the entry carries the value at the
- * 10 MJ/day reference energy intake and says so in the citation.
- * Chromium is the one exception: EFSA concluded no DRV can be set, so
- * the entry cites the NIH ODS adequate intake instead — spelled out in
- * its source string.
+ * Reference values are the EFSA DRV Finder adult values (Dietary Reference
+ * Values for the EU population) wherever EFSA sets a value per day; each entry
+ * cites its source verbatim in `reference.source`. Where EFSA expresses a
+ * vitamin per energy unit (thiamin, niacin), the entry carries the value at the
+ * 10 MJ/day reference energy intake and says so in the citation. Three codes
+ * cite another authority, named in `reference.authority`: chromium (EFSA
+ * concluded no DRV can be set; NIH ODS adequate intake), protein and
+ * carbohydrates (EFSA states them per kilogram of body weight or as a share of
+ * energy, never per day; the IOM recommended dietary allowance is the per-day
+ * figure). Energy, fat, sugar and alcohol carry no reference: EFSA's energy
+ * requirement depends on age, sex and activity, fat is a share of energy, and
+ * sugar and alcohol have no intake to aim for.
  */
 
 import type { BinaryReferenceSex } from "@/lib/profile/sex";
 
 /**
- * The codes HealthKit may send in the nutrient batch. `NUTRIENT_CODES` adds
- * the supplement-only codes below them; the batch validates against this
- * tuple, so its contract stays the 26 codes it always was.
+ * The codes the nutrient batch accepts. `NUTRIENT_CODES` adds the
+ * supplement-only codes below them; the batch validates against this tuple.
  */
 export const SYNCABLE_NUTRIENT_CODES = [
   // 13 vitamins
@@ -60,7 +68,7 @@ export const SYNCABLE_NUTRIENT_CODES = [
   "vitamin_d",
   "vitamin_e",
   "vitamin_k",
-  // 11 minerals (sodium + potassium excluded by directive)
+  // 13 minerals
   "calcium",
   "iron",
   "magnesium",
@@ -72,9 +80,20 @@ export const SYNCABLE_NUTRIENT_CODES = [
   "chromium",
   "molybdenum",
   "iodine",
+  "sodium",
+  "potassium",
   // taken substances with correlation value
   "water",
   "caffeine",
+  // energy and macronutrients (#1402)
+  "energy",
+  "protein",
+  "carbohydrates",
+  "fat",
+  "sugar",
+  "fiber",
+  // no HealthKit dietary type; a bridge token posts it
+  "alcohol",
 ] as const;
 
 /**
@@ -93,7 +112,7 @@ export type NutrientCode = (typeof NUTRIENT_CODES)[number];
 export type SyncableNutrientCode = (typeof SYNCABLE_NUTRIENT_CODES)[number];
 
 /** Canonical storage units. `ug` is µg on the wire — ASCII on purpose. */
-export type NutrientUnit = "mg" | "ug" | "ml";
+export type NutrientUnit = "mg" | "ug" | "ml" | "g" | "kcal";
 
 /**
  * v1.43 — every unit an amount may be ENTERED in. The canonical units plus
@@ -101,7 +120,7 @@ export type NutrientUnit = "mg" | "ug" | "ml";
  * one fixed mass (vitamin D, preformed vitamin A); vitamin E has none, because
  * its IU depends on whether the form is natural or synthetic.
  */
-export type NutrientInputUnitCode = NutrientUnit | "g" | "l" | "IU";
+export type NutrientInputUnitCode = NutrientUnit | "l" | "IU";
 
 /** The unit vocabulary, spelled once. Every other file reads it from here. */
 export const NUTRIENT_UNIT = {
@@ -111,6 +130,7 @@ export const NUTRIENT_UNIT = {
   g: "g",
   l: "l",
   IU: "IU",
+  kcal: "kcal",
 } as const satisfies Record<NutrientInputUnitCode, NutrientInputUnitCode>;
 
 export interface NutrientInputUnit {
@@ -147,7 +167,15 @@ export type NutrientUpperLimitForm =
   "retinol" | "folic_acid" | "magnesium_salts" | "alpha_tocopherol";
 
 export interface NutrientReference {
-  /** EFSA value type, named in Coach prose later (Slice B). */
+  /**
+   * The body that set the value. EFSA wherever it sets a per-day value; the
+   * catalogue header names each exception and why.
+   */
+  authority: NutrientReferenceAuthority;
+  /**
+   * Value type in EFSA's vocabulary. An IOM recommended dietary allowance is
+   * carried as `PRI`, the concept it matches.
+   */
   kind: "PRI" | "AI" | "safeLevel";
   /** `target` = reference intake; `upperGuidance` = do-not-exceed. */
   direction: "target" | "upperGuidance";
@@ -160,6 +188,22 @@ export interface NutrientReference {
   source: string;
 }
 
+export type NutrientReferenceAuthority = "EFSA" | "IOM" | "NIH ODS";
+
+/**
+ * Which family a code belongs to. The surfaces group by it (the micronutrient
+ * card lists vitamins and minerals, the energy card the `energy_macro` codes)
+ * instead of listing codes by hand.
+ */
+export type NutrientGroup =
+  | "vitamin"
+  | "mineral"
+  | "water"
+  | "caffeine"
+  | "energy_macro"
+  | "alcohol"
+  | "omega3";
+
 export interface NutrientDefinition {
   code: NutrientCode;
   /**
@@ -167,8 +211,19 @@ export interface NutrientDefinition {
    * supplement-only code (`dha`, `epa`).
    */
   hkIdentifier: string | null;
-  /** Whether HealthKit may send this code in the nutrient batch. */
+  /**
+   * Whether the nutrient batch accepts this code. HealthKit carries it only
+   * when `hkIdentifier` is set; alcohol is syncable through a token alone.
+   */
   syncable: boolean;
+  /** The family the code belongs to. */
+  group: NutrientGroup;
+  /**
+   * Whether a supplement's composition may name this code. False for water,
+   * energy and the macros, and alcohol: what a capsule contains is a substance
+   * taken, not a meal.
+   */
+  ingredient: boolean;
   /** Canonical storage unit AND the pinned HK query unit. */
   unit: NutrientUnit;
   /** i18n key for the display name (settings card + exports). */
@@ -207,6 +262,13 @@ const METRIC_INPUT_UNITS: Readonly<
     { unit: NUTRIENT_UNIT.ml, factorToCanonical: 1 },
     { unit: NUTRIENT_UNIT.l, factorToCanonical: 1000 },
   ],
+  g: [
+    { unit: NUTRIENT_UNIT.g, factorToCanonical: 1 },
+    { unit: NUTRIENT_UNIT.mg, factorToCanonical: 0.001 },
+  ],
+  // No kJ: a value typed in kilojoules and read as kilocalories is off by a
+  // factor of 4.184 and still looks plausible, so energy is entered in one unit.
+  kcal: [{ unit: NUTRIENT_UNIT.kcal, factorToCanonical: 1 }],
 };
 
 /**
@@ -330,17 +392,27 @@ function inputUnitsFor(
       ];
 }
 
+/** Groups whose codes a supplement's composition may not name. */
+const NON_INGREDIENT_GROUPS: ReadonlySet<NutrientGroup> = new Set([
+  "water",
+  "energy_macro",
+  "alcohol",
+]);
+
 function def(
   code: NutrientCode,
+  group: NutrientGroup,
   hkSuffix: string,
   unit: NutrientUnit,
   plausibleDailyMax: number,
-  reference: NutrientReference,
+  reference: NutrientReference | null,
 ): NutrientDefinition {
   return {
     code,
     hkIdentifier: `HKQuantityTypeIdentifierDietary${hkSuffix}`,
     syncable: true,
+    group,
+    ingredient: !NON_INGREDIENT_GROUPS.has(group),
     unit,
     labelKey: `nutrients.names.${code}`,
     plausibleDailyMax,
@@ -350,7 +422,32 @@ function def(
   };
 }
 
-/** A code that only a supplement's composition produces (v1.43). */
+/**
+ * A code the batch accepts that no HealthKit dietary type carries, so only a
+ * bridge token posts it. It names no reference.
+ */
+function tokenOnly(
+  code: NutrientCode,
+  group: NutrientGroup,
+  unit: NutrientUnit,
+  plausibleDailyMax: number,
+): NutrientDefinition {
+  return {
+    code,
+    hkIdentifier: null,
+    syncable: true,
+    group,
+    ingredient: !NON_INGREDIENT_GROUPS.has(group),
+    unit,
+    labelKey: `nutrients.names.${code}`,
+    plausibleDailyMax,
+    reference: null,
+    inputUnits: inputUnitsFor(code, unit),
+    upperLimit: UPPER_LIMITS[code] ?? null,
+  };
+}
+
+/** A code that only a supplement's composition produces. */
 function supplementOnly(
   code: NutrientCode,
   unit: NutrientUnit,
@@ -360,6 +457,8 @@ function supplementOnly(
     code,
     hkIdentifier: null,
     syncable: false,
+    group: "omega3",
+    ingredient: true,
     unit,
     labelKey: `nutrients.names.${code}`,
     plausibleDailyMax,
@@ -375,7 +474,8 @@ export const NUTRIENT_CATALOG: Readonly<
   Record<NutrientCode, NutrientDefinition>
 > = Object.freeze({
   // ── Vitamins ─────────────────────────────────────────────────────
-  vitamin_a: def("vitamin_a", "VitaminA", "ug", 15000, {
+  vitamin_a: def("vitamin_a", "vitamin", "VitaminA", "ug", 15000, {
+    authority: "EFSA",
     kind: "PRI",
     direction: "target",
     male: 750,
@@ -387,167 +487,255 @@ export const NUTRIENT_CATALOG: Readonly<
   // the ingest guard compares with `>`, so a 1000× error slipped through at
   // precisely this one analyte. 500 still clears any real supplement dose
   // (high-dose thiamin tops out around 300 mg) while catching that collision.
-  thiamin: def("thiamin", "Thiamin", "mg", 500, {
+  thiamin: def("thiamin", "vitamin", "Thiamin", "mg", 500, {
+    authority: "EFSA",
     kind: "PRI",
     direction: "target",
     adult: 1.0,
     source: "EFSA DRV 2016 (PRI 0.1 mg/MJ ≈ 1.0 mg/d at 10 MJ/d)",
   }),
-  riboflavin: def("riboflavin", "Riboflavin", "mg", 1000, {
+  riboflavin: def("riboflavin", "vitamin", "Riboflavin", "mg", 1000, {
+    authority: "EFSA",
     kind: "PRI",
     direction: "target",
     adult: 1.6,
     source: "EFSA DRV 2017 (adults)",
   }),
-  niacin: def("niacin", "Niacin", "mg", 3000, {
+  niacin: def("niacin", "vitamin", "Niacin", "mg", 3000, {
+    authority: "EFSA",
     kind: "PRI",
     direction: "target",
     adult: 16,
     source: "EFSA DRV 2014 (PRI 1.6 mg NE/MJ ≈ 16 mg NE/d at 10 MJ/d)",
   }),
-  pantothenic_acid: def("pantothenic_acid", "PantothenicAcid", "mg", 2000, {
-    kind: "AI",
-    direction: "target",
-    adult: 5,
-    source: "EFSA DRV 2014 (adults)",
-  }),
-  vitamin_b6: def("vitamin_b6", "VitaminB6", "mg", 1000, {
+  pantothenic_acid: def(
+    "pantothenic_acid",
+    "vitamin",
+    "PantothenicAcid",
+    "mg",
+    2000,
+    {
+      authority: "EFSA",
+      kind: "AI",
+      direction: "target",
+      adult: 5,
+      source: "EFSA DRV 2014 (adults)",
+    },
+  ),
+  vitamin_b6: def("vitamin_b6", "vitamin", "VitaminB6", "mg", 1000, {
+    authority: "EFSA",
     kind: "PRI",
     direction: "target",
     male: 1.7,
     female: 1.6,
     source: "EFSA DRV 2016 (adults)",
   }),
-  biotin: def("biotin", "Biotin", "ug", 20000, {
+  biotin: def("biotin", "vitamin", "Biotin", "ug", 20000, {
+    authority: "EFSA",
     kind: "AI",
     direction: "target",
     adult: 40,
     source: "EFSA DRV 2014 (adults)",
   }),
-  folate: def("folate", "Folate", "ug", 5000, {
+  folate: def("folate", "vitamin", "Folate", "ug", 5000, {
+    authority: "EFSA",
     kind: "PRI",
     direction: "target",
     adult: 330,
     source: "EFSA DRV 2014 (dietary folate equivalents, adults)",
   }),
-  vitamin_b12: def("vitamin_b12", "VitaminB12", "ug", 5000, {
+  vitamin_b12: def("vitamin_b12", "vitamin", "VitaminB12", "ug", 5000, {
+    authority: "EFSA",
     kind: "AI",
     direction: "target",
     adult: 4,
     source: "EFSA DRV 2015 (cobalamin, adults)",
   }),
-  vitamin_c: def("vitamin_c", "VitaminC", "mg", 10000, {
+  vitamin_c: def("vitamin_c", "vitamin", "VitaminC", "mg", 10000, {
+    authority: "EFSA",
     kind: "PRI",
     direction: "target",
     male: 110,
     female: 95,
     source: "EFSA DRV 2013 (adults)",
   }),
-  vitamin_d: def("vitamin_d", "VitaminD", "ug", 1000, {
+  vitamin_d: def("vitamin_d", "vitamin", "VitaminD", "ug", 1000, {
+    authority: "EFSA",
     kind: "AI",
     direction: "target",
     adult: 15,
     source: "EFSA DRV 2016 (adults, assuming minimal cutaneous synthesis)",
   }),
-  vitamin_e: def("vitamin_e", "VitaminE", "mg", 2000, {
+  vitamin_e: def("vitamin_e", "vitamin", "VitaminE", "mg", 2000, {
+    authority: "EFSA",
     kind: "AI",
     direction: "target",
     male: 13,
     female: 11,
     source: "EFSA DRV 2015 (alpha-tocopherol, adults)",
   }),
-  vitamin_k: def("vitamin_k", "VitaminK", "ug", 10000, {
+  vitamin_k: def("vitamin_k", "vitamin", "VitaminK", "ug", 10000, {
+    authority: "EFSA",
     kind: "AI",
     direction: "target",
     adult: 70,
     source: "EFSA DRV 2017 (phylloquinone, adults)",
   }),
   // ── Minerals ─────────────────────────────────────────────────────
-  calcium: def("calcium", "Calcium", "mg", 5000, {
+  calcium: def("calcium", "mineral", "Calcium", "mg", 5000, {
+    authority: "EFSA",
     kind: "PRI",
     direction: "target",
     adult: 950,
     source: "EFSA DRV 2015 (adults ≥ 25 y)",
   }),
-  iron: def("iron", "Iron", "mg", 500, {
+  iron: def("iron", "mineral", "Iron", "mg", 500, {
+    authority: "EFSA",
     kind: "PRI",
     direction: "target",
     male: 11,
     female: 16,
     source: "EFSA DRV 2015 (adults; 16 mg premenopausal women)",
   }),
-  magnesium: def("magnesium", "Magnesium", "mg", 2000, {
+  magnesium: def("magnesium", "mineral", "Magnesium", "mg", 2000, {
+    authority: "EFSA",
     kind: "AI",
     direction: "target",
     male: 350,
     female: 300,
     source: "EFSA DRV 2015 (adults)",
   }),
-  phosphorus: def("phosphorus", "Phosphorus", "mg", 5000, {
+  phosphorus: def("phosphorus", "mineral", "Phosphorus", "mg", 5000, {
+    authority: "EFSA",
     kind: "AI",
     direction: "target",
     adult: 550,
     source: "EFSA DRV 2015 (adults)",
   }),
-  zinc: def("zinc", "Zinc", "mg", 200, {
+  zinc: def("zinc", "mineral", "Zinc", "mg", 200, {
+    authority: "EFSA",
     kind: "PRI",
     direction: "target",
     male: 9.4,
     female: 7.5,
     source: "EFSA DRV 2014 (adults, at 300 mg/d phytate intake)",
   }),
-  copper: def("copper", "Copper", "mg", 20, {
+  copper: def("copper", "mineral", "Copper", "mg", 20, {
+    authority: "EFSA",
     kind: "AI",
     direction: "target",
     male: 1.6,
     female: 1.3,
     source: "EFSA DRV 2015 (adults)",
   }),
-  manganese: def("manganese", "Manganese", "mg", 50, {
+  manganese: def("manganese", "mineral", "Manganese", "mg", 50, {
+    authority: "EFSA",
     kind: "AI",
     direction: "target",
     adult: 3,
     source: "EFSA DRV 2013 (adults)",
   }),
-  selenium: def("selenium", "Selenium", "ug", 1000, {
+  selenium: def("selenium", "mineral", "Selenium", "ug", 1000, {
+    authority: "EFSA",
     kind: "AI",
     direction: "target",
     adult: 70,
     source: "EFSA DRV 2014 (adults)",
   }),
-  chromium: def("chromium", "Chromium", "ug", 2000, {
+  chromium: def("chromium", "mineral", "Chromium", "ug", 2000, {
+    authority: "NIH ODS",
     kind: "AI",
     direction: "target",
     male: 35,
     female: 25,
     source: "NIH ODS 2018 (adults 19–50 y; EFSA 2014 sets no DRV for chromium)",
   }),
-  molybdenum: def("molybdenum", "Molybdenum", "ug", 2000, {
+  molybdenum: def("molybdenum", "mineral", "Molybdenum", "ug", 2000, {
+    authority: "EFSA",
     kind: "AI",
     direction: "target",
     adult: 65,
     source: "EFSA DRV 2013 (adults)",
   }),
-  iodine: def("iodine", "Iodine", "ug", 2000, {
+  iodine: def("iodine", "mineral", "Iodine", "ug", 2000, {
+    authority: "EFSA",
     kind: "AI",
     direction: "target",
     adult: 150,
     source: "EFSA DRV 2014 (adults)",
   }),
+  sodium: def("sodium", "mineral", "Sodium", "mg", 50000, {
+    authority: "EFSA",
+    kind: "safeLevel",
+    direction: "upperGuidance",
+    adult: 2000,
+    source: "EFSA DRV 2019 (safe and adequate intake, adults)",
+  }),
+  potassium: def("potassium", "mineral", "Potassium", "mg", 30000, {
+    authority: "EFSA",
+    kind: "AI",
+    direction: "target",
+    adult: 3500,
+    source: "EFSA DRV 2016 (adults)",
+  }),
   // ── Taken substances with correlation value ──────────────────────
-  water: def("water", "Water", "ml", 20000, {
+  water: def("water", "water", "Water", "ml", 20000, {
+    authority: "EFSA",
     kind: "AI",
     direction: "target",
     male: 2500,
     female: 2000,
     source: "EFSA DRV 2010 (total water incl. food moisture, adults)",
   }),
-  caffeine: def("caffeine", "Caffeine", "mg", 2000, {
+  caffeine: def("caffeine", "caffeine", "Caffeine", "mg", 2000, {
+    authority: "EFSA",
     kind: "safeLevel",
     direction: "upperGuidance",
     adult: 400,
     source: "EFSA 2015 scientific opinion on the safety of caffeine (adults)",
   }),
+  // ── Energy and macronutrients (#1402) ────────────────────────────
+  // EFSA's average energy requirement depends on age, sex and activity level
+  // (EFSA 2013), so energy carries no single reference.
+  energy: def("energy", "energy_macro", "EnergyConsumed", "kcal", 20000, null),
+  protein: def("protein", "energy_macro", "Protein", "g", 1000, {
+    authority: "IOM",
+    kind: "PRI",
+    direction: "target",
+    male: 56,
+    female: 46,
+    source:
+      "IOM 2005 DRI for macronutrients (RDA 0.8 g/kg/d, 56 g/d men, 46 g/d women; EFSA 2012 sets a PRI of 0.83 g/kg/d and no g/d value)",
+  }),
+  carbohydrates: def(
+    "carbohydrates",
+    "energy_macro",
+    "Carbohydrates",
+    "g",
+    2000,
+    {
+      authority: "IOM",
+      kind: "PRI",
+      direction: "target",
+      adult: 130,
+      source:
+        "IOM 2005 DRI for macronutrients (RDA 130 g/d, adults; EFSA 2010 sets 45–60 % of energy and no g/d value)",
+    },
+  ),
+  // EFSA (2010) states fat as 20–35 % of energy; there is no per-day figure.
+  fat: def("fat", "energy_macro", "FatTotal", "g", 1000, null),
+  // EFSA (2022) set no safe level for added and free sugars.
+  sugar: def("sugar", "energy_macro", "Sugar", "g", 1500, null),
+  fiber: def("fiber", "energy_macro", "Fiber", "g", 500, {
+    authority: "EFSA",
+    kind: "AI",
+    direction: "target",
+    adult: 25,
+    source: "EFSA DRV 2010 (dietary fibre, adults)",
+  }),
+  // Grams of ethanol. HealthKit has no dietary type for it (its alcohol
+  // quantity is the number of drinks), so only a bridge token posts it.
+  alcohol: tokenOnly("alcohol", "alcohol", "g", 1000),
   // ── Supplement-only (v1.43) ──────────────────────────────────────
   // Omega-3 fatty acids from fish or algae oil capsules. The cap sits well
   // above the 5 g a day EFSA reviewed, so only a unit slip trips it.
@@ -613,6 +801,7 @@ export function toCanonicalNutrientAmount(
  * unit.
  */
 const INPUT_UNIT_SPELLINGS: Readonly<Record<string, NutrientInputUnitCode>> = {
+  kcal: NUTRIENT_UNIT.kcal,
   mg: NUTRIENT_UNIT.mg,
   ug: NUTRIENT_UNIT.ug,
   µg: NUTRIENT_UNIT.ug,
@@ -664,8 +853,23 @@ export function isAboveUpperLimit(
   return compared > limit.value;
 }
 
+/** Whether a supplement's composition may name `code`. */
+export function isIngredientNutrientCode(code: string): code is NutrientCode {
+  return isNutrientCode(code) && NUTRIENT_CATALOG[code].ingredient;
+}
+
+/** The codes of one group, in catalogue order. */
+export function nutrientCodesInGroup(
+  ...groups: NutrientGroup[]
+): NutrientCode[] {
+  return NUTRIENT_CODES.filter((code) =>
+    groups.includes(NUTRIENT_CATALOG[code].group),
+  );
+}
+
 /** A catalog reference resolved to one concrete number for a profile. */
 export interface ResolvedNutrientReference {
+  authority: NutrientReferenceAuthority;
   kind: NutrientReference["kind"];
   direction: NutrientReference["direction"];
   value: number;
@@ -693,6 +897,7 @@ export function resolveNutrientReference(
     (sex === "MALE" ? ref.male : sex === "FEMALE" ? ref.female : undefined);
   if (value === undefined) return null;
   return {
+    authority: ref.authority,
     kind: ref.kind,
     direction: ref.direction,
     value,

@@ -115,7 +115,7 @@ describe("resolveNutrientCode — every shipped locale, not just English", () =>
   it("still refuses a word that is in no bundle — a parse miss stays a miss", () => {
     expect(resolveNutrientCode("bananas")).toBeNull();
     expect(resolveNutrientCode("Bananen")).toBeNull();
-    expect(resolveNutrientCode("protein")).toBeNull();
+    expect(resolveNutrientCode("creatine")).toBeNull();
   });
 
   // The property, not a sample: EVERY code's name in EVERY shipped locale
@@ -226,11 +226,13 @@ describe("getNutrients — per-nutrient mode", () => {
     expect(result.days).toHaveLength(3);
     // Female reference for magnesium is 300 mg (EFSA DRV 2015).
     expect(result.reference).toEqual({
+      authority: "EFSA",
       kind: "AI",
       direction: "target",
       value: 300,
       source: "EFSA DRV 2015 (adults)",
     });
+    expect(result.personalTarget).toBeNull();
   });
 
   it("omits the reference (never guesses) when the profile has no sex on file", async () => {

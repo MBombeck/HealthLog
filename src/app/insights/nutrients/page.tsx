@@ -1,13 +1,14 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Leaf } from "lucide-react";
+import { Coffee, Leaf, Wine } from "lucide-react";
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { QueryErrorCard } from "@/components/ui/query-error-card";
 import { SubPageShell } from "@/components/insights/sub-page-shell";
 import { HydrationCard } from "@/components/insights/nutrients/hydration-card";
-import { CaffeineCard } from "@/components/insights/nutrients/caffeine-card";
+import { EnergyMacrosCard } from "@/components/insights/nutrients/energy-macros-card";
+import { SingleNutrientCard } from "@/components/insights/nutrients/single-nutrient-card";
 import { MicronutrientsCard } from "@/components/insights/nutrients/micronutrients-card";
 import { useAuth } from "@/hooks/use-auth";
 import { useTranslations, useFormatters } from "@/lib/i18n/context";
@@ -44,11 +45,11 @@ function lastAttemptReasonKey(reason: string): string {
  * `/insights/nutrients` — hydration + micronutrients (v1.29).
  *
  * Custom sub-page (NOT `HealthKitMetricPage` — that scaffold is
- * Measurement-backed; this store is `NutrientIntakeDay`). Three cards:
- * hydration hero (always renders once the module is on — even at 0 mL,
- * the quick-add entry point IS the first-run invitation), caffeine
- * (self-gates to nothing without data), micronutrients (self-gates to
- * an EmptyState without data). Degradation ladder:
+ * Measurement-backed; this store is `NutrientIntakeDay`). Five cards:
+ * hydration hero (always renders once the module is on — even at 0 mL),
+ * energy and macronutrients, caffeine and alcohol (each self-gates to
+ * nothing without data), micronutrients (self-gates to an EmptyState
+ * without data). Degradation ladder:
  *
  *   - module off → never reaches this page: the shell answers the URL with
  *     the module notice (`ModulePageGate`), like every other module page.
@@ -76,7 +77,7 @@ function lastAttemptReasonKey(reason: string): string {
  *   - module on, zero rows, no recorded attempt → the generic EmptyState
  *     explaining where data comes from (a health-app sync or a manual
  *     water entry) instead of three near-empty cards.
- *   - otherwise → the three-card spine.
+ *   - otherwise → the card spine.
  */
 export default function InsightsNutrientsPage() {
   const { t } = useTranslations();
@@ -147,7 +148,19 @@ export default function InsightsNutrientsPage() {
       description={t("nutrients.page.description")}
     >
       <HydrationCard />
-      <CaffeineCard />
+      <EnergyMacrosCard />
+      <SingleNutrientCard
+        code="caffeine"
+        icon={Coffee}
+        metaKey="nutrients.caffeine.ceilingMeta"
+        loadErrorKey="nutrients.caffeine.loadError"
+      />
+      <SingleNutrientCard
+        code="alcohol"
+        icon={Wine}
+        metaKey={null}
+        loadErrorKey="nutrients.alcohol.loadError"
+      />
       <MicronutrientsCard />
     </SubPageShell>
   );

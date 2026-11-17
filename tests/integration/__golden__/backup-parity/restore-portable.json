@@ -381,7 +381,7 @@
           "symptomDefinitions": 0,
           "lifeEvents": 0
         },
-        "accountSettingsApplied": 61,
+        "accountSettingsApplied": 62,
         "skipped": {
           "catalogueKeys": [
             {
@@ -2281,6 +2281,16 @@
         "stepsPerMonth": 250000,
         "workoutsPerWeek": 4
       },
+      "nutrientTargetsJson": {
+        "sugar": {
+          "value": 40,
+          "direction": "limit"
+        },
+        "protein": {
+          "value": 120,
+          "direction": "target"
+        }
+      },
       "glucoseUnit": "mmol/L",
       "hasDiabetes": true,
       "labsLocalOcrEnabled": true,
@@ -2482,6 +2492,16 @@
       "activityGoalsJson": {
         "stepsPerMonth": 250000,
         "workoutsPerWeek": 4
+      },
+      "nutrientTargetsJson": {
+        "sugar": {
+          "value": 40,
+          "direction": "limit"
+        },
+        "protein": {
+          "value": 120,
+          "direction": "target"
+        }
       },
       "reportSelectionJson": {
         "roundTrip": "rt-User-reportSelectionJson"

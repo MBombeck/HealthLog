@@ -5809,7 +5809,7 @@
         "subtitle": "같은 지표를 두 소스가 보낼 때 어느 쪽을 쓸지 정해요.",
         "nutrients": {
           "title": "동기화된 영양 섭취",
-          "description": "최근 {days}일간의 하루 합계예요. Apple Health에서 동기화한 값에 복용한 보충제가 더해져요.",
+          "description": "최근 {days}일간의 하루 합계예요. Apple Health나 식단 기록 앱에서 동기화한 값에 복용한 보충제가 더해져요.",
           "empty": "아직 동기화된 영양 데이터가 없어요.",
           "latest": "{date}에 {amount} {unit}",
           "daysWithData": "{days}일 중 {count}일",
@@ -6997,9 +6997,9 @@
     "apiTokensDescription": "측정값, 운동, 문서, 복용 기록용 토큰을 확인하고 폐기해요.",
     "measurementsToken": {
       "title": "측정 토큰",
-      "description": "체중계나 시계, 홈 오토메이션이 측정값과 사용자 지표 값을 기록할 수 있도록 토큰을 만들어요.",
+      "description": "체중계나 시계, 식단 기록 앱, 홈 오토메이션이 측정값, 사용자 지표 값, 하루 영양소 합계를 기록할 수 있도록 토큰을 만들어요.",
       "detail": "토큰은 한 번만 표시돼요.",
-      "scopeNote": "본인 기록에 새 측정값을 추가하고, 이미 만든 사용자 지표에 값을 추가하는 것만 할 수 있어요. 데이터를 읽거나, 사용자 지표를 만들거나, 무언가를 고치거나 지우거나, 다른 토큰을 만들 수는 없어요. 측정값은 외부 기기에서 온 것으로 표시되어 나중에 구분할 수 있지만, 사용자 지표 값에는 이런 표시가 없어요. 둘 다 언제든 고칠 수 있어요. 사용자 지표의 ID는 해당 지표 페이지 주소에서 /custom-metrics/ 뒤에 오는 부분이에요.",
+      "scopeNote": "본인 기록에 새 측정값을 추가하고, 이미 만든 사용자 지표에 값을 추가하고, 영양소 모듈이 켜져 있는 동안 하루 영양소 합계를 추가하는 것만 할 수 있어요. 데이터를 읽거나, 사용자 지표를 만들거나, 무언가를 고치거나 지우거나, 다른 토큰을 만들 수는 없어요. 측정값과 영양소 합계는 외부 기기에서 온 것으로 표시되어 나중에 구분할 수 있지만, 사용자 지표 값에는 이런 표시가 없어요. 측정값과 사용자 지표 값은 언제든 직접 고칠 수 있고, 영양소 하루 합계는 식단 기록 앱이 다시 보내서 고쳐요. 사용자 지표의 ID는 해당 지표 페이지 주소에서 /custom-metrics/ 뒤에 오는 부분이에요.",
       "createFailed": "토큰을 만들지 못했어요. 다시 시도해 주세요.",
       "namePlaceholder": "이름 (예: Home Assistant)",
       "appleHealth": {
@@ -10839,7 +10839,7 @@
     },
     "nutrients": {
       "label": "영양소 섭취",
-      "description": "Apple Health에서 동기화한 하루 미량영양소 합계."
+      "description": "Apple Health나 식단 기록 앱의 하루 영양소 합계: 수분, 에너지, 다량영양소, 비타민, 미네랄."
     },
     "vaccinations": {
       "label": "예방접종",
@@ -12658,15 +12658,24 @@
       "water": "수분",
       "caffeine": "카페인",
       "dha": "DHA (오메가-3)",
-      "epa": "EPA (오메가-3)"
+      "epa": "EPA (오메가-3)",
+      "energy": "에너지",
+      "protein": "단백질",
+      "carbohydrates": "탄수화물",
+      "fat": "지방",
+      "sugar": "당류",
+      "fiber": "식이섬유",
+      "sodium": "나트륨",
+      "potassium": "칼륨",
+      "alcohol": "알코올"
     },
     "page": {
       "title": "영양소 섭취",
-      "description": "휴대폰 건강 앱에서 동기화된 수분·비타민/미네랄 섭취량과 직접 입력한 수분 기록이에요.",
-      "moduleOffDescription": "영양소 모듈을 켜면 수분과 비타민/미네랄 섭취량을 여기서 볼 수 있어요. 동기화된 섭취량은 코치가 읽는 기록에 포함돼요.",
+      "description": "건강 앱이나 식단 기록 앱의 수분·에너지·다량영양소·비타민·미네랄과 직접 입력한 수분 기록이에요.",
+      "moduleOffDescription": "영양소 모듈을 켜면 수분, 에너지, 다량영양소, 비타민/미네랄 섭취량을 여기서 볼 수 있어요. 동기화된 섭취량은 코치가 읽는 기록에 포함돼요.",
       "moduleOffCta": "영양소 켜기",
       "emptyTitle": "아직 영양소 데이터가 없어요",
-      "emptyDescription": "휴대폰 건강 앱 동기화나 직접 입력한 수분 기록에서 데이터가 들어와요.",
+      "emptyDescription": "휴대폰 건강 앱 동기화, 측정값 토큰을 쓰는 식단 기록 앱, 또는 직접 입력한 수분 기록에서 데이터가 들어와요.",
       "loadError": "영양소 데이터를 불러오지 못했어요",
       "lastAttemptTitle": "동기화는 도착했지만 아무것도 저장하지 못했어요",
       "lastAttemptAt": "마지막 시도: {date}",
@@ -12679,7 +12688,7 @@
       }
     },
     "hydration": {
-      "referenceMeta": "권장 섭취량 {value} {unit}/일 (EFSA)",
+      "referenceMeta": "권장 섭취량 {value} {unit}/일 ({authority})",
       "loadError": "수분을 불러오지 못했어요."
     },
     "caffeine": {
@@ -12688,7 +12697,7 @@
     },
     "micronutrients": {
       "title": "비타민·미네랄",
-      "rowMeta": "{window}일 중 {days}일, 기준 {value} {unit} (EFSA)",
+      "rowMeta": "{window}일 중 {days}일, 기준 {value} {unit} ({authority})",
       "rowMetaNoRef": "{window}일 중 {days}일",
       "footer": "이 기간에 데이터가 있는 미량영양소는 추적 중인 {total}개 중 {tracked}개예요.",
       "emptyTitle": "아직 동기화된 미량영양소 데이터가 없어요",
@@ -12703,14 +12712,43 @@
         "alpha_tocopherol": "이 상한은 알파토코페롤 기준이에요."
       }
     },
-    "sparseNote": "여기 수치가 낮은 건 보통 결핍이 아니라 기록이 드물다는 뜻이에요. Apple Health의 하루 합계는 앱이 기록한 양만 반영하고, 전체 식이 섭취량은 아니에요.",
+    "sparseNote": "여기 수치가 낮은 건 보통 결핍이 아니라 기록이 드물다는 뜻이에요. 하루 합계는 앱이 기록한 양만 반영하고, 전체 식이 섭취량은 아니에요. 식단 기록 앱과 Apple Health가 같은 날을 보고하면 더 큰 합계가 반영돼요.",
     "units": {
       "IU": "IU"
     },
     "sources": {
       "APPLE_HEALTH": "동기화됨",
       "MANUAL": "직접 입력",
-      "SUPPLEMENT": "보충제"
+      "SUPPLEMENT": "보충제",
+      "EXTERNAL": "외부",
+      "HEALTH_CONNECT": "Health Connect"
+    },
+    "macros": {
+      "title": "에너지·다량영양소",
+      "short": {
+        "energy": "에너지",
+        "protein": "단백질",
+        "carbohydrates": "탄수화물",
+        "fat": "지방",
+        "sugar": "당류",
+        "fiber": "식이섬유"
+      },
+      "pickLabel": "영양소",
+      "referenceMeta": "기준 {value} {unit}/일 ({authority})",
+      "targetMeta": "내 목표 {value} {unit}/일",
+      "limitMeta": "내 상한 {value} {unit}/일",
+      "setTarget": "목표 설정",
+      "editTarget": "목표 수정",
+      "clearTarget": "목표 삭제",
+      "targetLabel": "하루 {name} ({unit})",
+      "directionLabel": "목표 종류",
+      "directionTarget": "이상 채우기",
+      "directionLimit": "이하로 유지",
+      "saveFailed": "목표를 저장하지 못했어요. 다시 시도해 주세요.",
+      "loadError": "에너지와 다량영양소를 불러오지 못했어요."
+    },
+    "alcohol": {
+      "loadError": "알코올을 불러오지 못했어요."
     }
   },
   "daily": {

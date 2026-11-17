@@ -124,6 +124,16 @@
         "stepsPerMonth": 250000,
         "workoutsPerWeek": 4
       },
+      "nutrientTargetsJson": {
+        "sugar": {
+          "value": 40,
+          "direction": "limit"
+        },
+        "protein": {
+          "value": 120,
+          "direction": "target"
+        }
+      },
       "reportSelectionJson": {
         "roundTrip": "rt-User-reportSelectionJson"
       },
@@ -2570,6 +2580,16 @@
       "activityGoalsJson": {
         "stepsPerMonth": 250000,
         "workoutsPerWeek": 4
+      },
+      "nutrientTargetsJson": {
+        "sugar": {
+          "value": 40,
+          "direction": "limit"
+        },
+        "protein": {
+          "value": 120,
+          "direction": "target"
+        }
       },
       "reportSelectionJson": {
         "roundTrip": "rt-User-reportSelectionJson"
