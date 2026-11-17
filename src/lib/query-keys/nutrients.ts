@@ -22,9 +22,8 @@ export const nutrientKeys = {
    * it.
    */
   nutrientCatalog: () => ["nutrients", "catalog"] as const,
-  /**
-   * The daily targets the person set, from `GET /api/nutrients/targets`. The
-   * target editor reads it; the daily series carries the one for its code.
-   */
-  nutrientTargets: () => ["nutrients", "targets"] as const,
+  // No key for `GET /api/nutrients/targets`: no web view reads it. The
+  // target editor reads a code's target from the daily series above and
+  // invalidates that series after a save. The route serves the API and the
+  // iPhone app.
 };

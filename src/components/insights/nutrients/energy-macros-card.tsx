@@ -253,14 +253,10 @@ function TargetEditor({
     setSaving(true);
     try {
       await apiPatch("/api/nutrients/targets", { targets: { [code]: next } });
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.nutrientTargets(),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.nutrientDaily(code, WINDOW_DAYS),
-        }),
-      ]);
+      // The daily series carries the target; it is the one read to refresh.
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.nutrientDaily(code, WINDOW_DAYS),
+      });
       onDone();
     } catch (cause) {
       showErrorToast(t("nutrients.macros.saveFailed"), { cause });
