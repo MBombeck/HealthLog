@@ -23,6 +23,15 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+// The report's dense-window counts are capped descents
+// (`countLiveReadingsPerType`): a sparse account holds none past the cap.
+vi.mock("@/lib/measurements/newest-per-type", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/lib/measurements/newest-per-type")
+  >()),
+  countLiveReadingsPerType: vi.fn(async () => new Map()),
+}));
+
 vi.mock("next/headers", () => ({ cookies: vi.fn() }));
 vi.mock("@/lib/clinician-share/resolve-share-token", () => ({
   resolveShareGateState: vi.fn(),

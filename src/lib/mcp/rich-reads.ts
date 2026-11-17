@@ -484,9 +484,6 @@ export const MCP_METRIC_STATUS_DISCOVERY: ReadonlyArray<{
  * inventory so a discover-before-fetch assistant can find a metric that IS
  * resolvable but sits off the Coach snapshot.
  */
-/** Readings a discovery row's count stops at. */
-const DISCOVERY_COUNT_CAP = 6_000;
-
 export async function metricStatusDiscoveryRows(userId: string): Promise<
   Array<{
     tool: string;
@@ -496,15 +493,13 @@ export async function metricStatusDiscoveryRows(userId: string): Promise<
     metric: string;
   }>
 > {
-  // Live rows only, counted up to a cap through one descent of the live
-  // index per type. A grouped count of every row was a pass over the whole
-  // history of a stress or energy stream a watch writes every few minutes,
-  // on a call a host makes first and often; past the cap the count is the
-  // cap, which is what an approximate sample count can say of it.
+  // Live rows only, counted to 6,000 through one descent of the live index
+  // per type: a grouped count read every row of a dense stress or energy
+  // stream on a call a host makes first and often.
   const countByType = await countLiveReadingsPerType(
     userId,
     MCP_METRIC_STATUS_DISCOVERY.map((s) => s.measurementType),
-    DISCOVERY_COUNT_CAP,
+    6_000,
     null,
   );
 

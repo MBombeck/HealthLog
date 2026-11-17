@@ -39,11 +39,11 @@
  * Under a limit every probe below reads from inside it only, and
  * `reachableWithWindow` never names a window wider than the limit.
  *
- * Cost. One grouped aggregate over `Measurement` for every measurement-backed
- * subject in the batch (indexed by `(userId, type, measuredAt)`, no rows
- * materialised in JS), plus at most one `aggregate()` per non-measurement
- * subject kind actually asked for. It runs ONLY on the miss path, and only for
- * the domains that missed.
+ * Cost. One bounded sample per measurement type in the batch
+ * (`measurement-sample.ts`: a capped descent of the live index, no rows
+ * materialised in JS), the rollup tier for a type past the cap, plus at most
+ * one `aggregate()` per non-measurement subject kind actually asked for. It
+ * runs ONLY on the miss path, and only for the domains that missed.
  *
  * Why an aggregate and not a wider window. The window cap exists because a
  * multi-year raw history does not fit a prompt budget — 1,597 CGM points cannot
@@ -53,9 +53,11 @@
  * is enough for the Coach to answer the question instead of only naming it.
  */
 import { prisma } from "@/lib/db";
-import { Prisma, type MeasurementType } from "@/generated/prisma/client";
-import { dayWeightedRowsSql, windowMeanSql } from "@/lib/measurements/day-mean";
-import { liveTypeDescent } from "@/lib/measurements/live-type-descent";
+import type { MeasurementType } from "@/generated/prisma/client";
+import {
+  MEASUREMENT_SAMPLE_CAP,
+  readMeasurementSample,
+} from "./measurement-sample";
 import {
   readAllTimeExtremes,
   type AllTimeExtremes,
@@ -166,12 +168,6 @@ interface RawBounds {
 }
 
 /**
- * Rows a type's aggregate is read from directly. Above it the type is a dense
- * stream and its figures come from `readAllTimeExtremes` instead.
- */
-const MEASUREMENT_SAMPLE_CAP = 5_000;
-
-/**
  * Count, range and per-unit aggregate for every type in `types`, split by unit
  * so a mixed-unit history is detectable rather than averaged.
  *
@@ -197,61 +193,7 @@ async function readMeasurementBounds(
   types: readonly MeasurementType[],
   floor: Date | null,
 ): Promise<Map<MeasurementType, RawBounds>> {
-  const tz = await resolveUserTimezone(userId);
-  const type = Prisma.sql`mt."type"::measurement_type`;
-  const rows = await prisma.$queryRaw<
-    Array<{
-      type: string;
-      unit: string | null;
-      n: number;
-      first_at: Date;
-      last_at: Date;
-      min: number | null;
-      max: number | null;
-      mean: number | null;
-      oldest_at: Date | null;
-      oldest_unit: string | null;
-    }>
-  >`
-    WITH src AS (
-      SELECT mt."type"::measurement_type AS "type", x."unit", x."value",
-             x."measured_at"
-      FROM unnest(${[...types]}::text[]) AS mt("type")
-      CROSS JOIN LATERAL (
-        SELECT m."unit", m."value", m."measured_at"
-        FROM measurements m
-        ${liveTypeDescent(userId, type, "newest", floor)}
-        LIMIT (SELECT ${MEASUREMENT_SAMPLE_CAP + 1}::int)
-      ) x
-    ),
-    sampled AS (
-      SELECT
-        m."type"::text AS type,
-        m."unit" AS unit,
-        COUNT(*)::int AS n,
-        MIN(m."measured_at") AS first_at,
-        MAX(m."measured_at") AS last_at,
-        MIN(m."value")::double precision AS min,
-        MAX(m."value")::double precision AS max,
-        ${Prisma.raw(
-          windowMeanSql({
-            typeColumn: 'm."type"',
-            value: 'm."value"',
-            weight: "m.day_weight",
-          }),
-        )}::double precision AS mean
-      FROM ${dayWeightedRowsSql("src", tz)} m
-      GROUP BY m."type", m."unit"
-    )
-    SELECT s.*, o."measured_at" AS oldest_at, o."unit" AS oldest_unit
-    FROM sampled s
-    CROSS JOIN LATERAL (
-      SELECT m."measured_at", m."unit"
-      FROM measurements m
-      ${liveTypeDescent(userId, Prisma.sql`s."type"::measurement_type`, "oldest", floor)}
-      LIMIT 1
-    ) o
-  `;
+  const rows = await readMeasurementSample(userId, types, floor);
 
   const byType = new Map<MeasurementType, typeof rows>();
   for (const row of rows) {

@@ -12,6 +12,10 @@ import type { CoachResultTable } from "@/lib/ai/coach/types";
 
 const buildCoachSnapshot =
   vi.fn<(userId: string, scope?: unknown) => Promise<CoachSnapshotResult>>();
+vi.mock("@/lib/ai/coach/tools/measurement-sample", () => ({
+  MEASUREMENT_SAMPLE_CAP: 5_000,
+  readMeasurementSample: async () => [],
+}));
 vi.mock("@/lib/ai/coach/snapshot", async (importOriginal) => ({
   ...(await importOriginal<object>()),
   buildCoachSnapshot: (userId: string, scope?: unknown) =>

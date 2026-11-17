@@ -87,7 +87,6 @@ const HELPER: Entry = { helper: true };
 
 /** Files with a database mean over values. */
 const SQL_READERS: Record<string, Entry> = {
-  "lib/ai/coach/tools/availability.ts": HELPER,
   "lib/analytics/summaries-slice.ts": HELPER,
   "lib/doctor-report/dense-buckets.ts": HELPER,
   "lib/insights/comprehensive-aggregator.ts": HELPER,
