@@ -64,6 +64,7 @@ export const PATCH = apiHandler(
         id: true,
         onsetAt: true,
         durationSec: true,
+        durationSource: true,
         count: true,
         certainty: true,
         typeProfileId: true,
@@ -96,7 +97,11 @@ export const PATCH = apiHandler(
           ? { durationSource: e.durationSource }
           : e.durationSec === null
             ? { durationSource: "UNKNOWN" as const }
-            : {}),
+            : // A duration added to one nobody timed is an estimate.
+              typeof e.durationSec === "number" &&
+                existing.durationSource === "UNKNOWN"
+              ? { durationSource: "ESTIMATED" as const }
+              : {}),
         ...(e.count !== undefined ? { count: e.count } : {}),
         ...(e.certainty !== undefined ? { certainty: e.certainty } : {}),
         ...(e.sleepState !== undefined ? { sleepState: e.sleepState } : {}),

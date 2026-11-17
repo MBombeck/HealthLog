@@ -381,13 +381,28 @@ const eventFields = {
   note: optionalText(SEIZURE_NOTE_MAX),
 };
 
-/** A duration without its source reads as timed only when the timer ran. */
+/**
+ * A duration and its source agree: UNKNOWN carries no duration, and an
+ * explicitly cleared duration cannot claim to be timed or estimated.
+ */
 function durationConsistent(v: {
   durationSec?: number | null;
   durationSource?: SeizureDurationSource;
 }): boolean {
   if (v.durationSource === "UNKNOWN") return v.durationSec == null;
+  if (v.durationSec === null && v.durationSource !== undefined) return false;
   return true;
+}
+
+/** On a new seizure an absent duration is no duration. */
+function createDurationConsistent(v: {
+  durationSec?: number | null;
+  durationSource?: SeizureDurationSource;
+}): boolean {
+  if (v.durationSec == null) {
+    return v.durationSource === undefined || v.durationSource === "UNKNOWN";
+  }
+  return durationConsistent(v);
 }
 
 export const seizureEventCreateSchema = z
@@ -396,7 +411,7 @@ export const seizureEventCreateSchema = z
     /** Doses given during this seizure, written with it (the quick log). */
     rescueDoses: z.array(seizureRescueDoseCreateSchema).max(5).optional(),
   })
-  .refine(durationConsistent, {
+  .refine(createDurationConsistent, {
     message: "A duration of unknown source must be empty",
     path: ["durationSec"],
   });
