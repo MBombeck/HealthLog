@@ -311,6 +311,8 @@ const EXEMPT_ROUTES: ReadonlyArray<string> = [
   "src/app/api/medications/[id]/compliance/route.ts",
   "src/app/api/medications/[id]/dose-history/route.ts",
   "src/app/api/medications/[id]/glp1/route.ts",
+  // #169 — correcting and removing a titration step, the same rows.
+  "src/app/api/medications/[id]/glp1/dose-changes/[doseChangeId]/route.ts",
   "src/app/api/medications/[id]/phase-config/route.ts",
   "src/app/api/medications/[id]/intake/route.ts",
   "src/app/api/medications/[id]/intake/[eventId]/route.ts",
