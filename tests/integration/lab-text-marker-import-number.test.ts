@@ -82,6 +82,8 @@ describe("Health Records import", () => {
       prisma,
     });
     expect(out.statuses).toEqual([{ status: "inserted" }]);
+    // The reading joined the existing marker; none was added.
+    expect(out.markersCreated).toBe(0);
     const after = await prisma.biomarker.findUniqueOrThrow({
       where: { id: marker.id },
     });

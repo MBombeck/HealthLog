@@ -38,6 +38,7 @@ import {
 } from "@/lib/apple-health/clinical-labs-import";
 import type { ClinicalLabReference } from "@/lib/apple-health/clinical-record-ref";
 import { importAppleHealthArchiveEcgs } from "@/lib/apple-health/ecg-import";
+import { emptyFhirLabCounts } from "@/lib/labs/fhir-import/types";
 import { extractExportXml } from "@/lib/import/unzip-export-xml";
 import { annotate } from "@/lib/logging/context";
 import {
@@ -497,13 +498,7 @@ export async function handleAppleHealthImport(
     const result: AppleHealthImportJobResult = {
       ...parsed,
       ecg,
-      labs: {
-        discovered: 0,
-        imported: 0,
-        duplicate: 0,
-        skipped: 0,
-        failed: 0,
-      },
+      labs: emptyFhirLabCounts(),
     };
 
     // Workout GPS tracks, on opt-in only. Fail-soft like the ECGs: the

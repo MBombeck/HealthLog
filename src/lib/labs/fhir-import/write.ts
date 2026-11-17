@@ -65,6 +65,8 @@ export interface FhirLabWriteResult {
   inserted: number;
   duplicate: number;
   failed: number;
+  /** Markers minted because no existing marker took a reading. */
+  markersCreated: number;
   /** The newest instant among the readings written, or null. */
   newestTakenAt: Date | null;
 }
@@ -89,11 +91,15 @@ export async function writeFhirLabReadings(args: {
     inserted: 0,
     duplicate: 0,
     failed: 0,
+    markersCreated: 0,
     newestTakenAt: null,
   };
   if (readings.length === 0) return result;
 
   const index: MarkerIndex = await loadMarkerIndex(client, userId);
+  // A marker minted for a new analyte joins the index, so its growth is the
+  // count of markers this write added to Labs.
+  const markersBefore = index.markers.length;
   const seenIds = new Set<string>();
   const seenKeys = new Set<string>();
 
@@ -248,6 +254,7 @@ export async function writeFhirLabReadings(args: {
       for (const plan of rowAt.values()) failed(plan.at, "write_failed");
     }
   }
+  result.markersCreated = index.markers.length - markersBefore;
   return result;
 }
 

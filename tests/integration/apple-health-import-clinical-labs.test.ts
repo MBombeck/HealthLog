@@ -212,6 +212,8 @@ describe("Apple Health export: lab results from Health Records", () => {
       duplicate: 1,
       skipped: 2,
       failed: 1,
+      // Hemoglobin is new to the account; LDL and Glucose already exist.
+      markersCreated: 1,
     });
     expect(result.clinical).toEqual({ skipped: 1 });
 
@@ -256,6 +258,7 @@ describe("Apple Health export: lab results from Health Records", () => {
       duplicate: 3,
       skipped: 2,
       failed: 1,
+      markersCreated: 0,
     });
     expect(
       await prisma.labResult.count({

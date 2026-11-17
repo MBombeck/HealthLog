@@ -67,6 +67,7 @@ function privacySafeResult(
       duplicate: boundedCount(labs.duplicate),
       skipped: boundedCount(labs.skipped),
       failed: boundedCount(labs.failed),
+      markersCreated: boundedCount(labs.markersCreated),
     },
   };
 }

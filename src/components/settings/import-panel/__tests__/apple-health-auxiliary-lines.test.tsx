@@ -41,7 +41,34 @@ describe("<AppleHealthAuxiliaryLines>", () => {
     expect(html).toContain(
       "Lab results from health records: 7 found, 4 imported, 1 already in your record, 1 skipped, 1 failed.",
     );
+    expect(html).toContain(
+      "A lab result that fails does not discard anything else from the archive.",
+    );
     expect(html).not.toContain("import-apple-health-ecg-result");
+  });
+
+  it("keeps the failure reassurance off a clean run and links to Labs", () => {
+    const html = render({
+      labs: { discovered: 3, imported: 3, markersCreated: 2 },
+    });
+    expect(html).not.toContain("does not discard");
+    expect(html).toContain("2 new markers were added to Labs.");
+    expect(html).toContain('href="/labs"');
+  });
+
+  it("offers no Labs link when nothing reached the record", () => {
+    const html = render({ labs: { discovered: 2, skipped: 2 } });
+    expect(html).not.toContain('href="/labs"');
+    expect(html).not.toContain("new marker");
+  });
+
+  it("formats the counts for the locale", () => {
+    expect(render({ labs: { discovered: 1240, imported: 1240 } })).toContain(
+      "1,240 found, 1,240 imported",
+    );
+    expect(
+      render({ labs: { discovered: 1240, imported: 1240 } }, "de"),
+    ).toContain("1.240 gefunden, 1.240 importiert");
   });
 
   it("renders the ECG line beside it", () => {

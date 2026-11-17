@@ -207,6 +207,7 @@ export async function importAppleHealthClinicalLabs(input: {
       counts.imported += written.inserted;
       counts.duplicate += written.duplicate;
       counts.failed += written.failed;
+      counts.markersCreated += written.markersCreated;
       for (const status of written.statuses) {
         if (status.status === "failed") note(status.reason);
       }
@@ -230,6 +231,7 @@ export async function importAppleHealthClinicalLabs(input: {
       duplicate: counts.duplicate,
       skipped: counts.skipped,
       failed: counts.failed,
+      markers_created: counts.markersCreated,
       reasons: tally,
     },
   });

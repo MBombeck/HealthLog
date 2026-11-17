@@ -35,6 +35,7 @@ beforeEach(() => {
       inserted: readings.length,
       duplicate: 0,
       failed: 0,
+      markersCreated: 0,
       newestTakenAt: new Date("2025-01-01T00:00:00Z"),
     }),
   );
@@ -124,6 +125,7 @@ describe("importAppleHealthClinicalLabs", () => {
       duplicate: 0,
       skipped: 1,
       failed: 0,
+      markersCreated: 0,
     });
     const [{ readings, tz, userId }] = mocks.write.mock.calls[0];
     expect(userId).toBe("user-1");

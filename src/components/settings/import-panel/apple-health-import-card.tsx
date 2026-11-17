@@ -1,14 +1,22 @@
 "use client";
 
-import { useCallback, useId, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Loader2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SettingsCardActions } from "@/components/settings/_card-actions";
 import { Progress } from "@/components/ui/progress";
-import { queryKeys } from "@/lib/query-keys";
-import { useTranslations } from "@/lib/i18n/context";
+import {
+  cycleDependentKeys,
+  invalidateKeys,
+  labDependentKeys,
+  measurementDependentKeys,
+  queryKeys,
+  refetchInactiveDailyReads,
+  workoutDependentKeys,
+} from "@/lib/query-keys";
+import { useFormatters, useTranslations } from "@/lib/i18n/context";
 import { cn } from "@/lib/utils";
 import { apiFetchRaw, apiGet } from "@/lib/api/api-fetch";
 import {
@@ -269,8 +277,25 @@ export function AppleHealthOwnRecordsNote({ count }: { count: number }) {
   );
 }
 
+/**
+ * Which sentence heads a finished import. The archive's own samples decide
+ * the "N of M imported" line; an archive whose only new data is lab results
+ * or ECGs gets its own sentence instead of "0 of M imported" under a success
+ * outcome; nothing written at all is the "nothing was imported" line.
+ * Exported for the SSR contract suite.
+ */
+export function appleHealthDoneSummaryKind(
+  rowsWritten: number,
+  auxWritten: number,
+): "samples" | "auxOnly" | "nothing" {
+  if (rowsWritten > 0) return "samples";
+  return auxWritten > 0 ? "auxOnly" : "nothing";
+}
+
 export function AppleHealthImportCard() {
   const { t } = useTranslations();
+  const fmt = useFormatters();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -364,6 +389,24 @@ export function AppleHealthImportCard() {
   const status = statusQuery.data ?? null;
   const isRunning = status !== null && !TERMINAL_STATES.includes(status.status);
   const isDone = status?.status === "done";
+
+  // The job writes measurements, workouts, cycle days, lab results and ECGs
+  // behind the session's back, so every read of those stays on its pre-import
+  // answer until its stale time runs out. Once per finished job, evict them
+  // the way a write from those surfaces does (the dose-history import card
+  // does the same for medication reads).
+  const refreshedJobRef = useRef<string | null>(null);
+  const finishedJobId = isDone ? (status?.jobId ?? null) : null;
+  useEffect(() => {
+    if (!finishedJobId || refreshedJobRef.current === finishedJobId) return;
+    refreshedJobRef.current = finishedJobId;
+    void invalidateKeys(queryClient, [
+      ...measurementDependentKeys,
+      ...workoutDependentKeys,
+      ...cycleDependentKeys,
+      ...labDependentKeys,
+    ]).then(() => refetchInactiveDailyReads(queryClient));
+  }, [finishedJobId, queryClient]);
   const ownRecordsSkipped =
     (status?.result?.writtenByHealthLog?.byMarker ?? 0) +
     (status?.result?.writtenByHealthLog?.byExternalId ?? 0) +
@@ -391,9 +434,11 @@ export function AppleHealthImportCard() {
   const ecg = status?.result?.ecg;
   const labs = status?.result?.labs;
   const rowsWritten = status?.result?.totals?.rowsUpserted ?? 0;
+  const recordsRead = status?.result?.totals?.recordsRead ?? 0;
   const auxWritten =
     (ecg?.imported ?? 0) + (ecg?.updated ?? 0) + (labs?.imported ?? 0);
   const skips = summarizeAppleHealthSkips(status?.result ?? null);
+  const doneKind = appleHealthDoneSummaryKind(rowsWritten, auxWritten);
   const cycleStats = status?.result?.cycle;
 
   return (
@@ -476,7 +521,7 @@ export function AppleHealthImportCard() {
             {typeof status?.progress?.rowsUpserted === "number" && (
               <p className="text-muted-foreground text-xs">
                 {t("settings.sections.export.import.appleHealth.rowsImported", {
-                  count: status.progress.rowsUpserted,
+                  count: fmt.integer(status.progress.rowsUpserted),
                 })}
               </p>
             )}
@@ -498,16 +543,25 @@ export function AppleHealthImportCard() {
             })}
             message={
               // An archive whose only new data is lab results or ECGs still
-              // imported something.
-              rowsWritten + auxWritten > 0
+              // imported something: it says so instead of "0 of N imported"
+              // under a success outcome, and the lines below count them.
+              doneKind === "samples"
                 ? t("settings.sections.export.import.appleHealth.doneSummary", {
-                    imported: rowsWritten,
-                    read: status?.result?.totals?.recordsRead ?? 0,
-                    skipped: status?.result?.clinical?.skipped ?? 0,
+                    imported: fmt.integer(rowsWritten),
+                    read: fmt.integer(recordsRead),
+                    skipped: fmt.integer(
+                      status?.result?.clinical?.skipped ?? 0,
+                    ),
                   })
-                : t("settings.sections.export.import.appleHealth.doneNothing", {
-                    read: status?.result?.totals?.recordsRead ?? 0,
-                  })
+                : doneKind === "auxOnly"
+                  ? t(
+                      "settings.sections.export.import.appleHealth.doneSummaryAuxOnly",
+                      { read: fmt.integer(recordsRead) },
+                    )
+                  : t(
+                      "settings.sections.export.import.appleHealth.doneNothing",
+                      { read: fmt.integer(recordsRead) },
+                    )
             }
             testId="import-apple-health-result"
           />

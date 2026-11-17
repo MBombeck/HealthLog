@@ -152,7 +152,10 @@ async function deleteReading(externalId: string) {
 
 describe("a deleted Health Records reading", () => {
   it("does not come back after its whole marker is deleted", async () => {
-    expect((await importBatch()).inserted).toBe(3);
+    const first = await importBatch();
+    expect(first.inserted).toBe(3);
+    // Ferritin and Glucose were new to the account.
+    expect(first.markersCreated).toBe(2);
     await deleteMarker("Ferritin");
     expect(await liveReadings()).toEqual([
       { analyte: "Glucose", externalId: "fhir:clinic:obs-3" },
@@ -161,6 +164,7 @@ describe("a deleted Health Records reading", () => {
     const again = await importBatch();
     expect(again.inserted).toBe(0);
     expect(again.duplicate).toBe(3);
+    expect(again.markersCreated).toBe(0);
     expect(await liveReadings()).toHaveLength(1);
     expect(
       await prisma.biomarker.count({

@@ -83,10 +83,19 @@ export interface FhirLabCounts {
   skipped: number;
   /** Readings refused (no unit, a unit the marker cannot take) or unreadable. */
   failed: number;
+  /** Markers added to Labs because no existing marker took the reading. */
+  markersCreated: number;
 }
 
 export function emptyFhirLabCounts(): FhirLabCounts {
-  return { discovered: 0, imported: 0, duplicate: 0, skipped: 0, failed: 0 };
+  return {
+    discovered: 0,
+    imported: 0,
+    duplicate: 0,
+    skipped: 0,
+    failed: 0,
+    markersCreated: 0,
+  };
 }
 
 /** Per-input outcome of a write. */

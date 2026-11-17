@@ -109,6 +109,7 @@ describe("GET /api/import/apple-health-export/[jobId]/status", () => {
             duplicate: -1,
             skipped: "x",
             failed: 1.5,
+            markersCreated: 4,
             reasons: { leaked: "content" },
           },
         },
@@ -127,6 +128,7 @@ describe("GET /api/import/apple-health-export/[jobId]/status", () => {
       duplicate: 0,
       skipped: 0,
       failed: 0,
+      markersCreated: 4,
     });
   });
 
