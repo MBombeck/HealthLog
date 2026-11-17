@@ -12,6 +12,7 @@ import {
   suggestInIndex,
   type IndexedMarker,
   type MarkerIndex,
+  unitFitsMarker,
 } from "../biomarker-resolve";
 
 let seq = 0;
@@ -312,5 +313,42 @@ describe("a catalog hint from the source (#1400)", () => {
         catalogKey: "ldl",
       }),
     ).toMatchObject({ marker: { id: own.id }, matchKind: "name" });
+  });
+});
+
+describe("unitFitsMarker", () => {
+  it("lets the first number give a text-only marker its unit", () => {
+    // A marker minted from a text result has no unit yet; the first numeric
+    // reading sets it, whatever unit it states.
+    expect(unitFitsMarker({ unit: "", analyteKey: null }, "mg/dL", null)).toBe(
+      true,
+    );
+    expect(
+      unitFitsMarker(
+        { unit: "  ", analyteKey: "glucose" },
+        "mmol/L",
+        "glucose",
+      ),
+    ).toBe(true);
+    expect(unitFitsMarker({ unit: "", analyteKey: null }, "1", null)).toBe(
+      true,
+    );
+  });
+
+  it("still refuses a unit that does not convert into a chosen one", () => {
+    expect(unitFitsMarker({ unit: "1", analyteKey: null }, "mg/dL", null)).toBe(
+      false,
+    );
+    expect(
+      unitFitsMarker({ unit: "mg/dL", analyteKey: null }, "U/L", null),
+    ).toBe(false);
+  });
+
+  it("finds a text-only marker of the catalog analyte for a numeric reading", () => {
+    const text = marker("Glucose", "");
+    expect(resolveInIndex(index([text]), "Blood glucose", "mg/dL")).toEqual({
+      marker: text,
+      matchKind: "catalog",
+    });
   });
 });
