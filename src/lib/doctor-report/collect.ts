@@ -21,6 +21,7 @@ import {
   medicationWindow,
 } from "@/lib/medications/course-window";
 import { prisma } from "@/lib/db";
+import { countLiveReadingsPerType } from "@/lib/measurements/newest-per-type";
 import {
   getEffectiveRange,
   type ThresholdOverridesJson,
@@ -203,25 +204,20 @@ export async function collectDoctorReportData(
   const includedDenseStatTypes = DENSE_STAT_TYPES.filter(
     (type) => !excluded.includes(type),
   );
-  // Inside the raw window, one grouped count decides each type on its own:
+  // Inside the raw window, one count per type decides each type on its own:
   // a watch's minute-by-minute heart rate folds while a few blood-oxygen
-  // readings a night beside it stay raw.
+  // readings a night beside it stay raw. Each count stops one past the cap,
+  // which is all the decision needs; a full count read every reading of the
+  // dense stream it was deciding to fold.
   const denseStatCounts =
     aggregateDenseTypes || includedDenseStatTypes.length === 0
       ? null
-      : new Map(
-          (
-            await prisma.measurement.groupBy({
-              by: ["type"],
-              where: {
-                userId,
-                type: { in: [...includedDenseStatTypes] },
-                measuredAt: { gte: start, lte: end },
-                deletedAt: null,
-              },
-              _count: { _all: true },
-            })
-          ).map((row) => [row.type, row._count._all]),
+      : await countLiveReadingsPerType(
+          userId,
+          includedDenseStatTypes,
+          DENSE_REPORT_RAW_ROW_CAP + 1,
+          start,
+          end,
         );
   const denseTypes: MeasurementType[] = includedDenseStatTypes.filter(
     (type) =>
