@@ -16,10 +16,20 @@
   for protein and carbohydrates, since EFSA gives those per kilogram or as a
   share of energy only. Thanks to @ljcasaai for asking for it. (#1402)
 - **Your own daily nutrient targets.** Set an amount to reach or a limit to
-  stay under for any nutrient on the energy card; the chart draws your number
+  stay under for any nutrient on the energy card, from the gear in the page
+  header like every other insights target; the chart draws your number
   instead of the reference. Targets travel in the full backup and are read
   and set through `GET` and `PATCH /api/nutrients/targets`. (#1402)
 - Lab results from Apple Health's Health Records now land in Labs. An Apple Health export used to skip every clinical record; the lab results among them are now read, matched to your existing markers (by name, alias or LOINC code, with a reading in another unit converted and the printed value kept), and filed under their panel. A result like "<0.5 mg/L" is kept as printed, a specific gravity, pH or INR sent without a unit is read as a plain number, the report's own reference range comes along, and preliminary or withdrawn results are left out. A result your provider later marks as entered in error is not removed once it is in HealthLog; delete it there if it should go. Importing the same results again writes nothing, a result you delete stays deleted (also when you delete its whole marker, long after the deletion, and across a backup restore), and a reading you already typed or scanned is not doubled. If you imported an archive before, upload it once more to pick up its lab results. For the iOS app, `POST /api/labs/fhir-batch` takes the same results straight from HealthKit. Thanks to @camiracode for asking for this. (#1400)
+- A lab reading now says where it came from (Manual, Scanned report, Import or
+  Apple Health) in its history, its chart tooltip and a new source filter on
+  the Labs list, and deleting an Apple Health reading says the next import
+  will not bring it back. An Apple Health import that brought only lab
+  results or ECGs says so instead of "0 of N records imported", counts the
+  markers it added and links to Labs. (#1400)
+- The day view lists the day's nutrient totals, so tapping a bar on a
+  nutrient chart opens a day that shows it. An opt-in energy tile for the
+  dashboard is available under Settings > Dashboard. (#1402)
 
 ### Changed
 
