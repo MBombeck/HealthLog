@@ -335,7 +335,7 @@
           "symptomDefinitions": 0,
           "lifeEvents": 0
         },
-        "accountSettingsApplied": 61,
+        "accountSettingsApplied": 62,
         "skipped": {
           "catalogueKeys": [],
           "links": 0
@@ -2806,6 +2806,9 @@
       "aiProviderChain": {
         "roundTrip": "rt-User-aiProviderChain"
       },
+      "aiNamedChains": {
+        "roundTrip": "rt-User-aiNamedChains"
+      },
       "aiResponseTimeoutSeconds": 3,
       "documentsAutoAiRead": true,
       "onboardingCompletedAt": "2026-06-30T12:34:56.789Z",
@@ -3066,6 +3069,9 @@
       "aiCompatModel": "rt-User-aiCompatModel",
       "aiProviderChain": {
         "roundTrip": "rt-User-aiProviderChain"
+      },
+      "aiNamedChains": {
+        "roundTrip": "rt-User-aiNamedChains"
       },
       "aiResponseTimeoutSeconds": 3,
       "useCentralCodex": true,

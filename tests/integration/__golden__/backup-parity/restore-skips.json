@@ -926,6 +926,7 @@
       "aiCompatKeyEncrypted": null,
       "aiCompatModel": null,
       "aiProviderChain": null,
+      "aiNamedChains": null,
       "aiResponseTimeoutSeconds": null,
       "documentsAutoAiRead": false,
       "onboardingCompletedAt": null,
