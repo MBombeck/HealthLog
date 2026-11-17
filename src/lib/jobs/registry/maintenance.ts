@@ -124,10 +124,6 @@ import {
   HEALTH_CONNECT_IMPORT_QUEUE,
 } from "@/lib/jobs/health-connect-import-queue";
 import {
-  FIT_IMPORT_CONCURRENCY,
-  FIT_IMPORT_QUEUE,
-} from "@/lib/jobs/fit-import-queue";
-import {
   INTAKE_AUTO_SKIP_CRON,
   INTAKE_AUTO_SKIP_QUEUE,
 } from "@/lib/jobs/intake-auto-skip-queue";
@@ -206,6 +202,7 @@ import {
 } from "@/lib/medications/intake-slot-dedup";
 
 import { MAINTENANCE_DISCOVERY } from "./maintenance-discovery";
+import { MAINTENANCE_FILE_IMPORT_JOBS } from "./maintenance-file-imports";
 import { MAINTENANCE_REPAIR_JOBS } from "./maintenance-repairs";
 import {
   defineJob,
@@ -502,12 +499,7 @@ const jobs: readonly JobDefinition[] = [
       (await import("@/lib/jobs/health-connect-import-worker"))
         .handleHealthConnectImport,
   }),
-  defineJob({
-    queue: FIT_IMPORT_QUEUE,
-    work: { localConcurrency: FIT_IMPORT_CONCURRENCY },
-    load: async () =>
-      (await import("@/lib/jobs/fit-import-worker")).handleFitImport,
-  }),
+  ...MAINTENANCE_FILE_IMPORT_JOBS,
   // A run that stops early sends its own follow-up while still active, which
   // `exclusive` would swallow. Serial: each batch holds an account against a
   // concurrent restore.

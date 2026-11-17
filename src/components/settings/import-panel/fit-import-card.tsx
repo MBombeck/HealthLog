@@ -9,7 +9,7 @@
  * the outcome is still there after a reload. Built like the Health Connect
  * card: the same shell, drop zone, phase line and result list.
  */
-import { useCallback, useId, useRef, useState } from "react";
+import { useCallback, useId, useRef, useState, type RefObject } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Activity, AlertCircle, Loader2, Upload } from "lucide-react";
 
@@ -128,8 +128,6 @@ export function FitImportCard() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [dragActive, setDragActive] = useState(false);
-  const dropDescId = useId();
 
   const statusQuery = useQuery({
     queryKey: queryKeys.fitImportStatus(),
@@ -212,54 +210,10 @@ export function FitImportCard() {
         <li>{t("settings.sections.export.import.fit.steps.other")}</li>
       </ol>
 
-      <div
-        role="button"
-        tabIndex={0}
-        aria-describedby={dropDescId}
-        aria-disabled={busy}
-        onClick={() => !busy && fileInputRef.current?.click()}
-        onKeyDown={(e) => {
-          if ((e.key === "Enter" || e.key === " ") && !busy) {
-            e.preventDefault();
-            fileInputRef.current?.click();
-          }
-        }}
-        onDragOver={(e) => {
-          e.preventDefault();
-          if (!busy) setDragActive(true);
-        }}
-        onDragLeave={() => setDragActive(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragActive(false);
-          const file = e.dataTransfer.files?.[0];
-          if (file && !busy) void upload(file);
-        }}
-        className={cn(
-          "border-border bg-muted/20 hover:bg-muted/40 focus-visible:ring-ring/50 flex min-h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed p-4 text-center transition-colors focus-visible:ring-2 focus-visible:outline-none",
-          dragActive && "border-primary bg-primary/5",
-          busy && "pointer-events-none opacity-60",
-        )}
-      >
-        <Upload className="text-muted-foreground h-5 w-5" aria-hidden="true" />
-        <span className="text-foreground text-sm font-medium">
-          {t("settings.sections.export.import.fit.dropLabel")}
-        </span>
-        <span id={dropDescId} className="text-muted-foreground text-xs">
-          {t("settings.sections.export.import.fit.dropHint")}
-        </span>
-      </div>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".fit,.gz,.zip,application/zip,application/gzip,application/octet-stream"
-        className="sr-only"
-        aria-label={t("settings.sections.export.import.fit.fileInputLabel")}
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) void upload(file);
-          e.target.value = "";
-        }}
+      <FitDropZone
+        busy={busy}
+        inputRef={fileInputRef}
+        onFile={(file) => void upload(file)}
       />
 
       <p className="text-muted-foreground text-xs">
@@ -347,5 +301,73 @@ export function FitImportCard() {
         </Button>
       </SettingsCardActions>
     </ImportCardShell>
+  );
+}
+
+/** The drop target and the hidden file input, as on the other import cards. */
+function FitDropZone({
+  busy,
+  inputRef,
+  onFile,
+}: {
+  busy: boolean;
+  inputRef: RefObject<HTMLInputElement | null>;
+  onFile: (file: File) => void;
+}) {
+  const { t } = useTranslations();
+  const [dragActive, setDragActive] = useState(false);
+  const dropDescId = useId();
+  return (
+    <>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-describedby={dropDescId}
+        aria-disabled={busy}
+        onClick={() => !busy && inputRef.current?.click()}
+        onKeyDown={(e) => {
+          if ((e.key === "Enter" || e.key === " ") && !busy) {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (!busy) setDragActive(true);
+        }}
+        onDragLeave={() => setDragActive(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragActive(false);
+          const file = e.dataTransfer.files?.[0];
+          if (file && !busy) onFile(file);
+        }}
+        className={cn(
+          "border-border bg-muted/20 hover:bg-muted/40 focus-visible:ring-ring/50 flex min-h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed p-4 text-center transition-colors focus-visible:ring-2 focus-visible:outline-none",
+          dragActive && "border-primary bg-primary/5",
+          busy && "pointer-events-none opacity-60",
+        )}
+      >
+        <Upload className="text-muted-foreground h-5 w-5" aria-hidden="true" />
+        <span className="text-foreground text-sm font-medium">
+          {t("settings.sections.export.import.fit.dropLabel")}
+        </span>
+        <span id={dropDescId} className="text-muted-foreground text-xs">
+          {t("settings.sections.export.import.fit.dropHint")}
+        </span>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".fit,.gz,.zip,application/zip,application/gzip,application/octet-stream"
+        className="sr-only"
+        aria-label={t("settings.sections.export.import.fit.fileInputLabel")}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onFile(file);
+          e.target.value = "";
+        }}
+      />
+    </>
   );
 }

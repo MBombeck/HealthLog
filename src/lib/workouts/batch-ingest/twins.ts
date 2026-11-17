@@ -14,19 +14,16 @@
  * workouts of its sport around its start, clustered exactly as every read
  * clusters them (`readWorkoutsAroundRange` + `workoutDuplicateClusterKeys`).
  * When it shares a cluster with a stored workout, the canonical one of those
- * (the source ladder, nearest start first) takes the entry's series and
+ * (`storedTwinOf`: the source ladder, nearest start first) takes the entry's series and
  * track where it has none, and nothing new is inserted. When the twin
  * already has both, the entry is a plain duplicate.
  */
 import type { MeasurementSource } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
-import {
-  pickCanonicalWorkoutRows,
-  workoutDuplicateClusterKeys,
-  type WorkoutPickerRow,
-} from "@/lib/measurements/pick-canonical-workout-rows";
+import type { WorkoutPickerRow } from "@/lib/measurements/pick-canonical-workout-rows";
 import {
   readWorkoutsAroundRange,
+  storedTwinOf,
   WORKOUT_PICK_SELECT,
 } from "@/lib/workouts/canonical-read";
 
@@ -41,7 +38,7 @@ type StoredRow = WorkoutPickerRow & {
 };
 
 /** The stored workout an incoming one duplicates, or null. */
-async function storedTwinOf(
+async function readStoredTwin(
   userId: string,
   p: PreparedWorkout,
   priorityJson: unknown,
@@ -61,39 +58,17 @@ async function storedTwinOf(
         },
       }),
   );
-  if (windowed.rows.length === 0) return null;
-  const incoming: WorkoutPickerRow & { id: null } = {
-    id: null,
-    userId,
-    sportType: p.row.sportType,
-    startedAt,
-    durationSec: p.row.durationSec,
-    source: (p.row.source ?? "MANUAL") as MeasurementSource,
-  };
-  // Stored rows first on an equal start, as `incomingWorkoutsToKeep` orders
-  // them: that is where a read finds them relative to a row written later.
-  const union: Array<StoredRow | typeof incoming> = [
-    ...windowed.rows,
-    incoming,
-  ].sort(
-    (a, b) =>
-      a.startedAt.getTime() - b.startedAt.getTime() ||
-      Number(a.id === null) - Number(b.id === null),
+  return storedTwinOf(
+    windowed,
+    {
+      userId,
+      sportType: p.row.sportType,
+      startedAt,
+      durationSec: p.row.durationSec,
+      source: (p.row.source ?? "MANUAL") as MeasurementSource,
+    },
+    priorityJson,
   );
-  const keys = workoutDuplicateClusterKeys(union);
-  const ownKey = keys[union.indexOf(incoming)];
-  const members = union.filter(
-    (row, i): row is StoredRow => row.id !== null && keys[i] === ownKey,
-  );
-  if (members.length === 0) return null;
-  const at = startedAt.getTime();
-  const canonical = pickCanonicalWorkoutRows(members, priorityJson);
-  const pool = canonical.length > 0 ? canonical : members;
-  return [...pool].sort(
-    (a, b) =>
-      Math.abs(a.startedAt.getTime() - at) -
-        Math.abs(b.startedAt.getTime() - at) || (a.id < b.id ? -1 : 1),
-  )[0]!;
 }
 
 /**
@@ -110,7 +85,7 @@ export async function adoptStoredTwins(
   const keep: PreparedWorkout[] = [];
   const claimed = new Set(plan.toEnrich.map((e) => e.workoutId));
   for (const p of plan.toInsert) {
-    const twin = await storedTwinOf(userId, p, priorityJson);
+    const twin = await readStoredTwin(userId, p, priorityJson);
     if (!twin) {
       keep.push(p);
       continue;
