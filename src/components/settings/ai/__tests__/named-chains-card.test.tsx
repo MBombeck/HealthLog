@@ -45,7 +45,7 @@ function render(data: NamedChainsData | undefined, isPending = false) {
             data,
             isPending,
             error: null,
-            refetch: (async () => ({})) as never,
+            refetch: () => undefined,
           }}
         />
       </I18nProvider>

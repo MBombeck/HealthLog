@@ -132,10 +132,13 @@ export function useNamedChainsQuery(
 export function NamedChainsCard({
   query,
 }: {
-  query: Pick<
-    UseQueryResult<NamedChainsData>,
-    "data" | "isPending" | "error" | "refetch"
-  >;
+  /** The read, as `useNamedChainsQuery` returns it. */
+  query: {
+    data: NamedChainsData | undefined;
+    isPending: boolean;
+    error: unknown;
+    refetch: () => unknown;
+  };
 }) {
   const { t } = useTranslations();
 
