@@ -6079,7 +6079,7 @@
           },
           "fit": {
             "title": "Fichier d’activité (FIT)",
-            "description": "Importer un entraînement depuis le fichier FIT qu’enregistre une montre ou un compteur vélo, par exemple Garmin, Wahoo, Coros, Polar, Suunto ou Zwift.",
+            "description": "Importer un entraînement depuis le fichier FIT d’une montre ou d’un compteur vélo, comme Garmin, Wahoo ou Coros.",
             "choose": "Choisir un fichier d’activité",
             "uploading": "Envoi en cours…",
             "uploadFailed": "L’envoi a échoué. Veuillez réessayer.",

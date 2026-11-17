@@ -6079,7 +6079,7 @@
           },
           "fit": {
             "title": "Activity file (FIT)",
-            "description": "Import a workout from the FIT file a watch or bike computer records, such as Garmin, Wahoo, Coros, Polar, Suunto or Zwift.",
+            "description": "Import a workout from the FIT file a watch or bike computer records, such as Garmin, Wahoo, Coros or Polar.",
             "choose": "Choose activity file",
             "uploading": "Uploading…",
             "uploadFailed": "The upload failed. Please try again.",

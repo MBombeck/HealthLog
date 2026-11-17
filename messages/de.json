@@ -6079,7 +6079,7 @@
           },
           "fit": {
             "title": "Aktivitätsdatei (FIT)",
-            "description": "Ein Training aus der FIT-Datei importieren, die eine Uhr oder ein Radcomputer aufzeichnet, etwa von Garmin, Wahoo, Coros, Polar, Suunto oder Zwift.",
+            "description": "Ein Training aus der FIT-Datei einer Uhr oder eines Radcomputers importieren, etwa von Garmin, Wahoo oder Coros.",
             "choose": "Aktivitätsdatei auswählen",
             "uploading": "Wird hochgeladen…",
             "uploadFailed": "Das Hochladen ist fehlgeschlagen. Bitte versuche es erneut.",

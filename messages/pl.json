@@ -6079,7 +6079,7 @@
           },
           "fit": {
             "title": "Plik aktywności (FIT)",
-            "description": "Zaimportuj trening z pliku FIT zapisanego przez zegarek lub licznik rowerowy, na przykład Garmin, Wahoo, Coros, Polar, Suunto albo Zwift.",
+            "description": "Zaimportuj trening z pliku FIT zegarka lub licznika rowerowego, np. Garmin, Wahoo, Coros albo Polar.",
             "choose": "Wybierz plik aktywności",
             "uploading": "Przesyłanie…",
             "uploadFailed": "Przesyłanie nie powiodło się. Spróbuj ponownie.",

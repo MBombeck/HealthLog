@@ -6079,7 +6079,7 @@
           },
           "fit": {
             "title": "활동 파일(FIT)",
-            "description": "Garmin, Wahoo, Coros, Polar, Suunto, Zwift 등 시계나 자전거 컴퓨터가 기록한 FIT 파일에서 운동을 가져옵니다.",
+            "description": "Garmin, Wahoo, Coros, Polar 등 시계나 자전거 컴퓨터가 기록한 FIT 파일에서 운동을 가져옵니다.",
             "choose": "활동 파일 선택",
             "uploading": "업로드 중…",
             "uploadFailed": "업로드에 실패했습니다. 다시 시도해 주세요.",

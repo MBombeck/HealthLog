@@ -6079,7 +6079,7 @@
           },
           "fit": {
             "title": "File di attività (FIT)",
-            "description": "Importa un allenamento dal file FIT registrato da un orologio o da un ciclocomputer, per esempio Garmin, Wahoo, Coros, Polar, Suunto o Zwift.",
+            "description": "Importa un allenamento dal file FIT di un orologio o ciclocomputer, come Garmin, Wahoo, Coros o Polar.",
             "choose": "Scegli file di attività",
             "uploading": "Caricamento…",
             "uploadFailed": "Il caricamento non è riuscito. Riprova.",

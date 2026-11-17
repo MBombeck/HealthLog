@@ -135,9 +135,9 @@ export async function runFitImport(
       },
     });
     return jobDone({
-      sessions: result.sessions,
+      records_read: result.sessions,
       imported: result.imported,
-      merged: result.merged,
+      rows_upserted: result.imported + result.merged,
     });
   } catch (err) {
     const reason = failureReason(err);

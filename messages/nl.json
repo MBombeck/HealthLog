@@ -6079,7 +6079,7 @@
           },
           "fit": {
             "title": "Activiteitsbestand (FIT)",
-            "description": "Importeer een training uit het FIT-bestand dat een horloge of fietscomputer vastlegt, bijvoorbeeld van Garmin, Wahoo, Coros, Polar, Suunto of Zwift.",
+            "description": "Importeer een training uit het FIT-bestand van een horloge of fietscomputer, zoals Garmin, Wahoo, Coros of Polar.",
             "choose": "Activiteitsbestand kiezen",
             "uploading": "Uploaden…",
             "uploadFailed": "Het uploaden is mislukt. Probeer het opnieuw.",
